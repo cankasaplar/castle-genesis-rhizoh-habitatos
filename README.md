@@ -72,6 +72,7 @@ Client icin gateway ve uçuş/uydu anahtarlari: `apps/client/.env.example` → `
 ## Rhizoh Brain v6 Entegrasyonu
 
 - **Client çekirdek (vNext-529)**: GPU/garanti/kapanış köprüsü, epistemik yüzey, dış solver ve kanıt ağı iskeleti — tek sayfa harita: [`docs/RHIZOH_KERNEL_VNEXT529.md`](docs/RHIZOH_KERNEL_VNEXT529.md)
+- **Proof OS yol haritası** (SMT, kanıt derleme, doğrulama çekirdeği, kripto kapanış, deterministik replay): [`docs/RHIZOH_PROOF_OPERATING_SYSTEM_ROADMAP.md`](docs/RHIZOH_PROOF_OPERATING_SYSTEM_ROADMAP.md)
 - Gateway uzerinde `RHIZOH_QUERY` / `RHIZOH_RESULT` mesaj tipi aktif.
 - Serbest metin komutlari Rhizoh cekirdegine yonlendirilir.
 - UI tarafinda mode/persona/reply paneli canli gosterilir.

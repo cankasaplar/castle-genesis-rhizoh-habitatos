@@ -54,6 +54,7 @@ Yaklaşık alanlar (sürüme göre genişleyebilir):
 
 ## 6. İlgili üst belgeler
 
+- [`RHIZOH_PROOF_OPERATING_SYSTEM_ROADMAP.md`](RHIZOH_PROOF_OPERATING_SYSTEM_ROADMAP.md) — DEEPOR vizyonu, SMT / kanıt derleme / doğrulama çekirdeği / kripto kapanış / deterministik replay faz planı.
 - `README.md` — monorepo girişi ve Rhizoh Brain v6 notu.
 - `docs/SECURITY_HARDENING.md` — güvenlik sertleştirme.
 - `docs/ARCHITECTURE_REALTIME.md` — gerçek zamanlı mimari.
