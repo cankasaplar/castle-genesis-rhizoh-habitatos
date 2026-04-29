@@ -1,0 +1,57 @@
+{
+  "version": "1.0.0",
+  "name": "Castle Genesis · Sovereign Runtime",
+  "description": "META orchestration manifest for Firebase (paths + API keys; no secrets).",
+  "firebase": {
+    "pathsRoot": "castle/genesis/v1",
+    "collectionsHint": "Mirror paths under Firestore or flatten into RTDB — enforce rules per castle/genesis/v1/**"
+  },
+  "apiKeys": {
+    "metaLayer": "castle.sovereign.meta.v1",
+    "boot": "castle.sovereign.boot.v1",
+    "capability": "castle.sovereign.capability.v1",
+    "pluginLifecycle": "castle.sovereign.plugin.lifecycle.v1",
+    "permissionGraph": "castle.sovereign.permission.graph.v1",
+    "health": "castle.sovereign.health.v1",
+    "schedule": "castle.sovereign.schedule.distributed.v1",
+    "chronos": "castle.chronos.engine.v1",
+    "biome": "castle.biome.ecology.v1",
+    "memoryEpisodic": "castle.memory.episodic.v1",
+    "memorySemantic": "castle.memory.semantic.v1",
+    "memoryProcedural": "castle.memory.procedural.v1",
+    "memoryCollective": "castle.memory.collective.v1",
+    "memoryGhost": "castle.memory.ghost.archive.v1",
+    "narrativeDream": "castle.narrative.dream.protocol.v1",
+    "economyMarketplace": "castle.economy.marketplace.v1",
+    "networkMesh": "castle.network.mesh.v1"
+  },
+  "firebasePaths": {
+    "root": "castle/genesis/v1",
+    "kernelRegistry": "castle/genesis/v1/registries/kernel",
+    "pluginRegistry": "castle/genesis/v1/registries/plugin",
+    "identityRegistry": "castle/genesis/v1/registries/identity",
+    "permissionRegistry": "castle/genesis/v1/registries/permission",
+    "memoryRegistry": "castle/genesis/v1/registries/memory",
+    "capabilityIndex": "castle/genesis/v1/capabilities/index",
+    "bootLog": "castle/genesis/v1/runtime/boot_log",
+    "healthMetrics": "castle/genesis/v1/runtime/health",
+    "scheduleLedger": "castle/genesis/v1/runtime/schedule",
+    "chronosClocks": "castle/genesis/v1/chronos/clocks",
+    "biomeState": "castle/genesis/v1/biome/state",
+    "biomeCycles": "castle/genesis/v1/biome/cycles",
+    "narrativeTimeline": "castle/genesis/v1/narrative/timeline",
+    "economyLedger": "castle/genesis/v1/economy/ledger",
+    "networkTopology": "castle/genesis/v1/network/topology",
+    "mediaSensorium": "castle/genesis/v1/media/sensorium"
+  },
+  "chronosClocks": ["simTime", "realTime", "eventTime", "memoryTime", "dreamTime"],
+  "physicsWorkers": ["physics_a", "physics_b", "collision", "pathfinding", "fluid"],
+  "biomeDefaults": {
+    "resourceCyclePhase": 0,
+    "foodWebStability": 0.72,
+    "climatePressure": 0.41,
+    "entropy": 0.18,
+    "diseaseLoad": 0.06,
+    "evolutionRate": 0.004
+  }
+}

@@ -1,0 +1,56 @@
+# Manual production deploy: Hosting + Firestore rules + Storage rules.
+# Gizli / env şeması: ENV_KEYS.md
+# GitHub → Settings → Secrets → Actions:
+#   FIREBASE_SERVICE_ACCOUNT_CASTLE_GENESIS — service account JSON (deploy yetkisi)
+#   VITE_FIREBASE_CONFIG — tek satır Web config JSON
+#   VITE_GATEWAY_WS_URL, VITE_GATEWAY_TOKEN, VITE_RHIZOH_LLM_HTTP, VITE_CASTLE_APP_ID, …
+
+name: Deploy Firebase (hosting + rules)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build client
+        run: npm run build
+        env:
+          VITE_FIREBASE_CONFIG: ${{ secrets.VITE_FIREBASE_CONFIG || '{}' }}
+          VITE_GATEWAY_WS_URL: ${{ secrets.VITE_GATEWAY_WS_URL }}
+          VITE_GATEWAY_TOKEN: ${{ secrets.VITE_GATEWAY_TOKEN }}
+          VITE_DRONE_TELEMETRY_WS: ${{ secrets.VITE_DRONE_TELEMETRY_WS }}
+          VITE_FLIGHT_VIEWER_HTTP: ${{ secrets.VITE_FLIGHT_VIEWER_HTTP }}
+          VITE_SATELLITE_TILE_TEMPLATE: ${{ secrets.VITE_SATELLITE_TILE_TEMPLATE }}
+          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+          VITE_CESIUM_ION_TOKEN: ${{ secrets.VITE_CESIUM_ION_TOKEN }}
+          VITE_RHIZOH_LLM_HTTP: ${{ secrets.VITE_RHIZOH_LLM_HTTP }}
+          VITE_RHIZOH_LLM_TOKEN: ${{ secrets.VITE_RHIZOH_LLM_TOKEN }}
+          VITE_TELEMETRY_MAX_HZ: ${{ secrets.VITE_TELEMETRY_MAX_HZ }}
+          VITE_SIM_DRONE_COUNT: ${{ secrets.VITE_SIM_DRONE_COUNT }}
+          VITE_CASTLE_APP_ID: ${{ secrets.VITE_CASTLE_APP_ID }}
+
+      - name: Write Firebase service account
+        run: node -e "require('fs').writeFileSync('firebase-ci.json', process.env.GOOGLE_CREDENTIALS)"
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CASTLE_GENESIS }}
+
+      - name: Deploy (hosting, Firestore rules, Storage rules)
+        run: npx firebase-tools deploy --only hosting,firestore:rules,storage --project castle-genesis --non-interactive
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-ci.json

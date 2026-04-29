@@ -1,0 +1,36 @@
+{
+  "version": "1.0.0",
+  "title": "Castle Genesis · Flight · Satellite · Realtime viewer",
+  "description": "Client env keys + protocol constants for production. Secrets only in hosting env / Firebase.",
+  "protocol": {
+    "gatewayRelay": "DRONE_TELEMETRY",
+    "envelope": "{ type, payload, ts }"
+  },
+  "viteEnvKeys": [
+    "VITE_GATEWAY_WS_URL",
+    "VITE_GATEWAY_TOKEN",
+    "VITE_DRONE_TELEMETRY_WS",
+    "VITE_FLIGHT_VIEWER_HTTP",
+    "VITE_SATELLITE_TILE_TEMPLATE",
+    "VITE_CESIUM_ION_TOKEN",
+    "VITE_MAPBOX_TOKEN",
+    "VITE_TELEMETRY_MAX_HZ",
+    "VITE_SIM_DRONE_COUNT",
+    "VITE_FIREBASE_CONFIG"
+  ],
+  "manifestKeys": {
+    "satelliteLayer": "castle.flight.satellite.layer.v1",
+    "droneTelemetryStream": "castle.flight.drone.telemetry.v1",
+    "droneCommandIngress": "castle.flight.drone.command.v1",
+    "realtimeViewerApi": "castle.flight.viewer.realtime.v1",
+    "cesiumIon": "castle.gis.cesium.ion.v1",
+    "mapboxRaster": "castle.gis.mapbox.raster.v1",
+    "gatewayBroadcast": "castle.network.gateway.broadcast.v1"
+  },
+  "telemetryPayloadExamples": {
+    "singlePose": { "id": "drone-1", "lat": 41.0086, "lon": 28.9802, "alt": 140, "yaw": 0 },
+    "gatewayBatch": { "drones": [{ "id": "SIM-DRONE-1", "lat": 41.01, "lon": 28.98, "alt": 200 }], "ts": 0 }
+  },
+  "pluginGlobal": "window.__CASTLE_FLIGHT__ — subscribeCastleDroneTelemetry · getCastleFlightConfig",
+  "satelliteTileTemplateHint": "Mapbox: https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=TOKEN — veya kendi raster CDN."
+}

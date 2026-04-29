@@ -1,0 +1,43 @@
+:root {
+  --castle-bg: #05030a;
+  --castle-panel: #0b0f16;
+  --castle-text: #e5e7eb;
+  --castle-muted: #94a3b8;
+  --castle-accent: #8b5cf6;
+  --castle-accent-2: #22d3ee;
+  --castle-ok: #22c55e;
+  --castle-border: rgba(148, 163, 184, 0.28);
+}
+
+html, body {
+  background: var(--castle-bg);
+  color: var(--castle-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif;
+}
+
+.castle-shell-card {
+  border: 1px solid var(--castle-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--castle-panel) 82%, transparent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.castle-shell-title {
+  color: var(--castle-accent-2);
+  letter-spacing: 0.04em;
+}
+
+.castle-shell-btn {
+  border: 1px solid color-mix(in srgb, var(--castle-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--castle-accent) 22%, transparent);
+  color: var(--castle-text);
+}
+
+.castle-shell-btn:hover {
+  border-color: var(--castle-accent-2);
+  background: color-mix(in srgb, var(--castle-accent-2) 18%, transparent);
+}
+
+.castle-shell-note {
+  color: var(--castle-muted);
+}

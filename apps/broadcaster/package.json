@@ -1,0 +1,13 @@
+{
+  "name": "@castle/broadcaster",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/agent.js"
+  },
+  "dependencies": {
+    "@castle/protocol": "1.0.0",
+    "ws": "^8.18.3"
+  }
+}

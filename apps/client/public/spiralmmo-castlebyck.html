@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpiralMMO CastleByCK - Habitat Room</title>
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <link rel="stylesheet" href="/studio-shared.css" />
+  <script src="/studio-shared.js"></script>
+  <style>
+    body { margin:0; overflow:hidden; background:#06070c; color:#e5e7eb; }
+    #root { position:fixed; inset:0; display:grid; grid-template-columns:1fr 360px; }
+    #stage { position:relative; }
+    #hud { padding:14px; overflow:auto; background:rgba(8,10,16,.88); border-left:1px solid rgba(139,92,246,.35); }
+    .card { margin-bottom:12px; padding:12px; border-radius:12px; }
+    .row { display:flex; gap:8px; margin:8px 0; }
+    .btn { flex:1; cursor:pointer; border-radius:8px; padding:8px 10px; border:1px solid rgba(148,163,184,.35); background:rgba(30,35,45,.65); color:#e5e7eb; font-size:12px; }
+    .btn:hover { border-color:#22d3ee; }
+    .small { font-size:11px; color:#94a3b8; }
+    input, select { width:100%; padding:8px; border-radius:8px; border:1px solid rgba(148,163,184,.35); background:rgba(30,35,45,.85); color:#e5e7eb; }
+    #log { max-height:160px; overflow:auto; white-space:pre-wrap; font-size:11px; color:#a5b4fc; }
+    #label { position:absolute; top:12px; left:12px; z-index:5; font-size:12px; padding:8px 12px; border-radius:10px; background:rgba(0,0,0,.45); border:1px solid rgba(34,211,238,.35); }
+    @media (max-width: 1100px) { #root { grid-template-columns:1fr; grid-template-rows:1fr 46vh; } #hud { border-left:none; border-top:1px solid rgba(139,92,246,.35); } }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <section id="stage">
+      <div id="label">SpiralMMO Room · OrbitDeep Kernel</div>
+    </section>
+    <aside id="hud">
+      <div class="card castle-shell-card">
+        <div class="castle-shell-title">SpiralMMO Oda</div>
+        <div class="small">Bu katman Habitat çekirdeği ile aynı WS/SFU/sinyal ayarlarını kullanır.</div>
+        <div class="row">
+          <select id="roomSelect"></select>
+          <button class="btn castle-shell-btn" id="btnCreateRoom">Oda Yarat</button>
+        </div>
+        <input id="roomName" placeholder="Yeni oda adı (örn: Spiral-Arena)" />
+      </div>
+
+      <div class="card castle-shell-card">
+        <div class="castle-shell-title">AI Oyuncular</div>
+        <div class="row">
+          <button class="btn castle-shell-btn" id="btnSpawnAi">AI Kat</button>
+          <button class="btn castle-shell-btn" id="btnClearAi">Temizle</button>
+        </div>
+        <div class="row">
+          <button class="btn" id="btnStartMedia">Mic+Cam</button>
+          <button class="btn" id="btnStopMedia">Stop</button>
+        </div>
+      </div>
+
+      <div class="card castle-shell-card">
+        <div class="castle-shell-title">Ağ Durumu</div>
+        <div class="small" id="netStatus">Gateway: - | SFU: - | LiveKit: -</div>
+      </div>
+
+      <div class="card castle-shell-card">
+        <div class="castle-shell-title">Dil / Stil</div>
+        <select id="lang">
+          <option value="tr">TR</option>
+          <option value="en">EN</option>
+        </select>
+      </div>
+
+      <div class="card castle-shell-card">
+        <div class="castle-shell-title">Olay Günlüğü</div>
+        <div id="log"></div>
+      </div>
+    </aside>
+  </div>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    const WS_BASE_URL = localStorage.getItem("CASTLE_GATEWAY_WS_URL") || "ws://localhost:8090";
+    const GATEWAY_TOKEN = localStorage.getItem("CASTLE_GATEWAY_TOKEN") || "";
+    const SFU_WS_URL = localStorage.getItem("VITE_SFU_WS_URL") || "ws://localhost:5005";
+    const LIVEKIT_URL = localStorage.getItem("CASTLE_LIVEKIT_URL") || "wss://castle-genesis.livekit.cloud";
+    const TOKEN_ENDPOINT = localStorage.getItem("CASTLE_TOKEN_ENDPOINT") || "https://castle-genesis-api.workers.dev/api/get-livekit-token";
+    const WS_URL = GATEWAY_TOKEN ? `${WS_BASE_URL}?token=${encodeURIComponent(GATEWAY_TOKEN)}` : WS_BASE_URL;
+
+    const stage = document.getElementById("stage");
+    const label = document.getElementById("label");
+    const logEl = document.getElementById("log");
+    const netStatusEl = document.getElementById("netStatus");
+    const roomSelect = document.getElementById("roomSelect");
+    const roomName = document.getElementById("roomName");
+    const langSelect = document.getElementById("lang");
+
+    const roomState = {
+      rooms: [{ id: "room-default", name: "Spiral Default Arena" }],
+      activeRoomId: "room-default",
+      characters: [],
+      clientId: null
+    };
+
+    const log = (m) => {
+      const ts = new Date().toLocaleTimeString();
+      logEl.textContent = `[${ts}] ${m}\n` + logEl.textContent.slice(0, 5000);
+    };
+
+    function renderRoomList() {
+      roomSelect.innerHTML = roomState.rooms.map((r) => `<option value="${r.id}">${r.name}</option>`).join("");
+      roomSelect.value = roomState.activeRoomId;
+    }
+
+    function updateNetStatus(partial) {
+      roomState.net = { ...(roomState.net || {}), ...partial };
+      const n = roomState.net;
+      netStatusEl.textContent = `Gateway: ${n.gateway || "-"} | SFU: ${n.sfu || "-"} | LiveKit: ${n.livekit || "-"}`;
+    }
+
+    // 3D scene
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(stage.clientWidth, stage.clientHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    stage.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x06070c);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+    const d = new THREE.DirectionalLight(0x99ddff, 1.8);
+    d.position.set(8, 12, 6);
+    scene.add(d);
+    scene.add(new THREE.Mesh(new THREE.SphereGeometry(3200, 48, 48), new THREE.MeshStandardMaterial({ color: 0x0b1635, emissive: 0x0e223f, metalness: 0.7, roughness: 0.2, transparent: true, opacity: 0.75 })));
+
+    const cam = new THREE.PerspectiveCamera(45, stage.clientWidth / stage.clientHeight, 1, 100000);
+    cam.position.set(0, 3500, 9500);
+    const controls = new OrbitControls(cam, renderer.domElement);
+    controls.enableDamping = true;
+
+    const aiGroup = new THREE.Group();
+    scene.add(aiGroup);
+    const aiColor = new THREE.Color();
+    const dummy = new THREE.Object3D();
+    const aiMesh = new THREE.InstancedMesh(
+      new THREE.IcosahedronGeometry(140, 1),
+      new THREE.MeshPhongMaterial({ shininess: 90, vertexColors: true }),
+      512
+    );
+    aiMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    aiGroup.add(aiMesh);
+
+    function hashNum(text) {
+      const s = String(text || "");
+      let h = 2166136261;
+      for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+      return (h >>> 0) / 4294967295;
+    }
+
+    function rebuildAiVisual(t) {
+      const list = roomState.characters.filter((p) => p.roomId === roomState.activeRoomId);
+      aiMesh.count = Math.min(list.length, 512);
+      for (let i = 0; i < aiMesh.count; i++) {
+        const p = list[i];
+        const phase = hashNum(p.id) * Math.PI * 2;
+        const speed = 0.25 + hashNum(`${p.id}:speed`) * 0.65;
+        const a = phase + t * speed * 0.28 + i * 0.03;
+        const r = 3600 + Math.sin(t * 0.3 + i) * 600;
+        dummy.position.set(Math.cos(a) * r, Math.sin(a * 1.4) * 900, Math.sin(a) * r);
+        dummy.rotation.set(0, a, 0);
+        dummy.scale.setScalar(0.85 + Math.sin(t * 2.0 + i) * 0.2);
+        dummy.updateMatrix();
+        aiMesh.setMatrixAt(i, dummy.matrix);
+        aiColor.set(p.role === "builder" ? 0x00ffaa : p.role === "defender" ? 0xffb020 : p.role === "caster" ? 0xd946ef : 0x22d3ee);
+        aiMesh.setColorAt(i, aiColor);
+      }
+      aiMesh.instanceMatrix.needsUpdate = true;
+      if (aiMesh.instanceColor) aiMesh.instanceColor.needsUpdate = true;
+    }
+
+    // Shared kernel connections
+    let gatewayWs = null;
+    function connectGateway() {
+      try {
+        gatewayWs = new WebSocket(WS_URL);
+        gatewayWs.onopen = () => {
+          updateNetStatus({ gateway: "live" });
+          log("Gateway connected");
+          gatewayWs.send(JSON.stringify({ type: "SPIRAL_JOIN_ROOM", payload: { roomId: roomState.activeRoomId } }));
+        };
+        gatewayWs.onmessage = (evt) => {
+          try {
+            const msg = JSON.parse(evt.data);
+            if (msg.type === "HELLO") {
+              roomState.clientId = msg.payload?.clientId || null;
+            } else if (msg.type === "SPIRAL_STATE") {
+              roomState.rooms = msg.payload?.rooms || roomState.rooms;
+              roomState.characters = msg.payload?.characters || [];
+              if (!roomState.rooms.find((r) => r.id === roomState.activeRoomId)) {
+                roomState.activeRoomId = roomState.rooms[0]?.id || "room-default";
+              }
+              renderRoomList();
+            } else if (msg.type === "COMMAND_RESULT" && msg.payload?.characterId) {
+              log(`Character created: ${msg.payload.characterId}`);
+            } else if (msg.type === "ERROR") {
+              log(`Gateway error: ${msg.payload?.error || "unknown"}`);
+            }
+          } catch {
+            // ignore
+          }
+        };
+        gatewayWs.onclose = () => {
+          updateNetStatus({ gateway: "offline" });
+          log("Gateway disconnected");
+          setTimeout(connectGateway, 2000);
+        };
+        gatewayWs.onerror = () => {
+          updateNetStatus({ gateway: "error" });
+        };
+      } catch {
+        updateNetStatus({ gateway: "error" });
+      }
+    }
+
+    function probeSfu() {
+      try {
+        const s = new WebSocket(SFU_WS_URL);
+        s.onopen = () => { updateNetStatus({ sfu: "live" }); s.close(); };
+        s.onerror = () => { updateNetStatus({ sfu: "offline" }); };
+      } catch {
+        updateNetStatus({ sfu: "offline" });
+      }
+    }
+
+    let localStream = null;
+    let lkRoom = null;
+    async function startMedia() {
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+        updateNetStatus({ media: "ready" });
+        log("Local media ready");
+        await connectLiveKit();
+      } catch (e) {
+        log(`Media error: ${e.message}`);
+      }
+    }
+    function stopMedia() {
+      localStream?.getTracks().forEach((t) => t.stop());
+      localStream = null;
+      if (lkRoom) lkRoom.disconnect();
+      lkRoom = null;
+      updateNetStatus({ livekit: "offline" });
+    }
+
+    async function connectLiveKit() {
+      try {
+        const tokenRes = await fetch(`${TOKEN_ENDPOINT}?user=${encodeURIComponent("SpiralMMO_" + Date.now())}`);
+        if (!tokenRes.ok) throw new Error(`Token ${tokenRes.status}`);
+        const tokenJson = await tokenRes.json();
+        lkRoom = new window.LivekitClient.Room();
+        await lkRoom.connect(LIVEKIT_URL, tokenJson.token);
+        updateNetStatus({ livekit: "live" });
+        log("LiveKit connected");
+      } catch (e) {
+        updateNetStatus({ livekit: "error" });
+        log(`LiveKit error: ${e.message}`);
+      }
+    }
+
+    // UI bindings
+    document.getElementById("btnCreateRoom").onclick = () => {
+      const name = (roomName.value || "").trim() || `SpiralRoom-${roomState.rooms.length + 1}`;
+      const id = `room-${Math.random().toString(36).slice(2, 7)}`;
+      roomState.rooms.push({ id, name });
+      roomState.activeRoomId = id;
+      renderRoomList();
+      log(`Room created: ${name}`);
+      roomName.value = "";
+      gatewayWs?.readyState === 1 && gatewayWs.send(JSON.stringify({ type: "SPIRAL_JOIN_ROOM", payload: { roomId: id, roomName: name } }));
+    };
+    roomSelect.onchange = () => {
+      roomState.activeRoomId = roomSelect.value;
+      log(`Switched room: ${roomSelect.options[roomSelect.selectedIndex]?.text || roomSelect.value}`);
+      gatewayWs?.readyState === 1 && gatewayWs.send(JSON.stringify({ type: "SPIRAL_JOIN_ROOM", payload: { roomId: roomState.activeRoomId } }));
+    };
+    document.getElementById("btnSpawnAi").onclick = () => {
+      if (gatewayWs?.readyState !== 1) {
+        log("Gateway offline: cannot create character");
+        return;
+      }
+      const idx = (roomState.characters.filter((c) => c.source === "spawned").length + 1).toString().padStart(2, "0");
+      gatewayWs.send(
+        JSON.stringify({
+          type: "SPIRAL_CREATE_CHARACTER",
+          payload: { roomId: roomState.activeRoomId, name: `Spiral-AI-${idx}`, role: ["scout", "defender", "builder", "caster"][Number(idx) % 4] }
+        })
+      );
+    };
+    document.getElementById("btnClearAi").onclick = () => {
+      roomState.characters = roomState.characters.filter((p) => p.roomId !== roomState.activeRoomId || p.source === "world");
+      log("Local room filter cleared (world agents kept)");
+    };
+    document.getElementById("btnStartMedia").onclick = startMedia;
+    document.getElementById("btnStopMedia").onclick = stopMedia;
+
+    const shared = window.CastleStudioSettings?.get?.() || { language: "tr" };
+    langSelect.value = shared.language || "tr";
+    langSelect.onchange = () => {
+      window.CastleStudioSettings?.set?.({ language: langSelect.value });
+      log(`Language set: ${langSelect.value.toUpperCase()}`);
+    };
+    window.addEventListener("castle:settings-changed", (e) => {
+      const language = e.detail?.language || "tr";
+      langSelect.value = language;
+    });
+
+    // Start
+    renderRoomList();
+    connectGateway();
+    probeSfu();
+    log("SpiralMMO room booted");
+
+    window.addEventListener("resize", () => {
+      renderer.setSize(stage.clientWidth, stage.clientHeight);
+      cam.aspect = stage.clientWidth / stage.clientHeight;
+      cam.updateProjectionMatrix();
+    });
+
+    const clock = new THREE.Clock();
+    function loop() {
+      requestAnimationFrame(loop);
+      const t = clock.getElapsedTime();
+      rebuildAiVisual(t);
+      const activeCount = roomState.characters.filter((c) => c.roomId === roomState.activeRoomId).length;
+      label.textContent = `SpiralMMO Room · ${roomState.activeRoomId} · Characters ${activeCount}`;
+      controls.update();
+      renderer.render(scene, cam);
+    }
+    loop();
+  </script>
+</body>
+</html>

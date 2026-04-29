@@ -1,0 +1,10 @@
+{
+  "name": "@castle/command-dsl",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "dependencies": {
+    "@castle/protocol": "1.0.0"
+  }
+}

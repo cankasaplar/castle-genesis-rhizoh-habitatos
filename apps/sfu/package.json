@@ -1,0 +1,13 @@
+{
+  "name": "@castle/sfu",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js"
+  },
+  "dependencies": {
+    "mediasoup": "^3.15.5",
+    "ws": "^8.18.3"
+  }
+}
