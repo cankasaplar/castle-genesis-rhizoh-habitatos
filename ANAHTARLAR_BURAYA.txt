@@ -1,14 +1,25 @@
 Castle — API anahtarları nereye?
 
+Bu dosyada gerçek anahtar YOK ve OLMAMALI. Repoya yalnızca sansürlü örnekler aşağıda.
+Gerçek değerleri yerelde `*.env.local`, `apps/gateway/.env`, `apps/client/.env.production` içinde tutun (çoğu .gitignore altında).
+
 Sadece 2 dosya düşünün (ENV_KEYS.md = sadece isim listesi; içine gizli yazmayın).
+
+────────────────────────────────────────────────────────
+Sansürlü örnek satırlar (kopyala-yapıştır için biçim; değerler sahte)
+
+  VITE_FIREBASE_API_KEY=AIzaSy••••••••••••••••••••REDACTED
+  VITE_CESIUM_ION_TOKEN=eyJhbG••••••••••••••••••••REDACTED
+  OPENAI_API_KEY=sk-proj-••••••••••••••••••••REDACTED
+  CASTLE_GATEWAY_TOKEN=••••••••••••••••••••REDACTED
 
 ────────────────────────────────────────────────────────
 1) TARAYICI — Firebase, Cesium Ion, gateway adres/token
    Dosya:  apps\client\.env.local
-   
+
    Bir kez oluşturmak için (PowerShell, repo kökünde):
    Copy-Item apps\client\.env.example apps\client\.env.local
-      
+
    Sonra .env.local içinde satırları doldurun, örnek:
    VITE_CESIUM_ION_TOKEN=...
    VITE_FIREBASE_API_KEY=...
@@ -30,3 +41,6 @@ Sadece 2 dosya düşünün (ENV_KEYS.md = sadece isim listesi; içine gizli yazm
 
 Hepsi otomatik şablon kopyası (dosya varsa silmez):
    npm run setup:env
+
+İstersen gerçek anahtarları sadece makinede tutmak için ayrı dosya (repoya ekleme):
+   ANAHTARLAR_BURAYA.local.txt  →  .gitignore içinde

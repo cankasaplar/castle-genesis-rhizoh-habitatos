@@ -5,3 +5,10 @@ dist
 .env.production
 .env.*.local
 firebase-ci.json
+
+# Araç ikilileri / yerel tünel — repoya koyma
+cloudflared.exe
+.firebase/
+
+# Gerçek anahtarları buraya yaz; bu dosya repoda olmasın (şablon: ANAHTARLAR_BURAYA.txt)
+ANAHTARLAR_BURAYA.local.txt
