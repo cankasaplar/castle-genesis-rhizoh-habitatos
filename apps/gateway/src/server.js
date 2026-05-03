@@ -1,3 +1,11 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
+dotenv.config({ path: path.join(__dirname, "..", ".env.local"), override: true });
+
 import { WebSocket, WebSocketServer } from "ws";
 import { createServer } from "node:http";
 import { createOrchestrator } from "@castle/orchestrator";
@@ -6,7 +14,8 @@ import { WS_MESSAGE, COMMAND, createEnvelope, safeJsonParse } from "@castle/prot
 import { queryOpenData } from "./openData.js";
 import { verifyClientToken } from "./auth.js";
 import { runRhizohBrain } from "./rhizohBrain.js";
-import { queryRhizohLlm } from "./rhizohLlmGateway.js";
+import { queryRhizohLlm, diagnoseRhizohLlmContext } from "./rhizohLlmGateway.js";
+import { countArtifactLayerDocuments } from "./artifactCounts.js";
 import { runRhizohBrainV2 } from "./rhizohBrainV2.js";
 import {
   listConnections,
@@ -16,6 +25,8 @@ import {
   setDefaultConnection,
   resolveConnection
 } from "./llmConnectionsStore.js";
+import { checkHttpRateLimit, getHttpClientIp } from "./castleHttpRateLimit.js";
+import { logLlmAccess } from "./castleLlmAudit.js";
 import { appendMemory, listMemories, getMemoryContext, getPersonaGoalMemory, setPersonaGoalMemory, autoCompactMemories } from "./memoryStore.js";
 import { getFirebasePersistence } from "./firebasePersistence.js";
 import { registerAgentIdentity, listAgentIdentities, getAgentIdentity, updateAgentIdentity } from "./agentIdentityStore.js";
@@ -43,7 +54,11 @@ import {
   listSocialChannels
 } from "./studioOpsStore.js";
 
-const PORT = Number(process.env.CASTLE_GATEWAY_PORT || 8090);
+/** Render / Fly / Railway: `PORT` — yoksa `CASTLE_GATEWAY_PORT` — yoksa 8090. */
+const PORT =
+  Number(process.env.PORT) ||
+  Number(process.env.CASTLE_GATEWAY_PORT) ||
+  8090;
 const MAX_MESSAGE_BYTES = Number(process.env.CASTLE_MAX_MESSAGE_BYTES || 32 * 1024);
 const REQUIRED_GATEWAY_TOKEN = process.env.CASTLE_GATEWAY_TOKEN || "";
 const ALLOWED_ORIGINS = (process.env.CASTLE_ALLOWED_ORIGINS || "")
@@ -58,6 +73,17 @@ const SOCIAL_RETRY_BASE_MS = Math.max(100, Number(process.env.CASTLE_SOCIAL_RETR
 const TELEGRAM_BOT_TOKEN = process.env.CASTLE_TELEGRAM_BOT_TOKEN || "";
 const WHATSAPP_TOKEN = process.env.CASTLE_WHATSAPP_TOKEN || "";
 const WHATSAPP_PHONE_NUMBER_ID = process.env.CASTLE_WHATSAPP_PHONE_NUMBER_ID || "";
+const RL_RHIZOH_LLM_PER_MIN = Math.max(5, Number(process.env.CASTLE_RL_RHIZOH_LLM_PER_MIN || 40));
+const RL_LLM_CONN_TEST_PER_MIN = Math.max(2, Number(process.env.CASTLE_RL_LLM_CONNECTION_TEST_PER_MIN || 8));
+
+/** İstemci: llmKeySource veya keySource — env | user_connection | auto */
+function normalizeClientLlmKeySource(raw) {
+  const s = String(raw ?? "").trim().toLowerCase();
+  if (s === "env" || s === "server") return "env";
+  if (s === "user_connection" || s === "connection" || s === "user") return "user_connection";
+  if (s === "auto" || s === "") return "auto";
+  return null;
+}
 
 function sendJson(res, statusCode, payload) {
   res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
@@ -66,6 +92,45 @@ function sendJson(res, statusCode, payload) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getHttpPathname(req) {
+  return String(req.url || "").split("?")[0];
+}
+
+function rhizohLlmEnvConfigured() {
+  const p = String(process.env.CASTLE_LLM_PROVIDER || "openai").toLowerCase();
+  const key =
+    p === "anthropic"
+      ? process.env.ANTHROPIC_API_KEY
+      : p === "gemini"
+        ? process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY
+        : p === "xai"
+          ? process.env.XAI_API_KEY
+          : p === "deepseek"
+            ? process.env.DEEPSEEK_API_KEY
+            : p === "mistral"
+              ? process.env.MISTRAL_API_KEY
+              : p === "openrouter"
+                ? process.env.OPENROUTER_API_KEY
+                : process.env.OPENAI_API_KEY;
+  return !!String(key || "").trim();
+}
+
+/**
+ * @param {import("firebase-admin/firestore").Firestore | null} db
+ * @param {number} timeoutMs
+ */
+async function probeFirestoreReachable(db, timeoutMs = 2000) {
+  if (!db) return { ok: false, reason: "no_db" };
+  const timeout = sleep(timeoutMs).then(() => ({ ok: false, reason: "timeout" }));
+  const work = db
+    .collection("_castle_gateway_health")
+    .doc("ping")
+    .get()
+    .then(() => ({ ok: true, reason: "reachable" }))
+    .catch((e) => ({ ok: false, reason: String(e?.message || e || "firestore_error") }));
+  return Promise.race([work, timeout]);
 }
 
 function stripHtml(text = "") {
@@ -308,6 +373,13 @@ function readHttpJson(req, limit = 128 * 1024) {
   });
 }
 
+function maskOpaqueId(value) {
+  const t = String(value || "");
+  if (!t) return "(empty)";
+  if (t.length <= 8) return "****";
+  return `${t.slice(0, 4)}…${t.slice(-2)}`;
+}
+
 async function resolveHttpUser(req) {
   const authResult = await verifyClientToken(req);
   if (authResult?.ok && authResult.user?.uid) {
@@ -330,9 +402,87 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "GET" && req.url === "/health") {
-    const persistence = getFirebasePersistence().mode;
-    sendJson(res, 200, { ok: true, service: "castle-gateway", wsPort: PORT, persistence });
+  const pathname = getHttpPathname(req);
+
+  if (req.method === "GET" && pathname === "/health/live") {
+    if (process.env.CASTLE_GATEWAY_MAINTENANCE === "true") {
+      sendJson(res, 503, { ok: false, live: false, dns: true, phase: "maintenance", service: "castle-gateway" });
+      return;
+    }
+    sendJson(res, 200, { ok: true, live: true, dns: true, service: "castle-gateway", ts: Date.now() });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/health/ready") {
+    if (process.env.CASTLE_GATEWAY_MAINTENANCE === "true") {
+      sendJson(res, 503, { ok: false, ready: false, phase: "maintenance", service: "castle-gateway" });
+      return;
+    }
+    try {
+      const persistence = getFirebasePersistence();
+      sendJson(res, 200, {
+        ok: true,
+        ready: true,
+        dns: true,
+        persistence: persistence.mode,
+        service: "castle-gateway"
+      });
+    } catch (e) {
+      sendJson(res, 503, { ok: false, ready: false, reason: String(e?.message || e), service: "castle-gateway" });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/health/deps") {
+    const t0 = Date.now();
+    if (process.env.CASTLE_GATEWAY_MAINTENANCE === "true") {
+      sendJson(res, 503, {
+        ok: false,
+        dns: true,
+        llm: false,
+        firestore: false,
+        phase: "maintenance",
+        latencyMs: Date.now() - t0,
+        service: "castle-gateway"
+      });
+      return;
+    }
+    const persistence = getFirebasePersistence();
+    let firestoreOk = persistence.mode !== "firebase";
+    let firestoreDetail = persistence.mode === "file" ? "file_mode" : "not_applicable";
+    if (persistence.mode === "firebase" && persistence.db) {
+      const pr = await probeFirestoreReachable(persistence.db, 2000);
+      firestoreOk = pr.ok;
+      firestoreDetail = pr.reason || (pr.ok ? "reachable" : "fail");
+    } else if (persistence.mode === "firebase" && !persistence.db) {
+      firestoreOk = false;
+      firestoreDetail = "firebase_not_initialized";
+    }
+    const llmOk = rhizohLlmEnvConfigured();
+    const overallOk = llmOk && firestoreOk;
+    const latencyMs = Date.now() - t0;
+    sendJson(res, 200, {
+      ok: overallOk,
+      dns: true,
+      llm: llmOk,
+      firestore: persistence.mode === "firebase" ? firestoreOk : false,
+      persistence: persistence.mode,
+      firestoreDetail,
+      latencyMs,
+      service: "castle-gateway",
+      wsPort: PORT
+    });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/health") {
+    const persistence = getFirebasePersistence();
+    sendJson(res, 200, {
+      ok: true,
+      service: "castle-gateway",
+      wsPort: PORT,
+      persistence: persistence.mode
+    });
     return;
   }
 
@@ -390,12 +540,28 @@ const httpServer = createServer(async (req, res) => {
     if (!auth.ok) return sendJson(res, 401, { ok: false, error: auth.reason });
     try {
       const payload = await readHttpJson(req);
-      const result = await queryRhizohLlm({
-        message: String(payload?.message || "Ping from Castle Gateway"),
-        context: payload?.context || { source: "connection_test" },
-        provider: payload?.provider,
-        model: payload?.model,
-        apiKey: payload?.apiKey
+      if (!checkHttpRateLimit(`llm_conn_test:${auth.uid}`, RL_LLM_CONN_TEST_PER_MIN, 60_000)) {
+        return sendJson(res, 429, { ok: false, error: "rate_limit_exceeded" });
+      }
+      const hasBodyKey = !!String(payload?.apiKey || "").trim();
+      const result = await queryRhizohLlm(
+        {
+          message: String(payload?.message || "Ping from Castle Gateway"),
+          context: payload?.context || { source: "connection_test" },
+          provider: payload?.provider,
+          model: payload?.model,
+          apiKey: payload?.apiKey || ""
+        },
+        { allowExternalApiKey: true, llmKeySource: hasBodyKey ? "auto" : "env" }
+      );
+      logLlmAccess({
+        route: "/llm/connections/test",
+        uid: auth.uid,
+        llmKeyBillingOwner: result.llmKeyBillingOwner,
+        llmKeyOrigin: result.llmKeyOrigin,
+        provider: result.provider,
+        model: result.model,
+        connectionId: null
       });
       sendJson(res, 200, { ok: true, result });
     } catch (error) {
@@ -586,13 +752,16 @@ const httpServer = createServer(async (req, res) => {
       ]
         .filter(Boolean)
         .join("\n");
-      const summary = await queryRhizohLlm({
-        message: `Give a concise conversational briefing about this place for a walking-route companion.\nPersona style: ${persona}\n${raw}`,
-        context: { source: "event-layer-place-brief", placeName, persona },
-        provider: conn?.provider,
-        model: conn?.model,
-        apiKey: conn?.apiKey
-      });
+      const summary = await queryRhizohLlm(
+        {
+          message: `Give a concise conversational briefing about this place for a walking-route companion.\nPersona style: ${persona}\n${raw}`,
+          context: { source: "event-layer-place-brief", placeName, persona },
+          provider: conn?.provider,
+          model: conn?.model,
+          apiKey: conn?.apiKey || ""
+        },
+        { llmKeySource: conn?.apiKey ? "user_connection" : "env" }
+      );
       await appendMemory({
         scope: "users",
         id: auth.uid,
@@ -645,13 +814,16 @@ const httpServer = createServer(async (req, res) => {
         ]
           .filter(Boolean)
           .join("\n");
-        const summary = await queryRhizohLlm({
-          message: `Generate a concise spoken briefing for route waypoint.\nPersona style: ${persona}\n${raw}`,
-          context: { source: "event-layer-route-brief", waypoint: name, persona },
-          provider: conn?.provider,
-          model: conn?.model,
-          apiKey: conn?.apiKey
-        });
+        const summary = await queryRhizohLlm(
+          {
+            message: `Generate a concise spoken briefing for route waypoint.\nPersona style: ${persona}\n${raw}`,
+            context: { source: "event-layer-route-brief", waypoint: name, persona },
+            provider: conn?.provider,
+            model: conn?.model,
+            apiKey: conn?.apiKey || ""
+          },
+          { llmKeySource: conn?.apiKey ? "user_connection" : "env" }
+        );
         out.push({
           name,
           persona,
@@ -703,13 +875,16 @@ const httpServer = createServer(async (req, res) => {
       let content = providedText;
       if (!content && url) content = await fetchTextFromUrl(url);
       if (!content) return sendJson(res, 400, { ok: false, error: "text_or_supported_url_required" });
-      const summary = await queryRhizohLlm({
-        message: `Summarize this document and provide key points + practical actions.\nTitle:${title}\nContent:\n${content.slice(0, 12000)}`,
-        context: { source: "event-layer-pdf-brief", title },
-        provider: conn?.provider,
-        model: conn?.model,
-        apiKey: conn?.apiKey
-      });
+      const summary = await queryRhizohLlm(
+        {
+          message: `Summarize this document and provide key points + practical actions.\nTitle:${title}\nContent:\n${content.slice(0, 12000)}`,
+          context: { source: "event-layer-pdf-brief", title },
+          provider: conn?.provider,
+          model: conn?.model,
+          apiKey: conn?.apiKey || ""
+        },
+        { llmKeySource: conn?.apiKey ? "user_connection" : "env" }
+      );
       await appendMemory({
         scope: "users",
         id: auth.uid,
@@ -852,6 +1027,60 @@ const httpServer = createServer(async (req, res) => {
       sendJson(res, 200, { ok: true, row });
     } catch (error) {
       sendJson(res, 400, { ok: false, error: error?.message || "transcript_write_failed" });
+    }
+    return;
+  }
+
+  /** E1: broadcast intent → GreenRoom capability → transcript + memory artifact */
+  if (req.method === "POST" && req.url === "/studio/capabilities/greenroom") {
+    const auth = await resolveHttpUser(req);
+    if (!auth.ok) return sendJson(res, 401, { ok: false, error: auth.reason });
+    try {
+      const payload = await readHttpJson(req);
+      const traceId = String(payload?.traceId || `TRC-${Date.now().toString(36).toUpperCase()}`);
+      const title = String(payload?.title || "Castle Live Broadcast").slice(0, 200);
+      const intentRaw = String(payload?.intentRaw || "").slice(0, 800);
+      const audienceEstimate = Math.max(0, Math.min(50_000_000, Number(payload?.audienceEstimate) || 1200));
+      const roomId = String(payload?.roomId || "greenroom-main");
+      const transcriptRow = await addTranscript(auth.uid, {
+        source: "rhizoh",
+        eventType: "BROADCAST_ROUTED",
+        text: `GreenRoom · ${title}${intentRaw ? `\nIntent: ${intentRaw}` : ""}`,
+        roomId,
+        meta: {
+          ack: "BROADCAST_ROUTED",
+          capability: "greenroom",
+          intentType: "broadcast",
+          traceId,
+          audienceEstimate,
+          artifact: {
+            kind: "broadcast_card",
+            title,
+            traceId,
+            roomId,
+            createdAt: Date.now()
+          }
+        }
+      });
+      await appendMemory({
+        scope: "users",
+        id: auth.uid,
+        text: `GREENROOM_BROADCAST:${title} trace=${traceId}`,
+        tags: ["broadcast", "greenroom", "artifact", "castle-library"],
+        importance: 0.72,
+        kind: "episodic",
+        meta: { traceId, capability: "greenroom", transcriptId: transcriptRow.id }
+      });
+      sendJson(res, 200, {
+        ok: true,
+        ack: "BROADCAST_ROUTED",
+        traceId,
+        transcript: transcriptRow,
+        replayPath: `/replay/${encodeURIComponent(traceId)}`,
+        sharePath: `/replay/${encodeURIComponent(traceId)}`
+      });
+    } catch (error) {
+      sendJson(res, 400, { ok: false, error: error?.message || "greenroom_capability_failed" });
     }
     return;
   }
@@ -1215,22 +1444,145 @@ const httpServer = createServer(async (req, res) => {
     try {
       const payload = await readHttpJson(req);
       const auth = await resolveHttpUser(req);
+      const ip = getHttpClientIp(req);
+      const rlKey = auth.ok ? `uid:${auth.uid}` : `ip:${ip}`;
+      if (!checkHttpRateLimit(`rhizoh_llm:${rlKey}`, RL_RHIZOH_LLM_PER_MIN, 60_000)) {
+        return sendJson(res, 429, {
+          ok: false,
+          error: "rate_limit_exceeded",
+          reply: "İstek sınırı aşıldı. Kısa süre sonra tekrar deneyin.",
+          directive: "NONE"
+        });
+      }
+
+      const requireExplicit = process.env.CASTLE_LLM_REQUIRE_EXPLICIT_KEY_SOURCE === "1";
+      const keyMode = normalizeClientLlmKeySource(payload?.llmKeySource ?? payload?.keySource);
+      if (keyMode === null) {
+        return sendJson(res, 400, {
+          ok: false,
+          error: "invalid_llm_key_source",
+          reply: "llmKeySource geçersiz. Kullanın: env | user_connection | auto",
+          directive: "NONE"
+        });
+      }
+      if (requireExplicit && keyMode === "auto") {
+        return sendJson(res, 400, {
+          ok: false,
+          error: "llm_key_source_required",
+          reply: "Sunucu CASTLE_LLM_REQUIRE_EXPLICIT_KEY_SOURCE=1: istekte llmKeySource (env veya user_connection) zorunlu.",
+          directive: "NONE"
+        });
+      }
+
       const conn = auth.ok ? await resolveConnection(auth.uid, String(payload?.connectionId || "")) : null;
+
+      if (keyMode === "user_connection") {
+        if (!auth.ok) {
+          return sendJson(res, 401, {
+            ok: false,
+            error: "llm_auth_required_for_user_connection",
+            reply: "Kayıtlı LLM bağlantısı için giriş gerekli.",
+            directive: "NONE"
+          });
+        }
+        if (!conn?.apiKey) {
+          return sendJson(res, 400, {
+            ok: false,
+            error: "user_llm_connection_required",
+            reply: "Geçerli bir LLM bağlantısı yok; Studio’da bağlantı ekleyin veya llmKeySource=env kullanın.",
+            directive: "NONE"
+          });
+        }
+      }
+
+      const safePayload = { ...(payload || {}) };
+      delete safePayload.apiKey;
+      delete safePayload.llmKeySource;
+      delete safePayload.keySource;
+
+      let resolvedProvider = payload?.provider;
+      let resolvedModel = payload?.model;
+      let connApiKey = "";
+
+      if (keyMode === "user_connection") {
+        resolvedProvider = conn.provider;
+        resolvedModel = conn.model;
+        connApiKey = conn.apiKey || "";
+      } else if (keyMode === "env") {
+        connApiKey = "";
+      } else {
+        resolvedProvider = conn?.provider || payload?.provider;
+        resolvedModel = conn?.model || payload?.model;
+        connApiKey = conn?.apiKey || "";
+      }
+
       const memory = await getMemoryContext({
         uid: auth.ok ? auth.uid : "anon",
         agentId: String(payload?.context?.agentId || ""),
         query: String(payload?.message || ""),
         limit: Number(payload?.memoryLimit || 30)
       });
-      const result = await queryRhizohLlm({
-        ...payload,
-        provider: conn?.provider || payload?.provider,
-        model: conn?.model || payload?.model,
-        apiKey: conn?.apiKey || payload?.apiKey,
-        context: {
-          ...(payload?.context || {}),
-          memory
-        }
+      const fullContext = {
+        ...(payload?.context || {}),
+        memory
+      };
+      if (process.env.CASTLE_RHIZOH_LLM_IDENTITY_LOG === "1") {
+        const cont = fullContext?.continuity && typeof fullContext.continuity === "object" ? fullContext.continuity : {};
+        const memoryBlk = fullContext?.memory && typeof fullContext.memory === "object" ? fullContext.memory : {};
+        const goals = Array.isArray(memoryBlk.goals) ? memoryBlk.goals.length : 0;
+        const episodic = Array.isArray(memoryBlk.episodic) ? memoryBlk.episodic.length : 0;
+        const semantic = Array.isArray(memoryBlk.semantic) ? memoryBlk.semantic.length : 0;
+        console.info(
+          "[rhizoh.llm.identity]",
+          JSON.stringify({
+            identityNarrativeChars: String(cont.identityNarrative || "").length,
+            recentTurns: Array.isArray(cont.recentTurns) ? cont.recentTurns.length : 0,
+            profileGoals: Array.isArray(cont.persona?.goals) ? cont.persona.goals.length : 0,
+            memoryGoals: goals,
+            memoryEpisodic: episodic,
+            memorySemantic: semantic
+          })
+        );
+      }
+      if (process.env.CASTLE_RHIZOH_LLM_DIAG === "1") {
+        const { db } = getFirebasePersistence();
+        const artifactAppId = String(process.env.CASTLE_ARTIFACT_APP_ID || "castle-vnext-core").trim();
+        const artifactStats = db ? await countArtifactLayerDocuments(db, artifactAppId) : null;
+        const diag = diagnoseRhizohLlmContext(fullContext, artifactStats);
+        const persistenceMode = getFirebasePersistence().mode;
+        console.info(
+          "[rhizoh.llm.diag]",
+          JSON.stringify({
+            authOk: auth.ok,
+            authMode: auth.ok ? auth.mode : "none",
+            uidMask: auth.ok ? maskOpaqueId(auth.uid) : "anon",
+            agentIdMask: maskOpaqueId(payload?.context?.agentId),
+            persistenceMode,
+            artifactAppId,
+            llmKeyMode: keyMode,
+            ...(artifactStats?.error ? { artifactCountError: artifactStats.error } : {}),
+            ...diag
+          })
+        );
+      }
+      const result = await queryRhizohLlm(
+        {
+          ...safePayload,
+          provider: resolvedProvider,
+          model: resolvedModel,
+          apiKey: connApiKey,
+          context: fullContext
+        },
+        { llmKeySource: keyMode }
+      );
+      logLlmAccess({
+        route: "/rhizoh/llm",
+        uid: auth.ok ? auth.uid : null,
+        llmKeyBillingOwner: result.llmKeyBillingOwner,
+        llmKeyOrigin: result.llmKeyOrigin,
+        provider: result.provider,
+        model: result.model,
+        connectionId: keyMode === "user_connection" ? conn?.id : null
       });
       if (auth.ok) {
         const profile = await getPersonaGoalMemory(auth.uid);
@@ -1260,16 +1612,22 @@ const httpServer = createServer(async (req, res) => {
           eventType: "dialog",
           text: `${String(payload?.message || "").slice(0, 240)} => ${String(result?.reply || "").slice(0, 360)}`,
           roomId: "studio-main",
-          meta: { directive: result?.directive, provider: result?.provider }
+          meta: { directive: result?.directive, provider: result?.provider, llmKeyBillingOwner: result.llmKeyBillingOwner }
         });
         await autoCompactMemories({ scope: "users", id: auth.uid });
       }
-      sendJson(res, 200, { ...result, connectionId: conn?.id || null });
+      sendJson(res, 200, { ...result, connectionId: conn?.id || null, llmKeySourceUsed: keyMode });
     } catch (error) {
-      sendJson(res, 500, {
+      const msg = String(error?.message || "");
+      const code = error?.code || "";
+      let status = 500;
+      if (msg === "rate_limit_exceeded") status = 429;
+      else if (["server_llm_key_missing", "user_llm_connection_required", "message_required", "missing_api_key"].includes(code) || msg.includes("missing_api_key_for_"))
+        status = 400;
+      sendJson(res, status, {
         ok: false,
-        error: error?.message || "rhizoh_llm_failed",
-        reply: "Rhizoh bağlantısı geçici olarak kesildi.",
+        error: msg || "rhizoh_llm_failed",
+        reply: status === 500 ? "Rhizoh bağlantısı geçici olarak kesildi." : msg,
         directive: "NONE"
       });
     }

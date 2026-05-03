@@ -1,4 +1,7 @@
-import pdfParse from "pdf-parse";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const pdfParse = require("pdf-parse");
 import { getFirebasePersistence } from "./firebasePersistence.js";
 import { appendMemory } from "./memoryStore.js";
 

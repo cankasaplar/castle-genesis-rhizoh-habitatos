@@ -1,6 +1,7 @@
 {
   "hosting": {
     "site": "castle-genesis",
+    "predeploy": ["npm run build"],
     "public": "apps/client/dist",
     "ignore": [
       "firebase.json",

@@ -1,0 +1,46 @@
+# Render Blueprint — Castle Node gateway (Rhizoh HTTP/WS)
+# Dashboard: New → Blueprint → bu repo'yu seç → Apply
+# https://render.com/docs/infrastructure-as-code
+#
+# ghost-whisperer vb. başka repolarla karıştırma: bu servis bu monorepodan build alır.
+# Deploy sonrası URL örneği: https://castle-genesis-gateway.onrender.com
+# (isim çakışırsa Render benzersiz subdomain verir — paneldeki tam URL’yi client .env’e yaz.)
+#
+# Gizliler: OPENAI_API_KEY ve CASTLE_GATEWAY_TOKEN → Apply sırasında Render panelinde gir.
+# Client: VITE_GATEWAY_TOKEN = CASTLE_GATEWAY_TOKEN (aynı string).
+
+services:
+  - type: web
+    name: castle-genesis-gateway
+    runtime: node
+    region: frankfurt
+    plan: free
+    branch: main
+    rootDir: .
+    # Monorepo workspace: ilk deploy için npm install daha toleranslı (npm ci --omit=dev alternatif)
+    buildCommand: npm install
+    startCommand: node apps/gateway/src/server.js
+    healthCheckPath: /health/live
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CASTLE_HTTP_CORS_ORIGIN
+        value: https://castle-genesis.web.app
+      - key: CASTLE_ALLOWED_ORIGINS
+        value: https://castle-genesis.web.app,http://localhost:5173
+      # --- Auth: şimdilik smoke / WAKE zinciri için gevşek. Canlıya sıkılaştırırken Render’da şunu yap:
+      # CASTLE_REQUIRE_AUTH=true, CASTLE_ALLOW_DEV_ANON=false, CASTLE_ALLOW_DEV_HTTP_UID=false
+      - key: CASTLE_REQUIRE_AUTH
+        value: "false"
+      - key: CASTLE_ALLOW_DEV_ANON
+        value: "true"
+      - key: CASTLE_ALLOW_DEV_HTTP_UID
+        value: "true"
+      - key: CASTLE_LLM_PROVIDER
+        value: openai
+      - key: CASTLE_LLM_MODEL
+        value: gpt-4o-mini
+      - key: CASTLE_GATEWAY_TOKEN
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false

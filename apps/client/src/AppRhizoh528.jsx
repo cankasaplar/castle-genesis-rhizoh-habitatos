@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useSyncExternalStore, useCallback, memo } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect, useSyncExternalStore, useCallback, useMemo, memo, useReducer } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import {
@@ -18,24 +18,190 @@ import {
   GraduationCap,
   Cpu,
   Camera,
-  Navigation2
+  Navigation2,
+  Shield,
+  MapPin,
+  Trash2,
+  Power,
+  Users,
+  Radio,
+  BookOpen,
+  Video,
+  PlayCircle,
+  FastForward,
+  Share2,
+  MessageCircle,
+  Hash,
+  Handshake
 } from "lucide-react";
 import SovereignRuntimePanel from "./sovereign/SovereignRuntimePanel.jsx";
 import { sovereignRuntimeSingleton } from "./sovereign/sovereignRuntimeSpec.js";
-import { ISTANBUL_GEO, ISTANBUL_POI, latLonToSceneXZ } from "./castleFlight/geo.js";
+import { ISTANBUL_GEO, ISTANBUL_POI, latLonToSceneXZ, sceneXZToLatLon } from "./castleFlight/geo.js";
 import { getCastleFlightConfig } from "./castleFlight/castleFlightConfig.js";
 import { DroneFlightBridge } from "./castleFlight/DroneFlightBridge.js";
 import "./castleFlight/registerGlobals.js";
+import { installWebglContextLostReporter } from "./boot/castleCrashTelemetry.js";
+import {
+  configureRealityDirector,
+  notifyRealityEngineReady,
+  reconcileMapSurfaceFromGateway,
+  setRealityMode,
+  enqueueApexCameraAfterCesiumIfNeeded
+} from "./reality/realityDirector.js";
+import { computeMapSurfaceActive } from "./reality/realityEngineSurface.js";
 import CastleFlightHud from "./castleFlight/CastleFlightHud.jsx";
 import CesiumRealMapLayer from "./castleFlight/CesiumRealMapLayer.jsx";
 import { useCastleAuth } from "./firebase/useCastleAuth.js";
+import { useCastleActiveCastles } from "./firebase/useCastleActiveCastles.js";
 import { CastleAuthOverlay, CastleAccountBadge } from "./auth/CastleAuthOverlay.jsx";
 import { createCastleUlid, stableJitterFromId } from "./kernel/castleIds.js";
 import { worldToSpatialBucket } from "./kernel/spatialMorton.js";
 import { KnowledgeGraphSubstrate, KG_NODE, KG_EDGE } from "./kernel/knowledgeGraphSubstrate.js";
 import { ChronosScheduler, CapabilityToken } from "./kernel/sovereignChronos.js";
 import { verifyTwistCommand } from "./kernel/roboticsClosedLoop.js";
-import { warmSwarmGpu } from "./kernel/swarmGpuBridge.js";
+import {
+  buildThoughtChainL8V1,
+  buildPulseSeriesFromSeed,
+  CASTLE_L9_SOCIAL_EVENT
+} from "./kernel/castleL9EventMeshV1.js";
+import {
+  pushL9SocialDraftArbitrated,
+  resetL9EventBus,
+  configureL9ExecutionGate,
+  flushL9ExecutionHoldQueue
+} from "./kernel/castleL9EventBusV2.js";
+import { recordCastleRuntimeFrame } from "./kernel/castleRuntimeMetrics.js";
+import { getL9BackgroundTickStride } from "./kernel/castleL9GatePolicy.js";
+import { CASTLE_L9_EXECUTION_FEEDBACK } from "./kernel/castleL9ExecutionFeedback.js";
+import { warmSwarmGpu, createRhizohAutonomousCompanyRuntimeV0 } from "./kernel/swarmGpuBridge.js";
+import { composeRhizohVisualCognitionStateV1 } from "./kernel/visual/RhizohVisualCognitionComposerV1.js";
+import { composeRelationalPresenceStateV1 } from "./kernel/visual/RelationalPresenceComposerV1.js";
+import { computeRhizohCinematicOutputV1, resolveAdaptiveIntroRouteV1 } from "./kernel/visual/RhizohCinematicOrchestratorV1.js";
+import {
+  resolveRhizohFirstName,
+  buildRhizohExploreGreeting
+} from "./kernel/rhizohDisplayName.js";
+import {
+  hydrateIdentityGraphFromSignals,
+  buildIdentityNarrativeForLlm,
+  readIdentityGraph,
+  writeIdentityGraph,
+  touchIdentitySessionOnce,
+  buildRhizohWelcomeNarrativeTr
+} from "./kernel/rhizohIdentityKernelV1.js";
+import { computeLaunchSceneDirectorOverlayV1 } from "./kernel/visual/RhizohLaunchSceneDirectorV1.js";
+import { RhizohCapabilityHaloV1 } from "./components/RhizohCapabilityHaloV1.jsx";
+import { RhizohPersistentCoreInspectV1 } from "./components/RhizohPersistentCoreInspectV1.jsx";
+import { RhizohGatewayBanner } from "./components/RhizohGatewayBanner.jsx";
+import { SwarmCollectiveAuraV1 } from "./components/SwarmCollectiveAuraV1.jsx";
+import { RhizohPresenceField } from "./components/RhizohPresenceField.jsx";
+import { RhizohGroupPresenceField } from "./components/RhizohGroupPresenceField.jsx";
+import {
+  normalizeRhizohOutput,
+  materializeCommsFromNormalized,
+  emitRhizohPresence,
+  stepPresenceFsm,
+  initialPresenceFsmState,
+  QPP_EVENT,
+  QPP_PHASE,
+  installRhizohPresenceAcoustics,
+  deriveCognitiveTraceLabel
+} from "./rhizoh/presence/index.js";
+import { useRhizohGatewayMonitor, getRhizohApiBase } from "./rhizoh/useRhizohGatewayMonitor.js";
+import {
+  buildRhizohHealthState,
+  computeRhizohHealthInfluence,
+  blendRelationalToneWithHealthRecommended,
+  adjustRelationalToneForHealthLatency,
+  stepReliabilityEpisodesMeta,
+  formatReliabilityEpisodesSummaryForLlm
+} from "./rhizoh/reliability/index.js";
+import { deriveRhizohPolicy } from "./rhizoh/policy/index.js";
+import {
+  advanceSocialField,
+  advanceCastleSocialIdentity,
+  createBrowserPresenceSignalRef,
+  attachBrowserPresenceSensors,
+  snapshotBrowserPresenceForCsil,
+  castlePeersForSocial,
+  formatCognitiveSubThreadsForPrompt
+} from "./rhizoh/social/index.js";
+import { rhizohGatewayPhaseShowsRetry } from "./rhizoh/gatewayPhaseUtils.js";
+import { enqueueRhizohMessageIntent, drainRhizohMessageIntentQueue } from "./castleFlight/castleIntentQueue.js";
+import { parseDSL, detectCastleIntentWithoutCoords } from "./kernel/rhizohCommandParser.js";
+import {
+  TCEE_PHASE,
+  ensurePreBreathSeed,
+  commitWakeSeal,
+  revertTceeToPreBreath,
+  CASTLE_FIELD_TICK_MS,
+  castleFieldTickPlan,
+  runCastleFieldPhysicsTick,
+  runCastleFieldMemoryIdentityTick,
+  runCastleFieldConsolidationTick,
+  scheduleCastleFieldDeferredTask,
+  createFieldTickBackpressure,
+  withFieldPhysicsBackpressure,
+  executionMetricsFromBackpressure,
+  appendCastleTemporalLedgerEntry,
+  buildPolicyLedgerEntryV0,
+  getCastleTemporalLedgerSnapshot,
+  getSuppressedRealityIndexForPromptV0,
+  enqueueCastleRuntimeTransaction,
+  peekCastleRuntimeTransactionQueueDepth,
+  drainCastleRuntimeTransactionQueue,
+  resolveCastleRuntimeTransactionBatch,
+  buildRtqBatchLedgerEntryV0,
+  withRuntimeMergeCommit,
+  getLastRuntimeMergeId
+} from "./rhizoh/boot/index.js";
+import { registerClientContinuitySync, syncClientContinuityRef } from "./rhizoh/continuity/continuitySyncBridge.js";
+import { KERNEL_SEAL_V1, CAPABILITY_MANIFEST_V1 } from "./rhizoh/contracts/index.js";
+import L10Observatory from "./rhizoh/observatory/index.js";
+import {
+  pickPrimaryCognitiveThreadId,
+  buildUserAgentGhostProjectionV1
+} from "./rhizoh/agents/userAgentGhostProjectionV1.js";
+import { normalizeArbitrationGovernorBuffer } from "./rhizoh/agents/arbitrationStabilityGovernorV1.js";
+import {
+  normalizeTemporalIntentDriftMemory,
+  pushTemporalIntentSnapshot,
+  buildTemporalIntentSnapshotFromStack,
+  summarizeIntentDriftForPrompt,
+  computeArbitrationReasonDrift
+} from "./rhizoh/agents/temporalIntentDriftMemoryV1.js";
+import { routeRhizohInput } from "./rhizoh/router/routeRhizohInput.js";
+import {
+  applyEmotionDelta,
+  applyRepairOutcome,
+  deriveRelationalTone,
+  readOutcomeSessionFromMeta,
+  DEFAULT_EMOTIONS,
+  normalizeEmotionState
+} from "./rhizoh/emotion/index.js";
+import {
+  selectWeightedMemoryTurns,
+  buildRhizohWeightedTurnRecord,
+  appendRhizohWeightedTurn,
+  buildMemoryEpisodesFromTurns,
+  buildPhysicsPhaseImprint,
+  classifyMemoryCrystallization,
+  computeMemoryWeight,
+  computeIdentityFeedbackFromRecall,
+  applyRecallFeedbackToIdentityGraph,
+  recallClosurePayloadForMeta
+} from "./rhizoh/memory/index.js";
+import { buildRhizohDriftLogEntry } from "./rhizoh/telemetry/index.js";
+import {
+  getRhizohStabilityAnchorSnapshot,
+  normalizeGovernorCalibration,
+  stepGovernorCalibrationFromDriftLog,
+  softClampEmotionsToIdentityAnchor,
+  clampRelationalToneToAnchor,
+  applyMemoryDominanceCap,
+  mergeRhizohNarrativeThread
+} from "./rhizoh/stability/index.js";
+import { advanceRhizohNarrativeArc } from "./rhizoh/narrative/index.js";
 
 const CODEX_VERSION = "vNext-530.Kernel-Morton-ULID";
 const CODEX_DATE = "2026-04-28";
@@ -281,6 +447,79 @@ const YOUTUBE_LIVE_URL = "https://www.youtube.com/@CastleGenesis/live";
 const BOID_NEIGHBOR_CAP = 22;
 const BOID_COLLECT_CAP = 120;
 
+function sampleLiveAgentProjection(limit = 20) {
+  const rows = [];
+  const cap = Math.min(coreWorld.activeCount, coreWorld.MAX);
+  const seen = new Set();
+  const push = (i) => {
+    if (rows.length >= limit || seen.has(i)) return;
+    seen.add(i);
+    const s = coreWorld.state[i];
+    if (s === 0) return;
+    const id = String(coreWorld.indexToId[i] || `AGENT-${i}`);
+    const { lat, lon } = sceneXZToLatLon(coreWorld.posX[i], coreWorld.posZ[i]);
+    rows.push({
+      id,
+      idx: i,
+      state: s,
+      brainType: Number(coreWorld.brainType[i] || 0),
+      level: Number(coreWorld.level[i] || 0),
+      energy: Math.round(Number(coreWorld.energy[i] || 0)),
+      x: Number(coreWorld.posX[i] || 0),
+      y: Number(coreWorld.posY[i] || 0),
+      z: Number(coreWorld.posZ[i] || 0),
+      lat: Number(lat || 0),
+      lon: Number(lon || 0)
+    });
+  };
+  for (let i = 0; i < cap; i++) if (coreWorld.state[i] === STATE.RHIZOH) push(i);
+  for (let i = 0; i < cap; i++) {
+    const s = coreWorld.state[i];
+    if (s === STATE.AGENT_PROFESSOR || s === STATE.AGENT_CADET || s === STATE.AGENT_STUDENT || s === STATE.AGENT_MASTER) push(i);
+  }
+  for (let i = 0; i < cap; i++) if (coreWorld.state[i] === STATE.GUARDIAN || coreWorld.state[i] === STATE.SCOUT) push(i);
+  for (let i = 0; i < cap && rows.length < limit; i++) {
+    if (coreWorld.state[i] === STATE.CITIZEN && coreWorld.brainType[i] > 0) push(i);
+  }
+  for (let i = 0; i < cap && rows.length < limit; i++) {
+    if (coreWorld.state[i] === STATE.CITIZEN) push(i);
+  }
+  return rows;
+}
+
+function resolveHeroAvatar(row) {
+  const s = row.state;
+  const bt = row.brainType || 0;
+  if (s === STATE.RHIZOH) return { key: "rhizoh", label: "Rhizoh Core" };
+  const byBrain = {
+    1: { key: "scout", label: "Scout" },
+    2: { key: "curator", label: "Curator" },
+    3: { key: "archivist", label: "Archivist" },
+    4: { key: "builder", label: "Builder" },
+    5: { key: "sentinel", label: "Sentinel" },
+    6: { key: "navigator", label: "Navigator" }
+  };
+  if (byBrain[bt]) return byBrain[bt];
+  if (s === STATE.AGENT_PROFESSOR) return { key: "broadcaster", label: "Broadcaster" };
+  return { key: "hero", label: "Hero" };
+}
+
+function buildMemoryConstellationNodes(heat, maxNodes = 36) {
+  const n = Math.max(0, Math.min(maxNodes, Math.floor(Number(heat || 0) * 1.5 + 8)));
+  const base = ISTANBUL_POI.FATIH;
+  const out = [];
+  for (let k = 0; k < n; k++) {
+    const t = (k / Math.max(1, n)) * Math.PI * 2;
+    const r = 0.018 + (k % 7) * 0.004;
+    out.push({
+      lat: base.lat + Math.sin(t) * r,
+      lon: base.lon + Math.cos(t * 1.07) * r,
+      alt: 140 + (k % 5) * 35
+    });
+  }
+  return out;
+}
+
 function getOrCreateCastleDevUid() {
   const key = "castle.dev.uid";
   let uid = "";
@@ -296,16 +535,361 @@ function getOrCreateCastleDevUid() {
   return uid;
 }
 
-function getRhizohApiBase() {
-  const cfg = getCastleFlightConfig();
-  const url = String(cfg.rhizohLlmHttp || "").trim();
-  if (!url) return "http://localhost:8090";
-  try {
-    const u = new URL(url);
-    return `${u.protocol}//${u.host}`;
-  } catch {
-    return "http://localhost:8090";
+function getRhizohDevFetchHeaders(extra = {}) {
+  return {
+    "Content-Type": "application/json",
+    "X-Castle-Dev-Uid": getOrCreateCastleDevUid(),
+    ...extra
+  };
+}
+
+function absolutizeRhizohAssetPath(maybePath) {
+  const s = String(maybePath || "").trim();
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.startsWith("//")) return `${typeof window !== "undefined" ? window.location.protocol : "https:"}${s}`;
+  if (typeof window === "undefined") return s;
+  const origin = String(window.location.origin || "").replace(/\/$/, "");
+  return `${origin}${s.startsWith("/") ? "" : "/"}${s}`;
+}
+
+function classifyMediaUrl(url) {
+  const base = String(url || "").split(/[?#]/)[0].toLowerCase();
+  if (/\.(mp3|wav|ogg|m4a|aac|flac)$/.test(base)) return "audio";
+  return "video";
+}
+
+/** Studio oturumları + transcript meta alanlarından oynatılabilir URL listesi üretir. */
+function mergeMediaPlaylistFromGateway(sessions, transcripts) {
+  const out = [];
+  const seen = new Set();
+  const push = (id, label, kind, url, origin) => {
+    const u = String(url || "").trim();
+    if (!/^https?:\/\//i.test(u) || seen.has(u)) return;
+    seen.add(u);
+    out.push({ id, label, kind: kind || classifyMediaUrl(u), url: u, origin });
+  };
+  for (const s of sessions || []) {
+    const ingest = String(s?.ingestUrl || "").trim();
+    if (ingest) push(`pub-${s.id}`, `${s.protocol || "PUB"} · ${String(s.target || s.status || "").slice(0, 28)}`, classifyMediaUrl(ingest), ingest, "publish");
   }
+  for (const t of transcripts || []) {
+    const m = t?.meta && typeof t.meta === "object" ? t.meta : {};
+    const cand = [m.replayPath, m.sharePath, m.ingestUrl, m.playbackUrl, m.streamUrl].filter(Boolean);
+    let k = 0;
+    for (const p of cand) {
+      const abs = absolutizeRhizohAssetPath(p);
+      push(
+        `trx-${t.id || "x"}-${k}`,
+        `${t.eventType || "event"} · ${String(t.text || "").slice(0, 36)}`,
+        classifyMediaUrl(abs),
+        abs,
+        "transcript"
+      );
+      k += 1;
+    }
+  }
+  return out;
+}
+
+/** E1: GreenRoom capability — transcript + Castle Library memory commit (gateway). */
+async function postGreenRoomCapability({ idToken, intentRaw, title, audienceEstimate, traceId, roomId }) {
+  const apiBase = getRhizohApiBase();
+  const headers = { "Content-Type": "application/json" };
+  if (idToken) headers.Authorization = `Bearer ${idToken}`;
+  else headers["X-Castle-Dev-Uid"] = getOrCreateCastleDevUid();
+  const res = await fetch(`${apiBase}/studio/capabilities/greenroom`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      intentRaw,
+      title,
+      audienceEstimate,
+      traceId,
+      roomId: roomId || "greenroom-main"
+    })
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.ok) throw new Error(json.error || "greenroom_route_failed");
+  return json;
+}
+
+/** Simulated live field estimate (world telemetry, not external analytics). */
+function computeSimulatedAudienceEstimate({ swarmBoost, activeHeroCount, memoryHeat }) {
+  const s = swarmBoost ? 1 : 0;
+  const h = Math.max(0, Math.min(22, Number(activeHeroCount) || 0));
+  const mem = Math.max(0, Math.min(10, Number(memoryHeat) || 0));
+  return Math.max(8, Math.floor(8 + s * 14 + h * 3 + mem * 6));
+}
+
+function audienceSignalLabel(watching) {
+  const n = Number(watching) || 0;
+  if (n >= 80) return "Peak";
+  if (n >= 55) return "Strong";
+  if (n >= 30) return "Moderate";
+  return "Low";
+}
+
+function formatGreenRoomElapsed(totalSeconds) {
+  const s = Math.max(0, Math.floor(totalSeconds || 0));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+}
+
+const LIVE_FIELD_REACTIONS = [
+  () => `+${2 + Math.floor(Math.random() * 4)} viewers joined`,
+  () => "+3 viewers joined",
+  () => "Signal spike detected",
+  () => "Swarm cluster responded",
+  () => "••• ripple echoes increased",
+  () => "Field echo converging on anchor",
+  () => "Memory plane acknowledged pulse"
+];
+
+function AudienceSparkline({ values }) {
+  const w = 118;
+  const h = 28;
+  const pad = 3;
+  if (!values?.length) return null;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = Math.max(1e-6, max - min);
+  const n1 = Math.max(1, values.length - 1);
+  const pts = values
+    .map((v, i) => {
+      const x = pad + (i / n1) * (w - pad * 2);
+      const y = pad + (1 - (v - min) / span) * (h - pad * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  return (
+    <svg width={w} height={h} className="opacity-95" aria-hidden>
+      <polyline fill="none" stroke="rgba(232,121,249,0.9)" strokeWidth="1.6" strokeLinejoin="round" points={pts} />
+    </svg>
+  );
+}
+
+function findAgentIdxForBroadcastName(name) {
+  const want = String(name || "")
+    .toLowerCase()
+    .trim();
+  if (!want) return -1;
+  const n = Math.min(coreWorld.activeCount, coreWorld.MAX);
+  for (let i = 0; i < n; i++) {
+    const id = String(coreWorld.indexToId[i] || "").toLowerCase();
+    if (id && (id.includes(want) || want.includes(id.replace(/\s/g, "")))) return i;
+  }
+  if (want.includes("prometheus") || want.includes("citymind")) {
+    if (coreWorld.rhizohIdx >= 0) return coreWorld.rhizohIdx;
+  }
+  if (want.includes("atlas")) {
+    for (let i = 0; i < n; i++) if (coreWorld.state[i] === STATE.GUARDIAN) return i;
+  }
+  return -1;
+}
+
+function BroadcastPulseSparkline({ values, tone = "cyan" }) {
+  const w = 76;
+  const h = 22;
+  const pad = 2;
+  if (!values?.length) return null;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = Math.max(1e-6, max - min);
+  const n1 = Math.max(1, values.length - 1);
+  const stroke = tone === "fuchsia" ? "rgba(232,121,249,0.95)" : "rgba(34,211,238,0.88)";
+  const pts = values
+    .map((v, i) => {
+      const x = pad + (i / n1) * (w - pad * 2);
+      const y = pad + (1 - (v - min) / span) * (h - pad * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  return (
+    <svg width={w} height={h} className="opacity-95 shrink-0" aria-hidden>
+      <polyline fill="none" stroke={stroke} strokeWidth="1.35" strokeLinejoin="round" points={pts} />
+    </svg>
+  );
+}
+
+function readClientContinuity() {
+  try {
+    const raw = window.localStorage.getItem("rhizoh.continuity.v1") || "";
+    if (!raw) return { turns: [], persona: {}, meta: {} };
+    const parsed = JSON.parse(raw);
+    return {
+      turns: Array.isArray(parsed?.turns) ? parsed.turns.slice(-10) : [],
+      persona: parsed?.persona && typeof parsed.persona === "object" ? parsed.persona : {},
+      meta: parsed?.meta && typeof parsed.meta === "object" ? parsed.meta : {}
+    };
+  } catch {
+    return { turns: [], persona: {}, meta: {} };
+  }
+}
+
+function writeClientContinuity(next) {
+  try {
+    window.localStorage.setItem("rhizoh.continuity.v1", JSON.stringify(next));
+  } catch {
+    /* noop */
+  }
+}
+
+function patchRhizohEmotionDisk(emotions, relationalTone, outcomeResonance, outcomeSession, driftLogEntry) {
+  try {
+    const disk = readClientContinuity();
+    const meta = disk.meta && typeof disk.meta === "object" ? disk.meta : {};
+    const nextMeta = {
+      ...meta,
+      rhizohEmotions: emotions,
+      rhizohRelationalTone: relationalTone,
+      rhizohEmotionUpdatedAt: Date.now()
+    };
+    if (typeof outcomeResonance === "number" && Number.isFinite(outcomeResonance)) {
+      nextMeta.rhizohLastOutcomeResonance = Math.round(outcomeResonance * 1000) / 1000;
+      nextMeta.rhizohLastOutcomeAt = Date.now();
+    }
+    if (outcomeSession && typeof outcomeSession === "object") {
+      nextMeta.rhizohLastRemoteFetchFailed = !!outcomeSession.lastRemoteFetchFailed;
+      nextMeta.rhizohConsecutiveLocalStubCount = Math.max(
+        0,
+        Math.min(24, Number(outcomeSession.consecutiveLocalStubCount) || 0)
+      );
+    }
+    if (driftLogEntry && typeof driftLogEntry === "object") {
+      const log = Array.isArray(nextMeta.rhizohDriftLog) ? nextMeta.rhizohDriftLog.slice(-31) : [];
+      log.push({ ts: Date.now(), ...driftLogEntry });
+      nextMeta.rhizohDriftLog = log;
+      nextMeta.rhizohGovernorCalibration = stepGovernorCalibrationFromDriftLog(nextMeta);
+      try {
+        if (import.meta.env?.DEV) window.__CASTLE_RHIZOH_DRIFT_LOG__ = log.slice(-24);
+      } catch {
+        /* noop */
+      }
+    }
+    writeClientContinuity({
+      turns: Array.isArray(disk.turns) ? disk.turns : [],
+      persona: disk.persona && typeof disk.persona === "object" ? disk.persona : {},
+      meta: nextMeta
+    });
+  } catch {
+    /* noop */
+  }
+}
+
+function priorAssistantRepliesFromContinuity(cont) {
+  const rt = Array.isArray(cont?.recentTurns) ? cont.recentTurns : [];
+  return rt.map((x) => String(x?.assistant || "")).filter(Boolean).slice(-8);
+}
+
+function finalizeRhizohAfterLlm(
+  preLlmEmotions,
+  {
+    rhizohRouter,
+    reply,
+    source,
+    runtimeHints,
+    gatewayUx,
+    persistRhizohEmotions,
+    outcomeSession,
+    priorAssistantReplies
+  }
+) {
+  const { emotions: emotionsRaw, resonance, outcomeSession: nextOutcomeSession } = applyRepairOutcome({
+    router: rhizohRouter,
+    llmResult: { reply, source },
+    gatewayUx: gatewayUx && typeof gatewayUx === "object" ? gatewayUx : {},
+    runtime: runtimeHints,
+    previousEmotion: preLlmEmotions,
+    outcomeSession,
+    priorAssistantReplies
+  });
+  const tonePreOutcome = deriveRelationalTone(emotionsRaw);
+  const govCalPost = normalizeGovernorCalibration(readClientContinuity().meta?.rhizohGovernorCalibration);
+  const emotions = softClampEmotionsToIdentityAnchor(emotionsRaw, "postOutcome", govCalPost);
+  const hsPost =
+    runtimeHints && typeof runtimeHints === "object" && runtimeHints.healthState ? runtimeHints.healthState : null;
+  const relationalTone = blendRelationalToneForHealth(emotions, hsPost);
+  const emotionUpdatedAt = Date.now();
+  const driftPost = buildRhizohDriftLogEntry({
+    phase: "postOutcome",
+    emotionsPre: emotionsRaw,
+    emotionsPost: emotions,
+    tonePre: tonePreOutcome,
+    tonePost: relationalTone,
+    intent: rhizohRouter?.intent,
+    source,
+    resonance
+  });
+  patchRhizohEmotionDisk(emotions, relationalTone, resonance, nextOutcomeSession, driftPost);
+  if (typeof persistRhizohEmotions === "function") {
+    try {
+      persistRhizohEmotions({
+        emotions,
+        relationalTone,
+        emotionUpdatedAt,
+        outcomeResonance: resonance,
+        outcomeSession: nextOutcomeSession
+      });
+    } catch {
+      /* noop */
+    }
+  }
+  return {
+    emotions,
+    relationalTone,
+    outcomeResonance: resonance,
+    emotionUpdatedAt,
+    outcomeSession: nextOutcomeSession
+  };
+}
+
+function blendRelationalToneForHealth(emotionSource, healthState) {
+  const base = deriveRelationalTone(emotionSource);
+  if (!healthState || typeof healthState !== "object") {
+    return clampRelationalToneToAnchor(base);
+  }
+  return clampRelationalToneToAnchor(
+    adjustRelationalToneForHealthLatency(
+      blendRelationalToneWithHealthRecommended(base, healthState),
+      healthState
+    )
+  );
+}
+
+/** LLM-friendly lines from meta.realityLog (disk may be ahead of continuityRef). */
+function formatRecentRealityLines(meta, firstName) {
+  const log = Array.isArray(meta?.realityLog) ? meta.realityLog : [];
+  const who = (firstName && String(firstName).trim()) || "Sen";
+  return log.slice(-12).map((e) => {
+    if (e?.note) {
+      return String(e.note).replace(/^Kullanıcı\b/, who);
+    }
+    const src = e?.source || "APP";
+    const dm = Number.isFinite(e?.durationMs) ? ` (${e.durationMs}ms)` : "";
+    if (e?.to === "REAL_MAP" && e?.from === "GLOBE") return `${who} ${src} ile REAL_MAP'e geçti${dm}`;
+    if (e?.to === "GLOBE" && e?.from === "REAL_MAP") return `${who} ${src} ile GLOBE'a döndü${dm}`;
+    return `${who} ${src}: ${e?.from} → ${e?.to}${dm}`;
+  });
+}
+
+function normalizeGhostPetForLlm(meta) {
+  const gp = meta?.ghostPet && typeof meta.ghostPet === "object" ? meta.ghostPet : {};
+  const lastReal = gp.lastRealMapAt;
+  return {
+    mood: gp.mood ?? "neutral",
+    curiosity: Number(gp.curiosity || 0),
+    confused: Number(gp.confused || 0),
+    lastRealMapAt:
+      lastReal != null
+        ? typeof lastReal === "number"
+          ? new Date(lastReal).toISOString()
+          : String(lastReal)
+        : null,
+    lastSource: gp.lastSource ?? null,
+    lastFailReason: gp.lastFailReason ?? null
+  };
 }
 
 function arrayBufferToBase64(buf) {
@@ -322,17 +906,27 @@ function arrayBufferToBase64(buf) {
 class EventMesh {
   constructor(capacity = 64) {
     this.capacity = capacity;
-    this.buf = [];
+    this.buf = new Array(capacity);
+    this.head = 0;
+    this.size = 0;
   }
   push(ev) {
-    this.buf.unshift(ev);
-    if (this.buf.length > this.capacity) this.buf.length = this.capacity;
+    this.buf[this.head] = ev;
+    this.head = (this.head + 1) % this.capacity;
+    if (this.size < this.capacity) this.size += 1;
   }
   recent(n = 8) {
-    return this.buf.slice(0, n);
+    const take = Math.max(0, Math.min(n | 0, this.size));
+    const out = new Array(take);
+    for (let i = 0; i < take; i++) {
+      const idx = (this.head - 1 - i + this.capacity) % this.capacity;
+      out[i] = this.buf[idx];
+    }
+    return out;
   }
   clear() {
-    this.buf.length = 0;
+    this.head = 0;
+    this.size = 0;
   }
 }
 
@@ -362,6 +956,13 @@ class SquadRegistry {
     this.squads.clear();
     this.nextId = 1;
   }
+}
+
+function ownerStringToDistrictKey(s) {
+  const str = String(s || "GUEST");
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  return h === 0 ? 1 : h;
 }
 
 /** L8 procedural city mind + L9 heatmaps + Castle Academics district */
@@ -454,6 +1055,54 @@ class CityMind {
     };
   }
 
+  /** Kişisel kale — districtOwner + tip; koordinat CityMind dışında saklanır (continuity). */
+  spawnPersonalCastle(ownerId, lat, lon, typeStr) {
+    const typeMap = {
+      SANCTUARY: DISTRICT.SANCTUARY,
+      ACADEMY: DISTRICT.ACADEMICS,
+      ACADEMICS: DISTRICT.ACADEMICS,
+      DEFENSE: DISTRICT.DEFENSE,
+      NEXUS: DISTRICT.ANOMALY
+    };
+    const dt = typeMap[String(typeStr || "SANCTUARY").toUpperCase()] ?? DISTRICT.SANCTUARY;
+    const oid = ownerStringToDistrictKey(ownerId);
+    let slot = -1;
+    for (let i = 1; i < MAX_DISTRICTS; i++) {
+      if (this.districtOwner[i] === oid) {
+        slot = i;
+        break;
+      }
+    }
+    if (slot < 0) {
+      for (let i = 1; i < MAX_DISTRICTS; i++) {
+        if (this.districtOwner[i] < 0) {
+          slot = i;
+          break;
+        }
+      }
+    }
+    if (slot < 0) slot = Math.max(1, (Math.abs(oid) % (MAX_DISTRICTS - 1)) + 1);
+    this.districtType[slot] = dt;
+    this.districtOwner[slot] = oid;
+    this.districtEnergy[slot] = Math.max(this.districtEnergy[slot], 140);
+    this.districtThreat[slot] = Math.max(0, this.districtThreat[slot] - 6);
+    this.academicsEnergy += 18;
+    return { slot, districtKey: oid, districtType: dt, lat, lon };
+  }
+
+  purgePersonalCastle(ownerId) {
+    const oid = ownerStringToDistrictKey(ownerId);
+    let cleared = 0;
+    for (let i = 0; i < MAX_DISTRICTS; i++) {
+      if (this.districtOwner[i] === oid) {
+        this.districtOwner[i] = -1;
+        this.districtEnergy[i] = Math.max(8, this.districtEnergy[i] * 0.32);
+        cleared += 1;
+      }
+    }
+    return cleared;
+  }
+
   reset() {
     this.academicsTier = 1;
     this.academicsEnergy = 0;
@@ -469,6 +1118,209 @@ const cityMind = new CityMind();
 const eventMesh = new EventMesh(96);
 const squadRegistry = new SquadRegistry();
 
+function syncGhostPetToCastle(lat, lon) {
+  try {
+    const disk = readClientContinuity();
+    const meta = { ...disk.meta };
+    const prev = meta.ghostPet && typeof meta.ghostPet === "object" ? meta.ghostPet : {};
+    meta.ghostPet = {
+      ...prev,
+      mood: "guard",
+      castleLat: lat,
+      castleLon: lon,
+      guardSince: Date.now(),
+      lastCastleSpawnAt: Date.now()
+    };
+    const cs0 = meta.castleState && typeof meta.castleState === "object" ? meta.castleState : {};
+    meta.castleState = {
+      ...cs0,
+      phase: "SEED",
+      anchorLat: lat,
+      anchorLon: lon,
+      updatedAt: Date.now()
+    };
+    const log = Array.isArray(meta.realityLog) ? meta.realityLog.slice() : [];
+    log.push({
+      at: Date.now(),
+      note: `Kişisel kale SEED · ${Number(lat).toFixed(4)}, ${Number(lon).toFixed(4)}`,
+      source: "DSL_SPAWN"
+    });
+    meta.realityLog = log.slice(-24);
+    writeClientContinuity({ ...disk, meta });
+  } catch {
+    /* noop */
+  }
+}
+
+function clearGhostPetCastleAnchor() {
+  try {
+    const disk = readClientContinuity();
+    const meta = { ...disk.meta };
+    const prev = meta.ghostPet && typeof meta.ghostPet === "object" ? meta.ghostPet : {};
+    meta.ghostPet = {
+      ...prev,
+      mood: "neutral",
+      castleLat: null,
+      castleLon: null,
+      guardSince: null
+    };
+    if (meta.castleState && typeof meta.castleState === "object") {
+      meta.castleState = { ...meta.castleState, phase: "PURGED", updatedAt: Date.now() };
+    }
+    writeClientContinuity({ ...disk, meta });
+  } catch {
+    /* noop */
+  }
+}
+
+/**
+ * DSL köprüsü: CityMind + Event Mesh + süreklilik + REAL_MAP + Cesium flyToCustom.
+ * @param {{ verb: string, args: Record<string, string> }} parsed
+ */
+async function applyPersonalCastleDsl(parsed) {
+  if (!parsed || !parsed.verb) return { ok: false, reply: "Geçersiz DSL." };
+  if (parsed.verb === "SPAWN_CASTLE") {
+    const lat = Number(parsed.args.lat);
+    const lon = Number(parsed.args.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      return {
+        ok: false,
+        reply:
+          "SPAWN CASTLE için --lat ve --lon sayısal olmalı (örn. --lat 41.0082 --lon 28.9784). Panelden «Konum ile kur» kullanabilirsiniz."
+      };
+    }
+    const owner = String(parsed.args.owner || "GUEST");
+    const type = String(parsed.args.type || "SANCTUARY");
+    enqueueCastleRuntimeTransaction({
+      kind: "spawn_request",
+      source: "applyPersonalCastleDsl",
+      payload: { verb: "SPAWN_CASTLE", owner, lat, lon, type }
+    });
+    const { x, z } = latLonToSceneXZ(lat, lon);
+    const zone = cityMind.spawnPersonalCastle(owner, lat, lon, type);
+    eventMesh.push({
+      eventType: "CASTLE_SPAWN",
+      eventSource: owner,
+      eventTarget: `DISTRICT_${zone.slot}`,
+      eventEnergy: 12,
+      eventLifetime: 44,
+      ts: new Date().toLocaleTimeString(),
+      meta: { lat, lon, type, sceneX: x, sceneZ: z, slot: zone.slot }
+    });
+    uiStore.dispatch({ type: "EVENT_PULSE" });
+    uiStore.dispatch({
+      type: "SYNC_METRICS",
+      payload: { district0Energy: cityMind.districtEnergy[0] }
+    });
+    syncGhostPetToCastle(lat, lon);
+    await setRealityMode("REAL_MAP", { source: "DSL_SPAWN_CASTLE" });
+    const t0 = performance.now();
+    const fly = () => {
+      const c = window.__CASTLE_CESIUM__;
+      if (c?.flyToCustom) {
+        c.flyToCustom(lat, lon, 820);
+        return;
+      }
+      if (performance.now() - t0 > 9000) return;
+      requestAnimationFrame(fly);
+    };
+    requestAnimationFrame(fly);
+    return {
+      ok: true,
+      reply: `Kale yükseltildi (${type}) · bölge #${zone.slot} · sahip ${owner}. Ghost devriye; SEED aşamasında Event Mesh rezonansı ve çevre ajanlarından pasif XP akışı başlar.`,
+      directive: "ZOOM_CASTLE"
+    };
+  }
+  if (parsed.verb === "WAKE_TCEE") {
+    const reason = String(parsed.args.reason || "kernel_wake").slice(0, 64);
+    enqueueCastleRuntimeTransaction({
+      kind: "dsl_command",
+      source: "applyPersonalCastleDsl",
+      payload: { verb: "WAKE_TCEE", reason }
+    });
+    const disk = readClientContinuity();
+    const meta = disk.meta && typeof disk.meta === "object" ? disk.meta : {};
+    const seeded = ensurePreBreathSeed(meta);
+    const nextMeta = commitWakeSeal(seeded, { reason, sessionKey: getOrCreateCastleDevUid() });
+    const next = { ...disk, meta: nextMeta };
+    withRuntimeMergeCommit(() => {
+      writeClientContinuity(next);
+      syncClientContinuityRef(next);
+    });
+    uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
+    uiStore.dispatch({
+      type: "ADD_LOG",
+      payload: {
+        ts: new Date().toLocaleTimeString(),
+        type: "SYS",
+        data: `TCEE WAKE · Phase B seal (${reason}) · L10 · memoryClockEpoch=${nextMeta.tceeBoot?.memoryClockEpoch ?? ""}`
+      }
+    });
+    return {
+      ok: true,
+      reply:
+        "TCEE WAKE tamam (Phase B): kimlik manifoldu mühürlendi, hafıza saati epoch başladı, tam CSPE + recall→identity açık. Önceki faz pre-breath yalnızca pasif sensör/nabız.",
+      directive: "FOCUS_RHIZOH"
+    };
+  }
+  if (parsed.verb === "SLEEP_TCEE") {
+    enqueueCastleRuntimeTransaction({
+      kind: "dsl_command",
+      source: "applyPersonalCastleDsl",
+      payload: { verb: "SLEEP_TCEE" }
+    });
+    const disk = readClientContinuity();
+    const meta = disk.meta && typeof disk.meta === "object" ? disk.meta : {};
+    const nextMeta = revertTceeToPreBreath(meta);
+    const next = { ...disk, meta: nextMeta };
+    withRuntimeMergeCommit(() => {
+      writeClientContinuity(next);
+      syncClientContinuityRef(next);
+    });
+    uiStore.dispatch({
+      type: "ADD_LOG",
+      payload: {
+        ts: new Date().toLocaleTimeString(),
+        type: "SYS",
+        data: "TCEE HIBERNATE · pre_breath (recall→identity kapalı)"
+      }
+    });
+    return {
+      ok: true,
+      reply:
+        "TCEE HIBERNATE: pre-breath. Pasif alan nabzı sürer; recall→identity geri beslemesi bu fazda kapalı. Hafıza diskte kalır.",
+      directive: "FOCUS_RHIZOH"
+    };
+  }
+  if (parsed.verb === "PURGE_CASTLE") {
+    const owner = String(parsed.args.owner || "GUEST");
+    enqueueCastleRuntimeTransaction({
+      kind: "dsl_command",
+      source: "applyPersonalCastleDsl",
+      payload: { verb: "PURGE_CASTLE", owner }
+    });
+    const n = cityMind.purgePersonalCastle(owner);
+    eventMesh.push({
+      eventType: "CASTLE_PURGE",
+      eventSource: owner,
+      eventTarget: "NEXUS",
+      eventEnergy: 5,
+      eventLifetime: 20,
+      ts: new Date().toLocaleTimeString()
+    });
+    uiStore.dispatch({ type: "EVENT_PULSE" });
+    clearGhostPetCastleAnchor();
+    return {
+      ok: true,
+      reply:
+        n > 0
+          ? `PURGE tamam: ${n} bölge sıfırlandı (${owner}). Simülasyondan kale kaldırıldı.`
+          : `PURGE: ${owner} için atanmış kişisel bölge yoktu.`
+    };
+  }
+  return { ok: false, reply: "Bilinmeyen DSL fiili." };
+}
+
 /** Server-side LLM recommended; client stub keeps ECS loop closed */
 async function callLLMStub(prompt) {
   return {
@@ -480,23 +1332,292 @@ async function callLLMStub(prompt) {
   };
 }
 
-async function queryRhizohLLM({ message, provider, connectionId, agentId, layerProfile, layerSpec, simTime }) {
-  const cfg = getCastleFlightConfig();
-  const endpoint = cfg.rhizohLlmHttp;
-  if (!endpoint) {
+async function queryRhizohLLM({
+  message,
+  provider,
+  connectionId,
+  agentId,
+  layerProfile,
+  layerSpec,
+  simTime,
+  idToken,
+  continuity,
+  runtime,
+  llmKeySource = "auto",
+  persistRhizohEmotions,
+  gatewayUx
+}) {
+  const trimmed = String(message || "").trim();
+  const dslParsed = parseDSL(trimmed);
+  if (dslParsed) {
+    const out = await applyPersonalCastleDsl(dslParsed);
     return {
-      reply: `Rhizoh: ${layerProfile.mission}. Talep alındı -> ${message}. Kamera ve ajanlar bu katman için hizalanıyor.`,
+      reply: out.reply,
+      directive: out.directive || "FOCUS_RHIZOH",
+      source: out.ok ? "dsl-castle" : "dsl-castle-error"
+    };
+  }
+  if (detectCastleIntentWithoutCoords(trimmed)) {
+    return {
+      reply:
+        "Kişisel kale için tarayıcı konumu gerekir — detay çekmecesinde «Sovereign Castle» panelinden «Konum ile kur» kullanın. Ya da tam komut: SPAWN CASTLE --owner sizin-id --lat 41.0082 --lon 28.9784 --type SANCTUARY",
       directive: "FOCUS_RHIZOH",
-      source: "local-stub"
+      source: "dsl-hint"
     };
   }
 
+  const cont = continuity && typeof continuity === "object" ? continuity : {};
+  let runtimeHints = runtime && typeof runtime === "object" && !Array.isArray(runtime) ? { ...runtime } : {};
+  if (Object.keys(runtimeHints).length === 0) {
+    try {
+      const st = uiStore.getState();
+      runtimeHints = {
+        realityMode: st.realityMode,
+        mapSurfaceActive: st.mapSurfaceActive,
+        layerFocus: st.layerFocus,
+        governanceState: st.governanceState
+      };
+    } catch {
+      runtimeHints = {};
+    }
+  }
+  const cr = cont.runtime;
+  if (cr && typeof cr === "object" && !Array.isArray(cr)) {
+    runtimeHints = { ...runtimeHints, ...cr };
+  }
+  if (gatewayUx && typeof gatewayUx === "object" && gatewayUx.phase) {
+    runtimeHints = {
+      ...runtimeHints,
+      gatewayPhase: gatewayUx.phase,
+      rhizohGatewayPhase: gatewayUx.phase
+    };
+  }
+  const healthState = buildRhizohHealthState({
+    gatewayPhase: gatewayUx?.phase,
+    healthDeps: gatewayUx?.healthDeps,
+    mapSurfaceActive: runtimeHints.mapSurfaceActive
+  });
+  const rhizohHealthInfluence = computeRhizohHealthInfluence(healthState);
+  runtimeHints = { ...runtimeHints, healthState, rhizohHealthInfluence };
+  const rhizohRouter = routeRhizohInput(trimmed, cont, runtimeHints);
+  const rhizohPolicy = deriveRhizohPolicy({ ...runtimeHints, rhizohRouter });
+  runtimeHints = { ...runtimeHints, rhizohPolicy };
+  enqueueCastleRuntimeTransaction({
+    kind: "llm_turn",
+    source: "chat",
+    payload: {
+      intent: String(rhizohRouter?.intent || "CHAT").slice(0, 32),
+      msgLen: trimmed.length
+    }
+  });
+
+  const relBase = cont.relationship && typeof cont.relationship === "object" ? cont.relationship : {};
+  const emotionPrev =
+    relBase.emotions && typeof relBase.emotions === "object" ? relBase.emotions : { ...DEFAULT_EMOTIONS };
+  const emotionLastAt =
+    typeof relBase.emotionUpdatedAt === "number" && Number.isFinite(relBase.emotionUpdatedAt)
+      ? relBase.emotionUpdatedAt
+      : null;
+  const emotionsAfterDelta = applyEmotionDelta({
+    current: emotionPrev,
+    routerOutput: rhizohRouter,
+    runtime: runtimeHints,
+    continuity: cont,
+    lastUpdatedAt: emotionLastAt
+  });
+  const tonePreGovernor = deriveRelationalTone(emotionsAfterDelta);
+  const diskForPre = readClientContinuity();
+  const diskMetaPre =
+    diskForPre.meta && typeof diskForPre.meta === "object" ? diskForPre.meta : {};
+  const govCalPre = normalizeGovernorCalibration(diskMetaPre.rhizohGovernorCalibration);
+  const rhizohEmotions = softClampEmotionsToIdentityAnchor(emotionsAfterDelta, "preLlm", govCalPre);
+  const relationalTone = blendRelationalToneForHealth(rhizohEmotions, healthState);
+  const driftPre = buildRhizohDriftLogEntry({
+    phase: "preLlm",
+    emotionsPre: emotionsAfterDelta,
+    emotionsPost: rhizohEmotions,
+    tonePre: tonePreGovernor,
+    tonePost: relationalTone,
+    intent: rhizohRouter.intent,
+    source: "input-turn",
+    resonance: null
+  });
+  patchRhizohEmotionDisk(rhizohEmotions, relationalTone, undefined, undefined, driftPre);
+  const emotionUpdatedAt = Date.now();
+  const diskSnap = readClientContinuity();
+  const diskMeta = diskSnap.meta && typeof diskSnap.meta === "object" ? diskSnap.meta : {};
+  const tceeBootPhase = String(diskMeta.tceeBoot?.phase || TCEE_PHASE.PRE_BREATH);
+  const govCalMem = normalizeGovernorCalibration(diskMeta.rhizohGovernorCalibration);
+  const outcomeSessionMirror =
+    cont.rhizohOutcomeSession && typeof cont.rhizohOutcomeSession === "object"
+      ? cont.rhizohOutcomeSession
+      : readOutcomeSessionFromMeta(diskMeta);
+  const priorAssistantReplies = priorAssistantRepliesFromContinuity(cont);
+  const bondForMemory = Math.min(
+    1,
+    Math.max(0, (Number(relBase.trust || 0) + Number(relBase.familiarity || 0)) / 2)
+  );
+  const episodeSlice = Array.isArray(diskMeta.rhizohMemoryEpisodes) ? diskMeta.rhizohMemoryEpisodes.slice(-16) : [];
+  const turnSlice =
+    Array.isArray(cont.rhizohWeightedMemory) && cont.rhizohWeightedMemory.length
+      ? cont.rhizohWeightedMemory
+      : Array.isArray(diskMeta.rhizohWeightedTurns)
+        ? diskMeta.rhizohWeightedTurns.slice(-40)
+        : [];
+  const weightedMemorySource = [...episodeSlice, ...turnSlice].slice(-52);
+  const rhizohMemoryEpisodes = Array.isArray(cont.rhizohMemoryEpisodes)
+    ? cont.rhizohMemoryEpisodes
+    : Array.isArray(diskMeta.rhizohMemoryEpisodes)
+      ? diskMeta.rhizohMemoryEpisodes
+      : [];
+  const rhizohWeightedRecollection = applyMemoryDominanceCap(
+    selectWeightedMemoryTurns(weightedMemorySource, {
+      now: Date.now(),
+      queryIntent: rhizohRouter.intent,
+      currentBond: Math.min(1, Math.max(0.08, bondForMemory || 0.35)),
+      limit: 14,
+      currentPhysics: runtimeHints.socialPhysics,
+      currentFieldTheory: runtimeHints.socialRegistry?.socialFieldTheory
+    }),
+    { maxTopShare: govCalMem.memoryMaxTopShare }
+  );
+  let rhizohRecallIdentityFeedback = null;
+  let rhizohRecallMerge = null;
+  if (tceeBootPhase === TCEE_PHASE.AWAKE) {
+    try {
+      const fb = computeIdentityFeedbackFromRecall(rhizohWeightedRecollection, {
+        currentPhysics: runtimeHints.socialPhysics,
+        now: Date.now()
+      });
+      if (fb) {
+        const ig0 = readIdentityGraph();
+        const igNext = applyRecallFeedbackToIdentityGraph(ig0, fb);
+        rhizohRecallIdentityFeedback = fb;
+        const payload = recallClosurePayloadForMeta(fb);
+        rhizohRecallMerge =
+          igNext && typeof igNext === "object"
+            ? { identityGraphNext: igNext, recallClosurePayload: payload || null }
+            : null;
+      }
+    } catch {
+      /* noop */
+    }
+  }
+  const igAfterRecall = rhizohRecallMerge?.identityGraphNext || readIdentityGraph();
+  const rhizohRelAfterRecall = igAfterRecall.rhizoh || {};
+  const relForLlm =
+    tceeBootPhase === TCEE_PHASE.AWAKE
+      ? {
+          ...relBase,
+          trust: Number(rhizohRelAfterRecall.trust ?? relBase.trust ?? 0),
+          familiarity: Number(rhizohRelAfterRecall.familiarity ?? relBase.familiarity ?? 0),
+          bondScore:
+            Math.round(
+              ((Number(rhizohRelAfterRecall.trust ?? relBase.trust ?? 0) +
+                Number(rhizohRelAfterRecall.familiarity ?? relBase.familiarity ?? 0)) /
+                2) *
+                100
+            ) / 100
+        }
+      : { ...relBase };
+  const rhizohStabilityAnchor = getRhizohStabilityAnchorSnapshot();
+  const rhizohNarrativeThread =
+    cont.rhizohNarrativeThread && typeof cont.rhizohNarrativeThread === "object"
+      ? cont.rhizohNarrativeThread
+      : diskMeta.rhizohNarrativeThread && typeof diskMeta.rhizohNarrativeThread === "object"
+        ? diskMeta.rhizohNarrativeThread
+        : null;
+  const rhizohNarrativeArc =
+    cont.rhizohNarrativeArc && typeof cont.rhizohNarrativeArc === "object"
+      ? cont.rhizohNarrativeArc
+      : diskMeta.rhizohNarrativeArc && typeof diskMeta.rhizohNarrativeArc === "object"
+        ? diskMeta.rhizohNarrativeArc
+        : null;
+  const reliabilityEpisodes = Array.isArray(diskMeta.rhizohReliabilityEpisodes)
+    ? diskMeta.rhizohReliabilityEpisodes
+    : [];
+  const rhizohReliabilitySummary = formatReliabilityEpisodesSummaryForLlm(reliabilityEpisodes);
+  const contForLlm = {
+    ...cont,
+    runtime: {
+      ...(cont.runtime && typeof cont.runtime === "object" ? cont.runtime : {}),
+      gatewayPhase: runtimeHints.gatewayPhase,
+      rhizohGatewayPhase: runtimeHints.rhizohGatewayPhase,
+      healthState,
+      rhizohPolicy
+    },
+    relationship: {
+      ...relForLlm,
+      emotions: rhizohEmotions,
+      relationalTone,
+      emotionUpdatedAt
+    },
+    rhizohWeightedRecollection,
+    rhizohRecallIdentityFeedback,
+    rhizohStabilityAnchor,
+    rhizohNarrativeThread,
+    rhizohMemoryEpisodes,
+    rhizohNarrativeArc,
+    rhizohGovernorCalibration: govCalMem,
+    rhizohReliabilityEpisodes: reliabilityEpisodes.slice(-12),
+    rhizohReliabilitySummary,
+    recentReliabilitySummary: rhizohReliabilitySummary,
+    meta: {
+      rhizohReliabilityEpisodes: reliabilityEpisodes.slice(-12),
+      rhizohHealthInfluence,
+      ...(rhizohRecallIdentityFeedback ? { rhizohRecallIdentityFeedback } : {})
+    }
+  };
+  if (typeof persistRhizohEmotions === "function") {
+    try {
+      persistRhizohEmotions({ emotions: rhizohEmotions, relationalTone, emotionUpdatedAt });
+    } catch {
+      /* noop */
+    }
+  }
+
+  const cfg = getCastleFlightConfig();
+  const endpoint = cfg.rhizohLlmHttp;
+  if (!endpoint) {
+    const replyStub = `Rhizoh: ${layerProfile.mission}. Talep alındı -> ${message}. LLM için ağ geçidi (VITE_GATEWAY_HTTP veya VITE_RHIZOH_LLM_HTTP) tanımlayın; anahtar sunucuda OPENAI_API_KEY.`;
+    const post = finalizeRhizohAfterLlm(rhizohEmotions, {
+      rhizohRouter,
+      reply: replyStub,
+      source: "local-stub",
+      runtimeHints,
+      gatewayUx,
+      persistRhizohEmotions,
+      outcomeSession: outcomeSessionMirror,
+      priorAssistantReplies
+    });
+    return {
+      reply: replyStub,
+      directive: "FOCUS_RHIZOH",
+      source: "local-stub",
+      rhizohRouter,
+      rhizohEmotions: post.emotions,
+      relationalTone: post.relationalTone,
+      outcomeResonance: post.outcomeResonance,
+      emotionsPreOutcome: rhizohEmotions,
+      outcomeSession: post.outcomeSession,
+      rhizohRecallMerge
+    };
+  }
+
+  const authHeader =
+    idToken && String(idToken).trim()
+      ? { Authorization: `Bearer ${String(idToken).trim()}` }
+      : cfg.rhizohLlmToken
+        ? { Authorization: `Bearer ${cfg.rhizohLlmToken}` }
+        : {};
+
   try {
-    const res = await fetch(endpoint, {
+    const fetchOpts = {
       method: "POST",
       body: JSON.stringify({
         message,
         provider,
+        llmKeySource,
         connectionId: connectionId || "",
         context: {
           agentId: agentId || "",
@@ -507,7 +1628,11 @@ async function queryRhizohLLM({ message, provider, connectionId, agentId, layerP
           detail: layerProfile.detail,
           reality: layerProfile.reality,
           camera: layerProfile.camera,
-          simTime
+          simTime,
+          continuity: contForLlm,
+          rhizohRouter,
+          rhizohMemoryContract:
+            "continuity state is authoritative session memory (identity, castleState, ghostPet, recentReality, codex, relationship). Do not invent facts beyond it; answer in natural Turkish and reference it when relevant. When you should hold quiet companionship without spoken reply, output only the tag <SILENCE> (optional attributes: intensity=0..1 resonance=0..1 durationMs=milliseconds state=listening|present)."
         },
         options: {
           maxTokens: 280,
@@ -516,23 +1641,122 @@ async function queryRhizohLLM({ message, provider, connectionId, agentId, layerP
       }),
       headers: {
         "Content-Type": "application/json",
-        ...(cfg.rhizohLlmToken ? { Authorization: `Bearer ${cfg.rhizohLlmToken}` } : {}),
+        ...authHeader,
         "X-Castle-Dev-Uid": getOrCreateCastleDevUid()
       }
-    });
+    };
+    if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
+      fetchOpts.signal = AbortSignal.timeout(55_000);
+    }
+    const res = await fetch(endpoint, fetchOpts);
     if (!res.ok) throw new Error(`rhizoh_llm_http_${res.status}`);
     const json = await res.json();
+    const replyOk = String(json?.reply || json?.text || "Rhizoh yanıtı boş döndü.");
+    const postOk = finalizeRhizohAfterLlm(rhizohEmotions, {
+      rhizohRouter,
+      reply: replyOk,
+      source: "remote-llm",
+      runtimeHints,
+      gatewayUx,
+      persistRhizohEmotions,
+      outcomeSession: outcomeSessionMirror,
+      priorAssistantReplies
+    });
     return {
-      reply: String(json?.reply || json?.text || "Rhizoh yanıtı boş döndü."),
+      reply: replyOk,
       directive: String(json?.directive || json?.action || ""),
-      source: "remote-llm"
+      source: "remote-llm",
+      llmKeyBillingOwner: json?.llmKeyBillingOwner,
+      llmKeyOrigin: json?.llmKeyOrigin,
+      llmKeySourceUsed: json?.llmKeySourceUsed,
+      rhizohRouter,
+      rhizohEmotions: postOk.emotions,
+      relationalTone: postOk.relationalTone,
+      outcomeResonance: postOk.outcomeResonance,
+      emotionsPreOutcome: rhizohEmotions,
+      outcomeSession: postOk.outcomeSession,
+      rhizohRecallMerge
     };
-  } catch {
+  } catch (err) {
+    try {
+      window.__CASTLE_RHIZOH_LLM_DIAG__ = {
+        at: Date.now(),
+        endpoint: String(endpoint).split(/[?#]/)[0],
+        message: String(err?.message || err || "fetch_failed")
+      };
+      if (import.meta.env?.DEV) console.warn("[Rhizoh LLM]", endpoint, err);
+    } catch {
+      /* noop */
+    }
+    const replyFb = `Rhizoh: Uzak LLM hattı yanıt vermedi. Yerel protokolle devam ediyorum -> ${message}`;
+    const postFb = finalizeRhizohAfterLlm(rhizohEmotions, {
+      rhizohRouter,
+      reply: replyFb,
+      source: "fallback",
+      runtimeHints,
+      gatewayUx,
+      persistRhizohEmotions,
+      outcomeSession: outcomeSessionMirror,
+      priorAssistantReplies
+    });
     return {
-      reply: `Rhizoh: Uzak LLM hattı yanıt vermedi. Yerel protokolle devam ediyorum -> ${message}`,
+      reply: replyFb,
       directive: "FOCUS_RHIZOH",
-      source: "fallback"
+      source: "fallback",
+      rhizohRouter,
+      rhizohEmotions: postFb.emotions,
+      relationalTone: postFb.relationalTone,
+      outcomeResonance: postFb.outcomeResonance,
+      emotionsPreOutcome: rhizohEmotions,
+      outcomeSession: postFb.outcomeSession,
+      rhizohRecallMerge
     };
+  }
+}
+
+function rhizohPersistTraceFromOut(out) {
+  if (!out?.rhizohRouter) return undefined;
+  const trace = {
+    router: out.rhizohRouter,
+    source: out.source,
+    outcomeResonance: out.outcomeResonance,
+    emotionsAfter: out.rhizohEmotions,
+    emotionsBefore: out.emotionsPreOutcome
+  };
+  if (out.rhizohRecallMerge && typeof out.rhizohRecallMerge === "object") {
+    trace.rhizohRecallMerge = out.rhizohRecallMerge;
+  }
+  return trace;
+}
+
+function getSpeechRecognitionCtor() {
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
+function applyRhizohDirective(directive, engineRef) {
+  const engine = engineRef.current;
+  if (!directive) return;
+  const d = String(directive).toUpperCase();
+  if (d === "FOCUS_RHIZOH") {
+    if (coreWorld.rhizohIdx === -1) coreWorld.allocate("RHIZOH-PRIME", STATE.RHIZOH);
+    const idx = coreWorld.rhizohIdx;
+    if (idx >= 0 && engine) {
+      engine.focusWorldPoint(coreWorld.posX[idx], coreWorld.posY[idx], coreWorld.posZ[idx], 1800);
+    }
+    return;
+  }
+  if (d === "ZOOM_CASTLE") {
+    const c = window.__CASTLE_CESIUM__;
+    if (c?.focusCastle) c.focusCastle();
+    else engine?.focusCastleBeacon?.();
+    return;
+  }
+  if (d === "ZOOM_AGENT") {
+    engine?.focusNextAgent?.();
+    return;
+  }
+  if (d === "ISTANBUL_OVERVIEW") {
+    window.__CASTLE_CESIUM__?.flyToIstanbul?.();
   }
 }
 
@@ -572,6 +1796,8 @@ class World {
     this.ghostGridNext = new Int32Array(this.MAX).fill(-1);
     this.agentGridHead = new Int32Array(this.HASH_SIZE).fill(-1);
     this.agentGridNext = new Int32Array(this.MAX).fill(-1);
+    this.nearbyScratch = new Int32Array(512);
+    this.neighborPoolScratch = new Int32Array(BOID_COLLECT_CAP);
     this.squadId = new Uint16Array(this.MAX);
     this.swarmActive = false;
     this.portalCharge = 0;
@@ -579,6 +1805,8 @@ class World {
     this.simTime = 0;
     this.targetMode = "GLOBE";
     this.rhizohIdx = -1;
+    /** Köprü üzerinden tek ajan için parabolik transit (tick içinde konum yazılır). */
+    this.bridgeTransit = null;
 
     // --- L11: CASTLE ACADEMICS CORE ---
     this.curriculum = [
@@ -635,6 +1863,7 @@ class World {
     this.cellHash.fill(-1);
     this.squadId.fill(0);
     this.rhizohIdx = -1;
+    this.bridgeTransit = null;
     this.academyXP.fill(0);
     this.knowledge.fill(0);
     this.discipline.fill(0);
@@ -802,6 +2031,39 @@ class World {
     return arr;
   }
 
+  beginCastleBridgeTransit(agentIdx, tx, ty, tz, duration = 4.5) {
+    if (agentIdx < 0 || agentIdx >= this.activeCount || this.state[agentIdx] === 0) return false;
+    const ax = this.posX[agentIdx];
+    const ay = this.posY[agentIdx];
+    const az = this.posZ[agentIdx];
+    let perpX = -(tz - az);
+    let perpZ = tx - ax;
+    const pl = Math.hypot(perpX, perpZ);
+    if (pl > 1e-6) {
+      perpX /= pl;
+      perpZ /= pl;
+    } else {
+      perpX = 1;
+      perpZ = 0;
+    }
+    const arcHeight = Math.min(4200, Math.max(800, Math.hypot(tx - ax, ty - ay, tz - az) * 0.38));
+    this.bridgeTransit = {
+      idx: agentIdx,
+      ax,
+      ay,
+      az,
+      tx,
+      ty,
+      tz,
+      perpX,
+      perpZ,
+      arcHeight,
+      t: 0,
+      dur: Math.max(1.2, duration)
+    };
+    return true;
+  }
+
   findNearbyAgents(i, radius) {
     const px = this.posX[i];
     const py = this.posY[i];
@@ -811,7 +2073,7 @@ class World {
     const cy = Math.floor(py / this.CELL_SIZE);
     const cz = Math.floor(pz / this.CELL_SIZE);
     const cellR = Math.ceil(radius / this.CELL_SIZE) + 1;
-    const out = [];
+    let outCount = 0;
     for (let dx = -cellR; dx <= cellR; dx++) {
       for (let dy = -cellR; dy <= cellR; dy++) {
         for (let dz = -cellR; dz <= cellR; dz++) {
@@ -822,14 +2084,17 @@ class World {
               const ddx = this.posX[j] - px;
               const ddy = this.posY[j] - py;
               const ddz = this.posZ[j] - pz;
-              if (ddx * ddx + ddy * ddy + ddz * ddz <= r2) out.push(j);
+              if (ddx * ddx + ddy * ddy + ddz * ddz <= r2) {
+                if (outCount < this.nearbyScratch.length) this.nearbyScratch[outCount] = j;
+                outCount++;
+              }
             }
             j = this.agentGridNext[j];
           }
         }
       }
     }
-    return out;
+    return { count: Math.min(outCount, this.nearbyScratch.length), ids: this.nearbyScratch };
   }
 
   spawnEvent(srcIdx, tgtIdx, kind, energy) {
@@ -994,6 +2259,28 @@ class World {
     this.simTime += safeDt;
     this.chronos.flushDue(this.simTime);
 
+    let bridgeIdx = -1;
+    if (this.bridgeTransit) {
+      const b = this.bridgeTransit;
+      b.t = (b.t || 0) + safeDt;
+      const u = Math.min(1, b.t / b.dur);
+      const sm = u * u * (3 - 2 * u);
+      const arc = Math.sin(u * Math.PI) * b.arcHeight;
+      const i = b.idx;
+      bridgeIdx = i;
+      if (i >= 0 && i < this.activeCount && this.state[i] !== 0) {
+        const f = sm;
+        this.posX[i] = b.ax + (b.tx - b.ax) * f + b.perpX * arc * 0.22;
+        this.posY[i] = b.ay + (b.ty - b.ay) * f + arc;
+        this.posZ[i] = b.az + (b.tz - b.az) * f + b.perpZ * arc * 0.22;
+        this.velX[i] = 0;
+        this.velY[i] = 0;
+        this.velZ[i] = 0;
+        this.isDirty[i] = 1;
+      }
+      if (u >= 1) this.bridgeTransit = null;
+    }
+
     const k = 0.008;
     const damping = Math.pow(0.99, timeScale);
 
@@ -1022,6 +2309,7 @@ class World {
 
     for (let i = 0; i < this.activeCount; i++) {
       if (this.state[i] === 0) continue;
+      if (bridgeIdx === i) continue;
 
       const px = this.posX[i];
       const py = this.posY[i];
@@ -1052,8 +2340,8 @@ class World {
         this.isDirty[i] = 1;
       } else if (this.state[i] === STATE.AGENT_PROFESSOR) {
         const nearby = this.findNearbyAgents(i, 800);
-        for (let ni = 0; ni < nearby.length; ni++) {
-          const s = nearby[ni];
+        for (let ni = 0; ni < nearby.count; ni++) {
+          const s = nearby.ids[ni];
           if (this.state[s] === STATE.AGENT_CADET || this.state[s] === STATE.AGENT_STUDENT) {
             this.academyXP[s] += safeDt * 80;
             this.knowledge[s] += safeDt * 3;
@@ -1103,7 +2391,8 @@ class World {
         const gcx = Math.floor(px / this.GHOST_CELL_SIZE);
         const gcy = Math.floor(py / this.GHOST_CELL_SIZE);
         const gcz = Math.floor(pz / this.GHOST_CELL_SIZE);
-        const neighborPool = [];
+        const neighborPool = this.neighborPoolScratch;
+        let neighborCount = 0;
         for (let dx = -1; dx <= 1; dx++) {
           for (let dy = -1; dy <= 1; dy++) {
             for (let dz = -1; dz <= 1; dz++) {
@@ -1113,7 +2402,7 @@ class World {
                 (gcz + dz) * this.GHOST_CELL_SIZE
               );
               let neighborIdx = this.ghostGridHead[hh];
-              while (neighborIdx !== -1 && neighborPool.length < BOID_COLLECT_CAP) {
+              while (neighborIdx !== -1 && neighborCount < BOID_COLLECT_CAP) {
                 if (neighborIdx !== i) {
                   const nx = this.posX[neighborIdx];
                   const ny = this.posY[neighborIdx];
@@ -1122,23 +2411,23 @@ class World {
                   const dyDist = py - ny;
                   const dzDist = pz - nz;
                   const distSq2 = dxDist * dxDist + dyDist * dyDist + dzDist * dzDist;
-                  if (distSq2 > 0.001 && distSq2 < 15000) neighborPool.push(neighborIdx);
+                  if (distSq2 > 0.001 && distSq2 < 15000) {
+                    neighborPool[neighborCount] = neighborIdx;
+                    neighborCount++;
+                  }
                 }
                 neighborIdx = this.ghostGridNext[neighborIdx];
               }
             }
           }
         }
-        let pickN = neighborPool.length;
+        let pickN = neighborCount;
         if (pickN > BOID_NEIGHBOR_CAP) pickN = BOID_NEIGHBOR_CAP;
+        if (neighborCount === 0) continue;
+        const stride = 17;
+        const base = (((this.simTime * 60) | 0) + i * 13) % neighborCount;
         for (let p = 0; p < pickN; p++) {
-          const r = p + Math.floor(Math.random() * (neighborPool.length - p));
-          const t = neighborPool[p];
-          neighborPool[p] = neighborPool[r];
-          neighborPool[r] = t;
-        }
-        for (let p = 0; p < pickN; p++) {
-          const neighborIdx = neighborPool[p];
+          const neighborIdx = neighborPool[(base + p * stride) % neighborCount];
           const nx = this.posX[neighborIdx];
           const ny = this.posY[neighborIdx];
           const nz = this.posZ[neighborIdx];
@@ -1273,11 +2562,14 @@ class RealMapCore {
   static async loadCity(sceneGroup, onLog) {
     if (this.isLoaded || this.isLoading) return;
     this.isLoading = true;
-    onLog("SATELLITE_LINK: L5 ZONE GENERATION STARTED…");
-    this.buildProceduralFallback(sceneGroup);
-    this.isLoaded = true;
-    this.isLoading = false;
-    onLog("SATELLITE_LINK: ISTANBUL TILE · procedural REAL_MAP injected.");
+    try {
+      onLog("SATELLITE_LINK: L5 ZONE GENERATION STARTED…");
+      this.buildProceduralFallback(sceneGroup);
+      this.isLoaded = true;
+      onLog("SATELLITE_LINK: ISTANBUL TILE · procedural REAL_MAP injected.");
+    } finally {
+      this.isLoading = false;
+    }
   }
 
   static buildProceduralFallback(sceneGroup) {
@@ -1365,6 +2657,9 @@ const uiStore = {
   state: {
     viewMode: "CITIZEN",
     realityMode: "GLOBE",
+    /** Cesium REAL_MAP yüzeyi — RealityDirector + gateway fazı ile commit */
+    mapSurfaceActive: false,
+    lastRealityCommit: null,
     tickCounter: 0,
     activeEntityCount: 0,
     isSatelliteActive: false,
@@ -1378,8 +2673,12 @@ const uiStore = {
     swarmActive: false,
     greenRoomArm: false,
     portalVisible: false,
-    squadCount: 0
+    squadCount: 0,
+    eventPulseCount: 0,
+    /** Rhizoh 3D sahnesi üzerinde yüzen CODEX / medya ankrajı */
+    rhizohSceneAnchor: null
   },
+  pendingEventPulses: 0,
   listeners: new Set(),
   getState() {
     return this.state;
@@ -1390,7 +2689,18 @@ const uiStore = {
   },
   dispatch(action) {
     if (action.type === "EVENT_PULSE") {
-      this.state = { ...this.state, tickCounter: this.state.tickCounter + 1 };
+      this.pendingEventPulses += 1;
+      return;
+    }
+    if (action.type === "FLUSH_EVENT_PULSES") {
+      const pulseCount = this.pendingEventPulses;
+      this.pendingEventPulses = 0;
+      if (!pulseCount) return;
+      this.state = {
+        ...this.state,
+        tickCounter: this.state.tickCounter + 1,
+        eventPulseCount: this.state.eventPulseCount + pulseCount
+      };
       this.listeners.forEach((l) => l());
       return;
     }
@@ -1404,9 +2714,48 @@ const uiStore = {
     } else {
       let next = this.state;
       if (action.type === "TOGGLE_VIEW") next = { ...next, viewMode: next.viewMode === "CITIZEN" ? "DEVELOPER" : "CITIZEN" };
+      if (action.type === "REALITY_CHANGED") {
+        const p = action.payload;
+        const mode = p.to ?? p.mode;
+        const gw = p.gatewayPhase ?? this.state.lastRealityCommit?.gatewayPhase ?? "unconfigured";
+        const mapSurface =
+          typeof p.mapSurfaceActive === "boolean" ? p.mapSurfaceActive : computeMapSurfaceActive(mode, gw);
+        next = {
+          ...next,
+          realityMode: mode,
+          mapSurfaceActive: mapSurface,
+          lastRealityCommit: {
+            at: Date.now(),
+            gatewayPhase: p.gatewayPhase ?? gw,
+            source: p.source,
+            durationMs: p.durationMs
+          },
+          tickCounter: this.state.tickCounter + 1
+        };
+      }
+      if (action.type === "REALITY_ENGINE_SYNC") {
+        const p = action.payload;
+        next = {
+          ...next,
+          mapSurfaceActive: !!p.mapSurfaceActive,
+          lastRealityCommit: {
+            ...(next.lastRealityCommit || {}),
+            at: Date.now(),
+            gatewayPhase: p.gatewayPhase ?? next.lastRealityCommit?.gatewayPhase,
+            reason: p.reason
+          },
+          tickCounter: this.state.tickCounter + 1
+        };
+      }
       if (action.type === "SET_REALITY") {
         coreWorld.targetMode = action.payload;
-        next = { ...next, realityMode: action.payload };
+        const mode = action.payload;
+        const gw = this.state.lastRealityCommit?.gatewayPhase ?? "unconfigured";
+        next = {
+          ...next,
+          realityMode: mode,
+          mapSurfaceActive: computeMapSurfaceActive(mode, gw)
+        };
       }
       if (action.type === "TOGGLE_SATELLITE") next = { ...next, isSatelliteActive: !next.isSatelliteActive };
       if (action.type === "SET_LAYER_FOCUS") {
@@ -1446,10 +2795,18 @@ const uiStore = {
         coreWorld.swarmActive = !coreWorld.swarmActive;
         next = { ...next, swarmActive: coreWorld.swarmActive };
       }
+      if (action.type === "SET_SWARM_ACTIVE") {
+        const on = !!action.payload;
+        coreWorld.swarmActive = on;
+        next = { ...next, swarmActive: on };
+      }
       if (action.type === "SET_GREENROOM") next = { ...next, greenRoomArm: !!action.payload };
       if (action.type === "SET_PORTAL") {
         coreWorld.portalCharge = action.payload ? 1 : 0;
         next = { ...next, portalVisible: !!action.payload };
+      }
+      if (action.type === "SET_RHIZOH_SCENE_ANCHOR") {
+        next = { ...next, rhizohSceneAnchor: action.payload ?? null, tickCounter: this.state.tickCounter + 1 };
       }
       this.state = next;
     }
@@ -1488,6 +2845,8 @@ class ApexEngine {
   constructor(container) {
     this.container = container;
     this.active = true;
+    /** Kept in lockstep with uiStore.realityMode via RealityDirector.commitReality */
+    this.internalRealityMode = "GLOBE";
 
     this.slotColorCache = new Uint8Array(coreWorld.MAX).fill(255);
 
@@ -1514,10 +2873,17 @@ class ApexEngine {
     this.targetCamDir = new THREE.Vector3();
     this._camScratch = new THREE.Vector3();
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+    const win =
+      typeof navigator !== "undefined" && /Windows/i.test(String(navigator.userAgent || ""));
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      ...(win ? {} : { powerPreference: "high-performance" })
+    });
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.container.appendChild(this.renderer.domElement);
+    installWebglContextLostReporter(this.renderer.domElement, "three_apex");
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
@@ -1530,6 +2896,15 @@ class ApexEngine {
     this._zoomAgentCursor = 0;
     this.droneBridge = null;
     this._wallPrev = performance.now();
+    this._renderErrorLogged = false;
+
+    /** Kesilebilir otopilot: OrbitControls ile kullanıcı müdahalesi sonrası ~5s programatik hareket yok. */
+    this._userAutopilotHoldUntil = 0;
+    this._bezierMove = null;
+    this._orbitalRaf = null;
+    this._autoLookScratch = new THREE.Vector3();
+    this._orbitStartHandler = () => this._noteUserCameraIntervention();
+    this.controls.addEventListener("start", this._orbitStartHandler);
 
     this.setupWorld();
     this.setupInstancing();
@@ -1570,6 +2945,10 @@ class ApexEngine {
     this.satelliteGroup.visible = false;
     this.scene.add(this.satelliteGroup);
 
+    this.bridgeArcGroup = new THREE.Group();
+    this.bridgeArcGroup.name = "rhizoh_mirror_bridges";
+    this.scene.add(this.bridgeArcGroup);
+
     this.scene.add(new THREE.AmbientLight(0xffffff, 1.2));
     this.sunLight = new THREE.DirectionalLight(0x00ffff, 4.0);
     this.sunLight.position.set(10000, 10000, 10000);
@@ -1608,25 +2987,41 @@ class ApexEngine {
     if (this.controls) this.controls.update();
   }
 
-  async transitionReality(mode) {
+  rollbackPartialRealMapPrepare() {
+    if (this.droneBridge) {
+      this.droneBridge.dispose();
+      this.droneBridge = null;
+    }
+    this.realMapGroup.visible = false;
+  }
+
+  async prepareReality(mode) {
+    if (mode !== "REAL_MAP") return;
+    this.realMapGroup.visible = false;
+    if (!RealMapCore.isLoaded) {
+      await RealMapCore.loadCity(this.realMapGroup, () => {});
+    }
+    if (!this.droneBridge) {
+      const cfg = getCastleFlightConfig();
+      this.droneBridge = new DroneFlightBridge(this.realMapGroup, cfg);
+      this.droneBridge.startSimulated();
+      if (cfg.droneTelemetryWs) this.droneBridge.connectTelemetryWs(cfg.droneTelemetryWs);
+      if (cfg.gatewayWsUrl) this.droneBridge.connectGatewayMirror(cfg.gatewayWsUrl, cfg.gatewayToken);
+    }
+  }
+
+  commitReality(mode) {
+    this.internalRealityMode = mode;
+    const setFog = (d) => {
+      const f = this.scene?.fog;
+      if (f && typeof f.density === "number") f.density = d;
+    };
     if (mode === "REAL_MAP") {
-      if (!RealMapCore.isLoaded) {
-        await RealMapCore.loadCity(this.realMapGroup, (msg) => {
-          uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: msg } });
-        });
-      }
       this.realMapGroup.visible = true;
-      this.scene.fog.density = 0.00015;
-      if (!this.droneBridge) {
-        const cfg = getCastleFlightConfig();
-        this.droneBridge = new DroneFlightBridge(this.realMapGroup, cfg);
-        this.droneBridge.startSimulated();
-        if (cfg.droneTelemetryWs) this.droneBridge.connectTelemetryWs(cfg.droneTelemetryWs);
-        if (cfg.gatewayWsUrl) this.droneBridge.connectGatewayMirror(cfg.gatewayWsUrl, cfg.gatewayToken);
-      }
+      setFog(0.00015);
     } else {
       this.realMapGroup.visible = false;
-      this.scene.fog.density = 0.00006;
+      setFog(0.00006);
       if (this.droneBridge) {
         this.droneBridge.dispose();
         this.droneBridge = null;
@@ -1641,10 +3036,11 @@ class ApexEngine {
     const nowWall = performance.now();
     const frameDt = Math.min(0.1, Math.max(0.001, (nowWall - this._wallPrev) / 1000));
     this._wallPrev = nowWall;
+    recordCastleRuntimeFrame(frameDt);
 
     const simTime = coreWorld.simTime;
-    const activeCount = coreWorld.activeCount;
-    const mode = uiStore.getState().realityMode;
+    const activeCount = Math.min(coreWorld.activeCount, coreWorld.MAX);
+    const mode = this.internalRealityMode;
     const isSat = uiStore.getState().isSatelliteActive;
 
     if (isSat) {
@@ -1841,45 +3237,246 @@ class ApexEngine {
         );
         this.globe.rotation.y += 0.0003;
         this.globeGroup.visible = true;
-        if (this.globe.material.opacity < 0.9) this.globe.material.opacity += 0.02;
+        const globMat = this.globe?.material;
+        if (globMat && !Array.isArray(globMat) && typeof globMat.opacity === "number" && globMat.opacity < 0.9) globMat.opacity += 0.02;
       } else {
         const cityPan = simTime * 0.05;
         this.targetCamPos.set(Math.cos(cityPan) * 5200, 2100 + Math.sin(simTime * 0.03) * 400, Math.sin(cityPan) * 5200);
         lookTargetY = Math.max(140, RealMapCore.castleWorldPos.y * 0.45);
-        this._camScratch.set(cx, lookTargetY, cz);
-        if (this.globe.material.opacity > 0) this.globe.material.opacity -= 0.02;
-        else this.globeGroup.visible = false;
+        const beaconX = RealMapCore.castleWorldPos.x;
+        const beaconZ = RealMapCore.castleWorldPos.z;
+        this._camScratch.set(beaconX, lookTargetY, beaconZ);
+        const globMat = this.globe?.material;
+        if (globMat && !Array.isArray(globMat) && typeof globMat.opacity === "number") {
+          if (globMat.opacity > 0) globMat.opacity -= 0.02;
+          else this.globeGroup.visible = false;
+        } else this.globeGroup.visible = false;
       }
 
       this.camera.position.lerp(this.targetCamPos, 0.022);
       if (mode === "REAL_MAP") {
-        this.targetCamDir.copy(this._camScratch).sub(this.camera.position).normalize();
+        this.targetCamDir.copy(this._camScratch).sub(this.camera.position);
+        if (this.targetCamDir.lengthSq() > 1e-6) this.targetCamDir.normalize();
+        else this.targetCamDir.copy(this.camForward).negate();
       } else {
-        this.targetCamDir.set(0, lookTargetY, 0).sub(this.camera.position).normalize();
+        this.targetCamDir.set(0, lookTargetY, 0).sub(this.camera.position);
+        if (this.targetCamDir.lengthSq() > 1e-6) this.targetCamDir.normalize();
+        else this.targetCamDir.copy(this.camForward).negate();
       }
-      this._qTemp.setFromUnitVectors(this.camForward, this.targetCamDir);
-      this.camera.quaternion.slerp(this._qTemp, 0.022);
+      try {
+        if (Number.isFinite(this.targetCamDir.x)) {
+          this._qTemp.setFromUnitVectors(this.camForward, this.targetCamDir);
+          this.camera.quaternion.slerp(this._qTemp, 0.022);
+        }
+      } catch {
+        /* avoid NaN quaternion from parallel-opposite edge cases */
+      }
+    } else if (this._bezierMove) {
+      const m = this._bezierMove;
+      m.t += frameDt;
+      const u = Math.min(1, m.t / m.duration);
+      const s = u * u * (3 - 2 * u);
+      const o = 1 - s;
+      this._camScratch
+        .copy(m.p0)
+        .multiplyScalar(o * o)
+        .addScaledVector(m.p1, 2 * o * s)
+        .addScaledVector(m.p2, s * s);
+      this.camera.position.copy(this._camScratch);
+      this.controls.target.copy(m.look);
+      this.controls.enabled = false;
+      this._autoLookScratch.copy(m.look).sub(this.camera.position);
+      if (this._autoLookScratch.lengthSq() > 1e-8) {
+        this._autoLookScratch.normalize();
+        try {
+          this._qTemp.setFromUnitVectors(this.camForward, this._autoLookScratch);
+          this.camera.quaternion.slerp(this._qTemp, Math.min(1, 0.12 + frameDt * 4.5));
+        } catch {
+          /* parallel */
+        }
+      }
+      this.controls.update();
+      if (u >= 1) {
+        this._bezierMove = null;
+        this.controls.enabled = true;
+      }
     } else {
       this.controls.enabled = true;
       this.controls.update();
     }
 
     if (mode === "REAL_MAP" && this.droneBridge) {
-      this.droneBridge.tick(simTime, frameDt);
+      try {
+        this.droneBridge.tick(simTime, frameDt);
+      } catch (e) {
+        if (!this._renderErrorLogged) {
+          console.error("[CASTLE_DRONE_BRIDGE]", e);
+          this._renderErrorLogged = true;
+        }
+      }
     }
 
-    this.renderer.render(this.scene, this.camera);
+    try {
+      if (this.renderer && this.scene && this.camera) this.renderer.render(this.scene, this.camera);
+    } catch (e) {
+      if (!this._renderErrorLogged) {
+        console.error("[CASTLE_APEX_RENDER]", e);
+        this._renderErrorLogged = true;
+      }
+    }
   }
 
   setCameraMode(mode) {
     uiStore.dispatch({ type: "SET_CAMERA_MODE", payload: mode === "DRONE" ? "DRONE" : "ORBIT" });
   }
 
-  focusWorldPoint(x, y, z, distance = 1600) {
+  isAutopilotAllowed() {
+    return performance.now() >= this._userAutopilotHoldUntil;
+  }
+
+  _noteUserCameraIntervention() {
+    this._userAutopilotHoldUntil = performance.now() + 5000;
+    this._cancelProgrammaticCamera();
+  }
+
+  _cancelProgrammaticCamera() {
+    if (this._orbitalRaf != null) {
+      cancelAnimationFrame(this._orbitalRaf);
+      this._orbitalRaf = null;
+    }
+    this._bezierMove = null;
+  }
+
+  /**
+   * İki nokta arasında kontrol noktası yükseltilmiş quadratic Bezier — düz lerp yerine "swoop".
+   */
+  _beginBezierCameraTo(tx, ty, tz, distance, opts = {}) {
+    const duration = opts.duration ?? 1.85;
+    const cinematicBias = opts.cinematicBias ?? 0.62;
+    if (!this.isAutopilotAllowed()) {
+      this._focusWorldPointImpl(tx, ty, tz, distance, { instant: true });
+      return;
+    }
+    this._cancelProgrammaticCamera();
+    this.setCameraMode("DRONE");
+    this.controls.enabled = false;
+
+    const target = new THREE.Vector3(Number(tx) || 0, Number(ty) || 0, Number(tz) || 0);
+    const p0 = this.camera.position.clone();
+    const toT = this._dirTemp.subVectors(target, p0);
+    const distTo = toT.length();
+    if (distTo < 2) {
+      this._focusWorldPointImpl(tx, ty, tz, distance, { instant: true });
+      return;
+    }
+    toT.normalize();
+    const worldUp = new THREE.Vector3(0, 1, 0);
+    const side = new THREE.Vector3().copy(toT).cross(worldUp);
+    if (side.lengthSq() < 1e-8) side.set(1, 0, 0);
+    else side.normalize();
+
+    const p2 = target
+      .clone()
+      .addScaledVector(side, distance * 0.42)
+      .addScaledVector(worldUp, distance * 0.29 * cinematicBias)
+      .addScaledVector(toT, -distance * 0.09);
+
+    const p1 = p0.clone().lerp(p2, 0.46);
+    p1.addScaledVector(worldUp, distance * (0.2 + 0.14 * cinematicBias));
+    p1.addScaledVector(side, distance * 0.12);
+
+    this._bezierMove = {
+      t: 0,
+      duration,
+      p0,
+      p1,
+      p2,
+      look: new THREE.Vector3(Number(tx) || 0, Number(ty) || 0, Number(tz) || 0)
+    };
+  }
+
+  /** L9 büyük olay: çapraz çerçeve + bezier yaklaşma */
+  frameL9CinematicEvent(detail) {
+    enqueueApexCameraAfterCesiumIfNeeded(() => this._frameL9CinematicEventImpl(detail), "L9 sinematik");
+  }
+
+  _frameL9CinematicEventImpl(detail) {
+    if (!detail || !this.isAutopilotAllowed()) return;
+    let wx;
+    let wy;
+    let wz;
+    const idx = detail.agentIdx;
+    if (typeof idx === "number" && idx >= 0 && idx < coreWorld.activeCount && coreWorld.state[idx] !== 0) {
+      wx = coreWorld.posX[idx];
+      wy = coreWorld.posY[idx];
+      wz = coreWorld.posZ[idx];
+    } else if (Number.isFinite(detail.lat) && Number.isFinite(detail.lon)) {
+      const xz = latLonToSceneXZ(detail.lat, detail.lon);
+      wx = xz.x;
+      wy = 220;
+      wz = xz.z;
+    } else {
+      const p = RealMapCore.castleWorldPos;
+      wx = p.x;
+      wy = p.y;
+      wz = p.z;
+    }
+    const cnt = Number(detail.agentCount) || 0;
+    const dist = 1580 + Math.min(900, cnt * 42);
+    const dur = 2.0 + Math.min(0.75, cnt * 0.025);
+    this._beginBezierCameraTo(wx, wy, wz, dist, { duration: dur, cinematicBias: 0.98 });
+  }
+
+  /** Çoklu kale köprüleri: parabolik enerji arkı (Line). */
+  setRhizohMirrorBridges(arcs) {
+    if (!this.bridgeArcGroup) return;
+    while (this.bridgeArcGroup.children.length) {
+      const ch = this.bridgeArcGroup.children.pop();
+      this.bridgeArcGroup.remove(ch);
+      if (ch.geometry) ch.geometry.dispose();
+      if (ch.material) ch.material.dispose();
+    }
+    for (const a of arcs || []) {
+      const ax = Number(a.ax) || 0;
+      const ay = Number(a.ay) || 0;
+      const az = Number(a.az) || 0;
+      const bx = Number(a.bx) || 0;
+      const by = Number(a.by) || 0;
+      const bz = Number(a.bz) || 0;
+      const mid = new THREE.Vector3((ax + bx) / 2, Math.max(ay, by) + 1600 + Math.hypot(bx - ax, bz - az) * 0.12, (az + bz) / 2);
+      const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(ax, ay, az), mid, new THREE.Vector3(bx, by, bz));
+      const pts = curve.getPoints(56);
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      const mat = new THREE.LineBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.88,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const line = new THREE.Line(geo, mat);
+      this.bridgeArcGroup.add(line);
+    }
+  }
+
+  focusWorldPoint(x, y, z, distance = 1600, opts = {}) {
+    enqueueApexCameraAfterCesiumIfNeeded(() => this._focusWorldPointImpl(x, y, z, distance, opts), "dünya odak");
+  }
+
+  _focusWorldPointImpl(x, y, z, distance = 1600, opts = {}) {
+    const instant = opts.instant === true || !this.isAutopilotAllowed();
+    if (instant) this._cancelProgrammaticCamera();
     uiStore.dispatch({ type: "SET_CAMERA_MODE", payload: "DRONE" });
-    this.controls.target.set(x, y, z);
-    this.camera.position.set(x + distance * 0.48, y + distance * 0.32, z + distance * 0.52);
-    this.controls.update();
+    if (instant) {
+      this.controls.target.set(x, y, z);
+      this.camera.position.set(x + distance * 0.48, y + distance * 0.32, z + distance * 0.52);
+      this.controls.update();
+      return;
+    }
+    this._beginBezierCameraTo(x, y, z, distance, {
+      duration: opts.duration ?? 1.72,
+      cinematicBias: opts.cinematicBias ?? 0.55
+    });
   }
 
   focusNextAgent() {
@@ -1909,8 +3506,85 @@ class ApexEngine {
     this.focusWorldPoint(xz.x, 200, xz.z, 3000);
   }
 
+  /** Onay sonrası sinematik tur: hedef etrafında hızlı orbital sweep */
+  runOrbitalSweepAt(x, y, z, opts = {}) {
+    enqueueApexCameraAfterCesiumIfNeeded(() => this._runOrbitalSweepAtImpl(x, y, z, opts), "orbital sweep");
+  }
+
+  _runOrbitalSweepAtImpl(x, y, z, opts = {}) {
+    if (!this.isAutopilotAllowed()) return;
+    this._cancelProgrammaticCamera();
+    const durationMs = opts.durationMs ?? 1400;
+    const radius = opts.radius ?? 920;
+    const target = new THREE.Vector3(Number(x) || 0, Number(y) || 0, Number(z) || 0);
+    this.setCameraMode("DRONE");
+    this.controls.enabled = false;
+    const start = performance.now();
+    const step = (now) => {
+      if (!this.active) {
+        this._orbitalRaf = null;
+        return;
+      }
+      const t = Math.min(1, (now - start) / durationMs);
+      const ang = t * Math.PI * 2;
+      const ox = Math.cos(ang) * radius;
+      const oz = Math.sin(ang) * radius;
+      this.controls.target.copy(target);
+      this.camera.position.set(target.x + ox, target.y + 480 + t * 220, target.z + oz);
+      this.controls.update();
+      if (t < 1) {
+        this._orbitalRaf = requestAnimationFrame(step);
+      } else {
+        this._orbitalRaf = null;
+        this.controls.enabled = true;
+      }
+    };
+    this._orbitalRaf = requestAnimationFrame(step);
+  }
+
+  /** Kısa süreli “sinyal halesi” — torus mesh, sahneye eklenir ve soluklar */
+  emitSignalHaloFlash(x, y, z) {
+    const gx = Number(x) || 0;
+    const gy = Number(y) || 0;
+    const gz = Number(z) || 0;
+    const geo = new THREE.TorusGeometry(140, 10, 10, 40);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0x22d3ee,
+      transparent: true,
+      opacity: 0.82
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(gx, gy + 160, gz);
+    mesh.rotation.x = Math.PI / 2;
+    this.scene.add(mesh);
+    const begin = performance.now();
+    const fade = () => {
+      const e = performance.now() - begin;
+      mat.opacity = Math.max(0, 0.82 - e * 0.0011);
+      mesh.scale.multiplyScalar(1.025);
+      if (mat.opacity > 0.02) requestAnimationFrame(fade);
+      else {
+        this.scene.remove(mesh);
+        geo.dispose();
+        mat.dispose();
+      }
+    };
+    requestAnimationFrame(fade);
+  }
+
   terminate() {
     this.active = false;
+    this._cancelProgrammaticCamera();
+    if (this.controls && this._orbitStartHandler) {
+      try {
+        this.controls.removeEventListener("start", this._orbitStartHandler);
+      } catch {
+        /* noop */
+      }
+    }
+    if (this.bridgeArcGroup) {
+      this.setRhizohMirrorBridges([]);
+    }
     if (this.droneBridge) {
       this.droneBridge.dispose();
       this.droneBridge = null;
@@ -1925,7 +3599,12 @@ class ApexEngine {
       }
     });
 
-    if (this.container && this.renderer.domElement) this.container.removeChild(this.renderer.domElement);
+    try {
+      const el = this.renderer?.domElement;
+      if (this.container && el && this.container.contains(el)) this.container.removeChild(el);
+    } catch {
+      /* dom may already be detached */
+    }
     this.renderer.dispose();
   }
 }
@@ -1941,11 +3620,29 @@ const SovereignHud = memo(({ engineRef }) => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const substrate = companyRuntimeRef.current?.substrate;
+      if (!substrate) return;
+      setSubstrateSnapshot(substrate.getSnapshot());
+      setSubstrateEvents(substrate.getEventLog({ limit: 12 }));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const seen = window.localStorage.getItem("rhizoh_intro_seen_v1") === "1";
+    setReturningUser(seen);
+    introStartedAtRef.current = Date.now();
+    const interval = setInterval(() => {
+      setCinematicElapsedMs(Date.now() - introStartedAtRef.current);
+    }, 200);
+    return () => clearInterval(interval);
+  }, []);
+
   const toggleReality = () => {
     const nextMode = realityMode === "GLOBE" ? "REAL_MAP" : "GLOBE";
-    uiStore.dispatch({ type: "SET_REALITY", payload: nextMode });
-    if (engineRef.current) engineRef.current.transitionReality(nextMode);
-    uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: `LAYER SHIFT: ${nextMode}` } });
+    void setRealityMode(nextMode, { source: "HUD" });
   };
 
   const toggleSatellite = () => {
@@ -2087,26 +3784,28 @@ const LayerExperiencePanel = memo(({ engineRef }) => {
   const tinyBtn = "text-[8px] px-2 py-1.5 rounded-lg border font-bold transition-colors";
 
   const runQuickAction = async (action) => {
-    const engine = engineRef.current;
-    if (!engine) return;
     const log = (data) =>
       uiStore.dispatch({
         type: "ADD_LOG",
         payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data }
       });
 
+    if (action === "ZOOM CASTLE") {
+      await setRealityMode("REAL_MAP", { source: "LAYER_QUICK" });
+      const eng = engineRef.current;
+      const c = window.__CASTLE_CESIUM__;
+      if (c?.focusCastle) c.focusCastle();
+      else eng?.focusCastleBeacon();
+      log("LAYER ACTION · Zoom castle");
+      return;
+    }
+
+    const engine = engineRef.current;
+    if (!engine) return;
+
     if (action === "ZOOM AGENT") {
       engine.focusNextAgent();
       log("LAYER ACTION · Zoom agent");
-      return;
-    }
-    if (action === "ZOOM CASTLE") {
-      uiStore.dispatch({ type: "SET_REALITY", payload: "REAL_MAP" });
-      await engine.transitionReality("REAL_MAP");
-      const c = window.__CASTLE_CESIUM__;
-      if (c?.focusCastle) c.focusCastle();
-      else engine.focusCastleBeacon();
-      log("LAYER ACTION · Zoom castle");
       return;
     }
     log(`LAYER ACTION · Komut terminali: ${action}`);
@@ -2115,14 +3814,13 @@ const LayerExperiencePanel = memo(({ engineRef }) => {
   const applyLayerPreset = async (id) => {
     const p = LAYER_UI_PROFILES[id];
     const engine = engineRef.current;
-    if (!p || !engine) return;
+    if (!p) return;
 
     uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: id });
-    if (p.camera) engine.setCameraMode(p.camera);
     if (p.reality) {
-      uiStore.dispatch({ type: "SET_REALITY", payload: p.reality });
-      await engine.transitionReality(p.reality);
+      await setRealityMode(p.reality, { source: "LAYER_PRESET" });
     }
+    if (engine && p.camera) engine.setCameraMode(p.camera);
     const satShouldBe = !!p.satellite;
     if (satShouldBe !== isSat) uiStore.dispatch({ type: "TOGGLE_SATELLITE" });
 
@@ -2182,15 +3880,12 @@ const CameraFlightDeck = memo(({ engineRef }) => {
   const theme = (LAYER_UI_PROFILES[focus] || LAYER_UI_PROFILES[10]).theme;
   const btn = "text-[8px] px-2 py-1.5 rounded-lg border font-bold transition-colors";
   const flyRealMapThen = async (fn) => {
+    await setRealityMode("REAL_MAP", { source: "CAMERA_DECK" });
     const e = engineRef.current;
-    if (!e) return;
-    uiStore.dispatch({ type: "SET_REALITY", payload: "REAL_MAP" });
-    await e.transitionReality("REAL_MAP");
-    fn(e);
+    if (e) fn(e);
   };
   const flyCesium = async (action) => {
-    uiStore.dispatch({ type: "SET_REALITY", payload: "REAL_MAP" });
-    await engineRef.current?.transitionReality("REAL_MAP");
+    await setRealityMode("REAL_MAP", { source: "CAMERA_DECK" });
     const c = window.__CASTLE_CESIUM__;
     if (!c) return false;
     if (action === "castle") c.focusCastle?.();
@@ -3332,7 +5027,7 @@ const RoboticsMechanicsPanel = memo(({ selectedAgentId }) => {
 
 const EventLayerIntelPanel = memo(({ selectedAgentId, selectedConnectionId }) => {
   const focus = useUISelector((s) => s.layerFocus);
-  const realityMode = useUISelector((s) => s.realityMode);
+  const mapSurfaceActive = useUISelector((s) => s.mapSurfaceActive);
   const theme = (LAYER_UI_PROFILES[focus] || LAYER_UI_PROFILES[10]).theme;
   const [place, setPlace] = useState("Suleymaniye Library Istanbul");
   const [docUrl, setDocUrl] = useState("");
@@ -3496,7 +5191,7 @@ const EventLayerIntelPanel = memo(({ selectedAgentId, selectedConnectionId }) =>
   }, [pdfJobId]);
 
   useEffect(() => {
-    if (!companionOn || realityMode !== "REAL_MAP") return;
+    if (!companionOn || !mapSurfaceActive) return;
     let dead = false;
     const intv = setInterval(() => {
       if (dead) return;
@@ -3516,7 +5211,7 @@ const EventLayerIntelPanel = memo(({ selectedAgentId, selectedConnectionId }) =>
       dead = true;
       clearInterval(intv);
     };
-  }, [companionOn, thresholdM, cooldownSec, realityMode, selectedAgentId, selectedConnectionId]);
+  }, [companionOn, thresholdM, cooldownSec, mapSurfaceActive, selectedAgentId, selectedConnectionId]);
 
   return (
     <div className="rounded-2xl p-4 space-y-2" style={{ background: theme.bg, border: `1px solid ${theme.border}` }}>
@@ -3594,15 +5289,1369 @@ const EventLayerIntelPanel = memo(({ selectedAgentId, selectedConnectionId }) =>
   );
 });
 
-const RhizohCommsPanel = memo(({ engineRef, selectedConnectionId, selectedAgentId }) => {
+const RhizohSceneAnchorWindow = memo(() => {
+  const anchor = useUISelector((s) => s.rhizohSceneAnchor);
+  if (!anchor?.open) return null;
+  const title = String(anchor.title || "Rhizoh · CODEX");
+  return (
+    <div className="pointer-events-auto fixed bottom-20 right-4 z-[52] w-[min(420px,92vw)] rounded-2xl border border-cyan-400/35 bg-[#030912]/92 shadow-[0_0_40px_rgba(34,211,238,0.12)] backdrop-blur-xl p-3">
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <div className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-200/90">Rhizoh sahne penceresi</div>
+        <button
+          type="button"
+          className="shrink-0 rounded-lg border border-white/15 px-2 py-0.5 text-[9px] text-white/60 hover:bg-white/10"
+          onClick={() => uiStore.dispatch({ type: "SET_RHIZOH_SCENE_ANCHOR", payload: null })}
+        >
+          Kapat
+        </button>
+      </div>
+      <div className="mb-2 text-[10px] text-white/85 normal-case leading-snug">{title}</div>
+      {anchor.kind === "video" && anchor.src ? (
+        <video src={anchor.src} controls playsInline className="max-h-52 w-full rounded-lg border border-white/10 bg-black" />
+      ) : null}
+      {anchor.kind === "audio" && anchor.src ? <audio src={anchor.src} controls className="w-full" /> : null}
+      {anchor.kind === "text" && anchor.text ? (
+        <div className="max-h-56 overflow-y-auto no-scrollbar rounded-lg border border-indigo-400/25 bg-indigo-950/30 p-2 text-[9px] text-indigo-100/90 normal-case leading-relaxed whitespace-pre-wrap">
+          {anchor.text}
+        </div>
+      ) : null}
+      {!anchor.src && anchor.kind !== "text" ? (
+        <div className="text-[8px] text-white/45 normal-case">Bu ankraj için kaynak URL bağlı değil; panelden ingest veya replay seçin.</div>
+      ) : null}
+    </div>
+  );
+});
+RhizohSceneAnchorWindow.displayName = "RhizohSceneAnchorWindow";
+
+const SOCIAL_MESH_PLATFORMS = [
+  { id: "telegram", apiPlatform: "telegram", name: "Telegram", icon: MessageCircle, color: "text-sky-400" },
+  { id: "x", apiPlatform: "x", name: "X (Twitter)", icon: Hash, color: "text-white" },
+  { id: "youtube", apiPlatform: "youtube", name: "YouTube Live", icon: Video, color: "text-red-400" },
+  { id: "discord", apiPlatform: "discord", name: "Discord", icon: Globe, color: "text-indigo-400" }
+];
+
+const SovereignCastleCommandPanel = memo(
+  ({
+    engineRef,
+    currentUserId,
+    rhizohFirstName,
+    selectedAgentId = "",
+    selectedConnectionId = "",
+    remoteCastles = [],
+    bridgeRegistryReady = false,
+    onInitiateMirrorBridge = null,
+    onCastleLifecycleChange = null
+  }) => {
   const focus = useUISelector((s) => s.layerFocus);
   const theme = (LAYER_UI_PROFILES[focus] || LAYER_UI_PROFILES[10]).theme;
+
+  const [castleState, setCastleState] = useState("DORMANT");
+  const [userLocation, setUserLocation] = useState(null);
+  const [activeTab, setActiveTab] = useState("GREETING");
+  const [castleType, setCastleType] = useState("SANCTUARY");
+  const [kernelNote, setKernelNote] = useState("");
+  const [garrison, setGarrison] = useState([
+    { id: "A-01", name: "Prometheus", role: "Overmind", status: "Hibernating" },
+    { id: "A-02", name: "Atlas", role: "Guardian", status: "Hibernating" },
+    { id: "P-01", name: "Ghost Pet", role: "Companion", status: "Hibernating" }
+  ]);
+  const [mediaState, setMediaState] = useState({ playing: false, track: "CODEX_Memory_Fragment_01.wav", src: "", kind: "video" });
+  const [waveHeights, setWaveHeights] = useState(() => Array.from({ length: 16 }, () => 20));
+  const [mediaPlaylist, setMediaPlaylist] = useState([]);
+  const [mediaIndex, setMediaIndex] = useState(0);
+  const [archiveStatus, setArchiveStatus] = useState("");
+  const [codexQuery, setCodexQuery] = useState("greenroom");
+  const [codexHits, setCodexHits] = useState([]);
+  const [pdfBriefText, setPdfBriefText] = useState("");
+  const mediaElRef = useRef(null);
+  const codexQueryRef = useRef(codexQuery);
+  codexQueryRef.current = codexQuery;
+
+  const [socialStatus, setSocialStatus] = useState("");
+  const [socialServerByPlatform, setSocialServerByPlatform] = useState({});
+  const [socialUnbindLocal, setSocialUnbindLocal] = useState({});
+  const [broadcastDraft, setBroadcastDraft] = useState("");
+  const [autoPostMode, setAutoPostMode] = useState("MANUAL_APPROVAL");
+  const [attachSimContext, setAttachSimContext] = useState(true);
+  const [thoughtExpandedId, setThoughtExpandedId] = useState(null);
+  const [pendingBroadcasts, setPendingBroadcasts] = useState([
+    {
+      id: "bcast-01",
+      agent: "Prometheus",
+      platform: "X (Twitter)",
+      text: "Castle Genesis L10 subsystem stabilized. The swarm is expanding across Istanbul coordinates.",
+      time: "2 dk önce",
+      agentIdx: -1,
+      lat: ISTANBUL_POI.FATIH.lat,
+      lon: ISTANBUL_POI.FATIH.lon,
+      heatPulse: buildPulseSeriesFromSeed(401, 14),
+      thoughtChain: buildThoughtChainL8V1({ threatLevel: 0.55, districtEnergy: 0.62, swarmLevel: 0.7, memoryEcho: 0.48 }),
+      trigger: "demo"
+    },
+    {
+      id: "bcast-02",
+      agent: "Broadcaster",
+      platform: "Telegram",
+      text: "Yeni bir ajan arketipi sisteme dahil oldu. Event Mesh verileri analiz ediliyor.",
+      time: "5 dk önce",
+      agentIdx: -1,
+      lat: ISTANBUL_POI.FATIH.lat,
+      lon: ISTANBUL_POI.FATIH.lon,
+      heatPulse: buildPulseSeriesFromSeed(902, 14),
+      thoughtChain: buildThoughtChainL8V1({ threatLevel: 0.33, districtEnergy: 0.58, swarmLevel: 0.44, memoryEcho: 0.61 }),
+      trigger: "demo"
+    }
+  ]);
+
+  const owner = String(currentUserId || getOrCreateCastleDevUid() || "GUEST");
+
+  useEffect(() => {
+    const onDraft = (e) => {
+      const d = e?.detail;
+      if (!d?.id) return;
+      setPendingBroadcasts((prev) => {
+        if (prev.some((x) => x.id === d.id)) return prev;
+        return [{ ...d, time: d.time || "L9" }, ...prev].slice(0, 22);
+      });
+      uiStore.dispatch({
+        type: "ADD_LOG",
+        payload: {
+          ts: new Date().toLocaleTimeString(),
+          type: "SYS",
+          data: `L9 · ${d.trigger || "event"} → sosyal kuyruk · ${String(d.text || "").slice(0, 72)}`
+        }
+      });
+      const cnt = Number(d.agentCount) || 0;
+      const big = cnt >= 8 || (d.trigger === "swarm_nexus" && cnt >= 6) || d.trigger === "academy_master";
+      if (big) {
+        const eng = engineRef?.current;
+        window.requestAnimationFrame(() => eng?.frameL9CinematicEvent?.(d));
+      }
+    };
+    window.addEventListener(CASTLE_L9_SOCIAL_EVENT, onDraft);
+    return () => window.removeEventListener(CASTLE_L9_SOCIAL_EVENT, onDraft);
+  }, []);
+
+  const focusCameraForBroadcast = (b) => {
+    const mapSurface = uiStore.getState().mapSurfaceActive;
+    const c = window.__CASTLE_CESIUM__;
+    const idx =
+      typeof b.agentIdx === "number" && b.agentIdx >= 0 ? b.agentIdx : findAgentIdxForBroadcastName(b.agent);
+    if (mapSurface && c?.flyToCustom && Number.isFinite(b.lat) && Number.isFinite(b.lon)) {
+      c.flyToCustom(b.lat, b.lon, 1180);
+      return;
+    }
+    const eng = engineRef?.current;
+    if (!eng) return;
+    if (idx >= 0) {
+      eng.focusWorldPoint(coreWorld.posX[idx], coreWorld.posY[idx], coreWorld.posZ[idx], 1580);
+      return;
+    }
+    if (Number.isFinite(b.lat) && Number.isFinite(b.lon)) {
+      const xz = latLonToSceneXZ(b.lat, b.lon);
+      eng.focusWorldPoint(xz.x, 220, xz.z, 2480);
+      return;
+    }
+    eng.focusCastleBeacon?.();
+  };
+
+  const runApprovalCinematic = (b) => {
+    const idx =
+      typeof b.agentIdx === "number" && b.agentIdx >= 0 ? b.agentIdx : findAgentIdxForBroadcastName(b.agent);
+    const eng = engineRef?.current;
+    if (!eng) return;
+    if (idx >= 0) {
+      eng.runOrbitalSweepAt(coreWorld.posX[idx], coreWorld.posY[idx], coreWorld.posZ[idx], { durationMs: 1500, radius: 880 });
+      window.setTimeout(() => eng.emitSignalHaloFlash(coreWorld.posX[idx], coreWorld.posY[idx], coreWorld.posZ[idx]), 380);
+      return;
+    }
+    if (Number.isFinite(b.lat) && Number.isFinite(b.lon)) {
+      const xz = latLonToSceneXZ(b.lat, b.lon);
+      eng.runOrbitalSweepAt(xz.x, 220, xz.z, { durationMs: 1500, radius: 900 });
+      window.setTimeout(() => eng.emitSignalHaloFlash(xz.x, 220, xz.z), 380);
+      return;
+    }
+    const p = RealMapCore.castleWorldPos;
+    eng.runOrbitalSweepAt(p.x, p.y, p.z, { durationMs: 1400, radius: 960 });
+    window.setTimeout(() => eng.emitSignalHaloFlash(p.x, p.y, p.z), 400);
+  };
+
+  const refreshSocialChannels = useCallback(async () => {
+    const apiBase = getRhizohApiBase();
+    if (!apiBase) return;
+    try {
+      const res = await fetch(`${apiBase}/social/channels`, { headers: getRhizohDevFetchHeaders() });
+      const j = await res.json().catch(() => ({}));
+      if (!j?.ok || !Array.isArray(j.items)) return;
+      const map = {};
+      for (const c of j.items) {
+        const p = String(c.platform || "").toLowerCase();
+        if (String(c.status || "").toLowerCase() === "enabled") map[p] = true;
+      }
+      setSocialServerByPlatform(map);
+    } catch {
+      /* noop */
+    }
+  }, []);
+
+  const meshRowConnected = (row) => !!socialServerByPlatform[row.apiPlatform] && !socialUnbindLocal[row.id];
+
+  const connectSocialRow = async (row) => {
+    const apiBase = getRhizohApiBase();
+    const hasServer = !!socialServerByPlatform[row.apiPlatform];
+    if (hasServer && socialUnbindLocal[row.id]) {
+      setSocialUnbindLocal((p) => {
+        const n = { ...p };
+        delete n[row.id];
+        return n;
+      });
+      setSocialStatus(`${row.name} · mevcut gateway kanalıyla yeniden bağlandı.`);
+      return;
+    }
+    if (!apiBase) {
+      setSocialStatus("Gateway yok — rhizohLlmHttp.");
+      return;
+    }
+    setSocialStatus(`${row.name} köprüleniyor…`);
+    try {
+      const res = await fetch(`${apiBase}/social/channels`, {
+        method: "POST",
+        headers: getRhizohDevFetchHeaders(),
+        body: JSON.stringify({
+          platform: row.apiPlatform,
+          connectorType: "webhook",
+          endpoint: "",
+          status: "enabled",
+          audience: "castle-mesh"
+        })
+      });
+      const j = await res.json().catch(() => ({}));
+      if (j?.ok) {
+        setSocialStatus(`${row.name} Sentinel ağına kaydedildi.`);
+        setSocialUnbindLocal((p) => {
+          const n = { ...p };
+          delete n[row.id];
+          return n;
+        });
+        await refreshSocialChannels();
+      } else {
+        setSocialStatus(`Sosyal kanal: ${j?.error || "failed"}`);
+      }
+    } catch {
+      setSocialStatus("Sosyal kanal isteği başarısız.");
+    }
+  };
+
+  const disconnectSocialRow = (row) => {
+    setSocialUnbindLocal((p) => ({ ...p, [row.id]: true }));
+    setSocialStatus(`${row.name} UI’da ayıklandı (sunucudaki etkin kanallar /social/broadcast ile yine tetiklenebilir).`);
+  };
+
+  const sendMeshBroadcast = async () => {
+    const text = broadcastDraft.trim();
+    if (!text) return;
+    const apiBase = getRhizohApiBase();
+    if (!apiBase) {
+      setSocialStatus("Gateway yok — metin yerelde kaldı.");
+      return;
+    }
+    setSocialStatus("Duyuru gönderiliyor…");
+    try {
+      const res = await fetch(`${apiBase}/social/broadcast`, {
+        method: "POST",
+        headers: getRhizohDevFetchHeaders(),
+        body: JSON.stringify({ text })
+      });
+      const j = await res.json().catch(() => ({}));
+      if (j?.ok) {
+        setSocialStatus(`Duyuru kuyruğa alındı (${j.queuedChannels ?? "?"} kanal).`);
+        setBroadcastDraft("");
+        uiStore.dispatch({
+          type: "ADD_LOG",
+          payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: `SOCIAL BROADCAST · ${text.slice(0, 120)}` }
+        });
+      } else {
+        setSocialStatus(`Broadcast: ${j?.error || "failed"}`);
+      }
+    } catch {
+      setSocialStatus("Broadcast ağ hatası.");
+    }
+  };
+
+  const approveBroadcast = async (b) => {
+    runApprovalCinematic(b);
+    let payloadText = b.text;
+    if (attachSimContext && mediaState.playing && mediaState.track) {
+      payloadText += `\n\n— Castle ambiyans: ${String(mediaState.track).slice(0, 96)}`;
+    }
+    if (attachSimContext && pdfBriefText) {
+      const clip = String(pdfBriefText).trim().slice(0, 300);
+      payloadText += `\n\n— CODEX: ${clip}${pdfBriefText.length > 300 ? "…" : ""}`;
+    }
+    const apiBase = getRhizohApiBase();
+    setSocialStatus("Onaylı yayın iletiliyor…");
+    if (apiBase) {
+      try {
+        const res = await fetch(`${apiBase}/social/broadcast`, {
+          method: "POST",
+          headers: getRhizohDevFetchHeaders(),
+          body: JSON.stringify({ text: payloadText })
+        });
+        const j = await res.json().catch(() => ({}));
+        setSocialStatus(j?.ok ? "Yayın gateway’e iletildi." : `Hata: ${j?.error || "broadcast"}`);
+      } catch {
+        setSocialStatus("Yayın ağ hatası.");
+      }
+    } else {
+      setSocialStatus("Gateway yok — kuyruk öğesi kaldırıldı (demo).");
+    }
+    setThoughtExpandedId(null);
+    setPendingBroadcasts((prev) => prev.filter((x) => x.id !== b.id));
+  };
+
+  const rejectBroadcast = (id) => {
+    setPendingBroadcasts((prev) => prev.filter((b) => b.id !== id));
+    setThoughtExpandedId((cur) => (cur === id ? null : cur));
+    setSocialStatus("Ajan yayını reddedildi.");
+  };
+
+  const applyPlaylistIndex = useCallback((idx, list) => {
+    const rows = list ?? mediaPlaylist;
+    const n = rows.length;
+    if (!n) {
+      setMediaState((s) => ({ ...s, track: "Gateway’den akış yok", src: "", kind: "video", playing: false }));
+      return;
+    }
+    const i = ((idx % n) + n) % n;
+    const row = rows[i];
+    setMediaIndex(i);
+    setMediaState((s) => ({ ...s, track: row.label, src: row.url, kind: row.kind, playing: false }));
+  }, [mediaPlaylist]);
+
+  const refreshArchive = useCallback(async () => {
+    const apiBase = getRhizohApiBase();
+    if (!apiBase) {
+      setArchiveStatus("API tabanı yok (rhizohLlmHttp).");
+      setMediaPlaylist([]);
+      return;
+    }
+    setArchiveStatus("Senkron…");
+    try {
+      const q = String(codexQueryRef.current || "greenroom").trim() || "greenroom";
+      const devH = { "X-Castle-Dev-Uid": getOrCreateCastleDevUid() };
+      const [trRes, sessRes, metaRes] = await Promise.all([
+        fetch(`${apiBase}/studio/transcripts?limit=50`, { headers: devH }),
+        fetch(`${apiBase}/studio/publish/sessions`, { headers: getRhizohDevFetchHeaders() }),
+        fetch(`${apiBase}/studio/metadata/search?q=${encodeURIComponent(q)}&limit=28`, { headers: devH })
+      ]);
+      const trJ = await trRes.json().catch(() => ({}));
+      const sJ = await sessRes.json().catch(() => ({}));
+      const mJ = await metaRes.json().catch(() => ({}));
+      const list = mergeMediaPlaylistFromGateway(sJ.items, trJ.items);
+      setMediaPlaylist(list);
+      setCodexHits(Array.isArray(mJ.items) ? mJ.items : []);
+      setArchiveStatus(`Kayıt: tr ${trJ.items?.length ?? "—"} · yayın ${sJ.items?.length ?? "—"} · arama ${mJ.items?.length ?? "—"}`);
+      if (list.length) {
+        const row = list[0];
+        setMediaIndex(0);
+        setMediaState((s) => ({ ...s, track: row.label, src: row.url, kind: row.kind, playing: false }));
+      } else {
+        setMediaState((s) => ({ ...s, track: "Oynatılabilir URL yok (ingest/replay)", src: "", playing: false }));
+      }
+    } catch {
+      setArchiveStatus("Arşiv isteği başarısız.");
+    }
+  }, []);
+
+  const runPdfBriefOnRow = useCallback(
+    async (row) => {
+      const apiBase = getRhizohApiBase();
+      if (!apiBase || !row) return;
+      setArchiveStatus("pdf-brief…");
+      try {
+        const text = String(row.text || "").slice(0, 12000);
+        const res = await fetch(`${apiBase}/event-layer/pdf-brief`, {
+          method: "POST",
+          headers: getRhizohDevFetchHeaders(),
+          body: JSON.stringify({
+            title: String(row.eventType || "codex-hit"),
+            url: "",
+            text,
+            agentId: selectedAgentId || "",
+            connectionId: selectedConnectionId || ""
+          })
+        });
+        const j = await res.json().catch(() => ({}));
+        if (j?.ok) setPdfBriefText(String(j.reply || ""));
+        setArchiveStatus(j?.ok ? "PDF / doküman özeti hazır" : `pdf-brief: ${j?.error || "failed"}`);
+      } catch {
+        setArchiveStatus("pdf-brief ağ hatası");
+      }
+    },
+    [selectedAgentId, selectedConnectionId]
+  );
+
+  useEffect(() => {
+    if (castleState !== "ACTIVE" || activeTab !== "ARCHIVE") return;
+    void refreshArchive();
+  }, [castleState, activeTab, refreshArchive]);
+
+  useEffect(() => {
+    if (castleState !== "ACTIVE" || activeTab !== "NETWORK") return;
+    void refreshSocialChannels();
+  }, [castleState, activeTab, refreshSocialChannels]);
+
+  useEffect(() => {
+    if (castleState !== "ACTIVE") return;
+    const apiBase = getRhizohApiBase();
+    if (!apiBase) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const h = getRhizohDevFetchHeaders();
+        const [dRes, tRes] = await Promise.all([
+          fetch(`${apiBase}/robotics/devices`, { headers: h }),
+          fetch(`${apiBase}/robotics/telemetry`, { headers: h })
+        ]);
+        const dJ = await dRes.json().catch(() => ({}));
+        const tJ = await tRes.json().catch(() => ({}));
+        if (cancelled || !dJ?.ok) return;
+        const telById = new Map((tJ.items || []).map((x) => [x.deviceId, x]));
+        const drones = (dJ.items || []).filter((x) => String(x.kind || "").toLowerCase() === "drone");
+        setGarrison((prev) => {
+          const core = prev.filter((a) => !String(a.id).startsWith("api-"));
+          const apiRows = drones.map((d) => {
+            const tel = telById.get(d.id);
+            return {
+              id: `api-${d.id}`,
+              name: d.name || d.id,
+              role: "DroneRelay",
+              status: tel ? `${tel.mode || "—"} · ${tel.speed ?? "?"} m/s` : String(d.status || "registered")
+            };
+          });
+          return [...core, ...apiRows];
+        });
+      } catch {
+        /* noop */
+      }
+    };
+    void tick();
+    const id = window.setInterval(() => void tick(), 9000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [castleState]);
+
+  useEffect(() => {
+    const el = mediaElRef.current;
+    if (!el || !mediaState.src) return;
+    if (mediaState.playing) {
+      void el.play().catch(() => setMediaState((s) => ({ ...s, playing: false })));
+    } else el.pause();
+  }, [mediaState.playing, mediaState.src, mediaIndex]);
+
+  useEffect(() => {
+    if (!mediaState.playing) {
+      setWaveHeights(Array.from({ length: 16 }, () => 20));
+      return;
+    }
+    const id = window.setInterval(() => {
+      setWaveHeights(Array.from({ length: 16 }, () => 20 + Math.random() * 72));
+    }, 220);
+    return () => window.clearInterval(id);
+  }, [mediaState.playing]);
+
+  const handleSpawn = () => {
+    if (!navigator.geolocation) {
+      setKernelNote("Geolocation desteklenmiyor.");
+      return;
+    }
+    setCastleState("SPAWNING");
+    setKernelNote("");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setUserLocation({ lat: latitude, lon: longitude });
+        try {
+          window.__CASTLE_NEXUS_GEO__ = { lat: latitude, lon: longitude };
+          window.__CASTLE_CLIENT_CASTLE_STATE__ = "ACTIVE";
+        } catch {
+          /* noop */
+        }
+        onCastleLifecycleChange?.("ACTIVE");
+        const spawnCmd = `SPAWN CASTLE --owner ${owner} --lat ${latitude} --lon ${longitude} --type ${castleType}`;
+        uiStore.dispatch({
+          type: "ADD_LOG",
+          payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: `KERNEL DSL · ${spawnCmd}` }
+        });
+        const parsed = parseDSL(spawnCmd);
+        const out = parsed ? await applyPersonalCastleDsl(parsed) : { ok: false, reply: "DSL ayrıştırılamadı." };
+        setKernelNote(out.reply);
+        if (!out.ok) {
+          setCastleState("DORMANT");
+          return;
+        }
+        window.setTimeout(() => {
+          setCastleState("ACTIVE");
+          setGarrison((prev) => prev.map((agent) => ({ ...agent, status: "Online & Patrol" })));
+          uiStore.dispatch({
+            type: "ADD_LOG",
+            payload: {
+              ts: new Date().toLocaleTimeString(),
+              type: "SYS",
+              data: "CASTLE ACTIVE · CODEX sürekliliği ve Event Mesh bu merkeze bağlandı (L10)."
+            }
+          });
+        }, 400);
+      },
+      (err) => {
+        setCastleState("DORMANT");
+        setKernelNote(`Konum: ${err?.message || err?.code || "hata"}`);
+      },
+      { enableHighAccuracy: true, timeout: 14_000, maximumAge: 60_000 }
+    );
+  };
+
+  const handlePurge = async () => {
+    const purgeCmd = `PURGE CASTLE --owner ${owner}`;
+    uiStore.dispatch({
+      type: "ADD_LOG",
+      payload: { ts: new Date().toLocaleTimeString(), type: "WARN", data: `KERNEL DSL · ${purgeCmd}` }
+    });
+    const parsed = parseDSL(purgeCmd);
+    if (parsed) await applyPersonalCastleDsl(parsed);
+    setCastleState("DORMANT");
+    setUserLocation(null);
+    try {
+      delete window.__CASTLE_NEXUS_GEO__;
+      window.__CASTLE_CLIENT_CASTLE_STATE__ = "DORMANT";
+    } catch {
+      /* noop */
+    }
+    onCastleLifecycleChange?.("DORMANT");
+    uiStore.dispatch({ type: "SET_RHIZOH_SCENE_ANCHOR", payload: null });
+    setGarrison((prev) =>
+      prev.filter((a) => !String(a.id).startsWith("api-")).map((a) => ({ ...a, status: "Hibernating" }))
+    );
+    setActiveTab("GREETING");
+    setMediaPlaylist([]);
+    setPdfBriefText("");
+    setSocialUnbindLocal({});
+    setBroadcastDraft("");
+    setSocialStatus("");
+    setKernelNote("PURGE tamamlandı; kale simülasyondan kaldırıldı.");
+  };
+
+  const mirrorToRhizohScene = () => {
+    if (mediaState.src) {
+      uiStore.dispatch({
+        type: "SET_RHIZOH_SCENE_ANCHOR",
+        payload: { open: true, title: mediaState.track, kind: mediaState.kind === "audio" ? "audio" : "video", src: mediaState.src }
+      });
+      return;
+    }
+    if (pdfBriefText) {
+      uiStore.dispatch({
+        type: "SET_RHIZOH_SCENE_ANCHOR",
+        payload: { open: true, title: "CODEX · pdf-brief", kind: "text", text: pdfBriefText }
+      });
+    }
+  };
+
+  const btnClass =
+    "text-[9px] px-3 py-1.5 rounded-lg border font-bold transition-all uppercase tracking-wider flex items-center gap-2 justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400";
+  const tabClass = (tab) =>
+    `shrink-0 px-2 sm:px-3 py-1.5 text-[8px] font-black uppercase tracking-widest border-b-2 transition-all ${
+      activeTab === tab ? "border-cyan-400 text-cyan-200 bg-cyan-400/10" : "border-transparent text-white/40 hover:text-white/70"
+    }`;
+
+  const welcomeName = (rhizohFirstName && String(rhizohFirstName).trim()) || "MİMAR";
+
+  return (
+    <div
+      className="rounded-2xl p-4 space-y-4 backdrop-blur-xl shadow-2xl normal-case"
+      style={{ background: theme.bg, border: `1px solid ${theme.border}` }}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+        <div className="flex items-center gap-2 text-cyan-300 font-black tracking-[0.28em] text-[10px]">
+          <Shield size={16} className={castleState === "ACTIVE" ? "text-cyan-400 animate-pulse shrink-0" : "text-white/40 shrink-0"} aria-hidden />
+          PERSONAL CASTLE
+          {castleState === "ACTIVE" ? <span className="text-emerald-400/95">[ONLINE]</span> : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {castleState === "DORMANT" || castleState === "SPAWNING" ? (
+            <select
+              value={castleType}
+              onChange={(e) => setCastleType(e.target.value)}
+              disabled={castleState === "SPAWNING"}
+              className="bg-black/35 border border-white/15 rounded-lg px-2 py-1 text-[8px] text-white uppercase outline-none"
+              aria-label="Kale tipi"
+            >
+              <option value="SANCTUARY">SANCTUARY</option>
+              <option value="ACADEMY">ACADEMY</option>
+              <option value="DEFENSE">DEFENSE</option>
+            </select>
+          ) : null}
+          {castleState === "DORMANT" ? (
+            <button type="button" onClick={handleSpawn} className={`${btnClass} border-cyan-400/50 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20`}>
+              <Power size={12} aria-hidden /> INITIALIZE CASTLE
+            </button>
+          ) : castleState === "SPAWNING" ? (
+            <span className="text-[8px] text-cyan-200/80 uppercase tracking-widest">SPAWNING…</span>
+          ) : (
+            <button type="button" onClick={() => void handlePurge()} className={`${btnClass} border-rose-400/50 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20`}>
+              <Trash2 size={12} aria-hidden /> PURGE
+            </button>
+          )}
+        </div>
+      </div>
+
+      {kernelNote && castleState !== "ACTIVE" ? (
+        <div className="text-[8px] text-amber-200/90 border border-amber-400/25 rounded-lg px-2 py-1.5 bg-amber-950/20">{kernelNote}</div>
+      ) : null}
+
+      {castleState === "SPAWNING" ? (
+        <div className="text-[9px] text-cyan-300 animate-pulse text-center py-4 tracking-widest uppercase">
+          <Cpu size={24} className="mx-auto mb-2 animate-spin-slow" aria-hidden />
+          Synchronizing Spatial Engine… Awakening Nodes…
+        </div>
+      ) : null}
+
+      {castleState === "ACTIVE" ? (
+        <>
+          <div className="flex gap-1 border-b border-white/10 overflow-x-auto no-scrollbar">
+            <button type="button" onClick={() => setActiveTab("GREETING")} className={tabClass("GREETING")}>
+              Welcome
+            </button>
+            <button type="button" onClick={() => setActiveTab("GARRISON")} className={tabClass("GARRISON")}>
+              Agents
+            </button>
+            <button type="button" onClick={() => setActiveTab("MODULES")} className={tabClass("MODULES")}>
+              Modules
+            </button>
+            <button type="button" onClick={() => setActiveTab("ARCHIVE")} className={tabClass("ARCHIVE")}>
+              Library &amp; Media
+            </button>
+            <button type="button" onClick={() => setActiveTab("NETWORK")} className={tabClass("NETWORK")}>
+              Network
+            </button>
+            <button type="button" onClick={() => setActiveTab("ALLIANCES")} className={tabClass("ALLIANCES")}>
+              Alliances
+            </button>
+          </div>
+
+          <div className="min-h-[120px] max-h-[min(320px,48vh)] overflow-y-auto no-scrollbar pt-2">
+            {activeTab === "GREETING" ? (
+              <div className="space-y-2 text-[9px] text-white/70 leading-relaxed">
+                <div className="text-cyan-200 font-black text-[10px] tracking-widest mb-2">HOŞ GELDİN, {welcomeName}.</div>
+                <p>
+                  Kaleniz {userLocation?.lat.toFixed(4)}, {userLocation?.lon.toFixed(4)} koordinatlarında stabilize edildi ({castleType}).
+                </p>
+                <p>L10 Command Layer üzerinden Event Mesh ve CityMind akışları bu merkeze bağlandı.</p>
+                <div className="p-2 mt-2 bg-black/40 border border-emerald-500/30 rounded text-emerald-200">
+                  Nexus Energy: Optimal. Savunma ve iletişim kanalları açık.
+                </div>
+              </div>
+            ) : null}
+
+            {activeTab === "GARRISON" ? (
+              <div className="space-y-2">
+                <div className="text-[8px] text-white/40 tracking-widest uppercase mb-2 flex items-center gap-1">
+                  <Users size={10} aria-hidden /> Bağlı ajanlar &amp; swarm
+                </div>
+                {garrison.map((a) => (
+                  <div key={a.id} className="flex items-center justify-between p-2 rounded border border-white/10 bg-black/20 text-[9px]">
+                    <div>
+                      <span className="text-cyan-300 font-bold">{a.name}</span>
+                      <span className="text-white/40 ml-2">[{a.role}]</span>
+                    </div>
+                    <span className="text-emerald-400 font-mono">{a.status}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {activeTab === "MODULES" ? (
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.open("/greenroom-ultimate.html", "_blank", "noopener")}
+                  className="p-3 rounded border border-fuchsia-400/30 bg-fuchsia-500/10 text-left hover:bg-fuchsia-500/20 transition-all group"
+                >
+                  <Video size={14} className="text-fuchsia-300 mb-1 group-hover:scale-110 transition-transform" aria-hidden />
+                  <div className="text-[9px] text-fuchsia-100 font-bold uppercase tracking-wide">GreenRoom Studio</div>
+                  <div className="text-[7px] text-fuchsia-200/50 mt-1">Canlı yayın ve podcast</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.open("/spiralmmo-castlebyck.html", "_blank", "noopener")}
+                  className="p-3 rounded border border-emerald-400/30 bg-emerald-500/10 text-left hover:bg-emerald-500/20 transition-all group"
+                >
+                  <MapPin size={14} className="text-emerald-300 mb-1 group-hover:scale-110 transition-transform" aria-hidden />
+                  <div className="text-[9px] text-emerald-100 font-bold uppercase tracking-wide">Spiral MMO</div>
+                  <div className="text-[7px] text-emerald-200/50 mt-1">Academics &amp; spatial görevler</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 13 });
+                    uiStore.dispatch({
+                      type: "ADD_LOG",
+                      payload: {
+                        ts: new Date().toLocaleTimeString(),
+                        type: "SYS",
+                        data: "SWARM RELAY · L13 Robotics — gateway /robotics/* telemetri ve komut köprüsü"
+                      }
+                    });
+                  }}
+                  className="p-3 rounded border border-amber-400/30 bg-amber-500/10 text-left hover:bg-amber-500/20 transition-all group col-span-2"
+                >
+                  <Radio size={14} className="text-amber-300 mb-1 group-hover:scale-110 transition-transform" aria-hidden />
+                  <div className="text-[9px] text-amber-100 font-bold uppercase tracking-wide">Swarm Relay</div>
+                  <div className="text-[7px] text-amber-200/50 mt-1">Drone telemetrisi · detay L13 Robotics panel</div>
+                </button>
+              </div>
+            ) : null}
+
+            {activeTab === "ARCHIVE" ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 p-3 border border-indigo-400/30 bg-indigo-900/20 rounded">
+                  <BookOpen size={20} className="text-indigo-300 shrink-0" aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[9px] text-indigo-200 font-bold uppercase tracking-widest">CODEX Library</div>
+                    <div className="text-[8px] text-indigo-300/60">
+                      Gateway: transcripts, publish ingest, metadata araması ve event-layer/pdf-brief.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 items-center">
+                  <input
+                    value={codexQuery}
+                    onChange={(e) => setCodexQuery(e.target.value)}
+                    placeholder="metadata arama (ör. pdf, greenroom)"
+                    className="min-w-[8rem] flex-1 bg-black/35 border border-white/15 rounded px-2 py-1 text-[8px] normal-case"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void refreshArchive()}
+                    className="text-[8px] px-2 py-1 rounded-lg border border-cyan-400/40 text-cyan-100 font-bold"
+                  >
+                    Yenile
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => mirrorToRhizohScene()}
+                    className="text-[8px] px-2 py-1 rounded-lg border border-fuchsia-400/40 text-fuchsia-100 font-bold"
+                  >
+                    Sahneye yansıt
+                  </button>
+                </div>
+                <div className="text-[8px] text-white/45">{archiveStatus}</div>
+
+                {mediaPlaylist.length > 0 ? (
+                  <div className="max-h-24 overflow-y-auto no-scrollbar space-y-1 rounded border border-white/10 bg-black/25 p-2">
+                    {mediaPlaylist.map((row, idx) => (
+                      <button
+                        key={row.id}
+                        type="button"
+                        onClick={() => applyPlaylistIndex(idx)}
+                        className={`w-full text-left rounded px-2 py-1 text-[8px] normal-case ${
+                          idx === mediaIndex ? "bg-cyan-500/20 text-cyan-100" : "text-white/70 hover:bg-white/5"
+                        }`}
+                      >
+                        <span className="text-cyan-400/80">{row.kind}</span> · {row.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-[8px] text-white/40 normal-case">Henüz HTTP(S) ingest veya replay URL’si yok; Studio publish veya transcript meta ekleyin.</div>
+                )}
+
+                <div className="p-3 rounded-xl border border-cyan-400/20 bg-black/40">
+                  <div className="text-[8px] text-cyan-400/60 tracking-[0.2em] uppercase mb-2 flex justify-between gap-2">
+                    <span>Castle Media Player</span>
+                    <span className="text-white/40 shrink-0">{mediaState.playing ? "PLAYING" : "PAUSED"}</span>
+                  </div>
+                  <div className="text-[9px] text-white font-mono mb-2 truncate">{mediaState.track}</div>
+                  {mediaState.src ? (
+                    mediaState.kind === "audio" ? (
+                      <audio key={mediaState.src} ref={mediaElRef} src={mediaState.src} controls className="mb-2 w-full" />
+                    ) : (
+                      <video
+                        key={mediaState.src}
+                        ref={mediaElRef}
+                        src={mediaState.src}
+                        controls
+                        playsInline
+                        className="mb-2 max-h-28 w-full rounded border border-white/10 bg-black"
+                      />
+                    )
+                  ) : null}
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!mediaState.src) {
+                          setArchiveStatus("Önce listeden oynatılabilir bir URL seçin.");
+                          return;
+                        }
+                        setMediaState((s) => ({ ...s, playing: !s.playing }));
+                      }}
+                      className="p-2 rounded-full bg-cyan-400 text-black hover:scale-105 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                      aria-label={mediaState.playing ? "Duraklat" : "Oynat"}
+                    >
+                      <PlayCircle size={16} className={mediaState.playing ? "animate-pulse" : ""} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!mediaPlaylist.length) return;
+                        applyPlaylistIndex(mediaIndex + 1);
+                      }}
+                      className="p-1.5 text-white/50 hover:text-white transition-colors"
+                      aria-label="Sonraki kaynak"
+                    >
+                      <FastForward size={14} aria-hidden />
+                    </button>
+                    <div className="flex-1 flex items-center gap-0.5 h-4 opacity-70">
+                      {waveHeights.map((h, i) => (
+                        <div key={i} className="w-1 bg-cyan-400 rounded-full transition-[height] duration-200" style={{ height: `${h}%` }} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[8px] text-indigo-300/80 tracking-wide uppercase">Arama sonuçları · doküman özeti</div>
+                <div className="max-h-32 overflow-y-auto no-scrollbar space-y-1">
+                  {codexHits.length === 0 ? (
+                    <div className="text-[8px] text-white/40 normal-case">Sonuç yok — sorguyu değiştirip yenileyin.</div>
+                  ) : (
+                    codexHits.slice(0, 12).map((row, i) => (
+                      <div
+                        key={row.id || `hit-${i}`}
+                        className="rounded border border-white/10 bg-black/20 p-2 text-[8px] text-white/75 normal-case"
+                      >
+                        <div className="font-mono text-cyan-200/80">
+                          {row.eventType} · {new Date(row.ts || Date.now()).toLocaleTimeString()}
+                        </div>
+                        <div className="mt-0.5 line-clamp-3">{String(row.text || "").slice(0, 220)}</div>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          <button
+                            type="button"
+                            onClick={() => void runPdfBriefOnRow(row)}
+                            className="rounded border border-amber-400/35 px-2 py-0.5 text-[7px] text-amber-100"
+                          >
+                            PDF / doküman brief
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const t = String(row.text || "").slice(0, 8000);
+                              setPdfBriefText(t);
+                              uiStore.dispatch({
+                                type: "SET_RHIZOH_SCENE_ANCHOR",
+                                payload: { open: true, title: `Ham metin · ${row.eventType}`, kind: "text", text: t }
+                              });
+                            }}
+                            className="rounded border border-indigo-400/35 px-2 py-0.5 text-[7px] text-indigo-100"
+                          >
+                            Metni sahneye aç
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                {pdfBriefText ? (
+                  <div className="rounded border border-emerald-400/25 bg-emerald-950/20 p-2 text-[8px] text-emerald-100/90 normal-case max-h-28 overflow-y-auto no-scrollbar whitespace-pre-wrap">
+                    {pdfBriefText.slice(0, 2400)}
+                    {pdfBriefText.length > 2400 ? "…" : ""}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            {activeTab === "NETWORK" ? (
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                  <div className="text-[9px] text-emerald-300 font-bold uppercase tracking-widest flex items-center gap-2">
+                    <Share2 size={14} aria-hidden /> Social Mesh Bindings
+                  </div>
+                  <div className="text-[8px] text-white/40 max-w-[14rem] text-right normal-case">{socialStatus}</div>
+                </div>
+                <p className="text-[8px] text-white/50 leading-relaxed">
+                  Dış yayın ve sinyaller için gateway <span className="text-cyan-200/80">/social/channels</span> ve{" "}
+                  <span className="text-cyan-200/80">/social/broadcast</span> uçlarına bağlanır; Event Mesh (L9) ile birlikte düşünün.
+                </p>
+
+                <div className="grid grid-cols-1 gap-2">
+                  {SOCIAL_MESH_PLATFORMS.map((platform) => {
+                    const Icon = platform.icon;
+                    const connected = meshRowConnected(platform);
+                    return (
+                      <div
+                        key={platform.id}
+                        className={`flex items-center justify-between p-2 rounded border ${
+                          connected ? "border-emerald-500/30 bg-emerald-900/20" : "border-white/10 bg-black/20"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`shrink-0 p-1.5 rounded-full ${connected ? "bg-emerald-500/20" : "bg-white/5"} ${platform.color}`}>
+                            <Icon size={14} aria-hidden />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[9px] font-bold text-white uppercase truncate">{platform.name}</div>
+                            <div className="text-[7px] text-white/40 uppercase tracking-widest">
+                              {connected ? "Data stream (UI)" : "Disconnected"}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => (connected ? disconnectSocialRow(platform) : void connectSocialRow(platform))}
+                          className={`shrink-0 text-[8px] px-3 py-1 rounded font-bold uppercase transition-colors ${
+                            connected ? "bg-rose-500/20 text-rose-300 hover:bg-rose-500/30" : "bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30"
+                          }`}
+                        >
+                          {connected ? "Unbind" : "Connect"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {SOCIAL_MESH_PLATFORMS.some((p) => meshRowConnected(p)) ? (
+                  <div className="mt-1 p-2 border border-cyan-400/20 bg-cyan-900/20 rounded flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={broadcastDraft}
+                      onChange={(e) => setBroadcastDraft(e.target.value)}
+                      placeholder="Bağlı kanallara hızlı duyuru (broadcast)…"
+                      className="flex-1 min-w-0 bg-transparent border-none outline-none text-[9px] text-cyan-100 placeholder:text-cyan-300/30"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void sendMeshBroadcast()}
+                      className="shrink-0 text-[8px] px-2 py-1 bg-cyan-500 text-black font-black rounded uppercase"
+                    >
+                      Send
+                    </button>
+                  </div>
+                ) : null}
+
+                <div className="mt-2 p-3 border border-fuchsia-500/30 bg-fuchsia-900/10 rounded-lg">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3 border-b border-fuchsia-500/20 pb-2">
+                    <div className="text-[9px] text-fuchsia-300 font-bold uppercase tracking-widest flex items-center gap-2">
+                      <MessageCircle size={12} aria-hidden /> Agent Broadcast Queue
+                    </div>
+                    <select
+                      value={autoPostMode}
+                      onChange={(e) => setAutoPostMode(e.target.value)}
+                      className="bg-black/50 border border-fuchsia-500/30 text-fuchsia-200 text-[8px] rounded px-2 py-1 outline-none uppercase max-w-[11rem]"
+                    >
+                      <option value="MANUAL_APPROVAL">Sıfır otonomi (onay şart)</option>
+                      <option value="SEMI_AUTO">Yarı otonom (öneriler)</option>
+                    </select>
+                  </div>
+                  <label className="flex items-center gap-2 mb-2 text-[8px] text-white/55 normal-case cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={attachSimContext}
+                      onChange={(e) => setAttachSimContext(e.target.checked)}
+                      className="rounded border-white/20"
+                    />
+                    Onayda Library oynatılan ambiyans + CODEX özetini gönderiye ekle
+                  </label>
+
+                  {pendingBroadcasts.length === 0 ? (
+                    <div className="text-[8px] text-white/40 text-center py-2 italic normal-case">Onay bekleyen ajan yayını yok.</div>
+                  ) : (
+                    <div className="space-y-2 max-h-[min(240px,40vh)] overflow-y-auto no-scrollbar">
+                      {pendingBroadcasts.map((broadcast) => (
+                        <div
+                          key={broadcast.id}
+                          className="p-2 bg-black/40 border border-fuchsia-500/20 rounded relative group"
+                          onMouseEnter={() => focusCameraForBroadcast(broadcast)}
+                        >
+                          <div className="flex justify-between items-start gap-2 mb-1">
+                            <span className="text-[8px] text-cyan-300 font-bold uppercase">
+                              {broadcast.agent} <span className="text-white/40">via</span> {broadcast.platform}
+                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="text-[7px] text-fuchsia-300/50 uppercase tracking-tighter hidden sm:inline">heat</span>
+                              <BroadcastPulseSparkline
+                                values={broadcast.heatPulse || buildPulseSeriesFromSeed(String(broadcast.id).length * 9, 12)}
+                              />
+                              <span className="text-[7px] text-white/40">{broadcast.time}</span>
+                            </div>
+                          </div>
+                          {broadcast.trigger ? (
+                            <div className="text-[7px] text-fuchsia-300/75 font-mono mb-0.5">L9 · {broadcast.trigger}</div>
+                          ) : null}
+                          <p className="text-[9px] text-white/80 leading-relaxed pr-16 normal-case">"{broadcast.text}"</p>
+                          <button
+                            type="button"
+                            className="mt-1 text-[7px] text-indigo-300/95 hover:text-indigo-200 normal-case"
+                            onClick={() => setThoughtExpandedId((id) => (id === broadcast.id ? null : broadcast.id))}
+                          >
+                            Thought process (L8 City Mind)
+                          </button>
+                          {thoughtExpandedId === broadcast.id && Array.isArray(broadcast.thoughtChain) ? (
+                            <ol className="mt-1.5 list-decimal pl-4 space-y-1 text-[8px] text-indigo-100/88 normal-case leading-relaxed border-t border-indigo-500/15 pt-1.5">
+                              {broadcast.thoughtChain.map((line, li) => (
+                                <li key={`${broadcast.id}-th-${li}`}>{line}</li>
+                              ))}
+                            </ol>
+                          ) : null}
+                          <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={() => void approveBroadcast(broadcast)}
+                              className="text-[8px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded hover:bg-emerald-500/40"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => rejectBroadcast(broadcast.id)}
+                              className="text-[8px] px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded hover:bg-rose-500/40"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
+
+            {activeTab === "ALLIANCES" ? (
+              <div className="space-y-3">
+                <div className="text-[9px] text-sky-300 font-bold uppercase tracking-widest flex items-center gap-2">
+                  <Handshake size={14} aria-hidden /> Diplomacy &amp; Rhizoh-Mirror Bridges
+                </div>
+                <p className="text-[8px] text-white/50 leading-relaxed normal-case">
+                  Çevrimiçi kaleler <span className="text-cyan-200/80">active_castles</span> koleksiyonundan okunur; köprü kurunca Apex sahnesinde
+                  parabolik enerji arkı ve (Master / Rhizoh varsa) ajan transit animasyonu başlar.
+                </p>
+                {!bridgeRegistryReady ? (
+                  <div className="text-[8px] text-amber-200/90 border border-amber-400/30 rounded-lg px-2 py-2 bg-amber-950/20 normal-case">
+                    Firebase yapılandırılmadı veya oturum yok — liste yerel demo modunda; yine de INITIATE BRIDGE sahne arkını üretebilir.
+                  </div>
+                ) : null}
+                {remoteCastles.length === 0 ? (
+                  <div className="text-[8px] text-white/40 text-center py-6 normal-case italic">
+                    Aktif uzak kale sinyali yok. Başka bir mimar kalenizi açıp konum heartbeat gönderdiğinde burada görünür.
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-[min(260px,42vh)] overflow-y-auto no-scrollbar">
+                    {remoteCastles.map((c) => (
+                      <div
+                        key={c.id}
+                        className="flex flex-wrap items-center justify-between gap-2 p-2 rounded border border-cyan-500/25 bg-black/30 text-[8px]"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-mono text-cyan-200/90 truncate">{c.displayName || c.id.slice(0, 10)}</div>
+                          <div className="text-white/45 normal-case mt-0.5">
+                            {Number.isFinite(c.lat) && Number.isFinite(c.lon)
+                              ? `${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}`
+                              : "—"}{" "}
+                            · nexus{" "}
+                            {typeof c.nexusEnergy === "number" ? `${(c.nexusEnergy * 100).toFixed(0)}%` : "—"}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => onInitiateMirrorBridge?.(c)}
+                          className="shrink-0 px-2 py-1 rounded-lg border border-emerald-400/45 bg-emerald-500/15 text-emerald-200 font-black uppercase text-[7px] tracking-wide hover:bg-emerald-500/25"
+                        >
+                          Initiate bridge
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+  }
+);
+
+SovereignCastleCommandPanel.displayName = "SovereignCastleCommandPanel";
+
+function buildRhizohNormalizedLlmOutput(out, gatewaySnapshot, mapSurfaceActive) {
+  const healthState = buildRhizohHealthState({
+    gatewayPhase: gatewaySnapshot?.phase,
+    healthDeps: gatewaySnapshot?.healthDeps,
+    mapSurfaceActive
+  });
+  const policy = deriveRhizohPolicy({
+    healthState,
+    rhizohRouter: out.rhizohRouter,
+    gatewayPhase: gatewaySnapshot?.phase
+  });
+  return normalizeRhizohOutput({
+    reply: out.reply,
+    router: out.rhizohRouter,
+    resonance: out.outcomeResonance,
+    emotions: out.rhizohEmotions,
+    policy,
+    gatewayPhase: gatewaySnapshot?.phase
+  });
+}
+
+const RhizohCommsPanel = memo(
+  ({
+    engineRef,
+    selectedConnectionId,
+    selectedAgentId,
+    gatewayModel = null,
+    onGatewayRetry = () => {},
+    hasHttpOrigin = false,
+    castleAuth = null,
+    continuityBuilder = null,
+    socialFieldPreview = null,
+    onPersistRhizohTurn = null,
+    socialRegistryPreview = null,
+    browserPresenceRef = null,
+    remoteAgentActivity = null
+  }) => {
+  const focus = useUISelector((s) => s.layerFocus);
+  const mapSurfaceActive = useUISelector((s) => s.mapSurfaceActive);
+  const theme = (LAYER_UI_PROFILES[focus] || LAYER_UI_PROFILES[10]).theme;
+  const prevGatewayPhaseRef = useRef("");
+  const gatewayModelRef = useRef(gatewayModel);
+  gatewayModelRef.current = gatewayModel;
+  const presencePhaseWasRef = useRef(QPP_PHASE.IDLE);
   const [input, setInput] = useState("");
-  const [lastReply, setLastReply] = useState("Rhizoh beklemede.");
+  const [lastReply, setLastReply] = useState("Henüz yanıt yok — ilk komutunuzu gönderin.");
   const [isThinking, setIsThinking] = useState(false);
   const [source, setSource] = useState("local");
   const [provider, setProvider] = useState("openai");
-  const btn = "text-[8px] px-2 py-1.5 rounded-lg border font-bold transition-colors";
+  /** Gateway: env = sunucu OPENAI_* , user_connection = kayıtlı bağlantı (giriş + connectionId), auto = önce sunucu anahtarı */
+  const [llmKeySource, setLlmKeySource] = useState("auto");
+  const [lastBillingLabel, setLastBillingLabel] = useState(null);
+  const [commsError, setCommsError] = useState(null);
+  const [sendPulseNonce, setSendPulseNonce] = useState(0);
+  const [lastRouterIntent, setLastRouterIntent] = useState("CHAT");
+  const [qppSound, setQppSound] = useState(() => {
+    try {
+      return window.localStorage.getItem("rhizoh.qpp.sound") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const [presenceFsm, dispatchPresence] = useReducer(stepPresenceFsm, undefined, initialPresenceFsmState);
+  const [sensorLiveTick, setSensorLiveTick] = useState(0);
+  const socialRegistryRef = useRef(socialRegistryPreview);
+  socialRegistryRef.current = socialRegistryPreview;
+  const presenceFsmRef = useRef(presenceFsm);
+  presenceFsmRef.current = presenceFsm;
+  const lastPhysicsBiasRef = useRef(0);
+  const btn =
+    "text-[8px] px-2 py-1.5 rounded-lg border font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400";
+
+  useEffect(() => {
+    emitRhizohPresence({ kind: "fsm", source: "rhizoh-comms", ...presenceFsm });
+  }, [presenceFsm]);
+
+  useEffect(() => {
+    if (focus !== 10 || !browserPresenceRef?.current) return undefined;
+    const id = window.setInterval(() => setSensorLiveTick((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [focus, browserPresenceRef]);
+
+  useEffect(() => {
+    return installRhizohPresenceAcoustics({ isSoundEnabled: () => qppSound });
+  }, [qppSound]);
+
+  useEffect(() => {
+    if (presenceFsm.phase !== QPP_PHASE.PULSE) return undefined;
+    const id = window.setTimeout(() => {
+      dispatchPresence({ type: QPP_EVENT.PULSE_COMPLETE, payload: { stillThinking: isThinking } });
+    }, 1150);
+    return () => window.clearTimeout(id);
+  }, [presenceFsm.phase, isThinking]);
+
+  useEffect(() => {
+    if (presenceFsm.phase !== QPP_PHASE.SETTLING) return undefined;
+    const id = window.setTimeout(() => dispatchPresence({ type: QPP_EVENT.FADE_COMPLETE }), 420);
+    return () => window.clearTimeout(id);
+  }, [presenceFsm.phase]);
+
+  useEffect(() => {
+    if (presenceFsm.phase !== QPP_PHASE.QUIET || !presenceFsm.durationMs) return undefined;
+    const id = window.setTimeout(() => dispatchPresence({ type: QPP_EVENT.TIMEOUT }), presenceFsm.durationMs);
+    return () => window.clearTimeout(id);
+  }, [presenceFsm.phase, presenceFsm.durationMs]);
+
+  useEffect(() => {
+    if (presenceFsm.phase !== QPP_PHASE.FADE) return undefined;
+    const id = window.setTimeout(() => dispatchPresence({ type: QPP_EVENT.FADE_COMPLETE }), 900);
+    return () => window.clearTimeout(id);
+  }, [presenceFsm.phase]);
+
+  useEffect(() => {
+    if (presencePhaseWasRef.current === QPP_PHASE.FADE && presenceFsm.phase === QPP_PHASE.IDLE) {
+      setLastReply((r) => (String(r).trim() === "—" ? "Rhizoh burada — sessiz eşlik sona erdi." : r));
+    }
+    presencePhaseWasRef.current = presenceFsm.phase;
+  }, [presenceFsm.phase]);
+
+  useEffect(() => {
+    if (focus !== 10) return undefined;
+    const id = window.setInterval(() => {
+      if (presenceFsmRef.current.phase !== QPP_PHASE.QUIET) return;
+      const phys = socialRegistryRef.current?.socialPhysics;
+      if (!phys || typeof phys !== "object") return;
+      const qProb = Number(phys.quietStateProbability) || 0;
+      const recon = Number(phys.reconciliationNeed) || 0;
+      const obs = Number(phys.observationMode) || 0;
+      const iEng = Number(phys.interactionEnergy);
+      const energy = Number.isFinite(iEng) ? iEng : 1;
+      const ph = String(phys.phase || "");
+      if (ph !== "reconcile" && qProb < 0.28 && recon < 0.56) return;
+      const t = Date.now();
+      if (t - lastPhysicsBiasRef.current < 2600) return;
+      lastPhysicsBiasRef.current = t;
+      const extend = Math.round(320 + qProb * 2600 * recon + obs * 480);
+      const intensity = Math.max(0.2, Math.min(0.55, 0.44 - obs * 0.15));
+      const resonance = Math.max(0.24, Math.min(0.62, 0.54 - energy * 0.15));
+      dispatchPresence({
+        type: QPP_EVENT.PHYSICS_BIAS,
+        payload: {
+          biasField: {
+            quietExtendMs: extend,
+            intensity,
+            resonance,
+            ...(obs > 0.55 ? { label: "holding space" } : {})
+          }
+        }
+      });
+    }, 3200);
+    return () => window.clearInterval(id);
+  }, [focus]);
+
+  useEffect(() => {
+    const cur = gatewayModel?.phase || "";
+    const prev = prevGatewayPhaseRef.current;
+    prevGatewayPhaseRef.current = cur;
+    if (cur !== "connected" || prev === "connected") return;
+    const items = drainRhizohMessageIntentQueue();
+    if (!items.length) return;
+    void (async () => {
+      for (const it of items) {
+        if (it.type !== "SEND_MESSAGE") continue;
+        setSendPulseNonce((n) => n + 1);
+        dispatchPresence({
+          type: QPP_EVENT.USER_MESSAGE,
+          payload: {
+            label: "listening",
+            intensity: 0.48,
+            resonance: 0.55,
+            pulsePattern: "receive_absorb_settle"
+          }
+        });
+        setIsThinking(true);
+        setCommsError(null);
+        try {
+          if (llmKeySource === "user_connection" && !castleAuth?.user) {
+            setCommsError("Kayıtlı bağlantı modu için hesapla giriş yapın.");
+            break;
+          }
+          let idToken = "";
+          try {
+            idToken = castleAuth?.user ? await castleAuth.user.getIdToken() : "";
+          } catch {
+            idToken = "";
+          }
+          const st = uiStore.getState();
+          const f = Number.isFinite(Number(it.focus)) ? Number(it.focus) : focus;
+          const profile = LAYER_UI_PROFILES[f] || LAYER_UI_PROFILES[10];
+          const spec = LAYER_SPECS.find((layerRow) => layerRow.id === f) || LAYER_SPECS[10];
+          const q = String(it.message || "");
+          const cont =
+            typeof continuityBuilder === "function"
+              ? continuityBuilder(q)
+              : {
+                  runtime: {
+                    layerFocus: f,
+                    realityMode: st.realityMode,
+                    governanceState: st.governanceState,
+                    mapSurfaceActive: st.mapSurfaceActive,
+                    message: q.slice(0, 1600),
+                    gatewayPhase: gatewayModelRef.current?.phase,
+                    rhizohGatewayPhase: gatewayModelRef.current?.phase
+                  }
+                };
+          const out = await queryRhizohLLM({
+            message: q,
+            provider: it.provider || "openai",
+            connectionId: it.connectionId || "",
+            agentId: it.agentId || "",
+            layerProfile: profile,
+            layerSpec: spec,
+            simTime: coreWorld.simTime,
+            idToken,
+            llmKeySource: it.llmKeySource || "auto",
+            gatewayUx: gatewayModelRef.current,
+            continuity: cont
+          });
+          const norm = buildRhizohNormalizedLlmOutput(out, gatewayModelRef.current, mapSurfaceActive);
+          const procQ = materializeCommsFromNormalized(norm, out.reply);
+          if (typeof onPersistRhizohTurn === "function") {
+            try {
+              onPersistRhizohTurn(String(it.message || ""), out.reply, rhizohPersistTraceFromOut(out));
+            } catch {
+              /* noop */
+            }
+          }
+          setLastReply(procQ.uiReply);
+          setLastRouterIntent(out.rhizohRouter?.intent || "CHAT");
+          setSource(out.source || "local");
+          if (norm.type === "QPP_STATE") {
+            const pr = norm.payload.presence;
+            dispatchPresence({
+              type: QPP_EVENT.QPP_ENTER,
+              payload: {
+                intensity: pr.intensity,
+                resonance: pr.resonance,
+                durationMs: pr.durationMs,
+                label: typeof pr.state === "string" ? pr.state : "listening",
+                pulsePattern: pr.pulsePattern
+              }
+            });
+          } else {
+            dispatchPresence({ type: QPP_EVENT.THINKING_END });
+          }
+          applyDirective(out.directive);
+          if (!procQ.skipSpeech) speak(procQ.uiReply);
+          else if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+          uiStore.dispatch({
+            type: "ADD_LOG",
+            payload: {
+              ts: new Date().toLocaleTimeString(),
+              type: "SYS",
+              data: `RHIZOH COMMS (kuyruk) [${out.source}] · ${String(it.message || "").slice(0, 120)}`
+            }
+          });
+        } catch (err) {
+          const msg = String(err?.message || err || "İstek başarısız");
+          setCommsError(msg.length > 160 ? `${msg.slice(0, 160)}…` : msg);
+        } finally {
+          setIsThinking(false);
+        }
+      }
+    })();
+  }, [gatewayModel?.phase, castleAuth?.user, llmKeySource, continuityBuilder, onPersistRhizohTurn]);
 
   const ensureRhizoh = () => {
     if (coreWorld.rhizohIdx !== -1) return coreWorld.rhizohIdx;
@@ -3650,49 +6699,235 @@ const RhizohCommsPanel = memo(({ engineRef, selectedConnectionId, selectedAgentI
     }
   };
 
-  const sendPrompt = async () => {
-    const q = input.trim();
+  const sendPrompt = async (overrideRaw) => {
+    const q = String(overrideRaw != null ? overrideRaw : input).trim();
     if (!q || isThinking) return;
+    setCommsError(null);
+    const profile = LAYER_UI_PROFILES[focus] || LAYER_UI_PROFILES[10];
+    const spec = LAYER_SPECS.find((layerRow) => layerRow.id === focus) || LAYER_SPECS[10];
+    if (llmKeySource === "user_connection" && !castleAuth?.user) {
+      setCommsError("Kayıtlı bağlantı modu için hesapla giriş yapın.");
+      setIsThinking(false);
+      return;
+    }
+    const gwPh = gatewayModel?.phase || "";
+    if (gwPh === "offline" || gwPh === "offline_dns") {
+      setSendPulseNonce((n) => n + 1);
+      dispatchPresence({
+        type: QPP_EVENT.USER_MESSAGE,
+        payload: {
+          label: "listening",
+          intensity: 0.45,
+          resonance: 0.5,
+          pulsePattern: "receive_absorb_settle"
+        }
+      });
+      enqueueRhizohMessageIntent({
+        type: "SEND_MESSAGE",
+        message: q,
+        provider,
+        connectionId: selectedConnectionId || "",
+        agentId: selectedAgentId || "",
+        llmKeySource,
+        focus
+      });
+      setLastReply("Bağlantı kurulur kurulmaz ileteceğim — mesaj sıraya alındı.");
+      if (overrideRaw == null) setInput("");
+      setIsThinking(false);
+      uiStore.dispatch({
+        type: "ADD_LOG",
+        payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: `RHIZOH KUYRUK · ${q.slice(0, 120)}` }
+      });
+      return;
+    }
+    setSendPulseNonce((n) => n + 1);
+    dispatchPresence({
+      type: QPP_EVENT.USER_MESSAGE,
+      payload: {
+        label: "listening",
+        intensity: 0.48,
+        resonance: 0.55,
+        pulsePattern: "receive_absorb_settle"
+      }
+    });
     setIsThinking(true);
     ensureRhizoh();
-    const profile = LAYER_UI_PROFILES[focus] || LAYER_UI_PROFILES[10];
-    const spec = LAYER_SPECS.find((s) => s.id === focus) || LAYER_SPECS[10];
-    const out = await queryRhizohLLM({
-      message: q,
-      provider,
-      connectionId: selectedConnectionId || "",
-      agentId: selectedAgentId || "",
-      layerProfile: profile,
-      layerSpec: spec,
-      simTime: coreWorld.simTime
-    });
-    const reply = out.reply;
-    setLastReply(reply);
-    setSource(out.source || "local");
-    applyDirective(out.directive);
-    speak(reply);
-    uiStore.dispatch({
-      type: "ADD_LOG",
-      payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: `RHIZOH COMMS [${out.source}] · ${q}` }
-    });
-    setInput("");
-    setIsThinking(false);
+    let idToken = "";
+    try {
+      idToken = castleAuth?.user ? await castleAuth.user.getIdToken() : "";
+    } catch {
+      idToken = "";
+    }
+    try {
+      const st = uiStore.getState();
+      const cont =
+        typeof continuityBuilder === "function"
+          ? continuityBuilder(q)
+          : {
+              runtime: {
+                layerFocus: focus,
+                realityMode: st.realityMode,
+                governanceState: st.governanceState,
+                mapSurfaceActive: st.mapSurfaceActive,
+                message: q.slice(0, 1600),
+                gatewayPhase: gatewayModel?.phase,
+                rhizohGatewayPhase: gatewayModel?.phase
+              }
+            };
+      const out = await queryRhizohLLM({
+        message: q,
+        provider,
+        connectionId: selectedConnectionId || "",
+        agentId: selectedAgentId || "",
+        layerProfile: profile,
+        layerSpec: spec,
+        simTime: coreWorld.simTime,
+        idToken,
+        llmKeySource,
+        gatewayUx: gatewayModel,
+        continuity: cont
+      });
+      const norm = buildRhizohNormalizedLlmOutput(out, gatewayModel, mapSurfaceActive);
+      const procQ = materializeCommsFromNormalized(norm, out.reply);
+      if (typeof onPersistRhizohTurn === "function") {
+        try {
+          onPersistRhizohTurn(q, out.reply, rhizohPersistTraceFromOut(out));
+        } catch {
+          /* noop */
+        }
+      }
+      setLastReply(procQ.uiReply);
+      setLastRouterIntent(out.rhizohRouter?.intent || "CHAT");
+      if (norm.type === "QPP_STATE") {
+        const pr = norm.payload.presence;
+        dispatchPresence({
+          type: QPP_EVENT.QPP_ENTER,
+          payload: {
+            intensity: pr.intensity,
+            resonance: pr.resonance,
+            durationMs: pr.durationMs,
+            label: typeof pr.state === "string" ? pr.state : "listening",
+            pulsePattern: pr.pulsePattern
+          }
+        });
+      } else {
+        dispatchPresence({ type: QPP_EVENT.THINKING_END });
+      }
+      setSource(out.source || "local");
+      const origin = out.llmKeyOrigin || "";
+      const bill = out.llmKeyBillingOwner || "";
+      if (origin === "env" || bill === "server")
+        setLastBillingLabel("Son kullanım: sunucu anahtarı (ENV)");
+      else if (origin === "user_connection" || bill === "user")
+        setLastBillingLabel("Son kullanım: hesabınızdaki LLM bağlantısı");
+      else if (origin || bill) setLastBillingLabel(`Son kullanım: ${origin || bill}`);
+      else setLastBillingLabel(null);
+      applyDirective(out.directive);
+      if (!procQ.skipSpeech) speak(procQ.uiReply);
+      else if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      uiStore.dispatch({
+        type: "ADD_LOG",
+        payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: `RHIZOH COMMS [${out.source}] · ${q}` }
+      });
+      if (overrideRaw == null) setInput("");
+    } catch (err) {
+      const msg = String(err?.message || err || "İstek başarısız");
+      setCommsError(msg.length > 160 ? `${msg.slice(0, 160)}…` : msg);
+      setLastReply("Bu komut gönderilemedi. Bağlantınızı kontrol edip yeniden deneyin.");
+    } finally {
+      setIsThinking(false);
+    }
   };
 
+  const sendDisabled = !input.trim() || isThinking;
+  const sendReason = isThinking ? "Rhizoh yanıt üretiyor…" : !input.trim() ? "Göndermek için metin yazın" : "";
+  const inQuietPresence =
+    presenceFsm.phase === QPP_PHASE.QUIET || presenceFsm.phase === QPP_PHASE.FADE;
+  const cognitiveTraceLabel =
+    presenceFsm.phase !== QPP_PHASE.IDLE
+      ? presenceFsm.label
+      : deriveCognitiveTraceLabel(lastRouterIntent, gatewayModel?.phase);
+  void sensorLiveTick;
+  const basePresenceTel =
+    socialRegistryPreview?.presenceTelemetry && typeof socialRegistryPreview.presenceTelemetry === "object"
+      ? socialRegistryPreview.presenceTelemetry
+      : {};
+  let mergedPresenceTelemetry = basePresenceTel;
+  if (focus === 10 && browserPresenceRef?.current) {
+    const snap = snapshotBrowserPresenceForCsil(browserPresenceRef.current);
+    mergedPresenceTelemetry = { ...basePresenceTel };
+    if (basePresenceTel.qppMode !== "cautious") {
+      if (snap.cursorActivity || snap.micActive) {
+        mergedPresenceTelemetry.qppMode = "soft_pulse";
+        if (
+          presenceFsm.phase === QPP_PHASE.IDLE &&
+          (!basePresenceTel.qppLabel || basePresenceTel.qppLabel === "present")
+        ) {
+          mergedPresenceTelemetry.qppLabel = "noticing presence";
+        }
+      }
+      if (remoteAgentActivity?.active) {
+        mergedPresenceTelemetry.qppMode = "soft_pulse";
+        if (presenceFsm.phase === QPP_PHASE.IDLE) {
+          mergedPresenceTelemetry.qppLabel = mergedPresenceTelemetry.qppLabel || "observing";
+        }
+      }
+    }
+  }
+  const fieldLabel =
+    presenceFsm.phase !== QPP_PHASE.IDLE
+      ? cognitiveTraceLabel
+      : focus === 10 && mergedPresenceTelemetry?.qppLabel
+        ? String(mergedPresenceTelemetry.qppLabel)
+        : cognitiveTraceLabel;
+  const inputPlaceholder =
+    inQuietPresence
+      ? "Rhizoh dinliyor…"
+      : isThinking
+        ? "Düşünceni sürdür."
+        : "Katman, kamera veya görev yazın; gateway açıksa sunucu LLM, yoksa yerel yanıt.";
+
   return (
-    <div className="rounded-2xl p-4 space-y-3" style={{ background: theme.bg, border: `1px solid ${theme.border}` }}>
+    <div
+      className="rounded-2xl p-4 space-y-3 normal-case"
+      style={{ background: theme.bg, border: `1px solid ${theme.border}` }}
+    >
       <div className="text-[9px] tracking-[0.35em] font-black text-cyan-300 flex items-center gap-2">
-        <Mic size={12} /> RHIZOH COMMS
+        <Mic size={12} aria-hidden /> RHIZOH COMMS
       </div>
-      <div className="text-[8px] text-white/40">LLM source: {source}{isThinking ? " · düşünüyor..." : ""}</div>
-      <div className="flex items-center gap-2">
+      {gatewayModel ? (
+        <div className="rounded-xl border border-white/10 bg-black/25 px-2 py-2 text-[9px] text-white/75 space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold text-cyan-100/95">Ağ geçidi:</span> {gatewayModel.headline}
+            {rhizohGatewayPhaseShowsRetry(gatewayModel.phase) && hasHttpOrigin ? (
+              <button
+                type="button"
+                onClick={onGatewayRetry}
+                className="rounded border border-cyan-400/40 px-2 py-0.5 text-[8px] text-cyan-100 hover:bg-cyan-500/10"
+              >
+                Yeniden dene
+              </button>
+            ) : null}
+          </div>
+          <p className="text-[8px] text-white/55 leading-relaxed">{gatewayModel.hint}</p>
+          <span className="sr-only" aria-live="polite">
+            {gatewayModel.liveMessage}
+          </span>
+        </div>
+      ) : null}
+      <div className="text-[8px] text-white/45">
+        Yanıt kaynağı: <span className="text-white/75">{source}</span>
+        {isThinking ? " · üretiliyor…" : ""}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
         <span className="text-[8px] text-white/50">Provider</span>
         <select
           value={provider}
           onChange={(e) => setProvider(e.target.value)}
-          className="bg-black/35 border border-white/15 rounded-lg px-2 py-1 text-[9px] text-white normal-case tracking-normal outline-none"
+          aria-label="LLM sağlayıcı seçimi"
+          className="bg-black/35 border border-white/15 rounded-lg px-2 py-1 text-[9px] text-white normal-case tracking-normal outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
         >
-          <option value="openai">OpenAI</option>
+          <option value="openai">OpenAI (gateway / sunucu anahtarı)</option>
           <option value="anthropic">Anthropic</option>
           <option value="gemini">Google Gemini</option>
           <option value="xai">xAI</option>
@@ -3701,18 +6936,127 @@ const RhizohCommsPanel = memo(({ engineRef, selectedConnectionId, selectedAgentI
           <option value="openrouter">OpenRouter</option>
         </select>
       </div>
-      <div className="text-[8px] text-white/70 leading-relaxed">{lastReply}</div>
-      <div className="flex gap-2">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendPrompt()}
-          className="flex-1 bg-black/35 border border-white/15 rounded-lg px-2 py-1 text-[9px] text-white normal-case tracking-normal outline-none"
-          placeholder="Rhizoh'a yaz: katman, kamera, görev..."
-        />
-        <button type="button" className={`${btn} border-cyan-400/35 text-cyan-100`} onClick={sendPrompt} disabled={isThinking}>
-          {isThinking ? "..." : "Gönder"}
-        </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[8px] text-white/50">Anahtar</span>
+        <select
+          value={llmKeySource}
+          onChange={(e) => setLlmKeySource(e.target.value)}
+          aria-label="LLM anahtar kaynağı"
+          className="bg-black/35 border border-white/15 rounded-lg px-2 py-1 text-[9px] text-white normal-case tracking-normal outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+        >
+          <option value="auto">Otomatik (önce sunucu ENV, yoksa bağlantım)</option>
+          <option value="env">Yalnız sunucu (ENV)</option>
+          <option value="user_connection">Yalnız kayıtlı bağlantım (giriş gerekir)</option>
+        </select>
+      </div>
+      {lastBillingLabel ? (
+        <p className="text-[8px] text-emerald-200/85 leading-relaxed">{lastBillingLabel}</p>
+      ) : null}
+      <p className="text-[8px] text-white/50 leading-relaxed">
+        Bağlantı kimliği sunucuda yalnızca sizin hesabınızın alt koleksiyonundan çözülür; anahtar tarayıcıya gönderilmez. Net faturalama için «Yalnız sunucu» veya «Yalnız bağlantım» seçin.
+      </p>
+      {commsError ? (
+        <div role="alert" className="rounded-lg border border-amber-400/40 bg-amber-950/30 px-2 py-1.5 text-[8px] text-amber-100/95">
+          {commsError}
+        </div>
+      ) : null}
+      {focus === 10 && socialFieldPreview ? (
+        <RhizohGroupPresenceField socialField={socialFieldPreview} pulseNonce={sendPulseNonce} />
+      ) : null}
+      <RhizohPresenceField
+        phase={presenceFsm.phase}
+        intensity={presenceFsm.intensity}
+        resonance={presenceFsm.resonance}
+        label={fieldLabel}
+        pulseNonce={sendPulseNonce}
+        presenceTelemetry={focus === 10 ? mergedPresenceTelemetry : null}
+        csilVisualActive={focus === 10 && !!mergedPresenceTelemetry && !!mergedPresenceTelemetry.qppLabel}
+        resonanceActive={
+          isThinking ||
+          presenceFsm.phase === QPP_PHASE.QUIET ||
+          presenceFsm.phase === QPP_PHASE.FADE ||
+          presenceFsm.phase === QPP_PHASE.ABSORBING ||
+          presenceFsm.phase === QPP_PHASE.PULSE ||
+          presenceFsm.phase === QPP_PHASE.SETTLING
+        }
+        soundEnabled={qppSound}
+        onSoundEnabledChange={(on) => {
+          setQppSound(on);
+          try {
+            window.localStorage.setItem("rhizoh.qpp.sound", on ? "1" : "0");
+          } catch {
+            /* noop */
+          }
+        }}
+      />
+      <div className="text-[8px] text-white/75 leading-relaxed min-h-[2.5rem] border border-white/5 rounded-lg px-2 py-1.5 bg-black/20">
+        {inQuietPresence ? (
+          <span className="text-cyan-100/70 italic">
+            Quiet presence — Rhizoh holds space{lastReply && lastReply !== "—" ? `: ${lastReply}` : ""}.
+          </span>
+        ) : (
+          lastReply
+        )}
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="rhizoh-comms-input" className="text-[8px] font-semibold text-cyan-200/80">
+          Mesaj
+        </label>
+        <div className="flex gap-2">
+          <input
+            id="rhizoh-comms-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !sendDisabled) sendPrompt();
+            }}
+            className="flex-1 bg-black/35 border border-white/15 rounded-lg px-2 py-1.5 text-[9px] text-white normal-case tracking-normal outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+            placeholder={inputPlaceholder}
+            aria-describedby="rhizoh-comms-send-hint"
+          />
+          <button
+            type="button"
+            className={`${btn} border-cyan-400/35 text-cyan-100 disabled:opacity-40 disabled:cursor-not-allowed`}
+            onClick={sendPrompt}
+            disabled={sendDisabled}
+            aria-label="Rhizoh mesajını gönder"
+            title={sendReason || "Gönder"}
+          >
+            {isThinking ? "…" : "Gönder"}
+          </button>
+        </div>
+        <p id="rhizoh-comms-send-hint" className="text-[8px] text-white/45">
+          {sendReason || "Enter ile de gönderebilirsiniz."}
+        </p>
+        <div className="flex flex-wrap gap-1.5 items-center">
+          <span className="text-[8px] text-violet-200/70">TCEE:</span>
+          <button
+            type="button"
+            className={`${btn} border-violet-400/40 text-violet-100/95`}
+            onClick={() => setInput("WAKE --reason manual")}
+          >
+            WAKE → kutuya
+          </button>
+          <button
+            type="button"
+            className={`${btn} border-fuchsia-400/35 text-fuchsia-100/90 disabled:opacity-40`}
+            disabled={isThinking}
+            onClick={() => void sendPrompt("WAKE --reason manual")}
+          >
+            WAKE · gönder
+          </button>
+          <button
+            type="button"
+            className={`${btn} border-white/15 text-white/70 disabled:opacity-40`}
+            disabled={isThinking}
+            onClick={() => void sendPrompt("wake")}
+          >
+            wake
+          </button>
+          <span className="text-[7px] text-white/40 normal-case">
+            DSL gateway beklemeden; Inspect WAKE=awake.
+          </span>
+        </div>
       </div>
       <div className="flex flex-wrap gap-2">
         <button type="button" className={`${btn} border-white/20 text-white/75`} onClick={focusRhizoh}>
@@ -3726,22 +7070,1410 @@ const RhizohCommsPanel = memo(({ engineRef, selectedConnectionId, selectedAgentI
   );
 });
 
+RhizohCommsPanel.displayName = "RhizohCommsPanel";
+
+const AutonomousCompanyDebugPanel = memo(({ runtimeRef }) => {
+  const focus = useUISelector((s) => s.layerFocus);
+  const theme = (LAYER_UI_PROFILES[focus] || LAYER_UI_PROFILES[12]).theme;
+  const [snap, setSnap] = useState(null);
+  const [events, setEvents] = useState([]);
+  const [traceReplay, setTraceReplay] = useState(null);
+
+  useEffect(() => {
+    const intv = setInterval(() => {
+      const rt = runtimeRef.current;
+      if (!rt) return;
+      setSnap(rt.substrate.getSnapshot());
+      const ev = rt.substrate.getEventLog({ limit: 8 });
+      setEvents(ev);
+      const traceId = rt.substrate.getSnapshot().recentTasks?.[0]?.traceId;
+      if (traceId) setTraceReplay(rt.substrate.replayTraceV0(traceId));
+      else setTraceReplay(null);
+    }, 1000);
+    return () => clearInterval(intv);
+  }, [runtimeRef]);
+
+  return (
+    <div className="rounded-2xl p-4 space-y-2" style={{ background: theme.bg, border: `1px solid ${theme.border}` }}>
+      <div className="text-[9px] tracking-[0.35em] font-black text-cyan-300">AUTONOMY SUBSTRATE V0</div>
+      <div className="text-[8px] text-white/70 normal-case">
+        contracts:{snap?.contractCount ?? 0} · approvals:{snap?.approvalPending ?? 0} · tasks(done/failed):
+        {snap?.taskCounts?.completed ?? 0}/{snap?.taskCounts?.failed ?? 0}
+      </div>
+      <div className="text-[8px] text-white/60 normal-case">
+        kill: {snap?.killState?.active ? `${snap.killState.level} · ${snap.killState.reason}` : "inactive"} ·
+        events:{snap?.eventCount ?? 0} · latest:{snap?.latestEventType ?? "none"}
+      </div>
+      <div className="text-[8px] text-white/55 normal-case">
+        snapshotHash: {snap?.snapshotHash ?? "n/a"}
+      </div>
+      <div className="text-[8px] text-white/60 normal-case max-h-14 overflow-y-auto no-scrollbar">
+        {(events ?? []).map((e) => (
+          <div key={e.eventId}>[{e.frameId}] {e.type} · {e.traceId ?? "-"}</div>
+        ))}
+      </div>
+      <div className="text-[8px] text-white/45 normal-case">
+        replay(trace): {traceReplay?.traceId ?? "none"} · events:{traceReplay?.eventCount ?? 0} ·
+        hash:{traceReplay?.deterministicSnapshotHash ?? "n/a"}
+      </div>
+      <div className="text-[8px] text-white/60 normal-case max-h-12 overflow-y-auto no-scrollbar">
+        {(snap?.recentTasks ?? []).map((t) => (
+          <div key={t.taskId}>{t.agentId.replace("RHIZOH_", "").replace("_AGENT", "")}: {t.status} · {t.traceId}</div>
+        ))}
+      </div>
+    </div>
+  );
+});
+
 export default function AppRhizoh528() {
   const castleAuth = useCastleAuth();
+  const { remoteCastles, recordBridgePeer, registryReady: bridgeRegistryReady } = useCastleActiveCastles(castleAuth.user?.uid);
+  const localBridgePeersRef = useRef(new Set());
+  const [bridgeVisualTick, setBridgeVisualTick] = useState(0);
+  const companyRuntimeRef = useRef(null);
+  if (!companyRuntimeRef.current) companyRuntimeRef.current = createRhizohAutonomousCompanyRuntimeV0();
+  useEffect(() => {
+    const rt = companyRuntimeRef.current;
+    if (!rt) return;
+    const traceId = `boot_trace_${Date.now()}`;
+    const submitted = rt.substrate.submitTaskProposal({
+      agentId: "RHIZOH_RESEARCH_AGENT",
+      kind: "boot_market_watch",
+      payload: { source: "runtime_boot_seed" },
+      requiresApproval: true,
+      traceId
+    });
+    if (submitted?.ok) {
+      rt.founderConsole.approve(submitted.taskId, "boot_seed_approved");
+      rt.substrate.executeNextReadyTask();
+    }
+  }, []);
   useEffect(() => {
     void warmSwarmGpu();
   }, []);
   const [booted, setBooted] = useState(false);
   const [cmd, setCmd] = useState("");
-  const [selectedConnectionId, setSelectedConnectionId] = useState("");
-  const [selectedAgentId, setSelectedAgentId] = useState("");
+  const [rhizohFieldState, setRhizohFieldState] = useState("IDLE");
+  const [realityState, setRealityState] = useState("WORLD_STABLE");
+  const [governanceState, setGovernanceState] = useState("NORMAL");
+  const [lastWhy, setLastWhy] = useState([]);
+  const [eventPreview, setEventPreview] = useState(null);
+  const [showWhy, setShowWhy] = useState(false);
+  const [lastIntentRaw, setLastIntentRaw] = useState("");
+  const [demoLoopState, setDemoLoopState] = useState("IDLE");
+  const [showClosureMoment, setShowClosureMoment] = useState(false);
+  const [replayMoments, setReplayMoments] = useState([]);
+  const [onboardingDone, setOnboardingDone] = useState(false);
+  const [substrateSnapshot, setSubstrateSnapshot] = useState(null);
+  const [substrateEvents, setSubstrateEvents] = useState([]);
+  const [voiceReady, setVoiceReady] = useState(false);
+  const [micListening, setMicListening] = useState(false);
+  const gatewayUx = useRhizohGatewayMonitor();
+  const gatewaySnapshotRef = useRef({ phase: "initializing" });
+  gatewaySnapshotRef.current = { phase: gatewayUx.phase, healthDeps: gatewayUx.healthDeps };
+  const hasRhizohHttpOrigin = Boolean(String(getCastleFlightConfig().rhizohLlmHttp || "").trim());
+  const [rhizohInlineError, setRhizohInlineError] = useState(null);
+  const [hasSentRhizohCommand, setHasSentRhizohCommand] = useState(false);
+  const [hasReceivedRhizohReply, setHasReceivedRhizohReply] = useState(false);
+  const [showTrustBlurb, setShowTrustBlurb] = useState(true);
+  const [commandLog, setCommandLog] = useState([]);
+  const [showCommandLog, setShowCommandLog] = useState(false);
+  const [cinematicElapsedMs, setCinematicElapsedMs] = useState(0);
+  const [returningUser, setReturningUser] = useState(false);
+  const [showReplayGhostTrails, setShowReplayGhostTrails] = useState(false);
+  const [ambientReady, setAmbientReady] = useState(false);
+  const [showHud, setShowHud] = useState(false);
+  const [showDetailDrawer, setShowDetailDrawer] = useState(false);
+  const [liveAgents, setLiveAgents] = useState([]);
+  const [greenRoomLive, setGreenRoomLive] = useState(null);
+  const [greenRoomLiveTick, setGreenRoomLiveTick] = useState(0);
+  const [sparklineVersion, setSparklineVersion] = useState(0);
+  const [continuitySocialTick, setContinuitySocialTick] = useState(0);
+  const [liveReactionToast, setLiveReactionToast] = useState(null);
+  const [immersiveLiveTrace, setImmersiveLiveTrace] = useState(null);
+  const [replayTimelinePct, setReplayTimelinePct] = useState(0);
+  const [sealBurstNonce, setSealBurstNonce] = useState(0);
+  const greenRoomSparklineRef = useRef([]);
+  const liveAgentsRef = useRef([]);
+  const lastIntentRawRef = useRef("");
+  const unfinishedJourneysRef = useRef(0);
+  const flowTimersRef = useRef([]);
+  const introStartedAtRef = useRef(Date.now());
+  const voicedPhasesRef = useRef(new Set());
+  const launchSwarmIgniteDoneRef = useRef(false);
+  const ambientCtxRef = useRef(null);
+  const ambientNodesRef = useRef([]);
+  const continuityRef = useRef(readClientContinuity());
+  const rhizohSocialPreReplyRef = useRef(null);
+  const rhizohRegistryPreReplyRef = useRef(null);
+  /** Last arbitration governor ring buffer (synced with continuity meta + optimistic turns). */
+  const arbitrationGovernorWorkingRef = useRef(null);
+  /** Temporal intent drift biography (closure + arbitration texture over turns). */
+  const temporalIntentDriftWorkingRef = useRef(null);
+  const browserPresenceRef = useRef(createBrowserPresenceSignalRef());
+
+  useEffect(() => {
+    return attachBrowserPresenceSensors(browserPresenceRef.current);
+  }, []);
+
+  useEffect(() => {
+    const disk = readClientContinuity();
+    const g = disk.meta?.rhizohArbitrationGovernorV1;
+    if (g && typeof g === "object") {
+      arbitrationGovernorWorkingRef.current = normalizeArbitrationGovernorBuffer(g);
+    }
+    const td = disk.meta?.rhizohTemporalIntentDriftMemoryV1;
+    if (td && typeof td === "object") {
+      temporalIntentDriftWorkingRef.current = normalizeTemporalIntentDriftMemory(td);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (browserPresenceRef.current) browserPresenceRef.current.micActive = !!micListening;
+  }, [micListening]);
+
+  useEffect(() => {
+    registerClientContinuitySync((next) => {
+      continuityRef.current = next;
+      const g = next.meta?.rhizohArbitrationGovernorV1;
+      if (g && typeof g === "object") {
+        arbitrationGovernorWorkingRef.current = normalizeArbitrationGovernorBuffer(g);
+      }
+      const td = next.meta?.rhizohTemporalIntentDriftMemoryV1;
+      if (td && typeof td === "object") {
+        temporalIntentDriftWorkingRef.current = normalizeTemporalIntentDriftMemory(td);
+      }
+      setContinuitySocialTick((t) => t + 1);
+    });
+    return () => registerClientContinuitySync(null);
+  }, []);
+
+  useEffect(() => {
+    const disk = readClientContinuity();
+    const meta = disk.meta && typeof disk.meta === "object" ? disk.meta : {};
+    if (meta.tceeBoot && meta.tceeBoot.phase) return;
+    const seeded = ensurePreBreathSeed(meta);
+    const next = { ...disk, meta: seeded };
+    writeClientContinuity(next);
+    continuityRef.current = {
+      turns: Array.isArray(disk.turns) ? disk.turns : [],
+      persona: disk.persona && typeof disk.persona === "object" ? disk.persona : {},
+      meta: { ...(continuityRef.current.meta || {}), ...seeded }
+    };
+    setContinuitySocialTick((t) => t + 1);
+  }, []);
+
   const containerRef = useRef(null);
   const engineRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const l9SpiralTickRef = useRef(0);
+  const l9BackgroundTickRef = useRef(0);
+  const l9PrevAgentRef = useRef({ state: new Map(), pet: new Map() });
+
+  useLayoutEffect(() => {
+    configureRealityDirector({
+      getEngine: () => engineRef.current,
+      getCoreWorld: () => coreWorld,
+      dispatch: (a) => uiStore.dispatch(a),
+      getState: () => uiStore.getState(),
+      getGatewaySnapshot: () => gatewaySnapshotRef.current
+    });
+    configureL9ExecutionGate({
+      getEngine: () => engineRef.current,
+      getState: () => uiStore.getState(),
+      getGatewaySnapshot: () => gatewaySnapshotRef.current
+    });
+  }, []);
+  useEffect(() => {
+    reconcileMapSurfaceFromGateway();
+  }, [gatewayUx.phase]);
   const entityCount = useUISelector((s) => s.activeEntityCount);
   const realityMode = useUISelector((s) => s.realityMode);
-  const layerFocus = useUISelector((s) => s.layerFocus);
-  const currentLayerProfile = LAYER_UI_PROFILES[layerFocus] || LAYER_UI_PROFILES[10];
-  const activeWidgets = currentLayerProfile.widgets || [];
+  const mapSurfaceActive = useUISelector((s) => s.mapSurfaceActive);
+  const prevMapSurfaceRef = useRef(mapSurfaceActive);
+  useEffect(() => {
+    const prev = prevMapSurfaceRef.current;
+    prevMapSurfaceRef.current = mapSurfaceActive;
+    if (mapSurfaceActive && !prev) {
+      const n = flushL9ExecutionHoldQueue();
+      if (n > 0) {
+        uiStore.dispatch({
+          type: "ADD_LOG",
+          payload: {
+            ts: new Date().toLocaleTimeString(),
+            type: "SYS",
+            data: `L9 EXECUTION GATE · ${n} ertelenmiş taslak yüzey aktif olunca yayınlandı`
+          }
+        });
+      }
+    }
+  }, [mapSurfaceActive]);
+  useEffect(() => {
+    const disk = readClientContinuity();
+    const ref = continuityRef.current || { turns: [], persona: {}, meta: {} };
+    const mergedTurns = Array.isArray(ref.turns) && ref.turns.length ? ref.turns : disk.turns;
+    const mergedPersona = ref.persona && Object.keys(ref.persona).length ? ref.persona : disk.persona;
+    const meta = { ...(disk.meta || {}), ...(ref.meta || {}) };
+    const stepped = stepReliabilityEpisodesMeta(
+      meta,
+      gatewayUx.phase || "",
+      Date.now(),
+      Number(gatewayUx.healthPollSerial) || 0
+    );
+    const healthStateDisk = buildRhizohHealthState({
+      gatewayPhase: gatewayUx?.phase,
+      healthDeps: gatewayUx?.healthDeps,
+      mapSurfaceActive
+    });
+    const rhizohHealthInfluence = computeRhizohHealthInfluence(healthStateDisk);
+    const nextMeta = {
+      ...meta,
+      ...stepped,
+      rhizohHealthInfluence,
+      updatedAt: Date.now()
+    };
+    const sameEp =
+      JSON.stringify(nextMeta.rhizohReliabilityEpisodes) === JSON.stringify(meta.rhizohReliabilityEpisodes || []);
+    const sameFsm =
+      JSON.stringify(nextMeta.rhizohReliabilityFsm) === JSON.stringify(meta.rhizohReliabilityFsm || {});
+    const sameHi = JSON.stringify(nextMeta.rhizohHealthInfluence) === JSON.stringify(meta.rhizohHealthInfluence || {});
+    if (sameEp && sameFsm && sameHi) return;
+    continuityRef.current = { turns: mergedTurns, persona: mergedPersona, meta: nextMeta };
+    writeClientContinuity({ turns: mergedTurns, persona: mergedPersona, meta: nextMeta });
+  }, [gatewayUx.phase, gatewayUx.healthPollSerial, gatewayUx.healthDeps, mapSurfaceActive]);
+  const swarmActiveUi = useUISelector((s) => s.swarmActive);
+  const defaultIntents = [
+    "yarin canli mac yayinla",
+    "studio'da muzik performansi baslat",
+    "spiralMMO'da gece etkinligi olustur",
+    "octoai ile yeni npc uret",
+    "swarm koordinasyonunu aktive et",
+    "istanbul arena'da simulasyon baslat"
+  ];
+  const heroAgentLabels = [
+    "Scout",
+    "Curator",
+    "Builder",
+    "Archivist",
+    "Sentinel",
+    "Broadcaster",
+    "Navigator",
+    "Rhizoh Core"
+  ];
+  const rhizohFirstName = useMemo(
+    () => resolveRhizohFirstName(castleAuth.user, castleAuth.profile),
+    [castleAuth.user, castleAuth.profile]
+  );
+  const memoryLinks = Math.max(0, (substrateSnapshot?.eventCount ?? 0) * 3 + (substrateEvents?.length ?? 0));
+  const unfinishedJourneys = substrateSnapshot?.approvalPending ?? 0;
+  const dormantAgents = Math.max(0, 12 - (substrateSnapshot?.taskCounts?.running ?? 0));
+  const memoryNarrative = memoryLinks >= 9
+    ? "Dormant paths woke up."
+    : memoryLinks >= 3
+      ? "9 memory links formed."
+      : "World remembered 3 signals.";
+  const cinematicRoute = useMemo(
+    () =>
+      resolveAdaptiveIntroRouteV1({
+        returningUser,
+        governanceState
+      }),
+    [returningUser, governanceState]
+  );
+  const launchSceneOverlay = useMemo(
+    () => computeLaunchSceneDirectorOverlayV1(cinematicElapsedMs, cinematicRoute),
+    [cinematicElapsedMs, cinematicRoute]
+  );
+  const welcomeCard = useMemo(() => {
+    if (returningUser) {
+      return buildRhizohWelcomeNarrativeTr(rhizohFirstName, readIdentityGraph(), {
+        unfinishedJourneys,
+        memoryLinks
+      });
+    }
+    return {
+      primary: buildRhizohExploreGreeting(rhizohFirstName),
+      secondary: `${memoryNarrative} · ${entityCount} pulses in the field.`
+    };
+  }, [returningUser, rhizohFirstName, unfinishedJourneys, memoryLinks, memoryNarrative, entityCount]);
+  const rhizohCommandBusy = ["INTERPRETING", "GENERATING", "EXECUTING"].includes(rhizohFieldState);
+  const gatewayLinkSettled =
+    gatewayUx.phase !== "connecting" && gatewayUx.phase !== "reconnecting" && gatewayUx.phase !== "initializing";
+  const memoryLinksRef = useRef(memoryLinks);
+  const governanceRef = useRef(governanceState);
+  const governanceEnteredAtRef = useRef(Date.now());
+  const prevGovernanceRef = useRef(governanceState);
+  const broadcastEmphasisRef = useRef({
+    active: false,
+    until: 0,
+    traceId: null,
+    phase: null,
+    joinPresenceUntil: 0
+  });
+  useEffect(() => {
+    memoryLinksRef.current = memoryLinks;
+  }, [memoryLinks]);
+  useEffect(() => {
+    governanceRef.current = governanceState;
+  }, [governanceState]);
+  useEffect(() => {
+    if (prevGovernanceRef.current !== governanceState) {
+      governanceEnteredAtRef.current = Date.now();
+      prevGovernanceRef.current = governanceState;
+    }
+  }, [governanceState]);
+
+  useEffect(() => {
+    liveAgentsRef.current = liveAgents;
+  }, [liveAgents]);
+
+  const castleTemporalCtxRef = useRef({});
+  const castleFieldBpRef = useRef(createFieldTickBackpressure());
+  castleTemporalCtxRef.current = {
+    readClientContinuity,
+    writeClientContinuity,
+    syncClientContinuityRef,
+    browserPresenceRef,
+    liveAgentsRef,
+    castleAuth,
+    remoteCastles,
+    rhizohFirstName,
+    getCastleDevUid: getOrCreateCastleDevUid
+  };
+
+  useEffect(() => {
+    let tickIdx = 0;
+    const id = window.setInterval(() => {
+      const basePlan = castleFieldTickPlan(tickIdx);
+      const ctx = {
+        ...castleTemporalCtxRef.current,
+        tickIndex: tickIdx,
+        tickPlan: basePlan,
+        getBackpressure: () => castleFieldBpRef.current
+      };
+      tickIdx += 1;
+      let physicsError = null;
+      const out = withFieldPhysicsBackpressure(castleFieldBpRef.current, () => {
+        try {
+          return runCastleFieldPhysicsTick(ctx);
+        } catch (err) {
+          physicsError = err;
+          console.error("[CASTLE_FIELD_TICK_PHYSICS]", err);
+          return null;
+        }
+      });
+      const canonical = out?.canonical ?? null;
+      if (canonical?.context && typeof canonical.context === "object") {
+        canonical.context.backpressure = executionMetricsFromBackpressure(castleFieldBpRef.current);
+      }
+      const deferredLanes = [];
+      if (canonical?.effectivePlan?.memoryIdentity) {
+        deferredLanes.push("memory_identity");
+        scheduleCastleFieldDeferredTask(() => runCastleFieldMemoryIdentityTick(ctx, canonical), {
+          delayMs: 0,
+          idleTimeoutMs: 120
+        });
+      }
+      if (canonical?.effectivePlan?.consolidation) {
+        deferredLanes.push("consolidation");
+        scheduleCastleFieldDeferredTask(() => runCastleFieldConsolidationTick(ctx, canonical), {
+          delayMs: 52
+        });
+      }
+      appendCastleTemporalLedgerEntry(
+        buildPolicyLedgerEntryV0({
+          tickIndex: ctx.tickIndex,
+          basePlan,
+          out,
+          canonical,
+          backpressure: castleFieldBpRef.current,
+          physicsError,
+          deferredLanes
+        })
+      );
+      if (peekCastleRuntimeTransactionQueueDepth() > 0) {
+        const rtqBatch = drainCastleRuntimeTransactionQueue(24);
+        const resolved = resolveCastleRuntimeTransactionBatch(rtqBatch, { tickIndex: ctx.tickIndex });
+        appendCastleTemporalLedgerEntry(buildRtqBatchLedgerEntryV0(resolved, ctx.tickIndex));
+      }
+    }, CASTLE_FIELD_TICK_MS);
+    return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    window.__CASTLE_POLICY_LEDGER__ = {
+      peek: (n) => getCastleTemporalLedgerSnapshot(typeof n === "number" ? n : 24),
+      suppressedReality: () => getSuppressedRealityIndexForPromptV0({ limit: 16 })
+    };
+    window.__CASTLE_RTQ__ = {
+      enqueue: enqueueCastleRuntimeTransaction,
+      depth: peekCastleRuntimeTransactionQueueDepth
+    };
+    return () => {
+      try {
+        delete window.__CASTLE_POLICY_LEDGER__;
+        delete window.__CASTLE_RTQ__;
+      } catch {
+        /* noop */
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    lastIntentRawRef.current = lastIntentRaw;
+  }, [lastIntentRaw]);
+  useEffect(() => {
+    unfinishedJourneysRef.current = unfinishedJourneys;
+  }, [unfinishedJourneys]);
+  useEffect(() => {
+    touchIdentitySessionOnce();
+  }, []);
+
+  const initiateMirrorBridge = useCallback(
+    async (peer) => {
+      if (!peer?.id) return;
+      const ok = await recordBridgePeer(peer.id);
+      localBridgePeersRef.current.add(peer.id);
+      setBridgeVisualTick((t) => t + 1);
+      let masterIdx = -1;
+      const n = Math.min(coreWorld.activeCount, coreWorld.MAX);
+      for (let i = 0; i < n; i++) {
+        if (coreWorld.state[i] === STATE.AGENT_MASTER) {
+          masterIdx = i;
+          break;
+        }
+      }
+      const traveller = masterIdx >= 0 ? masterIdx : coreWorld.rhizohIdx;
+      if (traveller >= 0 && Number.isFinite(peer.lat) && Number.isFinite(peer.lon)) {
+        const xz = latLonToSceneXZ(peer.lat, peer.lon);
+        coreWorld.beginCastleBridgeTransit(traveller, xz.x, 360 + (traveller % 6) * 35, xz.z, 5.2);
+      }
+      uiStore.dispatch({
+        type: "ADD_LOG",
+        payload: {
+          ts: new Date().toLocaleTimeString(),
+          type: "SYS",
+          data: `RHIZOH-MIRROR · INITIATE BRIDGE → ${String(peer.id).slice(0, 10)}… (${ok ? "registry" : "local-only"})`
+        }
+      });
+      try {
+        window.dispatchEvent(new CustomEvent("castle-bridge-initiated", { detail: { peer, recordOk: ok } }));
+      } catch {
+        /* noop */
+      }
+    },
+    [recordBridgePeer]
+  );
+
+  const handleCastleLifecycle = useCallback((phase) => {
+    if (phase === "DORMANT") {
+      localBridgePeersRef.current.clear();
+      setBridgeVisualTick((t) => t + 1);
+      try {
+        engineRef.current?.setRhizohMirrorBridges?.([]);
+      } catch {
+        /* noop */
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!booted) return;
+    const eng = engineRef.current;
+    if (!eng?.setRhizohMirrorBridges) return;
+    const geo = typeof window !== "undefined" ? window.__CASTLE_NEXUS_GEO__ : null;
+    const peers = localBridgePeersRef.current;
+    if (!geo?.lat || !geo?.lon || peers.size === 0) {
+      eng.setRhizohMirrorBridges([]);
+      return;
+    }
+    const from = latLonToSceneXZ(geo.lat, geo.lon);
+    const arcs = [];
+    for (const c of remoteCastles) {
+      if (!peers.has(c.id)) continue;
+      if (!Number.isFinite(c.lat) || !Number.isFinite(c.lon)) continue;
+      const to = latLonToSceneXZ(c.lat, c.lon);
+      arcs.push({
+        ax: from.x,
+        ay: 220,
+        az: from.z,
+        bx: to.x,
+        by: 240,
+        bz: to.z
+      });
+    }
+    eng.setRhizohMirrorBridges(arcs);
+  }, [remoteCastles, bridgeVisualTick, booted]);
+
+  const applyBroadcastPresence = useCallback((traceId) => {
+    if (traceId) setImmersiveLiveTrace(traceId);
+    coreWorld.swarmActive = true;
+    uiStore.dispatch({ type: "SET_SWARM_ACTIVE", payload: true });
+    broadcastEmphasisRef.current = {
+      ...broadcastEmphasisRef.current,
+      joinPresenceUntil: Date.now() + 45_000
+    };
+    window.setTimeout(() => {
+      const c = window.__CASTLE_CESIUM__;
+      if (c?.focusCastle) c.focusCastle();
+      else c?.flyToIstanbul?.();
+    }, 60);
+  }, []);
+
+  useEffect(() => {
+    const syncPath = () => {
+      const m = window.location.pathname.match(/^\/greenroom\/live\/([^/]+)\/?$/i);
+      if (m) {
+        const tid = decodeURIComponent(m[1]);
+        setShowDetailDrawer(true);
+        applyBroadcastPresence(tid);
+      } else {
+        setImmersiveLiveTrace(null);
+        broadcastEmphasisRef.current = {
+          ...broadcastEmphasisRef.current,
+          joinPresenceUntil: 0
+        };
+      }
+    };
+    syncPath();
+    window.addEventListener("popstate", syncPath);
+    return () => window.removeEventListener("popstate", syncPath);
+  }, [applyBroadcastPresence]);
+
+  useEffect(() => {
+    if (greenRoomLive?.phase !== "LIVE") {
+      setLiveReactionToast(null);
+      return undefined;
+    }
+    let cancelled = false;
+    let tid;
+    const loop = () => {
+      tid = window.setTimeout(() => {
+        if (cancelled) return;
+        const line = LIVE_FIELD_REACTIONS[Math.floor(Math.random() * LIVE_FIELD_REACTIONS.length)]();
+        setLiveReactionToast({ text: line, id: Date.now() });
+        if (cancelled) return;
+        loop();
+      }, 4000 + Math.random() * 3000);
+    };
+    loop();
+    return () => {
+      cancelled = true;
+      if (tid) window.clearTimeout(tid);
+    };
+  }, [greenRoomLive?.phase, greenRoomLive?.traceId]);
+
+  useEffect(() => {
+    if (!greenRoomLive?.transcriptId || !greenRoomLive.memorySealed) return;
+    setSealBurstNonce((n) => n + 1);
+  }, [greenRoomLive?.transcriptId, greenRoomLive?.memorySealed]);
+
+  useEffect(() => {
+    if (!greenRoomLive?.traceId) return undefined;
+    const id = window.setInterval(() => setGreenRoomLiveTick((x) => x + 1), 1000);
+    return () => clearInterval(id);
+  }, [greenRoomLive?.traceId]);
+
+  useEffect(() => {
+    if (!greenRoomLive?.traceId) return undefined;
+    if (greenRoomLive.phase === "ARCHIVED") return undefined;
+    const sample = () => {
+      const aud = computeSimulatedAudienceEstimate({
+        swarmBoost: swarmActiveUi || coreWorld.swarmActive,
+        activeHeroCount: liveAgentsRef.current.length,
+        memoryHeat: memoryLinksRef.current
+      });
+      const buf = greenRoomSparklineRef.current;
+      buf.push(aud);
+      if (buf.length > 30) buf.shift();
+      setSparklineVersion((v) => v + 1);
+    };
+    sample();
+    const id = window.setInterval(sample, 1000);
+    return () => clearInterval(id);
+  }, [greenRoomLive?.traceId, greenRoomLive?.phase, swarmActiveUi]);
+
+  const greenRoomAudienceNow = useMemo(() => {
+    if (!greenRoomLive) return 0;
+    return computeSimulatedAudienceEstimate({
+      swarmBoost: swarmActiveUi || coreWorld.swarmActive,
+      activeHeroCount: liveAgents.length,
+      memoryHeat: memoryLinks
+    });
+  }, [greenRoomLive?.traceId, greenRoomLiveTick, liveAgents.length, swarmActiveUi, memoryLinks]);
+
+  const greenRoomElapsedSec = useMemo(() => {
+    if (!greenRoomLive) return 0;
+    if (greenRoomLive.phase === "ROUTING") {
+      return (Date.now() - (greenRoomLive.routingStartedAt || 0)) / 1000;
+    }
+    const base = greenRoomLive.liveStartedAt || greenRoomLive.routingStartedAt || Date.now();
+    return (Date.now() - base) / 1000;
+  }, [greenRoomLive, greenRoomLiveTick]);
+
+  const visualCognitionState = useMemo(() =>
+    composeRhizohVisualCognitionStateV1({
+      snapshot: substrateSnapshot,
+      events: substrateEvents,
+      governanceState,
+      rhizohFieldState,
+      demoLoopState,
+      lastIntentRaw,
+      eventConfidence: eventPreview?.confidence ?? 0,
+      lastWhy,
+      memoryLinks,
+      unfinishedJourneys,
+      dormantAgents,
+      deviceMeshLinks: 2,
+      launchSwarmIntensityBoost: launchSceneOverlay.swarmIntensityDelta,
+      launchMemoryEchoBoost: launchSceneOverlay.launchMemoryEchoBoost
+    }), [
+      substrateSnapshot,
+      substrateEvents,
+      governanceState,
+      rhizohFieldState,
+      demoLoopState,
+      lastIntentRaw,
+      eventPreview?.confidence,
+      lastWhy,
+      memoryLinks,
+      unfinishedJourneys,
+      dormantAgents,
+      launchSceneOverlay.swarmIntensityDelta,
+      launchSceneOverlay.launchMemoryEchoBoost
+    ]
+  );
+  const relationalPresenceState = useMemo(() =>
+    composeRelationalPresenceStateV1({
+      userName: rhizohFirstName ?? "",
+      snapshot: substrateSnapshot,
+      lastIntentRaw,
+      lastOutcome: eventPreview?.type ?? "World Mutation",
+      unfinishedJourneys,
+      memoryLinks,
+      liveSignalLabel: "Istanbul"
+    }), [
+      rhizohFirstName,
+      substrateSnapshot,
+      lastIntentRaw,
+      eventPreview?.type,
+      unfinishedJourneys,
+      memoryLinks
+    ]
+  );
+  const buildContinuityPayload = useCallback(
+    (userMessage) => {
+      const disk = readClientContinuity();
+      const ref = continuityRef.current || { turns: [], persona: {}, meta: {} };
+      const turns = Array.isArray(ref.turns) && ref.turns.length ? ref.turns : disk.turns;
+      const meta = { ...(disk.meta || {}), ...(ref.meta || {}) };
+      const realm = uiStore.getState().realityMode;
+      const ig = readIdentityGraph();
+      const r = ig.rhizoh || {};
+      const trust = Number(r.trust || 0);
+      const familiarity = Number(r.familiarity || 0);
+      const bondScore = Math.round(((trust + familiarity) / 2) * 100) / 100;
+      const discoveries = Array.isArray(meta.codexDiscovery) ? meta.codexDiscovery.slice(-16) : [];
+      const emotionStored = meta.rhizohEmotions && typeof meta.rhizohEmotions === "object" ? meta.rhizohEmotions : null;
+      const emotionsForLlm = emotionStored ? normalizeEmotionState(emotionStored) : normalizeEmotionState(DEFAULT_EMOTIONS);
+      const emotionUpdatedAt =
+        typeof meta.rhizohEmotionUpdatedAt === "number" && Number.isFinite(meta.rhizohEmotionUpdatedAt)
+          ? meta.rhizohEmotionUpdatedAt
+          : null;
+      const relationalFromMeta =
+        meta.rhizohRelationalTone && typeof meta.rhizohRelationalTone === "object"
+          ? meta.rhizohRelationalTone
+          : null;
+      const rhizohOutcomeSession = readOutcomeSessionFromMeta(meta);
+      const rhizohWeightedMemory = Array.isArray(meta.rhizohWeightedTurns)
+        ? meta.rhizohWeightedTurns.slice(-40)
+        : [];
+      const rhizohNarrativeThread =
+        meta.rhizohNarrativeThread && typeof meta.rhizohNarrativeThread === "object"
+          ? meta.rhizohNarrativeThread
+          : null;
+      const rhizohMemoryEpisodes = Array.isArray(meta.rhizohMemoryEpisodes)
+        ? meta.rhizohMemoryEpisodes.slice(-20)
+        : [];
+      const rhizohNarrativeArc =
+        meta.rhizohNarrativeArc && typeof meta.rhizohNarrativeArc === "object"
+          ? meta.rhizohNarrativeArc
+          : null;
+      const rhizohGovernorCalibration = normalizeGovernorCalibration(meta.rhizohGovernorCalibration);
+      const relEpisodes = Array.isArray(meta.rhizohReliabilityEpisodes) ? meta.rhizohReliabilityEpisodes : [];
+      const healthState = buildRhizohHealthState({
+        gatewayPhase: gatewayUx?.phase,
+        healthDeps: gatewayUx?.healthDeps,
+        mapSurfaceActive
+      });
+      const rhizohHealthInfluence = computeRhizohHealthInfluence(healthState);
+      const rhizohReliabilitySummary = formatReliabilityEpisodesSummaryForLlm(relEpisodes);
+      const msg = String(userMessage || "").trim();
+      const runtimeBase = {
+        layerFocus: uiStore.getState().layerFocus,
+        realityMode: realm,
+        governanceState,
+        mapSurfaceActive,
+        message: msg.slice(0, 1600),
+        gatewayPhase: gatewayUx?.phase,
+        rhizohGatewayPhase: gatewayUx?.phase,
+        healthState,
+        rhizohHealthInfluence,
+        tceeBoot: meta.tceeBoot && typeof meta.tceeBoot === "object" ? meta.tceeBoot : { phase: TCEE_PHASE.PRE_BREATH }
+      };
+      const contStub = {
+        recentTurns: turns.slice(-8),
+        codex: { discoveries },
+        castleState: { realm },
+        relationship: { emotions: emotionsForLlm }
+      };
+      const routerSnap = routeRhizohInput(msg, contStub, runtimeBase);
+      const rhizohPolicy = deriveRhizohPolicy({ ...runtimeBase, rhizohRouter: routerSnap });
+      const operatorId = String(castleAuth.user?.uid || getOrCreateCastleDevUid() || "local-operator");
+      const operatorLabel = String(
+        castleAuth.profile?.displayName || castleAuth.user?.displayName || rhizohFirstName || "you"
+      ).slice(0, 48);
+      const castlePeers = castlePeersForSocial(remoteCastles, castleAuth.user?.uid || "");
+      const browserPresence = snapshotBrowserPresenceForCsil(browserPresenceRef.current);
+      const ecsAgentEvent = (liveAgentsRef.current || []).length
+        ? { kind: "ecs_agent_presence", count: (liveAgentsRef.current || []).length }
+        : null;
+      const prevSocial = meta.rhizohSocialField;
+      const rhizohSocialField = advanceSocialField(prevSocial, {
+        message: msg,
+        recentTurns: turns.slice(-8),
+        operatorId,
+        operatorLabel,
+        trust,
+        familiarity,
+        intent: routerSnap?.intent || "CHAT",
+        castlePeers
+      });
+      rhizohSocialPreReplyRef.current = rhizohSocialField;
+
+      const prevReg = meta.rhizohSocialRegistry;
+      const csilTick = advanceCastleSocialIdentity(prevReg, {
+        message: msg,
+        operatorId,
+        operatorLabel,
+        trust,
+        familiarity,
+        hasFirebaseUser: !!castleAuth.user,
+        firebaseUid: castleAuth.user?.uid || "",
+        sessionKey: operatorId,
+        roomTension: Number(rhizohSocialField.roomState?.tension),
+        routerIntent: routerSnap?.intent || "CHAT",
+        identityRecallClosure:
+          meta.tceeBoot?.phase === TCEE_PHASE.AWAKE ? meta.rhizohLastRecallClosure || null : null,
+        countUserMessage: true,
+        browserPresence,
+        castlePeers,
+        avatarActivity: (liveAgentsRef.current || []).length > 0,
+        agentEvent: ecsAgentEvent
+      });
+      rhizohRegistryPreReplyRef.current = csilTick.registry;
+
+      const ctxTl = csilTick.registry?.contextTimeline;
+      const cognitiveSubThreadsPrompt = formatCognitiveSubThreadsForPrompt(
+        Array.isArray(ctxTl?.cognitiveSubThreads) ? ctxTl.cognitiveSubThreads : [],
+        {
+          bondScore,
+          trust,
+          familiarity,
+          routerIntent: routerSnap?.intent || "CHAT"
+        }
+      );
+
+      const governorBuffer = normalizeArbitrationGovernorBuffer(
+        arbitrationGovernorWorkingRef.current || meta.rhizohArbitrationGovernorV1
+      );
+      const ghostUserAgentProj = buildUserAgentGhostProjectionV1(csilTick.registry, null, {
+        arbitrationGovernorBuffer: governorBuffer
+      });
+      const nextGovBuf = ghostUserAgentProj?.perceptionArbitrationV1?.governorV1?.nextBuffer;
+      if (nextGovBuf && typeof nextGovBuf === "object") {
+        arbitrationGovernorWorkingRef.current = normalizeArbitrationGovernorBuffer(nextGovBuf);
+      }
+      const rhizohGhostPerceptionV1 =
+        ghostUserAgentProj?.ghostPerceptionV1 && typeof ghostUserAgentProj.ghostPerceptionV1 === "object"
+          ? {
+              subjectThreadId: ghostUserAgentProj.subjectThreadId,
+              promptBlock: ghostUserAgentProj.ghostPerceptionV1.promptBlock,
+              semanticPromptBlock: ghostUserAgentProj.ghostPerceptionV1.semanticPromptBlock,
+              structuredDebugBlock: ghostUserAgentProj.ghostPerceptionV1.structuredDebugBlock,
+              structuredLens: ghostUserAgentProj.ghostPerceptionV1.structuredLens,
+              overallTone: ghostUserAgentProj.ghostPerceptionV1.overallTone
+            }
+          : null;
+      const arb = ghostUserAgentProj?.perceptionArbitrationV1;
+      const gv = arb?.governorV1 && typeof arb.governorV1 === "object" ? arb.governorV1 : null;
+      const rhizohPerceptionArbitrationV1 =
+        arb && typeof arb === "object"
+          ? {
+              dominantFrame: arb.dominantFrame,
+              fallbackNeutral: arb.fallbackNeutral,
+              conflictScore: arb.conflictScore,
+              dominanceScores: arb.dominanceScores,
+              rationale: arb.rationale,
+              orderedPromptBlock: arb.orderedPromptBlock,
+              promptMeta: arb.promptMeta,
+              governorSummary:
+                gv && !gv.disabled
+                  ? {
+                      stabilityMetrics: gv.stabilityMetrics,
+                      oscillation: gv.oscillation,
+                      governanceNotes: gv.governanceNotes,
+                      rawDominanceScores: gv.rawDominanceScores
+                    }
+                  : gv?.disabled
+                    ? { disabled: true }
+                    : null
+            }
+          : null;
+
+      const ifc = ghostUserAgentProj?.intentFeedbackClosureV1;
+      const rhizohIntentFeedbackClosureV1 =
+        ifc && typeof ifc === "object"
+          ? {
+              patternIntentPosture: ifc.patternIntentPosture,
+              dominantFrame: ifc.intentTrace?.dominantFrame ?? null,
+              intentBiasLine: ifc.intentBiasLine,
+              traceHead: Array.isArray(ifc.intentTrace?.lines) ? ifc.intentTrace.lines.slice(0, 4) : [],
+              selfAwarenessPromptBlock: ifc.selfAwarenessPromptBlock
+            }
+          : null;
+
+      let temporalDriftMem = normalizeTemporalIntentDriftMemory(
+        temporalIntentDriftWorkingRef.current || meta.rhizohTemporalIntentDriftMemoryV1
+      );
+      if (ghostUserAgentProj) {
+        const driftSnap = buildTemporalIntentSnapshotFromStack(ghostUserAgentProj);
+        if (driftSnap) {
+          temporalDriftMem = pushTemporalIntentSnapshot(temporalDriftMem, driftSnap, { dedupeWithinMs: 2800 });
+        }
+      }
+      temporalIntentDriftWorkingRef.current = temporalDriftMem;
+      const driftSummaryPrompt = summarizeIntentDriftForPrompt(temporalDriftMem);
+      const reasonDrift = computeArbitrationReasonDrift(temporalDriftMem);
+      const rhizohTemporalIntentDriftMemoryV1 = {
+        driftSummaryPrompt,
+        reasonDrift,
+        snapshotCount: temporalDriftMem.snapshots.length
+      };
+
+      return {
+        identity: {
+          persona: {
+            firstName: rhizohFirstName || "",
+            displayName: String(castleAuth.profile?.displayName || castleAuth.user?.displayName || ""),
+            goals: Array.isArray(castleAuth.profile?.goals) ? castleAuth.profile.goals.slice(0, 8) : [],
+            preferences: castleAuth.profile?.preferences || {}
+          },
+          narrative: buildIdentityNarrativeForLlm(ig)
+        },
+        castleState: {
+          realm
+        },
+        ghostPet: normalizeGhostPetForLlm(meta),
+        recentReality: formatRecentRealityLines(meta, rhizohFirstName),
+        codex: {
+          discoveries
+        },
+        relationship: {
+          bondScore,
+          trust,
+          familiarity,
+          emotions: emotionsForLlm,
+          relationalTone: relationalFromMeta || deriveRelationalTone(emotionsForLlm),
+          emotionUpdatedAt
+        },
+        persona: {
+          firstName: rhizohFirstName || "",
+          displayName: String(castleAuth.profile?.displayName || castleAuth.user?.displayName || ""),
+          goals: Array.isArray(castleAuth.profile?.goals) ? castleAuth.profile.goals.slice(0, 8) : [],
+          preferences: castleAuth.profile?.preferences || {}
+        },
+        recentTurns: turns.slice(-8),
+        identityNarrative: buildIdentityNarrativeForLlm(ig),
+        cognitiveSubThreadsPrompt,
+        kernelSeal: KERNEL_SEAL_V1,
+        capabilityManifest: CAPABILITY_MANIFEST_V1,
+        runtime: {
+          ...runtimeBase,
+          kernelSeal: KERNEL_SEAL_V1,
+          capabilityManifest: CAPABILITY_MANIFEST_V1,
+          rhizohPolicy,
+          socialField: rhizohSocialField,
+          socialRegistry: csilTick.registry,
+          socialPhysics: csilTick.socialPhysics,
+          socialFieldTheory: csilTick.socialFieldTheory,
+          csilToneHint: csilTick.toneHint,
+          csilIntroductionGuidance: csilTick.introductionGuidance,
+          cognitiveSubThreadsPrompt,
+          activeCognitiveSubThreads: Array.isArray(ctxTl?.cognitiveSubThreads)
+            ? ctxTl.cognitiveSubThreads.slice(0, 3)
+            : [],
+          suppressedRealityIndex: getSuppressedRealityIndexForPromptV0({ limit: 10 })
+        },
+        rhizohOutcomeSession,
+        rhizohWeightedMemory,
+        rhizohStabilityAnchor: getRhizohStabilityAnchorSnapshot(),
+        rhizohNarrativeThread,
+        rhizohMemoryEpisodes,
+        rhizohNarrativeArc,
+        rhizohGovernorCalibration,
+        rhizohReliabilityEpisodes: relEpisodes.slice(-12),
+        rhizohReliabilitySummary,
+        recentReliabilitySummary: rhizohReliabilitySummary,
+        rhizohGhostPerceptionV1,
+        rhizohPerceptionArbitrationV1,
+        rhizohIntentFeedbackClosureV1,
+        rhizohTemporalIntentDriftMemoryV1,
+        rhizohSuppressedRealityIndexV1: getSuppressedRealityIndexForPromptV0({ limit: 12 }),
+        meta: {
+          rhizohReliabilityEpisodes: relEpisodes.slice(-12),
+          rhizohHealthInfluence,
+          rhizohSocialField,
+          rhizohSocialRegistry: csilTick.registry
+        }
+      };
+    },
+    [castleAuth.profile, castleAuth.user, governanceState, rhizohFirstName, gatewayUx, mapSurfaceActive, remoteCastles]
+  );
+  const drawerSocialField = useMemo(() => {
+    const disk = readClientContinuity();
+    const ref = continuityRef.current || { meta: {} };
+    const m = { ...(disk.meta || {}), ...(ref.meta || {}) };
+    return m.rhizohSocialField && typeof m.rhizohSocialField === "object" ? m.rhizohSocialField : null;
+  }, [continuitySocialTick]);
+  const drawerSocialRegistry = useMemo(() => {
+    const disk = readClientContinuity();
+    const ref = continuityRef.current || { meta: {} };
+    const m = { ...(disk.meta || {}), ...(ref.meta || {}) };
+    return m.rhizohSocialRegistry && typeof m.rhizohSocialRegistry === "object" ? m.rhizohSocialRegistry : null;
+  }, [continuitySocialTick]);
+  const l10HudPresence = useMemo(() => {
+    const tel = drawerSocialRegistry?.presenceTelemetry;
+    const phys = drawerSocialRegistry?.socialPhysics;
+    const ft = drawerSocialRegistry?.socialFieldTheory;
+    const inf = ft?.interference && typeof ft.interference === "object" ? ft.interference : null;
+    if (!tel || typeof tel !== "object") return null;
+    return {
+      label: String(tel.qppLabel || "present"),
+      mode: String(tel.qppMode || "idle"),
+      phase: String(phys?.phase || "stable"),
+      interference: inf ? String(inf.pattern || "mixed") : "—"
+    };
+  }, [drawerSocialRegistry]);
+  const persistContinuityTurn = useCallback(
+    (userText, assistantText, rhizohTrace) => {
+      const ref = continuityRef.current || { turns: [], persona: {}, meta: {} };
+      const disk = readClientContinuity();
+      const prev = {
+        turns: Array.isArray(ref.turns) && ref.turns.length ? ref.turns : disk.turns,
+        persona: ref.persona && Object.keys(ref.persona).length ? ref.persona : disk.persona,
+        meta: { ...(disk.meta || {}), ...(ref.meta || {}) }
+      };
+      const prevMeta = prev.meta && typeof prev.meta === "object" ? prev.meta : {};
+      const ig = readIdentityGraph();
+      const ir = ig.rhizoh || {};
+      const relationship = {
+        trust: Number(ir.trust || 0),
+        familiarity: Number(ir.familiarity || 0)
+      };
+      let weightedTurns = Array.isArray(prevMeta.rhizohWeightedTurns) ? prevMeta.rhizohWeightedTurns : [];
+      let pendingWeightedEntry = null;
+      if (
+        rhizohTrace &&
+        typeof rhizohTrace === "object" &&
+        rhizohTrace.router &&
+        rhizohTrace.emotionsAfter &&
+        typeof rhizohTrace.emotionsAfter === "object"
+      ) {
+        pendingWeightedEntry = buildRhizohWeightedTurnRecord({
+          userText,
+          assistantText,
+          router: rhizohTrace.router,
+          source: rhizohTrace.source,
+          outcomeResonance: rhizohTrace.outcomeResonance,
+          emotionsAfter: rhizohTrace.emotionsAfter,
+          emotionsBefore: rhizohTrace.emotionsBefore || rhizohTrace.emotionsAfter,
+          relationship
+        });
+      }
+      const narrativeThread = mergeRhizohNarrativeThread(prevMeta.rhizohNarrativeThread, {
+        userSnippet: userText,
+        intent: rhizohTrace?.router?.intent || "CHAT"
+      });
+      const bondNum = Math.min(1, Math.max(0, (relationship.trust + relationship.familiarity) / 2));
+      const emForArc =
+        rhizohTrace &&
+        typeof rhizohTrace === "object" &&
+        rhizohTrace.emotionsAfter &&
+        typeof rhizohTrace.emotionsAfter === "object"
+          ? rhizohTrace.emotionsAfter
+          : prevMeta.rhizohEmotions && typeof prevMeta.rhizohEmotions === "object"
+            ? prevMeta.rhizohEmotions
+            : {};
+      const orRaw =
+        rhizohTrace && typeof rhizohTrace === "object" && rhizohTrace.outcomeResonance != null
+          ? Number(rhizohTrace.outcomeResonance)
+          : null;
+      const narrativeArc = advanceRhizohNarrativeArc(prevMeta.rhizohNarrativeArc, {
+        intent: rhizohTrace?.router?.intent || "CHAT",
+        bond: bondNum,
+        emotions: emForArc,
+        outcomeResonance: Number.isFinite(orRaw) ? orRaw : null,
+        thread: narrativeThread
+      });
+      const turns = [
+        ...(Array.isArray(prev.turns) ? prev.turns : []),
+        {
+          ts: Date.now(),
+          user: String(userText || "").slice(0, 500),
+          assistant: String(assistantText || "").slice(0, 900),
+          layerFocus: uiStore.getState().layerFocus
+        }
+      ].slice(-12);
+      const operatorId = String(castleAuth.user?.uid || getOrCreateCastleDevUid() || "local-operator");
+      const operatorLabel = String(
+        castleAuth.profile?.displayName || castleAuth.user?.displayName || rhizohFirstName || "you"
+      ).slice(0, 48);
+      const preReplySf = rhizohSocialPreReplyRef.current;
+      rhizohSocialPreReplyRef.current = null;
+      const castlePeers = castlePeersForSocial(remoteCastles, castleAuth.user?.uid || "");
+      const browserPresence = snapshotBrowserPresenceForCsil(browserPresenceRef.current);
+      const ecsAgentEvent = (liveAgentsRef.current || []).length
+        ? { kind: "ecs_agent_presence", count: (liveAgentsRef.current || []).length }
+        : null;
+      const baseSf = preReplySf || prevMeta.rhizohSocialField;
+      const rhizohSocialField = advanceSocialField(baseSf, {
+        message: "",
+        recentTurns: turns,
+        operatorId,
+        operatorLabel,
+        trust: relationship.trust,
+        familiarity: relationship.familiarity,
+        intent: rhizohTrace?.router?.intent || "CHAT",
+        assistantSnippet: assistantText,
+        castlePeers
+      });
+      const preReg = rhizohRegistryPreReplyRef.current;
+      rhizohRegistryPreReplyRef.current = null;
+      const baseReg = preReg || prevMeta.rhizohSocialRegistry;
+      const csilPost = advanceCastleSocialIdentity(baseReg, {
+        message: "",
+        assistantSnippet: assistantText,
+        operatorId,
+        operatorLabel,
+        trust: relationship.trust,
+        familiarity: relationship.familiarity,
+        hasFirebaseUser: !!castleAuth.user,
+        firebaseUid: castleAuth.user?.uid || "",
+        sessionKey: operatorId,
+        roomTension: Number(rhizohSocialField.roomState?.tension),
+        routerIntent: rhizohTrace?.router?.intent || "CHAT",
+        identityRecallClosure:
+          prevMeta.tceeBoot?.phase === TCEE_PHASE.AWAKE
+            ? prevMeta.rhizohLastRecallClosure || null
+            : null,
+        countUserMessage: false,
+        browserPresence,
+        castlePeers,
+        avatarActivity: (liveAgentsRef.current || []).length > 0,
+        agentEvent: ecsAgentEvent
+      });
+      if (pendingWeightedEntry) {
+        const reg = csilPost.registry && typeof csilPost.registry === "object" ? csilPost.registry : {};
+        const sp = reg.socialPhysics && typeof reg.socialPhysics === "object" ? reg.socialPhysics : {};
+        const sft = reg.socialFieldTheory && typeof reg.socialFieldTheory === "object" ? reg.socialFieldTheory : {};
+        pendingWeightedEntry.physicsImprint = buildPhysicsPhaseImprint(sp, sft);
+        const wPrev = computeMemoryWeight(pendingWeightedEntry, {
+          now: Date.now(),
+          queryIntent: pendingWeightedEntry.intent,
+          currentBond: pendingWeightedEntry.bond,
+          currentPhysics: sp,
+          currentFieldTheory: sft
+        });
+        pendingWeightedEntry.memoryCrystallization = classifyMemoryCrystallization(wPrev);
+        pendingWeightedEntry.crystallizationWeightPreview = wPrev;
+        weightedTurns = appendRhizohWeightedTurn(weightedTurns, pendingWeightedEntry);
+      }
+      const memoryEpisodes = buildMemoryEpisodesFromTurns(weightedTurns);
+      const govPersist = arbitrationGovernorWorkingRef.current;
+      const driftPersist = temporalIntentDriftWorkingRef.current;
+      const recallPayload = rhizohTrace?.rhizohRecallMerge?.recallClosurePayload || null;
+      const nextBase = {
+        turns,
+        persona: {
+          firstName: rhizohFirstName || "",
+          displayName: String(castleAuth.profile?.displayName || castleAuth.user?.displayName || "")
+        },
+        meta: {
+          ...prevMeta,
+          rhizohWeightedTurns: weightedTurns,
+          rhizohNarrativeThread: narrativeThread,
+          rhizohNarrativeArc: narrativeArc,
+          rhizohMemoryEpisodes: memoryEpisodes,
+          rhizohSocialField,
+          rhizohSocialRegistry: csilPost.registry,
+          ...(recallPayload ? { rhizohLastRecallClosure: recallPayload } : {}),
+          ...(govPersist && typeof govPersist === "object" && Array.isArray(govPersist.entries)
+            ? { rhizohArbitrationGovernorV1: govPersist }
+            : {}),
+          ...(driftPersist &&
+          typeof driftPersist === "object" &&
+          Array.isArray(driftPersist.snapshots)
+            ? { rhizohTemporalIntentDriftMemoryV1: driftPersist }
+            : {}),
+          updatedAt: Date.now()
+        }
+      };
+      const heroLabels = (liveAgentsRef.current || [])
+        .map((a) => String(a?.id || a?.label || a?.name || "").trim())
+        .filter(Boolean)
+        .slice(0, 12);
+      withRuntimeMergeCommit(() => {
+        const recGraph = rhizohTrace?.rhizohRecallMerge?.identityGraphNext;
+        if (recGraph && typeof recGraph === "object") {
+          writeIdentityGraph(recGraph);
+        }
+        const mergeId = getLastRuntimeMergeId();
+        const mergeAt = Date.now();
+        const next = {
+          ...nextBase,
+          meta: {
+            ...nextBase.meta,
+            rhizohLastRuntimeMergeId: mergeId,
+            rhizohLastMergeAt: mergeAt
+          }
+        };
+        writeClientContinuity(next);
+        syncClientContinuityRef(next);
+        hydrateIdentityGraphFromSignals(readIdentityGraph(), {
+          profileGoals: Array.isArray(castleAuth.profile?.goals) ? castleAuth.profile.goals : [],
+          governanceState: governanceRef.current,
+          memoryLinks: memoryLinksRef.current,
+          unfinishedJourneys: unfinishedJourneysRef.current,
+          heroLabels,
+          lastIntentRaw: lastIntentRawRef.current,
+          userMessage: userText,
+          assistantSnippet: assistantText
+        });
+      });
+    },
+    [castleAuth.profile, castleAuth.user, rhizohFirstName, remoteCastles]
+  );
+  const persistRhizohEmotionSession = useCallback(
+    ({ emotions, relationalTone, emotionUpdatedAt, outcomeResonance, outcomeSession }) => {
+      const ref = continuityRef.current || { turns: [], persona: {}, meta: {} };
+      const prevMeta = ref.meta && typeof ref.meta === "object" ? ref.meta : {};
+      const nextMeta = {
+        ...prevMeta,
+        rhizohEmotions: emotions,
+        rhizohRelationalTone: relationalTone,
+        rhizohEmotionUpdatedAt: emotionUpdatedAt
+      };
+      if (typeof outcomeResonance === "number" && Number.isFinite(outcomeResonance)) {
+        nextMeta.rhizohLastOutcomeResonance = Math.round(outcomeResonance * 1000) / 1000;
+        nextMeta.rhizohLastOutcomeAt = Date.now();
+      }
+      if (outcomeSession && typeof outcomeSession === "object") {
+        nextMeta.rhizohLastRemoteFetchFailed = !!outcomeSession.lastRemoteFetchFailed;
+        nextMeta.rhizohConsecutiveLocalStubCount = Math.max(
+          0,
+          Math.min(24, Number(outcomeSession.consecutiveLocalStubCount) || 0)
+        );
+      }
+      continuityRef.current = {
+        ...ref,
+        meta: nextMeta
+      };
+    },
+    []
+  );
+  const cinematicOutput = useMemo(() =>
+    computeRhizohCinematicOutputV1({
+      route: cinematicRoute,
+      elapsedMs: cinematicElapsedMs
+    }), [cinematicRoute, cinematicElapsedMs]
+  );
+  const governanceFx = useMemo(() => {
+    if (governanceState === "FROZEN") return { tone: "from-red-600/10 to-transparent", label: "Fracture Wave", orb: "crystal" };
+    if (governanceState === "RECOVERY") return { tone: "from-purple-500/10 to-transparent", label: "Calm Rebuild", orb: "fluid" };
+    if (governanceState === "DEGRADED") return { tone: "from-amber-500/10 to-transparent", label: "Amber Flicker", orb: "tense" };
+    return { tone: "from-emerald-500/8 to-transparent", label: "Balanced Pulse", orb: "breathing" };
+  }, [governanceState]);
+  const layerComposition = useMemo(() => {
+    const swarm = coreWorld.swarmActive;
+    const memoryReady = memoryLinks > 0;
+    const agentsReady = liveAgents.length > 0;
+    const mapReady = mapSurfaceActive;
+    return {
+      mapReady,
+      swarm,
+      agentsReady,
+      memoryReady,
+      governance: governanceState,
+      score: [mapReady, swarm, agentsReady, memoryReady].filter(Boolean).length
+    };
+  }, [governanceState, liveAgents.length, memoryLinks, mapSurfaceActive]);
+
+  const speakRhizoh = useCallback((text) => {
+    if (!("speechSynthesis" in window) || !text) return;
+    const utterance = new SpeechSynthesisUtterance(String(text).slice(0, 1800));
+    utterance.lang = "tr-TR";
+    utterance.rate = 1;
+    utterance.pitch = 1.05;
+    utterance.volume = 0.92;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+    setVoiceReady(true);
+  }, []);
+  const ensureAmbientSound = useCallback(() => {
+    if (ambientCtxRef.current) return;
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor) return;
+    const ctx = new AudioContextCtor();
+    const master = ctx.createGain();
+    master.gain.value = 0.04;
+    master.connect(ctx.destination);
+
+    const hum = ctx.createOscillator();
+    hum.type = "sine";
+    hum.frequency.value = 92;
+    const humGain = ctx.createGain();
+    humGain.gain.value = 0.08;
+    hum.connect(humGain).connect(master);
+    hum.start();
+
+    const whisper = ctx.createOscillator();
+    whisper.type = "triangle";
+    whisper.frequency.value = 180;
+    const whisperGain = ctx.createGain();
+    whisperGain.gain.value = 0.04;
+    whisper.connect(whisperGain).connect(master);
+    whisper.start();
+
+    ambientCtxRef.current = ctx;
+    ambientNodesRef.current = [hum, whisper, humGain, whisperGain, master];
+    setAmbientReady(true);
+  }, []);
+
+  const startVoiceToRhizoh = useCallback(async () => {
+    const Ctor = getSpeechRecognitionCtor();
+    if (!Ctor) {
+      speakRhizoh("Bu tarayıcıda ses tanıma yok. Aşağıya yazıp gönder.");
+      return;
+    }
+    const prev = recognitionRef.current;
+    if (prev) {
+      try {
+        prev.onresult = null;
+        prev.onerror = null;
+        prev.onend = null;
+        prev.stop();
+      } catch {
+        /* noop */
+      }
+    }
+    ensureAmbientSound();
+    setRhizohFieldState("LISTENING");
+    setMicListening(true);
+    const rec = new Ctor();
+    rec.lang = "tr-TR";
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.continuous = false;
+    rec.onend = () => {
+      setMicListening(false);
+    };
+    rec.onerror = (e) => {
+      setMicListening(false);
+      const err = String(e?.error || "");
+      if (err === "not-allowed" || err === "service-not-allowed") {
+        speakRhizoh("Mikrofon izni gerekli. Tarayıcı ayarlarından bu siteye izin ver.");
+      } else if (err && err !== "aborted" && err !== "no-speech") {
+        speakRhizoh("Ses tanıma başarısız. Yazarak göndermeyi dene.");
+      }
+    };
+    rec.onresult = async (ev) => {
+      try {
+        const text = String(ev?.results?.[0]?.[0]?.transcript || "").trim();
+        setMicListening(false);
+        if (!text) return;
+        const focusPre = uiStore.getState().layerFocus;
+        enqueueCastleRuntimeTransaction({
+          kind: "voice_event",
+          source: "speech_recognition_onresult",
+          payload: { textLen: text.length, layerFocus: focusPre }
+        });
+        setCmd(text);
+        setRhizohFieldState("INTERPRETING");
+        const focus = focusPre;
+        const profile = LAYER_UI_PROFILES[focus] || LAYER_UI_PROFILES[10];
+        const spec = LAYER_SPECS.find((layerRow) => layerRow.id === focus) || LAYER_SPECS[10];
+        let idToken = "";
+        try {
+          idToken = castleAuth.user ? await castleAuth.user.getIdToken() : "";
+        } catch {
+          /* noop */
+        }
+        const out = await queryRhizohLLM({
+          message: text,
+          provider: "openai",
+          connectionId: "",
+          agentId: "",
+          layerProfile: profile,
+          layerSpec: spec,
+          simTime: coreWorld.simTime,
+          idToken,
+          gatewayUx,
+          continuity: buildContinuityPayload(text),
+          persistRhizohEmotions: persistRhizohEmotionSession
+        });
+        applyRhizohDirective(out.directive, engineRef);
+        speakRhizoh(out.reply);
+        persistContinuityTurn(text, out.reply, rhizohPersistTraceFromOut(out));
+        setRhizohFieldState("IDLE");
+        uiStore.dispatch({
+          type: "ADD_LOG",
+          payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: `VOICE·RHIZOH · ${text.slice(0, 120)}` }
+        });
+      } catch (err) {
+        console.error("[VOICE_PIPE_FATAL]", err);
+        try {
+          window.__CASTLE_LAST_FATAL__ = {
+            kind: "voice_onresult",
+            err,
+            message: String(err?.message || err),
+            stack: String(err?.stack || ""),
+            at: Date.now()
+          };
+        } catch {
+          /* noop */
+        }
+        setMicListening(false);
+        setRhizohFieldState("IDLE");
+        speakRhizoh("Ses ile Rhizoh hattında hata oluştu; yazarak göndermeyi dene.");
+      }
+    };
+    recognitionRef.current = rec;
+    try {
+      rec.start();
+    } catch {
+      setMicListening(false);
+      speakRhizoh("Mikrofon başlatılamadı.");
+    }
+  }, [
+    castleAuth.user,
+    speakRhizoh,
+    ensureAmbientSound,
+    buildContinuityPayload,
+    persistContinuityTurn,
+    persistRhizohEmotionSession,
+    gatewayUx
+  ]);
 
   useEffect(() => {
     let isMounted = true;
@@ -3757,6 +8489,7 @@ export default function AppRhizoh528() {
 
       if (containerRef.current && !engineRef.current) {
         engineRef.current = new ApexEngine(containerRef.current);
+        notifyRealityEngineReady();
         resizeObserver.observe(containerRef.current);
         if (isMounted) setBooted(true);
       }
@@ -3782,6 +8515,7 @@ export default function AppRhizoh528() {
 
         uiSyncCounter++;
         if (uiSyncCounter >= 30) {
+          uiStore.dispatch({ type: "FLUSH_EVENT_PULSES" });
           uiStore.dispatch({ type: "SYNC_STATS", payload: coreWorld.activeCount });
           uiStore.dispatch({
             type: "SYNC_METRICS",
@@ -3804,10 +8538,22 @@ export default function AppRhizoh528() {
 
     return () => {
       isMounted = false;
+      flowTimersRef.current.forEach((timerId) => clearTimeout(timerId));
+      flowTimersRef.current = [];
+      ambientNodesRef.current.forEach((n) => {
+        try { n.stop?.(); } catch { /* noop */ }
+        try { n.disconnect?.(); } catch { /* noop */ }
+      });
+      ambientNodesRef.current = [];
+      if (ambientCtxRef.current) {
+        void ambientCtxRef.current.close();
+        ambientCtxRef.current = null;
+      }
       coreWorld.reset();
       cityMind.reset();
       squadRegistry.clear();
       eventMesh.clear();
+      resetL9EventBus();
       resizeObserver.disconnect();
       if (simRaf) cancelAnimationFrame(simRaf);
       if (engineRef.current) {
@@ -3818,377 +8564,1328 @@ export default function AppRhizoh528() {
   }, []);
 
   useEffect(() => {
-    const engine = engineRef.current;
-    const profile = LAYER_UI_PROFILES[layerFocus] || LAYER_UI_PROFILES[10];
-    if (!engine || !profile) return;
+    const id = window.setInterval(() => {
+      const heroes = sampleLiveAgentProjection(22).map((h) => {
+        const avatar = resolveHeroAvatar(h);
+        return {
+          ...h,
+          avatarKey: avatar.key,
+          avatarLabel: avatar.label,
+          alt: 110 + (h.idx % 11) * 26
+        };
+      });
+      setLiveAgents(heroes);
+      window.__CASTLE_WORLD_PROJECTION__ = {
+        ts: Date.now(),
+        simTime: coreWorld.simTime,
+        swarmActive: coreWorld.swarmActive,
+        governance: governanceRef.current,
+        governanceEnteredAt: governanceEnteredAtRef.current,
+        broadcastEmphasis: { ...broadcastEmphasisRef.current },
+        memoryHeat: memoryLinksRef.current,
+        anchor: { lat: ISTANBUL_POI.FATIH.lat, lon: ISTANBUL_POI.FATIH.lon },
+        memoryConstellation: buildMemoryConstellationNodes(memoryLinksRef.current, 42),
+        heroes
+      };
+    }, 320);
+    return () => window.clearInterval(id);
+  }, []);
 
-    const run = async () => {
-      if (profile.camera) engine.setCameraMode(profile.camera);
-      if (profile.reality) {
-        uiStore.dispatch({ type: "SET_REALITY", payload: profile.reality });
-        await engine.transitionReality(profile.reality);
+  useEffect(() => {
+    if (!booted) return;
+    const toRad = (d) => (d * Math.PI) / 180;
+    const distKm = (la, lo, la2, lo2) => {
+      const R = 6371;
+      const dLa = toRad(la2 - la);
+      const dLo = toRad(lo2 - lo);
+      const a =
+        Math.sin(dLa / 2) ** 2 + Math.cos(toRad(la)) * Math.cos(toRad(la2)) * Math.sin(dLo / 2) ** 2;
+      return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+    };
+    const id = window.setInterval(() => {
+      l9BackgroundTickRef.current += 1;
+      const stride = getL9BackgroundTickStride();
+      if (stride > 1 && l9BackgroundTickRef.current % stride !== 0) return;
+
+      const mapOk = uiStore.getState().mapSurfaceActive;
+      const swarm = coreWorld.swarmActive;
+      const geo = typeof window !== "undefined" ? window.__CASTLE_NEXUS_GEO__ : null;
+      const psMap = l9PrevAgentRef.current.state;
+      const ppMap = l9PrevAgentRef.current.pet;
+
+      if (mapOk && swarm && geo?.lat != null && geo?.lon != null) {
+        const rows = sampleLiveAgentProjection(96);
+        let cnt = 0;
+        for (const a of rows) {
+          if (distKm(geo.lat, geo.lon, a.lat, a.lon) <= 3.6) cnt++;
+        }
+        if (cnt >= 6) {
+          pushL9SocialDraftArbitrated({
+            trigger: "swarm_nexus",
+            agent: "CityMind",
+            platform: "X (Twitter)",
+            agentIdx: coreWorld.rhizohIdx >= 0 ? coreWorld.rhizohIdx : -1,
+            lat: geo.lat,
+            lon: geo.lon,
+            agentCount: cnt,
+            text: `Istanbul Nexus'ta devasa bir enerji dalgalanması tespiti. ${cnt} otonom ajan ana kalede savunma formasyonuna geçti. #CastleGenesis`,
+            heatPulse: buildPulseSeriesFromSeed(cnt + (Date.now() % 997), 14),
+            thoughtChain: buildThoughtChainL8V1({
+              threatLevel: Math.min(1, cnt / 16),
+              districtEnergy: 0.52 + cnt * 0.03,
+              swarmLevel: 0.74,
+              memoryEcho: 0.41
+            })
+          });
+        }
       }
-      if (profile.flight === "agent") {
-        engine.focusNextAgent();
-      } else if (profile.flight === "rhizoh") {
-        const idx = coreWorld.rhizohIdx !== -1 ? coreWorld.rhizohIdx : coreWorld.allocate("RHIZOH-PRIME", STATE.RHIZOH);
-        if (idx >= 0) engine.focusWorldPoint(coreWorld.posX[idx], coreWorld.posY[idx], coreWorld.posZ[idx], 1800);
-      } else if (profile.flight === "castle") {
-        const c = window.__CASTLE_CESIUM__;
-        if (c?.focusCastle) c.focusCastle();
-        else engine.focusCastleBeacon();
-      } else if (profile.flight === "academy") {
-        const c = window.__CASTLE_CESIUM__;
-        if (c?.streetView) c.streetView(ISTANBUL_POI.FATIH.lat, ISTANBUL_POI.FATIH.lon, 180);
-      } else if (profile.flight === "istanbul-mid") {
-        const c = window.__CASTLE_CESIUM__;
-        c?.flyToIstanbul?.();
-      } else if (profile.flight === "istanbul-high" || profile.flight === "istanbul-wide") {
-        const c = window.__CASTLE_CESIUM__;
-        c?.flyToIstanbul?.();
+
+      l9SpiralTickRef.current += 1;
+      if (swarm && mapOk && l9SpiralTickRef.current % 22 === 0) {
+        pushL9SocialDraftArbitrated({
+          trigger: "spiral_geometry",
+          agent: "Atlas",
+          platform: "X (Twitter)",
+          agentIdx: -1,
+          lat: ISTANBUL_POI.FATIH.lat,
+          lon: ISTANBUL_POI.FATIH.lon,
+          text: "Atlas birimi, L10 katmanında yeni bir yörünge geometrisi keşfetti. Şehir haritasında genişleyen spiral deseni stabilize edildi.",
+          heatPulse: buildPulseSeriesFromSeed(Math.floor(coreWorld.simTime * 10) + 3, 14),
+          thoughtChain: buildThoughtChainL8V1({
+            threatLevel: 0.44,
+            districtEnergy: 0.63,
+            swarmLevel: 0.82,
+            memoryEcho: 0.35
+          })
+        });
+      }
+
+      const n = Math.min(coreWorld.activeCount, coreWorld.MAX);
+      for (let i = 0; i < n; i++) {
+        const prevS = psMap.get(i);
+        const curS = coreWorld.state[i];
+        if (prevS === STATE.AGENT_STUDENT && curS === STATE.AGENT_MASTER) {
+          const idStr = String(coreWorld.indexToId[i] || `A-${i}`);
+          const { lat, lon } = sceneXZToLatLon(coreWorld.posX[i], coreWorld.posZ[i]);
+          pushL9SocialDraftArbitrated({
+            trigger: "academy_master",
+            agent: idStr,
+            platform: "X (Twitter)",
+            agentIdx: i,
+            lat,
+            lon,
+            text: `${idStr} [Prometheus] Master seviyesine ulaştı ve kaleden ayrılıp kendi şehrini kurma yetkisi kazandı.`,
+            heatPulse: buildPulseSeriesFromSeed(i + 11, 14),
+            thoughtChain: buildThoughtChainL8V1({
+              threatLevel: 0.22,
+              districtEnergy: 0.88,
+              swarmLevel: 0.52,
+              memoryEcho: 0.76
+            })
+          });
+        }
+        const prevP = ppMap.get(i);
+        const curP = coreWorld.petStage[i];
+        if (curS === STATE.GHOSTPET && prevP === PET_STAGE.SPIRIT && curP === PET_STAGE.GUARDIAN) {
+          const idStr = String(coreWorld.indexToId[i] || `PET-${i}`);
+          const { lat, lon } = sceneXZToLatLon(coreWorld.posX[i], coreWorld.posZ[i]);
+          pushL9SocialDraftArbitrated({
+            trigger: "pet_guardian",
+            agent: idStr,
+            platform: "Telegram",
+            agentIdx: i,
+            lat,
+            lon,
+            text: `Ghost Pet ${idStr} SPIRIT aşamasından GUARDIAN'a evrildi — kale bariyerleri güçlendirildi.`,
+            heatPulse: buildPulseSeriesFromSeed(i + 901, 14),
+            thoughtChain: buildThoughtChainL8V1({
+              threatLevel: 0.26,
+              districtEnergy: 0.64,
+              swarmLevel: 0.45,
+              memoryEcho: 0.58
+            })
+          });
+        }
+        psMap.set(i, curS);
+        ppMap.set(i, curP);
+      }
+    }, 8000);
+    return () => {
+      window.clearInterval(id);
+      resetL9EventBus();
+    };
+  }, [booted]);
+
+  useEffect(() => {
+    const onGhost = (e) => {
+      const idx = e?.detail?.agentIdx;
+      if (idx == null || idx < 0) return;
+      if (coreWorld.state[idx] !== STATE.GHOSTPET) return;
+      coreWorld.xp[idx] = Math.min(1e6, (coreWorld.xp[idx] || 0) + 200);
+      uiStore.dispatch({
+        type: "ADD_LOG",
+        payload: {
+          ts: new Date().toLocaleTimeString(),
+          type: "SYS",
+          data: `Ghost Pet · L9 bellek nabzı (idx ${idx}) — kişilik yüzeyi güncellendi`
+        }
+      });
+    };
+    window.addEventListener("castle-l9-ghost-personality", onGhost);
+    return () => window.removeEventListener("castle-l9-ghost-personality", onGhost);
+  }, []);
+
+  useEffect(() => {
+    const onFeedback = (ev) => {
+      const d = ev?.detail;
+      if (!d?.kind) return;
+      const ts = new Date().toLocaleTimeString();
+      if (d.kind === "execution_deferred") {
+        uiStore.dispatch({
+          type: "ADD_LOG",
+          payload: {
+            ts,
+            type: "SYS",
+            data: `L9 FEEDBACK · emit beklemeye alındı (${d.reason || "?"}) · ${String(d.trigger || "").slice(0, 24)}`
+          }
+        });
+      } else if (d.kind === "hold_overflow") {
+        uiStore.dispatch({
+          type: "ADD_LOG",
+          payload: {
+            ts,
+            type: "WARN",
+            data: `L9 FEEDBACK · execution hold taştı (32) — ${String(d.message || "eski taslak düşürüldü")}`
+          }
+        });
       }
     };
-    void run();
-  }, [layerFocus]);
+    window.addEventListener(CASTLE_L9_EXECUTION_FEEDBACK, onFeedback);
+    return () => window.removeEventListener(CASTLE_L9_EXECUTION_FEEDBACK, onFeedback);
+  }, []);
 
-  const handleExecute = () => {
-    if (!cmd.trim()) return;
-    const raw = cmd.trim();
-    const command = raw.toUpperCase();
+  const buildShareArtifact = (preview) => {
+    const replay =
+      greenRoomLive?.sharePath ||
+      greenRoomLive?.replayPath ||
+      (preview?.traceId ? `/replay/${preview.traceId}` : "/replay/pending");
+    return [
+      "I just created a RHIZOH event:",
+      `- Intent: ${lastIntentRaw || "N/A"}`,
+      `- Outcome: ${preview?.type ?? "N/A"} (${preview?.status ?? "N/A"})`,
+      `- Ack: ${greenRoomLive?.ack ?? "pending"}`,
+      `- Replay: ${replay}`
+    ].join("\n");
+  };
 
-    const satelliteModeMatch = command.match(/^SATELLITE\s+(VOICE|MUSIC|MEMORY|DREAM|SIGNAL|STREAM)$/);
-    if (satelliteModeMatch) {
-      const mode = satelliteModeMatch[1];
-      uiStore.dispatch({ type: "SET_SATELLITE_MODE", payload: mode });
-      uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: `L4 SATELLITE SCAN · ${mode}` } });
-      pushRhizohEvent("SATELLITE_SCAN", "Satellite", mode, 1);
-      setCmd("");
-      return;
-    }
+  const handleExecute = async (overrideRaw) => {
+    const raw = (overrideRaw ?? cmd).trim();
+    if (!raw) return;
+    setHasSentRhizohCommand(true);
+    setRhizohInlineError(null);
+    const intent = raw.toUpperCase();
+    const isBroadcastIntent =
+      /YAYIN|BROADCAST|GREENROOM|LIVE|STUDIO|CANLI/.test(intent) ||
+      /canlı|yayın|yayını|yayınla|\byayin\b|\bcanli\b/i.test(raw);
+    const traceId = `TRC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+    setGreenRoomLive(null);
+    greenRoomSparklineRef.current = [];
+    setSparklineVersion(0);
+    broadcastEmphasisRef.current = {
+      active: false,
+      until: 0,
+      traceId: null,
+      phase: null,
+      joinPresenceUntil: 0
+    };
+    setLastIntentRaw(raw);
+    setDemoLoopState("CREATING");
 
-    const layerMatch = command.match(/^LAYER\s+(\d{1,2})$/);
-    if (layerMatch) {
-      const id = Math.min(13, Math.max(0, parseInt(layerMatch[1], 10)));
-      uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: id });
-      pushRhizohEvent("COMMAND_PULSE", "Rhizoh", `L${id}`, id / 10);
-      setCmd("");
-      return;
-    }
+    flowTimersRef.current.forEach((timerId) => clearTimeout(timerId));
+    flowTimersRef.current = [];
+    setShowWhy(false);
+    setRhizohFieldState("INTERPRETING");
+    setRealityState("WORLD_SIMULATING");
+    setGovernanceState("NORMAL");
+    setEventPreview({
+      status: "PROCESSING",
+      type: isBroadcastIntent ? "Live Broadcast" : "World Mutation",
+      location: isBroadcastIntent ? "Istanbul Arena (simulated)" : "Castle World Layer",
+      confidence: 0.86,
+      risk: "Low",
+      eventId: null,
+      traceId
+    });
+    setLastWhy([
+      "Intent gerçek LLM hattına yönlendirildi",
+      "Layer profile + runtime context ile prompt zenginleştirildi",
+      "Directive cevabına göre kamera/harita uygulanacak",
+      `Routing plan: ${isBroadcastIntent ? "Studio + GreenRoom" : "Rhizoh Command Layer"}`
+    ]);
+    setRhizohFieldState("GENERATING");
 
-    if (command === "DRONE MODE" || command === "CAMERA DRONE") {
-      engineRef.current?.setCameraMode("DRONE");
-      uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: "CAMERA: DRONE (OrbitControls)" } });
-      setCmd("");
-      return;
-    }
-    if (command === "ORBIT MODE" || command === "CAMERA ORBIT") {
-      engineRef.current?.setCameraMode("ORBIT");
-      uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: "CAMERA: ORBIT showcase" } });
-      setCmd("");
-      return;
-    }
-    if (command === "ZOOM AGENT") {
-      const idx = engineRef.current?.focusNextAgent() ?? -1;
+    try {
+      const focus = uiStore.getState().layerFocus;
+      const profile = LAYER_UI_PROFILES[focus] || LAYER_UI_PROFILES[10];
+      const spec = LAYER_SPECS.find((layerRow) => layerRow.id === focus) || LAYER_SPECS[10];
+      let idToken = "";
+      try {
+        idToken = castleAuth.user ? await castleAuth.user.getIdToken() : "";
+      } catch {
+        idToken = "";
+      }
+
+      const out = await queryRhizohLLM({
+        message: raw,
+        provider: "openai",
+        connectionId: "",
+        agentId: "",
+        layerProfile: profile,
+        layerSpec: spec,
+        simTime: coreWorld.simTime,
+        idToken,
+        gatewayUx,
+        continuity: buildContinuityPayload(raw),
+        persistRhizohEmotions: persistRhizohEmotionSession
+      });
+
+      setHasReceivedRhizohReply(true);
+      setCommandLog((prev) => [{ ts: Date.now(), raw, source: out.source || "unknown" }, ...prev].slice(0, 24));
+
+      setRhizohFieldState("EXECUTING");
+      setRealityState(isBroadcastIntent ? "WORLD_BROADCASTING" : "WORLD_TRANSITION");
+      applyRhizohDirective(out.directive, engineRef);
+      if (!isBroadcastIntent) speakRhizoh(out.reply);
+      persistContinuityTurn(raw, out.reply, rhizohPersistTraceFromOut(out));
       uiStore.dispatch({
         type: "ADD_LOG",
-        payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: idx >= 0 ? `CAMERA → agent slot ${idx}` : "CAMERA: no agent" }
+        payload: {
+          ts: new Date().toLocaleTimeString(),
+          type: "SYS",
+          data: `RHIZOH LIVE [${out.source || "unknown"}] · ${intent}`
+        }
       });
-      setCmd("");
-      return;
-    }
-    if (command === "ZOOM CASTLE") {
-      void (async () => {
-        uiStore.dispatch({ type: "SET_REALITY", payload: "REAL_MAP" });
-        await engineRef.current?.transitionReality("REAL_MAP");
-        const c = window.__CASTLE_CESIUM__;
-        if (c?.focusCastle) c.focusCastle();
-        else engineRef.current?.focusCastleBeacon();
-        uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: "CAMERA → İstanbul castle beacon" } });
-      })();
-      setCmd("");
-      return;
-    }
-    const gotoMatch = command.match(/^GOTO\s+(FATIH|KADIKOY|BESIKTAS|USKUDAR)$/);
-    if (gotoMatch) {
-      const key = gotoMatch[1];
-      void (async () => {
-        uiStore.dispatch({ type: "SET_REALITY", payload: "REAL_MAP" });
-        await engineRef.current?.transitionReality("REAL_MAP");
-        const c = window.__CASTLE_CESIUM__;
-        if (c?.focusPOI) c.focusPOI(key);
-        else engineRef.current?.focusIstanbulPOI(key);
-        uiStore.dispatch({
-          type: "ADD_LOG",
-          payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: `CAMERA → ${ISTANBUL_POI[key].label}` }
-        });
-      })();
-      setCmd("");
-      return;
-    }
 
-    if (command === "SOVEREIGN BOOT" || command === "META BOOT") {
-      void (async () => {
-        await sovereignRuntimeSingleton.runBootSequence((phase) => {
+      if (isBroadcastIntent) {
+        try {
+          const title =
+            String(out.reply || "")
+              .split("\n")
+              .map((s) => s.trim())
+              .find(Boolean)
+              ?.slice(0, 120) || "Castle Live";
+          const routingStartedAt = Date.now();
+          greenRoomSparklineRef.current = [];
+          setSparklineVersion(0);
+          broadcastEmphasisRef.current = {
+            active: true,
+            until: Date.now() + 240_000,
+            traceId,
+            phase: "ROUTING",
+            joinPresenceUntil: 0
+          };
+          setGreenRoomLive({
+            title,
+            traceId,
+            phase: "ROUTING",
+            routingStartedAt,
+            liveStartedAt: null,
+            replayReady: false,
+            memorySealed: false,
+            transcriptId: null,
+            ack: null,
+            replayPath: null,
+            sharePath: null
+          });
+
+          const audienceEstimate = computeSimulatedAudienceEstimate({
+            swarmBoost: swarmActiveUi || coreWorld.swarmActive,
+            activeHeroCount: liveAgentsRef.current.length,
+            memoryHeat: memoryLinksRef.current
+          });
+          const gr = await postGreenRoomCapability({
+            idToken,
+            intentRaw: raw,
+            title,
+            audienceEstimate,
+            traceId,
+            roomId: "greenroom-main"
+          });
+          broadcastEmphasisRef.current = {
+            active: true,
+            until: Date.now() + 240_000,
+            traceId: gr.traceId,
+            phase: "LIVE",
+            joinPresenceUntil: broadcastEmphasisRef.current.joinPresenceUntil || 0
+          };
+          setGreenRoomLive({
+            title,
+            traceId: gr.traceId,
+            phase: "LIVE",
+            routingStartedAt,
+            liveStartedAt: Date.now(),
+            replayReady: true,
+            memorySealed: true,
+            transcriptId: gr.transcript?.id ?? null,
+            ack: gr.ack ?? "BROADCAST_ROUTED",
+            replayPath: gr.replayPath ?? `/replay/${gr.traceId}`,
+            sharePath: gr.sharePath ?? `/replay/${gr.traceId}`
+          });
+          {
+            const heroLabels = (liveAgentsRef.current || [])
+              .map((a) => String(a?.id || a?.label || a?.name || "").trim())
+              .filter(Boolean)
+              .slice(0, 12);
+            hydrateIdentityGraphFromSignals(readIdentityGraph(), {
+              greenRoom: { title, traceId: gr.traceId, ack: gr.ack ?? "BROADCAST_ROUTED" },
+              profileGoals: Array.isArray(castleAuth.profile?.goals) ? castleAuth.profile.goals : [],
+              governanceState: governanceRef.current,
+              memoryLinks: memoryLinksRef.current,
+              unfinishedJourneys: unfinishedJourneysRef.current,
+              heroLabels,
+              lastIntentRaw: raw
+            });
+          }
+          speakRhizoh("Yayını açtım. Dünya dinliyor.");
+          const vEcho = window.setTimeout(() => speakRhizoh("İlk yankılar geliyor."), 15_000);
+          flowTimersRef.current.push(vEcho);
+          const tCool = window.setTimeout(() => {
+            broadcastEmphasisRef.current = {
+              ...broadcastEmphasisRef.current,
+              phase: "COOLDOWN"
+            };
+            setGreenRoomLive((p) => (p?.traceId === gr.traceId ? { ...p, phase: "COOLDOWN" } : p));
+          }, 90_000);
+          const tArch = window.setTimeout(() => {
+            broadcastEmphasisRef.current = {
+              ...broadcastEmphasisRef.current,
+              phase: "ARCHIVED"
+            };
+            setGreenRoomLive((p) => (p?.traceId === gr.traceId ? { ...p, phase: "ARCHIVED" } : p));
+          }, 150_000);
+          flowTimersRef.current.push(tCool, tArch);
           uiStore.dispatch({
             type: "ADD_LOG",
-            payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: `L12 BOOT · ${phase.id}` }
+            payload: {
+              ts: new Date().toLocaleTimeString(),
+              type: "SYS",
+              data: `BROADCAST_ROUTED → GreenRoom · ${gr.traceId}`
+            }
           });
-        });
-        uiStore.dispatch({
-          type: "ADD_LOG",
-          payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: "L12: SOVEREIGN RUNTIME · boot OK · registries seeded" }
-        });
-        pushRhizohEvent("SOVEREIGN_BOOT", "META", "Castle", 1);
-      })();
-      setCmd("");
-      return;
-    }
+        } catch (err) {
+          setGreenRoomLive(null);
+          broadcastEmphasisRef.current = {
+            active: false,
+            until: 0,
+            traceId: null,
+            phase: null,
+            joinPresenceUntil: 0
+          };
+          uiStore.dispatch({
+            type: "ADD_LOG",
+            payload: {
+              ts: new Date().toLocaleTimeString(),
+              type: "WARN",
+              data: `GreenRoom route skipped: ${String(err?.message || err)}`
+            }
+          });
+        }
+      }
 
-    if (command === "SPAWN RHIZOH") {
-      if (coreWorld.rhizohIdx === -1) {
-        coreWorld.allocate("RHIZOH-PRIME", STATE.RHIZOH);
-        uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: "L10: AVATAR ONLINE — RHIZOH COMMAND PLANE." } });
-        pushRhizohEvent("COMMAND_PULSE", "Rhizoh", "MESH", 1);
-      } else {
-        uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "ERR", data: "RHIZOH ZATEN AKTİF." } });
-      }
-    } else if (command === "CALL PET" || command === "SUMMON PET") {
-      const id = `PET-${createCastleUlid()}`;
-      const idx = coreWorld.allocate(id, STATE.GHOSTPET);
-      if (idx !== -1 && coreWorld.rhizohIdx !== -1) {
-        coreWorld.ownerIdx[idx] = coreWorld.rhizohIdx;
-        coreWorld.posX[idx] = coreWorld.posX[coreWorld.rhizohIdx] + (Math.random() * 200 - 100);
-        coreWorld.posY[idx] = coreWorld.posY[coreWorld.rhizohIdx];
-        coreWorld.posZ[idx] = coreWorld.posZ[coreWorld.rhizohIdx] + (Math.random() * 200 - 100);
-        uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: "L7: GHOST PET BAĞLANDI → RHIZOH." } });
-        pushRhizohEvent("PET_EVOLVE", "Pet", "RHIZOH", 0.6);
-      } else {
-        uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "WARN", data: "GHOST PET (OWNER YOK)" } });
-      }
-    } else if (command === "SATELLITE LINK") {
-      uiStore.dispatch({ type: "TOGGLE_SATELLITE" });
-      uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: "L4 · UYDU KATMANI TOGGLE" } });
-      pushRhizohEvent("SATELLITE_SCAN", "Satellite", uiStore.getState().satelliteScanMode, 1);
-    } else if (command === "SUMMON SQUAD") {
-      const sid = squadRegistry.create("ESCORT", "escort");
-      const roster = [AGENT_ARCHETYPE.SCOUT, AGENT_ARCHETYPE.GUARD, AGENT_ARCHETYPE.HACKER, AGENT_ARCHETYPE.BUILDER, AGENT_ARCHETYPE.HEALER, AGENT_ARCHETYPE.HUNTER];
-      roster.forEach((arch, i) => {
-        coreWorld.allocate(`SQ${sid}-${ARCHETYPE_NAMES[arch]}-${i}-${createCastleUlid()}`, STATE.CITIZEN, arch, sid);
+      setEventPreview((prev) => ({
+        ...(prev || {}),
+        status: "EVENT CREATED",
+        type: isBroadcastIntent ? "Live Broadcast (GreenRoom)" : "Rhizoh Live Response",
+        location: spec.name,
+        confidence: out.source === "remote-llm" ? 0.95 : 0.75,
+        risk: out.source === "remote-llm" ? "Low" : "Medium",
+        eventId: `EVT-${Date.now().toString(36).toUpperCase()}`,
+        traceId
+      }));
+      setDemoLoopState("CREATED");
+    } catch (err) {
+      const detail = String(err?.message || err || "bilinmeyen hata");
+      setRhizohFieldState("DEGRADED");
+      setGovernanceState("DEGRADED");
+      setEventPreview((prev) => ({
+        ...(prev || {}),
+        status: "FAILED",
+        confidence: 0.3,
+        risk: "High"
+      }));
+      const clipped = detail.length > 220 ? `${detail.slice(0, 220)}…` : detail;
+      setRhizohInlineError({
+        title: "Rhizoh bu komutu işleyemedi",
+        detail: `${clipped} Bağlantı veya oturum sorunu olabilir; birkaç saniye sonra tekrar deneyin.`
       });
-      uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: `L6: SQUAD ${sid} · ${formatRoster(roster)}` } });
-      pushRhizohEvent("SQUAD_FORM", "Rhizoh", `SQUAD-${sid}`, 1);
-    } else if (command === "OPEN GREENROOM") {
-      uiStore.dispatch({ type: "SET_GREENROOM", payload: true });
-      uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: "L5: GREENROOM ARM — stream resonance." } });
-      pushRhizohEvent("GREENROOM_RESONANCE", "GreenRoom", "STREAM", 1);
-      window.open("/greenroom-ultimate.html", "_blank", "noopener");
-    } else if (command === "SCAN CITY") {
-      const peak = cityMind.scanCity();
-      uiStore.dispatch({ type: "SYNC_METRICS", payload: { heatPeak: peak } });
-      uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: `L8/L9: HEATMAP PEAK ${peak.toFixed(3)}` } });
-      pushRhizohEvent("CITY_SCAN", "CityMind", "256²", peak);
-    } else if (command === "BUILD TOWER") {
-      const e = cityMind.buildTower(0);
-      uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: `L8: TOWER · district-0 E=${e.toFixed(1)}` } });
-      pushRhizohEvent("DISTRICT_BUILD", "Builder", "district-0", 0.8);
-    } else if (command === "OPEN PORTAL") {
-      uiStore.dispatch({ type: "SET_PORTAL", payload: true });
-      coreWorld.portalCharge = 1;
-      uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: "PORTAL · PHASE GATE (ABILITY.PORTAL)" } });
-      pushRhizohEvent("PORTAL", "Rhizoh", "OVERWORLD", 1);
-    } else if (command === "ACTIVATE SWARM") {
-      if (!coreWorld.swarmActive) uiStore.dispatch({ type: "TOGGLE_SWARM" });
-      uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: "L6: SWARM / SQUAD AI — citizens jitter ON" } });
-      pushRhizohEvent("SWARM", "Overmind", "CITIZENS", 1);
-    } else if (command === "CALL AGENTS") {
-      const ids = [
-        ["AG-SCOUT", AGENT_ARCHETYPE.SCOUT],
-        ["AG-GUARD", AGENT_ARCHETYPE.GUARD],
-        ["AG-HACKER", AGENT_ARCHETYPE.HACKER],
-        ["AG-BUILD", AGENT_ARCHETYPE.BUILDER],
-        ["AG-HEAL", AGENT_ARCHETYPE.HEALER],
-        ["AG-HUNT", AGENT_ARCHETYPE.HUNTER]
-      ];
-      ids.forEach(([name, arch], i) => coreWorld.allocate(`${name}-${createCastleUlid()}-${i}`, STATE.CITIZEN, arch, 0));
-      uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: "L2: ARCHETYPE LINEUP SPAWNED" } });
-      pushRhizohEvent("AGENT_REPORT", "Agents", "Castle", 1);
-    } else if (command === "ENTER GREENROOM" || command === "MEMORY RESONANCE") {
-      uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: "MEMORY resonance · dream channel stub" } });
-      pushRhizohEvent("MEMORY", "Dream", "RESONANCE", 0.4);
-    } else if (command === "RUN CURRICULUM") {
-      coreWorld.runCurriculumOrganize();
-      uiStore.dispatch({
-        type: "ADD_LOG",
-        payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: "L11: CURRICULUM RUN — cadet ring + discipline pulse." }
-      });
-      pushRhizohEvent("ACADEMY_CURRICULUM", "Castle", "CADETS", 1);
-    } else if (command === "EXAM MODE") {
-      coreWorld.examMode = !coreWorld.examMode;
-      uiStore.dispatch({
-        type: "ADD_LOG",
-        payload: {
-          ts: new Date().toLocaleTimeString(),
-          type: "SYS",
-          data: coreWorld.examMode ? "L11: EXAM MODE ON — graduation checks ↑4×" : "L11: EXAM MODE OFF"
-        }
-      });
-      pushRhizohEvent("ACADEMY_EXAM", "Castle", coreWorld.examMode ? "INTENSE" : "NORMAL", 1);
-    } else if (command === "ACADEMY RESET") {
-      coreWorld.resetAcademyLayer();
-      uiStore.dispatch({
-        type: "ADD_LOG",
-        payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: "L11: ACADEMY RESET — XP / knowledge graph / LLM bindings cleared." }
-      });
-      pushRhizohEvent("ACADEMY_RESET", "Castle", "MESH", 1);
-    } else if (command === "REGISTER LLM DEMO") {
-      const idx = coreWorld.registerLLMAgent("demo-user", {
-        agentId: `sage-${createCastleUlid()}`,
-        model: "gpt-4.1-mini",
-        persona: {
-          role: "Academy Professor",
-          traits: ["strict", "analytical", "creative"],
-          domain: "physics + swarm intelligence"
-        },
-        memorySeed: "Castle Academics researcher"
-      });
-      uiStore.dispatch({
-        type: "ADD_LOG",
-        payload: {
-          ts: new Date().toLocaleTimeString(),
-          type: "SYS",
-          data: idx >= 0 ? `L11: LLM AGENT REGISTERED · slot ${idx}` : "L11: REGISTER FAILED (capacity)"
-        }
-      });
-      if (idx >= 0) pushRhizohEvent("LLM_REGISTER", "User", "Professor", 1);
-    } else if (command === "KILL") {
-      if (coreWorld.activeCount > 0) coreWorld.remove(coreWorld.indexToId[0]);
-    } else {
-      uiStore.dispatch({ type: "ADD_LOG", payload: { ts: new Date().toLocaleTimeString(), type: "WARN", data: `UNKNOWN: ${command}` } });
+      speakRhizoh("Rhizoh canlı hatta yanıt üretemedi. Lütfen tekrar dene.");
+    } finally {
+      setRhizohFieldState("IDLE");
+      setRealityState("WORLD_STABLE");
     }
     setCmd("");
   };
 
-  const openUrl = (path) => window.open(path, "_blank", "noopener");
+  const handleDemoAction = async (action) => {
+    if (action === "replay") {
+      if (!eventPreview && !greenRoomLive) return;
+      speakRhizoh("Bu anı yeniden yaşıyoruz.");
+      setReplayTimelinePct(0);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => setReplayTimelinePct(100));
+      });
+      if (greenRoomLive?.replayPath) {
+        window.history.pushState(
+          { castleReplay: greenRoomLive.traceId },
+          "",
+          greenRoomLive.replayPath
+        );
+      }
+    } else if (!eventPreview) return;
+    if (action === "publish") {
+      setEventPreview((prev) => (prev ? { ...prev, status: "EVENT PUBLISHED" } : prev));
+      setDemoLoopState("PUBLISHED");
+      setShowClosureMoment(true);
+      window.setTimeout(() => setShowClosureMoment(false), 2000);
+      return;
+    }
+    if (action === "replay") {
+      setEventPreview((prev) =>
+        prev
+          ? { ...prev, status: "REPLAY READY" }
+          : greenRoomLive
+            ? {
+                status: "REPLAY READY",
+                type: "Live Broadcast (GreenRoom)",
+                traceId: greenRoomLive.traceId,
+                confidence: 0.9,
+                risk: "Low"
+              }
+            : prev
+      );
+      setReplayMoments([
+        "Intent received",
+        "Routing selected",
+        "World output committed"
+      ]);
+      setShowReplayGhostTrails(true);
+      window.setTimeout(() => {
+        setShowReplayGhostTrails(false);
+        setReplayTimelinePct(0);
+      }, 8500);
+      setRealityState("WORLD_TRANSITION");
+      window.setTimeout(() => setRealityState("WORLD_STABLE"), 1200);
+      setDemoLoopState("REPLAYED");
+      return;
+    }
+    if (action === "share") {
+      const shareText = buildShareArtifact(
+        eventPreview || {
+          type: greenRoomLive?.title || "Live Broadcast",
+          status: "LIVE",
+          traceId: greenRoomLive?.traceId
+        }
+      );
+      try {
+        if (navigator?.clipboard?.writeText) await navigator.clipboard.writeText(shareText);
+        uiStore.dispatch({
+          type: "ADD_LOG",
+          payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: `SHARE READY · ${shareText}` }
+        });
+      } catch {
+        uiStore.dispatch({
+          type: "ADD_LOG",
+          payload: { ts: new Date().toLocaleTimeString(), type: "WARN", data: "SHARE FAILED · clipboard unavailable" }
+        });
+      }
+      setDemoLoopState("SHARED");
+      return;
+    }
+    if (action === "modify") {
+      setRhizohFieldState("LISTENING");
+      setCmd(lastIntentRaw);
+      return;
+    }
+    if (action === "view") {
+      setShowWhy(false);
+      setRealityState("WORLD_STABLE");
+    }
+  };
+
+  useEffect(() => {
+    const phase = cinematicOutput.phase;
+    if (!phase) return;
+    if (!voicedPhasesRef.current.has(phase) && cinematicOutput.voiceLine) {
+      speakRhizoh(cinematicOutput.voiceLine);
+      voicedPhasesRef.current.add(phase);
+    }
+    if (cinematicOutput.cameraDirective === "HUMAN_CENTER_ANCHOR") {
+      engineRef.current?.setCameraMode("DRONE");
+      engineRef.current?.focusCastleBeacon();
+    } else if (cinematicOutput.cameraDirective === "HERO_FOCUS") {
+      engineRef.current?.focusNextAgent();
+    }
+    if (phase === "WORLD_PULSE") {
+      engineRef.current?.setCameraMode("ORBIT");
+      if (cinematicOutput.cameraDirective === "ORBIT_CITY_WIDE") {
+        engineRef.current?.focusCastleBeacon?.();
+      }
+    } else if (phase === "ANCHOR_REVEAL") {
+      engineRef.current?.setCameraMode("DRONE");
+      engineRef.current?.focusCastleBeacon();
+    } else if (phase === "VOICE_INVITE") {
+      engineRef.current?.focusNextAgent();
+    }
+  }, [cinematicOutput, speakRhizoh]);
+
+  useEffect(() => {
+    if (!cinematicOutput.launch?.oneShotSwarmIgnite || launchSwarmIgniteDoneRef.current) return;
+    launchSwarmIgniteDoneRef.current = true;
+    coreWorld.swarmActive = true;
+    uiStore.dispatch({ type: "SET_SWARM_ACTIVE", payload: true });
+  }, [cinematicOutput.launch]);
+
+  useEffect(() => {
+    if (!booted) return;
+    let tries = 0;
+    const id = window.setInterval(() => {
+      tries += 1;
+      const c = window.__CASTLE_CESIUM__;
+      if (c?.flyToIstanbul) {
+        c.flyToIstanbul();
+        window.clearInterval(id);
+      } else if (tries > 40) window.clearInterval(id);
+    }, 250);
+    return () => window.clearInterval(id);
+  }, [booted]);
+
+  useEffect(() => {
+    if (!rhizohInlineError) return;
+    const t = window.setTimeout(() => setRhizohInlineError(null), 12_000);
+    return () => window.clearTimeout(t);
+  }, [rhizohInlineError]);
 
   return (
     <div className="h-screen w-full bg-[#010103] text-white font-mono overflow-hidden relative select-none uppercase font-black selection:bg-cyan-400/40">
       <div ref={containerRef} className="absolute inset-0 z-0 bg-black" />
-      <CesiumRealMapLayer active={realityMode === "REAL_MAP"} />
-
-      <div className="absolute inset-0 z-10 pointer-events-none p-12 flex flex-col justify-between">
-        <div className="flex justify-between items-start">
-          <SovereignHud engineRef={engineRef} />
-
-          <div className="flex flex-col gap-6 pointer-events-auto w-96 text-left">
-            <CastleAccountBadge auth={castleAuth} />
-            <div className="bg-[#0a0f2a]/95 backdrop-blur-3xl border border-cyan-400/40 p-8 rounded-[3.5rem] shadow-[0_0_80px_rgba(0,255,255,0.1)] ring-1 ring-white/5">
-              <div className="text-[12px] text-cyan-400 tracking-[0.6em] mb-10 flex items-center gap-3 uppercase font-black">
-                <Target size={22} className="text-amber-500 animate-pulse" /> L0 → L13 KERNEL
+      <CesiumRealMapLayer active={mapSurfaceActive} />
+      <div className="absolute inset-0 z-[5] pointer-events-none">
+        <SwarmCollectiveAuraV1 collectiveField={visualCognitionState.collectiveField} className="z-[1]" />
+        <div className={`absolute inset-0 bg-gradient-to-br ${governanceFx.tone}`} />
+        {showHud && !immersiveLiveTrace ? (
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 text-[9px] tracking-[0.18em] text-white/70 bg-black/25 px-3 py-1 rounded-full border border-white/10">
+            Governance Atmosphere: {governanceFx.label}
+          </div>
+        ) : null}
+        <div
+          className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2"
+          style={{ opacity: Math.min(0.35 + visualCognitionState.swarmField.intensity * 0.5, 0.95) }}
+        >
+          <div
+            className="absolute left-1/2 top-1/2 h-[min(72vw,520px)] w-[min(72vw,520px)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-400/15"
+            style={{
+              background: `conic-gradient(from 0deg, transparent 0deg, rgba(34,211,238,0.12) 60deg, transparent 120deg, rgba(168,85,247,0.08) 200deg, transparent 280deg)`,
+              animation: "spin 28s linear infinite"
+            }}
+          />
+          <div className="absolute left-1/2 top-1/2 flex h-36 w-36 -translate-x-1/2 -translate-y-1/2 items-center justify-center">
+            <div className={`h-32 w-32 rounded-full border-2 ${governanceFx.orb === "crystal" ? "border-red-300/70" : governanceFx.orb === "tense" ? "border-amber-300/60" : "border-cyan-300/70"} animate-pulse shadow-[0_0_60px_rgba(34,211,238,0.35)]`} />
+            <div className="absolute inset-[-28px] rounded-full border border-cyan-200/25 animate-ping" />
+            <div className="absolute inset-[-48px] rounded-full border border-fuchsia-400/10" />
+          </div>
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-[5.5rem] text-[9px] tracking-[0.2em] text-cyan-200/80 normal-case whitespace-nowrap">
+            {entityCount} field pulses · swarm {visualCognitionState.swarmField.level}
+          </div>
+        </div>
+        {showReplayGhostTrails || replayTimelinePct > 0 ? (
+          <div className="absolute inset-x-10 bottom-28 z-[6] flex flex-col gap-2">
+            <div className="h-1.5 w-full max-w-md mx-auto rounded-full bg-white/10 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-cyan-400/30 via-cyan-300/90 to-fuchsia-400/50 transition-[width] duration-500 ease-out"
+                style={{ width: `${replayTimelinePct}%` }}
+              />
+            </div>
+            {showReplayGhostTrails ? (
+              <div className="h-14 rounded-full border border-cyan-200/25 bg-cyan-300/5 animate-pulse">
+                <div className="h-full w-full bg-gradient-to-r from-transparent via-cyan-300/25 to-transparent animate-pulse" />
               </div>
-              <div className="space-y-6">
-                <div className="p-5 bg-white/5 rounded-3xl border border-white/5 shadow-inner relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-3 opacity-20">
-                    <Activity size={40} className="text-cyan-400" />
-                  </div>
-                  <div className="text-[10px] text-white/30 mb-2 tracking-widest flex items-center gap-2 uppercase">Active Entities</div>
-                  <div className="text-4xl text-cyan-400 font-mono italic">{entityCount}</div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setShowHud((v) => !v)}
+        className="pointer-events-auto fixed bottom-6 left-4 z-[60] rounded-lg border border-white/20 bg-black/60 px-2 py-1 text-[9px] tracking-widest text-white/60 hover:bg-white/10"
+      >
+        {showHud ? "Hide debug HUD" : "Debug HUD"}
+      </button>
+
+      {immersiveLiveTrace ? (
+        <div className="pointer-events-auto fixed bottom-14 left-1/2 z-[58] flex -translate-x-1/2 items-center gap-3 rounded-full border border-fuchsia-400/45 bg-black/75 px-4 py-2 text-[9px] text-fuchsia-100/95 shadow-[0_0_24px_rgba(192,38,211,0.2)] normal-case">
+          <span className="tracking-wide">Live room · {immersiveLiveTrace.slice(0, 20)}…</span>
+          <button
+            type="button"
+            className="rounded-full border border-white/25 px-3 py-1 text-[9px] text-white/90 hover:bg-white/10"
+            onClick={() => {
+              setImmersiveLiveTrace(null);
+              broadcastEmphasisRef.current = {
+                ...broadcastEmphasisRef.current,
+                joinPresenceUntil: 0
+              };
+              window.history.pushState({}, "", "/");
+            }}
+          >
+            Exit room
+          </button>
+        </div>
+      ) : null}
+
+      <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between p-4 md:p-5">
+        <div className="flex justify-end items-start gap-3">
+          {showHud && !immersiveLiveTrace ? (
+            <div className="pointer-events-auto mr-auto max-w-[min(32rem,90vw)] rounded-2xl border border-cyan-300/30 bg-[#04091b]/80 backdrop-blur-xl p-4">
+              <div className="text-[9px] tracking-[0.35em] text-cyan-300/80 mb-3">SYSTEM STATE (DEBUG)</div>
+              <div className="grid grid-cols-3 gap-2 text-[9px]">
+                <div className="rounded-xl border border-white/10 bg-black/25 p-2">
+                  <div className="text-white/50 mb-1">FIELD</div>
+                  <div className="text-cyan-300">{rhizohFieldState}</div>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-black/25 p-2">
+                  <div className="text-white/50 mb-1">REALITY</div>
+                  <div className="text-emerald-300">{realityState}</div>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-black/25 p-2">
+                  <div className="text-white/50 mb-1">GOV</div>
+                  <div className="text-amber-300">{governanceState}</div>
                 </div>
               </div>
+              <div className="mt-2 grid grid-cols-2 gap-1 text-[8px] text-white/55">
+                <span>Swarm: {visualCognitionState.swarmField.level}</span>
+                <span>Memory: {visualCognitionState.memoryEcho.links}</span>
+              </div>
+              <RhizohPersistentCoreInspectV1
+                gatewayPhase={gatewayUx?.phase || "—"}
+                socialRegistry={drawerSocialRegistry}
+              />
             </div>
-
-            <div className="bg-amber-500/5 border border-amber-500/20 p-6 rounded-[2.5rem] backdrop-blur-xl">
-              <div className="flex items-start gap-3">
-                <Info size={16} className="text-amber-400 shrink-0 mt-1" />
-                <p className="text-[9px] text-white/50 leading-relaxed font-black uppercase tracking-widest">
-                  L0–L13: kernel … L11 Academics · L12 Sovereign Runtime · L13 Robotics Mechanics Bridge.
-                </p>
+          ) : null}
+          {!immersiveLiveTrace ? (
+            <div className="pointer-events-auto mr-auto max-w-[min(36rem,92vw)] rounded-2xl border border-emerald-300/25 bg-[#04131a]/80 backdrop-blur-xl px-4 py-3">
+              <div className="text-[9px] tracking-[0.28em] text-emerald-200/85">LAYER COMPOSITION BIND</div>
+              <div className="mt-2 flex flex-wrap gap-2 text-[9px]">
+                <span
+                  className={`rounded-full border px-2 py-1 normal-case ${layerComposition.mapReady ? "border-cyan-300/45 text-cyan-100 bg-cyan-300/10" : "border-white/20 text-white/55"}`}
+                >
+                  Harita {layerComposition.mapReady ? "bağlı" : realityMode === "REAL_MAP" ? "bekliyor (ağ/eşzamanlama)" : "kapalı"}
+                </span>
+                <span className={`rounded-full border px-2 py-1 ${layerComposition.swarm ? "border-fuchsia-300/45 text-fuchsia-100 bg-fuchsia-300/10" : "border-white/20 text-white/55"}`}>Swarm {layerComposition.swarm ? "live" : "idle"}</span>
+                <span className={`rounded-full border px-2 py-1 ${layerComposition.agentsReady ? "border-emerald-300/45 text-emerald-100 bg-emerald-300/10" : "border-white/20 text-white/55"}`}>Agents {liveAgents.length}</span>
+                <span className={`rounded-full border px-2 py-1 ${layerComposition.memoryReady ? "border-amber-300/45 text-amber-100 bg-amber-300/10" : "border-white/20 text-white/55"}`}>Memory {memoryLinks}</span>
+                <span className="rounded-full border border-indigo-300/45 text-indigo-100 bg-indigo-300/10 px-2 py-1">Gov {layerComposition.governance}</span>
               </div>
             </div>
-
-            {activeWidgets.includes("stack") ? <LayerStackMini /> : null}
-            {activeWidgets.includes("rail") ? <LayerRail /> : null}
-            {activeWidgets.includes("layerxp") ? <LayerExperiencePanel engineRef={engineRef} /> : null}
-            {activeWidgets.includes("camera") ? <CameraFlightDeck engineRef={engineRef} /> : null}
-            {activeWidgets.includes("flighthud") ? <CastleFlightHud /> : null}
-            {activeWidgets.includes("studiomirror") ? <StudioMirrorPanel /> : null}
-            {activeWidgets.includes("sovereign") ? (
-              <SovereignRuntimePanel
-                getSimTime={() => coreWorld.simTime}
-                onSystemLog={(msg) =>
-                  uiStore.dispatch({
-                    type: "ADD_LOG",
-                    payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: msg }
-                  })
-                }
-              />
+          ) : (
+            <div className="pointer-events-auto mr-auto rounded-2xl border border-fuchsia-400/35 bg-black/55 px-3 py-2 text-[9px] text-fuchsia-100/90 normal-case backdrop-blur-md">
+              Immersive broadcast · world synced to anchor
+            </div>
+          )}
+          <div className="pointer-events-auto flex max-w-[18rem] flex-col gap-2">
+            {!showDetailDrawer && l10HudPresence ? (
+              <div
+                className={`rounded-xl border px-2 py-1.5 bg-black/35 ${
+                  l10HudPresence.mode === "cautious"
+                    ? "border-amber-300/35"
+                    : l10HudPresence.mode === "soft_pulse"
+                      ? "border-violet-300/35"
+                      : "border-emerald-300/35"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`inline-block h-2 w-2 rounded-full animate-pulse ${
+                      l10HudPresence.mode === "cautious"
+                        ? "bg-amber-300"
+                        : l10HudPresence.mode === "soft_pulse"
+                          ? "bg-violet-300"
+                          : "bg-emerald-300"
+                    }`}
+                  />
+                  <span className="text-[8px] tracking-[0.22em] text-white/75">SLE PRESENCE</span>
+                </div>
+                <div className="mt-1 text-[9px] text-white/85 normal-case">Rhizoh {l10HudPresence.label}</div>
+                <div className="text-[8px] text-white/55 normal-case">
+                  Physics: {l10HudPresence.phase} · Field: {l10HudPresence.interference}
+                </div>
+              </div>
             ) : null}
-            {activeWidgets.includes("academy") ? <CastleAcademicsCard /> : null}
-            {activeWidgets.includes("events") ? <EventMeshMini /> : null}
-            {activeWidgets.includes("identitylab") ? (
-              <AgentIdentityLabPanel selectedAgentId={selectedAgentId} onSelectAgent={setSelectedAgentId} />
-            ) : null}
-            {activeWidgets.includes("academyroom") ? <AcademyEventRoomPanel selectedAgentId={selectedAgentId} /> : null}
-            {activeWidgets.includes("continuity") ? <RhizohContinuityHud selectedAgentId={selectedAgentId} /> : null}
-            {activeWidgets.includes("intel") ? (
-              <EventLayerIntelPanel selectedAgentId={selectedAgentId} selectedConnectionId={selectedConnectionId} />
-            ) : null}
-            {activeWidgets.includes("robotics") ? <RoboticsMechanicsPanel selectedAgentId={selectedAgentId} /> : null}
-            {activeWidgets.includes("connections") ? (
-              <MyLLMConnectionsPanel selectedConnectionId={selectedConnectionId} onSelectConnection={setSelectedConnectionId} />
-            ) : null}
-            {activeWidgets.includes("rhizoh") ? (
-              <RhizohCommsPanel engineRef={engineRef} selectedConnectionId={selectedConnectionId} selectedAgentId={selectedAgentId} />
-            ) : null}
-
-            <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => openUrl("/greenroom-ultimate.html")} className="px-3 py-2 rounded-xl bg-cyan-400 text-black text-xs font-bold">
-                Studio
-              </button>
-              <button type="button" onClick={() => openUrl("/octoai-studio.html")} className="px-3 py-2 rounded-xl bg-purple-400 text-black text-xs font-bold">
-                OCTO
-              </button>
-              <button type="button" onClick={() => openUrl("/spiralmmo-castlebyck.html")} className="px-3 py-2 rounded-xl bg-emerald-400 text-black text-xs font-bold">
-                SpiralMMO
-              </button>
-              <button type="button" onClick={() => openUrl(YOUTUBE_LIVE_URL)} className="px-3 py-2 rounded-xl bg-rose-400 text-black text-xs font-bold">
-                YouTube
+            <CastleAccountBadge auth={castleAuth} />
+            <div className="rounded-2xl border border-indigo-300/35 bg-indigo-300/15 p-3 backdrop-blur-md">
+              <div className="text-[10px] tracking-wide text-indigo-100 normal-case leading-relaxed">
+                {welcomeCard.primary}
+              </div>
+              <div className="mt-1.5 text-[10px] text-white/85 normal-case">
+                {welcomeCard.secondary}
+              </div>
+              <div className="mt-1 text-[10px] text-cyan-200/90 normal-case">
+                Istanbul anchor live — speak or type to shape it.
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDetailDrawer((v) => !v)}
+                className="mt-2 w-full rounded-xl border border-white/15 py-1.5 text-[9px] tracking-[0.12em] text-white/70"
+              >
+                {showDetailDrawer ? "Close details" : "More · agents · events · share"}
               </button>
             </div>
           </div>
         </div>
 
-        <div className="flex justify-center mb-8">
-          <div className="w-full max-w-6xl bg-[#0a1b3a]/98 border border-cyan-400/50 p-4 rounded-[5rem] flex items-center shadow-[0_0_120px_rgba(0,255,255,0.2)] backdrop-blur-5xl ring-2 ring-white/5 pointer-events-auto">
-            <button type="button" className="ml-6 p-6 hover:bg-cyan-400/20 rounded-full text-cyan-400 transition-all active:scale-90 shadow-inner">
-              <Mic size={32} />
-            </button>
-            <div className="flex-1 px-10 relative">
-              <input
-                value={cmd}
-                onChange={(e) => setCmd(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleExecute()}
-                placeholder="SPAWN RHIZOH · CALL PET · SATELLITE LINK · SUMMON SQUAD · SCAN CITY · BUILD TOWER · OPEN GREENROOM · ACTIVATE SWARM · CALL AGENTS · SATELLITE SIGNAL …"
-                className="w-full bg-transparent border-none outline-none text-xl font-black tracking-[0.5em] text-white uppercase placeholder:text-white/10 italic"
+        {showDetailDrawer ? (
+          <div className="pointer-events-auto fixed inset-y-0 right-0 z-[55] w-full max-w-md border-l border-cyan-400/25 bg-[#050a14]/95 p-4 shadow-2xl backdrop-blur-xl overflow-y-auto">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[10px] tracking-[0.2em] text-cyan-200">DETAILS</span>
+              <button type="button" onClick={() => setShowDetailDrawer(false)} className="text-[10px] text-white/50">
+                ✕
+              </button>
+            </div>
+            <div className="mb-4">
+              <L10Observatory
+                socialRegistry={drawerSocialRegistry}
+                truthIntervalMs={320}
+                mode="greenroom"
+                userAgentSubjectThreadId={pickPrimaryCognitiveThreadId(drawerSocialRegistry)}
               />
             </div>
-            <button type="button" onClick={handleExecute} className="p-7 bg-cyan-400 rounded-[3.5rem] hover:bg-cyan-300 transition-all text-black shadow-[0_0_60px_rgba(0,255,255,0.5)] active:scale-95 group">
-              <Send size={38} className="group-hover:scale-110 transition-transform" />
+            <RhizohCommsPanel
+              engineRef={engineRef}
+              selectedConnectionId=""
+              selectedAgentId=""
+              gatewayModel={gatewayUx}
+              onGatewayRetry={gatewayUx.retry}
+              hasHttpOrigin={hasRhizohHttpOrigin}
+              castleAuth={castleAuth}
+              continuityBuilder={buildContinuityPayload}
+              socialFieldPreview={drawerSocialField}
+              onPersistRhizohTurn={persistContinuityTurn}
+              socialRegistryPreview={drawerSocialRegistry}
+              browserPresenceRef={browserPresenceRef}
+              remoteAgentActivity={{ active: liveAgents.length > 0, count: liveAgents.length }}
+            />
+            <div className="mt-4">
+              <SovereignCastleCommandPanel
+                engineRef={engineRef}
+                currentUserId={castleAuth.user?.uid || getOrCreateCastleDevUid()}
+                rhizohFirstName={rhizohFirstName}
+                remoteCastles={remoteCastles}
+                bridgeRegistryReady={bridgeRegistryReady}
+                onInitiateMirrorBridge={initiateMirrorBridge}
+                onCastleLifecycleChange={handleCastleLifecycle}
+              />
+            </div>
+            <div className="space-y-3 text-[10px] text-white/75 normal-case mt-4">
+              <div>
+                <div className="text-white/40 mb-1">Agents</div>
+                {relationalPresenceState.agentAttentionMap.map((entry) => (
+                  <div key={entry.agentId}>{entry.message}</div>
+                ))}
+              </div>
+              <div>
+                <div className="text-white/40 mb-1">Live Agent Projection</div>
+                <div className="space-y-1 max-h-40 overflow-y-auto no-scrollbar">
+                  {liveAgents.slice(0, 10).map((a) => (
+                    <div key={a.id} className="rounded-lg border border-white/10 bg-black/20 px-2 py-1">
+                      <span className="text-cyan-200">{a.id}</span>
+                      <span className="text-white/50"> · L{a.level} · E{a.energy} · {a.lat.toFixed(4)}, {a.lon.toFixed(4)}</span>
+                    </div>
+                  ))}
+                  {!liveAgents.length ? <div className="text-white/45">Henüz görünür ajan yok.</div> : null}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {heroAgentLabels.map((name) => (
+                  <span key={name} className="rounded-full border border-white/15 px-2 py-0.5 text-[9px]">
+                    {name}
+                  </span>
+                ))}
+              </div>
+              <div className="text-white/55">
+                Last created: {relationalPresenceState.sessionContinuity.lastCreated} · Preference: {relationalPresenceState.sessionContinuity.preference}
+              </div>
+            </div>
+            {greenRoomLive ? (
+              <div className="mt-4 rounded-2xl border border-fuchsia-400/40 bg-gradient-to-br from-fuchsia-950/50 to-black/60 p-4 shadow-[0_0_40px_rgba(217,70,239,0.12)]">
+                <div className="text-[10px] tracking-[0.35em] text-fuchsia-200/95 mb-2">LIVE NOW</div>
+                <div className="h-px bg-gradient-to-r from-transparent via-fuchsia-400/50 to-transparent mb-3" />
+                <div className="text-[12px] text-white font-medium normal-case leading-snug">{greenRoomLive.title}</div>
+                <div className="mt-2 grid gap-1.5 text-[10px] text-white/75 normal-case">
+                  <div>
+                    Status:{" "}
+                    <span className="text-fuchsia-200/95 font-semibold">
+                      {greenRoomLive.phase === "ROUTING"
+                        ? "ROUTING"
+                        : greenRoomLive.phase === "LIVE"
+                          ? "LIVE"
+                          : greenRoomLive.phase === "COOLDOWN"
+                            ? "COOLDOWN"
+                            : "ARCHIVED"}
+                    </span>
+                  </div>
+                  <div>
+                    Elapsed:{" "}
+                    <span className="text-cyan-200/90 font-mono">{formatGreenRoomElapsed(greenRoomElapsedSec)}</span>
+                  </div>
+                  <div>
+                    Audience:{" "}
+                    <span className="text-fuchsia-200/90">
+                      {greenRoomAudienceNow} watching
+                    </span>
+                  </div>
+                  <div>
+                    Signal:{" "}
+                    <span className="text-emerald-200/85">{audienceSignalLabel(greenRoomAudienceNow)}</span>
+                  </div>
+                  <div>
+                    Replay:{" "}
+                    {greenRoomLive.replayReady ? (
+                      <span className="text-emerald-200/90">available</span>
+                    ) : (
+                      <span className="text-amber-200/80">preparing</span>
+                    )}
+                  </div>
+                  <div>
+                    Trace: <span className="text-cyan-200/90 font-mono text-[9px]">{greenRoomLive.traceId}</span>
+                  </div>
+                  {greenRoomLive.ack ? (
+                    <div>
+                      Route ack: <span className="text-emerald-200/85 font-mono text-[9px]">{greenRoomLive.ack}</span>
+                    </div>
+                  ) : null}
+                </div>
+                <div className="mt-2 flex items-center gap-2 text-[9px] text-fuchsia-300/70">
+                  <span className="shrink-0">Field</span>
+                  <AudienceSparkline key={sparklineVersion} values={[...greenRoomSparklineRef.current]} />
+                </div>
+                {greenRoomLive.phase === "LIVE" && liveReactionToast ? (
+                  <div
+                    key={liveReactionToast.id}
+                    className="castle-live-reaction-toast mt-2 rounded-lg border border-fuchsia-400/20 bg-fuchsia-950/40 px-2 py-1.5 text-center text-[9px] text-fuchsia-100/95 normal-case"
+                  >
+                    {liveReactionToast.text}
+                  </div>
+                ) : null}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="rounded-lg border border-emerald-300/40 bg-emerald-500/15 px-3 py-1.5 text-[10px] text-emerald-100 hover:bg-emerald-500/25 disabled:opacity-40"
+                    disabled={!greenRoomLive.replayReady}
+                    onClick={() => handleDemoAction("replay")}
+                  >
+                    Open replay
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-lg border border-fuchsia-300/45 bg-fuchsia-500/15 px-3 py-1.5 text-[10px] text-fuchsia-100 hover:bg-fuchsia-500/25"
+                    onClick={() => {
+                      if (!greenRoomLive.traceId) return;
+                      applyBroadcastPresence(greenRoomLive.traceId);
+                      const id = encodeURIComponent(greenRoomLive.traceId);
+                      window.history.pushState(
+                        { castleGreenRoom: greenRoomLive.traceId },
+                        "",
+                        `/greenroom/live/${id}`
+                      );
+                      uiStore.dispatch({
+                        type: "ADD_LOG",
+                        payload: {
+                          ts: new Date().toLocaleTimeString(),
+                          type: "SYS",
+                          data: `ENTER LIVE ROOM · /greenroom/live/${greenRoomLive.traceId}`
+                        }
+                      });
+                    }}
+                  >
+                    Enter live room
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-lg border border-white/20 px-3 py-1.5 text-[10px] text-white/90 hover:bg-white/10"
+                    onClick={() => handleDemoAction("share")}
+                  >
+                    Share
+                  </button>
+                </div>
+                {greenRoomLive.memorySealed ? (
+                  <div
+                    key={`seal-${sealBurstNonce}`}
+                    className="castle-seal-burst mt-3 rounded-lg border border-cyan-400/25 bg-cyan-950/30 px-2 py-1.5 text-[9px] text-cyan-100/90 normal-case"
+                  >
+                    <div className="text-white/50 text-[8px] tracking-[0.15em] mb-0.5">CASTLE LIBRARY</div>
+                    Committed to Castle Library · <span className="text-emerald-300/95">Memory sealed ✓</span>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            <div className="mt-4 rounded-2xl border border-cyan-300/30 bg-[#070d20]/80 p-4">
+              <div className="text-[10px] tracking-[0.3em] text-cyan-200/80 mb-2">EVENT PREVIEW</div>
+              <div className="text-[11px] text-white/80 normal-case">
+                {eventPreview?.status ?? "Awaiting intent"}
+              </div>
+              <div className="text-[10px] text-white/60 mt-3 normal-case">
+                Type: {eventPreview?.type ?? "N/A"}
+              </div>
+              <div className="text-[10px] text-white/60 normal-case">
+                Location: {eventPreview?.location ?? "N/A"}
+              </div>
+              <div className="text-[10px] text-white/60 normal-case">
+                Confidence: {eventPreview?.confidence ?? "N/A"} · Risk: {eventPreview?.risk ?? "N/A"}
+              </div>
+              <div className="text-[10px] text-emerald-200/90 normal-case">
+                System confidence: {eventPreview?.confidence ? (eventPreview.confidence >= 0.9 ? "High" : "Moderate") : "Pending"} · Governance {governanceState}
+              </div>
+              <div className="text-[10px] text-white/60 normal-case">
+                Event: {eventPreview?.eventId ?? "pending"} · Trace: {eventPreview?.traceId ?? "pending"}
+              </div>
+              {showClosureMoment && eventPreview?.traceId ? (
+                <div className="mt-3 rounded-2xl border border-emerald-300/40 bg-emerald-300/10 px-3 py-2 animate-pulse">
+                  <div className="text-[10px] text-emerald-200 tracking-[0.1em]">SYSTEM COMPLETED LOOP</div>
+                  <div className="text-[10px] text-emerald-100/90 normal-case">Trace highlighted: {eventPreview.traceId}</div>
+                </div>
+              ) : null}
+              <div className="text-[10px] text-white/50 mt-3">Active Entities: {entityCount}</div>
+              <div className="text-[10px] text-cyan-200/80 mt-1">Demo Loop: {demoLoopState}</div>
+              <button
+                type="button"
+                onClick={() => setShowWhy((prev) => !prev)}
+                className="mt-4 w-full rounded-2xl border border-cyan-300/30 bg-cyan-300/10 py-2 text-[10px] tracking-[0.2em] text-cyan-200"
+              >
+                WHY THIS HAPPENED?
+              </button>
+              {showWhy ? (
+                <div className="mt-3 space-y-1 text-[10px] text-white/70 normal-case">
+                  <div className="text-emerald-200/90">Decision was auto-routed by healthy capacity + low risk profile.</div>
+                  <div className="text-indigo-200/90">Light route committed: knowledge → map → camera → voice → memory → artifact.</div>
+                  <div className="text-cyan-200/90">
+                    Breadcrumbs: {visualCognitionState.explainabilityBreadcrumbs.path.slice(0, 2).join(" -> ") || "awaiting path"}
+                  </div>
+                  {lastWhy.map((item) => (
+                    <div key={item}>- {item}</div>
+                  ))}
+                </div>
+              ) : null}
+              {demoLoopState === "REPLAYED" && replayMoments.length > 0 ? (
+                <div className="mt-3 rounded-2xl border border-cyan-300/25 bg-cyan-300/5 p-3">
+                  <div className="text-[10px] text-cyan-200 tracking-[0.12em] mb-2">REPLAY MICRO-TIMELINE</div>
+                  <div className="space-y-1 text-[10px] text-white/75 normal-case">
+                    {replayMoments.map((step, idx) => (
+                      <div key={step}>{idx + 1}. {step}</div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {eventPreview?.status === "EVENT CREATED" || demoLoopState === "PUBLISHED" ? (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => handleDemoAction("view")} className="rounded-xl border border-white/15 py-2 text-[10px]">View</button>
+                  <button type="button" onClick={() => handleDemoAction("modify")} className="rounded-xl border border-white/15 py-2 text-[10px]">Modify</button>
+                  <button type="button" onClick={() => handleDemoAction("publish")} className="rounded-xl border border-emerald-300/30 bg-emerald-300/10 py-2 text-[10px]">Publish</button>
+                  <button type="button" onClick={() => handleDemoAction("replay")} className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 py-2 text-[10px]">Replay</button>
+                  <button type="button" onClick={() => handleDemoAction("share")} className="col-span-2 rounded-xl border border-amber-300/30 bg-amber-300/10 py-2 text-[10px]">Share</button>
+                </div>
+              ) : null}
+              {eventPreview?.traceId ? (
+                <div className="mt-3 rounded-2xl border border-amber-300/20 bg-amber-300/5 p-3">
+                  <div className="text-[10px] text-amber-200 tracking-[0.1em] mb-2">SHARE ARTIFACT</div>
+                  <pre className="text-[9px] text-white/70 normal-case whitespace-pre-wrap">{buildShareArtifact(eventPreview)}</pre>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        <RhizohCapabilityHaloV1
+          className="pointer-events-auto z-[12] mb-1"
+          collectivePulse={visualCognitionState.collectiveField?.density ?? 0.4}
+          onSeedIntent={(s) => {
+            setCmd(s);
+            setRhizohFieldState("LISTENING");
+          }}
+          onFocusLayer={(id) => {
+            uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: id });
+          }}
+          onOpenHref={(href) => window.open(href, "_blank", "noopener")}
+          onOpenRealMap={() => {
+            void setRealityMode("REAL_MAP", { source: "RHIZOH" });
+          }}
+        />
+
+        <div className="pointer-events-auto mb-3 flex flex-wrap items-center justify-center gap-2 px-2">
+          {[
+            { label: "Studio", href: "/greenroom-ultimate.html", tone: "border-cyan-400/40 bg-cyan-400/10 text-cyan-100" },
+            { label: "Octo", href: "/octoai-studio.html", tone: "border-fuchsia-400/40 bg-fuchsia-500/10 text-fuchsia-100" },
+            { label: "SpiralMMO", href: "/spiralmmo-castlebyck.html", tone: "border-emerald-400/40 bg-emerald-500/10 text-emerald-100" },
+            { label: "GreenRoom", href: "/greenroom-ultimate.html", tone: "border-amber-400/40 bg-amber-500/10 text-amber-100" }
+          ].map((p) => (
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => window.open(p.href, "_blank", "noopener")}
+              className={`rounded-full border px-4 py-2 text-[10px] tracking-[0.12em] ${p.tone}`}
+            >
+              {p.label}
             </button>
+          ))}
+        </div>
+
+        <div className="flex justify-center mb-6 px-2">
+          <div className="w-full max-w-6xl bg-[#0a1b3a]/85 border border-cyan-400/40 p-3 sm:p-4 rounded-[2rem] flex flex-col gap-3 shadow-[0_0_80px_rgba(0,255,255,0.12)] backdrop-blur-xl ring-1 ring-white/5 pointer-events-auto">
+            {showTrustBlurb ? (
+              <div className="mx-1 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 normal-case">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <div className="text-[10px] font-bold tracking-[0.2em] text-cyan-200/90">BU UYGULAMA NE YAPAR?</div>
+                    <p className="mt-1.5 text-[10px] leading-relaxed text-white/80 max-w-prose">
+                      Rhizoh Genesis: yazı veya sesle 3B şehir ve swarm alanını yönlendirir; isteğe bağlı uzak LLM ve canlı yayın (GreenRoom)
+                      hattına bağlanır. Kimlik ve oturum Firebase üzerindedir; üretken model çağrıları yalnızca yapılandırdığınız HTTPS uç
+                      noktasına gider (ör. barındırmada <span className="text-cyan-200/90">/api/rhizoh</span>).
+                    </p>
+                    <p className="mt-1 text-[9px] text-white/55">
+                      Tarayıcı konsolundaki teknik hatalar gizlenmez; bağlantı durumu bu kartın üstünde canlı güncellenir. Veri akışı yoksa yerel
+                      demo yanıtları kullanılır — süreklilik belleği sınırlı kalır.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowTrustBlurb(false)}
+                    className="shrink-0 rounded-lg border border-white/15 px-2 py-1 text-[9px] text-white/65 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a1b3a]"
+                  >
+                    Gizle
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowTrustBlurb(true)}
+                className="mx-1 text-left text-[9px] text-cyan-300/75 hover:text-cyan-200 normal-case focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded px-1"
+              >
+                Uygulama özeti ve gizlilik notunu göster
+              </button>
+            )}
+
+            <RhizohGatewayBanner
+              model={gatewayUx}
+              onRetry={gatewayUx.retry}
+              hasHttpOrigin={hasRhizohHttpOrigin}
+              className="mx-1"
+            />
+
+            <div className="mx-1 rounded-2xl border border-emerald-400/25 bg-emerald-950/25 px-4 py-3 normal-case">
+              <div className="text-[9px] font-bold tracking-[0.25em] text-emerald-200/90 mb-2">HIZLI BAŞLANGIÇ</div>
+              <ol className="grid sm:grid-cols-2 gap-2 text-[10px] text-white/80 list-decimal list-inside marker:text-emerald-400/80">
+                <li className={gatewayLinkSettled ? "text-emerald-100" : ""}>
+                  Bağlantı durumu: {gatewayUx.headline}
+                </li>
+                <li className={cmd.trim().length > 0 ? "text-emerald-100" : ""}>Örnek metin yazın veya çiplerden seçin</li>
+                <li className={hasSentRhizohCommand ? "text-emerald-100" : ""}>
+                  <span className="font-semibold">Gönder</span> — Enter veya cyan düğme
+                </li>
+                <li className={hasReceivedRhizohReply ? "text-emerald-100" : ""}>Yanıt: ses özeti · olay kartı · detay çekmecesi</li>
+              </ol>
+            </div>
+
+            {rhizohInlineError ? (
+              <div role="alert" className="mx-1 rounded-2xl border border-red-400/50 bg-red-950/40 px-4 py-3 normal-case">
+                <div className="text-[10px] font-bold text-red-100">{rhizohInlineError.title}</div>
+                <div className="mt-1 text-[10px] text-white/90 leading-relaxed">{rhizohInlineError.detail}</div>
+                <button
+                  type="button"
+                  className="mt-2 rounded-lg border border-white/20 px-2 py-1 text-[9px] text-white/85 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                  onClick={() => setRhizohInlineError(null)}
+                >
+                  Bildirimi kapat
+                </button>
+              </div>
+            ) : null}
+
+            {!onboardingDone ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setOnboardingDone(true);
+                  window.localStorage.setItem("rhizoh_intro_seen_v1", "1");
+                  ensureAmbientSound();
+                  setRhizohFieldState("LISTENING");
+                  void handleExecute("yarin canli mac yayinla");
+                }}
+                className="mx-4 rounded-2xl border border-emerald-300/35 bg-emerald-300/10 py-3 text-[10px] tracking-[0.18em] text-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+              >
+                İLK NİYETİ 10 SANİYEDE BAŞLAT
+              </button>
+            ) : null}
+            {cinematicOutput.showSemanticHints ? (
+              <div className="flex flex-wrap gap-2 px-4">
+                {["explore", "create", "ask", "build", "join"].map((hint) => (
+                  <div
+                    key={hint}
+                    className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-[9px] tracking-[0.1em] text-cyan-100"
+                  >
+                    {hint}
+                  </div>
+                ))}
+                {defaultIntents.map((seed) => (
+                  <button
+                    key={seed}
+                    type="button"
+                    onClick={() => {
+                      setCmd(seed);
+                      setRhizohFieldState("LISTENING");
+                    }}
+                    className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-[9px] tracking-[0.08em] text-white/70 normal-case hover:bg-cyan-300/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+                  >
+                    {seed}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            <div className="px-4 sm:px-6">
+              <button
+                type="button"
+                onClick={() => {
+                  void startVoiceToRhizoh();
+                }}
+                className="w-full rounded-2xl border border-cyan-300/35 bg-cyan-300/10 py-2 text-[10px] tracking-[0.14em] text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+              >
+                RHIZOH İLE KONUŞ (MİKROFON)
+              </button>
+            </div>
+            <div className="px-4 sm:px-6 space-y-1 normal-case">
+              <label htmlFor="castle-rhizoh-command" className="block text-[10px] font-bold tracking-[0.18em] text-cyan-200/90">
+                Mesaj gönder — Rhizoh komut hattı
+              </label>
+              <p id="castle-rhizoh-command-hint" className="text-[9px] text-white/55 leading-relaxed">
+                Bağlantı kurulmadan da gönderebilirsiniz: yerel demo yanıtı üretilir. Uzak model ve süreklilik için yapılandırılmış{" "}
+                <span className="text-cyan-200/85">HTTPS + /health</span> sunucusu gerekir.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+              <button
+                type="button"
+                onClick={() => {
+                  void startVoiceToRhizoh();
+                }}
+                aria-label="Mikrofonu aç"
+                className={`mx-4 sm:ml-6 sm:mr-0 p-5 sm:p-6 hover:bg-cyan-400/20 rounded-full text-cyan-400 transition-all active:scale-90 shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${cinematicOutput.showMicPulse ? "animate-pulse ring-2 ring-cyan-300/40" : ""}`}
+              >
+                <Mic size={32} aria-hidden />
+              </button>
+              <div className="flex-1 px-4 sm:px-8 relative flex items-center min-h-[3rem]">
+                <input
+                  id="castle-rhizoh-command"
+                  value={cmd}
+                  onChange={(e) => setCmd(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey && !rhizohCommandBusy) {
+                      e.preventDefault();
+                      void handleExecute();
+                    }
+                  }}
+                  autoComplete="off"
+                  aria-describedby="castle-rhizoh-command-hint castle-send-status"
+                  aria-invalid={!!rhizohInlineError}
+                  placeholder="Ne yaratmak istiyorsunuz? (ör. yarın canlı maç yayını, REAL_MAP, swarm)"
+                  className="w-full bg-transparent border-none outline-none text-base sm:text-lg font-semibold tracking-wide text-white normal-case placeholder:text-white/40 placeholder:font-medium placeholder:tracking-normal focus-visible:ring-2 focus-visible:ring-cyan-400/60 rounded-lg px-1"
+                />
+              </div>
+              <button
+                type="button"
+                id="castle-rhizoh-send"
+                onClick={() => void handleExecute()}
+                disabled={rhizohCommandBusy || !cmd.trim()}
+                aria-label="Komutu gönder"
+                aria-busy={rhizohCommandBusy}
+                aria-describedby="castle-send-status"
+                title={
+                  rhizohCommandBusy
+                    ? "Rhizoh işlem yapıyor — bekleyin"
+                    : !cmd.trim()
+                      ? "Göndermek için önce yazın"
+                      : "Komutu Rhizoh’a ilet"
+                }
+                className={`mx-auto sm:mx-0 sm:mr-4 p-5 sm:p-7 min-w-[4.5rem] bg-cyan-400 rounded-[3.5rem] transition-all text-black shadow-[0_0_60px_rgba(0,255,255,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a1b3a] ${
+                  rhizohCommandBusy || !cmd.trim()
+                    ? "opacity-45 cursor-not-allowed"
+                    : "hover:bg-cyan-300 active:scale-95 group"
+                }`}
+              >
+                <Send size={34} className={rhizohCommandBusy || !cmd.trim() ? "" : "group-hover:scale-110 transition-transform"} aria-hidden />
+              </button>
+            </div>
+            <p id="castle-send-status" className="px-4 sm:px-6 text-[9px] text-white/60 normal-case min-h-[2.5rem]">
+              {rhizohCommandBusy
+                ? "Rhizoh komutu işliyor — birkaç saniye sürebilir (uzak model zaman aşımı ~55 sn)."
+                : !cmd.trim()
+                  ? "Henüz komut yok. Üstteki örnekleri tıklayın veya yazın; Enter ile de gönderebilirsiniz."
+                  : "Bağlantı çevrimdışı olsa bile gönderebilirsiniz; yanıt kaynağı üst durum çubuğunda belirtilir."}
+            </p>
+            {commandLog.length > 0 ? (
+              <div className="mx-1 normal-case">
+                <button
+                  type="button"
+                  onClick={() => setShowCommandLog((v) => !v)}
+                  className="text-[9px] text-cyan-200/85 hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded px-1"
+                >
+                  {showCommandLog ? "Komut günlüğünü gizle" : `Komut günlüğü (${commandLog.length}) — göster`}
+                </button>
+                {showCommandLog ? (
+                  <ul
+                    className="mt-2 max-h-32 overflow-y-auto rounded-xl border border-white/10 bg-black/35 text-[9px] text-white/75 p-2 space-y-1 no-scrollbar"
+                    aria-label="Son gönderilen komutlar"
+                  >
+                    {commandLog.map((row, i) => (
+                      <li key={`${row.ts}-${i}`}>
+                        <span className="text-white/45">{new Date(row.ts).toLocaleTimeString()}</span> ·{" "}
+                        <span className="text-cyan-200/80">{row.source}</span> · {String(row.raw).slice(0, 140)}
+                        {String(row.raw).length > 140 ? "…" : ""}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : (
+              <div className="mx-1 rounded-xl border border-dashed border-white/15 px-3 py-2.5 text-[10px] text-white/60 normal-case">
+                Henüz ileti yok — ilk komutunuzu yazıp <span className="text-cyan-200/90">Gönder</span> ile iletin.
+              </div>
+            )}
+            {showHud && !immersiveLiveTrace ? (
+              <div className="px-4 text-[9px] text-white/45 normal-case border-t border-white/5 pt-2">
+                Phase: {cinematicOutput.phase} · Voice: {voiceReady ? "on" : "off"} · Mic:{" "}
+                {micListening ? "listening" : "idle"} · Gateway: {gatewayUx.phase} · Ambient: {ambientReady ? "on" : "off"} ·{" "}
+                {cinematicRoute.mode}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
 
       <CastleAuthOverlay auth={castleAuth} />
+      <RhizohSceneAnchorWindow />
 
       {!booted && (
-        <div className="absolute inset-0 z-[5000] bg-[#010103] flex flex-col items-center justify-center">
+        <div className="absolute inset-0 z-[5000] bg-[#010103] flex flex-col items-center justify-center px-6">
           <div className="relative mb-20 scale-[2.0]">
-            <Atom size={120} className="text-cyan-400 animate-spin opacity-30" />
+            <Atom size={120} className="text-cyan-400 animate-spin opacity-30" aria-hidden />
             <div className="absolute inset-0 flex items-center justify-center">
-              <Network size={40} className="text-fuchsia-400 animate-pulse" />
+              <Network size={40} className="text-fuchsia-400 animate-pulse" aria-hidden />
             </div>
           </div>
           <div className="text-4xl font-black tracking-[2em] text-cyan-400/50 ml-[2em] animate-pulse uppercase italic">RHIZOH_Genesis</div>
+          <p className="mt-8 max-w-md text-center text-[11px] font-medium normal-case tracking-normal text-white/55 leading-relaxed">
+            Oturum ve sahne başlatılıyor… Ağ geçidi kontrolü ana ekranda devam eder.
+          </p>
+          <span className="sr-only" aria-live="polite">
+            Başlatılıyor
+          </span>
         </div>
       )}
 

@@ -20,6 +20,8 @@ Bu repo artik monorepo yapisinda:
 
 ## Hizli Baslangic
 
+API anahtarları **ENV_KEYS.md içine değil**, iki dosyaya yazılır: `apps/client/.env.local` ve `apps/gateway/.env`. Özet: **`ANAHTARLAR_BURAYA.txt`** · ilk kurulum: `npm run setup:env`
+
 ```bash
 npm install
 npm run dev:gateway
@@ -45,6 +47,8 @@ Client icin gateway ve uçuş/uydu anahtarlari: `apps/client/.env.example` → `
   - `npm run firebase:deploy:hosting`
   - `npm run firebase:deploy:rules`
   - `npm run firebase:deploy`
+- **Üretim yayını:** önce `apps/client/.env.production` ve gateway ortamını `ENV_KEYS.md` ile doldurun; adım adım liste [`docs/PRODUCTION_LAUNCH_CHECKLIST.md`](docs/PRODUCTION_LAUNCH_CHECKLIST.md). Ortam doğrulaması: `npm run verify:production`. GitHub Actions ile deploy için repo secret listesi workflow dosyasındaki yorumda.
+- Gateway'i kalıcı domaine alma (VPS + PM2 + Nginx + SSL): [`docs/GATEWAY_PERMANENT_SETUP.md`](docs/GATEWAY_PERMANENT_SETUP.md).
 
 ## Guvenlik ve Anahtar Yonetimi
 
@@ -73,6 +77,27 @@ Client icin gateway ve uçuş/uydu anahtarlari: `apps/client/.env.example` → `
 
 - **Client çekirdek (vNext-529)**: GPU/garanti/kapanış köprüsü, epistemik yüzey, dış solver ve kanıt ağı iskeleti — tek sayfa harita: [`docs/RHIZOH_KERNEL_VNEXT529.md`](docs/RHIZOH_KERNEL_VNEXT529.md)
 - **Proof OS yol haritası** (SMT, kanıt derleme, doğrulama çekirdeği, kripto kapanış, deterministik replay): [`docs/RHIZOH_PROOF_OPERATING_SYSTEM_ROADMAP.md`](docs/RHIZOH_PROOF_OPERATING_SYSTEM_ROADMAP.md)
+- **Single Layer Experience (SLE) v1** (tek giriş, tek sahne, intent->reality akışı): [`docs/RHIZOH_SINGLE_LAYER_EXPERIENCE_SLE_V1.md`](docs/RHIZOH_SINGLE_LAYER_EXPERIENCE_SLE_V1.md)
+- **Final Product Flow Map v1** (runtime contract: single intent -> multi-world execution): [`docs/RHIZOH_FINAL_PRODUCT_FLOW_MAP_V1.md`](docs/RHIZOH_FINAL_PRODUCT_FLOW_MAP_V1.md)
+- **Capability Graph v1** (intent -> capability mapping + routing + fallback + intent library): [`docs/RHIZOH_CAPABILITY_GRAPH_V1.md`](docs/RHIZOH_CAPABILITY_GRAPH_V1.md)
+- **Launch Freeze Spec v1.1** (freeze boundary + onboarding path + deploy + telemetry): [`docs/RHIZOH_LAUNCH_FREEZE_SPEC_V1_1.md`](docs/RHIZOH_LAUNCH_FREEZE_SPEC_V1_1.md)
+- **First Impression Cinematic Contract v1** (ilk 15 saniye frame-by-frame launch hook): [`docs/RHIZOH_FIRST_IMPRESSION_CINEMATIC_CONTRACT_V1.md`](docs/RHIZOH_FIRST_IMPRESSION_CINEMATIC_CONTRACT_V1.md)
+- **Enterprise Architecture v1**: [`docs/RHIZOH_ENTERPRISE_ARCHITECTURE_V1.md`](docs/RHIZOH_ENTERPRISE_ARCHITECTURE_V1.md)
+- **Security Manifest v1**: [`docs/RHIZOH_SECURITY_MANIFEST_V1.md`](docs/RHIZOH_SECURITY_MANIFEST_V1.md)
+- **Series A Deck v1**: [`docs/RHIZOH_SERIES_A_DECK_V1.md`](docs/RHIZOH_SERIES_A_DECK_V1.md)
+- **IP Moat Map v1**: [`docs/RHIZOH_IP_MOAT_MAP_V1.md`](docs/RHIZOH_IP_MOAT_MAP_V1.md)
+- **Founding Operating Memo v1**: [`docs/RHIZOH_FOUNDING_OPERATING_MEMO_V1.md`](docs/RHIZOH_FOUNDING_OPERATING_MEMO_V1.md)
+- **Product SKUs v1**: [`docs/RHIZOH_PRODUCT_SKUS_V1.md`](docs/RHIZOH_PRODUCT_SKUS_V1.md)
+- **Reference Architectures v1**: [`docs/RHIZOH_REFERENCE_ARCHITECTURES_V1.md`](docs/RHIZOH_REFERENCE_ARCHITECTURES_V1.md)
+- **API Contracts v1**: [`docs/RHIZOH_API_CONTRACTS_V1.md`](docs/RHIZOH_API_CONTRACTS_V1.md)
+- **Technical Due Diligence Packet v1**: [`docs/RHIZOH_TECHNICAL_DUE_DILIGENCE_PACKET_V1.md`](docs/RHIZOH_TECHNICAL_DUE_DILIGENCE_PACKET_V1.md)
+- **Lighthouse Customer Program v1**: [`docs/RHIZOH_LIGHTHOUSE_CUSTOMER_PROGRAM_V1.md`](docs/RHIZOH_LIGHTHOUSE_CUSTOMER_PROGRAM_V1.md)
+- **Demo Operating Spec v1**: [`docs/RHIZOH_DEMO_OPERATING_SPEC_V1.md`](docs/RHIZOH_DEMO_OPERATING_SPEC_V1.md)
+- **Autonomous Company Layer v1**: [`docs/RHIZOH_AUTONOMOUS_COMPANY_LAYER_V1.md`](docs/RHIZOH_AUTONOMOUS_COMPANY_LAYER_V1.md)
+- **Autonomy Substrate v1**: [`docs/RHIZOH_AUTONOMY_SUBSTRATE_V1.md`](docs/RHIZOH_AUTONOMY_SUBSTRATE_V1.md)
+- **Agent Operating Contracts v1**: [`docs/RHIZOH_AGENT_OPERATING_CONTRACTS_V1.md`](docs/RHIZOH_AGENT_OPERATING_CONTRACTS_V1.md)
+- **Company Dashboard Spec v1**: [`docs/RHIZOH_COMPANY_DASHBOARD_SPEC_V1.md`](docs/RHIZOH_COMPANY_DASHBOARD_SPEC_V1.md)
+- **Substrate v0 Implementation Backlog**: [`docs/RHIZOH_SUBSTRATE_V0_IMPLEMENTATION_BACKLOG.md`](docs/RHIZOH_SUBSTRATE_V0_IMPLEMENTATION_BACKLOG.md)
 - Gateway uzerinde `RHIZOH_QUERY` / `RHIZOH_RESULT` mesaj tipi aktif.
 - Serbest metin komutlari Rhizoh cekirdegine yonlendirilir.
 - UI tarafinda mode/persona/reply paneli canli gosterilir.

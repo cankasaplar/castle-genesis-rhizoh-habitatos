@@ -9,7 +9,8 @@ const CODEX_VERSION = "vNext-521.Alpha-Production-Solid";
 const CODEX_DATE = "2025-07-12";
 const GLOBE_RADIUS = 3000;
 const MAX_INSTANCES = 50000;
-const WS_URL = import.meta.env.VITE_GATEWAY_WS_URL || "ws://localhost:8090";
+const WS_URL =
+  import.meta.env.VITE_GATEWAY_WS || import.meta.env.VITE_GATEWAY_WS_URL || "ws://localhost:8090";
 const YOUTUBE_LIVE_URL = "https://www.youtube.com/@CastleGenesis/live";
 
 const firebaseConfig = typeof __firebase_config !== "undefined" ? JSON.parse(__firebase_config) : null;

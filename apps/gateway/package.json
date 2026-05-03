@@ -10,6 +10,7 @@
     "@castle/command-dsl": "1.0.0",
     "@castle/orchestrator": "1.0.0",
     "@castle/protocol": "1.0.0",
+    "dotenv": "^16.4.5",
     "firebase-admin": "^13.4.0",
     "jsonwebtoken": "^9.0.2",
     "pdf-parse": "^2.4.5",

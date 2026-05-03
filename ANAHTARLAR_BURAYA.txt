@@ -1,0 +1,32 @@
+Castle — API anahtarları nereye?
+
+Sadece 2 dosya düşünün (ENV_KEYS.md = sadece isim listesi; içine gizli yazmayın).
+
+────────────────────────────────────────────────────────
+1) TARAYICI — Firebase, Cesium Ion, gateway adres/token
+   Dosya:  apps\client\.env.local
+   
+   Bir kez oluşturmak için (PowerShell, repo kökünde):
+   Copy-Item apps\client\.env.example apps\client\.env.local
+      
+   Sonra .env.local içinde satırları doldurun, örnek:
+   VITE_CESIUM_ION_TOKEN=...
+   VITE_FIREBASE_API_KEY=...
+   VITE_GATEWAY_WS=wss://...
+   VITE_GATEWAY_HTTP=https://.../rhizoh/llm
+   VITE_GATEWAY_TOKEN=...
+
+────────────────────────────────────────────────────────
+2) GATEWAY SUNUCUSU — OpenAI vb., Firebase Admin, CASTLE_GATEWAY_TOKEN
+   Dosya:  apps\gateway\.env
+
+   Bir kez oluşturmak için:
+   Copy-Item apps\gateway\.env.example apps\gateway\.env
+
+   İstemci VITE_GATEWAY_TOKEN ile gateway CASTLE_GATEWAY_TOKEN aynı olmalı.
+
+────────────────────────────────────────────────────────
+ÜRETİM BUILD (Firebase Hosting öncesi): apps\client\.env.production
+
+Hepsi otomatik şablon kopyası (dosya varsa silmez):
+   npm run setup:env

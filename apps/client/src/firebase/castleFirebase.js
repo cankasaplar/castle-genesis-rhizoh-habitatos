@@ -3,7 +3,9 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 let parsed = null;
 try {
   if (typeof __firebase_config !== "undefined" && __firebase_config) {
-    parsed = JSON.parse(__firebase_config);
+    let step = JSON.parse(__firebase_config);
+    if (typeof step === "string") step = JSON.parse(step);
+    parsed = step;
   }
 } catch {
   parsed = null;
@@ -18,4 +20,24 @@ export function getFirebaseApp() {
   if (!firebaseConfigured) return null;
   if (getApps().length === 0) return initializeApp(parsed);
   return getApp();
+}
+
+/**
+ * measurementId yapılandırılmışsa Analytics’i dinamik yükle (bundle/code-split).
+ * Tarayıcı / GDPR gereksinimlerinize göre kullanıcı onayından sonra çağırabilirsiniz.
+ */
+export function initFirebaseAnalyticsWhenReady() {
+  if (typeof window === "undefined" || !firebaseConfigured || !parsed?.measurementId) return;
+  const app = getFirebaseApp();
+  if (!app) return;
+  import("firebase/analytics")
+    .then(async ({ getAnalytics, isSupported }) => {
+      try {
+        if (!(await isSupported())) return;
+        getAnalytics(app);
+      } catch {
+        /* Analytics desteklenmiyor */
+      }
+    })
+    .catch(() => {});
 }

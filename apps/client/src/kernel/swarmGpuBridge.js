@@ -29,7 +29,8 @@ export async function getSwarmGpuDevice() {
   if (!_initPromise) {
     _initPromise = (async () => {
       try {
-        _adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
+        const win = /Windows/i.test(String(navigator.userAgent || ""));
+        _adapter = await navigator.gpu.requestAdapter(win ? {} : { powerPreference: "high-performance" });
         if (!_adapter) return null;
         _device = await _adapter.requestDevice();
         return _device;
@@ -228,3 +229,51 @@ export {
   buildExternalProofNetworkPayload,
   assertValidProofSolverNodeV1
 } from "./rhizohExternalProofNetworkV1.js";
+export {
+  createRhizohAutonomousCompanyRuntimeV0,
+  createRhizohAutonomySubstrateV0,
+  createRhizohFounderConsoleStore,
+  createRhizohStudioBridgeHooks,
+  RHIZOH_COMPANY_AGENT_IDS,
+  getDefaultRhizohCompanyAgentContractsV1,
+  bootstrapRhizohCompanyContracts,
+  RHIZOH_TASK_NODE_STATUS,
+  RHIZOH_STATE_REDUCER_VERSION,
+  reduceRhizohEventLogV1,
+  RHIZOH_REPLAY_VERIFIER_VERSION,
+  verifyRhizohReplayTraceV1,
+  RHIZOH_AUDIT_EXPORT_VERSION,
+  exportRhizohAuditBundleV1,
+  RHIZOH_RECOVERY_STATE_MACHINE_VERSION,
+  RHIZOH_RECOVERY_PHASE,
+  RHIZOH_FREEZE_REASON_CLASS,
+  classifyRecoveryReasonV1,
+  createRecoveryStateMachineV1,
+  RHIZOH_RECOVERY_POLICY_ENGINE_VERSION,
+  createRhizohRecoveryPolicyEngineV1,
+  RHIZOH_FORMAL_GOVERNANCE_SYSTEM_VERSION,
+  RHIZOH_GOVERNANCE_INVARIANT,
+  evaluateRhizohGovernanceInvariantsV1,
+  proveRhizohDecisionConsistencyV1,
+  validateRhizohPolicyWithSmtV1,
+  evaluateFormalGovernanceSystemV1,
+  RHIZOH_GLOBAL_GOVERNANCE_COHERENCE_ENGINE_VERSION,
+  evaluateTemporalPolicyCoherenceV1,
+  evaluateInvariantStabilityUnderRecoveryCyclesV1,
+  resolveCrossAgentGovernanceConflictsV1,
+  evaluateRhizohGlobalGovernanceCoherenceV1,
+  RHIZOH_SYSTEM_WIDE_COHERENCE_CLOSURE_ENGINE_VERSION,
+  attemptGlobalInvariantConvergenceProofV1,
+  detectRecoveryCycleFixedPointV1,
+  analyzePolicyTemporalFixpointV1,
+  evaluateSystemWideCoherenceClosureV1,
+  RHIZOH_GOVERNANCE_EXECUTION_SPLIT_VERSION,
+  RHIZOH_GOVERNANCE_MODE,
+  evaluateRhizohGovernanceOnlineModeV1,
+  evaluateRhizohGovernanceOfflineModeV1,
+  RHIZOH_GOVERNANCE_RECONCILIATION_LAYER_VERSION,
+  RHIZOH_GOVERNANCE_CONFLICT_KIND,
+  reconcileGovernanceDecisionsV1,
+  RHIZOH_GOVERNANCE_STABILITY_CONSTRAINT_LAYER_VERSION,
+  createRhizohGovernanceStabilityConstraintLayerV1
+} from "./company/index.js";

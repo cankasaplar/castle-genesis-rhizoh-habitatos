@@ -1,0 +1,6 @@
+**/node_modules
+**/.git
+apps/client/dist
+.firebase
+*.log
+.DS_Store

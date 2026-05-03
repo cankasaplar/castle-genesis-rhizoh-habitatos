@@ -7,7 +7,10 @@
     "envelope": "{ type, payload, ts }"
   },
   "viteEnvKeys": [
+    "VITE_GATEWAY_WS",
     "VITE_GATEWAY_WS_URL",
+    "VITE_GATEWAY_HTTP",
+    "VITE_RHIZOH_LLM_HTTP",
     "VITE_GATEWAY_TOKEN",
     "VITE_DRONE_TELEMETRY_WS",
     "VITE_FLIGHT_VIEWER_HTTP",
@@ -16,7 +19,14 @@
     "VITE_MAPBOX_TOKEN",
     "VITE_TELEMETRY_MAX_HZ",
     "VITE_SIM_DRONE_COUNT",
-    "VITE_FIREBASE_CONFIG"
+    "VITE_FIREBASE_CONFIG",
+    "VITE_FIREBASE_API_KEY",
+    "VITE_FIREBASE_AUTH_DOMAIN",
+    "VITE_FIREBASE_PROJECT_ID",
+    "VITE_FIREBASE_STORAGE_BUCKET",
+    "VITE_FIREBASE_MESSAGING_SENDER_ID",
+    "VITE_FIREBASE_APP_ID",
+    "VITE_ENV"
   ],
   "manifestKeys": {
     "satelliteLayer": "castle.flight.satellite.layer.v1",

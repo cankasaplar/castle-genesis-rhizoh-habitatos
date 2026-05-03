@@ -2,37 +2,95 @@
 
 Bu dosya repodaki **tüm gizli / yapılandırma** değişkenlerinin tek referansıdır. Gerçek değerleri yalnızca `.env.local`, `.env.production` veya barındırıcı gizli alanlarında tutun; repoya commit etmeyin.
 
+**Hızlı özet (hangi dosya?):** repo kökünde **`ANAHTARLAR_BURAYA.txt`** — ilk kurulum için `npm run setup:env`.
+
+**Üretim kontrol listesi:** [`docs/PRODUCTION_LAUNCH_CHECKLIST.md`](docs/PRODUCTION_LAUNCH_CHECKLIST.md) · Yerel doğrulama: `npm run verify:production` (şablonları doldurduktan sonra).
+
+**Gateway’i Render’a almak:** [`docs/RENDER_GATEWAY.md`](docs/RENDER_GATEWAY.md) — monorepo **kökünden** build (`render.yaml` veya kök `npm ci` + `node apps/gateway/src/server.js`). Client `VITE_RHIZOH_LLM_HTTP` / `VITE_GATEWAY_WS` Render’da gösterilen host ile doldurulmalı (başka GitHub reposu değil).
+
 ## Dışarıdan alınacak anahtarlar (özet)
 
 | Kaynak | Ne için |
 |--------|---------|
 | **Firebase Console** (proje `castle-genesis`) | Web: `VITE_FIREBASE_CONFIG`. Sunucu: servis hesabı → `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`. |
 | **OpenAI / Anthropic / Google AI / xAI / DeepSeek / Mistral / OpenRouter** | Rhizoh LLM (`CASTLE_LLM_PROVIDER` + ilgili `*_API_KEY`). |
-| **Cesium ion** | `VITE_CESIUM_ION_TOKEN`. |
+| **Cesium ion** | `VITE_CESIUM_ION_TOKEN` |
 | **Mapbox** | `VITE_MAPBOX_TOKEN`. |
 | **Telegram BotFather** | `CASTLE_TELEGRAM_BOT_TOKEN`. |
 | **Meta WhatsApp Cloud API** | `CASTLE_WHATSAPP_TOKEN`, `CASTLE_WHATSAPP_PHONE_NUMBER_ID`. |
 | **Sizin ürettiğiniz gizli** | `CASTLE_GATEWAY_TOKEN` = `VITE_GATEWAY_TOKEN`; `CASTLE_JWT_SECRET`; `CASTLE_STORE_SECRET`. |
 | **GitHub Actions deploy** | `FIREBASE_SERVICE_ACCOUNT_CASTLE_GENESIS` (JSON) + build için `VITE_*` secret’ları. |
 
+## Rhizoh ana hat (gateway route’ları)
+
+Sunucu **`apps/gateway/src/server.js`** içinde Express yok; yollar sabit path ile eşleşir.
+
+| Amaç | Method | Path | Tam örnek |
+|------|--------|------|-----------|
+| **Rhizoh LLM** (istemci ana hat) | `POST` | **`/rhizoh/llm`** | `https://HOST/rhizoh/llm` |
+| Canlılık | `GET` | `/health/live` | `https://HOST/health/live` |
+| Hazır | `GET` | `/health/ready` | `https://HOST/health/ready` |
+| Bağımlılıklar (istemci monitörü) | `GET` | `/health/deps` | `https://HOST/health/deps` |
+
+**`/api/chat`**, **`/gateway`** veya tek başına **`/rhizoh`** bu gateway’de Rhizoh LLM için kullanılmıyor; doğru path **`/rhizoh/llm`**.
+
+### İstemci env (tam URL)
+
+Şunlardan **biri** yeterli; kod önceliği: **`VITE_GATEWAY_HTTP` → `VITE_RHIZOH_LLM_HTTP`** (`castleFlightConfig.js`).
+
+```bash
+# Önerilen (tek satırda tam uç nokta):
+VITE_RHIZOH_LLM_HTTP=https://HOST/rhizoh/llm
+
+# veya aynı değer:
+VITE_GATEWAY_HTTP=https://HOST/rhizoh/llm
+```
+
+`HOST` örnekleri: `castle-gateway.onrender.com`, `api.castlegenesis.ai`, `xxxx.run.app` (Cloud Run).
+
+`VITE_GATEWAY_TOKEN` = gateway’deki **`CASTLE_GATEWAY_TOKEN`** ile aynı olmalı.
+
+### Deploy sonrası doğrulama (kritik)
+
+1. **Build’de env gömüldü mü:** üretim sayfasında tarayıcı konsolu:
+   - `import.meta.env.VITE_RHIZOH_LLM_HTTP` **veya** kullandığınız `import.meta.env.VITE_GATEWAY_HTTP`
+   - Çıktı **string URL** olmalı (boş / `undefined` ise Hosting build sırasında secret yok demektir → GitHub Actions secret veya `apps/client/.env.production` + yeniden `npm run build`).
+
+2. **Network:** Rhizoh mesajı gönderince `rhizoh/llm` isteği — beklenen durum kodları: **200** (başarı), **401/403** (token/auth), veya CORS hatası (origin / `CASTLE_HTTP_CORS_ORIGIN`).
+
+3. **Health:** yeni sekmede `GET https://HOST/health/deps` → JSON (`llm`, `ok`, …); tarayıcıdan CORS gerekebilir — **aynı origin veya CORS açık** olmalı.
+
 ## Uyum: istemci ↔ gateway
 
 | İstemci (`apps/client`) | Gateway (`apps/gateway`) | Not |
 |-------------------------|---------------------------|-----|
 | `VITE_GATEWAY_TOKEN` | `CASTLE_GATEWAY_TOKEN` | **Aynı gizli dize** olmalı; gateway bunu WebSocket/HTTP için doğrular. |
-| `VITE_GATEWAY_WS_URL` | — | Örn. `wss://api.sizin-domain.com` (HTTPS sayfada `wss` kullanın). |
-| `VITE_RHIZOH_LLM_HTTP` | Gateway aynı hostta `.../rhizoh/llm` | Örn. `https://api.sizin-domain.com/rhizoh/llm`. |
+| `VITE_GATEWAY_URL` | — | Tek HTTPS taban (örn. `https://api…`); istemci `wss://…` ve `…/rhizoh/llm` türetir. Ayrı `VITE_GATEWAY_WS` / `VITE_GATEWAY_HTTP` verilirse onlar önceliklidir. |
+| `VITE_GATEWAY_WS` / `VITE_GATEWAY_WS_URL` | — | Kısa ad `VITE_GATEWAY_WS`; örn. `wss://api.sizin-domain.com` veya `/ws` path’li tam URL. |
+| `VITE_GATEWAY_HTTP` / `VITE_RHIZOH_LLM_HTTP` | Gateway **`POST /rhizoh/llm`** | **Tam URL:** `https://HOST/rhizoh/llm`. Önce `VITE_GATEWAY_HTTP`, yoksa `VITE_RHIZOH_LLM_HTTP`. |
 | `VITE_RHIZOH_LLM_TOKEN` | İlgili HTTP route koruması varsa | Gateway tarafında ayrı header kontrolü yoksa boş kalabilir; üretimde TLS + auth önerilir. |
 
 ## 1. Tarayıcı (Vite) — `apps/client`
 
 | Değişken | Zorunlu | Nereden | Açıklama |
 |----------|---------|---------|----------|
-| `VITE_FIREBASE_CONFIG` | Üretimde önerilir | Firebase Console → Project settings → Your apps → Web → config JSON (tek satır) | `vite` build sırasında gömülür (`__firebase_config`). |
-| `VITE_GATEWAY_WS_URL` | Önerilir | Kendi gateway URL’niz | Varsayılan `ws://localhost:8090`. |
+| `VITE_FIREBASE_CONFIG` | Alternatif | Firebase Console → Web app JSON (tek satır) | `vite` build birleştirir; **veya** aşağıdaki `VITE_FIREBASE_*` alanları. |
+| `VITE_FIREBASE_API_KEY` | Split modda | Console Web config | `VITE_FIREBASE_PROJECT_ID` ile birlikte kullanılabilir. |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Hayır | — | Örn. `castle-genesis.firebaseapp.com`. |
+| `VITE_FIREBASE_PROJECT_ID` | Split modda | — | Örn. `castle-genesis`. |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Hayır | — | |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Hayır | — | |
+| `VITE_FIREBASE_APP_ID` | Hayır | — | |
+| `VITE_FIREBASE_MEASUREMENT_ID` | Hayır | Analytics | |
+| `VITE_FIREBASE_DATABASE_URL` | Hayır | Realtime DB | Boşsa `projectId` üzerinden varsayılan üretilir. |
+| `VITE_GATEWAY_URL` | Önerilir (tek alan) | HTTPS gateway kökü | Örn. `https://api.example.com` → WS ve `/rhizoh/llm` otomatik; aşağıdaki ayrıntılı değişkenler doluysa onlar baskın. |
+| `VITE_GATEWAY_WS` | Önerilir | Kendi gateway WS URL’niz | **VITE_GATEWAY_WS_URL** ile aynı rol (önce `VITE_GATEWAY_WS`). Varsayılan `ws://localhost:8090`. |
+| `VITE_GATEWAY_HTTP` | Önerilir | Rhizoh LLM tabanı | **VITE_RHIZOH_LLM_HTTP** ile aynı rol (önce `VITE_GATEWAY_HTTP`). |
+| `VITE_ENV` | Hayır | — | Bilgi amaçlı; genelde `production`. |
 | `VITE_GATEWAY_TOKEN` | Gateway’de token zorunluysa | Siz üretin | `CASTLE_GATEWAY_TOKEN` ile eşleşmeli. |
-| `VITE_RHIZOH_LLM_HTTP` | Önerilir | Gateway tabanı + `/rhizoh/llm` | Rhizoh LLM HTTP proxy. |
 | `VITE_RHIZOH_LLM_TOKEN` | İsteğe bağlı | — | İstemci tarafı ek header ihtiyacı için (şema için ayrılmış). |
+| `VITE_GATEWAY_WS_URL` | Hayır | Eski isim | `VITE_GATEWAY_WS` yoksa kullanılır. |
+| `VITE_RHIZOH_LLM_HTTP` | Hayır | Eski isim | `VITE_GATEWAY_HTTP` yoksa kullanılır. |
 | `VITE_CESIUM_ION_TOKEN` | Cesium Ion kullanıyorsanız | [Cesium ion](https://cesium.com/ion/) | 3D küre / gerçek dünya katmanı. |
 | `VITE_MAPBOX_TOKEN` | Mapbox raster kullanıyorsanız | Mapbox | Uydu / vektör şablonları. |
 | `VITE_SATELLITE_TILE_TEMPLATE` | Özel karo şablonu | — | `{z}/{x}/{y}` şablonu. |
@@ -81,6 +139,9 @@ Bu dosya repodaki **tüm gizli / yapılandırma** değişkenlerinin tek referans
 | `CASTLE_ACADEMY_EVENT_AUTO_RESOLVE_MS` | Hayır | |
 | `CASTLE_GEOFENCE_CENTER_LAT` / `LON` / `RADIUS_M` | Hayır | Varsayılan İstanbul bölgesi. |
 | `CASTLE_SPEED_CAP_MPS` | Hayır | Hız tavanı. |
+| `CASTLE_RHIZOH_LLM_DIAG` | Hayır | `1` ise `/rhizoh/llm` isteklerinde maskeli bellek/kimlik özeti konsola yazılır (üretimde kapalı tutun). |
+| `CASTLE_RHIZOH_LLM_IDENTITY_LOG` | Hayır | `1` ise her `/rhizoh/llm` çağrısında tek satır: `identityNarrativeChars`, `recentTurns`, bellek sayıları (prompt dökümü yok; doğrulama için). |
+| `CASTLE_ARTIFACT_APP_ID` | Hayır | Tanı modunda Firestore `artifacts/{appId}/public/data/*` sayımı; istemci `VITE_CASTLE_APP_ID` ile aynı olmalı (varsayılan `castle-vnext-core`). |
 
 **Dosya:** `apps/gateway/.env.example` (kopya `.env` veya `.env.local`).
 

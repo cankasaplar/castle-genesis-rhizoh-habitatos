@@ -1,0 +1,97 @@
+/* Phenomenology layer: driven by CSS vars set from rAF (no React per-frame). Scoped under .l10-morph-root */
+
+.l10-morph-root {
+  --l10-tsge-radius: 90px;
+  --l10-tsge-glow: 0;
+  --l10-tsge-glow-blur: 2px;
+  --l10-tsge-wobble-amplitude: 0px;
+  --l10-tsge-wobble-period: 2.8s;
+  --l10-tsge-stroke-opacity: 0.45;
+  --l10-chorus-tilt: 0deg;
+  --l10-chorus-jitter: 0px;
+  --l10-chorus-jitter-period: 1.4s;
+  --l10-chorus-hue: 0deg;
+}
+
+.l10-morph-tsge-wobble {
+  animation: l10TsgeWobble var(--l10-tsge-wobble-period) ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes l10TsgeWobble {
+  0%,
+  100% {
+    transform: translateX(var(--l10-tsge-wobble-amplitude));
+  }
+  50% {
+    transform: translateX(calc(-1 * var(--l10-tsge-wobble-amplitude)));
+  }
+}
+
+.l10-svg.l10-morph-orbit .l10-tsge-ring-main {
+  r: var(--l10-tsge-radius);
+  stroke-opacity: var(--l10-tsge-stroke-opacity);
+}
+
+.l10-svg.l10-morph-orbit .l10-tsge-sat-ring {
+  r: calc(var(--l10-tsge-radius, 90px) * 0.9);
+}
+
+.l10-svg.l10-morph-orbit .l10-tsge-ring-glow {
+  r: var(--l10-tsge-radius);
+  fill: none;
+  stroke: rgb(52, 211, 153);
+  stroke-width: 1.05px;
+  stroke-dasharray: 3 7;
+  opacity: calc(0.28 + var(--l10-tsge-glow) * 0.62);
+  filter: drop-shadow(0 0 var(--l10-tsge-glow-blur) rgba(16, 185, 129, 0.55));
+}
+
+.l10-svg.l10-morph-orbit .l10-chorus-orbit {
+  transform: rotate(var(--l10-chorus-tilt));
+  transform-box: fill-box;
+  transform-origin: center;
+  filter: hue-rotate(var(--l10-chorus-hue));
+}
+
+.l10-morph-chorus-jitter {
+  animation: l10ChorusJitter var(--l10-chorus-jitter-period) ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes l10ChorusJitter {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(var(--l10-chorus-jitter), calc(-0.55 * var(--l10-chorus-jitter)));
+  }
+  50% {
+    transform: translate(calc(-0.8 * var(--l10-chorus-jitter)), var(--l10-chorus-jitter));
+  }
+  75% {
+    transform: translate(var(--l10-chorus-jitter), calc(0.4 * var(--l10-chorus-jitter)));
+  }
+}
+
+.l10-morph-proto-sway {
+  animation: l10ProtoSway var(--l10-proto-sway-period, 5s) ease-in-out infinite;
+  transform-box: fill-box;
+}
+
+@keyframes l10ProtoSway {
+  0%,
+  100% {
+    transform: rotate(calc(-1 * var(--l10-proto-sway-deg, 0deg)));
+  }
+  50% {
+    transform: rotate(var(--l10-proto-sway-deg, 0deg));
+  }
+}
+
+.l10-svg.l10-morph-orbit .l10-court-arc {
+  stroke-opacity: calc(0.36 + var(--l10-court-slot-score, 0) * 0.58);
+}

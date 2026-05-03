@@ -25,6 +25,338 @@ function getProviderKey(provider) {
   return "";
 }
 
+const DEFAULT_MEMORY_CONTRACT =
+  "continuity.* is authoritative session memory (identity, castleState, ghostPet, recentReality, codex, relationship). Do not invent facts beyond it; answer in the user's language.";
+
+/**
+ * @param {Record<string, unknown> | null | undefined} policy
+ */
+/**
+ * @param {Record<string, unknown> | null | undefined} sf
+ */
+function buildSocialCognitionMemoryLines(sf) {
+  if (!sf || typeof sf !== "object") return "";
+  const rs = sf.roomState && typeof sf.roomState === "object" ? sf.roomState : {};
+  const att = sf.attention && typeof sf.attention === "object" ? sf.attention : {};
+  const vh = sf.voiceHint && typeof sf.voiceHint === "object" ? sf.voiceHint : {};
+  const energy = Number(rs.energy) > 0.66 ? "high" : Number(rs.energy) < 0.4 ? "low" : "medium";
+  const cohesion = Number(rs.cohesion) > 0.75 ? "high" : Number(rs.cohesion) < 0.45 ? "low" : "medium";
+  const topic = String(rs.focusTopic || "").slice(0, 64);
+  const listeners = Array.isArray(att.listeners) ? att.listeners.join(", ") : "";
+  return [
+    "Social cognition (sovereign companion — not a generic moderator):",
+    `- Room: energy=${energy} tension=${(Number(rs.tension) || 0).toFixed(2)} cohesion=${cohesion} noise=${(Number(rs.noise) || 0).toFixed(2)} topic=${topic || "n/a"}`,
+    `- Primary speaker: ${att.primarySpeaker ?? "n/a"} (mode=${att.mode ?? ""})`,
+    listeners ? `- Other voices in play: ${listeners}` : "- Other voices: none detected",
+    `- Voice route hint: ${vh.type ?? ""} (${vh.rationale ?? ""})${vh.addressee ? ` → @${vh.addressee}` : ""}`,
+    "Respond socially: prefer the hinted route; use room-wide language only when route is room_reply; vary tone per participant when bonds differ."
+  ].join("\n");
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} reg
+ */
+function buildCastleSocialIdentityMemoryLines(reg) {
+  if (!reg || typeof reg !== "object") return "";
+  const entities = reg.entities && typeof reg.entities === "object" ? reg.entities : {};
+  const ids = Object.keys(entities).slice(0, 8);
+  if (!ids.length) {
+    return "Castle Social Identity (CSIL): no resolved entities yet — the room may be occupied; do not assume names or private context.";
+  }
+  const lines = [
+    "Castle Social Identity (CSIL) — registry:",
+    "Unknown/guest: no «Merhaba X» until introduction protocol allows; respect permissions.",
+    "Tone by class: human_user=personal; human_guest=polite/explanatory; ai_agent=protocol; ghost_pet=playful; ambient=no reply; unknown=cautious."
+  ];
+  for (const id of ids) {
+    const e = entities[id];
+    const rel = reg.relationships && typeof reg.relationships === "object" ? reg.relationships[id] : {};
+    const intro = reg.introductions && typeof reg.introductions === "object" ? reg.introductions[id] : {};
+    const perm = reg.permissions && typeof reg.permissions === "object" ? reg.permissions[id] : {};
+    if (!e || typeof e !== "object") continue;
+    lines.push(
+      `- ${id}: class=${e.class} stage=${rel.stage ?? "?"} intro=${intro.phase ?? "?"} name=${e.displayName || "—"} mem=${perm.accessMemory} priv=${perm.hearPrivateContext} cmd=${perm.issueCommands}`
+    );
+  }
+  const tel = reg.presenceTelemetry && typeof reg.presenceTelemetry === "object" ? reg.presenceTelemetry : null;
+  if (tel?.qppLabel) lines.push(`CSIL presence / QPP: ${tel.qppLabel} (${tel.qppMode || "idle"})`);
+  return lines.join("\n");
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} sp
+ */
+function buildSocialPhysicsMemoryLines(sp) {
+  if (!sp || typeof sp !== "object") return "";
+  const qBias =
+    sp.quietStateProbability != null || sp.observationMode != null
+      ? ` quietP=${sp.quietStateProbability ?? "n/a"} interactionE=${sp.interactionEnergy ?? "n/a"} observe=${sp.observationMode ?? "n/a"} reconcileMs=${sp.reconcileDurationMs ?? 0}`
+      : "";
+  return [
+    "Social physics (temporal cognition engine):",
+    `- Phase=${sp.phase ?? "stable"} trustRegime=${sp.trustRegime ?? "observe-only"} attention=${sp.attentionDirection ?? "self_anchor"}`,
+    `- Stability=${sp.stabilityScore ?? 0} drift=${sp.driftScore ?? 0} reconcileNeed=${sp.reconciliationNeed ?? 0}`,
+    `- InteractionMomentum=${sp.interactionMomentum ?? 0} coPresenceMomentum=${sp.coPresenceMomentum ?? 0} trustFlux=${sp.trustFlux ?? 0}${qBias}`
+  ].join("\n");
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} ft
+ */
+function buildSocialFieldTheoryMemoryLines(ft) {
+  if (!ft || typeof ft !== "object") return "";
+  const af = ft.attentionField && typeof ft.attentionField === "object" ? ft.attentionField : {};
+  const td = ft.trustDensity && typeof ft.trustDensity === "object" ? ft.trustDensity : {};
+  const inf = ft.interference && typeof ft.interference === "object" ? ft.interference : {};
+  const waves = Array.isArray(ft.presenceWaves) ? ft.presenceWaves : [];
+  return [
+    "Social field theory (simulated social continuum — use as metaphor for stance, not literal physics):",
+    `- Attention field: vector=(${af.vx ?? 0}, ${af.vy ?? 0}) magnitude=${af.magnitude ?? 0} (${af.directionLabel ?? ""})`,
+    `- Trust scalar density: meanρ=${td.meanRho ?? 0} totalMass=${td.totalMass ?? 0}`,
+    `- Presence waves: n=${waves.length} interference=${inf.pattern ?? "flat"} contrast=${inf.contrast ?? 0} |Σψ|²/Σ|ψ|²=${inf.rawRatio ?? 0}`
+  ].join("\n");
+}
+
+function buildRhizohPolicyMemoryLines(policy) {
+  if (!policy || typeof policy !== "object") return "";
+  const tool = policy.toolMode === "local_only" ? "local_only" : "full_remote_ok";
+  const mem = policy.memoryMode === "deferred_commit" ? "deferred_commit" : "normal";
+  const ent = policy.initiativeEntropy || "medium";
+  const verb = policy.verbosityStyle || "moderate";
+  const speech = policy.speechMode === "slow_and_direct" ? "slow_and_direct" : "normal";
+  const sil = policy.silenceCapable === false ? "false" : "true";
+  return [
+    "Current policy (obey — shapes tools, memory claims, and reply shape):",
+    `- tool mode: ${tool}`,
+    `- memory mode: ${mem}`,
+    `- initiative / entropy: ${ent}`,
+    `- verbosity: ${verb}`,
+    `- speech pacing: ${speech}`,
+    `- silence capable: ${sil}`
+  ].join("\n");
+}
+
+/**
+ * Human-readable Castle continuity for system prompt (matches client buildContinuityPayload).
+ * @param {Record<string, unknown>} continuity
+ */
+function buildContinuityMemoryBlock(continuity) {
+  const c = continuity && typeof continuity === "object" ? continuity : {};
+  const lines = [];
+
+  const realm = (c.castleState && typeof c.castleState === "object" && c.castleState.realm) || c.runtime?.realityMode || "";
+  if (realm) lines.push(`Castle realm: ${realm}`);
+
+  const gp = c.ghostPet && typeof c.ghostPet === "object" ? c.ghostPet : null;
+  if (gp && (gp.mood != null || gp.curiosity != null || gp.confused != null)) {
+    lines.push(
+      `Ghost pet: mood=${gp.mood ?? "unknown"} curiosity=${gp.curiosity ?? 0} confused=${gp.confused ?? 0} lastRealMapAt=${gp.lastRealMapAt ?? "n/a"}`
+    );
+  }
+
+  const rr = Array.isArray(c.recentReality) ? c.recentReality : [];
+  if (rr.length) {
+    lines.push("Recent reality transitions:");
+    rr.slice(-8).forEach((line) => lines.push(`- ${line}`));
+  }
+
+  const discoveries = c.codex && typeof c.codex === "object" && Array.isArray(c.codex.discoveries) ? c.codex.discoveries : [];
+  if (discoveries.length) {
+    lines.push("Codex (recent discovery nodes):");
+    discoveries.slice(-6).forEach((d) => {
+      const kind = d?.kind ?? "node";
+      lines.push(`- ${kind} ${d?.from}→${d?.to} source=${d?.source}${d?.success === false ? " (failed)" : ""}`);
+    });
+  }
+
+  const rel = c.relationship && typeof c.relationship === "object" ? c.relationship : null;
+  if (rel && (rel.bondScore != null || rel.trust != null)) {
+    lines.push(
+      `Relationship: bondScore=${rel.bondScore ?? "n/a"} trust=${rel.trust ?? "n/a"} familiarity=${rel.familiarity ?? "n/a"}`
+    );
+  }
+  if (rel?.emotions && typeof rel.emotions === "object") {
+    lines.push(`Rhizoh session emotions: ${JSON.stringify(rel.emotions)}`);
+  }
+  if (rel?.relationalTone && typeof rel.relationalTone === "object") {
+    lines.push(`Relational tone (warmth/directness/patience/depth): ${JSON.stringify(rel.relationalTone)}`);
+  }
+
+  const rif = c.rhizohRecallIdentityFeedback && typeof c.rhizohRecallIdentityFeedback === "object" ? c.rhizohRecallIdentityFeedback : null;
+  if (rif && (rif.trustDelta != null || rif.familiarityDelta != null)) {
+    lines.push(
+      `Recall→identity field feedback (bounded, diversity-damped): Δtrust=${rif.trustDelta} Δfamiliarity=${rif.familiarityDelta} diversityPenalty=${rif.diversityPenalty} anchorSkew=${rif.anchorSkew}`
+    );
+  }
+
+  const recall = Array.isArray(c.rhizohWeightedRecollection) ? c.rhizohWeightedRecollection : [];
+  if (recall.length) {
+    lines.push(
+      "Weighted memory recollection (semantic × physics collapse — field-aligned ranking, not pre-filtered search):"
+    );
+    recall.slice(0, 16).forEach((row) => {
+      const w = row?.retrievalWeight != null ? Number(row.retrievalWeight).toFixed(4) : "?";
+      const mf = row?.memoryFieldScores && typeof row.memoryFieldScores === "object" ? row.memoryFieldScores : null;
+      const mfStr =
+        mf && mf.semantic != null && mf.physicsCollapse != null
+          ? ` sem=${Number(mf.semantic).toFixed(3)} phys=${Number(mf.physicsCollapse).toFixed(3)}`
+          : "";
+      const ph =
+        row?.physicsImprint && typeof row.physicsImprint === "object"
+          ? ` imprint=${String(row.physicsImprint.phase || "").slice(0, 12)}`
+          : "";
+      const int = row?.intent ?? "";
+      const u = String(row?.user || row?.text || "").slice(0, 120);
+      const a = String(row?.assistant || "").slice(0, 160);
+      lines.push(
+        `- [W=${w}${mfStr}${ph} intent=${int}] user: ${u}${u.length >= 120 ? "…" : ""} | assistant: ${a}${a.length >= 160 ? "…" : ""}`
+      );
+    });
+  }
+
+  const anchor = c.rhizohStabilityAnchor && typeof c.rhizohStabilityAnchor === "object" ? c.rhizohStabilityAnchor : null;
+  const constraints = anchor && Array.isArray(anchor.philosophyConstraints) ? anchor.philosophyConstraints : [];
+  if (constraints.length) {
+    lines.push("Rhizoh identity anchor (stable — stay consistent):");
+    constraints.forEach((line) => lines.push(`- ${String(line)}`));
+  }
+
+  const nar = c.rhizohNarrativeThread && typeof c.rhizohNarrativeThread === "object" ? c.rhizohNarrativeThread : null;
+  if (nar && (nar.arcSummary || (Array.isArray(nar.intentChain) && nar.intentChain.length))) {
+    const chain = Array.isArray(nar.intentChain) ? nar.intentChain.slice(-6) : [];
+    lines.push(
+      `Narrative thread: focus=${nar.focusIntent ?? ""} recentIntents=${JSON.stringify(chain)} arc=${String(nar.arcSummary || "").slice(0, 280)}`
+    );
+  }
+
+  const arcLong = c.rhizohNarrativeArc && typeof c.rhizohNarrativeArc === "object" ? c.rhizohNarrativeArc : null;
+  if (arcLong && (arcLong.phase || arcLong.trajectory || arcLong.direction)) {
+    lines.push(
+      `Narrative arc (long horizon): phase=${arcLong.phase ?? ""} trajectory=${arcLong.trajectory ?? ""} bondTrend=${arcLong.bondTrend ?? ""} headline=${String(arcLong.arcHeadline || "").slice(0, 200)} direction=${String(arcLong.direction || "").slice(0, 320)}`
+    );
+  }
+
+  const gcal = c.rhizohGovernorCalibration && typeof c.rhizohGovernorCalibration === "object" ? c.rhizohGovernorCalibration : null;
+  if (gcal && (gcal.pullScalePre != null || gcal.memoryMaxTopShare != null)) {
+    lines.push(
+      `Governor calibration (adaptive): pullPre=${gcal.pullScalePre} pullPost=${gcal.pullScalePost} driftBand=${gcal.driftBandScale} memTopShare=${gcal.memoryMaxTopShare}`
+    );
+  }
+
+  const eps = Array.isArray(c.rhizohMemoryEpisodes) ? c.rhizohMemoryEpisodes : [];
+  if (eps.length) {
+    lines.push("Compressed memory episodes (clustered turns):");
+    eps.slice(-10).forEach((ep) => {
+      const n = ep?.spanCount ?? "?";
+      const int = ep?.intent ?? "";
+      const u = String(ep?.user || "").slice(0, 100);
+      const a = String(ep?.assistant || "").slice(0, 140);
+      lines.push(`- [${n} turns · ${int}] ${u}${u.length >= 100 ? "…" : ""} || ${a}${a.length >= 140 ? "…" : ""}`);
+    });
+  }
+
+  const runt = c.runtime && typeof c.runtime === "object" ? c.runtime : null;
+  const tb = runt?.tceeBoot;
+  if (tb && typeof tb === "object" && tb.phase) {
+    lines.push(
+      `TCEE boot (Dual-Phase): phase=${tb.phase} idlePulses=${tb.idlePulseCount ?? 0} wakeSealedAt=${tb.wakeSealedAt ?? "n/a"} memoryClockEpoch=${tb.memoryClockEpoch ?? "n/a"}`
+    );
+  }
+  const ks = runt?.kernelSeal && typeof runt.kernelSeal === "object" ? runt.kernelSeal : null;
+  if (ks && ks.version) {
+    const locked = Array.isArray(ks.lockedZones) ? ks.lockedZones.join(",") : "";
+    lines.push(`Kernel Seal v${ks.version} (${ks.sealedAt || "n/a"}): backbone zones locked [${locked}] — mutable spawn/agents/ui/world per contract.`);
+  }
+  const cm = runt?.capabilityManifest && typeof runt.capabilityManifest === "object" ? runt.capabilityManifest : null;
+  if (cm && cm.era) {
+    const sp = cm.zones?.spawn && typeof cm.zones.spawn === "object" ? cm.zones.spawn : null;
+    const spCap = sp && Array.isArray(sp.capabilities) ? sp.capabilities.length : 0;
+    lines.push(
+      `Capability manifest (${cm.manifestVersion || "?"} · ${cm.era}): spawn v${sp?.version ?? "?"} has ${spCap} declared capabilities — expansion surfaces versioned to reduce drift.`
+    );
+  }
+  const hs = runt?.healthState;
+  if (hs && typeof hs === "object" && hs.connectivity) {
+    lines.push(
+      `Cognitive reliability: connectivity=${hs.connectivity} confidence=${hs.confidence ?? ""} recommendedTone=${hs.recommendedTone ?? ""} latencyMs=${hs.latencyMs ?? "n/a"} capabilities=${JSON.stringify(hs.capabilities || {})} symptoms=${JSON.stringify(hs.symptoms || [])}`
+    );
+  }
+  const relSum = String(c.rhizohReliabilitySummary || c.recentReliabilitySummary || "").trim();
+  if (relSum) {
+    lines.push(`Reliability memory (session): ${relSum.slice(0, 420)}`);
+  }
+
+  const pol = runt?.rhizohPolicy;
+  const policyBlock = buildRhizohPolicyMemoryLines(pol);
+  if (policyBlock) {
+    lines.push(policyBlock);
+  }
+
+  const soc = runt?.socialField;
+  const socialBlock = buildSocialCognitionMemoryLines(soc);
+  if (socialBlock) {
+    lines.push(socialBlock);
+  }
+
+  const csilReg = runt?.socialRegistry;
+  const csilBlock = buildCastleSocialIdentityMemoryLines(csilReg);
+  if (csilBlock) {
+    lines.push(csilBlock);
+  }
+  const socialPhysics = runt?.socialPhysics;
+  const physicsBlock = buildSocialPhysicsMemoryLines(socialPhysics);
+  if (physicsBlock) {
+    lines.push(physicsBlock);
+  }
+  const fieldTheory = runt?.socialFieldTheory || csilReg?.socialFieldTheory;
+  const fieldBlock = buildSocialFieldTheoryMemoryLines(fieldTheory);
+  if (fieldBlock) {
+    lines.push(fieldBlock);
+  }
+  const csilIntro = runt?.csilIntroductionGuidance;
+  if (csilIntro && String(csilIntro).trim()) {
+    lines.push(String(csilIntro).trim().slice(0, 1200));
+  }
+
+  const arb = c.rhizohPerceptionArbitrationV1 && typeof c.rhizohPerceptionArbitrationV1 === "object" ? c.rhizohPerceptionArbitrationV1 : null;
+  const arbBlock = arb && String(arb.orderedPromptBlock || "").trim();
+
+  const cogPrompt = String(c.cognitiveSubThreadsPrompt || runt?.cognitiveSubThreadsPrompt || "").trim();
+  const ghostPerc = c.rhizohGhostPerceptionV1 && typeof c.rhizohGhostPerceptionV1 === "object" ? c.rhizohGhostPerceptionV1 : null;
+  const ghostPb = ghostPerc && String(ghostPerc.promptBlock || "").trim();
+
+  if (arbBlock) {
+    lines.push(arbBlock.slice(0, 4800));
+  } else {
+    if (cogPrompt) {
+      lines.push(cogPrompt.slice(0, 1600));
+    }
+    if (ghostPb) {
+      lines.push(ghostPb.slice(0, 3400));
+    }
+  }
+
+  const ifc = c.rhizohIntentFeedbackClosureV1 && typeof c.rhizohIntentFeedbackClosureV1 === "object" ? c.rhizohIntentFeedbackClosureV1 : null;
+  const ifcBlock = ifc && String(ifc.selfAwarenessPromptBlock || "").trim();
+  if (ifcBlock) {
+    lines.push(ifcBlock.slice(0, 1400));
+  }
+
+  const tid = c.rhizohTemporalIntentDriftMemoryV1 && typeof c.rhizohTemporalIntentDriftMemoryV1 === "object" ? c.rhizohTemporalIntentDriftMemoryV1 : null;
+  const tidBlock = tid && String(tid.driftSummaryPrompt || "").trim();
+  if (tidBlock) {
+    lines.push(tidBlock.slice(0, 1600));
+  }
+
+  const idNarr = (c.identity && typeof c.identity === "object" && c.identity.narrative) || c.identityNarrative;
+  if (idNarr && String(idNarr).trim()) {
+    lines.push("Identity narrative (authoritative):");
+    lines.push(String(idNarr).trim().slice(0, 2200));
+  }
+
+  return lines.length ? ["--- Continuity memory (client) ---", ...lines].join("\n") : "";
+}
+
 function buildSystemPrompt(layerContext) {
   const persona = layerContext?.memory?.persona || {};
   const goals = Array.isArray(layerContext?.memory?.goals) ? layerContext.memory.goals : [];
@@ -32,19 +364,171 @@ function buildSystemPrompt(layerContext) {
   const episodic = Array.isArray(layerContext?.memory?.episodic) ? layerContext.memory.episodic : [];
   const semantic = Array.isArray(layerContext?.memory?.semantic) ? layerContext.memory.semantic : [];
   const procedural = Array.isArray(layerContext?.memory?.procedural) ? layerContext.memory.procedural : [];
+  const continuity = layerContext?.continuity && typeof layerContext.continuity === "object" ? layerContext.continuity : {};
+  const identityNarrative = String(continuity.identityNarrative || "").trim();
+  const nestedNarrative =
+    continuity.identity && typeof continuity.identity === "object" && continuity.identity.narrative
+      ? String(continuity.identity.narrative || "").trim()
+      : "";
+  const memoryContract = String(layerContext?.rhizohMemoryContract || "").trim() || DEFAULT_MEMORY_CONTRACT;
+  const rhizohRouter =
+    layerContext?.rhizohRouter && typeof layerContext.rhizohRouter === "object" ? layerContext.rhizohRouter : null;
+
+  const layerForPrompt = { ...layerContext, memory: undefined, rhizohRouter: undefined };
+  if (layerForPrompt.continuity && typeof layerForPrompt.continuity === "object") {
+    const slimIdentity =
+      layerForPrompt.continuity.identity && typeof layerForPrompt.continuity.identity === "object"
+        ? { ...layerForPrompt.continuity.identity, narrative: nestedNarrative || identityNarrative ? "[see Continuity memory section]" : "" }
+        : layerForPrompt.continuity.identity;
+    const recallN = Array.isArray(layerForPrompt.continuity.rhizohWeightedRecollection)
+      ? layerForPrompt.continuity.rhizohWeightedRecollection.length
+      : 0;
+    const rtCont = layerForPrompt.continuity.runtime;
+    const slimRuntime =
+      rtCont && typeof rtCont === "object"
+        ? {
+            ...rtCont,
+            ...(rtCont.healthState
+              ? { healthState: "[see Cognitive reliability above]" }
+              : {}),
+            ...(rtCont.rhizohPolicy ? { rhizohPolicy: "[see Current policy above]" } : {}),
+            ...(rtCont.socialField ? { socialField: "[see Social cognition above]" } : {}),
+            ...(rtCont.socialRegistry ? { socialRegistry: "[see Castle Social Identity above]" } : {}),
+            ...(rtCont.socialPhysics ? { socialPhysics: "[see Social physics above]" } : {}),
+            ...(rtCont.socialFieldTheory ? { socialFieldTheory: "[see Social field theory above]" } : {}),
+            ...(rtCont.csilIntroductionGuidance
+              ? { csilIntroductionGuidance: "[see CSIL introduction protocol above]" }
+              : {}),
+            ...(rtCont.tceeBoot ? { tceeBoot: "[see TCEE boot line above]" } : {})
+          }
+        : layerForPrompt.continuity.runtime;
+    const relEpN = Array.isArray(layerForPrompt.continuity.rhizohReliabilityEpisodes)
+      ? layerForPrompt.continuity.rhizohReliabilityEpisodes.length
+      : 0;
+    const metaIn = layerForPrompt.continuity.meta;
+    const metaSlimmed =
+      relEpN > 0 && metaIn && typeof metaIn === "object"
+        ? { ...metaIn, rhizohReliabilityEpisodes: "[see Reliability memory above]" }
+        : metaIn;
+    layerForPrompt.continuity = {
+      ...layerForPrompt.continuity,
+      runtime: slimRuntime,
+      meta: metaSlimmed,
+      identity: slimIdentity,
+      identityNarrative: identityNarrative ? "[see Continuity memory section]" : "",
+      rhizohWeightedRecollection:
+        recallN > 0 ? `[${recallN} items — see Weighted memory recollection above]` : layerForPrompt.continuity.rhizohWeightedRecollection,
+      rhizohStabilityAnchor: layerForPrompt.continuity.rhizohStabilityAnchor ? "[see Identity anchor above]" : undefined,
+      rhizohNarrativeThread: layerForPrompt.continuity.rhizohNarrativeThread ? "[see Narrative thread above]" : undefined,
+      rhizohNarrativeArc: layerForPrompt.continuity.rhizohNarrativeArc ? "[see Narrative arc above]" : undefined,
+      rhizohGovernorCalibration: layerForPrompt.continuity.rhizohGovernorCalibration ? "[see Governor calibration above]" : undefined,
+      rhizohReliabilitySummary: layerForPrompt.continuity.rhizohReliabilitySummary ? "[see Reliability memory above]" : undefined,
+      rhizohReliabilityEpisodes:
+        relEpN > 0 ? `[${relEpN} episodes — see Reliability memory above]` : layerForPrompt.continuity.rhizohReliabilityEpisodes,
+      rhizohMemoryEpisodes: Array.isArray(layerForPrompt.continuity.rhizohMemoryEpisodes)
+        ? `[${layerForPrompt.continuity.rhizohMemoryEpisodes.length} episodes — see Compressed memory above]`
+        : layerForPrompt.continuity.rhizohMemoryEpisodes
+    };
+  }
+  if (layerForPrompt.rhizohMemoryContract) {
+    layerForPrompt.rhizohMemoryContract = "[see Memory contract line above]";
+  }
+
+  const intentRoutingLine = rhizohRouter
+    ? [
+        "Intent routing (client engine):",
+        JSON.stringify({
+          intent: rhizohRouter.intent,
+          subIntent: rhizohRouter.subIntent,
+          confidence: rhizohRouter.confidence,
+          urgency: rhizohRouter.urgency,
+          emotionalSignal: rhizohRouter.emotionalSignal,
+          toolHint: rhizohRouter.toolHint,
+          silenceMode: rhizohRouter.silenceMode,
+          reliabilityIntentProfile: rhizohRouter.reliabilityIntentProfile
+        }),
+        "Adjust reply tone: CRISIS = calm, focused repair; BUILD = productive; PLAY = exploratory; REFLECT = thoughtful; CHAT = conversational; SILENCE = brief acknowledgment only."
+      ].join(" ")
+    : "";
+
+  const continuityBlock = buildContinuityMemoryBlock(continuity);
+  const identityBlock = [
+    "Identity graph (client continuity): treat as authoritative for user-specific facts; do not invent details absent from it.",
+    "Match the user's language (e.g. Turkish when they write Turkish). Speak as one persistent Rhizoh entity, not a generic assistant.",
+    continuityBlock ? "" : "No structured continuity in this request yet; stay generic on personal history until it arrives."
+  ]
+    .filter(Boolean)
+    .join("\n");
+
   return [
     "You are Rhizoh, command intelligence for Castle Genesis.",
     "Keep answers concise, actionable, and cinematic. Maintain continuity with the user.",
     "Return strict JSON with keys: reply, directive.",
     "directive must be one of: FOCUS_RHIZOH, ZOOM_CASTLE, ZOOM_AGENT, ISTANBUL_OVERVIEW, NONE.",
+    `Memory contract: ${memoryContract}`,
+    intentRoutingLine,
+    continuityBlock,
+    identityBlock,
     `Persona memory: ${JSON.stringify(persona)}`,
     `Goal memory: ${JSON.stringify(goals)}`,
     `User preferences: ${JSON.stringify(preferences)}`,
     `Episodic memory: ${JSON.stringify(episodic)}`,
     `Semantic memory: ${JSON.stringify(semantic)}`,
     `Procedural memory: ${JSON.stringify(procedural)}`,
-    `Layer context: ${JSON.stringify({ ...layerContext, memory: undefined } || {})}`
-  ].join("\n");
+    `Layer context: ${JSON.stringify(layerForPrompt || {})}`
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/**
+ * Üretimde hassas içerik loglamadan Rhizoh LLM bağlam özetini döner.
+ * `CASTLE_RHIZOH_LLM_DIAG=1` ile sunucu konsolunda kullanılır.
+ * @param {object|null} artifactStats — `countArtifactLayerDocuments` çıktısı (opsiyonel)
+ */
+export function diagnoseRhizohLlmContext(layerContext, artifactStats = null) {
+  const systemPrompt = buildSystemPrompt(layerContext);
+  const memory = layerContext?.memory || {};
+  const episodic = Array.isArray(memory.episodic) ? memory.episodic : [];
+  const semantic = Array.isArray(memory.semantic) ? memory.semantic : [];
+  const procedural = Array.isArray(memory.procedural) ? memory.procedural : [];
+  const goals = Array.isArray(memory.goals) ? memory.goals : [];
+  const persona = memory.persona && typeof memory.persona === "object" ? memory.persona : {};
+  const preferences = memory.preferences && typeof memory.preferences === "object" ? memory.preferences : {};
+  const mergedForIntensity = [...episodic, ...semantic, ...procedural];
+  let relationshipIntensity = 0;
+  if (mergedForIntensity.length) {
+    const sum = mergedForIntensity.reduce((a, m) => a + (Number(m?.importance) || 0), 0);
+    relationshipIntensity = Math.round((sum / mergedForIntensity.length) * 1000) / 1000;
+  }
+  const preferenceKeys = Object.keys(preferences);
+  const continuity = layerContext?.continuity && typeof layerContext.continuity === "object" ? layerContext.continuity : {};
+  const recentReality = Array.isArray(continuity.recentReality) ? continuity.recentReality : [];
+  const discoveries = continuity.codex && typeof continuity.codex === "object" && Array.isArray(continuity.codex.discoveries) ? continuity.codex.discoveries : [];
+  return {
+    identityNarrativeChars: String(continuity.identityNarrative || "").length,
+    recentRealityLines: recentReality.length,
+    codexDiscoveryNodes: discoveries.length,
+    ghostPetMood: continuity.ghostPet && typeof continuity.ghostPet === "object" ? continuity.ghostPet.mood : null,
+    castleRealm: (continuity.castleState && continuity.castleState.realm) || continuity.runtime?.realityMode || null,
+    memoryCount: mergedForIntensity.length,
+    memoryEpisodic: episodic.length,
+    memorySemantic: semantic.length,
+    memoryProcedural: procedural.length,
+    goalsCount: goals.length,
+    personaKeys: Object.keys(persona).length,
+    preferencesKeyCount: preferenceKeys.length,
+    /** İstemci şemasıyla uyum için anahtar adları (değerler loglanmaz) */
+    preferenceKeys: preferenceKeys.slice(0, 24),
+    relationshipIntensity,
+    promptChars: systemPrompt.length,
+    activeArtifacts: artifactStats?.total ?? 0,
+    artifactAgents: artifactStats?.agents ?? 0,
+    artifactCommands: artifactStats?.commands ?? 0,
+    artifactRealityEvents: artifactStats?.realityEvents ?? 0,
+    artifactCountCapped: Boolean(artifactStats?.capped),
+    layerContextKeys: Object.keys(layerContext || {}).filter((k) => k !== "memory")
+  };
 }
 
 function safeParseJsonObject(text) {
@@ -128,14 +612,72 @@ async function callGemini(key, model, systemPrompt, userMessage) {
   return String(content);
 }
 
-export async function queryRhizohLlm(input) {
+/**
+ * Hangi anahtarın kullanılacağı — otomatik env→conn sırası yalnızca `auto` modunda.
+ * @param {"env"|"user_connection"|"auto"} mode
+ * @param {string} envKey
+ * @param {string} connectionKey — yalnızca sunucunun `resolveConnection` ile yüklediği anahtar
+ * @param {boolean} allowExternalApiKey
+ * @param {string} externalKey — yalnızca bağlantı testi
+ */
+function resolveLlmSecretKey({ mode, envKey, connectionKey, allowExternalApiKey, externalKey, provider }) {
+  const env = String(envKey || "").trim();
+  const conn = String(connectionKey || "").trim();
+  const ext = String(externalKey || "").trim();
+
+  if (allowExternalApiKey && ext) {
+    return { key: ext, llmKeyBillingOwner: "connection_test", llmKeyOrigin: "connection_test" };
+  }
+
+  if (mode === "env") {
+    if (!env) {
+      const e = new Error("server_llm_key_missing");
+      e.code = "server_llm_key_missing";
+      throw e;
+    }
+    return { key: env, llmKeyBillingOwner: "server", llmKeyOrigin: "env" };
+  }
+
+  if (mode === "user_connection") {
+    if (!conn) {
+      const e = new Error("user_llm_connection_required");
+      e.code = "user_llm_connection_required";
+      throw e;
+    }
+    return { key: conn, llmKeyBillingOwner: "user", llmKeyOrigin: "user_connection" };
+  }
+
+  if (env) return { key: env, llmKeyBillingOwner: "server", llmKeyOrigin: "env" };
+  if (conn) return { key: conn, llmKeyBillingOwner: "user", llmKeyOrigin: "user_connection" };
+  const e = new Error(`missing_api_key_for_${String(provider || "unknown")}`);
+  e.code = "missing_api_key";
+  throw e;
+}
+
+/**
+ * @param {object} input
+ * @param {{ allowExternalApiKey?: boolean, llmKeySource?: "env"|"user_connection"|"auto" }} [meta]
+ */
+export async function queryRhizohLlm(input, meta = {}) {
+  const allowExternalApiKey = meta.allowExternalApiKey === true;
+  const keyMode = meta.llmKeySource || "auto";
   const payload = input || {};
   const message = String(payload?.message || "").slice(0, 1600);
   if (!message) throw new Error("message_required");
   const context = payload?.context || {};
   const { provider, model } = getProviderConfig(payload?.provider, payload?.model);
-  const key = String(payload?.apiKey || getProviderKey(provider));
-  if (!key) throw new Error(`missing_api_key_for_${provider}`);
+  const envKey = getProviderKey(provider);
+  const connectionKey = String(payload?.apiKey || "").trim();
+  const externalKey = allowExternalApiKey ? connectionKey : "";
+
+  const { key, llmKeyBillingOwner, llmKeyOrigin } = resolveLlmSecretKey({
+    mode: keyMode,
+    envKey,
+    connectionKey: allowExternalApiKey ? "" : connectionKey,
+    allowExternalApiKey,
+    externalKey: allowExternalApiKey ? externalKey : "",
+    provider
+  });
 
   const systemPrompt = buildSystemPrompt(context);
   let rawText = "";
@@ -175,6 +717,8 @@ export async function queryRhizohLlm(input) {
     provider,
     model,
     reply,
-    directive
+    directive,
+    llmKeyBillingOwner,
+    llmKeyOrigin
   };
 }

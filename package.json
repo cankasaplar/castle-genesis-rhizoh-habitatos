@@ -16,12 +16,17 @@
     "dev:orchestrator": "npm run dev -w apps/orchestrator",
     "dev:sim-core": "npm run dev -w apps/sim-core",
     "build": "npm run build -w apps/client",
+    "test": "npm run test -w apps/client",
+    "test:watch": "npm run test:watch -w apps/client",
     "firebase:build": "npm run build",
     "firebase:deploy": "npm run firebase:build && npx firebase-tools deploy",
     "firebase:deploy:hosting": "npm run firebase:build && npx firebase-tools deploy --only hosting",
     "firebase:deploy:hosting+firestore": "npm run firebase:build && npx firebase-tools deploy --only \"hosting,firestore:rules\"",
     "firebase:deploy:rules": "npx firebase-tools deploy --only firestore:rules,storage",
+    "gateway:docker:build": "docker build -f apps/gateway/Dockerfile -t castle-gateway .",
     "security:audit": "npm audit --audit-level=high",
-    "security:sast": "node scripts/sast-check.js"
+    "security:sast": "node scripts/sast-check.js",
+    "verify:production": "node scripts/verify-production-env.mjs",
+    "setup:env": "node scripts/setup-env-templates.mjs"
   }
 }

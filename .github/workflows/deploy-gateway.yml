@@ -1,0 +1,35 @@
+# Gateway (Node) redeploy — Rhizoh LLM ve HTTP/WS güncellemeleri için.
+# Hosting workflow bunu ÇALIŞTIRMAZ; identity prompt değiştiyse bunu veya manuel redeploy şart.
+#
+# Gerekli Secrets (repo → Settings → Actions):
+#   GATEWAY_SSH_HOST, GATEWAY_SSH_USER, GATEWAY_SSH_PRIVATE_KEY
+#   GATEWAY_DEPLOY_PATH — örn. /opt/castle (sunucuda git checkout veya rsync hedefi)
+#
+# Sunucu script'i örnek: repo içinde `git pull && npm ci --omit=dev && pm2 restart castle-gateway`
+# Kendi sürecinize göre `script` adımını düzenleyin.
+
+name: Deploy gateway (SSH)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (sadece dokümantasyon / senkron için isteğe bağlı)
+        uses: actions/checkout@v4
+
+      - name: Remote redeploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.GATEWAY_SSH_HOST }}
+          username: ${{ secrets.GATEWAY_SSH_USER }}
+          key: ${{ secrets.GATEWAY_SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd "${{ secrets.GATEWAY_DEPLOY_PATH }}"
+            git pull origin main || git pull origin master
+            npm ci --omit=dev
+            pm2 restart castle-gateway || pm2 restart gateway || (cd apps/gateway && pm2 start src/server.js --name castle-gateway)

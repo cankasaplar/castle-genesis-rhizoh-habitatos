@@ -235,6 +235,7 @@ export async function setDefaultConnection(uid, id) {
   await persist();
 }
 
+/** Bağlantılar Firestore’da castle_users/{uid}/llm_connections altında; başka uid’nin id’si ile okuma yapılamaz. */
 export async function resolveConnection(uid, id = "") {
   const { db } = getFirebasePersistence();
   if (db) {
@@ -242,6 +243,8 @@ export async function resolveConnection(uid, id = "") {
     if (id) {
       const snap = await col.doc(id).get();
       if (!snap.exists) return null;
+      const parentDoc = snap.ref.parent.parent;
+      if (!parentDoc || parentDoc.id !== uid) return null;
       return { id: snap.id, ...snap.data() };
     }
     const defaults = await col.where("isDefault", "==", true).limit(1).get();
