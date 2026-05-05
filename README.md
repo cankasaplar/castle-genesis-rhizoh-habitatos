@@ -122,24 +122,20 @@ Client icin gateway ve uçuş/uydu anahtarlari: `apps/client/.env.example` → `
 - Marker pulse siddeti hava verisine (sicaklik + ruzgar) baglanir.
 - Castle-lar arasi geodesic benzeri baglanti cizgileri ve canli metadata overlay paneli gosterilir.
 
-## Studio Katmani (GreenRoom Ultimate)
+## Studio / GreenRoom / Spiral (tek SPA)
 
-- Studio sayfasi: `apps/client/public/greenroom-ultimate.html`
-- HabitatOS icinden "Open Studio Layer" butonu ile acilir.
+- Ana uygulama: `apps/client/src/main.jsx` → `CastleShellRouter` → `AppRhizoh528.jsx` (React Router).
+- **Dahili rotalar:** `/studio`, `/greenroom/main`, `/greenroom/live/:traceId`, `/spiral`, `/map`, `/academy`, `/hall/:roomUid`, `/broadcast/:broadcastUid`, `/settings`
+- Eski statik URL’ler (`/greenroom-ultimate.html` vb.) → Firebase **301 redirect** + Vite dev middleware → yukarıdaki rotalara yönlenir.
 - YouTube cikis hedefi: `https://www.youtube.com/@CastleGenesis/live`
 - Not: tarayici `canvas.captureStream()` yalnizca local stream uretir; YouTube'a gercek yayin icin LiveKit egress/OBS/RTMP bridge gerekir.
-- OCTO AI Studio sayfasi: `apps/client/public/octoai-studio.html`
-- GreenRoom ve HabitatOS panelinden "Open OCTO AI" ile acilir.
-- Ortak studio stil/dil ayari:
+- Ortak studio stil/dil (varsa asset’ler):
   - `apps/client/public/studio-shared.css`
   - `apps/client/public/studio-shared.js`
-  - Dil secimi (TR/EN) tum studio sekmelerinde ortaktir (localStorage).
-- OCTO extensibility:
-  - `window.OctoExtensions.register({ onInit(octoMind) { ... } })` ile plugin tabanli gelistirme.
 
-## SpiralMMO Katmani (CastleByCK Room)
+## SpiralMMO (CastleByCK) — SPA içi
 
-- Sayfa: `apps/client/public/spiralmmo-castlebyck.html`
+- Rota: **`/spiral`** (L6 swarm katmanı + gerçek harita modu tetiklenir).
 - Amac: sisteme katilan AI varliklarinin SpiralMMO odasinda oynadigi canli alan.
 - Kernel uyumu:
   - Gateway: `ws://localhost:8090` (aynı ws/token mantigi)
@@ -155,7 +151,7 @@ Client icin gateway ve uçuş/uydu anahtarlari: `apps/client/.env.example` → `
   - gateway `WORLD_TICK` dinler
   - AI destekli sahne cue uretir (preset/speaker/camera/bpm/line)
   - `STUDIO_CUE` olarak tum kullanicilara ortak yayin direktifi yollar
-- GreenRoom sayfasi `STUDIO_CUE` mesajlarini dinler ve otomatik uygular.
+- GreenRoom yuzu (SPA `/greenroom/...`) `STUDIO_CUE` mesajlarini dinleyecek sekilde baglanabilir (entegrasyon backlog).
 - Varsayilan yayin hedefi: `https://www.youtube.com/@CastleGenesis/live`
 
 ## CI Security Scan

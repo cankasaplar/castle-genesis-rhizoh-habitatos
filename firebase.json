@@ -8,6 +8,23 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "redirects": [
+      {
+        "source": "/greenroom-ultimate.html",
+        "destination": "/greenroom/main",
+        "type": 301
+      },
+      {
+        "source": "/octoai-studio.html",
+        "destination": "/studio?focus=octo",
+        "type": 301
+      },
+      {
+        "source": "/spiralmmo-castlebyck.html",
+        "destination": "/spiral",
+        "type": 301
+      }
+    ],
     "rewrites": [
       {
         "source": "**",

@@ -4,6 +4,12 @@ export const WS_MESSAGE = {
   WORLD_DELTA: "WORLD_DELTA",
   WORLD_DELTA_PACKED: "WORLD_DELTA_PACKED",
   WORLD_TICK: "WORLD_TICK",
+  /** Rhizoh spine — dünya / varlık yaması (payload: createRhizohSpineEnvelope şeması) */
+  WORLD_PATCH: "WORLD_PATCH",
+  PRESENCE_UPDATE: "PRESENCE_UPDATE",
+  ENTITY_EVENT: "ENTITY_EVENT",
+  REALITY_PATCH: "REALITY_PATCH",
+  SYSTEM_NOTICE: "SYSTEM_NOTICE",
   NETWORK_TICK: "NETWORK_TICK",
   INPUT_FRAME: "INPUT_FRAME",
   SIGNAL: "SIGNAL",
@@ -33,8 +39,57 @@ export const COMMAND = {
   CREATE_CASTLE: "CREATE_CASTLE"
 };
 
+/**
+ * Presence room mesh (gateway): REST paths `/presence/mesh/*`; payload `{ node?, projectionPatch?, seq, roomUid }` on deltas.
+ * SSE `data` JSON uses `type` in {@link PRESENCE_MESH_SSE}.
+ */
+export const PRESENCE_MESH = {
+  JOIN: "JOIN",
+  LEAVE: "LEAVE",
+  SNAPSHOT: "SNAPSHOT",
+  DELTA: "DELTA",
+  SUBSCRIBE: "SUBSCRIBE",
+  REPLAY: "REPLAY"
+};
+
+/** SSE stream (`GET /presence/mesh/subscribe`) — each event is JSON in `data:`. */
+export const PRESENCE_MESH_SSE = {
+  HELLO: "hello",
+  DELTA: "delta",
+  MEMBER_JOIN: "member_join",
+  MEMBER_LEAVE: "member_leave"
+};
+
 export function createEnvelope(type, payload = {}) {
   return { type, payload, ts: Date.now() };
+}
+
+/** Rhizoh spine WS — payload.scope için sabitler */
+export const RHIZOH_SPINE_SCOPE = {
+  USER: "user",
+  ROOM: "room",
+  GLOBAL: "global"
+};
+
+/**
+ * Rhizoh spine / world bus — dış kabuk her zaman `createEnvelope` ile aynı: `{ type, payload, ts }`.
+ * İstemci `payload` içinden `v`, `traceId`, `source`, `scope` okur; tip-özel veri aynı nesnede (örn. `patch`, `entity`).
+ *
+ * @param {string} type - WS_MESSAGE.WORLD_PATCH | PRESENCE_UPDATE | ENTITY_EVENT | REALITY_PATCH | SYSTEM_NOTICE
+ * @param {Record<string, unknown>} [spineFields]
+ * @param {string} [spineFields.traceId]
+ * @param {string} [spineFields.source] - varsayılan rhizoh.gateway
+ * @param {"user"|"room"|"global"} [spineFields.scope] - varsayılan global
+ */
+export function createRhizohSpineEnvelope(type, spineFields = {}) {
+  const { traceId, source = "rhizoh.gateway", scope = RHIZOH_SPINE_SCOPE.GLOBAL, ...rest } = spineFields;
+  return createEnvelope(type, {
+    ...rest,
+    v: 1,
+    ...(traceId ? { traceId: String(traceId) } : {}),
+    source: String(source || "rhizoh.gateway"),
+    scope: scope === "user" || scope === "room" || scope === "global" ? scope : RHIZOH_SPINE_SCOPE.GLOBAL
+  });
 }
 
 export function safeJsonParse(raw) {

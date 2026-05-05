@@ -14,8 +14,17 @@ import { WS_MESSAGE, COMMAND, createEnvelope, safeJsonParse } from "@castle/prot
 import { queryOpenData } from "./openData.js";
 import { verifyClientToken } from "./auth.js";
 import { runRhizohBrain } from "./rhizohBrain.js";
-import { queryRhizohLlm, diagnoseRhizohLlmContext } from "./rhizohLlmGateway.js";
-import { countArtifactLayerDocuments } from "./artifactCounts.js";
+import { queryRhizohLlm } from "./rhizohLlmGateway.js";
+import { rhizohGatewayTurn } from "./rhizohGatewayTurn.js";
+import {
+  meshAppendDelta,
+  meshJoin,
+  meshLeave,
+  meshReplayFromNodeId,
+  meshReplayFromSeq,
+  meshSnapshot,
+  meshSubscribeSse
+} from "./presenceRoomMesh.js";
 import { runRhizohBrainV2 } from "./rhizohBrainV2.js";
 import {
   listConnections,
@@ -65,9 +74,59 @@ const ALLOWED_ORIGINS = (process.env.CASTLE_ALLOWED_ORIGINS || "")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
+
+function normalizeHttpOrigin(origin) {
+  return String(origin || "")
+    .trim()
+    .replace(/\/+$/, "");
+}
+
+/** HTTP CORS: `CASTLE_ALLOWED_ORIGINS` + `CASTLE_HTTP_CORS_ORIGIN` (tek origin); `CASTLE_HTTP_CORS_ORIGIN=*` → wildcard. */
+function buildHttpCorsOriginAllowSet() {
+  const set = new Set();
+  for (const o of ALLOWED_ORIGINS) {
+    const n = normalizeHttpOrigin(o);
+    if (n) set.add(n);
+  }
+  const primary = normalizeHttpOrigin(process.env.CASTLE_HTTP_CORS_ORIGIN);
+  if (primary && primary !== "*") set.add(primary);
+  return set;
+}
+
+const HTTP_CORS_ORIGIN_ALLOW_SET = buildHttpCorsOriginAllowSet();
+
+/**
+ * Tarayıcı `Origin` ile tam eşleşme ister. Tek sabit `CASTLE_HTTP_CORS_ORIGIN` yeterli değil:
+ * örn. `web.app` vs `firebaseapp.com` veya Render’da yanlış/eksik env.
+ * @returns {string|null} `Access-Control-Allow-Origin` değeri; null = başlık yok (istemci CORS fail).
+ */
+function accessControlAllowOriginValue(req) {
+  const primaryEnv = normalizeHttpOrigin(process.env.CASTLE_HTTP_CORS_ORIGIN);
+  if (primaryEnv === "*") return "*";
+  const reqOrigin = normalizeHttpOrigin(req.headers?.origin);
+  if (HTTP_CORS_ORIGIN_ALLOW_SET.size === 0) return "*";
+  if (!reqOrigin) return "*";
+  if (HTTP_CORS_ORIGIN_ALLOW_SET.has(reqOrigin)) return reqOrigin;
+  return null;
+}
+
+function applyHttpCorsHeaders(req, res) {
+  const allow = accessControlAllowOriginValue(req);
+  if (allow) {
+    res.setHeader("Access-Control-Allow-Origin", allow);
+    if (allow !== "*") res.setHeader("Vary", "Origin");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Castle-Dev-Uid, X-Castle-Guest-Id"
+  );
+}
 const REQUIRE_AUTH = process.env.CASTLE_REQUIRE_AUTH === "true";
 const ALLOW_DEV_ANON = process.env.CASTLE_ALLOW_DEV_ANON !== "false";
 const ALLOW_DEV_HTTP_UID = process.env.CASTLE_ALLOW_DEV_HTTP_UID !== "false";
+/** Presence mesh: allow `X-Castle-Guest-Id` when Firebase auth absent (default on). Set `false` to require auth only. */
+const ALLOW_MESH_GUEST = process.env.CASTLE_ALLOW_MESH_GUEST !== "false";
 const SOCIAL_RETRY_MAX = Math.max(0, Math.min(5, Number(process.env.CASTLE_SOCIAL_RETRY_MAX || 2)));
 const SOCIAL_RETRY_BASE_MS = Math.max(100, Number(process.env.CASTLE_SOCIAL_RETRY_BASE_MS || 700));
 const TELEGRAM_BOT_TOKEN = process.env.CASTLE_TELEGRAM_BOT_TOKEN || "";
@@ -392,10 +451,23 @@ async function resolveHttpUser(req) {
   return { ok: false, reason: authResult?.reason || "auth_required" };
 }
 
+/** Mesh actor: Firebase uid, dev header, or `guest:<uuid>` via header / `guestId` query (SSE cannot set headers). */
+async function resolveMeshActor(req) {
+  const auth = await resolveHttpUser(req);
+  if (auth.ok) return { ok: true, clientUid: auth.uid, mode: auth.mode };
+  if (ALLOW_MESH_GUEST) {
+    const q = new URL(String(req.url || ""), "http://localhost");
+    const gid = String(req.headers?.["x-castle-guest-id"] || q.searchParams.get("guestId") || "").trim();
+    if (gid) {
+      const normalized = gid.startsWith("guest:") ? gid.slice(0, 180) : `guest:${gid.slice(0, 160)}`;
+      return { ok: true, clientUid: normalized, mode: "guest-header" };
+    }
+  }
+  return { ok: false, reason: "mesh_auth_required" };
+}
+
 const httpServer = createServer(async (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", process.env.CASTLE_HTTP_CORS_ORIGIN || "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Castle-Dev-Uid");
+  applyHttpCorsHeaders(req, res);
   if (req.method === "OPTIONS") {
     res.writeHead(204);
     res.end();
@@ -420,12 +492,16 @@ const httpServer = createServer(async (req, res) => {
     }
     try {
       const persistence = getFirebasePersistence();
+      const llmProbe = rhizohLlmEnvConfigured();
       sendJson(res, 200, {
         ok: true,
         ready: true,
         dns: true,
         persistence: persistence.mode,
-        service: "castle-gateway"
+        service: "castle-gateway",
+        gateway: "ok",
+        llm: llmProbe ? "ok" : "degraded",
+        spine: llmProbe ? "ok" : "partial"
       });
     } catch (e) {
       sendJson(res, 503, { ok: false, ready: false, reason: String(e?.message || e), service: "castle-gateway" });
@@ -481,8 +557,129 @@ const httpServer = createServer(async (req, res) => {
       ok: true,
       service: "castle-gateway",
       wsPort: PORT,
-      persistence: persistence.mode
+      persistence: persistence.mode,
+      presenceMesh: "sse"
     });
+    return;
+  }
+
+  /** Presence room mesh (C): JOIN / LEAVE / SNAPSHOT / DELTA / REPLAY (HTTP); SUBSCRIBE = SSE stream. */
+  if (req.method === "POST" && pathname === "/presence/mesh/join") {
+    const actor = await resolveMeshActor(req);
+    if (!actor.ok) return sendJson(res, 401, { ok: false, error: actor.reason });
+    try {
+      const body = await readHttpJson(req, 16 * 1024);
+      const roomUid = String(body?.roomUid || "").trim();
+      if (!roomUid) return sendJson(res, 400, { ok: false, error: "roomUid_required" });
+      meshJoin(roomUid, actor.clientUid);
+      sendJson(res, 200, { ok: true, roomUid, clientUid: actor.clientUid });
+    } catch (e) {
+      sendJson(res, 400, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/presence/mesh/leave") {
+    const actor = await resolveMeshActor(req);
+    if (!actor.ok) return sendJson(res, 401, { ok: false, error: actor.reason });
+    try {
+      const body = await readHttpJson(req, 16 * 1024);
+      const roomUid = String(body?.roomUid || "").trim();
+      if (!roomUid) return sendJson(res, 400, { ok: false, error: "roomUid_required" });
+      meshLeave(roomUid, actor.clientUid);
+      sendJson(res, 200, { ok: true, roomUid });
+    } catch (e) {
+      sendJson(res, 400, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/presence/mesh/snapshot") {
+    const actor = await resolveMeshActor(req);
+    if (!actor.ok) return sendJson(res, 401, { ok: false, error: actor.reason });
+    try {
+      const body = await readHttpJson(req, 16 * 1024);
+      const roomUid = String(body?.roomUid || "").trim();
+      if (!roomUid) return sendJson(res, 400, { ok: false, error: "roomUid_required" });
+      sendJson(res, 200, meshSnapshot(roomUid));
+    } catch (e) {
+      sendJson(res, 400, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/presence/mesh/delta") {
+    const actor = await resolveMeshActor(req);
+    if (!actor.ok) return sendJson(res, 401, { ok: false, error: actor.reason });
+    try {
+      const body = await readHttpJson(req, MAX_MESSAGE_BYTES);
+      const roomUid = String(body?.roomUid || "").trim();
+      if (!roomUid) return sendJson(res, 400, { ok: false, error: "roomUid_required" });
+      const seq = meshAppendDelta(roomUid, actor.clientUid, {
+        node: body?.node,
+        projectionPatch: body?.projectionPatch,
+        writerSubject: body?.writerSubject
+      });
+      sendJson(res, 200, { ok: true, roomUid, seq });
+    } catch (e) {
+      sendJson(res, 400, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/presence/mesh/replay") {
+    const actor = await resolveMeshActor(req);
+    if (!actor.ok) return sendJson(res, 401, { ok: false, error: actor.reason });
+    try {
+      const body = await readHttpJson(req, 16 * 1024);
+      const roomUid = String(body?.roomUid || "").trim();
+      if (!roomUid) return sendJson(res, 400, { ok: false, error: "roomUid_required" });
+      const fromNodeId = body?.fromNodeId != null ? String(body.fromNodeId) : "";
+      const fromSeq = body?.fromSeq;
+      if (fromNodeId) {
+        sendJson(res, 200, meshReplayFromNodeId(roomUid, fromNodeId));
+        return;
+      }
+      sendJson(res, 200, meshReplayFromSeq(roomUid, fromSeq));
+    } catch (e) {
+      sendJson(res, 400, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/presence/mesh/subscribe") {
+    const actor = await resolveMeshActor(req);
+    if (!actor.ok) return sendJson(res, 401, { ok: false, error: actor.reason });
+    const q = new URL(String(req.url || ""), "http://localhost");
+    const roomUid = String(q.searchParams.get("roomUid") || "").trim();
+    if (!roomUid) return sendJson(res, 400, { ok: false, error: "roomUid_required" });
+    meshJoin(roomUid, actor.clientUid);
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no"
+    });
+    res.flushHeaders?.();
+    const write = (chunk) => {
+      try {
+        res.write(chunk);
+      } catch {
+        /* closed */
+      }
+    };
+    const unsub = meshSubscribeSse(roomUid, write);
+    const onClose = () => {
+      unsub();
+      meshLeave(roomUid, actor.clientUid);
+      try {
+        res.end();
+      } catch {
+        /* ignore */
+      }
+    };
+    req.on("close", onClose);
+    req.on("aborted", onClose);
     return;
   }
 
@@ -1516,107 +1713,24 @@ const httpServer = createServer(async (req, res) => {
         connApiKey = conn?.apiKey || "";
       }
 
-      const memory = await getMemoryContext({
-        uid: auth.ok ? auth.uid : "anon",
-        agentId: String(payload?.context?.agentId || ""),
-        query: String(payload?.message || ""),
-        limit: Number(payload?.memoryLimit || 30)
+      const { result, traceId, turnLatencyMs, spinePhases, sampledTrace } = await rhizohGatewayTurn({
+        safePayload,
+        auth,
+        keyMode,
+        conn,
+        resolvedProvider,
+        resolvedModel,
+        connApiKey
       });
-      const fullContext = {
-        ...(payload?.context || {}),
-        memory
-      };
-      if (process.env.CASTLE_RHIZOH_LLM_IDENTITY_LOG === "1") {
-        const cont = fullContext?.continuity && typeof fullContext.continuity === "object" ? fullContext.continuity : {};
-        const memoryBlk = fullContext?.memory && typeof fullContext.memory === "object" ? fullContext.memory : {};
-        const goals = Array.isArray(memoryBlk.goals) ? memoryBlk.goals.length : 0;
-        const episodic = Array.isArray(memoryBlk.episodic) ? memoryBlk.episodic.length : 0;
-        const semantic = Array.isArray(memoryBlk.semantic) ? memoryBlk.semantic.length : 0;
-        console.info(
-          "[rhizoh.llm.identity]",
-          JSON.stringify({
-            identityNarrativeChars: String(cont.identityNarrative || "").length,
-            recentTurns: Array.isArray(cont.recentTurns) ? cont.recentTurns.length : 0,
-            profileGoals: Array.isArray(cont.persona?.goals) ? cont.persona.goals.length : 0,
-            memoryGoals: goals,
-            memoryEpisodic: episodic,
-            memorySemantic: semantic
-          })
-        );
-      }
-      if (process.env.CASTLE_RHIZOH_LLM_DIAG === "1") {
-        const { db } = getFirebasePersistence();
-        const artifactAppId = String(process.env.CASTLE_ARTIFACT_APP_ID || "castle-vnext-core").trim();
-        const artifactStats = db ? await countArtifactLayerDocuments(db, artifactAppId) : null;
-        const diag = diagnoseRhizohLlmContext(fullContext, artifactStats);
-        const persistenceMode = getFirebasePersistence().mode;
-        console.info(
-          "[rhizoh.llm.diag]",
-          JSON.stringify({
-            authOk: auth.ok,
-            authMode: auth.ok ? auth.mode : "none",
-            uidMask: auth.ok ? maskOpaqueId(auth.uid) : "anon",
-            agentIdMask: maskOpaqueId(payload?.context?.agentId),
-            persistenceMode,
-            artifactAppId,
-            llmKeyMode: keyMode,
-            ...(artifactStats?.error ? { artifactCountError: artifactStats.error } : {}),
-            ...diag
-          })
-        );
-      }
-      const result = await queryRhizohLlm(
-        {
-          ...safePayload,
-          provider: resolvedProvider,
-          model: resolvedModel,
-          apiKey: connApiKey,
-          context: fullContext
-        },
-        { llmKeySource: keyMode }
-      );
-      logLlmAccess({
-        route: "/rhizoh/llm",
-        uid: auth.ok ? auth.uid : null,
-        llmKeyBillingOwner: result.llmKeyBillingOwner,
-        llmKeyOrigin: result.llmKeyOrigin,
-        provider: result.provider,
-        model: result.model,
-        connectionId: keyMode === "user_connection" ? conn?.id : null
+      sendJson(res, 200, {
+        ...result,
+        connectionId: conn?.id || null,
+        llmKeySourceUsed: keyMode,
+        traceId,
+        turnLatencyMs,
+        ...(spinePhases ? { spinePhases } : {}),
+        ...(sampledTrace !== undefined ? { sampledTrace } : {})
       });
-      if (auth.ok) {
-        const profile = await getPersonaGoalMemory(auth.uid);
-        const importanceUp = Array.isArray(profile?.goals) && profile.goals.some((g) => String(payload?.message || "").toLowerCase().includes(String(g).toLowerCase()))
-          ? 0.7
-          : 0.5;
-        await appendMemory({
-          scope: "users",
-          id: auth.uid,
-          text: `USER:${String(payload?.message || "").slice(0, 1000)}`,
-          tags: ["dialog", "user"],
-          importance: importanceUp,
-          kind: "episodic",
-          meta: { source: "rhizoh.llm" }
-        });
-        await appendMemory({
-          scope: "users",
-          id: auth.uid,
-          text: `RHIZOH:${String(result?.reply || "").slice(0, 1200)}`,
-          tags: ["dialog", "rhizoh", String(result?.directive || "none").toLowerCase()],
-          importance: 0.6,
-          kind: "episodic",
-          meta: { source: "rhizoh.llm", provider: result?.provider, model: result?.model }
-        });
-        await addTranscript(auth.uid, {
-          source: "rhizoh",
-          eventType: "dialog",
-          text: `${String(payload?.message || "").slice(0, 240)} => ${String(result?.reply || "").slice(0, 360)}`,
-          roomId: "studio-main",
-          meta: { directive: result?.directive, provider: result?.provider, llmKeyBillingOwner: result.llmKeyBillingOwner }
-        });
-        await autoCompactMemories({ scope: "users", id: auth.uid });
-      }
-      sendJson(res, 200, { ...result, connectionId: conn?.id || null, llmKeySourceUsed: keyMode });
     } catch (error) {
       const msg = String(error?.message || "");
       const code = error?.code || "";

@@ -26,6 +26,10 @@
     "gateway:docker:build": "docker build -f apps/gateway/Dockerfile -t castle-gateway .",
     "security:audit": "npm audit --audit-level=high",
     "security:sast": "node scripts/sast-check.js",
+    "validate:rhizoh-smoke": "node scripts/rhizoh-validation-smoke.mjs",
+    "ci:schema-lock": "node scripts/verify-causal-schema-lock.mjs",
+    "ci:read-stack": "npm run test -w apps/client -- src/studio/__tests__/studio-read-stack-integration.test.ts",
+    "ci:enforce-client": "npm run ci:schema-lock && npm run typecheck -w apps/client && npm run test -w apps/client && npm run ci:read-stack",
     "verify:production": "node scripts/verify-production-env.mjs",
     "setup:env": "node scripts/setup-env-templates.mjs"
   }

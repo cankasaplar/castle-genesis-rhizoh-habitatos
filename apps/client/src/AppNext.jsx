@@ -307,8 +307,6 @@ export default function AppNext() {
     setCmd("");
   };
 
-  const open = (path) => window.open(path, "_blank", "noopener");
-
   return (
     <div className="h-screen w-full bg-[#010103] text-white font-mono overflow-hidden relative select-none uppercase font-black">
       <div ref={containerRef} className="absolute inset-0 z-0 bg-black" />
@@ -321,10 +319,23 @@ export default function AppNext() {
               <div className="flex justify-between"><span>Rendered Agents</span><span className="text-emerald-300">{entityCount}</span></div>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <button className="px-3 py-2 rounded-xl bg-cyan-400 text-black text-xs font-bold" onClick={() => open("/greenroom-ultimate.html")}>Studio</button>
-              <button className="px-3 py-2 rounded-xl bg-purple-400 text-black text-xs font-bold" onClick={() => open("/octoai-studio.html")}>OCTO</button>
-              <button className="px-3 py-2 rounded-xl bg-emerald-400 text-black text-xs font-bold" onClick={() => open("/spiralmmo-castlebyck.html")}>SpiralMMO</button>
-              <button className="px-3 py-2 rounded-xl bg-rose-400 text-black text-xs font-bold" onClick={() => open(YOUTUBE_LIVE_URL)}>YouTube</button>
+              <a className="px-3 py-2 rounded-xl bg-cyan-400 text-black text-xs font-bold text-center" href="/studio">
+                Studio
+              </a>
+              <a className="px-3 py-2 rounded-xl bg-purple-400 text-black text-xs font-bold text-center" href="/studio?focus=octo">
+                OCTO
+              </a>
+              <a className="px-3 py-2 rounded-xl bg-emerald-400 text-black text-xs font-bold text-center" href="/spiral">
+                SpiralMMO
+              </a>
+              <a
+                className="px-3 py-2 rounded-xl bg-rose-400 text-black text-xs font-bold text-center"
+                href={YOUTUBE_LIVE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                YouTube
+              </a>
             </div>
           </FloatingWindow>
           <FloatingWindow title="Narrative Mission Board" className="w-[420px]">

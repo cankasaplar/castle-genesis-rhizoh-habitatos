@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, useSyncExternalStore, useCallback, useMemo, memo, useReducer } from "react";
+import { useLocation, useNavigate, matchPath } from "react-router-dom";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import {
@@ -54,6 +55,14 @@ import CesiumRealMapLayer from "./castleFlight/CesiumRealMapLayer.jsx";
 import { useCastleAuth } from "./firebase/useCastleAuth.js";
 import { useCastleActiveCastles } from "./firebase/useCastleActiveCastles.js";
 import { CastleAuthOverlay, CastleAccountBadge } from "./auth/CastleAuthOverlay.jsx";
+import { patchIdentityFromAuth } from "./studio/auth/patchIdentityFromAuth";
+import { DirectorDeckPanel } from "./studio/ui/DirectorDeckPanel";
+import { KernelConsolePanel } from "./studio/ui/KernelConsolePanel";
+import { WorldLivingMapPanel } from "./studio/ui/WorldLivingMapPanel";
+import { UnifiedProductShellBar } from "./studio/ui/UnifiedProductShellBar";
+import { ProductProfilePanel } from "./studio/ui/ProductProfilePanel";
+import { RuntimeHealthPanel } from "./studio/ui/RuntimeHealthPanel";
+import { CASTLE_RUNTIME_VERSION } from "./studio/runtime/castleRuntimeVersion";
 import { createCastleUlid, stableJitterFromId } from "./kernel/castleIds.js";
 import { worldToSpatialBucket } from "./kernel/spatialMorton.js";
 import { KnowledgeGraphSubstrate, KG_NODE, KG_EDGE } from "./kernel/knowledgeGraphSubstrate.js";
@@ -91,6 +100,11 @@ import {
 } from "./kernel/rhizohIdentityKernelV1.js";
 import { computeLaunchSceneDirectorOverlayV1 } from "./kernel/visual/RhizohLaunchSceneDirectorV1.js";
 import { RhizohCapabilityHaloV1 } from "./components/RhizohCapabilityHaloV1.jsx";
+import { CASTLE_RHIZOH_KERNEL_DRAWER_HREF } from "./kernel/visual/rhizohCapabilityHaloConfigV1.js";
+import { ensureGreenRoomMainHallBound } from "./studio/lib/greenRoomRouteBinding";
+import { startGreenRoomPresenceMesh } from "./studio/runtime/greenRoomPresenceMesh";
+import { ensureCastleWorldTopology } from "./studio/lib/bootstrapWorldTopology";
+import { startRhizohAgentRuntime } from "./studio/runtime/agentRuntimeLoop";
 import { RhizohPersistentCoreInspectV1 } from "./components/RhizohPersistentCoreInspectV1.jsx";
 import { RhizohGatewayBanner } from "./components/RhizohGatewayBanner.jsx";
 import { SwarmCollectiveAuraV1 } from "./components/SwarmCollectiveAuraV1.jsx";
@@ -2676,7 +2690,9 @@ const uiStore = {
     squadCount: 0,
     eventPulseCount: 0,
     /** Rhizoh 3D sahnesi üzerinde yüzen CODEX / medya ankrajı */
-    rhizohSceneAnchor: null
+    rhizohSceneAnchor: null,
+    /** Phase P1 — unified shell: world | hall | greenroom | broadcast | studio | profile */
+    productSurface: "world"
   },
   pendingEventPulses: 0,
   listeners: new Set(),
@@ -2807,6 +2823,13 @@ const uiStore = {
       }
       if (action.type === "SET_RHIZOH_SCENE_ANCHOR") {
         next = { ...next, rhizohSceneAnchor: action.payload ?? null, tickCounter: this.state.tickCounter + 1 };
+      }
+      if (action.type === "SET_PRODUCT_SURFACE") {
+        const allowed = new Set(["world", "hall", "greenroom", "broadcast", "studio", "profile"]);
+        const id = String(action.payload || "");
+        if (allowed.has(id) && this.state.productSurface !== id) {
+          next = { ...next, productSurface: id, tickCounter: this.state.tickCounter + 1 };
+        }
       }
       this.state = next;
     }
@@ -5340,8 +5363,10 @@ const SovereignCastleCommandPanel = memo(
     remoteCastles = [],
     bridgeRegistryReady = false,
     onInitiateMirrorBridge = null,
-    onCastleLifecycleChange = null
+    onCastleLifecycleChange = null,
+    onOpenRhizohKernelDrawer = null
   }) => {
+  const navigate = useNavigate();
   const focus = useUISelector((s) => s.layerFocus);
   const theme = (LAYER_UI_PROFILES[focus] || LAYER_UI_PROFILES[10]).theme;
 
@@ -5976,16 +6001,16 @@ const SovereignCastleCommandPanel = memo(
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => window.open("/greenroom-ultimate.html", "_blank", "noopener")}
+                  onClick={() => onOpenRhizohKernelDrawer?.()}
                   className="p-3 rounded border border-fuchsia-400/30 bg-fuchsia-500/10 text-left hover:bg-fuchsia-500/20 transition-all group"
                 >
                   <Video size={14} className="text-fuchsia-300 mb-1 group-hover:scale-110 transition-transform" aria-hidden />
-                  <div className="text-[9px] text-fuchsia-100 font-bold uppercase tracking-wide">GreenRoom Studio</div>
-                  <div className="text-[7px] text-fuchsia-200/50 mt-1">Canlı yayın ve podcast</div>
+                  <div className="text-[9px] text-fuchsia-100 font-bold uppercase tracking-wide">Rhizoh Studio</div>
+                  <div className="text-[7px] text-fuchsia-200/50 mt-1">Kernel, director, presence (bu sayfa)</div>
                 </button>
                 <button
                   type="button"
-                  onClick={() => window.open("/spiralmmo-castlebyck.html", "_blank", "noopener")}
+                  onClick={() => navigate("/spiral")}
                   className="p-3 rounded border border-emerald-400/30 bg-emerald-500/10 text-left hover:bg-emerald-500/20 transition-all group"
                 >
                   <MapPin size={14} className="text-emerald-300 mb-1 group-hover:scale-110 transition-transform" aria-hidden />
@@ -7127,6 +7152,12 @@ const AutonomousCompanyDebugPanel = memo(({ runtimeRef }) => {
 
 export default function AppRhizoh528() {
   const castleAuth = useCastleAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  useEffect(() => {
+    if (!castleAuth.firebaseConfigured) return;
+    void patchIdentityFromAuth(castleAuth.user);
+  }, [castleAuth.firebaseConfigured, castleAuth.user]);
   const { remoteCastles, recordBridgePeer, registryReady: bridgeRegistryReady } = useCastleActiveCastles(castleAuth.user?.uid);
   const localBridgePeersRef = useRef(new Set());
   const [bridgeVisualTick, setBridgeVisualTick] = useState(0);
@@ -7184,6 +7215,8 @@ export default function AppRhizoh528() {
   const [ambientReady, setAmbientReady] = useState(false);
   const [showHud, setShowHud] = useState(false);
   const [showDetailDrawer, setShowDetailDrawer] = useState(false);
+  /** Drawer studio: WORLD (map) · LIVE (director) · KERNEL (console). */
+  const [drawerStudioTab, setDrawerStudioTab] = useState("world");
   const [liveAgents, setLiveAgents] = useState([]);
   const [greenRoomLive, setGreenRoomLive] = useState(null);
   const [greenRoomLiveTick, setGreenRoomLiveTick] = useState(0);
@@ -7288,6 +7321,7 @@ export default function AppRhizoh528() {
     reconcileMapSurfaceFromGateway();
   }, [gatewayUx.phase]);
   const entityCount = useUISelector((s) => s.activeEntityCount);
+  const productSurface = useUISelector((s) => s.productSurface);
   const realityMode = useUISelector((s) => s.realityMode);
   const mapSurfaceActive = useUISelector((s) => s.mapSurfaceActive);
   const prevMapSurfaceRef = useRef(mapSurfaceActive);
@@ -7399,6 +7433,33 @@ export default function AppRhizoh528() {
   const rhizohCommandBusy = ["INTERPRETING", "GENERATING", "EXECUTING"].includes(rhizohFieldState);
   const gatewayLinkSettled =
     gatewayUx.phase !== "connecting" && gatewayUx.phase !== "reconnecting" && gatewayUx.phase !== "initializing";
+  const runtimeHealth = useMemo(
+    () => ({
+      gatewayConnected: ["connected", "ready", "live"].includes(String(gatewayUx.phase || "").toLowerCase()),
+      gatewayPhase: gatewayUx.phase || "initializing",
+      meshConnected: !!(greenRoomLive?.traceId || immersiveLiveTrace),
+      worldActive: mapSurfaceActive || realityMode === "REAL_MAP" || realityMode === "GLOBE",
+      presenceActive: liveAgents.length > 0,
+      broadcastLive: greenRoomLive?.phase === "LIVE",
+      rhizohHeartbeat: hasReceivedRhizohReply || hasSentRhizohCommand || gatewayLinkSettled,
+      economyHealthy: governanceState !== "CRITICAL",
+      memoryFresh: memoryLinks >= 3
+    }),
+    [
+      gatewayUx.phase,
+      greenRoomLive?.traceId,
+      greenRoomLive?.phase,
+      immersiveLiveTrace,
+      mapSurfaceActive,
+      realityMode,
+      liveAgents.length,
+      hasReceivedRhizohReply,
+      hasSentRhizohCommand,
+      gatewayLinkSettled,
+      governanceState,
+      memoryLinks
+    ]
+  );
   const memoryLinksRef = useRef(memoryLinks);
   const governanceRef = useRef(governanceState);
   const governanceEnteredAtRef = useRef(Date.now());
@@ -7620,25 +7681,175 @@ export default function AppRhizoh528() {
     }, 60);
   }, []);
 
+  /** Product routes → shell + layer/reality (React Router; refresh-safe). */
   useEffect(() => {
-    const syncPath = () => {
-      const m = window.location.pathname.match(/^\/greenroom\/live\/([^/]+)\/?$/i);
-      if (m) {
-        const tid = decodeURIComponent(m[1]);
-        setShowDetailDrawer(true);
-        applyBroadcastPresence(tid);
-      } else {
-        setImmersiveLiveTrace(null);
-        broadcastEmphasisRef.current = {
-          ...broadcastEmphasisRef.current,
-          joinPresenceUntil: 0
-        };
-      }
+    const pathname = location.pathname;
+    const search = location.search;
+
+    const liveMatch = matchPath({ path: "/greenroom/live/:traceId", end: true }, pathname);
+    if (liveMatch?.params?.traceId) {
+      const tid = decodeURIComponent(String(liveMatch.params.traceId));
+      uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "broadcast" });
+      setShowDetailDrawer(true);
+      applyBroadcastPresence(tid);
+      return;
+    }
+
+    setImmersiveLiveTrace(null);
+    broadcastEmphasisRef.current = {
+      ...broadcastEmphasisRef.current,
+      joinPresenceUntil: 0
     };
-    syncPath();
-    window.addEventListener("popstate", syncPath);
-    return () => window.removeEventListener("popstate", syncPath);
-  }, [applyBroadcastPresence]);
+
+    if (matchPath({ path: "/studio", end: true }, pathname)) {
+      uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "studio" });
+      setShowDetailDrawer(true);
+      const sp = new URLSearchParams(search);
+      if (sp.get("focus") === "octo") {
+        uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 7 });
+      }
+      return;
+    }
+
+    const greenSlugMatch = matchPath({ path: "/greenroom/:roomUid", end: true }, pathname);
+    if (greenSlugMatch?.params?.roomUid) {
+      uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "greenroom" });
+      setShowDetailDrawer(true);
+      uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 5 });
+      void setRealityMode("REAL_MAP", { source: "ROUTE_GREENROOM" });
+      const slug = decodeURIComponent(String(greenSlugMatch.params.roomUid));
+      if (slug === "main") {
+        ensureGreenRoomMainHallBound();
+      }
+      return;
+    }
+
+    if (matchPath({ path: "/broadcast/:broadcastUid", end: true }, pathname)) {
+      uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "broadcast" });
+      setShowDetailDrawer(true);
+      return;
+    }
+
+    if (matchPath({ path: "/hall/:roomUid", end: true }, pathname)) {
+      uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "hall" });
+      setShowDetailDrawer(true);
+      uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
+      void setRealityMode("REAL_MAP", { source: "ROUTE_HALL" });
+      return;
+    }
+
+    if (matchPath({ path: "/map", end: true }, pathname)) {
+      uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
+      void setRealityMode("REAL_MAP", { source: "ROUTE_MAP" });
+      return;
+    }
+
+    if (matchPath({ path: "/academy", end: true }, pathname)) {
+      uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "profile" });
+      setShowDetailDrawer(true);
+      setDrawerStudioTab("profile");
+      uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 11 });
+      void setRealityMode("REAL_MAP", { source: "ROUTE_ACADEMY" });
+      return;
+    }
+
+    if (matchPath({ path: "/spiral", end: true }, pathname)) {
+      uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "studio" });
+      uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 6 });
+      void setRealityMode("REAL_MAP", { source: "ROUTE_SPIRAL" });
+      return;
+    }
+
+    if (matchPath({ path: "/settings", end: true }, pathname)) {
+      uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "profile" });
+      setShowDetailDrawer(true);
+      setDrawerStudioTab("profile");
+      return;
+    }
+
+    if (pathname === "/" || pathname === "") {
+      uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
+      setShowDetailDrawer(false);
+    }
+  }, [location.pathname, location.search, applyBroadcastPresence]);
+
+  useEffect(() => {
+    const s = productSurface;
+    if (s === "world") {
+      void setRealityMode("GLOBE", { source: "PRODUCT_SHELL" });
+      uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
+      uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
+      setShowDetailDrawer(false);
+      return;
+    }
+    if (s === "hall") {
+      void setRealityMode("REAL_MAP", { source: "PRODUCT_SHELL_HALL" });
+      uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
+      uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
+      setShowDetailDrawer(true);
+      setDrawerStudioTab("world");
+      return;
+    }
+    if (s === "greenroom") {
+      void setRealityMode("REAL_MAP", { source: "PRODUCT_SHELL_GREENROOM" });
+      uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 5 });
+      uiStore.dispatch({ type: "SET_GREENROOM", payload: true });
+      ensureGreenRoomMainHallBound();
+      setShowDetailDrawer(true);
+      setDrawerStudioTab("live");
+      return;
+    }
+    if (s === "broadcast") {
+      void setRealityMode("REAL_MAP", { source: "PRODUCT_SHELL_BROADCAST" });
+      uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 9 });
+      uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
+      setShowDetailDrawer(true);
+      setDrawerStudioTab("live");
+      return;
+    }
+    if (s === "studio") {
+      void setRealityMode("REAL_MAP", { source: "PRODUCT_SHELL_STUDIO" });
+      uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 12 });
+      uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
+      setShowDetailDrawer(true);
+      setDrawerStudioTab("kernel");
+      return;
+    }
+    if (s === "profile") {
+      void setRealityMode("REAL_MAP", { source: "PRODUCT_SHELL_PROFILE" });
+      uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 11 });
+      uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
+      setShowDetailDrawer(true);
+      setDrawerStudioTab("profile");
+    }
+  }, [productSurface]);
+
+  const onProductShellSelect = useCallback(
+    (id) => {
+      if (id === "world" && productSurface === "world") {
+        setShowDetailDrawer(false);
+        void setRealityMode("GLOBE", { source: "PRODUCT_SHELL_WORLD_RECENTER" });
+        uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
+        uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
+        return;
+      }
+      uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: id });
+    },
+    [productSurface]
+  );
+
+  useEffect(() => {
+    const m = matchPath({ path: "/greenroom/:roomUid", end: true }, location.pathname);
+    const slug = m?.params?.roomUid ? decodeURIComponent(String(m.params.roomUid)) : "";
+    if (slug !== "main") return undefined;
+    return startGreenRoomPresenceMesh();
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!booted) return undefined;
+    ensureCastleWorldTopology();
+    return startRhizohAgentRuntime({ heartbeatMs: 4200 });
+  }, [booted]);
 
   useEffect(() => {
     if (greenRoomLive?.phase !== "LIVE") {
@@ -8488,11 +8699,27 @@ export default function AppRhizoh528() {
       if (coreWorld.rhizohIdx === -1) coreWorld.allocate("RHIZOH-PRIME", STATE.RHIZOH);
 
       if (containerRef.current && !engineRef.current) {
-        engineRef.current = new ApexEngine(containerRef.current);
-        notifyRealityEngineReady();
-        resizeObserver.observe(containerRef.current);
-        if (isMounted) setBooted(true);
+        try {
+          engineRef.current = new ApexEngine(containerRef.current);
+          notifyRealityEngineReady();
+          resizeObserver.observe(containerRef.current);
+        } catch (err) {
+          console.error("[Castle] ApexEngine boot failed", err);
+          try {
+            window.__CASTLE_LAST_FATAL__ = {
+              kind: "apex_engine_constructor",
+              err,
+              message: String(err?.message || err),
+              stack: String(err?.stack || ""),
+              at: Date.now()
+            };
+          } catch {
+            /* noop */
+          }
+          engineRef.current = null;
+        }
       }
+      if (isMounted) setBooted(true);
 
       let lastTime = performance.now();
       let accumulator = 0;
@@ -9035,11 +9262,9 @@ export default function AppRhizoh528() {
         window.requestAnimationFrame(() => setReplayTimelinePct(100));
       });
       if (greenRoomLive?.replayPath) {
-        window.history.pushState(
-          { castleReplay: greenRoomLive.traceId },
-          "",
-          greenRoomLive.replayPath
-        );
+        const rp = String(greenRoomLive.replayPath);
+        if (rp.startsWith("/")) navigate(rp);
+        else window.location.assign(rp);
       }
     } else if (!eventPreview) return;
     if (action === "publish") {
@@ -9217,13 +9442,15 @@ export default function AppRhizoh528() {
       <button
         type="button"
         onClick={() => setShowHud((v) => !v)}
-        className="pointer-events-auto fixed bottom-6 left-4 z-[60] rounded-lg border border-white/20 bg-black/60 px-2 py-1 text-[9px] tracking-widest text-white/60 hover:bg-white/10"
+        className="pointer-events-auto fixed bottom-[4.5rem] left-4 z-[60] rounded-lg border border-white/20 bg-black/60 px-2 py-1 text-[9px] tracking-widest text-white/60 hover:bg-white/10"
       >
         {showHud ? "Hide debug HUD" : "Debug HUD"}
       </button>
 
+      <UnifiedProductShellBar active={productSurface} onSelect={onProductShellSelect} />
+
       {immersiveLiveTrace ? (
-        <div className="pointer-events-auto fixed bottom-14 left-1/2 z-[58] flex -translate-x-1/2 items-center gap-3 rounded-full border border-fuchsia-400/45 bg-black/75 px-4 py-2 text-[9px] text-fuchsia-100/95 shadow-[0_0_24px_rgba(192,38,211,0.2)] normal-case">
+        <div className="pointer-events-auto fixed bottom-[5.25rem] left-1/2 z-[58] flex max-w-[95vw] -translate-x-1/2 items-center gap-3 rounded-full border border-fuchsia-400/45 bg-black/75 px-4 py-2 text-[9px] text-fuchsia-100/95 shadow-[0_0_24px_rgba(192,38,211,0.2)] normal-case">
           <span className="tracking-wide">Live room · {immersiveLiveTrace.slice(0, 20)}…</span>
           <button
             type="button"
@@ -9234,7 +9461,7 @@ export default function AppRhizoh528() {
                 ...broadcastEmphasisRef.current,
                 joinPresenceUntil: 0
               };
-              window.history.pushState({}, "", "/");
+              navigate("/", { replace: true });
             }}
           >
             Exit room
@@ -9345,7 +9572,7 @@ export default function AppRhizoh528() {
         {showDetailDrawer ? (
           <div className="pointer-events-auto fixed inset-y-0 right-0 z-[55] w-full max-w-md border-l border-cyan-400/25 bg-[#050a14]/95 p-4 shadow-2xl backdrop-blur-xl overflow-y-auto">
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-[10px] tracking-[0.2em] text-cyan-200">DETAILS</span>
+              <span className="text-[10px] tracking-[0.2em] text-cyan-200">DETAILS · {CASTLE_RUNTIME_VERSION}</span>
               <button type="button" onClick={() => setShowDetailDrawer(false)} className="text-[10px] text-white/50">
                 ✕
               </button>
@@ -9358,6 +9585,36 @@ export default function AppRhizoh528() {
                 userAgentSubjectThreadId={pickPrimaryCognitiveThreadId(drawerSocialRegistry)}
               />
             </div>
+            <div className="mb-3 flex gap-0.5 overflow-x-auto rounded-lg border border-white/10 bg-black/30 p-0.5 no-scrollbar">
+              {[
+                { id: "world", label: "WORLD" },
+                { id: "live", label: "LIVE" },
+                { id: "kernel", label: "KERNEL" },
+                { id: "profile", label: "YOU" }
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setDrawerStudioTab(t.id)}
+                  className={`min-w-[4.5rem] flex-1 shrink-0 rounded-md py-2 text-[8px] font-black tracking-[0.16em] transition-colors sm:text-[9px] sm:tracking-[0.2em] ${
+                    drawerStudioTab === t.id
+                      ? "bg-cyan-500/25 text-cyan-100 border border-cyan-400/35"
+                      : "text-white/45 hover:text-white/70 border border-transparent"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            {drawerStudioTab === "world" ? <WorldLivingMapPanel /> : null}
+            {drawerStudioTab === "live" ? <DirectorDeckPanel /> : null}
+            {drawerStudioTab === "kernel" ? <KernelConsolePanel /> : null}
+            {drawerStudioTab === "profile" ? <ProductProfilePanel auth={castleAuth} /> : null}
+            {drawerStudioTab === "profile" || drawerStudioTab === "kernel" ? (
+              <div className="mt-3">
+                <RuntimeHealthPanel health={runtimeHealth} />
+              </div>
+            ) : null}
             <RhizohCommsPanel
               engineRef={engineRef}
               selectedConnectionId=""
@@ -9382,6 +9639,7 @@ export default function AppRhizoh528() {
                 bridgeRegistryReady={bridgeRegistryReady}
                 onInitiateMirrorBridge={initiateMirrorBridge}
                 onCastleLifecycleChange={handleCastleLifecycle}
+                onOpenRhizohKernelDrawer={() => setShowDetailDrawer(true)}
               />
             </div>
             <div className="space-y-3 text-[10px] text-white/75 normal-case mt-4">
@@ -9491,11 +9749,7 @@ export default function AppRhizoh528() {
                       if (!greenRoomLive.traceId) return;
                       applyBroadcastPresence(greenRoomLive.traceId);
                       const id = encodeURIComponent(greenRoomLive.traceId);
-                      window.history.pushState(
-                        { castleGreenRoom: greenRoomLive.traceId },
-                        "",
-                        `/greenroom/live/${id}`
-                      );
+                      navigate(`/greenroom/live/${id}`);
                       uiStore.dispatch({
                         type: "ADD_LOG",
                         payload: {
@@ -9613,7 +9867,19 @@ export default function AppRhizoh528() {
           onFocusLayer={(id) => {
             uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: id });
           }}
-          onOpenHref={(href) => window.open(href, "_blank", "noopener")}
+          onOpenHref={(href) => {
+            if (href === CASTLE_RHIZOH_KERNEL_DRAWER_HREF) {
+              navigate("/studio");
+              return;
+            }
+            if (typeof href === "string" && href.startsWith("/")) {
+              navigate(href);
+              return;
+            }
+            if (/^https?:\/\//i.test(String(href))) {
+              window.open(href, "_blank", "noopener,noreferrer");
+            }
+          }}
           onOpenRealMap={() => {
             void setRealityMode("REAL_MAP", { source: "RHIZOH" });
           }}
@@ -9621,15 +9887,15 @@ export default function AppRhizoh528() {
 
         <div className="pointer-events-auto mb-3 flex flex-wrap items-center justify-center gap-2 px-2">
           {[
-            { label: "Studio", href: "/greenroom-ultimate.html", tone: "border-cyan-400/40 bg-cyan-400/10 text-cyan-100" },
-            { label: "Octo", href: "/octoai-studio.html", tone: "border-fuchsia-400/40 bg-fuchsia-500/10 text-fuchsia-100" },
-            { label: "SpiralMMO", href: "/spiralmmo-castlebyck.html", tone: "border-emerald-400/40 bg-emerald-500/10 text-emerald-100" },
-            { label: "GreenRoom", href: "/greenroom-ultimate.html", tone: "border-amber-400/40 bg-amber-500/10 text-amber-100" }
+            { label: "Studio", path: "/studio", tone: "border-cyan-400/40 bg-cyan-400/10 text-cyan-100" },
+            { label: "Octo", path: "/studio?focus=octo", tone: "border-fuchsia-400/40 bg-fuchsia-500/10 text-fuchsia-100" },
+            { label: "SpiralMMO", path: "/spiral", tone: "border-emerald-400/40 bg-emerald-500/10 text-emerald-100" },
+            { label: "GreenRoom", path: "/greenroom/main", tone: "border-amber-400/40 bg-amber-500/10 text-amber-100" }
           ].map((p) => (
             <button
               key={p.label}
               type="button"
-              onClick={() => window.open(p.href, "_blank", "noopener")}
+              onClick={() => navigate(p.path)}
               className={`rounded-full border px-4 py-2 text-[10px] tracking-[0.12em] ${p.tone}`}
             >
               {p.label}

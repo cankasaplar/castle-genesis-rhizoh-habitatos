@@ -15,6 +15,30 @@ Gerçek anahtarları **asla** git’e commit etmeyin; Firebase Console, OpenAI, 
    - `VITE_CASTLE_APP_ID` — Gateway `CASTLE_ARTIFACT_APP_ID` ile **aynı** (varsayılan `castle-vnext-core`).
 4. Yerel doğrulama: `npm run verify:production -- --target=client`
 
+### 1b. MVP freeze — ilk stabil omurga (önerilen dondurma)
+
+**Amaç:** İleri spine / telemetry / WS patch özellikleri boot veya gürültüyü kırmadan önce düz hat kanıtlanır.
+
+**Backend (kanıt):**
+
+- `GET /health/live` → 200
+- `GET /health/ready` → 200 (`llm` / `spine` alanları kontrol)
+- `POST /rhizoh/llm` → anlamlı `reply` + `provider` + `model` + `traceId` + `turnLatencyMs`
+
+**Frontend:**
+
+- Kök React render + `import.meta.env` ile gömülü gateway URL’leri doğru
+- **Zorunlu:** `VITE_RHIZOH_LLM_HTTP` veya `VITE_GATEWAY_HTTP` (`https://…/rhizoh/llm`), `VITE_GATEWAY_WS` (`wss://…`)
+- **İsteğe bağlı:** `VITE_GATEWAY_URL` — sadece taban; LLM path explicit ise boş bırakılabilir
+
+**Gateway ortamı (MVP’de kapalı tut):**
+
+- `CASTLE_RHIZOH_WS_EMIT_PATCH=0` — LLM sonrası WS `WORLD_PATCH` yayını (henüz opsiyonel; açılınca implemente edilir)
+- `CASTLE_RHIZOH_SPINE_TRACE=0` — her yanıtta `spinePhases` yok
+- `CASTLE_RHIZOH_TRACE_SAMPLE=0` — örneklem kapalı
+
+Blueprint: `render.yaml` içinde bu üçü varsayılan **0** olarak set edilir.
+
 ## 2. Gateway (HTTPS API + WebSocket)
 
 1. `apps/gateway/.env.production.example` → `apps/gateway/.env` (sunucuda veya gizli mağazada aynı anahtarlar).
@@ -23,8 +47,8 @@ Gerçek anahtarları **asla** git’e commit etmeyin; Firebase Console, OpenAI, 
    - Seçilen LLM için anahtar (örn. `OPENAI_API_KEY`).
 3. **Önerilir:**
    - `CASTLE_GATEWAY_TOKEN` — istemci ile paylaşımlı.
-   - `CASTLE_HTTP_CORS_ORIGIN=https://castle-genesis.web.app`
-   - `CASTLE_ALLOWED_ORIGINS` — Hosting + gerekiyorsa preview URL’leri.
+   - `CASTLE_HTTP_CORS_ORIGIN` — varsayılan origin; gateway ayrıca `CASTLE_ALLOWED_ORIGINS` ile gelen `Origin` başlığını **echo** eder (çoklu Firebase: `…web.app` **ve** `…firebaseapp.com` listeye ekleyin).
+   - `CASTLE_ALLOWED_ORIGINS` — WS + HTTP CORS whitelist (virgülle).
    - `CASTLE_REQUIRE_AUTH=true`, geliştirici bypass’ları kapalı (`CASTLE_ALLOW_DEV_*=false`).
 4. Doğrulama: `npm run verify:production -- --target=gateway --strict`
 

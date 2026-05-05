@@ -2,6 +2,9 @@
  * Capability Graph — halo düğümleri + Rhizoh whisper metinleri (ürün yüzeyi).
  */
 
+/** Pseudo-href: `RhizohCapabilityHaloV1` parent’ı `onOpenHref` ile çekmeceyi açar (statik HTML değil). */
+export const CASTLE_RHIZOH_KERNEL_DRAWER_HREF = "castle:rhizoh-studio";
+
 export const RHIZOH_CAPABILITY_HALO_INTRO_WHISPER =
   "Rhizoh capability graph — bir düğümün üzerine gel; ne yapabileceğimi fısıldayayım.";
 
@@ -13,7 +16,7 @@ export const RHIZOH_CAPABILITY_HALO_NODES_V1 = [
     whisper:
       "Studio veya GreenRoom’da yeni bir oturum açabilirim; senaryo, yayın veya içerik iskelesi kurarız.",
     seedIntent: "studio'da yeni bir yaratim oturumu ac",
-    href: "/greenroom-ultimate.html"
+    href: CASTLE_RHIZOH_KERNEL_DRAWER_HREF
   },
   {
     id: "explore",
@@ -36,7 +39,7 @@ export const RHIZOH_CAPABILITY_HALO_NODES_V1 = [
     label: "Broadcast",
     whisper: "Canlı yayın ve GreenRoom yönlendirmesi yapabilirim; izleyici ve bellek bağlarını açarım.",
     seedIntent: "yarin canli mac yayinla",
-    href: "/greenroom-ultimate.html"
+    href: CASTLE_RHIZOH_KERNEL_DRAWER_HREF
   },
   {
     id: "build",
@@ -50,7 +53,7 @@ export const RHIZOH_CAPABILITY_HALO_NODES_V1 = [
     label: "Companion",
     whisper: "Octo ile pet / ghost / eşlikçi karakter ve diyalog yüzeyi açabilirim.",
     seedIntent: "octo ile yeni bir companion karakter tasarla",
-    href: "/octoai-studio.html"
+    href: "/studio?focus=octo"
   },
   {
     id: "robotics",
@@ -71,7 +74,7 @@ export const RHIZOH_CAPABILITY_HALO_NODES_V1 = [
     label: "World",
     whisper: "SpiralMMO ve sosyal dünya yüzeylerine intent ile köprü kurabilirim.",
     seedIntent: "spiralMMO icin gece etkinligi oner",
-    href: "/spiralmmo-castlebyck.html"
+    href: "/spiral"
   }
 ];
 

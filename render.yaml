@@ -27,7 +27,7 @@ services:
       - key: CASTLE_HTTP_CORS_ORIGIN
         value: https://castle-genesis.web.app
       - key: CASTLE_ALLOWED_ORIGINS
-        value: https://castle-genesis.web.app,http://localhost:5173
+        value: https://castle-genesis.web.app,https://castle-genesis.firebaseapp.com,http://localhost:5173
       # --- Auth: şimdilik smoke / WAKE zinciri için gevşek. Canlıya sıkılaştırırken Render’da şunu yap:
       # CASTLE_REQUIRE_AUTH=true, CASTLE_ALLOW_DEV_ANON=false, CASTLE_ALLOW_DEV_HTTP_UID=false
       - key: CASTLE_REQUIRE_AUTH
@@ -40,6 +40,13 @@ services:
         value: openai
       - key: CASTLE_LLM_MODEL
         value: gpt-4o-mini
+      # MVP freeze: spine telemetry / WS patch yayını kapalı (boot + gürültü riski)
+      - key: CASTLE_RHIZOH_WS_EMIT_PATCH
+        value: "0"
+      - key: CASTLE_RHIZOH_SPINE_TRACE
+        value: "0"
+      - key: CASTLE_RHIZOH_TRACE_SAMPLE
+        value: "0"
       - key: CASTLE_GATEWAY_TOKEN
         sync: false
       - key: OPENAI_API_KEY

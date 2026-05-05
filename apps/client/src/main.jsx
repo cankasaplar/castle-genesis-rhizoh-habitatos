@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./AppRhizoh528.jsx";
+import { CastleShellRouter } from "./shell/CastleShellRouter.jsx";
 import { initFirebaseAnalyticsWhenReady } from "./firebase/castleFirebase.js";
 import { installGlobalCrashTelemetry, reportCastleFatal } from "./boot/castleCrashTelemetry.js";
 import "../../../src/index.css";
@@ -55,6 +55,6 @@ class RootErrorBoundary extends React.Component {
 
 ReactDOM.createRoot(document.getElementById("app")).render(
   <RootErrorBoundary>
-    <App />
+    <CastleShellRouter />
   </RootErrorBoundary>
 );

@@ -1,0 +1,3 @@
+# CI drift gate — bump only with an intentional ontology / constitution migration.
+# Must match: apps/client/src/studio/types/rskOntology.ts → RSK_ONTOLOGY_VERSION
+RSK_ONTOLOGY_VERSION=0.1.0

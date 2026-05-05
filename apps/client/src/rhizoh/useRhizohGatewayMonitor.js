@@ -4,7 +4,7 @@ import { getCastleFlightConfig } from "../castleFlight/castleFlightConfig.js";
 const MAX_ATTEMPTS = 5;
 const HEALTH_TIMEOUT_MS = 6500;
 
-function getOrCreateCastleDevUid() {
+export function getOrCreateCastleDevUid() {
   const key = "castle.dev.uid";
   try {
     let uid = window.localStorage.getItem(key) || "";

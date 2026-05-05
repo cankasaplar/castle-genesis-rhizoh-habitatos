@@ -1,0 +1,45 @@
+# PR / main quality gate — tests, typecheck, read-stack regression, ontology lock.
+name: CI Enforcement
+
+on:
+  pull_request:
+    branches: ["**"]
+  push:
+    branches: [main, master]
+
+concurrency:
+  group: ci-enforce-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  client-enforcement:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Causal schema lock (RSK_ONTOLOGY_VERSION)
+        run: node scripts/verify-causal-schema-lock.mjs
+
+      - name: Studio imports extensionless (mandatory)
+        run: node scripts/check-studio-import-extensions.mjs
+
+      - name: Typecheck (client mandatory)
+        run: npm run typecheck -w apps/client
+
+      - name: Tests (client full suite mandatory)
+        run: npm run test -w apps/client
+
+      - name: Read stack regression lock
+        run: npm run test -w apps/client -- src/studio/__tests__/studio-read-stack-integration.test.ts

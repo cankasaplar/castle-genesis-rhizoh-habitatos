@@ -4,6 +4,32 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import cesium from "vite-plugin-cesium";
 
+/** Dev/preview: old static studio URLs → SPA routes (files removed from `public/`). */
+function legacyStudioHtmlRedirectsPlugin() {
+  const map = {
+    "/greenroom-ultimate.html": "/greenroom/main",
+    "/octoai-studio.html": "/studio?focus=octo",
+    "/spiralmmo-castlebyck.html": "/spiral"
+  };
+  const attach = (server) => {
+    server.middlewares.use((req, res, next) => {
+      const p = req.url?.split("?")[0];
+      if (p && map[p]) {
+        res.statusCode = 302;
+        res.setHeader("Location", map[p]);
+        res.end();
+        return;
+      }
+      next();
+    });
+  };
+  return {
+    name: "castle-legacy-studio-html-redirects",
+    configureServer: attach,
+    configurePreviewServer: attach
+  };
+}
+
 /** Firebase Hosting: 404.html fallback when a release is missing rewrites edge cases; mirrors SPA shell. */
 function emitFirebaseSpaFallback() {
   return {
@@ -82,7 +108,8 @@ export default defineConfig(({ mode }) => {
         cesiumBuildPath,
         cesiumBaseUrl: "cesium/"
       }),
-      emitFirebaseSpaFallback()
+      emitFirebaseSpaFallback(),
+      legacyStudioHtmlRedirectsPlugin()
     ],
     define: {
       __firebase_config: JSON.stringify(JSON.stringify(firebaseObj)),

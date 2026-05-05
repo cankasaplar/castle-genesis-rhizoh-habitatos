@@ -1,0 +1,11 @@
+export const CASTLE_RUNTIME_VERSION = "1.0.0-alpha";
+
+export const CASTLE_RUNTIME_MODULE_VERSIONS = {
+  RSK_KERNEL: "1.0",
+  WORLD_OS: "1.0",
+  PRESENCE_OS: "1.0",
+  BROADCAST_OS: "1.0",
+  ATTENTION_OS: "1.0",
+  RHIZOH_OS: "1.0",
+  PRODUCT_SHELL: "1.0"
+};

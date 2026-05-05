@@ -358,6 +358,7 @@ function buildContinuityMemoryBlock(continuity) {
 }
 
 function buildSystemPrompt(layerContext) {
+  const cognitiveInvoke = Boolean(layerContext?.cognitiveInvoke);
   const persona = layerContext?.memory?.persona || {};
   const goals = Array.isArray(layerContext?.memory?.goals) ? layerContext.memory.goals : [];
   const preferences = layerContext?.memory?.preferences || {};
@@ -460,10 +461,19 @@ function buildSystemPrompt(layerContext) {
     .filter(Boolean)
     .join("\n");
 
+  const jsonShape = cognitiveInvoke
+    ? [
+        "Return strict JSON with keys: reply, directive, intents.",
+        "intents: array (may be empty) of { toolId, kernelAction?, payload, confidence, rationale?, attentionFocus? }.",
+        "confidence must be 0..1. attentionFocus optional: world | room | social | broadcast | memory.",
+        "Use intents only for kernel-safe tool actions the client can execute (e.g. presence.avatar.move); omit when unsure."
+      ].join(" ")
+    : "Return strict JSON with keys: reply, directive.";
+
   return [
     "You are Rhizoh, command intelligence for Castle Genesis.",
     "Keep answers concise, actionable, and cinematic. Maintain continuity with the user.",
-    "Return strict JSON with keys: reply, directive.",
+    jsonShape,
     "directive must be one of: FOCUS_RHIZOH, ZOOM_CASTLE, ZOOM_AGENT, ISTANBUL_OVERVIEW, NONE.",
     `Memory contract: ${memoryContract}`,
     intentRoutingLine,
@@ -662,9 +672,10 @@ export async function queryRhizohLlm(input, meta = {}) {
   const allowExternalApiKey = meta.allowExternalApiKey === true;
   const keyMode = meta.llmKeySource || "auto";
   const payload = input || {};
-  const message = String(payload?.message || "").slice(0, 1600);
-  if (!message) throw new Error("message_required");
   const context = payload?.context || {};
+  const cognitiveInvoke = Boolean(context?.cognitiveInvoke);
+  const message = String(payload?.message || "").slice(0, cognitiveInvoke ? 24000 : 1600);
+  if (!message) throw new Error("message_required");
   const { provider, model } = getProviderConfig(payload?.provider, payload?.model);
   const envKey = getProviderKey(provider);
   const connectionKey = String(payload?.apiKey || "").trim();
@@ -711,6 +722,7 @@ export async function queryRhizohLlm(input, meta = {}) {
   const directive = ["FOCUS_RHIZOH", "ZOOM_CASTLE", "ZOOM_AGENT", "ISTANBUL_OVERVIEW", "NONE"].includes(directiveRaw)
     ? directiveRaw
     : "NONE";
+  const intents = Array.isArray(parsed.intents) ? parsed.intents : [];
 
   return {
     ok: true,
@@ -718,6 +730,8 @@ export async function queryRhizohLlm(input, meta = {}) {
     model,
     reply,
     directive,
+    intents,
+    cognitiveInvoke,
     llmKeyBillingOwner,
     llmKeyOrigin
   };

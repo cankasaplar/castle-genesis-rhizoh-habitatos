@@ -1,4 +1,4 @@
-﻿import React, { memo, useEffect, useRef } from "react";
+import React, { memo, useEffect, useRef } from "react";
 import * as Cesium from "cesium";
 import { ISTANBUL_GEO, ISTANBUL_POI } from "./geo.js";
 import { getCastleFlightConfig } from "./castleFlightConfig.js";
