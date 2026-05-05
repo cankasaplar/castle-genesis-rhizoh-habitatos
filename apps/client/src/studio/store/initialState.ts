@@ -1,4 +1,5 @@
 import type {
+  IdentityGraphState,
   RhizohAgentRuntimeState,
   CausalEconomyLayerState,
   IdentityState,
@@ -32,9 +33,80 @@ export function emptyIdentity(): IdentityState {
     ownerId: null,
     actor: null,
     session: null,
+    identityGraph: defaultIdentityGraph("guest"),
     permissions: {},
     delegates: [],
     sharedOwnerIds: []
+  };
+}
+
+export function defaultIdentityGraph(ownerUid: string): IdentityGraphState {
+  const userUid = ownerUid || "guest";
+  return {
+    root: {
+      userUid,
+      avatarUid: `avatar:${userUid}`,
+      companionUid: `companion:${userUid}:rhizoh`,
+      ghostPetUid: `pet:${userUid}:seed`,
+      inventoryUid: `inventory:${userUid}`,
+      vaultUid: `vault:${userUid}`,
+      journalUid: `journal:${userUid}`,
+      signatureUid: `signature:${userUid}`,
+      profileMeta: {
+        displayName: "Castle Operator",
+        homeRegionUid: "region:istanbul:fatih",
+        updatedAt: Date.now()
+      }
+    },
+    avatar: {
+      bodyArchetype: "sovereign-scout",
+      palette: "indigo-cyan",
+      motionStyle: "orbit-calm",
+      aura: "signal-lattice",
+      badges: ["founder", "atlas"],
+      homeRegion: "region:istanbul:fatih"
+    },
+    companion: {
+      name: "Rhizoh",
+      voice: "tr-neutral",
+      archetype: "guide",
+      tone: "supportive",
+      memoryBias: "episodic-social",
+      preferredRole: "companion"
+    },
+    ghostPet: {
+      species: "lumen-fox",
+      temperament: "curious",
+      orbitStyle: "spiral-soft",
+      bondLevel: 0.42
+    },
+    inventory: {
+      tools: ["scanner", "broadcast-kit"],
+      artifacts: ["fatih-beacon-fragment"],
+      wearables: ["operator-cloak"],
+      keys: ["greenroom-main"]
+    },
+    vault: {
+      permanentUnlocks: ["world-shell-v1"],
+      creatorLicenses: ["broadcast-alpha"],
+      rareMemories: ["first-istanbul-anchor"]
+    },
+    journal: {
+      clips: [],
+      bookmarks: ["welcome-route"],
+      milestones: ["alpha-runtime-online"],
+      notes: []
+    },
+    signature: {
+      crest: "castle-sigil",
+      colorSystem: "indigo-cyan",
+      motif: "orbital-lines",
+      publicCard: "Castle Operator · Rhizoh Companion"
+    },
+    reputation: {
+      score: 100,
+      tier: "founder-alpha"
+    }
   };
 }
 

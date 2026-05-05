@@ -495,6 +495,104 @@ export interface SessionState {
   expiresAt: number;
 }
 
+export interface IdentityRoot {
+  userUid: string;
+  avatarUid: string;
+  companionUid: string;
+  ghostPetUid: string;
+  inventoryUid: string;
+  vaultUid: string;
+  journalUid: string;
+  signatureUid: string;
+  profileMeta: {
+    displayName: string;
+    homeRegionUid: string;
+    updatedAt: number;
+  };
+}
+
+export interface AvatarIdentity {
+  bodyArchetype: string;
+  palette: string;
+  motionStyle: string;
+  aura: string;
+  badges: string[];
+  homeRegion: string;
+}
+
+export interface CompanionIdentity {
+  name: string;
+  voice: string;
+  archetype: string;
+  tone: string;
+  memoryBias: string;
+  preferredRole: string;
+}
+
+export interface GhostPetIdentity {
+  species: string;
+  temperament: string;
+  orbitStyle: string;
+  bondLevel: number;
+}
+
+export interface InventoryIdentity {
+  tools: string[];
+  artifacts: string[];
+  wearables: string[];
+  keys: string[];
+}
+
+export interface VaultIdentity {
+  permanentUnlocks: string[];
+  creatorLicenses: string[];
+  rareMemories: string[];
+}
+
+export interface MemoryJournalIdentity {
+  clips: string[];
+  bookmarks: string[];
+  milestones: string[];
+  notes: string[];
+}
+
+export interface SignatureIdentity {
+  crest: string;
+  colorSystem: string;
+  motif: string;
+  publicCard: string;
+}
+
+export interface IdentityGraphState {
+  root: IdentityRoot;
+  avatar: AvatarIdentity;
+  companion: CompanionIdentity;
+  ghostPet: GhostPetIdentity;
+  inventory: InventoryIdentity;
+  vault: VaultIdentity;
+  journal: MemoryJournalIdentity;
+  signature: SignatureIdentity;
+  reputation: {
+    score: number;
+    tier: string;
+  };
+}
+
+export interface IdentityCausalEventV0 {
+  type:
+    | "identity.avatar.update"
+    | "identity.companion.update"
+    | "identity.ghostpet.update"
+    | "identity.signature.update"
+    | "identity.vault.unlock"
+    | "identity.journal.append";
+  actorUid: string;
+  targetUid: string;
+  patch: Record<string, unknown>;
+  causeNodeId?: string;
+  timestamp: number;
+}
+
 /**
  * Persistent identity shell. Session is ephemeral but carried alongside for kernel + UI;
  * do not treat session as durable profile data.
@@ -503,6 +601,7 @@ export interface IdentityState {
   ownerId: string | null;
   actor: ActorState | null;
   session?: SessionState | null;
+  identityGraph?: IdentityGraphState;
   /** Namespaced capability flags, e.g. registry.*, sim.shadow.run */
   permissions: Record<string, boolean>;
   delegates: string[];

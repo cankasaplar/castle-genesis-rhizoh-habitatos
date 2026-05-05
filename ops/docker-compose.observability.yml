@@ -1,0 +1,81 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  gateway:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -lc "npm ci && npm run dev -w apps/gateway"
+    environment:
+      REDIS_URL: redis://redis:6379
+      USE_QUEUE: "true"
+      USE_DUAL_RUN: "false"
+      CASTLE_GATEWAY_PORT: "8090"
+      CASTLE_WORKER_INFRA_URL: http://worker:8092
+    volumes:
+      - ..:/app
+    ports:
+      - "8090:8090"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  worker:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -lc "npm ci && npm run dev -w apps/worker"
+    environment:
+      REDIS_URL: redis://redis:6379
+      WORKER_STREAM: castle:events:branch:main
+      WORKER_GROUP: kernel-workers
+      WORKER_INFRA_PORT: "8092"
+    volumes:
+      - ..:/app
+    ports:
+      - "8092:8092"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - gateway
+      - worker
+      - alertmanager
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+    volumes:
+      - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports:
+      - "9093:9093"
+
+  grafana:
+    image: grafana/grafana:11.1.4
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./../docs/infra/grafana-castle-sre-cockpit.json:/var/lib/grafana/dashboards/castle-sre-cockpit.json:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus

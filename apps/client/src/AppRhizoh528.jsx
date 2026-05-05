@@ -2724,9 +2724,20 @@ const uiStore = {
       logBuffer.push(action.payload);
       this.state = { ...this.state, tickCounter: this.state.tickCounter + 1 };
     } else if (action.type === "SYNC_STATS") {
-      this.state = { ...this.state, activeEntityCount: action.payload };
+      const nextCount = Number(action.payload) || 0;
+      if (this.state.activeEntityCount === nextCount) return;
+      this.state = { ...this.state, activeEntityCount: nextCount };
     } else if (action.type === "SYNC_METRICS") {
-      this.state = { ...this.state, ...action.payload };
+      const payload = action.payload && typeof action.payload === "object" ? action.payload : {};
+      let changed = false;
+      for (const [k, v] of Object.entries(payload)) {
+        if (this.state[k] !== v) {
+          changed = true;
+          break;
+        }
+      }
+      if (!changed) return;
+      this.state = { ...this.state, ...payload };
     } else {
       let next = this.state;
       if (action.type === "TOGGLE_VIEW") next = { ...next, viewMode: next.viewMode === "CITIZEN" ? "DEVELOPER" : "CITIZEN" };
@@ -2751,17 +2762,22 @@ const uiStore = {
       }
       if (action.type === "REALITY_ENGINE_SYNC") {
         const p = action.payload;
-        next = {
-          ...next,
-          mapSurfaceActive: !!p.mapSurfaceActive,
-          lastRealityCommit: {
-            ...(next.lastRealityCommit || {}),
-            at: Date.now(),
-            gatewayPhase: p.gatewayPhase ?? next.lastRealityCommit?.gatewayPhase,
-            reason: p.reason
-          },
-          tickCounter: this.state.tickCounter + 1
-        };
+        const nextMap = !!p.mapSurfaceActive;
+        const prevGw = next.lastRealityCommit?.gatewayPhase;
+        const nextGw = p.gatewayPhase ?? prevGw;
+        if (next.mapSurfaceActive !== nextMap || prevGw !== nextGw) {
+          next = {
+            ...next,
+            mapSurfaceActive: nextMap,
+            lastRealityCommit: {
+              ...(next.lastRealityCommit || {}),
+              at: Date.now(),
+              gatewayPhase: nextGw,
+              reason: p.reason
+            },
+            tickCounter: this.state.tickCounter + 1
+          };
+        }
       }
       if (action.type === "SET_REALITY") {
         coreWorld.targetMode = action.payload;
@@ -2791,38 +2807,50 @@ const uiStore = {
             type: "SYS",
             data: `LAYER · ${fromSpec?.code ?? "?"} → ${toSpec?.code ?? "?"} (${toSpec?.name ?? ""})`
           });
+          next = {
+            ...next,
+            layerFocus: nf,
+            layerTransitionSeq: (this.state.layerTransitionSeq || 0) + 1,
+            tickCounter: this.state.tickCounter + 1
+          };
         }
-        next = {
-          ...next,
-          layerFocus: nf,
-          ...(prev !== nf
-            ? {
-                layerTransitionSeq: (this.state.layerTransitionSeq || 0) + 1,
-                tickCounter: this.state.tickCounter + 1
-              }
-            : {})
-        };
       }
       if (action.type === "SET_CAMERA_MODE") {
-        next = { ...next, cameraMode: action.payload === "DRONE" ? "DRONE" : "ORBIT", tickCounter: this.state.tickCounter + 1 };
+        const mode = action.payload === "DRONE" ? "DRONE" : "ORBIT";
+        if (next.cameraMode !== mode) {
+          next = { ...next, cameraMode: mode, tickCounter: this.state.tickCounter + 1 };
+        }
       }
-      if (action.type === "SET_SATELLITE_MODE") next = { ...next, satelliteScanMode: action.payload };
+      if (action.type === "SET_SATELLITE_MODE" && next.satelliteScanMode !== action.payload) {
+        next = { ...next, satelliteScanMode: action.payload };
+      }
       if (action.type === "TOGGLE_SWARM") {
         coreWorld.swarmActive = !coreWorld.swarmActive;
         next = { ...next, swarmActive: coreWorld.swarmActive };
       }
       if (action.type === "SET_SWARM_ACTIVE") {
         const on = !!action.payload;
-        coreWorld.swarmActive = on;
-        next = { ...next, swarmActive: on };
+        if (coreWorld.swarmActive !== on || next.swarmActive !== on) {
+          coreWorld.swarmActive = on;
+          next = { ...next, swarmActive: on };
+        }
       }
-      if (action.type === "SET_GREENROOM") next = { ...next, greenRoomArm: !!action.payload };
+      if (action.type === "SET_GREENROOM") {
+        const on = !!action.payload;
+        if (next.greenRoomArm !== on) next = { ...next, greenRoomArm: on };
+      }
       if (action.type === "SET_PORTAL") {
-        coreWorld.portalCharge = action.payload ? 1 : 0;
-        next = { ...next, portalVisible: !!action.payload };
+        const on = !!action.payload;
+        if (next.portalVisible !== on || coreWorld.portalCharge !== (on ? 1 : 0)) {
+          coreWorld.portalCharge = on ? 1 : 0;
+          next = { ...next, portalVisible: on };
+        }
       }
       if (action.type === "SET_RHIZOH_SCENE_ANCHOR") {
-        next = { ...next, rhizohSceneAnchor: action.payload ?? null, tickCounter: this.state.tickCounter + 1 };
+        const anchor = action.payload ?? null;
+        if (next.rhizohSceneAnchor !== anchor) {
+          next = { ...next, rhizohSceneAnchor: anchor, tickCounter: this.state.tickCounter + 1 };
+        }
       }
       if (action.type === "SET_PRODUCT_SURFACE") {
         const allowed = new Set(["world", "hall", "greenroom", "broadcast", "studio", "profile"]);
@@ -2831,6 +2859,7 @@ const uiStore = {
           next = { ...next, productSurface: id, tickCounter: this.state.tickCounter + 1 };
         }
       }
+      if (next === this.state) return;
       this.state = next;
     }
     this.listeners.forEach((l) => l());
@@ -7460,6 +7489,15 @@ export default function AppRhizoh528() {
       memoryLinks
     ]
   );
+  const infraGatewayBaseUrl = useMemo(() => {
+    try {
+      const base = String(getRhizohApiBase() || "").trim();
+      if (!base) return "";
+      return new URL(base).origin;
+    } catch {
+      return "";
+    }
+  }, []);
   const memoryLinksRef = useRef(memoryLinks);
   const governanceRef = useRef(governanceState);
   const governanceEnteredAtRef = useRef(Date.now());
@@ -9612,7 +9650,7 @@ export default function AppRhizoh528() {
             {drawerStudioTab === "profile" ? <ProductProfilePanel auth={castleAuth} /> : null}
             {drawerStudioTab === "profile" || drawerStudioTab === "kernel" ? (
               <div className="mt-3">
-                <RuntimeHealthPanel health={runtimeHealth} />
+                <RuntimeHealthPanel health={runtimeHealth} gatewayBaseUrl={infraGatewayBaseUrl} />
               </div>
             ) : null}
             <RhizohCommsPanel

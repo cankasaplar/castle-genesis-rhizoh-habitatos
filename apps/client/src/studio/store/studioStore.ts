@@ -20,7 +20,24 @@ export {
   subscribeStudioKernelSelector
 } from "./internalStore.js";
 
-export { patchIdentity } from "./identitySlice";
+export {
+  patchIdentity,
+  updateAvatarIdentity,
+  updateCompanionIdentity,
+  updateGhostPetIdentity,
+  appendJournalClip,
+  grantVaultUnlock
+} from "./identitySlice";
+export {
+  identityCausalUpdateAvatar,
+  identityCausalUpdateCompanion,
+  identityCausalUpdateGhostPet,
+  identityCausalUpdateSignature,
+  identityCausalUnlockVault,
+  identityCausalJournalAppend,
+  setIdentityMeshPublishEnabled,
+  registerIdentityMeshPublisher
+} from "./identityCausalSlice";
 export { patchSimulation, setSimulationDiff } from "./simulationSlice";
 export {
   patchRuntime,
@@ -171,6 +188,12 @@ export { patchCausalEconomy } from "./economySlice";
 export { ingestPresenceMeshDelta } from "./presenceMeshIngestSlice";
 export { PresenceMeshClient, resolvePresenceMeshHttpBase } from "../runtime/presenceMeshClient";
 export { startGreenRoomPresenceMesh } from "../runtime/greenRoomPresenceMesh";
+export {
+  getInfluenceTrace,
+  resetInfluenceTrace,
+  type InfluenceTraceEntry
+} from "../runtime/influenceTraceRegistry";
+export { validateInfluenceReplayDeterminism } from "../runtime/identityInfluenceRouter";
 export {
   bindPresenceRoomToRegion,
   patchRegionChunkRuntime,

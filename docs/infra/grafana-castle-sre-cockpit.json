@@ -1,0 +1,42 @@
+{
+  "title": "Castle SRE Cockpit",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Gateway Events/s",
+      "targets": [{ "expr": "rate(castle_gateway_events_processed_total[1m])" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Queue Lag Seconds",
+      "targets": [{ "expr": "castle_gateway_queue_lag_seconds" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Worker Consume p95",
+      "targets": [{ "expr": "castle_worker_consume_latency_p95" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Kernel Turn ms",
+      "targets": [{ "expr": "castle_kernel_turn_ms" }]
+    },
+    {
+      "type": "stat",
+      "title": "Kernel Divergence",
+      "targets": [{ "expr": "castle_kernel_divergence_total" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Worker Retry/DLQ",
+      "targets": [
+        { "expr": "rate(castle_worker_retry_total[1m])", "legendFormat": "retry/s" },
+        { "expr": "rate(castle_worker_dlq_total[1m])", "legendFormat": "dlq/s" }
+      ]
+    }
+  ]
+}

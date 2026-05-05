@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { CASTLE_RUNTIME_MODULE_VERSIONS, CASTLE_RUNTIME_VERSION } from "../runtime/castleRuntimeVersion";
 
 function StatusRow({ label, on, detail }) {
@@ -13,7 +13,40 @@ function StatusRow({ label, on, detail }) {
   );
 }
 
-export function RuntimeHealthPanel({ health }) {
+export function RuntimeHealthPanel({ health, gatewayBaseUrl = "", workerInfraUrl = "" }) {
+  const [infra, setInfra] = useState({ status: "unknown", score: 0, reasons: [], worker: null });
+  const gatewayHealthUrl = useMemo(() => {
+    const base = String(gatewayBaseUrl || "").trim();
+    if (!base) return "/infra/health";
+    return `${base.replace(/\/+$/, "")}/infra/health`;
+  }, [gatewayBaseUrl]);
+
+  useEffect(() => {
+    let dead = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(gatewayHealthUrl, { method: "GET" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (dead) return;
+        setInfra({
+          status: String(data?.status || "unknown"),
+          score: Number(data?.score || 0),
+          reasons: Array.isArray(data?.reasons) ? data.reasons : [],
+          worker: data?.worker || null
+        });
+      } catch {
+        /* noop */
+      }
+    };
+    poll();
+    const id = window.setInterval(poll, 4000);
+    return () => {
+      dead = true;
+      window.clearInterval(id);
+    };
+  }, [gatewayHealthUrl, workerInfraUrl]);
+
   return (
     <div className="space-y-2 rounded-xl border border-cyan-400/25 bg-cyan-950/15 p-3">
       <div className="flex items-center justify-between">
@@ -29,9 +62,18 @@ export function RuntimeHealthPanel({ health }) {
         <StatusRow label="Rhizoh" on={health.rhizohHeartbeat} detail={health.rhizohHeartbeat ? "heartbeat" : "cold"} />
         <StatusRow label="Economy" on={health.economyHealthy} detail={health.economyHealthy ? "healthy" : "draining"} />
         <StatusRow label="Memory Pack" on={health.memoryFresh} detail={health.memoryFresh ? "fresh" : "stale"} />
+        <StatusRow
+          label="Determinism"
+          on={infra.status !== "readonly"}
+          detail={infra.status === "readonly" ? "readonly" : "stable"}
+        />
+      </div>
+      <div className="rounded-md border border-white/10 bg-black/25 px-2 py-1.5 text-[8px] text-white/70 normal-case">
+        HEALTH SCORE: {infra.score.toFixed(2)} ï¿½ STATE: {String(infra.status || "unknown").toUpperCase()}
+        {infra.reasons?.length ? ` ï¿½ CAUSE: ${infra.reasons.join(",")}` : ""}
       </div>
       <div className="text-[8px] text-white/45 normal-case">
-        RSK {CASTLE_RUNTIME_MODULE_VERSIONS.RSK_KERNEL} · World {CASTLE_RUNTIME_MODULE_VERSIONS.WORLD_OS} · Presence {CASTLE_RUNTIME_MODULE_VERSIONS.PRESENCE_OS} · Broadcast {CASTLE_RUNTIME_MODULE_VERSIONS.BROADCAST_OS} · Attention {CASTLE_RUNTIME_MODULE_VERSIONS.ATTENTION_OS} · Rhizoh {CASTLE_RUNTIME_MODULE_VERSIONS.RHIZOH_OS} · Product {CASTLE_RUNTIME_MODULE_VERSIONS.PRODUCT_SHELL}
+        RSK {CASTLE_RUNTIME_MODULE_VERSIONS.RSK_KERNEL} ï¿½ World {CASTLE_RUNTIME_MODULE_VERSIONS.WORLD_OS} ï¿½ Presence {CASTLE_RUNTIME_MODULE_VERSIONS.PRESENCE_OS} ï¿½ Broadcast {CASTLE_RUNTIME_MODULE_VERSIONS.BROADCAST_OS} ï¿½ Attention {CASTLE_RUNTIME_MODULE_VERSIONS.ATTENTION_OS} ï¿½ Rhizoh {CASTLE_RUNTIME_MODULE_VERSIONS.RHIZOH_OS} ï¿½ Product {CASTLE_RUNTIME_MODULE_VERSIONS.PRODUCT_SHELL}
       </div>
     </div>
   );

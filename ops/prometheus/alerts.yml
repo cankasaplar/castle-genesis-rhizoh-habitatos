@@ -1,0 +1,32 @@
+groups:
+  - name: castle-runtime-alerts
+    rules:
+      - alert: CastleKernelDivergenceReadonly
+        expr: castle_kernel_divergence_total > 0
+        for: 10s
+        labels:
+          severity: critical
+          service: castle-kernel
+        annotations:
+          summary: "Castle kernel divergence detected"
+          description: "Determinism contract breached. Runtime should be in readonly protection mode."
+
+      - alert: CastleQueueLagHigh
+        expr: castle_gateway_queue_lag_seconds > 2
+        for: 60s
+        labels:
+          severity: warning
+          service: castle-gateway
+        annotations:
+          summary: "Gateway queue lag is elevated"
+          description: "Queue lag exceeded 2s for at least 1 minute."
+
+      - alert: CastleWorkerDLQRateHigh
+        expr: rate(castle_worker_dlq_total[5m]) > 0
+        for: 30s
+        labels:
+          severity: warning
+          service: castle-worker
+        annotations:
+          summary: "Worker is producing DLQ events"
+          description: "At least one event per 5m window reached DLQ."

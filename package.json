@@ -15,6 +15,7 @@
     "dev:broadcaster": "npm run dev -w apps/broadcaster",
     "dev:orchestrator": "npm run dev -w apps/orchestrator",
     "dev:sim-core": "npm run dev -w apps/sim-core",
+    "dev:worker": "npm run dev -w apps/worker",
     "build": "npm run build -w apps/client",
     "test": "npm run test -w apps/client",
     "test:watch": "npm run test:watch -w apps/client",
@@ -31,6 +32,7 @@
     "ci:read-stack": "npm run test -w apps/client -- src/studio/__tests__/studio-read-stack-integration.test.ts",
     "ci:enforce-client": "npm run ci:schema-lock && npm run typecheck -w apps/client && npm run test -w apps/client && npm run ci:read-stack",
     "verify:production": "node scripts/verify-production-env.mjs",
-    "setup:env": "node scripts/setup-env-templates.mjs"
+    "setup:env": "node scripts/setup-env-templates.mjs",
+    "infra:replay": "npm run replay -w apps/worker"
   }
 }

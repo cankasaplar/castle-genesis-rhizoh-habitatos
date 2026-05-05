@@ -1,0 +1,13 @@
+{
+  "name": "@castle/worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/worker.js",
+    "replay": "node src/replay.js"
+  },
+  "dependencies": {
+    "redis": "^4.7.0"
+  }
+}

@@ -62,6 +62,9 @@ import {
   registerSocialChannel,
   listSocialChannels
 } from "./studioOpsStore.js";
+import { metrics as infraMetrics } from "./infra/metrics.js";
+import { scoreHealth } from "./infra/healthScore.js";
+import { getTraceById, listTracesBySession } from "./infra/traceRegistry.js";
 
 /** Render / Fly / Railway: `PORT` — yoksa `CASTLE_GATEWAY_PORT` — yoksa 8090. */
 const PORT =
@@ -147,6 +150,37 @@ function normalizeClientLlmKeySource(raw) {
 function sendJson(res, statusCode, payload) {
   res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(payload));
+}
+
+function renderInfraMetricsProm() {
+  const lines = [
+    `castle_gateway_events_processed_total ${infraMetrics.eventsProcessed}`,
+    `castle_gateway_duplicate_reject_total ${infraMetrics.duplicateRejects}`,
+    `castle_gateway_enqueue_latency_ms ${infraMetrics.enqueueLatencyMs}`,
+    `castle_gateway_queue_depth ${infraMetrics.queueDepth}`,
+    `castle_gateway_queue_lag_seconds ${(Number(infraMetrics.queueLag || 0) / 1000).toFixed(3)}`,
+    `castle_gateway_errors_total ${infraMetrics.errors}`
+  ];
+  const buckets = infraMetrics.enqueueLatencyBuckets || {};
+  for (const k of Object.keys(buckets)) {
+    lines.push(`castle_gateway_enqueue_latency_bucket{le="${k}"} ${buckets[k]}`);
+  }
+  lines.push(`castle_gateway_enqueue_latency_bucket{le="+Inf"} ${infraMetrics.eventsProcessed}`);
+  return lines.join("\n");
+}
+
+async function fetchJsonWithTimeout(url, timeoutMs = 1200) {
+  const ctl = new AbortController();
+  const tid = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: ctl.signal });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(tid);
+  }
 }
 
 function sleep(ms) {
@@ -561,6 +595,51 @@ const httpServer = createServer(async (req, res) => {
       presenceMesh: "sse"
     });
     return;
+  }
+
+  if (req.method === "GET" && pathname === "/infra/health") {
+    const workerBase = String(process.env.WORKER_INFRA_URL || "").trim();
+    const worker = workerBase ? await fetchJsonWithTimeout(`${workerBase.replace(/\/+$/, "")}/infra/health`) : null;
+    const scored = scoreHealth(infraMetrics, {
+      divergenceTotal: Number(worker?.metrics?.divergenceTotal || 0)
+    });
+    sendJson(res, 200, {
+      ok: true,
+      role: "gateway",
+      queueLagMs: infraMetrics.queueLag,
+      queueDepth: infraMetrics.queueDepth,
+      errors: infraMetrics.errors,
+      status: scored.status,
+      score: scored.score,
+      reasons: scored.reasons,
+      worker: worker
+        ? {
+            status: worker.status,
+            score: worker.score,
+            reasons: worker.reasons
+          }
+        : null,
+      timestamp: Date.now()
+    });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/infra/metrics") {
+    res.writeHead(200, { "Content-Type": "text/plain; version=0.0.4; charset=utf-8" });
+    res.end(renderInfraMetricsProm());
+    return;
+  }
+  if (req.method === "GET" && pathname.startsWith("/infra/traces/")) {
+    const traceId = decodeURIComponent(pathname.slice("/infra/traces/".length));
+    const item = await getTraceById(traceId);
+    if (!item) return sendJson(res, 404, { ok: false, error: "trace_not_found" });
+    return sendJson(res, 200, { ok: true, trace: item });
+  }
+  if (req.method === "GET" && pathname === "/infra/traces") {
+    const u = new URL(String(req.url || "/infra/traces"), `http://${req.headers.host || "localhost"}`);
+    const sessionId = String(u.searchParams.get("sessionId") || "").trim();
+    const items = sessionId ? await listTracesBySession(sessionId) : [];
+    return sendJson(res, 200, { ok: true, sessionId, traces: items });
   }
 
   /** Presence room mesh (C): JOIN / LEAVE / SNAPSHOT / DELTA / REPLAY (HTTP); SUBSCRIBE = SSE stream. */
