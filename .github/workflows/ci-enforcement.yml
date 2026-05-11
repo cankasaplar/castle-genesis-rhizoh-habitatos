@@ -32,6 +32,9 @@ jobs:
       - name: Causal schema lock (RSK_ONTOLOGY_VERSION)
         run: node scripts/verify-causal-schema-lock.mjs
 
+      - name: CIL-AMENDMENT parse + stabilization verify hook (AEE v0.1)
+        run: npm run stabilization:validate-amendment -- --verify
+
       - name: Studio imports extensionless (mandatory)
         run: node scripts/check-studio-import-extensions.mjs
 

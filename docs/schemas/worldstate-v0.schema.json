@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://castle.local/schemas/worldstate-v0.schema.json",
+  "title": "WorldState v0",
+  "description": "Laboratory-universe snapshot for replay/diff — observation/manifold layer only; not frozen execution core state.",
+  "type": "object",
+  "required": ["contract_version", "world_id", "logical_tick", "entities", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "const": "worldstate-v0",
+      "description": "Schema contract id."
+    },
+    "world_id": {
+      "type": "string",
+      "description": "Stable world/session identifier (ULID recommended)."
+    },
+    "logical_tick": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Monotonic logical time index for replay ordering."
+    },
+    "frozen_core_refs": {
+      "type": "object",
+      "description": "Optional pointer to known repo refs — documentary only.",
+      "additionalProperties": true,
+      "properties": {
+        "reality_lock_sha256": { "type": "string" },
+        "stabilization_graph_sha256": { "type": "string" }
+      }
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["entity_id", "kind_id"],
+        "additionalProperties": false,
+        "properties": {
+          "entity_id": { "type": "string" },
+          "kind_id": { "type": "string", "description": "Aligns with ASSET_CONTRACT AssetKind when applicable." },
+          "semantic_tags": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "pose_stub": {
+            "type": "object",
+            "description": "Minimal spatial stub — optional; robotics/habitat projection.",
+            "additionalProperties": true,
+            "properties": {
+              "frame": { "type": "string" },
+              "position_m": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 3,
+                "maxItems": 3
+              }
+            }
+          },
+          "observation_bindings": {
+            "type": "array",
+            "description": "Observation stream ids affecting this entity (interpretation layer).",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "observation_digest": {
+      "type": "object",
+      "description": "Fingerprint of aggregated observation fabric inputs at this tick — not execution commands.",
+      "additionalProperties": true,
+      "properties": {
+        "streams_hashed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "stream_id": { "type": "string" },
+              "content_sha256": { "type": "string" }
+            }
+          }
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "epistemic_snapshot": {
+      "type": "object",
+      "description": "Interpretive projection numbers — conceptual linkage to v567–v570 must stay documented, not wired in v0.",
+      "additionalProperties": true,
+      "properties": {
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "number" },
+          "description": "Named scalars 0..1 for lab notebooks only."
+        },
+        "schema_note": {
+          "type": "string",
+          "description": "Human-readable disclaimer for invariant mapping."
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["sources"],
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["role"],
+            "properties": {
+              "role": {
+                "type": "string",
+                "enum": [
+                  "principal",
+                  "cursor_agent",
+                  "nisa_session",
+                  "external_llm",
+                  "live_feed",
+                  "sensor_sim",
+                  "deterministic_import"
+                ]
+              },
+              "ref": { "type": "string", "description": "Commit SHA, URL stub, or SESSION_LOG pointer — forensic." },
+              "recorded_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "forensic_only": {
+          "type": "boolean",
+          "const": true,
+          "description": "If present must be true: provenance is audit trail, not semantic authority."
+        }
+      }
+    }
+  }
+}

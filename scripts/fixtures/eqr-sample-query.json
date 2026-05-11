@@ -1,0 +1,12 @@
+{
+  "eqrQueryVersion": "1.0",
+  "commitSnapshot": "commit:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "layers": ["TAL", "CRA", "EPOCH", "ECG_EXPORT", "GEMC_ROLLUP"],
+  "bounds": {
+    "epochWindow": { "fromRef": "0xepoch1", "toRef": "0xepoch2" }
+  },
+  "filters": {
+    "craArtifactIds": ["CRA-sample-001"],
+    "talAnchors": ["docs/academic/SESSION_LOG.md"]
+  }
+}

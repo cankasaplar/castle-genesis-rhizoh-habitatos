@@ -25,7 +25,7 @@ function GoogleMark() {
 }
 
 function panelClass() {
-  return "bg-[#0a0f2a]/98 border border-cyan-400/40 rounded-[2rem] shadow-[0_0_80px_rgba(0,255,255,0.12)] backdrop-blur-xl p-8 max-w-md w-full pointer-events-auto";
+  return "bg-[#0a0f2a]/98 border border-cyan-400/40 rounded-[2rem] shadow-[0_0_80px_rgba(0,255,255,0.12)] backdrop-blur-xl p-8 max-w-md w-full max-h-[92vh] overflow-y-auto pointer-events-auto";
 }
 
 export function CastleAccountBadge({ auth }) {
@@ -70,7 +70,10 @@ export function CastleAuthOverlay({ auth }) {
     signInGuest,
     signInEmail,
     signUpEmail,
+    resetPassword,
     signInWithGoogle,
+    linkGoogleForCurrentUser,
+    linkEmailForCurrentUser,
     user: authUser,
     completeOnboarding,
     skipOnboardingDisplayOnly
@@ -80,6 +83,8 @@ export function CastleAuthOverlay({ auth }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [linkEmail, setLinkEmail] = useState("");
+  const [linkPassword, setLinkPassword] = useState("");
 
   useEffect(() => {
     if (needsOnboarding && authUser?.displayName) setDisplayName(authUser.displayName);
@@ -155,6 +160,16 @@ export function CastleAuthOverlay({ auth }) {
           >
             {busy ? "…" : mode === "login" ? "Giriş yap" : "Hesap oluştur"}
           </button>
+          {mode === "login" ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void resetPassword(email)}
+              className="w-full py-2 rounded-xl bg-white/5 text-cyan-200 font-black text-[11px] uppercase tracking-widest mb-3 border border-white/10 disabled:opacity-50"
+            >
+              Şifremi unuttum
+            </button>
+          ) : null}
 
           <div className="flex items-center gap-3 mb-3">
             <div className="h-px flex-1 bg-white/10" />
@@ -205,6 +220,42 @@ export function CastleAuthOverlay({ auth }) {
             className="w-full bg-black/40 border border-white/15 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-cyan-400/60 mb-4 normal-case"
           />
           {error ? <div className="text-rose-400 text-[11px] mb-3 normal-case">{error}</div> : null}
+          <div className="rounded-xl border border-white/10 bg-black/25 p-3 mb-3 normal-case">
+            <div className="text-[10px] text-cyan-200/90 uppercase tracking-widest mb-2">Hesap birleştirme</div>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void linkGoogleForCurrentUser()}
+              className="w-full py-2 rounded-xl bg-white text-gray-900 font-black text-[11px] uppercase tracking-widest mb-2 flex items-center justify-center gap-2 disabled:opacity-50 border border-white/20"
+            >
+              <GoogleMark />
+              Bu hesaba Google bağla
+            </button>
+            <input
+              type="email"
+              autoComplete="email"
+              value={linkEmail}
+              onChange={(e) => setLinkEmail(e.target.value)}
+              placeholder="Bağlanacak e-posta"
+              className="w-full bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400/60 mb-2"
+            />
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={linkPassword}
+              onChange={(e) => setLinkPassword(e.target.value)}
+              placeholder="E-posta hesabı şifresi"
+              className="w-full bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400/60 mb-2"
+            />
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void linkEmailForCurrentUser(linkEmail, linkPassword)}
+              className="w-full py-2 rounded-xl bg-white/10 text-white font-black text-[11px] uppercase tracking-widest border border-white/15 disabled:opacity-50"
+            >
+              Bu hesaba e-posta/şifre bağla
+            </button>
+          </div>
           <button
             type="button"
             disabled={busy}

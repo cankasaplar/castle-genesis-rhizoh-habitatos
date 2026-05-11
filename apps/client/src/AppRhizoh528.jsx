@@ -86,10 +86,12 @@ import { warmSwarmGpu, createRhizohAutonomousCompanyRuntimeV0 } from "./kernel/s
 import { composeRhizohVisualCognitionStateV1 } from "./kernel/visual/RhizohVisualCognitionComposerV1.js";
 import { composeRelationalPresenceStateV1 } from "./kernel/visual/RelationalPresenceComposerV1.js";
 import { computeRhizohCinematicOutputV1, resolveAdaptiveIntroRouteV1 } from "./kernel/visual/RhizohCinematicOrchestratorV1.js";
+import { resolveRhizohFirstName } from "./kernel/rhizohDisplayName.js";
 import {
-  resolveRhizohFirstName,
-  buildRhizohExploreGreeting
-} from "./kernel/rhizohDisplayName.js";
+  buildRhizohFirstTouchEpistemicBody,
+  buildRhizohFirstTouchEpistemicArtifact
+} from "./kernel/rhizohWelcomeEpistemicV1.js";
+import { buildBootObservationProvenance } from "./kernel/rhizohScenarioPhaseReadoutV1.js";
 import {
   hydrateIdentityGraphFromSignals,
   buildIdentityNarrativeForLlm,
@@ -105,7 +107,6 @@ import { ensureGreenRoomMainHallBound } from "./studio/lib/greenRoomRouteBinding
 import { startGreenRoomPresenceMesh } from "./studio/runtime/greenRoomPresenceMesh";
 import { ensureCastleWorldTopology } from "./studio/lib/bootstrapWorldTopology";
 import { startRhizohAgentRuntime } from "./studio/runtime/agentRuntimeLoop";
-import { RhizohPersistentCoreInspectV1 } from "./components/RhizohPersistentCoreInspectV1.jsx";
 import { RhizohGatewayBanner } from "./components/RhizohGatewayBanner.jsx";
 import { SwarmCollectiveAuraV1 } from "./components/SwarmCollectiveAuraV1.jsx";
 import { RhizohPresenceField } from "./components/RhizohPresenceField.jsx";
@@ -141,6 +142,14 @@ import {
   formatCognitiveSubThreadsForPrompt
 } from "./rhizoh/social/index.js";
 import { rhizohGatewayPhaseShowsRetry } from "./rhizoh/gatewayPhaseUtils.js";
+import {
+  buildEpistemicTruthContract,
+  CASTLE_RHIZOH_EPISTEMIC_SURFACE_EVENT,
+  RhizohEpistemicOrb,
+  RhizohEpistemicWorldGravity,
+  sealRhizohEpistemicTrace,
+  sha256HexUtf8
+} from "./rhizoh/epistemic/index.js";
 import { enqueueRhizohMessageIntent, drainRhizohMessageIntentQueue } from "./castleFlight/castleIntentQueue.js";
 import { parseDSL, detectCastleIntentWithoutCoords } from "./kernel/rhizohCommandParser.js";
 import {
@@ -186,6 +195,34 @@ import {
 } from "./rhizoh/agents/temporalIntentDriftMemoryV1.js";
 import { routeRhizohInput } from "./rhizoh/router/routeRhizohInput.js";
 import {
+  RHIZOH_CONVERSATION_ORCHESTRATOR_VERSION,
+  advanceRhizohConversationPhase,
+  buildRhizohConversationLlmDirective,
+  buildRhizohProductCapabilityEnvelope,
+  rhizohConversationPhaseShortLabelTr
+} from "./rhizoh/product/rhizohConversationOrchestratorV1.js";
+import {
+  appendRhizohClosureMilestone,
+  loadRhizohProductSession,
+  readRhizohExplicitPowerUnlock,
+  saveRhizohProductSession
+} from "./rhizoh/product/rhizohProductSessionPersistenceV1.js";
+import { emitRhizohProductDecisionSignal } from "./rhizoh/product/rhizohProductDecisionLayerV1.js";
+import { finalizeRhizohProductOverlay } from "./rhizoh/product/rhizohProductPolicyLearningV1.js";
+import {
+  computeRhizohDecisionOverlayFingerprint,
+  runRhizohDecisionFeedbackTick
+} from "./rhizoh/product/rhizohDecisionEffectivenessV1.js";
+import { getRhizohPolicyProductionInsight } from "./rhizoh/product/rhizohProductProductionTruthV1.js";
+import {
+  buildRhizohCapabilitySurfaceRows,
+  buildRhizohConversationGoals,
+  buildRhizohPhaseStory,
+  buildRhizohPhaseClosure,
+  inferRhizohUserGoalHint
+} from "./rhizoh/experience/index.js";
+import { RhizohExperienceRibbon } from "./components/RhizohExperienceRibbon.jsx";
+import {
   applyEmotionDelta,
   applyRepairOutcome,
   deriveRelationalTone,
@@ -205,7 +242,14 @@ import {
   applyRecallFeedbackToIdentityGraph,
   recallClosurePayloadForMeta
 } from "./rhizoh/memory/index.js";
-import { buildRhizohDriftLogEntry } from "./rhizoh/telemetry/index.js";
+import {
+  buildRhizohDriftLogEntry,
+  emitRhizohBehaviorSignal,
+  recordRhizohVisitAndEmitReturnSignals,
+  buildRhizohTurnDepthSignal,
+  startRhizohBehaviorMetricsAggregation,
+  getRhizohBehaviorMetricsSnapshot
+} from "./rhizoh/telemetry/index.js";
 import {
   getRhizohStabilityAnchorSnapshot,
   normalizeGovernorCalibration,
@@ -221,6 +265,27 @@ const CODEX_VERSION = "vNext-530.Kernel-Morton-ULID";
 const CODEX_DATE = "2026-04-28";
 const GLOBE_RADIUS = 3000;
 const MAX_INSTANCES = 50000;
+
+/** İstemci `options.maxTokens` — gateway `RHIZOH_GENERATION_MODES` ile aynı anahtarlar. */
+const RHIZOH_GENERATION_MODE_MAX = {
+  FAST_DIALOGUE: 120,
+  STANDARD: 320,
+  REFLECTIVE: 900,
+  NARRATIVE: 1600,
+  DEEP_REASONING: 2600
+};
+
+const RHIZOH_GENERATION_MODE_UI = [
+  { id: "FAST_DIALOGUE", label: "Hızlı", sub: "Kısa cevap" },
+  { id: "STANDARD", label: "Standart", sub: "Dengeli sohbet" },
+  { id: "REFLECTIVE", label: "Yansıtıcı", sub: "Derin / ölçülü" },
+  { id: "NARRATIVE", label: "Anlatı", sub: "Uzun hikâye" },
+  { id: "DEEP_REASONING", label: "Akıl yürütme", sub: "Katmanlı düşünce" }
+];
+
+function normalizeRhizohGenerationModeId(mode) {
+  return String(mode || "STANDARD").trim().toUpperCase().replace(/-/g, "_");
+}
 
 /** L0–L13 + Rhizoh command plane (L13 = Robotics Mechanics bridge layer) */
 const LAYER_SPECS = [
@@ -1346,6 +1411,40 @@ async function callLLMStub(prompt) {
   };
 }
 
+function logRhizohHealth(stage, detail = {}) {
+  try {
+    const meta = detail && typeof detail === "object" ? detail : {};
+    console.info(`[RHIZOH_OK] ${String(stage || "unknown")}`, meta);
+  } catch {
+    /* noop */
+  }
+}
+
+/** Uzak /rhizoh/llm hattı hatalarını A/B/C sınıflarına ayırır (UI ve telemetri). */
+function classifyRhizohLlmClientFailure(err, httpStatusFromBody) {
+  const msg = String(err?.message || err || "");
+  if (err?.rhizohFailureKind && typeof err.rhizohFailureKind === "string") {
+    return {
+      kind: err.rhizohFailureKind,
+      httpStatus: err.providerHttpStatus ?? httpStatusFromBody ?? null
+    };
+  }
+  if (/rhizoh_llm_timeout/i.test(msg) || /AbortError|aborted/i.test(msg)) {
+    return { kind: "timeout", httpStatus: httpStatusFromBody ?? null };
+  }
+  const m = msg.match(/rhizoh_llm_http_(\d+)/i);
+  if (m) {
+    const st = Number(m[1]);
+    if (st === 408 || st === 504) return { kind: "timeout", httpStatus: st };
+    if (st === 429) return { kind: "rate_limit", httpStatus: st };
+    return { kind: "provider_error", httpStatus: st };
+  }
+  if (/failed to fetch|NetworkError|network/i.test(msg)) return { kind: "network_error", httpStatus: null };
+  if (/rhizoh_llm_bad_json|unexpected token|json\.parse|is not valid json/i.test(msg))
+    return { kind: "provider_error", httpStatus: httpStatusFromBody ?? null };
+  return { kind: "unknown", httpStatus: httpStatusFromBody ?? null };
+}
+
 async function queryRhizohLLM({
   message,
   provider,
@@ -1358,10 +1457,14 @@ async function queryRhizohLLM({
   continuity,
   runtime,
   llmKeySource = "auto",
+  /** @type {string} FAST_DIALOGUE | STANDARD | REFLECTIVE | NARRATIVE | DEEP_REASONING */
+  generationMode = "STANDARD",
   persistRhizohEmotions,
-  gatewayUx
+  gatewayUx,
+  productDecisionOverlay
 }) {
   const trimmed = String(message || "").trim();
+  logRhizohHealth("ui_send", { chars: trimmed.length });
   const dslParsed = parseDSL(trimmed);
   if (dslParsed) {
     const out = await applyPersonalCastleDsl(dslParsed);
@@ -1381,6 +1484,48 @@ async function queryRhizohLLM({
   }
 
   const cont = continuity && typeof continuity === "object" ? continuity : {};
+  const diskIntro =
+    typeof window !== "undefined" && window.localStorage.getItem("rhizoh_intro_seen_v1") === "1";
+  const diskMetaEarly = readClientContinuity().meta || {};
+  const rhizohProductSnap = loadRhizohProductSession(
+    diskMetaEarly && typeof diskMetaEarly === "object" ? diskMetaEarly : {}
+  );
+  const relPhase = cont.relationship && typeof cont.relationship === "object" ? cont.relationship : {};
+  const tuning = productDecisionOverlay?.phaseTuning && typeof productDecisionOverlay.phaseTuning === "object"
+    ? productDecisionOverlay.phaseTuning
+    : {};
+  const rhizohPhaseForTurn = advanceRhizohConversationPhase(
+    rhizohProductSnap.conversationPhase,
+    {
+      trust: Number(relPhase.trust || 0),
+      familiarity: Number(relPhase.familiarity || 0),
+      userTurnCount: rhizohProductSnap.userTurnCount + 1,
+      introSeen: diskIntro,
+      explicitPowerUnlock: readRhizohExplicitPowerUnlock()
+    },
+    tuning
+  );
+  const bondGovernance01 =
+    (Math.max(0, Math.min(1, Number(relPhase.trust) || 0)) +
+      Math.max(0, Math.min(1, Number(relPhase.familiarity) || 0))) /
+    2;
+  const rhizohCapabilityEnvelope = buildRhizohProductCapabilityEnvelope(rhizohPhaseForTurn, {
+    governanceBond01: bondGovernance01,
+    suppressGovernanceOpsBadgeUnlessBond01:
+      productDecisionOverlay?.capabilityGates?.suppressGovernanceOpsBadgeUnlessBond01 ?? null
+  });
+  const rhizohLlmDirective = buildRhizohConversationLlmDirective(rhizohPhaseForTurn);
+  const bumpRhizohProductSessionAfterReply = () => {
+    const gh = inferRhizohUserGoalHint(trimmed);
+    saveRhizohProductSession({
+      ...rhizohProductSnap,
+      conversationPhase: rhizohPhaseForTurn,
+      userTurnCount: rhizohProductSnap.userTurnCount + 1,
+      userGoalHintBucket: gh.bucket,
+      userGoalHintLabel: gh.label
+    });
+  };
+
   let runtimeHints = runtime && typeof runtime === "object" && !Array.isArray(runtime) ? { ...runtime } : {};
   if (Object.keys(runtimeHints).length === 0) {
     try {
@@ -1558,7 +1703,15 @@ async function queryRhizohLLM({
       gatewayPhase: runtimeHints.gatewayPhase,
       rhizohGatewayPhase: runtimeHints.rhizohGatewayPhase,
       healthState,
-      rhizohPolicy
+      rhizohPolicy,
+      rhizohProductOrchestration: {
+        schemaVersion: "1.0.0",
+        orchestratorVersion: RHIZOH_CONVERSATION_ORCHESTRATOR_VERSION,
+        sessionId: rhizohProductSnap.sessionId,
+        conversationPhase: rhizohPhaseForTurn,
+        userTurnIndex: rhizohProductSnap.userTurnCount + 1,
+        capabilityEnvelope: rhizohCapabilityEnvelope
+      }
     },
     relationship: {
       ...relForLlm,
@@ -1592,6 +1745,8 @@ async function queryRhizohLLM({
 
   const cfg = getCastleFlightConfig();
   const endpoint = cfg.rhizohLlmHttp;
+  const modeKey = normalizeRhizohGenerationModeId(generationMode);
+  const maxTok = RHIZOH_GENERATION_MODE_MAX[modeKey] ?? 320;
   if (!endpoint) {
     const replyStub = `Rhizoh: ${layerProfile.mission}. Talep alındı -> ${message}. LLM için ağ geçidi (VITE_GATEWAY_HTTP veya VITE_RHIZOH_LLM_HTTP) tanımlayın; anahtar sunucuda OPENAI_API_KEY.`;
     const post = finalizeRhizohAfterLlm(rhizohEmotions, {
@@ -1604,10 +1759,14 @@ async function queryRhizohLLM({
       outcomeSession: outcomeSessionMirror,
       priorAssistantReplies
     });
+    bumpRhizohProductSessionAfterReply();
     return {
       reply: replyStub,
       directive: "FOCUS_RHIZOH",
       source: "local-stub",
+      traceId: "",
+      llmProvider: null,
+      llmModel: null,
       rhizohRouter,
       rhizohEmotions: post.emotions,
       relationalTone: post.relationalTone,
@@ -1645,12 +1804,25 @@ async function queryRhizohLLM({
           simTime,
           continuity: contForLlm,
           rhizohRouter,
-          rhizohMemoryContract:
-            "continuity state is authoritative session memory (identity, castleState, ghostPet, recentReality, codex, relationship). Do not invent facts beyond it; answer in natural Turkish and reference it when relevant. When you should hold quiet companionship without spoken reply, output only the tag <SILENCE> (optional attributes: intensity=0..1 resonance=0..1 durationMs=milliseconds state=listening|present)."
+          rhizohProductOrchestration: {
+            schemaVersion: "1.0.0",
+            orchestratorVersion: RHIZOH_CONVERSATION_ORCHESTRATOR_VERSION,
+            sessionId: rhizohProductSnap.sessionId,
+            conversationPhase: rhizohPhaseForTurn,
+            userTurnIndex: rhizohProductSnap.userTurnCount + 1,
+            capabilityEnvelope: rhizohCapabilityEnvelope
+          },
+          rhizohConversationLlmDirective: rhizohLlmDirective,
+          rhizohMemoryContract: `${[
+            "continuity state is authoritative session memory (identity, castleState, ghostPet, recentReality, codex, relationship). Do not invent facts beyond it; answer in natural Turkish and reference it when relevant. When you should hold quiet companionship without spoken reply, output only the tag <SILENCE> (optional attributes: intensity=0..1 resonance=0..1 durationMs=milliseconds state=listening|present).",
+            "",
+            rhizohLlmDirective
+          ].join("\n")}`
         },
         options: {
-          maxTokens: 280,
-          language: "tr-TR"
+          maxTokens: maxTok,
+          language: "tr-TR",
+          generationMode: modeKey
         }
       }),
       headers: {
@@ -1659,12 +1831,54 @@ async function queryRhizohLLM({
         "X-Castle-Dev-Uid": getOrCreateCastleDevUid()
       }
     };
+    let timeoutCtrl = null;
+    let timeoutId = 0;
     if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
       fetchOpts.signal = AbortSignal.timeout(55_000);
+    } else if (typeof AbortController !== "undefined") {
+      timeoutCtrl = new AbortController();
+      timeoutId = window.setTimeout(() => {
+        try {
+          timeoutCtrl.abort(new Error("rhizoh_llm_timeout"));
+        } catch {
+          /* noop */
+        }
+      }, 55_000);
+      fetchOpts.signal = timeoutCtrl.signal;
     }
     const res = await fetch(endpoint, fetchOpts);
-    if (!res.ok) throw new Error(`rhizoh_llm_http_${res.status}`);
-    const json = await res.json();
+    logRhizohHealth("gateway_accept", { status: Number(res?.status || 0) });
+    if (timeoutId) window.clearTimeout(timeoutId);
+    if (!res.ok) {
+      let errBody = null;
+      try {
+        errBody = await res.json();
+      } catch {
+        /* noop */
+      }
+      const e = new Error(`rhizoh_llm_http_${res.status}`);
+      if (errBody && typeof errBody === "object") {
+        if (errBody.rhizohFailureKind) e.rhizohFailureKind = String(errBody.rhizohFailureKind);
+        if (errBody.providerHttpStatus != null) e.providerHttpStatus = Number(errBody.providerHttpStatus);
+      }
+      throw e;
+    }
+    let json;
+    try {
+      json = await res.json();
+    } catch {
+      const bad = new Error("rhizoh_llm_bad_json");
+      bad.rhizohFailureKind = "provider_error";
+      throw bad;
+    }
+    logRhizohHealth("llm_response", { traceId: String(json?.traceId || "") });
+    if (!rhizohCapabilityEnvelope.backendHints.attachFullRhizohProduction && json && typeof json === "object") {
+      try {
+        delete json.rhizohProduction;
+      } catch {
+        /* noop */
+      }
+    }
     const replyOk = String(json?.reply || json?.text || "Rhizoh yanıtı boş döndü.");
     const postOk = finalizeRhizohAfterLlm(rhizohEmotions, {
       rhizohRouter,
@@ -1676,13 +1890,23 @@ async function queryRhizohLLM({
       outcomeSession: outcomeSessionMirror,
       priorAssistantReplies
     });
+    bumpRhizohProductSessionAfterReply();
+    logRhizohHealth("continuity_saved", { phase: rhizohPhaseForTurn });
     return {
       reply: replyOk,
       directive: String(json?.directive || json?.action || ""),
       source: "remote-llm",
+      traceId: String(json?.traceId || ""),
+      llmProvider: json?.provider ?? provider ?? null,
+      llmModel: json?.model ?? null,
       llmKeyBillingOwner: json?.llmKeyBillingOwner,
       llmKeyOrigin: json?.llmKeyOrigin,
       llmKeySourceUsed: json?.llmKeySourceUsed,
+      rhizohDeliveryKind: json?.rhizohDeliveryKind ?? "ok",
+      rhizohCompressionLedger:
+        json?.rhizohCompressionLedger && typeof json.rhizohCompressionLedger === "object"
+          ? json.rhizohCompressionLedger
+          : null,
       rhizohRouter,
       rhizohEmotions: postOk.emotions,
       relationalTone: postOk.relationalTone,
@@ -1692,17 +1916,33 @@ async function queryRhizohLLM({
       rhizohRecallMerge
     };
   } catch (err) {
+    const fail = classifyRhizohLlmClientFailure(err, err?.providerHttpStatus);
     try {
       window.__CASTLE_RHIZOH_LLM_DIAG__ = {
         at: Date.now(),
         endpoint: String(endpoint).split(/[?#]/)[0],
-        message: String(err?.message || err || "fetch_failed")
+        message: String(err?.message || err || "fetch_failed"),
+        rhizohFailureKind: fail.kind,
+        httpStatus: fail.httpStatus
       };
       if (import.meta.env?.DEV) console.warn("[Rhizoh LLM]", endpoint, err);
     } catch {
       /* noop */
     }
-    const replyFb = `Rhizoh: Uzak LLM hattı yanıt vermedi. Yerel protokolle devam ediyorum -> ${message}`;
+    const httpBit = fail.httpStatus != null ? ` HTTP ${fail.httpStatus}` : "";
+    const replyByKind =
+      fail.kind === "timeout"
+        ? `Rhizoh: Uzak model zaman aşımı. Kısa bir mesajla tekrar deneyin.`
+        : fail.kind === "network_error"
+          ? `Rhizoh: Ağ hatası — bağlantıyı kontrol edin.`
+          : fail.kind === "rate_limit"
+            ? `Rhizoh: İstek sınırı aşıldı; bir süre sonra tekrar deneyin.`
+            : fail.kind === "client_config"
+              ? `Rhizoh: Sunucu veya API anahtarı yapılandırması eksik (client_config).`
+              : fail.kind === "provider_error"
+                ? `Rhizoh: Uzak model yanıt vermedi${httpBit}. Yerel protokolle devam ediyorum.`
+                : `Rhizoh: Uzak LLM hattı yanıt vermedi (${fail.kind}). Yerel protokolle devam ediyorum -> ${message}`;
+    const replyFb = replyByKind;
     const postFb = finalizeRhizohAfterLlm(rhizohEmotions, {
       rhizohRouter,
       reply: replyFb,
@@ -1713,10 +1953,17 @@ async function queryRhizohLLM({
       outcomeSession: outcomeSessionMirror,
       priorAssistantReplies
     });
+    bumpRhizohProductSessionAfterReply();
+    logRhizohHealth("continuity_saved", { phase: rhizohPhaseForTurn, fallback: true });
     return {
       reply: replyFb,
       directive: "FOCUS_RHIZOH",
       source: "fallback",
+      traceId: "",
+      llmProvider: null,
+      llmModel: null,
+      llmFailureKind: fail.kind,
+      llmFailureHttpStatus: fail.httpStatus,
       rhizohRouter,
       rhizohEmotions: postFb.emotions,
       relationalTone: postFb.relationalTone,
@@ -1728,17 +1975,82 @@ async function queryRhizohLLM({
   }
 }
 
-function rhizohPersistTraceFromOut(out) {
+async function rhizohPersistTraceFromOut(out, epistemicCtx) {
   if (!out?.rhizohRouter) return undefined;
+  const turnId =
+    (epistemicCtx && typeof epistemicCtx === "object" && epistemicCtx.turnId) ||
+    `turn_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   const trace = {
+    turnId: String(turnId),
+    traceId:
+      epistemicCtx && typeof epistemicCtx === "object" && epistemicCtx.traceId
+        ? String(epistemicCtx.traceId)
+        : "",
     router: out.rhizohRouter,
     source: out.source,
     outcomeResonance: out.outcomeResonance,
     emotionsAfter: out.rhizohEmotions,
     emotionsBefore: out.emotionsPreOutcome
   };
+  if (out.llmProvider != null || out.llmModel != null) {
+    trace.modelRoute = { provider: out.llmProvider ?? null, model: out.llmModel ?? null };
+  }
   if (out.rhizohRecallMerge && typeof out.rhizohRecallMerge === "object") {
     trace.rhizohRecallMerge = out.rhizohRecallMerge;
+  }
+  if (out.rhizohCompressionLedger && typeof out.rhizohCompressionLedger === "object") {
+    trace.rhizohCompressionLedger = out.rhizohCompressionLedger;
+  }
+  if (out.rhizohDeliveryKind) trace.rhizohDeliveryKind = out.rhizohDeliveryKind;
+  if (out.llmFailureKind) trace.llmFailureKind = out.llmFailureKind;
+  if (epistemicCtx && typeof epistemicCtx === "object") {
+    try {
+      trace.epistemic = buildEpistemicTruthContract({
+        source: out.source,
+        gatewayPhase: epistemicCtx.gatewayPhase,
+        mapSurfaceActive: epistemicCtx.mapSurfaceActive,
+        router: out.rhizohRouter
+      });
+      if (epistemicCtx.seal !== false && trace.epistemic) {
+        const diskForSeal = readClientContinuity();
+        const diskMetaSeal =
+          diskForSeal.meta && typeof diskForSeal.meta === "object" ? diskForSeal.meta : {};
+        const memoryDigest = await sha256HexUtf8(JSON.stringify(diskMetaSeal));
+        const worldSnap = JSON.stringify({
+          layerFocus: epistemicCtx.layerFocus ?? null,
+          simTime: epistemicCtx.simTime ?? null,
+          realityMode: epistemicCtx.realityMode ?? null,
+          governanceState: epistemicCtx.governanceState ?? null
+        });
+        const worldSnapshotHash = await sha256HexUtf8(worldSnap);
+        const runtimeHash = await sha256HexUtf8(
+          JSON.stringify({
+            gatewayPhase: epistemicCtx.gatewayPhase ?? null,
+            mapSurfaceActive: epistemicCtx.mapSurfaceActive ?? null,
+            source: out.source
+          })
+        );
+        trace.epistemic.clientBindings = {
+          worldSnapshotHash,
+          memoryDigest,
+          runtimeHash
+        };
+        await sealRhizohEpistemicTrace(trace, {
+          runtimeHash,
+          modelRoute: {
+            provider: out.llmProvider ?? null,
+            model: out.llmModel ?? null
+          },
+          memoryDigest,
+          worldSnapshotHash,
+          realityMode: epistemicCtx.realityMode ?? null,
+          governanceState: epistemicCtx.governanceState ?? null,
+          idToken: epistemicCtx.idToken ? String(epistemicCtx.idToken).trim() : ""
+        });
+      }
+    } catch {
+      /* noop */
+    }
   }
   return trace;
 }
@@ -6039,15 +6351,6 @@ const SovereignCastleCommandPanel = memo(
                 </button>
                 <button
                   type="button"
-                  onClick={() => navigate("/spiral")}
-                  className="p-3 rounded border border-emerald-400/30 bg-emerald-500/10 text-left hover:bg-emerald-500/20 transition-all group"
-                >
-                  <MapPin size={14} className="text-emerald-300 mb-1 group-hover:scale-110 transition-transform" aria-hidden />
-                  <div className="text-[9px] text-emerald-100 font-bold uppercase tracking-wide">Spiral MMO</div>
-                  <div className="text-[7px] text-emerald-200/50 mt-1">Academics &amp; spatial görevler</div>
-                </button>
-                <button
-                  type="button"
                   onClick={() => {
                     uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 13 });
                     uiStore.dispatch({
@@ -6476,7 +6779,9 @@ const RhizohCommsPanel = memo(
     onPersistRhizohTurn = null,
     socialRegistryPreview = null,
     browserPresenceRef = null,
-    remoteAgentActivity = null
+    remoteAgentActivity = null,
+    productDecisionOverlayRef = null,
+    rhizohGenerationMode = "STANDARD"
   }) => {
   const focus = useUISelector((s) => s.layerFocus);
   const mapSurfaceActive = useUISelector((s) => s.mapSurfaceActive);
@@ -6488,6 +6793,7 @@ const RhizohCommsPanel = memo(
   const [input, setInput] = useState("");
   const [lastReply, setLastReply] = useState("Henüz yanıt yok — ilk komutunuzu gönderin.");
   const [isThinking, setIsThinking] = useState(false);
+  const thinkWatchdogRef = useRef(0);
   const [source, setSource] = useState("local");
   const [provider, setProvider] = useState("openai");
   /** Gateway: env = sunucu OPENAI_* , user_connection = kayıtlı bağlantı (giriş + connectionId), auto = önce sunucu anahtarı */
@@ -6656,14 +6962,30 @@ const RhizohCommsPanel = memo(
             simTime: coreWorld.simTime,
             idToken,
             llmKeySource: it.llmKeySource || "auto",
+            generationMode: rhizohGenerationMode,
             gatewayUx: gatewayModelRef.current,
-            continuity: cont
+            continuity: cont,
+            productDecisionOverlay: productDecisionOverlayRef?.current ?? null
           });
           const norm = buildRhizohNormalizedLlmOutput(out, gatewayModelRef.current, mapSurfaceActive);
           const procQ = materializeCommsFromNormalized(norm, out.reply);
           if (typeof onPersistRhizohTurn === "function") {
             try {
-              onPersistRhizohTurn(String(it.message || ""), out.reply, rhizohPersistTraceFromOut(out));
+              onPersistRhizohTurn(
+                String(it.message || ""),
+                out.reply,
+                await rhizohPersistTraceFromOut(out, {
+                  traceId: out.traceId || "",
+                  gatewayPhase: gatewayModelRef.current?.phase,
+                  mapSurfaceActive,
+                  layerFocus: f,
+                  simTime: coreWorld.simTime,
+                  realityMode: st.realityMode,
+                  governanceState: st.governanceState,
+                  idToken
+                })
+              );
+              logRhizohHealth("telemetry_emitted", { traceId: String(out?.traceId || "") });
             } catch {
               /* noop */
             }
@@ -6805,6 +7127,12 @@ const RhizohCommsPanel = memo(
       }
     });
     setIsThinking(true);
+    if (thinkWatchdogRef.current) window.clearTimeout(thinkWatchdogRef.current);
+    thinkWatchdogRef.current = window.setTimeout(() => {
+      setIsThinking(false);
+      setCommsError((prev) => prev || "Rhizoh yanıtı zaman aşımına uğradı. Lütfen tekrar deneyin.");
+      dispatchPresence({ type: QPP_EVENT.THINKING_END });
+    }, 65_000);
     ensureRhizoh();
     let idToken = "";
     try {
@@ -6838,14 +7166,29 @@ const RhizohCommsPanel = memo(
         simTime: coreWorld.simTime,
         idToken,
         llmKeySource,
+        generationMode: rhizohGenerationMode,
         gatewayUx: gatewayModel,
-        continuity: cont
+        continuity: cont,
+        productDecisionOverlay: productDecisionOverlayRef?.current ?? null
       });
       const norm = buildRhizohNormalizedLlmOutput(out, gatewayModel, mapSurfaceActive);
       const procQ = materializeCommsFromNormalized(norm, out.reply);
       if (typeof onPersistRhizohTurn === "function") {
         try {
-          onPersistRhizohTurn(q, out.reply, rhizohPersistTraceFromOut(out));
+          onPersistRhizohTurn(
+            q,
+            out.reply,
+            await rhizohPersistTraceFromOut(out, {
+              traceId: out.traceId || "",
+              gatewayPhase: gatewayModel?.phase,
+              mapSurfaceActive,
+              layerFocus: focus,
+              simTime: coreWorld.simTime,
+              realityMode: st.realityMode,
+              governanceState: st.governanceState,
+              idToken
+            })
+          );
         } catch {
           /* noop */
         }
@@ -6889,6 +7232,10 @@ const RhizohCommsPanel = memo(
       setCommsError(msg.length > 160 ? `${msg.slice(0, 160)}…` : msg);
       setLastReply("Bu komut gönderilemedi. Bağlantınızı kontrol edip yeniden deneyin.");
     } finally {
+      if (thinkWatchdogRef.current) {
+        window.clearTimeout(thinkWatchdogRef.current);
+        thinkWatchdogRef.current = 0;
+      }
       setIsThinking(false);
     }
   };
@@ -7224,9 +7571,15 @@ export default function AppRhizoh528() {
   const [showClosureMoment, setShowClosureMoment] = useState(false);
   const [replayMoments, setReplayMoments] = useState([]);
   const [onboardingDone, setOnboardingDone] = useState(false);
+  /** Sealed Attested Boot Observation Artifact; null if returning user or pending async seal. */
+  const [firstBootObservationArtifact, setFirstBootObservationArtifact] = useState(null);
   const [substrateSnapshot, setSubstrateSnapshot] = useState(null);
   const [substrateEvents, setSubstrateEvents] = useState([]);
   const [voiceReady, setVoiceReady] = useState(false);
+  const [voiceNetworkBlocked, setVoiceNetworkBlocked] = useState(false);
+  const [voiceLoopEnabled, setVoiceLoopEnabled] = useState(false);
+  /** Uzak LLM üretim rejimi — yazı ve ses aynı modu kullanır (uzun sohbet için NARRATIVE / REFLECTIVE). */
+  const [rhizohGenerationMode, setRhizohGenerationMode] = useState("NARRATIVE");
   const [micListening, setMicListening] = useState(false);
   const gatewayUx = useRhizohGatewayMonitor();
   const gatewaySnapshotRef = useRef({ phase: "initializing" });
@@ -7238,19 +7591,116 @@ export default function AppRhizoh528() {
   const [showTrustBlurb, setShowTrustBlurb] = useState(true);
   const [commandLog, setCommandLog] = useState([]);
   const [showCommandLog, setShowCommandLog] = useState(false);
+  /** Ana komut / ses hattı: LLM yanıtı yazılı (TTS kapalı olsa da görünsün). */
+  const [rhizohMainHudReply, setRhizohMainHudReply] = useState(null);
   const [cinematicElapsedMs, setCinematicElapsedMs] = useState(0);
   const [returningUser, setReturningUser] = useState(false);
   const [showReplayGhostTrails, setShowReplayGhostTrails] = useState(false);
-  const [ambientReady, setAmbientReady] = useState(false);
-  const [showHud, setShowHud] = useState(false);
   const [showDetailDrawer, setShowDetailDrawer] = useState(false);
   /** Drawer studio: WORLD (map) · LIVE (director) · KERNEL (console). */
-  const [drawerStudioTab, setDrawerStudioTab] = useState("world");
+  const [drawerStudioTab, setDrawerStudioTab] = useState("chat");
   const [liveAgents, setLiveAgents] = useState([]);
   const [greenRoomLive, setGreenRoomLive] = useState(null);
   const [greenRoomLiveTick, setGreenRoomLiveTick] = useState(0);
   const [sparklineVersion, setSparklineVersion] = useState(0);
   const [continuitySocialTick, setContinuitySocialTick] = useState(0);
+  const [rhizohClosureBanner, setRhizohClosureBanner] = useState(null);
+  const prevRhizohProductPhaseRef = useRef(null);
+  const rhizohProductDecisionOverlayRef = useRef(null);
+  const rhizohPhaseEnteredAtMsRef = useRef(Date.now());
+  const rhizohTrustSignalPrevRef = useRef(null);
+  const rhizohPhaseHydratedRef = useRef(false);
+  const rhizohConversationUx = useMemo(() => {
+    try {
+      const disk = readClientContinuity();
+      const meta = disk.meta && typeof disk.meta === "object" ? disk.meta : {};
+      const s = loadRhizohProductSession(meta);
+      const metricsSnapshot = getRhizohBehaviorMetricsSnapshot();
+      const decisionOverlay = finalizeRhizohProductOverlay(metricsSnapshot, meta);
+      const introSeen =
+        typeof window !== "undefined" && window.localStorage.getItem("rhizoh_intro_seen_v1") === "1";
+      const ig = readIdentityGraph();
+      const rr = ig.rhizoh && typeof ig.rhizoh === "object" ? ig.rhizoh : {};
+      const bondUi =
+        (Math.max(0, Math.min(1, Number(rr.trust) || 0)) +
+          Math.max(0, Math.min(1, Number(rr.familiarity) || 0))) /
+        2;
+      const envelope = buildRhizohProductCapabilityEnvelope(s.conversationPhase, {
+        governanceBond01: bondUi,
+        suppressGovernanceOpsBadgeUnlessBond01:
+          decisionOverlay.capabilityGates?.suppressGovernanceOpsBadgeUnlessBond01 ?? null
+      });
+      const story = buildRhizohPhaseStory(s.conversationPhase);
+      const goals = buildRhizohConversationGoals(s.conversationPhase, {
+        trust: Number(rr.trust || 0),
+        familiarity: Number(rr.familiarity || 0),
+        userTurnCount: s.userTurnCount,
+        introSeen
+      });
+      const capabilityRows = buildRhizohCapabilitySurfaceRows(envelope.surfaces);
+      const milestonesRaw = Array.isArray(s.closureMilestones) ? s.closureMilestones : [];
+      const closureMilestonesPreview = milestonesRaw
+        .slice(-3)
+        .reverse()
+        .map((m) =>
+          m && typeof m === "object"
+            ? {
+                atMs: m.atMs,
+                headline: m.headline,
+                toPhase: m.toPhase
+              }
+            : null
+        )
+        .filter(Boolean);
+      const insightsMilestones = milestonesRaw.slice(-16);
+      const insightsTurns = Array.isArray(disk.turns) ? disk.turns.slice(-24) : [];
+      return {
+        label: rhizohConversationPhaseShortLabelTr(s.conversationPhase),
+        surfaces: envelope.surfaces,
+        story,
+        goals,
+        capabilityRows,
+        closureMilestonesPreview,
+        insightsMilestones,
+        insightsTurns,
+        metricsSnapshot,
+        decisionOverlay,
+        userGoalHint:
+          s.userGoalHintLabel != null
+            ? { bucket: s.userGoalHintBucket, label: String(s.userGoalHintLabel) }
+            : null
+      };
+    } catch {
+      const metricsSnapshot = getRhizohBehaviorMetricsSnapshot();
+      const decisionOverlay = finalizeRhizohProductOverlay(metricsSnapshot, undefined);
+      const env = buildRhizohProductCapabilityEnvelope("NEW_USER", {});
+      return {
+        label: "—",
+        surfaces: env.surfaces,
+        story: buildRhizohPhaseStory("NEW_USER"),
+        goals: buildRhizohConversationGoals("NEW_USER", {}),
+        capabilityRows: buildRhizohCapabilitySurfaceRows(env.surfaces),
+        closureMilestonesPreview: [],
+        insightsMilestones: [],
+        insightsTurns: [],
+        metricsSnapshot,
+        decisionOverlay,
+        userGoalHint: null
+      };
+    }
+  }, [continuitySocialTick]);
+  useLayoutEffect(() => {
+    rhizohProductDecisionOverlayRef.current = rhizohConversationUx.decisionOverlay;
+  }, [rhizohConversationUx.decisionOverlay]);
+  const rhizohPolicyLearningGuard = useMemo(() => {
+    try {
+      const disk = readClientContinuity();
+      const meta = disk.meta && typeof disk.meta === "object" ? disk.meta : {};
+      return getRhizohPolicyProductionInsight(meta);
+    } catch {
+      return getRhizohPolicyProductionInsight(undefined);
+    }
+  }, [continuitySocialTick]);
   const [liveReactionToast, setLiveReactionToast] = useState(null);
   const [immersiveLiveTrace, setImmersiveLiveTrace] = useState(null);
   const [replayTimelinePct, setReplayTimelinePct] = useState(0);
@@ -7266,6 +7716,10 @@ export default function AppRhizoh528() {
   const ambientCtxRef = useRef(null);
   const ambientNodesRef = useRef([]);
   const continuityRef = useRef(readClientContinuity());
+  const continuityTickGuardRef = useRef(0);
+  const bootLogRef = useRef(
+    typeof window !== "undefined" && window.__CASTLE_BOOT_LOG__ ? window.__CASTLE_BOOT_LOG__ : null
+  );
   const rhizohSocialPreReplyRef = useRef(null);
   const rhizohRegistryPreReplyRef = useRef(null);
   /** Last arbitration governor ring buffer (synced with continuity meta + optimistic turns). */
@@ -7273,6 +7727,49 @@ export default function AppRhizoh528() {
   /** Temporal intent drift biography (closure + arbitration texture over turns). */
   const temporalIntentDriftWorkingRef = useRef(null);
   const browserPresenceRef = useRef(createBrowserPresenceSignalRef());
+  /** Primitives only — object snapshots from useSyncExternalStore must be referentially stable when inputs unchanged. */
+  const epistemicOrbLayerFocus = useUISelector((s) => s.layerFocus);
+  const epistemicOrbRealityMode = useUISelector((s) => s.realityMode);
+  const epistemicOrbMapSurfaceActive = useUISelector((s) => s.mapSurfaceActive);
+  const epistemicOrbUiEnv = useMemo(
+    () => ({
+      layerFocus: epistemicOrbLayerFocus,
+      realityMode: epistemicOrbRealityMode,
+      mapSurfaceActive: epistemicOrbMapSurfaceActive,
+      governanceState
+    }),
+    [epistemicOrbLayerFocus, epistemicOrbRealityMode, epistemicOrbMapSurfaceActive, governanceState]
+  );
+  const epistemicGovStress = useMemo(() => {
+    const g = String(governanceState || "NORMAL").toUpperCase();
+    return g === "DEGRADED" || g === "FROZEN" || g === "CRITICAL";
+  }, [governanceState]);
+  const hydrateEpistemicOrbFromDisk = useCallback(() => {
+    try {
+      const disk = readClientContinuity();
+      const w = disk.meta?.rhizohWeightedTurns;
+      if (!Array.isArray(w) || !w.length) return null;
+      for (let i = w.length - 1; i >= 0; i--) {
+        const row = w[i];
+        if (row?.epistemic && typeof row.epistemic === "object") {
+          return {
+            epistemic: row.epistemic,
+            modelRoute: row.modelRoute && typeof row.modelRoute === "object" ? row.modelRoute : null,
+            source: row.source || null,
+            router: { intent: row.intent, subIntent: row.subIntent }
+          };
+        }
+      }
+    } catch {
+      /* noop */
+    }
+    return null;
+  }, []);
+
+  const safeBumpContinuitySocialTick = useCallback(() => {
+    continuityTickGuardRef.current = Date.now();
+    setContinuitySocialTick((t) => (t + 1) % 1_000_000);
+  }, []);
 
   useEffect(() => {
     return attachBrowserPresenceSensors(browserPresenceRef.current);
@@ -7295,6 +7792,23 @@ export default function AppRhizoh528() {
   }, [micListening]);
 
   useEffect(() => {
+    voiceLoopEnabledRef.current = voiceLoopEnabled;
+  }, [voiceLoopEnabled]);
+  useEffect(() => {
+    voiceNetworkBlockedRef.current = voiceNetworkBlocked;
+  }, [voiceNetworkBlocked]);
+
+  useEffect(() => startRhizohBehaviorMetricsAggregation(), []);
+
+  useEffect(() => {
+    try {
+      recordRhizohVisitAndEmitReturnSignals();
+    } catch {
+      /* noop */
+    }
+  }, []);
+
+  useEffect(() => {
     registerClientContinuitySync((next) => {
       continuityRef.current = next;
       const g = next.meta?.rhizohArbitrationGovernorV1;
@@ -7305,10 +7819,10 @@ export default function AppRhizoh528() {
       if (td && typeof td === "object") {
         temporalIntentDriftWorkingRef.current = normalizeTemporalIntentDriftMemory(td);
       }
-      setContinuitySocialTick((t) => t + 1);
+      safeBumpContinuitySocialTick();
     });
     return () => registerClientContinuitySync(null);
-  }, []);
+  }, [safeBumpContinuitySocialTick]);
 
   useEffect(() => {
     const disk = readClientContinuity();
@@ -7322,12 +7836,141 @@ export default function AppRhizoh528() {
       persona: disk.persona && typeof disk.persona === "object" ? disk.persona : {},
       meta: { ...(continuityRef.current.meta || {}), ...seeded }
     };
-    setContinuitySocialTick((t) => t + 1);
+    // Stabilization: seed write zaten continuity sync callback'ini tetikler; burada ek tick atmayalım.
   }, []);
+
+  useEffect(() => {
+    try {
+      const disk = readClientContinuity();
+      const meta = disk.meta && typeof disk.meta === "object" ? disk.meta : {};
+      const s = loadRhizohProductSession(meta);
+      const phase = s.conversationPhase;
+      const prev = prevRhizohProductPhaseRef.current;
+      const igTrust = Number(readIdentityGraph().rhizoh?.trust || 0);
+      if (!rhizohPhaseHydratedRef.current) {
+        rhizohPhaseHydratedRef.current = true;
+        rhizohPhaseEnteredAtMsRef.current = Date.now();
+        rhizohTrustSignalPrevRef.current = Number.isFinite(igTrust) ? igTrust : 0;
+        emitRhizohBehaviorSignal("rhizoh.phase.enter", { phase, origin: "hydrate" });
+      }
+      if (prev && prev !== phase) {
+        const dur = Math.max(0, Date.now() - rhizohPhaseEnteredAtMsRef.current);
+        emitRhizohBehaviorSignal("rhizoh.phase.exit", { phase: prev, durationMs: dur });
+        emitRhizohBehaviorSignal("rhizoh.phase.enter", { phase, origin: "transition", fromPhase: prev });
+        rhizohPhaseEnteredAtMsRef.current = Date.now();
+
+        const tPrev =
+          rhizohTrustSignalPrevRef.current != null && Number.isFinite(rhizohTrustSignalPrevRef.current)
+            ? rhizohTrustSignalPrevRef.current
+            : igTrust;
+        emitRhizohBehaviorSignal("rhizoh.trust.phase_delta", {
+          fromPhase: prev,
+          toPhase: phase,
+          trustBefore: tPrev,
+          trustAfter: igTrust,
+          delta: igTrust - tPrev
+        });
+        rhizohTrustSignalPrevRef.current = igTrust;
+
+        const closure = buildRhizohPhaseClosure(prev, phase);
+        emitRhizohBehaviorSignal("rhizoh.closure.view", {
+          fromPhase: prev,
+          toPhase: phase,
+          unlockCount: closure.unlockedSurfaceKeys.length,
+          rewardHeadline: closure.rewardHeadline
+        });
+        if (closure.unlockedSurfaceKeys.length > 0) {
+          emitRhizohBehaviorSignal("rhizoh.capability.unlock_seen", {
+            keys: closure.unlockedSurfaceKeys.slice(0, 24)
+          });
+        }
+        setRhizohClosureBanner({
+          rewardHeadline: closure.rewardHeadline,
+          achievementLine: closure.achievementLine,
+          whatChangedForYou: closure.whatChangedForYou,
+          unlockedLabelsTr: closure.unlockedLabelsTr
+        });
+        appendRhizohClosureMilestone(s, {
+          fromPhase: prev,
+          toPhase: phase,
+          headline: closure.achievementLine,
+          unlockedKeys: closure.unlockedSurfaceKeys
+        });
+        // Stabilization: closure milestone write continuity sync üzerinden zaten UI güncelliyor.
+      }
+      prevRhizohProductPhaseRef.current = phase;
+    } catch {
+      /* noop */
+    }
+  }, [continuitySocialTick, safeBumpContinuitySocialTick]);
+
+  useEffect(() => {
+    const fp = computeRhizohDecisionOverlayFingerprint(rhizohConversationUx.decisionOverlay);
+    if (!fp) return;
+    const manualTickEnabled =
+      typeof window !== "undefined" && window.localStorage.getItem("rhizoh.feedback.tick.manual.v1") === "1";
+    if (!manualTickEnabled) {
+      return;
+    }
+    if (!window.__RHIZOH_LAST_DECISION_FEEDBACK_FP__) window.__RHIZOH_LAST_DECISION_FEEDBACK_FP__ = "";
+    if (window.__RHIZOH_LAST_DECISION_FEEDBACK_FP__ === fp) return;
+    window.__RHIZOH_LAST_DECISION_FEEDBACK_FP__ = fp;
+    const o = rhizohConversationUx.decisionOverlay;
+    emitRhizohProductDecisionSignal(o);
+    void runRhizohDecisionFeedbackTick(o).catch(() => {
+      window.__RHIZOH_LAST_DECISION_FEEDBACK_FP__ = "";
+    });
+  }, [rhizohConversationUx.decisionOverlay]);
+
+  useEffect(() => {
+    if (!rhizohClosureBanner) return;
+    const closureMs = Math.max(
+      4000,
+      Math.min(60000, Number(rhizohConversationUx.decisionOverlay?.ux?.closureBannerMs) || 12000)
+    );
+    const shownAt = Date.now();
+    const guard = { dismissed: false };
+    const id = window.setTimeout(() => {
+      guard.dismissed = true;
+      emitRhizohBehaviorSignal("rhizoh.closure.dismiss", {
+        reason: "timeout",
+        visibleMs: Date.now() - shownAt
+      });
+      setRhizohClosureBanner(null);
+    }, closureMs);
+    return () => {
+      window.clearTimeout(id);
+      if (!guard.dismissed) {
+        guard.dismissed = true;
+        emitRhizohBehaviorSignal("rhizoh.closure.dismiss", {
+          reason: "replaced_or_unmount",
+          visibleMs: Date.now() - shownAt
+        });
+      }
+    };
+  }, [rhizohClosureBanner, rhizohConversationUx.decisionOverlay?.ux?.closureBannerMs]);
+
+  useEffect(() => {
+    if (!rhizohConversationUx.surfaces.kernelHeavyPanels && drawerStudioTab === "analyze") {
+      setDrawerStudioTab("chat");
+    }
+  }, [rhizohConversationUx.surfaces.kernelHeavyPanels, drawerStudioTab]);
 
   const containerRef = useRef(null);
   const engineRef = useRef(null);
   const recognitionRef = useRef(null);
+  /** Sürekli dinleme: LLM/TTS sırasında rec.onend ile erken mic açılmasını erteler. */
+  const voiceTurnBusyRef = useRef(false);
+  const voiceTtsSessionIdRef = useRef(0);
+  const bargeInRecognitionRef = useRef(null);
+  const startVoiceToRhizohRef = useRef(() => {});
+  const voiceLoopEnabledRef = useRef(false);
+  const voiceNetworkBlockedRef = useRef(false);
+  const voiceBargeInEnabledRef = useRef(true);
+  const handleVoiceTranscriptRef = useRef(async () => {});
+  const startBargeInWhileRhizohSpeaksRef = useRef(() => {});
+  const lastVoiceNetworkWarnAtRef = useRef(0);
+  const voiceNetworkRetryRef = useRef(0);
   const l9SpiralTickRef = useRef(0);
   const l9BackgroundTickRef = useRef(0);
   const l9PrevAgentRef = useRef({ state: new Map(), pet: new Map() });
@@ -7405,6 +8048,7 @@ export default function AppRhizoh528() {
     writeClientContinuity({ turns: mergedTurns, persona: mergedPersona, meta: nextMeta });
   }, [gatewayUx.phase, gatewayUx.healthPollSerial, gatewayUx.healthDeps, mapSurfaceActive]);
   const swarmActiveUi = useUISelector((s) => s.swarmActive);
+  const heatPeak = useUISelector((s) => s.heatPeak);
   const defaultIntents = [
     "yarin canli mac yayinla",
     "studio'da muzik performansi baslat",
@@ -7427,6 +8071,28 @@ export default function AppRhizoh528() {
     () => resolveRhizohFirstName(castleAuth.user, castleAuth.profile),
     [castleAuth.user, castleAuth.profile]
   );
+  const bootObservationProvenance = useMemo(
+    () =>
+      buildBootObservationProvenance({
+        realityState,
+        governanceState,
+        rhizohFieldState,
+        heatPeak,
+        activeEntityCount: entityCount,
+        swarmActive: swarmActiveUi,
+        mapSurfaceActive,
+        readoutDegraded: false
+      }),
+    [
+      realityState,
+      governanceState,
+      rhizohFieldState,
+      heatPeak,
+      entityCount,
+      swarmActiveUi,
+      mapSurfaceActive
+    ]
+  );
   const memoryLinks = Math.max(0, (substrateSnapshot?.eventCount ?? 0) * 3 + (substrateEvents?.length ?? 0));
   const unfinishedJourneys = substrateSnapshot?.approvalPending ?? 0;
   const dormantAgents = Math.max(0, 12 - (substrateSnapshot?.taskCounts?.running ?? 0));
@@ -7447,6 +8113,20 @@ export default function AppRhizoh528() {
     () => computeLaunchSceneDirectorOverlayV1(cinematicElapsedMs, cinematicRoute),
     [cinematicElapsedMs, cinematicRoute]
   );
+  useEffect(() => {
+    if (returningUser) {
+      setFirstBootObservationArtifact(null);
+      return;
+    }
+    let cancelled = false;
+    void buildRhizohFirstTouchEpistemicArtifact(rhizohFirstName, bootObservationProvenance).then((sealed) => {
+      if (!cancelled) setFirstBootObservationArtifact(sealed);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [returningUser, rhizohFirstName, bootObservationProvenance]);
+
   const welcomeCard = useMemo(() => {
     if (returningUser) {
       return buildRhizohWelcomeNarrativeTr(rhizohFirstName, readIdentityGraph(), {
@@ -7454,14 +8134,80 @@ export default function AppRhizoh528() {
         memoryLinks
       });
     }
+    const body = buildRhizohFirstTouchEpistemicBody(rhizohFirstName, bootObservationProvenance);
     return {
-      primary: buildRhizohExploreGreeting(rhizohFirstName),
-      secondary: `${memoryNarrative} · ${entityCount} pulses in the field.`
+      primary: body.primary,
+      secondary: `${memoryNarrative} · ${entityCount} pulses in the field.`,
+      bootObservationArtifact: firstBootObservationArtifact
     };
-  }, [returningUser, rhizohFirstName, unfinishedJourneys, memoryLinks, memoryNarrative, entityCount]);
+  }, [
+    returningUser,
+    rhizohFirstName,
+    bootObservationProvenance,
+    unfinishedJourneys,
+    memoryLinks,
+    memoryNarrative,
+    entityCount,
+    firstBootObservationArtifact
+  ]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.__rhizoh = {
+      debug: () => ({
+        field: rhizohFieldState,
+        reality: realityState,
+        governance: governanceState,
+        gateway: gatewayUx.phase,
+        layerFocus: epistemicOrbLayerFocus,
+        bootObservationArtifact: welcomeCard.bootObservationArtifact ?? null,
+        welcomeArtifact: welcomeCard.bootObservationArtifact ?? null
+      }),
+      metrics: () => {
+        const rows = [
+          { key: "memoryLinks", value: memoryLinks },
+          { key: "activeEntities", value: entityCount },
+          { key: "liveAgents", value: liveAgents.length },
+          { key: "phase", value: rhizohConversationUx.label }
+        ];
+        console.table(rows);
+        return rows;
+      },
+      policy: () => rhizohConversationUx.decisionOverlay,
+      truth: () => rhizohPolicyLearningGuard
+    };
+    return () => {
+      try {
+        delete window.__rhizoh;
+      } catch {
+        /* noop */
+      }
+    };
+  }, [
+    rhizohFieldState,
+    realityState,
+    governanceState,
+    gatewayUx.phase,
+    epistemicOrbLayerFocus,
+    memoryLinks,
+    entityCount,
+    liveAgents.length,
+    rhizohConversationUx.label,
+    rhizohConversationUx.decisionOverlay,
+    rhizohPolicyLearningGuard,
+    welcomeCard
+  ]);
   const rhizohCommandBusy = ["INTERPRETING", "GENERATING", "EXECUTING"].includes(rhizohFieldState);
   const gatewayLinkSettled =
     gatewayUx.phase !== "connecting" && gatewayUx.phase !== "reconnecting" && gatewayUx.phase !== "initializing";
+  const rhizohLlmHostLabel = useMemo(() => {
+    const u = String(getCastleFlightConfig().rhizohLlmHttp || "").trim();
+    if (!u) return "LLM uç tanımsız";
+    try {
+      return new URL(u).host;
+    } catch {
+      return u.slice(0, 44);
+    }
+  }, []);
   const runtimeHealth = useMemo(
     () => ({
       gatewayConnected: ["connected", "ready", "live"].includes(String(gatewayUx.phase || "").toLowerCase()),
@@ -7785,7 +8531,7 @@ export default function AppRhizoh528() {
     if (matchPath({ path: "/academy", end: true }, pathname)) {
       uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "profile" });
       setShowDetailDrawer(true);
-      setDrawerStudioTab("profile");
+      setDrawerStudioTab("chat");
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 11 });
       void setRealityMode("REAL_MAP", { source: "ROUTE_ACADEMY" });
       return;
@@ -7801,7 +8547,7 @@ export default function AppRhizoh528() {
     if (matchPath({ path: "/settings", end: true }, pathname)) {
       uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "profile" });
       setShowDetailDrawer(true);
-      setDrawerStudioTab("profile");
+      setDrawerStudioTab("chat");
       return;
     }
 
@@ -7825,7 +8571,7 @@ export default function AppRhizoh528() {
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
       uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
       setShowDetailDrawer(true);
-      setDrawerStudioTab("world");
+      setDrawerStudioTab("explore");
       return;
     }
     if (s === "greenroom") {
@@ -7834,7 +8580,7 @@ export default function AppRhizoh528() {
       uiStore.dispatch({ type: "SET_GREENROOM", payload: true });
       ensureGreenRoomMainHallBound();
       setShowDetailDrawer(true);
-      setDrawerStudioTab("live");
+      setDrawerStudioTab("build");
       return;
     }
     if (s === "broadcast") {
@@ -7842,7 +8588,7 @@ export default function AppRhizoh528() {
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 9 });
       uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
       setShowDetailDrawer(true);
-      setDrawerStudioTab("live");
+      setDrawerStudioTab("build");
       return;
     }
     if (s === "studio") {
@@ -7850,7 +8596,7 @@ export default function AppRhizoh528() {
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 12 });
       uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
       setShowDetailDrawer(true);
-      setDrawerStudioTab("kernel");
+      setDrawerStudioTab("analyze");
       return;
     }
     if (s === "profile") {
@@ -7858,7 +8604,7 @@ export default function AppRhizoh528() {
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 11 });
       uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
       setShowDetailDrawer(true);
-      setDrawerStudioTab("profile");
+      setDrawerStudioTab("sovereign");
     }
   }, [productSurface]);
 
@@ -8301,19 +9047,6 @@ export default function AppRhizoh528() {
     const m = { ...(disk.meta || {}), ...(ref.meta || {}) };
     return m.rhizohSocialRegistry && typeof m.rhizohSocialRegistry === "object" ? m.rhizohSocialRegistry : null;
   }, [continuitySocialTick]);
-  const l10HudPresence = useMemo(() => {
-    const tel = drawerSocialRegistry?.presenceTelemetry;
-    const phys = drawerSocialRegistry?.socialPhysics;
-    const ft = drawerSocialRegistry?.socialFieldTheory;
-    const inf = ft?.interference && typeof ft.interference === "object" ? ft.interference : null;
-    if (!tel || typeof tel !== "object") return null;
-    return {
-      label: String(tel.qppLabel || "present"),
-      mode: String(tel.qppMode || "idle"),
-      phase: String(phys?.phase || "stable"),
-      interference: inf ? String(inf.pattern || "mixed") : "—"
-    };
-  }, [drawerSocialRegistry]);
   const persistContinuityTurn = useCallback(
     (userText, assistantText, rhizohTrace) => {
       const ref = continuityRef.current || { turns: [], persona: {}, meta: {} };
@@ -8347,7 +9080,9 @@ export default function AppRhizoh528() {
           outcomeResonance: rhizohTrace.outcomeResonance,
           emotionsAfter: rhizohTrace.emotionsAfter,
           emotionsBefore: rhizohTrace.emotionsBefore || rhizohTrace.emotionsAfter,
-          relationship
+          relationship,
+          epistemic: rhizohTrace.epistemic,
+          modelRoute: rhizohTrace.modelRoute
         });
       }
       const narrativeThread = mergeRhizohNarrativeThread(prevMeta.rhizohNarrativeThread, {
@@ -8384,6 +9119,10 @@ export default function AppRhizoh528() {
           layerFocus: uiStore.getState().layerFocus
         }
       ].slice(-12);
+      emitRhizohBehaviorSignal(
+        "rhizoh.conversation.turn_depth",
+        buildRhizohTurnDepthSignal(userText, assistantText, rhizohTrace, turns.length)
+      );
       const operatorId = String(castleAuth.user?.uid || getOrCreateCastleDevUid() || "local-operator");
       const operatorLabel = String(
         castleAuth.profile?.displayName || castleAuth.user?.displayName || rhizohFirstName || "you"
@@ -8466,6 +9205,7 @@ export default function AppRhizoh528() {
           rhizohMemoryEpisodes: memoryEpisodes,
           rhizohSocialField,
           rhizohSocialRegistry: csilPost.registry,
+          rhizohProductSessionV1: loadRhizohProductSession(prevMeta),
           ...(recallPayload ? { rhizohLastRecallClosure: recallPayload } : {}),
           ...(govPersist && typeof govPersist === "object" && Array.isArray(govPersist.entries)
             ? { rhizohArbitrationGovernorV1: govPersist }
@@ -8510,6 +9250,22 @@ export default function AppRhizoh528() {
           assistantSnippet: assistantText
         });
       });
+      if (rhizohTrace?.epistemic && typeof rhizohTrace.epistemic === "object") {
+        try {
+          window.dispatchEvent(
+            new CustomEvent(CASTLE_RHIZOH_EPISTEMIC_SURFACE_EVENT, {
+              detail: {
+                epistemic: rhizohTrace.epistemic,
+                router: rhizohTrace.router,
+                source: rhizohTrace.source,
+                modelRoute: rhizohTrace.modelRoute || null
+              }
+            })
+          );
+        } catch {
+          /* noop */
+        }
+      }
     },
     [castleAuth.profile, castleAuth.user, rhizohFirstName, remoteCastles]
   );
@@ -8553,32 +9309,247 @@ export default function AppRhizoh528() {
     if (governanceState === "DEGRADED") return { tone: "from-amber-500/10 to-transparent", label: "Amber Flicker", orb: "tense" };
     return { tone: "from-emerald-500/8 to-transparent", label: "Balanced Pulse", orb: "breathing" };
   }, [governanceState]);
-  const layerComposition = useMemo(() => {
-    const swarm = coreWorld.swarmActive;
-    const memoryReady = memoryLinks > 0;
-    const agentsReady = liveAgents.length > 0;
-    const mapReady = mapSurfaceActive;
-    return {
-      mapReady,
-      swarm,
-      agentsReady,
-      memoryReady,
-      governance: governanceState,
-      score: [mapReady, swarm, agentsReady, memoryReady].filter(Boolean).length
-    };
-  }, [governanceState, liveAgents.length, memoryLinks, mapSurfaceActive]);
 
-  const speakRhizoh = useCallback((text) => {
-    if (!("speechSynthesis" in window) || !text) return;
-    const utterance = new SpeechSynthesisUtterance(String(text).slice(0, 1800));
-    utterance.lang = "tr-TR";
-    utterance.rate = 1;
-    utterance.pitch = 1.05;
-    utterance.volume = 0.92;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
-    setVoiceReady(true);
+  /** Sürekli dinleme açıksa TTS veya sessiz tur sonunda mikrofonu yeniden başlatır. */
+  const finishVoiceTurnIfNeeded = useCallback(() => {
+    voiceTurnBusyRef.current = false;
+    if (!voiceLoopEnabledRef.current || voiceNetworkBlockedRef.current) return;
+    window.setTimeout(() => {
+      if (!voiceLoopEnabledRef.current || voiceNetworkBlockedRef.current) return;
+      void startVoiceToRhizohRef.current(true);
+    }, 280);
   }, []);
+
+  const stopBargeInMic = useCallback(() => {
+    const r = bargeInRecognitionRef.current;
+    if (!r) return;
+    bargeInRecognitionRef.current = null;
+    try {
+      r.__castleStopRequested = true;
+      r.onresult = null;
+      r.onerror = null;
+      r.onend = null;
+      r.stop();
+    } catch {
+      /* noop */
+    }
+  }, []);
+
+  const speakRhizoh = useCallback(
+    (text, opts = {}) => {
+      const voiceTurn = opts?.voiceTurn === true;
+      if (!("speechSynthesis" in window)) {
+        if (voiceTurn) finishVoiceTurnIfNeeded();
+        return;
+      }
+      stopBargeInMic();
+      if (!text) {
+        if (voiceTurn) finishVoiceTurnIfNeeded();
+        return;
+      }
+      const sessionId = ++voiceTtsSessionIdRef.current;
+      const utterance = new SpeechSynthesisUtterance(String(text).slice(0, 1800));
+      utterance.lang = "tr-TR";
+      utterance.rate = 1;
+      utterance.pitch = 1.05;
+      utterance.volume = 0.92;
+      utterance.onstart = () => {
+        if (sessionId !== voiceTtsSessionIdRef.current) return;
+        if (voiceTurn) {
+          setRhizohFieldState("SPEAKING");
+          if (voiceBargeInEnabledRef.current) {
+            window.setTimeout(() => {
+              startBargeInWhileRhizohSpeaksRef.current(sessionId);
+            }, 320);
+          }
+        }
+      };
+      utterance.onend = () => {
+        stopBargeInMic();
+        if (sessionId !== voiceTtsSessionIdRef.current) return;
+        if (voiceTurn) {
+          setRhizohFieldState("IDLE");
+          finishVoiceTurnIfNeeded();
+        }
+      };
+      utterance.onerror = () => {
+        stopBargeInMic();
+        if (sessionId !== voiceTtsSessionIdRef.current) return;
+        if (voiceTurn) {
+          setRhizohFieldState("IDLE");
+          finishVoiceTurnIfNeeded();
+        }
+      };
+      try {
+        window.speechSynthesis.cancel();
+      } catch {
+        /* noop */
+      }
+      window.speechSynthesis.speak(utterance);
+      setVoiceReady(true);
+    },
+    [finishVoiceTurnIfNeeded, stopBargeInMic]
+  );
+
+  const handleVoiceTranscript = useCallback(
+    async (text, { manageVoiceTurn = false, source = "mic" } = {}) => {
+      const trimmed = String(text || "").trim();
+      if (!trimmed) {
+        if (manageVoiceTurn) finishVoiceTurnIfNeeded();
+        return;
+      }
+      const focusPre = uiStore.getState().layerFocus;
+      enqueueCastleRuntimeTransaction({
+        kind: "voice_event",
+        source: source === "barge_in" ? "speech_recognition_barge_in" : "speech_recognition_onresult",
+        payload: { textLen: trimmed.length, layerFocus: focusPre }
+      });
+      setCmd(trimmed);
+      setRhizohFieldState("INTERPRETING");
+      const focus = focusPre;
+      const profile = LAYER_UI_PROFILES[focus] || LAYER_UI_PROFILES[10];
+      const spec = LAYER_SPECS.find((layerRow) => layerRow.id === focus) || LAYER_SPECS[10];
+      let idToken = "";
+      try {
+        idToken = castleAuth.user ? await castleAuth.user.getIdToken() : "";
+      } catch {
+        /* noop */
+      }
+      const out = await queryRhizohLLM({
+        message: trimmed,
+        provider: "openai",
+        connectionId: "",
+        agentId: "",
+        layerProfile: profile,
+        layerSpec: spec,
+        simTime: coreWorld.simTime,
+        idToken,
+        gatewayUx,
+        continuity: buildContinuityPayload(trimmed),
+        generationMode: rhizohGenerationMode,
+        persistRhizohEmotions: persistRhizohEmotionSession,
+        productDecisionOverlay: rhizohProductDecisionOverlayRef.current
+      });
+      applyRhizohDirective(out.directive, engineRef);
+      const normV = buildRhizohNormalizedLlmOutput(out, gatewayUx, mapSurfaceActive);
+      const procV = materializeCommsFromNormalized(normV, out.reply);
+      setRhizohMainHudReply({
+        text: procV.uiReply,
+        source: String(out.source || "voice"),
+        at: Date.now()
+      });
+      if (!procV.skipSpeech) {
+        speakRhizoh(procV.uiReply, { voiceTurn: manageVoiceTurn });
+      } else {
+        setRhizohFieldState("IDLE");
+        if (manageVoiceTurn) finishVoiceTurnIfNeeded();
+      }
+      const stVoice = uiStore.getState();
+      persistContinuityTurn(
+        trimmed,
+        out.reply,
+        await rhizohPersistTraceFromOut(out, {
+          traceId: out.traceId || "",
+          gatewayPhase: gatewayUx?.phase,
+          mapSurfaceActive,
+          layerFocus: focusPre,
+          simTime: coreWorld.simTime,
+          realityMode: stVoice.realityMode,
+          governanceState: stVoice.governanceState,
+          idToken
+        })
+      );
+      uiStore.dispatch({
+        type: "ADD_LOG",
+        payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: `VOICE·RHIZOH · ${trimmed.slice(0, 120)}` }
+      });
+    },
+    [
+      castleAuth.user,
+      speakRhizoh,
+      finishVoiceTurnIfNeeded,
+      buildContinuityPayload,
+      persistContinuityTurn,
+      persistRhizohEmotionSession,
+      gatewayUx,
+      mapSurfaceActive,
+      rhizohGenerationMode
+    ]
+  );
+
+  const startBargeInWhileRhizohSpeaks = useCallback(
+    (ttsSessionId) => {
+      if (ttsSessionId !== voiceTtsSessionIdRef.current) return;
+      if (!voiceBargeInEnabledRef.current) return;
+      const Ctor = getSpeechRecognitionCtor();
+      if (!Ctor) return;
+      stopBargeInMic();
+      const rec = new Ctor();
+      rec.lang = String(navigator?.language || "tr-TR");
+      rec.interimResults = true;
+      rec.continuous = true;
+      rec.maxAlternatives = 1;
+      rec.__castleStopRequested = false;
+      bargeInRecognitionRef.current = rec;
+      const maybeInterrupt = (raw, isFinal) => {
+        const t = String(raw || "").trim();
+        if (t.length < 4) return;
+        if (!isFinal && t.length < 14) return;
+        if (ttsSessionId !== voiceTtsSessionIdRef.current) return;
+        voiceTtsSessionIdRef.current += 1;
+        try {
+          window.speechSynthesis.cancel();
+        } catch {
+          /* noop */
+        }
+        stopBargeInMic();
+        voiceTurnBusyRef.current = true;
+        void Promise.resolve(
+          handleVoiceTranscriptRef.current(t, {
+            manageVoiceTurn: voiceLoopEnabledRef.current,
+            source: "barge_in"
+          })
+        ).catch((err) => {
+          console.error("[VOICE_BARGE_FATAL]", err);
+          voiceTurnBusyRef.current = false;
+          setRhizohFieldState("IDLE");
+          setVoiceLoopEnabled(false);
+        });
+      };
+      rec.onresult = (ev) => {
+        let chunk = "";
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          chunk += ev.results[i][0].transcript;
+        }
+        const last = ev.results[ev.results.length - 1];
+        maybeInterrupt(chunk, !!last?.isFinal);
+      };
+      rec.onerror = (e) => {
+        const err = String(e?.error || "");
+        if (err !== "aborted" && err !== "no-speech") {
+          console.warn(`[VOICE_BARGE_IN_ERROR] code=${err || "unknown"}`);
+        }
+        stopBargeInMic();
+      };
+      rec.onend = () => {
+        if (bargeInRecognitionRef.current === rec) bargeInRecognitionRef.current = null;
+      };
+      try {
+        rec.start();
+      } catch {
+        stopBargeInMic();
+      }
+    },
+    [stopBargeInMic]
+  );
+
+  useEffect(() => {
+    handleVoiceTranscriptRef.current = handleVoiceTranscript;
+  }, [handleVoiceTranscript]);
+  useEffect(() => {
+    startBargeInWhileRhizohSpeaksRef.current = startBargeInWhileRhizohSpeaks;
+  }, [startBargeInWhileRhizohSpeaks]);
+
   const ensureAmbientSound = useCallback(() => {
     if (ambientCtxRef.current) return;
     const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
@@ -8606,123 +9577,183 @@ export default function AppRhizoh528() {
 
     ambientCtxRef.current = ctx;
     ambientNodesRef.current = [hum, whisper, humGain, whisperGain, master];
-    setAmbientReady(true);
   }, []);
 
-  const startVoiceToRhizoh = useCallback(async () => {
-    const Ctor = getSpeechRecognitionCtor();
-    if (!Ctor) {
-      speakRhizoh("Bu tarayıcıda ses tanıma yok. Aşağıya yazıp gönder.");
-      return;
+  const startVoiceToRhizoh = useCallback(
+    async (keepAlive = false) => {
+      const Ctor = getSpeechRecognitionCtor();
+      if (!Ctor) {
+        speakRhizoh("Bu tarayıcıda ses tanıma yok. Aşağıya yazıp gönder.");
+        return;
+      }
+      stopBargeInMic();
+      const prev = recognitionRef.current;
+      if (prev) {
+        try {
+          prev.onresult = null;
+          prev.onerror = null;
+          prev.onend = null;
+          prev.__castleStopRequested = true;
+          prev.stop();
+        } catch {
+          /* noop */
+        }
+      }
+      ensureAmbientSound();
+      try {
+        window.speechSynthesis?.cancel?.();
+      } catch {
+        /* noop */
+      }
+      setRhizohFieldState("LISTENING");
+      setMicListening(true);
+      const rec = new Ctor();
+      rec.lang = String(navigator?.language || "tr-TR");
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      rec.continuous = !!keepAlive;
+      rec.__castleStopRequested = false;
+      rec.onend = () => {
+        setMicListening(false);
+        if (rec.__castleStopRequested) return;
+        if (!keepAlive) return;
+        if (voiceNetworkBlockedRef.current) return;
+        if (voiceTurnBusyRef.current) {
+          return;
+        }
+        window.setTimeout(() => {
+          if (!voiceLoopEnabledRef.current) return;
+          void startVoiceToRhizohRef.current(true);
+        }, 220);
+      };
+      rec.onerror = (e) => {
+        setMicListening(false);
+        const err = String(e?.error || "");
+        const msg = typeof e?.message === "string" ? e.message : "";
+        const benign = err === "aborted" || err === "no-speech";
+        if (!benign) {
+          console.warn(`[VOICE_RECOGNITION_ERROR] code=${err || "unknown"}${msg ? ` message=${msg}` : ""}`);
+        }
+        if (err === "not-allowed" || err === "service-not-allowed") {
+          setVoiceLoopEnabled(false);
+          speakRhizoh("Mikrofon izni gerekli. Tarayıcı ayarlarından bu siteye izin ver.");
+        } else if (err === "audio-capture") {
+          setVoiceLoopEnabled(false);
+          speakRhizoh("Mikrofon bulunamadı ya da kullanılamıyor. Ses giriş cihazını kontrol et.");
+        } else if (err === "network") {
+          const retryCount = Number(voiceNetworkRetryRef.current || 0);
+          if (retryCount < 2) {
+            voiceNetworkRetryRef.current = retryCount + 1;
+            window.setTimeout(() => {
+              if (keepAlive && !voiceLoopEnabledRef.current) return;
+              void startVoiceToRhizohRef.current(keepAlive);
+            }, 420 + retryCount * 380);
+            return;
+          }
+          setVoiceNetworkBlocked(true);
+          setVoiceLoopEnabled(false);
+          voiceNetworkRetryRef.current = 0;
+          const now = Date.now();
+          if (now - Number(lastVoiceNetworkWarnAtRef.current || 0) > 15000) {
+            lastVoiceNetworkWarnAtRef.current = now;
+            speakRhizoh(
+              "Tarayıcı ses tanıma servisine şu an ulaşılamıyor. Bu Rhizoh bağlantı hatası değil; yazıp gönderebilirsin."
+            );
+          }
+        } else if (err === "language-not-supported") {
+          setVoiceLoopEnabled(false);
+          speakRhizoh("Seçili dilde ses tanıma desteklenmiyor. Tarayıcı dilini değiştirip tekrar dene.");
+        } else if (err && err !== "aborted" && err !== "no-speech") {
+          setVoiceLoopEnabled(false);
+          speakRhizoh("Ses tanıma başarısız. Yazarak göndermeyi dene.");
+        }
+      };
+      rec.onresult = async (ev) => {
+        try {
+          const text = String(ev?.results?.[0]?.[0]?.transcript || "").trim();
+          setMicListening(false);
+          setVoiceNetworkBlocked(false);
+          voiceNetworkRetryRef.current = 0;
+          if (!text) {
+            if (keepAlive && !voiceTurnBusyRef.current) {
+              window.setTimeout(() => {
+                if (!voiceLoopEnabledRef.current || voiceNetworkBlockedRef.current) return;
+                void startVoiceToRhizohRef.current(true);
+              }, 220);
+            }
+            return;
+          }
+          voiceTurnBusyRef.current = true;
+          await handleVoiceTranscript(text, { manageVoiceTurn: keepAlive, source: "mic" });
+        } catch (err) {
+          console.error("[VOICE_PIPE_FATAL]", err);
+          try {
+            window.__CASTLE_LAST_FATAL__ = {
+              kind: "voice_onresult",
+              err,
+              message: String(err?.message || err),
+              stack: String(err?.stack || ""),
+              at: Date.now()
+            };
+          } catch {
+            /* noop */
+          }
+          setMicListening(false);
+          setRhizohFieldState("IDLE");
+          voiceTurnBusyRef.current = false;
+          setVoiceLoopEnabled(false);
+          speakRhizoh("Ses ile Rhizoh hattında hata oluştu; yazarak göndermeyi dene.");
+        }
+      };
+      recognitionRef.current = rec;
+      try {
+        rec.start();
+      } catch {
+        setMicListening(false);
+        voiceNetworkRetryRef.current = 0;
+        speakRhizoh("Mikrofon başlatılamadı.");
+      }
+    },
+    [
+      speakRhizoh,
+      ensureAmbientSound,
+      handleVoiceTranscript,
+      stopBargeInMic
+    ]
+  );
+
+  useEffect(() => {
+    startVoiceToRhizohRef.current = startVoiceToRhizoh;
+  }, [startVoiceToRhizoh]);
+
+  const stopVoiceLoop = useCallback(() => {
+    setVoiceLoopEnabled(false);
+    voiceTurnBusyRef.current = false;
+    voiceTtsSessionIdRef.current += 1;
+    try {
+      window.speechSynthesis?.cancel?.();
+    } catch {
+      /* noop */
     }
+    stopBargeInMic();
     const prev = recognitionRef.current;
     if (prev) {
       try {
-        prev.onresult = null;
-        prev.onerror = null;
-        prev.onend = null;
+        prev.__castleStopRequested = true;
         prev.stop();
       } catch {
         /* noop */
       }
     }
-    ensureAmbientSound();
-    setRhizohFieldState("LISTENING");
-    setMicListening(true);
-    const rec = new Ctor();
-    rec.lang = "tr-TR";
-    rec.interimResults = false;
-    rec.maxAlternatives = 1;
-    rec.continuous = false;
-    rec.onend = () => {
-      setMicListening(false);
-    };
-    rec.onerror = (e) => {
-      setMicListening(false);
-      const err = String(e?.error || "");
-      if (err === "not-allowed" || err === "service-not-allowed") {
-        speakRhizoh("Mikrofon izni gerekli. Tarayıcı ayarlarından bu siteye izin ver.");
-      } else if (err && err !== "aborted" && err !== "no-speech") {
-        speakRhizoh("Ses tanıma başarısız. Yazarak göndermeyi dene.");
-      }
-    };
-    rec.onresult = async (ev) => {
-      try {
-        const text = String(ev?.results?.[0]?.[0]?.transcript || "").trim();
-        setMicListening(false);
-        if (!text) return;
-        const focusPre = uiStore.getState().layerFocus;
-        enqueueCastleRuntimeTransaction({
-          kind: "voice_event",
-          source: "speech_recognition_onresult",
-          payload: { textLen: text.length, layerFocus: focusPre }
-        });
-        setCmd(text);
-        setRhizohFieldState("INTERPRETING");
-        const focus = focusPre;
-        const profile = LAYER_UI_PROFILES[focus] || LAYER_UI_PROFILES[10];
-        const spec = LAYER_SPECS.find((layerRow) => layerRow.id === focus) || LAYER_SPECS[10];
-        let idToken = "";
-        try {
-          idToken = castleAuth.user ? await castleAuth.user.getIdToken() : "";
-        } catch {
-          /* noop */
-        }
-        const out = await queryRhizohLLM({
-          message: text,
-          provider: "openai",
-          connectionId: "",
-          agentId: "",
-          layerProfile: profile,
-          layerSpec: spec,
-          simTime: coreWorld.simTime,
-          idToken,
-          gatewayUx,
-          continuity: buildContinuityPayload(text),
-          persistRhizohEmotions: persistRhizohEmotionSession
-        });
-        applyRhizohDirective(out.directive, engineRef);
-        speakRhizoh(out.reply);
-        persistContinuityTurn(text, out.reply, rhizohPersistTraceFromOut(out));
-        setRhizohFieldState("IDLE");
-        uiStore.dispatch({
-          type: "ADD_LOG",
-          payload: { ts: new Date().toLocaleTimeString(), type: "SYS", data: `VOICE·RHIZOH · ${text.slice(0, 120)}` }
-        });
-      } catch (err) {
-        console.error("[VOICE_PIPE_FATAL]", err);
-        try {
-          window.__CASTLE_LAST_FATAL__ = {
-            kind: "voice_onresult",
-            err,
-            message: String(err?.message || err),
-            stack: String(err?.stack || ""),
-            at: Date.now()
-          };
-        } catch {
-          /* noop */
-        }
-        setMicListening(false);
-        setRhizohFieldState("IDLE");
-        speakRhizoh("Ses ile Rhizoh hattında hata oluştu; yazarak göndermeyi dene.");
-      }
-    };
-    recognitionRef.current = rec;
-    try {
-      rec.start();
-    } catch {
-      setMicListening(false);
-      speakRhizoh("Mikrofon başlatılamadı.");
-    }
-  }, [
-    castleAuth.user,
-    speakRhizoh,
-    ensureAmbientSound,
-    buildContinuityPayload,
-    persistContinuityTurn,
-    persistRhizohEmotionSession,
-    gatewayUx
-  ]);
+    setMicListening(false);
+    voiceNetworkRetryRef.current = 0;
+  }, [stopBargeInMic]);
+  const startVoiceLoop = useCallback(() => {
+    setVoiceNetworkBlocked(false);
+    voiceNetworkRetryRef.current = 0;
+    setVoiceLoopEnabled(true);
+    void startVoiceToRhizoh(true);
+  }, [startVoiceToRhizoh]);
 
   useEffect(() => {
     let isMounted = true;
@@ -8733,7 +9764,8 @@ export default function AppRhizoh528() {
     });
 
     const init = async () => {
-      for (let i = 0; i < 300; i++) coreWorld.allocate(`CITIZEN-${i}`, STATE.CITIZEN);
+      try {
+        for (let i = 0; i < 300; i++) coreWorld.allocate(`CITIZEN-${i}`, STATE.CITIZEN);
       if (coreWorld.rhizohIdx === -1) coreWorld.allocate("RHIZOH-PRIME", STATE.RHIZOH);
 
       if (containerRef.current && !engineRef.current) {
@@ -8757,8 +9789,6 @@ export default function AppRhizoh528() {
           engineRef.current = null;
         }
       }
-      if (isMounted) setBooted(true);
-
       let lastTime = performance.now();
       let accumulator = 0;
       const fixedStep = 1 / 60;
@@ -8796,7 +9826,23 @@ export default function AppRhizoh528() {
 
         simRaf = requestAnimationFrame(simLoop);
       };
-      simRaf = requestAnimationFrame(simLoop);
+        simRaf = requestAnimationFrame(simLoop);
+      } catch (err) {
+        console.error("[Castle] init failed", err);
+        try {
+          window.__CASTLE_LAST_FATAL__ = {
+            kind: "app_init",
+            err,
+            message: String(err?.message || err),
+            stack: String(err?.stack || ""),
+            at: Date.now()
+          };
+        } catch {
+          /* noop */
+        }
+      } finally {
+        if (isMounted) setBooted(true);
+      }
     };
 
     init();
@@ -9048,6 +10094,7 @@ export default function AppRhizoh528() {
     if (!raw) return;
     setHasSentRhizohCommand(true);
     setRhizohInlineError(null);
+    setRhizohMainHudReply(null);
     const intent = raw.toUpperCase();
     const isBroadcastIntent =
       /YAYIN|BROADCAST|GREENROOM|LIVE|STUDIO|CANLI/.test(intent) ||
@@ -9111,7 +10158,17 @@ export default function AppRhizoh528() {
         idToken,
         gatewayUx,
         continuity: buildContinuityPayload(raw),
-        persistRhizohEmotions: persistRhizohEmotionSession
+        generationMode: rhizohGenerationMode,
+        persistRhizohEmotions: persistRhizohEmotionSession,
+        productDecisionOverlay: rhizohProductDecisionOverlayRef.current
+      });
+
+      const normExec = buildRhizohNormalizedLlmOutput(out, gatewayUx, mapSurfaceActive);
+      const procExec = materializeCommsFromNormalized(normExec, out.reply);
+      setRhizohMainHudReply({
+        text: procExec.uiReply,
+        source: String(out.source || "unknown"),
+        at: Date.now()
       });
 
       setHasReceivedRhizohReply(true);
@@ -9120,8 +10177,28 @@ export default function AppRhizoh528() {
       setRhizohFieldState("EXECUTING");
       setRealityState(isBroadcastIntent ? "WORLD_BROADCASTING" : "WORLD_TRANSITION");
       applyRhizohDirective(out.directive, engineRef);
-      if (!isBroadcastIntent) speakRhizoh(out.reply);
-      persistContinuityTurn(raw, out.reply, rhizohPersistTraceFromOut(out));
+      if (!isBroadcastIntent && !procExec.skipSpeech) {
+        speakRhizoh(procExec.uiReply, { voiceTurn: voiceLoopEnabled });
+      }
+      const stExec = uiStore.getState();
+      try {
+        persistContinuityTurn(
+          raw,
+          out.reply,
+          await rhizohPersistTraceFromOut(out, {
+            traceId: traceId || out.traceId || "",
+            gatewayPhase: gatewayUx?.phase,
+            mapSurfaceActive,
+            layerFocus: focus,
+            simTime: coreWorld.simTime,
+            realityMode: stExec.realityMode,
+            governanceState: stExec.governanceState,
+            idToken
+          })
+        );
+      } catch (persistErr) {
+        console.warn("[RHIZOH_CONTINUITY_PERSIST_WARN]", String(persistErr?.message || persistErr || "persist_failed"));
+      }
       uiStore.dispatch({
         type: "ADD_LOG",
         payload: {
@@ -9283,6 +10360,19 @@ export default function AppRhizoh528() {
         title: "Rhizoh bu komutu işleyemedi",
         detail: `${clipped} Bağlantı veya oturum sorunu olabilir; birkaç saniye sonra tekrar deneyin.`
       });
+      try {
+        const diag = window.__CASTLE_RHIZOH_LLM_DIAG__;
+        if (diag && typeof diag === "object") {
+          console.info("[Rhizoh LLM diag]", diag.endpoint, diag.message);
+        }
+      } catch {
+        /* noop */
+      }
+      setRhizohMainHudReply({
+        text: `Yanıt üretilemedi: ${clipped}. Ağ geçidi (üst durum) ve konsoldaki [Rhizoh LLM diag] satırına bakın.`,
+        source: "error",
+        at: Date.now()
+      });
       speakRhizoh("Rhizoh canlı hatta yanıt üretemedi. Lütfen tekrar dene.");
     } finally {
       setRhizohFieldState("IDLE");
@@ -9410,6 +10500,11 @@ export default function AppRhizoh528() {
 
   useEffect(() => {
     if (!booted) return;
+    try {
+      bootLogRef.current?.ok?.("app.engine.ready", "Apex engine + world loop active");
+    } catch {
+      /* noop */
+    }
     let tries = 0;
     const id = window.setInterval(() => {
       tries += 1;
@@ -9423,23 +10518,55 @@ export default function AppRhizoh528() {
   }, [booted]);
 
   useEffect(() => {
+    const phase = String(gatewayUx.phase || "");
+    if (!phase) return;
+    try {
+      if (phase === "connected") bootLogRef.current?.ok?.("app.gateway.connected", "Rhizoh gateway online");
+      else if (phase === "degraded" || phase === "degraded_llm" || phase === "degraded_storage")
+        bootLogRef.current?.warn?.("app.gateway.degraded", phase);
+      else if (phase === "offline" || phase === "offline_dns") bootLogRef.current?.warn?.("app.gateway.offline", phase);
+    } catch {
+      /* noop */
+    }
+  }, [gatewayUx.phase]);
+
+  useEffect(() => {
+    if (!voiceReady) return;
+    try {
+      bootLogRef.current?.ok?.("app.voice.ready", "speech synthesis initialized");
+    } catch {
+      /* noop */
+    }
+  }, [voiceReady]);
+
+  useEffect(() => {
+    if (!voiceNetworkBlocked) return;
+    try {
+      bootLogRef.current?.warn?.("app.voice.network", "browser speech recognition unavailable");
+    } catch {
+      /* noop */
+    }
+  }, [voiceNetworkBlocked]);
+
+  useEffect(() => {
     if (!rhizohInlineError) return;
     const t = window.setTimeout(() => setRhizohInlineError(null), 12_000);
     return () => window.clearTimeout(t);
   }, [rhizohInlineError]);
 
   return (
-    <div className="h-screen w-full bg-[#010103] text-white font-mono overflow-hidden relative select-none uppercase font-black selection:bg-cyan-400/40">
-      <div ref={containerRef} className="absolute inset-0 z-0 bg-black" />
-      <CesiumRealMapLayer active={mapSurfaceActive} />
+    <div className="min-h-screen w-full bg-[#010103] text-white font-mono overflow-x-hidden overflow-y-auto relative select-none uppercase font-black selection:bg-cyan-400/40">
+      <RhizohEpistemicWorldGravity
+        layerFocus={epistemicOrbLayerFocus}
+        governanceStress={epistemicGovStress}
+      >
+        <div ref={containerRef} className="absolute inset-0 z-0 bg-black" />
+        <CesiumRealMapLayer active={mapSurfaceActive} />
+      </RhizohEpistemicWorldGravity>
       <div className="absolute inset-0 z-[5] pointer-events-none">
+        
         <SwarmCollectiveAuraV1 collectiveField={visualCognitionState.collectiveField} className="z-[1]" />
         <div className={`absolute inset-0 bg-gradient-to-br ${governanceFx.tone}`} />
-        {showHud && !immersiveLiveTrace ? (
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 text-[9px] tracking-[0.18em] text-white/70 bg-black/25 px-3 py-1 rounded-full border border-white/10">
-            Governance Atmosphere: {governanceFx.label}
-          </div>
-        ) : null}
         <div
           className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2"
           style={{ opacity: Math.min(0.35 + visualCognitionState.swarmField.intensity * 0.5, 0.95) }}
@@ -9477,14 +10604,6 @@ export default function AppRhizoh528() {
         ) : null}
       </div>
 
-      <button
-        type="button"
-        onClick={() => setShowHud((v) => !v)}
-        className="pointer-events-auto fixed bottom-[4.5rem] left-4 z-[60] rounded-lg border border-white/20 bg-black/60 px-2 py-1 text-[9px] tracking-widest text-white/60 hover:bg-white/10"
-      >
-        {showHud ? "Hide debug HUD" : "Debug HUD"}
-      </button>
-
       <UnifiedProductShellBar active={productSurface} onSelect={onProductShellSelect} />
 
       {immersiveLiveTrace ? (
@@ -9507,87 +10626,19 @@ export default function AppRhizoh528() {
         </div>
       ) : null}
 
-      <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between p-4 md:p-5">
-        <div className="flex justify-end items-start gap-3">
-          {showHud && !immersiveLiveTrace ? (
-            <div className="pointer-events-auto mr-auto max-w-[min(32rem,90vw)] rounded-2xl border border-cyan-300/30 bg-[#04091b]/80 backdrop-blur-xl p-4">
-              <div className="text-[9px] tracking-[0.35em] text-cyan-300/80 mb-3">SYSTEM STATE (DEBUG)</div>
-              <div className="grid grid-cols-3 gap-2 text-[9px]">
-                <div className="rounded-xl border border-white/10 bg-black/25 p-2">
-                  <div className="text-white/50 mb-1">FIELD</div>
-                  <div className="text-cyan-300">{rhizohFieldState}</div>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-black/25 p-2">
-                  <div className="text-white/50 mb-1">REALITY</div>
-                  <div className="text-emerald-300">{realityState}</div>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-black/25 p-2">
-                  <div className="text-white/50 mb-1">GOV</div>
-                  <div className="text-amber-300">{governanceState}</div>
-                </div>
-              </div>
-              <div className="mt-2 grid grid-cols-2 gap-1 text-[8px] text-white/55">
-                <span>Swarm: {visualCognitionState.swarmField.level}</span>
-                <span>Memory: {visualCognitionState.memoryEcho.links}</span>
-              </div>
-              <RhizohPersistentCoreInspectV1
-                gatewayPhase={gatewayUx?.phase || "—"}
-                socialRegistry={drawerSocialRegistry}
-              />
-            </div>
-          ) : null}
+      <div className="absolute inset-0 z-10 pointer-events-none flex min-h-full flex-col p-4 md:p-5">
+        <div className="flex shrink-0 justify-end items-start gap-3">
           {!immersiveLiveTrace ? (
-            <div className="pointer-events-auto mr-auto max-w-[min(36rem,92vw)] rounded-2xl border border-emerald-300/25 bg-[#04131a]/80 backdrop-blur-xl px-4 py-3">
-              <div className="text-[9px] tracking-[0.28em] text-emerald-200/85">LAYER COMPOSITION BIND</div>
-              <div className="mt-2 flex flex-wrap gap-2 text-[9px]">
-                <span
-                  className={`rounded-full border px-2 py-1 normal-case ${layerComposition.mapReady ? "border-cyan-300/45 text-cyan-100 bg-cyan-300/10" : "border-white/20 text-white/55"}`}
-                >
-                  Harita {layerComposition.mapReady ? "bağlı" : realityMode === "REAL_MAP" ? "bekliyor (ağ/eşzamanlama)" : "kapalı"}
-                </span>
-                <span className={`rounded-full border px-2 py-1 ${layerComposition.swarm ? "border-fuchsia-300/45 text-fuchsia-100 bg-fuchsia-300/10" : "border-white/20 text-white/55"}`}>Swarm {layerComposition.swarm ? "live" : "idle"}</span>
-                <span className={`rounded-full border px-2 py-1 ${layerComposition.agentsReady ? "border-emerald-300/45 text-emerald-100 bg-emerald-300/10" : "border-white/20 text-white/55"}`}>Agents {liveAgents.length}</span>
-                <span className={`rounded-full border px-2 py-1 ${layerComposition.memoryReady ? "border-amber-300/45 text-amber-100 bg-amber-300/10" : "border-white/20 text-white/55"}`}>Memory {memoryLinks}</span>
-                <span className="rounded-full border border-indigo-300/45 text-indigo-100 bg-indigo-300/10 px-2 py-1">Gov {layerComposition.governance}</span>
-              </div>
-            </div>
+            <div className="pointer-events-auto mr-auto" />
           ) : (
             <div className="pointer-events-auto mr-auto rounded-2xl border border-fuchsia-400/35 bg-black/55 px-3 py-2 text-[9px] text-fuchsia-100/90 normal-case backdrop-blur-md">
               Immersive broadcast · world synced to anchor
             </div>
           )}
           <div className="pointer-events-auto flex max-w-[18rem] flex-col gap-2">
-            {!showDetailDrawer && l10HudPresence ? (
-              <div
-                className={`rounded-xl border px-2 py-1.5 bg-black/35 ${
-                  l10HudPresence.mode === "cautious"
-                    ? "border-amber-300/35"
-                    : l10HudPresence.mode === "soft_pulse"
-                      ? "border-violet-300/35"
-                      : "border-emerald-300/35"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`inline-block h-2 w-2 rounded-full animate-pulse ${
-                      l10HudPresence.mode === "cautious"
-                        ? "bg-amber-300"
-                        : l10HudPresence.mode === "soft_pulse"
-                          ? "bg-violet-300"
-                          : "bg-emerald-300"
-                    }`}
-                  />
-                  <span className="text-[8px] tracking-[0.22em] text-white/75">SLE PRESENCE</span>
-                </div>
-                <div className="mt-1 text-[9px] text-white/85 normal-case">Rhizoh {l10HudPresence.label}</div>
-                <div className="text-[8px] text-white/55 normal-case">
-                  Physics: {l10HudPresence.phase} · Field: {l10HudPresence.interference}
-                </div>
-              </div>
-            ) : null}
             <CastleAccountBadge auth={castleAuth} />
             <div className="rounded-2xl border border-indigo-300/35 bg-indigo-300/15 p-3 backdrop-blur-md">
-              <div className="text-[10px] tracking-wide text-indigo-100 normal-case leading-relaxed">
+              <div className="text-[10px] tracking-wide text-indigo-100 normal-case leading-relaxed whitespace-pre-wrap">
                 {welcomeCard.primary}
               </div>
               <div className="mt-1.5 text-[10px] text-white/85 normal-case">
@@ -9616,43 +10667,99 @@ export default function AppRhizoh528() {
               </button>
             </div>
             <div className="mb-4">
-              <L10Observatory
-                socialRegistry={drawerSocialRegistry}
-                truthIntervalMs={320}
-                mode="greenroom"
-                userAgentSubjectThreadId={pickPrimaryCognitiveThreadId(drawerSocialRegistry)}
-              />
+              {rhizohConversationUx.surfaces.intentRoutingFull ? (
+                <L10Observatory
+                  socialRegistry={drawerSocialRegistry}
+                  truthIntervalMs={320}
+                  mode="greenroom"
+                  userAgentSubjectThreadId={pickPrimaryCognitiveThreadId(drawerSocialRegistry)}
+                />
+              ) : (
+                <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-[9px] normal-case text-white/55 leading-relaxed">
+                  Gözlemevi henüz kapalı — güven fazına gelince niyet omurgası görünür.
+                </div>
+              )}
             </div>
             <div className="mb-3 flex gap-0.5 overflow-x-auto rounded-lg border border-white/10 bg-black/30 p-0.5 no-scrollbar">
               {[
-                { id: "world", label: "WORLD" },
-                { id: "live", label: "LIVE" },
-                { id: "kernel", label: "KERNEL" },
-                { id: "profile", label: "YOU" }
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setDrawerStudioTab(t.id)}
-                  className={`min-w-[4.5rem] flex-1 shrink-0 rounded-md py-2 text-[8px] font-black tracking-[0.16em] transition-colors sm:text-[9px] sm:tracking-[0.2em] ${
-                    drawerStudioTab === t.id
-                      ? "bg-cyan-500/25 text-cyan-100 border border-cyan-400/35"
-                      : "text-white/45 hover:text-white/70 border border-transparent"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
+                { id: "chat", label: "CHAT" },
+                { id: "explore", label: "EXPLORE" },
+                { id: "build", label: "BUILD" },
+                { id: "analyze", label: "ANALYZE" },
+                { id: "sovereign", label: "SOVEREIGN" }
+              ].map((t) => {
+                const kernelLocked = t.id === "analyze" && !rhizohConversationUx.surfaces.kernelHeavyPanels;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    disabled={kernelLocked}
+                    title={kernelLocked ? "Tam sohbet bandında açılır" : undefined}
+                    onClick={() => {
+                      if (kernelLocked) return;
+                      setDrawerStudioTab(t.id);
+                    }}
+                    className={`min-w-[4.5rem] flex-1 shrink-0 rounded-md py-2 text-[8px] font-black tracking-[0.16em] transition-colors sm:text-[9px] sm:tracking-[0.2em] ${
+                      drawerStudioTab === t.id
+                        ? "bg-cyan-500/25 text-cyan-100 border border-cyan-400/35"
+                        : kernelLocked
+                          ? "text-white/25 border border-transparent cursor-not-allowed opacity-60"
+                          : "text-white/45 hover:text-white/70 border border-transparent"
+                    }`}
+                  >
+                    {t.label}
+                    {kernelLocked ? " · ○" : ""}
+                  </button>
+                );
+              })}
             </div>
-            {drawerStudioTab === "world" ? <WorldLivingMapPanel /> : null}
-            {drawerStudioTab === "live" ? <DirectorDeckPanel /> : null}
-            {drawerStudioTab === "kernel" ? <KernelConsolePanel /> : null}
-            {drawerStudioTab === "profile" ? <ProductProfilePanel auth={castleAuth} /> : null}
-            {drawerStudioTab === "profile" || drawerStudioTab === "kernel" ? (
+            {drawerStudioTab === "chat" ? <ProductProfilePanel auth={castleAuth} /> : null}
+            {drawerStudioTab === "explore" ? <WorldLivingMapPanel /> : null}
+            {drawerStudioTab === "build" ? <DirectorDeckPanel /> : null}
+            {drawerStudioTab === "analyze" ? (
+              rhizohConversationUx.surfaces.kernelHeavyPanels ? (
+                <KernelConsolePanel />
+              ) : (
+                <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-4 text-[10px] normal-case text-white/55 leading-relaxed">
+                  KERNEL konsolu bu evrede kilitli. Bond ve tur sayısı arttıkça “Tam sohbet” bandında açılır — üstteki
+                  deneyim şeridinde ilerlemeyi görebilirsin.
+                </div>
+              )
+            ) : null}
+            {drawerStudioTab === "sovereign" ? (
+              <div className="mt-4">
+                <SovereignCastleCommandPanel
+                  engineRef={engineRef}
+                  currentUserId={castleAuth.user?.uid || getOrCreateCastleDevUid()}
+                  rhizohFirstName={rhizohFirstName}
+                  remoteCastles={remoteCastles}
+                  bridgeRegistryReady={bridgeRegistryReady}
+                  onInitiateMirrorBridge={initiateMirrorBridge}
+                  onCastleLifecycleChange={handleCastleLifecycle}
+                  onOpenRhizohKernelDrawer={() => setShowDetailDrawer(true)}
+                />
+              </div>
+            ) : null}
+            {drawerStudioTab === "chat" ||
+            (drawerStudioTab === "analyze" && rhizohConversationUx.surfaces.kernelHeavyPanels) ? (
               <div className="mt-3">
                 <RuntimeHealthPanel health={runtimeHealth} gatewayBaseUrl={infraGatewayBaseUrl} />
               </div>
             ) : null}
+            {rhizohConversationUx.surfaces.epistemicHeavyHud ? (
+              <div className="mt-3 mb-2">
+                <RhizohEpistemicOrb
+                  gatewayPhase={gatewayUx.phase}
+                  uiEnv={epistemicOrbUiEnv}
+                  firebaseUid={castleAuth.user?.uid || null}
+                  hydrateFromDisk={hydrateEpistemicOrbFromDisk}
+                />
+              </div>
+            ) : (
+              <div className="mt-3 mb-2 rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-[9px] normal-case text-white/50 leading-relaxed">
+                Epistemik küre · tam sohbet bandında görünür.
+              </div>
+            )}
             <RhizohCommsPanel
               engineRef={engineRef}
               selectedConnectionId=""
@@ -9667,19 +10774,9 @@ export default function AppRhizoh528() {
               socialRegistryPreview={drawerSocialRegistry}
               browserPresenceRef={browserPresenceRef}
               remoteAgentActivity={{ active: liveAgents.length > 0, count: liveAgents.length }}
+              productDecisionOverlayRef={rhizohProductDecisionOverlayRef}
+              rhizohGenerationMode={rhizohGenerationMode}
             />
-            <div className="mt-4">
-              <SovereignCastleCommandPanel
-                engineRef={engineRef}
-                currentUserId={castleAuth.user?.uid || getOrCreateCastleDevUid()}
-                rhizohFirstName={rhizohFirstName}
-                remoteCastles={remoteCastles}
-                bridgeRegistryReady={bridgeRegistryReady}
-                onInitiateMirrorBridge={initiateMirrorBridge}
-                onCastleLifecycleChange={handleCastleLifecycle}
-                onOpenRhizohKernelDrawer={() => setShowDetailDrawer(true)}
-              />
-            </div>
             <div className="space-y-3 text-[10px] text-white/75 normal-case mt-4">
               <div>
                 <div className="text-white/40 mb-1">Agents</div>
@@ -9895,6 +10992,7 @@ export default function AppRhizoh528() {
           </div>
         ) : null}
 
+        <div className="mt-auto flex w-full shrink-0 flex-col gap-1">
         <RhizohCapabilityHaloV1
           className="pointer-events-auto z-[12] mb-1"
           collectivePulse={visualCognitionState.collectiveField?.density ?? 0.4}
@@ -9926,8 +11024,6 @@ export default function AppRhizoh528() {
         <div className="pointer-events-auto mb-3 flex flex-wrap items-center justify-center gap-2 px-2">
           {[
             { label: "Studio", path: "/studio", tone: "border-cyan-400/40 bg-cyan-400/10 text-cyan-100" },
-            { label: "Octo", path: "/studio?focus=octo", tone: "border-fuchsia-400/40 bg-fuchsia-500/10 text-fuchsia-100" },
-            { label: "SpiralMMO", path: "/spiral", tone: "border-emerald-400/40 bg-emerald-500/10 text-emerald-100" },
             { label: "GreenRoom", path: "/greenroom/main", tone: "border-amber-400/40 bg-amber-500/10 text-amber-100" }
           ].map((p) => (
             <button
@@ -9981,8 +11077,48 @@ export default function AppRhizoh528() {
               model={gatewayUx}
               onRetry={gatewayUx.retry}
               hasHttpOrigin={hasRhizohHttpOrigin}
+              conversationPhaseLabel={rhizohConversationUx.label}
               className="mx-1"
             />
+            <RhizohExperienceRibbon
+              phaseLabel={rhizohConversationUx.label}
+              story={rhizohConversationUx.story}
+              goals={rhizohConversationUx.goals}
+              capabilityRows={rhizohConversationUx.capabilityRows}
+              userGoalHint={rhizohConversationUx.userGoalHint}
+              closure={rhizohClosureBanner}
+              recentClosureMilestones={rhizohConversationUx.closureMilestonesPreview}
+              className="mx-1 mt-2"
+            />
+
+            <div className="mx-1 mt-2 rounded-2xl border border-cyan-400/25 bg-[#061028]/90 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2 normal-case">
+              <div className="flex flex-wrap items-center gap-2 min-w-0">
+                <label htmlFor="castle-rhizoh-generation-mode" className="text-[9px] text-cyan-200/90 shrink-0 whitespace-nowrap">
+                  Sohbet derinliği
+                </label>
+                <select
+                  id="castle-rhizoh-generation-mode"
+                  value={rhizohGenerationMode}
+                  onChange={(e) => setRhizohGenerationMode(e.target.value)}
+                  className="rounded-lg border border-white/20 bg-black/40 px-2 py-1.5 text-[10px] text-white/90 max-w-[min(100%,18rem)] sm:max-w-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+                >
+                  {RHIZOH_GENERATION_MODE_UI.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label} — {m.sub} (~{RHIZOH_GENERATION_MODE_MAX[m.id]} tok)
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="text-[9px] text-white/65 sm:ml-auto sm:text-right leading-snug">
+                <span className={runtimeHealth.gatewayConnected ? "text-emerald-300/95" : "text-amber-200/90"}>
+                  Geçit: {runtimeHealth.gatewayConnected ? "canlı" : gatewayUx.phase}
+                </span>
+                {" · "}
+                <span className={hasRhizohHttpOrigin ? "text-cyan-200/85" : "text-amber-200/80"}>
+                  {hasRhizohHttpOrigin ? `LLM: ${rhizohLlmHostLabel}` : "LLM URL yapılandırın (VITE_*)"}
+                </span>
+              </div>
+            </div>
 
             <div className="mx-1 rounded-2xl border border-emerald-400/25 bg-emerald-950/25 px-4 py-3 normal-case">
               <div className="text-[9px] font-bold tracking-[0.25em] text-emerald-200/90 mb-2">HIZLI BAŞLANGIÇ</div>
@@ -10012,20 +11148,40 @@ export default function AppRhizoh528() {
               </div>
             ) : null}
 
-            {!onboardingDone ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setOnboardingDone(true);
-                  window.localStorage.setItem("rhizoh_intro_seen_v1", "1");
-                  ensureAmbientSound();
-                  setRhizohFieldState("LISTENING");
-                  void handleExecute("yarin canli mac yayinla");
-                }}
-                className="mx-4 rounded-2xl border border-emerald-300/35 bg-emerald-300/10 py-3 text-[10px] tracking-[0.18em] text-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            {rhizohMainHudReply?.text ? (
+              <div
+                role="status"
+                aria-live="polite"
+                className={`mx-1 rounded-2xl border px-4 py-3 normal-case ${
+                  rhizohMainHudReply.source === "error"
+                    ? "border-amber-400/40 bg-amber-950/30"
+                    : "border-emerald-400/35 bg-emerald-950/25"
+                }`}
               >
-                İLK NİYETİ 10 SANİYEDE BAŞLAT
-              </button>
+                <div
+                  className={`text-[9px] font-bold tracking-wider uppercase ${
+                    rhizohMainHudReply.source === "error" ? "text-amber-200/90" : "text-emerald-200/90"
+                  }`}
+                >
+                  Rhizoh yanıtı · {rhizohMainHudReply.source}
+                </div>
+                <div className="mt-1 text-[11px] text-white/92 leading-relaxed whitespace-pre-wrap">
+                  {rhizohMainHudReply.text}
+                </div>
+                <button
+                  type="button"
+                  className="mt-2 rounded-lg border border-white/15 px-2 py-1 text-[9px] text-white/75 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+                  onClick={() => setRhizohMainHudReply(null)}
+                >
+                  Kapat
+                </button>
+              </div>
+            ) : null}
+
+            {!onboardingDone ? (
+              <div className="mx-4 rounded-2xl border border-emerald-300/25 bg-emerald-300/10 px-3 py-2 text-[10px] text-emerald-100/90 normal-case">
+                Rhizoh seni tanımaya başlıyor.
+              </div>
             ) : null}
             {cinematicOutput.showSemanticHints ? (
               <div className="flex flex-wrap gap-2 px-4">
@@ -10052,17 +11208,6 @@ export default function AppRhizoh528() {
                 ))}
               </div>
             ) : null}
-            <div className="px-4 sm:px-6">
-              <button
-                type="button"
-                onClick={() => {
-                  void startVoiceToRhizoh();
-                }}
-                className="w-full rounded-2xl border border-cyan-300/35 bg-cyan-300/10 py-2 text-[10px] tracking-[0.14em] text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
-              >
-                RHIZOH İLE KONUŞ (MİKROFON)
-              </button>
-            </div>
             <div className="px-4 sm:px-6 space-y-1 normal-case">
               <label htmlFor="castle-rhizoh-command" className="block text-[10px] font-bold tracking-[0.18em] text-cyan-200/90">
                 Mesaj gönder — Rhizoh komut hattı
@@ -10076,13 +11221,30 @@ export default function AppRhizoh528() {
               <button
                 type="button"
                 onClick={() => {
-                  void startVoiceToRhizoh();
+                  setVoiceNetworkBlocked(false);
+                  if (voiceLoopEnabled) {
+                    stopVoiceLoop();
+                  } else {
+                    startVoiceLoop();
+                  }
                 }}
-                aria-label="Mikrofonu aç"
-                className={`mx-4 sm:ml-6 sm:mr-0 p-5 sm:p-6 hover:bg-cyan-400/20 rounded-full text-cyan-400 transition-all active:scale-90 shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${cinematicOutput.showMicPulse ? "animate-pulse ring-2 ring-cyan-300/40" : ""}`}
+                aria-label={voiceLoopEnabled ? "Sürekli dinlemeyi kapat" : "Sürekli dinlemeyi başlat"}
+                aria-pressed={voiceLoopEnabled}
+                title={voiceLoopEnabled ? "Dinlemeyi durdur" : "Sesli sohbet — mikrofonu aç"}
+                className={`mx-4 sm:ml-6 sm:mr-0 p-5 sm:p-6 hover:bg-cyan-400/20 rounded-full text-cyan-400 transition-all active:scale-90 shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${voiceLoopEnabled || cinematicOutput.showMicPulse ? "ring-2 ring-emerald-400/50" : ""} ${micListening ? "animate-pulse" : ""}`}
               >
                 <Mic size={32} aria-hidden />
               </button>
+              {rhizohFieldState === "SPEAKING" ? (
+                <div className="mx-2 rounded-lg border border-violet-400/30 bg-violet-950/30 px-2 py-1 text-[9px] text-violet-100/90 normal-case max-w-[12rem] sm:max-w-xs">
+                  Rhizoh konuşuyor…
+                </div>
+              ) : null}
+              {voiceNetworkBlocked ? (
+                <div className="ml-2 rounded-lg border border-amber-300/35 bg-amber-950/30 px-2 py-1 text-[9px] text-amber-100/90 normal-case">
+                  Tarayıcı ses tanıma servisi erişilemiyor. Mikrofona izin verip tekrar deneyin; olmazsa yazıyla devam edin.
+                </div>
+              ) : null}
               <div className="flex-1 px-4 sm:px-8 relative flex items-center min-h-[3rem]">
                 <input
                   id="castle-rhizoh-command"
@@ -10128,6 +11290,8 @@ export default function AppRhizoh528() {
             <p id="castle-send-status" className="px-4 sm:px-6 text-[9px] text-white/60 normal-case min-h-[2.5rem]">
               {rhizohCommandBusy
                 ? "Rhizoh komutu işliyor — birkaç saniye sürebilir (uzak model zaman aşımı ~55 sn)."
+                : voiceNetworkBlocked
+                  ? "Mikrofon tarafı şu an tarayıcı servis hatası veriyor (network). Yazıyla göndermeye devam edin veya farklı tarayıcıda mikrofon deneyin."
                 : !cmd.trim()
                   ? "Henüz komut yok. Üstteki örnekleri tıklayın veya yazın; Enter ile de gönderebilirsiniz."
                   : "Bağlantı çevrimdışı olsa bile gönderebilirsiniz; yanıt kaynağı üst durum çubuğunda belirtilir."}
@@ -10161,14 +11325,9 @@ export default function AppRhizoh528() {
                 Henüz ileti yok — ilk komutunuzu yazıp <span className="text-cyan-200/90">Gönder</span> ile iletin.
               </div>
             )}
-            {showHud && !immersiveLiveTrace ? (
-              <div className="px-4 text-[9px] text-white/45 normal-case border-t border-white/5 pt-2">
-                Phase: {cinematicOutput.phase} · Voice: {voiceReady ? "on" : "off"} · Mic:{" "}
-                {micListening ? "listening" : "idle"} · Gateway: {gatewayUx.phase} · Ambient: {ambientReady ? "on" : "off"} ·{" "}
-                {cinematicRoute.mode}
-              </div>
-            ) : null}
+            
           </div>
+        </div>
         </div>
       </div>
 
@@ -10176,7 +11335,7 @@ export default function AppRhizoh528() {
       <RhizohSceneAnchorWindow />
 
       {!booted && (
-        <div className="absolute inset-0 z-[5000] bg-[#010103] flex flex-col items-center justify-center px-6">
+        <div className="pointer-events-none absolute inset-0 z-[5000] bg-[#010103] flex flex-col items-center justify-center px-6">
           <div className="relative mb-20 scale-[2.0]">
             <Atom size={120} className="text-cyan-400 animate-spin opacity-30" aria-hidden />
             <div className="absolute inset-0 flex items-center justify-center">

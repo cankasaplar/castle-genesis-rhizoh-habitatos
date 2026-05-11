@@ -2,6 +2,11 @@ import { getMemoryContext, getPersonaGoalMemory } from "./memoryStore.js";
 import { listAgentIdentities } from "./agentIdentityStore.js";
 import { queueAcademyEvent } from "./academyEventEngine.js";
 import { queryRhizohLlm } from "./rhizohLlmGateway.js";
+import {
+  applyConstitutionalThetaLlmFilter,
+  extractConstitutionalThetaFromContext
+} from "./constitutionalThetaLlmFilter.js";
+import { estimateConstitutionalThetaLlmStressFeedback } from "./constitutionalThetaLlmFeedback.js";
 
 function deriveDirective(message = "") {
   const t = String(message || "").toLowerCase();
@@ -48,6 +53,7 @@ export async function runRhizohBrainV2(payload = {}) {
   const llmContext = {
     source: "rhizoh-brain-v2",
     uid,
+    ...(payload?.constitutionalTheta != null ? { constitutionalTheta: payload.constitutionalTheta } : {}),
     eventIntent,
     suggestedDirective: directive,
     queuedEvent: queuedEvent
@@ -75,8 +81,10 @@ export async function runRhizohBrainV2(payload = {}) {
 
   let llmReply = "";
   let llmDirective = "";
+  /** @type {{ stressBump: number, thetaDeltaHint: number, components: Record<string, unknown> } | undefined} */
+  let constitutionalThetaStressFeedbackHint = undefined;
   try {
-    const llm = await queryRhizohLlm(
+    const llmRaw = await queryRhizohLlm(
       {
         message: [
           "User message:",
@@ -92,6 +100,14 @@ export async function runRhizohBrainV2(payload = {}) {
       },
       { llmKeySource: "env" }
     );
+    const thetaProbe = extractConstitutionalThetaFromContext(llmContext);
+    const llm = applyConstitutionalThetaLlmFilter(llmRaw, thetaProbe);
+    const thetaFb = estimateConstitutionalThetaLlmStressFeedback(llm);
+    Object.assign(llm, {
+      constitutionalThetaStressBump: thetaFb.stressBump,
+      constitutionalThetaStressFeedbackHint: thetaFb
+    });
+    constitutionalThetaStressFeedbackHint = thetaFb;
     llmReply = String(llm?.reply || "").trim();
     llmDirective = String(llm?.directive || "").trim();
   } catch {
@@ -130,6 +146,12 @@ export async function runRhizohBrainV2(payload = {}) {
           type: queuedEvent.type,
           roomId: queuedEvent.roomId
         }
-      : null
+      : null,
+    ...(constitutionalThetaStressFeedbackHint != null
+      ? {
+          constitutionalThetaStressBump: constitutionalThetaStressFeedbackHint.stressBump,
+          constitutionalThetaStressFeedbackHint
+        }
+      : {})
   };
 }

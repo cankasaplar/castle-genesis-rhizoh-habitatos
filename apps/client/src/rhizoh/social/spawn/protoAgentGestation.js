@@ -309,7 +309,7 @@ export function stepProtoAgentGestationQueue(prevQueue, opts) {
   const now = Number(opts.now) || Date.now();
   const raw = Array.isArray(prevQueue) ? prevQueue : [];
   const seedEntityId = String(opts.seedEntityId || "").trim();
-  const tsge = opts.tsge && typeof opts.tsge === "object" ? tsge : {};
+  const tsge = opts.tsge && typeof opts.tsge === "object" ? opts.tsge : {};
   const maxRaw =
     Number(opts.lastMaxRawPairwiseForce ?? tsge.lastMaxRawPairwiseForce) || 0;
   const seedMaxRaw =

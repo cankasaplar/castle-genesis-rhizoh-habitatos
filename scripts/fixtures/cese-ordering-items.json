@@ -1,0 +1,5 @@
+[
+  { "id": "COMP-B", "compensationOf": "PRIMARY-A", "priorAnchor": "commit:bbb" },
+  { "id": "PRIMARY-A", "compensationOf": null, "priorAnchor": "commit:aaa" },
+  { "id": "COMP-C", "compensationOf": "COMP-B", "priorAnchor": "commit:ccc" }
+]

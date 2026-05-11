@@ -28,6 +28,8 @@ function resolveMaybeRelativeHttp(url) {
 export const LS_RHIZOH_LLM_HTTP_OVERRIDE = "castle.rhizohLlmHttp.override";
 /** Build’de URL yoksa yedek (ör. sadece Hosting’de hızlı deneme). */
 export const LS_RHIZOH_LLM_HTTP = "castle.rhizohLlmHttp";
+/** Son kullanıcı için varsayılan canlı gateway (lokal kurulum zorunluluğunu kaldırır). */
+const DEFAULT_LIVE_GATEWAY_BASE = "https://castle-genesis-gateway.onrender.com";
 
 function readLlmHttpFromLocalStorage() {
   try {
@@ -44,6 +46,7 @@ export function getCastleFlightConfig() {
   const env = import.meta.env;
   const host = typeof window !== "undefined" ? window.location.hostname : "";
   const isLocalHost = host === "localhost" || host === "127.0.0.1" || host === "::1";
+  const preferLocalGateway = String(env.VITE_PREFER_LOCAL_GATEWAY || "").trim() === "1";
   /** Ephemeral tunnel / geçici gateway tamamen kapalı: WS + telemetri WS zorla boş; VITE_GATEWAY_URL türevi yok sayılır. */
   const gatewayOff = String(env.VITE_CASTLE_GATEWAY_OFF || "").trim() === "1";
   const gatewayBase = gatewayOff
@@ -55,12 +58,38 @@ export function getCastleFlightConfig() {
     ? gatewayBase.replace(/^https:/i, "wss:").replace(/^http:/i, "ws:")
     : "";
   const llmFromBase = gatewayBase ? `${gatewayBase}/rhizoh/llm` : "";
-  const wsFallback = isLocalHost ? "ws://localhost:8090" : "";
-  const llmFallback = isLocalHost ? "http://localhost:8090/rhizoh/llm" : "";
+  const liveGatewayBase = String(env.VITE_LIVE_GATEWAY_BASE || DEFAULT_LIVE_GATEWAY_BASE).trim().replace(/\/$/, "");
+  const wsLiveFallback = liveGatewayBase ? liveGatewayBase.replace(/^https:/i, "wss:").replace(/^http:/i, "ws:") : "";
+  const llmLiveFallback = liveGatewayBase ? `${liveGatewayBase}/rhizoh/llm` : "";
+  const wsLocalFallback = isLocalHost ? "ws://localhost:8090" : "";
+  const llmLocalFallback = isLocalHost ? "http://localhost:8090/rhizoh/llm" : "";
+  const defaultLocalFirst = isLocalHost && !preferLocalGateway;
+  const wsFallback = defaultLocalFirst
+    ? wsLocalFallback || wsLiveFallback
+    : preferLocalGateway
+      ? wsLocalFallback
+      : wsLiveFallback || wsLocalFallback;
+  const llmFallback = defaultLocalFirst
+    ? llmLocalFallback || llmLiveFallback
+    : preferLocalGateway
+      ? llmLocalFallback
+      : llmLiveFallback || llmLocalFallback;
   const llmExplicit = resolveMaybeRelativeHttp(env.VITE_GATEWAY_HTTP || env.VITE_RHIZOH_LLM_HTTP || "");
   const { force: llmStorageForce, fill: llmStorageFill } = readLlmHttpFromLocalStorage();
   const envLlmChain = llmExplicit || llmFromBase || llmFallback;
-  const rhizohLlmHttpResolved = llmStorageForce || envLlmChain || llmStorageFill;
+  // Production'da eski localStorage override/fill değerleri yanlış gateway'e kilitleyebiliyor.
+  // Varsayılan olarak sadece localhost geliştirmede localStorage override'larını dikkate al.
+  const allowStorageLlmOverride = isLocalHost || String(env.VITE_ALLOW_LLM_STORAGE_OVERRIDE || "").trim() === "1";
+  let rhizohLlmHttpResolved = allowStorageLlmOverride ? llmStorageForce || envLlmChain || llmStorageFill : envLlmChain;
+  // Barındırılan sitede (Firebase vb.) build'e yanlışlıkla gömülü localhost URL kullanıcı tarayıcısında çalışmaz.
+  if (typeof window !== "undefined" && !isLocalHost) {
+    const baked = String(rhizohLlmHttpResolved || "").trim();
+    if (baked && /localhost|127\.0\.0\.1/i.test(baked)) {
+      const altCandidates = [llmLiveFallback, llmFromBase].map((s) => String(s || "").trim()).filter(Boolean);
+      const alt = altCandidates.find((u) => u && !/localhost|127\.0\.0\.1/i.test(u)) || "";
+      if (alt) rhizohLlmHttpResolved = alt;
+    }
+  }
   return {
     /** Yayın kısa adlar: VITE_GATEWAY_WS — eski: VITE_GATEWAY_WS_URL — veya VITE_GATEWAY_URL tabanı */
     gatewayWsUrl: gatewayOff

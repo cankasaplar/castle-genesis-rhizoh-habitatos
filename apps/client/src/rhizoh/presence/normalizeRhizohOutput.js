@@ -152,10 +152,11 @@ export function normalizeRhizohOutput(input = {}) {
 export function materializeCommsFromNormalized(norm, rawReply = "") {
   if (norm.type === "QPP_STATE") {
     const pr = norm.payload.presence;
+    const stripped = String(rawReply || "").replace(/<SILENCE[^>]*\/?>/gi, "").trim();
+    const quietLabel = typeof pr?.state === "string" && pr.state.trim() ? pr.state.trim() : "listening";
     return {
-      uiReply: String(rawReply || "")
-        .replace(/<SILENCE[^>]*\/?>/gi, "")
-        .trim() || "—",
+      // Sessiz yanıtı "boş" gibi göstermeyelim; kullanıcıya mod bilgisini görünür ver.
+      uiReply: stripped || `Rhizoh şu an sessiz eşlik modunda (${quietLabel}).`,
       skipSpeech: true,
       quietSpec: {
         mode: "presence",

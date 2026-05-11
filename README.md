@@ -1,5 +1,12 @@
 # Castle System - Production Architecture Skeleton
 
+## Rhizoh × Castle — medeniyet çekirdeği vs kişisel düğüm
+
+- **Rhizoh = Protocol Civilization** (paylaşılan protokol, chronicle, şahitlik, uzun ufuk).  
+- **Castle = Personal Reality Node (PRN)** (bireyin kendi hafıza alanı, ritüel, düğüm).  
+
+πEFC, ECER, HOGA, ETK, PAG vb. **civilization kernel** katmanları son kullanıcıya “formül” olarak değil, **güven ve süreklilik** olarak hissedilir. Ürün dili: [`docs/RHIZOH_CASTLE_CIVILIZATION_FRAMING.md`](docs/RHIZOH_CASTLE_CIVILIZATION_FRAMING.md). **Kurumsal / epistemic infrastructure** (audit, çok-ajan yönetişimi, GTM merdiveni): [`docs/RHIZOH_EPISTEMIC_INFRASTRUCTURE_ENTERPRISE.md`](docs/RHIZOH_EPISTEMIC_INFRASTRUCTURE_ENTERPRISE.md). **Ürün fazları (A freeze → B Companion → … → E Spiral):** [`docs/RHIZOH_PRODUCT_PHASES_A_THROUGH_E.md`](docs/RHIZOH_PRODUCT_PHASES_A_THROUGH_E.md). **FREEZE-0 (min. canlı yayın çekirdeği):** [`docs/RHIZOH_FREEZE_0.md`](docs/RHIZOH_FREEZE_0.md). **Phase B — Reference User Journey:** [`docs/RHIZOH_COMPANION_REFERENCE_JOURNEY.md`](docs/RHIZOH_COMPANION_REFERENCE_JOURNEY.md). **Castle node runtime:** [`docs/CASTLE_NODE_RUNTIME_MODEL.md`](docs/CASTLE_NODE_RUNTIME_MODEL.md). **UI dil + sakin UX:** [`docs/RHIZOH_UI_LANGUAGE_GUIDE.md`](docs/RHIZOH_UI_LANGUAGE_GUIDE.md) · [`docs/RHIZOH_COMPANION_PERSONALITY_STABILITY.md`](docs/RHIZOH_COMPANION_PERSONALITY_STABILITY.md) · [`docs/RHIZOH_CALM_TECHNOLOGY_PRINCIPLE.md`](docs/RHIZOH_CALM_TECHNOLOGY_PRINCIPLE.md). **Üç katman + embodied validasyon + spec öncesi UX gate:** [`docs/RHIZOH_EMBODIED_PRODUCT_REALITY.md`](docs/RHIZOH_EMBODIED_PRODUCT_REALITY.md). **Reference implementations (teori sonrası):** [`docs/RHIZOH_REFERENCE_IMPLEMENTATIONS.md`](docs/RHIZOH_REFERENCE_IMPLEMENTATIONS.md). **`apps/client` deneyim ↔ rota ↔ öncelik:** [`docs/RHIZOH_IMPLEMENTATION_MAP.md`](docs/RHIZOH_IMPLEMENTATION_MAP.md).
+
 ## Castle Genesis — ürün sütunları
 
 | | |

@@ -63,7 +63,10 @@ export function composeRhizohVisualCognitionStateV1(input) {
       participantNode: true,
       userBeacon: true,
       personalCastleAura: true,
-      voiceRingPulse: input?.rhizohFieldState === "LISTENING" || input?.rhizohFieldState === "INTERPRETING",
+      voiceRingPulse:
+        input?.rhizohFieldState === "LISTENING" ||
+        input?.rhizohFieldState === "INTERPRETING" ||
+        input?.rhizohFieldState === "SPEAKING",
       deviceMeshLinks: input?.deviceMeshLinks ?? 2,
       dormantAgents
     },

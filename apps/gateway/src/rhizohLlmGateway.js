@@ -8,6 +8,80 @@ const PROVIDER_DEFAULT_MODEL = {
   openrouter: "openai/gpt-4o-mini"
 };
 
+/** İstemci `options.maxTokens` yoksa OpenAI-uyumlu uçlar için kullanılan varsayılan tamamlama üst sınırı. */
+const DEFAULT_MAX_COMPLETION_TOKENS = 400;
+
+/**
+ * Açık üretim rejimleri: `options.generationMode` ile seçilir; `options.maxTokens` varsa tavan olarak önceliklidir.
+ * @type {Record<string, { maxTokens: number, directive: string }>}
+ */
+export const RHIZOH_GENERATION_MODES = {
+  FAST_DIALOGUE: {
+    maxTokens: 120,
+    directive:
+      "Mode FAST_DIALOGUE: concise=true. Kısa tur; gereksiz derinleşme yok; kullanıcı açıkça istemedikçe uzatma."
+  },
+  STANDARD: {
+    maxTokens: 320,
+    directive: "Mode STANDARD: dengeli derinlik. Net cevap; gereksiz uzunluktan kaçın."
+  },
+  REFLECTIVE: {
+    maxTokens: 900,
+    directive:
+      "Mode REFLECTIVE: introspective=true. Sonuçlar, duygusal çerçeve ve ödünleşimleri düşün; yansıtıcı ton."
+  },
+  NARRATIVE: {
+    maxTokens: 1600,
+    directive:
+      "Mode NARRATIVE: cinematic=true, elaboration=true. Süreklilik uygunsa sahne ve anlatım zenginleştir; bellekteki olgulara sadık kal."
+  },
+  DEEP_REASONING: {
+    maxTokens: 2600,
+    directive:
+      "Mode DEEP_REASONING: layered reasoning=true, uncertainty disclosure=true. Adımları ve alternatifleri göster; belirsizlikleri açıkça işaretle."
+  }
+};
+
+/**
+ * İstemci `options` → provider parametreleri + sistem prompt eki (rejim direktifi).
+ * @param {Record<string, unknown>} payload
+ * @returns {{ maxTokens: number, temperature: number, modeDirective: string, generationModeLabel: string | null }}
+ */
+function resolveRhizohGenerationOptions(payload) {
+  const opts = payload?.options && typeof payload.options === "object" ? payload.options : {};
+  const capEnv = Number(process.env.CASTLE_LLM_MAX_TOKENS_CAP);
+  const hardCap = Number.isFinite(capEnv) && capEnv > 0 ? Math.min(Math.floor(capEnv), 32768) : 8192;
+  const floor = 32;
+
+  const modeKeyRaw = String(opts.generationMode || opts.generation_mode || "")
+    .trim()
+    .toUpperCase()
+    .replace(/-/g, "_");
+  const modeDef =
+    modeKeyRaw && Object.prototype.hasOwnProperty.call(RHIZOH_GENERATION_MODES, modeKeyRaw)
+      ? RHIZOH_GENERATION_MODES[modeKeyRaw]
+      : null;
+
+  const maxRaw = opts.maxTokens != null ? Number(opts.maxTokens) : NaN;
+  let maxTokens;
+  if (Number.isFinite(maxRaw) && maxRaw > 0) {
+    maxTokens = Math.floor(maxRaw);
+  } else if (modeDef) {
+    maxTokens = modeDef.maxTokens;
+  } else {
+    maxTokens = DEFAULT_MAX_COMPLETION_TOKENS;
+  }
+  maxTokens = Math.max(floor, Math.min(maxTokens, hardCap));
+
+  const tempRaw = opts.temperature != null ? Number(opts.temperature) : NaN;
+  const temperature = Number.isFinite(tempRaw) ? Math.max(0, Math.min(2, tempRaw)) : 0.35;
+
+  const modeDirective = modeDef ? modeDef.directive : "";
+  const generationModeLabel = modeDef ? modeKeyRaw : null;
+
+  return { maxTokens, temperature, modeDirective, generationModeLabel };
+}
+
 function getProviderConfig(overrideProvider = "", overrideModel = "") {
   const provider = String(overrideProvider || process.env.CASTLE_LLM_PROVIDER || "openai").toLowerCase();
   const model = String(overrideModel || process.env.CASTLE_LLM_MODEL || PROVIDER_DEFAULT_MODEL[provider] || PROVIDER_DEFAULT_MODEL.openai);
@@ -561,7 +635,18 @@ function safeParseJsonObject(text) {
   }
 }
 
-async function callOpenAiLike(endpoint, key, model, systemPrompt, userMessage, extraHeaders = {}) {
+/**
+ * @param {string} endpoint
+ * @param {string} key
+ * @param {string} model
+ * @param {string} systemPrompt
+ * @param {string} userMessage
+ * @param {Record<string, string>} [extraHeaders]
+ * @param {{ maxTokens?: number, temperature?: number }} [gen]
+ */
+async function callOpenAiLike(endpoint, key, model, systemPrompt, userMessage, extraHeaders = {}, gen = {}) {
+  const temperature = gen.temperature != null ? gen.temperature : 0.35;
+  const max_tokens = gen.maxTokens != null ? gen.maxTokens : DEFAULT_MAX_COMPLETION_TOKENS;
   const res = await fetch(endpoint, {
     method: "POST",
     headers: {
@@ -571,7 +656,8 @@ async function callOpenAiLike(endpoint, key, model, systemPrompt, userMessage, e
     },
     body: JSON.stringify({
       model,
-      temperature: 0.35,
+      temperature,
+      max_tokens,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
@@ -585,7 +671,11 @@ async function callOpenAiLike(endpoint, key, model, systemPrompt, userMessage, e
   return String(content);
 }
 
-async function callAnthropic(key, model, systemPrompt, userMessage) {
+/**
+ * @param {{ maxTokens?: number, temperature?: number }} [gen]
+ */
+async function callAnthropic(key, model, systemPrompt, userMessage, gen = {}) {
+  const max_tokens = gen.maxTokens != null ? gen.maxTokens : 420;
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -595,7 +685,7 @@ async function callAnthropic(key, model, systemPrompt, userMessage) {
     },
     body: JSON.stringify({
       model,
-      max_tokens: 420,
+      max_tokens,
       system: systemPrompt,
       messages: [{ role: "user", content: userMessage }]
     })
@@ -606,13 +696,18 @@ async function callAnthropic(key, model, systemPrompt, userMessage) {
   return String(content);
 }
 
-async function callGemini(key, model, systemPrompt, userMessage) {
+/**
+ * @param {{ maxTokens?: number, temperature?: number }} [gen]
+ */
+async function callGemini(key, model, systemPrompt, userMessage, gen = {}) {
+  const temperature = gen.temperature != null ? gen.temperature : 0.35;
+  const maxOutputTokens = gen.maxTokens != null ? gen.maxTokens : DEFAULT_MAX_COMPLETION_TOKENS;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      generationConfig: { temperature: 0.35, responseMimeType: "application/json" },
+      generationConfig: { temperature, maxOutputTokens, responseMimeType: "application/json" },
       contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\nUser: ${userMessage}` }] }]
     })
   });
@@ -690,19 +785,24 @@ export async function queryRhizohLlm(input, meta = {}) {
     provider
   });
 
-  const systemPrompt = buildSystemPrompt(context);
+  const gen = resolveRhizohGenerationOptions(payload);
+  const systemPromptBase = buildSystemPrompt(context);
+  const systemPrompt =
+    gen.modeDirective && gen.generationModeLabel
+      ? `${systemPromptBase}\n\n## Rhizoh generation: ${gen.generationModeLabel}\n${gen.modeDirective}`
+      : systemPromptBase;
   let rawText = "";
 
   if (provider === "anthropic") {
-    rawText = await callAnthropic(key, model, systemPrompt, message);
+    rawText = await callAnthropic(key, model, systemPrompt, message, gen);
   } else if (provider === "gemini") {
-    rawText = await callGemini(key, model, systemPrompt, message);
+    rawText = await callGemini(key, model, systemPrompt, message, gen);
   } else if (provider === "xai") {
-    rawText = await callOpenAiLike("https://api.x.ai/v1/chat/completions", key, model, systemPrompt, message);
+    rawText = await callOpenAiLike("https://api.x.ai/v1/chat/completions", key, model, systemPrompt, message, {}, gen);
   } else if (provider === "deepseek") {
-    rawText = await callOpenAiLike("https://api.deepseek.com/chat/completions", key, model, systemPrompt, message);
+    rawText = await callOpenAiLike("https://api.deepseek.com/chat/completions", key, model, systemPrompt, message, {}, gen);
   } else if (provider === "mistral") {
-    rawText = await callOpenAiLike("https://api.mistral.ai/v1/chat/completions", key, model, systemPrompt, message);
+    rawText = await callOpenAiLike("https://api.mistral.ai/v1/chat/completions", key, model, systemPrompt, message, {}, gen);
   } else if (provider === "openrouter") {
     rawText = await callOpenAiLike(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -710,19 +810,42 @@ export async function queryRhizohLlm(input, meta = {}) {
       model,
       systemPrompt,
       message,
-      { "HTTP-Referer": "https://castle.local", "X-Title": "Castle Rhizoh Gateway" }
+      { "HTTP-Referer": "https://castle.local", "X-Title": "Castle Rhizoh Gateway" },
+      gen
     );
   } else {
-    rawText = await callOpenAiLike("https://api.openai.com/v1/chat/completions", key, model, systemPrompt, message);
+    rawText = await callOpenAiLike("https://api.openai.com/v1/chat/completions", key, model, systemPrompt, message, {}, gen);
   }
 
   const parsed = safeParseJsonObject(rawText) || {};
-  const reply = String(parsed.reply || "").trim() || "Rhizoh yanıt üretti fakat içerik boş döndü.";
+  const rawReplyFromSchema = String(parsed.reply ?? "").trim();
+
+  /** @type {"ok"|"empty_reply"|"semantic_silence"} */
+  let rhizohDeliveryKind = "ok";
+  let reply;
+  if (!rawReplyFromSchema) {
+    rhizohDeliveryKind = "empty_reply";
+    reply = "Rhizoh yanıt üretti fakat içerik boş döndü.";
+  } else if (/^<SILENCE\b/i.test(rawReplyFromSchema) || rawReplyFromSchema === "<SILENCE>") {
+    rhizohDeliveryKind = "semantic_silence";
+    reply = rawReplyFromSchema;
+  } else {
+    reply = rawReplyFromSchema;
+  }
+
   const directiveRaw = String(parsed.directive || "NONE").toUpperCase();
   const directive = ["FOCUS_RHIZOH", "ZOOM_CASTLE", "ZOOM_AGENT", "ISTANBUL_OVERVIEW", "NONE"].includes(directiveRaw)
     ? directiveRaw
     : "NONE";
   const intents = Array.isArray(parsed.intents) ? parsed.intents : [];
+
+  const rhizohCompressionLedger = {
+    prePromptChars: systemPrompt.length,
+    rawProviderChars: rawText.length,
+    parsedReplyChars: rawReplyFromSchema.length,
+    generationMode: gen.generationModeLabel,
+    maxTokensApplied: gen.maxTokens
+  };
 
   return {
     ok: true,
@@ -733,6 +856,8 @@ export async function queryRhizohLlm(input, meta = {}) {
     intents,
     cognitiveInvoke,
     llmKeyBillingOwner,
-    llmKeyOrigin
+    llmKeyOrigin,
+    rhizohDeliveryKind,
+    rhizohCompressionLedger
   };
 }

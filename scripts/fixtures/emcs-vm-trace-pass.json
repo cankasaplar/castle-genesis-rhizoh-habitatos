@@ -1,0 +1,42 @@
+{
+  "manifestVersion": "EMCS-1.0.0",
+  "vmVersion": "EBVM-1.0",
+  "steps": [
+    {
+      "pc": 0,
+      "gateId": "G0",
+      "impl": "eoiValidator",
+      "stateInHash": "sha256:befe3bec0e778153b8b72b6df7ffc74b752ab6874bf02f64b7b9e10f309f2955",
+      "stateOutHash": "sha256:8eae4c8c4b00124f1cc5ebbf21cb56e9d9846a95e01d9d5e1a6fad8a718cfced",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "pc": 1,
+      "gateId": "G1",
+      "impl": "snapshotLockValidator",
+      "stateInHash": "sha256:8eae4c8c4b00124f1cc5ebbf21cb56e9d9846a95e01d9d5e1a6fad8a718cfced",
+      "stateOutHash": "sha256:cfd6e2d3a4a144d73985f7218d37f4589710e2aed150b884c026600134121c32",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "pc": 2,
+      "gateId": "G2",
+      "impl": "reconcileValidator",
+      "stateInHash": "sha256:cfd6e2d3a4a144d73985f7218d37f4589710e2aed150b884c026600134121c32",
+      "stateOutHash": "sha256:cfd6e2d3a4a144d73985f7218d37f4589710e2aed150b884c026600134121c32",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "pc": 3,
+      "gateId": "G3",
+      "impl": "semanticConstraintValidator",
+      "stateInHash": "sha256:cfd6e2d3a4a144d73985f7218d37f4589710e2aed150b884c026600134121c32",
+      "stateOutHash": "sha256:cfd6e2d3a4a144d73985f7218d37f4589710e2aed150b884c026600134121c32",
+      "ok": true,
+      "detail": null
+    }
+  ]
+}

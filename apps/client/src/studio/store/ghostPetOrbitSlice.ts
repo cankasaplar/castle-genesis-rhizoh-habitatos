@@ -41,7 +41,7 @@ export function stablePetSlotUid(ownerAvatarUid: string): string {
 }
 
 export function isGhostPetSummon(petUid: string): boolean {
-  return petUid.toLowerCase().startsWith("ghost:");
+  return String(petUid || "").toLowerCase().startsWith("ghost:");
 }
 
 function ensureBranch(s: StudioKernelState, branchId: string, causalGraph: CausalGraphRegistry) {

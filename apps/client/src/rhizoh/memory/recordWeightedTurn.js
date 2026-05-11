@@ -13,7 +13,9 @@ import { normalizeEmotionState } from "../emotion/emotionState.js";
  *   outcomeResonance?: number,
  *   emotionsAfter?: Record<string, unknown>,
  *   emotionsBefore?: Record<string, unknown>,
- *   relationship?: { trust?: number, familiarity?: number }
+ *   relationship?: { trust?: number, familiarity?: number },
+ *   epistemic?: Record<string, unknown>,
+ *   modelRoute?: { provider?: string | null, model?: string | null }
  * }} payload
  */
 export function buildRhizohWeightedTurnRecord(payload) {
@@ -35,7 +37,7 @@ export function buildRhizohWeightedTurnRecord(payload) {
       ? Math.min(1, Math.max(0, payload.outcomeResonance))
       : 0.42;
 
-  return {
+  const row = {
     id: `turn_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`,
     ts: Date.now(),
     text: userText.slice(0, 400),
@@ -50,6 +52,13 @@ export function buildRhizohWeightedTurnRecord(payload) {
     tags: inferRhizohMemoryTags(userText, assistantText),
     source: String(payload.source || "")
   };
+  if (payload.epistemic && typeof payload.epistemic === "object") {
+    row.epistemic = payload.epistemic;
+  }
+  if (payload.modelRoute && typeof payload.modelRoute === "object") {
+    row.modelRoute = payload.modelRoute;
+  }
+  return row;
 }
 
 /**

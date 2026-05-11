@@ -1,0 +1,45 @@
+---
+description: Frozen epistemic core boundaries + active habitat for Cursor agents
+alwaysApply: true
+---
+
+# Frozen Core + Habitat (Cursor agent)
+
+**Bu kural dosyası bir execution engine değildir** — çalışan programa doğrudan müdahale etmez; **execution bias / soft policy** üretir (Cursor’un öncelikleri ve sınırları). Gerçek yürütme grafiği = kod + `validateStabilizationGraph.mjs` + CI.
+
+## Truth sources (read before changing architecture)
+
+- [`docs/ARCHITECTURE_POST_FREEZE_SUMMARY.md`](docs/ARCHITECTURE_POST_FREEZE_SUMMARY.md)
+- [`STABILIZATION.md`](STABILIZATION.md), [`SPECFLOW_MARKERS.md`](SPECFLOW_MARKERS.md)
+- [`STABILIZATION_GRAPH.md`](STABILIZATION_GRAPH.md) + hash lock (`scripts/stabilization-graph.sha256.lock`)
+
+## Immutable execution graph (unless explicit v571+ / experimental)
+
+- **v562–v570** phase modules under `apps/client/src/ghost/phase*.js` in the **locked subgraph**: no new imports, topology changes, or behavior tweaks without `STABILIZATION` + graph + lock + `validateStabilizationGraph.mjs` updates in one intentional change set.
+- **Spec layer is non-authoritative for runtime:** docs do not replace code; CI enforces graph + hash; `validateSpecflowCoherence.mjs` enforces policy-doc wiring only.
+
+## Epistemik sınır
+
+- v567–v570 models **how error / mistrust is scored** inside deterministic rules — not stochastic “oracle truth.” Do not describe the frozen core as probabilistic drift unless code explicitly introduces randomness (it does not in this chain).
+
+## SPECFLOW (every sprint item)
+
+- Tag work: **`CORE-ELIGIBLE`** | **`RESEARCH-ONLY`** | **`FUTURE-PROOF-ONLY`** per [`SPECFLOW_MARKERS.md`](SPECFLOW_MARKERS.md).
+- Default for academic formalization: **`RESEARCH-ONLY`** (artifacts in `docs/`, no frozen `phase*.js` edits).
+
+## Multi-observer policy
+
+- Observers (human, Nisa, external LLM, live feeds) **do not** hold execution authority — see [`docs/OBSERVATION_FABRIC_V1.md`](docs/OBSERVATION_FABRIC_V1.md): *Agents may influence interpretation, never execution.*
+- Layer expansion without redefining core: [`docs/LAYER_EXPANSION_PROTOCOL.md`](docs/LAYER_EXPANSION_PROTOCOL.md). Attribution: [`docs/AGENT_IDENTITY_AND_ATTRIBUTION.md`](docs/AGENT_IDENTITY_AND_ATTRIBUTION.md).
+
+## Active habitat (task space)
+
+- **Academic:** [`docs/SPRINT_HABITAT_ACADEMIC.md`](docs/SPRINT_HABITAT_ACADEMIC.md)
+- **Collaboration (Nisa + external LLM / NASA-tier rigor slot):** [`docs/HABITAT_COLLABORATION_ACADEMIC.md`](docs/HABITAT_COLLABORATION_ACADEMIC.md)
+
+## Commands
+
+```bash
+npm run stabilization:validate-graph
+npm run stabilization:validate-specflow
+```

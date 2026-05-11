@@ -1,4 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeFirestore } from "firebase/firestore";
 
 let parsed = null;
 try {
@@ -18,7 +19,21 @@ export const firebaseConfigured = Boolean(
 
 export function getFirebaseApp() {
   if (!firebaseConfigured) return null;
-  if (getApps().length === 0) return initializeApp(parsed);
+  if (getApps().length === 0) {
+    const app = initializeApp(parsed);
+    try {
+      initializeFirestore(app, {
+        experimentalForceLongPolling: true,
+        useFetchStreams: false
+      });
+    } catch (e) {
+      const m = String(e?.message || e);
+      if (!/already|started default/i.test(m)) {
+        console.warn("[Castle] Firestore initializeFirestore:", m);
+      }
+    }
+    return app;
+  }
   return getApp();
 }
 

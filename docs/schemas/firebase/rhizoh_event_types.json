@@ -1,0 +1,17 @@
+{
+  "envelopeVersion": 1,
+  "schemaVersionDefault": 1,
+  "allowedStreams": ["companion", "observe", "chronicle", "castle", "studio"],
+  "typesByStream": {
+    "companion": ["companion_message_sent_v1"],
+    "observe": [
+      "observe_skeleton_ready_v1",
+      "observe_anchor_committed_v1",
+      "observe_live_feed_attached_v1",
+      "observe_telemetry_deferred_v1"
+    ],
+    "chronicle": ["chronicle_entry_sealed_v1"],
+    "castle": ["castle_node_pulse_v1"],
+    "studio": ["studio_workflow_step_v1"]
+  }
+}

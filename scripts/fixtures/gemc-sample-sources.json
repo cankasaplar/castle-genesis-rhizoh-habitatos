@@ -1,0 +1,10 @@
+{
+  "gemcManifestVersion": "1.0",
+  "windowLabel": "sample-window-2026-05",
+  "epochRefs": ["0xepoch1", "0xepoch2"],
+  "craArtifactIds": ["CRA-sample-001", "CRA-sample-002"],
+  "talPointers": ["docs/academic/SESSION_LOG.md#block-example"],
+  "commitAnchors": ["commit:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
+  "compressionTier": "semantic-summary-v0",
+  "prunePolicyRef": "CIL-AMENDMENT-GEMC-POLICY-TBD"
+}

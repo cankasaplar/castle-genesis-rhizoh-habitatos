@@ -2,11 +2,19 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { CastleShellRouter } from "./shell/CastleShellRouter.jsx";
 import { initFirebaseAnalyticsWhenReady } from "./firebase/castleFirebase.js";
-import { installGlobalCrashTelemetry, reportCastleFatal } from "./boot/castleCrashTelemetry.js";
+import {
+  installCastleBootLogFlow,
+  installGlobalCrashTelemetry,
+  reportCastleFatal
+} from "./boot/castleCrashTelemetry.js";
 import "../../../src/index.css";
 
+const bootLog = installCastleBootLogFlow();
+bootLog.start("boot.entry", "main.jsx loaded");
 installGlobalCrashTelemetry();
+bootLog.ok("boot.crash_telemetry", "global error + rejection hooks installed");
 initFirebaseAnalyticsWhenReady();
+bootLog.ok("boot.firebase_analytics", "analytics init requested");
 
 class RootErrorBoundary extends React.Component {
   constructor(props) {
@@ -53,8 +61,29 @@ class RootErrorBoundary extends React.Component {
   }
 }
 
-ReactDOM.createRoot(document.getElementById("app")).render(
+const appEl = document.getElementById("app");
+let reactRoot = window.__CASTLE_REACT_ROOT__;
+if (!reactRoot) {
+  reactRoot = ReactDOM.createRoot(appEl);
+  window.__CASTLE_REACT_ROOT__ = reactRoot;
+}
+reactRoot.render(
   <RootErrorBoundary>
     <CastleShellRouter />
   </RootErrorBoundary>
 );
+bootLog.ok("boot.react_mount", "root rendered; Rhizoh shell routing live");
+
+if (import.meta.env?.VITE_RCIL_LIVE_WIRING === "1") {
+  /** @type {Promise<typeof window.__RCIL_LIVE_WIRING__>} Yükleme bitene kadar `__RCIL_LIVE_WIRING__` yoktur — önce bunu await edin. */
+  window.__RCIL_LIVE_WIRING_READY__ = import("./rhizoh/runtime/rcilLiveWiringV1.js")
+    .then((m) => {
+      m.installRcilLiveWiringBootHook?.();
+      bootLog.ok("boot.rcil_wiring", "RCIL live wiring dev hook (__RCIL_LIVE_WIRING__)");
+      return window.__RCIL_LIVE_WIRING__;
+    })
+    .catch((e) => {
+      bootLog.fail?.("boot.rcil_wiring", String(e?.message || e));
+      throw e;
+    });
+}

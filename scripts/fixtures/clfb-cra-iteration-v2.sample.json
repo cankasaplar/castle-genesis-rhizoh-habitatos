@@ -1,0 +1,29 @@
+{
+  "_clfbNote": "Identity chain node: amendmentId, compensationOf, priorCraAnchor are immutable after creation; state fields evolve via new nodes or controlled refine.",
+  "craVersion": "1.0",
+  "priorCraAnchor": "commit:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "ceeArtifactId": "CRA-sample-002",
+  "amendmentId": "CIL-COMP-SAMPLE-002",
+  "compensationOf": "EP2-1-AEE-V01",
+  "priorAnchor": "commit:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "failureContext": {
+    "codes": ["ASE_ATOMIC_VIOLATION", "AEE_VERIFY_GRAPH_FAILED"],
+    "aeeRunState": "FAILED"
+  },
+  "targetsRemaining": ["docs/EPISTEMIC_PHASE2_EXECUTION_VALIDATION_V1.md"],
+  "targetsReverted": ["docs/temp-promoted.md"],
+  "partialRecovery": {
+    "mode": "ATOMIC_GAP_CLOSE",
+    "inventoryCommit": "commit:cccccccccccccccccccccccccccccccccccccccc"
+  },
+  "retryPolicy": {
+    "name": "IDEMPOTENT_REPLAY",
+    "maxRetries": 2,
+    "note": "Declarative only — each attempt must be logged (TAL / AEE JSON)."
+  },
+  "inject": {
+    "aeePhases": ["parse", "verify", "apply_git", "post_verify"],
+    "failFast": true
+  },
+  "_comment": "Illustrates CLFB-1: execution outcome refined failureContext + inventory; new CRA row with priorCraAnchor."
+}

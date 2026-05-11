@@ -1,0 +1,16 @@
+{
+  "identity": {
+    "anchor": "anchor:demo:001"
+  },
+  "snapshot": {
+    "commitSnapshot": "commit:abc123",
+    "anchor": "anchor:demo:001"
+  },
+  "temporal": {
+    "reconcileWitness": { "status": "clean", "sources": 1 }
+  },
+  "semantic": {
+    "constraintsPass": true,
+    "vector": { "cil": "pass", "ecg": "pass", "ewm": "pass" }
+  }
+}

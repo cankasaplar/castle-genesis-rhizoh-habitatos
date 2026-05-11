@@ -13,9 +13,10 @@ function statusDotClass(phase) {
   return "bg-cyan-400 animate-pulse";
 }
 
-export const RhizohGatewayBanner = memo(({ model, onRetry, hasHttpOrigin = false, className = "" }) => {
+export const RhizohGatewayBanner = memo(({ model, onRetry, hasHttpOrigin = false, conversationPhaseLabel = "", className = "" }) => {
   const { phase, headline, hint, detail, attempt, maxAttempts, showSlowLoading } = model;
   const [gateUrlDraft, setGateUrlDraft] = useState("");
+  const [expanded, setExpanded] = useState(false);
   const Icon =
     phase === "offline" || phase === "offline_dns"
       ? WifiOff
@@ -37,8 +38,8 @@ export const RhizohGatewayBanner = memo(({ model, onRetry, hasHttpOrigin = false
         {model.liveMessage}
         {detail ? ` ${detail}` : ""}
       </span>
-      <div className="flex flex-wrap items-start gap-3">
-        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/40">
+      <div className="flex flex-wrap items-start gap-2">
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/40">
           <Icon
             className={`h-4 w-4 ${phase === "connecting" || phase === "reconnecting" || phase === "initializing" ? "animate-spin text-cyan-300" : phase === "connected" ? "text-emerald-300" : "text-white/80"}`}
             aria-hidden
@@ -47,26 +48,41 @@ export const RhizohGatewayBanner = memo(({ model, onRetry, hasHttpOrigin = false
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className={`h-2 w-2 shrink-0 rounded-full ${statusDotClass(phase)}`} aria-hidden />
-            <span className="text-[11px] font-semibold tracking-wide text-white/95">{headline}</span>
+            <span className="text-[10px] font-semibold tracking-wide text-white/95">{headline}</span>
+            {conversationPhaseLabel ? (
+              <span
+                className="rounded-md border border-cyan-500/35 bg-cyan-950/40 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-cyan-100/95"
+                title="Rhizoh konuşma fazı (ürün orkestrasyonu)"
+              >
+                {conversationPhaseLabel}
+              </span>
+            ) : null}
             {(phase === "reconnecting" || phase === "connecting") && attempt > 0 ? (
               <span className="text-[9px] font-mono text-cyan-200/80">
                 {phase === "reconnecting" ? `${attempt}/${maxAttempts}` : ""}
               </span>
             ) : null}
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              className="ml-auto rounded border border-white/15 px-1.5 py-0.5 text-[8px] text-white/60 hover:bg-white/10"
+            >
+              {expanded ? "Gizle" : "Detay"}
+            </button>
           </div>
-          <p className="text-[10px] leading-relaxed text-white/70">{hint}</p>
-          {detail ? (
+          <p className="text-[9px] leading-relaxed text-white/70">{hint}</p>
+          {expanded && detail ? (
             <p className="text-[9px] leading-relaxed text-amber-200/90 border-t border-white/5 pt-1.5 mt-1.5">
               <span className="font-semibold text-white/50">Ayrıntı: </span>
               {detail}
             </p>
           ) : null}
-          {showSlowLoading && (phase === "connecting" || phase === "reconnecting" || phase === "initializing") ? (
+          {expanded && showSlowLoading && (phase === "connecting" || phase === "reconnecting" || phase === "initializing") ? (
             <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/10">
               <div className="h-full w-1/3 animate-pulse rounded-full bg-gradient-to-r from-cyan-500/40 via-cyan-300/80 to-cyan-500/40" />
             </div>
           ) : null}
-          <div className="flex flex-wrap gap-2 pt-2">
+          <div className="flex flex-wrap gap-2 pt-1">
             {rhizohGatewayPhaseShowsRetry(phase) && hasHttpOrigin ? (
               <button
                 type="button"
@@ -77,7 +93,7 @@ export const RhizohGatewayBanner = memo(({ model, onRetry, hasHttpOrigin = false
                 Yeniden dene
               </button>
             ) : null}
-            {phase === "unconfigured" ? (
+            {expanded && phase === "unconfigured" ? (
               <div className="w-full space-y-1.5 rounded-lg border border-amber-400/25 bg-amber-950/20 p-2">
                 <div className="text-[9px] font-semibold text-amber-100/90">Geçit URL (sayfa yenilenmeden)</div>
                 <div className="flex flex-wrap gap-2">
@@ -113,7 +129,7 @@ export const RhizohGatewayBanner = memo(({ model, onRetry, hasHttpOrigin = false
                 </p>
               </div>
             ) : null}
-            <span className="text-[9px] text-white/45 self-center">
+            <span className="text-[8px] text-white/45 self-center">
               İpucu: bağlantı yoksa yine de komut gönderebilirsiniz — yerel demo yanıtı üretilir.
             </span>
           </div>

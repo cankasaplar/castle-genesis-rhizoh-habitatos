@@ -7,6 +7,7 @@ import type {
 import { PRESENCE_ZONE_IDS } from "../lib/presenceRoomZones";
 import { isPresenceRole } from "../lib/presenceRoles";
 import { identityAllowsAction } from "./permissionResolver";
+import { evaluateRhizohMembraneGate } from "../../rhizoh/constitution/actionPolicyMatrixV1.js";
 
 function isPresenceZoneId(v: unknown): v is string {
   return typeof v === "string" && (PRESENCE_ZONE_IDS as readonly string[]).includes(v);
@@ -36,6 +37,11 @@ function authorize(identity: IdentityState, action: string): { ok: true } | { ok
       action.startsWith("world."))
   ) {
     return { ok: false, error: "no_owner_session" };
+  }
+  const membraneFloor = identity.rhizohMembraneFloor;
+  if (membraneFloor != null && String(membraneFloor).length > 0) {
+    const gate = evaluateRhizohMembraneGate(action, membraneFloor);
+    if (!gate.ok) return { ok: false, error: gate.error };
   }
   if (!identityAllowsAction(identity.permissions, action)) {
     return { ok: false, error: "forbidden" };

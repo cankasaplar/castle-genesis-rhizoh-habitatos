@@ -41,13 +41,17 @@ function newTurnId(): string {
   return `turn:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function safeToolId(intent: RhizohAgentToolIntentV0): string {
+  return String((intent as { toolId?: unknown })?.toolId ?? "").trim();
+}
+
 function normalizeToolKey(intent: RhizohAgentToolIntentV0): string {
-  return intent.toolId.trim().toLowerCase().replace(/\s+/g, "_");
+  return safeToolId(intent).toLowerCase().replace(/\s+/g, "_");
 }
 
 function defaultCooldownMs(intent: RhizohAgentToolIntentV0): number {
   const a = (intent.kernelAction ?? "").toLowerCase();
-  const t = intent.toolId.toLowerCase();
+  const t = safeToolId(intent).toLowerCase();
   if (a.includes("speak") || t.includes("speak")) return 2000;
   if (a.includes("move") || t.includes("move")) return 1000;
   if (a.includes("broadcast") || t.includes("broadcast")) return 5000;
@@ -58,7 +62,8 @@ function resolveKernelAction(intent: RhizohAgentToolIntentV0): string | undefine
   if (intent.kernelAction && String(intent.kernelAction).trim()) {
     return String(intent.kernelAction).trim();
   }
-  const t = intent.toolId.toLowerCase();
+  const t = safeToolId(intent).toLowerCase();
+  if (!t) return undefined;
   if (t === "move" || t.endsWith(".move")) return "presence.avatar.move";
   if (t.includes("speak_start") || t === "speak.start") return "presence.avatar.speak.start";
   if (t.includes("speak_stop") || t === "speak.stop") return "presence.avatar.speak.stop";

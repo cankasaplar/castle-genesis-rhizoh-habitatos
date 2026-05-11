@@ -1,0 +1,21 @@
+{
+  "gcrBundleVersion": "1.0",
+  "cras": [
+    {
+      "amendmentId": "CIL-X-1",
+      "compensationOf": null,
+      "priorAnchor": "commit:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "priorCraAnchor": null,
+      "targetsRemaining": ["docs/a-only.md"],
+      "inject": { "aeePhases": ["parse", "verify"], "failFast": true }
+    },
+    {
+      "amendmentId": "CIL-X-2",
+      "compensationOf": "CIL-X-1",
+      "priorAnchor": "commit:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "priorCraAnchor": "commit:parent-cra",
+      "targetsRemaining": ["docs/b-only.md"],
+      "inject": { "aeePhases": ["parse", "verify"], "failFast": true }
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+# Production stabilization — audit zinciri self-test + constitutional replay determinism (LLM yok).
+name: Rhizoh Production Stabilization
+
+on:
+  pull_request:
+    paths:
+      - "apps/client/src/rhizoh/constitution/**"
+      - "apps/client/src/ghost/phase*.js"
+      - "apps/gateway/src/rhizoh*.js"
+      - "scripts/rhizoh-*.mjs"
+      - "scripts/validateStabilizationGraph.mjs"
+      - "scripts/print-stabilization-graph-hash.mjs"
+      - "scripts/stabilization-graph.sha256.lock"
+      - "STABILIZATION_GRAPH.md"
+      - "STABILIZATION.md"
+      - "SPECFLOW_MARKERS.md"
+      - "AGENTS.md"
+      - ".cursor/rules/frozen-core-habitat.mdc"
+      - "docs/SPRINT_HABITAT_ACADEMIC.md"
+      - "docs/HABITAT_COLLABORATION_ACADEMIC.md"
+      - "docs/SPRINT_BOOTSTRAP_TEMPLATE.md"
+      - "docs/CONTEXT_RECONSTRUCTION_PROMPT.md"
+      - "docs/ASSET_CONTRACT_SPEC.md"
+      - "docs/ASSET_CONTRACT_V1_TO_WORLD_MODEL_MAPPING.md"
+      - "docs/OBSERVATION_FABRIC_V1.md"
+      - "docs/LAYER_EXPANSION_PROTOCOL.md"
+      - "docs/AGENT_IDENTITY_AND_ATTRIBUTION.md"
+      - "docs/WORLDSTATE_V0_SPEC.md"
+      - "docs/schemas/worldstate-v0.schema.json"
+      - "docs/SPRINT_PREP_ACADEMIC_ROBOTICS_FROZEN_CORE.md"
+      - "docs/ARCHITECTURE_POST_FREEZE_SUMMARY.md"
+      - "scripts/validateSpecflowCoherence.mjs"
+      - "scripts/validateCilAmendment.mjs"
+      - "docs/CIL_AMENDMENT_AND_ECG_CONSTRAINTS_V1.md"
+      - "docs/EPISTEMIC_PHASE2_EXECUTION_VALIDATION_V1.md"
+      - "docs/EPISTEMIC_TRIPLE_SURFACE_SPEC_V1.md"
+      - ".github/workflows/rhizoh-stabilization.yml"
+  push:
+    branches: [main, master]
+    paths:
+      - "apps/client/src/rhizoh/constitution/**"
+      - "apps/client/src/ghost/phase*.js"
+      - "apps/gateway/src/rhizoh*.js"
+      - "scripts/rhizoh-*.mjs"
+      - "scripts/validateStabilizationGraph.mjs"
+      - "scripts/print-stabilization-graph-hash.mjs"
+      - "scripts/stabilization-graph.sha256.lock"
+      - "STABILIZATION_GRAPH.md"
+      - "STABILIZATION.md"
+      - "SPECFLOW_MARKERS.md"
+      - "AGENTS.md"
+      - ".cursor/rules/frozen-core-habitat.mdc"
+      - "docs/SPRINT_HABITAT_ACADEMIC.md"
+      - "docs/HABITAT_COLLABORATION_ACADEMIC.md"
+      - "docs/SPRINT_BOOTSTRAP_TEMPLATE.md"
+      - "docs/CONTEXT_RECONSTRUCTION_PROMPT.md"
+      - "docs/ASSET_CONTRACT_SPEC.md"
+      - "docs/ASSET_CONTRACT_V1_TO_WORLD_MODEL_MAPPING.md"
+      - "docs/OBSERVATION_FABRIC_V1.md"
+      - "docs/LAYER_EXPANSION_PROTOCOL.md"
+      - "docs/AGENT_IDENTITY_AND_ATTRIBUTION.md"
+      - "docs/WORLDSTATE_V0_SPEC.md"
+      - "docs/schemas/worldstate-v0.schema.json"
+      - "docs/SPRINT_PREP_ACADEMIC_ROBOTICS_FROZEN_CORE.md"
+      - "docs/ARCHITECTURE_POST_FREEZE_SUMMARY.md"
+      - "scripts/validateSpecflowCoherence.mjs"
+      - "scripts/validateCilAmendment.mjs"
+      - "docs/CIL_AMENDMENT_AND_ECG_CONSTRAINTS_V1.md"
+      - "docs/EPISTEMIC_PHASE2_EXECUTION_VALIDATION_V1.md"
+      - "docs/EPISTEMIC_TRIPLE_SURFACE_SPEC_V1.md"
+
+concurrency:
+  group: rhizoh-stab-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  stabilization-gates:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit chain verify (self-test)
+        run: node scripts/rhizoh-audit-chain-verify.mjs
+
+      - name: Frozen epistemic core DAG (v562–v570)
+        run: npm run stabilization:validate-graph
+
+      - name: SPECFLOW policy doc coherence
+        run: npm run stabilization:validate-specflow
+
+      - name: Constitutional replay determinism (Vitest)
+        run: npm run test -w apps/client -- src/rhizoh/constitution/__tests__/constitutionalReplayDeterminism.test.ts

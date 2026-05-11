@@ -1,0 +1,28 @@
+{
+  "gcrBundleVersion": "1.0",
+  "commitSnapshot": "optional:git-sha-for-witness",
+  "cras": [
+    {
+      "craVersion": "1.0",
+      "priorCraAnchor": null,
+      "ceeArtifactId": "CRA-habitat-a-001",
+      "amendmentId": "CIL-AMEND-A",
+      "compensationOf": null,
+      "priorAnchor": "commit:1111111111111111111111111111111111111111",
+      "targetsRemaining": ["docs/shared-spec.md"],
+      "failureContext": { "codes": [], "aeeRunState": "VERIFIED" },
+      "inject": { "aeePhases": ["parse", "verify"], "failFast": true }
+    },
+    {
+      "craVersion": "1.0",
+      "priorCraAnchor": null,
+      "ceeArtifactId": "CRA-habitat-b-001",
+      "amendmentId": "CIL-AMEND-B",
+      "compensationOf": null,
+      "priorAnchor": "commit:2222222222222222222222222222222222222222",
+      "targetsRemaining": ["docs/shared-spec.md"],
+      "failureContext": { "codes": ["AEE_VERIFY_GRAPH_FAILED"], "aeeRunState": "FAILED" },
+      "inject": { "aeePhases": ["parse", "verify", "apply_git"], "failFast": true }
+    }
+  ]
+}

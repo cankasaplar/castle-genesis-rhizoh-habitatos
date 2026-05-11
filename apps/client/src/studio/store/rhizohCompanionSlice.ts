@@ -39,7 +39,8 @@ export function stableRhizohCompanionUid(ownerAvatarUid: string): string {
 }
 
 export function isRhizohCompanionInvoke(agentUid: string, intent?: string): boolean {
-  if (agentUid.toLowerCase().includes("rhizoh")) return true;
+  const uid = String(agentUid || "").toLowerCase();
+  if (uid.includes("rhizoh")) return true;
   if (intent && /@rhizoh\b/i.test(intent)) return true;
   return false;
 }

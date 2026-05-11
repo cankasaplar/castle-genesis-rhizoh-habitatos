@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rhizoh.local/schemas/payloads/companion_message_sent_v1.schema.json",
+  "title": "companion_message_sent_v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["threadId", "messageRole"],
+  "properties": {
+    "threadId": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "messageRole": { "type": "string", "enum": ["user", "assistant", "system"] },
+    "contentSummary": { "type": "string", "maxLength": 2000 }
+  }
+}

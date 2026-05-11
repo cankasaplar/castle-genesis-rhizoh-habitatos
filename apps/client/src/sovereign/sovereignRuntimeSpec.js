@@ -53,6 +53,9 @@ export const FIREBASE_PATH_KEYS = {
   memoryRegistry: "castle/genesis/v1/registries/memory",
   capabilityIndex: "castle/genesis/v1/capabilities/index",
   bootLog: "castle/genesis/v1/runtime/boot_log",
+  /** RCIL Live Wiring Sprint — epistemic event ledger (Firestore sub-path; rules: `castle/**`) */
+  rcilEventLedger: "castle/genesis/v1/runtime/rcil_events",
+  rcilEpistemicTrace: "castle/genesis/v1/runtime/rcil_trace_tail",
   healthMetrics: "castle/genesis/v1/runtime/health",
   scheduleLedger: "castle/genesis/v1/runtime/schedule",
   chronosClocks: "castle/genesis/v1/chronos/clocks",

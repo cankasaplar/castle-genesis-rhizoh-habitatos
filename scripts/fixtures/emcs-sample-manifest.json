@@ -1,0 +1,32 @@
+{
+  "manifestVersion": "EMCS-1.0.0",
+  "frozenCoreHash": "sha256:PLACEHOLDER_CORE_HASH",
+
+  "semantics": {
+    "vg": {
+      "entryGates": ["G0", "G1", "G2", "G3"],
+      "failFast": true
+    },
+    "pal": {
+      "associativity": "normalized-only",
+      "identity": "none",
+      "projectionOrder": ["Pack", "EWM.project"]
+    },
+    "csb": {
+      "closure": true,
+      "singlePrimaryError": true
+    }
+  },
+
+  "gateMap": {
+    "G0": "eoiValidator",
+    "G1": "snapshotLockValidator",
+    "G2": "reconcileValidator",
+    "G3": "semanticConstraintValidator"
+  },
+
+  "errorSpace": {
+    "CSB_ERR_*": "closed-algebra",
+    "primaryOnly": true
+  }
+}

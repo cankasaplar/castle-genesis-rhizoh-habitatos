@@ -606,6 +606,11 @@ export interface IdentityState {
   permissions: Record<string, boolean>;
   delegates: string[];
   sharedOwnerIds: string[];
+  /**
+   * Optional: RHIZOH ActionPolicyMatrix v1 actor stratum. When set, KernelGuard enforces
+   * the semantic class `identity_floor` before permission wildcards (`actionPolicyMatrixV1`).
+   */
+  rhizohMembraneFloor?: "ghost" | "trusted" | "verified" | "sovereign_verified";
 }
 
 /** Merge / shadow conflict hint for Fracture View (lite heuristics). */

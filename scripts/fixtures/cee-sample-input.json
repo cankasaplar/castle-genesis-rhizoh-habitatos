@@ -1,0 +1,12 @@
+{
+  "compensationId": "CIL-COMP-SAMPLE-001",
+  "date": "2026-05-10",
+  "compensationOf": "EP2-1-AEE-V01",
+  "failureContext": "ASE_ATOMIC_VIOLATION (illustrative dry-run)",
+  "priorAnchor": "commit:0000000000000000000000000000000000000000",
+  "targets": ["docs/EPISTEMIC_PHASE2_EXECUTION_VALIDATION_V1.md"],
+  "specflow": "FUTURE-PROOF-ONLY",
+  "summary": "Sample compensation block — replace placeholders before use.",
+  "rationale": "Demonstrates CEE-1 template output.",
+  "attestations": "- Role: Maintainer — Identity: local — Ref: cee-template fixture"
+}

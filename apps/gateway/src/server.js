@@ -63,8 +63,23 @@ import {
   listSocialChannels
 } from "./studioOpsStore.js";
 import { metrics as infraMetrics } from "./infra/metrics.js";
+import { renderRhizohPrometheusMetrics } from "./infra/rhizohEnterpriseMetrics.js";
 import { scoreHealth } from "./infra/healthScore.js";
 import { getTraceById, listTracesBySession } from "./infra/traceRegistry.js";
+import { canonicalEpistemicSealString, hashAndSignEpistemicSeal, EPISTEMIC_SEAL_SCHEMA } from "./epistemicSeal.js";
+import { persistEpistemicLedgerBatch } from "./epistemicLedgerStore.js";
+import { persistEpistemicForecastBatch } from "./epistemicForecastStore.js";
+import { buildRhizohExternalGroundTruthPayload } from "./rhizohExternalGroundTruthGateway.js";
+import { ingestRhizohExternalLossBatchHttp } from "./rhizohExternalLossIngestGateway.js";
+import {
+  ingestRhizohProductOutcomeHttp,
+  listRhizohProductOutcomeAggregates,
+  verifyRhizohOutcomeHmac,
+  verifyRhizohOutcomeSourceToken
+} from "./rhizohProductOutcomeIngestGateway.js";
+import { initRhizoh } from "./rhizohProductionBootstrap.js";
+import { handleStripeCheckoutCreate, handleStripeMembershipWebhook } from "./stripeWebhookMembership.js";
+import { buildRealityHealthPayload } from "./edgeRealityConsistencyV1.js";
 
 /** Render / Fly / Railway: `PORT` — yoksa `CASTLE_GATEWAY_PORT` — yoksa 8090. */
 const PORT =
@@ -122,7 +137,7 @@ function applyHttpCorsHeaders(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Castle-Dev-Uid, X-Castle-Guest-Id"
+    "Content-Type, Authorization, X-Castle-Dev-Uid, X-Castle-Guest-Id, X-Castle-Gateway-Token, X-Rhizoh-Outcome-Signature, X-Rhizoh-Outcome-Source-Token"
   );
 }
 const REQUIRE_AUTH = process.env.CASTLE_REQUIRE_AUTH === "true";
@@ -136,7 +151,20 @@ const TELEGRAM_BOT_TOKEN = process.env.CASTLE_TELEGRAM_BOT_TOKEN || "";
 const WHATSAPP_TOKEN = process.env.CASTLE_WHATSAPP_TOKEN || "";
 const WHATSAPP_PHONE_NUMBER_ID = process.env.CASTLE_WHATSAPP_PHONE_NUMBER_ID || "";
 const RL_RHIZOH_LLM_PER_MIN = Math.max(5, Number(process.env.CASTLE_RL_RHIZOH_LLM_PER_MIN || 40));
+const RL_RHIZOH_EXTERNAL_TRUTH_PER_MIN = Math.max(10, Number(process.env.CASTLE_RL_RHIZOH_EXTERNAL_TRUTH_PER_MIN || 120));
+const RL_RHIZOH_EXTERNAL_LOSS_BATCH_PER_MIN = Math.max(8, Number(process.env.CASTLE_RL_RHIZOH_EXTERNAL_LOSS_BATCH_PER_MIN || 48));
+const RL_RHIZOH_PRODUCT_OUTCOME_PER_MIN = Math.max(4, Number(process.env.CASTLE_RL_RHIZOH_PRODUCT_OUTCOME_PER_MIN || 24));
+const RL_RHIZOH_PRODUCT_OUTCOME_SUBJECT_PER_MIN = Math.max(
+  4,
+  Number(process.env.CASTLE_RL_RHIZOH_PRODUCT_OUTCOME_SUBJECT_PER_MIN || 18)
+);
+const RL_EPISTEMIC_SEAL_PER_MIN = Math.max(10, Number(process.env.CASTLE_RL_EPISTEMIC_SEAL_PER_MIN || 120));
+const RL_EPISTEMIC_LOG_PER_MIN = Math.max(20, Number(process.env.CASTLE_RL_EPISTEMIC_LOG_PER_MIN || 240));
+const EPISTEMIC_SEAL_SECRET = String(
+  process.env.CASTLE_EPISTEMIC_SEAL_SECRET || process.env.CASTLE_GATEWAY_TOKEN || ""
+).trim();
 const RL_LLM_CONN_TEST_PER_MIN = Math.max(2, Number(process.env.CASTLE_RL_LLM_CONNECTION_TEST_PER_MIN || 8));
+const rhizohRuntime = initRhizoh();
 
 /** İstemci: llmKeySource veya keySource — env | user_connection | auto */
 function normalizeClientLlmKeySource(raw) {
@@ -150,6 +178,14 @@ function normalizeClientLlmKeySource(raw) {
 function sendJson(res, statusCode, payload) {
   res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(payload));
+}
+
+function logRhizohHealth(stage, detail = {}) {
+  try {
+    console.info(`[RHIZOH_OK] ${String(stage || "unknown")}`, detail && typeof detail === "object" ? detail : {});
+  } catch {
+    /* noop */
+  }
 }
 
 function renderInfraMetricsProm() {
@@ -466,11 +502,32 @@ function readHttpJson(req, limit = 128 * 1024) {
   });
 }
 
+/** Ham gövde (HMAC doğrulaması için). */
+function readHttpBodyText(req, limit = 128 * 1024) {
+  return new Promise((resolve, reject) => {
+    let buf = "";
+    req.on("data", (chunk) => {
+      buf += chunk.toString("utf8");
+      if (Buffer.byteLength(buf, "utf8") > limit) reject(new Error("payload_too_large"));
+    });
+    req.on("end", () => resolve(buf));
+    req.on("error", reject);
+  });
+}
+
 function maskOpaqueId(value) {
   const t = String(value || "");
   if (!t) return "(empty)";
   if (t.length <= 8) return "****";
   return `${t.slice(0, 4)}…${t.slice(-2)}`;
+}
+
+function readGatewayHttpToken(req) {
+  const x = String(req.headers?.["x-castle-gateway-token"] || "").trim();
+  if (x) return x;
+  const auth = String(req.headers?.authorization || "");
+  const m = /^Bearer\s+(.+)$/i.exec(auth);
+  return m ? String(m[1] || "").trim() : "";
 }
 
 async function resolveHttpUser(req) {
@@ -510,6 +567,16 @@ const httpServer = createServer(async (req, res) => {
 
   const pathname = getHttpPathname(req);
 
+  if (req.method === "POST" && pathname === "/webhooks/stripe") {
+    await handleStripeMembershipWebhook(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/billing/stripe/checkout") {
+    await handleStripeCheckoutCreate(req, res, { readHttpJson, resolveHttpUser, sendJson });
+    return;
+  }
+
   if (req.method === "GET" && pathname === "/health/live") {
     if (process.env.CASTLE_GATEWAY_MAINTENANCE === "true") {
       sendJson(res, 503, { ok: false, live: false, dns: true, phase: "maintenance", service: "castle-gateway" });
@@ -540,6 +607,12 @@ const httpServer = createServer(async (req, res) => {
     } catch (e) {
       sendJson(res, 503, { ok: false, ready: false, reason: String(e?.message || e), service: "castle-gateway" });
     }
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/health/reality") {
+    const payload = buildRealityHealthPayload();
+    sendJson(res, payload.ok ? 200 : 503, payload);
     return;
   }
 
@@ -627,6 +700,16 @@ const httpServer = createServer(async (req, res) => {
   if (req.method === "GET" && pathname === "/infra/metrics") {
     res.writeHead(200, { "Content-Type": "text/plain; version=0.0.4; charset=utf-8" });
     res.end(renderInfraMetricsProm());
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.infraPrometheusMetrics) {
+    if (process.env.CASTLE_PROMETHEUS_METRICS !== "1") {
+      sendJson(res, 404, { ok: false, error: "prometheus_metrics_disabled" });
+      return;
+    }
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end(renderRhizohPrometheusMetrics());
     return;
   }
   if (req.method === "GET" && pathname.startsWith("/infra/traces/")) {
@@ -1716,11 +1799,151 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "POST" && req.url === "/rhizoh/llm") {
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.externalTruth) {
+    try {
+      if (process.env.RHIZOH_EXTERNAL_TRUTH_REQUIRE_TOKEN === "1" && REQUIRED_GATEWAY_TOKEN) {
+        const tok = readGatewayHttpToken(req);
+        if (tok !== REQUIRED_GATEWAY_TOKEN) {
+          sendJson(res, 401, { ok: false, error: "gateway_token_required" });
+          return;
+        }
+      }
+      const ip = getHttpClientIp(req);
+      if (!checkHttpRateLimit(`rhizoh_external_truth:${ip}`, RL_RHIZOH_EXTERNAL_TRUTH_PER_MIN, 60_000)) {
+        sendJson(res, 429, { ok: false, error: "rate_limit_exceeded" });
+        return;
+      }
+      sendJson(res, 200, buildRhizohExternalGroundTruthPayload(req));
+    } catch (e) {
+      sendJson(res, 500, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && pathname === rhizohRuntime.routes.productOutcome) {
+    try {
+      if (process.env.RHIZOH_PRODUCT_OUTCOME_REQUIRE_TOKEN === "1" && REQUIRED_GATEWAY_TOKEN) {
+        const tok = readGatewayHttpToken(req);
+        if (tok !== REQUIRED_GATEWAY_TOKEN) {
+          sendJson(res, 401, { ok: false, error: "gateway_token_required" });
+          return;
+        }
+      }
+      const ip = getHttpClientIp(req);
+      if (!checkHttpRateLimit(`rhizoh_product_outcome:${ip}`, RL_RHIZOH_PRODUCT_OUTCOME_PER_MIN, 60_000)) {
+        sendJson(res, 429, { ok: false, error: "rate_limit_exceeded" });
+        return;
+      }
+      const rawBody = await readHttpBodyText(req, 64 * 1024);
+      const body = rawBody.trim() ? safeJsonParse(rawBody) : null;
+      if (!body || typeof body !== "object") {
+        sendJson(res, 400, { ok: false, error: "invalid_json_payload" });
+        return;
+      }
+      const sigHdr = String(req.headers?.["x-rhizoh-outcome-signature"] || "").trim();
+      const hmacV = verifyRhizohOutcomeHmac(rawBody, sigHdr);
+      if (!hmacV.ok) {
+        sendJson(res, 401, { ok: false, error: hmacV.error || "outcome_hmac_invalid" });
+        return;
+      }
+      const srcTokHdr = String(req.headers?.["x-rhizoh-outcome-source-token"] || "").trim();
+      const srcV = verifyRhizohOutcomeSourceToken(body.source, srcTokHdr);
+      if (!srcV.ok) {
+        sendJson(res, 401, { ok: false, error: srcV.error || "outcome_source_token_invalid" });
+        return;
+      }
+      const subjectKey = String(body.subjectKey || "").trim().slice(0, 128);
+      if (
+        subjectKey &&
+        !checkHttpRateLimit(
+          `rhizoh_product_outcome_subj:${subjectKey}`,
+          RL_RHIZOH_PRODUCT_OUTCOME_SUBJECT_PER_MIN,
+          60_000
+        )
+      ) {
+        sendJson(res, 429, { ok: false, error: "rate_limit_subject" });
+        return;
+      }
+      const result = ingestRhizohProductOutcomeHttp(body, { ip });
+      if (!result.ok) {
+        sendJson(res, 400, { ok: false, error: result.error || "ingest_failed" });
+        return;
+      }
+      sendJson(res, 200, {
+        ok: true,
+        schemaVersion: "1.1.0",
+        aggregate: result.aggregate,
+        integrity: result.integrity
+      });
+    } catch (e) {
+      sendJson(res, 400, { ok: false, error: String(e?.message || e || "outcome_failed") });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.productOutcomeAggregate) {
+    try {
+      if (process.env.RHIZOH_PRODUCT_OUTCOME_REQUIRE_TOKEN === "1" && REQUIRED_GATEWAY_TOKEN) {
+        const tok = readGatewayHttpToken(req);
+        if (tok !== REQUIRED_GATEWAY_TOKEN) {
+          sendJson(res, 401, { ok: false, error: "gateway_token_required" });
+          return;
+        }
+      }
+      const ip = getHttpClientIp(req);
+      if (!checkHttpRateLimit(`rhizoh_product_outcome_agg:${ip}`, RL_RHIZOH_PRODUCT_OUTCOME_PER_MIN, 60_000)) {
+        sendJson(res, 429, { ok: false, error: "rate_limit_exceeded" });
+        return;
+      }
+      const u = new URL(String(req.url || "/"), "http://localhost");
+      const cohortId = u.searchParams.get("cohortId") || "";
+      const decisionFingerprint = u.searchParams.get("decisionFingerprint") || "";
+      const limit = u.searchParams.get("limit") || "50";
+      const rows = listRhizohProductOutcomeAggregates({
+        cohortId: cohortId || undefined,
+        decisionFingerprint: decisionFingerprint || undefined,
+        limit: Number(limit) || 50
+      });
+      sendJson(res, 200, { ok: true, schemaVersion: "1.1.0", rows });
+    } catch (e) {
+      sendJson(res, 500, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && pathname === rhizohRuntime.routes.externalLossBatch) {
+    try {
+      if (process.env.RHIZOH_EXTERNAL_LOSS_BATCH_REQUIRE_TOKEN === "1" && REQUIRED_GATEWAY_TOKEN) {
+        const tok = readGatewayHttpToken(req);
+        if (tok !== REQUIRED_GATEWAY_TOKEN) {
+          sendJson(res, 401, { ok: false, error: "gateway_token_required" });
+          return;
+        }
+      }
+      const ip = getHttpClientIp(req);
+      if (!checkHttpRateLimit(`rhizoh_external_loss_batch:${ip}`, RL_RHIZOH_EXTERNAL_LOSS_BATCH_PER_MIN, 60_000)) {
+        sendJson(res, 429, { ok: false, error: "rate_limit_exceeded" });
+        return;
+      }
+      const body = await readHttpJson(req, 256 * 1024);
+      const result = ingestRhizohExternalLossBatchHttp(body, { ip });
+      if (!result.ok) {
+        sendJson(res, 400, { ok: false, error: result.error || "ingest_failed" });
+        return;
+      }
+      sendJson(res, 200, { ok: true, accepted: result.accepted ?? 0 });
+    } catch (e) {
+      sendJson(res, 400, { ok: false, error: String(e?.message || e || "batch_failed") });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && req.url === rhizohRuntime.routes.rhizohLlm) {
     try {
       const payload = await readHttpJson(req);
       const auth = await resolveHttpUser(req);
       const ip = getHttpClientIp(req);
+      logRhizohHealth("gateway_accept", { route: rhizohRuntime.routes.rhizohLlm, auth: auth.ok ? "ok" : "anon", ip });
       const rlKey = auth.ok ? `uid:${auth.uid}` : `ip:${ip}`;
       if (!checkHttpRateLimit(`rhizoh_llm:${rlKey}`, RL_RHIZOH_LLM_PER_MIN, 60_000)) {
         return sendJson(res, 429, {
@@ -1801,6 +2024,12 @@ const httpServer = createServer(async (req, res) => {
         resolvedModel,
         connApiKey
       });
+      logRhizohHealth("llm_response", {
+        route: rhizohRuntime.routes.rhizohLlm,
+        traceId,
+        turnLatencyMs: Number(turnLatencyMs || 0),
+        keyMode
+      });
       sendJson(res, 200, {
         ...result,
         connectionId: conn?.id || null,
@@ -1817,12 +2046,126 @@ const httpServer = createServer(async (req, res) => {
       if (msg === "rate_limit_exceeded") status = 429;
       else if (["server_llm_key_missing", "user_llm_connection_required", "message_required", "missing_api_key"].includes(code) || msg.includes("missing_api_key_for_"))
         status = 400;
+      let rhizohFailureKind = "provider_error";
+      if (msg === "rate_limit_exceeded") rhizohFailureKind = "rate_limit";
+      else if (status === 400) rhizohFailureKind = "client_config";
+      else if (msg.startsWith("provider_http_")) {
+        const st = Number(msg.replace("provider_http_", ""));
+        if (st === 408 || st === 504) rhizohFailureKind = "timeout";
+        else rhizohFailureKind = "provider_error";
+      } else if (/timeout|timed out|ETIMEDOUT/i.test(msg)) rhizohFailureKind = "timeout";
+
+      const providerHttpMatch = msg.match(/^provider_http_(\d{3})$/);
       sendJson(res, status, {
         ok: false,
+        rhizohFailureKind,
+        ...(providerHttpMatch ? { providerHttpStatus: Number(providerHttpMatch[1]) } : {}),
         error: msg || "rhizoh_llm_failed",
         reply: status === 500 ? "Rhizoh bağlantısı geçici olarak kesildi." : msg,
         directive: "NONE"
       });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && pathname === rhizohRuntime.routes.epistemicSeal) {
+    try {
+      if (!EPISTEMIC_SEAL_SECRET) {
+        sendJson(res, 503, { ok: false, error: "epistemic_seal_disabled" });
+        return;
+      }
+      if (REQUIRED_GATEWAY_TOKEN) {
+        const tok = readGatewayHttpToken(req);
+        if (tok !== REQUIRED_GATEWAY_TOKEN) {
+          sendJson(res, 401, { ok: false, error: "gateway_token_required" });
+          return;
+        }
+      }
+      const ip = getHttpClientIp(req);
+      if (!checkHttpRateLimit(`epistemic_seal:${ip}`, RL_EPISTEMIC_SEAL_PER_MIN, 60_000)) {
+        sendJson(res, 429, { ok: false, error: "rate_limit_exceeded" });
+        return;
+      }
+      const body = await readHttpJson(req, 256 * 1024);
+      const truth = body.truth_contract;
+      if (!truth || typeof truth !== "object") {
+        sendJson(res, 400, { ok: false, error: "truth_contract_required" });
+        return;
+      }
+      const sealBody = {
+        truth_contract: truth,
+        runtime_hash: String(body.runtime_hash || ""),
+        model_route: {
+          provider: body.model_route?.provider ?? null,
+          model: body.model_route?.model ?? null
+        },
+        memory_digest: String(body.memory_digest || ""),
+        world_snapshot_hash: String(body.world_snapshot_hash || ""),
+        timestamp: Number(body.timestamp) || Date.now()
+      };
+      const canonical = canonicalEpistemicSealString(sealBody);
+      const { hash, signature } = hashAndSignEpistemicSeal(canonical, EPISTEMIC_SEAL_SECRET);
+      const attestation = {
+        schema: EPISTEMIC_SEAL_SCHEMA,
+        algorithm: "SHA-256+HMAC-SHA256",
+        keyHint: process.env.CASTLE_EPISTEMIC_SEAL_SECRET ? "CASTLE_EPISTEMIC_SEAL_SECRET" : "CASTLE_GATEWAY_TOKEN",
+        issuedAt: Date.now(),
+        gateway: { service: "castle-gateway", listenPort: PORT }
+      };
+      sendJson(res, 200, {
+        ok: true,
+        hash,
+        signature,
+        attestation,
+        canonicalBytes: Buffer.byteLength(canonical, "utf8")
+      });
+    } catch (e) {
+      sendJson(res, 400, { ok: false, error: String(e?.message || e || "seal_failed") });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && pathname === rhizohRuntime.routes.epistemicLogsBatch) {
+    try {
+      if (REQUIRED_GATEWAY_TOKEN) {
+        const tok = readGatewayHttpToken(req);
+        if (tok !== REQUIRED_GATEWAY_TOKEN) {
+          sendJson(res, 401, { ok: false, error: "gateway_token_required" });
+          return;
+        }
+      }
+      const auth = await resolveHttpUser(req);
+      if (!auth.ok) {
+        sendJson(res, 401, { ok: false, error: auth.reason || "auth_required" });
+        return;
+      }
+      const ip = getHttpClientIp(req);
+      const rlKey = `uid:${auth.uid || ip}`;
+      if (!checkHttpRateLimit(`epistemic_logs:${rlKey}`, RL_EPISTEMIC_LOG_PER_MIN, 60_000)) {
+        sendJson(res, 429, { ok: false, error: "rate_limit_exceeded" });
+        return;
+      }
+      const body = await readHttpJson(req, 512 * 1024);
+      const entries = Array.isArray(body?.entries) ? body.entries.slice(0, 120) : [];
+      if (!entries.length) {
+        sendJson(res, 400, { ok: false, error: "entries_required" });
+        return;
+      }
+      const persisted = await persistEpistemicLedgerBatch(auth.uid, entries);
+      // Internal cognition layer: forecast stays gateway/ledger-only (no client exposure).
+      try {
+        await persistEpistemicForecastBatch(auth.uid, persisted.normalized || []);
+      } catch {
+        /* forecast failures must not break primary ledger ingest */
+      }
+      sendJson(res, 200, {
+        ok: true,
+        persisted: persisted.persisted,
+        mode: persisted.mode,
+        latest: persisted.normalized?.[persisted.normalized.length - 1] || null
+      });
+    } catch (e) {
+      sendJson(res, 400, { ok: false, error: String(e?.message || e || "epistemic_log_ingest_failed") });
     }
     return;
   }
@@ -2168,6 +2511,9 @@ setInterval(async () => {
   }
 }, 50);
 
-httpServer.listen(PORT, () => {
-  console.log(`[GATEWAY] ws/http://localhost:${PORT}`);
-});
+(async () => {
+  await rhizohRuntime.telemetry.initOpenTelemetry();
+  httpServer.listen(PORT, () => {
+    console.log(`[GATEWAY] ws/http://localhost:${PORT}`);
+  });
+})();

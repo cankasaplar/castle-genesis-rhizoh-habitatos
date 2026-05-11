@@ -1,0 +1,18 @@
+{
+  "craVersion": "1.0",
+  "ceeArtifactId": "CRA-sample-001",
+  "amendmentId": "CIL-COMP-SAMPLE-001",
+  "compensationOf": "EP2-1-AEE-V01",
+  "priorAnchor": "commit:0000000000000000000000000000000000000000",
+  "failureContext": { "codes": ["ASE_ATOMIC_VIOLATION"], "aeeRunState": "FAILED" },
+  "targetsRemaining": ["docs/EPISTEMIC_PHASE2_EXECUTION_VALIDATION_V1.md"],
+  "targetsReverted": [],
+  "partialRecovery": {
+    "mode": "ATOMIC_GAP_CLOSE",
+    "inventoryCommit": null
+  },
+  "inject": {
+    "aeePhases": ["parse", "verify", "apply_git", "post_verify"],
+    "failFast": true
+  }
+}

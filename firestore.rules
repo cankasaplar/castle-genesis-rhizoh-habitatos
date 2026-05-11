@@ -22,6 +22,12 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Stripe webhook (Admin SDK) yazar; istemci yalnızca okur — ödeme gerçeği sunucuda.
+    match /memberships/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
     // Kullanıcıya özel alt koleksiyonlar (bağlantılar, hedefler, vb.) — üst belge kuralından ayrı.
     match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
@@ -38,6 +44,87 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow create, update: if request.auth != null && request.auth.uid == castleDocId;
       allow delete: if request.auth != null && request.auth.uid == castleDocId;
+    }
+
+    // --- FER-1 minimal production stack (see docs/RHIZOH_FER1_MINIMAL_PRODUCTION_STACK_V1.md) ---
+
+    function rhizohEventEnvelopeOk() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['type', 'source', 'schemaVersion', 'correlationId', 'actorUid'])
+        && d.actorUid == request.auth.uid
+        && d.source == 'client'
+        && d.schemaVersion is int
+        && d.schemaVersion == 1
+        && d.type is string
+        && d.type.size() > 4
+        && d.type.size() < 200
+        && d.correlationId is string
+        && d.correlationId.size() > 4
+        && d.correlationId.size() < 200;
+    }
+
+    function rhizohTypeMatchesStream(stream, t) {
+      return (stream == 'companion' && t.matches('^companion_.*_v[0-9]+$'))
+        || (stream == 'observe' && t.matches('^observe_.*_v[0-9]+$'))
+        || (stream == 'chronicle' && t.matches('^chronicle_.*_v[0-9]+$'))
+        || (stream == 'castle' && t.matches('^castle_.*_v[0-9]+$'))
+        || (stream == 'studio' && t.matches('^studio_.*_v[0-9]+$'));
+    }
+
+    function observePrimaryClaimOk(stream, d) {
+      return stream != 'observe'
+        || !('primaryClaimCount' in d)
+        || (d.primaryClaimCount is int && d.primaryClaimCount >= 0 && d.primaryClaimCount <= 2);
+    }
+
+    // Epistemic append-only event items (client → timeline material).
+    match /rhizoh_events/{stream}/items/{eventId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && stream in ['companion', 'observe', 'chronicle', 'castle', 'studio']
+        && rhizohEventEnvelopeOk()
+        && rhizohTypeMatchesStream(stream, request.resource.data.type)
+        && observePrimaryClaimOk(stream, request.resource.data);
+      allow update, delete: if false;
+    }
+
+    // TCS / client mirror (single doc per user).
+    match /rhizoh_client_sync/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId
+        && (!('productSurface' in request.resource.data)
+          || request.resource.data.productSurface in [
+            'world', 'hall', 'greenroom', 'broadcast', 'studio', 'profile',
+            'companion', 'observe', 'chronicle', 'castle'
+          ]);
+    }
+
+    // ESTL telemetry (owner-only create; no update — append-only discipline).
+    match /estl_sessions/{sessionId} {
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll(['ownerUid', 'flow', 'magic'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.flow is string
+        && request.resource.data.magic is string;
+      allow read: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /estl_diff_index/{diffId} {
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll(['ownerUid'])
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow read: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Broadcast index (client may register intent; tighten with membership claims later).
+    match /broadcast_index/{broadcastId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.resource.data.keys().hasAll(['ownerUid', 'status'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.status is string;
+      allow delete: if request.auth != null && resource.data.ownerUid == request.auth.uid;
     }
 
     // Default deny for everything else.
