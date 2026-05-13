@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, useSyncExternalStore, useCallback, useMemo, memo, useReducer } from "react";
-import { useLocation, useNavigate, matchPath } from "react-router-dom";
+import { useLocation, useNavigate, matchPath, Link } from "react-router-dom";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import {
@@ -10636,6 +10636,27 @@ export default function AppRhizoh528() {
             </div>
           )}
           <div className="pointer-events-auto flex max-w-[18rem] flex-col gap-2">
+            {(location.pathname === "/" || location.pathname === "") ? (
+              <Link
+                to="/academy/observe"
+                className="rounded-2xl border border-emerald-400/35 bg-emerald-950/25 p-3 backdrop-blur-md transition-colors hover:border-emerald-300/50"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[9px] font-black uppercase tracking-[0.22em] text-emerald-200/95">Live system</span>
+                  <span className="flex items-center gap-1.5 text-[8px] font-semibold text-emerald-100/90 normal-case">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.75)]" />
+                    SSE path live
+                  </span>
+                </div>
+                <div className="mt-2 text-[10px] font-semibold text-white/90 normal-case">Temporal stream · replay lab</div>
+                <div className="mt-1 text-[9px] text-white/55 normal-case leading-relaxed">
+                  Gateway-only observability — EventSource continuity, fingerprint, evolution panels.
+                </div>
+                <span className="mt-2 inline-block text-[9px] font-black uppercase tracking-[0.18em] text-emerald-200/90 underline-offset-2">
+                  Open Observe →
+                </span>
+              </Link>
+            ) : null}
             <CastleAccountBadge auth={castleAuth} />
             <div className="rounded-2xl border border-indigo-300/35 bg-indigo-300/15 p-3 backdrop-blur-md">
               <div className="text-[10px] tracking-wide text-indigo-100 normal-case leading-relaxed whitespace-pre-wrap">

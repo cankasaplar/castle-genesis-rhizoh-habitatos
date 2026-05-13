@@ -90,10 +90,10 @@ export function RuntimeHealthPanel({ health, gatewayBaseUrl = "", workerInfraUrl
       </div>
       <div className="border-t border-white/[0.06] pt-2">
         <Link
-          to="/genesis"
+          to="/academy/observe"
           className="text-[8px] font-semibold uppercase tracking-[0.12em] text-violet-300/90 underline-offset-2 hover:text-violet-200 hover:underline"
         >
-          Genesis observatory (runtime / replay)
+          Genesis Observe Live (SSE · replay · evolution)
         </Link>
       </div>
     </div>

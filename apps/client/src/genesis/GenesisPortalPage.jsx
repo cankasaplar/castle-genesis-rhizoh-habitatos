@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { getRhizohApiBase } from "../rhizoh/useRhizohGatewayMonitor.js";
+import { GenesisSurfaceNav } from "./GenesisSurfaceNav.jsx";
+import { resolveGenesisGatewayOriginCached } from "./genesisNetworkResolverV1.js";
 import { GenesisRuntimeObservationPanel } from "../studio/ui/GenesisRuntimeObservationPanel.jsx";
 import { GenesisClientCapabilityPanel } from "./GenesisClientCapabilityPanel.jsx";
 import { GenesisContinuityMicroStream } from "./GenesisContinuityMicroStream.jsx";
@@ -13,19 +14,12 @@ import { GENESIS_SURFACE_PROTOCOL_ARTIFACT_VERSION } from "./genesisSurfaceArtif
  * Treat as a low-churn protocol artifact (continuity onboarding + runtime observation).
  */
 export default function GenesisPortalPage() {
-  const gatewayOrigin = useMemo(() => {
-    try {
-      const base = String(getRhizohApiBase() || "").trim();
-      if (!base) return "";
-      return new URL(base).origin;
-    } catch {
-      return "";
-    }
-  }, []);
+  const gatewayOrigin = useMemo(() => resolveGenesisGatewayOriginCached(), []);
 
   return (
     <div className="min-h-screen bg-[#07060d] px-4 py-8 text-white">
       <div className="mx-auto max-w-2xl space-y-6">
+        <GenesisSurfaceNav active="portal" />
         <header className="space-y-1">
           <div className="text-[10px] font-black uppercase tracking-[0.35em] text-violet-200/80">Castle Genesis</div>
           <h1 className="text-lg font-light tracking-tight text-white/90">Runtime observation</h1>
