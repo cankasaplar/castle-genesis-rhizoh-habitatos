@@ -3,7 +3,7 @@
 # https://render.com/docs/infrastructure-as-code
 #
 # ghost-whisperer vb. başka repolarla karıştırma: bu servis bu monorepodan build alır.
-# Deploy sonrası URL örneği: https://castle-genesis-gateway.onrender.com
+# Deploy sonrası URL örneği: paneldeki tam host (örn. castle-genesis-rhizoh-habitatos.onrender.com) — client VITE_* ile aynı origin kilitle.
 # (isim çakışırsa Render benzersiz subdomain verir — paneldeki tam URL’yi client .env’e yaz.)
 #
 # Gizliler: OPENAI_API_KEY ve CASTLE_GATEWAY_TOKEN → Apply sırasında Render panelinde gir.
@@ -16,6 +16,9 @@ services:
     region: frankfurt
     plan: free
     branch: main
+    # Root Directory (Render Dashboard) ile startCommand BİRLİKTE seçilmeli — uyuşmazsa path İKİ KERE yazılır:
+    #   rootDir: . (repo kökü)     →  startCommand: node apps/gateway/src/server.js
+    #   rootDir: apps/gateway      →  startCommand: node src/server.js   veya  npm start  (asla tekrar apps/gateway/… ekleme)
     rootDir: .
     # Monorepo workspace: ilk deploy için npm install daha toleranslı (npm ci --omit=dev alternatif)
     buildCommand: npm install
@@ -28,14 +31,14 @@ services:
         value: https://castle-genesis.web.app
       - key: CASTLE_ALLOWED_ORIGINS
         value: https://castle-genesis.web.app,https://castle-genesis.firebaseapp.com,http://localhost:5173
-      # --- Auth: şimdilik smoke / WAKE zinciri için gevşek. Canlıya sıkılaştırırken Render’da şunu yap:
-      # CASTLE_REQUIRE_AUTH=true, CASTLE_ALLOW_DEV_ANON=false, CASTLE_ALLOW_DEV_HTTP_UID=false
+      # --- Auth: Observatory Live v0.1 — prod’da dev bypass kapalı tutun (staging’de geçici true).
       - key: CASTLE_REQUIRE_AUTH
         value: "false"
       - key: CASTLE_ALLOW_DEV_ANON
-        value: "true"
+        value: "false"
       - key: CASTLE_ALLOW_DEV_HTTP_UID
-        value: "true"
+        value: "false"
+      # Opsiyonel: boot’ta freeze marker log — CASTLE_GENESIS_OBSERVATORY_LIVE_V01=1
       - key: CASTLE_LLM_PROVIDER
         value: openai
       - key: CASTLE_LLM_MODEL
