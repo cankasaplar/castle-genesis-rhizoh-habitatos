@@ -23,6 +23,11 @@ import { persistEpistemicForecastBatch } from "./epistemicForecastStore.js";
  * Keeps production wiring centralized without forcing route ownership changes.
  */
 export function initRhizoh() {
+  console.log("🧭 [GENESIS_BOOT] routes initializing...");
+  console.log("🧭 [GENESIS_BOOT] expected routes:", {
+    runtime: "/rhizoh/genesis/runtime",
+    stream: "/rhizoh/genesis/stream"
+  });
   const telemetry = {
     initOpenTelemetry: () => initCastleGatewayOpenTelemetry()
   };
@@ -71,6 +76,18 @@ export function initRhizoh() {
     externalLossBatch: "/rhizoh/product/external-loss/batch",
     epistemicSeal: "/rhizoh/epistemic/seal",
     epistemicLogsBatch: "/rhizoh/epistemic/logs/batch",
+    genesisRuntime: "/rhizoh/genesis/runtime",
+    genesisStream: "/rhizoh/genesis/stream",
+    genesisCheckpointLatest: "/rhizoh/genesis/checkpoint/latest",
+    genesisCheckpointBySeqPrefix: "/rhizoh/genesis/checkpoint/by-seq/",
+    genesisCheckpointRange: "/rhizoh/genesis/checkpoint/range",
+    genesisCheckpointLineage: "/rhizoh/genesis/checkpoint/lineage",
+    genesisContinuityEvents: "/rhizoh/genesis/continuity/events",
+    genesisReplay: "/rhizoh/genesis/replay",
+    genesisReplayDiff: "/rhizoh/genesis/replay/diff",
+    genesisReplayEquivalence: "/rhizoh/genesis/replay/equivalence",
+    genesisReplayAnalytics: "/rhizoh/genesis/replay/analytics",
+    genesisReplayEvolution: "/rhizoh/genesis/replay/evolution",
     infraPrometheusMetrics: "/infra/metrics/prometheus"
   };
 

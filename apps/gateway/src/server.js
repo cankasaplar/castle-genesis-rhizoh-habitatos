@@ -2,7 +2,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+console.log("🔥 [GENESIS_BOOT] entry file:", __filename);
+console.log("🔥 [GENESIS_BOOT] node env:", process.env.NODE_ENV);
+console.log("🔥 [GENESIS_BOOT] pid:", process.pid);
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", ".env.local"), override: true });
 
@@ -18,6 +22,7 @@ import { queryRhizohLlm } from "./rhizohLlmGateway.js";
 import { rhizohGatewayTurn } from "./rhizohGatewayTurn.js";
 import {
   meshAppendDelta,
+  meshContinuityAggregate,
   meshJoin,
   meshLeave,
   meshReplayFromNodeId,
@@ -63,7 +68,7 @@ import {
   listSocialChannels
 } from "./studioOpsStore.js";
 import { metrics as infraMetrics } from "./infra/metrics.js";
-import { renderRhizohPrometheusMetrics } from "./infra/rhizohEnterpriseMetrics.js";
+import { renderRhizohPrometheusMetrics, rhizohEnterpriseMetrics } from "./infra/rhizohEnterpriseMetrics.js";
 import { scoreHealth } from "./infra/healthScore.js";
 import { getTraceById, listTracesBySession } from "./infra/traceRegistry.js";
 import { canonicalEpistemicSealString, hashAndSignEpistemicSeal, EPISTEMIC_SEAL_SCHEMA } from "./epistemicSeal.js";
@@ -78,6 +83,39 @@ import {
   verifyRhizohOutcomeSourceToken
 } from "./rhizohProductOutcomeIngestGateway.js";
 import { initRhizoh } from "./rhizohProductionBootstrap.js";
+import {
+  buildGenesisRuntimeSurfacePayload,
+  recordGenesisEpistemicLedgerPersisted,
+  recordGenesisEpistemicSealIssued,
+  startGenesisCanonicalClock
+} from "./genesisRuntimeSurfaceV0.js";
+import { registerGenesisSseClient, getGenesisContinuitySeq, setGenesisContinuityAfterPublishHook } from "./genesisContinuityStreamHubV0.js";
+import { computeGenesisReplayFingerprintV0 } from "./genesisReplayFingerprintV0.js";
+import { buildGenesisGatewayCapabilitiesV0 } from "./genesisGatewayCapabilitiesV0.js";
+import {
+  installGenesisCheckpointSurfaceGetter,
+  noteGenesisCheckpointSeqCommitted,
+  getLatestGenesisSignedCheckpoint
+} from "./genesisContinuityCheckpointV0.js";
+import { hydrateGenesisContinuityPersistenceBootV0 } from "./genesisContinuityHydrateBootV0.js";
+import {
+  genesisCheckpointQueryBySeqV0,
+  genesisCheckpointQueryRangeV0,
+  genesisCheckpointQueryLineageV0
+} from "./genesisCheckpointQueryV0.js";
+import {
+  genesisContinuityEventArchiveEnabled,
+  queryGenesisContinuityEventArchiveV0,
+  GENESIS_CONTINUITY_EVENT_ARCHIVE_QUERY_PROJECTION
+} from "./genesisContinuityEventArchiveV0.js";
+import { resolveGenesisReplayRouterV1, GENESIS_REPLAY_ROUTER_SCHEMA } from "./genesisReplayRouterV1.js";
+import {
+  computeGenesisReplayTemporalDiffV1,
+  GENESIS_REPLAY_TEMPORAL_DIFF_SCHEMA
+} from "./genesisReplayTemporalDiffV1.js";
+import { compareGenesisReplayEquivalenceV1 } from "./genesisReplayEquivalenceV1.js";
+import { computeGenesisReplayAnalyticsV1 } from "./genesisReplayAnalyticsV1.js";
+import { computeGenesisReplayEvolutionV1 } from "./genesisReplayEvolutionV1.js";
 import { handleStripeCheckoutCreate, handleStripeMembershipWebhook } from "./stripeWebhookMembership.js";
 import { buildRealityHealthPayload } from "./edgeRealityConsistencyV1.js";
 
@@ -86,6 +124,8 @@ const PORT =
   Number(process.env.PORT) ||
   Number(process.env.CASTLE_GATEWAY_PORT) ||
   8090;
+/** Spiral / world WebSocket server — set after `wss` init; used by genesis runtime surface. */
+let spiralWssForGenesis = null;
 const MAX_MESSAGE_BYTES = Number(process.env.CASTLE_MAX_MESSAGE_BYTES || 32 * 1024);
 const REQUIRED_GATEWAY_TOKEN = process.env.CASTLE_GATEWAY_TOKEN || "";
 const ALLOWED_ORIGINS = (process.env.CASTLE_ALLOWED_ORIGINS || "")
@@ -164,6 +204,45 @@ const EPISTEMIC_SEAL_SECRET = String(
   process.env.CASTLE_EPISTEMIC_SEAL_SECRET || process.env.CASTLE_GATEWAY_TOKEN || ""
 ).trim();
 const RL_LLM_CONN_TEST_PER_MIN = Math.max(2, Number(process.env.CASTLE_RL_LLM_CONNECTION_TEST_PER_MIN || 8));
+
+/** One-shot production warnings: CORS surface, auth toggle, dev bypass flags (observatory deploy hygiene). */
+function logProductionObservatorySurfaceGuardsV0() {
+  if (String(process.env.NODE_ENV || "").toLowerCase() !== "production") return;
+  const tag = "[GATEWAY_PROD_GUARD]";
+  const primaryCors = normalizeHttpOrigin(process.env.CASTLE_HTTP_CORS_ORIGIN);
+  const corsListEmpty = ALLOWED_ORIGINS.length === 0;
+  if (corsListEmpty && !primaryCors) {
+    console.warn(
+      `${tag} CORS: CASTLE_ALLOWED_ORIGINS empty and CASTLE_HTTP_CORS_ORIGIN empty — browser SSE/replay may fail; set explicit Firebase Hosting origins`
+    );
+  } else if (corsListEmpty && primaryCors && primaryCors !== "*") {
+    console.warn(
+      `${tag} CORS: CASTLE_ALLOWED_ORIGINS empty — only CASTLE_HTTP_CORS_ORIGIN set; add web.app + firebaseapp.com (and previews) to CASTLE_ALLOWED_ORIGINS if clients use alternate hostnames`
+    );
+  }
+  if (primaryCors && /localhost|127\.0\.0\.1/i.test(primaryCors)) {
+    console.warn(`${tag} CORS: CASTLE_HTTP_CORS_ORIGIN is localhost while NODE_ENV=production`);
+  }
+  if (REQUIRE_AUTH) {
+    console.warn(
+      `${tag} AUTH: CASTLE_REQUIRE_AUTH=true — clients must send a valid gateway credential (otherwise silent 401 on replay/SSE); EventSource cannot set custom headers unless proxied`
+    );
+    if (REQUIRED_GATEWAY_TOKEN.length < 16) {
+      console.warn(`${tag} AUTH: CASTLE_GATEWAY_TOKEN missing or short while require-auth enabled`);
+    }
+  }
+  if (ALLOW_DEV_ANON) {
+    console.warn(
+      `${tag} DEV: CASTLE_ALLOW_DEV_ANON is not "false" — dev anonymous path may be live in production (set CASTLE_ALLOW_DEV_ANON=false)`
+    );
+  }
+  if (ALLOW_DEV_HTTP_UID) {
+    console.warn(
+      `${tag} DEV: CASTLE_ALLOW_DEV_HTTP_UID is not "false" — X-Castle-Dev-Uid bypass risk (set CASTLE_ALLOW_DEV_HTTP_UID=false)`
+    );
+  }
+}
+
 const rhizohRuntime = initRhizoh();
 
 /** İstemci: llmKeySource veya keySource — env | user_connection | auto */
@@ -224,7 +303,12 @@ function sleep(ms) {
 }
 
 function getHttpPathname(req) {
-  return String(req.url || "").split("?")[0];
+  let p = String(req.url || "").split("?")[0];
+  /* Reverse proxies / clients sometimes append `/` — avoid silent 404 on e.g. `/rhizoh/genesis/stream/`. */
+  while (p.length > 1 && p.endsWith("/")) {
+    p = p.slice(0, -1);
+  }
+  return p;
 }
 
 function rhizohLlmEnvConfigured() {
@@ -557,6 +641,56 @@ async function resolveMeshActor(req) {
   return { ok: false, reason: "mesh_auth_required" };
 }
 
+/** Live genesis runtime JSON (GET /rhizoh/genesis/runtime + SSE infra sampler). */
+async function buildGenesisRuntimeSurfacePayloadLive() {
+  const workerBase = String(process.env.WORKER_INFRA_URL || "").trim();
+  const worker = workerBase ? await fetchJsonWithTimeout(`${workerBase.replace(/\/+$/, "")}/infra/health`) : null;
+  const scored = scoreHealth(infraMetrics, {
+    divergenceTotal: Number(worker?.metrics?.divergenceTotal || 0)
+  });
+  let spiralWsActive = 0;
+  if (spiralWssForGenesis) {
+    for (const c of spiralWssForGenesis.clients) {
+      if (c.readyState === 1) spiralWsActive += 1;
+    }
+  }
+  const base = buildGenesisRuntimeSurfacePayload({
+    infraMetrics,
+    scoredHealth: scored,
+    rhizohEnterpriseMetrics,
+    mesh: meshContinuityAggregate(),
+    workerHealth: worker,
+    port: PORT,
+    spiralWebSocketClientsActive: spiralWsActive
+  });
+  return {
+    ...base,
+    replayFingerprint: computeGenesisReplayFingerprintV0(base),
+    gatewayCapabilities: buildGenesisGatewayCapabilitiesV0(),
+    genesisStream: {
+      schema: "castle.genesis.stream_cursor.v0",
+      lastAcceptedSeq: getGenesisContinuitySeq(),
+      eventArchive: genesisContinuityEventArchiveEnabled()
+        ? {
+            enabled: true,
+            projection: GENESIS_CONTINUITY_EVENT_ARCHIVE_QUERY_PROJECTION,
+            queryPath: rhizohRuntime.routes.genesisContinuityEvents
+          }
+        : { enabled: false },
+      replayRouter: {
+        schema: GENESIS_REPLAY_ROUTER_SCHEMA,
+        queryPath: rhizohRuntime.routes.genesisReplay,
+        queryHint: "from=&to= or range=from-to; optional type=&checkpoints=0",
+        temporalDiffPath: rhizohRuntime.routes.genesisReplayDiff,
+        temporalDiffSchema: GENESIS_REPLAY_TEMPORAL_DIFF_SCHEMA,
+        equivalencePath: rhizohRuntime.routes.genesisReplayEquivalence,
+        analyticsPath: rhizohRuntime.routes.genesisReplayAnalytics,
+        evolutionPath: rhizohRuntime.routes.genesisReplayEvolution
+      }
+    }
+  };
+}
+
 const httpServer = createServer(async (req, res) => {
   applyHttpCorsHeaders(req, res);
   if (req.method === "OPTIONS") {
@@ -566,6 +700,17 @@ const httpServer = createServer(async (req, res) => {
   }
 
   const pathname = getHttpPathname(req);
+
+  if (req.method === "GET" && pathname === "/rhizoh/genesis/__ping") {
+    sendJson(res, 200, {
+      ok: true,
+      pid: process.pid,
+      entry: __filename,
+      time: Date.now(),
+      genesis: true
+    });
+    return;
+  }
 
   if (req.method === "POST" && pathname === "/webhooks/stripe") {
     await handleStripeMembershipWebhook(req, res);
@@ -694,6 +839,324 @@ const httpServer = createServer(async (req, res) => {
         : null,
       timestamp: Date.now()
     });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.genesisRuntime) {
+    const payload = await buildGenesisRuntimeSurfacePayloadLive();
+    sendJson(res, 200, payload);
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.genesisStream) {
+    const corsOrigin = accessControlAllowOriginValue(req);
+    if (!corsOrigin && String(process.env.NODE_ENV || "").toLowerCase() === "production") {
+      const og = String(req.headers?.origin || "").trim();
+      if (og) {
+        console.warn("[GATEWAY] genesis SSE: missing Access-Control-Allow-Origin for browser Origin (CORS whitelist mismatch):", og);
+      }
+    }
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no"
+    });
+    res.flushHeaders?.();
+    res.write("retry: 3000\n\n");
+    res.write(": genesis continuity stream\n\n");
+    res.write("event: genesis\n");
+    res.write(`data: {"booted":true,"pid":${process.pid}}\n\n`);
+    registerGenesisSseClient(res, req);
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.genesisCheckpointLatest) {
+    const cp = getLatestGenesisSignedCheckpoint();
+    if (!cp) {
+      sendJson(res, 404, { ok: false, error: "no_checkpoint_yet", hint: "wait_for_seq_interval_or_configure_signing_secret" });
+      return;
+    }
+    sendJson(res, 200, { ok: true, checkpoint: cp });
+    return;
+  }
+
+  if (req.method === "GET" && pathname.startsWith(rhizohRuntime.routes.genesisCheckpointBySeqPrefix)) {
+    const tail = pathname.slice(rhizohRuntime.routes.genesisCheckpointBySeqPrefix.length).split("/")[0];
+    const seq = parseInt(String(tail || "").trim(), 10);
+    const out = await genesisCheckpointQueryBySeqV0(seq);
+    if (out.error === "genesis_ephemeral_mode") {
+      sendJson(res, 410, { ok: false, ...out });
+      return;
+    }
+    if (out.error === "genesis_disk_query_unavailable") {
+      sendJson(res, 503, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok && out.error === "invalid_seq") {
+      sendJson(res, 400, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok && out.error === "checkpoint_not_found") {
+      sendJson(res, 404, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok) {
+      sendJson(res, 500, { ok: false, ...out });
+      return;
+    }
+    sendJson(res, 200, { ok: true, ...out });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.genesisCheckpointRange) {
+    const u = new URL(String(req.url || "/"), `http://${req.headers.host || "localhost"}`);
+    const from = parseInt(String(u.searchParams.get("from") || "").trim(), 10);
+    const to = parseInt(String(u.searchParams.get("to") || "").trim(), 10);
+    const out = await genesisCheckpointQueryRangeV0(from, to);
+    if (out.error === "genesis_ephemeral_mode") {
+      sendJson(res, 410, { ok: false, ...out });
+      return;
+    }
+    if (out.error === "genesis_disk_query_unavailable") {
+      sendJson(res, 503, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok && (out.error === "invalid_range" || out.error === "range_inverted" || out.error === "range_span_too_large")) {
+      sendJson(res, 400, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok && out.error === "range_result_cap_exceeded") {
+      sendJson(res, 400, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok) {
+      sendJson(res, 500, { ok: false, ...out });
+      return;
+    }
+    sendJson(res, 200, { ok: true, ...out });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.genesisCheckpointLineage) {
+    const u = new URL(String(req.url || "/"), `http://${req.headers.host || "localhost"}`);
+    const seq = parseInt(String(u.searchParams.get("seq") || "").trim(), 10);
+    const out = await genesisCheckpointQueryLineageV0(seq);
+    if (out.error === "genesis_ephemeral_mode") {
+      sendJson(res, 410, { ok: false, ...out });
+      return;
+    }
+    if (out.error === "genesis_disk_query_unavailable") {
+      sendJson(res, 503, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok && out.error === "invalid_seq") {
+      sendJson(res, 400, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok && out.error === "lineage_result_cap_exceeded") {
+      sendJson(res, 400, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok) {
+      sendJson(res, 500, { ok: false, ...out });
+      return;
+    }
+    sendJson(res, 200, { ok: true, ...out });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.genesisContinuityEvents) {
+    const u = new URL(String(req.url || "/"), `http://${req.headers.host || "localhost"}`);
+    const from = parseInt(String(u.searchParams.get("from") || "").trim(), 10);
+    const to = parseInt(String(u.searchParams.get("to") || "").trim(), 10);
+    const type = String(u.searchParams.get("type") || "").trim();
+    const limit = parseInt(String(u.searchParams.get("limit") || "").trim(), 10);
+    const out = await queryGenesisContinuityEventArchiveV0(from, to, type, limit);
+    if (out.error === "genesis_ephemeral_mode") {
+      sendJson(res, 410, { ok: false, ...out });
+      return;
+    }
+    if (out.error === "genesis_disk_query_unavailable" || out.error === "event_archive_disabled") {
+      sendJson(res, 503, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok && (out.error === "invalid_range" || out.error === "range_inverted" || out.error === "range_span_too_large")) {
+      sendJson(res, 400, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok && out.error === "archive_file_too_large") {
+      sendJson(res, 413, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok) {
+      sendJson(res, 500, { ok: false, ...out });
+      return;
+    }
+    sendJson(res, 200, { ok: true, ...out });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.genesisReplay) {
+    const u = new URL(String(req.url || "/"), `http://${req.headers.host || "localhost"}`);
+    let fromSeq = parseInt(String(u.searchParams.get("from") || "").trim(), 10);
+    let toSeq = parseInt(String(u.searchParams.get("to") || "").trim(), 10);
+    const rangeRaw = String(u.searchParams.get("range") || "").trim();
+    if ((!Number.isFinite(fromSeq) || !Number.isFinite(toSeq) || fromSeq <= 0 || toSeq <= 0) && rangeRaw) {
+      const m = rangeRaw.match(/^(\d+)\s*-\s*(\d+)$/);
+      if (m) {
+        fromSeq = parseInt(m[1], 10);
+        toSeq = parseInt(m[2], 10);
+      }
+    }
+    const type = String(u.searchParams.get("type") || "").trim();
+    const checkpointsRaw = String(u.searchParams.get("checkpoints") ?? "1").trim().toLowerCase();
+    const includeCheckpoints = checkpointsRaw !== "0" && checkpointsRaw !== "false";
+    const out = await resolveGenesisReplayRouterV1({
+      from: fromSeq,
+      to: toSeq,
+      type,
+      includeCheckpoints
+    });
+    if (!out.ok && (out.error === "invalid_range" || out.error === "range_inverted" || out.error === "range_span_too_large")) {
+      sendJson(res, 400, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok) {
+      sendJson(res, 500, { ok: false, ...out });
+      return;
+    }
+    sendJson(res, 200, { ok: true, ...out });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.genesisReplayDiff) {
+    const u = new URL(String(req.url || "/"), `http://${req.headers.host || "localhost"}`);
+    let fromSeq = parseInt(String(u.searchParams.get("from") || "").trim(), 10);
+    let toSeq = parseInt(String(u.searchParams.get("to") || "").trim(), 10);
+    const rangeRaw = String(u.searchParams.get("range") || "").trim();
+    if ((!Number.isFinite(fromSeq) || !Number.isFinite(toSeq) || fromSeq <= 0 || toSeq <= 0) && rangeRaw) {
+      const m = rangeRaw.match(/^(\d+)\s*-\s*(\d+)$/);
+      if (m) {
+        fromSeq = parseInt(m[1], 10);
+        toSeq = parseInt(m[2], 10);
+      }
+    }
+    const type = String(u.searchParams.get("type") || "").trim();
+    const out = await computeGenesisReplayTemporalDiffV1({ from: fromSeq, to: toSeq, type });
+    if (!out.ok && (out.error === "invalid_range" || out.error === "range_inverted" || out.error === "range_span_too_large")) {
+      sendJson(res, 400, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok) {
+      sendJson(res, 500, { ok: false, ...out });
+      return;
+    }
+    sendJson(res, 200, { ok: true, ...out });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.genesisReplayEquivalence) {
+    const u = new URL(String(req.url || "/"), `http://${req.headers.host || "localhost"}`);
+    const from1 = parseInt(String(u.searchParams.get("from1") || "").trim(), 10);
+    const to1 = parseInt(String(u.searchParams.get("to1") || "").trim(), 10);
+    const from2 = parseInt(String(u.searchParams.get("from2") || "").trim(), 10);
+    const to2 = parseInt(String(u.searchParams.get("to2") || "").trim(), 10);
+    const type = String(u.searchParams.get("type") || "").trim();
+    const checkpointsRaw = String(u.searchParams.get("checkpoints") ?? "1").trim().toLowerCase();
+    const includeCheckpoints = checkpointsRaw !== "0" && checkpointsRaw !== "false";
+    const out = await compareGenesisReplayEquivalenceV1({
+      from1,
+      to1,
+      from2,
+      to2,
+      type,
+      includeCheckpoints
+    });
+    if (
+      !out.ok &&
+      (out.error === "invalid_range" || out.error === "range_inverted" || out.error === "range_span_too_large")
+    ) {
+      sendJson(res, 400, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok) {
+      sendJson(res, 500, { ok: false, ...out });
+      return;
+    }
+    sendJson(res, 200, { ok: true, ...out });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.genesisReplayAnalytics) {
+    const u = new URL(String(req.url || "/"), `http://${req.headers.host || "localhost"}`);
+    let fromSeq = parseInt(String(u.searchParams.get("from") || "").trim(), 10);
+    let toSeq = parseInt(String(u.searchParams.get("to") || "").trim(), 10);
+    const rangeRaw = String(u.searchParams.get("range") || "").trim();
+    if ((!Number.isFinite(fromSeq) || !Number.isFinite(toSeq) || fromSeq <= 0 || toSeq <= 0) && rangeRaw) {
+      const m = rangeRaw.match(/^(\d+)\s*-\s*(\d+)$/);
+      if (m) {
+        fromSeq = parseInt(m[1], 10);
+        toSeq = parseInt(m[2], 10);
+      }
+    }
+    const type = String(u.searchParams.get("type") || "").trim();
+    const bins = parseInt(String(u.searchParams.get("bins") || "16").trim(), 10);
+    const checkpointsRaw = String(u.searchParams.get("checkpoints") ?? "1").trim().toLowerCase();
+    const includeCheckpoints = checkpointsRaw !== "0" && checkpointsRaw !== "false";
+    const out = await computeGenesisReplayAnalyticsV1({
+      from: fromSeq,
+      to: toSeq,
+      type,
+      bins,
+      includeCheckpoints
+    });
+    if (!out.ok && (out.error === "invalid_range" || out.error === "range_inverted" || out.error === "range_span_too_large")) {
+      sendJson(res, 400, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok) {
+      sendJson(res, 500, { ok: false, ...out });
+      return;
+    }
+    sendJson(res, 200, { ok: true, ...out });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.genesisReplayEvolution) {
+    const u = new URL(String(req.url || "/"), `http://${req.headers.host || "localhost"}`);
+    let fromSeq = parseInt(String(u.searchParams.get("from") || "").trim(), 10);
+    let toSeq = parseInt(String(u.searchParams.get("to") || "").trim(), 10);
+    const rangeRaw = String(u.searchParams.get("range") || "").trim();
+    if ((!Number.isFinite(fromSeq) || !Number.isFinite(toSeq) || fromSeq <= 0 || toSeq <= 0) && rangeRaw) {
+      const m = rangeRaw.match(/^(\d+)\s*-\s*(\d+)$/);
+      if (m) {
+        fromSeq = parseInt(m[1], 10);
+        toSeq = parseInt(m[2], 10);
+      }
+    }
+    const type = String(u.searchParams.get("type") || "").trim();
+    const bins = parseInt(String(u.searchParams.get("bins") || "16").trim(), 10);
+    const collapseWindows = parseInt(String(u.searchParams.get("collapseWindows") || "0").trim(), 10);
+    const checkpointsRaw = String(u.searchParams.get("checkpoints") ?? "1").trim().toLowerCase();
+    const includeCheckpoints = checkpointsRaw !== "0" && checkpointsRaw !== "false";
+    const out = await computeGenesisReplayEvolutionV1({
+      from: fromSeq,
+      to: toSeq,
+      type,
+      bins,
+      collapseWindows,
+      includeCheckpoints
+    });
+    if (!out.ok && (out.error === "invalid_range" || out.error === "range_inverted" || out.error === "range_span_too_large")) {
+      sendJson(res, 400, { ok: false, ...out });
+      return;
+    }
+    if (!out.ok) {
+      sendJson(res, 500, { ok: false, ...out });
+      return;
+    }
+    sendJson(res, 200, { ok: true, ...out });
     return;
   }
 
@@ -2105,6 +2568,7 @@ const httpServer = createServer(async (req, res) => {
       };
       const canonical = canonicalEpistemicSealString(sealBody);
       const { hash, signature } = hashAndSignEpistemicSeal(canonical, EPISTEMIC_SEAL_SECRET);
+      recordGenesisEpistemicSealIssued(hash);
       const attestation = {
         schema: EPISTEMIC_SEAL_SCHEMA,
         algorithm: "SHA-256+HMAC-SHA256",
@@ -2152,6 +2616,7 @@ const httpServer = createServer(async (req, res) => {
         return;
       }
       const persisted = await persistEpistemicLedgerBatch(auth.uid, entries);
+      recordGenesisEpistemicLedgerPersisted(persisted.persisted);
       // Internal cognition layer: forecast stays gateway/ledger-only (no client exposure).
       try {
         await persistEpistemicForecastBatch(auth.uid, persisted.normalized || []);
@@ -2174,6 +2639,7 @@ const httpServer = createServer(async (req, res) => {
 });
 
 const wss = new WebSocketServer({ server: httpServer });
+spiralWssForGenesis = wss;
 const orchestrator = createOrchestrator();
 const clientStats = new Map();
 let broadcasterClientId = null;
@@ -2513,7 +2979,27 @@ setInterval(async () => {
 
 (async () => {
   await rhizohRuntime.telemetry.initOpenTelemetry();
+  if (String(process.env.CASTLE_GENESIS_DISK_PERSIST ?? "").trim() === "") {
+    process.env.CASTLE_GENESIS_DISK_PERSIST = "1";
+  }
+  const genesisDiskBoot = await hydrateGenesisContinuityPersistenceBootV0();
+  if (!genesisDiskBoot.ok) {
+    console.warn("[GATEWAY] genesis disk hydrate failed; continuing with in-memory genesis continuity");
+  }
   httpServer.listen(PORT, () => {
+    startGenesisCanonicalClock();
+    installGenesisCheckpointSurfaceGetter(buildGenesisRuntimeSurfacePayloadLive);
+    setGenesisContinuityAfterPublishHook((seq) => {
+      noteGenesisCheckpointSeqCommitted(seq);
+    });
+    startGenesisContinuityInfraSampler(buildGenesisRuntimeSurfacePayloadLive, 2000);
+    logProductionObservatorySurfaceGuardsV0();
     console.log(`[GATEWAY] ws/http://localhost:${PORT}`);
+    console.log(
+      `[GATEWAY] genesis continuity: GET ${rhizohRuntime.routes.genesisRuntime} | SSE ${rhizohRuntime.routes.genesisStream} | replay ${rhizohRuntime.routes.genesisReplay} | diff ${rhizohRuntime.routes.genesisReplayDiff} | equiv ${rhizohRuntime.routes.genesisReplayEquivalence} | analytics ${rhizohRuntime.routes.genesisReplayAnalytics} | evolution ${rhizohRuntime.routes.genesisReplayEvolution}`
+    );
+    if (String(process.env.CASTLE_GENESIS_OBSERVATORY_LIVE_V01 ?? "").trim() === "1") {
+      console.log("GENESIS OBSERVATORY LIVE v0.1 — READ ONLY PHASE STARTED");
+    }
   });
 })();
