@@ -11,13 +11,21 @@ export function getFirebasePersistence() {
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
     const privateKeyRaw = process.env.FIREBASE_PRIVATE_KEY;
     if (projectId && clientEmail && privateKeyRaw) {
-      const privateKey = privateKeyRaw.replace(/\\n/g, "\n");
-      if (getApps().length === 0) {
-        initializeApp({
-          credential: cert({ projectId, clientEmail, privateKey })
-        });
+      try {
+        const privateKey = privateKeyRaw.replace(/\\n/g, "\n");
+        if (getApps().length === 0) {
+          initializeApp({
+            credential: cert({ projectId, clientEmail, privateKey })
+          });
+        }
+        db = getFirestore(getApp());
+      } catch (e) {
+        db = null;
+        console.warn(
+          "[GATEWAY] Firebase Admin init failed; falling back to file persistence:",
+          String(e?.message || e)
+        );
       }
-      db = getFirestore(getApp());
     }
   }
 

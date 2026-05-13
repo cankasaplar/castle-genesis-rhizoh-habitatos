@@ -2959,25 +2959,31 @@ wss.on("connection", async (socket, req) => {
   });
 });
 
-setInterval(async () => {
-  const { frame, snapshot, delta, packedDelta } = orchestrator.tick(1 / 20);
-  syncSpiralCharactersWithWorld(snapshot);
-  broadcast(createEnvelope(WS_MESSAGE.NETWORK_TICK, { frame }));
-  broadcast(createEnvelope(WS_MESSAGE.WORLD_TICK, snapshot));
-  broadcast(createEnvelope(WS_MESSAGE.WORLD_DELTA, delta));
-  broadcast(createEnvelope(WS_MESSAGE.WORLD_DELTA_PACKED, packedDelta));
-  broadcastSpiralState();
-  await runAcademyEventTick();
-  const executed = await tickAutomations(Date.now());
-  for (const a of executed) {
-    await addTranscript(a.uid, {
-      source: "planner",
-      eventType: "automation-executed",
-      text: `Automation executed: ${a.title} (${a.action})`,
-      roomId: "studio-main",
-      meta: { automationId: a.id, action: a.action, deviceId: a.deviceId || "" }
-    });
-  }
+setInterval(() => {
+  void (async () => {
+    try {
+      const { frame, snapshot, delta, packedDelta } = orchestrator.tick(1 / 20);
+      syncSpiralCharactersWithWorld(snapshot);
+      broadcast(createEnvelope(WS_MESSAGE.NETWORK_TICK, { frame }));
+      broadcast(createEnvelope(WS_MESSAGE.WORLD_TICK, snapshot));
+      broadcast(createEnvelope(WS_MESSAGE.WORLD_DELTA, delta));
+      broadcast(createEnvelope(WS_MESSAGE.WORLD_DELTA_PACKED, packedDelta));
+      broadcastSpiralState();
+      await runAcademyEventTick();
+      const executed = await tickAutomations(Date.now());
+      for (const a of executed) {
+        await addTranscript(a.uid, {
+          source: "planner",
+          eventType: "automation-executed",
+          text: `Automation executed: ${a.title} (${a.action})`,
+          roomId: "studio-main",
+          meta: { automationId: a.id, action: a.action, deviceId: a.deviceId || "" }
+        });
+      }
+    } catch (e) {
+      console.error("[GATEWAY] world tick / automations loop error:", String(e?.message || e));
+    }
+  })();
 }, 50);
 
 (async () => {
@@ -3005,4 +3011,7 @@ setInterval(async () => {
       console.log("GENESIS OBSERVATORY LIVE v0.1 — READ ONLY PHASE STARTED");
     }
   });
-})();
+})().catch((e) => {
+  console.error("[GATEWAY] fatal boot (before or during listen):", e);
+  process.exit(1);
+});
