@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { CASTLE_RUNTIME_MODULE_VERSIONS, CASTLE_RUNTIME_VERSION } from "../runtime/castleRuntimeVersion";
 
 function StatusRow({ label, on, detail }) {
@@ -60,6 +61,15 @@ export function RuntimeHealthPanel({ health, gatewayBaseUrl = "", workerInfraUrl
         <StatusRow label="Presence" on={health.presenceActive} detail={health.presenceActive ? "active" : "idle"} />
         <StatusRow label="Broadcast" on={health.broadcastLive} detail={health.broadcastLive ? "live" : "idle"} />
         <StatusRow label="Rhizoh" on={health.rhizohHeartbeat} detail={health.rhizohHeartbeat ? "heartbeat" : "cold"} />
+        <StatusRow
+          label="Studio tier"
+          on={!health.studioDegraded}
+          detail={
+            health.studioTier
+              ? `${String(health.studioTier)}${health.studioDetail ? ` · ${health.studioDetail}` : ""}`
+              : "pending"
+          }
+        />
         <StatusRow label="Economy" on={health.economyHealthy} detail={health.economyHealthy ? "healthy" : "draining"} />
         <StatusRow label="Memory Pack" on={health.memoryFresh} detail={health.memoryFresh ? "fresh" : "stale"} />
         <StatusRow
@@ -69,11 +79,22 @@ export function RuntimeHealthPanel({ health, gatewayBaseUrl = "", workerInfraUrl
         />
       </div>
       <div className="rounded-md border border-white/10 bg-black/25 px-2 py-1.5 text-[8px] text-white/70 normal-case">
-        HEALTH SCORE: {infra.score.toFixed(2)} � STATE: {String(infra.status || "unknown").toUpperCase()}
-        {infra.reasons?.length ? ` � CAUSE: ${infra.reasons.join(",")}` : ""}
+        HEALTH SCORE: {infra.score.toFixed(2)} · STATE: {String(infra.status || "unknown").toUpperCase()}
+        {infra.reasons?.length ? ` · CAUSE: ${infra.reasons.join(",")}` : ""}
       </div>
       <div className="text-[8px] text-white/45 normal-case">
-        RSK {CASTLE_RUNTIME_MODULE_VERSIONS.RSK_KERNEL} � World {CASTLE_RUNTIME_MODULE_VERSIONS.WORLD_OS} � Presence {CASTLE_RUNTIME_MODULE_VERSIONS.PRESENCE_OS} � Broadcast {CASTLE_RUNTIME_MODULE_VERSIONS.BROADCAST_OS} � Attention {CASTLE_RUNTIME_MODULE_VERSIONS.ATTENTION_OS} � Rhizoh {CASTLE_RUNTIME_MODULE_VERSIONS.RHIZOH_OS} � Product {CASTLE_RUNTIME_MODULE_VERSIONS.PRODUCT_SHELL}
+        RSK {CASTLE_RUNTIME_MODULE_VERSIONS.RSK_KERNEL} · World {CASTLE_RUNTIME_MODULE_VERSIONS.WORLD_OS} · Presence{" "}
+        {CASTLE_RUNTIME_MODULE_VERSIONS.PRESENCE_OS} · Broadcast {CASTLE_RUNTIME_MODULE_VERSIONS.BROADCAST_OS} ·
+        Attention {CASTLE_RUNTIME_MODULE_VERSIONS.ATTENTION_OS} · Rhizoh {CASTLE_RUNTIME_MODULE_VERSIONS.RHIZOH_OS} ·
+        Product {CASTLE_RUNTIME_MODULE_VERSIONS.PRODUCT_SHELL}
+      </div>
+      <div className="border-t border-white/[0.06] pt-2">
+        <Link
+          to="/genesis"
+          className="text-[8px] font-semibold uppercase tracking-[0.12em] text-violet-300/90 underline-offset-2 hover:text-violet-200 hover:underline"
+        >
+          Genesis observatory (runtime / replay)
+        </Link>
       </div>
     </div>
   );
