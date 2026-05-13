@@ -7,6 +7,8 @@ const __dirname = path.dirname(__filename);
 console.log("🔥 [GENESIS_BOOT] entry file:", __filename);
 console.log("🔥 [GENESIS_BOOT] node env:", process.env.NODE_ENV);
 console.log("🔥 [GENESIS_BOOT] pid:", process.pid);
+console.log("🧬 [GENESIS_BOOT] cwd:", process.cwd());
+console.log("🧬 [GENESIS_BOOT] import.meta.url:", import.meta.url);
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", ".env.local"), override: true });
 
