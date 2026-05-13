@@ -27,6 +27,29 @@ import {
   buildGenesisContinuityEventArchiveQueryUrl
 } from "./genesisHubQueryContextV1.js";
 
+/** @typedef {"stream" | "replay" | "evolution"} GenesisObserveMode */
+
+const OBSERVE_MODE_IDS = /** @type {const} */ ({
+  stream: "hub-continuity-panel",
+  evolution: "hub-temporal-field-map",
+  replay: "hub-epistemic-panel"
+});
+
+/** @param {URLSearchParams} prev */
+function parseObserveMode(prev) {
+  const raw = String(prev.get("mode") || "").trim().toLowerCase();
+  if (raw === "stream" || raw === "replay" || raw === "evolution") return /** @type {GenesisObserveMode} */ (raw);
+  return null;
+}
+
+/** @param {URLSearchParams} prev @param {GenesisObserveMode | null} mode */
+function searchParamsWithMode(prev, mode) {
+  const p = new URLSearchParams(prev.toString());
+  if (mode) p.set("mode", mode);
+  else p.delete("mode");
+  return p;
+}
+
 function SectionTitle({ k, children, explainAnchorId }) {
   return (
     <div className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.08] pb-1">
@@ -47,6 +70,9 @@ export default function GenesisObservabilityHubPage() {
   const navActive = pathname === "/academy/observe" ? "observe" : "hub";
   const [searchParams, setSearchParams] = useSearchParams();
   const scrollSig = useRef("");
+  const modeScrollSig = useRef("");
+
+  const observeMode = useMemo(() => parseObserveMode(searchParams), [searchParams]);
 
   const gatewayOrigin = useMemo(() => resolveGenesisGatewayOriginCached(), []);
   const bundle = useMemo(() => resolveGenesisNetworkBundle(), []);
@@ -81,6 +107,44 @@ export default function GenesisObservabilityHubPage() {
       alive = false;
     };
   }, [gatewayOrigin]);
+
+  const entryState = useMemo(() => {
+    if (!gatewayOrigin) {
+      return { key: "replay-only", label: "replay-only", hint: "Gateway origin yok — canlı HTTP/SSE yok; replay uçları ayrı origin gerektirir.", tone: "amber" };
+    }
+    if (health === null) {
+      return { key: "loading", label: "…", hint: "Gateway sağlığı yükleniyor.", tone: "neutral" };
+    }
+    if (!health.ok) {
+      return {
+        key: "replay-only",
+        label: "replay-only",
+        hint: `health/live başarısız: ${health.phase || health.error || "not_ok"} — deterministik replay GET’leri hâlâ denenebilir.`,
+        tone: "amber"
+      };
+    }
+    if (obsTel.err) {
+      return { key: "degraded", label: "degraded", hint: `Runtime snapshot: ${obsTel.err}`, tone: "yellow" };
+    }
+    if (streamTel.transport !== "sse" || streamTel.sseErrorCount > 0) {
+      const sub =
+        streamTel.transport === "poll"
+          ? "SSE yok veya düştü — continuity poll fallback."
+          : `SSE onerror birikimi (${streamTel.sseErrorCount}).`;
+      return { key: "degraded", label: "degraded", hint: sub, tone: "yellow" };
+    }
+    return { key: "live", label: "live", hint: "SSE + health/live + runtime snapshot yeşil.", tone: "emerald" };
+  }, [gatewayOrigin, health, obsTel.err, streamTel.transport, streamTel.sseErrorCount]);
+
+  const lastFingerprintDisplay = useMemo(() => {
+    const fp = obsTel.snap?.replayFingerprint;
+    if (!fp || typeof fp !== "object") return null;
+    const short = String(fp.short || "").trim();
+    if (short) return short;
+    const hex = String(fp.hex || "").trim();
+    if (hex.length >= 16) return `${hex.slice(0, 8)}…${hex.slice(-6)}`;
+    return hex || null;
+  }, [obsTel.snap]);
 
   const issues = useMemo(() => {
     /** @type {{ key: string, text: string, anchorId: string }[]} */
@@ -137,10 +201,101 @@ export default function GenesisObservabilityHubPage() {
     });
   }, [hubQueryContext, searchParams]);
 
+  useEffect(() => {
+    if (!observeMode) {
+      modeScrollSig.current = "";
+      return;
+    }
+    const sig = `${observeMode}:${pathname}`;
+    if (sig === modeScrollSig.current) return;
+    modeScrollSig.current = sig;
+    const id = OBSERVE_MODE_IDS[observeMode];
+    const t = window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [observeMode, pathname]);
+
+  const modeLinkClass = (m) =>
+    `rounded-md border px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] transition-colors ${
+      observeMode === m
+        ? "border-violet-400/50 bg-violet-500/20 text-violet-100"
+        : "border-white/10 text-white/45 hover:border-white/20 hover:text-white/75"
+    }`;
+
   return (
     <div className="min-h-screen bg-[#07060d] px-4 py-6 text-white">
       <div className="mx-auto max-w-4xl space-y-5">
         <GenesisSurfaceNav active={navActive} />
+
+        <div className="flex flex-col gap-2 rounded-xl border border-white/[0.08] bg-black/35 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/40">Observe</span>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] ${
+                entryState.tone === "emerald"
+                  ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-100"
+                  : entryState.tone === "yellow"
+                    ? "border-amber-400/40 bg-amber-500/15 text-amber-100"
+                    : entryState.tone === "amber"
+                      ? "border-orange-400/35 bg-orange-950/30 text-orange-100"
+                      : "border-white/10 bg-white/5 text-white/60"
+              }`}
+            >
+              {entryState.tone === "emerald" ? (
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" />
+              ) : entryState.tone === "yellow" ? (
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-300" />
+              ) : entryState.tone === "amber" ? (
+                <span className="h-1.5 w-1.5 rounded-full bg-orange-300" />
+              ) : (
+                <span className="h-1.5 w-1.5 rounded-full bg-white/30" />
+              )}
+              {entryState.label}
+            </span>
+            <span className="max-w-md text-[8px] font-normal normal-case leading-snug text-white/50">{entryState.hint}</span>
+          </div>
+          <div className="flex min-w-0 flex-col items-start gap-1 sm:items-end">
+            <span className="text-[7px] font-mono uppercase tracking-[0.16em] text-white/35">last replay fingerprint</span>
+            <span
+              className="max-w-full truncate font-mono text-[10px] text-violet-200/95"
+              title={lastFingerprintDisplay || "runtime henüz dönmedi"}
+            >
+              {lastFingerprintDisplay ?? "—"}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-white/[0.06] bg-black/25 px-2 py-1.5">
+          <span className="text-[7px] font-black uppercase tracking-[0.18em] text-white/35">Deep link</span>
+          <Link
+            className={modeLinkClass("stream")}
+            to={`${pathname}?${searchParamsWithMode(searchParams, "stream").toString()}`}
+          >
+            mode=stream
+          </Link>
+          <Link
+            className={modeLinkClass("replay")}
+            to={`${pathname}?${searchParamsWithMode(searchParams, "replay").toString()}`}
+          >
+            mode=replay
+          </Link>
+          <Link
+            className={modeLinkClass("evolution")}
+            to={`${pathname}?${searchParamsWithMode(searchParams, "evolution").toString()}`}
+          >
+            mode=evolution
+          </Link>
+          {observeMode ? (
+            <button
+              type="button"
+              className="ml-1 text-[7px] uppercase tracking-[0.12em] text-white/35 underline-offset-2 hover:text-white/55 hover:underline"
+              onClick={() => setSearchParams(searchParamsWithMode(searchParams, null))}
+            >
+              mode temizle
+            </button>
+          ) : null}
+        </div>
 
         {hubQueryContext ? (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-500/25 bg-emerald-950/20 px-3 py-2 text-[9px] text-emerald-100/90 normal-case">
@@ -184,7 +339,11 @@ export default function GenesisObservabilityHubPage() {
               <button
                 type="button"
                 className="rounded border border-white/15 px-2 py-0.5 text-[8px] uppercase tracking-[0.12em] text-white/70 hover:bg-white/10"
-                onClick={() => setSearchParams({})}
+                onClick={() => {
+                  const next = new URLSearchParams();
+                  if (observeMode) next.set("mode", observeMode);
+                  setSearchParams(next);
+                }}
               >
                 Filtreyi temizle
               </button>
