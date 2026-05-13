@@ -12,6 +12,9 @@
 #   VITE_RHIZOH_LLM_TOKEN (opsiyonel)
 #   VITE_TELEMETRY_MAX_HZ, VITE_SIM_DRONE_COUNT (opsiyonel; workflow varsayılan verir)
 #   VITE_CASTLE_APP_ID — gateway CASTLE_ARTIFACT_APP_ID ile aynı
+#   VITE_GENESIS_DEPLOY_MODE — `observability` (üretim varsayılanı, workflow) | `research` (laboratuvar)
+#   VITE_GENESIS_PASSIVE_EPOCH_MAX — pasif epoch penceresi (varsayılan 100)
+#   VITE_GENESIS_SIMULATE_LEGACY_DRIFT — yalnız QA; üretim secret vermeyin
 
 name: Deploy Firebase (hosting + rules)
 
@@ -63,6 +66,8 @@ jobs:
           VITE_TELEMETRY_MAX_HZ: ${{ secrets.VITE_TELEMETRY_MAX_HZ || '30' }}
           VITE_SIM_DRONE_COUNT: ${{ secrets.VITE_SIM_DRONE_COUNT || '4' }}
           VITE_CASTLE_APP_ID: ${{ secrets.VITE_CASTLE_APP_ID || 'castle-vnext-core' }}
+          VITE_GENESIS_DEPLOY_MODE: ${{ secrets.VITE_GENESIS_DEPLOY_MODE || 'observability' }}
+          VITE_GENESIS_PASSIVE_EPOCH_MAX: ${{ secrets.VITE_GENESIS_PASSIVE_EPOCH_MAX || '100' }}
 
       - name: Write Firebase service account
         run: node -e "require('fs').writeFileSync('firebase-ci.json', process.env.GOOGLE_CREDENTIALS)"

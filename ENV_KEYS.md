@@ -99,6 +99,9 @@ VITE_GATEWAY_HTTP=https://HOST/rhizoh/llm
 | `VITE_TELEMETRY_MAX_HZ` | Hayır | — | Varsayılan `30`. |
 | `VITE_SIM_DRONE_COUNT` | Hayır | — | Varsayılan `4`. |
 | `VITE_CASTLE_APP_ID` | Hayır | Siz belirlersiniz | `vite` → `__app_id`; Firestore’da `artifacts/{appId}/...` (varsayılan `castle-vnext-core`). |
+| `VITE_GENESIS_DEPLOY_MODE` | Hayır | `research` \| `observability` | Genesis Replay Observatory: **research** = laboratuvar (topoloji serbest); **observability** = H_surface kilidi + Legacy drift. GitHub Hosting deploy workflow varsayılanı **`observability`**. |
+| `VITE_GENESIS_PASSIVE_EPOCH_MAX` | Hayır | Tamsayı | İlk N epistemik gradient epoch’ta rejim geçişi yalnızca log; varsayılan `100`. |
+| `VITE_GENESIS_SIMULATE_LEGACY_DRIFT` | Hayır | `1` yalnız QA | Observability modda Legacy drift UI’yi zorlar; üretimde kapalı tutun. |
 
 **Dosyalar:** `.env.example`, `.env.production.example` → kopya `.env.local` / `.env.production`.
 
