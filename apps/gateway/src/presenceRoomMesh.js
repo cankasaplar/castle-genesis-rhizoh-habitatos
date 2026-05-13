@@ -138,3 +138,27 @@ export function meshSubscribeSse(roomUid, onWrite) {
     if (r.members.size === 0 && r.listeners.size === 0) roomMap().delete(roomUid);
   };
 }
+
+/** Aggregate presence mesh stats for read-only observability (no PII beyond opaque client Uids). */
+export function meshContinuityAggregate() {
+  const m = roomMap();
+  let roomCount = 0;
+  let maxSeq = 0;
+  let logTailEntries = 0;
+  let sseListenerCount = 0;
+  const uniqueClientUids = new Set();
+  for (const r of m.values()) {
+    roomCount += 1;
+    if (r.seq > maxSeq) maxSeq = r.seq;
+    logTailEntries += r.log.length;
+    sseListenerCount += r.listeners.size;
+    for (const uid of r.members.keys()) uniqueClientUids.add(uid);
+  }
+  return {
+    roomCount,
+    uniqueClientUids: uniqueClientUids.size,
+    maxSeqAcrossRooms: maxSeq,
+    appendOnlyLogEntries: logTailEntries,
+    sseListenerCount
+  };
+}
