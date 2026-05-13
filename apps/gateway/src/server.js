@@ -100,6 +100,7 @@ import {
   getLatestGenesisSignedCheckpoint
 } from "./genesisContinuityCheckpointV0.js";
 import { hydrateGenesisContinuityPersistenceBootV0 } from "./genesisContinuityHydrateBootV0.js";
+import { startGenesisContinuityInfraSampler } from "./genesisContinuityInfraSamplerV0.js";
 import {
   genesisCheckpointQueryBySeqV0,
   genesisCheckpointQueryRangeV0,
