@@ -1,20 +1,42 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { CastleShellRouter } from "./shell/CastleShellRouter.jsx";
 import { initFirebaseAnalyticsWhenReady } from "./firebase/castleFirebase.js";
+import { getCookieConsentV0 } from "./rhizoh/ingress/ingress_router.js";
 import {
   installCastleBootLogFlow,
   installGlobalCrashTelemetry,
   reportCastleFatal
 } from "./boot/castleCrashTelemetry.js";
+import { initRuntimeFrameOnce } from "./rhizoh/runtime/runtimeFrameCorrelationV0.js";
+import { buildRuntimeSnapshotV1, persistRuntimeSnapshotV1 } from "./rhizoh/runtime/runtimeSnapshotV1.js";
+import { resolveActiveRuntimeIdentity } from "./rhizoh/runtime/runtimeIdentityMergePolicyV0.js";
 import "../../../src/index.css";
 
 const bootLog = installCastleBootLogFlow();
 bootLog.start("boot.entry", "main.jsx loaded");
 installGlobalCrashTelemetry();
 bootLog.ok("boot.crash_telemetry", "global error + rejection hooks installed");
-initFirebaseAnalyticsWhenReady();
-bootLog.ok("boot.firebase_analytics", "analytics init requested");
+initRuntimeFrameOnce();
+bootLog.ok("boot.runtime_frame", "runtimeFrameId bound (castle.last_frame.v1)");
+try {
+  if (typeof window !== "undefined" && import.meta.env.DEV) {
+    window.__CASTLE_BUILD_RUNTIME_SNAPSHOT__ = () => buildRuntimeSnapshotV1();
+    window.__CASTLE_PERSIST_RUNTIME_SNAPSHOT__ = () => persistRuntimeSnapshotV1();
+    window.__CASTLE_RESOLVE_RUNTIME_IDENTITY__ = (opts) => resolveActiveRuntimeIdentity(opts && typeof opts === "object" ? opts : {});
+    bootLog.ok("boot.runtime_snapshot", "DevTools: __CASTLE_BUILD_RUNTIME_SNAPSHOT__()");
+  }
+} catch {
+  /* noop */
+}
+if (!import.meta.env.DEV) {
+  bootLog.ok("boot.runtime_snapshot", "prod: snapshot DevTools globals omitted");
+}
+if (getCookieConsentV0().analytics) {
+  initFirebaseAnalyticsWhenReady();
+  bootLog.ok("boot.firebase_analytics", "analytics init requested");
+} else {
+  bootLog.ok("boot.firebase_analytics", "skipped — cookie consent analytics off");
+}
 
 class RootErrorBoundary extends React.Component {
   constructor(props) {
@@ -52,7 +74,8 @@ class RootErrorBoundary extends React.Component {
             {String(error?.stack || "")}
           </pre>
           <p style={{ fontSize: 13, marginTop: 16 }}>
-            Konsol: <code>[CASTLE_FATAL]</code> · <code>window.__CASTLE_LAST_FATAL__</code>
+            Konsol: <code>[CASTLE_FATAL]</code> · <code>window.__CASTLE_LAST_FATAL__</code> · yenileme sonrası{" "}
+            <code>sessionStorage castle.last_fatal.v1</code>
           </p>
         </div>
       );
@@ -61,18 +84,16 @@ class RootErrorBoundary extends React.Component {
   }
 }
 
+import { mountCastleApplicationV0 } from "./boot/mountCastleApplicationV0.jsx";
+
 const appEl = document.getElementById("app");
-let reactRoot = window.__CASTLE_REACT_ROOT__;
-if (!reactRoot) {
-  reactRoot = ReactDOM.createRoot(appEl);
-  window.__CASTLE_REACT_ROOT__ = reactRoot;
-}
-reactRoot.render(
-  <RootErrorBoundary>
-    <CastleShellRouter />
-  </RootErrorBoundary>
-);
-bootLog.ok("boot.react_mount", "root rendered; Rhizoh shell routing live");
+void mountCastleApplicationV0({ appEl, RootErrorBoundary, bootLog }).then((mount) => {
+  if (mount.quarantine) {
+    bootLog.ok("boot.react_mount", "quarantine shell rendered (ontological gate)");
+  } else {
+    bootLog.ok("boot.react_mount", "root rendered; Rhizoh shell routing live");
+  }
+});
 
 if (import.meta.env?.VITE_RCIL_LIVE_WIRING === "1") {
   /** @type {Promise<typeof window.__RCIL_LIVE_WIRING__>} Yükleme bitene kadar `__RCIL_LIVE_WIRING__` yoktur — önce bunu await edin. */
