@@ -32,6 +32,9 @@ jobs:
       - name: Causal schema lock (RSK_ONTOLOGY_VERSION)
         run: node scripts/verify-causal-schema-lock.mjs
 
+      - name: Interaction Geometry boundary v0 (identity substrate isolation)
+        run: node scripts/validateInteractionGeometryBoundaryV0.mjs
+
       - name: CIL-AMENDMENT parse + stabilization verify hook (AEE v0.1)
         run: npm run stabilization:validate-amendment -- --verify
 
@@ -44,5 +47,51 @@ jobs:
       - name: Tests (client full suite mandatory)
         run: npm run test -w apps/client
 
+      - name: Substrate gate (ontology integrity regression)
+        run: npm run ci:substrate-gate
+
       - name: Read stack regression lock
         run: npm run test -w apps/client -- src/studio/__tests__/studio-read-stack-integration.test.ts
+
+      - name: Narrative misread release gate
+        run: npm run ci:misread-gate
+
+      - name: Tenant narrative isolation gate
+        run: npm run ci:tenant-narrative-isolation
+
+      - name: Social propagation release gate
+        run: npm run ci:social-propagation-gate
+
+      - name: Trust decay / mythology dynamics gate
+        run: npm run ci:trust-dynamics-gate
+
+      - name: Action semantic governance gate
+        run: npm run ci:action-semantic-gate
+
+      - name: Action context resolution gate
+        run: npm run ci:action-context-gate
+
+      - name: Epistemic coherence gate
+        run: npm run ci:epistemic-coherence-gate
+
+      - name: Coherence authority boundary gate
+        run: npm run ci:coherence-authority-gate
+
+      - name: Decision latency governance gate
+        run: npm run ci:decision-latency-gate
+
+      - name: Decision packet uncertainty gate
+        run: npm run ci:decision-packet-uncertainty-gate
+
+      # EDPL: queue_saturation + temporary_static_posture_windows; deploy_agent/apply_narrative never execution_approval
+      - name: Epistemic decision pacing gate
+        run: npm run ci:epistemic-decision-pacing-gate
+
+      - name: Epistemic temporal coherence gate
+        run: npm run ci:epistemic-temporal-coherence-gate
+
+      - name: Reality drift observer gate
+        run: npm run ci:reality-drift-observer-gate
+
+      - name: Drift causality gate
+        run: npm run ci:drift-causality-gate

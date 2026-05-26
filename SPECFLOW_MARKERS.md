@@ -8,6 +8,8 @@ Bu dosya, backlog ve sprint maddelerinin **Executable Core** (repo + CI ile koru
 
 **Observation fabric & layer expansion:** [`docs/OBSERVATION_FABRIC_V1.md`](docs/OBSERVATION_FABRIC_V1.md), [`docs/LAYER_EXPANSION_PROTOCOL.md`](docs/LAYER_EXPANSION_PROTOCOL.md), [`docs/AGENT_IDENTITY_AND_ATTRIBUTION.md`](docs/AGENT_IDENTITY_AND_ATTRIBUTION.md), [`docs/WORLDSTATE_V0_SPEC.md`](docs/WORLDSTATE_V0_SPEC.md).
 
+**Living world / embodiment (İstanbul presence, dünya durumu, Cesium yönü):** [`docs/RHIZOH_LIVING_WORLD_AND_EMBODIMENT_ROADMAP_V0.md`](docs/RHIZOH_LIVING_WORLD_AND_EMBODIMENT_ROADMAP_V0.md) — `RESEARCH-ONLY` ürün yönü; frozen core’a dokunmadan runtime / habitat genişlemesi. **Continuity governance / authority matrisi (taslak):** [`docs/RHIZOH_GOVERNANCE_MIDDLEWARE_V1.md`](docs/RHIZOH_GOVERNANCE_MIDDLEWARE_V1.md) — `RESEARCH-ONLY` / EXPERIMENTAL; executable runtime yerine geçmez.
+
 ---
 
 ## Policy vs otomasyon (net sınır)
