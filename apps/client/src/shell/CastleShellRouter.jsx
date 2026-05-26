@@ -12,6 +12,7 @@ export function CastleShellRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/genesis" element={<Navigate to="/genesis/hub" replace />} />
+        <Route path="/genesis/observe" element={<Navigate to="/academy/observe" replace />} />
         <Route path="/genesis/hub" element={<GenesisObservabilityHubPage />} />
         <Route path="/genesis/academy" element={<GenesisAcademyPage />} />
         {/* Product entry: same observability surface as Hub, stable URL for Academy → Observe */}

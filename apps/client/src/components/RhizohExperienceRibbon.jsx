@@ -55,6 +55,20 @@ export const RhizohExperienceRibbon = memo(function RhizohExperienceRibbon({
           style={{ width: `${pct}%` }}
         />
       </div>
+      <div className="mt-2 space-y-1 rounded-lg border border-white/[0.06] bg-black/15 px-2 py-1.5">
+        <p className="text-[9px] leading-snug text-white/72">
+          <span className="font-semibold text-white/50">Neden burada · </span>
+          {story?.whyHere || "—"}
+        </p>
+        <p className="text-[9px] leading-snug text-white/65">
+          <span className="font-semibold text-white/50">Şu an · </span>
+          {story?.narrativeLead || "—"}
+        </p>
+        <p className="text-[9px] leading-snug text-emerald-200/85">
+          <span className="font-semibold text-emerald-200/50">Ne yapabilirsin · </span>
+          {goals?.headline || "—"}
+        </p>
+      </div>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
