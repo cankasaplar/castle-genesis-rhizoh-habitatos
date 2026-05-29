@@ -56,3 +56,15 @@ export function shouldShowSemanticHintChipsV0() {
 export function shouldShowVerboseCommandHintV0() {
   return getRhizohUiTextModeV0() === RHIZOH_UI_TEXT_MODE_V0.FULL && !isCohortReviewSessionV0();
 }
+
+/** Cohort / zen: short LLM + faster spoken reply. */
+export function resolveDefaultRhizohGenerationModeV0() {
+  if (isCohortReviewSessionV0() || getRhizohUiTextModeV0() === RHIZOH_UI_TEXT_MODE_V0.ZEN) {
+    return "FAST_DIALOGUE";
+  }
+  return "STANDARD";
+}
+
+export function shouldPreferFastDialogueForSessionV0() {
+  return resolveDefaultRhizohGenerationModeV0() === "FAST_DIALOGUE";
+}

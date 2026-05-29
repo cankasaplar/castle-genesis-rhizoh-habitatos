@@ -141,10 +141,13 @@ import {
 import {
   resolveCommandHintV0,
   resolveCommandPlaceholderV0,
+  resolveDefaultRhizohGenerationModeV0,
   resolveFirstInteractionIntentsV0,
+  shouldPreferFastDialogueForSessionV0,
   shouldShowSemanticHintChipsV0,
   shouldShowVerboseCommandHintV0
 } from "./rhizoh/experience/livingWorldFirstInteractionV0.js";
+import { prewarmSpeechSynthesisV0, resolveTurkishSpeechVoiceV0 } from "./rhizoh/runtime/prewarmSpeechSynthesisV0.js";
 import {
   buildRhizohHealthState,
   computeRhizohHealthInfluence,
@@ -7627,8 +7630,8 @@ export default function AppRhizoh528() {
   const [voiceReady, setVoiceReady] = useState(false);
   const [voiceNetworkBlocked, setVoiceNetworkBlocked] = useState(false);
   const [voiceLoopEnabled, setVoiceLoopEnabled] = useState(false);
-  /** Uzak LLM üretim rejimi — yazı ve ses aynı modu kullanır (uzun sohbet için NARRATIVE / REFLECTIVE). */
-  const [rhizohGenerationMode, setRhizohGenerationMode] = useState("NARRATIVE");
+  /** Uzak LLM üretim rejimi — cohort/zen: FAST_DIALOGUE (kısa + hızlı ses). */
+  const [rhizohGenerationMode, setRhizohGenerationMode] = useState(() => resolveDefaultRhizohGenerationModeV0());
   const [micListening, setMicListening] = useState(false);
   const commandInputRef = useRef(null);
   const gatewayUx = useRhizohGatewayMonitor();
@@ -9414,6 +9417,8 @@ export default function AppRhizoh528() {
       utterance.rate = 1;
       utterance.pitch = 1.05;
       utterance.volume = 0.92;
+      const trVoice = resolveTurkishSpeechVoiceV0();
+      if (trVoice) utterance.voice = trVoice;
       utterance.onstart = () => {
         if (sessionId !== voiceTtsSessionIdRef.current) return;
         if (voiceTurn) {
@@ -9903,12 +9908,17 @@ export default function AppRhizoh528() {
       speakRhizoh("Ses tanıma kullanılamıyor. Aşağıya yazıp gönderebilirsin.");
       return;
     }
+    const gw = String(gatewayUx?.phase || "");
+    if (gw === "offline" || gw === "offline_dns") {
+      speakRhizoh("Rhizoh hattı henüz bağlanıyor. On beş saniye bekleyip mikrofona tekrar bas, ya da yazıyla gönder.");
+      return;
+    }
     setVoiceNetworkBlocked(false);
     voiceNetworkRetryRef.current = 0;
     clearVoiceSttRecoveryV0();
     setVoiceLoopEnabled(true);
     void startVoiceToRhizoh(true);
-  }, [startVoiceToRhizoh, fallbackToTextInput, speakRhizoh]);
+  }, [startVoiceToRhizoh, fallbackToTextInput, speakRhizoh, gatewayUx?.phase]);
 
   useEffect(() => {
     let isMounted = true;
@@ -10313,7 +10323,9 @@ export default function AppRhizoh528() {
         idToken,
         gatewayUx,
         continuity: buildContinuityPayload(raw),
-        generationMode: rhizohGenerationMode,
+        generationMode: shouldPreferFastDialogueForSessionV0() ? "FAST_DIALOGUE" : rhizohGenerationMode,
+        fetchTimeoutMs: shouldPreferFastDialogueForSessionV0() ? VOICE_LLM_TIMEOUT_MS : TEXT_LLM_TIMEOUT_MS,
+        slimVoicePath: shouldPreferFastDialogueForSessionV0(),
         persistRhizohEmotions: persistRhizohEmotionSession,
         productDecisionOverlay: rhizohProductDecisionOverlayRef.current
       });
@@ -10689,6 +10701,10 @@ export default function AppRhizoh528() {
       /* noop */
     }
   }, [gatewayUx.phase]);
+
+  useEffect(() => {
+    prewarmSpeechSynthesisV0();
+  }, []);
 
   useEffect(() => {
     const snap = ensureVoiceAdapterRegistered();
