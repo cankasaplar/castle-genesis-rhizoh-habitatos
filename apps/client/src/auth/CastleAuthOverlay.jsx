@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { User, LogIn, LogOut, Loader2 } from "lucide-react";
+import {
+  isCohortEmailAllowlistActiveV0,
+  isCohortEmailAllowlistConfiguredV0,
+  isCohortServerGateEnabledV0,
+  isInviteOnlyGoogleModeV0
+} from "../rhizoh/ingress/cohortEmailAllowlistV0.js";
+import {
+  hasLegalPreambleAckV0,
+  isLegalPreambleRequiredV0,
+  LEGAL_REALITY_SPEC_SHA256_V0
+} from "../rhizoh/ingress/ingress_router.js";
+import { LegalPreambleScreen } from "../rhizoh/ingress/LegalPreambleScreen.jsx";
 
 function GoogleMark() {
   return (
@@ -85,6 +97,7 @@ export function CastleAuthOverlay({ auth }) {
   const [displayName, setDisplayName] = useState("");
   const [linkEmail, setLinkEmail] = useState("");
   const [linkPassword, setLinkPassword] = useState("");
+  const [legalAckTick, setLegalAckTick] = useState(0);
 
   useEffect(() => {
     if (needsOnboarding && authUser?.displayName) setDisplayName(authUser.displayName);
@@ -100,82 +113,125 @@ export function CastleAuthOverlay({ auth }) {
   }
 
   if (needsAuthGate) {
+    if (isLegalPreambleRequiredV0() && !hasLegalPreambleAckV0()) {
+      return (
+        <div className="absolute inset-0 z-[6000] flex items-center justify-center bg-[#010103]/95 p-6 pointer-events-auto overflow-y-auto">
+          <LegalPreambleScreen
+            specSha256={LEGAL_REALITY_SPEC_SHA256_V0}
+            onProceed={() => setLegalAckTick((n) => n + 1)}
+          />
+        </div>
+      );
+    }
+    const inviteOnlyGoogle = isInviteOnlyGoogleModeV0();
+    const cohortServerGate = isCohortServerGateEnabledV0();
+    const cohortClientList = isCohortEmailAllowlistActiveV0();
+    const cohortListConfigured = isCohortEmailAllowlistConfiguredV0();
     return (
       <div className="absolute inset-0 z-[6000] flex items-center justify-center bg-[#010103]/95 p-6 pointer-events-auto">
         <div className={panelClass()}>
           <div className="text-[11px] text-cyan-400 tracking-[0.4em] mb-2 uppercase">Castle Genesis</div>
-          <h1 className="text-xl text-white font-black tracking-tight mb-1 normal-case">Hoş geldiniz</h1>
+          <h1 className="text-xl text-white font-black tracking-tight mb-1 normal-case">
+            {inviteOnlyGoogle ? "Davetli kohort" : "Hoş geldiniz"}
+          </h1>
           <p className="text-[11px] text-white/50 leading-relaxed mb-6 normal-case font-medium">
-            Üyelik ile ilerlemeniz Firestore&apos;da güvenli şekilde saklanır. İsterseniz önce misafir olarak deneyebilirsiniz.
+            {inviteOnlyGoogle
+              ? "Bu ortam kapalı erişimlidir. Yalnızca Google ile, davet e-postanızla eşleşen hesapla giriş yapın."
+              : "Üyelik ile ilerlemeniz Firestore'da güvenli şekilde saklanır. İsterseniz önce misafir olarak deneyebilirsiniz."}
+            {cohortServerGate ? (
+              <span className="block mt-2 text-cyan-200/80">
+                Erişim sunucu allowlist ile doğrulanır (istemci env ile atlanamaz). Firebase Functions{" "}
+                <code className="text-cyan-100/90">cohortGateV0</code> + parametre{" "}
+                <code className="text-cyan-100/90">COHORT_EMAIL_ALLOWLIST</code>.
+              </span>
+            ) : null}
+            {cohortClientList && !inviteOnlyGoogle ? (
+              <span className="block mt-2 text-cyan-200/80">
+                Kapalı kohort (istemci listesi): yalnızca build allowlist e-postaları oturum açabilir.
+              </span>
+            ) : null}
+            {!cohortServerGate && cohortListConfigured && inviteOnlyGoogle ? (
+              <span className="block mt-2 text-amber-200/80 text-[10px]">
+                Üretimde sunucu kapısını açmanız önerilir (<code>VITE_RHIZOH_COHORT_SERVER_GATE=1</code>).
+              </span>
+            ) : null}
           </p>
 
-          <div className="flex gap-2 mb-6">
-            <button
-              type="button"
-              onClick={() => setMode("login")}
-              className={`flex-1 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest ${
-                mode === "login" ? "bg-cyan-400 text-black" : "bg-white/5 text-white/60"
-              }`}
-            >
-              <LogIn size={14} className="inline mr-1 align-text-bottom" />
-              Giriş
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("register")}
-              className={`flex-1 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest ${
-                mode === "register" ? "bg-cyan-400 text-black" : "bg-white/5 text-white/60"
-              }`}
-            >
-              Kayıt
-            </button>
-          </div>
+          {!inviteOnlyGoogle ? (
+            <>
+              <div className="flex gap-2 mb-6">
+                <button
+                  type="button"
+                  onClick={() => setMode("login")}
+                  className={`flex-1 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest ${
+                    mode === "login" ? "bg-cyan-400 text-black" : "bg-white/5 text-white/60"
+                  }`}
+                >
+                  <LogIn size={14} className="inline mr-1 align-text-bottom" />
+                  Giriş
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode("register")}
+                  className={`flex-1 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest ${
+                    mode === "register" ? "bg-cyan-400 text-black" : "bg-white/5 text-white/60"
+                  }`}
+                >
+                  Kayıt
+                </button>
+              </div>
 
-          <div className="space-y-3 mb-4 normal-case">
-            <input
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="E-posta"
-              className="w-full bg-black/40 border border-white/15 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-cyan-400/60"
-            />
-            <input
-              type="password"
-              autoComplete={mode === "register" ? "new-password" : "current-password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Şifre (en az 6 karakter)"
-              className="w-full bg-black/40 border border-white/15 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-cyan-400/60"
-            />
-          </div>
+              <div className="space-y-3 mb-4 normal-case">
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="E-posta"
+                  className="w-full bg-black/40 border border-white/15 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-cyan-400/60"
+                />
+                <input
+                  type="password"
+                  autoComplete={mode === "register" ? "new-password" : "current-password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Şifre (en az 6 karakter)"
+                  className="w-full bg-black/40 border border-white/15 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-cyan-400/60"
+                />
+              </div>
 
-          {error ? <div className="text-rose-400 text-[11px] mb-3 normal-case font-medium">{error}</div> : null}
+              {error ? <div className="text-rose-400 text-[11px] mb-3 normal-case font-medium">{error}</div> : null}
 
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => (mode === "login" ? void signInEmail(email, password) : void signUpEmail(email, password))}
-            className="w-full py-3 rounded-xl bg-cyan-400 text-black font-black text-xs uppercase tracking-widest mb-3 disabled:opacity-50"
-          >
-            {busy ? "…" : mode === "login" ? "Giriş yap" : "Hesap oluştur"}
-          </button>
-          {mode === "login" ? (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void resetPassword(email)}
-              className="w-full py-2 rounded-xl bg-white/5 text-cyan-200 font-black text-[11px] uppercase tracking-widest mb-3 border border-white/10 disabled:opacity-50"
-            >
-              Şifremi unuttum
-            </button>
-          ) : null}
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => (mode === "login" ? void signInEmail(email, password) : void signUpEmail(email, password))}
+                className="w-full py-3 rounded-xl bg-cyan-400 text-black font-black text-xs uppercase tracking-widest mb-3 disabled:opacity-50"
+              >
+                {busy ? "…" : mode === "login" ? "Giriş yap" : "Hesap oluştur"}
+              </button>
+              {mode === "login" ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void resetPassword(email)}
+                  className="w-full py-2 rounded-xl bg-white/5 text-cyan-200 font-black text-[11px] uppercase tracking-widest mb-3 border border-white/10 disabled:opacity-50"
+                >
+                  Şifremi unuttum
+                </button>
+              ) : null}
 
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-px flex-1 bg-white/10" />
-            <span className="text-[10px] text-white/35 uppercase tracking-widest">veya</span>
-            <div className="h-px flex-1 bg-white/10" />
-          </div>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-px flex-1 bg-white/10" />
+                <span className="text-[10px] text-white/35 uppercase tracking-widest">veya</span>
+                <div className="h-px flex-1 bg-white/10" />
+              </div>
+            </>
+          ) : (
+            <>
+              {error ? <div className="text-rose-400 text-[11px] mb-3 normal-case font-medium">{error}</div> : null}
+            </>
+          )}
 
           <button
             type="button"
@@ -187,16 +243,19 @@ export function CastleAuthOverlay({ auth }) {
             Google ile devam et
           </button>
 
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void signInGuest()}
-            className="w-full py-3 rounded-xl bg-white/10 text-white font-black text-xs uppercase tracking-widest border border-white/15 mb-2 disabled:opacity-50"
-          >
-            Misafir olarak devam et
-          </button>
+          {!inviteOnlyGoogle ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void signInGuest()}
+              className="w-full py-3 rounded-xl bg-white/10 text-white font-black text-xs uppercase tracking-widest border border-white/15 mb-2 disabled:opacity-50"
+            >
+              Misafir olarak devam et
+            </button>
+          ) : null}
           <p className="text-[10px] text-white/35 normal-case leading-relaxed">
-            Firebase Authentication: E-posta/Şifre, Google ve Anonim yöntemleri etkin olmalı; Hosting alan adınızı yetkili domain listesine ekleyin.
+            Firebase Authentication: Google{inviteOnlyGoogle ? "" : ", e-posta ve misafir"}; Hosting alan adınızı yetkili
+            domain listesine ekleyin.
           </p>
         </div>
       </div>
