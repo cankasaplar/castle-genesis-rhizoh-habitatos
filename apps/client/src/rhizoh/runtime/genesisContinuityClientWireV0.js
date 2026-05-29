@@ -6,6 +6,7 @@ import {
 import { publishWorldObservationV0 } from "./worldObservationBusV0.js";
 import { startWorldObservationIngressWireV0 } from "./worldObservationIngressWireV0.js";
 import { installWorldObservationObservabilityV0 } from "./worldObservationObservabilityV0.js";
+import { installCohortSessionFeedbackMailV0 } from "../cohort/cohortSessionFeedbackMailV0.js";
 import {
   getRhizohUiTextModeV0,
   getRhizohUiTextVisibilityV0
@@ -14,6 +15,7 @@ import {
 let eventSource = null;
 let stopIngressWire = () => {};
 let stopObservability = () => {};
+let stopCohortFeedbackMail = () => {};
 let pollTimer = 0;
 /** @type {number | null} */
 let lastSeq = null;
@@ -60,6 +62,7 @@ export function startGenesisContinuityClientWireV0() {
 
   stopIngressWire = startWorldObservationIngressWireV0();
   stopObservability = installWorldObservationObservabilityV0();
+  stopCohortFeedbackMail = installCohortSessionFeedbackMailV0();
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
     window.__rhizoh.uiTextMode = getRhizohUiTextModeV0();
@@ -119,6 +122,8 @@ export function startGenesisContinuityClientWireV0() {
 }
 
 export function stopGenesisContinuityClientWireV0() {
+  stopCohortFeedbackMail();
+  stopCohortFeedbackMail = () => {};
   stopObservability();
   stopObservability = () => {};
   stopIngressWire();

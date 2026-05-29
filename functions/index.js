@@ -10,6 +10,10 @@ const { onRequest } = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const { validateRhizohEventEnvelope } = require("./validateRhizohEvent");
 const { parseCohortEmailAllowlist } = require("./cohortAllowlistParse");
+const {
+  handleCohortSessionFeedbackMailV0,
+  handleCohortFeedbackSubmitV0
+} = require("./cohortMailV0");
 
 /** Lazy Firebase Admin — yalnızca cohortGateV0 yükünde init (deploy kod analizi zaman aşımını azaltır). */
 function getAdmin() {
@@ -133,6 +137,79 @@ exports.gatewayProxyV0 = onRequest(
     } catch (e) {
       logger.warn("gateway_proxy_failed", { url, message: String(e?.message || e) });
       res.status(502).json({ ok: false, reason: "upstream_unreachable" });
+    }
+  }
+);
+
+async function verifyOptionalBearerEmail(req) {
+  const authHeader = String(req.headers.authorization || "");
+  const m = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (!m) return null;
+  try {
+    const admin = getAdmin();
+    const decoded = await admin.auth().verifyIdToken(m[1]);
+    return String(decoded.email || "").trim().toLowerCase() || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * POST — session end: feedback link mail to observer (cohort review).
+ */
+exports.cohortSessionFeedbackMailV0 = onRequest(
+  {
+    cors: true,
+    region: "us-central1",
+    invoker: "public"
+  },
+  async (req, res) => {
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, reason: "method_not_allowed" });
+      return;
+    }
+    try {
+      const tokenEmail = await verifyOptionalBearerEmail(req);
+      const out = await handleCohortSessionFeedbackMailV0(req.body || {}, tokenEmail);
+      res.status(out.ok ? 200 : 400).json(out);
+    } catch (e) {
+      const reason = String(e?.code || e?.message || e);
+      logger.error("cohort_session_feedback_mail_failed", { reason });
+      res.status(reason === "smtp_unconfigured" ? 503 : 500).json({ ok: false, reason });
+    }
+  }
+);
+
+/**
+ * POST — human feedback notes after session.
+ */
+exports.cohortFeedbackSubmitV0 = onRequest(
+  {
+    cors: true,
+    region: "us-central1",
+    invoker: "public"
+  },
+  async (req, res) => {
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, reason: "method_not_allowed" });
+      return;
+    }
+    try {
+      const tokenEmail = await verifyOptionalBearerEmail(req);
+      const out = await handleCohortFeedbackSubmitV0(req.body || {}, tokenEmail);
+      res.status(out.ok ? 200 : 400).json(out);
+    } catch (e) {
+      const reason = String(e?.code || e?.message || e);
+      logger.error("cohort_feedback_submit_failed", { reason });
+      res.status(reason === "smtp_unconfigured" ? 503 : 500).json({ ok: false, reason });
     }
   }
 );

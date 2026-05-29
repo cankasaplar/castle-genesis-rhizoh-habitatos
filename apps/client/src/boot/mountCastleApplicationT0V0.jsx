@@ -7,6 +7,8 @@ import {
   resolveIngressRouteV0
 } from "../rhizoh/ingress/ingress_router.js";
 import { RhizohIngressFlow } from "../rhizoh/ingress/RhizohIngressFlow.jsx";
+import { isCohortFeedbackRouteV0 } from "../rhizoh/cohort/cohortFeedbackUrlV0.js";
+import { CohortSessionFeedbackScreen } from "../rhizoh/cohort/CohortSessionFeedbackScreen.jsx";
 
 /**
  * T0 shell mount — legal/cohort ingress + monolithic AppRhizoh528 (no ontological gate).
@@ -18,6 +20,16 @@ export async function mountCastleApplicationT0V0(ctx) {
   if (!reactRoot) {
     reactRoot = ReactDOM.createRoot(appEl);
     window.__CASTLE_REACT_ROOT__ = reactRoot;
+  }
+
+  if (isCohortFeedbackRouteV0()) {
+    bootLog?.ok?.("boot.cohort_feedback", "feedback route");
+    reactRoot.render(
+      <RootErrorBoundary>
+        <CohortSessionFeedbackScreen />
+      </RootErrorBoundary>
+    );
+    return { mounted: true, quarantine: false, gate: null, ingress: "cohort_feedback" };
   }
 
   const ingress = resolveIngressRouteV0();
