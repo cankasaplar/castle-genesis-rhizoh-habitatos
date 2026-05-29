@@ -28,8 +28,11 @@ function resolveMaybeRelativeHttp(url) {
 export const LS_RHIZOH_LLM_HTTP_OVERRIDE = "castle.rhizohLlmHttp.override";
 /** Build’de URL yoksa yedek (ör. sadece Hosting’de hızlı deneme). */
 export const LS_RHIZOH_LLM_HTTP = "castle.rhizohLlmHttp";
-/** Son kullanıcı için varsayılan canlı gateway (lokal kurulum zorunluluğunu kaldırır). */
-const DEFAULT_LIVE_GATEWAY_BASE = "https://castle-genesis-gateway.onrender.com";
+/**
+ * Build’de `VITE_LIVE_GATEWAY_BASE` boşsa kullanılan varsayılan gateway kökü (LLM = `${base}/rhizoh/llm`, Genesis SSE aynı origin).
+ * Kendi Render servisin farklıysa: hem `VITE_GATEWAY_HTTP` hem `VITE_LIVE_GATEWAY_BASE` aynı host’a kilitlenmeli (split gateway yok).
+ */
+const DEFAULT_LIVE_GATEWAY_BASE = "https://castle-genesis-rhizoh-habitatos.onrender.com";
 
 function readLlmHttpFromLocalStorage() {
   try {
@@ -123,10 +126,19 @@ export function getCastleFlightConfig() {
     cesiumBootDiag: String(env.VITE_CESIUM_BOOT_DIAG || "").trim() === "1",
     /** Aşama süreleri + primitive/entity sayıları — VITE_CESIUM_BOOT_WATCHDOG=1 (veya BOOT_DIAG açıkken de yazılır) */
     cesiumBootWatchdog: String(env.VITE_CESIUM_BOOT_WATCHDOG || "").trim() === "1",
+    /** Rhizoh B1 — Sarıyer kalibrasyon kökü + anchor projection → Cesium fog/globe + tek entity (`VITE_RHIZOH_EPISTEMIC_CESIUM_BOOTSTRAP=1`) */
+    rhizohEpistemicCesiumBootstrap: String(env.VITE_RHIZOH_EPISTEMIC_CESIUM_BOOTSTRAP || "").trim() === "1",
     mapboxToken: env.VITE_MAPBOX_TOKEN || "",
     /** Rhizoh LLM HTTP — sıra: localStorage override → Vite env → localStorage fill (demo Hosting). */
     rhizohLlmHttp: rhizohLlmHttpResolved,
     rhizohLlmToken: env.VITE_RHIZOH_LLM_TOKEN || "",
+    /**
+     * YouTube Publisher Bridge (A1) HTTP kökü, örn. `http://127.0.0.1:8791`.
+     * Boş → istemci publish isteği göndermez ve analytics çekmez (A2/A3 kapalı).
+     */
+    youtubePublisherBridgeUrl: String(env.VITE_YOUTUBE_PUBLISHER_BRIDGE_URL || "")
+      .trim()
+      .replace(/\/$/, ""),
     /** Telemetri Hz üst sınırı (istemci tarafı) */
     telemetryMaxHz: Number(env.VITE_TELEMETRY_MAX_HZ || 30) || 30,
     /** Simülasyon drone sayısı (REAL_MAP) */
@@ -134,4 +146,68 @@ export function getCastleFlightConfig() {
     /** production | development — isteğe bağlı (Vite MODE yerine) */
     viteEnv: env.VITE_ENV || env.MODE || "development"
   };
+}
+
+/**
+ * Genesis `GET /rhizoh/genesis/*` ve SSE için gerçek gateway origin.
+ * Firebase Hosting üzerinde `VITE_GATEWAY_HTTP` veya göreli `/rhizoh/llm` bazen sayfa origin'ine çözülür;
+ * bu durumda statik SPA HTML döner (`text/html` ≠ `text/event-stream`). O zaman canlı gateway tabanı kullanılır.
+ * @returns {string}
+ */
+export function getGenesisProtocolGatewayOrigin() {
+  const env = import.meta.env;
+  const cfg = getCastleFlightConfig();
+  const host = typeof window !== "undefined" ? window.location.hostname : "";
+  const isLocalHost = host === "localhost" || host === "127.0.0.1" || host === "::1";
+  const liveBase = String(env.VITE_LIVE_GATEWAY_BASE || DEFAULT_LIVE_GATEWAY_BASE).trim().replace(/\/+$/, "");
+
+  let liveOrigin = "";
+  if (liveBase) {
+    try {
+      liveOrigin = new URL(liveBase).origin;
+    } catch {
+      liveOrigin = liveBase;
+    }
+  }
+
+  const llm = String(cfg.rhizohLlmHttp || "").trim();
+  let origin = "";
+  if (llm) {
+    try {
+      const baseHref =
+        typeof window !== "undefined" && window.location?.href ? window.location.href : "http://localhost/";
+      const u = new URL(llm, baseHref);
+      origin = `${u.protocol}//${u.host}`;
+    } catch {
+      origin = "";
+    }
+  }
+
+  if (!origin) return liveOrigin;
+
+  const pageOrigin = typeof window !== "undefined" && window.location?.origin ? window.location.origin : "";
+  let pageHost = "";
+  try {
+    pageHost = pageOrigin ? new URL(pageOrigin).hostname : "";
+  } catch {
+    pageHost = "";
+  }
+  const onFirebaseHosting = /\.(web\.app|firebaseapp\.com)$/i.test(pageHost);
+
+  /**
+   * Hosting aynı origin'de `/rhizoh/*` yok → SPA `index.html` (`text/html`). Genesis/SSE mutlaka ayrı gateway origin.
+   */
+  if (!isLocalHost && pageOrigin && origin === pageOrigin && onFirebaseHosting) {
+    if (liveOrigin && liveOrigin !== pageOrigin) return liveOrigin;
+    try {
+      const defOrigin = new URL(DEFAULT_LIVE_GATEWAY_BASE).origin;
+      if (defOrigin && defOrigin !== pageOrigin) return defOrigin;
+    } catch {
+      /* noop */
+    }
+  }
+
+  if (!isLocalHost && pageOrigin && origin === pageOrigin && liveOrigin) return liveOrigin;
+
+  return origin;
 }
