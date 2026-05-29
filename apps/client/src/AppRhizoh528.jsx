@@ -148,6 +148,7 @@ import {
   shouldShowVerboseCommandHintV0
 } from "./rhizoh/experience/livingWorldFirstInteractionV0.js";
 import { prewarmSpeechSynthesisV0, resolveTurkishSpeechVoiceV0 } from "./rhizoh/runtime/prewarmSpeechSynthesisV0.js";
+import { extractSpeechRecognitionTranscriptV0 } from "./rhizoh/runtime/extractSpeechRecognitionTranscriptV0.js";
 import {
   buildRhizohHealthState,
   computeRhizohHealthInfluence,
@@ -9752,9 +9753,9 @@ export default function AppRhizoh528() {
       setMicListening(true);
       const rec = new Ctor();
       rec.lang = String(navigator?.language || "tr-TR");
-      rec.interimResults = false;
+      rec.interimResults = true;
       rec.maxAlternatives = 1;
-      rec.continuous = !!keepAlive;
+      rec.continuous = false;
       rec.__castleStopRequested = false;
       rec.onend = () => {
         setMicListening(false);
@@ -9815,7 +9816,11 @@ export default function AppRhizoh528() {
       };
       rec.onresult = async (ev) => {
         try {
-          const text = String(ev?.results?.[0]?.[0]?.transcript || "").trim();
+          const { text, isFinal } = extractSpeechRecognitionTranscriptV0(ev);
+          if (!isFinal) {
+            setMicListening(true);
+            return;
+          }
           setMicListening(false);
           setVoiceNetworkBlocked(false);
           clearVoiceSttRecoveryV0();
@@ -9829,8 +9834,7 @@ export default function AppRhizoh528() {
             }
             return;
           }
-          voiceTurnBusyRef.current = true;
-          voiceTurnBusySinceRef.current = Date.now();
+          console.info("[VOICE_STT] final", { chars: text.length, preview: text.slice(0, 96) });
           await handleVoiceTranscript(text, { manageVoiceTurn: keepAlive, source: "mic" });
         } catch (err) {
           console.error("[VOICE_PIPE_FATAL]", err);
