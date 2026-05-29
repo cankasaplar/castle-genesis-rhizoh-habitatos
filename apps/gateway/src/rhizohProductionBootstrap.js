@@ -78,6 +78,7 @@ export function initRhizoh() {
     epistemicLogsBatch: "/rhizoh/epistemic/logs/batch",
     genesisRuntime: "/rhizoh/genesis/runtime",
     genesisStream: "/rhizoh/genesis/stream",
+    genesisIngress: "/rhizoh/genesis/ingress",
     genesisCheckpointLatest: "/rhizoh/genesis/checkpoint/latest",
     genesisCheckpointBySeqPrefix: "/rhizoh/genesis/checkpoint/by-seq/",
     genesisCheckpointRange: "/rhizoh/genesis/checkpoint/range",
@@ -88,7 +89,11 @@ export function initRhizoh() {
     genesisReplayEquivalence: "/rhizoh/genesis/replay/equivalence",
     genesisReplayAnalytics: "/rhizoh/genesis/replay/analytics",
     genesisReplayEvolution: "/rhizoh/genesis/replay/evolution",
-    infraPrometheusMetrics: "/infra/metrics/prometheus"
+    infraPrometheusMetrics: "/infra/metrics/prometheus",
+    opsAbuseReport: "/rhizoh/ops/abuse-report",
+    opsModerationQueue: "/rhizoh/ops/moderation/queue",
+    opsAgentSnapshots: "/rhizoh/ops/agent-snapshots",
+    opsHardeningStatus: "/rhizoh/ops/hardening/status"
   };
 
   return {

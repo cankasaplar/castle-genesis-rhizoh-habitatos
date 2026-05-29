@@ -42,6 +42,27 @@ import {
   resolveConnection
 } from "./llmConnectionsStore.js";
 import { checkHttpRateLimit, getHttpClientIp } from "./castleHttpRateLimit.js";
+import {
+  submitAbuseReportV0,
+  listModerationQueueV0,
+  softBlockUserV0,
+  removeSoftBlockV0,
+  listSoftBlockedUsersV0
+} from "./ops/moderationMvpV0.js";
+import { listRecentAgentSnapshotsV0 } from "./ops/agentObservabilityV0.js";
+import { readAgentContainmentConfigV0 } from "./ops/agentContainmentV0.js";
+import { readCostContainmentConfigV0, getCostContainmentStatsV0 } from "./ops/costContainmentV0.js";
+import { getGlobalCostLedgerSnapshotV0, getGclBackendStatusV0 } from "./ops/globalCostLedgerV0.js";
+import { evaluateEconomicStrategyL3V0 } from "./ops/economicStrategyEngineL3V0.js";
+import { getPhasedRolloutStatsV0, readPhasedRolloutTierV0 } from "./ops/phasedRolloutV0.js";
+import { buildUnifiedStateNarrativeV0 } from "./ops/unifiedStateNarrativeV0.js";
+import { resolveHardeningTenantIdV0 } from "./ops/narrativeTenantIsolationV0.js";
+import {
+  classifyStressResponseV0,
+  verifyStressTaxonomyCoverageV0,
+  verifyStressConflictResolutionV0
+} from "./ops/stressResponseTaxonomyV0.js";
+import { verifyResolutionStabilityEnvelopeV0 } from "./ops/resolutionStabilityEnvelopeV0.js";
 import { logLlmAccess } from "./castleLlmAudit.js";
 import { appendMemory, listMemories, getMemoryContext, getPersonaGoalMemory, setPersonaGoalMemory, autoCompactMemories } from "./memoryStore.js";
 import { getFirebasePersistence } from "./firebasePersistence.js";
@@ -121,6 +142,23 @@ import { computeGenesisReplayAnalyticsV1 } from "./genesisReplayAnalyticsV1.js";
 import { computeGenesisReplayEvolutionV1 } from "./genesisReplayEvolutionV1.js";
 import { handleStripeCheckoutCreate, handleStripeMembershipWebhook } from "./stripeWebhookMembership.js";
 import { buildRealityHealthPayload } from "./edgeRealityConsistencyV1.js";
+import {
+  assertWalPeerSocketAuthorityV0,
+  buildGatewaySubstrateAuthoritySnapshotV0,
+  logGatewaySubstrateAuthorityGuardsV0,
+  validateWalPeerFeedSignatureV0
+} from "./gatewaySubstrateAuthorityV0.js";
+import {
+  buildSubstrateOperationalSnapshotV0,
+  recordWalPeerRejectV0,
+  renderSubstratePrometheusMetricsV0
+} from "./infra/substrateOperationalMetrics.js";
+import { ingestClientSubstrateHealthV0 } from "./rhizohSubstrateHealthIngestV0.js";
+import { recordSubstrateOtelEventV0 } from "./infra/opentelemetrySubstrateV0.js";
+import {
+  GENESIS_WORLD_OBSERVATION_INGRESS_SCHEMA,
+  ingestGenesisWorldObservationV0
+} from "./genesisContinuityClientIngressV0.js";
 
 /** Render / Fly / Railway: `PORT` — yoksa `CASTLE_GATEWAY_PORT` — yoksa 8090. */
 const PORT =
@@ -284,6 +322,9 @@ function renderInfraMetricsProm() {
     lines.push(`castle_gateway_enqueue_latency_bucket{le="${k}"} ${buckets[k]}`);
   }
   lines.push(`castle_gateway_enqueue_latency_bucket{le="+Inf"} ${infraMetrics.eventsProcessed}`);
+  if (process.env.CASTLE_SUBSTRATE_METRICS !== "0") {
+    lines.push(renderSubstratePrometheusMetricsV0().trimEnd());
+  }
   return lines.join("\n");
 }
 
@@ -673,6 +714,10 @@ async function buildGenesisRuntimeSurfacePayloadLive() {
     genesisStream: {
       schema: "castle.genesis.stream_cursor.v0",
       lastAcceptedSeq: getGenesisContinuitySeq(),
+      clientIngress: {
+        schema: GENESIS_WORLD_OBSERVATION_INGRESS_SCHEMA,
+        postPath: rhizohRuntime.routes.genesisIngress
+      },
       eventArchive: genesisContinuityEventArchiveEnabled()
         ? {
             enabled: true,
@@ -764,6 +809,44 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === "GET" && pathname === "/health/substrate") {
+    const authority = buildGatewaySubstrateAuthoritySnapshotV0();
+    const operational = buildSubstrateOperationalSnapshotV0();
+    const drift = buildRealityHealthPayload();
+    const ok = Boolean(authority.productionAuthoritySatisfied) && drift.ok;
+    sendJson(res, ok ? 200 : 503, {
+      ok,
+      service: "castle-gateway",
+      ts: Date.now(),
+      authority,
+      operational,
+      drift: { ok: drift.ok, errors: drift.drift?.errors, warnings: drift.drift?.warnings }
+    });
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/rhizoh/substrate/health") {
+    if (REQUIRED_GATEWAY_TOKEN) {
+      const hdr =
+        String(req.headers?.["x-castle-gateway-token"] || req.headers?.["authorization"] || "").trim();
+      const bearer = hdr.startsWith("Bearer ") ? hdr.slice(7).trim() : hdr;
+      if (bearer !== REQUIRED_GATEWAY_TOKEN) {
+        sendJson(res, 401, { ok: false, error: "gateway_token_required" });
+        return;
+      }
+    }
+    const body = await readHttpJson(req);
+    const uid = (await resolveHttpUser(req))?.uid || "anonymous";
+    const result = ingestClientSubstrateHealthV0(body, { uid, clientId: uid });
+    if (!result.ok) {
+      sendJson(res, 400, result);
+      return;
+    }
+    recordSubstrateOtelEventV0("client_health_ingest", { uid: String(uid).slice(0, 32) });
+    sendJson(res, 200, result);
+    return;
+  }
+
   if (req.method === "GET" && pathname === "/health/deps") {
     const t0 = Date.now();
     if (process.env.CASTLE_GATEWAY_MAINTENANCE === "true") {
@@ -848,6 +931,34 @@ const httpServer = createServer(async (req, res) => {
   if (req.method === "GET" && pathname === rhizohRuntime.routes.genesisRuntime) {
     const payload = await buildGenesisRuntimeSurfacePayloadLive();
     sendJson(res, 200, payload);
+    return;
+  }
+
+  if (req.method === "POST" && pathname === rhizohRuntime.routes.genesisIngress) {
+    if (REQUIRED_GATEWAY_TOKEN) {
+      const hdr =
+        String(req.headers?.["x-castle-gateway-token"] || req.headers?.["authorization"] || "").trim();
+      const bearer = hdr.startsWith("Bearer ") ? hdr.slice(7).trim() : hdr;
+      if (bearer !== REQUIRED_GATEWAY_TOKEN) {
+        sendJson(res, 401, { ok: false, error: "gateway_token_required" });
+        return;
+      }
+    }
+    try {
+      const body = await readHttpJson(req, 8 * 1024);
+      const actor = await resolveMeshActor(req);
+      const clientId = actor.ok ? actor.clientUid : (await resolveHttpUser(req))?.uid || "anonymous";
+      const result = ingestGenesisWorldObservationV0(body, { clientId });
+      if (!result.ok) {
+        const status =
+          result.error === "rate_limited" ? 429 : result.error === "payload_too_large" ? 413 : 400;
+        sendJson(res, status, result);
+        return;
+      }
+      sendJson(res, 202, result);
+    } catch (e) {
+      sendJson(res, 400, { ok: false, error: String(e?.message || e) });
+    }
     return;
   }
 
@@ -2404,6 +2515,283 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
+  function moderationAdminOk(req) {
+    const expected = String(process.env.CASTLE_MODERATION_ADMIN_KEY || "").trim();
+    if (!expected) return false;
+    const got = String(req.headers["x-castle-moderation-key"] || "").trim();
+    return got.length > 0 && got === expected;
+  }
+
+  if (req.method === "POST" && pathname === rhizohRuntime.routes.opsAbuseReport) {
+    try {
+      const body = await readHttpJson(req, 32 * 1024);
+      const auth = await resolveHttpUser(req);
+      const entry = submitAbuseReportV0({
+        reporterUid: auth.ok ? auth.uid : null,
+        targetUid: body?.targetUid ?? null,
+        category: body?.category,
+        detail: body?.detail,
+        traceId: body?.traceId ?? null
+      });
+      sendJson(res, 202, { ok: true, reportId: entry.id, status: entry.status });
+    } catch (e) {
+      sendJson(res, 400, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.opsModerationQueue) {
+    if (!moderationAdminOk(req)) {
+      sendJson(res, 403, { ok: false, error: "moderation_admin_required" });
+      return;
+    }
+    sendJson(res, 200, {
+      ok: true,
+      queue: listModerationQueueV0(100),
+      softBlocked: listSoftBlockedUsersV0()
+    });
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/rhizoh/ops/moderation/soft-block") {
+    if (!moderationAdminOk(req)) {
+      sendJson(res, 403, { ok: false, error: "moderation_admin_required" });
+      return;
+    }
+    try {
+      const body = await readHttpJson(req, 8 * 1024);
+      const out = softBlockUserV0(body?.uid, body?.reason);
+      sendJson(res, out.ok ? 200 : 400, out);
+    } catch (e) {
+      sendJson(res, 400, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/rhizoh/ops/moderation/soft-unblock") {
+    if (!moderationAdminOk(req)) {
+      sendJson(res, 403, { ok: false, error: "moderation_admin_required" });
+      return;
+    }
+    try {
+      const body = await readHttpJson(req, 8 * 1024);
+      sendJson(res, 200, removeSoftBlockV0(body?.uid));
+    } catch (e) {
+      sendJson(res, 400, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.opsAgentSnapshots) {
+    if (!moderationAdminOk(req)) {
+      sendJson(res, 403, { ok: false, error: "moderation_admin_required" });
+      return;
+    }
+    const limit = Number(new URL(req.url || "", "http://local").searchParams.get("limit") || 50);
+    sendJson(res, 200, { ok: true, snapshots: listRecentAgentSnapshotsV0(limit) });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.opsHardeningStatus) {
+    const auth = await resolveHttpUser(req);
+    const principal = auth.ok ? `uid:${auth.uid}` : null;
+    const gclSnap = await getGlobalCostLedgerSnapshotV0(principal);
+    const economicStrategy = evaluateEconomicStrategyL3V0(gclSnap);
+    const hardeningTenantId = resolveHardeningTenantIdV0(auth, req);
+    const unifiedState = await buildUnifiedStateNarrativeV0({
+      tenantId: hardeningTenantId ?? undefined,
+      platformScope: !hardeningTenantId,
+      principal
+    });
+    sendJson(res, 200, {
+      ok: true,
+      schema: "rhizoh.ops.hardening_status.v0",
+      containment: readAgentContainmentConfigV0(),
+      cost: readCostContainmentConfigV0(),
+      gcl: {
+        backend: await getGclBackendStatusV0(),
+        snapshot: gclSnap
+      },
+      economicStrategyL3: economicStrategy,
+      phasedRollout: await getPhasedRolloutStatsV0(),
+      tier: readPhasedRolloutTierV0(),
+      principalCost: auth.ok ? await getCostContainmentStatsV0(principal) : null,
+      stressTaxonomy: verifyStressTaxonomyCoverageV0(),
+      stressConflictResolution: verifyStressConflictResolutionV0(),
+      resolutionStabilityEnvelope: verifyResolutionStabilityEnvelopeV0(),
+      unifiedState: {
+        tenantScope: {
+          tenantId: unifiedState.tenantScope?.tenantId,
+          scope: unifiedState.tenantScope?.scope,
+          noGlobalDerivedState: unifiedState.tenantScope?.noGlobalDerivedState
+        },
+        narrativeFingerprint: unifiedState.narrativeFingerprint,
+        screenshotScopeWatermark: unifiedState.screenshotScopeWatermark,
+        interpretationSafetyContract: unifiedState.interpretationSafetyContract,
+        interpretationUxContract: {
+          schema: unifiedState.interpretationUxContract?.schema,
+          layerOrder: unifiedState.interpretationUxContract?.layerOrder,
+          narrativeNeverVisuallyDominant: unifiedState.interpretationUxContract?.narrativeNeverVisuallyDominant
+        },
+        governance: {
+          narrativeIsNotDecisionLayer: unifiedState.governance.narrativeIsNotDecisionLayer,
+          displayOrder: unifiedState.governance.displayOrder,
+          trustPosture: unifiedState.governance.trustPosture,
+          interpretationUxContract: unifiedState.governance.interpretationUxContract?.schema
+        },
+        humanOps: {
+          decisionTier: unifiedState.humanOps?.humanDecisionScaling?.tier,
+          decisionOwner: unifiedState.humanOps?.humanDecisionScaling?.decisionOwner,
+          opsRouteId: unifiedState.humanOps?.humanDecisionOpsRunbook?.routing?.routeId,
+          slaAckMinutes: unifiedState.humanOps?.humanDecisionOpsRunbook?.sla?.ackMinutes,
+          uiDisclaimerRequired: unifiedState.humanOps?.narrativeUiSafety?.displayRules?.requireDisclaimerBanner,
+          misreadHighResidual: unifiedState.humanOps?.misreadSimulation?.highResidualCount,
+          propagationHighResidual: unifiedState.humanOps?.socialPropagationSimulation?.highResidualCount,
+          worstWatermarkSurvivability:
+            unifiedState.humanOps?.socialPropagationSimulation?.aggregate?.worstWatermarkSurvivability,
+          dominantDistortionSource:
+            unifiedState.humanOps?.socialPropagationSimulation?.aggregate?.dominantDistortionSource
+        },
+        culturalRisk: {
+          perceptualRiskClass: unifiedState.culturalRisk?.perceptualRiskClass,
+          trustFork: unifiedState.culturalRisk?.trustDynamics?.fork,
+          trustDecayScore: unifiedState.culturalRisk?.trustDynamics?.scores?.trustDecay,
+          mythologyScore: unifiedState.culturalRisk?.trustDynamics?.scores?.mythology,
+          confidenceDetachmentExposure:
+            unifiedState.culturalRisk?.trustDynamics?.axes?.confidenceDetachmentExposure
+        },
+        appliedSystemsLayer: {
+          schema: unifiedState.appliedSystemsLayer?.schema,
+          researchOutputType: unifiedState.appliedSystemsLayer?.researchGovernance?.outputType,
+          roboticsBlockActuation: unifiedState.appliedSystemsLayer?.roboticsGrounding?.blockActuation,
+          spiralRumorCount:
+            unifiedState.appliedSystemsLayer?.spiralMMOGameKernel?.gameLayer?.rumors?.length
+        },
+        actionSemanticGovernance: {
+          schema: unifiedState.actionSemanticGovernance?.schema,
+          highRiskActionCount: unifiedState.actionSemanticGovernance?.highRiskActionCount,
+          loopClosed: unifiedState.actionSemanticGovernance?.epistemicFeedbackLoop?.loopClosed,
+          authorityCollapseMitigated:
+            unifiedState.actionSemanticGovernance?.epistemicFeedbackLoop?.risks?.authorityCollapse
+              ?.mitigated
+        },
+        actionContextResolution: {
+          schema: unifiedState.actionContextResolution?.schema,
+          contextFingerprint: unifiedState.actionContextResolution?.contextFingerprint?.fingerprintHash,
+          domainCollision: unifiedState.actionContextResolution?.domainCollision?.detected,
+          deployAgentSpiralBlocked:
+            unifiedState.actionContextResolution?.actionOverloadingRisk?.deployAgentExample
+              ?.spiral_mmo === "blocked",
+          roboticsActuationEligible:
+            unifiedState.actionContextResolution?.roboticsActuationCorrectness?.actuationEligible
+        },
+        epistemicCoherence: {
+          schema: unifiedState.epistemicCoherence?.schema,
+          verdict: unifiedState.epistemicCoherence?.systemCoherence?.verdict,
+          coherenceScore: unifiedState.epistemicCoherence?.systemCoherence?.score,
+          contradictionCount: unifiedState.epistemicCoherence?.crossLayerContradictions?.count,
+          operatorDecision: unifiedState.epistemicCoherence?.uxCompression?.operatorDecision,
+          headlineTr: unifiedState.epistemicCoherence?.uxCompression?.headline?.tr,
+          falseSafetyWarning: Boolean(
+            unifiedState.epistemicCoherence?.uxCompression?.falseSafetyWarning
+          )
+        },
+        coherenceAuthorityBoundary: {
+          schema: unifiedState.coherenceAuthorityBoundary?.schema,
+          bindingValid: unifiedState.coherenceAuthorityBoundary?.eclAuthorityBinding?.valid,
+          canExecute: unifiedState.coherenceAuthorityBoundary?.contract?.can_execute,
+          mandatoryBannerTr:
+            unifiedState.coherenceAuthorityBoundary?.disclaimers?.mandatoryBanner?.tr
+        },
+        decisionLatencyGovernance: {
+          schema: unifiedState.decisionLatencyGovernance?.schema,
+          latencyTier: unifiedState.decisionLatencyGovernance?.latencyTier,
+          inflationScore: unifiedState.decisionLatencyGovernance?.latencyInflation?.score,
+          fastPathEligible: unifiedState.decisionLatencyGovernance?.fastPath?.eligible,
+          primaryActionId: unifiedState.decisionLatencyGovernance?.humanDecisionPacket?.primaryActionId,
+          ackSlaMinutes: unifiedState.decisionLatencyGovernance?.humanDecisionPacket?.ackSlaMinutes,
+          certaintyCap: unifiedState.decisionLatencyGovernance?.humanDecisionPacket?.certaintyCap,
+          uncertaintyItems:
+            unifiedState.decisionLatencyGovernance?.humanDecisionPacket?.uncertaintyEnvelope?.itemCount
+        },
+        decisionPacketUncertaintyBoundary: {
+          schema: unifiedState.decisionPacketUncertaintyBoundary?.schema,
+          invariantValid: unifiedState.decisionPacketUncertaintyBoundary?.invariantCheck?.valid,
+          centralInvariant: unifiedState.decisionPacketUncertaintyBoundary?.centralInvariant
+        },
+        epistemicDecisionPacing: {
+          schema: unifiedState.epistemicDecisionPacing?.schema,
+          queueSaturationTier:
+            unifiedState.epistemicDecisionPacing?.operatorPacingControl?.queueSaturation?.tier,
+          operatorProcessingLatency:
+            unifiedState.epistemicDecisionPacing?.operatorPacingControl?.queueSaturation
+              ?.operatorProcessingLatency,
+          postureWindowCount:
+            unifiedState.epistemicDecisionPacing?.temporaryStaticPostureWindows
+              ?.temporaryStaticPostureWindows?.windowCount,
+          executionBoundariesValid:
+            unifiedState.epistemicDecisionPacing?.executionBoundaries?.valid,
+          grantsExecutionApproval: unifiedState.epistemicDecisionPacing?.grantsExecutionApproval
+        },
+        epistemicTemporalCoherence: {
+          schema: unifiedState.epistemicTemporalCoherence?.schema,
+          allInvariantsValid: unifiedState.epistemicTemporalCoherence?.allInvariantsValid,
+          temporalAlignmentValid:
+            unifiedState.epistemicTemporalCoherence?.invariants?.temporalAlignment?.valid,
+          crossWindowGuardValid:
+            unifiedState.epistemicTemporalCoherence?.invariants?.crossWindowContradictionGuard?.valid,
+          delayedTruthValid: unifiedState.epistemicTemporalCoherence?.invariants?.delayedTruthRule?.valid,
+          reconciliationRequired:
+            unifiedState.epistemicTemporalCoherence?.invariants?.crossWindowContradictionGuard
+              ?.reconciliation?.required
+        },
+        realityDriftObserver: {
+          schema: unifiedState.realityDriftObserver?.schema,
+          driftActive: unifiedState.realityDriftObserver?.driftObserverSummary?.active,
+          misapprehensionShapeCount:
+            unifiedState.realityDriftObserver?.misapprehensionShapeCatalog?.shapeCount,
+          criticalShapeCount:
+            unifiedState.realityDriftObserver?.driftObserverSummary?.criticalShapeCount,
+          roboticsMismatchActive:
+            unifiedState.realityDriftObserver?.roboticsFeedbackMismatch?.active
+        },
+        driftCausality: {
+          schema: unifiedState.driftCausality?.schema,
+          shapesWithCausalExplanation: unifiedState.driftCausality?.rdolLinkage?.shapesWithCausalExplanation,
+          activeDomainCount: unifiedState.driftCausality?.causalitySummary?.activeDomainCount,
+          propagationCausalityActive: unifiedState.driftCausality?.causalDomains?.propagation?.active
+        },
+        productReadiness: unifiedState.productReadiness,
+        stateLayers: {
+          raw: unifiedState.stateLayers.raw,
+          derived: {
+            systemState: unifiedState.stateLayers.derived.systemState,
+            narrative: unifiedState.stateLayers.derived.narrative,
+            validation: unifiedState.stateLayers.derived.validation
+          },
+          policy: {
+            binding: unifiedState.stateLayers.policy.binding,
+            decisionOwner: unifiedState.stateLayers.policy.decisionOwner,
+            prohibitedActions: unifiedState.stateLayers.policy.prohibitedActions
+          }
+        },
+        systemState: unifiedState.systemState,
+        interpretation: unifiedState.interpretation,
+        validation: {
+          trustPosture: unifiedState.validation.trustPosture,
+          adjustedConfidence: unifiedState.validation.adjustedConfidence,
+          agreement: unifiedState.validation.confidenceDecomposition.agreement,
+          divergenceScore: unifiedState.validation.divergence.divergenceScore,
+          validated: unifiedState.validation.divergence.validated,
+          uncertaintyTags: unifiedState.validation.uncertainty.tags.map((t) => t.id),
+          flags: unifiedState.validation.divergence.flags.map((f) => f.id)
+        },
+        compression: unifiedState.compression
+      }
+    });
+    return;
+  }
+
   if (req.method === "POST" && req.url === rhizohRuntime.routes.rhizohLlm) {
     try {
       const payload = await readHttpJson(req);
@@ -2412,10 +2800,21 @@ const httpServer = createServer(async (req, res) => {
       logRhizohHealth("gateway_accept", { route: rhizohRuntime.routes.rhizohLlm, auth: auth.ok ? "ok" : "anon", ip });
       const rlKey = auth.ok ? `uid:${auth.uid}` : `ip:${ip}`;
       if (!checkHttpRateLimit(`rhizoh_llm:${rlKey}`, RL_RHIZOH_LLM_PER_MIN, 60_000)) {
+        const rlTaxonomy = classifyStressResponseV0({ code: "rate_limit_exceeded" });
         return sendJson(res, 429, {
           ok: false,
           error: "rate_limit_exceeded",
-          reply: "İstek sınırı aşıldı. Kısa süre sonra tekrar deneyin.",
+          reply: rlTaxonomy.userMessageTr || "İstek sınırı aşıldı. Kısa süre sonra tekrar deneyin.",
+          stressClass: rlTaxonomy.stressClass,
+          responseAction: rlTaxonomy.responseAction,
+          stressMatrix: rlTaxonomy.matrix,
+          stressInterpretable: rlTaxonomy.interpretable,
+          stressConfidence: rlTaxonomy.stressConfidence,
+          actionConfidence: rlTaxonomy.actionConfidence,
+          actionSoftened: rlTaxonomy.actionSoftened,
+          responseActionStrict: rlTaxonomy.responseActionStrict,
+          actionInterpretable: rlTaxonomy.actionInterpretable,
+          conflictResolution: rlTaxonomy.conflictResolution,
           directive: "NONE"
         });
       }
@@ -2510,10 +2909,19 @@ const httpServer = createServer(async (req, res) => {
       const code = error?.code || "";
       let status = 500;
       if (msg === "rate_limit_exceeded") status = 429;
+      else if (
+        code === "cost_hard_limit" ||
+        code === "phased_rollout_capacity" ||
+        error?.containment === true ||
+        String(code).startsWith("agent_")
+      ) {
+        status = 429;
+      } else if (code === "user_soft_blocked" || code === "prompt_abuse_detected") status = 403;
       else if (["server_llm_key_missing", "user_llm_connection_required", "message_required", "missing_api_key"].includes(code) || msg.includes("missing_api_key_for_"))
         status = 400;
       let rhizohFailureKind = "provider_error";
-      if (msg === "rate_limit_exceeded") rhizohFailureKind = "rate_limit";
+      if (msg === "rate_limit_exceeded" || status === 429) rhizohFailureKind = "rate_limit";
+      else if (status === 403) rhizohFailureKind = "policy_block";
       else if (status === 400) rhizohFailureKind = "client_config";
       else if (msg.startsWith("provider_http_")) {
         const st = Number(msg.replace("provider_http_", ""));
@@ -2522,13 +2930,55 @@ const httpServer = createServer(async (req, res) => {
       } else if (/timeout|timed out|ETIMEDOUT/i.test(msg)) rhizohFailureKind = "timeout";
 
       const providerHttpMatch = msg.match(/^provider_http_(\d{3})$/);
+      const stressTaxonomy =
+        error?.stressClass != null
+          ? {
+              stressClass: error.stressClass,
+              responseAction: error.responseAction,
+              stressMatrix: error.stressMatrix,
+              stressInterpretable: error.stressInterpretable !== false,
+              stressConfidence: error.stressConfidence,
+              actionConfidence: error.actionConfidence,
+              actionSoftened: error.actionSoftened,
+              responseActionStrict: error.responseActionStrict,
+              actionInterpretable: error.actionInterpretable,
+              conflictResolution: error.conflictResolution,
+              stressSecondary: error.stressSecondary,
+              responseActions: error.responseActions
+            }
+          : (() => {
+              const t = classifyStressResponseV0({
+                code: code || msg,
+                rhizohFailureKind,
+                providerHttpStatus: providerHttpMatch
+                  ? Number(providerHttpMatch[1])
+                  : null
+              });
+              return {
+                stressClass: t.stressClass,
+                responseAction: t.responseAction,
+                stressMatrix: t.matrix,
+                stressInterpretable: t.interpretable,
+                stressConfidence: t.stressConfidence,
+                actionConfidence: t.actionConfidence,
+                actionSoftened: t.actionSoftened,
+                responseActionStrict: t.responseActionStrict,
+                actionInterpretable: t.actionInterpretable,
+                conflictResolution: t.conflictResolution,
+                stressSecondary: t.stressSecondary,
+                responseActions: t.responseActions
+              };
+            })();
       sendJson(res, status, {
         ok: false,
         rhizohFailureKind,
         ...(providerHttpMatch ? { providerHttpStatus: Number(providerHttpMatch[1]) } : {}),
-        error: msg || "rhizoh_llm_failed",
-        reply: status === 500 ? "Rhizoh bağlantısı geçici olarak kesildi." : msg,
-        directive: "NONE"
+        error: code || msg || "rhizoh_llm_failed",
+        reply:
+          error?.reply ||
+          (status === 500 ? "Rhizoh bağlantısı geçici olarak kesildi." : msg),
+        directive: error?.directive || "NONE",
+        ...stressTaxonomy
       });
     }
     return;
@@ -2651,6 +3101,191 @@ const spiralState = {
   activeByClient: new Map(),
   characters: new Map() // id -> {id,name,role,roomId,source}
 };
+
+/** Castle social rooms — keyed by `castleRoomKey` from {@link WS_MESSAGE.CASTLE_SOCIAL_PULSE}. */
+const castleSocialRoomState = new Map();
+const CASTLE_SOCIAL_MEMBER_TTL_MS = 90_000;
+const CASTLE_SOCIAL_MAX_PULSE_BYTES = 8192;
+
+function removeCastleSocialClientFromAllRooms(clientId) {
+  const cid = String(clientId || "");
+  if (!cid) return;
+  for (const room of castleSocialRoomState.values()) {
+    room.members.delete(cid);
+  }
+}
+
+function buildCastleSocialRoomPayload(roomKey) {
+  const room = castleSocialRoomState.get(roomKey);
+  if (!room) return null;
+  const now = Date.now();
+  for (const [cid, m] of [...room.members.entries()]) {
+    if (now - m.lastMs > CASTLE_SOCIAL_MEMBER_TTL_MS) room.members.delete(cid);
+  }
+  const roster = [...room.members.values()].map((m) => ({
+    userId: m.userId,
+    lastMs: m.lastMs,
+    ...m.sp
+  }));
+  const peerFeeds =
+    room.walPeers && room.walPeers.size
+      ? [...room.walPeers.values()].map((m) => ({
+          castleId: m.castleId,
+          userId: m.userId,
+          lastMs: m.lastMs,
+          walPeerFeed: m.walPeerFeed
+        }))
+      : [];
+  return { castleRoomKey: roomKey, seq: room.seq, roster, peerFeeds, ts: now };
+}
+
+const CASTLE_WAL_PEER_MAX_FEED_BYTES = 48 * 1024;
+
+/**
+ * @param {import("ws").WebSocket} socket
+ * @param {{ ok: boolean, code?: string, reason?: string }} gate
+ */
+function rejectWalPeerIngressV0(socket, gate) {
+  const code = gate.code || "wal_peer_rejected";
+  recordWalPeerRejectV0(code);
+  recordSubstrateOtelEventV0("wal_peer_reject", { code, reason: String(gate.reason || "").slice(0, 120) });
+  socket.send(
+    JSON.stringify(
+      createEnvelope(WS_MESSAGE.ERROR, {
+        error: gate.reason || "WAL peer ingress rejected.",
+        code
+      })
+    )
+  );
+}
+
+/**
+ * @param {import("ws").WebSocket} socket
+ * @param {Record<string, unknown> | null | undefined} walPeerFeed
+ * @returns {boolean}
+ */
+function gateWalPeerIngressV0(socket, walPeerFeed) {
+  const authGate = assertWalPeerSocketAuthorityV0(socket);
+  if (!authGate.ok) {
+    rejectWalPeerIngressV0(socket, authGate);
+    return false;
+  }
+  const sigGate = validateWalPeerFeedSignatureV0(
+    walPeerFeed && typeof walPeerFeed === "object" ? walPeerFeed : {}
+  );
+  if (!sigGate.ok) {
+    rejectWalPeerIngressV0(socket, sigGate);
+    return false;
+  }
+  return true;
+}
+
+function handleCastleWalPeerFeed(socket, payload) {
+  const p = payload && typeof payload === "object" ? payload : {};
+  const probe = JSON.stringify(p);
+  if (Buffer.byteLength(probe, "utf8") > CASTLE_WAL_PEER_MAX_FEED_BYTES) {
+    socket.send(JSON.stringify(createEnvelope(WS_MESSAGE.ERROR, { error: "CASTLE_WAL_PEER_FEED too large." })));
+    return;
+  }
+  const walPeerFeed = p.walPeerFeed && typeof p.walPeerFeed === "object" ? p.walPeerFeed : {};
+  if (!gateWalPeerIngressV0(socket, walPeerFeed)) return;
+  const castleRoomKey = String(p.castleRoomKey || "wal:convergence").slice(0, 64);
+  const castleId = String(p.castleId || socket.auth?.user?.uid || socket.clientId || "anonymous").slice(0, 64);
+  const userId = String(p.userId || socket.auth?.user?.uid || socket.clientId || "anonymous").slice(0, 128);
+  let room = castleSocialRoomState.get(castleRoomKey);
+  if (!room) {
+    room = { seq: 0, members: new Map(), walPeers: new Map() };
+    castleSocialRoomState.set(castleRoomKey, room);
+  }
+  if (!room.walPeers) room.walPeers = new Map();
+  room.seq += 1;
+  const now = Date.now();
+  room.walPeers.set(socket.clientId, {
+    clientId: socket.clientId,
+    castleId,
+    userId,
+    lastMs: now,
+    walPeerFeed: { ...walPeerFeed, observedAtMs: Number(walPeerFeed.observedAtMs) || now }
+  });
+  room.members.set(socket.clientId, {
+    clientId: socket.clientId,
+    userId,
+    lastMs: now,
+    sp: room.members.get(socket.clientId)?.sp ?? {}
+  });
+  const peerFeeds = [...room.walPeers.values()].map((m) => ({
+    castleId: m.castleId,
+    userId: m.userId,
+    lastMs: m.lastMs,
+    walPeerFeed: m.walPeerFeed
+  }));
+  const body = {
+    castleRoomKey,
+    seq: room.seq,
+    peerFeeds,
+    ts: now
+  };
+  const env = createEnvelope(WS_MESSAGE.CASTLE_WAL_PEER_ROOM, body);
+  const encoded = JSON.stringify(env);
+  const memberIds = new Set([...room.members.keys(), ...room.walPeers.keys()]);
+  for (const client of wss.clients) {
+    if (memberIds.has(client.clientId) && client.readyState === 1) client.send(encoded);
+  }
+}
+
+function handleCastleSocialPulse(socket, payload) {
+  const p = payload && typeof payload === "object" ? payload : {};
+  const probe = JSON.stringify(p);
+  if (Buffer.byteLength(probe, "utf8") > CASTLE_SOCIAL_MAX_PULSE_BYTES) {
+    socket.send(JSON.stringify(createEnvelope(WS_MESSAGE.ERROR, { error: "CASTLE_SOCIAL_PULSE too large." })));
+    return;
+  }
+  const castleRoomKey = String(p.castleRoomKey || "default").slice(0, 64);
+  const userId = String(p.userId || socket.auth?.user?.uid || socket.clientId || "anonymous").slice(0, 128);
+  let room = castleSocialRoomState.get(castleRoomKey);
+  if (!room) {
+    room = { seq: 0, members: new Map(), walPeers: new Map() };
+    castleSocialRoomState.set(castleRoomKey, room);
+  }
+  if (!room.walPeers) room.walPeers = new Map();
+  room.seq += 1;
+  const now = Date.now();
+  const sp = p.socialPulse && typeof p.socialPulse === "object" ? p.socialPulse : {};
+  const walPeerFeed =
+    p.walPeerFeed && typeof p.walPeerFeed === "object"
+      ? p.walPeerFeed
+      : sp.walPeerFeed && typeof sp.walPeerFeed === "object"
+        ? sp.walPeerFeed
+        : null;
+  if (walPeerFeed && !gateWalPeerIngressV0(socket, walPeerFeed)) return;
+  const spNext = walPeerFeed ? { ...sp, walPeerFeed } : { ...sp };
+  room.members.set(socket.clientId, {
+    clientId: socket.clientId,
+    userId,
+    lastMs: now,
+    sp: spNext
+  });
+  if (walPeerFeed) {
+    room.walPeers.set(socket.clientId, {
+      clientId: socket.clientId,
+      castleId: String(p.castleId || userId).slice(0, 64),
+      userId,
+      lastMs: now,
+      walPeerFeed: { ...walPeerFeed, observedAtMs: Number(walPeerFeed.observedAtMs) || now }
+    });
+  }
+  for (const [cid, m] of [...room.members.entries()]) {
+    if (now - m.lastMs > CASTLE_SOCIAL_MEMBER_TTL_MS) room.members.delete(cid);
+  }
+  const body = buildCastleSocialRoomPayload(castleRoomKey);
+  if (!body) return;
+  const env = createEnvelope(WS_MESSAGE.CASTLE_SOCIAL_ROOM, body);
+  const encoded = JSON.stringify(env);
+  const memberIds = new Set([...room.members.keys()]);
+  for (const client of wss.clients) {
+    if (memberIds.has(client.clientId) && client.readyState === 1) client.send(encoded);
+  }
+}
 
 function broadcast(msgObj) {
   const encoded = JSON.stringify(msgObj);
@@ -2861,6 +3496,16 @@ wss.on("connection", async (socket, req) => {
       return;
     }
 
+    if (parsed.type === WS_MESSAGE.CASTLE_SOCIAL_PULSE) {
+      handleCastleSocialPulse(socket, parsed.payload || {});
+      return;
+    }
+
+    if (parsed.type === WS_MESSAGE.CASTLE_WAL_PEER_FEED) {
+      handleCastleWalPeerFeed(socket, parsed.payload || {});
+      return;
+    }
+
     if (parsed.type === WS_MESSAGE.OPEN_DATA_QUERY) {
       queryOpenData(parsed.payload)
         .then((result) => {
@@ -2954,6 +3599,7 @@ wss.on("connection", async (socket, req) => {
     if (socket.clientId === broadcasterClientId) broadcasterClientId = null;
     clientStats.delete(socket.clientId);
     spiralState.activeByClient.delete(socket.clientId);
+    removeCastleSocialClientFromAllRooms(socket.clientId);
     broadcast(createEnvelope(WS_MESSAGE.PEERS, { peers: [...wss.clients].map((c) => c.clientId).filter(Boolean) }));
     broadcastState();
   });
@@ -3003,9 +3649,10 @@ setInterval(() => {
     });
     startGenesisContinuityInfraSampler(buildGenesisRuntimeSurfacePayloadLive, 2000);
     logProductionObservatorySurfaceGuardsV0();
+    logGatewaySubstrateAuthorityGuardsV0();
     console.log(`[GATEWAY] ws/http://localhost:${PORT}`);
     console.log(
-      `[GATEWAY] genesis continuity: GET ${rhizohRuntime.routes.genesisRuntime} | SSE ${rhizohRuntime.routes.genesisStream} | replay ${rhizohRuntime.routes.genesisReplay} | diff ${rhizohRuntime.routes.genesisReplayDiff} | equiv ${rhizohRuntime.routes.genesisReplayEquivalence} | analytics ${rhizohRuntime.routes.genesisReplayAnalytics} | evolution ${rhizohRuntime.routes.genesisReplayEvolution}`
+      `[GATEWAY] genesis continuity: GET ${rhizohRuntime.routes.genesisRuntime} | POST ${rhizohRuntime.routes.genesisIngress} | SSE ${rhizohRuntime.routes.genesisStream} | replay ${rhizohRuntime.routes.genesisReplay} | diff ${rhizohRuntime.routes.genesisReplayDiff} | equiv ${rhizohRuntime.routes.genesisReplayEquivalence} | analytics ${rhizohRuntime.routes.genesisReplayAnalytics} | evolution ${rhizohRuntime.routes.genesisReplayEvolution}`
     );
     if (String(process.env.CASTLE_GENESIS_OBSERVATORY_LIVE_V01 ?? "").trim() === "1") {
       console.log("GENESIS OBSERVATORY LIVE v0.1 — READ ONLY PHASE STARTED");

@@ -3,7 +3,7 @@
  * and SSE `id:` for Last-Event-ID / reconnect catch-up (bounded ring).
  *
  * Event kinds: TickAdvanced | SealIssued | LedgerAdvanced | ReplayState | PresenceMesh | InfraHealth
- *   | SpiralWebSocket | RuntimeCapabilityEvent | ReplayFingerprint
+ *   | SpiralWebSocket | RuntimeCapabilityEvent | ReplayFingerprint | WorldObservation
  *
  * Semantics:
  * - `continuitySeq` / `event.seq` = causal **acceptance line** (continuity exists without observers).
