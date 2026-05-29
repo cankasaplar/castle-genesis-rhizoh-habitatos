@@ -11,6 +11,11 @@ import {
 import {
   getGenesisContinuitySeqAuditV0
 } from "./genesisContinuitySeqGapV0.js";
+import {
+  getGenesisIngressSocialLoadSnapshotV0,
+  noteGenesisIngressClientActivityV0,
+  resolveAgentSpokeRateLimitV0
+} from "./genesisIngressSocialBalancerV0.js";
 
 export const GENESIS_WORLD_OBSERVATION_INGRESS_SCHEMA = "castle.genesis.world_observation_ingress.v0";
 export const WORLD_OBSERVATION_INGRESS_ENVELOPE_SCHEMA_V1 = "castle.world_observation.ingress_envelope.v1";
@@ -22,7 +27,6 @@ const MAX_PAYLOAD_KEYS = 24;
 const RATE_WINDOW_MS = 10_000;
 const RATE_MAX_PER_CLIENT = 48;
 const AGENT_SPOKE_WINDOW_MS = 10_000;
-const AGENT_SPOKE_MAX_PER_CLIENT = 8;
 const IDEMPOTENCY_MAX = 2048;
 const IDEMPOTENCY_TTL_MS = 15 * 60_000;
 
@@ -141,7 +145,8 @@ export function getGenesisWorldObservationIngressStatusV0() {
     contract: WORLD_OBSERVATION_INGRESS_ENVELOPE_SCHEMA_V1,
     allowedTypes: [...ALLOWED_TYPES],
     idempotencyCacheSize: idempotencyCache.size,
-    seqAudit: getGenesisContinuitySeqAuditV0()
+    seqAudit: getGenesisContinuitySeqAuditV0(),
+    socialLoad: getGenesisIngressSocialLoadSnapshotV0()
   };
 }
 
@@ -154,6 +159,7 @@ export function ingestGenesisWorldObservationV0(body, meta = {}) {
   if (!v.ok) return { ok: false, error: v.error, ...(v.allowed ? { allowed: v.allowed } : {}) };
 
   const clientId = clampClientId(meta.clientId);
+  noteGenesisIngressClientActivityV0(clientId);
   pruneIdempotencyCache();
 
   const idemKey = idempotencyKeyFor(clientId, body, v);
@@ -175,7 +181,7 @@ export function ingestGenesisWorldObservationV0(body, meta = {}) {
   }
   if (
     v.type === "agent.spoke" &&
-    !rateOk(agentSpokeRateByClient, clientId, AGENT_SPOKE_MAX_PER_CLIENT, AGENT_SPOKE_WINDOW_MS)
+    !rateOk(agentSpokeRateByClient, clientId, resolveAgentSpokeRateLimitV0(), AGENT_SPOKE_WINDOW_MS)
   ) {
     return { ok: false, error: "agent_spoke_throttled", retryAfterMs: AGENT_SPOKE_WINDOW_MS, deferred: true };
   }
