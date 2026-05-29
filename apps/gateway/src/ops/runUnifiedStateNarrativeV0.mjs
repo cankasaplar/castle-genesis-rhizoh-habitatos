@@ -14,7 +14,7 @@ const narrative = await buildUnifiedStateNarrativeV0({
 const json = JSON.stringify(narrative, null, 2);
 console.log(json);
 
-const exportDir = join(here, "../../../../docs/ops/export");
+const exportDir = join(here, "../../../../docs/exports/ops");
 mkdirSync(exportDir, { recursive: true });
 const out = join(exportDir, "unified_state_narrative_LATEST.json");
 writeFileSync(out, json, "utf8");

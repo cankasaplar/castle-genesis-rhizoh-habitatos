@@ -110,7 +110,7 @@ export async function gatherOperationalSignalsV0() {
  */
 export function gatherLoadTestSignalsV0(analysisPath) {
   const here = dirname(fileURLToPath(import.meta.url));
-  const defaultPath = join(here, "../../../../docs/ops/export/load_test_analysis_LATEST.json");
+  const defaultPath = join(here, "../../../../docs/exports/ops/load_test_analysis_LATEST.json");
   const path = analysisPath || defaultPath;
   if (!existsSync(path)) {
     return { available: false, path };
