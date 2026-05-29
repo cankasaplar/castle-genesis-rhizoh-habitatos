@@ -8,8 +8,6 @@ import {
   reportCastleFatal
 } from "./boot/castleCrashTelemetry.js";
 import { initRuntimeFrameOnce } from "./rhizoh/runtime/runtimeFrameCorrelationV0.js";
-import { buildRuntimeSnapshotV1, persistRuntimeSnapshotV1 } from "./rhizoh/runtime/runtimeSnapshotV1.js";
-import { resolveActiveRuntimeIdentity } from "./rhizoh/runtime/runtimeIdentityMergePolicyV0.js";
 import "../../../src/index.css";
 
 const bootLog = installCastleBootLogFlow();
@@ -18,17 +16,22 @@ installGlobalCrashTelemetry();
 bootLog.ok("boot.crash_telemetry", "global error + rejection hooks installed");
 initRuntimeFrameOnce();
 bootLog.ok("boot.runtime_frame", "runtimeFrameId bound (castle.last_frame.v1)");
-try {
-  if (typeof window !== "undefined" && import.meta.env.DEV) {
-    window.__CASTLE_BUILD_RUNTIME_SNAPSHOT__ = () => buildRuntimeSnapshotV1();
-    window.__CASTLE_PERSIST_RUNTIME_SNAPSHOT__ = () => persistRuntimeSnapshotV1();
-    window.__CASTLE_RESOLVE_RUNTIME_IDENTITY__ = (opts) => resolveActiveRuntimeIdentity(opts && typeof opts === "object" ? opts : {});
-    bootLog.ok("boot.runtime_snapshot", "DevTools: __CASTLE_BUILD_RUNTIME_SNAPSHOT__()");
-  }
-} catch {
-  /* noop */
-}
-if (!import.meta.env.DEV) {
+if (import.meta.env.DEV) {
+  void import("./rhizoh/runtime/runtimeSnapshotV1.js")
+    .then((m) => {
+      window.__CASTLE_BUILD_RUNTIME_SNAPSHOT__ = () => m.buildRuntimeSnapshotV1();
+      window.__CASTLE_PERSIST_RUNTIME_SNAPSHOT__ = () => m.persistRuntimeSnapshotV1();
+      bootLog.ok("boot.runtime_snapshot", "DevTools: __CASTLE_BUILD_RUNTIME_SNAPSHOT__()");
+      return import("./rhizoh/runtime/runtimeIdentityMergePolicyV0.js");
+    })
+    .then((m) => {
+      window.__CASTLE_RESOLVE_RUNTIME_IDENTITY__ = (opts) =>
+        m.resolveActiveRuntimeIdentity(opts && typeof opts === "object" ? opts : {});
+    })
+    .catch(() => {
+      bootLog.ok("boot.runtime_snapshot", "dev snapshot modules optional (not in tree)");
+    });
+} else {
   bootLog.ok("boot.runtime_snapshot", "prod: snapshot DevTools globals omitted");
 }
 if (getCookieConsentV0().analytics) {
