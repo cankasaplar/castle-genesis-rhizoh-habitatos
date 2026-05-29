@@ -241,6 +241,8 @@ async function executeRhizohGatewayTurn(traceId, input) {
  * @param {string} input.connApiKey
  */
 export async function rhizohGatewayTurn(input) {
-  const traceId = randomUUID();
+  const clientTrace = String(input?.safePayload?.traceId || "").trim();
+  const traceId =
+    clientTrace.length >= 8 && clientTrace.length <= 128 ? clientTrace : randomUUID();
   return runRhizohLlmTurnWithOtelSpan(traceId, () => executeRhizohGatewayTurn(traceId, input));
 }

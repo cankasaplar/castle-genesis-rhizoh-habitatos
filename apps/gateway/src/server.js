@@ -307,7 +307,7 @@ function sendJson(res, statusCode, payload) {
 
 function logRhizohHealth(stage, detail = {}) {
   try {
-    console.info(`[RHIZOH_OK] ${String(stage || "unknown")}`, detail && typeof detail === "object" ? detail : {});
+    console.info(`[CASTLE_${String(stage || "unknown")}]`, detail && typeof detail === "object" ? detail : {});
   } catch {
     /* noop */
   }
@@ -2809,7 +2809,12 @@ const httpServer = createServer(async (req, res) => {
       const payload = await readHttpJson(req);
       const auth = await resolveHttpUser(req);
       const ip = getHttpClientIp(req);
-      logRhizohHealth("gateway_accept", { route: rhizohRuntime.routes.rhizohLlm, auth: auth.ok ? "ok" : "anon", ip });
+      logRhizohHealth("gateway_accept", {
+        route: rhizohRuntime.routes.rhizohLlm,
+        traceId: String(payload?.traceId || ""),
+        auth: auth.ok ? "ok" : "anon",
+        ip
+      });
       const rlKey = auth.ok ? `uid:${auth.uid}` : `ip:${ip}`;
       if (!checkHttpRateLimit(`rhizoh_llm:${rlKey}`, RL_RHIZOH_LLM_PER_MIN, 60_000)) {
         const rlTaxonomy = classifyStressResponseV0({ code: "rate_limit_exceeded" });

@@ -1,0 +1,30 @@
+{
+  "version": "0",
+  "note": "Ops mail kimlikleri. Gercek @rhizoh.com icin DNS + Workspace/Resend gerekir; env ile override.",
+  "channels": {
+    "morning_report": {
+      "fromAddress": "morning@rhizoh.com",
+      "fromName": "Rhizoh Morning",
+      "replyTo": "observe@rhizoh.com"
+    },
+    "spiralmmo_daily": {
+      "fromAddress": "archive@rhizoh.com",
+      "fromName": "Rhizoh Archive",
+      "replyTo": "observe@rhizoh.com"
+    },
+    "cohort_observe": {
+      "fromAddress": "observe@rhizoh.com",
+      "fromName": "Rhizoh",
+      "replyTo": "observe@rhizoh.com"
+    }
+  },
+  "recipient": {
+    "env": "SPIRALMMO_REPORT_TO",
+    "description": "Raporlarin gidecegi kisisel/ops inbox (alici). Gonderen degil."
+  },
+  "smtp": {
+    "userEnv": "SPIRALMMO_SMTP_USER",
+    "passwordEnv": "SPIRALMMO_SMTP_APP_PASSWORD",
+    "description": "SMTP kimlik dogrulama (relay). From adresinden farkli olabilir."
+  }
+}

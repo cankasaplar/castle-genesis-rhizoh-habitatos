@@ -1,10 +1,13 @@
 {
   "name": "rhizoh-firebase-functions",
   "private": true,
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": "22"
+  },
   "main": "index.js",
   "dependencies": {
     "firebase-admin": "^12.0.0",
-    "firebase-functions": "^5.0.0"
+    "firebase-functions": "^5.0.0",
+    "nodemailer": "^6.10.1"
   }
 }
