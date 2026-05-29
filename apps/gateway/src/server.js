@@ -157,8 +157,13 @@ import { ingestClientSubstrateHealthV0 } from "./rhizohSubstrateHealthIngestV0.j
 import { recordSubstrateOtelEventV0 } from "./infra/opentelemetrySubstrateV0.js";
 import {
   GENESIS_WORLD_OBSERVATION_INGRESS_SCHEMA,
+  getGenesisWorldObservationIngressStatusV0,
   ingestGenesisWorldObservationV0
 } from "./genesisContinuityClientIngressV0.js";
+import {
+  getGenesisContinuitySeqAuditV0,
+  noteGenesisContinuitySeqAcceptedV0
+} from "./genesisContinuitySeqGapV0.js";
 
 /** Render / Fly / Railway: `PORT` — yoksa `CASTLE_GATEWAY_PORT` — yoksa 8090. */
 const PORT =
@@ -716,8 +721,11 @@ async function buildGenesisRuntimeSurfacePayloadLive() {
       lastAcceptedSeq: getGenesisContinuitySeq(),
       clientIngress: {
         schema: GENESIS_WORLD_OBSERVATION_INGRESS_SCHEMA,
-        postPath: rhizohRuntime.routes.genesisIngress
+        contract: "castle.world_observation.ingress_envelope.v1",
+        postPath: rhizohRuntime.routes.genesisIngress,
+        closure: getGenesisWorldObservationIngressStatusV0()
       },
+      seqContinuity: getGenesisContinuitySeqAuditV0(),
       eventArchive: genesisContinuityEventArchiveEnabled()
         ? {
             enabled: true,
@@ -951,11 +959,15 @@ const httpServer = createServer(async (req, res) => {
       const result = ingestGenesisWorldObservationV0(body, { clientId });
       if (!result.ok) {
         const status =
-          result.error === "rate_limited" ? 429 : result.error === "payload_too_large" ? 413 : 400;
+          result.error === "rate_limited" || result.error === "agent_spoke_throttled"
+            ? 429
+            : result.error === "payload_too_large"
+              ? 413
+              : 400;
         sendJson(res, status, result);
         return;
       }
-      sendJson(res, 202, result);
+      sendJson(res, result.idempotent ? 200 : 202, result);
     } catch (e) {
       sendJson(res, 400, { ok: false, error: String(e?.message || e) });
     }
@@ -3646,6 +3658,7 @@ setInterval(() => {
     installGenesisCheckpointSurfaceGetter(buildGenesisRuntimeSurfacePayloadLive);
     setGenesisContinuityAfterPublishHook((seq) => {
       noteGenesisCheckpointSeqCommitted(seq);
+      noteGenesisContinuitySeqAcceptedV0(seq);
     });
     startGenesisContinuityInfraSampler(buildGenesisRuntimeSurfacePayloadLive, 2000);
     logProductionObservatorySurfaceGuardsV0();

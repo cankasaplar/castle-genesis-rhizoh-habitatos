@@ -27,8 +27,9 @@ export function isOntologicalBootGateEnabledV0() {
   if (typeof import.meta === "undefined") return true;
   const env = import.meta.env || {};
   if (env.VITE_ONTOLOGICAL_BOOT_GATE === "0") return false;
+  if (env.VITE_ONTOLOGICAL_BOOT_GATE === "1") return true;
   if (env.VITE_SUBSTRATE_CONTINUITY_IDB === "1") return true;
-  return env.VITE_ONTOLOGICAL_BOOT_GATE === "1" || env.PROD === true;
+  return false;
 }
 
 /**

@@ -1,6 +1,6 @@
 /**
  * Authoritative client world-observation ingress → genesis continuity hub.
- * Flow: world event → POST → publishGenesisContinuityEvent → SSE / replay / archive.
+ * Closure: single contract · idempotent writes · rate/backpressure · seq audit.
  */
 
 import crypto from "node:crypto";
@@ -8,8 +8,12 @@ import {
   getGenesisContinuitySeq,
   publishGenesisContinuityEvent
 } from "./genesisContinuityStreamHubV0.js";
+import {
+  getGenesisContinuitySeqAuditV0
+} from "./genesisContinuitySeqGapV0.js";
 
 export const GENESIS_WORLD_OBSERVATION_INGRESS_SCHEMA = "castle.genesis.world_observation_ingress.v0";
+export const WORLD_OBSERVATION_INGRESS_ENVELOPE_SCHEMA_V1 = "castle.world_observation.ingress_envelope.v1";
 
 const CLIENT_OBSERVATION_SCHEMA = "castle.world_observation.v0";
 const ALLOWED_TYPES = new Set(["world.tick", "agent.spoke"]);
@@ -17,25 +21,51 @@ const MAX_BODY_BYTES = 8 * 1024;
 const MAX_PAYLOAD_KEYS = 24;
 const RATE_WINDOW_MS = 10_000;
 const RATE_MAX_PER_CLIENT = 48;
+const AGENT_SPOKE_WINDOW_MS = 10_000;
+const AGENT_SPOKE_MAX_PER_CLIENT = 8;
+const IDEMPOTENCY_MAX = 2048;
+const IDEMPOTENCY_TTL_MS = 15 * 60_000;
 
 /** @type {Map<string, { count: number, resetAt: number }>} */
 const rateByClient = new Map();
+/** @type {Map<string, { count: number, resetAt: number }>} */
+const agentSpokeRateByClient = new Map();
+/** @type {Map<string, { seq: number, eventId: string, atMs: number }>} */
+const idempotencyCache = new Map();
 
 function clampClientId(raw) {
   const s = String(raw || "anonymous").trim().slice(0, 96);
   return s || "anonymous";
 }
 
-function rateOk(clientId) {
+function rateOk(map, clientId, max, windowMs) {
   const now = Date.now();
-  let row = rateByClient.get(clientId);
+  let row = map.get(clientId);
   if (!row || now > row.resetAt) {
-    row = { count: 0, resetAt: now + RATE_WINDOW_MS };
-    rateByClient.set(clientId, row);
+    row = { count: 0, resetAt: now + windowMs };
+    map.set(clientId, row);
   }
-  if (row.count >= RATE_MAX_PER_CLIENT) return false;
+  if (row.count >= max) return false;
   row.count += 1;
   return true;
+}
+
+function pruneIdempotencyCache() {
+  const now = Date.now();
+  for (const [k, v] of idempotencyCache) {
+    if (now - v.atMs > IDEMPOTENCY_TTL_MS) idempotencyCache.delete(k);
+  }
+  while (idempotencyCache.size > IDEMPOTENCY_MAX) {
+    const first = idempotencyCache.keys().next().value;
+    if (first == null) break;
+    idempotencyCache.delete(first);
+  }
+}
+
+function idempotencyKeyFor(clientId, body, v) {
+  const explicit = String(body?.ingressKey || "").trim();
+  if (explicit) return `${clientId}:${explicit}`.slice(0, 220);
+  return `${clientId}:${buildEventId(clientId, v.type, v.atMs, v.payload)}`;
 }
 
 function sanitizePayload(raw) {
@@ -63,31 +93,37 @@ function sanitizePayload(raw) {
 
 /**
  * @param {unknown} body
- * @returns {{ ok: true, type: string, atMs: number, payload: Record<string, unknown> } | { ok: false, error: string }}
  */
 export function validateGenesisWorldObservationIngressBodyV0(body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return { ok: false, error: "invalid_body" };
   }
-  const schema = String(/** @type {Record<string, unknown>} */ (body).schema || "").trim();
-  if (schema && schema !== CLIENT_OBSERVATION_SCHEMA && schema !== GENESIS_WORLD_OBSERVATION_INGRESS_SCHEMA) {
+  const b = /** @type {Record<string, unknown>} */ (body);
+  const schema = String(b.schema || "").trim();
+  if (
+    schema &&
+    schema !== CLIENT_OBSERVATION_SCHEMA &&
+    schema !== GENESIS_WORLD_OBSERVATION_INGRESS_SCHEMA &&
+    schema !== WORLD_OBSERVATION_INGRESS_ENVELOPE_SCHEMA_V1
+  ) {
     return { ok: false, error: "schema_mismatch" };
   }
-  const type = String(/** @type {Record<string, unknown>} */ (body).type || "").trim().slice(0, 64);
+  const type = String(b.type || "").trim().slice(0, 64);
   if (!ALLOWED_TYPES.has(type)) {
     return { ok: false, error: "type_not_allowed", allowed: [...ALLOWED_TYPES] };
   }
-  const atMsRaw = /** @type {Record<string, unknown>} */ (body).atMs;
+  const atMsRaw = b.atMs;
   const atMs = atMsRaw != null ? Math.floor(Number(atMsRaw)) : Date.now();
   if (!Number.isFinite(atMs) || atMs <= 0) {
     return { ok: false, error: "invalid_atMs" };
   }
-  const payload = sanitizePayload(/** @type {Record<string, unknown>} */ (body).payload);
-  const probe = JSON.stringify({ type, atMs, payload });
+  const payload = sanitizePayload(b.payload);
+  const ingressKey = String(b.ingressKey || "").trim().slice(0, 180);
+  const probe = JSON.stringify({ type, atMs, payload, ingressKey });
   if (Buffer.byteLength(probe, "utf8") > MAX_BODY_BYTES) {
     return { ok: false, error: "payload_too_large" };
   }
-  return { ok: true, type, atMs, payload };
+  return { ok: true, type, atMs, payload, ingressKey: ingressKey || null };
 }
 
 function buildEventId(clientId, type, atMs, payload) {
@@ -99,6 +135,16 @@ function buildEventId(clientId, type, atMs, payload) {
   return `wo:${digest}`;
 }
 
+export function getGenesisWorldObservationIngressStatusV0() {
+  return {
+    schema: GENESIS_WORLD_OBSERVATION_INGRESS_SCHEMA,
+    contract: WORLD_OBSERVATION_INGRESS_ENVELOPE_SCHEMA_V1,
+    allowedTypes: [...ALLOWED_TYPES],
+    idempotencyCacheSize: idempotencyCache.size,
+    seqAudit: getGenesisContinuitySeqAuditV0()
+  };
+}
+
 /**
  * @param {unknown} body
  * @param {{ clientId?: string }} meta
@@ -108,8 +154,30 @@ export function ingestGenesisWorldObservationV0(body, meta = {}) {
   if (!v.ok) return { ok: false, error: v.error, ...(v.allowed ? { allowed: v.allowed } : {}) };
 
   const clientId = clampClientId(meta.clientId);
-  if (!rateOk(clientId)) {
-    return { ok: false, error: "rate_limited" };
+  pruneIdempotencyCache();
+
+  const idemKey = idempotencyKeyFor(clientId, body, v);
+  const prior = idempotencyCache.get(idemKey);
+  if (prior) {
+    return {
+      ok: true,
+      schema: GENESIS_WORLD_OBSERVATION_INGRESS_SCHEMA,
+      seq: prior.seq,
+      eventId: prior.eventId,
+      observationType: v.type,
+      idempotent: true,
+      deferred: false
+    };
+  }
+
+  if (!rateOk(rateByClient, clientId, RATE_MAX_PER_CLIENT, RATE_WINDOW_MS)) {
+    return { ok: false, error: "rate_limited", retryAfterMs: RATE_WINDOW_MS, deferred: true };
+  }
+  if (
+    v.type === "agent.spoke" &&
+    !rateOk(agentSpokeRateByClient, clientId, AGENT_SPOKE_MAX_PER_CLIENT, AGENT_SPOKE_WINDOW_MS)
+  ) {
+    return { ok: false, error: "agent_spoke_throttled", retryAfterMs: AGENT_SPOKE_WINDOW_MS, deferred: true };
   }
 
   const eventId = buildEventId(clientId, v.type, v.atMs, v.payload);
@@ -119,22 +187,30 @@ export function ingestGenesisWorldObservationV0(body, meta = {}) {
     payload: {
       observationType: v.type,
       observationSchema: CLIENT_OBSERVATION_SCHEMA,
+      ingressKey: v.ingressKey || idemKey,
       clientAtMs: v.atMs,
       clientId,
       ...v.payload
     }
   });
 
+  const seq = getGenesisContinuitySeq();
+  idempotencyCache.set(idemKey, { seq, eventId, atMs: Date.now() });
+
   return {
     ok: true,
     schema: GENESIS_WORLD_OBSERVATION_INGRESS_SCHEMA,
-    seq: getGenesisContinuitySeq(),
+    seq,
     eventId,
-    observationType: v.type
+    observationType: v.type,
+    idempotent: false,
+    deferred: false
   };
 }
 
 /** @public Tests */
 export function resetGenesisWorldObservationIngressForTestsV0() {
   rateByClient.clear();
+  agentSpokeRateByClient.clear();
+  idempotencyCache.clear();
 }
