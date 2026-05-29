@@ -29,11 +29,11 @@ on:
       deploy_track:
         description: "Entry shell track (spatial-main = current main; t0-interface-lock = full monolith @ 8bd4ff9)"
         required: true
-        default: spatial-main
+        default: t0-interface-lock
         type: choice
         options:
-          - spatial-main
           - t0-interface-lock
+          - spatial-main
 
 jobs:
   deploy:
