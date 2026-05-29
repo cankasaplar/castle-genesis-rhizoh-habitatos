@@ -5,6 +5,7 @@
 #   VITE_FIREBASE_CONFIG — tek satır Web config JSON
 #   VITE_GATEWAY_WS veya VITE_GATEWAY_WS_URL — wss://...
 #   VITE_GATEWAY_HTTP veya VITE_RHIZOH_LLM_HTTP — https://.../rhizoh/llm
+#   VITE_LIVE_GATEWAY_BASE — https://... (gateway kökü; VITE_GATEWAY_HTTP ile aynı origin önerilir — Genesis SSE drift önlemi)
 #   VITE_GATEWAY_TOKEN — gateway CASTLE_GATEWAY_TOKEN ile aynı
 #   VITE_FIREBASE_CONFIG veya ayrı VITE_FIREBASE_API_KEY, VITE_FIREBASE_PROJECT_ID, …
 #   VITE_DRONE_TELEMETRY_WS, VITE_FLIGHT_VIEWER_HTTP (opsiyonel)
@@ -14,12 +15,25 @@
 #   VITE_CASTLE_APP_ID — gateway CASTLE_ARTIFACT_APP_ID ile aynı
 #   VITE_GENESIS_DEPLOY_MODE — `observability` (üretim varsayılanı, workflow) | `research` (laboratuvar)
 #   VITE_GENESIS_PASSIVE_EPOCH_MAX — pasif epoch penceresi (varsayılan 100)
-#   VITE_GENESIS_SIMULATE_LEGACY_DRIFT — yalnız QA; üretim secret vermeyin
+#   VITE_RHIZOH_INVITE_ONLY_GOOGLE — `1` → girişte yalnızca Google (kapalı kohort UI)
+#   VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST — virgülle e-postalar (GitHub secret; uzun string)
+#   VITE_RHIZOH_COHORT_SERVER_GATE — `1` → cohortGateV0 HTTPS zorunlu (Functions + COHORT_EMAIL_ALLOWLIST param)
+#   VITE_RHIZOH_COHORT_GATE_URL — tam URL; boşsa origin+/api/cohortGateV0
+#   VITE_ONTOLOGICAL_BOOT_GATE — `1` = seal öncesi ontological gate açık (IDB living world zorunlu). `0` veya secret yok = kapalı (kohort cold start).
 
 name: Deploy Firebase (hosting + rules)
 
 on:
   workflow_dispatch:
+    inputs:
+      deploy_track:
+        description: "Entry shell track (spatial-main = current main; t0-interface-lock = full monolith @ 8bd4ff9)"
+        required: true
+        default: spatial-main
+        type: choice
+        options:
+          - spatial-main
+          - t0-interface-lock
 
 jobs:
   deploy:
@@ -29,6 +43,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.deploy_track == 't0-interface-lock' && 't0-interface-lock' || github.ref }}
+
+      - name: Resolve deploy track
+        id: track
+        run: |
+          if [ "${{ inputs.deploy_track }}" = "t0-interface-lock" ]; then
+            echo "world_layer=1" >> "$GITHUB_OUTPUT"
+            echo "deploy_label=t0-interface-lock" >> "$GITHUB_OUTPUT"
+          else
+            echo "world_layer=${{ secrets.VITE_WORLD_LAYER || '0' }}" >> "$GITHUB_OUTPUT"
+            echo "deploy_label=spatial-main" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Deploy track: ${{ inputs.deploy_track }}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -54,6 +82,7 @@ jobs:
           VITE_GATEWAY_WS: ${{ secrets.VITE_GATEWAY_WS }}
           VITE_GATEWAY_WS_URL: ${{ secrets.VITE_GATEWAY_WS_URL }}
           VITE_GATEWAY_HTTP: ${{ secrets.VITE_GATEWAY_HTTP }}
+          VITE_LIVE_GATEWAY_BASE: ${{ secrets.VITE_LIVE_GATEWAY_BASE }}
           VITE_GATEWAY_TOKEN: ${{ secrets.VITE_GATEWAY_TOKEN }}
           VITE_DRONE_TELEMETRY_WS: ${{ secrets.VITE_DRONE_TELEMETRY_WS }}
           VITE_FLIGHT_VIEWER_HTTP: ${{ secrets.VITE_FLIGHT_VIEWER_HTTP }}
@@ -68,6 +97,16 @@ jobs:
           VITE_CASTLE_APP_ID: ${{ secrets.VITE_CASTLE_APP_ID || 'castle-vnext-core' }}
           VITE_GENESIS_DEPLOY_MODE: ${{ secrets.VITE_GENESIS_DEPLOY_MODE || 'observability' }}
           VITE_GENESIS_PASSIVE_EPOCH_MAX: ${{ secrets.VITE_GENESIS_PASSIVE_EPOCH_MAX || '100' }}
+          VITE_RHIZOH_INVITE_ONLY_GOOGLE: ${{ secrets.VITE_RHIZOH_INVITE_ONLY_GOOGLE }}
+          VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST: ${{ secrets.VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST }}
+          VITE_RHIZOH_COHORT_OBSERVATION_LOG: ${{ secrets.VITE_RHIZOH_COHORT_OBSERVATION_LOG }}
+          VITE_RHIZOH_COHORT_SERVER_GATE: ${{ secrets.VITE_RHIZOH_COHORT_SERVER_GATE }}
+          VITE_RHIZOH_COHORT_GATE_URL: ${{ secrets.VITE_RHIZOH_COHORT_GATE_URL }}
+          VITE_ONTOLOGICAL_BOOT_GATE: ${{ secrets.VITE_ONTOLOGICAL_BOOT_GATE }}
+          VITE_WORLD_LAYER: ${{ steps.track.outputs.world_layer }}
+          VITE_WORLD_EXECUTION_MODE: ${{ steps.track.outputs.world_layer == '1' && 'active' || '' }}
+          VITE_SATELLITE_NODE_REGISTRY_V0: ${{ inputs.deploy_track == 't0-interface-lock' && '0' || secrets.VITE_SATELLITE_NODE_REGISTRY_V0 }}
+          VITE_SOVEREIGN_NODE_ONBOARDING: ${{ inputs.deploy_track == 't0-interface-lock' && '0' || secrets.VITE_SOVEREIGN_NODE_ONBOARDING }}
 
       - name: Write Firebase service account
         run: node -e "require('fs').writeFileSync('firebase-ci.json', process.env.GOOGLE_CREDENTIALS)"

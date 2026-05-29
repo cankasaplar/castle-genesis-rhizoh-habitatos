@@ -1,0 +1,43 @@
+{
+  "version": "1.0",
+  "label": "T0 full Castle shell (pre-Living-World refactor)",
+  "commit": "8bd4ff9e6ce792e63fe3ac96875af23635ad34eb",
+  "shortCommit": "8bd4ff9",
+  "tag": "t0-interface-v0-lock",
+  "branch": "t0-interface-lock",
+  "worktreePath": "../castle-t0-interface",
+  "parentOfLivingWorldRefactor": "6dfe2d1",
+  "features": [
+    "AppRhizoh528 monolith",
+    "CesiumRealMapLayer",
+    "Three.js globe / ApexEngine",
+    "GPU swarm",
+    "Agent HUD",
+    "UnifiedProductShellBar",
+    "RhizohCapabilityHaloV1",
+    "Green Room presence mesh",
+    "Broadcast / Studio / Hall drawers"
+  ],
+  "requiredEnv": [
+    "VITE_GATEWAY_HTTP",
+    "VITE_GATEWAY_WS",
+    "VITE_LIVE_GATEWAY_BASE",
+    "VITE_GATEWAY_TOKEN",
+    "VITE_FIREBASE_CONFIG"
+  ],
+  "productEnvDefaults": {
+    "VITE_DEBUG": "0",
+    "VITE_SATELLITE_NODE_REGISTRY_V0": "0",
+    "VITE_SOVEREIGN_NODE_ONBOARDING": "0",
+    "VITE_EPISTEMIC_GRAPH_VIZ_V0": "0",
+    "VITE_PREFER_LOCAL_GATEWAY": "0"
+  },
+  "deployTrack": "t0-interface-lock",
+  "forwardPortFromMain": [
+    "apps/client/src/rhizoh/runtime/castleWorldLayerGateV0.js",
+    "apps/client/src/rhizoh/runtime/studioCapabilityProbeV0.js",
+    "apps/client/src/castleFlight/castleFlightConfig.js"
+  ],
+  "forwardPortScript": "scripts/apply-t0-interface-lock-patch.ps1",
+  "rhizohComNote": "Firebase workflow_dispatch deploy_track=t0-interface-lock + GitHub secrets for gateway/Firebase"
+}
