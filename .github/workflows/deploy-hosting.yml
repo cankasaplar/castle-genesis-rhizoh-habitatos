@@ -107,6 +107,10 @@ jobs:
           VITE_WORLD_EXECUTION_MODE: ${{ steps.track.outputs.world_layer == '1' && 'active' || '' }}
           VITE_SATELLITE_NODE_REGISTRY_V0: ${{ inputs.deploy_track == 't0-interface-lock' && '0' || secrets.VITE_SATELLITE_NODE_REGISTRY_V0 }}
           VITE_SOVEREIGN_NODE_ONBOARDING: ${{ inputs.deploy_track == 't0-interface-lock' && '0' || secrets.VITE_SOVEREIGN_NODE_ONBOARDING }}
+          VITE_RHIZOH_VOICE_ENGINE_V3: ${{ secrets.VITE_RHIZOH_VOICE_ENGINE_V3 || (inputs.deploy_track == 't0-interface-lock' && '1' || '') }}
+          VITE_RHIZOH_VOICE_WITNESS_SHADOW: ${{ secrets.VITE_RHIZOH_VOICE_WITNESS_SHADOW || (inputs.deploy_track == 't0-interface-lock' && '1' || '') }}
+          VITE_RHIZOH_VOICE_ATTENTION_MODE: ${{ secrets.VITE_RHIZOH_VOICE_ATTENTION_MODE }}
+          VITE_RHIZOH_SHARED_ATTENTION_TYPE: ${{ secrets.VITE_RHIZOH_SHARED_ATTENTION_TYPE }}
 
       - name: Write Firebase service account
         run: node -e "require('fs').writeFileSync('firebase-ci.json', process.env.GOOGLE_CREDENTIALS)"

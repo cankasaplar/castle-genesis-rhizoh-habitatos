@@ -4,6 +4,10 @@
 
 import { createVoiceEngineOrchestratorV3 } from "./voiceEngineOrchestratorV3.js";
 import { isVoiceEngineV3EnabledV0 } from "./isVoiceEngineV3EnabledV0.js";
+import {
+  emitReadOnlyVoiceInfluenceAttributionV0,
+  emitStreamLifecycleInfluenceV0
+} from "../voiceInfluenceAttributionReadOnlyHookV0.js";
 
 export const VOICE_V3_MAX_RECORD_MS = 8000;
 
@@ -76,6 +80,13 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
         strategy: result.merged.strategy,
         preview: result.merged.text.slice(0, 96)
       });
+      emitReadOnlyVoiceInfluenceAttributionV0({
+        text: result.merged.text,
+        confidence: result.merged.confidence,
+        strategy: result.merged.strategy,
+        source: "mic_v3",
+        stage: "v3_final_read_only"
+      });
       await callbacks.handleVoiceTranscriptRef.current(result.merged.text, {
         manageVoiceTurn: keepAlive,
         source: "mic_v3"
@@ -84,6 +95,10 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     }
 
     if (result.error === "no_speech" || result.error === "no_transcript") {
+      emitStreamLifecycleInfluenceV0(result.error, {
+        source: "mic_v3",
+        stage: "v3_stop_empty"
+      });
       callbacks.maybeWarnVoiceSilentStop("empty");
       if (keepAlive) {
         callbacks.scheduleVoiceMicRestart(keepAlive, {
@@ -97,6 +112,11 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     }
 
     logWarn("V3_TRANSCRIBE_FAIL", { error: result.error });
+    emitStreamLifecycleInfluenceV0("TRANSCRIBE_FAIL", {
+      source: "mic_v3",
+      stage: "v3_stop_fail",
+      error: result.error
+    });
     callbacks.setRhizohFieldState("IDLE");
     return { ok: false, error: result.error || "transcribe_failed" };
   }
