@@ -8,6 +8,9 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit -p .",
     "test": "vitest run",
+    "test:predeploy-substrate": "vitest run src/rhizoh/runtime/__tests__/preDeploySubstrateGateV0.test.js",
+    "test:substrate-authority": "vitest run src/rhizoh/runtime/__tests__/substrateAuthorityProfileV0.test.js src/rhizoh/runtime/__tests__/realityHealthMetricsV0.test.js",
+    "test:interaction-geometry": "vitest run src/rhizoh/interactionGeometry",
     "test:watch": "vitest"
   },
   "dependencies": {

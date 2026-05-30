@@ -1,9 +1,11 @@
+import { WORLD_MESH_LABELS_V0 } from "../../rhizoh/spatial/worldMeshLabelsV0.js";
+
 const pickPreferenceFromIntent = (intent) => {
   const text = String(intent || "").toLowerCase();
   if (text.includes("explore") || text.includes("museum")) return "immersive exploration";
   if (text.includes("broadcast") || text.includes("yayin")) return "live storytelling";
   if (text.includes("simulasyon") || text.includes("simulation")) return "scenario testing";
-  return "guided creation";
+  return "open composition";
 };
 
 export function composeRelationalPresenceStateV1(input) {
@@ -56,7 +58,7 @@ export function composeRelationalPresenceStateV1(input) {
     agentAttentionMap: attention,
     userMemoryEcho: {
       memoryLinks: input?.memoryLinks ?? 0,
-      liveSignal: input?.liveSignalLabel || "Istanbul"
+      liveSignal: input?.liveSignalLabel || WORLD_MESH_LABELS_V0.liveSignal
     },
     conversationalPresence: {
       rhizohGreeting: userName

@@ -2,6 +2,8 @@ import React, { memo, useEffect, useRef } from "react";
 import * as Cesium from "cesium";
 import { ISTANBUL_GEO, ISTANBUL_POI } from "./geo.js";
 import { getCastleFlightConfig } from "./castleFlightConfig.js";
+import { cesiumSceneOverBudget } from "./cesiumSceneBudget.js";
+import { isWorldLayerEnabled } from "../rhizoh/runtime/castleWorldLayerGateV0.js";
 import { subscribeCastleDroneTelemetry } from "./telemetryHub.js";
 import { installCesiumWorldProjectionBind } from "./cesiumWorldProjectionBind.js";
 import { installWebglContextLostReporter, reportCastleFatal } from "../boot/castleCrashTelemetry.js";
@@ -10,7 +12,30 @@ import {
   notifyCesiumFlightEnd,
   resetCesiumApexCameraCoordinator
 } from "../reality/realityDirector.js";
-import { cesiumSceneOverBudget } from "./cesiumSceneBudget.js";
+import {
+  installRhizohEpistemicCesiumBootstrapV0,
+  getRhizohCalibrationRootInitialSetViewV0,
+  buildRhizohEpistemicWorldPresenceForBootstrapV0
+} from "../rhizoh/spatial/cesiumEpistemicBootstrapV0.js";
+import { resyncCesiumEpistemicRuntimeWindowMirrorV0 } from "../rhizoh/spatial/cesiumEpistemicRuntimeStoreV0.js";
+import { maybeInstallPerceptionDebugObserverV0 } from "../rhizoh/spatial/perceptionDebugRuntimeV0.js";
+import {
+  isEpistemicSimResearchEnabledV0,
+  maybeInstallEpistemicSimResearchOnCesiumV0
+} from "../rhizoh/runtime/epistemicSimResearchWireV0.js";
+import { recordCameraKeyObserverTelemetryV0, recordPoiSelectObserverTelemetryV0 } from "../rhizoh/runtime/epistemicObserverTelemetryV0.js";
+import { maybeInstallEpistemicGraphVisualizationOnCesiumV0 } from "../rhizoh/runtime/sovereign/epistemicGraphCesiumV0.js";
+import { installCesiumSovereignGeographicPickV0 } from "../rhizoh/runtime/sovereign/cesiumSovereignGeographicPickV0.js";
+import { isSovereignNodeOnboardingEnabledV0 } from "../rhizoh/runtime/sovereign/sovereignNodeOnboardingWizardV0.js";
+import { getEpistemicNavigationMoveScaleV0 } from "../rhizoh/runtime/epistemicPerceptionMirrorV0.js";
+import { getRhizohCalibrationRootAnchorV0 } from "../rhizoh/spatial/geographicAnchorsV0.js";
+import { deriveAnchorAtmosphereProjectionV0 } from "../rhizoh/spatial/deriveAnchorAtmosphereProjectionV0.js";
+import {
+  unregisterLiveRuntimeCesiumRenderSinkV0,
+  registerLiveRuntimeProjectionConsumerV0,
+  unregisterLiveRuntimeProjectionConsumerV0
+} from "../rhizoh/runtime/liveRuntimeOrchestratorV0.js";
+import { applyLiveRuntimeProjectionHintsToCesiumSceneV0 } from "./liveRuntimeCesiumAtmosphereBridgeV0.js";
 
 const IMPORTANT_OVERPASS_TAGS = [
   ["tourism", "museum"],
@@ -78,6 +103,32 @@ function haversineMeters(aLat, aLon, bLat, bLon) {
   const sb = Math.sin(dLon / 2);
   const x = sa * sa + Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * sb * sb;
   return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+/** Cesium destroy sonrası host'u boşalt — React unmount removeChild NotFoundError önler. */
+function detachCesiumHostDomV0(host) {
+  if (!host) return;
+  try {
+    host.replaceChildren();
+    return;
+  } catch {
+    /* fall through */
+  }
+  try {
+    while (host.firstChild) host.removeChild(host.firstChild);
+  } catch {
+    /* noop */
+  }
+}
+
+function destroyCesiumViewerSafeV0(viewer, host) {
+  if (!viewer) return;
+  try {
+    if (!viewer.isDestroyed()) viewer.destroy();
+  } catch {
+    /* noop */
+  }
+  detachCesiumHostDomV0(host);
 }
 
 /** display:none → block geçişinde canvas 0×0 iken Viewer açılırsa frustum bozulabilir */
@@ -191,7 +242,7 @@ function setCesiumActivity(viewer, on) {
   }
 }
 
-const CesiumRealMapLayer = memo(({ active }) => {
+const CesiumRealMapLayerImpl = memo(({ active }) => {
   const hostRef = useRef(null);
   const viewerRef = useRef(null);
   const droneEntitiesRef = useRef(new Map());
@@ -232,16 +283,11 @@ const CesiumRealMapLayer = memo(({ active }) => {
       extrasCleanupRef.current?.();
       extrasCleanupRef.current = null;
       const v = viewerRef.current;
+      const host = hostRef.current;
       viewerRef.current = null;
       bootedRef.current = false;
       bootingRef.current = false;
-      if (v && !v.isDestroyed()) {
-        try {
-          v.destroy();
-        } catch {
-          /* noop */
-        }
-      }
+      destroyCesiumViewerSafeV0(v, host);
       droneEntitiesRef.current.clear();
       importantEntitiesRef.current = [];
       fallbackBuildingEntitiesRef.current = [];
@@ -283,11 +329,7 @@ const CesiumRealMapLayer = memo(({ active }) => {
       });
       viewerRef.current = viewer;
       if (cancelled || dead) {
-        try {
-          viewer.destroy();
-        } catch {
-          /* noop */
-        }
+        destroyCesiumViewerSafeV0(viewer, hostRef.current);
         viewerRef.current = null;
         return;
       }
@@ -314,6 +356,11 @@ const CesiumRealMapLayer = memo(({ active }) => {
       let osmBuildingsPrimitive = null;
       let renderErrorCount = 0;
       let sceneBudgetDowngraded = false;
+      let teardownRhizohEpistemicBootstrap = () => {};
+      let teardownPerceptionDebug = () => {};
+      let teardownEpistemicSimResearch = () => {};
+      let teardownEpistemicGraphViz = () => {};
+      let teardownSovereignGeographicPick = () => {};
 
       const trackedCameraFlyTo = (flyOpts) => {
         if (!flyOpts || typeof flyOpts !== "object") return;
@@ -567,14 +614,18 @@ const CesiumRealMapLayer = memo(({ active }) => {
 
       const fatih = ISTANBUL_POI.FATIH;
       await runBootStage("initial_setView", async () => {
-        viewer.camera.setView({
-          destination: Cesium.Cartesian3.fromDegrees(fatih.lon, fatih.lat, 3800),
-          orientation: {
-            heading: Cesium.Math.toRadians(18),
-            pitch: Cesium.Math.toRadians(-42),
-            roll: 0
-          }
-        });
+        const useRhizohCalib = !!cfg.rhizohEpistemicCesiumBootstrap;
+        const view = useRhizohCalib
+          ? getRhizohCalibrationRootInitialSetViewV0(Cesium)
+          : {
+              destination: Cesium.Cartesian3.fromDegrees(fatih.lon, fatih.lat, 3800),
+              orientation: {
+                heading: Cesium.Math.toRadians(18),
+                pitch: Cesium.Math.toRadians(-42),
+                roll: 0
+              }
+            };
+        viewer.camera.setView(view);
       });
       logCesiumBootDiag("after_initial_setView");
 
@@ -603,6 +654,15 @@ const CesiumRealMapLayer = memo(({ active }) => {
           }
         }
       );
+
+      if (cfg.rhizohEpistemicCesiumBootstrap && !dead && !cancelled && viewerRef.current === viewer) {
+        try {
+          const presence = buildRhizohEpistemicWorldPresenceForBootstrapV0();
+          teardownRhizohEpistemicBootstrap = installRhizohEpistemicCesiumBootstrapV0(viewer, Cesium, presence);
+        } catch (e) {
+          console.warn("[CASTLE_CESIUM] rhizoh epistemic bootstrap:", String(e?.message || e));
+        }
+      }
 
       if (dead || cancelled || viewerRef.current !== viewer) return;
 
@@ -784,9 +844,21 @@ const CesiumRealMapLayer = memo(({ active }) => {
           categoryStateRef.current[category] = !!visible;
           applyCategoryVisibility();
         },
-        flyToIstanbul() {
+        /** Bootstrap calibration viewport — not world center (L1 perception override). */
+        flyToBootstrapViewport() {
+          const view = getRhizohCalibrationRootInitialSetViewV0(Cesium);
           trackedCameraFlyTo({
-            destination: Cesium.Cartesian3.fromDegrees(fatih.lon, fatih.lat, 3400),
+            destination: view.destination,
+            orientation: view.orientation,
+            duration: 1.2
+          });
+        },
+        /** Legacy alias → bootstrap viewport only. */
+        flyToIstanbul() {
+          const view = getRhizohCalibrationRootInitialSetViewV0(Cesium);
+          trackedCameraFlyTo({
+            destination: view.destination,
+            orientation: view.orientation,
             duration: 1.2
           });
         },
@@ -867,6 +939,61 @@ const CesiumRealMapLayer = memo(({ active }) => {
         }
       };
 
+      try {
+        resyncCesiumEpistemicRuntimeWindowMirrorV0();
+      } catch {
+        /* noop */
+      }
+
+      try {
+        teardownPerceptionDebug = maybeInstallPerceptionDebugObserverV0(viewer, Cesium, () => {
+          try {
+            const root = getRhizohCalibrationRootAnchorV0();
+            const st = buildRhizohEpistemicWorldPresenceForBootstrapV0();
+            return deriveAnchorAtmosphereProjectionV0(root, st).localFog;
+          } catch {
+            return undefined;
+          }
+        });
+      } catch {
+        /* noop */
+      }
+
+      try {
+        teardownEpistemicSimResearch = maybeInstallEpistemicSimResearchOnCesiumV0(viewer);
+      } catch {
+        /* noop */
+      }
+
+      try {
+        teardownEpistemicGraphViz = maybeInstallEpistemicGraphVisualizationOnCesiumV0(viewer);
+      } catch {
+        /* noop */
+      }
+
+      try {
+        if (isSovereignNodeOnboardingEnabledV0()) {
+          teardownSovereignGeographicPick = installCesiumSovereignGeographicPickV0(viewer);
+        }
+      } catch {
+        /* noop */
+      }
+
+      try {
+        registerLiveRuntimeProjectionConsumerV0(({ hints }) => {
+          try {
+            applyLiveRuntimeProjectionHintsToCesiumSceneV0(viewer, hints);
+            if (viewer && typeof viewer.isDestroyed === "function" && !viewer.isDestroyed()) {
+              viewer.scene.requestRender();
+            }
+          } catch {
+            /* noop */
+          }
+        });
+      } catch {
+        /* noop */
+      }
+
       if (staged && cfg.cesiumWorldProjectionBind) {
         await sleep(cfg.cesiumStageMsProjection);
         if (dead || cancelled || viewerRef.current !== viewer) return;
@@ -892,6 +1019,13 @@ const CesiumRealMapLayer = memo(({ active }) => {
       viewer.selectedEntityChanged.addEventListener((entity) => {
         const meta = entity?.__castleMeta;
         if (!meta) return;
+        if (isEpistemicSimResearchEnabledV0()) {
+          recordPoiSelectObserverTelemetryV0({
+            id: meta.id,
+            category: meta.category,
+            label: meta.label
+          });
+        }
         window.__CASTLE_CESIUM__.selectedPoi = {
           ...meta,
           categoryLabel: CATEGORY_LABELS[meta.category] || meta.category,
@@ -909,7 +1043,8 @@ const CesiumRealMapLayer = memo(({ active }) => {
           if (v && activeRef.current && navStateRef.current.enabled) {
             try {
               const keys = navStateRef.current.keys;
-              const move = keys.boost ? 18 : 6;
+              const baseMove = keys.boost ? 18 : 6;
+              const move = baseMove * getEpistemicNavigationMoveScaleV0();
               if (keys.forward) v.camera.moveForward(move);
               if (keys.back) v.camera.moveBackward(move);
               if (keys.left) v.camera.moveLeft(move);
@@ -944,6 +1079,9 @@ const CesiumRealMapLayer = memo(({ active }) => {
           if (k === "q") keys.down = true;
           if (k === "e") keys.up = true;
           if (k === "shift") keys.boost = true;
+          if (isEpistemicSimResearchEnabledV0() && "wsadqe".includes(k)) {
+            recordCameraKeyObserverTelemetryV0(k);
+          }
         };
         onKeyUp = (e) => {
           const keys = navStateRef.current.keys;
@@ -988,6 +1126,46 @@ const CesiumRealMapLayer = memo(({ active }) => {
       }
 
       extrasCleanupRef.current = () => {
+        try {
+          unregisterLiveRuntimeProjectionConsumerV0();
+        } catch {
+          /* noop */
+        }
+        try {
+          unregisterLiveRuntimeCesiumRenderSinkV0();
+        } catch {
+          /* noop */
+        }
+        try {
+          teardownPerceptionDebug();
+        } catch {
+          /* noop */
+        }
+        teardownPerceptionDebug = () => {};
+        try {
+          teardownEpistemicSimResearch();
+        } catch {
+          /* noop */
+        }
+        teardownEpistemicSimResearch = () => {};
+        try {
+          teardownEpistemicGraphViz();
+        } catch {
+          /* noop */
+        }
+        teardownEpistemicGraphViz = () => {};
+        try {
+          teardownSovereignGeographicPick();
+        } catch {
+          /* noop */
+        }
+        teardownSovereignGeographicPick = () => {};
+        try {
+          teardownRhizohEpistemicBootstrap();
+        } catch {
+          /* noop */
+        }
+        teardownRhizohEpistemicBootstrap = () => {};
         if (preRender) {
           try {
             viewer.scene?.preRender?.removeEventListener(preRender);
@@ -1013,11 +1191,7 @@ const CesiumRealMapLayer = memo(({ active }) => {
       if (cancelled || dead) {
         extrasCleanupRef.current();
         extrasCleanupRef.current = null;
-        try {
-          if (!viewer.isDestroyed()) viewer.destroy();
-        } catch {
-          /* noop */
-        }
+        destroyCesiumViewerSafeV0(viewer, hostRef.current);
         viewerRef.current = null;
         resetCesiumApexCameraCoordinator();
         if (window.__CASTLE_CESIUM__) delete window.__CASTLE_CESIUM__;
@@ -1084,4 +1258,8 @@ const CesiumRealMapLayer = memo(({ active }) => {
   );
 });
 
-export default CesiumRealMapLayer;
+/** WORLD layer opt-out — Genesis / survival surfaces must not mount Cesium/WebGL map stack. */
+export default function CesiumRealMapLayer(props) {
+  if (!isWorldLayerEnabled()) return null;
+  return <CesiumRealMapLayerImpl {...props} />;
+}

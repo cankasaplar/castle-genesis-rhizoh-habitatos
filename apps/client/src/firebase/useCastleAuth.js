@@ -18,7 +18,16 @@ import {
 } from "firebase/auth";
 import { getFirestore, doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
 import { getFirebaseApp, firebaseConfigured } from "./castleFirebase.js";
+import { logFirestoreRejection } from "./captureFirestoreRejectionV1.js";
 import { buildRhizohAccessLayer } from "../membership/membershipCoreV1.js";
+import {
+  isCohortEmailAllowlistActiveV0,
+  isCohortServerGateEnabledV0,
+  isEmailAllowedOnCohortAllowlistV0,
+  isInviteOnlyGoogleModeV0,
+  resolveCohortGateUrlV0
+} from "../rhizoh/ingress/cohortEmailAllowlistV0.js";
+import { recordCohortObservationV0 } from "../rhizoh/ingress/cohortObservationLogV0.js";
 
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });
@@ -85,14 +94,20 @@ export function useCastleAuth() {
       ref,
       async (snap) => {
         if (!snap.exists()) {
-          await setDoc(ref, {
-            displayName: firebaseUser.displayName || "",
-            photoURL: firebaseUser.photoURL || "",
-            onboardingCompleted: false,
-            membershipTier: firebaseUser.isAnonymous ? "guest" : "member",
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-          });
+          try {
+            await setDoc(ref, {
+              displayName: firebaseUser.displayName || "",
+              photoURL: firebaseUser.photoURL || "",
+              onboardingCompleted: false,
+              membershipTier: firebaseUser.isAnonymous ? "guest" : "member",
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
+          } catch (e) {
+            logFirestoreRejection("users_profile_bootstrap_setDoc", e, { path: `users/${firebaseUser.uid}` });
+            setError(String(e?.message || e));
+            setProfileReady(true);
+          }
           return;
         }
         setProfile(snap.data());
@@ -124,6 +139,104 @@ export function useCastleAuth() {
       }
     );
   }, [firebaseUser?.uid]);
+
+  useEffect(() => {
+    if (!firebaseConfigured || !firebaseUser) return undefined;
+
+    if (firebaseUser.isAnonymous) {
+      if (!isInviteOnlyGoogleModeV0()) return undefined;
+      let cancelled = false;
+      void (async () => {
+        try {
+          const auth = getAuth(getFirebaseApp());
+          await signOut(auth);
+          if (!cancelled) {
+            setError("Kapalı kohort: misafir oturumları kapalı. Google ile davetli hesabınızla giriş yapın.");
+          }
+        } catch (e) {
+          if (!cancelled) setError(String(e?.message || e));
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      if (isCohortServerGateEnabledV0()) {
+        const url = resolveCohortGateUrlV0();
+        if (!url) {
+          try {
+            const auth = getAuth(getFirebaseApp());
+            await signOut(auth);
+            if (!cancelled) setError("Kohort: sunucu kapısı URL eksik (VITE_RHIZOH_COHORT_GATE_URL veya Hosting kökü).");
+          } catch (e) {
+            if (!cancelled) setError(String(e?.message || e));
+          }
+          return;
+        }
+        try {
+          const idToken = await firebaseUser.getIdToken();
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${idToken}` }
+          });
+          const body = await res.json().catch(() => ({}));
+          if (cancelled) return;
+          if (!res.ok || body.ok !== true) {
+            recordCohortObservationV0({ tag: "cohort_server_gate_fail", meta: { status: res.status } });
+            const auth = getAuth(getFirebaseApp());
+            await signOut(auth);
+            if (!cancelled) {
+              setError("Sunucu kohort doğrulaması başarısız (liste veya oturum).");
+            }
+            return;
+          }
+          await firebaseUser.getIdToken(true);
+          if (!cancelled) recordCohortObservationV0({ tag: "cohort_server_gate_ok", meta: {} });
+        } catch (e) {
+          if (cancelled) return;
+          recordCohortObservationV0({ tag: "cohort_server_gate_fail", meta: { status: 0 } });
+          try {
+            const auth = getAuth(getFirebaseApp());
+            await signOut(auth);
+          } catch {
+            /* noop */
+          }
+          if (!cancelled) setError(String(e?.message || e));
+          return;
+        }
+      } else if (isCohortEmailAllowlistActiveV0()) {
+        const email = String(firebaseUser.email || "").trim().toLowerCase();
+        if (!isEmailAllowedOnCohortAllowlistV0(email)) {
+          try {
+            recordCohortObservationV0({ tag: "cohort_allowlist_reject", meta: {} });
+            const auth = getAuth(getFirebaseApp());
+            await signOut(auth);
+            if (!cancelled) {
+              setError("Bu hesap kapalı kohort listesinde değil. Davet e-postanızla Google girişi kullanın.");
+            }
+          } catch (e) {
+            if (!cancelled) setError(String(e?.message || e));
+          }
+          return;
+        }
+      }
+
+      if (!cancelled) {
+        recordCohortObservationV0({
+          tag: "cohort_auth_ok",
+          meta: { anonymous: false, serverGate: isCohortServerGateEnabledV0() }
+        });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [firebaseConfigured, firebaseUser?.uid, firebaseUser?.email, firebaseUser?.isAnonymous]);
 
   const signInGuest = useCallback(async () => {
     if (!firebaseConfigured) return;
@@ -322,6 +435,7 @@ export function useCastleAuth() {
           { merge: true }
         );
       } catch (e) {
+        logFirestoreRejection("users_profile_complete_onboarding_merge", e, { path: `users/${firebaseUser.uid}` });
         setError(e?.message || String(e));
       } finally {
         setBusy(false);
@@ -347,6 +461,7 @@ export function useCastleAuth() {
         { merge: true }
       );
     } catch (e) {
+      logFirestoreRejection("users_profile_skip_onboarding_merge", e, { path: `users/${firebaseUser.uid}` });
       setError(e?.message || String(e));
     } finally {
       setBusy(false);

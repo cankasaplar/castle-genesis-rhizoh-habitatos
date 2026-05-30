@@ -1,0 +1,561 @@
+{
+  "schema": "rhizoh.stress_taxonomy.verify.v0",
+  "atMs": "2026-05-25T02:46:15.409Z",
+  "matrix": {
+    "overload": "degrade",
+    "attack": "isolate",
+    "cost_spike": "throttle",
+    "drift": "flag",
+    "outage": "fallback"
+  },
+  "coverage": {
+    "pass": true,
+    "required": [
+      {
+        "stressClass": "overload",
+        "responseAction": "degrade",
+        "covered": true,
+        "exampleCodes": [
+          "phased_rollout_capacity",
+          "agent_turn_in_flight"
+        ]
+      },
+      {
+        "stressClass": "attack",
+        "responseAction": "isolate",
+        "covered": true,
+        "exampleCodes": [
+          "prompt_abuse_detected",
+          "user_soft_blocked",
+          "agent_recursive_tool_lock"
+        ]
+      },
+      {
+        "stressClass": "cost_spike",
+        "responseAction": "throttle",
+        "covered": true,
+        "exampleCodes": [
+          "cost_hard_limit"
+        ]
+      },
+      {
+        "stressClass": "drift",
+        "responseAction": "flag",
+        "covered": true,
+        "exampleCodes": [
+          "behavioral_drift_suspected"
+        ]
+      },
+      {
+        "stressClass": "outage",
+        "responseAction": "fallback",
+        "covered": true,
+        "exampleCodes": [
+          "agent_emergency_disable",
+          "provider_http_502",
+          "provider_http_503"
+        ]
+      }
+    ]
+  },
+  "conflictResolution": {
+    "pass": true,
+    "scenarios": [
+      {
+        "name": "attack_beats_cost_spike",
+        "pass": true,
+        "got": {
+          "stressClass": "attack",
+          "responseAction": "throttle",
+          "responseActionStrict": "isolate",
+          "actionSoftened": true,
+          "stressSecondary": [
+            "cost_spike"
+          ],
+          "conflictResolution": "priority_tree",
+          "stressConfidence": 0.74,
+          "actionConfidence": 0.6255999999999999
+        }
+      },
+      {
+        "name": "drift_plus_overload_hybrid",
+        "pass": true,
+        "got": {
+          "stressClass": "overload",
+          "responseAction": "degrade",
+          "responseActionStrict": "degrade",
+          "actionSoftened": false,
+          "stressSecondary": [
+            "drift"
+          ],
+          "conflictResolution": "hybrid",
+          "stressConfidence": 0.8,
+          "actionConfidence": 0.78
+        }
+      },
+      {
+        "name": "outage_not_drift",
+        "pass": true,
+        "got": {
+          "stressClass": "outage",
+          "responseAction": "fallback",
+          "responseActionStrict": "fallback",
+          "actionSoftened": false,
+          "stressSecondary": [
+            "drift"
+          ],
+          "conflictResolution": "hybrid",
+          "stressConfidence": 0.8,
+          "actionConfidence": 0.78
+        }
+      },
+      {
+        "name": "camouflage_escalation",
+        "pass": true,
+        "got": {
+          "stressClass": "attack",
+          "responseAction": "isolate",
+          "responseActionStrict": "isolate",
+          "actionSoftened": false,
+          "stressSecondary": [
+            "overload"
+          ],
+          "conflictResolution": "adversarial_escalation",
+          "stressConfidence": 0.82,
+          "actionConfidence": 0.7899999999999999
+        }
+      },
+      {
+        "name": "cost_not_mislabeled_attack",
+        "pass": true,
+        "got": {
+          "stressClass": "cost_spike",
+          "responseAction": "throttle",
+          "responseActionStrict": "throttle",
+          "actionSoftened": false,
+          "stressSecondary": [],
+          "conflictResolution": "single",
+          "stressConfidence": 0.92,
+          "actionConfidence": 0.92
+        }
+      }
+    ]
+  },
+  "resolutionStability": {
+    "schema": "rhizoh.resolution_stability.envelope.v0",
+    "actionConfidenceThreshold": 0.7,
+    "probeIterations": 64,
+    "confidenceBoundaryHysteresis": {
+      "pass": true,
+      "deadBand": {
+        "enter": 0.68,
+        "exit": 0.72
+      },
+      "samples": [
+        {
+          "responseAction": "throttle",
+          "actionSoftened": true,
+          "actionBorderline": true
+        },
+        {
+          "responseAction": "throttle",
+          "actionSoftened": true,
+          "actionBorderline": true
+        }
+      ]
+    },
+    "pass": true,
+    "scenarios": [
+      {
+        "name": "single_overload",
+        "pass": true,
+        "fingerprint": "7c38d32c8116b6e52beeeec8",
+        "uniqueCount": 1,
+        "sample": {
+          "stressClass": "overload",
+          "responseAction": "degrade",
+          "responseActionStrict": "degrade",
+          "actionSoftened": false,
+          "actionBorderline": false,
+          "stressConfidence": 0.92,
+          "actionConfidence": 0.92
+        }
+      },
+      {
+        "name": "single_cost",
+        "pass": true,
+        "fingerprint": "4b63719cabcd8ba752aad7f6",
+        "uniqueCount": 1,
+        "sample": {
+          "stressClass": "cost_spike",
+          "responseAction": "throttle",
+          "responseActionStrict": "throttle",
+          "actionSoftened": false,
+          "actionBorderline": false,
+          "stressConfidence": 0.92,
+          "actionConfidence": 0.92
+        }
+      },
+      {
+        "name": "attack_cost_mixed",
+        "pass": true,
+        "fingerprint": "f27c1580c7c2c3b68ada664c",
+        "uniqueCount": 1,
+        "sample": {
+          "stressClass": "attack",
+          "responseAction": "throttle",
+          "responseActionStrict": "isolate",
+          "actionSoftened": true,
+          "actionBorderline": false,
+          "stressConfidence": 0.74,
+          "actionConfidence": 0.6255999999999999
+        }
+      },
+      {
+        "name": "drift_overload_hybrid",
+        "pass": true,
+        "fingerprint": "8e821d6cdd13b60c83aaa117",
+        "uniqueCount": 1,
+        "sample": {
+          "stressClass": "overload",
+          "responseAction": "degrade",
+          "responseActionStrict": "degrade",
+          "actionSoftened": false,
+          "actionBorderline": false,
+          "stressConfidence": 0.8,
+          "actionConfidence": 0.78
+        }
+      },
+      {
+        "name": "camouflage_borderline",
+        "pass": true,
+        "fingerprint": "f5db739996b8e75e3fe5e98b",
+        "uniqueCount": 1,
+        "sample": {
+          "stressClass": "attack",
+          "responseAction": "isolate",
+          "responseActionStrict": "isolate",
+          "actionSoftened": false,
+          "actionBorderline": false,
+          "stressConfidence": 0.82,
+          "actionConfidence": 0.7899999999999999
+        }
+      },
+      {
+        "name": "outage_drift",
+        "pass": true,
+        "fingerprint": "3d301ce9a0d53e668ca95b60",
+        "uniqueCount": 1,
+        "sample": {
+          "stressClass": "outage",
+          "responseAction": "fallback",
+          "responseActionStrict": "fallback",
+          "actionSoftened": false,
+          "actionBorderline": false,
+          "stressConfidence": 0.8,
+          "actionConfidence": 0.78
+        }
+      },
+      {
+        "name": "unknown_code_fallback",
+        "pass": true,
+        "fingerprint": "214cc5323420fce5c6156940",
+        "uniqueCount": 1,
+        "sample": {
+          "stressClass": "overload",
+          "responseAction": "flag",
+          "responseActionStrict": "degrade",
+          "actionSoftened": true,
+          "actionBorderline": false,
+          "stressConfidence": 0.38,
+          "actionConfidence": 0.35
+        }
+      }
+    ]
+  },
+  "samples": [
+    {
+      "schema": "rhizoh.stress_response.taxonomy.v0",
+      "executionModel": "truth_stable_execution_adaptive",
+      "code": "phased_rollout_capacity",
+      "stressClass": "overload",
+      "responseAction": "degrade",
+      "userFacingAction": "degrade",
+      "responseActionStrict": "degrade",
+      "responseActions": [
+        "degrade"
+      ],
+      "stressSecondary": [],
+      "stressSignals": [
+        {
+          "code": "phased_rollout_capacity",
+          "stressClass": "overload",
+          "source": "primary_code"
+        }
+      ],
+      "stressConfidence": 0.92,
+      "actionConfidence": 0.92,
+      "actionSoftened": false,
+      "actionBorderline": false,
+      "conflictResolution": "single",
+      "interpretable": true,
+      "actionInterpretable": true,
+      "userMessageTr": "Hizmet geçici olarak hafif modda.",
+      "matrix": "overload → degrade",
+      "priorityTree": [
+        "attack",
+        "outage",
+        "cost_spike",
+        "overload",
+        "drift",
+        "none"
+      ],
+      "resolutionInputCanonical": "{\"codes\":[\"phased_rollout_capacity\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}"
+    },
+    {
+      "schema": "rhizoh.stress_response.taxonomy.v0",
+      "executionModel": "truth_stable_execution_adaptive",
+      "code": "prompt_abuse_detected",
+      "stressClass": "attack",
+      "responseAction": "isolate",
+      "userFacingAction": "isolate",
+      "responseActionStrict": "isolate",
+      "responseActions": [
+        "isolate"
+      ],
+      "stressSecondary": [],
+      "stressSignals": [
+        {
+          "code": "prompt_abuse_detected",
+          "stressClass": "attack",
+          "source": "primary_code"
+        }
+      ],
+      "stressConfidence": 0.92,
+      "actionConfidence": 0.92,
+      "actionSoftened": false,
+      "actionBorderline": false,
+      "conflictResolution": "single",
+      "interpretable": true,
+      "actionInterpretable": true,
+      "userMessageTr": "İstek güvenlik politikasına takıldı.",
+      "matrix": "attack → isolate",
+      "priorityTree": [
+        "attack",
+        "outage",
+        "cost_spike",
+        "overload",
+        "drift",
+        "none"
+      ],
+      "resolutionInputCanonical": "{\"codes\":[\"prompt_abuse_detected\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}"
+    },
+    {
+      "schema": "rhizoh.stress_response.taxonomy.v0",
+      "executionModel": "truth_stable_execution_adaptive",
+      "code": "cost_hard_limit",
+      "stressClass": "cost_spike",
+      "responseAction": "throttle",
+      "userFacingAction": "throttle",
+      "responseActionStrict": "throttle",
+      "responseActions": [
+        "throttle"
+      ],
+      "stressSecondary": [],
+      "stressSignals": [
+        {
+          "code": "cost_hard_limit",
+          "stressClass": "cost_spike",
+          "source": "primary_code"
+        }
+      ],
+      "stressConfidence": 0.92,
+      "actionConfidence": 0.92,
+      "actionSoftened": false,
+      "actionBorderline": false,
+      "conflictResolution": "single",
+      "interpretable": true,
+      "actionInterpretable": true,
+      "userMessageTr": "İstek geçici olarak sınırlandı.",
+      "matrix": "cost_spike → throttle",
+      "priorityTree": [
+        "attack",
+        "outage",
+        "cost_spike",
+        "overload",
+        "drift",
+        "none"
+      ],
+      "resolutionInputCanonical": "{\"codes\":[\"cost_hard_limit\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}"
+    },
+    {
+      "schema": "rhizoh.stress_response.taxonomy.v0",
+      "executionModel": "truth_stable_execution_adaptive",
+      "code": "behavioral_drift_suspected",
+      "stressClass": "drift",
+      "responseAction": "flag",
+      "userFacingAction": "flag",
+      "responseActionStrict": "flag",
+      "responseActions": [
+        "flag"
+      ],
+      "stressSecondary": [],
+      "stressSignals": [
+        {
+          "code": "behavioral_drift_suspected",
+          "stressClass": "drift",
+          "source": "drift_probe"
+        }
+      ],
+      "stressConfidence": 0.92,
+      "actionConfidence": 0.92,
+      "actionSoftened": false,
+      "actionBorderline": false,
+      "conflictResolution": "single",
+      "interpretable": true,
+      "actionInterpretable": true,
+      "userMessageTr": "Davranış izleme modunda (işlem devam edebilir).",
+      "matrix": "drift → flag",
+      "priorityTree": [
+        "attack",
+        "outage",
+        "cost_spike",
+        "overload",
+        "drift",
+        "none"
+      ],
+      "resolutionInputCanonical": "{\"codes\":[\"behavioral_drift_suspected\"],\"drift\":true,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}"
+    },
+    {
+      "schema": "rhizoh.stress_response.taxonomy.v0",
+      "executionModel": "truth_stable_execution_adaptive",
+      "code": "provider_http_503",
+      "stressClass": "outage",
+      "responseAction": "fallback",
+      "userFacingAction": "fallback",
+      "responseActionStrict": "fallback",
+      "responseActions": [
+        "fallback"
+      ],
+      "stressSecondary": [],
+      "stressSignals": [
+        {
+          "code": "provider_http_503",
+          "stressClass": "outage",
+          "source": "provider_http"
+        }
+      ],
+      "stressConfidence": 0.92,
+      "actionConfidence": 0.92,
+      "actionSoftened": false,
+      "actionBorderline": false,
+      "conflictResolution": "single",
+      "interpretable": true,
+      "actionInterpretable": true,
+      "userMessageTr": "Bağlantı geçici olarak kesildi.",
+      "matrix": "outage → fallback",
+      "priorityTree": [
+        "attack",
+        "outage",
+        "cost_spike",
+        "overload",
+        "drift",
+        "none"
+      ],
+      "resolutionInputCanonical": "{\"codes\":[\"provider_http_503\"],\"drift\":false,\"injection\":false,\"provider\":503,\"failureKind\":null,\"flags\":[]}"
+    },
+    {
+      "schema": "rhizoh.stress_response.taxonomy.v0",
+      "executionModel": "truth_stable_execution_adaptive",
+      "code": "prompt_abuse_detected",
+      "stressClass": "attack",
+      "responseAction": "throttle",
+      "userFacingAction": "throttle",
+      "responseActionStrict": "isolate",
+      "responseActions": [
+        "throttle",
+        "throttle"
+      ],
+      "stressSecondary": [
+        "cost_spike"
+      ],
+      "stressSignals": [
+        {
+          "code": "prompt_abuse_detected",
+          "stressClass": "attack",
+          "source": "explicit_codes"
+        },
+        {
+          "code": "cost_hard_limit",
+          "stressClass": "cost_spike",
+          "source": "explicit_codes"
+        }
+      ],
+      "stressConfidence": 0.74,
+      "actionConfidence": 0.6255999999999999,
+      "actionSoftened": true,
+      "actionBorderline": false,
+      "conflictResolution": "priority_tree",
+      "interpretable": true,
+      "actionInterpretable": false,
+      "userMessageTr": "İstek geçici olarak sınırlandı.",
+      "matrix": "attack → throttle (hybrid: throttle + throttle) [softened: isolate→throttle]",
+      "priorityTree": [
+        "attack",
+        "outage",
+        "cost_spike",
+        "overload",
+        "drift",
+        "none"
+      ],
+      "resolutionInputCanonical": "{\"codes\":[\"cost_hard_limit\",\"prompt_abuse_detected\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}"
+    },
+    {
+      "schema": "rhizoh.stress_response.taxonomy.v0",
+      "executionModel": "truth_stable_execution_adaptive",
+      "code": "phased_rollout_capacity",
+      "stressClass": "overload",
+      "responseAction": "degrade",
+      "userFacingAction": "degrade",
+      "responseActionStrict": "degrade",
+      "responseActions": [
+        "degrade",
+        "flag"
+      ],
+      "stressSecondary": [
+        "drift"
+      ],
+      "stressSignals": [
+        {
+          "code": "phased_rollout_capacity",
+          "stressClass": "overload",
+          "source": "explicit_codes"
+        },
+        {
+          "code": "behavioral_drift_suspected",
+          "stressClass": "drift",
+          "source": "explicit_codes"
+        }
+      ],
+      "stressConfidence": 0.8,
+      "actionConfidence": 0.78,
+      "actionSoftened": false,
+      "actionBorderline": false,
+      "conflictResolution": "hybrid",
+      "interpretable": true,
+      "actionInterpretable": true,
+      "userMessageTr": "Hizmet geçici olarak hafif modda.",
+      "matrix": "overload → degrade (hybrid: degrade + flag)",
+      "priorityTree": [
+        "attack",
+        "outage",
+        "cost_spike",
+        "overload",
+        "drift",
+        "none"
+      ],
+      "resolutionInputCanonical": "{\"codes\":[\"behavioral_drift_suspected\",\"phased_rollout_capacity\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}"
+    }
+  ],
+  "phase3Gate": "cognition_stack_ready_for_phase3"
+}

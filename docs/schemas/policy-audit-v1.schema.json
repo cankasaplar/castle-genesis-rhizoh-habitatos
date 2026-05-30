@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rhizoh.local/schemas/policy-audit-v1.schema.json",
+  "title": "PolicyAuditV1",
+  "$defs": {
+    "isoDateTime": {
+      "type": "string",
+      "minLength": 10,
+      "description": "RFC 3339 / ISO 8601 instant, e.g. 2026-05-11T12:00:00.000Z"
+    },
+    "policyRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["documentUri"],
+      "properties": {
+        "documentUri": { "type": "string", "minLength": 4, "maxLength": 500 },
+        "versionLabel": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "contentHash": { "type": "string", "minLength": 8, "maxLength": 128 }
+      }
+    },
+    "PolicyAuditEventV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "type", "occurredAt", "correlationId"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "type": {
+          "type": "string",
+          "enum": [
+            "scar.suggestion.recorded",
+            "governance.chain.entered",
+            "governance.approval.recorded",
+            "governance.runbook.linked",
+            "governance.action.completed",
+            "governance.chain.abandoned"
+          ]
+        },
+        "occurredAt": { "$ref": "#/$defs/isoDateTime" },
+        "correlationId": { "type": "string", "minLength": 8, "maxLength": 200 },
+        "chainId": { "type": "string", "minLength": 8, "maxLength": 200 },
+        "policyRef": { "$ref": "#/$defs/policyRef" },
+        "scarSnapshot": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "significance": { "type": "string", "enum": ["low", "medium", "high"] },
+            "recommendedPosture": {
+              "type": "string",
+              "enum": ["observe", "reweight", "force_break", "human_gate"]
+            }
+          }
+        },
+        "actorKind": {
+          "type": "string",
+          "enum": ["human", "system_process"],
+          "description": "system_process = ticketing/CI witness only; never auto-apply execution."
+        },
+        "latencyFromSuggestionMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optional; set on terminal events when suggestion timestamp is known."
+        },
+        "notes": { "type": "string", "maxLength": 4000 },
+        "extension": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Non-normative vendor-specific payload; must not drive RCIL/RRHP."
+        }
+      }
+    },
+    "PolicyAuditRollupV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "periodStart", "periodEnd"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "periodStart": { "$ref": "#/$defs/isoDateTime" },
+        "periodEnd": { "$ref": "#/$defs/isoDateTime" },
+        "chainsEntered": { "type": "integer", "minimum": 0 },
+        "suggestionsRecorded": { "type": "integer", "minimum": 0 },
+        "approvalsRecorded": { "type": "integer", "minimum": 0 },
+        "runbooksLinked": { "type": "integer", "minimum": 0 },
+        "actionsCompleted": { "type": "integer", "minimum": 0 },
+        "chainsAbandoned": { "type": "integer", "minimum": 0 },
+        "chainsWithNoProgress": { "type": "integer", "minimum": 0 },
+        "medianLatencySuggestionToActionMs": { "type": ["integer", "null"], "minimum": 0 },
+        "explicitApprovalRate": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "approvalsRecorded / chainsEntered when denominator > 0; else null."
+        }
+      }
+    }
+  },
+  "oneOf": [{ "$ref": "#/$defs/PolicyAuditEventV1" }, { "$ref": "#/$defs/PolicyAuditRollupV1" }]
+}

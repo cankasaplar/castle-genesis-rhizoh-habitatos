@@ -27,6 +27,9 @@ function pushLine(setLines, at, line, keyBase, eventType, seq) {
  * }} props
  */
 export function GenesisContinuityMicroStream({ gatewayOrigin, onStreamTelemetry, hubQueryContext }) {
+  const onStreamTelemetryRef = useRef(onStreamTelemetry);
+  onStreamTelemetryRef.current = onStreamTelemetry;
+
   const runtimeUrl = useMemo(() => {
     const o = String(gatewayOrigin || "").trim().replace(/\/+$/, "");
     if (!o) return "";
@@ -47,8 +50,8 @@ export function GenesisContinuityMicroStream({ gatewayOrigin, onStreamTelemetry,
   const [eventArchiveEnabled, setEventArchiveEnabled] = useState(false);
 
   useEffect(() => {
-    onStreamTelemetry?.({ transport, lastSeq, sseErrorCount, eventArchiveEnabled });
-  }, [transport, lastSeq, sseErrorCount, eventArchiveEnabled, onStreamTelemetry]);
+    onStreamTelemetryRef.current?.({ transport, lastSeq, sseErrorCount, eventArchiveEnabled });
+  }, [transport, lastSeq, sseErrorCount, eventArchiveEnabled]);
 
   const pull = useCallback(async () => {
     if (!runtimeUrl) return;

@@ -1,0 +1,26 @@
+﻿[
+    {
+        "batch_id":  "llm-20260528-172115",
+        "archived_at_utc":  "2026-05-28T14:21:15.5648122Z",
+        "source_hint":  "unknown",
+        "content_type":  "freeform_notes",
+        "quality":  "substantial",
+        "line_count":  12,
+        "char_count":  270,
+        "title":  "README",
+        "file_name":  "20260528-172115_unknown_readme.md",
+        "path":  "C:\\Users\\LENOVO\\Desktop\\castle\\docs\\archive\\llm-chats\\inbox\\20260528-172115_unknown_readme.md"
+    },
+    {
+        "batch_id":  "llm-20260528-172115",
+        "archived_at_utc":  "2026-05-28T14:21:15.5978877Z",
+        "source_hint":  "unknown",
+        "content_type":  "conversation",
+        "quality":  "empty_or_stub",
+        "line_count":  3,
+        "char_count":  109,
+        "title":  "test-sample",
+        "file_name":  "20260528-172115_unknown_test-sample.md",
+        "path":  "C:\\Users\\LENOVO\\Desktop\\castle\\docs\\archive\\llm-chats\\inbox\\20260528-172115_unknown_test-sample.md"
+    }
+]

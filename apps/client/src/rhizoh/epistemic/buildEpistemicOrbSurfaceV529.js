@@ -88,13 +88,14 @@ export function buildEpistemicOrbSurface(input) {
   let attachment = "—";
   if (!ep) attachment = "AWAITING_TRACE";
   else if (hash && sig) attachment = firebaseUid ? "CLOUD_ATTESTED" : "ATTESTED";
-  else if (source === "remote-llm" && gw === "connected") attachment = firebaseUid ? "REMOTE_SIGNED_PENDING" : "REMOTE_UNSIGNED";
+  else if (source === "remote-llm" && (gw === "connected" || gw === "uncertain"))
+    attachment = firebaseUid ? "REMOTE_SIGNED_PENDING" : "REMOTE_UNSIGNED";
   else if (source === "local-stub" || source === "fallback") attachment = "LOCAL_ONLY";
   else attachment = "LOCAL";
 
   let worldSync = "—";
-  if (gw === "connected" && uiEnv.mapSurfaceActive) worldSync = "MAP_LIVE";
-  else if (gw === "connected") worldSync = "MAP_IDLE";
+  if ((gw === "connected" || gw === "uncertain") && uiEnv.mapSurfaceActive) worldSync = "MAP_LIVE";
+  else if (gw === "connected" || gw === "uncertain") worldSync = "MAP_IDLE";
   else if (gw === "offline" || gw === "offline_dns") worldSync = "UNSYNCHRONIZED";
   else worldSync = "LINK_UNKNOWN";
 

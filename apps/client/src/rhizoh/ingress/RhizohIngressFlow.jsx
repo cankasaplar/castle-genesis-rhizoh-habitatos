@@ -10,11 +10,10 @@ import {
   deriveIngressPhaseV0,
   INGRESS_ROUTE_V0,
   isClosedAdmissionCohortStepRequiredV0,
+  LEGAL_REALITY_SPEC_SHA256_V0,
   normalizeIngressPhaseV0
 } from "./ingress_router.js";
-
-const LEGAL_REALITY_SPEC_SHA256_V0 =
-  "5dbeb7ee93e8b3ff40be73d569f93c9cec73eee37a7a3535205d87883a885972";
+import { recordCohortObservationV0 } from "./cohortObservationLogV0.js";
 
 /**
  * rhizoh.com: legal → (optional) beta accept → app. Errors surface explicitly.
@@ -44,7 +43,10 @@ export function RhizohIngressFlow() {
     };
   }, [phase, errorKind]);
 
-  const mountApp = useCallback(() => setPhase(INGRESS_ROUTE_V0.APP), []);
+  const mountApp = useCallback(() => {
+    recordCohortObservationV0({ tag: "ingress_shell_app_mount", meta: {} });
+    setPhase(INGRESS_ROUTE_V0.APP);
+  }, []);
 
   const refreshAfterLegal = useCallback(() => {
     if (typeof navigator !== "undefined" && navigator.onLine === false) {

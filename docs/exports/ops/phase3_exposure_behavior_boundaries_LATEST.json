@@ -1,0 +1,112 @@
+{
+  "schema": "rhizoh.phase3.exposure_behavior_boundaries.v0",
+  "atMs": "2026-05-25T05:31:11.224Z",
+  "pass": "exposure_behavior_boundaries_pass",
+  "checks": {
+    "controlPathFirewall": {
+      "ok": true,
+      "violations": []
+    },
+    "feedbackLoopHumanOnly": {
+      "ok": true,
+      "violations": [],
+      "path": "observation→proposal→config→execution_human_only"
+    },
+    "authorityPhraseScan": {
+      "ok": true,
+      "hits": []
+    },
+    "shadowLearning": {
+      "ok": true,
+      "violations": [],
+      "manifest": {
+        "schema": "rhizoh.phase3d.shadow_learning_boundary.v0",
+        "possible": true,
+        "condition": "writes_shadow_only_never_live_reflex",
+        "feedsExecution": false,
+        "defaultEvolutionMode": "observing_atlas",
+        "allowedEvolutionMode": "human_approved_proposal_semi_actuator",
+        "evolutionNote": "semi_actuator_is_proposal_queue_plus_human_approve_not_runtime_steering",
+        "twinRisks": {
+          "controlBlindness": "over_stabilization_if_shadow_never_reviewed",
+          "observationBloat": "ineffective_atlas_if_proposals_never_closed"
+        },
+        "allowedSurfaces": {
+          "TRAJECTORY_RING_BUFFER": "trajectory_ring_buffer",
+          "ATTRACTOR_HISTOGRAM": "attractor_basin_histogram",
+          "TRANSITION_COUNTS": "transition_probability_counts",
+          "PERTURBATION_RANKINGS": "perturbation_sensitivity_rankings",
+          "THRESHOLD_PROPOSAL_QUEUE": "threshold_proposal_queue_pending_human",
+          "SHADOW_DIVERGENCE_P95": "shadow_divergence_p95_histogram"
+        },
+        "forbiddenBackflow": [
+          "live_gate_threshold_mutation",
+          "executeOrContain_input_from_attractor",
+          "phase3dObservationGate_to_phase3ExecutionGate",
+          "auto_soften_from_fragility_score",
+          "auto_tighten_from_influence_score",
+          "runtime_import_phase3d_in_gateway_turn"
+        ],
+        "legalBridgeToControl": {
+          "id": "human_approved_config_schema_bump",
+          "steps": [
+            "shadow_export_review",
+            "audit_log_entry",
+            "phase3_config_version_tag",
+            "control_harness_rerun",
+            "deploy"
+          ]
+        }
+      }
+    },
+    "proposalQueue": {
+      "ok": true,
+      "violations": []
+    }
+  },
+  "misunderstandingScenarios": [
+    {
+      "id": "M1_attractor_as_command",
+      "userBelief": "primaryAttractor means system wants this mode",
+      "engineeringTruth": "empirical basin label only; feedsExecution false",
+      "mitigation": "UX label: observed region not recommendation"
+    },
+    {
+      "id": "M2_proposal_auto_applied",
+      "userBelief": "pending_human proposal already changed thresholds",
+      "engineeringTruth": "config unchanged until applied_config + human publish",
+      "mitigation": "Show proposal state + explicit not applied banner"
+    },
+    {
+      "id": "M3_observation_gate_as_deploy",
+      "userBelief": "phase3dObservationGate is go-live approval",
+      "engineeringTruth": "audit readiness only; phase3ExecutionGate is control",
+      "mitigation": "Never surface observation gate as user-facing deploy"
+    },
+    {
+      "id": "M4_telemetry_soft_steering",
+      "userBelief": "system learned my behavior and adapted gates to me",
+      "engineeringTruth": "telemetry may affect control gates; shadow proposals require human apply",
+      "mitigation": "Disclose path; audit proposal evidence for cohort bias"
+    },
+    {
+      "id": "M5_passive_entity_anthropomorphism",
+      "userBelief": "Rhizoh understands me",
+      "engineeringTruth": "rich reflector surface; not agency",
+      "mitigation": "Interpretation layer boundary; counsel UX review"
+    }
+  ],
+  "openRisks": {
+    "feedbackLoopLeakage": "mitigated_human_only",
+    "humanBottleneck": "operational_cadence_required",
+    "proposalQualityDrift": "monitor_stats_and_reject_path",
+    "interpretiveLeakage": "phrases_clean_in_export",
+    "schemaInflation": "require_explicit_schema_bump_per_new_field"
+  },
+  "stableOnOpen": {
+    "phase3Deterministic": true,
+    "phase3dObservationOnly": true,
+    "modeBProposalOnly": true,
+    "executionIsolatedFromShadow": true
+  }
+}

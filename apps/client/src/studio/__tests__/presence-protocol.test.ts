@@ -17,7 +17,11 @@ import {
   presenceAvatarSpeakStop
 } from "../store/studioStore.js";
 import { ghostPetDepart, stablePetSlotUid } from "../store/ghostPetOrbitSlice";
-import { rhizohCompanionDepart, stableRhizohCompanionUid } from "../store/rhizohCompanionSlice";
+import {
+  rhizohCompanionDepart,
+  stableAtlasCompanionUid,
+  stableRhizohCompanionUid
+} from "../store/rhizohCompanionSlice";
 
 function seed() {
   patchIdentity({
@@ -183,6 +187,33 @@ describe("presence protocol layer", () => {
     const s2 = getStudioKernelState();
     expect(s2.presence.companionAgents?.[key]).toBeUndefined();
     expect(s2.presence.avatars["avatar:rz:1"]?.companionAgentUid).toBeUndefined();
+  });
+
+  it("Atlas companion spawns on @Atlas invoke (registry archetype)", () => {
+    resetRhizohStudioKernelStore();
+    seed();
+    expect(registerEntity({ uid: "ent:at:1", ownerId: "proto-owner" }).ok).toBe(true);
+    expect(bindAvatarToEntity({ avatarUid: "avatar:at:1", linkedEntityUid: "ent:at:1" }).ok).toBe(true);
+    expect(createPresenceRoom({ roomUid: "room:at:1", title: "Atlas Hall" }).ok).toBe(true);
+    expect(joinPresenceRoom({ roomUid: "room:at:1", avatarUid: "avatar:at:1" }).ok).toBe(true);
+
+    expect(
+      presenceAvatarAgentInvoke({
+        avatarUid: "avatar:at:1",
+        agentUid: "guide-atlas",
+        intent: "@Atlas chart cross-node links"
+      }).ok
+    ).toBe(true);
+
+    const s = getStudioKernelState();
+    const key = stableAtlasCompanionUid("avatar:at:1");
+    expect(s.presence.avatars["avatar:at:1"]?.companionAgentUid).toBe(key);
+    expect(s.presence.companionAgents?.[key]?.archetype).toBe("atlas");
+    expect(s.presence.companionAgents?.[key]?.state).toBe("guiding");
+    expect(s.presence.companionAgents?.[key]?.lastResponseSummary).toContain("Atlas");
+
+    expect(rhizohCompanionDepart({ ownerAvatarUid: "avatar:at:1" }).ok).toBe(true);
+    expect(getStudioKernelState().presence.companionAgents?.[key]).toBeUndefined();
   });
 
   it("double speak.start coalesces stub segment (previous closed without stop node id)", () => {

@@ -56,6 +56,8 @@ export const FIREBASE_PATH_KEYS = {
   /** RCIL Live Wiring Sprint — epistemic event ledger (Firestore sub-path; rules: `castle/**`) */
   rcilEventLedger: "castle/genesis/v1/runtime/rcil_events",
   rcilEpistemicTrace: "castle/genesis/v1/runtime/rcil_trace_tail",
+  /** RRHP Persistent Projection v1 — gerçek doc: `users/{uid}/rrhp_projection_v1/singleton` (rules: `users/{userId}/**`) */
+  rrhpPersistentProjectionV1: "users/{uid}/rrhp_projection_v1/singleton",
   healthMetrics: "castle/genesis/v1/runtime/health",
   scheduleLedger: "castle/genesis/v1/runtime/schedule",
   chronosClocks: "castle/genesis/v1/chronos/clocks",

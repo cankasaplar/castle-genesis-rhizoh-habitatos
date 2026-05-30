@@ -27,10 +27,10 @@ import {
 import { mapReactionKindToRig } from "../lib/avatarRigHelpers";
 import { avatarProjectionWithLookAt } from "../lib/presenceLookAt";
 import { ensureRoomZones } from "../lib/presenceRoomZones";
+import { stableCompanionUidV1 } from "../runtime/companionAgentRegistryV1.js";
 import {
-  companionAppendRhizohChain,
-  isRhizohCompanionInvoke,
-  stableRhizohCompanionUid
+  companionAppendArchetypeChain,
+  resolveCompanionArchetypeFromInvoke
 } from "./rhizohCompanionSlice.js";
 import {
   ghostPetAppendOrbitChain,
@@ -539,8 +539,9 @@ export function presenceAvatarAgentInvoke(payload: {
   const actorId = s.identity.actor?.id ?? s.identity.ownerId ?? "unknown";
   const charge = estimateEconomyForNodeType("tool");
   const econBase = s.causalEconomy ?? defaultCausalEconomy();
-  const companionExtras = isRhizohCompanionInvoke(p.agentUid, p.intent)
-    ? pres.companionAgents?.[stableRhizohCompanionUid(p.avatarUid)]
+  const companionArchetype = resolveCompanionArchetypeFromInvoke(p.agentUid, p.intent);
+  const companionExtras = companionArchetype
+    ? pres.companionAgents?.[stableCompanionUidV1(companionArchetype, p.avatarUid)]
       ? 2
       : 3
     : 0;
@@ -583,8 +584,9 @@ export function presenceAvatarAgentInvoke(payload: {
   let nextGraph = causalGraph;
   let nextEcon = accumulateEconomy(econBase, charge);
 
-  if (isRhizohCompanionInvoke(p.agentUid, p.intent)) {
-    const cr = companionAppendRhizohChain({
+  if (companionArchetype) {
+    const cr = companionAppendArchetypeChain({
+      archetype: companionArchetype,
       s,
       pres: nextPres,
       causalGraph: nextGraph,

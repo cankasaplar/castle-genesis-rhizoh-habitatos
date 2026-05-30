@@ -1,0 +1,12 @@
+﻿BATCH_ID=llm-20260528-193539
+ARCHIVED_COUNT=1
+INBOX=C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\inbox
+INDEX=C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\LLM_CHAT_ARCHIVE_INDEX_V0.md
+MANIFEST_CSV=C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\manifests\llm-20260528-193539-manifest.csv
+MANIFEST_JSON=C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\manifests\llm-20260528-193539-manifest.json
+TONOM_POLICY=docs/archive/llm-chats/tonom-write-policy.v0.json
+C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\staging\20260528-193540_claude_claude-share-deneme_staging.md
+TONOM_APPLIED=true
+PROCESSED=1
+POLICY=C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\tonom-write-policy.v0.json
+INDEX=C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\LLM_CHAT_ARCHIVE_INDEX_V0.md

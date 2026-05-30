@@ -5,6 +5,7 @@ import { bootstrapRhizohOntologicalGateV0 } from "../rhizoh/runtime/continuity/b
 import { QuarantineOntologicalGateShell } from "./QuarantineOntologicalGateShell.jsx";
 import { resolveIngressRouteV0 } from "../rhizoh/ingress/ingress_router.js";
 import { RhizohIngressFlow } from "../rhizoh/ingress/RhizohIngressFlow.jsx";
+import { hideLegacyIndexHudV0 } from "./castleCrashTelemetry.js";
 
 /**
  * CORE-ELIGIBLE: mount after ontological gate (pre-render).
@@ -18,6 +19,7 @@ import { RhizohIngressFlow } from "../rhizoh/ingress/RhizohIngressFlow.jsx";
 export async function mountCastleApplicationV0(ctx) {
   const { appEl, RootErrorBoundary, bootLog } = ctx;
 
+  hideLegacyIndexHudV0();
   bootLog?.ok?.("boot.ontological_gate", "pre-render gate starting");
 
   const gate = await bootstrapRhizohOntologicalGateV0();

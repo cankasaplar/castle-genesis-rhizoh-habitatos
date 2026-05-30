@@ -1,0 +1,111 @@
+{
+  "schema": "rhizoh.resolution_stability.verify.v0",
+  "atMs": "2026-05-25T02:38:23.442Z",
+  "envelope": {
+    "schema": "rhizoh.resolution_stability.envelope.v0",
+    "actionConfidenceThreshold": 0.7,
+    "probeIterations": 64,
+    "pass": true,
+    "scenarios": [
+      {
+        "name": "single_overload",
+        "pass": true,
+        "fingerprint": "e8049d102df5637b0e32acaf",
+        "uniqueCount": 1,
+        "sample": {
+          "stressClass": "overload",
+          "responseAction": "degrade",
+          "responseActionStrict": "degrade",
+          "actionSoftened": false,
+          "stressConfidence": 0.92,
+          "actionConfidence": 0.92
+        }
+      },
+      {
+        "name": "single_cost",
+        "pass": true,
+        "fingerprint": "ea0d0da8a3170ea579e12398",
+        "uniqueCount": 1,
+        "sample": {
+          "stressClass": "cost_spike",
+          "responseAction": "throttle",
+          "responseActionStrict": "throttle",
+          "actionSoftened": false,
+          "stressConfidence": 0.92,
+          "actionConfidence": 0.92
+        }
+      },
+      {
+        "name": "attack_cost_mixed",
+        "pass": true,
+        "fingerprint": "6f034a70100fcccb2b8c6fa1",
+        "uniqueCount": 1,
+        "sample": {
+          "stressClass": "attack",
+          "responseAction": "isolate",
+          "responseActionStrict": "isolate",
+          "actionSoftened": false,
+          "stressConfidence": 0.74,
+          "actionConfidence": 0.74
+        }
+      },
+      {
+        "name": "drift_overload_hybrid",
+        "pass": true,
+        "fingerprint": "ee0a5e2f1b1e46bc5982721e",
+        "uniqueCount": 1,
+        "sample": {
+          "stressClass": "overload",
+          "responseAction": "degrade",
+          "responseActionStrict": "degrade",
+          "actionSoftened": false,
+          "stressConfidence": 0.8,
+          "actionConfidence": 0.8
+        }
+      },
+      {
+        "name": "camouflage_borderline",
+        "pass": true,
+        "fingerprint": "bf3d53e044061f4a04639df6",
+        "uniqueCount": 1,
+        "sample": {
+          "stressClass": "attack",
+          "responseAction": "isolate",
+          "responseActionStrict": "isolate",
+          "actionSoftened": false,
+          "stressConfidence": 0.82,
+          "actionConfidence": 0.82
+        }
+      },
+      {
+        "name": "outage_drift",
+        "pass": true,
+        "fingerprint": "8ac3bb3092a84ae6c1d39c9d",
+        "uniqueCount": 1,
+        "sample": {
+          "stressClass": "outage",
+          "responseAction": "fallback",
+          "responseActionStrict": "fallback",
+          "actionSoftened": false,
+          "stressConfidence": 0.8,
+          "actionConfidence": 0.8
+        }
+      },
+      {
+        "name": "unknown_code_fallback",
+        "pass": true,
+        "fingerprint": "719f51d03535ae0f6b4a64b5",
+        "uniqueCount": 1,
+        "sample": {
+          "stressClass": "overload",
+          "responseAction": "flag",
+          "responseActionStrict": "degrade",
+          "actionSoftened": true,
+          "stressConfidence": 0.38,
+          "actionConfidence": 0.35
+        }
+      }
+    ]
+  },
+  "phase3Gate": "resolution_stability_ready_for_phase3"
+}

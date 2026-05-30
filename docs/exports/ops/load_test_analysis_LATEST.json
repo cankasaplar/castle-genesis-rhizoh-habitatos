@@ -1,0 +1,336 @@
+{
+  "schema": "rhizoh.load_test.analysis.v1",
+  "analyzedAt": "2026-05-25T18:33:16.327Z",
+  "executionMode": "dev_memory",
+  "sliceCount": 7,
+  "slices": [
+    {
+      "label": "phase1_sanity_100",
+      "classification": {
+        "schema": "rhizoh.failure_mode_classification.v0",
+        "modes": [
+          {
+            "id": "healthy",
+            "severity": "info",
+            "confidence": 0.6,
+            "evidence": {
+              "successRate": 1
+            }
+          }
+        ],
+        "primary": "healthy",
+        "architectureNote": "capacity_system_to_ownership_system"
+      }
+    },
+    {
+      "label": "phase1_sanity_500",
+      "classification": {
+        "schema": "rhizoh.failure_mode_classification.v0",
+        "modes": [
+          {
+            "id": "soft_saturation_illusion",
+            "severity": "medium",
+            "confidence": 0.85,
+            "evidence": {
+              "successRate": 1,
+              "avgQueueDepth": 15.76,
+              "queueDepthMax": 16
+            }
+          }
+        ],
+        "primary": "soft_saturation_illusion",
+        "architectureNote": "capacity_system_to_ownership_system"
+      }
+    },
+    {
+      "label": "phase2_structural_ramp:1000",
+      "classification": {
+        "schema": "rhizoh.failure_mode_classification.v0",
+        "modes": [
+          {
+            "id": "soft_saturation_illusion",
+            "severity": "high",
+            "confidence": 0.85,
+            "evidence": {
+              "successRate": 1,
+              "avgQueueDepth": 31.587,
+              "queueDepthMax": 32
+            }
+          }
+        ],
+        "primary": "soft_saturation_illusion",
+        "architectureNote": "capacity_system_to_ownership_system"
+      }
+    },
+    {
+      "label": "phase2_structural_ramp:3000",
+      "classification": {
+        "schema": "rhizoh.failure_mode_classification.v0",
+        "modes": [
+          {
+            "id": "soft_saturation_illusion",
+            "severity": "high",
+            "confidence": 0.85,
+            "evidence": {
+              "successRate": 1,
+              "avgQueueDepth": 31.862,
+              "queueDepthMax": 32
+            }
+          }
+        ],
+        "primary": "soft_saturation_illusion",
+        "architectureNote": "capacity_system_to_ownership_system"
+      }
+    },
+    {
+      "label": "phase2_structural_ramp:10000",
+      "classification": {
+        "schema": "rhizoh.failure_mode_classification.v0",
+        "modes": [
+          {
+            "id": "soft_saturation_illusion",
+            "severity": "high",
+            "confidence": 0.85,
+            "evidence": {
+              "successRate": 1,
+              "avgQueueDepth": 31.959,
+              "queueDepthMax": 32
+            }
+          }
+        ],
+        "primary": "soft_saturation_illusion",
+        "architectureNote": "capacity_system_to_ownership_system"
+      }
+    },
+    {
+      "label": "phase3_chaos",
+      "classification": {
+        "schema": "rhizoh.failure_mode_classification.v0",
+        "modes": [
+          {
+            "id": "soft_saturation_illusion",
+            "severity": "high",
+            "confidence": 0.85,
+            "evidence": {
+              "successRate": 0.9513,
+              "avgQueueDepth": 31.876,
+              "queueDepthMax": 32
+            }
+          },
+          {
+            "id": "rollout_hysteresis",
+            "severity": "high",
+            "confidence": 0.8,
+            "evidence": {
+              "capacityViolationsPerMin": 0,
+              "activeTurns": 126,
+              "limit": 200
+            }
+          },
+          {
+            "id": "redis_coordination_lag",
+            "severity": "high",
+            "confidence": 0.4,
+            "evidence": {
+              "redisLatencyMs": 200,
+              "redisConnected": false,
+              "rolloutCoherenceErrorRate": 1.3228,
+              "simulatedOnly": false
+            }
+          }
+        ],
+        "primary": "soft_saturation_illusion",
+        "architectureNote": "capacity_system_to_ownership_system"
+      }
+    },
+    {
+      "label": "stress_spike",
+      "classification": {
+        "schema": "rhizoh.failure_mode_classification.v0",
+        "modes": [
+          {
+            "id": "soft_saturation_illusion",
+            "severity": "high",
+            "confidence": 0.85,
+            "evidence": {
+              "successRate": 0.9273,
+              "avgQueueDepth": 47.962,
+              "queueDepthMax": 48
+            }
+          },
+          {
+            "id": "rollout_hysteresis",
+            "severity": "high",
+            "confidence": 0.8,
+            "evidence": {
+              "capacityViolationsPerMin": 23.387,
+              "activeTurns": 159,
+              "limit": 200
+            }
+          },
+          {
+            "id": "redis_coordination_lag",
+            "severity": "high",
+            "confidence": 0.4,
+            "evidence": {
+              "redisLatencyMs": 200,
+              "redisConnected": false,
+              "rolloutCoherenceErrorRate": 0.8669,
+              "simulatedOnly": false
+            }
+          }
+        ],
+        "primary": "soft_saturation_illusion",
+        "architectureNote": "capacity_system_to_ownership_system"
+      }
+    }
+  ],
+  "dominantFailureMode": "soft_saturation_illusion",
+  "primaryCounts": {
+    "healthy": 1,
+    "soft_saturation_illusion": 6
+  },
+  "layers": {
+    "gcl": {
+      "status": "stable",
+      "note": "financial_truth_deterministic"
+    },
+    "rollout": {
+      "status": "lease_consistent",
+      "note": "ownership_cluster_or_memory"
+    },
+    "lifecycle": {
+      "status": "reconcile_available",
+      "note": "ttl_release_guarantee"
+    },
+    "coordination": {
+      "status": "dev_memory",
+      "note": "requires_redis_for_full_truth"
+    }
+  },
+  "divergence": {
+    "schema": "rhizoh.sim_real_divergence_map.v0",
+    "executionMode": "dev_memory",
+    "coordinationSim": false,
+    "redisConnected": false,
+    "signatures": [
+      {
+        "id": "queue_growth_vs_success",
+        "sim": "high_fidelity",
+        "real": "high_fidelity",
+        "observed": false,
+        "note": "successRate≥0.9 while avgQueueDepth rises — visible in both"
+      },
+      {
+        "id": "rollout_inflight_leak",
+        "sim": "pre_reconcile_visible",
+        "real": "pre_reconcile_visible",
+        "observed": false,
+        "note": "activeTurns>limit×0.15 before TTL reconcile; sim uses ZSET+lease"
+      },
+      {
+        "id": "redis_coordination_lag",
+        "sim": "sim_injected_latency_only",
+        "real": "network_tcp_plus_zset_race",
+        "observed": true,
+        "note": "SIM: chaos ms only (confidence capped); REAL: true coordination delay"
+      },
+      {
+        "id": "redis_zset_lease_pressure",
+        "sim": "skew_metric_approximate",
+        "real": "true_multi_instance_zset_card",
+        "observed": false,
+        "note": "trackedLeases vs activeTurns skew — partial in sim"
+      },
+      {
+        "id": "cross_instance_lease_contention",
+        "sim": "not_observable",
+        "real": "rare_but_real",
+        "observed": false,
+        "note": "Requires ≥2 gateway processes on same Redis"
+      },
+      {
+        "id": "gcl_rollout_sync_drift",
+        "sim": "high_fidelity",
+        "real": "high_fidelity",
+        "observed": false,
+        "note": "Financial vs execution slot mismatch"
+      },
+      {
+        "id": "lifecycle_reconcile_recovery",
+        "sim": "high_fidelity",
+        "real": "high_fidelity",
+        "observed": false,
+        "note": "purged>0 and activeTurns→0 after reconcile"
+      }
+    ],
+    "simReliablePatterns": [
+      "soft_saturation_illusion",
+      "rollout_hysteresis",
+      "gcl_rollout_sync_drift",
+      "lifecycle_reconcile_recovery",
+      "ttl_reconcile_latency_coupling"
+    ],
+    "simReliableObserved": [
+      "soft_saturation_illusion",
+      "rollout_hysteresis"
+    ],
+    "realValidationPatterns": [
+      "redis_coordination_lag",
+      "redis_zset_lease_pressure",
+      "cross_instance_lease_contention"
+    ],
+    "realValidationRequired": [
+      "redis_coordination_lag"
+    ],
+    "postRunRollout": {
+      "activeTurns": 159
+    },
+    "validationLayer": {
+      "role": "redis_stress",
+      "status": "deferred",
+      "note": "Real Redis is validation-only after SIM sign-off"
+    }
+  },
+  "systemHealthIntelligence": {
+    "verdict": "degraded_under_stress_sim",
+    "executionMode": "dev_memory",
+    "dominantPattern": "soft_saturation_illusion",
+    "gclLayer": "stable",
+    "executionLayer": "lease_consistent",
+    "lifecycleLayer": "reconcile_available",
+    "coordinationLayer": "dev_memory",
+    "findings": [
+      "System reports OK (high successRate) while queue depth grows — soft saturation."
+    ],
+    "signOff": {
+      "simLogic": "n/a",
+      "realRedisValidation": "run_completed"
+    }
+  },
+  "newRisks": [
+    {
+      "id": "redis_coordination_lag",
+      "level": "validate_on_real_redis"
+    }
+  ],
+  "revisedPriority": [
+    {
+      "rank": 1,
+      "action": "redis_stress_validation",
+      "reason": "real coordination truth"
+    },
+    {
+      "rank": 2,
+      "action": "sim_analysis_review",
+      "reason": "compare with coordination_sim baseline",
+      "done": true
+    },
+    {
+      "rank": 3,
+      "action": "http_rl_cluster_b3",
+      "reason": "optimization"
+    }
+  ],
+  "systemClass": "distributed_bounded_execution_with_ownership_lifecycle_and_financial_coherence"
+}

@@ -1,0 +1,57 @@
+{
+  "schema": "rhizoh.unified_state_narrative.v0",
+  "generatedAt": "2026-05-25T18:48:29.409Z",
+  "systemState": {
+    "health": "stressed",
+    "pressure": "high",
+    "risk": "saturation",
+    "confidence": 0.95,
+    "drivers": {
+      "dominantPattern": "soft_saturation_illusion",
+      "rolloutUtilization": 0,
+      "gclOk": true,
+      "lifecyclePurged": 0,
+      "executionMode": "coordination_sim"
+    }
+  },
+  "interpretation": {
+    "narrativeTr": "Sistem çalışıyor ancak kapasite veya kuyruk baskısı altında. Başarı oranı yüksek kalırken kuyruk büyüyor (soft saturation).",
+    "narrativeEn": "System is under capacity or queue pressure. Success stays high while queue grows (soft saturation).",
+    "headline": "Rhizoh: stressed (saturation)",
+    "suggestedActions": [
+      {
+        "id": "reduce_burst_concurrency",
+        "priority": 1,
+        "rationale": "Kuyruk büyümesi successRate'ı gizliyor — concurrency veya tier gözden geçir.",
+        "executable": false
+      },
+      {
+        "id": "schedule_redis_validation",
+        "priority": 2,
+        "rationale": "SIM sign-off sonrası ops:redis-stress ile coordination doğrula.",
+        "executable": false
+      }
+    ],
+    "interpretationOnly": true,
+    "executionContract": "no_automatic_execution_v0"
+  },
+  "compression": {
+    "inputSources": 4,
+    "output": "single_system_state_vector",
+    "note": "Reduces over-instrumentation drift — metrics/leases/ledger/classifier → one narrative"
+  },
+  "signalsSummary": {
+    "gclOk": true,
+    "rolloutActive": 0,
+    "rolloutLimit": 200,
+    "lifecyclePurged": 0,
+    "loadTestDominant": "soft_saturation_illusion",
+    "coordinationSim": false
+  },
+  "truthSourcesMerged": [
+    "gcl_financial",
+    "rollout_execution",
+    "lifecycle_reconcile",
+    "load_test_analysis"
+  ]
+}

@@ -1,5 +1,6 @@
 import React, { memo, useEffect, useState } from "react";
 import { subscribeCastleDroneTelemetry } from "./telemetryHub.js";
+import { WORLD_MESH_LABELS_V0 } from "../rhizoh/spatial/worldMeshLabelsV0.js";
 
 /** REAL_MAP aktifken drone telemetri özet şeridi + manifest linki */
 const CastleFlightHud = memo(() => {
@@ -77,7 +78,7 @@ const CastleFlightHud = memo(() => {
           ))}
       </div>
       {lines.length === 0 ? (
-        <span className="text-white/40 leading-relaxed">REAL CITY 3D (CESIUM) açıkken sim drone&apos;lar döner; `VITE_DRONE_TELEMETRY_WS` ile canlı pose.</span>
+        <span className="text-white/40 leading-relaxed">{WORLD_MESH_LABELS_V0.flightHudIdleHint}</span>
       ) : (
         <div className="space-y-1 max-h-28 overflow-y-auto no-scrollbar">
           {lines.map((l, i) => (

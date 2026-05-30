@@ -14,7 +14,9 @@ import type {
   WorldEcologyRuntimeState,
   WorldLocomotionState,
   WorldTopologyState,
-  WorldPhysicsLayerState
+  WorldPhysicsLayerState,
+  RealitySealLayerState,
+  WorldAuthorityRuntimeStateV0
 } from "../types/rskOntology.js";
 import { RSK_KERNEL_VERSION, RSK_ONTOLOGY_VERSION } from "../types/rskOntology";
 import { defaultCausalGraphRegistry } from "../runtime/causalGraph";
@@ -147,6 +149,35 @@ export function defaultWorldPhysics(): WorldPhysicsLayerState {
   };
 }
 
+import { defaultWorldAuthorityRuntimeV0 } from "../../rhizoh/runtime/worldAuthorityRuntimeDefaultsV0.js";
+
+export function defaultWorldAuthorityRuntime(): WorldAuthorityRuntimeStateV0 {
+  return defaultWorldAuthorityRuntimeV0();
+}
+
+export function defaultRealitySeal(nowMs = 0): RealitySealLayerState {
+  return {
+    realityEpoch: 0,
+    sealHashHead: "h00000000",
+    sealQueue: [],
+    auditTrail: [],
+    budget: {
+      windowStartMs: nowMs,
+      windowMs: 1000,
+      maxSealsPerWindow: 8,
+      sealsInWindow: 0
+    },
+    streamSeq: 0,
+    intentSeq: 0,
+    scheduler: {
+      lastDrainAtMs: 0,
+      lastScheduleEvalAtMs: nowMs,
+      coalesceHoldUntilMs: 0,
+      drainPassesThisSession: 0
+    }
+  };
+}
+
 export function defaultWorldTopology(): WorldTopologyState {
   return {
     regions: {},
@@ -224,6 +255,8 @@ export function createInitialStudioKernelState(): StudioKernelState {
     runtime: defaultRuntime(),
     mindRuntime: {},
     worldPhysics: defaultWorldPhysics(),
+    realitySeal: defaultRealitySeal(),
+    worldAuthorityRuntime: defaultWorldAuthorityRuntime(),
     worldTopology: defaultWorldTopology(),
     worldLocomotion: defaultWorldLocomotion(),
     worldChunks: defaultWorldChunks(),

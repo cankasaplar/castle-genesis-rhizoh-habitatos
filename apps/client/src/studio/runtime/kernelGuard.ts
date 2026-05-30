@@ -8,6 +8,7 @@ import { PRESENCE_ZONE_IDS } from "../lib/presenceRoomZones";
 import { isPresenceRole } from "../lib/presenceRoles";
 import { identityAllowsAction } from "./permissionResolver";
 import { evaluateRhizohMembraneGate } from "../../rhizoh/constitution/actionPolicyMatrixV1.js";
+import { isValidCompanionArchetypeV1 } from "./companionAgentRegistryV1.js";
 
 function isPresenceZoneId(v: unknown): v is string {
   return typeof v === "string" && (PRESENCE_ZONE_IDS as readonly string[]).includes(v);
@@ -284,7 +285,7 @@ function validate(action: string, payload: unknown): { ok: true } | { ok: false;
     if (typeof p.ownerAvatarUid !== "string" || !String(p.ownerAvatarUid).trim()) {
       return { ok: false, error: "ownerAvatarUid_required" };
     }
-    if (p.archetype !== "rhizoh") return { ok: false, error: "archetype_invalid" };
+    if (!isValidCompanionArchetypeV1(p.archetype)) return { ok: false, error: "archetype_invalid" };
     return { ok: true };
   }
   if (action === "presence.agent.listen") {

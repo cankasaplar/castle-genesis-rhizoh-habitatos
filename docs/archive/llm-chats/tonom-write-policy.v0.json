@@ -1,0 +1,116 @@
+﻿{
+    "schemaVersion":  "0",
+    "name":  "llm_chat_tonom_write_policy_v0",
+    "principle":  "observation_may_influence_interpretation_never_execution",
+    "layers":  {
+                   "file":  {
+                                "label":  "dosya",
+                                "scan":  true,
+                                "annotate":  true,
+                                "staging_write":  false,
+                                "canonical_write":  false,
+                                "execution_write":  false
+                            },
+                   "text":  {
+                                "label":  "text",
+                                "scan":  true,
+                                "annotate":  true,
+                                "staging_write":  true,
+                                "canonical_write":  false,
+                                "execution_write":  false
+                            },
+                   "comment":  {
+                                   "label":  "yorum",
+                                   "scan":  true,
+                                   "annotate":  true,
+                                   "staging_write":  true,
+                                   "canonical_write":  false,
+                                   "execution_write":  false
+                               },
+                   "meaning":  {
+                                   "label":  "anlam",
+                                   "scan":  true,
+                                   "annotate":  true,
+                                   "staging_write":  true,
+                                   "canonical_write":  false,
+                                   "execution_write":  false
+                               },
+                   "fun":  {
+                               "label":  "eglence",
+                               "scan":  true,
+                               "annotate":  true,
+                               "staging_write":  false,
+                               "canonical_write":  false,
+                               "execution_write":  false
+                           },
+                   "music":  {
+                                 "label":  "muzik",
+                                 "scan":  true,
+                                 "annotate":  true,
+                                 "staging_write":  false,
+                                 "canonical_write":  false,
+                                 "execution_write":  false
+                             },
+                   "art":  {
+                               "label":  "sanat",
+                               "scan":  true,
+                               "annotate":  true,
+                               "staging_write":  false,
+                               "canonical_write":  false,
+                               "execution_write":  false
+                           },
+                   "sport":  {
+                                 "label":  "spor",
+                                 "scan":  true,
+                                 "annotate":  true,
+                                 "staging_write":  false,
+                                 "canonical_write":  false,
+                                 "execution_write":  false
+                             },
+                   "competition":  {
+                                       "label":  "rekabet",
+                                       "scan":  true,
+                                       "annotate":  true,
+                                       "staging_write":  false,
+                                       "canonical_write":  false,
+                                       "execution_write":  false
+                                   },
+                   "real_layer":  {
+                                      "label":  "real_layer",
+                                      "scan":  true,
+                                      "annotate":  true,
+                                      "staging_write":  false,
+                                      "canonical_write":  false,
+                                      "execution_write":  false
+                                  }
+               },
+    "ingest_on_chat_added":  {
+                                 "auto_actions":  [
+                                                      "scan_all_layers",
+                                                      "annotate_manifest",
+                                                      "update_layer_index",
+                                                      "apply_tonom_write_policy"
+                                                  ],
+                                 "forbidden_globally":  [
+                                                            "execution_write",
+                                                            "canonical_write_without_human_gate"
+                                                        ]
+                             },
+    "state":  {
+                  "last_batch_id":  "llm-20260528-221101",
+                  "last_updated_utc":  "2026-05-28T19:11:35.6671242Z",
+                  "total_ingested":  12,
+                  "layer_hits":  {
+                                     "comment":  21,
+                                     "music":  11,
+                                     "fun":  14,
+                                     "text":  24,
+                                     "meaning":  36,
+                                     "competition":  19,
+                                     "sport":  25,
+                                     "real_layer":  18,
+                                     "art":  24,
+                                     "file":  20
+                                 }
+              }
+}

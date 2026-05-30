@@ -1,0 +1,6 @@
+﻿BATCH_ID=llm-20260528-172115
+ARCHIVED_COUNT=2
+INBOX=C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\inbox
+INDEX=C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\LLM_CHAT_ARCHIVE_INDEX_V0.md
+MANIFEST_CSV=C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\manifests\llm-20260528-172115-manifest.csv
+MANIFEST_JSON=C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\manifests\llm-20260528-172115-manifest.json

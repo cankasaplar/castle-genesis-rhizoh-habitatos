@@ -15,6 +15,7 @@ export {
 
 export {
   getStudioKernelState,
+  setStudioKernelState,
   resetStudioKernelInternal,
   subscribeStudioKernel,
   subscribeStudioKernelSelector
@@ -124,13 +125,52 @@ export {
 export {
   ghostPetDepart,
   isGhostPetSummon,
-  stablePetSlotUid
+  stablePetSlotUid,
+  presenceWithSyncedPetTransforms,
+  mergeGhostPetEmbodimentDriveIntoPresence
 } from "./ghostPetOrbitSlice.js";
+export {
+  buildSpatialReadinessBridgeFromPresenceV0,
+  mergeGhostPetEmbodimentDriveWithSpatialPresenceBridgeV0,
+  SPATIAL_READINESS_BRIDGE_FROM_PRESENCE_SCHEMA_V0
+} from "../lib/spatialReadinessBridgeFromPresenceV0";
+export {
+  registerSomaticExecutionCouplingHandlersV0,
+  clearSomaticExecutionCouplingHandlersV0,
+  tickSomaticExecutionCouplingV0,
+  getSomaticExecutionCouplingTickStatsV0,
+  SOMATIC_EXECUTION_COUPLING_LAYER_SCHEMA_V0
+} from "../lib/somaticExecutionCouplingLayerV0";
+export {
+  MINIMUM_REAL_SIMULATION_KERNEL_REGISTRATION_SCHEMA_V0,
+  registerMinimumRealSimulationKernelHandlersV0
+} from "../lib/minimumRealSimulationKernelRegistrationV0";
+export type { MinimumRealSimulationKernelEnginesV0 } from "../lib/minimumRealSimulationKernelRegistrationV0";
+export {
+  REAL_SIMULATION_ENGINE_COUPLING_SCHEMA_V0,
+  installRealSimulationEngineCouplingV0,
+  uninstallRealSimulationEngineCouplingV0,
+  getRealSimulationEngineDebugV0,
+  applyRealSimulationRewindV0,
+  getPredictedPetXZForSlotV0,
+  setRealSimulationDiscObstaclesV0
+} from "../lib/realSimulationEngineCouplingV0";
+export type { RealSimulationEngineCouplingOptionsV0 } from "../lib/realSimulationEngineCouplingV0";
 export {
   rhizohCompanionDepart,
   stableRhizohCompanionUid,
-  isRhizohCompanionInvoke
+  stableAtlasCompanionUid,
+  stableGhostCompanionUid,
+  isRhizohCompanionInvoke,
+  isAtlasCompanionInvoke,
+  isGhostCompanionInvoke,
+  resolveCompanionArchetypeFromInvoke,
+  companionAppendArchetypeChain
 } from "./rhizohCompanionSlice.js";
+export {
+  listCompanionArchetypeDefinitionsV1,
+  getCompanionArchetypeDefinitionV1
+} from "../runtime/companionAgentRegistryV1.js";
 export {
   getVoiceStubSegmentsForRoom,
   presenceAvatarAgentInvoke,

@@ -1,0 +1,6 @@
+# Default Firebase Hosting origin — custom domain (GoDaddy) için Search Console’da
+# sitemap URL’ini ve bu dosyayı yeni köke göre güncelleyin.
+User-agent: *
+Allow: /
+
+Sitemap: https://castle-genesis.web.app/sitemap.xml

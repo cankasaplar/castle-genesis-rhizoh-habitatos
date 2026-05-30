@@ -1,0 +1,289 @@
+{
+  "schema": "rhizoh.capacity_reality_curve.v0",
+  "generatedAtMs": 1779727234997,
+  "assumptions": {
+    "activeRatio": 0.4,
+    "peakHourShare": 0.12,
+    "turnsPerActivePerHour": 6,
+    "avgTurnDurationSec": 8,
+    "gatewayInstances": 1,
+    "note": "Planning model — validate with load test before launch."
+  },
+  "throughputEnvelope": {
+    "schema": "rhizoh.capacity_reality_curve.v0",
+    "rolloutTier": "off",
+    "concurrentCapPerInstance": null,
+    "maxInFlightCluster": null,
+    "agentTurnTimeoutMs": 120000,
+    "turnsPerSecPerInstanceAtP50": null,
+    "turnsPerSecClusterAtP50": null,
+    "perPrincipalMaxTurnsPerSec": 0.667,
+    "providerLatencyCollapsePointMs": 45000,
+    "bottleneckOrder": [
+      "per_principal_rate_limit",
+      "provider_latency_tail",
+      "agent_session_token_ceiling"
+    ],
+    "clusterGap": {
+      "phasedRolloutProcessLocal": true,
+      "httpRateLimitProcessLocal": true,
+      "gclClusterWide": false,
+      "warning": "Phased rollout + HTTP RL are per-instance; GCL is cluster-wide when Redis required."
+    }
+  },
+  "costSpikeTopology": {
+    "usdPer1M": 0.35,
+    "avgTokensPerTurn": 2500,
+    "usdPerTurn": 0.000875,
+    "steadyDayUsd": 70,
+    "viralBurstPattern": {
+      "description": "5-minute window × viralMultiplier on hourly steady rate",
+      "burstTurns5m": 26666,
+      "burstUsd5m": 23.33,
+      "globalCapUsd": 0,
+      "minutesToGlobalCap": null,
+      "gclEnforcement": "token_budget_only"
+    },
+    "sessionClustering": {
+      "usersInRoom": 40,
+      "perSessionTokenCeiling": 32000,
+      "risk": "High iteration same sessionKey — agent iteration + session token ceiling before GCL"
+    }
+  },
+  "byDau": [
+    {
+      "dau": 100,
+      "demand": {
+        "dau": 100,
+        "activeUsers": 40,
+        "peakConcurrentActiveUsers": 4,
+        "turnsPerHourPeak": 24,
+        "turnsPerSecPeak": 0.007
+      },
+      "rollout": {
+        "dau": 100,
+        "demand": {
+          "dau": 100,
+          "activeUsers": 40,
+          "peakConcurrentActiveUsers": 4,
+          "turnsPerHourPeak": 24,
+          "turnsPerSecPeak": 0.007
+        },
+        "envelope": {
+          "schema": "rhizoh.capacity_reality_curve.v0",
+          "rolloutTier": "off",
+          "concurrentCapPerInstance": null,
+          "maxInFlightCluster": null,
+          "agentTurnTimeoutMs": 120000,
+          "turnsPerSecPerInstanceAtP50": null,
+          "turnsPerSecClusterAtP50": null,
+          "perPrincipalMaxTurnsPerSec": 0.667,
+          "providerLatencyCollapsePointMs": 45000,
+          "bottleneckOrder": [
+            "per_principal_rate_limit",
+            "provider_latency_tail",
+            "agent_session_token_ceiling"
+          ],
+          "clusterGap": {
+            "phasedRolloutProcessLocal": true,
+            "httpRateLimitProcessLocal": true,
+            "gclClusterWide": false,
+            "warning": "Phased rollout + HTTP RL are per-instance; GCL is cluster-wide when Redis required."
+          }
+        },
+        "requiredInFlightAtPeak": 1,
+        "clusterConcurrentCap": null,
+        "headroomRatio": null,
+        "stable": false,
+        "tierDriftRisk": true,
+        "instances": 1,
+        "recommendation": "Current tier likely adequate for stated peak if provider latency stable."
+      },
+      "redis": {
+        "principals": 40,
+        "turnsPerDay": 240,
+        "estimatedMb": 0.33,
+        "auditListTrimCap": 4096,
+        "auditHistoryLoss": false,
+        "recommendation": "In-trim cap sufficient"
+      }
+    },
+    {
+      "dau": 1000,
+      "demand": {
+        "dau": 1000,
+        "activeUsers": 400,
+        "peakConcurrentActiveUsers": 48,
+        "turnsPerHourPeak": 288,
+        "turnsPerSecPeak": 0.08
+      },
+      "rollout": {
+        "dau": 1000,
+        "demand": {
+          "dau": 1000,
+          "activeUsers": 400,
+          "peakConcurrentActiveUsers": 48,
+          "turnsPerHourPeak": 288,
+          "turnsPerSecPeak": 0.08
+        },
+        "envelope": {
+          "schema": "rhizoh.capacity_reality_curve.v0",
+          "rolloutTier": "off",
+          "concurrentCapPerInstance": null,
+          "maxInFlightCluster": null,
+          "agentTurnTimeoutMs": 120000,
+          "turnsPerSecPerInstanceAtP50": null,
+          "turnsPerSecClusterAtP50": null,
+          "perPrincipalMaxTurnsPerSec": 0.667,
+          "providerLatencyCollapsePointMs": 45000,
+          "bottleneckOrder": [
+            "per_principal_rate_limit",
+            "provider_latency_tail",
+            "agent_session_token_ceiling"
+          ],
+          "clusterGap": {
+            "phasedRolloutProcessLocal": true,
+            "httpRateLimitProcessLocal": true,
+            "gclClusterWide": false,
+            "warning": "Phased rollout + HTTP RL are per-instance; GCL is cluster-wide when Redis required."
+          }
+        },
+        "requiredInFlightAtPeak": 1,
+        "clusterConcurrentCap": null,
+        "headroomRatio": null,
+        "stable": false,
+        "tierDriftRisk": true,
+        "instances": 1,
+        "recommendation": "Current tier likely adequate for stated peak if provider latency stable."
+      },
+      "redis": {
+        "principals": 400,
+        "turnsPerDay": 2400,
+        "estimatedMb": 2.01,
+        "auditListTrimCap": 4096,
+        "auditHistoryLoss": true,
+        "recommendation": "Archive audit stream to cold storage (S3/Firestore) daily"
+      }
+    },
+    {
+      "dau": 10000,
+      "demand": {
+        "dau": 10000,
+        "activeUsers": 4000,
+        "peakConcurrentActiveUsers": 480,
+        "turnsPerHourPeak": 2880,
+        "turnsPerSecPeak": 0.8
+      },
+      "rollout": {
+        "dau": 10000,
+        "demand": {
+          "dau": 10000,
+          "activeUsers": 4000,
+          "peakConcurrentActiveUsers": 480,
+          "turnsPerHourPeak": 2880,
+          "turnsPerSecPeak": 0.8
+        },
+        "envelope": {
+          "schema": "rhizoh.capacity_reality_curve.v0",
+          "rolloutTier": "off",
+          "concurrentCapPerInstance": null,
+          "maxInFlightCluster": null,
+          "agentTurnTimeoutMs": 120000,
+          "turnsPerSecPerInstanceAtP50": null,
+          "turnsPerSecClusterAtP50": null,
+          "perPrincipalMaxTurnsPerSec": 0.667,
+          "providerLatencyCollapsePointMs": 45000,
+          "bottleneckOrder": [
+            "per_principal_rate_limit",
+            "provider_latency_tail",
+            "agent_session_token_ceiling"
+          ],
+          "clusterGap": {
+            "phasedRolloutProcessLocal": true,
+            "httpRateLimitProcessLocal": true,
+            "gclClusterWide": false,
+            "warning": "Phased rollout + HTTP RL are per-instance; GCL is cluster-wide when Redis required."
+          }
+        },
+        "requiredInFlightAtPeak": 7,
+        "clusterConcurrentCap": null,
+        "headroomRatio": null,
+        "stable": false,
+        "tierDriftRisk": true,
+        "instances": 1,
+        "recommendation": "Move phased rollout counter to Redis (cluster envelope) before 10k DAU peak."
+      },
+      "redis": {
+        "principals": 4000,
+        "turnsPerDay": 24000,
+        "estimatedMb": 2.76,
+        "auditListTrimCap": 4096,
+        "auditHistoryLoss": true,
+        "recommendation": "Archive audit stream to cold storage (S3/Firestore) daily"
+      }
+    },
+    {
+      "dau": 100000,
+      "demand": {
+        "dau": 100000,
+        "activeUsers": 40000,
+        "peakConcurrentActiveUsers": 4800,
+        "turnsPerHourPeak": 28800,
+        "turnsPerSecPeak": 8
+      },
+      "rollout": {
+        "dau": 100000,
+        "demand": {
+          "dau": 100000,
+          "activeUsers": 40000,
+          "peakConcurrentActiveUsers": 4800,
+          "turnsPerHourPeak": 28800,
+          "turnsPerSecPeak": 8
+        },
+        "envelope": {
+          "schema": "rhizoh.capacity_reality_curve.v0",
+          "rolloutTier": "off",
+          "concurrentCapPerInstance": null,
+          "maxInFlightCluster": null,
+          "agentTurnTimeoutMs": 120000,
+          "turnsPerSecPerInstanceAtP50": null,
+          "turnsPerSecClusterAtP50": null,
+          "perPrincipalMaxTurnsPerSec": 0.667,
+          "providerLatencyCollapsePointMs": 45000,
+          "bottleneckOrder": [
+            "per_principal_rate_limit",
+            "provider_latency_tail",
+            "agent_session_token_ceiling"
+          ],
+          "clusterGap": {
+            "phasedRolloutProcessLocal": true,
+            "httpRateLimitProcessLocal": true,
+            "gclClusterWide": false,
+            "warning": "Phased rollout + HTTP RL are per-instance; GCL is cluster-wide when Redis required."
+          }
+        },
+        "requiredInFlightAtPeak": 64,
+        "clusterConcurrentCap": null,
+        "headroomRatio": null,
+        "stable": false,
+        "tierDriftRisk": true,
+        "instances": 1,
+        "recommendation": "Move phased rollout counter to Redis (cluster envelope) before 10k DAU peak."
+      },
+      "redis": {
+        "principals": 40000,
+        "turnsPerDay": 240000,
+        "estimatedMb": 10.32,
+        "auditListTrimCap": 4096,
+        "auditHistoryLoss": true,
+        "recommendation": "Archive audit stream to cold storage (S3/Firestore) daily"
+      }
+    }
+  ],
+  "verdict": {
+    "at10k": false,
+    "at100k": false,
+    "primaryRisk": "phased_rollout_and_rate_limit_process_local",
+    "gclMitigates": "global_usd_and_token_truth_cluster_wide_when_redis_required"
+  }
+}

@@ -1,3 +1,5 @@
+import { applyConversationDepthToGenerationV0 } from "./rhizohConversationDepthGatewayV0.js";
+
 const PROVIDER_DEFAULT_MODEL = {
   openai: "gpt-4o-mini",
   anthropic: "claude-3-5-sonnet-latest",
@@ -533,6 +535,28 @@ function buildSystemPrompt(layerContext) {
     : "";
 
   const continuityBlock = buildContinuityMemoryBlock(continuity);
+  const storySnap =
+    layerContext?.rhizohStoryContinuitySnapshot && typeof layerContext.rhizohStoryContinuitySnapshot === "object"
+      ? layerContext.rhizohStoryContinuitySnapshot
+      : null;
+  const storySnapBlock = storySnap
+    ? [
+        "## Story continuity snapshot (hard-partial when guarantee=true)",
+        storySnap.who ? `who: ${String(storySnap.who).slice(0, 64)}` : "",
+        storySnap.where ? `where: ${String(storySnap.where).slice(0, 96)}` : "",
+        storySnap.whatHappenedLast || storySnap.lastScene
+          ? `what_happened_last: ${String(storySnap.whatHappenedLast || storySnap.lastScene).slice(0, 320)}`
+          : "",
+        Array.isArray(storySnap.unresolvedThreads) && storySnap.unresolvedThreads.length
+          ? `unresolved: ${storySnap.unresolvedThreads.slice(0, 6).join(" | ")}`
+          : "",
+        storySnap.storyContinuityGuarantee
+          ? "Bind the reply to this snapshot; do not invent past scenes."
+          : ""
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : "";
   const identityBlock = [
     "Identity graph (client continuity): treat as authoritative for user-specific facts; do not invent details absent from it.",
     "Match the user's language (e.g. Turkish when they write Turkish). Speak as one persistent Rhizoh entity, not a generic assistant.",
@@ -558,6 +582,7 @@ function buildSystemPrompt(layerContext) {
     `Memory contract: ${memoryContract}`,
     intentRoutingLine,
     continuityBlock,
+    storySnapBlock,
     identityBlock,
     `Persona memory: ${JSON.stringify(persona)}`,
     `Goal memory: ${JSON.stringify(goals)}`,
@@ -913,12 +938,29 @@ export async function queryRhizohLlm(input, meta = {}) {
     provider
   });
 
-  const gen = resolveRhizohGenerationOptions(payload);
+  const baseGen = resolveRhizohGenerationOptions(payload);
+  const gen = applyConversationDepthToGenerationV0(payload, baseGen);
+  const depthMeta = gen.conversationDepth;
+  if (process.env.CASTLE_RHIZOH_LAYER_VISIBILITY_LOG === "1") {
+    const academyKeys = ["eventIntent", "queuedEvent", "agents", "source"];
+    const snap = {
+      traceId: String(payload?.traceId || "").slice(0, 128),
+      layerId: context?.layerId ?? null,
+      hasAcademyFields: academyKeys.some((k) => context?.[k] != null),
+      hasNarrativeThread: Boolean(context?.continuity?.rhizohNarrativeThread),
+      hasStorySnapshot: Boolean(context?.rhizohStoryContinuitySnapshot),
+      layerContextKeys: Object.keys(context || {}).filter((k) => k !== "memory").slice(0, 24)
+    };
+    console.info("[CASTLE_academy_tick]", snap);
+  }
   const systemPromptBase = buildSystemPrompt(context);
-  const systemPrompt =
-    gen.modeDirective && gen.generationModeLabel
-      ? `${systemPromptBase}\n\n## Rhizoh generation: ${gen.generationModeLabel}\n${gen.modeDirective}`
-      : systemPromptBase;
+  const systemPrompt = gen.modeDirective
+    ? depthMeta
+      ? `${systemPromptBase}\n\n${gen.modeDirective}`
+      : gen.generationModeLabel
+        ? `${systemPromptBase}\n\n## Rhizoh generation: ${gen.generationModeLabel}\n${gen.modeDirective}`
+        : `${systemPromptBase}\n\n${gen.modeDirective}`
+    : systemPromptBase;
   let rawText = "";
 
   if (provider === "anthropic") {
@@ -981,7 +1023,18 @@ export async function queryRhizohLlm(input, meta = {}) {
     providerExpectedFormat: extracted.providerExpectedFormat,
     observedFormat: extracted.observedFormat,
     generationMode: gen.generationModeLabel,
-    maxTokensApplied: gen.maxTokens
+    maxTokensApplied: gen.maxTokens,
+    ...(depthMeta
+      ? {
+          conversationMode: depthMeta.conversationMode,
+          conversationIntent: depthMeta.conversationIntent,
+          depthLevel: depthMeta.depthLevel,
+          continuityStrength: depthMeta.continuityStrength,
+          responseLength: depthMeta.responseLength,
+          needsRecall: depthMeta.needsRecall,
+          phraseChunking: depthMeta.phraseChunking
+        }
+      : {})
   };
 
   return {
@@ -999,6 +1052,15 @@ export async function queryRhizohLlm(input, meta = {}) {
     replyFormatDriftScore: extracted.replyFormatDriftScore,
     providerExpectedFormat: extracted.providerExpectedFormat,
     observedFormat: extracted.observedFormat,
+    ...(depthMeta
+      ? {
+          conversationMode: depthMeta.conversationMode,
+          conversationIntent: depthMeta.conversationIntent,
+          depthLevel: depthMeta.depthLevel,
+          continuityStrength: depthMeta.continuityStrength,
+          responseLength: depthMeta.responseLength
+        }
+      : {}),
     rhizohCompressionLedger
   };
 }

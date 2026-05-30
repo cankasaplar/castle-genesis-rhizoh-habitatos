@@ -3,6 +3,8 @@
  * localStorage: rhizoh.identity.graph.v1
  */
 
+import { WORLD_MESH_LABELS_V0 } from "../rhizoh/spatial/worldMeshLabelsV0.js";
+
 const STORAGE_KEY = "rhizoh.identity.graph.v1";
 
 export function defaultIdentityGraph() {
@@ -17,7 +19,7 @@ export function defaultIdentityGraph() {
       emotionalTone: "curious",
       preferredModality: "mixed",
       favoriteAgents: [],
-      favoritePlaces: ["Istanbul · Fatih anchor"],
+      favoritePlaces: ["Bootstrap window · Istanbul"],
       lastVisitAt: Date.now(),
       visitCount: 1
     },
@@ -209,7 +211,7 @@ export function buildRhizohWelcomeNarrativeTr(firstName, graph, ctx = {}) {
         : mem >= 3
           ? `Hafiza kafesi ${mem} bag ile isiniyor. Bugun neye odaklanalim?`
           : "Alan sakin; bugun ne kesfediyoruz, ne yayinliyoruz?";
-    return { primary: `${greet} ${sub}`, secondary: "Istanbul ankoru canli — Rhizoh dinliyor." };
+    return { primary: `${greet} ${sub}`, secondary: WORLD_MESH_LABELS_V0.welcomeHint };
   }
 
   const title = String(g.world.lastBroadcastTitle || "yayin").slice(0, 72);

@@ -1,0 +1,44 @@
+{
+  "schema": "castle.rhizoh.passive_coherence_check.v1",
+  "generatedAt": "2026-05-21T01:23:11.736Z",
+  "mode": "observe_only",
+  "legalFreezeRef": "LEGAL_FREEZE_SPEC_V1.0",
+  "allOk": true,
+  "checks": [
+    {
+      "id": "src/rhizoh/ingress/__tests__/ingress_router.test.js",
+      "ok": true,
+      "exitCode": 0,
+      "note": "pass"
+    },
+    {
+      "id": "src/rhizoh/ingress/__tests__/rhizohIngressFlowV0.test.js",
+      "ok": true,
+      "exitCode": 0,
+      "note": "pass"
+    },
+    {
+      "id": "src/rhizoh/ingress/__tests__/goLiveCohortSimulationV0.test.js",
+      "ok": true,
+      "exitCode": 0,
+      "note": "pass"
+    },
+    {
+      "id": "src/rhizoh/runtime/__tests__/epistemicAuditBundleV0.test.js",
+      "ok": true,
+      "exitCode": 0,
+      "note": "pass"
+    },
+    {
+      "id": "src/rhizoh/runtime/__tests__/worldRuntimeDaemonV0.test.js",
+      "ok": true,
+      "exitCode": 0,
+      "note": "pass"
+    },
+    {
+      "id": "go_live_cohort_sim_inline",
+      "ok": true,
+      "decision": "proceed"
+    }
+  ]
+}

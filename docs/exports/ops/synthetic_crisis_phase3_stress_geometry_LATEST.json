@@ -1,0 +1,1363 @@
+{
+  "schema": "rhizoh.stress_geometry.v0",
+  "atMs": "2026-05-25T03:19:31.439Z",
+  "latticeSize": 15,
+  "entropyVectorSpace": {
+    "model": "R^5 weighted L2",
+    "axes": [
+      "input_diversity",
+      "boundary_density",
+      "adversarial_mix",
+      "economic_pressure",
+      "baseline_deviation"
+    ],
+    "weights": {
+      "input_diversity": 1,
+      "boundary_density": 1.2,
+      "adversarial_mix": 1.4,
+      "economic_pressure": 1.1,
+      "baseline_deviation": 0.9
+    },
+    "deadBand": {
+      "enter": 0.68,
+      "exit": 0.72
+    },
+    "expansion": {
+      "min": 0.8836,
+      "max": 1.9884,
+      "mean": 1.1627,
+      "span": 1.1048
+    },
+    "probes": [
+      {
+        "id": "p3_01_single_overload",
+        "magnitude": 0.999,
+        "vector": [
+          0,
+          0.2857,
+          0,
+          0,
+          1
+        ],
+        "components": {
+          "input_diversity": 0,
+          "boundary_density": 0.2857,
+          "adversarial_mix": 0,
+          "economic_pressure": 0,
+          "baseline_deviation": 1
+        }
+      },
+      {
+        "id": "p3_02_single_cost",
+        "magnitude": 1.2715,
+        "vector": [
+          0,
+          0.2857,
+          0,
+          0.75,
+          1
+        ],
+        "components": {
+          "input_diversity": 0,
+          "boundary_density": 0.2857,
+          "adversarial_mix": 0,
+          "economic_pressure": 0.75,
+          "baseline_deviation": 1
+        }
+      },
+      {
+        "id": "p3_03_single_attack",
+        "magnitude": 1.1054,
+        "vector": [
+          0,
+          0.2857,
+          0.4,
+          0,
+          1
+        ],
+        "components": {
+          "input_diversity": 0,
+          "boundary_density": 0.2857,
+          "adversarial_mix": 0.4,
+          "economic_pressure": 0,
+          "baseline_deviation": 1
+        }
+      },
+      {
+        "id": "p3_04_drift_only",
+        "magnitude": 0.999,
+        "vector": [
+          0,
+          0.2857,
+          0,
+          0,
+          1
+        ],
+        "components": {
+          "input_diversity": 0,
+          "boundary_density": 0.2857,
+          "adversarial_mix": 0,
+          "economic_pressure": 0,
+          "baseline_deviation": 1
+        }
+      },
+      {
+        "id": "p3_05_outage",
+        "magnitude": 0.999,
+        "vector": [
+          0,
+          0.2857,
+          0,
+          0,
+          1
+        ],
+        "components": {
+          "input_diversity": 0,
+          "boundary_density": 0.2857,
+          "adversarial_mix": 0,
+          "economic_pressure": 0,
+          "baseline_deviation": 1
+        }
+      },
+      {
+        "id": "p3_06_attack_cost",
+        "magnitude": 1.3778,
+        "vector": [
+          0.2,
+          0.92,
+          0.4,
+          0.75,
+          0
+        ],
+        "components": {
+          "input_diversity": 0.2,
+          "boundary_density": 0.92,
+          "adversarial_mix": 0.4,
+          "economic_pressure": 0.75,
+          "baseline_deviation": 0
+        }
+      },
+      {
+        "id": "p3_07_overload_drift",
+        "magnitude": 0.8836,
+        "vector": [
+          0.2,
+          0.7857,
+          0,
+          0,
+          0
+        ],
+        "components": {
+          "input_diversity": 0.2,
+          "boundary_density": 0.7857,
+          "adversarial_mix": 0,
+          "economic_pressure": 0,
+          "baseline_deviation": 0
+        }
+      },
+      {
+        "id": "p3_08_outage_drift",
+        "magnitude": 0.8836,
+        "vector": [
+          0.2,
+          0.7857,
+          0,
+          0,
+          0
+        ],
+        "components": {
+          "input_diversity": 0.2,
+          "boundary_density": 0.7857,
+          "adversarial_mix": 0,
+          "economic_pressure": 0,
+          "baseline_deviation": 0
+        }
+      },
+      {
+        "id": "p3_09_camouflage",
+        "magnitude": 1.4543,
+        "vector": [
+          0.2,
+          0.75,
+          1,
+          0,
+          0
+        ],
+        "components": {
+          "input_diversity": 0.2,
+          "boundary_density": 0.75,
+          "adversarial_mix": 1,
+          "economic_pressure": 0,
+          "baseline_deviation": 0
+        }
+      },
+      {
+        "id": "p3_10_cost_soft",
+        "magnitude": 1.2715,
+        "vector": [
+          0,
+          0.2857,
+          0,
+          0.75,
+          1
+        ],
+        "components": {
+          "input_diversity": 0,
+          "boundary_density": 0.2857,
+          "adversarial_mix": 0,
+          "economic_pressure": 0.75,
+          "baseline_deviation": 1
+        }
+      },
+      {
+        "id": "p3_11_emergency",
+        "magnitude": 0.999,
+        "vector": [
+          0,
+          0.2857,
+          0,
+          0,
+          1
+        ],
+        "components": {
+          "input_diversity": 0,
+          "boundary_density": 0.2857,
+          "adversarial_mix": 0,
+          "economic_pressure": 0,
+          "baseline_deviation": 1
+        }
+      },
+      {
+        "id": "p3_12_unknown",
+        "magnitude": 1.1036,
+        "vector": [
+          0,
+          0.5147,
+          0,
+          0,
+          1
+        ],
+        "components": {
+          "input_diversity": 0,
+          "boundary_density": 0.5147,
+          "adversarial_mix": 0,
+          "economic_pressure": 0,
+          "baseline_deviation": 1
+        }
+      },
+      {
+        "id": "p3_13_triple_mix",
+        "magnitude": 1.9884,
+        "vector": [
+          0.6,
+          0.75,
+          1,
+          0.75,
+          1
+        ],
+        "components": {
+          "input_diversity": 0.6,
+          "boundary_density": 0.75,
+          "adversarial_mix": 1,
+          "economic_pressure": 0.75,
+          "baseline_deviation": 1
+        }
+      },
+      {
+        "id": "p3_14_policy_block",
+        "magnitude": 1.1054,
+        "vector": [
+          0,
+          0.2857,
+          0.4,
+          0,
+          1
+        ],
+        "components": {
+          "input_diversity": 0,
+          "boundary_density": 0.2857,
+          "adversarial_mix": 0.4,
+          "economic_pressure": 0,
+          "baseline_deviation": 1
+        }
+      },
+      {
+        "id": "p3_15_rate_only",
+        "magnitude": 0.999,
+        "vector": [
+          0,
+          0.2857,
+          0,
+          0,
+          1
+        ],
+        "components": {
+          "input_diversity": 0,
+          "boundary_density": 0.2857,
+          "adversarial_mix": 0,
+          "economic_pressure": 0,
+          "baseline_deviation": 1
+        }
+      }
+    ]
+  },
+  "executionDriftHeatmap": {
+    "schema": "rhizoh.stress_geometry.heatmap.v0",
+    "perception": {
+      "rowKind": "canonical_perception",
+      "matrix": {
+        "{\"codes\":[\"phased_rollout_capacity\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}": {
+          "c8625db54e7db778": 1
+        },
+        "{\"codes\":[\"cost_hard_limit\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}": {
+          "9528c5b7da536981": 1
+        },
+        "{\"codes\":[\"prompt_abuse_detected\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}": {
+          "9fd96d874d3c3a73": 1
+        },
+        "{\"codes\":[\"behavioral_drift_suspected\"],\"drift\":true,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}": {
+          "91e525c6844b9942": 1
+        },
+        "{\"codes\":[\"provider_http_503\"],\"drift\":false,\"injection\":false,\"provider\":503,\"failureKind\":null,\"flags\":[]}": {
+          "d64ea6a804f34299": 1
+        },
+        "{\"codes\":[\"cost_hard_limit\",\"prompt_abuse_detected\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}": {
+          "303d2c277d2635e9": 1
+        },
+        "{\"codes\":[\"behavioral_drift_suspected\",\"phased_rollout_capacity\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}": {
+          "c8625db54e7db778": 1
+        },
+        "{\"codes\":[\"behavioral_drift_suspected\",\"provider_http_503\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}": {
+          "d64ea6a804f34299": 1
+        },
+        "{\"codes\":[\"prompt_abuse_detected\",\"rate_limit_exceeded\"],\"drift\":false,\"injection\":true,\"provider\":null,\"failureKind\":null,\"flags\":[]}": {
+          "9fd96d874d3c3a73": 1
+        },
+        "{\"codes\":[\"cost_soft_downgrade\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}": {
+          "c8625db54e7db778": 1
+        },
+        "{\"codes\":[\"agent_emergency_disable\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}": {
+          "d64ea6a804f34299": 1
+        },
+        "{\"codes\":[\"synthetic_unknown_stress_xyz\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}": {
+          "c882ca731f361684": 1
+        },
+        "{\"codes\":[\"behavioral_drift_suspected\",\"cost_hard_limit\",\"prompt_abuse_detected\",\"rate_limit_exceeded\"],\"drift\":false,\"injection\":true,\"provider\":null,\"failureKind\":null,\"flags\":[]}": {
+          "9fd96d874d3c3a73": 1
+        },
+        "{\"codes\":[\"prompt_abuse_detected\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":\"policy_block\",\"flags\":[]}": {
+          "9fd96d874d3c3a73": 1
+        },
+        "{\"codes\":[\"rate_limit_exceeded\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}": {
+          "9528c5b7da536981": 1
+        }
+      },
+      "cells": [
+        {
+          "rowKey": "{\"codes\":[\"phased_rollout_capacity\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "executionKey": "c8625db54e7db778",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"cost_hard_limit\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "executionKey": "9528c5b7da536981",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"prompt_abuse_detected\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "executionKey": "9fd96d874d3c3a73",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"behavioral_drift_suspected\"],\"drift\":true,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "executionKey": "91e525c6844b9942",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"provider_http_503\"],\"drift\":false,\"injection\":false,\"provider\":503,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "executionKey": "d64ea6a804f34299",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"cost_hard_limit\",\"prompt_abuse_detected\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "executionKey": "303d2c277d2635e9",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"behavioral_drift_suspected\",\"phased_rollout_capacity\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "executionKey": "c8625db54e7db778",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"behavioral_drift_suspected\",\"provider_http_503\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "executionKey": "d64ea6a804f34299",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"prompt_abuse_detected\",\"rate_limit_exceeded\"],\"drift\":false,\"injection\":true,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "executionKey": "9fd96d874d3c3a73",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"cost_soft_downgrade\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "executionKey": "c8625db54e7db778",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"agent_emergency_disable\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "executionKey": "d64ea6a804f34299",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"synthetic_unknown_stress_xyz\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "executionKey": "c882ca731f361684",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"behavioral_drift_suspected\",\"cost_hard_limit\",\"prompt_abuse_detected\",\"rate_limit_exceeded\"],\"drift\":false,\"injection\":true,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "executionKey": "9fd96d874d3c3a73",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"prompt_abuse_detected\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":\"policy_block\",\"flags\":[]}",
+          "rowKind": "perception",
+          "executionKey": "9fd96d874d3c3a73",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"rate_limit_exceeded\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "executionKey": "9528c5b7da536981",
+          "count": 1,
+          "rowShare": 1
+        }
+      ],
+      "rowDrift": [
+        {
+          "rowKey": "{\"codes\":[\"phased_rollout_capacity\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "drift": 0,
+          "dominantExecution": "c8625db54e7db778",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"cost_hard_limit\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "drift": 0,
+          "dominantExecution": "9528c5b7da536981",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"prompt_abuse_detected\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "drift": 0,
+          "dominantExecution": "9fd96d874d3c3a73",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"behavioral_drift_suspected\"],\"drift\":true,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "drift": 0,
+          "dominantExecution": "91e525c6844b9942",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"provider_http_503\"],\"drift\":false,\"injection\":false,\"provider\":503,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "drift": 0,
+          "dominantExecution": "d64ea6a804f34299",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"cost_hard_limit\",\"prompt_abuse_detected\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "drift": 0,
+          "dominantExecution": "303d2c277d2635e9",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"behavioral_drift_suspected\",\"phased_rollout_capacity\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "drift": 0,
+          "dominantExecution": "c8625db54e7db778",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"behavioral_drift_suspected\",\"provider_http_503\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "drift": 0,
+          "dominantExecution": "d64ea6a804f34299",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"prompt_abuse_detected\",\"rate_limit_exceeded\"],\"drift\":false,\"injection\":true,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "drift": 0,
+          "dominantExecution": "9fd96d874d3c3a73",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"cost_soft_downgrade\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "drift": 0,
+          "dominantExecution": "c8625db54e7db778",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"agent_emergency_disable\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "drift": 0,
+          "dominantExecution": "d64ea6a804f34299",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"synthetic_unknown_stress_xyz\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "drift": 0,
+          "dominantExecution": "c882ca731f361684",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"behavioral_drift_suspected\",\"cost_hard_limit\",\"prompt_abuse_detected\",\"rate_limit_exceeded\"],\"drift\":false,\"injection\":true,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "drift": 0,
+          "dominantExecution": "9fd96d874d3c3a73",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"prompt_abuse_detected\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":\"policy_block\",\"flags\":[]}",
+          "rowKind": "perception",
+          "drift": 0,
+          "dominantExecution": "9fd96d874d3c3a73",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "{\"codes\":[\"rate_limit_exceeded\"],\"drift\":false,\"injection\":false,\"provider\":null,\"failureKind\":null,\"flags\":[]}",
+          "rowKind": "perception",
+          "drift": 0,
+          "dominantExecution": "9528c5b7da536981",
+          "rowMass": 1
+        }
+      ],
+      "meanExecutionDrift": 0,
+      "maxExecutionDrift": 0
+    },
+    "truthLabelSpread": {
+      "rowKind": "truth_class",
+      "matrix": {
+        "5412fc91afdff5bc": {
+          "c8625db54e7db778": 1,
+          "c882ca731f361684": 1,
+          "9528c5b7da536981": 1
+        },
+        "a02432a6cbb684fe": {
+          "9528c5b7da536981": 1,
+          "c8625db54e7db778": 1
+        },
+        "1fa2c3ba23f1427e": {
+          "9fd96d874d3c3a73": 2
+        },
+        "e2efac6482e9f4b7": {
+          "91e525c6844b9942": 1
+        },
+        "c21fc78bbc4848c7": {
+          "d64ea6a804f34299": 2
+        },
+        "4e955a06531c00fb": {
+          "303d2c277d2635e9": 1
+        },
+        "d5ca6b355b4728c2": {
+          "c8625db54e7db778": 1
+        },
+        "fd00751116ee2935": {
+          "d64ea6a804f34299": 1
+        },
+        "e9b37b935cc86b36": {
+          "9fd96d874d3c3a73": 1
+        },
+        "9912722310564cf5": {
+          "9fd96d874d3c3a73": 1
+        }
+      },
+      "cells": [
+        {
+          "rowKey": "5412fc91afdff5bc",
+          "rowKind": "truth_label",
+          "executionKey": "c8625db54e7db778",
+          "count": 1,
+          "rowShare": 0.3333
+        },
+        {
+          "rowKey": "5412fc91afdff5bc",
+          "rowKind": "truth_label",
+          "executionKey": "c882ca731f361684",
+          "count": 1,
+          "rowShare": 0.3333
+        },
+        {
+          "rowKey": "5412fc91afdff5bc",
+          "rowKind": "truth_label",
+          "executionKey": "9528c5b7da536981",
+          "count": 1,
+          "rowShare": 0.3333
+        },
+        {
+          "rowKey": "a02432a6cbb684fe",
+          "rowKind": "truth_label",
+          "executionKey": "9528c5b7da536981",
+          "count": 1,
+          "rowShare": 0.5
+        },
+        {
+          "rowKey": "a02432a6cbb684fe",
+          "rowKind": "truth_label",
+          "executionKey": "c8625db54e7db778",
+          "count": 1,
+          "rowShare": 0.5
+        },
+        {
+          "rowKey": "1fa2c3ba23f1427e",
+          "rowKind": "truth_label",
+          "executionKey": "9fd96d874d3c3a73",
+          "count": 2,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "e2efac6482e9f4b7",
+          "rowKind": "truth_label",
+          "executionKey": "91e525c6844b9942",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "c21fc78bbc4848c7",
+          "rowKind": "truth_label",
+          "executionKey": "d64ea6a804f34299",
+          "count": 2,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "4e955a06531c00fb",
+          "rowKind": "truth_label",
+          "executionKey": "303d2c277d2635e9",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "d5ca6b355b4728c2",
+          "rowKind": "truth_label",
+          "executionKey": "c8625db54e7db778",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "fd00751116ee2935",
+          "rowKind": "truth_label",
+          "executionKey": "d64ea6a804f34299",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "e9b37b935cc86b36",
+          "rowKind": "truth_label",
+          "executionKey": "9fd96d874d3c3a73",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "9912722310564cf5",
+          "rowKind": "truth_label",
+          "executionKey": "9fd96d874d3c3a73",
+          "count": 1,
+          "rowShare": 1
+        }
+      ],
+      "rowDrift": [
+        {
+          "rowKey": "5412fc91afdff5bc",
+          "rowKind": "truth_label",
+          "drift": 0.6667,
+          "dominantExecution": "c8625db54e7db778",
+          "rowMass": 3
+        },
+        {
+          "rowKey": "a02432a6cbb684fe",
+          "rowKind": "truth_label",
+          "drift": 0.5,
+          "dominantExecution": "9528c5b7da536981",
+          "rowMass": 2
+        },
+        {
+          "rowKey": "1fa2c3ba23f1427e",
+          "rowKind": "truth_label",
+          "drift": 0,
+          "dominantExecution": "9fd96d874d3c3a73",
+          "rowMass": 2
+        },
+        {
+          "rowKey": "e2efac6482e9f4b7",
+          "rowKind": "truth_label",
+          "drift": 0,
+          "dominantExecution": "91e525c6844b9942",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "c21fc78bbc4848c7",
+          "rowKind": "truth_label",
+          "drift": 0,
+          "dominantExecution": "d64ea6a804f34299",
+          "rowMass": 2
+        },
+        {
+          "rowKey": "4e955a06531c00fb",
+          "rowKind": "truth_label",
+          "drift": 0,
+          "dominantExecution": "303d2c277d2635e9",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "d5ca6b355b4728c2",
+          "rowKind": "truth_label",
+          "drift": 0,
+          "dominantExecution": "c8625db54e7db778",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "fd00751116ee2935",
+          "rowKind": "truth_label",
+          "drift": 0,
+          "dominantExecution": "d64ea6a804f34299",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "e9b37b935cc86b36",
+          "rowKind": "truth_label",
+          "drift": 0,
+          "dominantExecution": "9fd96d874d3c3a73",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "9912722310564cf5",
+          "rowKind": "truth_label",
+          "drift": 0,
+          "dominantExecution": "9fd96d874d3c3a73",
+          "rowMass": 1
+        }
+      ],
+      "meanExecutionSpread": 0.1167,
+      "maxExecutionSpread": 0.6667
+    },
+    "meanExecutionDrift": 0,
+    "maxExecutionDrift": 0,
+    "executionUnderStablePerception": true
+  },
+  "behavioralConsistencyScore": {
+    "schema": "rhizoh.stress_geometry.bcs.v0",
+    "bcs": 1,
+    "components": {
+      "truthStability": 1,
+      "executionConsistency": 1,
+      "antiDrift": 1,
+      "probeStability": 1,
+      "hysteresisOk": 1
+    },
+    "weights": {
+      "w_t": 0.25,
+      "w_e": 0.3,
+      "w_d": 0.25,
+      "w_s": 0.12,
+      "w_h": 0.08
+    },
+    "collisions": {
+      "truthCanonicalCollisions": 0,
+      "executionCanonicalCollisions": 0
+    },
+    "pass": true
+  },
+  "confidenceBoundaryHysteresis": {
+    "pass": true,
+    "deadBand": {
+      "enter": 0.68,
+      "exit": 0.72
+    },
+    "samples": [
+      {
+        "responseAction": "throttle",
+        "actionSoftened": true,
+        "actionBorderline": true
+      },
+      {
+        "responseAction": "throttle",
+        "actionSoftened": true,
+        "actionBorderline": true
+      }
+    ]
+  },
+  "probes": [
+    {
+      "id": "p3_01_single_overload",
+      "stable": true,
+      "truthKey": "5412fc91afdff5bc",
+      "executionKey": "c8625db54e7db778",
+      "entropyMagnitude": 0.999,
+      "stressClass": "overload",
+      "userFacingAction": "degrade"
+    },
+    {
+      "id": "p3_02_single_cost",
+      "stable": true,
+      "truthKey": "a02432a6cbb684fe",
+      "executionKey": "9528c5b7da536981",
+      "entropyMagnitude": 1.2715,
+      "stressClass": "cost_spike",
+      "userFacingAction": "throttle"
+    },
+    {
+      "id": "p3_03_single_attack",
+      "stable": true,
+      "truthKey": "1fa2c3ba23f1427e",
+      "executionKey": "9fd96d874d3c3a73",
+      "entropyMagnitude": 1.1054,
+      "stressClass": "attack",
+      "userFacingAction": "isolate"
+    },
+    {
+      "id": "p3_04_drift_only",
+      "stable": true,
+      "truthKey": "e2efac6482e9f4b7",
+      "executionKey": "91e525c6844b9942",
+      "entropyMagnitude": 0.999,
+      "stressClass": "drift",
+      "userFacingAction": "flag"
+    },
+    {
+      "id": "p3_05_outage",
+      "stable": true,
+      "truthKey": "c21fc78bbc4848c7",
+      "executionKey": "d64ea6a804f34299",
+      "entropyMagnitude": 0.999,
+      "stressClass": "outage",
+      "userFacingAction": "fallback"
+    },
+    {
+      "id": "p3_06_attack_cost",
+      "stable": true,
+      "truthKey": "4e955a06531c00fb",
+      "executionKey": "303d2c277d2635e9",
+      "entropyMagnitude": 1.3778,
+      "stressClass": "attack",
+      "userFacingAction": "throttle"
+    },
+    {
+      "id": "p3_07_overload_drift",
+      "stable": true,
+      "truthKey": "d5ca6b355b4728c2",
+      "executionKey": "c8625db54e7db778",
+      "entropyMagnitude": 0.8836,
+      "stressClass": "overload",
+      "userFacingAction": "degrade"
+    },
+    {
+      "id": "p3_08_outage_drift",
+      "stable": true,
+      "truthKey": "fd00751116ee2935",
+      "executionKey": "d64ea6a804f34299",
+      "entropyMagnitude": 0.8836,
+      "stressClass": "outage",
+      "userFacingAction": "fallback"
+    },
+    {
+      "id": "p3_09_camouflage",
+      "stable": true,
+      "truthKey": "e9b37b935cc86b36",
+      "executionKey": "9fd96d874d3c3a73",
+      "entropyMagnitude": 1.4543,
+      "stressClass": "attack",
+      "userFacingAction": "isolate"
+    },
+    {
+      "id": "p3_10_cost_soft",
+      "stable": true,
+      "truthKey": "a02432a6cbb684fe",
+      "executionKey": "c8625db54e7db778",
+      "entropyMagnitude": 1.2715,
+      "stressClass": "cost_spike",
+      "userFacingAction": "degrade"
+    },
+    {
+      "id": "p3_11_emergency",
+      "stable": true,
+      "truthKey": "c21fc78bbc4848c7",
+      "executionKey": "d64ea6a804f34299",
+      "entropyMagnitude": 0.999,
+      "stressClass": "outage",
+      "userFacingAction": "fallback"
+    },
+    {
+      "id": "p3_12_unknown",
+      "stable": true,
+      "truthKey": "5412fc91afdff5bc",
+      "executionKey": "c882ca731f361684",
+      "entropyMagnitude": 1.1036,
+      "stressClass": "overload",
+      "userFacingAction": "flag"
+    },
+    {
+      "id": "p3_13_triple_mix",
+      "stable": true,
+      "truthKey": "9912722310564cf5",
+      "executionKey": "9fd96d874d3c3a73",
+      "entropyMagnitude": 1.9884,
+      "stressClass": "attack",
+      "userFacingAction": "isolate"
+    },
+    {
+      "id": "p3_14_policy_block",
+      "stable": true,
+      "truthKey": "1fa2c3ba23f1427e",
+      "executionKey": "9fd96d874d3c3a73",
+      "entropyMagnitude": 1.1054,
+      "stressClass": "attack",
+      "userFacingAction": "isolate"
+    },
+    {
+      "id": "p3_15_rate_only",
+      "stable": true,
+      "truthKey": "5412fc91afdff5bc",
+      "executionKey": "9528c5b7da536981",
+      "entropyMagnitude": 0.999,
+      "stressClass": "overload",
+      "userFacingAction": "throttle"
+    }
+  ],
+  "phase3Gate": "execution_consistent_under_entropy",
+  "phase3Kind": "controlled_mismatch_measurement_layer",
+  "phase3Outcome": "divergence_instrumentation_under_constrained_execution",
+  "phase3Artifact": "modeled_observed_divergence_mapped",
+  "engineeringSsot": {
+    "identity": "bounded_observability_and_execution_system",
+    "definition": "Measures divergence between modeled state and observed state under controlled constraints",
+    "layers": [
+      "model",
+      "observation",
+      "execution"
+    ]
+  },
+  "interpretationLayer": {
+    "notEngineeringSsot": true,
+    "doNotUseInLegalOrProductionContracts": true,
+    "seeDoc": "docs/ops/RHIZOH_INTERPRETATION_LAYER_V1.0.md"
+  },
+  "distinction": "stress_geometry ≠ global_readiness",
+  "coordinateSystem": "entropy_axes_for_stress_probe_coordinates",
+  "systemIdentity": "bounded_observability_and_execution_system",
+  "realityResidualSignals": {
+    "schema": "rhizoh.reality_residual.signal.v0",
+    "semantics": "natural_measurable_system_behavior",
+    "truthLabelSpread": {
+      "rowKind": "truth_class",
+      "matrix": {
+        "5412fc91afdff5bc": {
+          "c8625db54e7db778": 1,
+          "c882ca731f361684": 1,
+          "9528c5b7da536981": 1
+        },
+        "a02432a6cbb684fe": {
+          "9528c5b7da536981": 1,
+          "c8625db54e7db778": 1
+        },
+        "1fa2c3ba23f1427e": {
+          "9fd96d874d3c3a73": 2
+        },
+        "e2efac6482e9f4b7": {
+          "91e525c6844b9942": 1
+        },
+        "c21fc78bbc4848c7": {
+          "d64ea6a804f34299": 2
+        },
+        "4e955a06531c00fb": {
+          "303d2c277d2635e9": 1
+        },
+        "d5ca6b355b4728c2": {
+          "c8625db54e7db778": 1
+        },
+        "fd00751116ee2935": {
+          "d64ea6a804f34299": 1
+        },
+        "e9b37b935cc86b36": {
+          "9fd96d874d3c3a73": 1
+        },
+        "9912722310564cf5": {
+          "9fd96d874d3c3a73": 1
+        }
+      },
+      "cells": [
+        {
+          "rowKey": "5412fc91afdff5bc",
+          "rowKind": "truth_label",
+          "executionKey": "c8625db54e7db778",
+          "count": 1,
+          "rowShare": 0.3333
+        },
+        {
+          "rowKey": "5412fc91afdff5bc",
+          "rowKind": "truth_label",
+          "executionKey": "c882ca731f361684",
+          "count": 1,
+          "rowShare": 0.3333
+        },
+        {
+          "rowKey": "5412fc91afdff5bc",
+          "rowKind": "truth_label",
+          "executionKey": "9528c5b7da536981",
+          "count": 1,
+          "rowShare": 0.3333
+        },
+        {
+          "rowKey": "a02432a6cbb684fe",
+          "rowKind": "truth_label",
+          "executionKey": "9528c5b7da536981",
+          "count": 1,
+          "rowShare": 0.5
+        },
+        {
+          "rowKey": "a02432a6cbb684fe",
+          "rowKind": "truth_label",
+          "executionKey": "c8625db54e7db778",
+          "count": 1,
+          "rowShare": 0.5
+        },
+        {
+          "rowKey": "1fa2c3ba23f1427e",
+          "rowKind": "truth_label",
+          "executionKey": "9fd96d874d3c3a73",
+          "count": 2,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "e2efac6482e9f4b7",
+          "rowKind": "truth_label",
+          "executionKey": "91e525c6844b9942",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "c21fc78bbc4848c7",
+          "rowKind": "truth_label",
+          "executionKey": "d64ea6a804f34299",
+          "count": 2,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "4e955a06531c00fb",
+          "rowKind": "truth_label",
+          "executionKey": "303d2c277d2635e9",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "d5ca6b355b4728c2",
+          "rowKind": "truth_label",
+          "executionKey": "c8625db54e7db778",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "fd00751116ee2935",
+          "rowKind": "truth_label",
+          "executionKey": "d64ea6a804f34299",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "e9b37b935cc86b36",
+          "rowKind": "truth_label",
+          "executionKey": "9fd96d874d3c3a73",
+          "count": 1,
+          "rowShare": 1
+        },
+        {
+          "rowKey": "9912722310564cf5",
+          "rowKind": "truth_label",
+          "executionKey": "9fd96d874d3c3a73",
+          "count": 1,
+          "rowShare": 1
+        }
+      ],
+      "rowDrift": [
+        {
+          "rowKey": "5412fc91afdff5bc",
+          "rowKind": "truth_label",
+          "drift": 0.6667,
+          "dominantExecution": "c8625db54e7db778",
+          "rowMass": 3
+        },
+        {
+          "rowKey": "a02432a6cbb684fe",
+          "rowKind": "truth_label",
+          "drift": 0.5,
+          "dominantExecution": "9528c5b7da536981",
+          "rowMass": 2
+        },
+        {
+          "rowKey": "1fa2c3ba23f1427e",
+          "rowKind": "truth_label",
+          "drift": 0,
+          "dominantExecution": "9fd96d874d3c3a73",
+          "rowMass": 2
+        },
+        {
+          "rowKey": "e2efac6482e9f4b7",
+          "rowKind": "truth_label",
+          "drift": 0,
+          "dominantExecution": "91e525c6844b9942",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "c21fc78bbc4848c7",
+          "rowKind": "truth_label",
+          "drift": 0,
+          "dominantExecution": "d64ea6a804f34299",
+          "rowMass": 2
+        },
+        {
+          "rowKey": "4e955a06531c00fb",
+          "rowKind": "truth_label",
+          "drift": 0,
+          "dominantExecution": "303d2c277d2635e9",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "d5ca6b355b4728c2",
+          "rowKind": "truth_label",
+          "drift": 0,
+          "dominantExecution": "c8625db54e7db778",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "fd00751116ee2935",
+          "rowKind": "truth_label",
+          "drift": 0,
+          "dominantExecution": "d64ea6a804f34299",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "e9b37b935cc86b36",
+          "rowKind": "truth_label",
+          "drift": 0,
+          "dominantExecution": "9fd96d874d3c3a73",
+          "rowMass": 1
+        },
+        {
+          "rowKey": "9912722310564cf5",
+          "rowKind": "truth_label",
+          "drift": 0,
+          "dominantExecution": "9fd96d874d3c3a73",
+          "rowMass": 1
+        }
+      ],
+      "meanExecutionSpread": 0.1167,
+      "maxExecutionSpread": 0.6667
+    },
+    "borderlineRate": 0,
+    "interpretableRate": 0.9333,
+    "nonInterpretableRate": 0.0667,
+    "actionSoftenedRate": 0.1333,
+    "perceptionExecutionDrift": 0,
+    "shadowSampling": {
+      "status": "required_post_phase3",
+      "purpose": "collect_live_canonical_keys_not_in_lattice"
+    },
+    "cohorts": {
+      "borderline": "strain_zone_not_failure",
+      "softened": "execution_adaptation_not_label_change",
+      "nonInterpretable": "explicit_limit_of_rule_based_v1"
+    }
+  },
+  "modelCompletenessScore": {
+    "schema": "rhizoh.model_completeness.v0",
+    "framing": "instrument_coverage_not_model_correctness",
+    "mcs": 0.9853,
+    "components": {
+      "interpretableCoverage": 0.9333,
+      "strainHeadroom": 1,
+      "perceptionExecutionMap": 1,
+      "internalConsistency": 1,
+      "divergenceAudited": 1
+    },
+    "weights": {
+      "w_i": 0.22,
+      "w_s": 0.13,
+      "w_e": 0.25,
+      "w_b": 0.3,
+      "w_a": 0.1
+    },
+    "pass": true,
+    "note": "High MCS on lattice = instrument self-consistent; live shadow required for world completeness"
+  },
+  "modelRealityDivergence": {
+    "schema": "rhizoh.model_reality_divergence.v0",
+    "principle": "modeled_observed_divergence_measurable_under_constraints",
+    "lattice": {
+      "role": "controlled_entropy_space",
+      "projection": "deterministic",
+      "size": 15,
+      "entropySpan": 1.1048,
+      "behavioralConsistency": 1
+    },
+    "reality": {
+      "role": "residual_space",
+      "field": "stochastic_deviation",
+      "truthLabelSpreadMean": 0.1167,
+      "shadowSampling": {
+        "status": "required_post_phase3",
+        "purpose": "collect_live_canonical_keys_not_in_lattice"
+      }
+    },
+    "divergence": {
+      "measurable": true,
+      "requiresLatticeCollision": false,
+      "residualFirstClass": true,
+      "perceptionGateDrift": 0
+    },
+    "overInterpretationRisk": {
+      "risk": "over_interpretation_of_residual_as_structured_pattern",
+      "guardrails": [
+        "dual_layer_execution",
+        "hysteresis_band",
+        "fingerprint_replay",
+        "borderline_cohort_separation",
+        "shadow_sampling_before_lattice_expansion"
+      ]
+    },
+    "residualOverfittingRisk": {
+      "risk": "residual_overfitting",
+      "definition": "treating_residual_noise_as_structure",
+      "controlledBy": [
+        "dual_layer_execution",
+        "hysteresis_band",
+        "replay_determinism",
+        "divergence_audit",
+        "shadow_sampling_not_lattice_expansion_without_evidence"
+      ],
+      "note": "instrument_coverage_not_ontological_completeness"
+    },
+    "modelCompleteness": {
+      "schema": "rhizoh.model_completeness.v0",
+      "framing": "instrument_coverage_not_model_correctness",
+      "mcs": 0.9853,
+      "components": {
+        "interpretableCoverage": 0.9333,
+        "strainHeadroom": 1,
+        "perceptionExecutionMap": 1,
+        "internalConsistency": 1,
+        "divergenceAudited": 1
+      },
+      "weights": {
+        "w_i": 0.22,
+        "w_s": 0.13,
+        "w_e": 0.25,
+        "w_b": 0.3,
+        "w_a": 0.1
+      },
+      "pass": true,
+      "note": "High MCS on lattice = instrument self-consistent; live shadow required for world completeness"
+    }
+  },
+  "modeledObservedDivergence": {
+    "schema": "rhizoh.model_reality_divergence.v0",
+    "principle": "modeled_observed_divergence_measurable_under_constraints",
+    "lattice": {
+      "role": "controlled_entropy_space",
+      "projection": "deterministic",
+      "size": 15,
+      "entropySpan": 1.1048,
+      "behavioralConsistency": 1
+    },
+    "reality": {
+      "role": "residual_space",
+      "field": "stochastic_deviation",
+      "truthLabelSpreadMean": 0.1167,
+      "shadowSampling": {
+        "status": "required_post_phase3",
+        "purpose": "collect_live_canonical_keys_not_in_lattice"
+      }
+    },
+    "divergence": {
+      "measurable": true,
+      "requiresLatticeCollision": false,
+      "residualFirstClass": true,
+      "perceptionGateDrift": 0
+    },
+    "overInterpretationRisk": {
+      "risk": "over_interpretation_of_residual_as_structured_pattern",
+      "guardrails": [
+        "dual_layer_execution",
+        "hysteresis_band",
+        "fingerprint_replay",
+        "borderline_cohort_separation",
+        "shadow_sampling_before_lattice_expansion"
+      ]
+    },
+    "residualOverfittingRisk": {
+      "risk": "residual_overfitting",
+      "definition": "treating_residual_noise_as_structure",
+      "controlledBy": [
+        "dual_layer_execution",
+        "hysteresis_band",
+        "replay_determinism",
+        "divergence_audit",
+        "shadow_sampling_not_lattice_expansion_without_evidence"
+      ],
+      "note": "instrument_coverage_not_ontological_completeness"
+    },
+    "modelCompleteness": {
+      "schema": "rhizoh.model_completeness.v0",
+      "framing": "instrument_coverage_not_model_correctness",
+      "mcs": 0.9853,
+      "components": {
+        "interpretableCoverage": 0.9333,
+        "strainHeadroom": 1,
+        "perceptionExecutionMap": 1,
+        "internalConsistency": 1,
+        "divergenceAudited": 1
+      },
+      "weights": {
+        "w_i": 0.22,
+        "w_s": 0.13,
+        "w_e": 0.25,
+        "w_b": 0.3,
+        "w_a": 0.1
+      },
+      "pass": true,
+      "note": "High MCS on lattice = instrument self-consistent; live shadow required for world completeness"
+    }
+  }
+}

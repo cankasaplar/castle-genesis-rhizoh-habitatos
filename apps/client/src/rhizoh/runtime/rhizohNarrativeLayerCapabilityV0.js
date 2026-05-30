@@ -5,18 +5,30 @@
 
 export const RHIZOH_CANONICAL_INGRESS_ORIGIN_V0 = "https://rhizoh.com";
 
+import { storyContinuityGuaranteeFromScoreV0 } from "./rhizohStorySnapshotEngineV0.js";
+
 /**
+ * @param {Record<string, unknown> | null} [storySnapshot]
  * @returns {Readonly<{
  *   schema: string,
  *   activeNow: readonly string[],
  *   notYet: readonly string[],
  *   stateContinuityGuarantee: boolean,
  *   storyContinuityGuarantee: boolean,
+ *   storyContinuityScore: number | null,
  *   canonicalIngress: string,
  *   ingressNote: string
  * }>}
  */
-export function describeRhizohNarrativeLayerCapabilityV0() {
+export function describeRhizohNarrativeLayerCapabilityV0(storySnapshot = null) {
+  const score =
+    storySnapshot && typeof storySnapshot.storyContinuityScore === "number"
+      ? storySnapshot.storyContinuityScore
+      : null;
+  const storyGuarantee =
+    storySnapshot?.storyContinuityGuarantee === true ||
+    (score != null && storyContinuityGuaranteeFromScoreV0(score));
+
   return Object.freeze({
     schema: "castle.rhizoh.narrative_layer_capability.v0",
     activeNow: Object.freeze([
@@ -24,16 +36,16 @@ export function describeRhizohNarrativeLayerCapabilityV0() {
       "phase_fsm",
       "bond_trust_gates",
       "continuity_ledger_write",
-      "living_world_product_grounding_copy"
+      "living_world_product_grounding_copy",
+      "story_snapshot_engine_v0"
     ]),
     notYet: Object.freeze([
-      "story_graph_reconstruction",
-      "last_scene_snapshot",
-      "active_entity_threads",
-      "unresolved_narrative_threads"
+      "full_story_graph_reconstruction",
+      "multi_entity_persistent_world_state"
     ]),
     stateContinuityGuarantee: true,
-    storyContinuityGuarantee: false,
+    storyContinuityGuarantee: storyGuarantee,
+    storyContinuityScore: score,
     canonicalIngress: RHIZOH_CANONICAL_INGRESS_ORIGIN_V0,
     ingressNote:
       "Non-canonical entry points should redirect or alias only; separate boot + state per domain fragments narrative anchor."

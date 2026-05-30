@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://castle.system/schemas/sovereign-network-event-envelope-v0.schema.json",
+  "title": "SovereignNetworkEventEnvelopeV0",
+  "description": "PR-2 contract freeze: transport-visible envelope only. Payload semantics (atmosphere, pet, studio, portal bodies) are NOT validated here — separate per-domain contracts or opaque storage.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "eventId",
+    "timestamp",
+    "type",
+    "origin",
+    "castleId",
+    "userId",
+    "payload",
+    "signature",
+    "epochId"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0,
+      "description": "Bump only on breaking envelope changes; never embed domain payload versions here."
+    },
+    "eventId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 256,
+      "description": "Globally unique event identifier (issuer-allocated)."
+    },
+    "timestamp": {
+      "type": "number",
+      "description": "Epoch milliseconds when the event was authored (transport may observe later)."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["ATMO", "PET", "PORTAL", "STUDIO", "GATEWAY"],
+      "description": "High-level routing class only; sub-types live inside payload or separate registries, not in this envelope."
+    },
+    "origin": {
+      "type": "string",
+      "enum": ["gateway", "session", "frame", "castle"],
+      "description": "Issuer class for ACL and replay policy; not a UI label."
+    },
+    "castleId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "userId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "Authenticated principal (e.g. Firebase uid) as asserted by signer context."
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Opaque L1/L2 payload bag — intentionally unconstrained by this schema."
+    },
+    "signature": {
+      "type": "string",
+      "minLength": 0,
+      "maxLength": 8192,
+      "description": "Issuer signature or MAC over canonical envelope bytes; empty allowed only in pre-production environments."
+    },
+    "epochId": {
+      "type": "string",
+      "minLength": 4,
+      "maxLength": 256,
+      "description": "Monotonic or totally-ordered epoch bucket for replay suppression (product-defined)."
+    }
+  }
+}

@@ -4,6 +4,7 @@ import { VOICE_ENGINE_STATE_V3 } from "./voiceEngineStateV3.js";
 import { noteVoiceSttEventV0 } from "../voiceSttTelemetryV0.js";
 import { logVoiceInfoV0, logVoiceWarnV0 } from "../rhizohProductionLogNamespacesV0.js";
 import { stampVoiceUserGestureV0 } from "../voiceUserGestureAnchorV0.js";
+import { handleRhizohVoiceTranscriptV0 } from "../rhizohVoiceLlmDispatchV0.js";
 export const VOICE_V3_MAX_RECORD_MS = 8000;
 
 let v3SessionLockActive = false;
@@ -119,7 +120,7 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
         strategy: result.merged.strategy,
         preview: result.merged.text.slice(0, 96)
       });
-      await callbacks.handleVoiceTranscriptRef.current(result.merged.text, {
+      const transcriptOpts = {
         manageVoiceTurn: keepAlive,
         source: "mic_v3",
         confidence: result.merged.confidence,
@@ -127,7 +128,13 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
         maxRms: result.maxRms,
         witnessed: result.witnessed,
         witnessCompleted: true
-      });
+      };
+      const handler = callbacks.handleVoiceTranscriptRef?.current;
+      if (typeof handler === "function") {
+        await handler(result.merged.text, transcriptOpts);
+      } else {
+        await handleRhizohVoiceTranscriptV0(result.merged.text, transcriptOpts);
+      }
       return { ok: true };
     }
 

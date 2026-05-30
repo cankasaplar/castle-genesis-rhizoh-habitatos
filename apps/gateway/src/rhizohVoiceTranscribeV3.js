@@ -130,6 +130,8 @@ export async function transcribeWhisperAccurateV3(audioBytes, config = {}) {
     form.append("file", blob, mimeType.includes("webm") ? "audio.webm" : "audio.wav");
     form.append("model", "whisper-1");
     form.append("language", language);
+    form.append("temperature", "0");
+    form.append("prompt", "Türkçe konuşma transkripti.");
     form.append("response_format", "verbose_json");
 
     const res = await fetch(OPENAI_WHISPER_URL, {

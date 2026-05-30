@@ -1,0 +1,16 @@
+{
+  "schema": "rhizoh.counsel_approval.v1",
+  "counselOk": false,
+  "approvedAt": null,
+  "counselName": null,
+  "channel": "email",
+  "approvalText": "Rhizoh sistemine ait KVKK ve kullanım şartları incelenmiş, mevcut haliyle kullanıma uygun görülmüştür.",
+  "scopes": {
+    "termsOfService": false,
+    "kvkkAydinlatmaAndOpenConsent": false,
+    "crossBorderAiTransfer": false
+  },
+  "legalPackSha256": null,
+  "primaryPdfPath": "docs/exports/legal/Rhizoh_Legal_Pack_Primary_v1.0_DRAFT.pdf",
+  "notes": null
+}

@@ -5,6 +5,7 @@ export function rhizohGatewayPhaseShowsRetry(phase) {
   return (
     p === "offline" ||
     p === "offline_dns" ||
+    p === "uncertain" ||
     p === "degraded" ||
     p === "degraded_llm" ||
     p === "degraded_storage" ||

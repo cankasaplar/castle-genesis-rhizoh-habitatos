@@ -93,7 +93,8 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId
         && (!('productSurface' in request.resource.data)
           || request.resource.data.productSurface in [
-            'world', 'hall', 'greenroom', 'broadcast', 'studio', 'profile',
+            'core', 'world', 'demo',
+            'hall', 'greenroom', 'broadcast', 'studio', 'profile',
             'companion', 'observe', 'chronicle', 'castle'
           ]);
     }

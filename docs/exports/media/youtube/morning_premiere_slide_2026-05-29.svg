@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#060f18"/>
+      <stop offset="100%" stop-color="#0b1d2a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="360" text-anchor="middle" fill="#8ecae6" font-family="Georgia, serif" font-size="64" letter-spacing="6">CASTLE GENESIS</text>
+  <text x="960" y="450" text-anchor="middle" fill="#5a9fc4" font-family="Segoe UI, Arial, sans-serif" font-size="32">REAL LAYER MORNING</text>
+  <text id="dateLine" x="960" y="520" text-anchor="middle" fill="#bde8ff" font-family="Consolas, monospace" font-size="28">2026-05-29 | 06:44</text>
+  <line x1="520" y1="580" x2="1400" y2="580" stroke="#4db8d8" stroke-width="2" opacity="0.5"/>
+  <text x="960" y="660" text-anchor="middle" fill="#8ecae6" font-family="Georgia, serif" font-size="22">Gozlem hatti acik | canonical yazma yok</text>
+  <text x="960" y="710" text-anchor="middle" fill="#6a9bb5" font-family="Georgia, serif" font-size="20">observe != exec | seal(WAL)</text>
+  <text x="960" y="780" text-anchor="middle" fill="#4a7f9a" font-family="Segoe UI, Arial, sans-serif" font-size="16">sabah esigi - sessiz yuzey</text>
+  <text x="960" y="860" text-anchor="middle" fill="#3d6d88" font-family="Consolas, monospace" font-size="14">rhizoh.com | premiere | observation only</text>
+</svg>

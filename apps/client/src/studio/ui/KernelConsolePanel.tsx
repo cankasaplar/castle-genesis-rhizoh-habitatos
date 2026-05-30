@@ -367,7 +367,7 @@ export function KernelConsolePanel() {
   const roomCount = useStudioKernel((s) => Object.keys(s.presence?.rooms ?? {}).length);
   const broadcastCount = useStudioKernel((s) => Object.keys(s.presence?.broadcasts ?? {}).length);
   const voiceStubSegments = useStudioKernel((s) => {
-    const roomUid = s.presence?.avatars["avatar:stage:1"]?.projection?.roomUid;
+    const roomUid = s.presence?.avatars?.["avatar:stage:1"]?.projection?.roomUid;
     if (!roomUid) return [];
     return s.presence?.voiceStubByRoomUid?.[roomUid]?.segments ?? [];
   });
@@ -677,7 +677,7 @@ export function KernelConsolePanel() {
 
   const onVoiceRingToggle = useCallback(() => {
     const s = getStudioKernelState();
-    const av = s.presence?.avatars["avatar:stage:1"];
+    const av = s.presence?.avatars?.["avatar:stage:1"];
     const roomUid = av?.currentRoomUid;
     const pr = av?.projection;
     if (!roomUid || !pr || pr.roomUid !== roomUid) {

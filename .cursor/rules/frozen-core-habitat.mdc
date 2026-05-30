@@ -42,4 +42,7 @@ alwaysApply: true
 ```bash
 npm run stabilization:validate-graph
 npm run stabilization:validate-specflow
+npm run stabilization:validate-canonical-drift
+npm run stabilization:validate-client-boundaries-quick
+npm run stabilization:validate-membrane-v0
 ```

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#060f18"/>
+      <stop offset="100%" stop-color="#0b1d2a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="380" text-anchor="middle" fill="#8ecae6" font-family="Georgia, serif" font-size="72" letter-spacing="8">CASTLE GENESIS</text>
+  <text x="960" y="470" text-anchor="middle" fill="#5a9fc4" font-family="Segoe UI, Arial, sans-serif" font-size="36">Rhizoh � infrastructure test</text>
+  <text x="960" y="560" text-anchor="middle" fill="#bde8ff" font-family="Georgia, serif" font-size="28" font-style="italic">Kendi Yalanina Inanmayan Yapay Zeka</text>
+  <line x1="560" y1="620" x2="1360" y2="620" stroke="#4db8d8" stroke-width="2" opacity="0.5"/>
+  <text x="960" y="700" text-anchor="middle" fill="#6a9bb5" font-family="Segoe UI, Arial, sans-serif" font-size="22">Observation != Execution</text>
+  <text x="960" y="750" text-anchor="middle" fill="#4a7f9a" font-family="Segoe UI, Arial, sans-serif" font-size="18">Sistem otomasyon testi � canonical execution yok</text>
+  <text x="960" y="820" text-anchor="middle" fill="#3d6d88" font-family="Consolas, monospace" font-size="16">rhizoh.com � unlisted � V0</text>
+</svg>

@@ -3,6 +3,10 @@
  */
 import { getCastleFlightConfig } from "../../castleFlight/castleFlightConfig";
 import { getOrCreateCastleDevUid } from "../../rhizoh/useRhizohGatewayMonitor";
+import {
+  prepareRhizohLlmTurnV0,
+  buildRhizohLlmContextPatchFromPrepV0
+} from "../../rhizoh/runtime/rhizohLlmTurnHotWireV0.js";
 import { buildRhizohMemoryContextPackWithSalience } from "./salienceScorer";
 import { composeRhizohLlmPrompt } from "./promptComposer";
 import { parseAgentBridgeResponse } from "./agentBridge";
@@ -50,6 +54,13 @@ export async function invokeRhizohCognitiveTurn(opts: RhizohCognitiveInvokeOptio
     return { ok: false, error: "rhizoh_llm_http_unconfigured" };
   }
 
+  const prep = prepareRhizohLlmTurnV0({
+    message: opts.userGoal,
+    speakInstantAck: false,
+    sourcePath: "studio_cognitive_invoke"
+  });
+  const fastPatch = buildRhizohLlmContextPatchFromPrepV0(prep);
+
   const s = getStudioKernelState();
   const pack = buildRhizohMemoryContextPackWithSalience(s, opts.packOpts);
   const { system, user } = composeRhizohLlmPrompt(pack, opts.userGoal);
@@ -94,9 +105,11 @@ export async function invokeRhizohCognitiveTurn(opts: RhizohCognitiveInvokeOptio
           continuity: {
             runtime: {
               cognitiveInvoke: true,
-              userGoal: opts.userGoal.slice(0, 800)
+              userGoal: opts.userGoal.slice(0, 800),
+              rhizohFastSpeech: fastPatch
             }
           },
+          rhizohExpression: prep.turn.expression,
           rhizohMemoryContract:
             "Return strict JSON only. intents must be valid tool calls the client can execute via KernelGuard."
         },

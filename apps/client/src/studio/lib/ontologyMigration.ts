@@ -9,7 +9,9 @@ import {
   defaultWorldChunks,
   defaultWorldEcology,
   defaultWorldLocomotion,
-  defaultWorldTopology
+  defaultWorldTopology,
+  defaultRealitySeal,
+  defaultWorldAuthorityRuntime
 } from "../store/initialState.js";
 import { mergePersistedCausalGraph } from "../runtime/causalGraph";
 import { defaultMainHallZones } from "./presenceRoomZones";
@@ -37,6 +39,8 @@ export function upgradeOntology(snapshot: unknown): StudioKernelState {
     ...base,
     mindRuntime: base.mindRuntime ?? {},
     worldPhysics: base.worldPhysics ?? { globalTick: 0, timeDilation: 1 },
+    realitySeal: base.realitySeal ?? defaultRealitySeal(),
+    worldAuthorityRuntime: base.worldAuthorityRuntime ?? defaultWorldAuthorityRuntime(),
     worldTopology: base.worldTopology ?? defaultWorldTopology(),
     worldLocomotion: base.worldLocomotion ?? defaultWorldLocomotion(),
     worldChunks: base.worldChunks ?? defaultWorldChunks(),

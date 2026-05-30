@@ -1,0 +1,13 @@
+﻿BATCH_ID=llm-20260528-215911
+ARCHIVED_COUNT=1
+DESKTOP_LANE=1 (non-canonical; inbox+scan+staging only)
+INBOX=C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\inbox
+INDEX=C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\LLM_CHAT_ARCHIVE_INDEX_V0.md
+MANIFEST_CSV=C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\manifests\llm-20260528-215911-manifest.csv
+MANIFEST_JSON=C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\manifests\llm-20260528-215911-manifest.json
+TONOM_POLICY=docs/archive/llm-chats/tonom-write-policy.v0.json
+C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\staging\20260528-215915_gemini_desktop-rtf-chat_staging.md
+TONOM_APPLIED=true
+PROCESSED=1
+POLICY=C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\tonom-write-policy.v0.json
+INDEX=C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\LLM_CHAT_ARCHIVE_INDEX_V0.md

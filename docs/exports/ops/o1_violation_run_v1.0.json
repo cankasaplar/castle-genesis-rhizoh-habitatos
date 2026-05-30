@@ -1,0 +1,89 @@
+{
+  "schema": "castle.rhizoh.ops.o1_violation_run.v1",
+  "mode": "T1_DRY",
+  "dataPlaneActive": false,
+  "at": "2026-05-21T23:09:49.546Z",
+  "baseline": {
+    "coreStateHash": null,
+    "tau": null,
+    "observationCount": null
+  },
+  "final": {
+    "coreStateHash": null,
+    "tau": null,
+    "observationCount": null
+  },
+  "violations": [
+    {
+      "id": "GATE",
+      "pass": true,
+      "type": "AUTO",
+      "detail": "isDataPlaneActiveV0=false"
+    },
+    {
+      "id": "NI2-SWITCH",
+      "pass": true,
+      "type": "AUTO",
+      "detail": "no hits"
+    },
+    {
+      "id": "GATE-TEST",
+      "pass": true,
+      "type": "AUTO",
+      "detail": "ok"
+    },
+    {
+      "id": "INGRESS",
+      "pass": true,
+      "type": "AUTO",
+      "detail": "ok"
+    },
+    {
+      "id": "O1-1",
+      "pass": true,
+      "type": "SKIP",
+      "detail": "SKIP: heartbeat ingest not built — T1_DRY static only"
+    },
+    {
+      "id": "O1-2",
+      "pass": true,
+      "type": "SKIP",
+      "detail": "SKIP: heartbeat ingest not built — T1_DRY static only"
+    },
+    {
+      "id": "O1-3",
+      "pass": true,
+      "type": "SKIP",
+      "detail": "SKIP: heartbeat ingest not built — T1_DRY static only"
+    },
+    {
+      "id": "O1-4",
+      "pass": true,
+      "type": "SKIP",
+      "detail": "SKIP: heartbeat ingest not built — T1_DRY static only"
+    },
+    {
+      "id": "O1-5",
+      "pass": true,
+      "type": "SKIP",
+      "detail": "SKIP: heartbeat ingest not built — T1_DRY static only"
+    },
+    {
+      "id": "A9",
+      "pass": true,
+      "type": "SKIP",
+      "detail": "SKIP: heartbeat ingest not built — T1_DRY static only"
+    },
+    {
+      "id": "NI2-O",
+      "pass": true,
+      "type": "SKIP",
+      "detail": "SKIP: heartbeat ingest not built — T1_DRY static only"
+    }
+  ],
+  "ni2": {
+    "gateInactive": true,
+    "singleSwitchSsot": true
+  },
+  "go": "PARTIAL_MANUAL"
+}

@@ -9,6 +9,7 @@ export function deriveCognitiveTraceLabel(intent, gatewayPhase) {
     ph === "maintenance" ||
     ph === "offline" ||
     ph === "offline_dns" ||
+    ph === "uncertain" ||
     ph === "degraded_llm" ||
     ph === "degraded_storage"
   ) {

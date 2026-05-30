@@ -35,6 +35,12 @@ jobs:
       - name: Interaction Geometry boundary v0 (identity substrate isolation)
         run: node scripts/validateInteractionGeometryBoundaryV0.mjs
 
+      - name: RCML freeze contract v1 (UI vs Model)
+        run: npm run rcml:validate-freeze-contract
+
+      - name: Spiral ↔ Rhizoh boundary v1 (no execution import into experience)
+        run: npm run spiral:validate-rhizoh-boundary
+
       - name: CIL-AMENDMENT parse + stabilization verify hook (AEE v0.1)
         run: npm run stabilization:validate-amendment -- --verify
 

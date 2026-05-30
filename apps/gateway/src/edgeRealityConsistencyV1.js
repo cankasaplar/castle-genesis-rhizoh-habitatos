@@ -10,6 +10,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { REALITY_CONTRACT_LOCK } from "./realityContractLockV1.js";
+import { buildGatewaySubstrateAuthoritySnapshotV0 } from "./gatewaySubstrateAuthorityV0.js";
+import { buildSubstrateOperationalSnapshotV0 } from "./infra/substrateOperationalMetrics.js";
 
 function stableStringify(value) {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
@@ -55,8 +57,23 @@ export function computeEnvDriftReport() {
     String(process.env.FIREBASE_PROJECT_ID || "").trim() &&
     String(process.env.FIREBASE_CLIENT_EMAIL || "").trim() &&
     String(process.env.FIREBASE_PRIVATE_KEY || "").trim();
+  const gatewayToken = String(process.env.CASTLE_GATEWAY_TOKEN || "").trim();
   if (!firebaseOk && !jwt && process.env.CASTLE_REQUIRE_AUTH === "true") {
     errors.push("auth_required_but_no_firebase_admin_or_jwt_secret");
+  }
+  if (
+    process.env.NODE_ENV === "production" &&
+    !firebaseOk &&
+    !jwt &&
+    gatewayToken.length >= 16 &&
+    process.env.CASTLE_REQUIRE_AUTH !== "true"
+  ) {
+    warnings.push("production_gateway_token_only_no_identity_verifier");
+  }
+  if (process.env.NODE_ENV === "production" && process.env.CASTLE_REJECT_UNSIGNED_WAL !== "false") {
+    if (process.env.CASTLE_REQUIRE_WAL_PEER_AUTH === "false") {
+      warnings.push("production_unsigned_wal_peer_auth_disabled");
+    }
   }
 
   if (process.env.CASTLE_OTEL_ENABLED === "1" && !String(process.env.OTEL_EXPORTER_OTLP_ENDPOINT || "").trim()) {
@@ -143,6 +160,8 @@ export function buildRealityHealthPayload() {
     layer: REALITY_CONTRACT_LOCK.layer,
     drift,
     parity,
+    substrateAuthority: buildGatewaySubstrateAuthoritySnapshotV0(),
+    substrateOperational: buildSubstrateOperationalSnapshotV0(),
     fingerprint: {
       fingerprintSha256: fingerprint.fingerprintSha256,
       lockSha256: fingerprint.lockSha256,

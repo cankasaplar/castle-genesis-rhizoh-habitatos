@@ -20,6 +20,8 @@ Bu dosya repodaki **tüm gizli / yapılandırma** değişkenlerinin tek referans
 | **Meta WhatsApp Cloud API** | `CASTLE_WHATSAPP_TOKEN`, `CASTLE_WHATSAPP_PHONE_NUMBER_ID`. |
 | **Sizin ürettiğiniz gizli** | `CASTLE_GATEWAY_TOKEN` = `VITE_GATEWAY_TOKEN`; `CASTLE_JWT_SECRET`; `CASTLE_STORE_SECRET`. |
 | **GitHub Actions deploy** | `FIREBASE_SERVICE_ACCOUNT_CASTLE_GENESIS` (JSON) + build için `VITE_*` secret’ları. |
+| **Gmail (SPIRALMMO günlük rapor)** | `SPIRALMMO_SMTP_USER`, `SPIRALMMO_SMTP_APP_PASSWORD` (Google App Password), `SPIRALMMO_REPORT_TO` — kurulum: `scripts/setup-gmail-spiralmmo.ps1` · [`docs/SPIRALMMO_DAILY_EMAIL_AUTOMATION_V0.md`](docs/SPIRALMMO_DAILY_EMAIL_AUTOMATION_V0.md) |
+| **Ops mail kimligi (From)** | `RHIZOH_MAIL_MORNING_FROM`, `RHIZOH_MAIL_SPIRALMMO_FROM`, `*_FROM_NAME` — `scripts/set-rhizoh-mail-identity.ps1` · [`docs/RHIZOH_OPS_MAIL_IDENTITY_V0.md`](docs/RHIZOH_OPS_MAIL_IDENTITY_V0.md) · GoDaddy: [`docs/RHIZOH_GODADDY_MAIL_SETUP_V0.md`](docs/RHIZOH_GODADDY_MAIL_SETUP_V0.md) |
 
 ## Rhizoh ana hat (gateway route’ları)
 
@@ -102,8 +104,22 @@ VITE_GATEWAY_HTTP=https://HOST/rhizoh/llm
 | `VITE_GENESIS_DEPLOY_MODE` | Hayır | `research` \| `observability` | Genesis Replay Observatory: **research** = laboratuvar (topoloji serbest); **observability** = H_surface kilidi + Legacy drift. GitHub Hosting deploy workflow varsayılanı **`observability`**. |
 | `VITE_GENESIS_PASSIVE_EPOCH_MAX` | Hayır | Tamsayı | İlk N epistemik gradient epoch’ta rejim geçişi yalnızca log; varsayılan `100`. |
 | `VITE_GENESIS_SIMULATE_LEGACY_DRIFT` | Hayır | `1` yalnız QA | Observability modda Legacy drift UI’yi zorlar; üretimde kapalı tutun. |
+| `VITE_RHIZOH_INVITE_ONLY_GOOGLE` | Hayır | `1` | Giriş ekranında yalnızca Google; misafir + e-posta akışı gizlenir (kapalı kohort). |
+| `VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST` | Hayır | Virgül/noktalı virgül ile e-postalar | **Yalnızca** `VITE_RHIZOH_COHORT_SERVER_GATE` kapalıyken istemci tarafında uygulanır. Üretimde sunucu kapısını tercih edin. |
+| `VITE_RHIZOH_COHORT_OBSERVATION_LOG` | Hayır | `0` / `1` / boş | `0` kapalı. `1` açık. Boş: invite-only veya allowlist açıksa otomatik açık — `sessionStorage` halkası + `window.__CASTLE_COHORT_OBSERVATION_LOG__()`. **Pasif gözlem:** buffer runtime gate veya ürün kararı tetiklemez; yalnızca allowlist’li etiketler yazılır. |
+| `VITE_RHIZOH_COHORT_SERVER_GATE` | Hayır | `1` | Açıksa oturumdan sonra `cohortGateV0` HTTPS ile doğrulama zorunlu; istemci `VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST` yetki için kullanılmaz. |
+| `VITE_RHIZOH_COHORT_GATE_URL` | Hayır | Tam HTTPS URL | Boşsa `window.location.origin + /api/cohortGateV0` (Hosting rewrite gerekir). |
+| `VITE_ONTOLOGICAL_BOOT_GATE` | Hayır | `0` \| `1` / boş | **`1`** → ön-yükleme gate açık (IDB seal + `mayBootstrapRuntime`). **`0` veya tanımsız** → gate kapalı (üretim cold start / kohort). `VITE_SUBSTRATE_CONTINUITY_IDB=1` iken gate açılır. |
 
 **Dosyalar:** `.env.example`, `.env.production.example` → kopya `.env.local` / `.env.production`.
+
+### 1b. Firebase Functions (`functions/`)
+
+| Parametre / değişken | Zorunlu | Açıklama |
+|----------------------|---------|----------|
+| `COHORT_EMAIL_ALLOWLIST` | Kohort kapısı açıksa | **Function ortam değişkeni** (Gen2) — virgülle e-postalar. Boşsa `cohortGateV0` **503**. Örnek: `firebase deploy --only functions --set-env-vars COHORT_EMAIL_ALLOWLIST="a@x.com,b@y.com"` veya Console → cohortGateV0 → Ortam değişkenleri. |
+| `cohortGateV0` | — | HTTPS; `Authorization: Bearer <Firebase ID token>`; başarıda `rhizoh_cohort_v0: true` custom claim (Firestore kurallarında sonraki adım). |
+| Hosting rewrite | — | `firebase.json`: `/api/cohortGateV0` → `cohortGateV0`. **Sadece Hosting deploy** fonksiyonu yüklemez — ilk kurulumda: `firebase deploy --only functions,hosting,firestore:rules,storage` (projeye göre daraltın). |
 
 ## 2. Gateway — `apps/gateway`
 

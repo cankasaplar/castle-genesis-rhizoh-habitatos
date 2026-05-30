@@ -6,6 +6,7 @@
 import { getShadowForwardRingV0, extractShadowReplaySignalsV0 } from "./voiceShadowReplayHookV0.js";
 import { computeInterpretationStabilityV0 } from "./voiceInterpretationStabilityV0.js";
 import { VOICE_SHADOW_REPLAY_HOOK_SCHEMA } from "./voiceShadowReplayHookV0.js";
+import { buildVoiceShadowTimelineViewV0, VOICE_SHADOW_TIMELINE_SCHEMA } from "./voiceShadowTimelineV0.js";
 
 export const VOICE_SHADOW_ANALYSIS_EXPORT_SCHEMA =
   "castle.rhizoh.voice_shadow_analysis_export.v0";
@@ -75,10 +76,12 @@ export function buildShadowVoiceAnalysisSnapshotV0(opts = {}) {
   const replay = extractShadowReplaySignalsV0(ring);
   const stability = computeInterpretationStabilityV0(ring);
   const clusters = clusterShadowForwardRingV0(ring);
+  const timeline = buildVoiceShadowTimelineViewV0();
 
   return Object.freeze({
     schema: VOICE_SHADOW_ANALYSIS_EXPORT_SCHEMA,
     replaySchema: VOICE_SHADOW_REPLAY_HOOK_SCHEMA,
+    timelineSchema: VOICE_SHADOW_TIMELINE_SCHEMA,
     exportedAtMs: Date.now(),
     analysisMode: "observation_only",
     executionPolicy: Object.freeze({
@@ -91,12 +94,15 @@ export function buildShadowVoiceAnalysisSnapshotV0(opts = {}) {
     replay,
     stability,
     clusters,
+    timeline,
     summary: Object.freeze({
       dominantReason: replay.dominantReason,
       dominantCount: replay.dominantCount,
       suggestedAction: replay.suggestedAction,
       recurringPatternCount: stability.recurringPatterns.length,
-      topCluster: clusters[0]?.clusterKey || null
+      topCluster: clusters[0]?.clusterKey || null,
+      timelineTrajectory: timeline.trajectory?.summary || null,
+      latestPhase: timeline.segments?.[timeline.segments.length - 1]?.phaseLabel || null
     })
   });
 }
@@ -115,4 +121,5 @@ export function installShadowVoiceAnalysisExportV0() {
   window.__rhizoh = window.__rhizoh || {};
   window.__rhizoh.exportShadowVoiceAnalysisV0 = () => exportShadowVoiceAnalysisJsonV0({ pretty: true });
   window.__rhizoh.getShadowVoiceAnalysisSnapshotV0 = () => buildShadowVoiceAnalysisSnapshotV0();
+  window.__rhizoh.getVoiceShadowTimelineViewV0 = () => buildVoiceShadowTimelineViewV0();
 }

@@ -1,7 +1,12 @@
 import type { StudioKernelState } from "../types/rskOntology";
 import { createInitialStudioKernelState } from "./initialState";
+import { applyBootRealitySealContinuityToKernelV0 } from "../../rhizoh/runtime/realitySealBootContinuityV0.js";
 
-let state: StudioKernelState = createInitialStudioKernelState();
+function bootstrapStudioKernelState(): StudioKernelState {
+  return applyBootRealitySealContinuityToKernelV0(createInitialStudioKernelState()).kernel;
+}
+
+let state: StudioKernelState = bootstrapStudioKernelState();
 const listeners = new Set<() => void>();
 
 export function getStudioKernelState(): StudioKernelState {

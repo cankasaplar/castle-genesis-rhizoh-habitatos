@@ -36,6 +36,8 @@ import {
 
 } from "./castleL9ExecutionGate.js";
 
+import { formatMeshSwarmFieldObservationV0 } from "../rhizoh/spatial/worldMeshLabelsV0.js";
+
 import { getL9CooldownMultiplier, evaluateL9ProposeThrottle } from "./castleL9GatePolicy.js";
 
 import { getCastleRuntimeMetrics } from "./castleRuntimeMetrics.js";
@@ -512,7 +514,7 @@ export class CastleL9EventBusV2 {
 
     const z = p.zone;
 
-    const text = `Istanbul Nexus'ta devasa bir enerji dalgalanması tespiti. ${maxCnt} otonom ajan ana kalede savunma formasyonuna geçti. #CastleGenesis`;
+    const text = formatMeshSwarmFieldObservationV0(maxCnt);
 
     const merged = {
 

@@ -31,7 +31,12 @@ export async function getSwarmGpuDevice() {
       try {
         const win = /Windows/i.test(String(navigator.userAgent || ""));
         _adapter = await navigator.gpu.requestAdapter(win ? {} : { powerPreference: "high-performance" });
-        if (!_adapter) return null;
+        if (!_adapter) {
+          console.info(
+            "[WEBGPU_ADAPTER] no gpu adapter (Chrome may log 'No available adapters' — unrelated to voice STT)"
+          );
+          return null;
+        }
         _device = await _adapter.requestDevice();
         return _device;
       } catch {

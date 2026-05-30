@@ -11,6 +11,7 @@ import {
   runVoiceTranscriptWitnessPipelineV0,
   witnessVoiceStreamLifecycleV0
 } from "../voiceTranscriptWitnessPipelineV0.js";
+import { prepareRhizohLlmTurnV0 } from "../rhizohLlmTurnHotWireV0.js";
 import { emitVoiceEngineTelemetryV3, setVoiceEngineStateV3 } from "./voiceEngineTelemetryV3.js";
 
 export const VOICE_MIN_RECORD_MS_V3 = 1200;
@@ -210,6 +211,15 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
             witnessed: pipe.witnessed
           };
         }
+
+        prepareRhizohLlmTurnV0({
+          message: pipe.sane.text,
+          traceId: opts.traceId,
+          sessionId,
+          voiceTurn: true,
+          speakInstantAck: false,
+          sourcePath: "voice_engine_v3"
+        });
 
         opts.onFinalTranscript?.({
           text: pipe.sane.text,

@@ -74,6 +74,11 @@ export function buildRhizohHealthState(input = {}) {
     connectivity = "DEGRADED";
     confidence = 0.58;
     if (!depsOverallOk) symptoms.push("deps_degraded");
+  } else if (phase === "uncertain") {
+    connectivity = "DEGRADED";
+    confidence = 0.6;
+    symptoms.push("gateway_health_uncertain");
+    if (deps && !depsOverallOk) symptoms.push("deps_partial");
   } else if (phase === "connected") {
     if (!depsOverallOk) {
       connectivity = "DEGRADED";

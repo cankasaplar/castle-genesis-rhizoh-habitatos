@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://castle.system/schemas/sovereign-castle-graph-v0.schema.json",
+  "title": "SovereignCastleGraphV0",
+  "description": "PR-2 contract freeze: minimal graph primitives. Richer ontology stays in kernel narrative docs, not here.",
+  "$defs": {
+    "CastleGraphNodeV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "castleId", "ownerUserId", "anchor", "stateRef"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 0 },
+        "castleId": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "ownerUserId": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "anchor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "Opaque pointer to L0 anchor record (e.g. profile path + revision); not lat/lon or district labels."
+        },
+        "stateRef": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "Opaque pointer to authoritative L1 state root for this Castle."
+        }
+      }
+    },
+    "CastleGraphEdgeV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "fromCastleId", "toCastleId", "relationType", "permissionScope"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 0 },
+        "fromCastleId": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "toCastleId": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "relationType": {
+          "type": "string",
+          "enum": ["VISIT", "BROADCAST", "PORTAL"],
+          "description": "Cross-Castle relation class; transport and UI derive from this, not the reverse."
+        },
+        "permissionScope": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "Opaque ACL scope key or serialized grant id; resolved outside this schema."
+        }
+      }
+    }
+  },
+  "oneOf": [{ "$ref": "#/$defs/CastleGraphNodeV0" }, { "$ref": "#/$defs/CastleGraphEdgeV0" }]
+}

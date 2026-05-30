@@ -1,0 +1,19 @@
+﻿{
+    "paths":  {
+                  "connection":  "C:\\Users\\LENOVO\\Desktop\\castle\\docs\\exports\\broadcast-ready\\connection\\EMAIL_YOUTUBE_CONNECTION_MATRIX.md",
+                  "readyRoot":  "C:\\Users\\LENOVO\\Desktop\\castle\\docs\\exports\\broadcast-ready",
+                  "morningHtml":  "C:\\Users\\LENOVO\\Desktop\\castle\\docs\\exports\\broadcast-ready\\morning\\morning_report_latest.html",
+                  "morningMp4":  "C:\\Users\\LENOVO\\Desktop\\castle\\docs\\exports\\broadcast-ready\\morning\\morning_premiere_latest.mp4"
+              },
+    "message":  "Assets ready. No scheduled tasks. No test send/upload.",
+    "schedule":  {
+                     "morningEmail":  "06:44",
+                     "morningPremiereBuild":  "06:30",
+                     "morningPremiereAir":  "06:44",
+                     "eveningLive":  "19:44",
+                     "spiralmmoEmail":  "18:44"
+                 },
+    "preparedAt":  "2026-05-29T00:51:22.4910615+03:00",
+    "date":  "2026-05-29",
+    "status":  "HOLD"
+}

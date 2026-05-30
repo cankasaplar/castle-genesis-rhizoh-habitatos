@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://castle.local/schemas/operator-inference-v0.gamma.schema.json",
+  "title": "OperatorInferenceGammaV0",
+  "description": "Minimal evaluation context Γ for operator IR inference (A2). Extends with handles, policyBindings, eval_revision in V1+.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "irSchemaVersion": {
+      "type": "string",
+      "const": "operator-ir/0.1.0",
+      "description": "IR document schema this Γ was built for."
+    },
+    "region": {
+      "type": "string",
+      "enum": ["governance", "world"],
+      "description": "Execution region: governance forbids writeWorld."
+    },
+    "handles": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Optional resolved handle map (BIND targets). V0 may be empty."
+    },
+    "policyBindings": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Optional policy bundle bindings for EVAL. V0 may be empty."
+    },
+    "cidAllocPolicy": {
+      "type": "string",
+      "description": "Optional cid allocation policy id when EMIT allocates (V1+)."
+    }
+  },
+  "required": ["irSchemaVersion", "region"]
+}

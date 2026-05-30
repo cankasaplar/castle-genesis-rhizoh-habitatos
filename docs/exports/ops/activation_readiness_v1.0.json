@@ -1,0 +1,121 @@
+{
+  "schema": "castle.rhizoh.activation_readiness.v1",
+  "generatedAt": "2026-05-21T01:23:11.834Z",
+  "go": "AUTO_PASS_MANUAL_PENDING",
+  "autoPass": true,
+  "checks": [
+    {
+      "id": "R1",
+      "label": "Ingress unit tests",
+      "type": "AUTO",
+      "pass": true,
+      "detail": "ok"
+    },
+    {
+      "id": "R2",
+      "label": "Passive coherence check",
+      "type": "AUTO",
+      "pass": true,
+      "detail": "ok"
+    },
+    {
+      "id": "R3",
+      "label": "VITE_RHIZOH_PHASE1_SIGNAL not 1 in tracked env",
+      "type": "AUTO",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "id": "R4",
+      "label": "Ingress fallback (no state carry)",
+      "type": "AUTO",
+      "pass": true,
+      "detail": "{\"fallbackCarriesState\":false,\"fallbackRoute\":\"app\"}"
+    },
+    {
+      "id": "R5",
+      "label": "Cohort UI no-op gate (no engine on UI path)",
+      "type": "AUTO",
+      "pass": true,
+      "detail": "ok"
+    },
+    {
+      "id": "R6",
+      "label": "No Phase 1 heartbeat ingest route in apps/gateway",
+      "type": "AUTO",
+      "pass": true,
+      "detail": "none found"
+    },
+    {
+      "id": "R7",
+      "label": "Legal preamble copy SSOT",
+      "type": "AUTO",
+      "pass": true,
+      "detail": "ok"
+    },
+    {
+      "id": "R9",
+      "label": "Single activation switch SSOT (phase1ActivationGateV0.js only)",
+      "type": "AUTO",
+      "pass": true,
+      "detail": "ok"
+    }
+  ],
+  "manual": [
+    {
+      "id": "A1",
+      "label": "DNS proxied (dig + dashboard)",
+      "type": "MANUAL",
+      "pass": null
+    },
+    {
+      "id": "A2",
+      "label": "TLS valid (curl -sI https://rhizoh.com)",
+      "type": "MANUAL",
+      "pass": null
+    },
+    {
+      "id": "A3",
+      "label": "Legal / counsel / PRIMARY PDF",
+      "type": "MANUAL",
+      "pass": null
+    },
+    {
+      "id": "A4",
+      "label": "Firebase rules read-only (firestore.rules)",
+      "type": "MANUAL",
+      "pass": null
+    },
+    {
+      "id": "A5",
+      "label": "Ingress route inert (staging smoke)",
+      "type": "MANUAL",
+      "pass": null
+    },
+    {
+      "id": "A6",
+      "label": "UI read-only decision gate only",
+      "type": "MANUAL",
+      "pass": null
+    },
+    {
+      "id": "A8",
+      "label": "Cohort sim decision filed",
+      "type": "MANUAL",
+      "pass": null
+    },
+    {
+      "id": "A9",
+      "label": "READY/HOLD ops log signed",
+      "type": "MANUAL",
+      "pass": null
+    },
+    {
+      "id": "OPS",
+      "label": "Decision: READY or HOLD (human)",
+      "type": "MANUAL",
+      "pass": null
+    }
+  ],
+  "doc": "docs/RHIZOH_ACTIVATION_READINESS_CHECKLIST_V1.0.md"
+}

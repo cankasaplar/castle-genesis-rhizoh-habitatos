@@ -6,7 +6,7 @@ import {
   ensureGreenRoomMainHallBound
 } from "../lib/greenRoomRouteBinding.js";
 import { getStudioKernelState, subscribeStudioKernel } from "../store/internalStore";
-import { ingestPresenceMeshDelta } from "../store/presenceMeshIngestSlice";
+import { ingestPresenceMeshDeltaMaybeWalV0 } from "../store/presenceMeshWalIngressV0";
 import { CAUSAL_MAIN_BRANCH_ID } from "./causalGraph";
 import { PresenceMeshClient, resolvePresenceMeshHttpBase, type PresenceMeshDeltaEvent } from "./presenceMeshClient";
 
@@ -34,7 +34,7 @@ function applyReplayTail(roomUid: string, raw: unknown) {
       clientUid: typeof e.clientUid === "string" ? e.clientUid : undefined,
       writerSubject: e.writerSubject != null ? String(e.writerSubject) : null
     };
-    ingestPresenceMeshDelta(ev);
+    ingestPresenceMeshDeltaMaybeWalV0(ev);
   }
 }
 
@@ -101,7 +101,7 @@ export function startGreenRoomPresenceMesh(): () => void {
   unsubMesh?.();
   unsubMesh = client.subscribe((ev) => {
     if (ev.kind !== "delta") return;
-    ingestPresenceMeshDelta(ev);
+    ingestPresenceMeshDeltaMaybeWalV0(ev);
   });
 
   unsubKernel?.();

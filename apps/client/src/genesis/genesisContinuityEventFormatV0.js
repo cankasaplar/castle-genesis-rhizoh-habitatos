@@ -32,6 +32,9 @@ export function formatGenesisContinuityEventLine(ev) {
     case "RuntimeCapabilityEvent":
       body = `cap · ${p.nodeRole ?? "—"} · llm ${p.llmConfigured ? "on" : "off"} · persist ${p.persistence ?? "—"}`;
       break;
+    case "WorldObservation":
+      body = `${String(p.observationType || "obs")} · ${String(p.clientId || "").slice(0, 12) || "client"}`;
+      break;
     default:
       body = `${t} · ${String(ev.id || "")}`;
   }

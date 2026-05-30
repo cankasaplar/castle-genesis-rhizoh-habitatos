@@ -88,18 +88,49 @@ function isBenignExternalResourceError(event) {
   return false;
 }
 
-function shouldIgnoreFatal(errOrMsg, extra = {}) {
+/** @param {unknown} errOrMsg @param {Record<string, unknown>} [extra] */
+export function isCastleBenignDomErrorV0(errOrMsg, extra = {}) {
   const msg = errOrMsg instanceof Error ? String(errOrMsg.message || "") : String(errOrMsg || "");
   const stack = errOrMsg instanceof Error ? String(errOrMsg.stack || "") : "";
-  const combined = `${msg}\n${stack}\n${String(extra?.filename || "")}`.toLowerCase();
+  const combined = `${msg}\n${stack}\n${String(extra?.filename || "")}\n${String(extra?.componentStack || "")}`.toLowerCase();
   // Browser extensions (not app code) can emit global errors/rejections on any page.
   // These should not trip Castle fatal banner.
   if (combined.includes("chrome-extension://")) return true;
+  if (combined.includes("moz-extension://")) return true;
+  if (combined.includes("safari-extension://")) return true;
+  const domOpNoise = /insertbefore|removechild|removebefore/i.test(combined);
+  const notChildNoise =
+    /not a child of this node|alt öğesi değil|alt düğümü değil/i.test(combined);
+  if (
+    domOpNoise &&
+    notChildNoise &&
+    (combined.includes("chrome-extension://") ||
+      combined.includes("moz-extension://") ||
+      combined.includes("safari-extension://"))
+  ) {
+    return true;
+  }
+  // React commit vs Cesium / ekran kaydı / harici DOM — stack genelde yalnızca bundle gösterir.
+  if (domOpNoise && notChildNoise) return true;
   if (combined.includes("failed to connect to metamask")) return true;
   if (combined.includes("metamask")) return true;
   if (combined.includes("googletagmanager.com")) return true;
   if (combined.includes("google-analytics.com")) return true;
   return false;
+}
+
+/** @deprecated alias — use isCastleBenignDomErrorV0 */
+function shouldIgnoreFatal(errOrMsg, extra = {}) {
+  return isCastleBenignDomErrorV0(errOrMsg, extra);
+}
+
+/** Legacy demo HUD in index.html — not Rhizoh ingress; hide before React shell. */
+export function hideLegacyIndexHudV0() {
+  try {
+    document.getElementById("hud")?.remove();
+  } catch {
+    /* noop */
+  }
 }
 
 export function installWebglContextLostReporter(domElement, label = "unknown") {

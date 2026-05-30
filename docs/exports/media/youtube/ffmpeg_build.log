@@ -1,0 +1,55 @@
+ffmpeg version 8.1.1-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers
+  built with gcc 15.2.0 (Rev13, Built by MSYS2 project)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-cairo --enable-fontconfig --enable-iconv --enable-gnutls --enable-lcms2 --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-libsnappy --enable-zlib --enable-librist --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-libbluray --enable-libcaca --enable-libdvdnav --enable-libdvdread --enable-sdl2 --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libdavs2 --enable-libopenjpeg --enable-libquirc --enable-libuavs3d --enable-libxevd --enable-libzvbi --enable-liboapv --enable-libqrencode --enable-librav1e --enable-libsvtav1 --enable-libvvenc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxeve --enable-libxvid --enable-libaom --enable-libjxl --enable-libsvtjpegxs --enable-libvpx --enable-mediafoundation --enable-libass --enable-frei0r --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-liblensfun --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffnvcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-libshaderc --enable-vulkan --enable-libplacebo --enable-opencl --enable-libcdio --enable-openal --enable-libgme --enable-libmodplug --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libshine --enable-libtheora --enable-libtwolame --enable-libvo-amrwbenc --enable-libcodec2 --enable-libilbc --enable-libgsm --enable-liblc3 --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-ladspa --enable-libbs2b --enable-libflite --enable-libmysofa --enable-librubberband --enable-libsoxr --enable-chromaprint --enable-whisper
+  libavutil      60. 26.101 / 60. 26.101
+  libavcodec     62. 28.101 / 62. 28.101
+  libavformat    62. 12.101 / 62. 12.101
+  libavdevice    62.  3.101 / 62.  3.101
+  libavfilter    11. 14.101 / 11. 14.101
+  libswscale      9.  5.101 /  9.  5.101
+  libswresample   6.  3.101 /  6.  3.101
+Input #0, png_pipe, from 'C:\Users\LENOVO\Desktop\castle\apps\client\public\ops\youtube-test\castle-genesis-holding-slide.png':
+  Duration: N/A, bitrate: N/A
+  Stream #0:0: Video: png, rgba(pc, gbr/unknown/unknown), 1920x1080, 1 fps, 1 tbr, 1 tbn
+Input #1, mov,mp4,m4a,3gp,3g2,mj2, from 'C:\Users\LENOVO\Desktop\castle\docs\ops\export\kendi_yalanina_audio.m4a':
+  Metadata:
+    major_brand     : dash
+    minor_version   : 0
+    compatible_brands: iso6mp41
+    creation_time   : 2026-05-09T01:36:49.000000Z
+    encoder         : Google
+  Duration: 00:14:25.99, start: 0.000000, bitrate: 257 kb/s
+  Stream #1:0[0x1](und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, stereo, fltp, 256 kb/s (default)
+    Metadata:
+      creation_time   : 2026-05-09T01:36:49.000000Z
+      handler_name    : ISO Media file produced by Google Inc.
+Stream mapping:
+  Stream #0:0 -> #0:0 (png (native) -> h264 (libx264))
+  Stream #1:0 -> #0:1 (copy)
+Press [q] to stop, [?] for help
+[libx264 @ 000001d2f1b87e00] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+[libx264 @ 000001d2f1b87e00] profile Constrained Baseline, level 4.0, 4:2:0, 8-bit
+[libx264 @ 000001d2f1b87e00] 264 - core 165 r3223 0480cb0 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=0 ref=1 deblock=0:-3:-3 analyse=0:0 me=dia subme=0 psy=1 psy_rd=2.00:0.70 mixed_ref=0 me_range=16 chroma_me=1 trellis=0 8x8dct=0 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=0 threads=6 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=0 weightp=0 keyint=250 keyint_min=1 scenecut=0 intra_refresh=0 rc=crf mbtree=0 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=0
+Output #0, mp4, to 'C:\Users\LENOVO\Desktop\castle\docs\ops\export\castle_genesis_test_kendi_yalanina.mp4':
+  Metadata:
+    encoder         : Lavf62.12.101
+  Stream #0:0: Video: h264 (avc1 / 0x31637661), yuv420p(tv, progressive), 1920x1080, q=2-31, 1 fps, 16384 tbn
+    Metadata:
+      encoder         : Lavc62.28.101 libx264
+    Side data:
+      CPB properties: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+  Stream #0:1(und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, stereo, fltp, 256 kb/s (default)
+    Metadata:
+      creation_time   : 2026-05-09T01:36:49.000000Z
+      handler_name    : ISO Media file produced by Google Inc.
+frame=   37 fps=0.0 q=1.0 size=    1024KiB time=00:00:37.00 bitrate= 226.7kbits/s speed=68.4x elapsed=0:00:00.54    frame=   90 fps= 84 q=1.0 size=    2816KiB time=00:01:30.00 bitrate= 256.3kbits/s speed=  84x elapsed=0:00:01.07    frame=  142 fps= 89 q=1.0 size=    4352KiB time=00:02:22.00 bitrate= 251.1kbits/s speed=89.2x elapsed=0:00:01.59    frame=  191 fps= 90 q=1.0 size=    5888KiB time=00:03:11.00 bitrate= 252.5kbits/s speed=90.4x elapsed=0:00:02.11    frame=  241 fps= 92 q=1.0 size=    7424KiB time=00:04:01.00 bitrate= 252.4kbits/s speed=91.6x elapsed=0:00:02.63    frame=  294 fps= 93 q=1.0 size=    9216KiB time=00:04:54.00 bitrate= 256.8kbits/s speed=93.3x elapsed=0:00:03.15    frame=  349 fps= 95 q=1.0 size=   11008KiB time=00:05:49.00 bitrate= 258.4kbits/s speed=94.8x elapsed=0:00:03.68    frame=  402 fps= 96 q=1.0 size=   12544KiB time=00:06:42.00 bitrate= 255.6kbits/s speed=95.8x elapsed=0:00:04.19    frame=  455 fps= 96 q=1.0 size=   14336KiB time=00:07:35.00 bitrate= 258.1kbits/s speed=96.4x elapsed=0:00:04.72    frame=  509 fps= 97 q=1.0 size=   16128KiB time=00:08:29.00 bitrate= 259.6kbits/s speed=97.1x elapsed=0:00:05.24    frame=  563 fps= 98 q=1.0 size=   17664KiB time=00:09:23.00 bitrate= 257.0kbits/s speed=97.8x elapsed=0:00:05.75    frame=  616 fps= 98 q=1.0 size=   19456KiB time=00:10:16.00 bitrate= 258.7kbits/s speed=97.9x elapsed=0:00:06.29    frame=  669 fps= 98 q=1.0 size=   20992KiB time=00:11:09.00 bitrate= 257.1kbits/s speed=  98x elapsed=0:00:06.82    frame=  718 fps= 98 q=1.0 size=   22528KiB time=00:11:58.19 bitrate= 257.0kbits/s speed=97.7x elapsed=0:00:07.35    frame=  769 fps= 98 q=1.0 size=   24320KiB time=00:12:49.00 bitrate= 259.1kbits/s speed=97.7x elapsed=0:00:07.87    frame=  823 fps= 98 q=1.0 size=   25856KiB time=00:13:43.00 bitrate= 257.4kbits/s speed=97.9x elapsed=0:00:08.40    [mp4 @ 000001d2f02c3c40] Starting second pass: moving the moov atom to the beginning of the file
+[out#0/mp4 @ 000001d2f02a5f00] video:388KiB audio:27062KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.577714%
+frame=  865 fps= 95 q=-1.0 Lsize=   27609KiB time=00:14:25.98 bitrate= 261.2kbits/s speed=95.4x elapsed=0:00:09.08    
+[libx264 @ 000001d2f1b87e00] frame I:4     Avg QP: 5.00  size: 73318
+[libx264 @ 000001d2f1b87e00] frame P:888   Avg QP: 1.08  size:   117
+[libx264 @ 000001d2f1b87e00] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 000001d2f1b87e00] mb P  I16..4:  0.1%  0.0%  0.0%  P16..4:  0.1%  0.0%  0.0%  0.0%  0.0%    skip:99.8%
+[libx264 @ 000001d2f1b87e00] coded y,uvDC,uvAC intra: 4.0% 4.4% 4.4% inter: 0.0% 0.0% 0.0%
+[libx264 @ 000001d2f1b87e00] i16 v,h,dc,p: 81% 17%  1%  0%
+[libx264 @ 000001d2f1b87e00] i8c dc,h,v,p: 74% 25%  1%  0%
+[libx264 @ 000001d2f1b87e00] kb/s:3.56

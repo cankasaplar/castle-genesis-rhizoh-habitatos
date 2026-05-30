@@ -90,6 +90,23 @@ function providerKeyName(provider) {
   return map[p] || "OPENAI_API_KEY";
 }
 
+function checkGatewayLiveBaseOriginAlignment(env, errors, warnings, strict) {
+  const httpLlm = String(env.VITE_GATEWAY_HTTP || env.VITE_RHIZOH_LLM_HTTP || "").trim();
+  const liveBase = String(env.VITE_LIVE_GATEWAY_BASE || "").trim().replace(/\/+$/, "");
+  if (!httpLlm || !liveBase) return;
+  try {
+    const uLlm = new URL(httpLlm);
+    const uLive = new URL(/^https?:\/\//i.test(liveBase) ? liveBase : `https://${liveBase}`);
+    if (uLlm.origin !== uLive.origin) {
+      const msg = `Gateway origin drift: VITE_GATEWAY_HTTP/VITE_RHIZOH_LLM_HTTP (${uLlm.origin}) ≠ VITE_LIVE_GATEWAY_BASE (${uLive.origin}) — Genesis SSE vs LLM/runtime split riski; aynı Render host’a kilitle.`;
+      if (strict) errors.push(msg);
+      else warnings.push(msg);
+    }
+  } catch {
+    /* URL parse hatalarında diğer kontroller yeterli */
+  }
+}
+
 function runClient(env, strict) {
   const errors = [];
   const warnings = [];
@@ -106,6 +123,8 @@ function runClient(env, strict) {
   if (!env.VITE_GATEWAY_TOKEN && strict) {
     warnings.push("VITE_GATEWAY_TOKEN boş — gateway CASTLE_GATEWAY_TOKEN ile eşleşmeli (genelde üretimde dolu olmalı).");
   }
+
+  checkGatewayLiveBaseOriginAlignment(env, errors, warnings, strict);
 
   const appId = env.VITE_CASTLE_APP_ID || "castle-vnext-core";
   if (!env.VITE_CASTLE_APP_ID) warnings.push(`VITE_CASTLE_APP_ID boş — varsayılan kullanılacak: ${appId}`);

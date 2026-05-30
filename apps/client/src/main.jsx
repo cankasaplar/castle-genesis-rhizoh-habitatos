@@ -2,17 +2,15 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { initFirebaseAnalyticsWhenReady } from "./firebase/castleFirebase.js";
 import { getCookieConsentV0 } from "./rhizoh/ingress/ingress_router.js";
-import {
-  installCastleBootLogFlow,
-  installGlobalCrashTelemetry,
-  reportCastleFatal
-} from "./boot/castleCrashTelemetry.js";
+import { installCastleBootLogFlow, installGlobalCrashTelemetry, hideLegacyIndexHudV0 } from "./boot/castleCrashTelemetry.js";
+import { CastleRootErrorBoundary } from "./boot/CastleRootErrorBoundary.jsx";
 import { initRuntimeFrameOnce } from "./rhizoh/runtime/runtimeFrameCorrelationV0.js";
 import "../../../src/index.css";
 
 const bootLog = installCastleBootLogFlow();
 bootLog.start("boot.entry", "main.jsx loaded");
 installGlobalCrashTelemetry();
+hideLegacyIndexHudV0();
 bootLog.ok("boot.crash_telemetry", "global error + rejection hooks installed");
 initRuntimeFrameOnce();
 bootLog.ok("boot.runtime_frame", "runtimeFrameId bound (castle.last_frame.v1)");
@@ -41,56 +39,10 @@ if (getCookieConsentV0().analytics) {
   bootLog.ok("boot.firebase_analytics", "skipped — cookie consent analytics off");
 }
 
-class RootErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { error: null };
-  }
-
-  static getDerivedStateFromError(err) {
-    return { error: err };
-  }
-
-  componentDidCatch(err, info) {
-    reportCastleFatal("react_error_boundary", err, {
-      componentStack: String(info?.componentStack || "")
-    });
-  }
-
-  render() {
-    const { error } = this.state;
-    if (error) {
-      return (
-        <div
-          style={{
-            padding: 24,
-            minHeight: "100vh",
-            boxSizing: "border-box",
-            background: "#140505",
-            color: "#fecaca",
-            fontFamily: "system-ui, sans-serif"
-          }}
-        >
-          <h1 style={{ fontSize: 18, margin: "0 0 12px" }}>Castle arayüz hatası</h1>
-          <pre style={{ fontSize: 13, whiteSpace: "pre-wrap", margin: 0 }}>{String(error?.message || error)}</pre>
-          <pre style={{ fontSize: 11, opacity: 0.85, whiteSpace: "pre-wrap", marginTop: 12 }}>
-            {String(error?.stack || "")}
-          </pre>
-          <p style={{ fontSize: 13, marginTop: 16 }}>
-            Konsol: <code>[CASTLE_FATAL]</code> · <code>window.__CASTLE_LAST_FATAL__</code> · yenileme sonrası{" "}
-            <code>sessionStorage castle.last_fatal.v1</code>
-          </p>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
 import { mountCastleApplicationV0 } from "./boot/mountCastleApplicationV0.jsx";
 
 const appEl = document.getElementById("app");
-void mountCastleApplicationV0({ appEl, RootErrorBoundary, bootLog }).then((mount) => {
+void mountCastleApplicationV0({ appEl, RootErrorBoundary: CastleRootErrorBoundary, bootLog }).then((mount) => {
   if (mount.quarantine) {
     bootLog.ok("boot.react_mount", "quarantine shell rendered (ontological gate)");
   } else {

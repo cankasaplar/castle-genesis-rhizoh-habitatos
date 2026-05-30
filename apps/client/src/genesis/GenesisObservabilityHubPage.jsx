@@ -26,6 +26,7 @@ import {
   parseHubLiveContextSearch,
   buildGenesisContinuityEventArchiveQueryUrl
 } from "./genesisHubQueryContextV1.js";
+import { RhizohInterpretationOpsPanel } from "../rhizoh/ops/RhizohInterpretationOpsPanel.jsx";
 
 /** @typedef {"stream" | "replay" | "evolution"} GenesisObserveMode */
 
@@ -426,6 +427,14 @@ export default function GenesisObservabilityHubPage() {
             <span className="font-mono text-white/55">temporal-field-map</span>.
           </p>
           <GenesisTemporalFieldMapV01 gatewayOrigin={gatewayOrigin} hubQueryContext={hubQueryContext} lastSeq={streamTel.lastSeq} />
+        </section>
+
+        <section id="hub-interpretation-ops" className="rounded-xl border border-amber-500/12 bg-amber-950/8 p-3">
+          <SectionTitle k="B0">Interpretation ops (RAW / DERIVED / POLICY)</SectionTitle>
+          <p className="mb-2 text-[9px] leading-relaxed text-white/40 normal-case">
+            UX Contract v1 — ölçüm önce; anlatı asla baskın katman değil; POLICY yürütmez.
+          </p>
+          <RhizohInterpretationOpsPanel gatewayOrigin={gatewayOrigin} />
         </section>
 
         <section id="hub-runtime-panel" className="rounded-xl border border-white/[0.07] bg-black/25 p-3">

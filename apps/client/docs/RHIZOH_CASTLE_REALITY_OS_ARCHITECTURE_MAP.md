@@ -375,7 +375,9 @@ Upper layers (Cesium, Ghost, agents, map atmosphere) stay frozen until Faz 2 exi
 
 ---
 
-## 12. Rhizoh Living Loop Orchestrator (RLL-O)
+## 12. Rhizoh Living Loop Orchestrator (RLL-O) + Canonical Model Layer (RCML)
+
+> **SSOT FREEZE (felt model):** [`RHIZOH_CANONICAL_MODEL_LAYER_MAP_V1.0.md`](./RHIZOH_CANONICAL_MODEL_LAYER_MAP_V1.0.md) · **CI:** [`RCML_FREEZE_CONTRACT_V1.0.md`](./RCML_FREEZE_CONTRACT_V1.0.md) (`npm run rcml:validate-freeze-contract`)
 
 **Status:** **wired (v0)** — `rhizohLivingLoopOrchestratorV0.js` · `RhizohLivingLoopRuntime.jsx` · `AppRhizoh528` via `RhizohAtmospherePresenceBridge`.
 
@@ -400,6 +402,80 @@ LocationSeed (tz + locale, route-independent)
 | Memory WAL | `livingLoopMemoryWalV0.js` | Append-only observation lane; **does not** advance sealer cursor |
 
 **Debug:** `__rhizoh.debug().livingLoop` → `getRhizohLivingLoopSnapshotV0()` (wire in mount if needed).
+
+### 12.1 Canonical entry (AppRhizoh528) — UI shell
+
+**Screen:** `living_world_entry_castle_first` (B + C; dashboard değil).
+
+| Zone | Model field (RCML) | UI file |
+|------|-------------------|---------|
+| **1 Continuity Strip** | `continuityStrip.*` (L1·L4·L5) | `RhizohLivingWorldEntryShell` |
+| **2 World State** | `worldState.*` (L2·L4·L5) | read-only |
+| **3 Action Surface** | `actionSurface.*` | observe · enterCastle · createCastle (disabled) |
+
+**Model composer:** `rhizohLivingWorldEntryOrchestratorV0.js` · **Mount:** `AppRhizoh528.jsx` · **Tests:** `livingWorldEntrySingleFlowV0.test.js`
+
+### Human Experience Layer (HEL) — adjacent projection
+
+Copy-only layer for FTUE · mental model · action closure · deployment persona.
+
+**SSOT:** `livingWorldEntryHumanLayerV0.js` · composed in orchestrator as `humanLayer` · UI projects only.
+
+| Block | Purpose |
+|-------|---------|
+| `ftue` | First 30s story beats (first visit) |
+| `mentalModel` | One-liner Rhizoh = ne |
+| `persona` | tz/locale/time UX tone |
+| `actionLoopClosure` | yaptım → değişti → oldu |
+| `showTechnicalMeta` | `false` on FTUE — hides instance id |
+
+### 12.1.1 Observation → UI reaction binding (v0)
+
+**SSOT:** [`OBSERVATION_UI_REACTION_BINDING_LAYER_V0.md`](./OBSERVATION_UI_REACTION_BINDING_LAYER_V0.md)
+
+**Contract:** Read-only **signals** (FTUE drop, entropy tier, return visit) map to **HEL / pacing / continuity strip** adjustments — **reaction binding**, not decision logic for authority or substrate. Composer merge point remains `rhizohLivingWorldEntryOrchestratorV0.js` until a dedicated mapper module is introduced.
+
+**Intensity scaling (v0):** [`OBSERVATION_UI_REACTION_WEIGHTING_LAYER_V0.md`](./OBSERVATION_UI_REACTION_WEIGHTING_LAYER_V0.md) — same reaction *kind*, variable strength (e.g. HEL at 30% vs 80%); **not** a decision layer.
+
+---
+
+### 12.2 RCML layer index (frozen — detail in SSOT doc)
+
+| RCML | Module | § in [RCML v1.0](./RHIZOH_CANONICAL_MODEL_LAYER_MAP_V1.0.md) |
+|------|--------|--------------------------------------------------------------|
+| L1 Identity binding | `identityDriftBindingV0.js` | L1 |
+| L2 Entropy economy | `perceptualEntropyEconomyV0.js` | L2 |
+| L3 Drift calibration | `worldDriftCalibrationV0.js` | L3 |
+| L4 Mutation feedback | `worldMutationFeedbackV0.js` | L4 |
+| L5 Coherence | `crossSessionWorldCoherenceV0.js` · `passivePerceptionFieldCoherenceV0.js` · `spiralMMOAgreementLayerV0.js` | L5 |
+
+**Adjacent (not RCML core):** `livingWorldPersistenceUxV0.js` · `livingWorldCollectivePulseV0.js`
+
+---
+
+## 13. Academy · external signal · output · connection (truth SSOT)
+
+Honest boundary: Academy observe surface vs RCML internal signals vs future external / sync / artifact systems.
+
+**SSOT:** [`ACADEMY_REAL_SIGNAL_OUTPUT_CONNECTION_V1.0.md`](./ACADEMY_REAL_SIGNAL_OUTPUT_CONNECTION_V1.0.md)
+
+---
+
+## 14. Product launch — final four gaps (deploy · analytics · safety · Spiral)
+
+**Gap narrative (what is still open at scale):** [`PRODUCT_LAUNCH_GAP_FINAL_FOUR_V1.0.md`](./PRODUCT_LAUNCH_GAP_FINAL_FOUR_V1.0.md) · Spiral boundary CI: `npm run spiral:validate-rhizoh-boundary`
+
+**Single-file ops SSOT (v1.0):**
+
+| Artifact | Purpose |
+|----------|---------|
+| [`DEPLOY_MATRIX_V1.0.md`](./DEPLOY_MATRIX_V1.0.md) | Env × flags × rollback × demo vs prod (client build SSOT) |
+| [`EDGE_CASE_SURVIVAL_KIT_V1.0.md`](./EDGE_CASE_SURVIVAL_KIT_V1.0.md) | Corrupt storage, long offline, identity mismatch — recovery copy + support order |
+| [`GO_LIVE_CHECKLIST_ONE_PAGE_V1.0.md`](./GO_LIVE_CHECKLIST_ONE_PAGE_V1.0.md) | One-page production launch gate (links to full activation checklist) |
+| [`OBSERVABILITY_FEEDBACK_SPIRAL_ROADMAP_V1.0.md`](./OBSERVABILITY_FEEDBACK_SPIRAL_ROADMAP_V1.0.md) | Post-launch priority: real observability → product feedback loop → Spiral expansion |
+| [`OBSERVATION_UI_REACTION_BINDING_LAYER_V0.md`](./OBSERVATION_UI_REACTION_BINDING_LAYER_V0.md) | v0: observation signals → HEL / pacing / continuity strip (**mapping**, not execution logic) |
+| [`OBSERVATION_UI_REACTION_WEIGHTING_LAYER_V0.md`](./OBSERVATION_UI_REACTION_WEIGHTING_LAYER_V0.md) | v0: **intensity only** (`[0,1]` per channel); e.g. FTUE → HEL same mode, 30% vs 80% strength — **not** decisions |
+| [`CLOSED_LOOP_REALITY_V0.md`](./CLOSED_LOOP_REALITY_V0.md) | Conceptual full loop; clarifies that runtime currently stops at weighted UI reaction (no automated system adaptation) |
 
 ---
 

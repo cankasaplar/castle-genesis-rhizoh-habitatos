@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function formatUptime(sec) {
   const s = Math.max(0, Math.floor(Number(sec) || 0));
@@ -25,9 +25,12 @@ function Row({ label, value, mono }) {
 
 /**
  * Read-only observer of gateway `GET /rhizoh/genesis/runtime` — no client-side synthetic continuity.
- * @param {{ gatewayOrigin: string }} props
+ * @param {{ gatewayOrigin: string, onObservationState?: (s: { err: string, snap: unknown | null, loading: boolean }) => void }} props
  */
-export function GenesisRuntimeObservationPanel({ gatewayOrigin }) {
+export function GenesisRuntimeObservationPanel({ gatewayOrigin, onObservationState }) {
+  const onObservationStateRef = useRef(onObservationState);
+  onObservationStateRef.current = onObservationState;
+
   const url = useMemo(() => {
     const o = String(gatewayOrigin || "").trim().replace(/\/+$/, "");
     if (!o) return "";
@@ -58,6 +61,10 @@ export function GenesisRuntimeObservationPanel({ gatewayOrigin }) {
       setLoading(false);
     }
   }, [url]);
+
+  useEffect(() => {
+    onObservationStateRef.current?.({ err, snap, loading });
+  }, [err, snap, loading]);
 
   useEffect(() => {
     if (!url) return undefined;

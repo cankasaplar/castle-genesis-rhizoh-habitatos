@@ -43,7 +43,7 @@ GCL + Rollout + Lifecycle + LoadTest analysis
 | `GET /rhizoh/ops/hardening/status` | Includes `unifiedState` (compressed) |
 | CLI | `npm run ops:state-narrative` |
 
-**Export:** `docs/ops/export/unified_state_narrative_LATEST.json`
+**Export:** `docs/exports/ops/unified_state_narrative_LATEST.json`
 
 ---
 

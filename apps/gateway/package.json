@@ -7,7 +7,18 @@
     "start": "node src/server.js",
     "dev": "node src/server.js",
     "test": "node --test src/__tests__/**/*.test.js",
-    "reality:lock-hash": "node scripts/print-reality-lock-hash.mjs"
+    "reality:lock-hash": "node scripts/print-reality-lock-hash.mjs",
+    "ops:capacity-curve": "node src/ops/runCapacityRealityCurveV0.mjs",
+    "ops:load-test": "node src/ops/runLoadTestHarnessV0.mjs --phase=all",
+    "ops:load-test:baseline": "node src/ops/runLoadTestHarnessV0.mjs --scenario=baseline --users=100",
+    "ops:load-test:analyze": "node src/ops/runLoadTestAnalysisV0.mjs",
+    "ops:load-test:sim": "node src/ops/runCoordinationSimLoadTestV0.mjs",
+    "ops:state-narrative": "node src/ops/runUnifiedStateNarrativeV0.mjs",
+    "ops:misread-gate": "node src/ops/runNarrativeMisreadReleaseGateV0.mjs",
+    "ops:tenant-isolation-gate": "node src/ops/runTenantNarrativeIsolationGateV0.mjs",
+    "ops:social-propagation-gate": "node src/ops/runSocialPropagationReleaseGateV0.mjs",
+    "ops:trust-dynamics-gate": "node src/ops/runTrustDynamicsGateV0.mjs",
+    "ops:redis-stress": "node src/ops/runRedisStressLoadTestV0.mjs"
   },
   "dependencies": {
     "@castle/command-dsl": "1.0.0",

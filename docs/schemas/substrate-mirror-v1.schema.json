@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://castle.local/schemas/substrate-mirror-v1.schema.json",
+  "title": "Substrate mirror contract v1",
+  "description": "Documents nested executionResult and ambient box shapes for PR-3.2.1 canonical mirror. Runtime enforcement: substrateMirrorSchemaV0.js + canonicalMirrorPipelineV0.js",
+  "type": "object",
+  "properties": {
+    "canonicalMirrorContractVersion": { "const": 1 },
+    "nestedExecutionResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "light": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "color": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" },
+            "brightness": { "type": "number", "minimum": 0, "maximum": 1 },
+            "temp": { "type": "number" },
+            "temperature": { "type": "number" }
+          }
+        },
+        "media": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "action": { "type": "string" },
+            "payload": { "type": ["string", "null"] }
+          }
+        }
+      }
+    },
+    "ambientBoxState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["light", "media", "timestamp", "mode"],
+      "properties": {
+        "mode": { "const": "VIRTUAL_SUBSTRATE" },
+        "timestamp": { "type": "number" },
+        "light": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["color", "brightness", "temperature"],
+          "properties": {
+            "color": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" },
+            "brightness": { "type": "number", "minimum": 0, "maximum": 1 },
+            "temperature": { "type": "number" }
+          }
+        },
+        "media": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["active", "payload"],
+          "properties": {
+            "active": { "type": ["string", "null"] },
+            "payload": { "type": ["string", "null"] }
+          }
+        }
+      }
+    }
+  }
+}

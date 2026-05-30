@@ -1,0 +1,190 @@
+{
+  "schemaVersion": "operator-inference-rules/0.1.0",
+  "description": "SSOT rule registry for operator IR V0 inference (A1). Validator loads this; each check emits rule_id in evaluation trace (A3).",
+  "documentEvaluationOrder": [
+    {
+      "id": "IR.DOC.001",
+      "evaluator": "docSchemaVersion",
+      "formal": {
+        "gamma": "Γ ⊢ document loaded",
+        "iff": "doc.schemaVersion === \"operator-ir/0.1.0\""
+      }
+    },
+    {
+      "id": "IR.DOC.002",
+      "evaluator": "docRegion",
+      "formal": {
+        "gamma": "Γ.region ∈ { governance, world }",
+        "iff": "typeof region === string ∧ region ∈ Region"
+      }
+    },
+    {
+      "id": "IR.DOC.003",
+      "evaluator": "docStepsIsArray",
+      "formal": {
+        "gamma": "Γ ⊢ steps : Array",
+        "iff": "Array.isArray(doc.steps)"
+      }
+    }
+  ],
+  "perStepEvaluationOrder": [
+    {
+      "id": "IR.STEP.001",
+      "evaluator": "stepIsObject",
+      "formal": {
+        "gamma": "Γ ⊢ steps[i] : object",
+        "iff": "step !== null ∧ typeof step === \"object\""
+      }
+    },
+    {
+      "id": "IR.STEP.002",
+      "evaluator": "stepOpKnown",
+      "formal": {
+        "gamma": "Γ ⊢ op ∈ Ops",
+        "iff": "op ∈ { EMIT, BIND, FORK, EVAL, DIFF, RANK, WALK }"
+      }
+    },
+    {
+      "id": "IR.STEP.003",
+      "evaluator": "stepEffectKnown",
+      "formal": {
+        "gamma": "Γ ⊢ effect ∈ Effects ∪ default pure",
+        "iff": "effect ∈ { pure, readGraph, readIO, writeWorld }"
+      }
+    },
+    {
+      "id": "IR.STEP.004",
+      "evaluator": "governanceNoWriteWorld",
+      "formal": {
+        "gamma": "Γ.region = governance ⇒ ¬writeWorld",
+        "iff": "region ≠ governance ∨ effect ≠ writeWorld"
+      }
+    },
+    {
+      "id": "IR.EMIT.001",
+      "whenOp": "EMIT",
+      "evaluator": "emitIntentNonEmpty",
+      "formal": {
+        "gamma": "Γ ⊢ EMIT intent",
+        "iff": "intent ∈ NonEmptyString"
+      }
+    },
+    {
+      "id": "IR.EMIT.002",
+      "whenOp": "EMIT",
+      "evaluator": "emitIntentLayerMember",
+      "formal": {
+        "gamma": "Γ ⊢ intentLayer ∈ AllowedLayer",
+        "iff": "intentLayer ∈ IntentLayer (atlas SSOT set)"
+      }
+    },
+    {
+      "id": "IR.BIND.001",
+      "whenOp": "BIND",
+      "evaluator": "bindHandleNonEmpty",
+      "formal": {
+        "gamma": "Γ ⊢ BIND handle",
+        "iff": "handle ∈ NonEmptyString"
+      }
+    },
+    {
+      "id": "IR.FORK.001",
+      "whenOp": "FORK",
+      "evaluator": "forkSnapshotRef",
+      "formal": {
+        "gamma": "Γ ⊢ FORK snapshotRef : FactSnapshotRef",
+        "iff": "snapshotRef ∈ NonEmptyString"
+      }
+    },
+    {
+      "id": "IR.FORK.002",
+      "whenOp": "FORK",
+      "evaluator": "forkSandboxCap",
+      "formal": {
+        "gamma": "Γ ⊢ FORK sandboxCap : SandboxCap",
+        "iff": "sandboxCap ∈ NonEmptyString"
+      }
+    },
+    {
+      "id": "IR.EVAL.001",
+      "whenOp": "EVAL",
+      "evaluator": "evalForkCtxRef",
+      "formal": {
+        "gamma": "Γ ⊢ EVAL forkCtxRef : ForkCtxRef",
+        "iff": "forkCtxRef ∈ NonEmptyString"
+      }
+    },
+    {
+      "id": "IR.EVAL.002",
+      "whenOp": "EVAL",
+      "evaluator": "evalPolicyBundleHandle",
+      "formal": {
+        "gamma": "Γ ⊢ policyBundleHandle",
+        "iff": "object ∧ policyId ∧ policyRevision present"
+      }
+    },
+    {
+      "id": "IR.EVAL.003",
+      "whenOp": "EVAL",
+      "evaluator": "evalSnapshotSchemaHintOptional",
+      "formal": {
+        "gamma": "optional snapshotSchemaHint",
+        "iff": "absent ∨ typeof string"
+      }
+    },
+    {
+      "id": "IR.DIFF.001",
+      "whenOp": "DIFF",
+      "evaluator": "diffLeftExplainRef",
+      "formal": {
+        "gamma": "Γ ⊢ DIFF left : ExplainRef",
+        "iff": "leftExplainRef ∈ NonEmptyString"
+      }
+    },
+    {
+      "id": "IR.DIFF.002",
+      "whenOp": "DIFF",
+      "evaluator": "diffRightExplainRef",
+      "formal": {
+        "gamma": "Γ ⊢ DIFF right : ExplainRef",
+        "iff": "rightExplainRef ∈ NonEmptyString"
+      }
+    },
+    {
+      "id": "IR.RANK.001",
+      "whenOp": "RANK",
+      "evaluator": "rankPolicyId",
+      "formal": {
+        "gamma": "Γ ⊢ RANK rankPolicyId",
+        "iff": "rankPolicyId ∈ NonEmptyString"
+      }
+    },
+    {
+      "id": "IR.WALK.001",
+      "whenOp": "WALK",
+      "evaluator": "walkNodeRef",
+      "formal": {
+        "gamma": "Γ ⊢ WALK nodeRef",
+        "iff": "nodeRef ∈ NonEmptyString"
+      }
+    },
+    {
+      "id": "IR.WALK.002",
+      "whenOp": "WALK",
+      "evaluator": "walkEdgeKindsIsArray",
+      "formal": {
+        "gamma": "Γ ⊢ WALK.edgeKinds : Array",
+        "iff": "Array.isArray(edgeKinds)"
+      }
+    },
+    {
+      "id": "IR.WALK.003",
+      "whenOp": "WALK",
+      "evaluator": "walkEachEdgeKindMember",
+      "formal": {
+        "gamma": "∀k. edgeKinds[k] ∈ EdgeKind",
+        "iff": "each element ∈ atlas EdgeKind seed set"
+      }
+    }
+  ]
+}

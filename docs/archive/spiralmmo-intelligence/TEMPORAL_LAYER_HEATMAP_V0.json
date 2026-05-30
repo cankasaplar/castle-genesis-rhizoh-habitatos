@@ -1,0 +1,107 @@
+﻿{
+    "days":  [
+                 "2026-05-28"
+             ],
+    "matrix":  [
+                   {
+                       "layer":  "file",
+                       "cells":  [
+                                     {
+                                         "day":  "2026-05-28",
+                                         "value":  3
+                                     }
+                                 ],
+                       "max":  3
+                   },
+                   {
+                       "layer":  "text",
+                       "cells":  [
+                                     {
+                                         "day":  "2026-05-28",
+                                         "value":  1
+                                     }
+                                 ],
+                       "max":  1
+                   },
+                   {
+                       "layer":  "comment",
+                       "cells":  [
+                                     {
+                                         "day":  "2026-05-28",
+                                         "value":  0
+                                     }
+                                 ],
+                       "max":  0
+                   },
+                   {
+                       "layer":  "meaning",
+                       "cells":  [
+                                     {
+                                         "day":  "2026-05-28",
+                                         "value":  0
+                                     }
+                                 ],
+                       "max":  0
+                   },
+                   {
+                       "layer":  "fun",
+                       "cells":  [
+                                     {
+                                         "day":  "2026-05-28",
+                                         "value":  0
+                                     }
+                                 ],
+                       "max":  0
+                   },
+                   {
+                       "layer":  "music",
+                       "cells":  [
+                                     {
+                                         "day":  "2026-05-28",
+                                         "value":  0
+                                     }
+                                 ],
+                       "max":  0
+                   },
+                   {
+                       "layer":  "art",
+                       "cells":  [
+                                     {
+                                         "day":  "2026-05-28",
+                                         "value":  0
+                                     }
+                                 ],
+                       "max":  0
+                   },
+                   {
+                       "layer":  "sport",
+                       "cells":  [
+                                     {
+                                         "day":  "2026-05-28",
+                                         "value":  0
+                                     }
+                                 ],
+                       "max":  0
+                   },
+                   {
+                       "layer":  "competition",
+                       "cells":  [
+                                     {
+                                         "day":  "2026-05-28",
+                                         "value":  0
+                                     }
+                                 ],
+                       "max":  0
+                   },
+                   {
+                       "layer":  "real_layer",
+                       "cells":  [
+                                     {
+                                         "day":  "2026-05-28",
+                                         "value":  0
+                                     }
+                                 ],
+                       "max":  0
+                   }
+               ]
+}

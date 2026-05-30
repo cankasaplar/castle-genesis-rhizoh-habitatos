@@ -49,6 +49,8 @@ $lines = @(
   "VITE_SATELLITE_NODE_REGISTRY_V0=0",
   "VITE_SOVEREIGN_NODE_ONBOARDING=0",
   "",
+  "# Fast speech + voice v3 (rhizoh.com conversation dock)",
+  "VITE_RHIZOH_FAST_SPEECH_MODE=1",
   "# Voice Engine v3 - MediaRecorder + gateway Whisper/Google STT",
   "VITE_RHIZOH_VOICE_ENGINE_V3=1",
   "VITE_RHIZOH_VOICE_WITNESS_SHADOW=1",

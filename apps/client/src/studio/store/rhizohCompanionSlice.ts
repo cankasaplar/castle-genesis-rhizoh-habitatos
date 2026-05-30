@@ -23,10 +23,18 @@ import {
 import { appendCausalNode } from "../runtime/graphReducer";
 import { KernelGuardRun } from "../runtime/kernelGuard";
 import { companionOrbitTransform, RHIZOH_ORBIT_PHASE_DEFAULT } from "../lib/rhizohCompanionOrbit";
+import {
+  getCompanionArchetypeDefinitionV1,
+  resolveCompanionArchetypeFromInvokeV1,
+  stableCompanionUidV1,
+  stubCompanionNarrativeOutputV1,
+  stubCompanionResponseSummaryV1
+} from "../runtime/companionAgentRegistryV1.js";
 import type {
   AgentProjection,
   CausalGraphRegistry,
   CausalEconomyLayerState,
+  CompanionAgentArchetype,
   PresenceLayerState,
   StudioKernelState,
   StudioResult
@@ -35,15 +43,30 @@ import { defaultCausalEconomy, defaultPresence } from "./initialState";
 import { getStudioKernelState, setStudioKernelState } from "./internalStore";
 
 export function stableRhizohCompanionUid(ownerAvatarUid: string): string {
-  return `rhizoh:companion:${ownerAvatarUid}`;
+  return stableCompanionUidV1("rhizoh", ownerAvatarUid);
+}
+
+export function stableAtlasCompanionUid(ownerAvatarUid: string): string {
+  return stableCompanionUidV1("atlas", ownerAvatarUid);
+}
+
+export function stableGhostCompanionUid(ownerAvatarUid: string): string {
+  return stableCompanionUidV1("ghost", ownerAvatarUid);
 }
 
 export function isRhizohCompanionInvoke(agentUid: string, intent?: string): boolean {
-  const uid = String(agentUid || "").toLowerCase();
-  if (uid.includes("rhizoh")) return true;
-  if (intent && /@rhizoh\b/i.test(intent)) return true;
-  return false;
+  return resolveCompanionArchetypeFromInvokeV1(agentUid, intent) === "rhizoh";
 }
+
+export function isAtlasCompanionInvoke(agentUid: string, intent?: string): boolean {
+  return resolveCompanionArchetypeFromInvokeV1(agentUid, intent) === "atlas";
+}
+
+export function isGhostCompanionInvoke(agentUid: string, intent?: string): boolean {
+  return resolveCompanionArchetypeFromInvokeV1(agentUid, intent) === "ghost";
+}
+
+export { resolveCompanionArchetypeFromInvokeV1 as resolveCompanionArchetypeFromInvoke };
 
 function attentionTargetUid(
   pres: PresenceLayerState,
@@ -59,10 +82,6 @@ function attentionTargetUid(
   return ownerAvatarUid;
 }
 
-function stubResponseSummary(intent: string | undefined): string {
-  const t = (intent ?? "").trim().slice(0, 160);
-  return t ? `Rhizoh · ${t}` : "Rhizoh · here.";
-}
 
 function ensureBranch(s: StudioKernelState, branchId: string, causalGraph: CausalGraphRegistry) {
   let cg = causalGraph;
@@ -115,7 +134,8 @@ export function presenceWithSyncedCompanionTransforms(
   };
 }
 
-export function companionAppendRhizohChain(input: {
+export function companionAppendArchetypeChain(input: {
+  archetype: CompanionAgentArchetype;
   s: StudioKernelState;
   pres: PresenceLayerState;
   causalGraph: CausalGraphRegistry;
@@ -132,7 +152,10 @@ export function companionAppendRhizohChain(input: {
   presence: PresenceLayerState;
   causalEconomy: CausalEconomyLayerState;
 }> {
-  const companionKey = stableRhizohCompanionUid(input.ownerAvatarUid);
+  const def = getCompanionArchetypeDefinitionV1(input.archetype);
+  if (!def) return { ok: false, error: "companion_archetype_unknown" };
+
+  const companionKey = stableCompanionUidV1(input.archetype, input.ownerAvatarUid);
   const writer = `companion:${companionKey}`;
   const invokeNode = input.causalGraph.nodes[input.invokeNodeId];
   if (!invokeNode) return { ok: false, error: "invoke_node_missing" };
@@ -184,7 +207,7 @@ export function companionAppendRhizohChain(input: {
 
     const proj0: AgentProjection = {
       uid: companionKey,
-      archetype: "rhizoh",
+      archetype: input.archetype,
       ownerAvatarUid: input.ownerAvatarUid,
       roomUid: input.roomUid,
       state: "listening",
@@ -231,9 +254,15 @@ export function companionAppendRhizohChain(input: {
   econ = accumulateEconomy(econ, charge);
   causeId = listenNode.id;
 
-  const summary = stubResponseSummary(input.intent);
+  const narrativeOut = stubCompanionNarrativeOutputV1(input.archetype, input.intent);
+  const summary = narrativeOut.text;
   const respondTick = nextCompanionTick(graph, input.branchId, companionKey, listenNode.tickIndex + 1);
-  const respondPayload = { agentUid: companionKey, roomUid: input.roomUid, summary };
+  const respondPayload = {
+    agentUid: companionKey,
+    roomUid: input.roomUid,
+    summary,
+    narrativeProvenance: narrativeOut.provenance
+  };
   const g2 = KernelGuardRun({ identity: input.s.identity, action: "presence.agent.respond", payload: respondPayload });
   if (!g2.allowed) return { ok: false, error: g2.error ?? "kernel_guard_denied" };
 
@@ -260,7 +289,7 @@ export function companionAppendRhizohChain(input: {
       ...(pres.companionAgents ?? {}),
       [companionKey]: {
         ...prevAg,
-        state: "orbiting",
+        state: def.defaultOrbitState,
         attentionTargetUid: attention,
         lastResponseSummary: summary,
         lastStateAt: input.wall,
@@ -270,6 +299,13 @@ export function companionAppendRhizohChain(input: {
   };
 
   return { ok: true, value: { causalGraph: graph, presence: pres, causalEconomy: econ } };
+}
+
+/** @deprecated use {@link companionAppendArchetypeChain} */
+export function companionAppendRhizohChain(
+  input: Omit<Parameters<typeof companionAppendArchetypeChain>[0], "archetype">
+): ReturnType<typeof companionAppendArchetypeChain> {
+  return companionAppendArchetypeChain({ ...input, archetype: "rhizoh" });
 }
 
 export function rhizohCompanionDepart(payload: { ownerAvatarUid: string }): StudioResult<{ causalNodeId: string }> {

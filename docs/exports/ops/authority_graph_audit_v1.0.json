@@ -1,0 +1,10 @@
+{
+  "schema": "castle.rhizoh.authority_graph_audit.v1",
+  "atMs": 1779583977650,
+  "phase": "2.3",
+  "fileCount": 651,
+  "edgeCount": 604,
+  "violations": [],
+  "ok": true,
+  "gateWiringNote": "phase1ActivationGateV0 has zero runtime imports; not wired from epistemicStability or audit bundle gateHints (human hints only)."
+}

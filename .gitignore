@@ -10,5 +10,10 @@ firebase-ci.json
 cloudflared.exe
 .firebase/
 
+# Gateway genesis durable continuity (local / deploy volumes)
+apps/gateway/data/*.jsonl
+apps/gateway/data/*.json
+!apps/gateway/data/.gitkeep
+
 # Gerçek anahtarları buraya yaz; bu dosya repoda olmasın (şablon: ANAHTARLAR_BURAYA.txt)
 ANAHTARLAR_BURAYA.local.txt

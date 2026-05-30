@@ -273,7 +273,12 @@ export function hasLegalAccessAckV0() {
   const parsed = parseLegalAccessAckV0();
   if (!parsed || parsed.schema !== LEGAL_ACCESS_ACK_SCHEMA_V0) return false;
   const a = parsed.acceptances;
-  return Boolean(a?.terms && a?.kvkkAydinlatma && a?.aiCrossBorderConsent);
+  if (!Boolean(a?.terms && a?.kvkkAydinlatma && a?.aiCrossBorderConsent)) return false;
+  const stored = parsed.docVersions || {};
+  for (const [key, version] of Object.entries(LEGAL_DOC_VERSIONS_V0)) {
+    if (stored[key] !== version) return false;
+  }
+  return true;
 }
 
 /** @deprecated alias */
@@ -338,6 +343,9 @@ function appendLegalAcceptanceAuditV0(record) {
     /* audit best-effort */
   }
 }
+
+export const LEGAL_REALITY_SPEC_SHA256_V0 =
+  "5dbeb7ee93e8b3ff40be73d569f93c9cec73eee37a7a3535205d87883a885972";
 
 /**
  * @param {{ specSha256?: string | null, acceptances: { terms: boolean, kvkkAydinlatma: boolean, aiCrossBorderConsent: boolean } }} opts

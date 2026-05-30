@@ -1,0 +1,3 @@
+﻿"batch_id","archived_at_utc","source_hint","content_type","quality","line_count","char_count","title","file_name","path"
+"llm-20260528-172115","2026-05-28T14:21:15.5648122Z","unknown","freeform_notes","substantial","12","270","README","20260528-172115_unknown_readme.md","C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\inbox\20260528-172115_unknown_readme.md"
+"llm-20260528-172115","2026-05-28T14:21:15.5978877Z","unknown","conversation","empty_or_stub","3","109","test-sample","20260528-172115_unknown_test-sample.md","C:\Users\LENOVO\Desktop\castle\docs\archive\llm-chats\inbox\20260528-172115_unknown_test-sample.md"

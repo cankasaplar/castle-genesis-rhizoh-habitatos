@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://castle.system/schemas/sovereign-network-permission-v0.schema.json",
+  "title": "SovereignNetworkPermissionV0",
+  "description": "PR-2 soft ACL contract: capability flags + deny list. trustScore is observational only — never execution authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "castleId",
+    "counterpartyCastleId",
+    "allowSubscribe",
+    "allowBroadcast",
+    "allowPortalTransfer",
+    "denyList"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 0 },
+    "castleId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "Castle owning this permission row (subject)."
+    },
+    "counterpartyCastleId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "Peer Castle this row governs (object)."
+    },
+    "allowSubscribe": { "type": "boolean", "description": "May receive subscribed topics from counterparty." },
+    "allowBroadcast": { "type": "boolean", "description": "May receive broadcast fan-out from counterparty." },
+    "allowPortalTransfer": { "type": "boolean", "description": "May participate in portal pointer transfer initiated by counterparty." },
+    "denyList": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 256 },
+      "description": "Topic ids, event prefixes, or counterparty-derived keys to hard-deny regardless of allows."
+    },
+    "trustScore": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Optional heuristic; MUST NOT gate security decisions alone."
+    }
+  }
+}

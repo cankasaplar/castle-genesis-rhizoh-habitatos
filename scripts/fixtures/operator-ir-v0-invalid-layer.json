@@ -1,0 +1,5 @@
+{
+  "schemaVersion": "operator-ir/0.1.0",
+  "region": "governance",
+  "steps": [{ "op": "EMIT", "intent": "X", "intentLayer": "not_a_layer" }]
+}

@@ -1,0 +1,394 @@
+﻿[
+    {
+        "source":  "llm_chat",
+        "reference":  "20260528-172115_unknown_test-sample.md",
+        "severity":  "low",
+        "signal_count":  1,
+        "signals":  "empty_or_stub"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\02_intro.html",
+        "severity":  "high",
+        "signal_count":  1,
+        "signals":  "empty_or_stub"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\05_intro.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\09_dashboard.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\10_dashboard.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\11_dashboard.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\12_dashboard.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\20_gameplay.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\21_gameplay.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\23_map_missions.html",
+        "severity":  "high",
+        "signal_count":  1,
+        "signals":  "empty_or_stub"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\24_map_missions.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\28_map_missions.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\29_map_missions.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\30_rewards_manifesto.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\37_advanced.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\39_advanced.html",
+        "severity":  "high",
+        "signal_count":  1,
+        "signals":  "empty_or_stub"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\46_advanced.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\47_advanced.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\52_advanced.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\55_advanced.html",
+        "severity":  "high",
+        "signal_count":  1,
+        "signals":  "empty_or_stub"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\againspiral.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\ai-helper.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\archive.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\balance_hill.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\can.html",
+        "severity":  "high",
+        "signal_count":  1,
+        "signals":  "empty_or_stub"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\castle.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\castlebyck_entry.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\castle_climb.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\castle_core.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\cloud_archive.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\coded_wish.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\codex_builder.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\coop.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\countdown_eye.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\crossover_panel.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\dadey.html",
+        "severity":  "high",
+        "signal_count":  1,
+        "signals":  "empty_or_stub"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\dark_archive.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\dreamentry.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\dream_spiral.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\echo_flow.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "html_surface",
+        "reference":  "assets\\SPIRALMMO HTML\\eleven_second_portal.html",
+        "severity":  "medium",
+        "signal_count":  1,
+        "signals":  "insufficient_code"
+    },
+    {
+        "source":  "duplicate_basename",
+        "reference":  "__init__.py",
+        "severity":  "medium",
+        "signal_count":  106,
+        "signals":  "possible_mirror_duplicate_paths"
+    },
+    {
+        "source":  "duplicate_basename",
+        "reference":  "__init__.cpython-313.pyc",
+        "severity":  "medium",
+        "signal_count":  102,
+        "signals":  "possible_mirror_duplicate_paths"
+    },
+    {
+        "source":  "duplicate_basename",
+        "reference":  "index.html",
+        "severity":  "medium",
+        "signal_count":  58,
+        "signals":  "possible_mirror_duplicate_paths"
+    },
+    {
+        "source":  "duplicate_basename",
+        "reference":  "main.js",
+        "severity":  "medium",
+        "signal_count":  22,
+        "signals":  "possible_mirror_duplicate_paths"
+    },
+    {
+        "source":  "duplicate_basename",
+        "reference":  "README.md",
+        "severity":  "medium",
+        "signal_count":  22,
+        "signals":  "possible_mirror_duplicate_paths"
+    },
+    {
+        "source":  "duplicate_basename",
+        "reference":  "py.typed",
+        "severity":  "medium",
+        "signal_count":  19,
+        "signals":  "possible_mirror_duplicate_paths"
+    },
+    {
+        "source":  "duplicate_basename",
+        "reference":  "__init__.pyi",
+        "severity":  "medium",
+        "signal_count":  18,
+        "signals":  "possible_mirror_duplicate_paths"
+    },
+    {
+        "source":  "duplicate_basename",
+        "reference":  "package.json",
+        "severity":  "medium",
+        "signal_count":  17,
+        "signals":  "possible_mirror_duplicate_paths"
+    },
+    {
+        "source":  "duplicate_basename",
+        "reference":  "style.css",
+        "severity":  "medium",
+        "signal_count":  16,
+        "signals":  "possible_mirror_duplicate_paths"
+    },
+    {
+        "source":  "duplicate_basename",
+        "reference":  "game.js",
+        "severity":  "medium",
+        "signal_count":  14,
+        "signals":  "possible_mirror_duplicate_paths"
+    },
+    {
+        "source":  "duplicate_basename",
+        "reference":  "WHEEL",
+        "severity":  "medium",
+        "signal_count":  11,
+        "signals":  "possible_mirror_duplicate_paths"
+    },
+    {
+        "source":  "duplicate_basename",
+        "reference":  "METADATA",
+        "severity":  "medium",
+        "signal_count":  11,
+        "signals":  "possible_mirror_duplicate_paths"
+    },
+    {
+        "source":  "duplicate_basename",
+        "reference":  "LICENSE.txt",
+        "severity":  "medium",
+        "signal_count":  11,
+        "signals":  "possible_mirror_duplicate_paths"
+    },
+    {
+        "source":  "duplicate_basename",
+        "reference":  "RECORD",
+        "severity":  "medium",
+        "signal_count":  11,
+        "signals":  "possible_mirror_duplicate_paths"
+    },
+    {
+        "source":  "duplicate_basename",
+        "reference":  "INSTALLER",
+        "severity":  "medium",
+        "signal_count":  11,
+        "signals":  "possible_mirror_duplicate_paths"
+    }
+]

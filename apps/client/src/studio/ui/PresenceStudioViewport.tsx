@@ -5,9 +5,17 @@ import { ENTITY_CACHE_KEY, projectEntity } from "../runtime/projectionReducer";
 import { collectRoomsForCrossRoomStitch, stitchCrossRoomBiasMap } from "../lib/crossRoomFieldStitch";
 import { GREENROOM_MAIN_HALL_ROOM_UID } from "../lib/greenRoomRouteBinding";
 import { derivePropagatedRenderBiasField } from "../lib/propagateRenderBiasField";
-import { getStudioKernelState, subscribeStudioKernel } from "../store/internalStore";
+import { getStudioKernelState, setStudioKernelState, subscribeStudioKernel } from "../store/internalStore";
+import { ingestGltfSceneGraphStreamOnKernelV0 } from "../../rhizoh/runtime/sceneGraphStreamV0.js";
+import { isWalGeometryIngressEnabledV0 } from "../../rhizoh/runtime/walWorldAuthorityGateV0.js";
+import { tickSomaticExecutionCouplingV0 } from "../lib/somaticExecutionCouplingLayerV0";
+import {
+  installRealSimulationEngineCouplingV0,
+  uninstallRealSimulationEngineCouplingV0
+} from "../lib/realSimulationEngineCouplingV0";
 import { PRESENCE_HALL_HALF } from "../store/presenceSpatialSlice";
-import type { PresenceLayerState } from "../types/rskOntology";
+import type { CompanionAgentArchetype, PresenceLayerState } from "../types/rskOntology";
+import { getCompanionArchetypeDefinitionV1 } from "../runtime/companionAgentRegistryV1.js";
 
 type AvatarBundle = { body: THREE.Mesh; ring: THREE.Mesh; mat: THREE.MeshStandardMaterial };
 
@@ -91,6 +99,13 @@ export function PresenceStudioViewport() {
     matRing: THREE.MeshBasicMaterial;
     matHalo: THREE.MeshBasicMaterial;
   } | null>(null);
+
+  useEffect(() => {
+    const w = typeof window !== "undefined" ? (window as unknown as { __rskRealSim?: boolean }) : undefined;
+    if (!w?.__rskRealSim) return undefined;
+    installRealSimulationEngineCouplingV0();
+    return () => uninstallRealSimulationEngineCouplingV0();
+  }, []);
 
   useEffect(() => {
     const el = mountRef.current;
@@ -195,12 +210,43 @@ export function PresenceStudioViewport() {
       matHalo
     };
 
+    if (isWalGeometryIngressEnabledV0()) {
+      const hallHalf = PRESENCE_HALL_HALF;
+      ingestGltfSceneGraphStreamOnKernelV0(getStudioKernelState, setStudioKernelState, {
+        roomScope: GREENROOM_MAIN_HALL_ROOM_UID,
+        frameId: "viewport:hall:static:v0",
+        gltfOrNodes: [
+          {
+            nodeUid: "hall:stage",
+            transform: { x: 0, y: 0.02, z: -7, rotY: 0 },
+            bounds: { hx: 4, hy: 0.02, hz: 2 }
+          },
+          {
+            nodeUid: "hall:lounge",
+            transform: { x: 0, y: 0.015, z: 3, rotY: 0 },
+            bounds: { hx: hallHalf * 0.8, hy: 0.02, hz: hallHalf * 0.6 }
+          },
+          {
+            nodeUid: "hall:floor_grid",
+            transform: { x: 0, y: 0, z: 0, rotY: 0 },
+            bounds: { hx: hallHalf, hy: 0.01, hz: hallHalf }
+          }
+        ]
+      });
+    }
+
     const ringGeo = new THREE.RingGeometry(0.42, 0.58, 28);
     const haloRingGeo = new THREE.RingGeometry(0.28, 0.38, 24);
+
+    let lastCouplingMs = performance.now();
 
     const sync = () => {
       const ctx = sceneRef.current;
       if (!ctx) return;
+      const nowMs = performance.now();
+      const dtMs = Math.min(250, Math.max(0, nowMs - lastCouplingMs));
+      lastCouplingMs = nowMs;
+      tickSomaticExecutionCouplingV0({ dtMs, nowMs, getState: getStudioKernelState });
       const s = getStudioKernelState();
       const branchId = s.runtime.activeBranchId ?? CAUSAL_MAIN_BRANCH_ID;
       const graph = s.registry.causalGraph;
@@ -223,7 +269,6 @@ export function PresenceStudioViewport() {
       const companions = s.presence?.companionAgents ?? {};
       const pets = s.presence?.pets ?? {};
 
-      const nowMs = performance.now();
       const frameSec = nowMs / 1000;
       const pres = s.presence;
       const hallRoomUid = pickPrimaryHallRoomUid(pres);
@@ -394,7 +439,10 @@ export function PresenceStudioViewport() {
       }
 
       for (const [cUid, ag] of Object.entries(companions)) {
-        if (ag.archetype !== "rhizoh") continue;
+        const archetypeDef = getCompanionArchetypeDefinitionV1(
+          ag.archetype as CompanionAgentArchetype
+        );
+        if (!archetypeDef) continue;
         const owner = avatars[ag.ownerAvatarUid];
         if (!owner) continue;
         if (!hallPosForAvatar(owner)) continue;
@@ -402,8 +450,8 @@ export function PresenceStudioViewport() {
         let cb = ctx.companionBundles.get(cUid);
         if (!cb) {
           const mat = new THREE.MeshStandardMaterial({
-            color: 0xa78bfa,
-            emissive: 0x4c1d95,
+            color: archetypeDef.meshColor,
+            emissive: archetypeDef.meshEmissive,
             emissiveIntensity: 0.35,
             metalness: 0.35,
             roughness: 0.45

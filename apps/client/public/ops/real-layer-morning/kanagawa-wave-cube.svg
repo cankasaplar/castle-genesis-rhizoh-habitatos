@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 520" role="img" aria-label="Kanagawa wave cube with formula">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#060f18"/>
+      <stop offset="100%" stop-color="#0b1d2a"/>
+    </linearGradient>
+    <linearGradient id="faceFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a0e06"/>
+      <stop offset="100%" stop-color="#120a04"/>
+    </linearGradient>
+    <linearGradient id="edgeGlow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff6b1a"/>
+      <stop offset="50%" stop-color="#ffb347"/>
+      <stop offset="100%" stop-color="#ff8c42"/>
+    </linearGradient>
+    <radialGradient id="cubeAura" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#ff8c42" stop-opacity="0.35"/>
+      <stop offset="70%" stop-color="#ff6b1a" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#ff6b1a" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="lineGlow">
+      <feGaussianBlur stdDeviation="1.2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="clipTop">
+      <polygon points="0,-125 155,-62 0,0 -155,-62"/>
+    </clipPath>
+    <clipPath id="clipLeft">
+      <polygon points="-155,-62 0,0 0,145 -155,88"/>
+    </clipPath>
+    <clipPath id="clipRight">
+      <polygon points="0,0 155,-62 155,88 0,145"/>
+    </clipPath>
+  </defs>
+
+  <rect width="640" height="520" fill="url(#sky)"/>
+  <text x="320" y="38" text-anchor="middle" fill="#8ecae6" font-family="Georgia, serif" font-size="14" letter-spacing="3">REAL LAYER &#183; 06:44</text>
+  <text x="320" y="58" text-anchor="middle" fill="#5a8fab" font-family="Segoe UI, Arial, sans-serif" font-size="10">rhizoh.com &#183; observation only</text>
+
+  <ellipse cx="320" cy="285" rx="200" ry="120" fill="url(#cubeAura)"/>
+
+  <g transform="translate(320 285)" filter="url(#softGlow)">
+    <!-- cube faces -->
+    <polygon points="0,-125 155,-62 0,0 -155,-62" fill="url(#faceFill)" stroke="url(#edgeGlow)" stroke-width="2"/>
+    <polygon points="-155,-62 0,0 0,145 -155,88" fill="#140c06" stroke="url(#edgeGlow)" stroke-width="2"/>
+    <polygon points="0,0 155,-62 155,88 0,145" fill="#180e07" stroke="url(#edgeGlow)" stroke-width="2"/>
+
+    <!-- top: seal ring -->
+    <g clip-path="url(#clipTop)" filter="url(#lineGlow)">
+      <circle cx="0" cy="-48" r="42" fill="none" stroke="#ffb347" stroke-width="1.1" opacity="0.85"/>
+      <circle cx="0" cy="-48" r="28" fill="none" stroke="#ff9a3c" stroke-width="0.8" opacity="0.6"/>
+      <text x="0" y="-44" text-anchor="middle" fill="#ffd4a8" font-family="Consolas, monospace" font-size="11" opacity="0.9">0644</text>
+    </g>
+
+    <!-- left: Vitruvian Man -->
+    <g clip-path="url(#clipLeft)" filter="url(#lineGlow)">
+      <rect x="-118" y="-18" width="95" height="95" fill="none" stroke="#ffb347" stroke-width="1" opacity="0.75"/>
+      <circle cx="-70" cy="28" r="40" fill="none" stroke="#ff9a3c" stroke-width="1.2" opacity="0.9"/>
+      <circle cx="-70" cy="12" r="7" fill="none" stroke="#ffd4a8" stroke-width="1.1"/>
+      <line x1="-70" y1="19" x2="-70" y2="52" stroke="#ffb347" stroke-width="1.3"/>
+      <line x1="-88" y1="34" x2="-52" y2="34" stroke="#ffb347" stroke-width="1.2"/>
+      <line x1="-70" y1="52" x2="-88" y2="78" stroke="#ff9a3c" stroke-width="1.2"/>
+      <line x1="-70" y1="52" x2="-52" y2="78" stroke="#ff9a3c" stroke-width="1.2"/>
+      <line x1="-70" y1="34" x2="-82" y2="22" stroke="#ffd4a8" stroke-width="1"/>
+      <line x1="-70" y1="34" x2="-58" y2="22" stroke="#ffd4a8" stroke-width="1"/>
+      <path d="M-98,78 Q-70,68 -42,78" fill="none" stroke="#ff8c42" stroke-width="0.9" opacity="0.7"/>
+    </g>
+
+    <!-- right: Great Wave -->
+    <g clip-path="url(#clipRight)" filter="url(#lineGlow)">
+      <path d="M18,95 L18,18" stroke="#ff6b1a" stroke-width="0.6" opacity="0.4"/>
+      <path d="M12,88 C35,72 55,78 78,62 C98,48 115,55 138,38" fill="none" stroke="#ffd4a8" stroke-width="2.2"/>
+      <path d="M8,98 C32,82 58,90 88,74 C108,62 128,70 148,52" fill="none" stroke="#ffb347" stroke-width="1.6" opacity="0.85"/>
+      <path d="M22,102 C48,88 72,96 102,80 C122,70 138,78 152,58" fill="none" stroke="#ff9a3c" stroke-width="1.2" opacity="0.7"/>
+      <path d="M30,108 L42,98 L54,106 L66,94 L78,102 L90,90" fill="none" stroke="#ffe0b8" stroke-width="1.4"/>
+      <path d="M95,108 L108,96 L122,104" fill="none" stroke="#ffd4a8" stroke-width="1.1"/>
+      <path d="M118,42 L128,28 L138,42 Z" fill="none" stroke="#ffb347" stroke-width="1"/>
+      <circle cx="128" cy="36" r="6" fill="none" stroke="#ff9a3c" stroke-width="0.8" opacity="0.8"/>
+      <!-- foam claws -->
+      <path d="M38,108 Q44,100 50,108" fill="none" stroke="#fff0d6" stroke-width="1"/>
+      <path d="M62,104 Q68,96 74,104" fill="none" stroke="#fff0d6" stroke-width="1"/>
+      <path d="M86,100 Q92,92 98,100" fill="none" stroke="#fff0d6" stroke-width="1"/>
+      <!-- formula on wave face -->
+      <text x="78" y="118" text-anchor="middle" fill="#ffe8c8" font-family="Georgia, serif" font-size="12" font-weight="normal" transform="rotate(24 78 118)">&#952;_proj = &#960;(obs)</text>
+    </g>
+
+    <!-- edge highlights -->
+    <line x1="-155" y1="-62" x2="0" y2="0" stroke="#ffd4a8" stroke-width="1.5" opacity="0.5"/>
+    <line x1="0" y1="0" x2="155" y2="-62" stroke="#ffd4a8" stroke-width="1.5" opacity="0.5"/>
+    <line x1="0" y1="0" x2="0" y2="145" stroke="#ff9a3c" stroke-width="1.2" opacity="0.35"/>
+  </g>
+
+  <text x="320" y="468" text-anchor="middle" fill="#6a9bb5" font-family="Georgia, serif" font-size="11" font-style="italic">sabah e&#351;i&#287;i &#183; sessiz y&#252;zey</text>
+  <text x="320" y="490" text-anchor="middle" fill="#4a7f9a" font-family="Segoe UI, Arial, sans-serif" font-size="9">observe &#8800; exec &#183; seal(WAL)</text>
+</svg>

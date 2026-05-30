@@ -1,0 +1,1635 @@
+{
+  "schema": "rhizoh.phase3.harness_export.v0",
+  "atMs": "2026-05-25T05:08:33.528Z",
+  "firewall": {
+    "schema": "rhizoh.phase3.control_observation_firewall.v0",
+    "enforced": true,
+    "phase3Role": "control_only",
+    "phase3dRole": "observation_only",
+    "rule": "observation_never_feeds_execution_gate",
+    "antiPattern": "measure_interpret_govern_chain",
+    "controlGateSource": "phase3Control.phase3ExecutionGate",
+    "observationGateSource": "phase3Observation.phase3dObservationGate",
+    "separation": {
+      "control": [
+        "G1_G5_gates",
+        "divergence_WAL",
+        "executeOrContain",
+        "over_gating_operational",
+        "under_sensitivity_drill_safety"
+      ],
+      "observation": [
+        "operability_balance",
+        "phase_space_map",
+        "trajectory_dynamics",
+        "phase3d_attractor_intelligence",
+        "perturbation_sensitivity_map"
+      ]
+    }
+  },
+  "phase3Control": {
+    "schema": "rhizoh.phase3.control_harness.v0",
+    "role": "control_only",
+    "atMs": "2026-05-25T05:08:33.528Z",
+    "formal": {
+      "definition": "Phase3 = f(observed, modeled)",
+      "constraint": "execution_allowed ⇔ divergence ≤ threshold ∧ stability OK ∧ gates pass"
+    },
+    "scenarios": [
+      {
+        "id": "NORMAL_baseline",
+        "pass": true,
+        "mode": "NORMAL",
+        "divergence": 0.02,
+        "band": "LOW",
+        "executionAllowed": true,
+        "sideEffects": true,
+        "projectionSchemaPass": true,
+        "expectedToGate": false,
+        "gates": {
+          "g1": true,
+          "g2": true,
+          "g4": true,
+          "g5": true
+        }
+      },
+      {
+        "id": "F1_observation_drift",
+        "pass": true,
+        "mode": "CONTAINED",
+        "divergence": 0.02,
+        "band": "LOW",
+        "executionAllowed": false,
+        "sideEffects": false,
+        "projectionSchemaPass": true,
+        "expectedToGate": true,
+        "gates": {
+          "g1": false,
+          "g2": true,
+          "g4": false,
+          "g5": true
+        }
+      },
+      {
+        "id": "F2_model_overconfidence",
+        "pass": true,
+        "mode": "NORMAL",
+        "divergence": 0.02,
+        "band": "LOW",
+        "executionAllowed": true,
+        "sideEffects": true,
+        "projectionSchemaPass": true,
+        "expectedToGate": false,
+        "gates": {
+          "g1": true,
+          "g2": true,
+          "g4": true,
+          "g5": true
+        }
+      },
+      {
+        "id": "F3_divergence_explosion",
+        "pass": true,
+        "mode": "FREEZE",
+        "divergence": 0.0757,
+        "band": "LOW",
+        "executionAllowed": false,
+        "sideEffects": false,
+        "projectionSchemaPass": true,
+        "expectedToGate": true,
+        "gates": {
+          "g1": true,
+          "g2": true,
+          "g4": true,
+          "g5": false
+        }
+      },
+      {
+        "id": "F4_feedback_loop",
+        "pass": true,
+        "mode": "CONTAINED",
+        "divergence": 0.02,
+        "band": "LOW",
+        "executionAllowed": false,
+        "sideEffects": false,
+        "projectionSchemaPass": true,
+        "expectedToGate": true,
+        "gates": {
+          "g1": false,
+          "g2": true,
+          "g4": true,
+          "g5": true
+        }
+      },
+      {
+        "id": "F5_execution_leakage",
+        "pass": true,
+        "mode": "CONTAINED",
+        "divergence": 0.029,
+        "band": "LOW",
+        "executionAllowed": false,
+        "sideEffects": false,
+        "projectionSchemaPass": true,
+        "expectedToGate": true,
+        "gates": {
+          "g1": false,
+          "g2": true,
+          "g4": false,
+          "g5": true
+        }
+      }
+    ],
+    "outcomeRecords": [
+      {
+        "id": "NORMAL_baseline",
+        "cycleOk": true,
+        "mode": "NORMAL",
+        "executionAllowed": true,
+        "sideEffects": true,
+        "projectionSchemaPass": true,
+        "expectedToGate": false
+      },
+      {
+        "id": "F1_observation_drift",
+        "cycleOk": true,
+        "mode": "CONTAINED",
+        "executionAllowed": false,
+        "sideEffects": false,
+        "projectionSchemaPass": true,
+        "expectedToGate": true
+      },
+      {
+        "id": "F2_model_overconfidence",
+        "cycleOk": true,
+        "mode": "NORMAL",
+        "executionAllowed": true,
+        "sideEffects": true,
+        "projectionSchemaPass": true,
+        "expectedToGate": false
+      },
+      {
+        "id": "F3_divergence_explosion",
+        "cycleOk": true,
+        "mode": "FREEZE",
+        "executionAllowed": false,
+        "sideEffects": false,
+        "projectionSchemaPass": true,
+        "expectedToGate": true
+      },
+      {
+        "id": "F4_feedback_loop",
+        "cycleOk": true,
+        "mode": "CONTAINED",
+        "executionAllowed": false,
+        "sideEffects": false,
+        "projectionSchemaPass": true,
+        "expectedToGate": true
+      },
+      {
+        "id": "F5_execution_leakage",
+        "cycleOk": true,
+        "mode": "CONTAINED",
+        "executionAllowed": false,
+        "sideEffects": false,
+        "projectionSchemaPass": true,
+        "expectedToGate": true
+      }
+    ],
+    "walChainLength": 6,
+    "modeledProjectionSchema": "rhizoh.phase3.modeled_projection.v0.1",
+    "overGatingMetrics": {
+      "operational": {
+        "schema": "rhizoh.phase3.over_gating_metrics.v0",
+        "rates": {
+          "containment": 0,
+          "rollback": 0,
+          "freeze": 0,
+          "throttle": 0,
+          "normal": 1,
+          "executionAllowed": 1
+        },
+        "inertnessScore": 0,
+        "overGating": false,
+        "thresholds": {
+          "maxContainmentRate": 0.45,
+          "maxRollbackRate": 0.15,
+          "minExecutionAllowedRate": 0.35
+        },
+        "recommendation": "gate_balance_ok"
+      },
+      "failureDrills": {
+        "schema": "rhizoh.phase3.over_gating_metrics.v0",
+        "rates": {
+          "containment": 0.75,
+          "rollback": 0,
+          "freeze": 0.25,
+          "throttle": 0,
+          "normal": 0,
+          "executionAllowed": 0
+        },
+        "inertnessScore": 0.875,
+        "overGating": true,
+        "thresholds": {
+          "maxContainmentRate": 0.45,
+          "maxRollbackRate": 0.15,
+          "minExecutionAllowedRate": 0.35
+        },
+        "recommendation": "loosen_entropy_or_divergence_thresholds_or_fix_false_containment_inputs"
+      },
+      "note": "inertness_risk_scored_on_operational_cycles_only"
+    },
+    "underSensitivityRisk": {
+      "schema": "rhizoh.phase3.under_sensitivity.v0",
+      "drillCount": 4,
+      "missedGatingCount": 0,
+      "missedGatingRate": 0,
+      "underSensitive": false,
+      "missedIds": []
+    },
+    "phase3ExecutionGate": "phase3_runtime_spec_pass",
+    "distinction": "control_harness_no_phase3d_observation_inputs"
+  },
+  "phase3Observation": {
+    "schema": "rhizoh.phase3.observation_export.v0",
+    "role": "observation_only",
+    "feedsExecution": false,
+    "firewall": {
+      "schema": "rhizoh.phase3.control_observation_firewall.v0",
+      "enforced": true,
+      "phase3Role": "control_only",
+      "phase3dRole": "observation_only",
+      "rule": "observation_never_feeds_execution_gate",
+      "antiPattern": "measure_interpret_govern_chain",
+      "controlGateSource": "phase3Control.phase3ExecutionGate",
+      "observationGateSource": "phase3Observation.phase3dObservationGate",
+      "separation": {
+        "control": [
+          "G1_G5_gates",
+          "divergence_WAL",
+          "executeOrContain",
+          "over_gating_operational",
+          "under_sensitivity_drill_safety"
+        ],
+        "observation": [
+          "operability_balance",
+          "phase_space_map",
+          "trajectory_dynamics",
+          "phase3d_attractor_intelligence",
+          "perturbation_sensitivity_map"
+        ]
+      }
+    },
+    "atMs": "2026-05-25T05:08:33.528Z",
+    "usefulnessProxy": {
+      "schema": "rhizoh.phase3.usefulness_proxy.v0",
+      "successfulCycleCompletionRate": 0.3333,
+      "stableProjectionContinuityWindow": 6,
+      "usefulnessScore": 0.6333,
+      "note": "non_semantic_proxy_not_user_value"
+    },
+    "underSensitivityRisk": {
+      "schema": "rhizoh.phase3.under_sensitivity.v0",
+      "drillCount": 4,
+      "missedGatingCount": 0,
+      "missedGatingRate": 0,
+      "underSensitive": false,
+      "missedIds": []
+    },
+    "containmentExecutionRatio": {
+      "ratio": 0,
+      "interpretation": "execution_heavy_low_lock"
+    },
+    "operabilityBalance": {
+      "schema": "rhizoh.phase3.operability_balance.v0",
+      "operabilityScore": 0.6333,
+      "balance": "balanced",
+      "overGating": false,
+      "underSensitive": false,
+      "containmentExecutionRatio": 0,
+      "usefulnessScore": 0.6333,
+      "recommendation": "maintain_thresholds_monitor_shadow_sampling"
+    },
+    "operabilityPhaseSpaceMap": {
+      "schema": "rhizoh.phase3.operability_phase_space_map.v0",
+      "space": {
+        "kind": "R3_unit_cube",
+        "axes": [
+          "usefulness_u",
+          "stability_s",
+          "guardSensitivity_g"
+        ],
+        "derivedFrom": [
+          "usefulnessScore",
+          "inertnessScore",
+          "missedGatingRate"
+        ],
+        "noNewPrimitives": true
+      },
+      "aggregate": {
+        "coordinates": {
+          "schema": "rhizoh.phase3.operability_phase_coords.v0",
+          "axes": {
+            "usefulness": {
+              "symbol": "u",
+              "value": 0.6333,
+              "source": "usefulnessScore"
+            },
+            "stability": {
+              "symbol": "s",
+              "value": 1,
+              "source": "1 - inertnessScore"
+            },
+            "guardSensitivity": {
+              "symbol": "g",
+              "value": 1,
+              "source": "1 - missedGatingRate"
+            }
+          },
+          "vector": [
+            0.6333,
+            1,
+            1
+          ],
+          "flags": {
+            "overGating": false,
+            "underSensitive": false
+          }
+        },
+        "region": {
+          "region": "optimal",
+          "labelTr": "optimal",
+          "distanceToOptimal": 0.2935,
+          "inOptimalBall": true
+        },
+        "operabilityBalance": "balanced"
+      },
+      "scenarioPoints": [
+        {
+          "id": "NORMAL_baseline",
+          "coords": [
+            1,
+            1,
+            0.75
+          ],
+          "region": "optimal",
+          "labelTr": "optimal",
+          "distanceToOptimal": 0.3841
+        },
+        {
+          "id": "F1_observation_drift",
+          "coords": [
+            0.7,
+            0.42,
+            0.95
+          ],
+          "region": "kilitli",
+          "labelTr": "kilitli",
+          "distanceToOptimal": 0.3375
+        },
+        {
+          "id": "F2_model_overconfidence",
+          "coords": [
+            1,
+            1,
+            0.75
+          ],
+          "region": "optimal",
+          "labelTr": "optimal",
+          "distanceToOptimal": 0.3841
+        },
+        {
+          "id": "F3_divergence_explosion",
+          "coords": [
+            0.7,
+            0.18,
+            0.95
+          ],
+          "region": "kilitli",
+          "labelTr": "kilitli",
+          "distanceToOptimal": 0.5744
+        },
+        {
+          "id": "F4_feedback_loop",
+          "coords": [
+            0.7,
+            0.42,
+            0.95
+          ],
+          "region": "kilitli",
+          "labelTr": "kilitli",
+          "distanceToOptimal": 0.3375
+        },
+        {
+          "id": "F5_execution_leakage",
+          "coords": [
+            0.7,
+            0.42,
+            0.95
+          ],
+          "region": "kilitli",
+          "labelTr": "kilitli",
+          "distanceToOptimal": 0.3375
+        }
+      ],
+      "lattice": {
+        "binsPerAxis": 4,
+        "cellCount": 4,
+        "occupancy": [
+          {
+            "key": "3,3,3",
+            "iu": 3,
+            "is": 3,
+            "ig": 3,
+            "count": 2,
+            "tags": [
+              "NORMAL_baseline",
+              "F2_model_overconfidence"
+            ],
+            "center": [
+              0.875,
+              0.875,
+              0.875
+            ],
+            "dominantTag": "NORMAL_baseline"
+          },
+          {
+            "key": "2,1,3",
+            "iu": 2,
+            "is": 1,
+            "ig": 3,
+            "count": 3,
+            "tags": [
+              "F1_observation_drift",
+              "F4_feedback_loop",
+              "F5_execution_leakage"
+            ],
+            "center": [
+              0.625,
+              0.375,
+              0.875
+            ],
+            "dominantTag": "F1_observation_drift"
+          },
+          {
+            "key": "2,0,3",
+            "iu": 2,
+            "is": 0,
+            "ig": 3,
+            "count": 1,
+            "tags": [
+              "F3_divergence_explosion"
+            ],
+            "center": [
+              0.625,
+              0.125,
+              0.875
+            ],
+            "dominantTag": "F3_divergence_explosion"
+          },
+          {
+            "key": "2,3,3",
+            "iu": 2,
+            "is": 3,
+            "ig": 3,
+            "count": 1,
+            "tags": [
+              "aggregate"
+            ],
+            "center": [
+              0.625,
+              0.875,
+              0.875
+            ],
+            "dominantTag": "aggregate"
+          }
+        ]
+      },
+      "regionCatalog": {
+        "optimal": {
+          "labelTr": "optimal",
+          "semantics": "useful_and_stable_and_sensitive_enough",
+          "halfSpace": "u>=0.55 ∧ s>=0.55 ∧ g>=0.75 ∧ ¬overGating"
+        },
+        "canli": {
+          "labelTr": "canlı",
+          "semantics": "executing_with_moderate_stability_not_blind",
+          "halfSpace": "u>=0.35 ∧ s>=0.35 ∧ g>=0.5 ∧ ¬kor ∧ ¬kilitli"
+        },
+        "kilitli": {
+          "labelTr": "kilitli",
+          "semantics": "safe_but_inert_over_gated_or_low_stability",
+          "halfSpace": "overGating ∨ s<0.45 ∨ (u<0.45 ∧ s<0.55)"
+        },
+        "kor": {
+          "labelTr": "kör",
+          "semantics": "under_sensitive_misses_expected_gates",
+          "halfSpace": "underSensitive ∨ g<0.5"
+        },
+        "kararsiz": {
+          "labelTr": "kararsız",
+          "semantics": "simultaneous_over_gating_and_under_sensitivity",
+          "halfSpace": "overGating ∧ underSensitive"
+        },
+        "gecis": {
+          "labelTr": "geçiş",
+          "semantics": "between_regions_recalibrate_or_collect_more_samples",
+          "halfSpace": "default_fallback"
+        }
+      },
+      "dominantRegion": "kilitli",
+      "trajectory": {
+        "schema": "rhizoh.phase3.operability_phase_trajectory.v0",
+        "analysisKind": "system_behavior_dynamics",
+        "notDebuggingSnapshot": true,
+        "seriesId": "phase3_harness_execution_order",
+        "clock": "execution_order",
+        "sampleCount": 6,
+        "samples": [
+          {
+            "t": 0,
+            "atMs": null,
+            "scenarioId": "NORMAL_baseline",
+            "coords": [
+              1,
+              1,
+              0.75
+            ],
+            "region": "optimal",
+            "labelTr": "optimal",
+            "distanceToOptimal": 0.3841,
+            "displacement": 0,
+            "regionChanged": false
+          },
+          {
+            "t": 1,
+            "atMs": null,
+            "scenarioId": "F1_observation_drift",
+            "coords": [
+              0.7,
+              0.42,
+              0.95
+            ],
+            "region": "kilitli",
+            "labelTr": "kilitli",
+            "distanceToOptimal": 0.3375,
+            "displacement": 0.6829,
+            "regionChanged": true
+          },
+          {
+            "t": 2,
+            "atMs": null,
+            "scenarioId": "F2_model_overconfidence",
+            "coords": [
+              1,
+              1,
+              0.75
+            ],
+            "region": "optimal",
+            "labelTr": "optimal",
+            "distanceToOptimal": 0.3841,
+            "displacement": 0.6829,
+            "regionChanged": true
+          },
+          {
+            "t": 3,
+            "atMs": null,
+            "scenarioId": "F3_divergence_explosion",
+            "coords": [
+              0.7,
+              0.18,
+              0.95
+            ],
+            "region": "kilitli",
+            "labelTr": "kilitli",
+            "distanceToOptimal": 0.5744,
+            "displacement": 0.8958,
+            "regionChanged": true
+          },
+          {
+            "t": 4,
+            "atMs": null,
+            "scenarioId": "F4_feedback_loop",
+            "coords": [
+              0.7,
+              0.42,
+              0.95
+            ],
+            "region": "kilitli",
+            "labelTr": "kilitli",
+            "distanceToOptimal": 0.3375,
+            "displacement": 0.24,
+            "regionChanged": false
+          },
+          {
+            "t": 5,
+            "atMs": null,
+            "scenarioId": "F5_execution_leakage",
+            "coords": [
+              0.7,
+              0.42,
+              0.95
+            ],
+            "region": "kilitli",
+            "labelTr": "kilitli",
+            "distanceToOptimal": 0.3375,
+            "displacement": 0,
+            "regionChanged": false
+          }
+        ],
+        "dynamics": {
+          "schema": "rhizoh.phase3.trajectory_dynamics.v0",
+          "pathLength": 2.5016,
+          "meanStepVelocity": 0.5003,
+          "netDisplacement": 0.6829,
+          "optimalDrift": -0.0466,
+          "oscillationIndex": 0.6,
+          "regionTransitionCount": 3,
+          "transitions": [
+            {
+              "at": 1,
+              "from": "optimal",
+              "to": "kilitli",
+              "scenarioId": "F1_observation_drift"
+            },
+            {
+              "at": 2,
+              "from": "kilitli",
+              "to": "optimal",
+              "scenarioId": "F2_model_overconfidence"
+            },
+            {
+              "at": 3,
+              "from": "optimal",
+              "to": "kilitli",
+              "scenarioId": "F3_divergence_explosion"
+            }
+          ],
+          "dwellByRegion": {
+            "optimal": 2,
+            "kilitli": 4
+          },
+          "classification": "oscillatory",
+          "summary": "high_region_churn"
+        }
+      }
+    },
+    "operabilityPhaseTrajectories": {
+      "executionOrder": {
+        "schema": "rhizoh.phase3.operability_phase_trajectory.v0",
+        "analysisKind": "system_behavior_dynamics",
+        "notDebuggingSnapshot": true,
+        "seriesId": "phase3_harness_execution_order",
+        "clock": "execution_order",
+        "sampleCount": 6,
+        "samples": [
+          {
+            "t": 0,
+            "atMs": null,
+            "scenarioId": "NORMAL_baseline",
+            "coords": [
+              1,
+              1,
+              0.75
+            ],
+            "region": "optimal",
+            "labelTr": "optimal",
+            "distanceToOptimal": 0.3841,
+            "displacement": 0,
+            "regionChanged": false
+          },
+          {
+            "t": 1,
+            "atMs": null,
+            "scenarioId": "F1_observation_drift",
+            "coords": [
+              0.7,
+              0.42,
+              0.95
+            ],
+            "region": "kilitli",
+            "labelTr": "kilitli",
+            "distanceToOptimal": 0.3375,
+            "displacement": 0.6829,
+            "regionChanged": true
+          },
+          {
+            "t": 2,
+            "atMs": null,
+            "scenarioId": "F2_model_overconfidence",
+            "coords": [
+              1,
+              1,
+              0.75
+            ],
+            "region": "optimal",
+            "labelTr": "optimal",
+            "distanceToOptimal": 0.3841,
+            "displacement": 0.6829,
+            "regionChanged": true
+          },
+          {
+            "t": 3,
+            "atMs": null,
+            "scenarioId": "F3_divergence_explosion",
+            "coords": [
+              0.7,
+              0.18,
+              0.95
+            ],
+            "region": "kilitli",
+            "labelTr": "kilitli",
+            "distanceToOptimal": 0.5744,
+            "displacement": 0.8958,
+            "regionChanged": true
+          },
+          {
+            "t": 4,
+            "atMs": null,
+            "scenarioId": "F4_feedback_loop",
+            "coords": [
+              0.7,
+              0.42,
+              0.95
+            ],
+            "region": "kilitli",
+            "labelTr": "kilitli",
+            "distanceToOptimal": 0.3375,
+            "displacement": 0.24,
+            "regionChanged": false
+          },
+          {
+            "t": 5,
+            "atMs": null,
+            "scenarioId": "F5_execution_leakage",
+            "coords": [
+              0.7,
+              0.42,
+              0.95
+            ],
+            "region": "kilitli",
+            "labelTr": "kilitli",
+            "distanceToOptimal": 0.3375,
+            "displacement": 0,
+            "regionChanged": false
+          }
+        ],
+        "dynamics": {
+          "schema": "rhizoh.phase3.trajectory_dynamics.v0",
+          "pathLength": 2.5016,
+          "meanStepVelocity": 0.5003,
+          "netDisplacement": 0.6829,
+          "optimalDrift": -0.0466,
+          "oscillationIndex": 0.6,
+          "regionTransitionCount": 3,
+          "transitions": [
+            {
+              "at": 1,
+              "from": "optimal",
+              "to": "kilitli",
+              "scenarioId": "F1_observation_drift"
+            },
+            {
+              "at": 2,
+              "from": "kilitli",
+              "to": "optimal",
+              "scenarioId": "F2_model_overconfidence"
+            },
+            {
+              "at": 3,
+              "from": "optimal",
+              "to": "kilitli",
+              "scenarioId": "F3_divergence_explosion"
+            }
+          ],
+          "dwellByRegion": {
+            "optimal": 2,
+            "kilitli": 4
+          },
+          "classification": "oscillatory",
+          "summary": "high_region_churn"
+        }
+      },
+      "rollingOperational": {
+        "schema": "rhizoh.phase3.operability_phase_trajectory.v0",
+        "analysisKind": "system_behavior_dynamics",
+        "seriesId": "phase3_rolling_operational_window",
+        "clock": "rolling_prefix",
+        "sampleCount": 6,
+        "samples": [
+          {
+            "t": 0,
+            "scenarioId": "NORMAL_baseline",
+            "coords": [
+              1,
+              1,
+              1
+            ],
+            "region": "optimal",
+            "labelTr": "optimal",
+            "distanceToOptimal": 0.3674,
+            "displacement": 0,
+            "regionChanged": false
+          },
+          {
+            "t": 1,
+            "scenarioId": "F1_observation_drift",
+            "coords": [
+              0.725,
+              1,
+              1
+            ],
+            "region": "optimal",
+            "labelTr": "optimal",
+            "distanceToOptimal": 0.2704,
+            "displacement": 0.275,
+            "regionChanged": false
+          },
+          {
+            "t": 2,
+            "scenarioId": "F2_model_overconfidence",
+            "coords": [
+              0.8167,
+              1,
+              1
+            ],
+            "region": "optimal",
+            "labelTr": "optimal",
+            "distanceToOptimal": 0.2774,
+            "displacement": 0.0917,
+            "regionChanged": false
+          },
+          {
+            "t": 3,
+            "scenarioId": "F3_divergence_explosion",
+            "coords": [
+              0.725,
+              1,
+              1
+            ],
+            "region": "optimal",
+            "labelTr": "optimal",
+            "distanceToOptimal": 0.2704,
+            "displacement": 0.0917,
+            "regionChanged": false
+          },
+          {
+            "t": 4,
+            "scenarioId": "F4_feedback_loop",
+            "coords": [
+              0.67,
+              1,
+              1
+            ],
+            "region": "optimal",
+            "labelTr": "optimal",
+            "distanceToOptimal": 0.2809,
+            "displacement": 0.055,
+            "regionChanged": false
+          },
+          {
+            "t": 5,
+            "scenarioId": "F5_execution_leakage",
+            "coords": [
+              0.6333,
+              1,
+              1
+            ],
+            "region": "optimal",
+            "labelTr": "optimal",
+            "distanceToOptimal": 0.2935,
+            "displacement": 0.0367,
+            "regionChanged": false
+          }
+        ],
+        "dynamics": {
+          "schema": "rhizoh.phase3.trajectory_dynamics.v0",
+          "pathLength": 0.5501,
+          "regionTransitionCount": 0,
+          "transitions": [],
+          "classification": "operational_evolution",
+          "summary": "operational_metrics_trajectory_not_per_cycle_instant"
+        }
+      }
+    },
+    "behaviorDynamics": {
+      "primary": "oscillatory",
+      "rollingOperational": "operational_evolution",
+      "analysisKind": "system_behavior_dynamics"
+    },
+    "phase3DAttractorIntelligence": {
+      "schema": "rhizoh.phase3d.attractor_intelligence.v0",
+      "kind": "dynamical_attractor_intelligence",
+      "atMs": "2026-05-25T05:08:33.555Z",
+      "frontier": {
+        "layer": "dynamical_attractor_intelligence",
+        "question": "which_attractors_why_stable_which_stressor_ejects",
+        "extension": "perturbation_sensitivity_map",
+        "supersedes": "phase3_static_phase_map_only",
+        "retains": "phase3_execution_runtime_gates"
+      },
+      "primaryAttractor": {
+        "attractorId": "attractor_optimal",
+        "region": "optimal",
+        "labelTr": "optimal",
+        "selectionBasis": "aggregate_phase_map",
+        "dwellFraction": 0.3333,
+        "whyDominant": "operational_window_balanced_high_u_s_g"
+      },
+      "attractors": [
+        {
+          "region": "kilitli",
+          "sampleCount": 4,
+          "dwellFraction": 0.6667,
+          "empiricalCentroid": [
+            0.7,
+            0.36,
+            0.95
+          ],
+          "basinSpread": 0.09,
+          "meanIntraBasinVelocity": 0.5003,
+          "isStableBasin": false,
+          "attractorId": "attractor_locked",
+          "labelTr": "kilitli",
+          "catalogCentroid": [
+            0.55,
+            0.32,
+            0.82
+          ],
+          "distanceToCatalog": 0.2025,
+          "stabilityMechanism": "containment_dominant_low_stability_axis",
+          "inDesignBasin": true
+        },
+        {
+          "region": "optimal",
+          "sampleCount": 2,
+          "dwellFraction": 0.3333,
+          "empiricalCentroid": [
+            1,
+            1,
+            0.75
+          ],
+          "basinSpread": 0,
+          "meanIntraBasinVelocity": 0.7539,
+          "isStableBasin": false,
+          "attractorId": "attractor_optimal",
+          "labelTr": "optimal",
+          "catalogCentroid": [
+            0.75,
+            0.75,
+            0.9
+          ],
+          "distanceToCatalog": 0.3841,
+          "stabilityMechanism": "high_usefulness_stability_guard_balance",
+          "inDesignBasin": false
+        }
+      ],
+      "empiricalBasins": [
+        {
+          "region": "kilitli",
+          "sampleCount": 4,
+          "dwellFraction": 0.6667,
+          "empiricalCentroid": [
+            0.7,
+            0.36,
+            0.95
+          ],
+          "basinSpread": 0.09,
+          "meanIntraBasinVelocity": 0.5003,
+          "isStableBasin": false
+        },
+        {
+          "region": "optimal",
+          "sampleCount": 2,
+          "dwellFraction": 0.3333,
+          "empiricalCentroid": [
+            1,
+            1,
+            0.75
+          ],
+          "basinSpread": 0,
+          "meanIntraBasinVelocity": 0.7539,
+          "isStableBasin": false
+        }
+      ],
+      "stabilityAnalysis": {
+        "schema": "rhizoh.phase3d.stability_analysis.v0",
+        "globalClassification": "oscillatory",
+        "whySystemStays": [
+          "attractor_locked:sufficient_dwell_mass; containment_mode_stability_envelope",
+          "attractor_optimal:sufficient_dwell_mass"
+        ],
+        "transientBasins": [],
+        "reports": [
+          {
+            "attractorId": "attractor_locked",
+            "region": "kilitli",
+            "labelTr": "kilitli",
+            "holdsBecause": "sufficient_dwell_mass; containment_mode_stability_envelope",
+            "isStable": true,
+            "dwellFraction": 0.6667,
+            "meanIntraBasinVelocity": 0.5003
+          },
+          {
+            "attractorId": "attractor_optimal",
+            "region": "optimal",
+            "labelTr": "optimal",
+            "holdsBecause": "sufficient_dwell_mass",
+            "isStable": true,
+            "dwellFraction": 0.3333,
+            "meanIntraBasinVelocity": 0.7539
+          }
+        ]
+      },
+      "stressorExitAnalysis": {
+        "schema": "rhizoh.phase3d.stressor_exit_analysis.v0",
+        "exitCount": 3,
+        "exits": [
+          {
+            "at": 1,
+            "stressorId": "F1_observation_drift",
+            "stressorClass": "synthetic_failure_drill",
+            "ejectedFrom": "optimal",
+            "deflectedTo": "kilitli",
+            "exitVector": [
+              -0.3,
+              -0.58,
+              0.2
+            ],
+            "exitMagnitude": 0.6829,
+            "mode": "CONTAINED",
+            "divergence": 0.02,
+            "narrative": "stressor_F1_observation_drift_ejected_optimal_to_kilitli"
+          },
+          {
+            "at": 2,
+            "stressorId": "F2_model_overconfidence",
+            "stressorClass": "synthetic_failure_drill",
+            "ejectedFrom": "kilitli",
+            "deflectedTo": "optimal",
+            "exitVector": [
+              0.3,
+              0.58,
+              -0.2
+            ],
+            "exitMagnitude": 0.6829,
+            "mode": "NORMAL",
+            "divergence": 0.02,
+            "narrative": "stressor_F2_model_overconfidence_ejected_kilitli_to_optimal"
+          },
+          {
+            "at": 3,
+            "stressorId": "F3_divergence_explosion",
+            "stressorClass": "synthetic_failure_drill",
+            "ejectedFrom": "optimal",
+            "deflectedTo": "kilitli",
+            "exitVector": [
+              -0.3,
+              -0.82,
+              0.2
+            ],
+            "exitMagnitude": 0.8958,
+            "mode": "FREEZE",
+            "divergence": 0.0757,
+            "narrative": "stressor_F3_divergence_explosion_ejected_optimal_to_kilitli"
+          }
+        ],
+        "stressorImpactRank": [
+          {
+            "stressorId": "F3_divergence_explosion",
+            "ejections": 1,
+            "totalMagnitude": 0.8958,
+            "meanMagnitude": 0.8958
+          },
+          {
+            "stressorId": "F1_observation_drift",
+            "ejections": 1,
+            "totalMagnitude": 0.6829,
+            "meanMagnitude": 0.6829
+          },
+          {
+            "stressorId": "F2_model_overconfidence",
+            "ejections": 1,
+            "totalMagnitude": 0.6829,
+            "meanMagnitude": 0.6829
+          }
+        ],
+        "primaryEjector": "F3_divergence_explosion"
+      },
+      "perturbationSensitivityMap": {
+        "schema": "rhizoh.phase3d.perturbation_sensitivity_map.v0",
+        "analysisKind": "attractor_perturbation_sensitivity",
+        "noNewPrimitives": true,
+        "inputAttractorInfluence": {
+          "schema": "rhizoh.phase3d.input_attractor_influence.v0",
+          "description": "which_input_pushes_which_attractor_how_much",
+          "matrix": [
+            {
+              "inputId": "F3_divergence_explosion",
+              "sourceAttractor": "optimal",
+              "targetAttractor": "kilitli",
+              "targetAttractorId": "attractor_kilitli",
+              "influenceScore": 2.7441,
+              "exitMagnitude": 0.8958,
+              "axisDelta": {
+                "u": -0.3,
+                "s": -0.82,
+                "g": 0.2
+              },
+              "stressorClass": "synthetic_failure_drill",
+              "divergence": 0.0757
+            },
+            {
+              "inputId": "F2_model_overconfidence",
+              "sourceAttractor": "kilitli",
+              "targetAttractor": "optimal",
+              "targetAttractorId": "attractor_optimal",
+              "influenceScore": 2.1463,
+              "exitMagnitude": 0.6829,
+              "axisDelta": {
+                "u": 0.3,
+                "s": 0.58,
+                "g": -0.2
+              },
+              "stressorClass": "synthetic_failure_drill",
+              "divergence": 0.02
+            },
+            {
+              "inputId": "F1_observation_drift",
+              "sourceAttractor": "optimal",
+              "targetAttractor": "kilitli",
+              "targetAttractorId": "attractor_kilitli",
+              "influenceScore": 1.6693,
+              "exitMagnitude": 0.6829,
+              "axisDelta": {
+                "u": -0.3,
+                "s": -0.58,
+                "g": 0.2
+              },
+              "stressorClass": "synthetic_failure_drill",
+              "divergence": 0.02
+            }
+          ],
+          "byInput": [
+            {
+              "inputId": "F3_divergence_explosion",
+              "totalInfluence": 2.7441,
+              "targetDistribution": {
+                "kilitli": 1
+              },
+              "primaryTarget": "kilitli"
+            },
+            {
+              "inputId": "F2_model_overconfidence",
+              "totalInfluence": 2.1463,
+              "targetDistribution": {
+                "optimal": 1
+              },
+              "primaryTarget": "optimal"
+            },
+            {
+              "inputId": "F1_observation_drift",
+              "totalInfluence": 1.6693,
+              "targetDistribution": {
+                "kilitli": 1
+              },
+              "primaryTarget": "kilitli"
+            }
+          ],
+          "rankings": [
+            {
+              "inputId": "F3_divergence_explosion",
+              "sourceAttractor": "optimal",
+              "targetAttractor": "kilitli",
+              "targetAttractorId": "attractor_kilitli",
+              "influenceScore": 2.7441,
+              "exitMagnitude": 0.8958,
+              "axisDelta": {
+                "u": -0.3,
+                "s": -0.82,
+                "g": 0.2
+              },
+              "stressorClass": "synthetic_failure_drill",
+              "divergence": 0.0757
+            },
+            {
+              "inputId": "F2_model_overconfidence",
+              "sourceAttractor": "kilitli",
+              "targetAttractor": "optimal",
+              "targetAttractorId": "attractor_optimal",
+              "influenceScore": 2.1463,
+              "exitMagnitude": 0.6829,
+              "axisDelta": {
+                "u": 0.3,
+                "s": 0.58,
+                "g": -0.2
+              },
+              "stressorClass": "synthetic_failure_drill",
+              "divergence": 0.02
+            },
+            {
+              "inputId": "F1_observation_drift",
+              "sourceAttractor": "optimal",
+              "targetAttractor": "kilitli",
+              "targetAttractorId": "attractor_kilitli",
+              "influenceScore": 1.6693,
+              "exitMagnitude": 0.6829,
+              "axisDelta": {
+                "u": -0.3,
+                "s": -0.58,
+                "g": 0.2
+              },
+              "stressorClass": "synthetic_failure_drill",
+              "divergence": 0.02
+            }
+          ],
+          "targetRegions": [
+            "kilitli",
+            "optimal"
+          ]
+        },
+        "basinBoundaryFragility": [
+          {
+            "attractorId": "attractor_locked",
+            "region": "kilitli",
+            "labelTr": "kilitli",
+            "basinRadius": 0.45,
+            "boundaryMargin": 0.2475,
+            "boundaryPressure": 0.6829,
+            "crossBasinProximity": 0.3171,
+            "spreadRatio": 0.2,
+            "fragilityScore": 0.4706,
+            "fragilityClass": "moderate",
+            "interpretation": "monitor_stressor_rank_at_boundary"
+          },
+          {
+            "attractorId": "attractor_optimal",
+            "region": "optimal",
+            "labelTr": "optimal",
+            "basinRadius": 0.35,
+            "boundaryMargin": 0.02,
+            "boundaryPressure": 0.7893,
+            "crossBasinProximity": 0.3171,
+            "spreadRatio": 0,
+            "fragilityScore": 0.5898,
+            "fragilityClass": "moderate",
+            "interpretation": "monitor_stressor_rank_at_boundary"
+          }
+        ],
+        "transitionProbabilityField": {
+          "schema": "rhizoh.phase3d.transition_probability_field.v0",
+          "description": "P(to|from) and P(to|from,input) from observed trajectory",
+          "regions": [
+            "optimal",
+            "kilitli"
+          ],
+          "marginalTransitions": [
+            {
+              "from": "optimal",
+              "to": "optimal",
+              "count": 0,
+              "probability": 0,
+              "conditionalOn": "from_region_only"
+            },
+            {
+              "from": "optimal",
+              "to": "canli",
+              "count": 0,
+              "probability": 0,
+              "conditionalOn": "from_region_only"
+            },
+            {
+              "from": "optimal",
+              "to": "kilitli",
+              "count": 2,
+              "probability": 1,
+              "conditionalOn": "from_region_only"
+            },
+            {
+              "from": "optimal",
+              "to": "kor",
+              "count": 0,
+              "probability": 0,
+              "conditionalOn": "from_region_only"
+            },
+            {
+              "from": "optimal",
+              "to": "kararsiz",
+              "count": 0,
+              "probability": 0,
+              "conditionalOn": "from_region_only"
+            },
+            {
+              "from": "optimal",
+              "to": "gecis",
+              "count": 0,
+              "probability": 0,
+              "conditionalOn": "from_region_only"
+            },
+            {
+              "from": "kilitli",
+              "to": "optimal",
+              "count": 1,
+              "probability": 1,
+              "conditionalOn": "from_region_only"
+            },
+            {
+              "from": "kilitli",
+              "to": "canli",
+              "count": 0,
+              "probability": 0,
+              "conditionalOn": "from_region_only"
+            },
+            {
+              "from": "kilitli",
+              "to": "kilitli",
+              "count": 0,
+              "probability": 0,
+              "conditionalOn": "from_region_only"
+            },
+            {
+              "from": "kilitli",
+              "to": "kor",
+              "count": 0,
+              "probability": 0,
+              "conditionalOn": "from_region_only"
+            },
+            {
+              "from": "kilitli",
+              "to": "kararsiz",
+              "count": 0,
+              "probability": 0,
+              "conditionalOn": "from_region_only"
+            },
+            {
+              "from": "kilitli",
+              "to": "gecis",
+              "count": 0,
+              "probability": 0,
+              "conditionalOn": "from_region_only"
+            }
+          ],
+          "stressorConditioned": [
+            {
+              "from": "optimal",
+              "to": "kilitli",
+              "stressorId": "F1_observation_drift",
+              "count": 1,
+              "probability": 0.5,
+              "conditionalOn": "from_region_and_stressor"
+            },
+            {
+              "from": "kilitli",
+              "to": "optimal",
+              "stressorId": "F2_model_overconfidence",
+              "count": 1,
+              "probability": 1,
+              "conditionalOn": "from_region_and_stressor"
+            },
+            {
+              "from": "optimal",
+              "to": "kilitli",
+              "stressorId": "F3_divergence_explosion",
+              "count": 1,
+              "probability": 0.5,
+              "conditionalOn": "from_region_and_stressor"
+            }
+          ],
+          "transitionMatrix": {
+            "optimal": {
+              "optimal": 0,
+              "kilitli": 1
+            },
+            "kilitli": {
+              "optimal": 1,
+              "kilitli": 0
+            }
+          },
+          "rankings": [
+            {
+              "label": "optimal→kilitli",
+              "probability": 1
+            },
+            {
+              "label": "kilitli→optimal",
+              "probability": 1
+            }
+          ]
+        },
+        "summary": {
+          "dominantPerturbation": "F3_divergence_explosion",
+          "mostFragileBasin": "attractor_optimal",
+          "highestTransitionProbability": "optimal→kilitli"
+        }
+      },
+      "rollingAttractor": {
+        "seriesId": "phase3_rolling_operational_window",
+        "terminalRegion": "optimal",
+        "terminalCoords": [
+          0.6333,
+          1,
+          1
+        ],
+        "classification": "operational_evolution",
+        "note": "operational_prefix_attractor_not_instant_cycle"
+      },
+      "phase3dGate": "phase3d_attractor_layer_ready",
+      "phase3dObservationGate": "phase3d_attractor_layer_ready",
+      "distinction": "attractor_intelligence_not_epistemic_truth"
+    },
+    "phase31FeedbackLoopPlan": {
+      "schema": "rhizoh.phase3.1.feedback_loop_plan.v0",
+      "status": "design_only_not_runtime",
+      "triggers": [
+        "hold_static_thresholds_collect_live_shadow_histogram"
+      ],
+      "modules": [
+        "over_gating_self_correction",
+        "schema_evolution_triggers",
+        "entropy_adaptive_gating",
+        "control_feedback_loop_optimization"
+      ]
+    },
+    "phase3dObservationGate": "phase3d_attractor_layer_ready",
+    "proposalQueue": {
+      "schema": "rhizoh.phase3d.proposal_queue.v0",
+      "feedsExecution": false,
+      "evolutionMode": "human_approved_proposal_semi_actuator",
+      "atMs": "2026-05-25T05:08:33.528Z",
+      "governance": {
+        "schema": "rhizoh.phase3d.human_approval_governance.v0",
+        "version": "v0",
+        "feedsExecution": false,
+        "initialState": "draft",
+        "terminalStates": [
+          "rejected",
+          "expired",
+          "superseded",
+          "applied_config",
+          "withdrawn"
+        ],
+        "transitions": [
+          {
+            "from": "draft",
+            "event": "submit",
+            "to": "pending_human",
+            "actorRole": "system_shadow"
+          },
+          {
+            "from": "draft",
+            "event": "withdraw",
+            "to": "withdrawn",
+            "actorRole": "system_shadow"
+          },
+          {
+            "from": "pending_human",
+            "event": "claim_review",
+            "to": "under_review",
+            "actorRole": "ops_reviewer"
+          },
+          {
+            "from": "pending_human",
+            "event": "withdraw",
+            "to": "withdrawn",
+            "actorRole": "ops_reviewer"
+          },
+          {
+            "from": "pending_human",
+            "event": "expire",
+            "to": "expired",
+            "actorRole": "system_shadow"
+          },
+          {
+            "from": "under_review",
+            "event": "approve",
+            "to": "approved",
+            "actorRole": "ops_approver"
+          },
+          {
+            "from": "under_review",
+            "event": "reject",
+            "to": "rejected",
+            "actorRole": "ops_approver"
+          },
+          {
+            "from": "under_review",
+            "event": "release_review",
+            "to": "pending_human",
+            "actorRole": "ops_reviewer"
+          },
+          {
+            "from": "under_review",
+            "event": "expire",
+            "to": "expired",
+            "actorRole": "system_shadow"
+          },
+          {
+            "from": "approved",
+            "event": "apply_config",
+            "to": "applied_config",
+            "actorRole": "deploy_operator"
+          },
+          {
+            "from": "approved",
+            "event": "supersede",
+            "to": "superseded",
+            "actorRole": "ops_approver"
+          },
+          {
+            "from": "approved",
+            "event": "expire",
+            "to": "expired",
+            "actorRole": "system_shadow"
+          }
+        ],
+        "closureRule": "only_applied_config_may_bump_phase3_config_after_control_harness_pass",
+        "illegal": [
+          "auto_approve",
+          "approve_from_attractor_score",
+          "apply_config_without_approved_state",
+          "pending_human_to_applied_config_skip"
+        ]
+      },
+      "proposals": [
+        {
+          "schema": "rhizoh.phase3d.threshold_proposal.v0",
+          "proposalId": "prop_e6b9c7d0d08abd4f",
+          "feedsExecution": false,
+          "kind": "monitoring_hold",
+          "state": "draft",
+          "createdAtMs": "2026-05-25T05:08:33.528Z",
+          "updatedAtMs": "2026-05-25T05:08:33.528Z",
+          "delta": {
+            "action": "hold_static_thresholds"
+          },
+          "evidence": {
+            "exportRef": "observation@2026-05-25T05:08:33.528Z",
+            "primaryEjector": "F3_divergence_explosion",
+            "perturbationSummary": {
+              "dominantPerturbation": "F3_divergence_explosion",
+              "mostFragileBasin": "attractor_optimal",
+              "highestTransitionProbability": "optimal→kilitli"
+            },
+            "operabilityBalance": "balanced"
+          },
+          "rationale": "balanced_window_monitoring_only",
+          "targetConfigSchema": "rhizoh.phase3.config.v0",
+          "auditTrail": []
+        }
+      ],
+      "stats": {
+        "draft": 1
+      },
+      "note": "queue_is_observation_sidecar_not_control_input"
+    },
+    "proposalQueueValidation": {
+      "ok": true,
+      "violations": []
+    },
+    "note": "phase3d_observation_gate_does_not_affect_phase3_execution_gate",
+    "shadowLearning": {
+      "schema": "rhizoh.phase3d.shadow_learning_boundary.v0",
+      "possible": true,
+      "condition": "writes_shadow_only_never_live_reflex",
+      "feedsExecution": false,
+      "defaultEvolutionMode": "observing_atlas",
+      "allowedEvolutionMode": "human_approved_proposal_semi_actuator",
+      "evolutionNote": "semi_actuator_is_proposal_queue_plus_human_approve_not_runtime_steering",
+      "twinRisks": {
+        "controlBlindness": "over_stabilization_if_shadow_never_reviewed",
+        "observationBloat": "ineffective_atlas_if_proposals_never_closed"
+      },
+      "allowedSurfaces": {
+        "TRAJECTORY_RING_BUFFER": "trajectory_ring_buffer",
+        "ATTRACTOR_HISTOGRAM": "attractor_basin_histogram",
+        "TRANSITION_COUNTS": "transition_probability_counts",
+        "PERTURBATION_RANKINGS": "perturbation_sensitivity_rankings",
+        "THRESHOLD_PROPOSAL_QUEUE": "threshold_proposal_queue_pending_human",
+        "SHADOW_DIVERGENCE_P95": "shadow_divergence_p95_histogram"
+      },
+      "forbiddenBackflow": [
+        "live_gate_threshold_mutation",
+        "executeOrContain_input_from_attractor",
+        "phase3dObservationGate_to_phase3ExecutionGate",
+        "auto_soften_from_fragility_score",
+        "auto_tighten_from_influence_score",
+        "runtime_import_phase3d_in_gateway_turn"
+      ],
+      "legalBridgeToControl": {
+        "id": "human_approved_config_schema_bump",
+        "steps": [
+          "shadow_export_review",
+          "audit_log_entry",
+          "phase3_config_version_tag",
+          "control_harness_rerun",
+          "deploy"
+        ]
+      },
+      "exportValid": true,
+      "internalRepresentationAllowed": true,
+      "controlBackflowAllowed": false
+    }
+  },
+  "phase3ExecutionGate": "phase3_runtime_spec_pass",
+  "phase3dObservationGate": "phase3d_attractor_layer_ready",
+  "distinction": "control_and_observation_composed_at_export_boundary_only"
+}

@@ -13,3 +13,7 @@ export {
   getVoiceEngineTelemetrySnapshotV3,
   setVoiceEngineStateV3
 } from "./voiceEngineTelemetryV3.js";
+export { createVoiceEngineV3TurnBridgeV0 } from "./voiceEngineV3TurnBridgeV0.js";
+export { handleRhizohVoiceTranscriptV0 } from "../rhizohVoiceLlmDispatchV0.js";
+export { postRhizohLlmTurnV0 } from "../rhizohLlmTurnClientV0.js";
+export { prepareRhizohLlmTurnV0 } from "../rhizohLlmTurnHotWireV0.js";

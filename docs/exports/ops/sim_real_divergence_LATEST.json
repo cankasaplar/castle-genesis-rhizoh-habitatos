@@ -1,0 +1,67 @@
+{
+  "schema": "rhizoh.sim_real_divergence_map.v0",
+  "executionMode": "dev_memory",
+  "signatures": [
+    {
+      "id": "queue_growth_vs_success",
+      "sim": "high_fidelity",
+      "real": "high_fidelity",
+      "observed": false,
+      "note": "successRate≥0.9 while avgQueueDepth rises — visible in both"
+    },
+    {
+      "id": "rollout_inflight_leak",
+      "sim": "pre_reconcile_visible",
+      "real": "pre_reconcile_visible",
+      "observed": false,
+      "note": "activeTurns>limit×0.15 before TTL reconcile; sim uses ZSET+lease"
+    },
+    {
+      "id": "redis_coordination_lag",
+      "sim": "sim_injected_latency_only",
+      "real": "network_tcp_plus_zset_race",
+      "observed": true,
+      "note": "SIM: chaos ms only (confidence capped); REAL: true coordination delay"
+    },
+    {
+      "id": "redis_zset_lease_pressure",
+      "sim": "skew_metric_approximate",
+      "real": "true_multi_instance_zset_card",
+      "observed": false,
+      "note": "trackedLeases vs activeTurns skew — partial in sim"
+    },
+    {
+      "id": "cross_instance_lease_contention",
+      "sim": "not_observable",
+      "real": "rare_but_real",
+      "observed": false,
+      "note": "Requires ≥2 gateway processes on same Redis"
+    },
+    {
+      "id": "gcl_rollout_sync_drift",
+      "sim": "high_fidelity",
+      "real": "high_fidelity",
+      "observed": false,
+      "note": "Financial vs execution slot mismatch"
+    },
+    {
+      "id": "lifecycle_reconcile_recovery",
+      "sim": "high_fidelity",
+      "real": "high_fidelity",
+      "observed": false,
+      "note": "purged>0 and activeTurns→0 after reconcile"
+    }
+  ],
+  "simReliableObserved": [
+    "soft_saturation_illusion",
+    "rollout_hysteresis"
+  ],
+  "realValidationRequired": [
+    "redis_coordination_lag"
+  ],
+  "validationLayer": {
+    "role": "redis_stress",
+    "status": "deferred",
+    "note": "Real Redis is validation-only after SIM sign-off"
+  }
+}

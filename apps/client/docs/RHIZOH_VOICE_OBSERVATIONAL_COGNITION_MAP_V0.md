@@ -82,17 +82,36 @@ Tek karar — çift log semantiği `rejectionLayer` ile korunur:
 | Bileşen | Dosya | Rol |
 |---------|-------|-----|
 | Shadow forward | `voiceTranscriptShadowForwardV0.js` | Reject → arşiv |
+| **Shadow timeline** | `voiceShadowTimelineV0.js` | **Temporal cognition** — 5s faz pencereleri |
 | Replay hook | `voiceShadowReplayHookV0.js` | Cluster + tuning **sinyali** (execution yok) |
 | Interpretation stability | `voiceInterpretationStabilityV0.js` | Tekrarlayan pattern etiketi |
 | Shadow ACK | `voiceShadowObservationAckV0.js` | UX only — modlu |
 
+### 4b. Temporal cognition view (ring → timeline)
+
+Ring = *ne* oldu; timeline = *ne zaman* oldu.
+
+Örnek segment çıktısı:
+
+| Pencere | `phaseLabel` | Anlam |
+|---------|--------------|--------|
+| `0s–5s` | `interaction_rejection_spike` | Turn gate baskın; gözlem var, execution yok |
+| `5s–10s` | `confidence_stabilization` | Sanity + interaction karışık; eşik tutuluyor |
+| `10s–15s` | `execution_emergence` | `STT_DISPATCH` — execution kanalı açıldı |
+
+`trajectory.summary`: `observation_to_execution` | `interaction_friction_without_execution` | …
+
+Log: `SHADOW_TIMELINE_PHASE` · Env: `VITE_RHIZOH_VOICE_TIMELINE_BUCKET_MS` (default `5000`)
+
 **Konsol API:**
 
 ```js
-window.__rhizoh.voiceShadowForwardRing
+window.__rhizoh.voiceShadowForwardRing      // spatial ring (legacy)
+window.__rhizoh.voiceShadowTimeline         // temporal view (preferred)
+window.__rhizoh.getVoiceShadowTimelineViewV0()
 window.__rhizoh.shadowReplaySignals
 window.__rhizoh.interpretationStability
-window.__rhizoh.exportShadowVoiceAnalysisV0() // JSON export, analysis mode
+window.__rhizoh.exportShadowVoiceAnalysisV0() // includes timeline + trajectory
 ```
 
 ---

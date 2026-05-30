@@ -27,8 +27,12 @@ export const WS_MESSAGE = {
   COMMAND_TEXT: "COMMAND_TEXT",
   COMMAND: "COMMAND",
   COMMAND_RESULT: "COMMAND_RESULT",
-  /** İHA telemetri yayını (gateway relay — batch veya tek pose) */
-  DRONE_TELEMETRY: "DRONE_TELEMETRY",
+  /** Castle multi-user social room sync (pulse in, merged roster broadcast). */
+  CASTLE_SOCIAL_PULSE: "CASTLE_SOCIAL_PULSE",
+  CASTLE_SOCIAL_ROOM: "CASTLE_SOCIAL_ROOM",
+  /** Sprint C.1 — peer WAL history feed (in) + room fan-out (out). */
+  CASTLE_WAL_PEER_FEED: "CASTLE_WAL_PEER_FEED",
+  CASTLE_WAL_PEER_ROOM: "CASTLE_WAL_PEER_ROOM",
   ERROR: "ERROR"
 };
 

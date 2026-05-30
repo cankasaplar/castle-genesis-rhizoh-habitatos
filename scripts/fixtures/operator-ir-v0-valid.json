@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "operator-ir/0.1.0",
+  "region": "governance",
+  "steps": [
+    { "op": "EMIT", "intent": "GATEWAY_RETRY", "intentLayer": "ui" },
+    { "op": "BIND", "handle": "cid:00000000-0000-0000-0000-000000000001" },
+    { "op": "WALK", "nodeRef": "explain:baseline", "edgeKinds": ["derived_from_cid", "override_lineage"] }
+  ]
+}

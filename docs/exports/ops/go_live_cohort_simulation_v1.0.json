@@ -1,0 +1,288 @@
+{
+  "schema": "castle.rhizoh.go_live_cohort_simulation.v0",
+  "version": "1.0",
+  "generatedAt": "2026-05-19T13:55:52.628Z",
+  "legalFreezeRef": "LEGAL_FREEZE_SPEC_V1.0",
+  "nodeCount": 50,
+  "seed": 42,
+  "decision": "proceed",
+  "metrics": {
+    "admitRate": 0.58,
+    "holdRate": 0.34,
+    "rejectRate": 0.08,
+    "stressClassSpread": 4,
+    "maxSingleClassShare": 0.4,
+    "histogram": {
+      "invariant_keeper": 20,
+      "systems_engineer": 11,
+      "edge_builder": 5,
+      "human_explorer": 14
+    },
+    "verdictCounts": {
+      "admit": 29,
+      "hold": 17,
+      "reject": 4
+    }
+  },
+  "thresholds": {
+    "minAdmitRate": 0.55,
+    "minAdmitRateHold": 0.4,
+    "maxRejectRate": 0.08,
+    "maxRejectRateAbort": 0.12,
+    "minStressClassSpread": 2,
+    "maxSingleClassShare": 0.65
+  },
+  "reasons": [],
+  "nodes": [
+    {
+      "subjectRef": "sim_node_0",
+      "verdict": "hold",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_1",
+      "verdict": "admit",
+      "primaryStressClass": "human_explorer"
+    },
+    {
+      "subjectRef": "sim_node_2",
+      "verdict": "admit",
+      "primaryStressClass": "human_explorer"
+    },
+    {
+      "subjectRef": "sim_node_3",
+      "verdict": "admit",
+      "primaryStressClass": "human_explorer"
+    },
+    {
+      "subjectRef": "sim_node_4",
+      "verdict": "admit",
+      "primaryStressClass": "edge_builder"
+    },
+    {
+      "subjectRef": "sim_node_5",
+      "verdict": "admit",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_6",
+      "verdict": "admit",
+      "primaryStressClass": "systems_engineer"
+    },
+    {
+      "subjectRef": "sim_node_7",
+      "verdict": "hold",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_8",
+      "verdict": "admit",
+      "primaryStressClass": "human_explorer"
+    },
+    {
+      "subjectRef": "sim_node_9",
+      "verdict": "admit",
+      "primaryStressClass": "edge_builder"
+    },
+    {
+      "subjectRef": "sim_node_10",
+      "verdict": "admit",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_11",
+      "verdict": "hold",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_12",
+      "verdict": "hold",
+      "primaryStressClass": "systems_engineer"
+    },
+    {
+      "subjectRef": "sim_node_13",
+      "verdict": "hold",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_14",
+      "verdict": "hold",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_15",
+      "verdict": "admit",
+      "primaryStressClass": "human_explorer"
+    },
+    {
+      "subjectRef": "sim_node_16",
+      "verdict": "hold",
+      "primaryStressClass": "systems_engineer"
+    },
+    {
+      "subjectRef": "sim_node_17",
+      "verdict": "admit",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_18",
+      "verdict": "hold",
+      "primaryStressClass": "systems_engineer"
+    },
+    {
+      "subjectRef": "sim_node_19",
+      "verdict": "hold",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_20",
+      "verdict": "admit",
+      "primaryStressClass": "human_explorer"
+    },
+    {
+      "subjectRef": "sim_node_21",
+      "verdict": "admit",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_22",
+      "verdict": "hold",
+      "primaryStressClass": "systems_engineer"
+    },
+    {
+      "subjectRef": "sim_node_23",
+      "verdict": "admit",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_24",
+      "verdict": "admit",
+      "primaryStressClass": "human_explorer"
+    },
+    {
+      "subjectRef": "sim_node_25",
+      "verdict": "admit",
+      "primaryStressClass": "human_explorer"
+    },
+    {
+      "subjectRef": "sim_node_26",
+      "verdict": "hold",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_27",
+      "verdict": "reject",
+      "primaryStressClass": "systems_engineer"
+    },
+    {
+      "subjectRef": "sim_node_28",
+      "verdict": "hold",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_29",
+      "verdict": "admit",
+      "primaryStressClass": "human_explorer"
+    },
+    {
+      "subjectRef": "sim_node_30",
+      "verdict": "hold",
+      "primaryStressClass": "systems_engineer"
+    },
+    {
+      "subjectRef": "sim_node_31",
+      "verdict": "admit",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_32",
+      "verdict": "hold",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_33",
+      "verdict": "admit",
+      "primaryStressClass": "human_explorer"
+    },
+    {
+      "subjectRef": "sim_node_34",
+      "verdict": "admit",
+      "primaryStressClass": "edge_builder"
+    },
+    {
+      "subjectRef": "sim_node_35",
+      "verdict": "admit",
+      "primaryStressClass": "systems_engineer"
+    },
+    {
+      "subjectRef": "sim_node_36",
+      "verdict": "hold",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_37",
+      "verdict": "admit",
+      "primaryStressClass": "edge_builder"
+    },
+    {
+      "subjectRef": "sim_node_38",
+      "verdict": "admit",
+      "primaryStressClass": "systems_engineer"
+    },
+    {
+      "subjectRef": "sim_node_39",
+      "verdict": "reject",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_40",
+      "verdict": "admit",
+      "primaryStressClass": "human_explorer"
+    },
+    {
+      "subjectRef": "sim_node_41",
+      "verdict": "admit",
+      "primaryStressClass": "edge_builder"
+    },
+    {
+      "subjectRef": "sim_node_42",
+      "verdict": "admit",
+      "primaryStressClass": "systems_engineer"
+    },
+    {
+      "subjectRef": "sim_node_43",
+      "verdict": "admit",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_44",
+      "verdict": "admit",
+      "primaryStressClass": "human_explorer"
+    },
+    {
+      "subjectRef": "sim_node_45",
+      "verdict": "hold",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_46",
+      "verdict": "admit",
+      "primaryStressClass": "systems_engineer"
+    },
+    {
+      "subjectRef": "sim_node_47",
+      "verdict": "reject",
+      "primaryStressClass": "invariant_keeper"
+    },
+    {
+      "subjectRef": "sim_node_48",
+      "verdict": "reject",
+      "primaryStressClass": "human_explorer"
+    },
+    {
+      "subjectRef": "sim_node_49",
+      "verdict": "hold",
+      "primaryStressClass": "human_explorer"
+    }
+  ]
+}

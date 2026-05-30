@@ -1,0 +1,20 @@
+{
+  "schema": "castle.rhizoh.activation_decision.v1",
+  "decision": "HOLD",
+  "signedBy": "",
+  "date": "",
+  "environment": "staging",
+  "checklistRef": "docs/RHIZOH_ACTIVATION_READINESS_CHECKLIST_V1.0.md",
+  "autoReport": "docs/exports/ops/activation_readiness_v1.0.json",
+  "manualVerified": {
+    "A1_dns_proxied": false,
+    "A2_tls_valid": false,
+    "A3_legal": false,
+    "A4_firebase_readonly": false,
+    "A5_ingress_inert": false,
+    "A6_ui_readonly_gate": false,
+    "A8_cohort_sim_filed": false,
+    "A9_surface_not_activation": false
+  },
+  "notes": "READY = all manual true + AUTO pass. HOLD = defer activation switch."
+}

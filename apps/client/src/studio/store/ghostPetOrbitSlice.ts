@@ -81,12 +81,94 @@ export function presenceWithSyncedPetTransforms(
   const slot = stablePetSlotUid(ownerAvatarUid);
   const pet = pres.pets?.[slot];
   if (!pet || pet.roomUid !== roomUid) return pres;
-  const t = petGhostOrbitTransform(ownerTransform, PET_GHOST_ORBIT_PHASE_DEFAULT);
+  if (pet.simulationPoseAuthoritative === true) {
+    return pres;
+  }
+  const d = pet.embodimentDrive;
+  const phase =
+    d && typeof d === "object" && Number.isFinite(Number(d.orbitPhaseRad))
+      ? Number(d.orbitPhaseRad)
+      : PET_GHOST_ORBIT_PHASE_DEFAULT;
+  const t = petGhostOrbitTransform(ownerTransform, phase, {
+    radiusScale01:
+      d && typeof d === "object" && Number.isFinite(Number(d.radiusScale01)) ? Number(d.radiusScale01) : undefined,
+    verticalBobScale01:
+      d && typeof d === "object" && Number.isFinite(Number(d.verticalBobScale01))
+        ? Number(d.verticalBobScale01)
+        : undefined,
+    attentionYawOffsetRad:
+      d && typeof d === "object" && Number.isFinite(Number(d.attentionYawOffsetRad))
+        ? Number(d.attentionYawOffsetRad)
+        : undefined,
+    worldAttentionYawOffsetRad:
+      d && typeof d === "object" && Number.isFinite(Number(d.worldAttentionYawOffsetRad))
+        ? Number(d.worldAttentionYawOffsetRad)
+        : undefined,
+    worldSpatialBlend01:
+      d && typeof d === "object" && Number.isFinite(Number(d.worldSpatialBlend01))
+        ? Number(d.worldSpatialBlend01)
+        : undefined
+  });
   return {
     ...pres,
     pets: {
       ...(pres.pets ?? {}),
       [slot]: { ...pet, transform: t }
+    }
+  };
+}
+
+/** Merge Rhizoh social kernel → pet orbit expressivity (v0). Pass `null` to clear. */
+export function mergeGhostPetEmbodimentDriveIntoPresence(
+  pres: PresenceLayerState,
+  ownerAvatarUid: string,
+  roomUid: string,
+  drive: Record<string, unknown> | null | undefined
+): PresenceLayerState {
+  const slot = stablePetSlotUid(ownerAvatarUid);
+  const pet = pres.pets?.[slot];
+  if (!pet || pet.roomUid !== roomUid) return pres;
+  if (!drive || typeof drive !== "object" || String(drive.schema || "").length < 8) {
+    const restPet = { ...pet };
+    delete restPet.embodimentDrive;
+    return {
+      ...pres,
+      pets: {
+        ...(pres.pets ?? {}),
+        [slot]: restPet
+      }
+    };
+  }
+  const orbitPhaseRad = Number(drive.orbitPhaseRad);
+  const radiusScale01 = Number(drive.radiusScale01);
+  const verticalBobScale01 = Number(drive.verticalBobScale01);
+  const yaw = Number(drive.attentionYawOffsetRad);
+  const embodimentDrive = {
+    schema: String(drive.schema),
+    orbitPhaseRad: Number.isFinite(orbitPhaseRad) ? orbitPhaseRad : PET_GHOST_ORBIT_PHASE_DEFAULT,
+    radiusScale01: Number.isFinite(radiusScale01) ? radiusScale01 : 1,
+    verticalBobScale01: Number.isFinite(verticalBobScale01) ? verticalBobScale01 : 1,
+    ...(Number.isFinite(yaw) ? { attentionYawOffsetRad: yaw } : {}),
+    ...(Number.isFinite(Number(drive.worldAttentionYawOffsetRad))
+      ? { worldAttentionYawOffsetRad: Number(drive.worldAttentionYawOffsetRad) }
+      : {}),
+    ...(Number.isFinite(Number(drive.worldSpatialBlend01))
+      ? { worldSpatialBlend01: Number(drive.worldSpatialBlend01) }
+      : {}),
+    ...(drive.worldSpatialBindingActive === true ? { worldSpatialBindingActive: true } : {}),
+    ...(Number.isFinite(Number(drive.spatialReadiness01))
+      ? { spatialReadiness01: Number(drive.spatialReadiness01) }
+      : {}),
+    ...(drive.attention && typeof drive.attention === "object" ? { attention: drive.attention } : {}),
+    ...(typeof drive.locomotionHint === "string" && drive.locomotionHint ? { locomotionHint: drive.locomotionHint } : {}),
+    ...(drive.motionStyle && typeof drive.motionStyle === "object" ? { motionStyle: drive.motionStyle } : {}),
+    ...(drive.multiPetHint && typeof drive.multiPetHint === "object" ? { multiPetHint: drive.multiPetHint } : {})
+  };
+  return {
+    ...pres,
+    pets: {
+      ...(pres.pets ?? {}),
+      [slot]: { ...pet, embodimentDrive }
     }
   };
 }

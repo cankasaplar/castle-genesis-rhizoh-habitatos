@@ -1,0 +1,10 @@
+﻿# Evening live playlist manifest (2026-05-29)
+# OBS: add as media source
+
+De_Rhizoh-protocollen.mp4 | 52.81 MB | C:\Users\LENOVO\Desktop\castle\De_Rhizoh-protocollen.mp4
+Işık Hızına Çapalanmış Hesaplamalı Gerçeklik.mp3 | 3.11 MB | C:\Users\LENOVO\Desktop\castle\Işık Hızına Çapalanmış Hesaplamalı Gerçeklik.mp3
+Kendi_Yalanına_İnanmayan_Yapay_Zeka_Rhizoh.m4a | 26.58 MB | C:\Users\LENOVO\Desktop\castle\Kendi_Yalanına_İnanmayan_Yapay_Zeka_Rhizoh.m4a
+Kendi_Yalanına_İnanmayan_Yapay_Zeka_Rhizoh.mp4 | 22.63 MB | C:\Users\LENOVO\Desktop\castle\Kendi_Yalanına_İnanmayan_Yapay_Zeka_Rhizoh.mp4
+Rhizoh ve dijital gerçekliğin matematiksel mühürleri.mp3 | 2.61 MB | C:\Users\LENOVO\Desktop\castle\Rhizoh ve dijital gerçekliğin matematiksel mühürleri.mp3
+Rhizoh_y_la_arquitectura_de_la_realidad.m4a | 27.05 MB | C:\Users\LENOVO\Desktop\castle\Rhizoh_y_la_arquitectura_de_la_realidad.m4a
+Rhizoh_y_la_arquitectura_de_la_realidad.mp4 | 23.06 MB | C:\Users\LENOVO\Desktop\castle\Rhizoh_y_la_arquitectura_de_la_realidad.mp4

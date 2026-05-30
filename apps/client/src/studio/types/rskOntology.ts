@@ -698,6 +698,116 @@ export interface WorldPhysicsLayerState {
   timeDilation: number;
 }
 
+/** Single audit row after a seal attempt (bounded trail on kernel). */
+export interface RealitySealAuditEntryV0 {
+  atMs: number;
+  candidateId: string;
+  source: string;
+  commitClassId: string;
+  verdict: string;
+  priorEpoch: number;
+  nextEpoch: number;
+  priorSealHash: string;
+  sealHash: string;
+  reasonCode?: string;
+}
+
+/** Pending seal candidate (queue item). */
+export interface RealitySealCandidateV0 {
+  candidateId: string;
+  source: "coherence" | "ros" | "wal" | "sim" | "studio" | "unknown";
+  commitClassId: string;
+  roomScope?: string;
+  payloadHash: string;
+  enqueuedAtMs: number;
+  constitutionOk?: boolean;
+  leaseOk?: boolean;
+  duplicateOfPriorSeal?: boolean;
+  emergencyForkToken?: boolean;
+}
+
+/** Epoch inflation budget meter (sparse seal rate guard). */
+export interface RealitySealBudgetV0 {
+  windowStartMs: number;
+  windowMs: number;
+  maxSealsPerWindow: number;
+  sealsInWindow: number;
+}
+
+/** Canonical sealer cadence / hysteresis (live scheduling). */
+export interface RealitySealSchedulerV0 {
+  lastDrainAtMs: number;
+  lastScheduleEvalAtMs: number;
+  coalesceHoldUntilMs: number;
+  drainPassesThisSession: number;
+}
+
+/**
+ * Reality Sealing Core — sparse sealed-world boundary on kernel.
+ * High-frequency layers use streamSeq / intentSeq; only sealing-class commits advance realityEpoch.
+ */
+export interface RealitySealLayerState {
+  realityEpoch: number;
+  sealHashHead: string;
+  sealQueue: RealitySealCandidateV0[];
+  auditTrail: RealitySealAuditEntryV0[];
+  budget: RealitySealBudgetV0;
+  streamSeq: number;
+  intentSeq: number;
+  scheduler: RealitySealSchedulerV0;
+}
+
+/** Sprint B — scene graph node (glTF / live mesh authority cache). */
+export interface SceneGraphNodeV0 {
+  nodeUid: string;
+  parentUid?: string;
+  meshUid?: string;
+  transform?: { x: number; y: number; z: number; rotY?: number };
+  bounds?: { minX: number; maxX: number; minZ: number; maxZ: number };
+}
+
+export interface SceneGraphRoomCacheV0 {
+  revision: number;
+  nodes: Record<string, SceneGraphNodeV0>;
+  sourceUrl?: string;
+  updatedAtMs: number;
+}
+
+export interface SealedObstacleAuthorityV0 {
+  sealedEpoch: number;
+  discs: { x: number; z: number; r: number }[];
+  invalidationCellKeys: number[];
+}
+
+/** Sprint C — daemon debug mirror on kernel (optional). */
+export interface WorldRuntimeDaemonSnapshotV0 {
+  schema: string;
+  ts: number;
+  running: boolean;
+  lastTickAtMs: number;
+  ticksThisSession: number;
+  backpressure: {
+    depth: number;
+    maxDepth: number;
+    droppedFrames: number;
+    paused: boolean;
+    highWaterMark: number;
+  };
+  queueDepth: number;
+  walHistoryLen: number;
+  remotePeerCount: number;
+  lastConvergence: Record<string, unknown> | null;
+}
+
+/** WAL geometry authority runtime (pending → sealed → sim injection). */
+export interface WorldAuthorityRuntimeStateV0 {
+  sceneGraphByRoomUid: Record<string, SceneGraphRoomCacheV0>;
+  pendingObstaclesByRoomUid: Record<string, SealedObstacleAuthorityV0>;
+  sealedObstacleByRoomUid: Record<string, SealedObstacleAuthorityV0>;
+  /** Optional mirror of Sprint C daemon metrics (non-authoritative). */
+  daemonSnapshot?: WorldRuntimeDaemonSnapshotV0;
+}
+
 export type WorldRegionKind =
   | "district"
   | "academy"
@@ -943,9 +1053,30 @@ export interface PetProjection {
   kind: "ghost";
   state: PetGhostState;
   transform: { x: number; y: number; z: number; rotY: number };
+  /**
+   * When true, `presenceWithSyncedPetTransforms` does not overwrite `transform`;
+   * the real simulation kernel integrates pose for this slot.
+   */
+  simulationPoseAuthoritative?: boolean;
   lastEchoKind?: string;
   rhizohAgentUid?: string;
   lastStateAt?: number;
+  /** Rhizoh social coherence → orbit phase / scale (see `computeGhostPetSocialEmbodimentDriveV0`). */
+  embodimentDrive?: {
+    schema: string;
+    orbitPhaseRad: number;
+    radiusScale01: number;
+    verticalBobScale01: number;
+    attentionYawOffsetRad?: number;
+    worldAttentionYawOffsetRad?: number;
+    worldSpatialBlend01?: number;
+    worldSpatialBindingActive?: boolean;
+    spatialReadiness01?: number;
+    attention?: Record<string, unknown>;
+    locomotionHint?: string;
+    motionStyle?: Record<string, unknown>;
+    multiPetHint?: Record<string, unknown>;
+  };
 }
 
 /** In-world companion intelligence (Rhizoh v1) — causal `agent.*` + viewport mesh. */
@@ -958,7 +1089,8 @@ export type RhizohCompanionAgentState =
   | "guiding"
   | "orbiting";
 
-export type CompanionAgentArchetype = "rhizoh";
+/** In-world companion intelligence archetypes (studio projection — non-executive). */
+export type CompanionAgentArchetype = "rhizoh" | "atlas" | "ghost";
 
 export interface AgentProjection {
   uid: string;
@@ -1162,6 +1294,10 @@ export interface StudioKernelState {
   mindRuntime: Record<string, RSKMindRuntimeState>;
   /** Declarative physics substrate (stub v0) */
   worldPhysics: WorldPhysicsLayerState;
+  /** Sparse reality boundary — epoch, seal chain, audit (Sprint 1 sealing core) */
+  realitySeal: RealitySealLayerState;
+  /** Sprint B — streamed geometry authority cache (scene graph, obstacles, nav invalidation) */
+  worldAuthorityRuntime: WorldAuthorityRuntimeStateV0;
   /** Real Map OS: canonical geography and portals */
   worldTopology: WorldTopologyState;
   /** World locomotion — region per avatar + portal debounce. */

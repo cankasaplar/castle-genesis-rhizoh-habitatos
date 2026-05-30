@@ -47,7 +47,8 @@ powershell -File scripts/run-t0-interface-worktree.ps1
 cd ..\castle-t0-interface
 npm install
 powershell -File ..\castle\scripts\apply-t0-interface-lock-patch.ps1 -MainRoot ..\castle
-powershell -File ..\castle\scripts\setup-rhizoh-t0-dev.ps1 -RepoRoot .
+powershell -File ..\castle\scripts\apply-t0-ingress-forward-port.ps1 -MainRoot ..\castle
+powershell -File ..\castle\scripts\setup-rhizoh-t0-production.ps1 -RepoRoot . -FromMainLocal
 npm run dev -w apps/client
 ```
 
@@ -74,7 +75,21 @@ npm run verify:t0-live
 
 ---
 
-## rhizoh.com deploy
+## rhizoh.com deploy (local)
+
+```powershell
+cd ..\castle-t0-interface
+powershell -File ..\castle\scripts\apply-t0-ingress-forward-port.ps1 -MainRoot ..\castle
+powershell -File ..\castle\scripts\setup-rhizoh-t0-production.ps1 -RepoRoot . -FromMainLocal
+npm run build -w apps/client
+npx firebase-tools deploy --only hosting --project castle-genesis
+```
+
+Production env must **not** bake `VITE_RHIZOH_LEGAL_PREAMBLE=0`. Ingress: legal preamble + closed cohort (`VITE_RHIZOH_CLOSED_ADMISSION=1`).
+
+---
+
+## rhizoh.com deploy (CI)
 
 1. GitHub → Actions → **Deploy Firebase (hosting + rules)**
 2. `deploy_track` = **`t0-interface-lock`**

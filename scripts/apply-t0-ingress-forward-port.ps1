@@ -44,11 +44,15 @@ $paths = @(
   "apps/client/src/rhizoh/runtime/worldObservationDensityV0.js",
   "apps/client/src/rhizoh/runtime/worldObservationObservabilityV0.js",
   "apps/client/src/rhizoh/runtime/rhizohUiTextModeV0.js",
+  "apps/client/src/rhizoh/runtime/prewarmSpeechSynthesisV0.js",
   "apps/client/src/rhizoh/runtime/voiceInputAdapterRegistryV0.js",
   "apps/client/src/rhizoh/runtime/worldTickPublisherV0.js",
   "apps/client/src/rhizoh/runtime/genesisContinuityClientWireV0.js",
   "apps/client/src/genesis/genesisContinuityEventFormatV0.js",
   "apps/client/src/components/RhizohWorldContinuityStrip.jsx",
+  "apps/client/src/components/RhizohCohortInspectStrip.jsx",
+  "apps/client/src/rhizoh/cohort",
+  "apps/client/src/rhizoh/experience/livingWorldFirstInteractionV0.js",
   "functions/index.js"
 )
 
