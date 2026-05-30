@@ -1,7 +1,7 @@
 {
   "hosting": {
     "site": "castle-genesis",
-    "predeploy": ["npm run build"],
+    "predeploy": ["npm run build:rhizoh-production"],
     "public": "apps/client/dist",
     "ignore": [
       "firebase.json",

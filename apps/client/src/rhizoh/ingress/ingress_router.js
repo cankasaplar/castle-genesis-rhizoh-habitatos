@@ -72,6 +72,10 @@ export const LEGAL_DOC_VERSIONS_V0 = Object.freeze({
  * Production rhizoh.com or explicit env → preamble required unless acked.
  */
 export function isLegalPreambleRequiredV0() {
+  if (typeof window !== "undefined") {
+    const host = String(window.location?.hostname || "").toLowerCase();
+    if (host === "rhizoh.com" || host.endsWith(".rhizoh.com")) return true;
+  }
   if (typeof import.meta !== "undefined" && import.meta.env?.VITE_RHIZOH_LEGAL_PREAMBLE === "0") {
     return false;
   }
@@ -80,10 +84,6 @@ export function isLegalPreambleRequiredV0() {
   }
   if (typeof import.meta !== "undefined" && import.meta.env?.PROD) {
     return true;
-  }
-  if (typeof window !== "undefined") {
-    const host = String(window.location?.hostname || "").toLowerCase();
-    if (host === "rhizoh.com" || host.endsWith(".rhizoh.com")) return true;
   }
   return false;
 }

@@ -57,7 +57,8 @@ $lines = @(
   "VITE_RHIZOH_VOICE_ATTENTION_MODE=moving_context",
   "VITE_RHIZOH_SHARED_ATTENTION_TYPE=co_presence",
   "",
-  "# Ingress: legal auto-on for rhizoh.com PROD; cohort step when closed admission enabled",
+  "# Ingress: legal + cohort (rhizoh.com); explicit=1 so .env.local cannot disable on deploy",
+  "VITE_RHIZOH_LEGAL_PREAMBLE=1",
   "VITE_RHIZOH_CLOSED_ADMISSION=1",
   "VITE_RHIZOH_INVITE_ONLY_GOOGLE=1",
   "VITE_ONTOLOGICAL_BOOT_GATE=0"

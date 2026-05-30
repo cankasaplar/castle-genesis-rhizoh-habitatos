@@ -13,6 +13,7 @@ import { RhizohConversationDockV0 } from "./RhizohConversationDockV0.jsx";
 import { RhizohConversationMirrorStrip } from "./RhizohConversationMirrorStrip.jsx";
 import { useRhizohGatewayMonitor, getRhizohApiBase } from "../rhizoh/useRhizohGatewayMonitor.js";
 import { useCastleAuth } from "../firebase/useCastleAuth.js";
+import { CastleAuthOverlay } from "../auth/CastleAuthOverlay.jsx";
 import { installRhizohPresenceAcoustics } from "../rhizoh/presence/presenceAcoustics.js";
 import { isWorldLayerEnabled } from "../rhizoh/runtime/castleWorldLayerGateV0.js";
 import { getWorldExecutionModeV0 } from "../rhizoh/runtime/worldExecutionGateV0.js";
@@ -217,6 +218,10 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
       data-product-surface={productSurface}
     >
       <CesiumRealMapLayer active={mapSurfaceActive} />
+
+      {castleAuth.needsAuthGate || castleAuth.needsOnboarding ? (
+        <CastleAuthOverlay auth={castleAuth} />
+      ) : null}
 
       {gateway.phase === "connecting" || gateway.phase === "reconnecting" || gateway.phase === "initializing" ? (
         <div className="pointer-events-none absolute left-3 top-16 z-[38] rounded-xl border border-cyan-400/30 bg-black/70 px-3 py-2 text-[10px] text-cyan-100/90 backdrop-blur-md">
