@@ -5,6 +5,7 @@
 
 import { logCastleLifecycleV0, logVoiceInfoV0, logVoiceWarnV0 } from "./rhizohProductionLogNamespacesV0.js";
 import { resolveTurkishSpeechVoiceV0 } from "./prewarmSpeechSynthesisV0.js";
+import { recordConversationMirrorFirstSpeechV0 } from "./rhizohConversationBehaviorMirrorV0.js";
 
 export const VOICE_INSTANT_ACK_SCHEMA = "castle.voice_instant_ack.v0";
 export const VOICE_ACK_SMOOTH_MAX_WAIT_MS = 2600;
@@ -147,6 +148,7 @@ export function speakVoiceInstantAckV0(phrase = pickVoiceInstantAckPhraseV0()) {
     }
     const firstSpeechMs = Math.max(0, Date.now() - dispatchAtMs);
     const meta = { firstSpeechMs, kind: "instant_ack", phrase: text };
+    recordConversationMirrorFirstSpeechV0({ firstSpeechMs, phraseKind: "instant_ack" });
     logVoiceInfoV0("FIRST_SPEECH", meta);
     logCastleLifecycleV0("first_speech", meta);
     if (typeof window !== "undefined") {

@@ -10,6 +10,7 @@ import { RhizohCapabilityHaloV1 } from "./RhizohCapabilityHaloV1.jsx";
 import { RhizohProductSurfaceDrawerV0 } from "./RhizohProductSurfaceDrawerV0.jsx";
 import { UnifiedProductShellBar } from "../studio/ui/UnifiedProductShellBar.jsx";
 import { RhizohConversationDockV0 } from "./RhizohConversationDockV0.jsx";
+import { RhizohConversationMirrorStrip } from "./RhizohConversationMirrorStrip.jsx";
 import { useRhizohGatewayMonitor, getRhizohApiBase } from "../rhizoh/useRhizohGatewayMonitor.js";
 import { useCastleAuth } from "../firebase/useCastleAuth.js";
 import { installRhizohPresenceAcoustics } from "../rhizoh/presence/presenceAcoustics.js";
@@ -93,12 +94,6 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
     return startRhizohAgentRuntime({ heartbeatMs: 4200 });
   }, []);
 
-  useEffect(() => {
-    if (!liveMeshEligible) return undefined;
-    ensureGreenRoomMainHallBound();
-    return startGreenRoomPresenceMesh();
-  }, [liveMeshEligible, gateway.healthPollSerial]);
-
   const toggleSection = useCallback(
     (key) => {
       persistPrefs({
@@ -128,6 +123,12 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
       ph !== "reconnecting"
     );
   }, [gateway.phase, gateway.remoteContinuityAvailable, productSurface]);
+
+  useEffect(() => {
+    if (!liveMeshEligible) return undefined;
+    ensureGreenRoomMainHallBound();
+    return startGreenRoomPresenceMesh();
+  }, [liveMeshEligible, gateway.healthPollSerial]);
 
   useEffect(() => {
     configureSpatialRealityInfraV0({
@@ -296,13 +297,14 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
       </header>
 
       {prefs.gatewayDetailOpen ? (
-        <div className="pointer-events-auto absolute left-3 right-3 top-[4.5rem] z-[38] max-w-md">
+        <div className="pointer-events-auto absolute left-3 right-3 top-[4.5rem] z-[38] max-w-md space-y-2">
           <RhizohGatewayBanner
             model={gateway}
             onRetry={gateway.retry}
             hasHttpOrigin={hasHttpOrigin}
             className="backdrop-blur-md"
           />
+          <RhizohConversationMirrorStrip />
         </div>
       ) : null}
 

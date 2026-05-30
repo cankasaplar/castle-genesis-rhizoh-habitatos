@@ -4,6 +4,7 @@
  */
 
 import { logCastleLifecycleV0, logVoiceInfoV0 } from "./rhizohProductionLogNamespacesV0.js";
+import { recordConversationMirrorGlueV0 } from "./rhizohConversationBehaviorMirrorV0.js";
 import {
   speakAfterVoiceInstantAckSmoothV0,
   isVoiceInstantAckPlayingV0,
@@ -149,6 +150,11 @@ export async function handoffHotSpeechToLlmReplyV0(glue, speakReplyFn) {
   }
 
   logVoiceInfoV0("SPEECH_GLUE_HANDOFF", handoff);
+  recordConversationMirrorGlueV0({
+    bridgeGapMs: gapMs,
+    llmWaitMs: glue?.llmWaitMs,
+    handoffMode: handoff.mode
+  });
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
     window.__rhizoh.lastSpeechGlueHandoff = Object.freeze({ ...handoff, atMs: Date.now() });

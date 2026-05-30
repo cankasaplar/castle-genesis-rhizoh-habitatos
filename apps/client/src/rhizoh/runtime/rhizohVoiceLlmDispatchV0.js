@@ -11,6 +11,7 @@ import {
 import { recordVoiceTimelineEventV0 } from "./voiceShadowTimelineV0.js";
 import { speakRhizohReplyChunkedV0 } from "./rhizohSpeechChunkTtsV0.js";
 import { buildConversationContinuityGlueV0 } from "./rhizohConversationContinuityGlueV0.js";
+import { recordConversationMirrorLlmCompleteV0 } from "./rhizohConversationBehaviorMirrorV0.js";
 
 export const RHIZOH_VOICE_LLM_DISPATCH_SCHEMA_V0 = "castle.rhizoh.voice_llm_dispatch.v0";
 
@@ -77,10 +78,12 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     idToken: opts.idToken,
     sourcePath: "voice_llm_dispatch"
   });
+  const llmWaitMs = Date.now() - llmT0;
   const glue = buildConversationContinuityGlueV0({
     prep: out.prep,
-    llmWaitMs: Date.now() - llmT0
+    llmWaitMs
   });
+  recordConversationMirrorLlmCompleteV0({ llmWaitMs, ok: out.ok });
 
   if (!out.ok) {
     logVoiceWarnV0("VOICE_LLM_DISPATCH_FAIL", { traceId, error: out.error });

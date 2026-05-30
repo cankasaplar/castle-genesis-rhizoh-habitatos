@@ -12,6 +12,7 @@ import {
   VOICE_DIRECTED_SPEECH_BAND
 } from "./voiceDirectedSpeechObservationV0.js";
 import { isDirectedSpeechGateReleaseEnabledV0 } from "./isDirectedSpeechGateReleaseEnabledV0.js";
+import { recordConversationMirrorVoiceRouteV0 } from "./rhizohConversationBehaviorMirrorV0.js";
 
 export const VOICE_TRANSCRIPT_CONFIDENCE_ROUTER_SCHEMA =
   "castle.rhizoh.voice_transcript_confidence_router.v0";
@@ -86,7 +87,15 @@ function finalizeRouteV0(route) {
     route.executionAccepted === true
       ? VOICE_ROUTER_REJECTION_LAYER_V0.EXECUTION
       : classifyVoiceRouterRejectionLayerV0(route.reason, route.sanityAccepted !== false);
-  return Object.freeze({ ...route, rejectionLayer });
+  const finalized = Object.freeze({ ...route, rejectionLayer });
+  recordConversationMirrorVoiceRouteV0({
+    executionAccepted: finalized.executionAccepted,
+    reason: finalized.reason,
+    rejectionLayer: finalized.rejectionLayer,
+    preview: route.preview,
+    source: finalized.source
+  });
+  return finalized;
 }
 
 /**

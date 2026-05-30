@@ -11,6 +11,10 @@ import {
 import { recordVoiceTimelineFromRouteV0 } from "./voiceShadowTimelineV0.js";
 import { routeVoiceTranscriptConfidenceV0 } from "./voiceTranscriptConfidenceRouterV0.js";
 import { FAST_ROUTE_V0 } from "./rhizohFastConversationRouterV0.js";
+import {
+  markConversationMirrorDispatchV0,
+  recordConversationMirrorTurnV0
+} from "./rhizohConversationBehaviorMirrorV0.js";
 
 export const RHIZOH_LLM_TURN_HOT_WIRE_SCHEMA_V0 = "castle.rhizoh.llm_turn_hot_wire.v0";
 
@@ -23,6 +27,7 @@ export const RHIZOH_LLM_TURN_HOT_WIRE_SCHEMA_V0 = "castle.rhizoh.llm_turn_hot_wi
 export function prepareRhizohLlmTurnV0(input = {}) {
   const text = String(input.message || input.text || "").trim();
   markVoiceTurnDispatchV0();
+  markConversationMirrorDispatchV0();
 
   const turn = runRhizohClagForLlmTurnV0({
     ...input,
@@ -53,6 +58,20 @@ export function prepareRhizohLlmTurnV0(input = {}) {
   if (input.speakInstantAck !== false && ackPhrase) {
     speakVoiceInstantAckV0(String(ackPhrase));
   }
+
+  const expr = turn.expression;
+  const companion = expr?.companion || turn.companion;
+  recordConversationMirrorTurnV0({
+    traceId: input.traceId,
+    language: expr?.projection?.language || turn.projection?.language,
+    routeId: expr?.route?.id || turn.route?.route,
+    fastPath: expr?.route?.fastPath === true || turn.route?.fastPath === true,
+    channel: input.voiceTurn === true ? "voice" : "text",
+    hotPathMs: turn.expression?.hotPathMs ?? turn.hotPathMs,
+    relationalTone: companion?.relationalTone,
+    warmth01: companion?.emotionalAttunement?.warmth,
+    presenceMode: companion?.presenceMode
+  });
 
   return Object.freeze({
     schema: RHIZOH_LLM_TURN_HOT_WIRE_SCHEMA_V0,
