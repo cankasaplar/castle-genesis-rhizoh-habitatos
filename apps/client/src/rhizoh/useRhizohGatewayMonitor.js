@@ -35,7 +35,15 @@ export function getRhizohHttpOrigin() {
  * @returns {string|null}
  */
 export function shouldUseSameOriginGatewayHealthProxyV0() {
-  return false;
+  if (typeof window === "undefined") return false;
+  const h = String(window.location.hostname || "").toLowerCase();
+  return (
+    h === "rhizoh.com" ||
+    h === "www.rhizoh.com" ||
+    h.endsWith(".rhizoh.com") ||
+    h === "castle-genesis.web.app" ||
+    h === "castle-genesis.firebaseapp.com"
+  );
 }
 
 export function getRhizohDirectGatewayHealthBase() {

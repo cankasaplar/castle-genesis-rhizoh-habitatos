@@ -9,6 +9,7 @@ import {
 import { RhizohIngressFlow } from "../rhizoh/ingress/RhizohIngressFlow.jsx";
 import { isCohortFeedbackRouteV0 } from "../rhizoh/cohort/cohortFeedbackUrlV0.js";
 import { CohortSessionFeedbackScreen } from "../rhizoh/cohort/CohortSessionFeedbackScreen.jsx";
+import { hideLegacyIndexHudV0 } from "./castleCrashTelemetry.js";
 
 /**
  * T0 shell mount — legal/cohort ingress + monolithic AppRhizoh528 (no ontological gate).
@@ -16,6 +17,7 @@ import { CohortSessionFeedbackScreen } from "../rhizoh/cohort/CohortSessionFeedb
 export async function mountCastleApplicationT0V0(ctx) {
   const { appEl, RootErrorBoundary, bootLog } = ctx;
 
+  hideLegacyIndexHudV0();
   let reactRoot = window.__CASTLE_REACT_ROOT__;
   if (!reactRoot) {
     reactRoot = ReactDOM.createRoot(appEl);

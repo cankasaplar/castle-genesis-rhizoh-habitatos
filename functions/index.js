@@ -9,7 +9,7 @@ const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { onRequest } = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const { validateRhizohEventEnvelope } = require("./validateRhizohEvent");
-const { parseCohortEmailAllowlist } = require("./cohortAllowlistParse");
+const { loadCohortEmailAllowlistV0 } = require("./cohortAllowlistLoadV0");
 const {
   handleCohortSessionFeedbackMailV0,
   handleCohortFeedbackSubmitV0
@@ -69,7 +69,7 @@ exports.cohortGateV0 = onRequest(
     }
 
     const email = String(decoded.email || "").trim().toLowerCase();
-    const list = parseCohortEmailAllowlist(process.env.COHORT_EMAIL_ALLOWLIST || "");
+    const list = loadCohortEmailAllowlistV0();
     if (!list.length) {
       logger.error("cohort_gate_allowlist_unconfigured");
       res.status(503).json({ ok: false, reason: "server_allowlist_unconfigured" });
@@ -101,21 +101,46 @@ exports.cohortGateV0 = onRequest(
 const GATEWAY_PROXY_UPSTREAM =
   process.env.CASTLE_GATEWAY_UPSTREAM || "https://castle-genesis-rhizoh-habitatos.onrender.com";
 
+function readRequestBodyBuffer(req) {
+  return new Promise((resolve, reject) => {
+    /** @type {Buffer[]} */
+    const chunks = [];
+    req.on("data", (c) => chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c)));
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
+function pickGatewayProxyForwardHeaders(req) {
+  const headers = {};
+  const auth = req.headers.authorization;
+  const ctype = req.headers["content-type"];
+  const devUid = req.headers["x-castle-dev-uid"];
+  const gwTok = req.headers["x-castle-gateway-token"];
+  if (auth) headers.Authorization = String(auth);
+  if (ctype) headers["Content-Type"] = String(ctype);
+  if (devUid) headers["X-Castle-Dev-Uid"] = String(devUid);
+  if (gwTok) headers["X-Castle-Gateway-Token"] = String(gwTok);
+  return headers;
+}
+
 /**
- * Same-origin proxy for GET /health/* — rhizoh.com CORS bypass (hosting rewrite → this function).
+ * Same-origin proxy — rhizoh.com: GET /health/* + POST /rhizoh/llm (CORS + Render cold-start).
  */
 exports.gatewayProxyV0 = onRequest(
   {
     cors: true,
     region: "us-central1",
-    invoker: "public"
+    invoker: "public",
+    timeoutSeconds: 120,
+    memory: "256MiB"
   },
   async (req, res) => {
     if (req.method === "OPTIONS") {
       res.status(204).send("");
       return;
     }
-    if (req.method !== "GET" && req.method !== "HEAD") {
+    if (req.method !== "GET" && req.method !== "HEAD" && req.method !== "POST") {
       res.status(405).json({ ok: false, reason: "method_not_allowed" });
       return;
     }
@@ -124,11 +149,16 @@ exports.gatewayProxyV0 = onRequest(
     const path = subPath.startsWith("/") ? subPath : `/${subPath}`;
     const upstream = String(GATEWAY_PROXY_UPSTREAM).replace(/\/$/, "");
     const url = `${upstream}${path}`;
+    const timeoutMs = path.includes("/rhizoh/llm") ? 90000 : 15000;
     try {
-      const headers = {};
-      const devUid = req.headers["x-castle-dev-uid"];
-      if (devUid) headers["X-Castle-Dev-Uid"] = String(devUid);
-      const r = await fetch(url, { headers, signal: AbortSignal.timeout(15000) });
+      const headers = pickGatewayProxyForwardHeaders(req);
+      /** @type {RequestInit} */
+      const init = { method: req.method, headers, signal: AbortSignal.timeout(timeoutMs) };
+      if (req.method === "POST") {
+        const body = await readRequestBodyBuffer(req);
+        if (body.length) init.body = body;
+      }
+      const r = await fetch(url, init);
       const text = await r.text();
       res
         .status(r.status)

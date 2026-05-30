@@ -80,6 +80,32 @@ function haversineMeters(aLat, aLon, bLat, bLon) {
   return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
 
+/** Cesium destroy sonrası host'u boşalt — React unmount removeChild NotFoundError önler. */
+function detachCesiumHostDomV0(host) {
+  if (!host) return;
+  try {
+    host.replaceChildren();
+    return;
+  } catch {
+    /* fall through */
+  }
+  try {
+    while (host.firstChild) host.removeChild(host.firstChild);
+  } catch {
+    /* noop */
+  }
+}
+
+function destroyCesiumViewerSafeV0(viewer, host) {
+  if (!viewer) return;
+  try {
+    if (!viewer.isDestroyed()) viewer.destroy();
+  } catch {
+    /* noop */
+  }
+  detachCesiumHostDomV0(host);
+}
+
 /** display:none → block geçişinde canvas 0×0 iken Viewer açılırsa frustum bozulabilir */
 async function waitForHostLayout(el, { minSize = 48, timeoutMs = 4000 } = {}) {
   if (!el) return false;
@@ -232,16 +258,11 @@ const CesiumRealMapLayer = memo(({ active }) => {
       extrasCleanupRef.current?.();
       extrasCleanupRef.current = null;
       const v = viewerRef.current;
+      const host = hostRef.current;
       viewerRef.current = null;
       bootedRef.current = false;
       bootingRef.current = false;
-      if (v && !v.isDestroyed()) {
-        try {
-          v.destroy();
-        } catch {
-          /* noop */
-        }
-      }
+      destroyCesiumViewerSafeV0(v, host);
       droneEntitiesRef.current.clear();
       importantEntitiesRef.current = [];
       fallbackBuildingEntitiesRef.current = [];
@@ -283,11 +304,7 @@ const CesiumRealMapLayer = memo(({ active }) => {
       });
       viewerRef.current = viewer;
       if (cancelled || dead) {
-        try {
-          viewer.destroy();
-        } catch {
-          /* noop */
-        }
+        destroyCesiumViewerSafeV0(viewer, hostRef.current);
         viewerRef.current = null;
         return;
       }
@@ -1013,11 +1030,7 @@ const CesiumRealMapLayer = memo(({ active }) => {
       if (cancelled || dead) {
         extrasCleanupRef.current();
         extrasCleanupRef.current = null;
-        try {
-          if (!viewer.isDestroyed()) viewer.destroy();
-        } catch {
-          /* noop */
-        }
+        destroyCesiumViewerSafeV0(viewer, hostRef.current);
         viewerRef.current = null;
         resetCesiumApexCameraCoordinator();
         if (window.__CASTLE_CESIUM__) delete window.__CASTLE_CESIUM__;

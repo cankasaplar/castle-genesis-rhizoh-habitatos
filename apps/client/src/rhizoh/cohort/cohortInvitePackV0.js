@@ -13,6 +13,8 @@ export const COHORT_REVIEWER_SLOTS_V0 = Object.freeze({
     id: "metehan",
     role: "human_observer",
     label: "Metehan",
+    /** Google giriş e-postası — functions/cohort-email-allowlist.v0.json ile aynı olmalı */
+    observerEmail: "metehan.arkan@gmail.com",
     focus: ["screenshot", "live_session", "subjective_read"]
   }),
   friday: Object.freeze({
