@@ -2,7 +2,9 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   extractRhizohLlmReplyFromProviderText,
-  replyParsingConfidenceForExtractPathV0
+  replyParsingConfidenceForExtractPathV0,
+  replyFormatDriftScoreFromConfidenceV0,
+  computeReplyFormatDriftV0
 } from "../rhizohLlmGateway.js";
 
 describe("extractRhizohLlmReplyFromProviderText", () => {
@@ -13,6 +15,8 @@ describe("extractRhizohLlmReplyFromProviderText", () => {
     assert.equal(out.reply, "Merhaba");
     assert.equal(out.extractPath, "json.reply");
     assert.equal(out.replyParsingConfidence, 1);
+    assert.equal(out.replyFormatDriftScore, 0);
+    assert.equal(out.observedFormat, "json.reply");
   });
 
   it("falls back to plain text when model ignores JSON schema", () => {
@@ -20,6 +24,7 @@ describe("extractRhizohLlmReplyFromProviderText", () => {
     assert.equal(out.reply, "Merhaba, ben buradayım.");
     assert.equal(out.extractPath, "plain_text_fallback");
     assert.equal(out.replyParsingConfidence, 0.5);
+    assert.equal(out.replyFormatDriftScore, 0.5);
   });
 
   it("reads alternate message field", () => {
@@ -58,5 +63,19 @@ describe("replyParsingConfidenceForExtractPathV0", () => {
 
   it("uses 0.25 for unknown paths", () => {
     assert.equal(replyParsingConfidenceForExtractPathV0("future_path"), 0.25);
+  });
+});
+
+describe("replyFormatDriftScoreFromConfidenceV0", () => {
+  it("equals 1 - confidence", () => {
+    assert.equal(replyFormatDriftScoreFromConfidenceV0(1), 0);
+    assert.equal(replyFormatDriftScoreFromConfidenceV0(0.7), 0.3);
+  });
+
+  it("computeReplyFormatDriftV0 exposes expected vs observed", () => {
+    const d = computeReplyFormatDriftV0("json.alt_field");
+    assert.equal(d.providerExpectedFormat, "json.reply");
+    assert.equal(d.observedFormat, "json.alt_field");
+    assert.equal(d.replyFormatDriftScore, 0.3);
   });
 });
