@@ -102,6 +102,10 @@ const GATEWAY_PROXY_UPSTREAM =
   process.env.CASTLE_GATEWAY_UPSTREAM || "https://castle-genesis-rhizoh-habitatos.onrender.com";
 
 function readRequestBodyBuffer(req) {
+  if (req.rawBody != null) {
+    if (Buffer.isBuffer(req.rawBody)) return Promise.resolve(req.rawBody);
+    return Promise.resolve(Buffer.from(String(req.rawBody)));
+  }
   return new Promise((resolve, reject) => {
     /** @type {Buffer[]} */
     const chunks = [];
@@ -109,6 +113,14 @@ function readRequestBodyBuffer(req) {
     req.on("end", () => resolve(Buffer.concat(chunks)));
     req.on("error", reject);
   });
+}
+
+function resolveGatewayProxySubPath(req) {
+  const urlStr = String(req.originalUrl || req.url || req.path || "");
+  let pathOnly = urlStr.split("?")[0] || "";
+  pathOnly = pathOnly.replace(/^\/api\/gatewayProxy\/?/i, "");
+  if (!pathOnly) return "/health/deps";
+  return pathOnly.startsWith("/") ? pathOnly : `/${pathOnly}`;
 }
 
 function pickGatewayProxyForwardHeaders(req) {
@@ -144,16 +156,19 @@ exports.gatewayProxyV0 = onRequest(
       res.status(405).json({ ok: false, reason: "method_not_allowed" });
       return;
     }
-    const rawPath = String(req.path || req.url || "");
-    const subPath = rawPath.replace(/^\/api\/gatewayProxy\/?/, "") || "health/deps";
-    const path = subPath.startsWith("/") ? subPath : `/${subPath}`;
+    const path = resolveGatewayProxySubPath(req);
     const upstream = String(GATEWAY_PROXY_UPSTREAM).replace(/\/$/, "");
     const url = `${upstream}${path}`;
     const timeoutMs = path.includes("/rhizoh/llm") ? 90000 : 15000;
     try {
       const headers = pickGatewayProxyForwardHeaders(req);
       /** @type {RequestInit} */
-      const init = { method: req.method, headers, signal: AbortSignal.timeout(timeoutMs) };
+      const init = { method: req.method, headers };
+      try {
+        init.signal = AbortSignal.timeout(timeoutMs);
+      } catch {
+        /* noop — older Node */
+      }
       if (req.method === "POST") {
         const body = await readRequestBodyBuffer(req);
         if (body.length) init.body = body;
