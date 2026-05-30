@@ -4,6 +4,10 @@
  */
 
 import { isSuspiciousWhisperArtifactV3 } from "./voiceEngineV3/voiceTranscriptSanityV3.js";
+import {
+  observeAmbientEnergyV0,
+  VOICE_AMBIENT_ENERGY_TIER
+} from "./voiceAmbientEnergyWitnessV0.js";
 
 export const VOICE_DIRECTED_SPEECH_OBSERVATION_SCHEMA = "castle.rhizoh.voice_directed_speech_observation.v0";
 
@@ -120,11 +124,15 @@ export function classifyVoiceDirectedSpeechBandV0(meta = {}) {
   const text = String(meta.text || "").trim();
   const norm = normalizeWitnessTextV0(text);
   if (!norm) {
+    const energy = observeAmbientEnergyV0(meta);
     return Object.freeze({
       band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
-      hints: ["empty"],
+      hints: ["empty", ...energy.hints],
       ambientScore: 0,
-      directedScore: 0
+      directedScore: 0,
+      energyTier: energy.tier,
+      energyRatio: energy.ratio,
+      roomBaselineRms: energy.baseline
     });
   }
 
@@ -148,10 +156,17 @@ export function classifyVoiceDirectedSpeechBandV0(meta = {}) {
         : VOICE_DIRECTED_SPEECH_BAND.AMBIENT;
   }
 
-  const maxRms = Number(meta.maxRms);
-  const hints = [...directed.hints, ...ambient.hints];
-  if (Number.isFinite(maxRms) && maxRms > 0 && maxRms < 0.012) {
-    hints.push("low_rms");
+  const energy = observeAmbientEnergyV0(meta);
+  const hints = [...directed.hints, ...ambient.hints, ...energy.hints];
+
+  /** Faz 1 witness only — distant energy + no directed cues → ambient label (gate unchanged). */
+  if (
+    band === VOICE_DIRECTED_SPEECH_BAND.UNKNOWN &&
+    directed.score === 0 &&
+    energy.tier === VOICE_AMBIENT_ENERGY_TIER.DISTANT
+  ) {
+    band = VOICE_DIRECTED_SPEECH_BAND.AMBIENT;
+    hints.push("energy_distant_to_ambient_witness");
   }
 
   return Object.freeze({
@@ -159,6 +174,10 @@ export function classifyVoiceDirectedSpeechBandV0(meta = {}) {
     hints,
     ambientScore: ambient.score,
     directedScore: directed.score,
+    energyTier: energy.tier,
+    energyRatio: energy.ratio,
+    roomBaselineRms: energy.baseline,
+    clipMaxRms: energy.maxRms,
     preview: text.slice(0, 96),
     confidence: Number.isFinite(Number(meta.confidence)) ? Number(meta.confidence) : undefined,
     strategy: meta.strategy ? String(meta.strategy) : undefined,
