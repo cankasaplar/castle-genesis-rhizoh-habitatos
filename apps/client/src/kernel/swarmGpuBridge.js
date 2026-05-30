@@ -6,6 +6,7 @@
  * (Object.freeze + readonlyKernelOutput shadow path’te).
  */
 
+import { requestWebGpuAdapterQuietlyV0, logWebGpuInfoV0 } from "../rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
 import { getRhizohRoadmapManifest } from "./rhizohExecutionRoadmap.js";
 import { getRuntimeCapabilityMap, getSabReadiness } from "./isolationSupport.js";
 import { createRhizohGpuShadowPath } from "./rhizohGpuShadowPath.js";
@@ -30,8 +31,14 @@ export async function getSwarmGpuDevice() {
     _initPromise = (async () => {
       try {
         const win = /Windows/i.test(String(navigator.userAgent || ""));
-        _adapter = await navigator.gpu.requestAdapter(win ? {} : { powerPreference: "high-performance" });
-        if (!_adapter) return null;
+        _adapter = await requestWebGpuAdapterQuietlyV0(win ? {} : { powerPreference: "high-performance" });
+        if (!_adapter) {
+          logWebGpuInfoV0("ADAPTER", {
+            status: "unavailable",
+            note: "voice STT unrelated; Chrome gpu probe returned null"
+          });
+          return null;
+        }
         _device = await _adapter.requestDevice();
         return _device;
       } catch {

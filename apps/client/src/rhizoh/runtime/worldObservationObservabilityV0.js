@@ -5,7 +5,7 @@
 import { getWorldObservationRingV0 } from "./worldObservationBusV0.js";
 import { getWorldObservationIngressQueueSnapshotV0 } from "./worldObservationIngressQueueV0.js";
 import { getRhizohUiTextModeV0, getRhizohUiTextVisibilityV0 } from "./rhizohUiTextModeV0.js";
-import { getVoiceAdapterRegistrySnapshot } from "./voiceInputAdapterRegistryV0.js";
+import { getVoiceAdapterRegistrySnapshot, ensureVoiceAdapterRegistered } from "./voiceInputAdapterRegistryV0.js";
 import {
   buildCohortInvitePackV0,
   exportCohortInvitePackV0,
@@ -16,6 +16,7 @@ import { installFridayPromptRunnerV0 } from "../cohort/cohortFridayPromptRunnerV
 export const WORLD_OBSERVATION_SNAPSHOT_SCHEMA_V0 = "castle.world_observation.snapshot.v0";
 
 export function captureWorldObservationSnapshotV0(extra = {}) {
+  ensureVoiceAdapterRegistered();
   return Object.freeze({
     schema: WORLD_OBSERVATION_SNAPSHOT_SCHEMA_V0,
     atMs: Date.now(),

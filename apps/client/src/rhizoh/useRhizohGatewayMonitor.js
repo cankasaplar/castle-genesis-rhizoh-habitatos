@@ -34,7 +34,11 @@ export function getRhizohHttpOrigin() {
  * Sadece origin kullanıldığında reverse proxy alt yolu kaçırılıp Hosting'e /health isteği gidebiliyordu.
  * @returns {string|null}
  */
-export function getRhizohGatewayHealthBase() {
+export function shouldUseSameOriginGatewayHealthProxyV0() {
+  return false;
+}
+
+export function getRhizohDirectGatewayHealthBase() {
   const cfg = getCastleFlightConfig();
   const url = String(cfg.rhizohLlmHttp || "").trim();
   if (!url) return null;
@@ -50,6 +54,13 @@ export function getRhizohGatewayHealthBase() {
   } catch {
     return getRhizohHttpOrigin();
   }
+}
+
+export function getRhizohGatewayHealthBase() {
+  if (shouldUseSameOriginGatewayHealthProxyV0()) {
+    return `${window.location.origin}/api/gatewayProxy`;
+  }
+  return getRhizohDirectGatewayHealthBase();
 }
 
 /** @returns {string} Örn. https://host — boş string gateway yoksa */
@@ -69,7 +80,7 @@ export function getRhizohApiBase() {
  * @param {string} origin
  * @returns {Promise<{ status: number, json: object | null, fetchOk: boolean, error?: Error }>}
  */
-async function fetchGatewayDepsOnce(httpBase) {
+async function fetchHealthAtBase(httpBase) {
   const headers = { "X-Castle-Dev-Uid": getOrCreateCastleDevUid() };
   const run = async (path) => {
     const ctrl = new AbortController();
@@ -88,25 +99,37 @@ async function fetchGatewayDepsOnce(httpBase) {
       window.clearTimeout(timer);
     }
   };
+  const first = await run("/health/deps");
+  if (first.status === 404) {
+    const legacy = await run("/health");
+    const ok = legacy.status > 0 && legacy.status < 500 && legacy.json?.ok !== false;
+    return {
+      status: legacy.status,
+      json: ok
+        ? {
+            ok: true,
+            dns: true,
+            llm: true,
+            firestore: false,
+            legacyFallback: true,
+            persistence: legacy.json?.persistence ?? "unknown"
+          }
+        : legacy.json,
+      fetchOk: true
+    };
+  }
+  return first;
+}
+
+async function fetchGatewayDepsOnce(httpBase) {
   try {
-    const first = await run("/health/deps");
-    if (first.status === 404) {
-      const legacy = await run("/health");
-      const ok = legacy.status > 0 && legacy.status < 500 && legacy.json?.ok !== false;
-      return {
-        status: legacy.status,
-        json: ok
-          ? {
-              ok: true,
-              dns: true,
-              llm: true,
-              firestore: false,
-              legacyFallback: true,
-              persistence: legacy.json?.persistence ?? "unknown"
-            }
-          : legacy.json,
-        fetchOk: true
-      };
+    let first = await fetchHealthAtBase(httpBase);
+    const viaProxy = String(httpBase || "").includes("/api/gatewayProxy");
+    if (viaProxy && (first.status === 404 || first.status >= 502 || !first.json)) {
+      const direct = getRhizohDirectGatewayHealthBase();
+      if (direct) {
+        first = await fetchHealthAtBase(direct);
+      }
     }
     return first;
   } catch (e) {

@@ -132,9 +132,11 @@ import {
 } from "./rhizoh/runtime/worldTickPublisherV0.js";
 import {
   activateVoiceFallbackModeV0,
+  awaitVoiceAdapterRegistryReadyV0,
   clearVoiceSttRecoveryV0,
   ensureVoiceAdapterRegistered,
   getRhizohInputAdaptersV0,
+  getRhizohVoiceInputAdapterV0,
   getVoiceAdapterRegistrySnapshot,
   recordVoiceSttErrorV0
 } from "./rhizoh/runtime/voiceInputAdapterRegistryV0.js";
@@ -148,7 +150,78 @@ import {
   shouldShowVerboseCommandHintV0
 } from "./rhizoh/experience/livingWorldFirstInteractionV0.js";
 import { prewarmSpeechSynthesisV0, resolveTurkishSpeechVoiceV0 } from "./rhizoh/runtime/prewarmSpeechSynthesisV0.js";
+import {
+  markVoiceTurnDispatchV0,
+  speakAfterVoiceInstantAckSmoothV0,
+  speakVoiceInstantAckV0
+} from "./rhizoh/runtime/voiceInstantAckV0.js";
+import {
+  noteVoiceTranscriptDispatchedV0,
+  probeVoiceTranscriptDispatchV0
+} from "./rhizoh/runtime/voiceTranscriptDispatchDedupV0.js";
+import {
+  createRhizohClientTraceIdV0,
+  logCastleLifecycleV0,
+  logVoiceInfoV0,
+  logVoiceWarnV0,
+  resolveRhizohTurnTraceIdV0
+} from "./rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
 import { extractSpeechRecognitionTranscriptV0 } from "./rhizoh/runtime/extractSpeechRecognitionTranscriptV0.js";
+import {
+  blockVoiceSttAutoRestartV0,
+  canRequestVoiceSttAutoRestartV0,
+  classifyEmptySttOnEndV0,
+  clearVoiceSttAutoRestartBlockV0,
+  probeVoiceSttStartPreconditionsV0,
+  resumeVoiceAudioContextV0,
+  voiceSttEmptyPromptTrV0
+} from "./rhizoh/runtime/voiceSttSessionGuardV0.js";
+import {
+  getVoiceGestureAdvisoryV0,
+  getVoiceGestureTrustV0,
+  getVoiceGestureAnchorSnapshotV0,
+  installVoiceUserGestureListenersV0,
+  publishVoiceGestureAnchorToWindowV0,
+  stampVoiceUserGestureV0
+} from "./rhizoh/runtime/voiceUserGestureAnchorV0.js";
+import {
+  getVoiceSttTelemetrySnapshotV0,
+  getVoiceInitSnapshotV0,
+  installVoiceSttTelemetryV0,
+  noteVoiceSttEventV0
+} from "./rhizoh/runtime/voiceSttTelemetryV0.js";
+import {
+  planVoiceSttNoSpeechRetryV0,
+  resolveVoiceSttContinuousV0,
+  resolveVoiceSttLangV0,
+  VOICE_STT_LANG_FALLBACK,
+  VOICE_STT_LANG_PRIMARY
+} from "./rhizoh/runtime/voiceSttChromeConfigV0.js";
+import {
+  createVoiceEngineV3TurnBridgeV0,
+  isVoiceEngineV3EnabledV0
+} from "./rhizoh/runtime/voiceEngineV3/voiceEngineV3TurnBridgeV0.js";
+import { sanitizeVoiceTranscriptForDispatchV3 } from "./rhizoh/runtime/voiceEngineV3/voiceTranscriptSanityV3.js";
+import {
+  evaluateVoiceTurnAcceptanceV0,
+  voiceTurnAcceptanceLogDetailV0
+} from "./rhizoh/runtime/voiceTurnAcceptanceGateV0.js";
+import {
+  runVoiceTranscriptWitnessPipelineV0,
+  runVoiceTurnGateAfterWitnessV0
+} from "./rhizoh/runtime/voiceTranscriptWitnessPipelineV0.js";
+import {
+  evaluateVoiceCommitmentFromBandV0,
+  finalizeVoiceBehavioralCommitmentV0,
+  publishVoiceBehavioralCommitmentV0,
+  shouldDispatchVoiceToLlmV0
+} from "./rhizoh/runtime/voiceBehavioralCommitmentV0.js";
+import { VOICE_DIRECTED_SPEECH_BAND } from "./rhizoh/runtime/voiceDirectedSpeechObservationV0.js";
+import {
+  deriveVoiceInfluenceAttributionV0,
+  recordVoiceInfluenceAttributionV0
+} from "./rhizoh/runtime/voiceInfluenceAttributionV0.js";
+import { publishRhizohTrustDebugV0 } from "./rhizoh/runtime/rhizohTrustDebugV0.js";
 import {
   buildRhizohHealthState,
   computeRhizohHealthInfluence,
@@ -1446,7 +1519,7 @@ async function callLLMStub(prompt) {
 function logRhizohHealth(stage, detail = {}) {
   try {
     const meta = detail && typeof detail === "object" ? detail : {};
-    console.info(`[RHIZOH_OK] ${String(stage || "unknown")}`, meta);
+    logCastleLifecycleV0(String(stage || "unknown"), meta);
   } catch {
     /* noop */
   }
@@ -1495,10 +1568,12 @@ async function queryRhizohLLM({
   gatewayUx,
   productDecisionOverlay,
   fetchTimeoutMs = TEXT_LLM_TIMEOUT_MS,
-  slimVoicePath = false
+  slimVoicePath = false,
+  voiceTurnMeta = null
 }) {
   const trimmed = String(message || "").trim();
-  logRhizohHealth("ui_send", { chars: trimmed.length });
+  const clientTraceId = createRhizohClientTraceIdV0();
+  logRhizohHealth("ui_send", { traceId: clientTraceId, chars: trimmed.length });
   const dslParsed = parseDSL(trimmed);
   if (dslParsed) {
     const out = await applyPersonalCastleDsl(dslParsed);
@@ -1528,12 +1603,77 @@ async function queryRhizohLLM({
   const tuning = productDecisionOverlay?.phaseTuning && typeof productDecisionOverlay.phaseTuning === "object"
     ? productDecisionOverlay.phaseTuning
     : {};
+  /** @type {ReturnType<typeof evaluateVoiceTurnAcceptanceV0>} */
+  let turnAcceptance;
+  const isVoiceTurn =
+    voiceTurnMeta &&
+    typeof voiceTurnMeta === "object" &&
+    voiceTurnMeta.source &&
+    voiceTurnMeta.source !== "text";
+  if (isVoiceTurn) {
+    if (voiceTurnMeta.witnessed) {
+      turnAcceptance = runVoiceTurnGateAfterWitnessV0(voiceTurnMeta.witnessed, {
+        ...(voiceTurnMeta && typeof voiceTurnMeta === "object" ? voiceTurnMeta : {}),
+        text: trimmed,
+        source: voiceTurnMeta.source || "mic",
+        stage: "turn_gate"
+      });
+    } else {
+      const pipe = runVoiceTranscriptWitnessPipelineV0({
+        text: trimmed,
+        confidence: voiceTurnMeta.confidence,
+        strategy: voiceTurnMeta.strategy,
+        maxRms: voiceTurnMeta.maxRms,
+        source: voiceTurnMeta.source,
+        stage: "turn_gate_full",
+        checkRepeat: false,
+        runTurnGate: true
+      });
+      turnAcceptance =
+        pipe.turnAcceptance ||
+        evaluateVoiceTurnAcceptanceV0({
+          text: trimmed,
+          source: voiceTurnMeta.source || "mic"
+        });
+    }
+  } else {
+    turnAcceptance = evaluateVoiceTurnAcceptanceV0({
+      text: trimmed,
+      source: "text"
+    });
+  }
+  /** @type {ReturnType<typeof finalizeVoiceBehavioralCommitmentV0> | null} */
+  let behavioralCommitment =
+    voiceTurnMeta?.commitment && typeof voiceTurnMeta.commitment === "object"
+      ? voiceTurnMeta.commitment
+      : null;
+  if (isVoiceTurn && !behavioralCommitment) {
+    const band =
+      voiceTurnMeta.witnessed?.observation?.band ||
+      voiceTurnMeta.preCommitment?.band ||
+      VOICE_DIRECTED_SPEECH_BAND.UNKNOWN;
+    behavioralCommitment = finalizeVoiceBehavioralCommitmentV0({
+      band,
+      source: voiceTurnMeta.source,
+      sanityAccepted: true,
+      turnAccepted: turnAcceptance.accepted === true,
+      turnReason: turnAcceptance.reason
+    });
+    publishVoiceBehavioralCommitmentV0(behavioralCommitment, { stage: "turn_gate", phase: "final" });
+  }
+  const countsAsUserTurn = behavioralCommitment
+    ? behavioralCommitment.turnCounts === true
+    : turnAcceptance.accepted;
+  const effectiveTurnCount = rhizohProductSnap.userTurnCount + (countsAsUserTurn ? 1 : 0);
+  if (!turnAcceptance.accepted && turnAcceptance.reason !== "non_voice") {
+    logVoiceInfoV0("GATE_TURN_SKIP", voiceTurnAcceptanceLogDetailV0(turnAcceptance));
+  }
   const rhizohPhaseForTurn = advanceRhizohConversationPhase(
     rhizohProductSnap.conversationPhase,
     {
       trust: Number(relPhase.trust || 0),
       familiarity: Number(relPhase.familiarity || 0),
-      userTurnCount: rhizohProductSnap.userTurnCount + 1,
+      userTurnCount: effectiveTurnCount,
       introSeen: diskIntro,
       explicitPowerUnlock: readRhizohExplicitPowerUnlock()
     },
@@ -1550,6 +1690,25 @@ async function queryRhizohLLM({
   });
   const rhizohLlmDirective = buildRhizohConversationLlmDirective(rhizohPhaseForTurn);
   const bumpRhizohProductSessionAfterReply = () => {
+    const mayBumpSession = behavioralCommitment
+      ? behavioralCommitment.sessionBumps === true
+      : turnAcceptance.accepted;
+    if (!mayBumpSession) {
+      publishRhizohTrustDebugV0({
+        phase: rhizohProductSnap.conversationPhase,
+        turns: rhizohProductSnap.userTurnCount,
+        turnsTarget: tuning.trustTurnsForNormal ?? 12,
+        bond: bondGovernance01,
+        bondTarget: tuning.trustBondForNormal ?? 0.34,
+        trust: Number(relPhase.trust || 0),
+        familiarity: Number(relPhase.familiarity || 0),
+        voiceConfidence: turnAcceptance.confidence ?? voiceTurnMeta?.confidence ?? null,
+        voiceSource: voiceTurnMeta?.source || "text",
+        turnAccepted: false,
+        turnReason: turnAcceptance.reason
+      });
+      return;
+    }
     const gh = inferRhizohUserGoalHint(trimmed);
     saveRhizohProductSession({
       ...rhizohProductSnap,
@@ -1780,12 +1939,20 @@ async function queryRhizohLLM({
       contForLlm.meta = { ...contForLlm.meta, rhizohReliabilityEpisodes: [] };
     }
   }
-  if (typeof persistRhizohEmotions === "function") {
+  const mayWriteVoiceMemory =
+    !isVoiceTurn || behavioralCommitment?.memoryEligible === true;
+  if (typeof persistRhizohEmotions === "function" && mayWriteVoiceMemory) {
     try {
       persistRhizohEmotions({ emotions: rhizohEmotions, relationalTone, emotionUpdatedAt });
     } catch {
       /* noop */
     }
+  } else if (isVoiceTurn && behavioralCommitment) {
+    logVoiceInfoV0("MEMORY_COMMIT_SKIP", {
+      band: behavioralCommitment.band,
+      commitment: behavioralCommitment.commitment,
+      memoryEligible: behavioralCommitment.memoryEligible
+    });
   }
 
   const cfg = getCastleFlightConfig();
@@ -1834,6 +2001,7 @@ async function queryRhizohLLM({
       method: "POST",
       body: JSON.stringify({
         message,
+        traceId: clientTraceId,
         provider,
         llmKeySource,
         connectionId: connectionId || "",
@@ -1893,7 +2061,7 @@ async function queryRhizohLLM({
       fetchOpts.signal = timeoutCtrl.signal;
     }
     const res = await fetch(endpoint, fetchOpts);
-    logRhizohHealth("gateway_accept", { status: Number(res?.status || 0) });
+    logRhizohHealth("gateway_accept", { traceId: clientTraceId, status: Number(res?.status || 0) });
     if (timeoutId) window.clearTimeout(timeoutId);
     if (!res.ok) {
       let errBody = null;
@@ -1917,7 +2085,8 @@ async function queryRhizohLLM({
       bad.rhizohFailureKind = "provider_error";
       throw bad;
     }
-    logRhizohHealth("llm_response", { traceId: String(json?.traceId || "") });
+    const turnTraceId = resolveRhizohTurnTraceIdV0(json?.traceId, clientTraceId);
+    logRhizohHealth("llm_response", { traceId: turnTraceId, clientTraceId });
     if (!rhizohCapabilityEnvelope.backendHints.attachFullRhizohProduction && json && typeof json === "object") {
       try {
         delete json.rhizohProduction;
@@ -1937,12 +2106,31 @@ async function queryRhizohLLM({
       priorAssistantReplies
     });
     bumpRhizohProductSessionAfterReply();
-    logRhizohHealth("continuity_saved", { phase: rhizohPhaseForTurn });
+    logRhizohHealth("continuity_saved", {
+      phase: rhizohPhaseForTurn,
+      turnAccepted: turnAcceptance.accepted,
+      turnReason: turnAcceptance.reason
+    });
+    publishRhizohTrustDebugV0({
+      phase: rhizohPhaseForTurn,
+      turns: turnAcceptance.accepted
+        ? rhizohProductSnap.userTurnCount + 1
+        : rhizohProductSnap.userTurnCount,
+      turnsTarget: tuning.trustTurnsForNormal ?? 12,
+      bond: bondGovernance01,
+      bondTarget: tuning.trustBondForNormal ?? 0.34,
+      trust: Number(relPhase.trust || 0),
+      familiarity: Number(relPhase.familiarity || 0),
+      voiceConfidence: turnAcceptance.confidence ?? voiceTurnMeta?.confidence ?? null,
+      voiceSource: voiceTurnMeta?.source || "text",
+      turnAccepted: turnAcceptance.accepted,
+      turnReason: turnAcceptance.reason
+    });
     return {
       reply: replyOk,
       directive: String(json?.directive || json?.action || ""),
       source: "remote-llm",
-      traceId: String(json?.traceId || ""),
+      traceId: turnTraceId,
       llmProvider: json?.provider ?? provider ?? null,
       llmModel: json?.model ?? null,
       llmKeyBillingOwner: json?.llmKeyBillingOwner,
@@ -8013,12 +8201,16 @@ export default function AppRhizoh528() {
   const containerRef = useRef(null);
   const engineRef = useRef(null);
   const recognitionRef = useRef(null);
+  const voiceEngineV3Ref = useRef(null);
+  const voiceSttMaxRecordTimerRef = useRef(0);
+  const voiceEngineV3BridgeRef = useRef(null);
   /** Sürekli dinleme: LLM/TTS sırasında rec.onend ile erken mic açılmasını erteler. */
   const voiceTurnBusyRef = useRef(false);
   const voiceTurnBusySinceRef = useRef(0);
   const voiceTtsSessionIdRef = useRef(0);
   const bargeInRecognitionRef = useRef(null);
   const startVoiceToRhizohRef = useRef(() => {});
+  const requestVoiceMicRestartRef = useRef(() => {});
   const voiceLoopEnabledRef = useRef(false);
   const voiceNetworkBlockedRef = useRef(false);
   const voiceBargeInEnabledRef = useRef(true);
@@ -8026,6 +8218,20 @@ export default function AppRhizoh528() {
   const startBargeInWhileRhizohSpeaksRef = useRef(() => {});
   const lastVoiceNetworkWarnAtRef = useRef(0);
   const voiceNetworkRetryRef = useRef(0);
+  /** Chrome STT: final transcript sometimes arrives only on onend — buffer until flush. */
+  const voicePendingTranscriptRef = useRef("");
+  const voiceSttDispatchedRef = useRef(false);
+  const voiceSttGotAnyResultRef = useRef(false);
+  const voiceAutoRestartBlockedRef = useRef(false);
+  const voiceSttStartInFlightRef = useRef(false);
+  const voiceMicRestartTimerRef = useRef(0);
+  const voiceLoopStartInFlightRef = useRef(false);
+  const voiceSttSessionStartedAtRef = useRef(0);
+  const voiceSttHadInterimRef = useRef(false);
+  const voiceSttLastSessionErrorRef = useRef("");
+  const voiceSttNoSpeechRetryRef = useRef(0);
+  const voiceSttNoSpeechRetryTimerRef = useRef(0);
+  const lastVoiceSilentStopWarnAtRef = useRef(0);
   const l9SpiralTickRef = useRef(0);
   const l9BackgroundTickRef = useRef(0);
   const l9PrevAgentRef = useRef({ state: new Map(), pet: new Map() });
@@ -8211,32 +8417,40 @@ export default function AppRhizoh528() {
   ]);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.__rhizoh = {
-      debug: () => ({
-        field: rhizohFieldState,
-        reality: realityState,
-        governance: governanceState,
-        gateway: gatewayUx.phase,
-        layerFocus: epistemicOrbLayerFocus,
-        bootObservationArtifact: welcomeCard.bootObservationArtifact ?? null,
-        welcomeArtifact: welcomeCard.bootObservationArtifact ?? null
-      }),
-      metrics: () => {
-        const rows = [
-          { key: "memoryLinks", value: memoryLinks },
-          { key: "activeEntities", value: entityCount },
-          { key: "liveAgents", value: liveAgents.length },
-          { key: "phase", value: rhizohConversationUx.label }
-        ];
-        console.table(rows);
-        return rows;
-      },
-      policy: () => rhizohConversationUx.decisionOverlay,
-      truth: () => rhizohPolicyLearningGuard
+    window.__rhizoh = window.__rhizoh || {};
+    window.__rhizoh.debug = () => ({
+      field: rhizohFieldState,
+      reality: realityState,
+      governance: governanceState,
+      gateway: gatewayUx.phase,
+      layerFocus: epistemicOrbLayerFocus,
+      bootObservationArtifact: welcomeCard.bootObservationArtifact ?? null,
+      welcomeArtifact: welcomeCard.bootObservationArtifact ?? null,
+      voiceGestureAnchor: getVoiceGestureAnchorSnapshotV0(),
+      voiceStt: getVoiceSttTelemetrySnapshotV0(),
+      voiceAdapter: window.__rhizoh?.voiceAdapter ?? null
+    });
+    window.__rhizoh.metrics = () => {
+      const rows = [
+        { key: "memoryLinks", value: memoryLinks },
+        { key: "activeEntities", value: entityCount },
+        { key: "liveAgents", value: liveAgents.length },
+        { key: "phase", value: rhizohConversationUx.label }
+      ];
+      console.table(rows);
+      return rows;
     };
+    window.__rhizoh.policy = () => rhizohConversationUx.decisionOverlay;
+    window.__rhizoh.truth = () => rhizohPolicyLearningGuard;
+    publishVoiceGestureAnchorToWindowV0();
+    installVoiceSttTelemetryV0();
     return () => {
       try {
-        delete window.__rhizoh;
+        if (!window.__rhizoh) return;
+        delete window.__rhizoh.debug;
+        delete window.__rhizoh.metrics;
+        delete window.__rhizoh.policy;
+        delete window.__rhizoh.truth;
       } catch {
         /* noop */
       }
@@ -9374,14 +9588,19 @@ export default function AppRhizoh528() {
     return { tone: "from-emerald-500/8 to-transparent", label: "Balanced Pulse", orb: "breathing" };
   }, [governanceState]);
 
-  /** Sürekli dinleme açıksa TTS veya sessiz tur sonunda mikrofonu yeniden başlatır. */
+  /** Sürekli dinleme: TTS sonrası STT event ile mic yeniden açılır (gateway bağımsız). */
   const finishVoiceTurnIfNeeded = useCallback(() => {
     voiceTurnBusyRef.current = false;
     voiceTurnBusySinceRef.current = 0;
-    if (!voiceLoopEnabledRef.current || voiceNetworkBlockedRef.current) return;
-    window.setTimeout(() => {
-      if (!voiceLoopEnabledRef.current || voiceNetworkBlockedRef.current) return;
-      void startVoiceToRhizohRef.current(true);
+    if (!voiceLoopEnabledRef.current) return;
+    stampVoiceUserGestureV0("after_tts_refresh");
+    if (voiceMicRestartTimerRef.current) {
+      window.clearTimeout(voiceMicRestartTimerRef.current);
+    }
+    voiceMicRestartTimerRef.current = window.setTimeout(() => {
+      voiceMicRestartTimerRef.current = 0;
+      if (!voiceLoopEnabledRef.current) return;
+      requestVoiceMicRestartRef.current(true, "after_tts");
     }, VOICE_AFTER_TURN_RESTART_MS);
   }, []);
 
@@ -9435,6 +9654,7 @@ export default function AppRhizoh528() {
         stopBargeInMic();
         if (sessionId !== voiceTtsSessionIdRef.current) return;
         if (voiceTurn) {
+          stampVoiceUserGestureV0("tts_end_refresh");
           setRhizohFieldState("IDLE");
           finishVoiceTurnIfNeeded();
         }
@@ -9459,15 +9679,158 @@ export default function AppRhizoh528() {
   );
 
   const handleVoiceTranscript = useCallback(
-    async (text, { manageVoiceTurn = false, source = "mic" } = {}) => {
+    async (
+      text,
+      {
+        manageVoiceTurn = false,
+        source = "mic",
+        confidence,
+        strategy,
+        maxRms,
+        witnessed: witnessedIn,
+        witnessCompleted = false
+      } = {}
+    ) => {
       const trimmed = String(text || "").trim();
       if (!trimmed) {
         if (manageVoiceTurn) finishVoiceTurnIfNeeded();
         return;
       }
+
+      const voiceSource = String(source || "mic");
+      /** @type {ReturnType<typeof import("./rhizoh/runtime/voiceTranscriptWitnessPipelineV0.js").witnessRawVoiceTranscriptV0> | null} */
+      let witnessed = witnessedIn || null;
+      /** @type {ReturnType<typeof finalizeVoiceBehavioralCommitmentV0> | null} */
+      let pipelineCommitment = null;
+      /** @type {ReturnType<typeof evaluateVoiceCommitmentFromBandV0> | null} */
+      let pipelinePreCommitment = null;
+
+      const isChromeLike =
+        voiceSource === "barge_in" || voiceSource === "mic" || voiceSource === "mic_onend";
+      if (isChromeLike) {
+        const pipe = runVoiceTranscriptWitnessPipelineV0({
+          text: trimmed,
+          confidence: Number.isFinite(Number(confidence))
+            ? Number(confidence)
+            : voiceSource === "barge_in"
+              ? 0.5
+              : undefined,
+          strategy: strategy || (voiceSource === "barge_in" ? "browser_stt" : ""),
+          source: voiceSource,
+          maxRms: Number.isFinite(Number(maxRms)) ? Number(maxRms) : undefined,
+          stage: "chrome_dispatch_raw",
+          checkRepeat: true,
+          runTurnGate: false
+        });
+        witnessed = pipe.witnessed;
+        pipelineCommitment = pipe.commitment;
+        pipelinePreCommitment = pipe.preCommitment;
+        if (!pipe.sanityGate.accepted) {
+          logVoiceWarnV0("STT_DISPATCH_REJECT", {
+            reason: pipe.sane.reason,
+            source: voiceSource,
+            preview: trimmed.slice(0, 96),
+            confidence: pipe.sane.confidence,
+            band: pipe.witnessed.observation.band
+          });
+          if (manageVoiceTurn) finishVoiceTurnIfNeeded();
+          return;
+        }
+      } else if (voiceSource === "mic_v3" && !witnessCompleted) {
+        const pipe = runVoiceTranscriptWitnessPipelineV0({
+          text: trimmed,
+          confidence: Number.isFinite(Number(confidence)) ? Number(confidence) : undefined,
+          strategy: strategy || undefined,
+          source: voiceSource,
+          maxRms: Number.isFinite(Number(maxRms)) ? Number(maxRms) : undefined,
+          stage: "mic_v3_dispatch_fallback",
+          checkRepeat: true,
+          runTurnGate: false
+        });
+        witnessed = pipe.witnessed;
+        pipelineCommitment = pipe.commitment;
+        pipelinePreCommitment = pipe.preCommitment;
+        if (!pipe.sanityGate.accepted) {
+          logVoiceWarnV0("STT_DISPATCH_REJECT", {
+            reason: pipe.sane.reason,
+            source: voiceSource,
+            preview: trimmed.slice(0, 96),
+            band: pipe.witnessed.observation.band
+          });
+          if (manageVoiceTurn) finishVoiceTurnIfNeeded();
+          return;
+        }
+      } else if (voiceSource === "mic_v3" && witnessCompleted && witnessed) {
+        pipelinePreCommitment = evaluateVoiceCommitmentFromBandV0(witnessed.observation.band, {
+          source: voiceSource
+        });
+      }
+
+      const isVoiceDispatch =
+        voiceSource === "barge_in" ||
+        voiceSource === "mic" ||
+        voiceSource === "mic_onend" ||
+        voiceSource === "mic_v3";
+      if (isVoiceDispatch) {
+        const pre =
+          pipelinePreCommitment ||
+          evaluateVoiceCommitmentFromBandV0(
+            witnessed?.observation?.band || VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+            { source: voiceSource }
+          );
+        if (!shouldDispatchVoiceToLlmV0(pre, { sanityAccepted: true })) {
+          const observeOnly = finalizeVoiceBehavioralCommitmentV0({
+            band: witnessed?.observation?.band || pre.band,
+            source: voiceSource,
+            sanityAccepted: true,
+            turnAccepted: false
+          });
+          publishVoiceBehavioralCommitmentV0(observeOnly, {
+            stage: "dispatch",
+            phase: "llm_blocked"
+          });
+          logVoiceInfoV0("BEHAVIOR_LLM_SKIP", {
+            band: pre.band,
+            commitment: observeOnly.commitment,
+            preview: trimmed.slice(0, 96)
+          });
+          recordVoiceInfluenceAttributionV0(
+            deriveVoiceInfluenceAttributionV0({
+              band: witnessed?.observation?.band || pre.band,
+              source: voiceSource,
+              stage: "dispatch_llm_blocked",
+              commitment: observeOnly,
+              sanityAccepted: true,
+              turnAccepted: false
+            }),
+            { preview: trimmed.slice(0, 96), phase: "llm_blocked" }
+          );
+          if (manageVoiceTurn) finishVoiceTurnIfNeeded();
+          return;
+        }
+      }
+
+      const dedup = probeVoiceTranscriptDispatchV0(trimmed);
+      if (!dedup.ok) {
+        logVoiceWarnV0("STT_DISPATCH_DEDUP", {
+          reason: dedup.reason,
+          preview: trimmed.slice(0, 96),
+          ageMs: dedup.ageMs,
+          source
+        });
+        if (manageVoiceTurn) finishVoiceTurnIfNeeded();
+        return;
+      }
+      noteVoiceTranscriptDispatchedV0(trimmed);
       voiceTurnBusyRef.current = true;
       voiceTurnBusySinceRef.current = Date.now();
       setMicListening(false);
+      const dispatchAtMs = Date.now();
+      markVoiceTurnDispatchV0(dispatchAtMs);
+      logVoiceInfoV0("STT_DISPATCH", { chars: trimmed.length, preview: trimmed.slice(0, 96), source, dispatchAtMs });
+      setCmd(trimmed);
+      setRhizohFieldState("INTERPRETING");
+      speakVoiceInstantAckV0();
       try {
         const focusPre = uiStore.getState().layerFocus;
         enqueueCastleRuntimeTransaction({
@@ -9475,8 +9838,6 @@ export default function AppRhizoh528() {
           source: source === "barge_in" ? "speech_recognition_barge_in" : "speech_recognition_onresult",
           payload: { textLen: trimmed.length, layerFocus: focusPre }
         });
-        setCmd(trimmed);
-        setRhizohFieldState("INTERPRETING");
         const focus = focusPre;
         const profile = LAYER_UI_PROFILES[focus] || LAYER_UI_PROFILES[10];
         const spec = LAYER_SPECS.find((layerRow) => layerRow.id === focus) || LAYER_SPECS[10];
@@ -9486,6 +9847,7 @@ export default function AppRhizoh528() {
         } catch {
           /* noop */
         }
+        const llmStartedAt = Date.now();
         const out = await queryRhizohLLM({
           message: trimmed,
           provider: "openai",
@@ -9501,7 +9863,23 @@ export default function AppRhizoh528() {
           fetchTimeoutMs: VOICE_LLM_TIMEOUT_MS,
           slimVoicePath: true,
           persistRhizohEmotions: persistRhizohEmotionSession,
-          productDecisionOverlay: rhizohProductDecisionOverlayRef.current
+          productDecisionOverlay: rhizohProductDecisionOverlayRef.current,
+          voiceTurnMeta: {
+            source: voiceSource,
+            text: trimmed,
+            confidence: Number.isFinite(Number(confidence)) ? Number(confidence) : undefined,
+            strategy: strategy || undefined,
+            maxRms: Number.isFinite(Number(maxRms)) ? Number(maxRms) : undefined,
+            witnessed: witnessed || undefined,
+            witnessCompleted: witnessCompleted || Boolean(witnessed),
+            commitment: pipelineCommitment || undefined,
+            preCommitment: pipelinePreCommitment || undefined
+          }
+        });
+        logCastleLifecycleV0("voice_turn_llm", {
+          llmMs: Date.now() - llmStartedAt,
+          dispatchAtMs,
+          traceId: out.traceId || ""
         });
         applyRhizohDirective(out.directive, engineRef);
         const normV = buildRhizohNormalizedLlmOutput(out, gatewayUx, mapSurfaceActive);
@@ -9516,8 +9894,23 @@ export default function AppRhizoh528() {
           source: String(out.source || "voice"),
           traceId: out.traceId || ""
         });
+        recordVoiceInfluenceAttributionV0(
+          deriveVoiceInfluenceAttributionV0({
+            direction: "egress",
+            band: witnessed?.observation?.band,
+            source: voiceSource,
+            stage: "llm_reply"
+          }),
+          {
+            preview: String(procV.uiReply || "").slice(0, 96),
+            traceId: out.traceId || "",
+            replySource: String(out.source || "voice")
+          }
+        );
         if (!procV.skipSpeech) {
-          speakRhizoh(procV.uiReply, { voiceTurn: manageVoiceTurn });
+          await speakAfterVoiceInstantAckSmoothV0(() => {
+            speakRhizoh(procV.uiReply, { voiceTurn: manageVoiceTurn });
+          });
         } else {
           setRhizohFieldState("IDLE");
           if (manageVoiceTurn) finishVoiceTurnIfNeeded();
@@ -9569,6 +9962,7 @@ export default function AppRhizoh528() {
   const startBargeInWhileRhizohSpeaks = useCallback(
     (ttsSessionId) => {
       if (ttsSessionId !== voiceTtsSessionIdRef.current) return;
+      if (isVoiceEngineV3EnabledV0()) return;
       if (!voiceBargeInEnabledRef.current) return;
       const Ctor = getSpeechRecognitionCtor();
       if (!Ctor) return;
@@ -9639,10 +10033,12 @@ export default function AppRhizoh528() {
     startBargeInWhileRhizohSpeaksRef.current = startBargeInWhileRhizohSpeaks;
   }, [startBargeInWhileRhizohSpeaks]);
 
-  const ensureAmbientSound = useCallback(() => {
-    if (ambientCtxRef.current) return;
+  const ensureAmbientSound = useCallback(async () => {
+    if (ambientCtxRef.current) {
+      return resumeVoiceAudioContextV0(ambientCtxRef.current);
+    }
     const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextCtor) return;
+    if (!AudioContextCtor) return "none";
     const ctx = new AudioContextCtor();
     const master = ctx.createGain();
     master.gain.value = 0.04;
@@ -9666,7 +10062,115 @@ export default function AppRhizoh528() {
 
     ambientCtxRef.current = ctx;
     ambientNodesRef.current = [hum, whisper, humGain, whisperGain, master];
+    return resumeVoiceAudioContextV0(ctx);
   }, []);
+
+  const maybeWarnVoiceSilentStopV0 = useCallback(
+    (promptKey) => {
+      const now = Date.now();
+      if (now - Number(lastVoiceSilentStopWarnAtRef.current || 0) < 12000) return;
+      lastVoiceSilentStopWarnAtRef.current = now;
+      speakRhizoh(voiceSttEmptyPromptTrV0(promptKey));
+    },
+    [speakRhizoh]
+  );
+
+  const requestVoiceMicRestartV0 = useCallback(
+    (keepAlive, context = "turn_end", opts = {}) => {
+      if (!keepAlive && context !== "after_tts") return;
+      if (voiceAutoRestartBlockedRef.current) return;
+      if (voiceTurnBusyRef.current) return;
+      if (voiceSttStartInFlightRef.current) return;
+
+      const lastSessionHadResult =
+        opts.lastSessionHadResult === true ||
+        context === "after_tts" ||
+        voiceSttGotAnyResultRef.current === true;
+
+      const decision = canRequestVoiceSttAutoRestartV0({
+        context,
+        lastSessionHadResult,
+        keepAlive
+      });
+      if (!decision.ok) {
+        if (decision.reason === "silent_abort_cooldown") {
+          logVoiceWarnV0("STT_RESTART_COOLDOWN", {
+            context,
+            remainingMs: decision.remainingMs
+          });
+        } else if (decision.reason === "onresult_empty_no_prior_result") {
+          logVoiceWarnV0("STT_RESTART_BLOCKED_NO_PRIOR_RESULT", { context });
+        } else if (decision.reason === "gesture_expired") {
+          logVoiceInfoV0("STT_RESTART_GESTURE_SOFT", { context, reason: decision.reason });
+        } else if (decision.reason === "onend_silent_abort" || decision.reason === "context_not_stt") {
+          logVoiceWarnV0("STT_RESTART_BLOCKED", { context, reason: decision.reason });
+        }
+        setRhizohFieldState("IDLE");
+        return;
+      }
+
+      if (decision.softDegrade) {
+        logVoiceInfoV0("STT_RESTART_SOFT_DEGRADE", {
+          context,
+          reason: decision.reason
+        });
+      }
+
+      const pre = probeVoiceSttStartPreconditionsV0(ambientCtxRef.current, {
+        softGesture: keepAlive && (context === "after_tts" || decision.softDegrade === true)
+      });
+      if (!pre.ok) {
+        if (pre.reason === "gesture_expired" && keepAlive && context === "after_tts") {
+          logVoiceInfoV0("STT_RESTART_GESTURE_SOFT", { context, reason: pre.reason });
+        } else {
+          logVoiceWarnV0("STT_RESTART_BLOCKED", { context, ...pre });
+          maybeWarnVoiceSilentStopV0(
+            pre.reason === "tab_hidden" ? "tab" : pre.reason === "gesture_expired" ? "gesture_rebind" : "audio"
+          );
+          setRhizohFieldState("IDLE");
+          return;
+        }
+      } else if (pre.softDegrade) {
+        logVoiceInfoV0("STT_RESTART_SOFT_DEGRADE", { context, reason: pre.reason });
+      }
+
+      const advisory = getVoiceGestureAdvisoryV0();
+      if (advisory.hintKey === "gesture_soft_rebind") {
+        logVoiceInfoV0("STT_RESTART_ADVISORY", {
+          context,
+          advisoryLevel: advisory.level,
+          ageMs: advisory.ageMs
+        });
+      }
+
+      window.setTimeout(() => {
+        if (!voiceLoopEnabledRef.current) return;
+        if (voiceSttStartInFlightRef.current) return;
+        const decisionLater = canRequestVoiceSttAutoRestartV0({
+          context,
+          lastSessionHadResult,
+          keepAlive
+        });
+        if (!decisionLater.ok && !(keepAlive && context === "after_tts" && decisionLater.reason === "gesture_expired")) {
+          logVoiceWarnV0("STT_RESTART_DEFERRED", {
+            context: `${context}_delayed`,
+            reason: decisionLater.reason
+          });
+          setRhizohFieldState("IDLE");
+          return;
+        }
+        void startVoiceToRhizohRef.current(true);
+      }, VOICE_AFTER_TURN_RESTART_MS);
+    },
+    [maybeWarnVoiceSilentStopV0]
+  );
+
+  const scheduleVoiceMicRestartV0 = useCallback(
+    (keepAlive, opts = {}) => {
+      requestVoiceMicRestartV0(keepAlive, opts.context || "onresult_empty", opts);
+    },
+    [requestVoiceMicRestartV0]
+  );
 
   const fallbackToTextInput = useCallback(
     (reason = "stt_unavailable") => {
@@ -9701,7 +10205,7 @@ export default function AppRhizoh528() {
       } catch {
         /* noop */
       }
-      console.info("[VOICE_ADAPTER] debug truth", {
+      logVoiceInfoV0("ADAPTER_DEBUG", {
         adapters: getRhizohInputAdaptersV0(),
         registry: snap
       });
@@ -9717,15 +10221,97 @@ export default function AppRhizoh528() {
   );
 
   const startVoiceToRhizoh = useCallback(
-    async (keepAlive = false) => {
-      const adapterSnap = ensureVoiceAdapterRegistered();
-      if (!getRhizohInputAdaptersV0().voice || adapterSnap.fallbackMode) {
+    async (keepAlive = false, opts = {}) => {
+      const userGestureUrgent = opts?.userGestureUrgent === true;
+      installVoiceSttTelemetryV0();
+      logVoiceInfoV0("VOICE_INIT_STATE", { ...getVoiceInitSnapshotV0(), userGestureUrgent });
+
+      if (voiceSttStartInFlightRef.current) {
+        const engineBusy = voiceEngineV3Ref.current?.isBusy?.();
+        if (!micListening && !engineBusy && rhizohFieldState === "IDLE") {
+          voiceSttStartInFlightRef.current = false;
+          logVoiceWarnV0("STT_INFLIGHT_STALE_RESET", {});
+        } else {
+          logVoiceInfoV0("STT_START_SKIPPED", { reason: "in_flight" });
+          return;
+        }
+      }
+      voiceSttStartInFlightRef.current = true;
+
+      let adapterSnap = getVoiceAdapterRegistrySnapshot();
+      if (!adapterSnap.hydrated) {
+        adapterSnap = await awaitVoiceAdapterRegistryReadyV0();
+      }
+      if (!getRhizohVoiceInputAdapterV0() || adapterSnap.fallbackMode) {
+        voiceSttStartInFlightRef.current = false;
         fallbackToTextInput("no_adapter_at_start");
         speakRhizoh("Bu tarayıcıda ses tanıma yok. Aşağıya yazıp gönder.");
         return;
       }
+      if (isVoiceEngineV3EnabledV0()) {
+        stopBargeInMic();
+        const preStartV3 = probeVoiceSttStartPreconditionsV0(ambientCtxRef.current, { softGesture: keepAlive });
+        if (!preStartV3.ok) {
+          voiceSttStartInFlightRef.current = false;
+          logVoiceWarnV0("V3_PRECONDITION", { ...preStartV3 });
+          setMicListening(false);
+          setRhizohFieldState("IDLE");
+          maybeWarnVoiceSilentStopV0(
+            preStartV3.reason === "tab_hidden"
+              ? "tab"
+              : preStartV3.reason === "gesture_expired"
+                ? "gesture_rebind"
+                : "audio"
+          );
+          return;
+        }
+        if (preStartV3.softDegrade) {
+          logVoiceInfoV0("V3_GESTURE_SOFT_DEGRADE", {
+            reason: preStartV3.reason,
+            trustLevel: preStartV3.trustLevel
+          });
+        }
+        if (!voiceEngineV3BridgeRef.current) {
+          voiceEngineV3BridgeRef.current = createVoiceEngineV3TurnBridgeV0({
+            refs: {
+              voiceEngineV3: voiceEngineV3Ref,
+              voiceSttStartInFlight: voiceSttStartInFlightRef,
+              voiceSttMaxRecordTimer: voiceSttMaxRecordTimerRef,
+              voiceSttGotAnyResult: voiceSttGotAnyResultRef
+            },
+            callbacks: {
+              setRhizohFieldState,
+              setMicListening,
+              handleVoiceTranscriptRef,
+              scheduleVoiceMicRestart: (k, o) => scheduleVoiceMicRestartV0(k, o),
+              maybeWarnVoiceSilentStop: maybeWarnVoiceSilentStopV0,
+              speakRhizoh
+            }
+          });
+        }
+        void ensureAmbientSound();
+        const engineState = voiceEngineV3Ref.current?.getState?.();
+        if (
+          voiceEngineV3Ref.current &&
+          engineState &&
+          engineState !== "IDLE" &&
+          engineState !== "RECORDING"
+        ) {
+          voiceSttStartInFlightRef.current = false;
+          logVoiceWarnV0("V3_START_BLOCKED", { state: engineState });
+          return;
+        }
+        if (voiceEngineV3Ref.current?.isBusy?.()) {
+          voiceSttStartInFlightRef.current = false;
+          logVoiceWarnV0("V3_START_SKIPPED", { reason: "engine_busy", state: engineState });
+          return;
+        }
+        await voiceEngineV3BridgeRef.current.startTurn(keepAlive);
+        return;
+      }
       const Ctor = getSpeechRecognitionCtor();
       if (!Ctor) {
+        voiceSttStartInFlightRef.current = false;
         fallbackToTextInput("no_speech_ctor");
         speakRhizoh("Bu tarayıcıda ses tanıma yok. Aşağıya yazıp gönder.");
         return;
@@ -9743,34 +10329,222 @@ export default function AppRhizoh528() {
           /* noop */
         }
       }
-      ensureAmbientSound();
       try {
         window.speechSynthesis?.cancel?.();
       } catch {
         /* noop */
       }
+      const preStart = probeVoiceSttStartPreconditionsV0(ambientCtxRef.current);
+      if (!preStart.ok) {
+        voiceSttStartInFlightRef.current = false;
+        logVoiceWarnV0("STT_PRECONDITION", { ...preStart });
+        setMicListening(false);
+        setRhizohFieldState("IDLE");
+        maybeWarnVoiceSilentStopV0(
+          preStart.reason === "tab_hidden"
+            ? "tab"
+            : preStart.reason === "gesture_expired"
+              ? "gesture_rebind"
+              : "audio"
+        );
+        return;
+      }
       setRhizohFieldState("LISTENING");
       setMicListening(true);
+      voicePendingTranscriptRef.current = "";
+      voiceSttDispatchedRef.current = false;
+      voiceSttGotAnyResultRef.current = false;
+      voiceSttHadInterimRef.current = false;
+      voiceSttLastSessionErrorRef.current = "";
+      if (!opts?.langAttempt) voiceSttNoSpeechRetryRef.current = 0;
+      voiceSttSessionStartedAtRef.current = Date.now();
       const rec = new Ctor();
-      rec.lang = String(navigator?.language || "tr-TR");
+      rec.lang = resolveVoiceSttLangV0({ langAttempt: opts?.langAttempt });
       rec.interimResults = true;
       rec.maxAlternatives = 1;
-      rec.continuous = false;
+      rec.continuous = resolveVoiceSttContinuousV0(keepAlive);
       rec.__castleStopRequested = false;
+      noteVoiceSttEventV0("STT_SESSION_BEGIN", {
+        lang: rec.lang,
+        continuous: rec.continuous,
+        keepAlive,
+        adapter: adapterSnap.sttStatus
+      });
+      logVoiceWarnV0("STT_SESSION_BEGIN", {
+        lang: rec.lang,
+        continuous: rec.continuous,
+        keepAlive,
+        adapter: adapterSnap.sttStatus,
+        userGestureUrgent
+      });
+      rec.onstart = () => {
+        noteVoiceSttEventV0("STT_START", { lang: rec.lang });
+        logVoiceInfoV0("STT_START", { lang: rec.lang, keepAlive });
+      };
+      rec.onaudiostart = () => {
+        noteVoiceSttEventV0("STT_AUDIO_START", {});
+        logVoiceInfoV0("STT_AUDIO_START", {});
+      };
+      rec.onsoundstart = () => {
+        noteVoiceSttEventV0("STT_SOUND_START", {});
+        logVoiceInfoV0("STT_SOUND_START", {});
+      };
+      rec.onsoundend = () => {
+        noteVoiceSttEventV0("STT_SOUND_END", {});
+        logVoiceInfoV0("STT_SOUND_END", {});
+      };
+      rec.onnomatch = () => {
+        noteVoiceSttEventV0("STT_NOMATCH", {});
+        logVoiceWarnV0("STT_NOMATCH", { lang: rec.lang });
+      };
+      rec.onresult = async (ev) => {
+        try {
+          voiceSttGotAnyResultRef.current = true;
+          const { text, isFinal } = extractSpeechRecognitionTranscriptV0(ev);
+          if (text) {
+            voicePendingTranscriptRef.current = text;
+            voiceSttHadInterimRef.current = true;
+          }
+          noteVoiceSttEventV0("STT_RESULT", {
+            isFinal,
+            chars: text.length,
+            preview: text.slice(0, 48)
+          });
+          logVoiceInfoV0("STT_RESULT", {
+            isFinal,
+            chars: text.length,
+            preview: text.slice(0, 48)
+          });
+          if (!isFinal) {
+            noteVoiceSttEventV0("STT_INTERIM", { chars: text.length, preview: text.slice(0, 48) });
+            logVoiceInfoV0("STT_INTERIM", { chars: text.length, preview: text.slice(0, 48) });
+            setMicListening(true);
+            return;
+          }
+          setMicListening(false);
+          setVoiceNetworkBlocked(false);
+          clearVoiceSttRecoveryV0();
+          voiceNetworkRetryRef.current = 0;
+          if (!text) {
+            if (keepAlive && !voiceTurnBusyRef.current) {
+              scheduleVoiceMicRestartV0(keepAlive, {
+                context: "onresult_empty",
+                lastSessionHadResult: true
+              });
+            }
+            return;
+          }
+          voiceSttNoSpeechRetryRef.current = 0;
+          rec.__castleStopRequested = true;
+          try {
+            rec.stop();
+          } catch {
+            /* noop */
+          }
+          voiceSttDispatchedRef.current = true;
+          noteVoiceSttEventV0("STT_FINAL", { chars: text.length, preview: text.slice(0, 96) });
+          logVoiceInfoV0("STT_FINAL", { chars: text.length, preview: text.slice(0, 96) });
+          await handleVoiceTranscript(text, { manageVoiceTurn: keepAlive, source: "mic" });
+        } catch (err) {
+          console.error("[VOICE_PIPE_FATAL]", err);
+          try {
+            window.__CASTLE_LAST_FATAL__ = {
+              kind: "voice_onresult",
+              err,
+              message: String(err?.message || err),
+              stack: String(err?.stack || ""),
+              at: Date.now()
+            };
+          } catch {
+            /* noop */
+          }
+          setMicListening(false);
+          setRhizohFieldState("IDLE");
+          voiceTurnBusyRef.current = false;
+          voiceTurnBusySinceRef.current = 0;
+          setVoiceLoopEnabled(false);
+          speakRhizoh("Ses ile Rhizoh hattında hata oluştu; yazarak göndermeyi dene.");
+        }
+      };
       rec.onend = () => {
+        voiceSttStartInFlightRef.current = false;
         setMicListening(false);
         if (rec.__castleStopRequested) return;
-        if (!keepAlive) return;
-        if (voiceNetworkBlockedRef.current) return;
-        if (voiceTurnBusyRef.current) {
+        const pending = String(voicePendingTranscriptRef.current || "").trim();
+        if (pending && !voiceSttDispatchedRef.current && !voiceTurnBusyRef.current) {
+          voiceSttDispatchedRef.current = true;
+          logVoiceInfoV0("STT_ONEND_FLUSH", { chars: pending.length, preview: pending.slice(0, 96) });
+          void handleVoiceTranscript(pending, { manageVoiceTurn: keepAlive, source: "mic_onend" });
           return;
         }
-        window.setTimeout(() => {
-          if (!voiceLoopEnabledRef.current) return;
-          void startVoiceToRhizohRef.current(true);
-        }, 220);
+        if (voiceSttNoSpeechRetryTimerRef.current) {
+          setRhizohFieldState("IDLE");
+          return;
+        }
+        const empty = classifyEmptySttOnEndV0({
+          pending,
+          gotAnyResult: voiceSttGotAnyResultRef.current,
+          keepAlive,
+          visibility: document.visibilityState,
+          audioState: ambientCtxRef.current?.state,
+          sessionDurationMs: Date.now() - Number(voiceSttSessionStartedAtRef.current || Date.now()),
+          gestureAgeMs: getVoiceGestureTrustV0().ageMs,
+          hadInterimActivity: voiceSttHadInterimRef.current,
+          lastSttError: voiceSttLastSessionErrorRef.current,
+          gatewayDegraded: ["offline", "offline_dns", "reconnecting", "connecting"].includes(
+            String(gatewayUx?.phase || "").toLowerCase()
+          )
+        });
+        if (!voiceSttDispatchedRef.current) {
+          noteVoiceSttEventV0("STT_ONEND_EMPTY", {
+            reason: empty.reason,
+            confidence: empty.silentEnd?.confidence,
+            gotAnyResult: voiceSttGotAnyResultRef.current
+          });
+          logVoiceInfoV0("STT_ONEND_EMPTY", {
+            reason: empty.reason,
+            kind: empty.kind,
+            gotAnyResult: voiceSttGotAnyResultRef.current,
+            silentEnd: empty.silentEnd
+          });
+        }
+        if (empty.blockAutoRestart) {
+          voiceAutoRestartBlockedRef.current = true;
+        }
+        if (empty.applySilentAbortCooldown && empty.cooldownMs > 0 && voiceSttLastSessionErrorRef.current !== "no-speech") {
+          blockVoiceSttAutoRestartV0(empty.cooldownMs);
+          logVoiceWarnV0("STT_SILENT_ABORT_COOLDOWN", {
+            cooldownMs: empty.cooldownMs,
+            reason: empty.reason,
+            confidence: empty.silentEnd?.confidence,
+            score: empty.silentEnd?.score
+          });
+        }
+        if (empty.shouldSoftRestart && keepAlive && !voiceTurnBusyRef.current) {
+          logVoiceInfoV0("STT_ONEND_SOFT_RESTART", {
+            confidence: empty.silentEnd?.confidence,
+            score: empty.silentEnd?.score
+          });
+          scheduleVoiceMicRestartV0(keepAlive, {
+            context: "onend_ambiguous",
+            lastSessionHadResult: voiceSttHadInterimRef.current
+          });
+          setRhizohFieldState("IDLE");
+          return;
+        }
+        if (empty.shouldPrompt) {
+          maybeWarnVoiceSilentStopV0(empty.promptKey || "gesture_rebind");
+          setRhizohFieldState("IDLE");
+          setRhizohInlineError({
+            title: "Mikrofon bekliyor",
+            detail: voiceSttEmptyPromptTrV0(empty.promptKey || "gesture_rebind")
+          });
+          return;
+        }
+        setRhizohFieldState("IDLE");
       };
       rec.onerror = (e) => {
+        voiceSttStartInFlightRef.current = false;
         setMicListening(false);
         const err = String(e?.error || "");
         const msg = typeof e?.message === "string" ? e.message : "";
@@ -9782,7 +10556,41 @@ export default function AppRhizoh528() {
             outcome.snapshot
           );
         }
-        if (benign) return;
+        if (benign) {
+          voiceSttLastSessionErrorRef.current = err;
+          noteVoiceSttEventV0("STT_ERROR_BENIGN", { code: err, message: msg });
+          logVoiceInfoV0("STT_ERROR_BENIGN", { code: err, message: msg });
+          if (err === "no-speech" && keepAlive && voiceLoopEnabledRef.current && !voiceTurnBusyRef.current) {
+            const plan = planVoiceSttNoSpeechRetryV0({
+              retryCount: voiceSttNoSpeechRetryRef.current,
+              langAttempt: opts?.langAttempt,
+              keepAlive
+            });
+            if (plan.ok) {
+              voiceSttNoSpeechRetryRef.current = plan.nextRetryCount;
+              if (voiceSttNoSpeechRetryTimerRef.current) {
+                window.clearTimeout(voiceSttNoSpeechRetryTimerRef.current);
+              }
+              logVoiceInfoV0("STT_NO_SPEECH_RETRY", {
+                attempt: plan.nextRetryCount,
+                delayMs: plan.delayMs,
+                lang: resolveVoiceSttLangV0({ langAttempt: plan.langAttempt }),
+                primary: VOICE_STT_LANG_PRIMARY,
+                fallback: VOICE_STT_LANG_FALLBACK
+              });
+              voiceSttNoSpeechRetryTimerRef.current = window.setTimeout(() => {
+                voiceSttNoSpeechRetryTimerRef.current = 0;
+                if (!voiceLoopEnabledRef.current || voiceTurnBusyRef.current) return;
+                void startVoiceToRhizohRef.current(keepAlive, {
+                  userGestureUrgent: false,
+                  langAttempt: plan.langAttempt
+                });
+              }, plan.delayMs);
+            }
+          }
+          return;
+        }
+        noteVoiceSttEventV0("STT_ERROR", { code: err, message: msg });
         if (outcome.shouldRetryNetwork) {
           voiceNetworkRetryRef.current = outcome.snapshot.networkRetryCount;
           window.setTimeout(() => {
@@ -9814,53 +10622,25 @@ export default function AppRhizoh528() {
           speakRhizoh("Ses tanıma başarısız. Yazarak göndermeyi dene.");
         }
       };
-      rec.onresult = async (ev) => {
-        try {
-          const { text, isFinal } = extractSpeechRecognitionTranscriptV0(ev);
-          if (!isFinal) {
-            setMicListening(true);
-            return;
-          }
-          setMicListening(false);
-          setVoiceNetworkBlocked(false);
-          clearVoiceSttRecoveryV0();
-          voiceNetworkRetryRef.current = 0;
-          if (!text) {
-            if (keepAlive && !voiceTurnBusyRef.current) {
-              window.setTimeout(() => {
-                if (!voiceLoopEnabledRef.current || voiceNetworkBlockedRef.current) return;
-                void startVoiceToRhizohRef.current(true);
-              }, 220);
-            }
-            return;
-          }
-          console.info("[VOICE_STT] final", { chars: text.length, preview: text.slice(0, 96) });
-          await handleVoiceTranscript(text, { manageVoiceTurn: keepAlive, source: "mic" });
-        } catch (err) {
-          console.error("[VOICE_PIPE_FATAL]", err);
-          try {
-            window.__CASTLE_LAST_FATAL__ = {
-              kind: "voice_onresult",
-              err,
-              message: String(err?.message || err),
-              stack: String(err?.stack || ""),
-              at: Date.now()
-            };
-          } catch {
-            /* noop */
-          }
-          setMicListening(false);
-          setRhizohFieldState("IDLE");
-          voiceTurnBusyRef.current = false;
-          voiceTurnBusySinceRef.current = 0;
-          setVoiceLoopEnabled(false);
-          speakRhizoh("Ses ile Rhizoh hattında hata oluştu; yazarak göndermeyi dene.");
-        }
-      };
+      noteVoiceSttEventV0("STT_HANDLERS_ATTACHED", {
+        lang: rec.lang,
+        hasOnresult: typeof rec.onresult === "function",
+        hasOnstart: typeof rec.onstart === "function",
+        hasOnend: typeof rec.onend === "function"
+      });
+      logVoiceInfoV0("STT_HANDLERS_ATTACHED", { lang: rec.lang });
       recognitionRef.current = rec;
       try {
+        stampVoiceUserGestureV0("rec_start");
         rec.start();
-      } catch {
+        logVoiceWarnV0("STT_START_CALLED", { lang: rec.lang, userGestureUrgent, keepAlive });
+        void ensureAmbientSound().then((audioState) => {
+          logVoiceInfoV0("STT_AMBIENT_READY", { audioState });
+        });
+      } catch (startErr) {
+        voiceSttStartInFlightRef.current = false;
+        noteVoiceSttEventV0("STT_START_FAILED", { message: String(startErr?.message || startErr) });
+        logVoiceWarnV0("STT_START_FAILED", { message: String(startErr?.message || startErr) });
         setMicListening(false);
         voiceNetworkRetryRef.current = 0;
         speakRhizoh("Mikrofon başlatılamadı.");
@@ -9871,9 +10651,16 @@ export default function AppRhizoh528() {
       ensureAmbientSound,
       handleVoiceTranscript,
       stopBargeInMic,
-      fallbackToTextInput
+      fallbackToTextInput,
+      maybeWarnVoiceSilentStopV0,
+      scheduleVoiceMicRestartV0,
+      gatewayUx?.phase
     ]
   );
+
+  useEffect(() => {
+    requestVoiceMicRestartRef.current = requestVoiceMicRestartV0;
+  }, [requestVoiceMicRestartV0]);
 
   useEffect(() => {
     startVoiceToRhizohRef.current = startVoiceToRhizoh;
@@ -9883,6 +10670,17 @@ export default function AppRhizoh528() {
     setVoiceLoopEnabled(false);
     voiceTurnBusyRef.current = false;
     voiceTurnBusySinceRef.current = 0;
+    voiceSttStartInFlightRef.current = false;
+    voiceSttNoSpeechRetryRef.current = 0;
+    if (voiceSttMaxRecordTimerRef.current) {
+      window.clearTimeout(voiceSttMaxRecordTimerRef.current);
+      voiceSttMaxRecordTimerRef.current = 0;
+    }
+    voiceEngineV3BridgeRef.current?.abortTurn?.();
+    if (voiceSttNoSpeechRetryTimerRef.current) {
+      window.clearTimeout(voiceSttNoSpeechRetryTimerRef.current);
+      voiceSttNoSpeechRetryTimerRef.current = 0;
+    }
     voiceTtsSessionIdRef.current += 1;
     try {
       window.speechSynthesis?.cancel?.();
@@ -9905,24 +10703,82 @@ export default function AppRhizoh528() {
   }, [stopBargeInMic]);
 
   const startVoiceLoop = useCallback(() => {
-    const snap = ensureVoiceAdapterRegistered();
-    const adapters = getRhizohInputAdaptersV0();
-    if (!adapters.voice || snap.fallbackMode) {
-      fallbackToTextInput("no_voice_adapter");
-      speakRhizoh("Ses tanıma kullanılamıyor. Aşağıya yazıp gönderebilirsin.");
-      return;
-    }
-    const gw = String(gatewayUx?.phase || "");
-    if (gw === "offline" || gw === "offline_dns") {
-      speakRhizoh("Rhizoh hattı henüz bağlanıyor. On beş saniye bekleyip mikrofona tekrar bas, ya da yazıyla gönder.");
-      return;
-    }
-    setVoiceNetworkBlocked(false);
-    voiceNetworkRetryRef.current = 0;
-    clearVoiceSttRecoveryV0();
-    setVoiceLoopEnabled(true);
-    void startVoiceToRhizoh(true);
+    if (voiceLoopStartInFlightRef.current) return;
+    voiceLoopStartInFlightRef.current = true;
+    stampVoiceUserGestureV0("mic_button");
+    voiceAutoRestartBlockedRef.current = false;
+    clearVoiceSttAutoRestartBlockV0();
+    setRhizohInlineError(null);
+    void (async () => {
+      try {
+        installVoiceSttTelemetryV0();
+        const snap = await awaitVoiceAdapterRegistryReadyV0();
+        if (!snap.hydrated) {
+          logVoiceWarnV0("VOICE_INIT_NOT_READY", { reason: "adapter_not_hydrated" });
+          speakRhizoh("Ses sistemi henüz hazır değil. Birkaç saniye bekleyip mikrofona tekrar bas.");
+          return;
+        }
+        const voiceAdapter = getRhizohVoiceInputAdapterV0();
+        if (!voiceAdapter || snap.fallbackMode) {
+          fallbackToTextInput("no_voice_adapter");
+          speakRhizoh("Ses tanıma kullanılamıyor. Aşağıya yazıp gönderebilirsin.");
+          return;
+        }
+        const gw = String(gatewayUx?.phase || "");
+        if (gw === "offline" || gw === "offline_dns") {
+          setRhizohInlineError({
+            title: "Rhizoh hattı",
+            detail: "Geçit henüz bağlanıyor — konuşabilirsin; yanıt gecikebilir. Yazıyla da gönderebilirsin."
+          });
+        }
+        setVoiceNetworkBlocked(false);
+        voiceNetworkRetryRef.current = 0;
+        clearVoiceSttRecoveryV0();
+        setVoiceLoopEnabled(true);
+        void startVoiceToRhizoh(true, { userGestureUrgent: true });
+      } finally {
+        voiceLoopStartInFlightRef.current = false;
+      }
+    })();
   }, [startVoiceToRhizoh, fallbackToTextInput, speakRhizoh, gatewayUx?.phase]);
+
+  const handleMicButtonClick = useCallback(() => {
+    stampVoiceUserGestureV0("mic_button");
+    voiceAutoRestartBlockedRef.current = false;
+    clearVoiceSttAutoRestartBlockV0();
+    setRhizohInlineError(null);
+
+    const engineBusy = voiceEngineV3Ref.current?.isBusy?.();
+    if (voiceSttStartInFlightRef.current && !micListening && !engineBusy) {
+      voiceSttStartInFlightRef.current = false;
+      logVoiceWarnV0("MIC_REBIND_INFLIGHT_RESET", { field: rhizohFieldState });
+    }
+
+    const sessionActive =
+      micListening || rhizohFieldState === "SPEAKING" || rhizohFieldState === "INTERPRETING";
+
+    if (voiceLoopEnabled && sessionActive) {
+      stopVoiceLoop();
+      return;
+    }
+    if (voiceLoopEnabled && !sessionActive) {
+      if (micListening || voiceSttStartInFlightRef.current) {
+        logVoiceInfoV0("MIC_REBIND_SKIPPED", {
+          field: rhizohFieldState,
+          listening: micListening,
+          inFlight: voiceSttStartInFlightRef.current
+        });
+        return;
+      }
+      setVoiceNetworkBlocked(false);
+      voiceNetworkRetryRef.current = 0;
+      clearVoiceSttRecoveryV0();
+      logVoiceInfoV0("MIC_REBIND", { field: rhizohFieldState });
+      void startVoiceToRhizoh(true, { userGestureUrgent: true });
+      return;
+    }
+    startVoiceLoop();
+  }, [voiceLoopEnabled, micListening, rhizohFieldState, stopVoiceLoop, startVoiceLoop, startVoiceToRhizoh]);
 
   useEffect(() => {
     let isMounted = true;
@@ -10710,22 +11566,27 @@ export default function AppRhizoh528() {
     prewarmSpeechSynthesisV0();
   }, []);
 
+  useLayoutEffect(() => {
+    ensureVoiceAdapterRegistered();
+  }, []);
+
   useEffect(() => {
-    const snap = ensureVoiceAdapterRegistered();
-    const adapters = getRhizohInputAdaptersV0();
-    try {
-      if (adapters.voice && !snap.fallbackMode) {
-        bootLogRef.current?.ok?.(
-          "app.voice.adapter",
-          `registered provider=${snap.sttProvider} status=${snap.sttStatus}`
-        );
-      } else {
-        bootLogRef.current?.warn?.("app.voice.adapter", "missing — text input fallback active");
-        fallbackToTextInput("boot_no_adapter");
+    void awaitVoiceAdapterRegistryReadyV0().then((snap) => {
+      if (!snap.hydrated) return;
+      try {
+        if (snap.voiceRegistered && !snap.fallbackMode) {
+          bootLogRef.current?.ok?.(
+            "app.voice.adapter",
+            `registered provider=${snap.sttProvider} status=${snap.sttStatus}`
+          );
+        } else {
+          bootLogRef.current?.warn?.("app.voice.adapter", "missing — text input fallback active");
+          fallbackToTextInput("boot_no_adapter");
+        }
+      } catch {
+        /* noop */
       }
-    } catch {
-      /* noop */
-    }
+    });
   }, [fallbackToTextInput]);
 
   useEffect(() => {
@@ -10759,6 +11620,13 @@ export default function AppRhizoh528() {
     }, 2500);
     return () => window.clearInterval(id);
   }, [voiceLoopEnabled, finishVoiceTurnIfNeeded]);
+
+  useEffect(() => {
+    stampVoiceUserGestureV0("app_mount");
+    publishVoiceGestureAnchorToWindowV0();
+    noteVoiceSttEventV0("STT_TELEMETRY_READY", {});
+    return installVoiceUserGestureListenersV0();
+  }, []);
 
   useEffect(() => {
     const onVis = () => {
@@ -11486,16 +12354,22 @@ export default function AppRhizoh528() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
               <button
                 type="button"
-                onClick={() => {
-                  if (voiceLoopEnabled) {
-                    stopVoiceLoop();
-                  } else {
-                    startVoiceLoop();
-                  }
-                }}
-                aria-label={voiceLoopEnabled ? "Sürekli dinlemeyi kapat" : "Sürekli dinlemeyi başlat"}
+                onClick={handleMicButtonClick}
+                aria-label={
+                  voiceLoopEnabled && (micListening || rhizohFieldState === "SPEAKING" || rhizohFieldState === "INTERPRETING")
+                    ? "Sürekli dinlemeyi kapat"
+                    : voiceLoopEnabled
+                      ? "Mikrofonu yeniden aç"
+                      : "Sürekli dinlemeyi başlat"
+                }
                 aria-pressed={voiceLoopEnabled}
-                title={voiceLoopEnabled ? "Dinlemeyi durdur" : "Sesli sohbet — mikrofonu aç"}
+                title={
+                  voiceLoopEnabled && !micListening && rhizohFieldState === "IDLE"
+                    ? "Dinlemeyi yeniden başlat"
+                    : voiceLoopEnabled
+                      ? "Dinlemeyi durdur"
+                      : "Sesli sohbet — mikrofonu aç"
+                }
                 className={`mx-4 sm:ml-6 sm:mr-0 p-5 sm:p-6 hover:bg-cyan-400/20 rounded-full text-cyan-400 transition-all active:scale-90 shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${voiceLoopEnabled || cinematicOutput.showMicPulse ? "ring-2 ring-emerald-400/50" : ""} ${micListening ? "animate-pulse" : ""}`}
               >
                 <Mic size={32} aria-hidden />

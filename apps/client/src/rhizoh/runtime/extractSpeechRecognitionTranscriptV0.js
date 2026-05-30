@@ -1,26 +1,31 @@
 /**
- * Web Speech API — extract latest final transcript from onresult event.
+ * Web Speech API — extract transcript from onresult (resultIndex-aware).
  */
 
 /**
  * @param {SpeechRecognitionEvent} ev
- * @param {{ finalOnly?: boolean }} [opts]
  */
-export function extractSpeechRecognitionTranscriptV0(ev, opts = {}) {
-  const finalOnly = opts.finalOnly !== false;
+export function extractSpeechRecognitionTranscriptV0(ev) {
   const results = ev?.results;
   if (!results?.length) return { text: "", isFinal: false };
 
-  for (let i = results.length - 1; i >= 0; i -= 1) {
+  const start = typeof ev.resultIndex === "number" ? ev.resultIndex : 0;
+  let text = "";
+  let isFinal = false;
+
+  for (let i = start; i < results.length; i += 1) {
     const res = results[i];
-    const isFinal = res?.isFinal !== false;
-    const text = String(res?.[0]?.transcript || "").trim();
-    if (!text) continue;
-    if (finalOnly && !isFinal) continue;
-    return { text, isFinal };
+    const chunk = String(res?.[0]?.transcript || "").trim();
+    if (!chunk) continue;
+    text = text ? `${text} ${chunk}`.trim() : chunk;
+    if (res.isFinal === true) isFinal = true;
   }
 
-  const last = results[results.length - 1];
-  const fallback = String(last?.[0]?.transcript || "").trim();
-  return { text: fallback, isFinal: last?.isFinal !== false };
+  if (!text) {
+    const last = results[results.length - 1];
+    text = String(last?.[0]?.transcript || "").trim();
+    isFinal = last?.isFinal === true;
+  }
+
+  return { text, isFinal };
 }

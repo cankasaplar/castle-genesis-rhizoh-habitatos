@@ -7,6 +7,18 @@ export {
   buildRhizohTurnDepthSignal
 } from "./rhizohBehaviorSignalsV1.js";
 export {
+  newRhizohUiCorrelationId,
+  emitRhizohUiIntent,
+  emitRhizohEngineActionTrace,
+  normalizeRhizohIntentLayer,
+  RHIZOH_INTENT_LAYER_UI,
+  RHIZOH_INTENT_LAYER_VOICE,
+  RHIZOH_INTENT_LAYER_SYSTEM,
+  RHIZOH_INTENT_LAYER_SYSTEM_INTERNAL,
+  RHIZOH_INTENT_LAYER_REPLAY,
+  RHIZOH_INTENT_LAYER_INFERRED
+} from "./rhizohUiIntentTraceV0.js";
+export {
   RHIZOH_METRICS_ROLLUP_VERSION,
   createEmptyRhizohBehaviorMetricsRollup,
   applyRhizohBehaviorSignalToRollup,

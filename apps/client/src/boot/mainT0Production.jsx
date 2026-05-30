@@ -6,10 +6,12 @@ import {
   installGlobalCrashTelemetry,
   reportCastleFatal
 } from "./boot/castleCrashTelemetry.js";
+import { installChromeWebGpuNoiseSuppressV0 } from "./rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
 import { mountCastleApplicationT0V0 } from "./boot/mountCastleApplicationT0V0.jsx";
 import "../../../src/index.css";
 
 const bootLog = installCastleBootLogFlow();
+installChromeWebGpuNoiseSuppressV0();
 bootLog.start("boot.entry", "main.jsx loaded");
 installGlobalCrashTelemetry();
 bootLog.ok("boot.crash_telemetry", "global error + rejection hooks installed");

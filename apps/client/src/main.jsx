@@ -1,3 +1,4 @@
+import "./rhizoh/runtime/voiceSttTelemetryBootV0.js";
 import React from "react";
 import { initFirebaseAnalyticsWhenReady } from "./firebase/castleFirebase.js";
 import { getCookieConsentV0 } from "./rhizoh/ingress/ingress_router.js";
@@ -6,10 +7,13 @@ import {
   installGlobalCrashTelemetry,
   reportCastleFatal
 } from "./boot/castleCrashTelemetry.js";
+import { installChromeWebGpuNoiseSuppressV0 } from "./rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
 import { mountCastleApplicationT0V0 } from "./boot/mountCastleApplicationT0V0.jsx";
 import "../../../src/index.css";
 
 const bootLog = installCastleBootLogFlow();
+installChromeWebGpuNoiseSuppressV0();
+bootLog.ok("boot.voice_telemetry", "voiceStt + voiceInit attached before React mount");
 bootLog.start("boot.entry", "main.jsx loaded");
 installGlobalCrashTelemetry();
 bootLog.ok("boot.crash_telemetry", "global error + rejection hooks installed");

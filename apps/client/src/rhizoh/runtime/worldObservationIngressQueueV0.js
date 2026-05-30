@@ -8,6 +8,7 @@ import {
   buildWorldObservationIngressEnvelopeV1,
   WORLD_OBSERVATION_INGRESS_ENVELOPE_SCHEMA_V1
 } from "./worldObservationIngressContractV0.js";
+import { throttleVoiceIngressPostV3, VOICE_THROTTLE_V3 } from "./voiceEngineV3/voiceThrottleV3.js";
 
 export const WORLD_OBSERVATION_INGRESS_PATH_V0 = "/rhizoh/genesis/ingress";
 export const WORLD_OBSERVATION_INGRESS_QUEUE_SCHEMA_V0 = "castle.world_observation.ingress_queue.v0";
@@ -16,7 +17,7 @@ const MAX_QUEUE = 64;
 const MAX_INFLIGHT = 2;
 const MAX_ATTEMPTS = 5;
 const RETRY_BASE_MS = 700;
-const DRAIN_INTERVAL_MS = 400;
+const DRAIN_INTERVAL_MS = Math.max(400, VOICE_THROTTLE_V3.ingressMs);
 
 /** @type {{ row: object, envelope: object, attempts: number, nextAt: number }[]} */
 let queue = [];
@@ -114,6 +115,7 @@ async function drainOnce() {
   publishQueueTruth();
 
   try {
+    await throttleVoiceIngressPostV3();
     const { res, json } = await postEnvelope(item.envelope);
     if (res.ok && json?.ok) {
       if (typeof json.seq === "number") lastAcceptedSeq = json.seq;

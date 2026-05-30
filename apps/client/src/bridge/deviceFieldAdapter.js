@@ -1,6 +1,4 @@
-/**
- * Device / runtime capability probe for field embodiment (WebGPU, bandwidth mode).
- */
+import { requestWebGpuAdapterQuietlyV0 } from "../rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
 
 /**
  * @typedef {object} FieldDeviceProfile
@@ -37,7 +35,7 @@ export async function requestFieldDevice() {
     return { device: null, adapter: null };
   }
   try {
-    const adapter = await navigator.gpu.requestAdapter();
+    const adapter = await requestWebGpuAdapterQuietlyV0();
     const device = adapter ? await adapter.requestDevice() : null;
     return { device, adapter };
   } catch {

@@ -2,6 +2,28 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta name="castle-hosting-rev" content="20260530-v15" />
+    <script>
+      (function () {
+        var REV = "20260530-v15";
+        try {
+          var key = "castle.hosting.rev";
+          var url = new URL(window.location.href);
+          if (url.searchParams.get("__rev") === REV) {
+            sessionStorage.setItem(key, REV);
+            return;
+          }
+          if (sessionStorage.getItem(key) !== REV) {
+            sessionStorage.setItem(key, REV);
+            url.searchParams.set("__rev", REV);
+            window.location.replace(url.toString());
+          }
+        } catch (e) {
+          /* noop */
+        }
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Castle Client - Realtime World Map</title>
