@@ -641,15 +641,51 @@ function safeParseJsonObject(text) {
   }
 }
 
+/** @type {Readonly<Record<string, number>>} */
+export const RHIZOH_REPLY_PARSE_CONFIDENCE_V0 = Object.freeze({
+  "json.reply": 1.0,
+  "json.alt_field": 0.7,
+  plain_text_fallback: 0.5,
+  "json.nested_response": 0.3,
+  empty_raw: 0,
+  json_missing_reply: 0
+});
+
+/**
+ * @param {string} extractPath
+ * @returns {number}
+ */
+export function replyParsingConfidenceForExtractPathV0(extractPath) {
+  const key = String(extractPath || "");
+  if (Object.prototype.hasOwnProperty.call(RHIZOH_REPLY_PARSE_CONFIDENCE_V0, key)) {
+    return RHIZOH_REPLY_PARSE_CONFIDENCE_V0[key];
+  }
+  return 0.25;
+}
+
+/**
+ * @param {string} extractPath
+ * @param {string} reply
+ * @param {Record<string, unknown>} parsed
+ */
+function rhizohReplyExtractResultV0(extractPath, reply, parsed) {
+  return {
+    reply,
+    extractPath,
+    parsed,
+    replyParsingConfidence: replyParsingConfidenceForExtractPathV0(extractPath)
+  };
+}
+
 /**
  * Provider text → user-visible reply (schema-first, plain-text fallback).
  * @param {string} rawText
- * @returns {{ reply: string, extractPath: string, parsed: Record<string, unknown> }}
+ * @returns {{ reply: string, extractPath: string, parsed: Record<string, unknown>, replyParsingConfidence: number }}
  */
 export function extractRhizohLlmReplyFromProviderText(rawText) {
   const trimmed = String(rawText || "").trim();
   if (!trimmed) {
-    return { reply: "", extractPath: "empty_raw", parsed: {} };
+    return rhizohReplyExtractResultV0("empty_raw", "", {});
   }
 
   const parsed = safeParseJsonObject(trimmed) || {};
@@ -662,17 +698,17 @@ export function extractRhizohLlmReplyFromProviderText(rawText) {
   };
 
   const fromReply = pick("reply");
-  if (fromReply) return { reply: fromReply, extractPath: "json.reply", parsed };
+  if (fromReply) return rhizohReplyExtractResultV0("json.reply", fromReply, parsed);
 
   const fromAlt = pick("message", "content", "text", "answer", "output");
-  if (fromAlt) return { reply: fromAlt, extractPath: "json.alt_field", parsed };
+  if (fromAlt) return rhizohReplyExtractResultV0("json.alt_field", fromAlt, parsed);
 
   const nested = parsed.response && typeof parsed.response === "object" ? parsed.response : null;
   if (nested) {
     const nestedReply = String(
       nested.reply ?? nested.message ?? nested.content ?? nested.text ?? ""
     ).trim();
-    if (nestedReply) return { reply: nestedReply, extractPath: "json.nested_response", parsed };
+    if (nestedReply) return rhizohReplyExtractResultV0("json.nested_response", nestedReply, parsed);
   }
 
   const hasJsonEnvelope = trimmed.startsWith("{") && Object.keys(parsed).length > 0;
@@ -682,11 +718,11 @@ export function extractRhizohLlmReplyFromProviderText(rawText) {
       .replace(/```\s*$/i, "")
       .trim();
     if (stripped) {
-      return { reply: stripped, extractPath: "plain_text_fallback", parsed: {} };
+      return rhizohReplyExtractResultV0("plain_text_fallback", stripped, {});
     }
   }
 
-  return { reply: "", extractPath: "json_missing_reply", parsed };
+  return rhizohReplyExtractResultV0("json_missing_reply", "", parsed);
 }
 
 /**
@@ -907,6 +943,7 @@ export async function queryRhizohLlm(input, meta = {}) {
     rawProviderChars: rawText.length,
     parsedReplyChars: rawReplyFromSchema.length,
     replyExtractPath: extracted.extractPath,
+    replyParsingConfidence: extracted.replyParsingConfidence,
     generationMode: gen.generationModeLabel,
     maxTokensApplied: gen.maxTokens
   };
@@ -922,6 +959,7 @@ export async function queryRhizohLlm(input, meta = {}) {
     llmKeyBillingOwner,
     llmKeyOrigin,
     rhizohDeliveryKind,
+    replyParsingConfidence: extracted.replyParsingConfidence,
     rhizohCompressionLedger
   };
 }
