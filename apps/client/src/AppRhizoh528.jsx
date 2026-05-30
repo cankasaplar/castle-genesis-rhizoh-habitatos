@@ -217,6 +217,7 @@ import {
 import { forwardVoiceTranscriptShadowV0 } from "./rhizoh/runtime/voiceTranscriptShadowForwardV0.js";
 import { speakShadowObservationAckV0 } from "./rhizoh/runtime/voiceShadowObservationAckV0.js";
 import { installShadowVoiceAnalysisExportV0 } from "./rhizoh/runtime/voiceShadowAnalysisExportV0.js";
+import { recordVoiceTimelineFromRouteV0 } from "./rhizoh/runtime/voiceShadowTimelineV0.js";
 import {
   evaluateVoiceCommitmentFromBandV0,
   finalizeVoiceBehavioralCommitmentV0,
@@ -228,7 +229,10 @@ import {
   deriveVoiceInfluenceAttributionV0,
   recordVoiceInfluenceAttributionV0
 } from "./rhizoh/runtime/voiceInfluenceAttributionV0.js";
-import { publishRhizohTrustDebugV0 } from "./rhizoh/runtime/rhizohTrustDebugV0.js";
+import {
+  buildRhizohContinuityHealthDetailV0,
+  publishRhizohTrustDebugV0
+} from "./rhizoh/runtime/rhizohTrustDebugV0.js";
 import {
   buildRhizohHealthState,
   computeRhizohHealthInfluence,
@@ -305,6 +309,7 @@ import {
   advanceRhizohConversationPhase,
   buildRhizohConversationLlmDirective,
   buildRhizohProductCapabilityEnvelope,
+  describeRhizohPhaseExitProgressV0,
   rhizohConversationPhaseShortLabelTr
 } from "./rhizoh/product/rhizohConversationOrchestratorV1.js";
 import {
@@ -1700,6 +1705,16 @@ async function queryRhizohLLM({
     (Math.max(0, Math.min(1, Number(relPhase.trust) || 0)) +
       Math.max(0, Math.min(1, Number(relPhase.familiarity) || 0))) /
     2;
+  const rhizohPhaseExitProgress = describeRhizohPhaseExitProgressV0(
+    rhizohPhaseForTurn,
+    {
+      trust: Number(relPhase.trust || 0),
+      familiarity: Number(relPhase.familiarity || 0),
+      userTurnCount: effectiveTurnCount,
+      introSeen: diskIntro
+    },
+    tuning
+  );
   const rhizohCapabilityEnvelope = buildRhizohProductCapabilityEnvelope(rhizohPhaseForTurn, {
     governanceBond01: bondGovernance01,
     suppressGovernanceOpsBadgeUnlessBond01:
@@ -2103,7 +2118,31 @@ async function queryRhizohLLM({
       throw bad;
     }
     const turnTraceId = resolveRhizohTurnTraceIdV0(json?.traceId, clientTraceId);
-    logRhizohHealth("llm_response", { traceId: turnTraceId, clientTraceId });
+    const replyFromGateway = String(
+      json?.reply ?? json?.text ?? json?.message ?? json?.content ?? ""
+    ).trim();
+    const ledger =
+      json?.rhizohCompressionLedger && typeof json.rhizohCompressionLedger === "object"
+        ? json.rhizohCompressionLedger
+        : {};
+    logRhizohHealth("llm_response", {
+      traceId: turnTraceId,
+      clientTraceId,
+      replyChars: replyFromGateway.length,
+      rhizohDeliveryKind: json?.rhizohDeliveryKind ?? null,
+      replyExtractPath: ledger.replyExtractPath ?? null,
+      rawProviderChars: ledger.rawProviderChars ?? null
+    });
+    if (import.meta.env?.DEV && typeof window !== "undefined") {
+      window.__CASTLE_RHIZOH_LLM_LAST_RESPONSE__ = Object.freeze({
+        at: Date.now(),
+        traceId: turnTraceId,
+        replyPreview: replyFromGateway.slice(0, 240),
+        rhizohDeliveryKind: json?.rhizohDeliveryKind ?? null,
+        replyExtractPath: ledger.replyExtractPath ?? null,
+        rawProviderChars: ledger.rawProviderChars ?? null
+      });
+    }
     if (!rhizohCapabilityEnvelope.backendHints.attachFullRhizohProduction && json && typeof json === "object") {
       try {
         delete json.rhizohProduction;
@@ -2111,7 +2150,11 @@ async function queryRhizohLLM({
         /* noop */
       }
     }
-    const replyOk = String(json?.reply || json?.text || "Rhizoh yanıtı boş döndü.");
+    const replyOk =
+      replyFromGateway ||
+      (json?.rhizohDeliveryKind === "semantic_silence"
+        ? ""
+        : "Rhizoh yanıtı boş döndü.");
     const postOk = finalizeRhizohAfterLlm(rhizohEmotions, {
       rhizohRouter,
       reply: replyOk,
@@ -2123,26 +2166,19 @@ async function queryRhizohLLM({
       priorAssistantReplies
     });
     bumpRhizohProductSessionAfterReply();
-    logRhizohHealth("continuity_saved", {
+    const continuityHealthDetail = buildRhizohContinuityHealthDetailV0({
       phase: rhizohPhaseForTurn,
-      turnAccepted: turnAcceptance.accepted,
-      turnReason: turnAcceptance.reason
+      traceId: turnTraceId,
+      rhizohProductSnap,
+      turnAcceptance,
+      bondGovernance01,
+      relPhase,
+      tuning,
+      voiceTurnMeta,
+      phaseExit: rhizohPhaseExitProgress
     });
-    publishRhizohTrustDebugV0({
-      phase: rhizohPhaseForTurn,
-      turns: turnAcceptance.accepted
-        ? rhizohProductSnap.userTurnCount + 1
-        : rhizohProductSnap.userTurnCount,
-      turnsTarget: tuning.trustTurnsForNormal ?? 12,
-      bond: bondGovernance01,
-      bondTarget: tuning.trustBondForNormal ?? 0.34,
-      trust: Number(relPhase.trust || 0),
-      familiarity: Number(relPhase.familiarity || 0),
-      voiceConfidence: turnAcceptance.confidence ?? voiceTurnMeta?.confidence ?? null,
-      voiceSource: voiceTurnMeta?.source || "text",
-      turnAccepted: turnAcceptance.accepted,
-      turnReason: turnAcceptance.reason
-    });
+    logRhizohHealth("continuity_saved", continuityHealthDetail);
+    publishRhizohTrustDebugV0(continuityHealthDetail);
     return {
       reply: replyOk,
       directive: String(json?.directive || json?.action || ""),
@@ -2205,7 +2241,20 @@ async function queryRhizohLLM({
       priorAssistantReplies
     });
     bumpRhizohProductSessionAfterReply();
-    logRhizohHealth("continuity_saved", { phase: rhizohPhaseForTurn, fallback: true });
+    logRhizohHealth(
+      "continuity_saved",
+      buildRhizohContinuityHealthDetailV0({
+        phase: rhizohPhaseForTurn,
+        rhizohProductSnap,
+        turnAcceptance,
+        bondGovernance01,
+        relPhase,
+        tuning,
+        voiceTurnMeta,
+        phaseExit: rhizohPhaseExitProgress,
+        fallback: true
+      })
+    );
     return {
       reply: replyFb,
       directive: "FOCUS_RHIZOH",
@@ -9883,6 +9932,18 @@ export default function AppRhizoh528() {
       const dispatchAtMs = Date.now();
       markVoiceTurnDispatchV0(dispatchAtMs);
       logVoiceInfoV0("STT_DISPATCH", { chars: trimmed.length, preview: trimmed.slice(0, 96), source, dispatchAtMs });
+      recordVoiceTimelineFromRouteV0(
+        {
+          executionAccepted: true,
+          observationForward: false,
+          reason: "voice_ok",
+          rejectionLayer: "execution",
+          source: voiceSource,
+          band: witnessed?.observation?.band,
+          confidence: Number.isFinite(Number(confidence)) ? Number(confidence) : undefined
+        },
+        { preview: trimmed, source: voiceSource, stage: "stt_dispatch" }
+      );
       setCmd(trimmed);
       setRhizohFieldState("INTERPRETING");
       speakVoiceInstantAckV0();
@@ -11638,16 +11699,28 @@ export default function AppRhizoh528() {
   }, []);
 
   useEffect(() => {
+    const adapterWaitStartedAt =
+      typeof performance !== "undefined" && typeof performance.now === "function"
+        ? performance.now()
+        : Date.now();
     void awaitVoiceAdapterRegistryReadyV0().then((snap) => {
       if (!snap.hydrated) return;
+      const waitMs = Math.round(
+        (typeof performance !== "undefined" && typeof performance.now === "function"
+          ? performance.now()
+          : Date.now()) - adapterWaitStartedAt
+      );
       try {
         if (snap.voiceRegistered && !snap.fallbackMode) {
           bootLogRef.current?.ok?.(
             "app.voice.adapter",
-            `registered provider=${snap.sttProvider} status=${snap.sttStatus}`
+            `registered provider=${snap.sttProvider} status=${snap.sttStatus} waitMs=${waitMs}`
           );
         } else {
-          bootLogRef.current?.warn?.("app.voice.adapter", "missing — text input fallback active");
+          bootLogRef.current?.warn?.(
+            "app.voice.adapter",
+            `missing — text fallback active waitMs=${waitMs} hydrated=${snap.hydrated} fallbackMode=${snap.fallbackMode}`
+          );
           fallbackToTextInput("boot_no_adapter");
         }
       } catch {
@@ -11659,7 +11732,16 @@ export default function AppRhizoh528() {
   useEffect(() => {
     if (!voiceReady) return;
     try {
-      bootLogRef.current?.ok?.("app.voice.ready", "speech synthesis initialized");
+      const sinceBootMs =
+        typeof performance !== "undefined" && typeof performance.timeOrigin === "number"
+          ? Math.round(performance.now())
+          : null;
+      bootLogRef.current?.ok?.(
+        "app.voice.ready",
+        sinceBootMs != null
+          ? `speech synthesis initialized sinceNavigationMs=${sinceBootMs}`
+          : "speech synthesis initialized"
+      );
     } catch {
       /* noop */
     }

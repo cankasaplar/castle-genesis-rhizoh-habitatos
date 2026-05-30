@@ -636,6 +636,54 @@ function safeParseJsonObject(text) {
 }
 
 /**
+ * Provider text → user-visible reply (schema-first, plain-text fallback).
+ * @param {string} rawText
+ * @returns {{ reply: string, extractPath: string, parsed: Record<string, unknown> }}
+ */
+export function extractRhizohLlmReplyFromProviderText(rawText) {
+  const trimmed = String(rawText || "").trim();
+  if (!trimmed) {
+    return { reply: "", extractPath: "empty_raw", parsed: {} };
+  }
+
+  const parsed = safeParseJsonObject(trimmed) || {};
+  const pick = (...keys) => {
+    for (const k of keys) {
+      const v = parsed[k];
+      if (v != null && String(v).trim()) return String(v).trim();
+    }
+    return "";
+  };
+
+  const fromReply = pick("reply");
+  if (fromReply) return { reply: fromReply, extractPath: "json.reply", parsed };
+
+  const fromAlt = pick("message", "content", "text", "answer", "output");
+  if (fromAlt) return { reply: fromAlt, extractPath: "json.alt_field", parsed };
+
+  const nested = parsed.response && typeof parsed.response === "object" ? parsed.response : null;
+  if (nested) {
+    const nestedReply = String(
+      nested.reply ?? nested.message ?? nested.content ?? nested.text ?? ""
+    ).trim();
+    if (nestedReply) return { reply: nestedReply, extractPath: "json.nested_response", parsed };
+  }
+
+  const hasJsonEnvelope = trimmed.startsWith("{") && Object.keys(parsed).length > 0;
+  if (!hasJsonEnvelope) {
+    const stripped = trimmed
+      .replace(/^```(?:json|markdown)?\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
+    if (stripped) {
+      return { reply: stripped, extractPath: "plain_text_fallback", parsed: {} };
+    }
+  }
+
+  return { reply: "", extractPath: "json_missing_reply", parsed };
+}
+
+/**
  * @param {string} endpoint
  * @param {string} key
  * @param {string} model
@@ -817,10 +865,11 @@ export async function queryRhizohLlm(input, meta = {}) {
     rawText = await callOpenAiLike("https://api.openai.com/v1/chat/completions", key, model, systemPrompt, message, {}, gen);
   }
 
-  const parsed = safeParseJsonObject(rawText) || {};
-  const rawReplyFromSchema = String(parsed.reply ?? "").trim();
+  const extracted = extractRhizohLlmReplyFromProviderText(rawText);
+  const parsed = extracted.parsed;
+  const rawReplyFromSchema = String(extracted.reply || "").trim();
 
-  /** @type {"ok"|"empty_reply"|"semantic_silence"} */
+  /** @type {"ok"|"empty_reply"|"semantic_silence"|"unstructured_reply"} */
   let rhizohDeliveryKind = "ok";
   let reply;
   if (!rawReplyFromSchema) {
@@ -828,6 +877,9 @@ export async function queryRhizohLlm(input, meta = {}) {
     reply = "Rhizoh yanıt üretti fakat içerik boş döndü.";
   } else if (/^<SILENCE\b/i.test(rawReplyFromSchema) || rawReplyFromSchema === "<SILENCE>") {
     rhizohDeliveryKind = "semantic_silence";
+    reply = rawReplyFromSchema;
+  } else if (extracted.extractPath === "plain_text_fallback" || extracted.extractPath === "json.alt_field") {
+    rhizohDeliveryKind = "unstructured_reply";
     reply = rawReplyFromSchema;
   } else {
     reply = rawReplyFromSchema;
@@ -843,6 +895,7 @@ export async function queryRhizohLlm(input, meta = {}) {
     prePromptChars: systemPrompt.length,
     rawProviderChars: rawText.length,
     parsedReplyChars: rawReplyFromSchema.length,
+    replyExtractPath: extracted.extractPath,
     generationMode: gen.generationModeLabel,
     maxTokensApplied: gen.maxTokens
   };
