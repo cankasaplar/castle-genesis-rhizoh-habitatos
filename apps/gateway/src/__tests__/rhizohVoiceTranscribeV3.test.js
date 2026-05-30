@@ -36,6 +36,27 @@ test("runRhizohVoiceTranscribeV3 — rejects missing audio", async () => {
   assert.equal(result.error, "audio_base64_required");
 });
 
+test("runRhizohVoiceTranscribeV3 — fast path uses whisper when only OpenAI key", async () => {
+  const prevOpenAi = process.env.OPENAI_API_KEY;
+  const prevGoogle = process.env.GOOGLE_API_KEY;
+  const prevSpeech = process.env.GOOGLE_SPEECH_API_KEY;
+  process.env.OPENAI_API_KEY = "test-key-not-real";
+  delete process.env.GOOGLE_API_KEY;
+  delete process.env.GOOGLE_SPEECH_API_KEY;
+  try {
+    const b64 = Buffer.from("fake-audio").toString("base64");
+    const result = await runRhizohVoiceTranscribeV3({ path: "fast", audioBase64: b64, mimeType: "audio/webm" });
+    assert.equal(result.ok, false);
+    assert.equal(result.error, "no_transcript");
+    assert.ok(result.whisperError);
+  } finally {
+    if (prevOpenAi !== undefined) process.env.OPENAI_API_KEY = prevOpenAi;
+    else delete process.env.OPENAI_API_KEY;
+    if (prevGoogle !== undefined) process.env.GOOGLE_API_KEY = prevGoogle;
+    if (prevSpeech !== undefined) process.env.GOOGLE_SPEECH_API_KEY = prevSpeech;
+  }
+});
+
 test("runRhizohVoiceTranscribeV3 — rejects when no ASR keys", async () => {
   const prevOpenAi = process.env.OPENAI_API_KEY;
   const prevGoogle = process.env.GOOGLE_API_KEY;

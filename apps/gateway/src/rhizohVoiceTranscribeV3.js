@@ -44,9 +44,7 @@ export function resolveVoiceTranscriptV3(google, whisper) {
 
 export function rhizohVoiceTranscribeEnvV3() {
   const openai = !!String(process.env.OPENAI_API_KEY || "").trim();
-  const google = !!String(
-    process.env.GOOGLE_SPEECH_API_KEY || process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || ""
-  ).trim();
+  const google = !!googleSpeechApiKey();
   return Object.freeze({ openai, google, any: openai || google });
 }
 
@@ -56,9 +54,7 @@ function clamp01(n) {
 }
 
 function googleSpeechApiKey() {
-  return String(
-    process.env.GOOGLE_SPEECH_API_KEY || process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || ""
-  ).trim();
+  return String(process.env.GOOGLE_SPEECH_API_KEY || process.env.GOOGLE_API_KEY || "").trim();
 }
 
 /**
@@ -214,30 +210,39 @@ export async function runRhizohVoiceTranscribeV3(body = {}) {
 
   const wantFast = path === "fast" || path === "both";
   const wantAccurate = path === "accurate" || path === "whisper" || path === "both";
+  /** @type {Record<string, unknown> | null} */
+  let googleError = null;
+  /** @type {Record<string, unknown> | null} */
+  let whisperError = null;
 
   if (wantFast && env.google) {
     const fast = await transcribeGoogleSttFastV3(decoded.base64, { encoding, sampleRateHertz, languageCode });
-    if (fast.ok) {
+    if (fast.ok && fast.text) {
       google = { text: fast.text, confidence: fast.confidence, source: "google" };
+    } else if (!fast.ok) {
+      googleError = { error: fast.error, status: fast.status, detail: fast.detail };
     }
   }
 
-  if (wantAccurate && env.openai) {
+  if ((wantAccurate || (path === "fast" && !google)) && env.openai) {
     const acc = await transcribeWhisperAccurateV3(decoded.buffer, { mimeType, languageCode });
-    if (acc.ok) {
+    if (acc.ok && acc.text) {
       whisper = { text: acc.text, confidence: acc.confidence, source: "whisper" };
+    } else if (!acc.ok) {
+      whisperError = { error: acc.error, status: acc.status, detail: acc.detail };
     }
   }
 
-  if (path === "fast" && !google && whisper) {
+  if (path === "fast" && whisper) {
     return {
       ok: true,
       schema: RHIZOH_VOICE_TRANSCRIBE_V3_SCHEMA,
       path,
       fast: whisper,
       whisper,
-      merged: resolveVoiceTranscriptV3(null, whisper),
-      fallback: "whisper_as_fast"
+      google,
+      merged: resolveVoiceTranscriptV3(google, whisper),
+      fallback: google ? "whisper_fast_with_google" : "whisper_as_fast"
     };
   }
 
@@ -249,6 +254,19 @@ export async function runRhizohVoiceTranscribeV3(body = {}) {
       fast: google,
       google,
       merged: resolveVoiceTranscriptV3(google, null)
+    };
+  }
+
+  if (path === "fast") {
+    return {
+      ok: false,
+      error: "no_transcript",
+      schema: RHIZOH_VOICE_TRANSCRIBE_V3_SCHEMA,
+      google,
+      whisper,
+      googleError,
+      whisperError,
+      env
     };
   }
 
@@ -278,6 +296,8 @@ export async function runRhizohVoiceTranscribeV3(body = {}) {
       schema: RHIZOH_VOICE_TRANSCRIBE_V3_SCHEMA,
       google,
       whisper,
+      googleError,
+      whisperError,
       env
     };
   }

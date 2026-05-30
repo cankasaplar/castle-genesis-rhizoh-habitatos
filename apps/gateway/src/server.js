@@ -228,7 +228,7 @@ function applyHttpCorsHeaders(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Castle-Dev-Uid, X-Castle-Guest-Id, X-Castle-Gateway-Token, X-Rhizoh-Outcome-Signature, X-Rhizoh-Outcome-Source-Token"
+    "Content-Type, Authorization, X-Castle-Dev-Uid, X-Castle-Guest-Id, X-Castle-Gateway-Token, X-Castle-Ingress-Contract, X-Rhizoh-Outcome-Signature, X-Rhizoh-Outcome-Source-Token"
   );
 }
 const REQUIRE_AUTH = process.env.CASTLE_REQUIRE_AUTH === "true";
@@ -2815,7 +2815,7 @@ const httpServer = createServer(async (req, res) => {
 
   if (req.method === "POST" && pathname === RHIZOH_VOICE_TRANSCRIBE_ROUTE_V3) {
     try {
-      const payload = await readHttpJson(req);
+      const payload = await readHttpJson(req, 6 * 1024 * 1024);
       const auth = await resolveHttpUser(req);
       const ip = getHttpClientIp(req);
       if (REQUIRED_GATEWAY_TOKEN) {
