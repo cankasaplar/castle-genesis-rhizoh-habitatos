@@ -1,5 +1,5 @@
 /**
- * Directed speech observation — label only (witness band).
+ * Directed speech observation — label only (Faz 1).
  * No turn authority; bands: ambient | unknown | directed_candidate.
  */
 
@@ -13,6 +13,7 @@ export const VOICE_DIRECTED_SPEECH_BAND = Object.freeze({
   DIRECTED_CANDIDATE: "directed_candidate"
 });
 
+/** TV / room / broadcast / system-echo patterns (witness only). */
 const AMBIENT_PHRASE_PATTERNS_V0 = [
   /herkese\s+iyi\s+gec/i,
   /afiyet\s+olsun/i,
@@ -38,9 +39,13 @@ const DIRECTED_ADDRESS_PATTERNS_V0 = [
   /\b(rhizoh|rizo|riza)\b/i,
   /beni\s+duy/i,
   /duyabiliyor\s+musun/i,
+  /indirebiliyor\s+musun/i,
   /burada\s+mısın/i,
   /şimdi\s+beni\s+duy/i,
-  /bana\s+(söyle|anlat|cevap)/i
+  /bana\s+(söyle|anlat|cevap)/i,
+  /nas[ıi]ls[ıi]n/i,
+  /sohbet\s+et/i,
+  /biraz\s+sohbet/i
 ];
 
 function normalizeWitnessTextV0(text) {
@@ -52,6 +57,9 @@ function normalizeWitnessTextV0(text) {
     .trim();
 }
 
+/**
+ * @param {string} norm
+ */
 function scoreAmbientV0(norm) {
   if (!norm) return { score: 0, hints: [] };
   const hints = [];
@@ -73,6 +81,9 @@ function scoreAmbientV0(norm) {
   return { score, hints };
 }
 
+/**
+ * @param {string} norm
+ */
 function scoreDirectedV0(norm) {
   if (!norm) return { score: 0, hints: [] };
   const hints = [];
@@ -120,6 +131,7 @@ export function classifyVoiceDirectedSpeechBandV0(meta = {}) {
   const ambient = scoreAmbientV0(norm);
   const directed = scoreDirectedV0(norm);
 
+  /** @type {string} */
   let band = VOICE_DIRECTED_SPEECH_BAND.UNKNOWN;
   if (directed.score >= 2 && directed.score > ambient.score) {
     band = VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE;

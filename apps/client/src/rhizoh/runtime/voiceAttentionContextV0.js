@@ -1,8 +1,6 @@
 /**
  * Attention Context Layer — "what kind of reality am I in right now?"
  * RESEARCH-ONLY v0: observation + policy hints; does not change gates, memory, or dispatch.
- *
- * Distinct from influence attribution (provenance) and witness band (speech label).
  */
 
 import { logVoiceInfoV0 } from "./rhizohProductionLogNamespacesV0.js";
@@ -10,14 +8,12 @@ import { VOICE_DIRECTED_SPEECH_BAND } from "./voiceDirectedSpeechObservationV0.j
 
 export const VOICE_ATTENTION_CONTEXT_SCHEMA = "castle.rhizoh.voice_attention_context.v0";
 
-/** User-declared or inferred life-context mode. */
 export const VOICE_ATTENTION_MODE_V0 = Object.freeze({
   DIRECT_LISTEN: "direct_listen",
   MOVING_CONTEXT: "moving_context",
   OBSERVER: "observer"
 });
 
-/** Channel metaphor — maps 1:1 to mode. */
 export const VOICE_ATTENTION_CHANNEL_V0 = Object.freeze({
   CLEAN: "clean_channel",
   MIXED: "mixed_channel",
@@ -58,7 +54,6 @@ const MODE_PROFILES = Object.freeze({
 });
 
 const VALID_MODES = new Set(Object.values(VOICE_ATTENTION_MODE_V0));
-
 let runtimeOverrideMode = "";
 
 function readEnvAttentionModeV0() {
@@ -76,10 +71,6 @@ function normalizeModeV0(mode) {
   return VALID_MODES.has(m) ? m : "";
 }
 
-/**
- * Dev / session override (read-only layer; does not touch execution graph).
- * @param {string} mode
- */
 export function setVoiceAttentionModeOverrideV0(mode) {
   runtimeOverrideMode = normalizeModeV0(mode);
   publishVoiceAttentionContextWindowV0(resolveVoiceAttentionContextV0({ reason: "override" }));
@@ -89,15 +80,6 @@ export function clearVoiceAttentionModeOverrideV0() {
   runtimeOverrideMode = "";
 }
 
-/**
- * @param {{
- *   explicitMode?: string,
- *   band?: string,
- *   source?: string,
- *   stage?: string,
- *   reason?: string
- * }} [input]
- */
 export function resolveVoiceAttentionContextV0(input = {}) {
   const explicit =
     normalizeModeV0(input.explicitMode) ||
@@ -129,10 +111,6 @@ export function resolveVoiceAttentionContextV0(input = {}) {
   });
 }
 
-/**
- * @param {ReturnType<typeof resolveVoiceAttentionContextV0>} ctx
- * @param {Record<string, unknown>} [detail]
- */
 export function publishVoiceAttentionContextV0(ctx, detail = {}) {
   logVoiceInfoV0("ATTENTION_CONTEXT", {
     mode: ctx.mode,

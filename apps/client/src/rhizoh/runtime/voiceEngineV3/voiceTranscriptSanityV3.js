@@ -7,6 +7,20 @@ export const VOICE_TRANSCRIPT_MIN_CONFIDENCE_V3 = 0.35;
 export const VOICE_TRANSCRIPT_SUSPICIOUS_CONF_V3 = 0.62;
 export const VOICE_TRANSCRIPT_MIN_CHARS_V3 = 3;
 
+/** Align with orchestrator VOICE_MIN_RECORD_MS_V3 — long capture ≠ short-text artifact. */
+export const VOICE_TRANSCRIPT_MIN_RECORD_MS_V3 = 1200;
+
+/** Conversational TR cues (witness / shadow-forward; not execution bypass alone). */
+const CONVERSATIONAL_UTTERANCE_PATTERNS_V3 = [
+  /nas[ıi]ls[ıi]n/i,
+  /sohbet/i,
+  /dostum/i,
+  /duyabiliyor\s+musun/i,
+  /indirebiliyor\s+musun/i,
+  /beni\s+duy/i,
+  /bugün/i
+];
+
 /** Known Whisper TR training / outro artifacts — only reject in suspicious confidence band. */
 const SUSPICIOUS_WHISPER_PHRASES_V3 = [
   /bir\s+sonraki\s+tarifte/i,
@@ -50,6 +64,7 @@ export function isSuspiciousWhisperArtifactV3(text, confidence) {
 }
 
 /**
+ * Detect repeated clause inside a single transcript (Whisper loop on ambient audio).
  * @param {string} text
  * @param {number} [minChunkLen]
  */
@@ -83,6 +98,15 @@ export function hasInternalTranscriptRepetitionV3(text, minChunkLen = 14) {
  * @param {number} [confidence]
  * @param {string} [strategy]
  */
+/**
+ * @param {string} text
+ */
+export function isConversationalTurkishUtteranceV3(text) {
+  const norm = normalizeTranscriptV3(text);
+  if (!norm || norm.length < 6) return false;
+  return CONVERSATIONAL_UTTERANCE_PATTERNS_V3.some((re) => re.test(norm));
+}
+
 export function isWhisperDefaultConfidenceV3(confidence, strategy) {
   const conf = Number(confidence);
   if (!Number.isFinite(conf) || conf !== VOICE_WHISPER_DEFAULT_CONF_V3) return false;
@@ -115,7 +139,7 @@ export function resetVoiceTranscriptRepeatForTestV3() {
 
 /**
  * @param {string} text
- * @param {{ confidence?: number, checkRepeat?: boolean, strategy?: string }} [opts]
+ * @param {{ confidence?: number, checkRepeat?: boolean, strategy?: string, recordedMs?: number }} [opts]
  */
 export function sanitizeVoiceTranscriptForDispatchV3(text, opts = {}) {
   const trimmed = String(text || "").trim();
@@ -139,11 +163,46 @@ export function sanitizeVoiceTranscriptForDispatchV3(text, opts = {}) {
     return { ok: false, reason: "internal_repetition", text: trimmed, confidence: conf };
   }
 
-  if (
-    isWhisperDefaultConfidenceV3(conf, strategy) &&
-    (trimmed.length <= 48 || hasInternalTranscriptRepetitionV3(trimmed, 10))
-  ) {
-    return { ok: false, reason: "whisper_default_conf", text: trimmed, confidence: conf, strategy };
+  if (isWhisperDefaultConfidenceV3(conf, strategy)) {
+    const recordedMs = Number(opts.recordedMs);
+    const longCapture =
+      Number.isFinite(recordedMs) && recordedMs >= VOICE_TRANSCRIPT_MIN_RECORD_MS_V3;
+    const shortTextFragile =
+      trimmed.length <= 48 || hasInternalTranscriptRepetitionV3(trimmed, 10);
+    const conversational = isConversationalTurkishUtteranceV3(trimmed);
+
+    if (longCapture && conversational && !hasInternalTranscriptRepetitionV3(trimmed, 10)) {
+      return {
+        ok: false,
+        reason: "whisper_default_conf",
+        text: trimmed,
+        confidence: conf,
+        strategy,
+        shadowForward: true
+      };
+    }
+
+    if (longCapture && !shortTextFragile) {
+      return {
+        ok: false,
+        reason: "whisper_default_conf",
+        text: trimmed,
+        confidence: conf,
+        strategy,
+        shadowForward: true
+      };
+    }
+
+    if (shortTextFragile) {
+      return {
+        ok: false,
+        reason: "whisper_default_conf",
+        text: trimmed,
+        confidence: conf,
+        strategy,
+        shadowForward: conversational
+      };
+    }
   }
 
   if (opts.checkRepeat !== false) {

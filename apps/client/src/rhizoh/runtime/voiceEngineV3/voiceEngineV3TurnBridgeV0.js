@@ -1,15 +1,41 @@
-/**
- * Voice Engine v3 — AppRhizoh528 turn bridge (Chrome STT bypass when VITE_RHIZOH_VOICE_ENGINE_V3=1).
- */
-
 import { createVoiceEngineOrchestratorV3 } from "./voiceEngineOrchestratorV3.js";
 import { isVoiceEngineV3EnabledV0 } from "./isVoiceEngineV3EnabledV0.js";
-import {
-  emitReadOnlyVoiceInfluenceAttributionV0,
-  emitStreamLifecycleInfluenceV0
-} from "../voiceInfluenceAttributionReadOnlyHookV0.js";
-
+import { VOICE_ENGINE_STATE_V3 } from "./voiceEngineStateV3.js";
+import { noteVoiceSttEventV0 } from "../voiceSttTelemetryV0.js";
+import { logVoiceInfoV0, logVoiceWarnV0 } from "../rhizohProductionLogNamespacesV0.js";
+import { stampVoiceUserGestureV0 } from "../voiceUserGestureAnchorV0.js";
 export const VOICE_V3_MAX_RECORD_MS = 8000;
+
+let v3SessionLockActive = false;
+let v3LastStartedSessionId = null;
+let v3StopInFlight = null;
+let v3LastEmptyRetryAtMs = 0;
+
+const V3_EMPTY_RETRY_DEBOUNCE_MS = 1400;
+
+const RETRYABLE_EMPTY_CODES = new Set([
+  "no_speech",
+  "no_transcript",
+  "too_short",
+  "recording_too_short",
+  "audio_too_small",
+  "audio_silent",
+  "low_confidence",
+  "whisper_artifact",
+  "repeated_hallucination",
+  "internal_repetition",
+  "whisper_default_conf",
+  "empty"
+]);
+
+function emptyPromptKey(error) {
+  if (error === "recording_too_short" || error === "audio_too_small") return "retry";
+  if (error === "audio_silent") return "silent";
+  if (error === "low_confidence" || error === "whisper_artifact" || error === "repeated_hallucination") {
+    return "low_confidence";
+  }
+  return "empty";
+}
 
 /**
  * @param {{
@@ -25,18 +51,12 @@ export const VOICE_V3_MAX_RECORD_MS = 8000;
  *     handleVoiceTranscriptRef: { current: (text: string, opts: object) => Promise<void> },
  *     scheduleVoiceMicRestart: (keepAlive: boolean, opts?: object) => void,
  *     maybeWarnVoiceSilentStop: (key: string) => void,
- *     speakRhizoh?: (text: string, opts?: object) => void,
- *     logInfo?: (tag: string, detail?: object) => void,
- *     logWarn?: (tag: string, detail?: object) => void,
- *     noteEvent?: (tag: string, detail?: object) => void
+ *     speakRhizoh?: (text: string, opts?: object) => void
  *   }
  * }} ctx
  */
 export function createVoiceEngineV3TurnBridgeV0(ctx) {
   const { refs, callbacks } = ctx;
-  const logInfo = callbacks.logInfo || (() => {});
-  const logWarn = callbacks.logWarn || (() => {});
-  const noteEvent = callbacks.noteEvent || (() => {});
 
   function clearMaxRecordTimer() {
     if (refs.voiceSttMaxRecordTimer.current) {
@@ -45,119 +65,178 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     }
   }
 
+  function releaseSessionLock(sessionId) {
+    if (!sessionId || v3LastStartedSessionId === sessionId) {
+      v3SessionLockActive = false;
+    }
+  }
+
   function abortTurn() {
+    const sessionId = refs.voiceEngineV3.current?.sessionId;
     clearMaxRecordTimer();
     refs.voiceEngineV3.current?.abort?.();
     refs.voiceEngineV3.current = null;
     refs.voiceSttStartInFlight.current = false;
+    releaseSessionLock(sessionId);
     callbacks.setMicListening(false);
   }
 
   async function finishTurn(keepAlive) {
+    if (v3StopInFlight) {
+      return v3StopInFlight;
+    }
     const engine = refs.voiceEngineV3.current;
     if (!engine) {
       refs.voiceSttStartInFlight.current = false;
+      v3SessionLockActive = false;
       return { ok: false, error: "no_engine" };
     }
+    const sessionId = engine.sessionId;
     clearMaxRecordTimer();
     callbacks.setRhizohFieldState("INTERPRETING");
     callbacks.setMicListening(false);
-    noteEvent("V3_STOP", { keepAlive });
-    logInfo("V3_STOP", { keepAlive });
+    noteVoiceSttEventV0("V3_STOP", {});
+    logVoiceInfoV0("V3_STOP", { keepAlive });
 
-    const result = await engine.stop();
+    v3StopInFlight = engine
+      .stop()
+      .finally(() => {
+        if (v3StopInFlight) v3StopInFlight = null;
+      });
+    const result = await v3StopInFlight;
     refs.voiceEngineV3.current = null;
     refs.voiceSttStartInFlight.current = false;
+    releaseSessionLock(sessionId);
 
     if (result.ok && result.merged?.text) {
       refs.voiceSttGotAnyResult.current = true;
-      noteEvent("V3_FINAL", {
+      noteVoiceSttEventV0("V3_FINAL", {
         chars: result.merged.text.length,
         strategy: result.merged.strategy
       });
-      logInfo("V3_FINAL", {
+      logVoiceInfoV0("V3_FINAL", {
         chars: result.merged.text.length,
         strategy: result.merged.strategy,
         preview: result.merged.text.slice(0, 96)
       });
-      emitReadOnlyVoiceInfluenceAttributionV0({
-        text: result.merged.text,
-        confidence: result.merged.confidence,
-        strategy: result.merged.strategy,
-        source: "mic_v3",
-        stage: "v3_final_read_only"
-      });
       await callbacks.handleVoiceTranscriptRef.current(result.merged.text, {
         manageVoiceTurn: keepAlive,
-        source: "mic_v3"
+        source: "mic_v3",
+        confidence: result.merged.confidence,
+        strategy: result.merged.strategy,
+        maxRms: result.maxRms,
+        witnessed: result.witnessed,
+        witnessCompleted: true
       });
       return { ok: true };
     }
 
-    if (result.error === "no_speech" || result.error === "no_transcript") {
-      emitStreamLifecycleInfluenceV0(result.error, {
-        source: "mic_v3",
-        stage: "v3_stop_empty"
-      });
-      callbacks.maybeWarnVoiceSilentStop("empty");
+    const err = String(result.error || "transcribe_failed");
+    if (RETRYABLE_EMPTY_CODES.has(err)) {
+      callbacks.maybeWarnVoiceSilentStop(emptyPromptKey(err));
       if (keepAlive) {
+        const now = Date.now();
+        if (now - v3LastEmptyRetryAtMs < V3_EMPTY_RETRY_DEBOUNCE_MS) {
+          logVoiceInfoV0("V3_RETRY_DEBOUNCED", { error: err, ageMs: now - v3LastEmptyRetryAtMs });
+          callbacks.setRhizohFieldState("IDLE");
+          return { ok: false, error: err, debounced: true };
+        }
+        v3LastEmptyRetryAtMs = now;
         callbacks.scheduleVoiceMicRestart(keepAlive, {
-          context: "onresult_empty",
+          context: "v3_empty_retry",
           lastSessionHadResult: refs.voiceSttGotAnyResult.current
         });
       } else {
         callbacks.setRhizohFieldState("IDLE");
       }
-      return { ok: false, error: result.error };
+      return { ok: false, error: err };
     }
 
-    logWarn("V3_TRANSCRIBE_FAIL", { error: result.error });
-    emitStreamLifecycleInfluenceV0("TRANSCRIBE_FAIL", {
-      source: "mic_v3",
-      stage: "v3_stop_fail",
-      error: result.error
-    });
+    if (err === "session_not_idle") {
+      callbacks.setRhizohFieldState("IDLE");
+      return { ok: false, error: err };
+    }
+
+    logVoiceWarnV0("V3_TRANSCRIBE_FAIL", { error: err });
     callbacks.setRhizohFieldState("IDLE");
-    return { ok: false, error: result.error || "transcribe_failed" };
+    return { ok: false, error: err };
   }
 
   async function startTurn(keepAlive = false) {
-    if (refs.voiceEngineV3.current?.isBusy?.()) {
-      return finishTurn(keepAlive);
+    if (v3StopInFlight) {
+      logVoiceWarnV0("V3_START_BLOCKED", { reason: "stop_in_flight" });
+      refs.voiceSttStartInFlight.current = false;
+      return { ok: false, error: "stop_in_flight" };
     }
-    if (refs.voiceSttStartInFlight.current) {
-      logInfo("V3_START_SKIPPED", { reason: "in_flight" });
-      return { ok: false, error: "in_flight" };
+    if (v3SessionLockActive) {
+      const busyEngine = refs.voiceEngineV3.current;
+      logVoiceWarnV0("V3_START_BLOCKED", {
+        reason: "session_lock",
+        sessionId: busyEngine?.sessionId,
+        state: busyEngine?.getState?.()
+      });
+      refs.voiceSttStartInFlight.current = false;
+      return { ok: false, error: "session_lock", state: busyEngine?.getState?.() };
     }
-    refs.voiceSttStartInFlight.current = true;
-    refs.voiceSttGotAnyResult.current = false;
 
+    const existing = refs.voiceEngineV3.current;
+    if (existing) {
+      const state = existing.getState?.() || VOICE_ENGINE_STATE_V3.IDLE;
+      if (state === VOICE_ENGINE_STATE_V3.RECORDING) {
+        return finishTurn(keepAlive);
+      }
+      if (state !== VOICE_ENGINE_STATE_V3.IDLE) {
+        refs.voiceSttStartInFlight.current = false;
+        logVoiceWarnV0("V3_START_BLOCKED", { state });
+        return { ok: false, error: "session_not_idle", state };
+      }
+    }
+
+    if (existing?.sessionId && existing.sessionId === v3LastStartedSessionId && refs.voiceSttStartInFlight.current) {
+      logVoiceWarnV0("V3_DUPLICATE_SESSION", { sessionId: existing.sessionId });
+      refs.voiceSttStartInFlight.current = false;
+      return { ok: false, error: "duplicate_session", sessionId: existing.sessionId };
+    }
+
+    refs.voiceSttGotAnyResult.current = false;
     callbacks.setRhizohFieldState("LISTENING");
     callbacks.setMicListening(true);
-    noteEvent("V3_SESSION_BEGIN", { keepAlive });
-    logInfo("V3_SESSION_BEGIN", { keepAlive });
+    noteVoiceSttEventV0("V3_SESSION_BEGIN", { keepAlive });
+    logVoiceInfoV0("V3_SESSION_BEGIN", { keepAlive });
 
     const engine = createVoiceEngineOrchestratorV3({
-      onFastTranscript: ({ text }) => {
-        refs.voiceSttGotAnyResult.current = true;
-        noteEvent("V3_FAST", { preview: text.slice(0, 48) });
-        logInfo("V3_FAST", { preview: text.slice(0, 48) });
-      },
       onError: ({ code }) => {
-        if (code === "no_speech" || code === "no_transcript") return;
-        logWarn("V3_ERROR", { code });
+        if (RETRYABLE_EMPTY_CODES.has(String(code || ""))) return;
+        logVoiceWarnV0("V3_ERROR", { code });
       }
     });
+
+    if (engine.sessionId === v3LastStartedSessionId && v3SessionLockActive) {
+      logVoiceWarnV0("V3_DUPLICATE_SESSION", { sessionId: engine.sessionId });
+      refs.voiceSttStartInFlight.current = false;
+      callbacks.setMicListening(false);
+      callbacks.setRhizohFieldState("IDLE");
+      return { ok: false, error: "duplicate_session", sessionId: engine.sessionId };
+    }
+
+    v3SessionLockActive = true;
+    v3LastStartedSessionId = engine.sessionId;
     refs.voiceEngineV3.current = engine;
+    stampVoiceUserGestureV0("v3_session_begin");
 
     const startRes = await engine.start();
     if (!startRes.ok) {
       abortTurn();
       callbacks.setRhizohFieldState("IDLE");
+      if (startRes.error === "session_not_idle") {
+        logVoiceWarnV0("V3_START_BLOCKED", { state: startRes.state });
+        return startRes;
+      }
       callbacks.maybeWarnVoiceSilentStop("audio");
       return startRes;
     }
 
+    stampVoiceUserGestureV0("v3_recording");
     refs.voiceSttMaxRecordTimer.current = window.setTimeout(() => {
       void finishTurn(keepAlive);
     }, VOICE_V3_MAX_RECORD_MS);

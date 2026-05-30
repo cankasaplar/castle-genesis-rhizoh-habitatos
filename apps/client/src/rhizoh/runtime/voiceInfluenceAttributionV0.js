@@ -1,6 +1,6 @@
 /**
  * Influence Attribution Layer — "Bu davranış nereden geldi?"
- * Observation only; no execution authority. Memory / behavior coupling intentionally deferred.
+ * Observation + commitment only; no execution authority (debug / drift / memory trace).
  */
 
 import { VOICE_DIRECTED_SPEECH_BAND } from "./voiceDirectedSpeechObservationV0.js";
@@ -15,6 +15,7 @@ export const INFLUENCE_STRENGTH_V0 = Object.freeze({
   MEMORY_ELIGIBLE: "memory_eligible"
 });
 
+/** Provenance class for memory debugging and drift analysis. */
 export const INFLUENCE_ATTRIBUTION_KIND_V0 = Object.freeze({
   USER_SPEECH_DIRECTED: "user_speech_directed",
   USER_SPEECH_CONDITIONAL: "user_speech_conditional",
@@ -62,6 +63,8 @@ export function deriveVoiceInfluenceAttributionV0(input = {}) {
   const band = String(input.band || VOICE_DIRECTED_SPEECH_BAND.UNKNOWN);
   const stage = String(input.stage || "unknown");
 
+  const observationOnly = INFLUENCE_STRENGTH_V0.OBSERVATION_ONLY;
+
   if (direction === "egress") {
     return Object.freeze({
       kind: INFLUENCE_ATTRIBUTION_KIND_V0.MODEL_RESPONSE,
@@ -69,7 +72,7 @@ export function deriveVoiceInfluenceAttributionV0(input = {}) {
       band,
       source,
       stage,
-      influenceStrength: INFLUENCE_STRENGTH_V0.OBSERVATION_ONLY,
+      influenceStrength: observationOnly,
       trustWeight: 0,
       influencesMemory: false,
       influencesBehavior: false
@@ -83,7 +86,7 @@ export function deriveVoiceInfluenceAttributionV0(input = {}) {
       band,
       source,
       stage,
-      influenceStrength: INFLUENCE_STRENGTH_V0.OBSERVATION_ONLY,
+      influenceStrength: observationOnly,
       trustWeight: 0,
       influencesMemory: false,
       influencesBehavior: false
@@ -97,7 +100,7 @@ export function deriveVoiceInfluenceAttributionV0(input = {}) {
       band: "text",
       source: "text",
       stage,
-      influenceStrength: INFLUENCE_STRENGTH_V0.OBSERVATION_ONLY,
+      influenceStrength: observationOnly,
       trustWeight: 0,
       influencesMemory: false,
       influencesBehavior: false
@@ -111,7 +114,7 @@ export function deriveVoiceInfluenceAttributionV0(input = {}) {
       band,
       source,
       stage,
-      influenceStrength: INFLUENCE_STRENGTH_V0.OBSERVATION_ONLY,
+      influenceStrength: observationOnly,
       trustWeight: 0,
       influencesMemory: false,
       influencesBehavior: false
@@ -126,7 +129,7 @@ export function deriveVoiceInfluenceAttributionV0(input = {}) {
       band,
       source,
       stage,
-      influenceStrength: INFLUENCE_STRENGTH_V0.OBSERVATION_ONLY,
+      influenceStrength: observationOnly,
       trustWeight: 0,
       influencesMemory: false,
       influencesBehavior: false
@@ -140,7 +143,7 @@ export function deriveVoiceInfluenceAttributionV0(input = {}) {
       band,
       source,
       stage,
-      influenceStrength: INFLUENCE_STRENGTH_V0.OBSERVATION_ONLY,
+      influenceStrength: observationOnly,
       trustWeight: 0,
       influencesMemory: false,
       influencesBehavior: false
@@ -157,7 +160,7 @@ export function deriveVoiceInfluenceAttributionV0(input = {}) {
       band,
       source,
       stage,
-      influenceStrength: INFLUENCE_STRENGTH_V0.OBSERVATION_ONLY,
+      influenceStrength: observationOnly,
       trustWeight: 0,
       influencesMemory: false,
       influencesBehavior: false
@@ -171,7 +174,7 @@ export function deriveVoiceInfluenceAttributionV0(input = {}) {
       band,
       source,
       stage,
-      influenceStrength: INFLUENCE_STRENGTH_V0.OBSERVATION_ONLY,
+      influenceStrength: observationOnly,
       trustWeight: 0,
       influencesMemory: false,
       influencesBehavior: false
@@ -184,7 +187,7 @@ export function deriveVoiceInfluenceAttributionV0(input = {}) {
     band,
     source,
     stage,
-    influenceStrength: INFLUENCE_STRENGTH_V0.OBSERVATION_ONLY,
+    influenceStrength: observationOnly,
     trustWeight: 0,
     influencesMemory: false,
     influencesBehavior: false
@@ -235,21 +238,6 @@ function publishInfluenceAttributionWindowV0(lastEntry) {
     counts: Object.freeze({ ...counts }),
     recent: Object.freeze([...ring]),
     atMs: Date.now()
-  });
-}
-
-/** Phase 1 — empty shell before first emit. */
-export function initVoiceInfluenceAttributionDebugV0() {
-  if (typeof window === "undefined") return;
-  if (window.__rhizoh?.voiceInfluenceAttribution) return;
-  window.__rhizoh = window.__rhizoh || {};
-  window.__rhizoh.voiceInfluenceAttribution = Object.freeze({
-    schema: VOICE_INFLUENCE_ATTRIBUTION_SCHEMA,
-    last: null,
-    counts: Object.freeze({ ...counts }),
-    recent: Object.freeze([]),
-    atMs: Date.now(),
-    phase: "core_import"
   });
 }
 

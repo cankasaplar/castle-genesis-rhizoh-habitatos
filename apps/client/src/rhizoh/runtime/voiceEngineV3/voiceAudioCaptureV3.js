@@ -2,6 +2,8 @@
  * Voice Engine v3 — MediaRecorder audio capture (Chrome STT-independent).
  */
 
+import { attachVoiceCaptureLevelProbeV3 } from "./voiceAudioLevelV3.js";
+
 export const VOICE_AUDIO_CAPTURE_V3_SCHEMA = "castle.rhizoh.voice_audio_capture.v3";
 export const VOICE_CAPTURE_CHUNK_MS_V3 = 1500;
 
@@ -12,7 +14,14 @@ export async function createVoiceAudioCaptureV3(opts = {}) {
   if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
     throw new Error("getUserMedia_unavailable");
   }
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+      channelCount: 1
+    }
+  });
   const mimeType =
     opts.mimeType ||
     (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
@@ -38,10 +47,12 @@ export async function createVoiceAudioCaptureV3(opts = {}) {
   };
 
   const timesliceMs = Number(opts.timesliceMs) > 0 ? Number(opts.timesliceMs) : VOICE_CAPTURE_CHUNK_MS_V3;
+  const levelProbe = attachVoiceCaptureLevelProbeV3(stream);
 
   return Object.freeze({
     stream,
     mimeType: recorder.mimeType || mimeType,
+    getMaxRms: () => levelProbe.getMaxRms(),
     start() {
       if (stopped) throw new Error("capture_already_stopped");
       chunks.length = 0;
@@ -55,6 +66,7 @@ export async function createVoiceAudioCaptureV3(opts = {}) {
         }
         stopped = true;
         recorder.onstop = () => {
+          levelProbe.stop();
           for (const track of stream.getTracks()) track.stop();
           resolve(buildBlob(chunks, recorder?.mimeType || mimeType));
         };
@@ -69,6 +81,7 @@ export async function createVoiceAudioCaptureV3(opts = {}) {
     },
     abort() {
       stopped = true;
+      levelProbe.stop();
       try {
         if (recorder.state !== "inactive") recorder.stop();
       } catch {

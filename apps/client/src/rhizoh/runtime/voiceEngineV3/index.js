@@ -13,4 +13,3 @@ export {
   getVoiceEngineTelemetrySnapshotV3,
   setVoiceEngineStateV3
 } from "./voiceEngineTelemetryV3.js";
-export { createVoiceEngineV3TurnBridgeV0, VOICE_V3_MAX_RECORD_MS } from "./voiceEngineV3TurnBridgeV0.js";

@@ -3,6 +3,7 @@
  */
 
 import { VOICE_ENGINE_V3_SCHEMA } from "./voiceEngineStateV3.js";
+import { refreshCastleVoiceNamespaceV0 } from "../voiceSttTelemetryV0.js";
 
 /** @type {{ events: object[], state: string, sessionId: string | null, atMs: number }} */
 const ring = {
@@ -30,14 +31,7 @@ export function emitVoiceEngineTelemetryV3(type, detail = {}) {
 
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
-    window.__CASTLE_VOICE__ = window.__CASTLE_VOICE__ || {};
-    window.__CASTLE_VOICE__.voiceEngineV3 = Object.freeze({
-      schema: VOICE_ENGINE_V3_SCHEMA,
-      state: ring.state,
-      sessionId: ring.sessionId,
-      events: [...ring.events],
-      atMs: ring.atMs
-    });
+    refreshCastleVoiceNamespaceV0();
   }
 
   try {

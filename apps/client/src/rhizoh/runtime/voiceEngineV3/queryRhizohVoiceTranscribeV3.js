@@ -3,6 +3,7 @@
  */
 
 import { getCastleFlightConfig } from "../../../castleFlight/castleFlightConfig.js";
+import { throttleVoiceTranscribePostV3 } from "./voiceThrottleV3.js";
 
 export const RHIZOH_VOICE_TRANSCRIBE_ROUTE_V3 = "/rhizoh/voice/transcribe/v3";
 
@@ -45,6 +46,8 @@ export async function queryRhizohVoiceTranscribeV3(audio, opts = {}) {
     bytes = audio;
   }
   if (!bytes || !bytes.byteLength) return { ok: false, error: "audio_empty" };
+
+  await throttleVoiceTranscribePostV3();
 
   const b64 = arrayBufferToBase64V3(bytes);
 
