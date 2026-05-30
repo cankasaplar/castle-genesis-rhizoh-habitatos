@@ -1,0 +1,17 @@
+/**
+ * Voice Engine v3 — state machine labels.
+ */
+
+export const VOICE_ENGINE_STATE_V3 = Object.freeze({
+  IDLE: "IDLE",
+  RECORDING: "RECORDING",
+  FAST_TRANSCRIBE: "FAST_TRANSCRIBE",
+  LLM_PREP: "LLM_PREP",
+  WAIT_WHISPER_FINAL: "WAIT_WHISPER_FINAL",
+  FINAL_TRANSCRIPT_RESOLVE: "FINAL_TRANSCRIPT_RESOLVE",
+  LLM_RESPONSE: "LLM_RESPONSE",
+  TTS_OUTPUT: "TTS_OUTPUT",
+  ERROR: "ERROR"
+});
+
+export const VOICE_ENGINE_V3_SCHEMA = "castle.rhizoh.voice_engine.v3";

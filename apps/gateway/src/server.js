@@ -23,6 +23,11 @@ import { runRhizohBrain } from "./rhizohBrain.js";
 import { queryRhizohLlm } from "./rhizohLlmGateway.js";
 import { rhizohGatewayTurn } from "./rhizohGatewayTurn.js";
 import {
+  RHIZOH_VOICE_TRANSCRIBE_ROUTE_V3,
+  runRhizohVoiceTranscribeV3,
+  rhizohVoiceTranscribeEnvV3
+} from "./rhizohVoiceTranscribeV3.js";
+import {
   meshAppendDelta,
   meshContinuityAggregate,
   meshJoin,
@@ -237,6 +242,10 @@ const TELEGRAM_BOT_TOKEN = process.env.CASTLE_TELEGRAM_BOT_TOKEN || "";
 const WHATSAPP_TOKEN = process.env.CASTLE_WHATSAPP_TOKEN || "";
 const WHATSAPP_PHONE_NUMBER_ID = process.env.CASTLE_WHATSAPP_PHONE_NUMBER_ID || "";
 const RL_RHIZOH_LLM_PER_MIN = Math.max(5, Number(process.env.CASTLE_RL_RHIZOH_LLM_PER_MIN || 40));
+const RL_RHIZOH_VOICE_TRANSCRIBE_PER_MIN = Math.max(
+  4,
+  Number(process.env.CASTLE_RL_RHIZOH_VOICE_TRANSCRIBE_PER_MIN || 30)
+);
 const RL_RHIZOH_EXTERNAL_TRUTH_PER_MIN = Math.max(10, Number(process.env.CASTLE_RL_RHIZOH_EXTERNAL_TRUTH_PER_MIN || 120));
 const RL_RHIZOH_EXTERNAL_LOSS_BATCH_PER_MIN = Math.max(8, Number(process.env.CASTLE_RL_RHIZOH_EXTERNAL_LOSS_BATCH_PER_MIN || 48));
 const RL_RHIZOH_PRODUCT_OUTCOME_PER_MIN = Math.max(4, Number(process.env.CASTLE_RL_RHIZOH_PRODUCT_OUTCOME_PER_MIN || 24));
@@ -2801,6 +2810,52 @@ const httpServer = createServer(async (req, res) => {
         compression: unifiedState.compression
       }
     });
+    return;
+  }
+
+  if (req.method === "POST" && pathname === RHIZOH_VOICE_TRANSCRIBE_ROUTE_V3) {
+    try {
+      const payload = await readHttpJson(req);
+      const auth = await resolveHttpUser(req);
+      const ip = getHttpClientIp(req);
+      if (REQUIRED_GATEWAY_TOKEN) {
+        const hdr =
+          String(req.headers?.["x-castle-gateway-token"] || req.headers?.["authorization"] || "").trim();
+        const bearer = hdr.startsWith("Bearer ") ? hdr.slice(7).trim() : hdr;
+        if (bearer !== REQUIRED_GATEWAY_TOKEN) {
+          sendJson(res, 401, { ok: false, error: "gateway_token_required" });
+          return;
+        }
+      }
+      const rlKey = auth.ok ? `uid:${auth.uid}` : `ip:${ip}`;
+      if (
+        !checkHttpRateLimit(`rhizoh_voice_transcribe:${rlKey}`, RL_RHIZOH_VOICE_TRANSCRIBE_PER_MIN, 60_000)
+      ) {
+        sendJson(res, 429, { ok: false, error: "rate_limit_exceeded" });
+        return;
+      }
+      const voiceEnv = rhizohVoiceTranscribeEnvV3();
+      if (!voiceEnv.any) {
+        sendJson(res, 503, {
+          ok: false,
+          error: "voice_asr_not_configured",
+          env: voiceEnv
+        });
+        return;
+      }
+      const result = await runRhizohVoiceTranscribeV3(payload);
+      sendJson(res, result.ok ? 200 : 422, {
+        ...result,
+        traceId: String(payload?.traceId || ""),
+        atMs: Date.now()
+      });
+    } catch (error) {
+      sendJson(res, 500, {
+        ok: false,
+        error: "voice_transcribe_failed",
+        detail: String(error?.message || error)
+      });
+    }
     return;
   }
 

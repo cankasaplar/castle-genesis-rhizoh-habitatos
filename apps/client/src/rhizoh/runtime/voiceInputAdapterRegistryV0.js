@@ -1,10 +1,17 @@
 /**
  * Voice input adapter registry — browser STT guard + text fallback truth surface.
  * STT = Web Speech API (Google cloud in Chrome); not Rhizoh gateway.
+ * Voice Engine v3 (`VITE_RHIZOH_VOICE_ENGINE_V3=1`): hybrid gateway ASR — Chrome optional trigger only.
+ *
+ * Hydration contract: consumers must distinguish `unknown` (pre-probe) from `unavailable` (probed, absent).
+ * Chrome "No available adapters" is WebGPU — unrelated; see swarmGpuBridge / studioCapabilityProbeV0.
  */
+
+import { isVoiceEngineV3EnabledV0 } from "./voiceEngineV3/isVoiceEngineV3EnabledV0.js";
 
 export const VOICE_INPUT_ADAPTER_SCHEMA = "castle.voice_input_adapter_registry.v0";
 export const VOICE_STT_NETWORK_RETRY_MAX = 2;
+export const VOICE_ADAPTER_UPDATED_EVENT = "rhizoh:voice-adapter:updated";
 
 /** @type {{
  *   voice: null | { id: string, provider: string },
@@ -23,6 +30,41 @@ const state = {
   networkRetryCount: 0
 };
 
+let hydrated = false;
+/** @type {Promise<ReturnType<typeof getVoiceAdapterRegistrySnapshot>> | null} */
+let readyPromise = null;
+/** @type {((snap: ReturnType<typeof getVoiceAdapterRegistrySnapshot>) => void) | null} */
+let readyResolve = null;
+/** @type {Set<(snap: ReturnType<typeof getVoiceAdapterRegistrySnapshot>) => void>} */
+const listeners = new Set();
+
+function completeHydrationProbe() {
+  if (hydrated) return;
+  hydrated = true;
+}
+
+function resolveReadyWaiters(snap) {
+  readyResolve?.(snap);
+  readyResolve = null;
+}
+
+function emitAdapterUpdated(snap) {
+  for (const listener of listeners) {
+    try {
+      listener(snap);
+    } catch {
+      /* noop */
+    }
+  }
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(new CustomEvent(VOICE_ADAPTER_UPDATED_EVENT, { detail: snap }));
+    } catch {
+      /* noop */
+    }
+  }
+}
+
 function publishDebugTruth() {
   const snap = getVoiceAdapterRegistrySnapshot();
   if (typeof window !== "undefined") {
@@ -30,12 +72,60 @@ function publishDebugTruth() {
     window.__rhizoh.voiceAdapter = snap;
     window.__rhizoh.inputAdapters = getRhizohInputAdaptersV0();
   }
+  emitAdapterUpdated(snap);
   return snap;
 }
 
+export function isVoiceAdapterRegistryHydratedV0() {
+  return hydrated;
+}
+
+/**
+ * Resolves after the first STT capability probe completes (sync probe; promise for ordering gates).
+ * @returns {Promise<ReturnType<typeof getVoiceAdapterRegistrySnapshot>>}
+ */
+export function awaitVoiceAdapterRegistryReadyV0() {
+  if (hydrated) return Promise.resolve(getVoiceAdapterRegistrySnapshot());
+  if (!readyPromise) {
+    readyPromise = new Promise((resolve) => {
+      readyResolve = resolve;
+    });
+    ensureVoiceAdapterRegistered();
+  }
+  return readyPromise;
+}
+
+/**
+ * @param {(snap: ReturnType<typeof getVoiceAdapterRegistrySnapshot>) => void} listener
+ * @returns {() => void}
+ */
+export function subscribeVoiceAdapterRegistryV0(listener) {
+  listeners.add(listener);
+  if (hydrated) {
+    try {
+      listener(getVoiceAdapterRegistrySnapshot());
+    } catch {
+      /* noop */
+    }
+  }
+  return () => listeners.delete(listener);
+}
+
+/**
+ * Voice adapter truth: `undefined` = probe pending, `null` = confirmed absent, object = available.
+ * @returns {undefined | null | { id: string, provider: string }}
+ */
+export function getRhizohVoiceInputAdapterV0() {
+  if (!hydrated) return undefined;
+  return state.voice;
+}
+
 export function getRhizohInputAdaptersV0() {
+  const voiceAvailability = !hydrated ? "unknown" : state.voice ? "available" : "unavailable";
   return Object.freeze({
-    voice: state.voice,
+    hydrated,
+    voiceAvailability,
+    voice: hydrated ? state.voice : undefined,
     text: Object.freeze({ id: "dom-text-input", provider: "dom", alwaysAvailable: true })
   });
 }
@@ -43,8 +133,10 @@ export function getRhizohInputAdaptersV0() {
 export function getVoiceAdapterRegistrySnapshot() {
   return Object.freeze({
     schema: VOICE_INPUT_ADAPTER_SCHEMA,
-    voiceRegistered: Boolean(state.voice),
-    voice: state.voice,
+    hydrated,
+    voiceRegistered: hydrated ? Boolean(state.voice) : null,
+    voice: hydrated ? state.voice : undefined,
+    voiceAvailability: !hydrated ? "unknown" : state.voice ? "available" : "unavailable",
     sttProvider: state.sttProvider,
     sttStatus: state.sttStatus,
     fallbackMode: state.fallbackMode,
@@ -59,7 +151,21 @@ export function ensureVoiceAdapterRegistered() {
     state.sttStatus = "no_window";
     state.fallbackMode = true;
     state.voice = null;
-    return publishDebugTruth();
+    completeHydrationProbe();
+    const snap = publishDebugTruth();
+    resolveReadyWaiters(snap);
+    return snap;
+  }
+  if (isVoiceEngineV3EnabledV0()) {
+    state.voice = Object.freeze({ id: "rhizoh-voice-engine-v3", provider: "hybrid-google-whisper" });
+    state.sttProvider = "rhizoh-voice-engine-v3";
+    state.sttStatus = "engine_v3_registered";
+    state.fallbackMode = false;
+    completeHydrationProbe();
+    const snap = publishDebugTruth();
+    resolveReadyWaiters(snap);
+    console.info("[VOICE_ADAPTER] engine v3 (Chrome STT deprecated as primary)", snap);
+    return snap;
   }
   const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (Ctor) {
@@ -72,7 +178,9 @@ export function ensureVoiceAdapterRegistered() {
     state.sttStatus = "no_speech_api";
     state.fallbackMode = true;
   }
+  completeHydrationProbe();
   const snap = publishDebugTruth();
+  resolveReadyWaiters(snap);
   console.info("[VOICE_ADAPTER] registry", snap);
   return snap;
 }
@@ -141,4 +249,8 @@ export function resetVoiceInputAdapterRegistryForTestV0() {
   state.fallbackMode = false;
   state.lastError = null;
   state.networkRetryCount = 0;
+  hydrated = false;
+  readyPromise = null;
+  readyResolve = null;
+  listeners.clear();
 }

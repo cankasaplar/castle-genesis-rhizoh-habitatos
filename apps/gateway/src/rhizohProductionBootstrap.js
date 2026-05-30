@@ -70,6 +70,7 @@ export function initRhizoh() {
 
   const routes = {
     rhizohLlm: "/rhizoh/llm",
+    voiceTranscribeV3: "/rhizoh/voice/transcribe/v3",
     externalTruth: "/rhizoh/product/external-truth",
     productOutcome: "/rhizoh/product/outcome",
     productOutcomeAggregate: "/rhizoh/product/outcome/aggregate",
