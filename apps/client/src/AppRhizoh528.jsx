@@ -211,6 +211,13 @@ import {
   runVoiceTurnGateAfterWitnessV0
 } from "./rhizoh/runtime/voiceTranscriptWitnessPipelineV0.js";
 import {
+  routeVoiceTranscriptConfidenceV0,
+  voiceConfidenceRouterLogDetailV0
+} from "./rhizoh/runtime/voiceTranscriptConfidenceRouterV0.js";
+import { forwardVoiceTranscriptShadowV0 } from "./rhizoh/runtime/voiceTranscriptShadowForwardV0.js";
+import { speakShadowObservationAckV0 } from "./rhizoh/runtime/voiceShadowObservationAckV0.js";
+import { installShadowVoiceAnalysisExportV0 } from "./rhizoh/runtime/voiceShadowAnalysisExportV0.js";
+import {
   evaluateVoiceCommitmentFromBandV0,
   finalizeVoiceBehavioralCommitmentV0,
   publishVoiceBehavioralCommitmentV0,
@@ -1667,6 +1674,16 @@ async function queryRhizohLLM({
   const effectiveTurnCount = rhizohProductSnap.userTurnCount + (countsAsUserTurn ? 1 : 0);
   if (!turnAcceptance.accepted && turnAcceptance.reason !== "non_voice") {
     logVoiceInfoV0("GATE_TURN_SKIP", voiceTurnAcceptanceLogDetailV0(turnAcceptance));
+    if (isVoiceTurn) {
+      return Object.freeze({
+        reply: "",
+        directive: "",
+        source: "voice_turn_skipped",
+        traceId: "",
+        turnSkipped: true,
+        turnReason: turnAcceptance.reason
+      });
+    }
   }
   const rhizohPhaseForTurn = advanceRhizohConversationPhase(
     rhizohProductSnap.conversationPhase,
@@ -8444,6 +8461,7 @@ export default function AppRhizoh528() {
     window.__rhizoh.truth = () => rhizohPolicyLearningGuard;
     publishVoiceGestureAnchorToWindowV0();
     installVoiceSttTelemetryV0();
+    installShadowVoiceAnalysisExportV0();
     return () => {
       try {
         if (!window.__rhizoh) return;
@@ -9772,6 +9790,43 @@ export default function AppRhizoh528() {
         voiceSource === "mic_onend" ||
         voiceSource === "mic_v3";
       if (isVoiceDispatch) {
+        const execRoute = routeVoiceTranscriptConfidenceV0({
+          text: trimmed,
+          confidence: Number.isFinite(Number(confidence)) ? Number(confidence) : undefined,
+          strategy: strategy || undefined,
+          maxRms: Number.isFinite(Number(maxRms)) ? Number(maxRms) : undefined,
+          source: voiceSource,
+          band: witnessed?.observation?.band,
+          checkRepeat: voiceSource !== "mic_v3" || !witnessCompleted
+        });
+        if (!execRoute.executionAccepted) {
+          if (execRoute.observationForward) {
+            forwardVoiceTranscriptShadowV0({
+              text: trimmed,
+              witnessed,
+              route: execRoute,
+              source: voiceSource,
+              stage: "dispatch_router_blocked",
+              confidence,
+              strategy,
+              maxRms
+            });
+          }
+          logVoiceInfoV0("STT_DISPATCH_BLOCKED", {
+            ...voiceConfidenceRouterLogDetailV0(execRoute),
+            preview: trimmed.slice(0, 96)
+          });
+          if (execRoute.observationForward) {
+            speakShadowObservationAckV0({
+              band: execRoute.band,
+              reason: execRoute.reason,
+              rejectionLayer: execRoute.rejectionLayer,
+              preview: trimmed
+            });
+          }
+          if (manageVoiceTurn) finishVoiceTurnIfNeeded();
+          return;
+        }
         const pre =
           pipelinePreCommitment ||
           evaluateVoiceCommitmentFromBandV0(
@@ -9881,6 +9936,18 @@ export default function AppRhizoh528() {
           dispatchAtMs,
           traceId: out.traceId || ""
         });
+        if (out?.turnSkipped) {
+          try {
+            window.speechSynthesis?.cancel?.();
+          } catch {
+            /* noop */
+          }
+          voiceTurnBusyRef.current = false;
+          voiceTurnBusySinceRef.current = 0;
+          setRhizohFieldState("IDLE");
+          if (manageVoiceTurn) finishVoiceTurnIfNeeded();
+          return;
+        }
         applyRhizohDirective(out.directive, engineRef);
         const normV = buildRhizohNormalizedLlmOutput(out, gatewayUx, mapSurfaceActive);
         const procV = materializeCommsFromNormalized(normV, out.reply);

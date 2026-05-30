@@ -8,6 +8,10 @@ export const VOICE_V3_MAX_RECORD_MS = 8000;
 
 let v3SessionLockActive = false;
 let v3LastStartedSessionId = null;
+let v3StopInFlight = null;
+let v3LastEmptyRetryAtMs = 0;
+
+const V3_EMPTY_RETRY_DEBOUNCE_MS = 1400;
 
 const RETRYABLE_EMPTY_CODES = new Set([
   "no_speech",
@@ -78,6 +82,9 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
   }
 
   async function finishTurn(keepAlive) {
+    if (v3StopInFlight) {
+      return v3StopInFlight;
+    }
     const engine = refs.voiceEngineV3.current;
     if (!engine) {
       refs.voiceSttStartInFlight.current = false;
@@ -91,7 +98,12 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     noteVoiceSttEventV0("V3_STOP", {});
     logVoiceInfoV0("V3_STOP", { keepAlive });
 
-    const result = await engine.stop();
+    v3StopInFlight = engine
+      .stop()
+      .finally(() => {
+        if (v3StopInFlight) v3StopInFlight = null;
+      });
+    const result = await v3StopInFlight;
     refs.voiceEngineV3.current = null;
     refs.voiceSttStartInFlight.current = false;
     releaseSessionLock(sessionId);
@@ -123,6 +135,13 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     if (RETRYABLE_EMPTY_CODES.has(err)) {
       callbacks.maybeWarnVoiceSilentStop(emptyPromptKey(err));
       if (keepAlive) {
+        const now = Date.now();
+        if (now - v3LastEmptyRetryAtMs < V3_EMPTY_RETRY_DEBOUNCE_MS) {
+          logVoiceInfoV0("V3_RETRY_DEBOUNCED", { error: err, ageMs: now - v3LastEmptyRetryAtMs });
+          callbacks.setRhizohFieldState("IDLE");
+          return { ok: false, error: err, debounced: true };
+        }
+        v3LastEmptyRetryAtMs = now;
         callbacks.scheduleVoiceMicRestart(keepAlive, {
           context: "v3_empty_retry",
           lastSessionHadResult: refs.voiceSttGotAnyResult.current
@@ -144,6 +163,11 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
   }
 
   async function startTurn(keepAlive = false) {
+    if (v3StopInFlight) {
+      logVoiceWarnV0("V3_START_BLOCKED", { reason: "stop_in_flight" });
+      refs.voiceSttStartInFlight.current = false;
+      return { ok: false, error: "stop_in_flight" };
+    }
     if (v3SessionLockActive) {
       const busyEngine = refs.voiceEngineV3.current;
       logVoiceWarnV0("V3_START_BLOCKED", {

@@ -39,9 +39,13 @@ const DIRECTED_ADDRESS_PATTERNS_V0 = [
   /\b(rhizoh|rizo|riza)\b/i,
   /beni\s+duy/i,
   /duyabiliyor\s+musun/i,
+  /indirebiliyor\s+musun/i,
   /burada\s+mısın/i,
   /şimdi\s+beni\s+duy/i,
-  /bana\s+(söyle|anlat|cevap)/i
+  /bana\s+(söyle|anlat|cevap)/i,
+  /nas[ıi]ls[ıi]n/i,
+  /sohbet\s+et/i,
+  /biraz\s+sohbet/i
 ];
 
 function normalizeWitnessTextV0(text) {

@@ -26,7 +26,7 @@ describe("voiceTranscriptWitnessPipelineV0", () => {
       runTurnGate: false
     });
     expect(pipe.witnessed.observation.band).toBe(VOICE_DIRECTED_SPEECH_BAND.AMBIENT);
-    expect(pipe.sanityGate.accepted).toBe(false);
+    expect(pipe.route.executionAccepted).toBe(false);
     expect(pipe.sane.reason).toBe("whisper_default_conf");
   });
 

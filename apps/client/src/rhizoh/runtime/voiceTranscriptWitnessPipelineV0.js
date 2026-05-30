@@ -11,7 +11,11 @@ import {
   voiceWitnessBandWeightV0
 } from "./voiceObservationShadowV0.js";
 import { isVoiceWitnessShadowEnabledV0 } from "./isDirectedSpeechGateReleaseEnabledV0.js";
-import { sanitizeVoiceTranscriptForDispatchV3 } from "./voiceEngineV3/voiceTranscriptSanityV3.js";
+import {
+  routeVoiceTranscriptConfidenceV0,
+  voiceConfidenceRouterLogDetailV0
+} from "./voiceTranscriptConfidenceRouterV0.js";
+import { forwardVoiceTranscriptShadowV0 } from "./voiceTranscriptShadowForwardV0.js";
 import {
   evaluateVoiceTurnAcceptanceV0,
   voiceTurnAcceptanceLogDetailV0
@@ -165,7 +169,9 @@ export function witnessVoiceStreamLifecycleV0(evt = {}) {
  *   source?: string,
  *   stage?: string,
  *   checkRepeat?: boolean,
- *   runTurnGate?: boolean
+ *   runTurnGate?: boolean,
+ *   recordedMs?: number,
+ *   shadowForwardOnReject?: boolean
  * }} meta
  */
 export function runVoiceTranscriptWitnessPipelineV0(meta = {}) {
@@ -177,45 +183,84 @@ export function runVoiceTranscriptWitnessPipelineV0(meta = {}) {
   const preCommitment = evaluateVoiceCommitmentFromBandV0(witnessed.observation.band, { source });
   publishVoiceBehavioralCommitmentV0(preCommitment, { stage, phase: "pre_gate" });
 
-  const sane = sanitizeVoiceTranscriptForDispatchV3(text, {
-    confidence: Number.isFinite(Number(meta.confidence)) ? Number(meta.confidence) : undefined,
-    strategy: meta.strategy || "",
-    checkRepeat: meta.checkRepeat !== false
+  const route = routeVoiceTranscriptConfidenceV0({
+    text,
+    confidence: meta.confidence,
+    strategy: meta.strategy,
+    maxRms: meta.maxRms,
+    source,
+    recordedMs: meta.recordedMs,
+    checkRepeat: meta.checkRepeat !== false,
+    band: witnessed.observation.band
   });
 
   const sanityGate = Object.freeze({
-    accepted: sane.ok === true,
-    reason: sane.ok ? "sanity_ok" : sane.reason || "quality_reject"
+    accepted: route.executionAccepted === true,
+    reason: route.executionAccepted ? "sanity_ok" : route.reason || "quality_reject",
+    observationForward: route.observationForward === true
   });
 
-  logVoiceInfoV0("GATE_SANITY", {
+  const sane = Object.freeze({
+    ok: route.executionAccepted === true,
+    text,
+    reason: route.reason,
+    confidence: route.confidence,
+    strategy: meta.strategy,
+    shadowForward: route.shadowForward === true
+  });
+
+  logVoiceInfoV0("GATE_CONFIDENCE_ROUTER", {
     stage,
-    accepted: sanityGate.accepted,
-    reason: sanityGate.reason,
+    ...voiceConfidenceRouterLogDetailV0(route),
     band: witnessed.observation.band,
-    preview: text.slice(0, 96),
-    confidence: meta.confidence,
-    source
+    preview: text.slice(0, 96)
   });
 
-  if (!sanityGate.accepted) {
-    logVoiceWarnV0("GATE_SANITY_REJECT", {
-      stage,
-      reason: sanityGate.reason,
-      band: witnessed.observation.band,
-      preview: text.slice(0, 96)
-    });
+  if (!route.executionAccepted && route.reason !== "non_voice") {
+    const layer = route.rejectionLayer;
+    if (layer === "sanity") {
+      logVoiceWarnV0("GATE_ROUTER_SANITY_REJECT", {
+        stage,
+        reason: route.reason,
+        rejectionLayer: layer,
+        band: witnessed.observation.band,
+        preview: text.slice(0, 96),
+        observationForward: route.observationForward === true
+      });
+    } else if (layer === "interaction") {
+      logVoiceInfoV0("GATE_ROUTER_INTERACTION_REJECT", {
+        stage,
+        reason: route.reason,
+        rejectionLayer: layer,
+        band: witnessed.observation.band,
+        preview: text.slice(0, 96),
+        observationForward: route.observationForward === true,
+        confidence: route.confidence,
+        threshold: route.threshold
+      });
+    } else {
+      logVoiceWarnV0("GATE_ROUTER_REJECT", {
+        stage,
+        reason: route.reason,
+        rejectionLayer: layer,
+        band: witnessed.observation.band,
+        preview: text.slice(0, 96),
+        observationForward: route.observationForward === true
+      });
+    }
   }
 
   /** @type {ReturnType<typeof evaluateVoiceTurnAcceptanceV0> | null} */
   let turnAcceptance = null;
-  if (meta.runTurnGate === true && sanityGate.accepted) {
+  if (meta.runTurnGate === true) {
     turnAcceptance = evaluateVoiceTurnAcceptanceV0({
-      text: sane.text,
+      text,
       confidence: meta.confidence,
       strategy: meta.strategy,
       maxRms: meta.maxRms,
-      source
+      source,
+      recordedMs: meta.recordedMs,
+      band: witnessed.observation.band
     });
     logVoiceInfoV0("GATE_TURN", {
       stage,
@@ -231,20 +276,38 @@ export function runVoiceTranscriptWitnessPipelineV0(meta = {}) {
     }
   }
 
-  const actualGate =
-    turnAcceptance ||
-    (sanityGate.accepted
-      ? null
-      : Object.freeze({ accepted: false, reason: sanityGate.reason, source }));
+  if (
+    meta.shadowForwardOnReject !== false &&
+    route.observationForward === true &&
+    !route.executionAccepted
+  ) {
+    forwardVoiceTranscriptShadowV0({
+      text,
+      witnessed,
+      route,
+      source,
+      stage: `${stage}_shadow_forward`,
+      confidence: meta.confidence,
+      strategy: meta.strategy,
+      maxRms: meta.maxRms,
+      recordedMs: meta.recordedMs
+    });
+  }
+
+  const actualGate = Object.freeze({
+    accepted: route.executionAccepted === true,
+    reason: route.reason,
+    source
+  });
 
   finalizeVoiceWitnessShadowV0(witnessed, actualGate);
 
   const commitment = finalizeVoiceBehavioralCommitmentV0({
     band: witnessed.observation.band,
     source,
-    sanityAccepted: sanityGate.accepted,
-    turnAccepted: turnAcceptance?.accepted === true,
-    turnReason: turnAcceptance?.reason
+    sanityAccepted: route.sanityAccepted !== false,
+    turnAccepted: route.executionAccepted === true,
+    turnReason: route.reason
   });
   publishVoiceBehavioralCommitmentV0(commitment, { stage, phase: "post_gate" });
 
@@ -266,6 +329,7 @@ export function runVoiceTranscriptWitnessPipelineV0(meta = {}) {
     attribution,
     sane,
     sanityGate,
+    route,
     turnAcceptance,
     snapshot
   });

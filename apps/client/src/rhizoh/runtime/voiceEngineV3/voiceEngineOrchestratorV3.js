@@ -185,12 +185,14 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           strategy: merged.strategy,
           source: "mic_v3",
           maxRms,
+          recordedMs,
           stage: "v3_orchestrator_raw",
           checkRepeat: false,
-          runTurnGate: false
+          runTurnGate: false,
+          shadowForwardOnReject: true
         });
 
-        if (!pipe.sanityGate.accepted) {
+        if (!pipe.route?.executionAccepted) {
           busy = false;
           setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
           emitVoiceEngineTelemetryV3("FINAL_TRANSCRIPT_REJECT", {
