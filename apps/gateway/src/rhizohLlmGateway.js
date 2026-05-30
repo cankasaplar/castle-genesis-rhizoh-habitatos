@@ -649,6 +649,38 @@ export const RHIZOH_REPLY_PARSE_CONFIDENCE_V0 = Object.freeze({
  * @param {string} extractPath
  * @returns {number}
  */
+export const RHIZOH_PROVIDER_EXPECTED_REPLY_FORMAT_V0 = "json.reply";
+
+/**
+ * @param {number} confidence 0..1
+ * @returns {number} 0..1 — higher = more format drift from provider contract
+ */
+export function replyFormatDriftScoreFromConfidenceV0(confidence) {
+  const c = Number(confidence);
+  const conf = Number.isFinite(c) ? Math.max(0, Math.min(1, c)) : 0;
+  return Math.round((1 - conf) * 1000) / 1000;
+}
+
+/**
+ * @param {string} extractPath
+ * @returns {{
+ *   providerExpectedFormat: string,
+ *   observedFormat: string,
+ *   replyParsingConfidence: number,
+ *   replyFormatDriftScore: number
+ * }}
+ */
+export function computeReplyFormatDriftV0(extractPath) {
+  const observedFormat = String(extractPath || "");
+  const replyParsingConfidence = replyParsingConfidenceForExtractPathV0(observedFormat);
+  return {
+    providerExpectedFormat: RHIZOH_PROVIDER_EXPECTED_REPLY_FORMAT_V0,
+    observedFormat,
+    replyParsingConfidence,
+    replyFormatDriftScore: replyFormatDriftScoreFromConfidenceV0(replyParsingConfidence)
+  };
+}
+
 export function replyParsingConfidenceForExtractPathV0(extractPath) {
   const key = String(extractPath || "");
   if (Object.prototype.hasOwnProperty.call(RHIZOH_REPLY_PARSE_CONFIDENCE_V0, key)) {
@@ -663,11 +695,12 @@ export function replyParsingConfidenceForExtractPathV0(extractPath) {
  * @param {Record<string, unknown>} parsed
  */
 function rhizohReplyExtractResultV0(extractPath, reply, parsed) {
+  const format = computeReplyFormatDriftV0(extractPath);
   return {
     reply,
     extractPath,
     parsed,
-    replyParsingConfidence: replyParsingConfidenceForExtractPathV0(extractPath)
+    ...format
   };
 }
 
@@ -933,6 +966,9 @@ export async function queryRhizohLlm(input, meta = {}) {
     parsedReplyChars: rawReplyFromSchema.length,
     replyExtractPath: extracted.extractPath,
     replyParsingConfidence: extracted.replyParsingConfidence,
+    replyFormatDriftScore: extracted.replyFormatDriftScore,
+    providerExpectedFormat: extracted.providerExpectedFormat,
+    observedFormat: extracted.observedFormat,
     generationMode: gen.generationModeLabel,
     maxTokensApplied: gen.maxTokens
   };
@@ -949,6 +985,9 @@ export async function queryRhizohLlm(input, meta = {}) {
     llmKeyOrigin,
     rhizohDeliveryKind,
     replyParsingConfidence: extracted.replyParsingConfidence,
+    replyFormatDriftScore: extracted.replyFormatDriftScore,
+    providerExpectedFormat: extracted.providerExpectedFormat,
+    observedFormat: extracted.observedFormat,
     rhizohCompressionLedger
   };
 }

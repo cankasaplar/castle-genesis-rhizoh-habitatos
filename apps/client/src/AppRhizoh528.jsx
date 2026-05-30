@@ -234,6 +234,11 @@ import {
   publishRhizohTrustDebugV0
 } from "./rhizoh/runtime/rhizohTrustDebugV0.js";
 import {
+  recordReplyFormatDriftSampleV0,
+  getReplyFormatDriftRollingV0
+} from "./rhizoh/runtime/replyFormatDriftTrackerV0.js";
+import { describeRhizohNarrativeLayerCapabilityV0 } from "./rhizoh/runtime/rhizohNarrativeLayerCapabilityV0.js";
+import {
   buildRhizohHealthState,
   computeRhizohHealthInfluence,
   blendRelationalToneWithHealthRecommended,
@@ -2127,6 +2132,17 @@ async function queryRhizohLLM({
         : {};
     const replyParsingConfidence =
       json?.replyParsingConfidence ?? ledger.replyParsingConfidence ?? null;
+    const replyFormatDriftScore =
+      json?.replyFormatDriftScore ?? ledger.replyFormatDriftScore ?? null;
+    const formatDriftRolling = recordReplyFormatDriftSampleV0({
+      replyFormatDriftScore,
+      replyParsingConfidence,
+      replyExtractPath: ledger.replyExtractPath ?? json?.observedFormat ?? null,
+      observedFormat: json?.observedFormat ?? ledger.observedFormat ?? null,
+      providerExpectedFormat:
+        json?.providerExpectedFormat ?? ledger.providerExpectedFormat ?? null,
+      traceId: turnTraceId
+    });
     logRhizohHealth("llm_response", {
       traceId: turnTraceId,
       clientTraceId,
@@ -2134,6 +2150,10 @@ async function queryRhizohLLM({
       rhizohDeliveryKind: json?.rhizohDeliveryKind ?? null,
       replyExtractPath: ledger.replyExtractPath ?? null,
       replyParsingConfidence,
+      replyFormatDriftScore,
+      replyFormatDriftRolling: formatDriftRolling.replyFormatDriftRolling,
+      providerExpectedFormat: ledger.providerExpectedFormat ?? null,
+      observedFormat: ledger.observedFormat ?? null,
       rawProviderChars: ledger.rawProviderChars ?? null
     });
     if (import.meta.env?.DEV && typeof window !== "undefined") {
@@ -2144,8 +2164,12 @@ async function queryRhizohLLM({
         rhizohDeliveryKind: json?.rhizohDeliveryKind ?? null,
         replyExtractPath: ledger.replyExtractPath ?? null,
         replyParsingConfidence,
+        replyFormatDriftScore,
+        replyFormatDriftRolling: formatDriftRolling,
         rawProviderChars: ledger.rawProviderChars ?? null
       });
+      window.__CASTLE_RHIZOH_REPLY_FORMAT_DRIFT__ = getReplyFormatDriftRollingV0();
+      window.__CASTLE_RHIZOH_NARRATIVE_CAPABILITY__ = describeRhizohNarrativeLayerCapabilityV0();
     }
     if (!rhizohCapabilityEnvelope.backendHints.attachFullRhizohProduction && json && typeof json === "object") {
       try {
@@ -2195,6 +2219,8 @@ async function queryRhizohLLM({
       llmKeySourceUsed: json?.llmKeySourceUsed,
       rhizohDeliveryKind: json?.rhizohDeliveryKind ?? "ok",
       replyParsingConfidence,
+      replyFormatDriftScore,
+      replyFormatDriftRolling: formatDriftRolling.replyFormatDriftRolling,
       rhizohCompressionLedger:
         json?.rhizohCompressionLedger && typeof json.rhizohCompressionLedger === "object"
           ? json.rhizohCompressionLedger
