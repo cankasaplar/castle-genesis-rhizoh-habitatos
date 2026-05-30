@@ -7,6 +7,10 @@ import { logCastleLifecycleV0, logVoiceInfoV0 } from "./rhizohProductionLogNames
 import { resolveTurkishSpeechVoiceV0 } from "./prewarmSpeechSynthesisV0.js";
 import { VOICE_DIRECTED_SPEECH_BAND } from "./voiceDirectedSpeechObservationV0.js";
 import { VOICE_ROUTER_REJECTION_LAYER_V0 } from "./voiceTranscriptConfidenceRouterV0.js";
+import {
+  recordVoiceTimelineEventV0,
+  VOICE_TIMELINE_EVENT_KIND_V0
+} from "./voiceShadowTimelineV0.js";
 
 export const VOICE_SHADOW_OBSERVATION_ACK_SCHEMA = "castle.rhizoh.voice_shadow_observation_ack.v0";
 
@@ -112,6 +116,16 @@ function speakShadowAckUtteranceV0(text, meta, mode, session) {
     });
     logVoiceInfoV0("SHADOW_OBSERVATION_ACK", payload);
     logCastleLifecycleV0("shadow_observation_ack", payload);
+    recordVoiceTimelineEventV0({
+      kind: VOICE_TIMELINE_EVENT_KIND_V0.SHADOW_ACK,
+      preview: meta.preview,
+      band: meta.band,
+      reason: meta.reason,
+      rejectionLayer: meta.rejectionLayer,
+      ackMode: mode,
+      observationForward: true,
+      executionAccepted: false
+    });
     if (typeof window !== "undefined") {
       window.__rhizoh = window.__rhizoh || {};
       window.__rhizoh.voiceShadowObservationAck = Object.freeze({

@@ -2125,12 +2125,15 @@ async function queryRhizohLLM({
       json?.rhizohCompressionLedger && typeof json.rhizohCompressionLedger === "object"
         ? json.rhizohCompressionLedger
         : {};
+    const replyParsingConfidence =
+      json?.replyParsingConfidence ?? ledger.replyParsingConfidence ?? null;
     logRhizohHealth("llm_response", {
       traceId: turnTraceId,
       clientTraceId,
       replyChars: replyFromGateway.length,
       rhizohDeliveryKind: json?.rhizohDeliveryKind ?? null,
       replyExtractPath: ledger.replyExtractPath ?? null,
+      replyParsingConfidence,
       rawProviderChars: ledger.rawProviderChars ?? null
     });
     if (import.meta.env?.DEV && typeof window !== "undefined") {
@@ -2140,6 +2143,7 @@ async function queryRhizohLLM({
         replyPreview: replyFromGateway.slice(0, 240),
         rhizohDeliveryKind: json?.rhizohDeliveryKind ?? null,
         replyExtractPath: ledger.replyExtractPath ?? null,
+        replyParsingConfidence,
         rawProviderChars: ledger.rawProviderChars ?? null
       });
     }
@@ -2190,6 +2194,7 @@ async function queryRhizohLLM({
       llmKeyOrigin: json?.llmKeyOrigin,
       llmKeySourceUsed: json?.llmKeySourceUsed,
       rhizohDeliveryKind: json?.rhizohDeliveryKind ?? "ok",
+      replyParsingConfidence,
       rhizohCompressionLedger:
         json?.rhizohCompressionLedger && typeof json.rhizohCompressionLedger === "object"
           ? json.rhizohCompressionLedger

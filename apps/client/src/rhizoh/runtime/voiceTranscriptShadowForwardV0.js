@@ -13,6 +13,7 @@ import { voiceConfidenceRouterLogDetailV0 } from "./voiceTranscriptConfidenceRou
 import { maybeEmitShadowReplaySignalsV0 } from "./voiceShadowReplayHookV0.js";
 import { maybeEmitInterpretationStabilityV0 } from "./voiceInterpretationStabilityV0.js";
 import { installShadowVoiceAnalysisExportV0 } from "./voiceShadowAnalysisExportV0.js";
+import { recordVoiceTimelineFromRouteV0, installVoiceShadowTimelineV0 } from "./voiceShadowTimelineV0.js";
 
 export const VOICE_TRANSCRIPT_SHADOW_FORWARD_SCHEMA =
   "castle.rhizoh.voice_transcript_shadow_forward.v0";
@@ -86,6 +87,12 @@ export function forwardVoiceTranscriptShadowV0(meta = {}) {
 
   logVoiceInfoV0("SHADOW_FORWARD", payload);
 
+  recordVoiceTimelineFromRouteV0(route, {
+    preview: text.slice(0, 72),
+    source,
+    stage
+  });
+
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
     const ring = Array.isArray(window.__rhizoh.voiceShadowForwardRing)
@@ -102,6 +109,7 @@ export function forwardVoiceTranscriptShadowV0(meta = {}) {
     maybeEmitShadowReplaySignalsV0(entry);
     maybeEmitInterpretationStabilityV0(entry);
     installShadowVoiceAnalysisExportV0();
+    installVoiceShadowTimelineV0();
   }
 
   return Object.freeze({ familiarity, attribution, payload });

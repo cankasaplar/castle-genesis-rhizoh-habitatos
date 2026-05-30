@@ -88,6 +88,50 @@ export function advanceRhizohConversationPhase(prevPhase, signals = {}, tuning =
 }
 
 /**
+ * Read-only progress toward the next conversation phase (ops / continuity logs).
+ * @param {RhizohConversationPhase | string | undefined} phase
+ * @param {{ trust?: number, familiarity?: number, userTurnCount?: number, introSeen?: boolean }} signals
+ * @param {Parameters<typeof advanceRhizohConversationPhase>[2]} [tuning]
+ */
+export function describeRhizohPhaseExitProgressV0(phase, signals = {}, tuning = {}) {
+  const introTurnsForTrust = clampIntPrefer(tuning.introTurnsForTrust, 6, 2, 24);
+  const introSeenTurnsForTrust = clampIntPrefer(tuning.introSeenTurnsForTrust, 3, 1, 16);
+  const trustBondForNormal = clampBondGate(tuning.trustBondForNormal, 0.34, 0.15, 0.55);
+  const trustTurnsForNormal = clampIntPrefer(tuning.trustTurnsForNormal, 12, 4, 48);
+
+  const p = String(phase || RHIZOH_CONVERSATION_PHASE.NEW_USER);
+  const bond = (clamp01(signals.trust) + clamp01(signals.familiarity)) / 2;
+  const turns = Math.max(0, Math.floor(Number(signals.userTurnCount) || 0));
+  const introSeen = signals.introSeen === true;
+
+  if (p === RHIZOH_CONVERSATION_PHASE.INTRO) {
+    const turnsNeed = introSeen ? introSeenTurnsForTrust : introTurnsForTrust;
+    return Object.freeze({
+      nextPhase: RHIZOH_CONVERSATION_PHASE.TRUST_BUILD,
+      bond,
+      turns,
+      turnsNeed,
+      introSeen,
+      turnsMet: (introSeen && turns >= introSeenTurnsForTrust) || turns >= introTurnsForTrust
+    });
+  }
+
+  if (p === RHIZOH_CONVERSATION_PHASE.TRUST_BUILD) {
+    return Object.freeze({
+      nextPhase: RHIZOH_CONVERSATION_PHASE.NORMAL_CHAT,
+      bond,
+      bondNeed: trustBondForNormal,
+      turns,
+      turnsNeed: trustTurnsForNormal,
+      bondMet: bond >= trustBondForNormal,
+      turnsMet: turns >= trustTurnsForNormal
+    });
+  }
+
+  return null;
+}
+
+/**
  * @param {RhizohConversationPhase | string} phase
  * @param {{
  *   governanceBond01?: number | null,
