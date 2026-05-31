@@ -1,6 +1,7 @@
 # Rhizoh Reply Schema Evolution Governance v1
 
 **Tag:** `CORE-ELIGIBLE` (registry + simulation) · **Policy owner:** founder / ops + CI  
+**Control plane:** [`RHIZOH_CONTROL_PLANE_V1.md`](RHIZOH_CONTROL_PLANE_V1.md)  
 **Code:** [`rhizohReplySchemaRegistryV1.js`](../apps/gateway/src/rhizohReplySchemaRegistryV1.js) · [`rhizohReplySchemaLifecycleV1.js`](../apps/gateway/src/rhizohReplySchemaLifecycleV1.js)  
 **Runtime law:** [`RHIZOH_REPLY_NORMALIZATION_LAYER_V1.md`](RHIZOH_REPLY_NORMALIZATION_LAYER_V1.md)
 
