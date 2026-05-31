@@ -682,12 +682,13 @@ export const RHIZOH_REPLY_PARSE_CONFIDENCE_V0 = Object.freeze({
  */
 export const RHIZOH_PROVIDER_EXPECTED_REPLY_FORMAT_V0 = "json.reply";
 
-/** Frozen client-facing reply contract — bump only with coordinated gateway + client release. */
-export {
+import {
   RHIZOH_REPLY_SCHEMA_V1,
   RHIZOH_REPLY_SCHEMA_VERSION_V1,
   attachReplySchemaContractV1
 } from "./rhizohReplySchemaRegistryV1.js";
+
+export { RHIZOH_REPLY_SCHEMA_V1, RHIZOH_REPLY_SCHEMA_VERSION_V1, attachReplySchemaContractV1 };
 
 /**
  * @param {number} confidence 0..1
