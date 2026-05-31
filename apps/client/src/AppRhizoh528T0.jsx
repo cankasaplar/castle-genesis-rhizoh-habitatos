@@ -2673,6 +2673,25 @@ const uiStore = {
   }
 };
 
+registerRhizohQueryLlmDepsV0({
+  applyPersonalCastleDsl,
+  readClientContinuity,
+  patchRhizohEmotionDisk,
+  getUiRuntimeHints: () => {
+    try {
+      const st = uiStore.getState();
+      return {
+        realityMode: st.realityMode,
+        mapSurfaceActive: st.mapSurfaceActive,
+        layerFocus: st.layerFocus,
+        governanceState: st.governanceState
+      };
+    } catch {
+      return {};
+    }
+  }
+});
+
 const ARCHETYPE_NAMES = ["", "SCOUT", "GUARD", "HACKER", "BUILDER", "HEALER", "HUNTER"];
 
 function formatRoster(roster) {

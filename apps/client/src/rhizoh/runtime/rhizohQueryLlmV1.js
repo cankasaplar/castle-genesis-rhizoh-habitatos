@@ -114,6 +114,86 @@ function normalizeRhizohGenerationModeId(mode) {
   return String(mode || "STANDARD").trim().toUpperCase().replace(/-/g, "_");
 }
 
+function priorAssistantRepliesFromContinuity(cont) {
+  const rt = Array.isArray(cont?.recentTurns) ? cont.recentTurns : [];
+  return rt.map((x) => String(x?.assistant || "")).filter(Boolean).slice(-8);
+}
+
+function blendRelationalToneForHealth(emotionSource, healthState) {
+  const base = deriveRelationalTone(emotionSource);
+  if (!healthState || typeof healthState !== "object") {
+    return clampRelationalToneToAnchor(base);
+  }
+  return clampRelationalToneToAnchor(
+    adjustRelationalToneForHealthLatency(
+      blendRelationalToneWithHealthRecommended(base, healthState),
+      healthState
+    )
+  );
+}
+
+function finalizeRhizohAfterLlm(
+  preLlmEmotions,
+  {
+    rhizohRouter,
+    reply,
+    source,
+    runtimeHints,
+    gatewayUx,
+    persistRhizohEmotions,
+    outcomeSession,
+    priorAssistantReplies
+  }
+) {
+  const { emotions: emotionsRaw, resonance, outcomeSession: nextOutcomeSession } = applyRepairOutcome({
+    router: rhizohRouter,
+    llmResult: { reply, source },
+    gatewayUx: gatewayUx && typeof gatewayUx === "object" ? gatewayUx : {},
+    runtime: runtimeHints,
+    previousEmotion: preLlmEmotions,
+    outcomeSession,
+    priorAssistantReplies
+  });
+  const tonePreOutcome = deriveRelationalTone(emotionsRaw);
+  const govCalPost = normalizeGovernorCalibration(readClientContinuity().meta?.rhizohGovernorCalibration);
+  const emotions = softClampEmotionsToIdentityAnchor(emotionsRaw, "postOutcome", govCalPost);
+  const hsPost =
+    runtimeHints && typeof runtimeHints === "object" && runtimeHints.healthState ? runtimeHints.healthState : null;
+  const relationalTone = blendRelationalToneForHealth(emotions, hsPost);
+  const emotionUpdatedAt = Date.now();
+  const driftPost = buildRhizohDriftLogEntry({
+    phase: "postOutcome",
+    emotionsPre: emotionsRaw,
+    emotionsPost: emotions,
+    tonePre: tonePreOutcome,
+    tonePost: relationalTone,
+    intent: rhizohRouter?.intent,
+    source,
+    resonance
+  });
+  patchRhizohEmotionDisk(emotions, relationalTone, resonance, nextOutcomeSession, driftPost);
+  if (typeof persistRhizohEmotions === "function") {
+    try {
+      persistRhizohEmotions({
+        emotions,
+        relationalTone,
+        emotionUpdatedAt,
+        outcomeResonance: resonance,
+        outcomeSession: nextOutcomeSession
+      });
+    } catch {
+      /* noop */
+    }
+  }
+  return {
+    emotions,
+    relationalTone,
+    outcomeResonance: resonance,
+    emotionUpdatedAt,
+    outcomeSession: nextOutcomeSession
+  };
+}
+
 export function logRhizohHealth(stage, detail = {}) {
   try {
     const meta = detail && typeof detail === "object" ? detail : {};
