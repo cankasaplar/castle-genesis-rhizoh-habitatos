@@ -1,0 +1,78 @@
+{
+  "schema": "castle.rhizoh.reply_schema_golden_suite.v1",
+  "enforceSchema": "castle.rhizoh.reply_schema.v1",
+  "samples": [
+    {
+      "id": "golden_ok_matched",
+      "mustPass": true,
+      "body": {
+        "ok": true,
+        "reply": "Merhaba, buradayım.",
+        "replySchemaRegistry": "castle.rhizoh.reply_schema_registry.v1",
+        "replySchemaVersion": "castle.rhizoh.reply_schema.v1",
+        "replySchemaNegotiation": {
+          "requested": "castle.rhizoh.reply_schema.v1",
+          "active": "castle.rhizoh.reply_schema.v1",
+          "status": "matched",
+          "registrySchema": "castle.rhizoh.reply_schema_registry.v1",
+          "lifecycle": { "currentId": "castle.rhizoh.reply_schema.v1", "lifecycle": "current" }
+        },
+        "replyContractDriftClass": "ok",
+        "rhizohDeliveryKind": "ok",
+        "replyParsingConfidence": 1,
+        "replyFormatDriftScore": 0
+      }
+    },
+    {
+      "id": "golden_informative_unstructured",
+      "mustPass": true,
+      "body": {
+        "ok": true,
+        "reply": "Plain text fallback yanıtı.",
+        "replySchemaRegistry": "castle.rhizoh.reply_schema_registry.v1",
+        "replySchemaVersion": "castle.rhizoh.reply_schema.v1",
+        "replySchemaNegotiation": {
+          "requested": null,
+          "active": "castle.rhizoh.reply_schema.v1",
+          "status": "downgraded_to_current",
+          "registrySchema": "castle.rhizoh.reply_schema_registry.v1",
+          "lifecycle": { "currentId": "castle.rhizoh.reply_schema.v1", "lifecycle": "current" }
+        },
+        "replyContractDriftClass": "informative",
+        "rhizohDeliveryKind": "unstructured_reply",
+        "replyParsingConfidence": 0.5,
+        "replyFormatDriftScore": 0.5
+      }
+    },
+    {
+      "id": "golden_semantic_silence",
+      "mustPass": true,
+      "body": {
+        "ok": true,
+        "reply": "<SILENCE>",
+        "replySchemaRegistry": "castle.rhizoh.reply_schema_registry.v1",
+        "replySchemaVersion": "castle.rhizoh.reply_schema.v1",
+        "replySchemaNegotiation": {
+          "requested": null,
+          "active": "castle.rhizoh.reply_schema.v1",
+          "status": "downgraded_to_current",
+          "registrySchema": "castle.rhizoh.reply_schema_registry.v1",
+          "lifecycle": { "currentId": "castle.rhizoh.reply_schema.v1", "lifecycle": "current" }
+        },
+        "replyContractDriftClass": "ok",
+        "rhizohDeliveryKind": "semantic_silence",
+        "replyParsingConfidence": 1,
+        "replyFormatDriftScore": 0
+      }
+    }
+  ],
+  "shadowSimulations": [
+    {
+      "id": "v2_shadow_from_golden_ok",
+      "sourceSampleId": "golden_ok_matched",
+      "targetSchema": "castle.rhizoh.reply_schema.v2",
+      "expectWouldBreak": true,
+      "note": "Informational until v2 promotion — not a deploy blocker"
+    }
+  ]
+}

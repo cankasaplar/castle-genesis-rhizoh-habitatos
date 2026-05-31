@@ -32,7 +32,8 @@ export const RHIZOH_REPLY_SCHEMA_REGISTRY_V1 = Object.freeze({
         "replySchemaVersion",
         "rhizohDeliveryKind",
         "replyContractDriftClass",
-        "replySchemaNegotiation"
+        "replySchemaNegotiation",
+        "replySchemaLifecycleAudit"
       ])
     })
   ]),

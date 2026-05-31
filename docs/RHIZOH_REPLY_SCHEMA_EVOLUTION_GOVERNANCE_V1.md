@@ -58,13 +58,28 @@ Answers: *"Would this body break under schema X?"*
 
 Not attached to live turns by default.
 
+## CI simulation gate (policy enforcement)
+
+**Script:** `npm run ci:reply-schema-simulation-gate`  
+**Runner:** [`runReplySchemaSimulationGateV1.mjs`](../apps/gateway/src/ops/runReplySchemaSimulationGateV1.mjs)  
+**Golden suite:** [`replySchemaGoldenSuiteV1.json`](../apps/gateway/fixtures/replySchemaGoldenSuiteV1.json)
+
+| Mode | Behavior |
+|------|----------|
+| Default | Golden + live `attachReplySchemaContractV1` probes **must pass** current schema |
+| `--strict-future` | Shadow v2 breaks also fail build (pre-promotion) |
+
+> Cohort routing controls **where**; CI simulation gate controls **whether** a schema may ship.
+
+Wired in: `.github/workflows/ci-enforcement.yml` · `stabilization:validate-client-boundaries-quick`
+
 ## Maturity
 
 | Level | Status |
 |-------|--------|
 | 5 Epistemic pipeline | ✔ |
 | 6 Contract-governed meaning | ✔ |
-| **7 Schema evolution governance** | **◑ this doc + lifecycle + sim** |
+| **7 Schema evolution governance** | **✔ lifecycle + sim + CI gate** |
 | 8 Cohort auto-migration | Future |
 
 > **Schema changes are gateway policy events, not client releases.**

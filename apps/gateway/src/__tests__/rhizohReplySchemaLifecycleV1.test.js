@@ -38,7 +38,7 @@ describe("rhizohReplySchemaLifecycleV1", () => {
     };
     const sim = simulateReplySchemaEvolutionV1(body, "castle.rhizoh.reply_schema.v2");
     assert.equal(sim.wouldBreak, true);
-    assert.ok(sim.violations.some((v) => v.includes("replySchemaNegotiation")));
+    assert.ok(sim.violations.some((v) => v.includes("replySchemaLifecycleAudit")));
   });
 
   it("negotiate planned v2 request → unsupported_requested", () => {

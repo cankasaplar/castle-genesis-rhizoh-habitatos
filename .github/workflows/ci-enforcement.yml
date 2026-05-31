@@ -101,3 +101,6 @@ jobs:
 
       - name: Drift causality gate
         run: npm run ci:drift-causality-gate
+
+      - name: Reply schema simulation gate (deploy constraint)
+        run: npm run ci:reply-schema-simulation-gate
