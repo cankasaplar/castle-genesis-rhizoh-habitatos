@@ -1,6 +1,11 @@
-import React, { memo } from "react";
+import React, { memo, useEffect, useSyncExternalStore } from "react";
 import { Mic, MicOff, Send, Loader2 } from "lucide-react";
+import { isCastleLayerRenderableV1, publishCastleLayerAuditV1 } from "../castle/layers/castleLayerGateV1.js";
 import { useRhizohConversationDockV0 } from "../rhizoh/runtime/useRhizohConversationDockV0.js";
+import {
+  getRhizohCommandPanelAuxExpandedSnapshotV0,
+  subscribeRhizohCommandPanelAuxExpandedV0
+} from "../rhizoh/runtime/rhizohCommandPanelPrefsV0.js";
 
 const FIELD_LABELS = Object.freeze({
   idle: "Konuşmaya hazır",
@@ -11,17 +16,41 @@ const FIELD_LABELS = Object.freeze({
 });
 
 /**
- * Spatial shell conversation dock — text + optional voice v3.
- * @param {{ firebaseUser?: object | null, className?: string }} props
+ * Rhizoh conversation dock — text + optional voice v3 mic (Gelişmiş only).
+ * @param {{ firebaseUser?: object | null, className?: string, advancedOpen?: boolean }} props
  */
-export const RhizohConversationDockV0 = memo(function RhizohConversationDockV0({ firebaseUser, className = "" }) {
+export const RhizohConversationDockV0 = memo(function RhizohConversationDockV0({
+  firebaseUser,
+  className = "",
+  advancedOpen: advancedOpenProp
+}) {
+  const advancedFromStore = useSyncExternalStore(
+    subscribeRhizohCommandPanelAuxExpandedV0,
+    getRhizohCommandPanelAuxExpandedSnapshotV0,
+    () => false
+  );
+  const advancedOpen = advancedOpenProp ?? advancedFromStore;
   const dock = useRhizohConversationDockV0({ firebaseUser, conversationPhase: "EXPLORE" });
+  const showMic =
+    dock.voiceV3Enabled && isCastleLayerRenderableV1("voice_v3_dock_mic", { advancedOpen });
+
+  useEffect(() => {
+    publishCastleLayerAuditV1({
+      advancedOpen,
+      mounted: {
+        voice_v3_dock_mic: showMic,
+        voice_v1_loop_mic_ui: false,
+        t0_slot_chat_surface: true
+      }
+    });
+  }, [advancedOpen, showMic]);
 
   return (
     <div
       className={`pointer-events-auto rounded-2xl border border-white/12 bg-black/72 px-3 py-2.5 shadow-lg backdrop-blur-md ${className}`}
       data-rhizoh-conversation-dock="1"
       data-field-state={dock.fieldState}
+      data-voice-mic-render={showMic ? "1" : "0"}
     >
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="text-[9px] font-medium uppercase tracking-[0.12em] text-violet-200/80">
@@ -49,7 +78,7 @@ export const RhizohConversationDockV0 = memo(function RhizohConversationDockV0({
           aria-label="Mesaj"
         />
 
-        {dock.voiceV3Enabled ? (
+        {showMic ? (
           <button
             type="button"
             title={dock.micActive ? "Kaydı bitir" : "Mikrofon"}

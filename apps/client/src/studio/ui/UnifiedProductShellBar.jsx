@@ -1,4 +1,5 @@
 import React from "react";
+import { RHIZOH_PRODUCT_TOPOLOGY_V0 } from "../../rhizoh/product/rhizohProductTopologyV0.js";
 
 /** Phase P1 — single product navigation (one UX language with the studio drawer). */
 export const PRODUCT_SHELL_ITEMS = [
@@ -28,6 +29,7 @@ export function UnifiedProductShellBar({ active, onSelect }) {
             <button
               key={item.id}
               type="button"
+              title={RHIZOH_PRODUCT_TOPOLOGY_V0[item.id]?.labelTr || item.label}
               onClick={() => onSelect(item.id)}
               className={`min-w-[3.25rem] flex-1 touch-manipulation rounded-lg border px-1 py-2 text-[8px] font-black uppercase tracking-[0.14em] transition-colors sm:min-w-0 sm:px-2 sm:text-[9px] sm:tracking-[0.18em] ${
                 on
