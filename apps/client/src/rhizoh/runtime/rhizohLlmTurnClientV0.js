@@ -8,6 +8,10 @@ import {
   prepareRhizohLlmTurnV0,
   buildRhizohLlmContextPatchFromPrepV0
 } from "./rhizohLlmTurnHotWireV0.js";
+import {
+  normalizeRhizohLlmGatewayResponseV0,
+  resolveRhizohReplyForDisplayV0
+} from "./rhizohLlmReplyNormalizeV0.js";
 
 export const RHIZOH_LLM_TURN_CLIENT_SCHEMA_V0 = "castle.rhizoh.llm_turn_client.v0";
 
@@ -121,7 +125,8 @@ export async function postRhizohLlmTurnV0(input = {}) {
     }
 
     const data = await res.json();
-    const reply = String(data?.reply ?? data?.message ?? "").trim();
+    const normalized = normalizeRhizohLlmGatewayResponseV0(data);
+    const reply = resolveRhizohReplyForDisplayV0(normalized);
 
     if (prep?.turn?.awaitSoftIntelligence) {
       void prep.turn.awaitSoftIntelligence();
@@ -131,8 +136,13 @@ export async function postRhizohLlmTurnV0(input = {}) {
       ok: true,
       schema: RHIZOH_LLM_TURN_CLIENT_SCHEMA_V0,
       reply,
-      directive: String(data?.directive ?? ""),
-      traceId: String(data?.traceId || input.traceId || ""),
+      normalized,
+      directive: normalized.directive,
+      traceId: String(normalized.traceId || input.traceId || ""),
+      replyParsingConfidence: normalized.replyParsingConfidence,
+      replyFormatDriftScore: normalized.replyFormatDriftScore,
+      extractPath: normalized.extractPath,
+      deliveryKind: normalized.deliveryKind,
       raw: data,
       prep
     });

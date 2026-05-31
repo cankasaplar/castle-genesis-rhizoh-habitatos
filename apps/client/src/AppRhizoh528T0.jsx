@@ -233,6 +233,12 @@ import {
   recordReplyFormatDriftSampleV0,
   getReplyFormatDriftRollingV0
 } from "./rhizoh/runtime/replyFormatDriftTrackerV0.js";
+import {
+  normalizeRhizohLlmGatewayResponseV0,
+  resolveRhizohReplyForDisplayV0,
+  toReplyFormatDriftSampleV0,
+  publishRhizohLlmReplyNormalizedV0
+} from "./rhizoh/runtime/rhizohLlmReplyNormalizeV0.js";
 import { describeRhizohNarrativeLayerCapabilityV0 } from "./rhizoh/runtime/rhizohNarrativeLayerCapabilityV0.js";
 import {
   buildRhizohHealthState,
@@ -2129,50 +2135,36 @@ async function queryRhizohLLM({
       throw bad;
     }
     const turnTraceId = resolveRhizohTurnTraceIdV0(json?.traceId, clientTraceId);
-    const replyFromGateway = String(
-      json?.reply ?? json?.text ?? json?.message ?? json?.content ?? ""
-    ).trim();
-    const ledger =
-      json?.rhizohCompressionLedger && typeof json.rhizohCompressionLedger === "object"
-        ? json.rhizohCompressionLedger
-        : {};
-    const replyParsingConfidence =
-      json?.replyParsingConfidence ?? ledger.replyParsingConfidence ?? null;
-    const replyFormatDriftScore =
-      json?.replyFormatDriftScore ?? ledger.replyFormatDriftScore ?? null;
-    const formatDriftRolling = recordReplyFormatDriftSampleV0({
-      replyFormatDriftScore,
-      replyParsingConfidence,
-      replyExtractPath: ledger.replyExtractPath ?? json?.observedFormat ?? null,
-      observedFormat: json?.observedFormat ?? ledger.observedFormat ?? null,
-      providerExpectedFormat:
-        json?.providerExpectedFormat ?? ledger.providerExpectedFormat ?? null,
-      traceId: turnTraceId
-    });
+    const normalized = publishRhizohLlmReplyNormalizedV0(normalizeRhizohLlmGatewayResponseV0(json));
+    const formatDriftRolling = recordReplyFormatDriftSampleV0(
+      toReplyFormatDriftSampleV0(normalized, turnTraceId)
+    );
+    const replyParsingConfidence = normalized.replyParsingConfidence;
+    const replyFormatDriftScore = normalized.replyFormatDriftScore;
     logRhizohHealth("llm_response", {
       traceId: turnTraceId,
       clientTraceId,
-      replyChars: replyFromGateway.length,
-      rhizohDeliveryKind: json?.rhizohDeliveryKind ?? null,
-      replyExtractPath: ledger.replyExtractPath ?? null,
+      replyChars: normalized.reply.length,
+      rhizohDeliveryKind: normalized.deliveryKind,
+      replyExtractPath: normalized.extractPath,
       replyParsingConfidence,
       replyFormatDriftScore,
       replyFormatDriftRolling: formatDriftRolling.replyFormatDriftRolling,
-      providerExpectedFormat: ledger.providerExpectedFormat ?? null,
-      observedFormat: ledger.observedFormat ?? null,
-      rawProviderChars: ledger.rawProviderChars ?? null
+      providerExpectedFormat: normalized.providerExpectedFormat,
+      observedFormat: normalized.observedFormat,
+      rawProviderChars: normalized.rhizohCompressionLedger?.rawProviderChars ?? null
     });
     if (import.meta.env?.DEV && typeof window !== "undefined") {
       window.__CASTLE_RHIZOH_LLM_LAST_RESPONSE__ = Object.freeze({
         at: Date.now(),
         traceId: turnTraceId,
-        replyPreview: replyFromGateway.slice(0, 240),
-        rhizohDeliveryKind: json?.rhizohDeliveryKind ?? null,
-        replyExtractPath: ledger.replyExtractPath ?? null,
+        replyPreview: normalized.reply.slice(0, 240),
+        rhizohDeliveryKind: normalized.deliveryKind,
+        replyExtractPath: normalized.extractPath,
         replyParsingConfidence,
         replyFormatDriftScore,
         replyFormatDriftRolling: formatDriftRolling,
-        rawProviderChars: ledger.rawProviderChars ?? null
+        rawProviderChars: normalized.rhizohCompressionLedger?.rawProviderChars ?? null
       });
       window.__CASTLE_RHIZOH_REPLY_FORMAT_DRIFT__ = getReplyFormatDriftRollingV0();
       window.__CASTLE_RHIZOH_NARRATIVE_CAPABILITY__ = describeRhizohNarrativeLayerCapabilityV0();
@@ -2184,11 +2176,12 @@ async function queryRhizohLLM({
         /* noop */
       }
     }
-    const replyOk =
-      replyFromGateway ||
-      (json?.rhizohDeliveryKind === "semantic_silence"
-        ? ""
-        : "Rhizoh yan─▒t─▒ bo┼ş d├Ând├╝.");
+    const replyOk = resolveRhizohReplyForDisplayV0(normalized, {
+      emptyFallback:
+        normalized.deliveryKind === "semantic_silence"
+          ? ""
+          : "Rhizoh yan─▒t─▒ bo┼ş d├Ând├╝."
+    });
     const postOk = finalizeRhizohAfterLlm(rhizohEmotions, {
       rhizohRouter,
       reply: replyOk,
@@ -2215,7 +2208,7 @@ async function queryRhizohLLM({
     publishRhizohTrustDebugV0(continuityHealthDetail);
     return {
       reply: replyOk,
-      directive: String(json?.directive || json?.action || ""),
+      directive: normalized.directive,
       source: "remote-llm",
       traceId: turnTraceId,
       llmProvider: json?.provider ?? provider ?? null,
@@ -2223,14 +2216,11 @@ async function queryRhizohLLM({
       llmKeyBillingOwner: json?.llmKeyBillingOwner,
       llmKeyOrigin: json?.llmKeyOrigin,
       llmKeySourceUsed: json?.llmKeySourceUsed,
-      rhizohDeliveryKind: json?.rhizohDeliveryKind ?? "ok",
+      rhizohDeliveryKind: normalized.deliveryKind,
       replyParsingConfidence,
       replyFormatDriftScore,
       replyFormatDriftRolling: formatDriftRolling.replyFormatDriftRolling,
-      rhizohCompressionLedger:
-        json?.rhizohCompressionLedger && typeof json.rhizohCompressionLedger === "object"
-          ? json.rhizohCompressionLedger
-          : null,
+      rhizohCompressionLedger: normalized.rhizohCompressionLedger,
       rhizohRouter,
       rhizohEmotions: postOk.emotions,
       relationalTone: postOk.relationalTone,
