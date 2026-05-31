@@ -118,6 +118,9 @@ jobs:
           GOOGLE_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CASTLE_GENESIS }}
 
       - name: Deploy (hosting, Firestore rules, Storage rules)
-        run: npx firebase-tools deploy --only hosting,firestore:rules,storage --project castle-genesis --non-interactive
+        run: |
+          # CI already built with GitHub secrets; firebase.json predeploy is Windows PowerShell only.
+          node -e "const fs=require('fs');const p='firebase.json';const j=JSON.parse(fs.readFileSync(p,'utf8'));delete j.hosting.predeploy;fs.writeFileSync(p,JSON.stringify(j,null,2));"
+          npx firebase-tools deploy --only hosting,firestore:rules,storage --project castle-genesis --non-interactive
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-ci.json
