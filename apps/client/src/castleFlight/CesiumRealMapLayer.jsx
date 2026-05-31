@@ -862,6 +862,18 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
             duration: 1.2
           });
         },
+        /** Topology globe — high orbit; swarm + epistemic orb entities stay on the same viewer. */
+        flyToTopologyGlobe() {
+          trackedCameraFlyTo({
+            destination: Cesium.Cartesian3.fromDegrees(28.9, 41.0, 18_500_000),
+            orientation: {
+              heading: Cesium.Math.toRadians(0),
+              pitch: Cesium.Math.toRadians(-72),
+              roll: 0
+            },
+            duration: 1.6
+          });
+        },
         focusCastle() {
           trackedCameraFlyTo({
             destination: Cesium.Cartesian3.fromDegrees(fatih.lon, fatih.lat, 1200),

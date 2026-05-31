@@ -59,6 +59,7 @@ $lines = @(
   "",
   "# Ingress: legal + cohort (rhizoh.com); explicit=1 so .env.local cannot disable on deploy",
   "VITE_RHIZOH_LEGAL_PREAMBLE=1",
+  "VITE_RHIZOH_CANONICAL_GLOBE_UI=1",
   "VITE_RHIZOH_CLOSED_ADMISSION=1",
   "VITE_RHIZOH_INVITE_ONLY_GOOGLE=1",
   "VITE_ONTOLOGICAL_BOOT_GATE=0"

@@ -363,10 +363,16 @@ export async function setRealityMode(mode, opts = {}) {
 }
 
 /** Namespace alias for call sites that prefer `RealityDirector.setMode(...)` */
+export function getRealityDirectorStateV0() {
+  if (!infra?.getState) return { realityMode: "REAL_MAP", mapSurfaceActive: false };
+  return infra.getState();
+}
+
 export const RealityDirector = {
   configure: configureRealityDirector,
   notifyEngineReady: notifyRealityEngineReady,
   setMode: setRealityMode,
+  getState: getRealityDirectorStateV0,
   subscribe: subscribeRealityTransition,
   enqueueApexCameraAfterCesiumIfNeeded,
   resetCesiumApexCameraCoordinator

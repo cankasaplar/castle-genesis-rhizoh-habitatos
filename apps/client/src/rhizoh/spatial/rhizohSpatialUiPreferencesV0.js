@@ -10,6 +10,7 @@ const STORAGE_KEY_V0 = "rhizoh_spatial_ui_prefs_v0.2";
  *   soundEnabled: boolean,
  *   flightHudOpen: boolean,
  *   gatewayDetailOpen: boolean,
+ *   conversationDockOpen: boolean,
  *   offlineMap: boolean,
  *   sections: {
  *     hero: boolean,
@@ -30,6 +31,7 @@ export function defaultRhizohSpatialUiPrefsV0() {
     soundEnabled: false,
     flightHudOpen: false,
     gatewayDetailOpen: false,
+    conversationDockOpen: true,
     offlineMap: false,
     sections: {
       hero: false,

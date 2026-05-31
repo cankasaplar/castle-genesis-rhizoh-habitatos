@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Volume2, VolumeX, PanelLeft, Radio, MapPin, Orbit, Eye } from "lucide-react";
+import { Volume2, VolumeX, PanelLeft, Radio, MapPin, Orbit, Eye, MessageCircle } from "lucide-react";
 import CesiumRealMapLayer from "../castleFlight/CesiumRealMapLayer.jsx";
 import CastleFlightHud from "../castleFlight/CastleFlightHud.jsx";
 import "../castleFlight/registerGlobals.js";
@@ -11,6 +11,11 @@ import { RhizohProductSurfaceDrawerV0 } from "./RhizohProductSurfaceDrawerV0.jsx
 import { UnifiedProductShellBar } from "../studio/ui/UnifiedProductShellBar.jsx";
 import { RhizohConversationDockV0 } from "./RhizohConversationDockV0.jsx";
 import { RhizohConversationMirrorStrip } from "./RhizohConversationMirrorStrip.jsx";
+import { RhizohRealityModeChromeV0 } from "./RhizohRealityModeChromeV0.jsx";
+import { RhizohEpistemicHud } from "../rhizoh/epistemic/RhizohEpistemicHud.jsx";
+import { RhizohEpistemicOrb } from "../rhizoh/epistemic/RhizohEpistemicOrb.jsx";
+import { subscribeRealityTransition } from "../reality/realityEventBus.js";
+import { isRhizohCanonicalGlobeUiV0 } from "../rhizoh/spatial/rhizohCanonicalGlobeUiV0.js";
 import { useRhizohGatewayMonitor, getRhizohApiBase } from "../rhizoh/useRhizohGatewayMonitor.js";
 import { useCastleAuth } from "../firebase/useCastleAuth.js";
 import { CastleAuthOverlay } from "../auth/CastleAuthOverlay.jsx";
@@ -72,6 +77,14 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
   const [productSurface, setProductSurface] = useState(() => readProductSurfaceV0());
   const [drawerOpen, setDrawerOpen] = useState(() => productSurfaceOpensDrawerV0(readProductSurfaceV0()));
   const [soundUnlocked, setSoundUnlocked] = useState(false);
+  const canonicalGlobeUi = isRhizohCanonicalGlobeUiV0();
+  const [realityMode, setRealityMode] = useState("REAL_MAP");
+
+  useEffect(() => {
+    return subscribeRealityTransition((ev) => {
+      if (ev?.to) setRealityMode(ev.to);
+    });
+  }, []);
 
   const persistPrefs = useCallback((patch) => {
     setPrefs((prev) => {
@@ -107,11 +120,20 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
     [persistPrefs, prefs.sections]
   );
 
-  const mapSurfaceActive = useMemo(
-    () =>
-      isWorldLayerEnabled() &&
-      resolveSpatialMapSurfaceActiveV0(gateway.phase, { worldLayerEnabled: true }),
-    [gateway.phase]
+  const mapSurfaceActive = useMemo(() => {
+    if (!isWorldLayerEnabled()) return false;
+    if (canonicalGlobeUi) return true;
+    return resolveSpatialMapSurfaceActiveV0(gateway.phase, { worldLayerEnabled: true });
+  }, [canonicalGlobeUi, gateway.phase]);
+
+  const epistemicUiEnv = useMemo(
+    () => ({
+      layerFocus: 10,
+      realityMode,
+      governanceState: "NORMAL",
+      mapSurfaceActive: realityMode === "REAL_MAP" && mapSurfaceActive
+    }),
+    [realityMode, mapSurfaceActive]
   );
 
   const liveMeshEligible = useMemo(() => {
@@ -219,8 +241,29 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
     >
       <CesiumRealMapLayer active={mapSurfaceActive} />
 
+      {canonicalGlobeUi ? (
+        <RhizohEpistemicHud
+          gatewayPhase={gateway.phase}
+          uiEnv={epistemicUiEnv}
+          firebaseUid={castleAuth?.user?.uid || null}
+        />
+      ) : null}
+
       {castleAuth.needsAuthGate || castleAuth.needsOnboarding ? (
         <CastleAuthOverlay auth={castleAuth} />
+      ) : null}
+
+      {canonicalGlobeUi ? (
+        <div className="pointer-events-none absolute left-3 top-3 z-[45] flex max-w-[min(100%,20rem)] flex-col gap-2">
+          <RhizohRealityModeChromeV0 className="pointer-events-auto" />
+          <div className="pointer-events-auto max-h-[38vh] overflow-y-auto">
+            <RhizohEpistemicOrb
+              gatewayPhase={gateway.phase}
+              uiEnv={epistemicUiEnv}
+              firebaseUid={castleAuth?.user?.uid || null}
+            />
+          </div>
+        </div>
       ) : null}
 
       {gateway.phase === "connecting" || gateway.phase === "reconnecting" || gateway.phase === "initializing" ? (
@@ -268,11 +311,21 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
         </div>
 
         <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-1.5">
+          {!canonicalGlobeUi ? (
+            <ChromeToggle
+              active={prefs.haloOpen}
+              label="Halka"
+              onClick={() => persistPrefs({ haloOpen: !prefs.haloOpen })}
+              icon={Orbit}
+            />
+          ) : null}
           <ChromeToggle
-            active={prefs.haloOpen}
-            label="Halka"
-            onClick={() => persistPrefs({ haloOpen: !prefs.haloOpen })}
-            icon={Orbit}
+            active={prefs.conversationDockOpen !== false}
+            label="Konuş"
+            onClick={() =>
+              persistPrefs({ conversationDockOpen: prefs.conversationDockOpen === false })
+            }
+            icon={MessageCircle}
           />
           <ChromeToggle
             active={prefs.soundEnabled}
@@ -282,7 +335,7 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
           />
           <ChromeToggle
             active={prefs.copyPanelOpen}
-            label="Metin"
+            label="Açıklama"
             onClick={() => persistPrefs({ copyPanelOpen: !prefs.copyPanelOpen })}
             icon={PanelLeft}
           />
@@ -353,7 +406,7 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
         </aside>
       ) : null}
 
-      {prefs.haloOpen ? (
+      {!canonicalGlobeUi && prefs.haloOpen ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-[3.5rem] z-[57] flex justify-center px-2">
           <RhizohCapabilityHaloV1
             className="pointer-events-auto max-w-[min(100%,420px)] scale-[0.88] sm:scale-100"
@@ -379,12 +432,17 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
         gatewayOrigin={gatewayOrigin}
       />
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-[3.5rem] z-[56] flex justify-center px-3">
-        <RhizohConversationDockV0
-          firebaseUser={castleAuth?.user}
-          className="pointer-events-auto w-full max-w-lg"
-        />
-      </div>
+      {prefs.conversationDockOpen !== false ? (
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-[4.75rem] z-[64] flex justify-center px-3 pb-[env(safe-area-inset-bottom)]"
+          data-rhizoh-conversation-dock-slot="1"
+        >
+          <RhizohConversationDockV0
+            firebaseUser={castleAuth?.user}
+            className="pointer-events-auto w-full max-w-lg"
+          />
+        </div>
+      ) : null}
 
       <UnifiedProductShellBar active={productSurface} onSelect={onProductShellSelect} />
     </div>
