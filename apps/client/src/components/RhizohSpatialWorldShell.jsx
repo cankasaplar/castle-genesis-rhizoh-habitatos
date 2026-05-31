@@ -23,7 +23,6 @@ import { installRhizohPresenceAcoustics } from "../rhizoh/presence/presenceAcous
 import { isWorldLayerEnabled } from "../rhizoh/runtime/castleWorldLayerGateV0.js";
 import { getWorldExecutionModeV0 } from "../rhizoh/runtime/worldExecutionGateV0.js";
 import { deriveShellHighlightId } from "../rhizoh/runtime/castleRuntimeShellModelV0.js";
-import { CASTLE_RHIZOH_KERNEL_DRAWER_HREF } from "../kernel/visual/rhizohCapabilityHaloConfigV1.js";
 import { ensureGreenRoomMainHallBound } from "../studio/lib/greenRoomRouteBinding";
 import { startGreenRoomPresenceMesh } from "../studio/runtime/greenRoomPresenceMesh";
 import { ensureCastleWorldTopology } from "../studio/lib/bootstrapWorldTopology";
@@ -201,33 +200,6 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
     },
     [productSurface]
   );
-
-  const onHaloOpenHref = useCallback(
-    (href) => {
-      const h = String(href || "");
-      if (h === CASTLE_RHIZOH_KERNEL_DRAWER_HREF) {
-        onProductShellSelect("studio");
-        return;
-      }
-      if (h.startsWith("/")) {
-        navigate(h);
-        return;
-      }
-      if (h.startsWith("http")) {
-        window.open(h, "_blank", "noopener,noreferrer");
-      }
-    },
-    [navigate, onProductShellSelect]
-  );
-
-  const onHaloOpenRealMap = useCallback(() => {
-    onProductShellSelect("world");
-    try {
-      window.__CASTLE_CESIUM__?.flyToIstanbul?.();
-    } catch {
-      /* noop */
-    }
-  }, [onProductShellSelect]);
 
   const collectivePulse = entryModel?.worldState?.castlePresence?.pulse01 ?? 0.45;
 
@@ -411,8 +383,6 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
           <RhizohCapabilityHaloV1
             className="pointer-events-auto max-w-[min(100%,420px)] scale-[0.88] sm:scale-100"
             collectivePulse={collectivePulse}
-            onOpenHref={onHaloOpenHref}
-            onOpenRealMap={onHaloOpenRealMap}
             onFocusLayer={() => {}}
             onSeedIntent={(intent) => {
               if (typeof window !== "undefined") {

@@ -90,4 +90,5 @@ window.__CASTLE_RHIZOH_RUNTIME_STABILITY__
 
 1. **Cleanup (now)** — T0 shell, registry, mic UI off  
 2. **Topology lock** — CI test on registry + gate  
-3. **Rhizoh aesthetic layer** — animation / thought physics (after zemin)
+3. **Domain ownership v1.1** — [`CASTLE_SYSTEM_TOPOLOGY_V1.1.md`](CASTLE_SYSTEM_TOPOLOGY_V1.1.md) · halo cognition-only  
+4. **Rhizoh aesthetic layer** — animation / thought physics (after zemin)

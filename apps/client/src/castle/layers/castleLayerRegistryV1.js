@@ -116,6 +116,28 @@ export const CASTLE_LAYER_REGISTRY_V1 = Object.freeze({
     mount: "runtime_only",
     render: false,
     note: "window.__CASTLE_RHIZOH_RUNTIME_STABILITY__ — reality check, not UI"
+  }),
+  t0_capability_wheel: Object.freeze({
+    status: "active",
+    owner: "RhizohCapabilityHaloV1",
+    mount: "t0_perception_aux",
+    render: true,
+    note: "Cognition-only: layerFocus + seedIntent — no href/openRealMap"
+  }),
+  t0_capability_wheel_nav: Object.freeze({
+    status: "deprecated",
+    owner: "RhizohCapabilityHaloV1",
+    mount: "t0_perception_aux",
+    render: false,
+    replacedBy: "t0_product_bar",
+    note: "href/openRealMap removed from halo config v1.1"
+  }),
+  t0_layer_switcher: Object.freeze({
+    status: "active",
+    owner: "rhizohPerceptionModeV0",
+    mount: "t0_perception_controller",
+    render: false,
+    note: "Placeholder SSOT — perceptionMode state only (UI later)"
   })
 });
 

@@ -102,7 +102,6 @@ import {
 } from "./kernel/rhizohIdentityKernelV1.js";
 import { computeLaunchSceneDirectorOverlayV1 } from "./kernel/visual/RhizohLaunchSceneDirectorV1.js";
 import { RhizohCapabilityHaloV1 } from "./components/RhizohCapabilityHaloV1.jsx";
-import { CASTLE_RHIZOH_KERNEL_DRAWER_HREF } from "./kernel/visual/rhizohCapabilityHaloConfigV1.js";
 import { ensureGreenRoomMainHallBound } from "./studio/lib/greenRoomRouteBinding";
 import { startGreenRoomPresenceMesh } from "./studio/runtime/greenRoomPresenceMesh";
 import { ensureCastleWorldTopology } from "./studio/lib/bootstrapWorldTopology";
@@ -12314,22 +12313,6 @@ export default function AppRhizoh528() {
           }}
           onFocusLayer={(id) => {
             uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: id });
-          }}
-          onOpenHref={(href) => {
-            if (href === CASTLE_RHIZOH_KERNEL_DRAWER_HREF) {
-              navigate("/studio");
-              return;
-            }
-            if (typeof href === "string" && href.startsWith("/")) {
-              navigate(href);
-              return;
-            }
-            if (/^https?:\/\//i.test(String(href))) {
-              window.open(href, "_blank", "noopener,noreferrer");
-            }
-          }}
-          onOpenRealMap={() => {
-            void setRealityMode("REAL_MAP", { source: "RHIZOH" });
           }}
         />
 

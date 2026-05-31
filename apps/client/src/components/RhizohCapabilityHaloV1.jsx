@@ -9,11 +9,10 @@ import {
 const RING_R = 118;
 const NODE_COUNT = RHIZOH_CAPABILITY_HALO_NODES_V1.length;
 
+/** Capability Wheel — cognition-only (layerFocus + seedIntent). Navigation = Product Bar. */
 export function RhizohCapabilityHaloV1({
   onSeedIntent,
   onFocusLayer,
-  onOpenHref,
-  onOpenRealMap,
   collectivePulse = 1,
   className = ""
 }) {
@@ -46,22 +45,24 @@ export function RhizohCapabilityHaloV1({
 
   const applyNode = useCallback(
     (node) => {
-      if (node.openRealMap && onOpenRealMap) onOpenRealMap();
-      if (node.href && onOpenHref) onOpenHref(node.href);
-      if (node.layerFocus != null && onFocusLayer) onFocusLayer(node.layerFocus);
-      if (node.seedIntent && onSeedIntent) onSeedIntent(node.seedIntent);
+      if (node.layerFocus != null && onFocusLayer) {
+        onFocusLayer(node.layerFocus);
+      }
+      if (node.seedIntent && onSeedIntent) {
+        onSeedIntent(node.seedIntent);
+      }
       if (node.isRoboticsHub) {
         setRoboticsOpen(true);
         if (onFocusLayer) onFocusLayer(13);
       }
     },
-    [onFocusLayer, onOpenHref, onOpenRealMap, onSeedIntent]
+    [onFocusLayer, onSeedIntent]
   );
 
   const scaleBreath = 0.96 + collectivePulse * 0.04;
 
   return (
-    <div className={`relative mx-auto flex flex-col items-center ${className}`}>
+    <div className={`relative mx-auto flex flex-col items-center ${className}`} data-rhizoh-capability-halo="1">
       <div
         className="pointer-events-none absolute -inset-8 rounded-full opacity-[0.14] blur-2xl transition-transform duration-[2.8s] ease-in-out"
         style={{
