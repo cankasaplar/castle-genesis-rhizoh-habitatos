@@ -33,7 +33,12 @@ export function projectReplySchemaFromGatewayV1(gatewayJson) {
           requested: negRaw.requested ?? null,
           active: String(negRaw.active ?? ""),
           status: String(negRaw.status ?? ""),
-          registrySchema: String(negRaw.registrySchema ?? "")
+          registrySchema: String(negRaw.registrySchema ?? ""),
+          cohortPin:
+            negRaw.cohortPin && typeof negRaw.cohortPin === "object"
+              ? Object.freeze({ .../** @type {Record<string, unknown>} */ (negRaw.cohortPin) })
+              : null,
+          observationOnly: negRaw.observationOnly === true
         })
       : null,
     replyContractDriftClass,

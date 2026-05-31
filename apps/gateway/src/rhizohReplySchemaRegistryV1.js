@@ -3,7 +3,7 @@
  * Client MUST NOT negotiate; only projects gateway replySchemaNegotiation + replyContractDriftClass.
  */
 
-export const RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1 = "castle.rhizoh.reply_schema_registry.v1";
+import { resolveCohortPinV1, currentSchemaV1 } from "./rhizohCohortSchemaMapV1.js";
 
 export const RHIZOH_REPLY_SCHEMA_V1 = "castle.rhizoh.reply_schema.v1";
 
@@ -11,7 +11,7 @@ export const RHIZOH_REPLY_SCHEMA_V1 = "castle.rhizoh.reply_schema.v1";
 export const RHIZOH_REPLY_SCHEMA_VERSION_V1 = RHIZOH_REPLY_SCHEMA_V1;
 
 /** @typedef {"planned"|"current"|"deprecated"|"retired"} RhizohSchemaLifecycleV1 */
-/** @typedef {"matched"|"downgraded_to_current"|"legacy_compat"|"unsupported_requested"|"retired_requested"} RhizohReplySchemaNegotiationStatusV1 */
+/** @typedef {"matched"|"downgraded_to_current"|"legacy_compat"|"unsupported_requested"|"retired_requested"|"cohort_shadow"|"cohort_pinned"} RhizohReplySchemaNegotiationStatusV1 */
 /** @typedef {"ok"|"informative"|"breaking"|"legacy_only"} RhizohReplyContractDriftClassV1 */
 
 export const RHIZOH_REPLY_SCHEMA_REGISTRY_V1 = Object.freeze({
@@ -86,18 +86,72 @@ function withLifecycleMeta(base) {
 }
 
 /**
- * Gateway-only version negotiation.
- * @param {unknown} requestedVersion — context.replySchemaPreference (optional client hint)
+ * Gateway-only version negotiation (+ optional cohort pin).
+ * @param {unknown} requestedVersion — context.replySchemaPreference (deprecated; cohort wins)
+ * @param {{ cohortId?: unknown }} [opts]
  */
-export function negotiateReplySchemaV1(requestedVersion) {
+export function negotiateReplySchemaV1(requestedVersion, opts = {}) {
+  const cohortPin = resolveCohortPinV1(opts.cohortId);
+  const active = currentSchemaV1();
+
+  if (cohortPin?.observationOnly) {
+    return withLifecycleMeta({
+      requested: cohortPin.pinnedSchema,
+      active,
+      status: "cohort_shadow",
+      cohortPin,
+      registrySchema: RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1,
+      observationOnly: true
+    });
+  }
+
+  if (cohortPin?.pinnedSchema && !cohortPin.unknownCohort) {
+    const pinned = cohortPin.pinnedSchema;
+    if (pinned === active) {
+      return withLifecycleMeta({
+        requested: pinned,
+        active,
+        status: "cohort_pinned",
+        cohortPin,
+        registrySchema: RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1
+      });
+    }
+    const reqLifecycle = resolveSchemaLifecycleV1(pinned);
+    if (reqLifecycle === "retired") {
+      return withLifecycleMeta({
+        requested: pinned,
+        active,
+        status: "retired_requested",
+        cohortPin,
+        registrySchema: RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1
+      });
+    }
+    if (KNOWN_IDS.has(pinned)) {
+      return withLifecycleMeta({
+        requested: pinned,
+        active,
+        status: "cohort_pinned",
+        cohortPin,
+        registrySchema: RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1
+      });
+    }
+    return withLifecycleMeta({
+      requested: pinned,
+      active,
+      status: "unsupported_requested",
+      cohortPin,
+      registrySchema: RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1
+    });
+  }
+
   const requested = String(requestedVersion ?? "").trim() || null;
-  const active = RHIZOH_REPLY_SCHEMA_REGISTRY_V1.current;
 
   if (!requested) {
     return withLifecycleMeta({
       requested: null,
       active,
       status: "downgraded_to_current",
+      cohortPin: cohortPin?.unknownCohort ? cohortPin : null,
       registrySchema: RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1
     });
   }
@@ -106,6 +160,7 @@ export function negotiateReplySchemaV1(requestedVersion) {
       requested,
       active,
       status: "matched",
+      cohortPin: cohortPin?.unknownCohort ? cohortPin : null,
       registrySchema: RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1
     });
   }
@@ -115,6 +170,7 @@ export function negotiateReplySchemaV1(requestedVersion) {
       requested,
       active,
       status: "retired_requested",
+      cohortPin: cohortPin?.unknownCohort ? cohortPin : null,
       registrySchema: RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1
     });
   }
@@ -123,6 +179,7 @@ export function negotiateReplySchemaV1(requestedVersion) {
       requested,
       active,
       status: negotiationStatusForSchemaId(requested),
+      cohortPin: cohortPin?.unknownCohort ? cohortPin : null,
       registrySchema: RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1
     });
   }
@@ -131,6 +188,7 @@ export function negotiateReplySchemaV1(requestedVersion) {
       requested,
       active,
       status: "legacy_compat",
+      cohortPin: cohortPin?.unknownCohort ? cohortPin : null,
       registrySchema: RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1
     });
   }
@@ -138,6 +196,7 @@ export function negotiateReplySchemaV1(requestedVersion) {
     requested,
     active,
     status: "unsupported_requested",
+    cohortPin: cohortPin?.unknownCohort ? cohortPin : null,
     registrySchema: RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1
   });
 }
@@ -161,6 +220,7 @@ export function classifyReplyContractDriftV1(input) {
   if (negotiation.status === "unsupported_requested" || negotiation.status === "retired_requested") {
     return "breaking";
   }
+  if (negotiation.status === "cohort_shadow") return "informative";
   if (negotiation.status === "legacy_compat") return "legacy_only";
 
   if (deliveryKind === "empty_reply") return "breaking";
@@ -173,7 +233,7 @@ export function classifyReplyContractDriftV1(input) {
 
   if (formatDrift) return "informative";
 
-  if (negotiation.status === "matched" || negotiation.status === "downgraded_to_current") {
+  if (negotiation.status === "matched" || negotiation.status === "downgraded_to_current" || negotiation.status === "cohort_pinned") {
     return "ok";
   }
 
@@ -184,9 +244,10 @@ export function classifyReplyContractDriftV1(input) {
  * Attach registry + negotiation + drift class to gateway success body.
  * @param {Record<string, unknown>} body
  * @param {unknown} requestedVersion
+ * @param {unknown} [cohortId]
  */
-export function attachReplySchemaContractV1(body, requestedVersion) {
-  const negotiation = negotiateReplySchemaV1(requestedVersion);
+export function attachReplySchemaContractV1(body, requestedVersion, cohortId) {
+  const negotiation = negotiateReplySchemaV1(requestedVersion, { cohortId });
   const replyContractDriftClass = classifyReplyContractDriftV1({
     negotiation,
     rhizohDeliveryKind: body.rhizohDeliveryKind,

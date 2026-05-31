@@ -58,6 +58,33 @@ Answers: *"Would this body break under schema X?"*
 
 Not attached to live turns by default.
 
+## Cohort pin mapping (routing layer)
+
+**Gateway SSOT:** [`rhizohCohortSchemaMapV1.js`](../apps/gateway/src/rhizohCohortSchemaMapV1.js)  
+**Client:** [`rhizohCohortPinClientV0.js`](../apps/client/src/rhizoh/runtime/rhizohCohortPinClientV0.js) — sends `context.cohortId` only
+
+```js
+resolveSchemaForRequestV1({ cohortId }) // → pinned schema ?? currentSchemaV1()
+```
+
+| Cohort | Pinned schema | Render |
+|--------|---------------|--------|
+| `cohort_alpha` / `cohort_beta` | v1 | v1 |
+| `cohort_canary` | `v2_shadow` | v1 body (observation only) |
+
+**Three control points:**
+
+| Layer | Controls |
+|-------|----------|
+| CI gate | Whether deploy is allowed |
+| Gateway | Which schema runs / negotiates |
+| Cohort | Which reality slice a user sees |
+| Client | ❌ no schema control |
+
+Runtime audit (client): `window.__CASTLE_SCHEMA_RUNTIME_AUDIT__`
+
+> CI controls **whether**; Gateway controls **reality**; Cohort controls **which reality you see**.
+
 ## CI simulation gate (policy enforcement)
 
 **Script:** `npm run ci:reply-schema-simulation-gate`  
@@ -79,7 +106,7 @@ Wired in: `.github/workflows/ci-enforcement.yml` · `stabilization:validate-clie
 |-------|--------|
 | 5 Epistemic pipeline | ✔ |
 | 6 Contract-governed meaning | ✔ |
-| **7 Schema evolution governance** | **✔ lifecycle + sim + CI gate** |
+| **7 Schema evolution governance** | **✔ lifecycle + CI gate + cohort routing** |
 | 8 Cohort auto-migration | Future |
 
 > **Schema changes are gateway policy events, not client releases.**

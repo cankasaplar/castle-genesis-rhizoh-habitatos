@@ -1071,6 +1071,7 @@ export async function queryRhizohLlm(input, meta = {}) {
         : {}),
       rhizohCompressionLedger
     },
-    context?.replySchemaPreference ?? payload?.replySchemaPreference
+    context?.replySchemaPreference ?? payload?.replySchemaPreference,
+    context?.cohortId ?? payload?.cohortId
   );
 }
