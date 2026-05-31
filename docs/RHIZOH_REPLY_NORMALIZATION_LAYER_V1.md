@@ -1,45 +1,69 @@
 # Rhizoh Reply Normalization Layer v1
 
 **Tag:** `CORE-ELIGIBLE` · **Status:** SSOT (client boundary)  
-**Code:** [`rhizohLlmReplyNormalizeV0.js`](../apps/client/src/rhizoh/runtime/rhizohLlmReplyNormalizeV0.js)  
-**Gateway parse (authoritative extract):** [`rhizohLlmGateway.js`](../apps/gateway/src/rhizohLlmGateway.js) → `extractRhizohLlmReplyFromProviderText`
+**Envelope:** [`rhizohReplyEnvelopeV1.js`](../apps/client/src/rhizoh/runtime/rhizohReplyEnvelopeV1.js) → `projectRhizohReplyEnvelopeV1`  
+**Normalize impl:** [`rhizohLlmReplyNormalizeV0.js`](../apps/client/src/rhizoh/runtime/rhizohLlmReplyNormalizeV0.js)  
+**Gateway parse (authoritative extract):** [`rhizohLlmGateway.js`](../apps/gateway/src/rhizohLlmGateway.js) → `extractRhizohLlmReplyFromProviderText`  
+**Gateway contract tests:** [`rhizohLlmReplyExtractV0.test.js`](../apps/gateway/src/__tests__/rhizohLlmReplyExtractV0.test.js)  
+**Client boundary CI:** `npm run stabilization:validate-reply-envelope-boundary`
 
 ## Purpose
 
 **ALL LLM output → single canonical format** on the client.
 
-Provider text is parsed **once** (gateway). The client normalizes the HTTP envelope only — it never re-runs `reply ?? text ?? message ?? content`.
+Provider text is parsed **once** (gateway). The client **projects** the HTTP envelope only — it never re-runs `reply ?? text ?? message ?? content`.
+
+**Wheel analogy:** navigation vs cognition split → here **interpretation vs rendering** split.
 
 ## Pipeline
 
 ```
 Provider raw text
-  → gateway extractRhizohLlmReplyFromProviderText (extractPath)
-  → gateway JSON { reply, rhizohDeliveryKind, ledger, drift scores }
-  → client normalizeRhizohLlmGatewayResponseV0 (canonical envelope)
+  → gateway extractRhizohLlmReplyFromProviderText (extract + decide + label)
+  → gateway JSON { reply, rhizohDeliveryKind, ledger, drift scores }  ← contract freeze
+  → client projectRhizohReplyEnvelopeV1 / normalizeRhizohLlmGatewayResponseV0
   → UI / voice / continuity (resolveRhizohReplyForDisplayV0)
 ```
 
-## Canonical envelope
+## Gateway contract freeze (reply only)
 
-Schema: `castle.rhizoh.llm_reply_normalized.v0`
+Client-facing `/rhizoh/llm` success body **must** expose:
 
-| Field | Source |
-|-------|--------|
-| `reply` | `json.reply` only |
-| `extractPath` | ledger.replyExtractPath · observedFormat |
-| `deliveryKind` | rhizohDeliveryKind |
-| `replyParsingConfidence` | top-level · ledger |
-| `replyFormatDriftScore` | top-level · ledger |
+| Field | Role |
+|-------|------|
+| `reply` | **Only** user-visible text (already extracted) |
+| `rhizohDeliveryKind` | ok · empty_reply · semantic_silence · unstructured_reply |
+| `rhizohCompressionLedger.replyExtractPath` | how gateway parsed provider |
+| `replyParsingConfidence` | parse confidence |
+| `replyFormatDriftScore` | format drift |
+
+**Fallback chains live only in gateway** (`extractRhizohLlmReplyFromProviderText`). Client alt-fields (`text`, `message`, `content`) are **ignored by design**.
+
+## replyEnvelopeV1 (canonical projection)
+
+Schema: `castle.rhizoh.reply_envelope.v1`
+
+```json
+{
+  "reply": "string",
+  "extractPath": "json.reply | plain_text_fallback | …",
+  "deliveryKind": "ok",
+  "confidence": 1,
+  "driftScore": 0
+}
+```
+
+Full normalize schema (internal): `castle.rhizoh.llm_reply_normalized.v0`
 
 ## Domain ownership
 
-| Layer | Owner |
-|-------|--------|
-| Provider parse + extractPath | Gateway |
-| Canonical envelope | `normalizeRhizohLlmGatewayResponseV0` |
-| Display string | `resolveRhizohReplyForDisplayV0` |
-| Drift EMA | `replyFormatDriftTrackerV0` |
+| Layer | Owner | Must not |
+|-------|--------|----------|
+| Provider parse + extractPath | Gateway | — |
+| Decide + label (deliveryKind) | Gateway | — |
+| replyEnvelope projection | Client | Re-parse provider text |
+| Display string | `resolveRhizohReplyForDisplayV0` | Alt-field fallback |
+| Drift EMA | `replyFormatDriftTrackerV0` | Override gateway reply |
 
 ## Dev probe
 
@@ -47,9 +71,13 @@ Schema: `castle.rhizoh.llm_reply_normalized.v0`
 window.__CASTLE_RHIZOH_LLM_REPLY_NORMALIZED__
 ```
 
-## Anti-pattern (forbidden on client)
+## Anti-pattern (forbidden on client — CI enforced)
 
 ```js
-// ❌ second schema router
+// ❌ second schema router — creates dual epistemic authority
 json?.reply ?? json?.text ?? json?.message ?? json?.content
 ```
+
+## Required test invariant
+
+**Alt-field shadow, no `reply` → client shows empty** (gateway must populate `reply` first).
