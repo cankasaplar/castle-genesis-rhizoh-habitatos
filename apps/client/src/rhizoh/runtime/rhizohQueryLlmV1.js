@@ -30,7 +30,8 @@ import {
   normalizeRhizohLlmGatewayResponseV0,
   resolveRhizohReplyForDisplayV0,
   toReplyFormatDriftSampleV0,
-  publishRhizohLlmReplyNormalizedV0
+  publishRhizohLlmReplyNormalizedV0,
+  RHIZOH_REPLY_SCHEMA_V1
 } from "./rhizohLlmReplyNormalizeV0.js";
 import { describeRhizohNarrativeLayerCapabilityV0 } from "./rhizohNarrativeLayerCapabilityV0.js";
 import {
@@ -641,6 +642,8 @@ export async function queryRhizohLLM({
             capabilityEnvelope: rhizohCapabilityEnvelope
           },
           rhizohConversationLlmDirective: rhizohLlmDirective,
+          /** Passive preference hint — gateway negotiates; client does not decide. */
+          replySchemaPreference: RHIZOH_REPLY_SCHEMA_V1,
           rhizohMemoryContract: `${[
             "continuity state is authoritative session memory (identity, castleState, ghostPet, recentReality, codex, relationship). Do not invent facts beyond it; answer in natural Turkish and reference it when relevant. When you should hold quiet companionship without spoken reply, output only the tag <SILENCE> (optional attributes: intensity=0..1 resonance=0..1 durationMs=milliseconds state=listening|present).",
             "",
@@ -712,6 +715,8 @@ export async function queryRhizohLLM({
       clientTraceId,
       replyChars: normalized.reply.length,
       replySchemaVersion: normalized.replySchemaVersion,
+      replyContractDriftClass: normalized.replyContractDriftClass,
+      replySchemaNegotiationStatus: normalized.replySchemaNegotiation?.status ?? null,
       contractOk: normalized.contractOk,
       contractDrift: normalized.contractDrift,
       rhizohDeliveryKind: normalized.deliveryKind,

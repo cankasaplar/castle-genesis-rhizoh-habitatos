@@ -42,15 +42,50 @@ Provider raw text
 
 ## Gateway contract freeze v2
 
-Pinned field on every successful `/rhizoh/llm` body:
+Pinned fields on every successful `/rhizoh/llm` body:
 
 ```json
-"replySchemaVersion": "castle.rhizoh.reply_schema.v1"
+{
+  "replySchemaRegistry": "castle.rhizoh.reply_schema_registry.v1",
+  "replySchemaVersion": "castle.rhizoh.reply_schema.v1",
+  "replySchemaNegotiation": {
+    "requested": "castle.rhizoh.reply_schema.v1",
+    "active": "castle.rhizoh.reply_schema.v1",
+    "status": "matched",
+    "registrySchema": "castle.rhizoh.reply_schema_registry.v1"
+  },
+  "replyContractDriftClass": "ok"
+}
 ```
 
-Client assesses via `assessRhizohReplySchemaContractV1` — **observable drift, non-executable** (`contractOk` / `contractDrift` on envelope). Reply render unchanged; missing version = legacy gateway until deploy.
+### Schema registry (`reply_schema_registry_v1`)
 
-Frozen success fields: `reply`, `replySchemaVersion`, `rhizohDeliveryKind`, `rhizohCompressionLedger`, drift scores.
+**Gateway SSOT:** [`rhizohReplySchemaRegistryV1.js`](../apps/gateway/src/rhizohReplySchemaRegistryV1.js)  
+**Client mirror (projection only):** [`rhizohReplySchemaRegistryV1.js`](../apps/client/src/rhizoh/runtime/rhizohReplySchemaRegistryV1.js)
+
+### Version negotiation (gateway only)
+
+Client may send passive hint `context.replySchemaPreference` — **gateway decides** via `negotiateReplySchemaV1`. Client never branches on negotiation outcome.
+
+| `replySchemaNegotiation.status` | Meaning |
+|----------------------------------|---------|
+| `matched` | Requested = active current |
+| `downgraded_to_current` | No preference → current served |
+| `legacy_compat` | Known legacy id → current served |
+| `unsupported_requested` | Unknown future id → current served, breaking drift |
+
+### Drift classification (`replyContractDriftClass`)
+
+Gateway-only via `classifyReplyContractDriftV1`. Client projects passively.
+
+| Class | Render | Observable |
+|-------|--------|------------|
+| `ok` | ✔ | Clean contract + parse |
+| `informative` | ✔ | Format drift / unstructured_reply |
+| `breaking` | ✔ (gateway reply) | Unsupported schema request or empty_reply |
+| `legacy_only` | ✔ | Pre-registry gateway or legacy_compat |
+
+Legacy mirrors: `contractOk` = ok \| informative · `contractDrift` = breaking only.
 
 ## Gateway contract freeze (reply only)
 

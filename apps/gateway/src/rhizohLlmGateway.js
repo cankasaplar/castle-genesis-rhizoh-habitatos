@@ -683,7 +683,11 @@ export const RHIZOH_REPLY_PARSE_CONFIDENCE_V0 = Object.freeze({
 export const RHIZOH_PROVIDER_EXPECTED_REPLY_FORMAT_V0 = "json.reply";
 
 /** Frozen client-facing reply contract — bump only with coordinated gateway + client release. */
-export const RHIZOH_REPLY_SCHEMA_VERSION_V1 = "castle.rhizoh.reply_schema.v1";
+export {
+  RHIZOH_REPLY_SCHEMA_V1,
+  RHIZOH_REPLY_SCHEMA_VERSION_V1,
+  attachReplySchemaContractV1
+} from "./rhizohReplySchemaRegistryV1.js";
 
 /**
  * @param {number} confidence 0..1
@@ -1040,31 +1044,33 @@ export async function queryRhizohLlm(input, meta = {}) {
       : {})
   };
 
-  return {
-    ok: true,
-    replySchemaVersion: RHIZOH_REPLY_SCHEMA_VERSION_V1,
-    provider,
-    model,
-    reply,
-    directive,
-    intents,
-    cognitiveInvoke,
-    llmKeyBillingOwner,
-    llmKeyOrigin,
-    rhizohDeliveryKind,
-    replyParsingConfidence: extracted.replyParsingConfidence,
-    replyFormatDriftScore: extracted.replyFormatDriftScore,
-    providerExpectedFormat: extracted.providerExpectedFormat,
-    observedFormat: extracted.observedFormat,
-    ...(depthMeta
-      ? {
-          conversationMode: depthMeta.conversationMode,
-          conversationIntent: depthMeta.conversationIntent,
-          depthLevel: depthMeta.depthLevel,
-          continuityStrength: depthMeta.continuityStrength,
-          responseLength: depthMeta.responseLength
-        }
-      : {}),
-    rhizohCompressionLedger
-  };
+  return attachReplySchemaContractV1(
+    {
+      ok: true,
+      provider,
+      model,
+      reply,
+      directive,
+      intents,
+      cognitiveInvoke,
+      llmKeyBillingOwner,
+      llmKeyOrigin,
+      rhizohDeliveryKind,
+      replyParsingConfidence: extracted.replyParsingConfidence,
+      replyFormatDriftScore: extracted.replyFormatDriftScore,
+      providerExpectedFormat: extracted.providerExpectedFormat,
+      observedFormat: extracted.observedFormat,
+      ...(depthMeta
+        ? {
+            conversationMode: depthMeta.conversationMode,
+            conversationIntent: depthMeta.conversationIntent,
+            depthLevel: depthMeta.depthLevel,
+            continuityStrength: depthMeta.continuityStrength,
+            responseLength: depthMeta.responseLength
+          }
+        : {}),
+      rhizohCompressionLedger
+    },
+    context?.replySchemaPreference ?? payload?.replySchemaPreference
+  );
 }

@@ -28,7 +28,10 @@ export function projectRhizohReplyEnvelopeV1(gatewayJson) {
   const envelope = normalizeRhizohLlmGatewayResponseV0(gatewayJson);
   return Object.freeze({
     schema: RHIZOH_REPLY_ENVELOPE_SCHEMA_V1,
+    replySchemaRegistry: envelope.replySchemaRegistry,
     replySchemaVersion: envelope.replySchemaVersion,
+    replySchemaNegotiation: envelope.replySchemaNegotiation,
+    replyContractDriftClass: envelope.replyContractDriftClass,
     contractOk: envelope.contractOk,
     contractDrift: envelope.contractDrift,
     reply: envelope.reply,
