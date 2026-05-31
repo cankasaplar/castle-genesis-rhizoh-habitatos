@@ -3,7 +3,11 @@
  * Client MUST NOT re-extract reply from text/message/content (gateway owns extractPath).
  */
 
+import { assessRhizohReplySchemaContractV1, RHIZOH_REPLY_SCHEMA_VERSION_V1 } from "./rhizohReplySchemaContractV1.js";
+
 export const RHIZOH_LLM_REPLY_NORMALIZED_SCHEMA_V0 = "castle.rhizoh.llm_reply_normalized.v0";
+
+export { RHIZOH_REPLY_SCHEMA_VERSION_V1 } from "./rhizohReplySchemaContractV1.js";
 
 export const RHIZOH_PROVIDER_EXPECTED_REPLY_FORMAT_V0 = "json.reply";
 
@@ -39,9 +43,13 @@ export function normalizeRhizohLlmGatewayResponseV0(gatewayJson) {
   );
 
   const deliveryKind = String(json.rhizohDeliveryKind ?? "ok");
+  const contract = assessRhizohReplySchemaContractV1(json);
 
   return Object.freeze({
     schema: RHIZOH_LLM_REPLY_NORMALIZED_SCHEMA_V0,
+    replySchemaVersion: contract.replySchemaVersion,
+    contractOk: contract.contractOk,
+    contractDrift: contract.contractDrift,
     reply,
     extractPath,
     deliveryKind,

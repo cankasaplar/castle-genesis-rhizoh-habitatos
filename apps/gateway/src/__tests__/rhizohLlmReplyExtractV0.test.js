@@ -4,7 +4,8 @@ import {
   extractRhizohLlmReplyFromProviderText,
   replyParsingConfidenceForExtractPathV0,
   replyFormatDriftScoreFromConfidenceV0,
-  computeReplyFormatDriftV0
+  computeReplyFormatDriftV0,
+  RHIZOH_REPLY_SCHEMA_VERSION_V1
 } from "../rhizohLlmGateway.js";
 
 describe("extractRhizohLlmReplyFromProviderText", () => {
@@ -77,5 +78,11 @@ describe("replyFormatDriftScoreFromConfidenceV0", () => {
     assert.equal(d.providerExpectedFormat, "json.reply");
     assert.equal(d.observedFormat, "json.alt_field");
     assert.equal(d.replyFormatDriftScore, 0.3);
+  });
+});
+
+describe("RHIZOH_REPLY_SCHEMA_VERSION_V1", () => {
+  it("is pinned contract id", () => {
+    assert.equal(RHIZOH_REPLY_SCHEMA_VERSION_V1, "castle.rhizoh.reply_schema.v1");
   });
 });

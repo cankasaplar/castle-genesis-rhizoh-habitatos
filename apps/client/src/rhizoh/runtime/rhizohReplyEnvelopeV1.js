@@ -1,6 +1,8 @@
 /**
  * Reply Envelope v1 — client SSOT projection layer (render only, no re-extract).
- * Gateway owns provider parse + extractPath; client projects gateway JSON → frozen envelope.
+ *
+ * RUNTIME INVARIANT: Gateway decides, client renders. No second interpretation exists.
+ * Meaning is decided once (gateway), rendered everywhere (client), never re-interpreted.
  *
  * @see docs/RHIZOH_REPLY_NORMALIZATION_LAYER_V1.md
  */
@@ -26,6 +28,9 @@ export function projectRhizohReplyEnvelopeV1(gatewayJson) {
   const envelope = normalizeRhizohLlmGatewayResponseV0(gatewayJson);
   return Object.freeze({
     schema: RHIZOH_REPLY_ENVELOPE_SCHEMA_V1,
+    replySchemaVersion: envelope.replySchemaVersion,
+    contractOk: envelope.contractOk,
+    contractDrift: envelope.contractDrift,
     reply: envelope.reply,
     extractPath: envelope.extractPath,
     deliveryKind: envelope.deliveryKind,

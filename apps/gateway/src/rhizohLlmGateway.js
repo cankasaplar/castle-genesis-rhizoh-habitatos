@@ -682,6 +682,9 @@ export const RHIZOH_REPLY_PARSE_CONFIDENCE_V0 = Object.freeze({
  */
 export const RHIZOH_PROVIDER_EXPECTED_REPLY_FORMAT_V0 = "json.reply";
 
+/** Frozen client-facing reply contract — bump only with coordinated gateway + client release. */
+export const RHIZOH_REPLY_SCHEMA_VERSION_V1 = "castle.rhizoh.reply_schema.v1";
+
 /**
  * @param {number} confidence 0..1
  * @returns {number} 0..1 — higher = more format drift from provider contract
@@ -1039,6 +1042,7 @@ export async function queryRhizohLlm(input, meta = {}) {
 
   return {
     ok: true,
+    replySchemaVersion: RHIZOH_REPLY_SCHEMA_VERSION_V1,
     provider,
     model,
     reply,
