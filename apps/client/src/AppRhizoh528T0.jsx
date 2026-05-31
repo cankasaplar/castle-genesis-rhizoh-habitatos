@@ -417,9 +417,8 @@ const RHIZOH_GENERATION_MODE_UI = [
   { id: "DEEP_REASONING", label: "Ak─▒l y├╝r├╝tme", sub: "Katmanl─▒ d├╝┼ş├╝nce" }
 ];
 
-/** Voice loop ÔÇö faster LLM + shorter watchdog so mic does not appear stuck. */
+/** Voice loop — faster LLM + shorter watchdog so mic does not appear stuck. */
 const VOICE_LLM_TIMEOUT_MS = 22_000;
-const TEXT_LLM_TIMEOUT_MS = 32_000;
 const VOICE_TURN_BUSY_WATCHDOG_MS = 38_000;
 const VOICE_AFTER_TURN_RESTART_MS = 280;
 
