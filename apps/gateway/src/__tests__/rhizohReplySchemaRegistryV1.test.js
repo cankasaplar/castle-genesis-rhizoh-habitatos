@@ -11,7 +11,8 @@ import {
 describe("rhizohReplySchemaRegistryV1", () => {
   it("registry pins current schema", () => {
     assert.equal(RHIZOH_REPLY_SCHEMA_REGISTRY_V1.current, RHIZOH_REPLY_SCHEMA_V1);
-    assert.equal(RHIZOH_REPLY_SCHEMA_REGISTRY_V1.entries.length, 1);
+    assert.equal(RHIZOH_REPLY_SCHEMA_REGISTRY_V1.entries.length, 2);
+    assert.equal(RHIZOH_REPLY_SCHEMA_REGISTRY_V1.entries[0].lifecycle, "current");
   });
 
   it("negotiate: no request → downgraded_to_current", () => {

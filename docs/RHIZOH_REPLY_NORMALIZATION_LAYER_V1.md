@@ -132,6 +132,8 @@ Full normalize schema (internal): `castle.rhizoh.llm_reply_normalized.v0`
 **Module:** [`rhizohQueryLlmV1.js`](../apps/client/src/rhizoh/runtime/rhizohQueryLlmV1.js)  
 **Entry:** `queryRhizohLLM` — text/voice turns; App registers shell deps via `registerRhizohQueryLlmDepsV0`.
 
+**Governance:** [`RHIZOH_REPLY_SCHEMA_EVOLUTION_GOVERNANCE_V1.md`](RHIZOH_REPLY_SCHEMA_EVOLUTION_GOVERNANCE_V1.md)
+
 ## Dev probe
 
 ```js

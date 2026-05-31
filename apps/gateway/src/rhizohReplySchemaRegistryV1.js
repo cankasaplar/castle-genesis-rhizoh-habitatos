@@ -10,8 +10,8 @@ export const RHIZOH_REPLY_SCHEMA_V1 = "castle.rhizoh.reply_schema.v1";
 /** @deprecated alias — use RHIZOH_REPLY_SCHEMA_V1 */
 export const RHIZOH_REPLY_SCHEMA_VERSION_V1 = RHIZOH_REPLY_SCHEMA_V1;
 
-/** @typedef {"current"|"legacy"|"deprecated"} RhizohReplySchemaEntryStatusV1 */
-/** @typedef {"matched"|"downgraded_to_current"|"legacy_compat"|"unsupported_requested"} RhizohReplySchemaNegotiationStatusV1 */
+/** @typedef {"planned"|"current"|"deprecated"|"retired"} RhizohSchemaLifecycleV1 */
+/** @typedef {"matched"|"downgraded_to_current"|"legacy_compat"|"unsupported_requested"|"retired_requested"} RhizohReplySchemaNegotiationStatusV1 */
 /** @typedef {"ok"|"informative"|"breaking"|"legacy_only"} RhizohReplyContractDriftClassV1 */
 
 export const RHIZOH_REPLY_SCHEMA_REGISTRY_V1 = Object.freeze({
@@ -20,8 +20,20 @@ export const RHIZOH_REPLY_SCHEMA_REGISTRY_V1 = Object.freeze({
   entries: Object.freeze([
     Object.freeze({
       id: RHIZOH_REPLY_SCHEMA_V1,
-      status: "current",
-      requiredFields: Object.freeze(["reply", "replySchemaVersion", "rhizohDeliveryKind"])
+      lifecycle: "current",
+      requiredFields: Object.freeze(["reply", "replySchemaVersion", "rhizohDeliveryKind", "replyContractDriftClass"])
+    }),
+    /** Simulation / governance placeholder — not served until promoted */
+    Object.freeze({
+      id: "castle.rhizoh.reply_schema.v2",
+      lifecycle: "planned",
+      requiredFields: Object.freeze([
+        "reply",
+        "replySchemaVersion",
+        "rhizohDeliveryKind",
+        "replyContractDriftClass",
+        "replySchemaNegotiation"
+      ])
     })
   ]),
   /** Pre-pin clients — gateway serves current schema, drift class legacy_only */
@@ -30,7 +42,47 @@ export const RHIZOH_REPLY_SCHEMA_REGISTRY_V1 = Object.freeze({
   unsupportedPolicy: "serve_current_mark_breaking"
 });
 
-const KNOWN_IDS = new Set(RHIZOH_REPLY_SCHEMA_REGISTRY_V1.entries.map((e) => e.id));
+const KNOWN_IDS = new Set(
+  RHIZOH_REPLY_SCHEMA_REGISTRY_V1.entries
+    .filter((e) => e.lifecycle === "current" || e.lifecycle === "deprecated")
+    .map((e) => e.id)
+);
+
+/**
+ * @param {string} schemaId
+ * @returns {RhizohSchemaLifecycleV1 | "unknown"}
+ */
+export function resolveSchemaLifecycleV1(schemaId) {
+  const id = String(schemaId || "").trim();
+  const hit = RHIZOH_REPLY_SCHEMA_REGISTRY_V1.entries.find((e) => e.id === id);
+  return hit ? hit.lifecycle : "unknown";
+}
+
+export function activeSchemaLifecycleSnapshotV1() {
+  const current = RHIZOH_REPLY_SCHEMA_REGISTRY_V1.current;
+  return Object.freeze({
+    currentId: current,
+    lifecycle: resolveSchemaLifecycleV1(current)
+  });
+}
+
+/**
+ * @param {string} schemaId
+ */
+function negotiationStatusForSchemaId(schemaId) {
+  const lifecycle = resolveSchemaLifecycleV1(schemaId);
+  if (lifecycle === "retired") return "retired_requested";
+  if (lifecycle === "deprecated") return "legacy_compat";
+  if (lifecycle === "current") return "matched";
+  return "unsupported_requested";
+}
+
+function withLifecycleMeta(base) {
+  return Object.freeze({
+    ...base,
+    lifecycle: activeSchemaLifecycleSnapshotV1()
+  });
+}
 
 /**
  * Gateway-only version negotiation.
@@ -41,30 +93,47 @@ export function negotiateReplySchemaV1(requestedVersion) {
   const active = RHIZOH_REPLY_SCHEMA_REGISTRY_V1.current;
 
   if (!requested) {
-    return Object.freeze({
+    return withLifecycleMeta({
       requested: null,
       active,
       status: "downgraded_to_current",
       registrySchema: RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1
     });
   }
-  if (requested === active || KNOWN_IDS.has(requested)) {
-    return Object.freeze({
+  if (requested === active) {
+    return withLifecycleMeta({
       requested,
       active,
       status: "matched",
       registrySchema: RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1
     });
   }
+  const reqLifecycle = resolveSchemaLifecycleV1(requested);
+  if (reqLifecycle === "retired") {
+    return withLifecycleMeta({
+      requested,
+      active,
+      status: "retired_requested",
+      registrySchema: RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1
+    });
+  }
+  if (KNOWN_IDS.has(requested)) {
+    return withLifecycleMeta({
+      requested,
+      active,
+      status: negotiationStatusForSchemaId(requested),
+      registrySchema: RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1
+    });
+  }
   if (RHIZOH_REPLY_SCHEMA_REGISTRY_V1.legacyIds.includes(requested)) {
-    return Object.freeze({
+    return withLifecycleMeta({
       requested,
       active,
       status: "legacy_compat",
       registrySchema: RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1
     });
   }
-  return Object.freeze({
+  return withLifecycleMeta({
     requested,
     active,
     status: "unsupported_requested",
@@ -88,7 +157,9 @@ export function classifyReplyContractDriftV1(input) {
   const driftScore = Number(input?.replyFormatDriftScore);
   const extractPath = String(input?.extractPath ?? "");
 
-  if (negotiation.status === "unsupported_requested") return "breaking";
+  if (negotiation.status === "unsupported_requested" || negotiation.status === "retired_requested") {
+    return "breaking";
+  }
   if (negotiation.status === "legacy_compat") return "legacy_only";
 
   if (deliveryKind === "empty_reply") return "breaking";
