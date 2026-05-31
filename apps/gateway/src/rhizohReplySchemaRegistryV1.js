@@ -4,8 +4,12 @@
  */
 
 import { resolveCohortPinV1, currentSchemaV1 } from "./rhizohCohortSchemaMapV1.js";
+import {
+  RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1,
+  RHIZOH_REPLY_SCHEMA_V1
+} from "./rhizohReplySchemaIdsV1.js";
 
-export const RHIZOH_REPLY_SCHEMA_V1 = "castle.rhizoh.reply_schema.v1";
+export { RHIZOH_REPLY_SCHEMA_V1, RHIZOH_REPLY_SCHEMA_REGISTRY_SCHEMA_V1 };
 
 /** @deprecated alias — use RHIZOH_REPLY_SCHEMA_V1 */
 export const RHIZOH_REPLY_SCHEMA_VERSION_V1 = RHIZOH_REPLY_SCHEMA_V1;

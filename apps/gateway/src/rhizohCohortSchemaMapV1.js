@@ -4,12 +4,13 @@
  * @see docs/RHIZOH_REPLY_SCHEMA_EVOLUTION_GOVERNANCE_V1.md
  */
 
-import { RHIZOH_REPLY_SCHEMA_REGISTRY_V1, RHIZOH_REPLY_SCHEMA_V1 } from "./rhizohReplySchemaRegistryV1.js";
+import {
+  RHIZOH_COHORT_SCHEMA_MAP_SCHEMA_V1,
+  RHIZOH_REPLY_SCHEMA_V1,
+  RHIZOH_REPLY_SCHEMA_V2_SHADOW_V1
+} from "./rhizohReplySchemaIdsV1.js";
 
-export const RHIZOH_COHORT_SCHEMA_MAP_SCHEMA_V1 = "castle.rhizoh.cohort_schema_map.v1";
-
-/** Observation-only pin — v1 body served, shadow metadata only (no render fork). */
-export const RHIZOH_REPLY_SCHEMA_V2_SHADOW_V1 = "castle.rhizoh.reply_schema.v2_shadow";
+export { RHIZOH_REPLY_SCHEMA_V2_SHADOW_V1 };
 
 export const COHORT_SCHEMA_MAP_V1 = Object.freeze({
   schema: RHIZOH_COHORT_SCHEMA_MAP_SCHEMA_V1,
@@ -20,8 +21,9 @@ export const COHORT_SCHEMA_MAP_V1 = Object.freeze({
   })
 });
 
+/** Must stay aligned with RHIZOH_REPLY_SCHEMA_REGISTRY_V1.current */
 export function currentSchemaV1() {
-  return RHIZOH_REPLY_SCHEMA_REGISTRY_V1.current;
+  return RHIZOH_REPLY_SCHEMA_V1;
 }
 
 /**
