@@ -111,6 +111,7 @@ import {
   verifyRhizohOutcomeSourceToken
 } from "./rhizohProductOutcomeIngestGateway.js";
 import { initRhizoh } from "./rhizohProductionBootstrap.js";
+import { handleAcademicObservatoryExportGetV0 } from "./rhizoh/academicObservatoryHttpV0.js";
 import {
   buildGenesisRuntimeSurfacePayload,
   recordGenesisEpistemicLedgerPersisted,
@@ -228,7 +229,7 @@ function applyHttpCorsHeaders(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Castle-Dev-Uid, X-Castle-Guest-Id, X-Castle-Gateway-Token, X-Castle-Ingress-Contract, X-Rhizoh-Outcome-Signature, X-Rhizoh-Outcome-Source-Token"
+    "Content-Type, Authorization, X-Castle-Dev-Uid, X-Castle-Guest-Id, X-Castle-Gateway-Token, X-Castle-Ingress-Contract, X-Rhizoh-Outcome-Signature, X-Rhizoh-Outcome-Source-Token, X-Castle-Academic-Observatory-Key, X-Castle-Moderation-Key"
   );
 }
 const REQUIRE_AUTH = process.env.CASTLE_REQUIRE_AUTH === "true";
@@ -2610,6 +2611,13 @@ const httpServer = createServer(async (req, res) => {
     }
     const limit = Number(new URL(req.url || "", "http://local").searchParams.get("limit") || 50);
     sendJson(res, 200, { ok: true, snapshots: listRecentAgentSnapshotsV0(limit) });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.academicObservatoryExport) {
+    const auth = await resolveHttpUser(req);
+    const out = handleAcademicObservatoryExportGetV0(req, auth);
+    sendJson(res, out.status, out.body);
     return;
   }
 

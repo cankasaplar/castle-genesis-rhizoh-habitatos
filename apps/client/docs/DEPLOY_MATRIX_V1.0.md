@@ -1,12 +1,16 @@
-# Deploy Matrix v1.0 — Single File SSOT
+# Deploy Matrix v1.1 — Single File SSOT
 
-**Tag:** `CORE-ELIGIBLE` · **Status:** SSOT v1.0  
+**Tag:** `CORE-ELIGIBLE` · **Status:** SSOT v1.1  
 **Purpose:** One table for env × authority × critical flags × rollback × demo/prod posture.  
 **Do not duplicate secrets here** — values live in `.env.*.example` and secret stores.
 
 | Related | Path / command |
 |---------|----------------|
-| Client env templates | [`../.env.example`](../.env.example) · [`../.env.staging.example`](../.env.staging.example) · [`../.env.production.example`](../.env.production.example) |
+| Client env templates | [`../.env.example`](../.env.example) · [`../.env.staging.example`](../.env.staging.example) · [`../.env.production.example`](../.env.production.example) · [**`../.env.creative.example`**](../.env.creative.example) (E2-X) |
+| Surface vs freeze | [`docs/RHIZOH_SURFACE_LAYER_OPERATING_MODEL_V0.md`](../../../docs/RHIZOH_SURFACE_LAYER_OPERATING_MODEL_V0.md) |
+| E2-X product + mode transition gap | [`docs/RHIZOH_E2X_PRODUCT_REALITY_AND_MODE_TRANSITION_V0.md`](../../../docs/RHIZOH_E2X_PRODUCT_REALITY_AND_MODE_TRANSITION_V0.md) |
+| Academic paper export | `npm run academic:export-paper` · [`scripts/export-academic-paper-v0.mjs`](../../../scripts/export-academic-paper-v0.mjs) |
+| Academy Research UI | `/academy/research` · [`AcademicObservatoryPageV0.jsx`](../src/surface/AcademicObservatoryPageV0.jsx) (own threads; gateway `CASTLE_ACADEMIC_OBSERVATORY=1`) |
 | Gap narrative | [`PRODUCT_LAUNCH_GAP_FINAL_FOUR_V1.0.md`](./PRODUCT_LAUNCH_GAP_FINAL_FOUR_V1.0.md) §1 |
 | Activation (full) | [`docs/RHIZOH_ACTIVATION_READINESS_CHECKLIST_V1.0.md`](../../../docs/RHIZOH_ACTIVATION_READINESS_CHECKLIST_V1.0.md) |
 | Go-live one page | [`GO_LIVE_CHECKLIST_ONE_PAGE_V1.0.md`](./GO_LIVE_CHECKLIST_ONE_PAGE_V1.0.md) |
@@ -27,7 +31,8 @@
 | **E2** | Production | Firebase Hosting / prod pipeline | **`production`** | `.env.production` from `.env.production.example` |
 | **E3** | Demo / survival | Same artifact as E2 *or* E0 with **demo flags** | Prefer **`staging`** or strict prod with **world off** | See §4 “Demo vs prod” |
 | **E2-F** | Founder observe (MODE 1) | Local or staging host | **`production`** or `staging` | `.env.local` / staging | Debug on; allowlist = founder only |
-| **E2-C** | Cohort reality test (MODE 2) | `rhizoh.com` prod host | **`production`** | `.env.production` cohort row | See §6 — **not** public launch |
+| **E2-C** | Cohort reality test (MODE 2) | `rhizoh.com` prod host | **`production`** | `.env.production` cohort row | See §6 — observer shell; Studio/Map **off** |
+| **E2-X** | **Creative surface cohort** | `rhizoh.com` or `app.castle-genesis.com` | **`production`** | [`.env.creative.example`](../.env.creative.example) | §7 — Studio + Map + L1/L2 **live**; core frozen |
 | **E2-T0** | T0 full monolith (swarm + HUD) | `deploy_track=t0-interface-lock` | **`production`** | `.env.t0.example` | Branch `t0-interface-lock` @ `8bd4ff9` |
 | **E2-S** | Spatial shell (main) | `deploy_track=spatial-main` + `VITE_WORLD_LAYER=1` secret | **`production`** | `.env.production` + world on | Lighter than T0; `RhizohSpatialWorldShell` |
 
@@ -55,6 +60,10 @@ Legend: **P** = production example default · **S** = staging example emphasis �
 | `VITE_SPIRAL_MMO_PERCEPTION_BRIDGE` | Rhizoh ↔ Spiral copy | `0` / unset | Same | Same | **off** |
 | `VITE_SPIRAL_MMO_AGREEMENT_LAYER` | Agreement layer copy | `0` / unset | Same | Same | **off** |
 | `VITE_RHIZOH_PHASE1_SIGNAL` | Data-plane activation | **Must not be `1` in tracked prod** (activation checklist R3) | Staging-only after READY | **off** until ops READY | **off** |
+| `VITE_RHIZOH_SURFACE_CREATIVE` | Creative surface row | — | optional | **off** (E2-C) | — | **E2-X: `1`** |
+| `VITE_WORLD_LAYER` | Cesium / REAL_MAP | L/S: optional | optional | **off** (Genesis-first) | off | **E2-X: `1`** |
+| `VITE_RHIZOH_ENTITY_PROJECTION_MAP` | Map ← L2 `map_pin` bundle | — | — | off | off | **E2-X: `1`** |
+| `VITE_CESIUM_WORLD_PROJECTION_BIND` | Cesium bind projection | off | off | off | off | **E2-X: `1`** |
 
 **Spiral / Rhizoh CI:** `npm run spiral:validate-rhizoh-boundary` — [`scripts/validateSpiralRhizohBoundaryV1.mjs`](../../../scripts/validateSpiralRhizohBoundaryV1.mjs)
 
@@ -100,11 +109,79 @@ Full runbook: [`PHASE2_CONTROLLED_REALITY_TEST_V1.0.md`](../../../docs/ops/PHASE
 
 ---
 
-## 5. Change policy
+## 7. E2-X — Creative surface cohort (interactive, core frozen)
 
-- Any **default** change to E2 column → bump this doc to **v1.1** + changelog line + update `.env.production.example` in same PR.
-- New global flag → add row to §2 + example file comment.
+**Purpose:** [`RHIZOH_SURFACE_LAYER_OPERATING_MODEL_V0.md`](../../../docs/RHIZOH_SURFACE_LAYER_OPERATING_MODEL_V0.md) — users get **expression field** (Studio drawer, map, chat), not observer-only shell.
+
+**Product framing:** *frozen intelligence layer + switchable expressive reality layer* — see [`RHIZOH_E2X_PRODUCT_REALITY_AND_MODE_TRANSITION_V0.md`](../../../docs/RHIZOH_E2X_PRODUCT_REALITY_AND_MODE_TRANSITION_V0.md). **Default entry:** [`RHIZOH_CONTINUITY_SEAMLESS_ENTRY_V0.md`](../../../docs/RHIZOH_CONTINUITY_SEAMLESS_ENTRY_V0.md) — silent continuation (no overlay pipeline).
+
+**Not:** public launch · not E1 device heartbeat · not substrate WAL thaw.
+
+### 7.1 Client (Firebase Hosting build)
+
+Copy [`.env.creative.example`](../.env.creative.example) → `.env.production` (or Hosting secret bundle `creative-cohort`).
+
+| Flag | E2-X value | Effect |
+|------|------------|--------|
+| `VITE_RHIZOH_SURFACE_CREATIVE` | **`1`** | Unlocks studio drawer surfaces via [`castleCreativeSurfaceGateV0.js`](../src/rhizoh/runtime/castleCreativeSurfaceGateV0.js) |
+| `VITE_WORLD_LAYER` | **`1`** | Map stack available |
+| `VITE_RHIZOH_ENTITY_PROJECTION_MAP` | **`1`** | Prefer L2 `map_pin` projection over demo flyTo |
+| `VITE_CESIUM_WORLD_PROJECTION_BIND` | **`1`** | Cesium reads projection bundle when wired |
+| `VITE_RHIZOH_RTL_FULL_CEREMONY` | **unset / `0`** | Default: **seamless** entry; set **`1`** for legacy 6-phase boot RTL |
+| `VITE_RHIZOH_VISIBLE_ENTRY_PIPELINE` | **unset / `0`** | Set **`1`** only for deprecated visible 3-step CEC (QA) |
+| `VITE_DEBUG` | **`0`** | Prod discipline |
+| `VITE_RHIZOH_PHASE1_SIGNAL` | **`0`** | Epistemic data-plane still off |
+| `VITE_RHIZOH_LEGAL_PREAMBLE` | **`1`** | |
+| `VITE_RHIZOH_INVITE_ONLY_GOOGLE` + cohort gate | **`1`** | Same admission as E2-C |
+| Substrate / Spiral | **off** | No `VITE_WAL_GEOMETRY_INGRESS` |
+
+**Context payload (per turn):** send castle binding for resolver:
+
+```json
+"context": {
+  "life_continuity": {
+    "thread_id": "thr_…",
+    "castle_id": "cst_ankara_home",
+    "location": { "lat": 39.9334, "lon": 32.8597, "place_name": "Ankara" }
+  }
+}
+```
+
+### 7.2 Gateway (Render — same deploy as E2-C host)
+
+| Env | Value |
+|-----|--------|
+| `CASTLE_LIFE_CONTINUITY_APPEND` | **`1`** |
+| `CASTLE_LIFE_ENTITY_RESOLVER` | **`1`** |
+| `CASTLE_PROJECTION_ACTIVATION` | **`1`** |
+| `CASTLE_LIFE_CONTINUITY_RECALL` | **`1`** (optional) |
+
+Response fields for UI: `lifeContinuity`, `lifeEntityProjection` (PAL-activated), `lifeContinuityRecall` when recall-shaped message.
+
+### 7.3 Rollback E2-X → E2-C
+
+1. Redeploy client with E2-C flag set (creative flags off).  
+2. Gateway: leave life flags on (harmless) or set append off for hard stop.  
+3. Hosting rollback to previous release if needed (§3 R1).
+
+### 7.4 vs MODE 2 (E2-C)
+
+| | E2-C (observer) | E2-X (creative) |
+|--|-----------------|-----------------|
+| Studio drawer | locked early phases | **on** (`SURFACE_CREATIVE`) |
+| Map | off | **on** + PAL thresholds |
+| Product feel | closed technical test | **usable creative field** |
+| Core / Phase1 signal | frozen | frozen (same) |
 
 ---
 
-*v1.0 — single-file deploy SSOT for Castle client.*
+## 5. Change policy
+
+- Any **default** change to E2 column → bump this doc minor version + changelog line + update `.env.production.example` in same PR.
+- New global flag → add row to §2 + example file comment.
+
+**v1.1 changelog:** Added **E2-X** creative surface row + `.env.creative.example` + gateway life-stack env table (§7).
+
+---
+
+*v1.1 — single-file deploy SSOT for Castle client.*

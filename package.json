@@ -39,6 +39,7 @@
     "validate:rhizoh-smoke": "node scripts/rhizoh-validation-smoke.mjs",
     "legal:export-pack-pdf": "node scripts/export-legal-pack-pdf.mjs",
     "legal:go-live-cohort-sim": "node scripts/run-go-live-cohort-simulation.mjs",
+    "academic:export-paper": "node scripts/export-academic-paper-v0.mjs",
     "ops:genesis-ingress-load-sim": "node scripts/genesis-ingress-social-load-sim.mjs",
     "ops:send-cohort-observer-invite": "powershell -File scripts/send-cohort-observer-invite.ps1",
     "ops:passive-coherence-check": "node scripts/passive-production-coherence-check.mjs",

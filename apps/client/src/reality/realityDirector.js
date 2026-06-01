@@ -359,7 +359,18 @@ export async function setRealityMode(mode, opts = {}) {
     });
   }
 
-  return withGate(() => runTransition(mode, opts));
+  const result = await withGate(() => runTransition(mode, opts));
+  if (mode === "REAL_MAP" && result?.ok) {
+    try {
+      const { maybeTriggerMapSurfaceMicroRtlV0 } = await import(
+        "../rhizoh/runtime/expressiveRealityMicroTransitionV0.js"
+      );
+      maybeTriggerMapSurfaceMicroRtlV0({ source: opts?.source || "REAL_MAP" });
+    } catch {
+      /* micro-RTL optional */
+    }
+  }
+  return result;
 }
 
 /** Namespace alias for call sites that prefer `RealityDirector.setMode(...)` */

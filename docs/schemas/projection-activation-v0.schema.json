@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rhizoh.local/schemas/projection-activation-v0.schema.json",
+  "title": "ProjectionActivationV0",
+  "description": "PAL v0 — activation envelope on L2 projection items. Parent: docs/RHIZOH_PROJECTION_ACTIVATION_LAYER_V0.md",
+  "$defs": {
+    "revealStage": {
+      "type": "string",
+      "enum": ["hidden", "hinted", "revealed", "anchored"]
+    },
+    "ProjectionActivationV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["visible", "stage", "emergence", "reason"],
+      "properties": {
+        "visible": { "type": "boolean" },
+        "stage": { "$ref": "#/$defs/revealStage" },
+        "emergence": {
+          "type": "boolean",
+          "description": "First time map_pin becomes visible for this castle in this runtime session."
+        },
+        "reason": { "type": "string", "maxLength": 120 },
+        "threshold": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "user_turns": { "type": "integer", "minimum": 0 },
+            "total_turns": { "type": "integer", "minimum": 0 },
+            "has_location": { "type": "boolean" },
+            "required_user_turns": { "type": "integer", "minimum": 0 },
+            "required_total_turns": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "ActivatedProjectionItemV0": {
+      "type": "object",
+      "required": ["projection_kind", "activation"],
+      "properties": {
+        "projection_kind": { "type": "string" },
+        "activation": { "$ref": "#/$defs/ProjectionActivationV0" }
+      },
+      "additionalProperties": true
+    },
+    "ActivatedProjectionBundleV0": {
+      "type": "object",
+      "required": ["contract_version", "user_id", "as_of", "projections", "pal_version"],
+      "properties": {
+        "contract_version": { "type": "string" },
+        "pal_version": { "type": "string", "const": "projection-activation-v0" },
+        "user_id": { "type": "string" },
+        "as_of": { "type": "string" },
+        "castle_reveal": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["castle_id", "stage", "thread_id", "metrics"],
+            "properties": {
+              "castle_id": { "type": "string" },
+              "stage": { "$ref": "#/$defs/revealStage" },
+              "thread_id": { "type": "string" },
+              "metrics": {
+                "type": "object",
+                "properties": {
+                  "user_turns": { "type": "integer" },
+                  "total_turns": { "type": "integer" },
+                  "has_location": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "projections": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ActivatedProjectionItemV0" }
+        }
+      }
+    }
+  },
+  "oneOf": [{ "$ref": "#/$defs/ActivatedProjectionBundleV0" }]
+}

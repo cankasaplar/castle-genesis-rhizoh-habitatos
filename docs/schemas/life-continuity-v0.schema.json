@@ -1,0 +1,426 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rhizoh.local/schemas/life-continuity-v0.schema.json",
+  "title": "LifeContinuityV0",
+  "description": "L1-alpha life store — threads, turns, notes, links, summaries. Product continuity layer; not execution WAL. Retention defaults: life-continuity-v0.retention.json. Parent: docs/RHIZOH_L1_LIFE_CONTINUITY_V0.md",
+  "$defs": {
+    "contractVersion": {
+      "type": "string",
+      "const": "life-continuity-v0"
+    },
+    "isoDateTime": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 40,
+      "description": "RFC 3339 instant, e.g. 2026-06-01T12:00:00.000Z"
+    },
+    "entityId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z0-9._-]+$"
+    },
+    "userId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "description": "Firebase UID or stable cohort subject id."
+    },
+    "lifeStoreClass": {
+      "type": "string",
+      "const": "life_store",
+      "description": "Must not be written as execution WAL / L1 seal segment."
+    },
+    "threadStatus": {
+      "type": "string",
+      "enum": ["active", "archived", "erased"]
+    },
+    "turnRole": {
+      "type": "string",
+      "enum": ["user", "assistant", "system"]
+    },
+    "summaryPeriod": {
+      "type": "string",
+      "enum": ["daily", "weekly"]
+    },
+    "memoryNodeKind": {
+      "type": "string",
+      "enum": ["thread", "turn", "note", "link"]
+    },
+    "erasureScope": {
+      "type": "string",
+      "enum": ["all", "thread", "turn", "note", "link", "summaries_only"]
+    },
+    "LifeThreadV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "life_store_class",
+        "thread_id",
+        "user_id",
+        "title",
+        "status",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "life_store_class": { "$ref": "#/$defs/lifeStoreClass" },
+        "thread_id": { "$ref": "#/$defs/entityId" },
+        "user_id": { "$ref": "#/$defs/userId" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 280 },
+        "status": { "$ref": "#/$defs/threadStatus" },
+        "created_at": { "$ref": "#/$defs/isoDateTime" },
+        "updated_at": { "$ref": "#/$defs/isoDateTime" },
+        "last_turn_at": { "$ref": "#/$defs/isoDateTime" },
+        "erased_at": { "$ref": "#/$defs/isoDateTime" },
+        "source_surface": {
+          "type": "string",
+          "enum": ["castle_chat"],
+          "description": "L1-alpha: Castle only."
+        }
+      }
+    },
+    "LifeTurnV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "life_store_class",
+        "turn_id",
+        "thread_id",
+        "user_id",
+        "role",
+        "text",
+        "at"
+      ],
+      "properties": {
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "life_store_class": { "$ref": "#/$defs/lifeStoreClass" },
+        "turn_id": { "$ref": "#/$defs/entityId" },
+        "thread_id": { "$ref": "#/$defs/entityId" },
+        "user_id": { "$ref": "#/$defs/userId" },
+        "role": { "$ref": "#/$defs/turnRole" },
+        "text": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 16384,
+          "description": "Display-contract text only; not raw provider log."
+        },
+        "at": { "$ref": "#/$defs/isoDateTime" },
+        "correlation_id": { "type": "string", "minLength": 8, "maxLength": 200 },
+        "gateway_trace_id": { "type": "string", "minLength": 8, "maxLength": 200 },
+        "reply_schema_version": { "type": "string", "maxLength": 32 },
+        "status": {
+          "type": "string",
+          "enum": ["active", "erased"],
+          "default": "active"
+        },
+        "erased_at": { "$ref": "#/$defs/isoDateTime" }
+      }
+    },
+    "LifeNoteV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "life_store_class",
+        "note_id",
+        "user_id",
+        "body",
+        "at"
+      ],
+      "properties": {
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "life_store_class": { "$ref": "#/$defs/lifeStoreClass" },
+        "note_id": { "$ref": "#/$defs/entityId" },
+        "user_id": { "$ref": "#/$defs/userId" },
+        "body": { "type": "string", "minLength": 1, "maxLength": 16384 },
+        "at": { "$ref": "#/$defs/isoDateTime" },
+        "thread_id": { "$ref": "#/$defs/entityId" },
+        "status": {
+          "type": "string",
+          "enum": ["active", "erased"],
+          "default": "active"
+        },
+        "erased_at": { "$ref": "#/$defs/isoDateTime" }
+      }
+    },
+    "LifeLinkV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "life_store_class",
+        "link_id",
+        "user_id",
+        "url",
+        "at"
+      ],
+      "properties": {
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "life_store_class": { "$ref": "#/$defs/lifeStoreClass" },
+        "link_id": { "$ref": "#/$defs/entityId" },
+        "user_id": { "$ref": "#/$defs/userId" },
+        "url": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 2048,
+          "description": "User-pasted URL only; no scrape payload in L1-alpha."
+        },
+        "title": { "type": "string", "maxLength": 280 },
+        "at": { "$ref": "#/$defs/isoDateTime" },
+        "thread_id": { "$ref": "#/$defs/entityId" },
+        "status": {
+          "type": "string",
+          "enum": ["active", "erased"],
+          "default": "active"
+        },
+        "erased_at": { "$ref": "#/$defs/isoDateTime" }
+      }
+    },
+    "LifeMemoryLinkV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "life_store_class",
+        "memory_link_id",
+        "user_id",
+        "from_kind",
+        "from_id",
+        "to_kind",
+        "to_id",
+        "at"
+      ],
+      "properties": {
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "life_store_class": { "$ref": "#/$defs/lifeStoreClass" },
+        "memory_link_id": { "$ref": "#/$defs/entityId" },
+        "user_id": { "$ref": "#/$defs/userId" },
+        "from_kind": { "$ref": "#/$defs/memoryNodeKind" },
+        "from_id": { "$ref": "#/$defs/entityId" },
+        "to_kind": { "$ref": "#/$defs/memoryNodeKind" },
+        "to_id": { "$ref": "#/$defs/entityId" },
+        "at": { "$ref": "#/$defs/isoDateTime" },
+        "dismissed_at": {
+          "$ref": "#/$defs/isoDateTime",
+          "description": "UI hide; underlying nodes may remain."
+        },
+        "label": { "type": "string", "maxLength": 120 }
+      }
+    },
+    "LifeSummaryProjectionV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "life_store_class",
+        "summary_id",
+        "user_id",
+        "period",
+        "period_start",
+        "period_end",
+        "body",
+        "source_turn_ids",
+        "generated_at"
+      ],
+      "properties": {
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "life_store_class": {
+          "type": "string",
+          "const": "life_store_projection",
+          "description": "Derived; regenerable per retention rules."
+        },
+        "summary_id": { "$ref": "#/$defs/entityId" },
+        "user_id": { "$ref": "#/$defs/userId" },
+        "period": { "$ref": "#/$defs/summaryPeriod" },
+        "period_start": { "$ref": "#/$defs/isoDateTime" },
+        "period_end": { "$ref": "#/$defs/isoDateTime" },
+        "body": { "type": "string", "minLength": 1, "maxLength": 8192 },
+        "source_turn_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/entityId" },
+          "minItems": 1,
+          "maxItems": 256
+        },
+        "source_thread_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/entityId" },
+          "maxItems": 64
+        },
+        "generated_at": { "$ref": "#/$defs/isoDateTime" },
+        "generator_ref": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Opaque model/route id for audit — not a user trait."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "erased"],
+          "default": "active"
+        },
+        "erased_at": { "$ref": "#/$defs/isoDateTime" }
+      }
+    },
+    "RecallCitationV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["turn_id", "thread_id", "at", "excerpt"],
+      "properties": {
+        "turn_id": { "$ref": "#/$defs/entityId" },
+        "thread_id": { "$ref": "#/$defs/entityId" },
+        "at": { "$ref": "#/$defs/isoDateTime" },
+        "excerpt": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "thread_title": { "type": "string", "maxLength": 280 }
+      }
+    },
+    "LifeRecallResultV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "user_id",
+        "query",
+        "citations",
+        "generated_at"
+      ],
+      "properties": {
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "user_id": { "$ref": "#/$defs/userId" },
+        "query": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "citations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/RecallCitationV0" },
+          "maxItems": 12
+        },
+        "generated_at": { "$ref": "#/$defs/isoDateTime" },
+        "answer_hint": {
+          "type": "string",
+          "maxLength": 4000,
+          "description": "Optional short assistant framing; must not add facts beyond citations."
+        }
+      }
+    },
+    "LifeContinuityProjectionV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Gateway/client read bundle — projection only; see retention projection_limits.",
+      "required": [
+        "contract_version",
+        "user_id",
+        "as_of",
+        "threads",
+        "recent_turns"
+      ],
+      "properties": {
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "user_id": { "$ref": "#/$defs/userId" },
+        "as_of": { "$ref": "#/$defs/isoDateTime" },
+        "threads": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LifeThreadV0" },
+          "maxItems": 12
+        },
+        "recent_turns": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LifeTurnV0" },
+          "maxItems": 288
+        },
+        "notes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LifeNoteV0" },
+          "maxItems": 16
+        },
+        "links": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LifeLinkV0" },
+          "maxItems": 16
+        },
+        "summaries": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LifeSummaryProjectionV0" },
+          "maxItems": 2
+        },
+        "memory_links": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LifeMemoryLinkV0" },
+          "maxItems": 32
+        },
+        "active_thread_id": { "$ref": "#/$defs/entityId" }
+      }
+    },
+    "LifeErasureRequestV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "request_id",
+        "user_id",
+        "scope",
+        "requested_at"
+      ],
+      "properties": {
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "request_id": { "$ref": "#/$defs/entityId" },
+        "user_id": { "$ref": "#/$defs/userId" },
+        "scope": { "$ref": "#/$defs/erasureScope" },
+        "target_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/entityId" },
+          "maxItems": 256
+        },
+        "requested_at": { "$ref": "#/$defs/isoDateTime" },
+        "reason": {
+          "type": "string",
+          "enum": ["user_request", "account_deletion", "ops_legal"],
+          "default": "user_request"
+        }
+      }
+    },
+    "LifeErasureResultV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "request_id",
+        "user_id",
+        "scope",
+        "completed_at",
+        "counts"
+      ],
+      "properties": {
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "request_id": { "$ref": "#/$defs/entityId" },
+        "user_id": { "$ref": "#/$defs/userId" },
+        "scope": { "$ref": "#/$defs/erasureScope" },
+        "completed_at": { "$ref": "#/$defs/isoDateTime" },
+        "counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "threads": { "type": "integer", "minimum": 0 },
+            "turns": { "type": "integer", "minimum": 0 },
+            "notes": { "type": "integer", "minimum": 0 },
+            "links": { "type": "integer", "minimum": 0 },
+            "summaries": { "type": "integer", "minimum": 0 },
+            "memory_links": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    { "$ref": "#/$defs/LifeThreadV0" },
+    { "$ref": "#/$defs/LifeTurnV0" },
+    { "$ref": "#/$defs/LifeNoteV0" },
+    { "$ref": "#/$defs/LifeLinkV0" },
+    { "$ref": "#/$defs/LifeMemoryLinkV0" },
+    { "$ref": "#/$defs/LifeSummaryProjectionV0" },
+    { "$ref": "#/$defs/LifeContinuityProjectionV0" },
+    { "$ref": "#/$defs/LifeRecallResultV0" },
+    { "$ref": "#/$defs/LifeErasureRequestV0" },
+    { "$ref": "#/$defs/LifeErasureResultV0" }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "contract_version": "life-continuity-retention-v0",
+  "parent_ssot": "docs/RHIZOH_L1_LIFE_CONTINUITY_V0.md",
+  "schema_ref": "docs/schemas/life-continuity-v0.schema.json",
+  "description": "Default retention and erasure rules for L1-alpha life store. Counsel addendum should reference this file by contract_version.",
+  "defaults": {
+    "thread": {
+      "policy": "account_lifetime",
+      "erase_on_user_request": true,
+      "tombstone_required": true
+    },
+    "turn": {
+      "policy": "account_lifetime",
+      "erase_on_user_request": true,
+      "cascade_from_thread_erase": true,
+      "tombstone_required": true
+    },
+    "note": {
+      "policy": "account_lifetime",
+      "erase_on_user_request": true,
+      "tombstone_required": true
+    },
+    "link": {
+      "policy": "account_lifetime",
+      "erase_on_user_request": true,
+      "tombstone_required": true
+    },
+    "memory_link": {
+      "policy": "account_lifetime",
+      "erase_on_user_request": true,
+      "dismiss_without_delete": true,
+      "note": "User may dismiss an edge in UI without deleting underlying thread/note/link."
+    },
+    "summary_projection": {
+      "policy": "rolling_days",
+      "rolling_days": 90,
+      "regenerable": true,
+      "erase_on_user_request": true,
+      "erase_on_account_delete": true,
+      "note": "Summaries are derived; may be rebuilt from turns until source turns are erased."
+    }
+  },
+  "erasure_scopes": {
+    "all": "Delete all L1 artifacts for userId; leave auth record to Firebase ops unless account deletion.",
+    "thread": "Delete thread + cascaded turns + summaries referencing those turns; notes/links with only this threadId unlinked or erased per product rule.",
+    "turn": "Delete single turn; regenerate or invalidate summaries listing turnId.",
+    "note": "Delete note; remove memory_link edges involving noteId.",
+    "link": "Delete link; remove memory_link edges involving linkId.",
+    "summaries_only": "Delete summary_projection rows only; threads/turns remain."
+  },
+  "forbidden_persistent_fields": [
+    "inferred_trait",
+    "personality_score",
+    "trust_score",
+    "reliability_score",
+    "behavior_cluster_id",
+    "biometric",
+    "gps",
+    "device_fingerprint",
+    "page_scrape_html",
+    "page_scrape_text",
+    "raw_provider_log",
+    "embedding_vector"
+  ],
+  "not_in_l1_alpha": [
+    "file_blob",
+    "calendar_event",
+    "voice_transcript",
+    "video_transcript",
+    "email_body",
+    "sms_body"
+  ],
+  "projection_limits": {
+    "max_threads_in_gateway_bundle": 12,
+    "max_turns_per_thread_in_bundle": 24,
+    "max_total_turn_chars_in_bundle": 24000,
+    "max_summaries_in_bundle": 2,
+    "max_notes_in_bundle": 16,
+    "max_links_in_bundle": 16
+  }
+}

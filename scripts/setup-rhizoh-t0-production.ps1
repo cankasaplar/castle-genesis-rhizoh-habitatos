@@ -48,6 +48,7 @@ $lines = @(
   "VITE_CASTLE_APP_ID=castle-vnext-core",
   "",
   "VITE_DEBUG=0",
+  "VITE_RHIZOH_T0_FIRST_MATCH=1",
   "VITE_SATELLITE_NODE_REGISTRY_V0=0",
   "VITE_SOVEREIGN_NODE_ONBOARDING=0",
   "",

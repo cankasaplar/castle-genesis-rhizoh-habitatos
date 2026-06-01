@@ -28,6 +28,14 @@ powershell -File scripts/apply-t0-interface-lock-patch.ps1
 
 ---
 
+## Product principle (not frozen by commit hash)
+
+Deploy lock = **which code runs**. Product SSOT = **how T0 must feel**:
+
+[`RHIZOH_T0_CONTINUITY_SURFACE_V0.md`](../RHIZOH_T0_CONTINUITY_SURFACE_V0.md) — **Continuity Surface** (Ready Flow, not Empty State; restoration ≠ blank screen).
+
+---
+
 ## What T0 includes
 
 - Monolithic `AppRhizoh528` (~11k lines) — Cesium, Three.js globe, ApexEngine

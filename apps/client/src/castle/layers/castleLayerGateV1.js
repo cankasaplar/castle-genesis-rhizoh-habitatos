@@ -3,14 +3,31 @@ import {
   CASTLE_LAYER_REGISTRY_SCHEMA_V1,
   T0_SHELL_SLOT_IDS_V1
 } from "./castleLayerRegistryV1.js";
+import { isRhizohT0FirstMatchIdentityV0 } from "../../rhizoh/runtime/rhizohT0FirstMatchIdentityV0.js";
+
+const FIRST_MATCH_BLOCKED_LAYER_IDS_V1 = new Set([
+  "debug_overlay_panels",
+  "t0_slot_layer_toggle",
+  "t0_capability_wheel",
+  "gateway_banner_panel",
+  "first_interaction_chips",
+  "trust_strip_expanded"
+]);
 
 /**
  * @param {string} layerId
- * @param {{ advancedOpen?: boolean, ignoreEnvGate?: boolean }} [ctx]
+ * @param {{ advancedOpen?: boolean, ignoreEnvGate?: boolean, firstMatchIdentity?: boolean }} [ctx]
  */
 export function isCastleLayerRenderableV1(layerId, ctx = {}) {
   const layer = CASTLE_LAYER_REGISTRY_V1[String(layerId || "")];
   if (!layer) return false;
+
+  const firstMatch =
+    ctx.firstMatchIdentity === true ||
+    (ctx.firstMatchIdentity !== false && isRhizohT0FirstMatchIdentityV0());
+  if (firstMatch && FIRST_MATCH_BLOCKED_LAYER_IDS_V1.has(String(layerId))) {
+    return false;
+  }
 
   if (layer.envGate && !ctx.ignoreEnvGate && typeof import.meta !== "undefined") {
     const [key, val] = String(layer.envGate).split("=");

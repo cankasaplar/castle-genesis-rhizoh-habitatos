@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rhizoh.local/schemas/academic-observation-export-v0.schema.json",
+  "title": "AcademicObservationExportV0",
+  "description": "AOL v0 — research-only session export. Not production UI. Parent: docs/RHIZOH_ACADEMIC_OBSERVATORY_LAYER_V0.md",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "exported_at",
+    "user_id",
+    "session_ref",
+    "reproducibility",
+    "life_continuity",
+    "entity_graph",
+    "resolver_trace"
+  ],
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "const": "academic-observation-export-v0"
+    },
+    "exported_at": { "type": "string", "minLength": 20 },
+    "user_id": { "type": "string", "minLength": 8 },
+    "session_ref": {
+      "type": "object",
+      "properties": {
+        "trace_id": { "type": "string" },
+        "thread_id": { "type": "string" },
+        "cohort_mode": { "type": "string", "enum": ["E2-C", "E2-X", "founder", "staging"] }
+      }
+    },
+    "reproducibility": {
+      "type": "object",
+      "required": ["life_continuity_contract", "life_entity_contract", "resolver_mode", "pal_version"],
+      "properties": {
+        "life_continuity_contract": { "type": "string" },
+        "life_entity_contract": { "type": "string" },
+        "resolver_mode": { "type": "string" },
+        "pal_version": { "type": "string" },
+        "recall_mode": { "type": "string" },
+        "env_snapshot": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "life_continuity": {
+      "type": "object",
+      "properties": {
+        "threads": { "type": "array" },
+        "turns_sample": { "type": "array" },
+        "recall_last": { "type": "object" }
+      }
+    },
+    "entity_graph": {
+      "type": "object",
+      "properties": {
+        "nodes": { "type": "array" },
+        "edges": { "type": "array" },
+        "castle_reveal": { "type": "array" }
+      }
+    },
+    "resolver_trace": {
+      "type": "object",
+      "properties": {
+        "hints_extracted": { "type": "object" },
+        "edges_created": { "type": "array", "items": { "type": "string" } },
+        "projection_activation": { "type": "array" }
+      }
+    },
+    "paper_blocks": {
+      "type": "object",
+      "description": "Optional markdown-ready sections",
+      "properties": {
+        "methods": { "type": "string" },
+        "observation_summary": { "type": "string" },
+        "reproducibility_note": { "type": "string" }
+      }
+    }
+  }
+}

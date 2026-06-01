@@ -1,0 +1,107 @@
+{
+  "description": "Minimal L1-alpha example — validate against life-continuity-v0.schema.json (LifeContinuityProjectionV0).",
+  "projection": {
+    "contract_version": "life-continuity-v0",
+    "user_id": "firebase_uid_example",
+    "as_of": "2026-06-01T09:00:00.000Z",
+    "active_thread_id": "thr_20260601_a1",
+    "threads": [
+      {
+        "contract_version": "life-continuity-v0",
+        "life_store_class": "life_store",
+        "thread_id": "thr_20260601_a1",
+        "user_id": "firebase_uid_example",
+        "title": "Pazartesi — proje yönü",
+        "status": "active",
+        "created_at": "2026-05-26T14:22:00.000Z",
+        "updated_at": "2026-05-26T15:01:00.000Z",
+        "last_turn_at": "2026-05-26T15:01:00.000Z",
+        "source_surface": "castle_chat"
+      }
+    ],
+    "recent_turns": [
+      {
+        "contract_version": "life-continuity-v0",
+        "life_store_class": "life_store",
+        "turn_id": "trn_20260526_u1",
+        "thread_id": "thr_20260601_a1",
+        "user_id": "firebase_uid_example",
+        "role": "user",
+        "text": "Geçen pazartesi konuştuğumuz süreklilik katmanını nasıl başlatırız?",
+        "at": "2026-05-26T14:22:10.000Z",
+        "correlation_id": "corr_example_001",
+        "status": "active"
+      },
+      {
+        "contract_version": "life-continuity-v0",
+        "life_store_class": "life_store",
+        "turn_id": "trn_20260526_a1",
+        "thread_id": "thr_20260601_a1",
+        "user_id": "firebase_uid_example",
+        "role": "assistant",
+        "text": "Önce life store şemasını kilitleyip thread SSOT ile projection UI'ya geçeriz.",
+        "at": "2026-05-26T14:22:45.000Z",
+        "correlation_id": "corr_example_001",
+        "status": "active"
+      }
+    ],
+    "notes": [
+      {
+        "contract_version": "life-continuity-v0",
+        "life_store_class": "life_store",
+        "note_id": "note_001",
+        "user_id": "firebase_uid_example",
+        "body": "L1 = süreklilik, zekâ değil.",
+        "at": "2026-05-26T14:30:00.000Z",
+        "thread_id": "thr_20260601_a1",
+        "status": "active"
+      }
+    ],
+    "links": [
+      {
+        "contract_version": "life-continuity-v0",
+        "life_store_class": "life_store",
+        "link_id": "lnk_001",
+        "user_id": "firebase_uid_example",
+        "url": "https://www.rhizoh.com",
+        "title": "Rhizoh ingress",
+        "at": "2026-05-26T14:31:00.000Z",
+        "thread_id": "thr_20260601_a1",
+        "status": "active"
+      }
+    ],
+    "summaries": [
+      {
+        "contract_version": "life-continuity-v0",
+        "life_store_class": "life_store_projection",
+        "summary_id": "sum_daily_001",
+        "user_id": "firebase_uid_example",
+        "period": "daily",
+        "period_start": "2026-05-26T00:00:00.000Z",
+        "period_end": "2026-05-26T23:59:59.999Z",
+        "body": "Pazartesi: L1 süreklilik katmanı ve şema önceliği konuşuldu.",
+        "source_turn_ids": ["trn_20260526_u1", "trn_20260526_a1"],
+        "source_thread_ids": ["thr_20260601_a1"],
+        "generated_at": "2026-05-27T08:00:00.000Z",
+        "generator_ref": "summary_v0",
+        "status": "active"
+      }
+    ],
+    "memory_links": []
+  },
+  "recall": {
+    "contract_version": "life-continuity-v0",
+    "user_id": "firebase_uid_example",
+    "query": "Geçen pazartesi konuştuğumuz şeyi hatırlıyor musun?",
+    "citations": [
+      {
+        "turn_id": "trn_20260526_u1",
+        "thread_id": "thr_20260601_a1",
+        "at": "2026-05-26T14:22:10.000Z",
+        "excerpt": "Geçen pazartesi konuştuğumuz süreklilik katmanını nasıl başlatırız?",
+        "thread_title": "Pazartesi — proje yönü"
+      }
+    ],
+    "generated_at": "2026-06-01T09:00:05.000Z"
+  }
+}

@@ -10,6 +10,8 @@ Boundary map: [`RHIZOH_MOCK_VS_REAL_BOUNDARY_MAP_V1.0.md`](RHIZOH_MOCK_VS_REAL_B
 > *Control-plane fully defined; data-plane intentionally absent.*  
 > *Deployment (DNS/TLS/connectivity) ≠ activation (signal on / reality injection).*
 
+**Product phases (orthogonal — not repo Phase numbers):** P0.5 · **E1** (repo Phase 1 witness) · **L1** [`RHIZOH_L1_LIFE_CONTINUITY_V0.md`](RHIZOH_L1_LIFE_CONTINUITY_V0.md) · **L2** [`RHIZOH_L2_ENTITY_CORE_V0.md`](RHIZOH_L2_ENTITY_CORE_V0.md) · L3 — *Architecture ≠ product.*
+
 ---
 
 ## Hard reality

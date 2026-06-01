@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rhizoh.local/schemas/life-entity-v0.schema.json",
+  "title": "LifeEntityGraphV0",
+  "description": "L2-alpha entity graph + projection bundle. Representation only — not L1 life store, not execution WAL. Parent: docs/RHIZOH_L2_ENTITY_CORE_V0.md",
+  "$defs": {
+    "contractVersion": {
+      "type": "string",
+      "const": "life-entity-v0"
+    },
+    "isoDateTime": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 40
+    },
+    "entityId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z0-9._-]+$"
+    },
+    "userId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "entityKind": {
+      "type": "string",
+      "enum": ["user", "castle", "location", "memory_ref", "media"]
+    },
+    "entityStatus": {
+      "type": "string",
+      "enum": ["active", "archived", "erased"]
+    },
+    "edgeRel": {
+      "type": "string",
+      "enum": ["owns", "located_at", "linked_thread", "references_turn", "attached_note", "contains_media"]
+    },
+    "projectionKind": {
+      "type": "string",
+      "enum": ["map_pin", "thread_list", "continuity_strip", "recall_panel", "weekly_summary_card", "gift_shell"]
+    },
+    "EntityNodeV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "entity_id",
+        "entity_kind",
+        "user_id",
+        "label",
+        "status",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "entity_id": { "$ref": "#/$defs/entityId" },
+        "entity_kind": { "$ref": "#/$defs/entityKind" },
+        "user_id": { "$ref": "#/$defs/userId" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 280 },
+        "status": { "$ref": "#/$defs/entityStatus" },
+        "created_at": { "$ref": "#/$defs/isoDateTime" },
+        "updated_at": { "$ref": "#/$defs/isoDateTime" },
+        "payload": {
+          "type": "object",
+          "description": "Kind-specific; no trust scores or embeddings.",
+          "properties": {
+            "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+            "lon": { "type": "number", "minimum": -180, "maximum": 180 },
+            "place_name": { "type": "string", "maxLength": 280 },
+            "thread_id": { "$ref": "#/$defs/entityId" },
+            "turn_id": { "$ref": "#/$defs/entityId" },
+            "note_id": { "$ref": "#/$defs/entityId" },
+            "castle_id": { "$ref": "#/$defs/entityId" },
+            "media_url": { "type": "string", "maxLength": 2048 }
+          },
+          "additionalProperties": true
+        }
+      }
+    },
+    "EntityEdgeV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "edge_id",
+        "user_id",
+        "rel",
+        "from_id",
+        "to_id",
+        "status",
+        "created_at"
+      ],
+      "properties": {
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "edge_id": { "$ref": "#/$defs/entityId" },
+        "user_id": { "$ref": "#/$defs/userId" },
+        "rel": { "$ref": "#/$defs/edgeRel" },
+        "from_id": { "$ref": "#/$defs/entityId" },
+        "to_id": { "$ref": "#/$defs/entityId" },
+        "status": { "$ref": "#/$defs/entityStatus" },
+        "created_at": { "$ref": "#/$defs/isoDateTime" },
+        "payload": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "thread_id": { "type": "string", "maxLength": 128 },
+            "turn_id": { "type": "string", "maxLength": 128 },
+            "note_id": { "type": "string", "maxLength": 128 }
+          }
+        }
+      }
+    },
+    "ProjectionItemV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projection_kind", "label", "source_entity_ids"],
+      "properties": {
+        "projection_kind": { "$ref": "#/$defs/projectionKind" },
+        "entity_id": { "$ref": "#/$defs/entityId" },
+        "label": { "type": "string", "maxLength": 280 },
+        "source_entity_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/entityId" },
+          "minItems": 1,
+          "maxItems": 16
+        },
+        "location": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "lat": { "type": "number" },
+            "lon": { "type": "number" },
+            "place_name": { "type": "string", "maxLength": 280 }
+          }
+        },
+        "thread_id": { "type": "string", "maxLength": 128 },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["thread_id"],
+            "properties": {
+              "thread_id": { "type": "string" },
+              "turn_id": { "type": "string" }
+            }
+          },
+          "maxItems": 32
+        }
+      }
+    },
+    "ProjectionBundleV0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract_version", "user_id", "as_of", "projections"],
+      "properties": {
+        "contract_version": { "$ref": "#/$defs/contractVersion" },
+        "user_id": { "$ref": "#/$defs/userId" },
+        "as_of": { "$ref": "#/$defs/isoDateTime" },
+        "projections": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ProjectionItemV0" },
+          "maxItems": 64
+        }
+      }
+    }
+  },
+  "oneOf": [
+    { "$ref": "#/$defs/EntityNodeV0" },
+    { "$ref": "#/$defs/EntityEdgeV0" },
+    { "$ref": "#/$defs/ProjectionBundleV0" }
+  ]
+}

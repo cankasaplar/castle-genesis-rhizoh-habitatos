@@ -108,6 +108,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
             <RuntimeHealthPanel gatewayBaseUrl={gatewayOrigin} />
             <QuickLinks
               links={[
+                { to: "/academy/research", label: "Academy · Research" },
                 { to: "/academy/observe", label: "Academy · Observe" },
                 { to: "/genesis/hub", label: "Genesis hub" }
               ]}

@@ -95,6 +95,22 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 
 ## Günlük
 
+### 2026-06-01 — Academic Observatory Layer (AOL) v0 SSOT
+
+**Summary:**
+- Kapalı ürün vs açık araştırma alanı ayrımı SSOT’ye alındı: sistem **çalışırken anlaşılabilir** olmalı; prod yüzeyi debug’a dönmemeli.
+- AOL üç iş: observation export · trace→paper · reproducibility — model değiştirmez, UX optimize etmez, ürün feature üretmez.
+- Katman harfleri: A=core, B=engine, C=surface, **D=AOL** ([`RHIZOH_SURFACE_LAYER_OPERATING_MODEL_V0.md`](../RHIZOH_SURFACE_LAYER_OPERATING_MODEL_V0.md)).
+
+**Linked Artifacts:**
+- `docs/RHIZOH_ACADEMIC_OBSERVATORY_LAYER_V0.md`
+- `docs/schemas/academic-observation-export-v0.schema.json`
+
+- **Habitat:** Academic
+- **SPECFLOW:** RESEARCH-ONLY
+- **Frozen core:** dokunulmadı
+- **Kod:** `apps/gateway/src/rhizoh/academicObservationExportV0.js`, `academicObservatoryHttpV0.js`, `GET /rhizoh/academic/observatory/export`
+
 ### 2026-05-09 — Founding state sealed (PRE-BOOTSTRAP)
 
 **Tag:** `FOUNDING_STATE_PRE_BOOTSTRAP_V1`  

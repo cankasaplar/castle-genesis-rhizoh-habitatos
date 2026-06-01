@@ -18,6 +18,8 @@ Formalizasyon, invariant listeleri, kanıt **taslakları** ve opsiyonel makale /
 
 Her anlamlı çalışma blokunu [`docs/academic/SESSION_LOG.md`](academic/SESSION_LOG.md) içine işleyin (karar izi + SPECFLOW etiketi).
 
+**Academic Observatory (AOL):** [`RHIZOH_ACADEMIC_OBSERVATORY_LAYER_V0.md`](RHIZOH_ACADEMIC_OBSERVATORY_LAYER_V0.md) — L1/L2’yi bozmadan canlı sistem davranışını paper-ready export ile görünür kılar; prod UI’dan ayrı tutulur.
+
 ## Çıktılar (artifact)
 
 - [ ] Numaralı **invariant** listesi (hangisi kodda doğrulanıyor / hangisi hipotez)

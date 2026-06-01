@@ -60,6 +60,43 @@ import { DirectorDeckPanel } from "./studio/ui/DirectorDeckPanel";
 import { KernelConsolePanel } from "./studio/ui/KernelConsolePanel";
 import { WorldLivingMapPanel } from "./studio/ui/WorldLivingMapPanel";
 import { UnifiedProductShellBar } from "./studio/ui/UnifiedProductShellBar";
+import { T0ContinuitySurfaceRailV0 } from "./rhizoh/runtime/T0ContinuitySurfaceRailV0.jsx";
+import { RhizohCognitiveFieldV0 } from "./rhizoh/runtime/RhizohCognitiveFieldV0.jsx";
+import { RhizohHonestCognitionAmbientV0 } from "./rhizoh/runtime/RhizohHonestCognitionAmbientV0.jsx";
+import { RhizohThoughtField3DV0 } from "./rhizoh/runtime/RhizohThoughtField3DV0.jsx";
+import { RhizohCognitionExposureBarV0 } from "./rhizoh/runtime/RhizohCognitionExposureBarV0.jsx";
+import { readT0UserIntentV0, writeT0UserIntentV0 } from "./rhizoh/runtime/t0ContextStripV0.js";
+import { readUserAnchorV0 } from "./rhizoh/runtime/memoryAnchorSystemV0.js";
+import { applyGrammarFromUtteranceV0 } from "./rhizoh/runtime/rhizohGrammarBridgeV0.js";
+import {
+  readHonestCognitionAmbientEnabledV0,
+  readThoughtFieldExpandedV0
+} from "./rhizoh/runtime/rhizohHonestCognitionSurfaceV0.js";
+import { resolveThinkingExposureV0 } from "./rhizoh/runtime/rhizohThinkingModelV0.js";
+import { readRhizohSessionLanguagePreferenceV0 } from "./rhizoh/runtime/rhizohMultilingualBridgeV0.js";
+import {
+  emitNextActionAnchorV0,
+  resolveNextActionAnchorV0
+} from "./rhizoh/runtime/rhizohActionCoherenceV0.js";
+import {
+  emitAttentionRhythmV0,
+  resolveAttentionRhythmV0
+} from "./rhizoh/runtime/rhizohAttentionRhythmV0.js";
+import {
+  emitFlowContinuityV0,
+  recordFlowContinuityStepV0,
+  recordFlowIntentV0,
+  resolveFlowContinuityV0,
+  snapshotLastVisitV0
+} from "./rhizoh/runtime/rhizohFlowContinuityV0.js";
+import {
+  emitCeolChoreographyV0,
+  emitCeolStartV0,
+  resolveCeolChoreographyV0
+} from "./rhizoh/runtime/rhizohCeolV0.js";
+import { isRhizohT0FirstMatchIdentityV0 } from "./rhizoh/runtime/rhizohT0FirstMatchIdentityV0.js";
+import { emitT0SoftAffordanceHintV0 } from "./rhizoh/runtime/t0ContinuitySurfaceV0.js";
+import { pushT0ContinuityPulseV0 } from "./rhizoh/runtime/t0ContinuitySurfaceStreamV0.js";
 import { ProductProfilePanel } from "./studio/ui/ProductProfilePanel";
 import { RuntimeHealthPanel } from "./studio/ui/RuntimeHealthPanel";
 import { CASTLE_RUNTIME_VERSION } from "./studio/runtime/castleRuntimeVersion";
@@ -7047,6 +7084,8 @@ const AutonomousCompanyDebugPanel = memo(({ runtimeRef }) => {
   );
 });
 
+const T0_FIRST_MATCH_IDENTITY_V0 = isRhizohT0FirstMatchIdentityV0();
+
 export default function AppRhizoh528() {
   const castleAuth = useCastleAuth();
   const navigate = useNavigate();
@@ -7703,7 +7742,7 @@ export default function AppRhizoh528() {
     firstBootObservationArtifact
   ]);
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || T0_FIRST_MATCH_IDENTITY_V0) return;
     window.__rhizoh = window.__rhizoh || {};
     window.__rhizoh.debug = () => ({
       field: rhizohFieldState,
@@ -8190,6 +8229,34 @@ export default function AppRhizoh528() {
     [productSurface, location.pathname, navigate]
   );
 
+  const onT0SoftAffordanceV0 = useCallback(
+    (affordanceId) => {
+      emitT0SoftAffordanceHintV0(affordanceId);
+      const id = String(affordanceId || "");
+      if (id === "spawn_castle") {
+        onProductShellSelect("world");
+        setShowDetailDrawer(true);
+        setCmd("Kalemi burada kurmak istiyorum — ");
+        setRhizohFieldState("LISTENING");
+        commandInputRef.current?.focus?.();
+      } else if (id === "add_moment") {
+        setCmd("Bu anı sürekliliğe ekle: ");
+        setRhizohFieldState("LISTENING");
+        commandInputRef.current?.focus?.();
+      } else if (id === "connect_world") {
+        onProductShellSelect("broadcast");
+        pushT0ContinuityPulseV0("Dünya verisi · spor · konser · event bağlantısı açılabilir", "world_bind");
+      }
+    },
+    [onProductShellSelect]
+  );
+
+  useEffect(() => {
+    if (runtimeHealth.gatewayConnected) {
+      pushT0ContinuityPulseV0("İletişim açık · Rhizoh seninle", "live");
+    }
+  }, [runtimeHealth.gatewayConnected]);
+
   useEffect(() => {
     const m = matchPath({ path: "/greenroom/:roomUid", end: true }, location.pathname);
     const slug = m?.params?.roomUid ? decodeURIComponent(String(m.params.roomUid)) : "";
@@ -8278,6 +8345,182 @@ export default function AppRhizoh528() {
     const base = greenRoomLive.liveStartedAt || greenRoomLive.routingStartedAt || Date.now();
     return (Date.now() - base) / 1000;
   }, [greenRoomLive, greenRoomLiveTick]);
+
+  const [t0UserIntent, setT0UserIntent] = useState(() => readT0UserIntentV0());
+  const [honestAmbientOn, setHonestAmbientOn] = useState(() =>
+    readHonestCognitionAmbientEnabledV0()
+  );
+  const [thoughtFieldExpanded, setThoughtFieldExpanded] = useState(() =>
+    readThoughtFieldExpandedV0()
+  );
+  const [cognitionEvolutionTrace, setCognitionEvolutionTrace] = useState(0);
+
+  const thinkingExposure = useMemo(
+    () => resolveThinkingExposureV0(rhizohFieldState),
+    [rhizohFieldState]
+  );
+
+  const localeTr = useMemo(() => {
+    const code = readRhizohSessionLanguagePreferenceV0();
+    return !code || code === "tr" || code === "und";
+  }, []);
+
+  const lastBusyEndAtRef = useRef(Date.now());
+  const ceolStartAtRef = useRef(Date.now());
+  const [attentionRhythmTick, setAttentionRhythmTick] = useState(0);
+  const [ceolTick, setCeolTick] = useState(0);
+
+  useEffect(() => {
+    const busy = ["LISTENING", "INTERPRETING", "GENERATING", "EXECUTING", "SPEAKING"].includes(
+      rhizohFieldState
+    );
+    if (!busy) {
+      lastBusyEndAtRef.current = Date.now();
+    }
+  }, [rhizohFieldState]);
+
+  useEffect(() => {
+    if (rhizohFieldState !== "IDLE") return undefined;
+    const id = window.setInterval(() => setAttentionRhythmTick((n) => n + 1), 600);
+    return () => window.clearInterval(id);
+  }, [rhizohFieldState]);
+
+  const attentionRhythm = useMemo(
+    () =>
+      resolveAttentionRhythmV0({
+        rhizohFieldState,
+        thoughtFieldExpanded,
+        ambientEnabled: honestAmbientOn,
+        msSinceBusyEnd: Date.now() - lastBusyEndAtRef.current
+      }),
+    [rhizohFieldState, thoughtFieldExpanded, honestAmbientOn, attentionRhythmTick]
+  );
+
+  useEffect(() => {
+    emitAttentionRhythmV0(attentionRhythm);
+  }, [attentionRhythm]);
+
+  const nextActionAnchor = useMemo(
+    () =>
+      resolveNextActionAnchorV0({
+        activeSurface: productSurface,
+        userIntent: t0UserIntent,
+        rhizohFieldState,
+        localeTr
+      }),
+    [productSurface, t0UserIntent, rhizohFieldState, localeTr]
+  );
+
+  useEffect(() => {
+    emitNextActionAnchorV0(nextActionAnchor);
+  }, [nextActionAnchor]);
+
+  useEffect(() => {
+    recordFlowContinuityStepV0({
+      activeSurface: productSurface,
+      userIntent: t0UserIntent,
+      rhythmPhase: attentionRhythm.rhythm_phase
+    });
+  }, [productSurface, t0UserIntent, attentionRhythm.rhythm_phase]);
+
+  const flowContinuity = useMemo(
+    () =>
+      resolveFlowContinuityV0({
+        activeSurface: productSurface,
+        userIntent: t0UserIntent,
+        rhythmPhase: attentionRhythm.rhythm_phase,
+        localeTr
+      }),
+    [productSurface, t0UserIntent, attentionRhythm.rhythm_phase, localeTr]
+  );
+
+  useEffect(() => {
+    emitFlowContinuityV0(flowContinuity);
+  }, [flowContinuity]);
+
+  useEffect(() => {
+    emitCeolStartV0(ceolStartAtRef.current);
+    const onCeolStart = (ev) => {
+      const at = ev?.detail?.started_at;
+      if (typeof at === "number" && at > 0) ceolStartAtRef.current = at;
+    };
+    window.addEventListener("rhizoh:ceol-start", onCeolStart);
+    return () => window.removeEventListener("rhizoh:ceol-start", onCeolStart);
+  }, []);
+
+  const ceolChoreography = useMemo(
+    () =>
+      resolveCeolChoreographyV0({
+        elapsedMs: Date.now() - ceolStartAtRef.current,
+        entryMode: flowContinuity?.entry?.entry_mode
+      }),
+    [ceolTick, flowContinuity?.entry?.entry_mode]
+  );
+
+  useEffect(() => {
+    emitCeolChoreographyV0(ceolChoreography);
+  }, [ceolChoreography]);
+
+  useEffect(() => {
+    if (ceolChoreography.play_ready) return undefined;
+    const id = window.setInterval(() => setCeolTick((n) => n + 1), 220);
+    return () => window.clearInterval(id);
+  }, [ceolChoreography.play_ready]);
+
+  useEffect(() => {
+    const snapVisit = () => {
+      snapshotLastVisitV0(productSurface, t0UserIntent || readT0UserIntentV0());
+    };
+    const onVis = () => {
+      if (document.visibilityState === "hidden") snapVisit();
+    };
+    window.addEventListener("visibilitychange", onVis);
+    window.addEventListener("beforeunload", snapVisit);
+    return () => {
+      window.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("beforeunload", snapVisit);
+    };
+  }, [productSurface, t0UserIntent]);
+
+  const onFlowReturnV0 = useCallback(
+    (surface, intent) => {
+      if (intent) {
+        writeT0UserIntentV0(intent);
+        setT0UserIntent(intent);
+      }
+      onProductShellSelect(String(surface || "world"));
+      pushT0ContinuityPulseV0("Süreklilik · geri dönüş", "flow_return");
+    },
+    [onProductShellSelect]
+  );
+
+  useEffect(() => {
+    const syncT0Intent = () => setT0UserIntent(readT0UserIntentV0());
+    window.addEventListener("rhizoh:t0-intent", syncT0Intent);
+    window.addEventListener("rhizoh:memory-anchor", syncT0Intent);
+    window.addEventListener("rhizoh:emotional-anchor", syncT0Intent);
+    return () => {
+      window.removeEventListener("rhizoh:t0-intent", syncT0Intent);
+      window.removeEventListener("rhizoh:memory-anchor", syncT0Intent);
+      window.removeEventListener("rhizoh:emotional-anchor", syncT0Intent);
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncHonest = () => {
+      setHonestAmbientOn(readHonestCognitionAmbientEnabledV0());
+      setThoughtFieldExpanded(readThoughtFieldExpandedV0());
+    };
+    window.addEventListener("rhizoh:honest-cognition-toggle", syncHonest);
+    return () => window.removeEventListener("rhizoh:honest-cognition-toggle", syncHonest);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(
+      new CustomEvent("rhizoh:thinking-exposure", { detail: thinkingExposure })
+    );
+  }, [thinkingExposure]);
 
   const visualCognitionState = useMemo(() =>
     composeRhizohVisualCognitionStateV1({
@@ -10494,6 +10737,15 @@ export default function AppRhizoh528() {
     setLastIntentRaw(raw);
     setDemoLoopState("CREATING");
 
+    const grammarResolution = applyGrammarFromUtteranceV0(raw, {
+      onEnterSurface: onProductShellSelect
+    });
+    recordFlowIntentV0(
+      raw,
+      grammarResolution?.surface || productSurface,
+      grammarResolution?.intentBias || t0UserIntent || readT0UserIntentV0()
+    );
+
     flowTimersRef.current.forEach((timerId) => clearTimeout(timerId));
     flowTimersRef.current = [];
     setShowWhy(false);
@@ -10561,6 +10813,7 @@ export default function AppRhizoh528() {
 
       setHasReceivedRhizohReply(true);
       setCommandLog((prev) => [{ ts: Date.now(), raw, source: out.source || "unknown" }, ...prev].slice(0, 24));
+      setCognitionEvolutionTrace((n) => Math.min(1, n + 0.08));
 
       setRhizohFieldState("EXECUTING");
       setRealityState(isBroadcastIntent ? "WORLD_BROADCASTING" : "WORLD_TRANSITION");
@@ -11023,6 +11276,13 @@ export default function AppRhizoh528() {
 
   return (
     <div className="min-h-screen w-full bg-[#010103] text-white font-mono overflow-x-hidden overflow-y-auto relative select-none uppercase font-black selection:bg-cyan-400/40">
+      {!T0_FIRST_MATCH_IDENTITY_V0 ? (
+        <RhizohHonestCognitionAmbientV0
+          rhizohFieldState={rhizohFieldState}
+          enabled={honestAmbientOn && attentionRhythm.show_ambient}
+          ambientOpacityScale={attentionRhythm.ambient_opacity_scale}
+        />
+      ) : null}
       <RhizohEpistemicWorldGravity
         layerFocus={epistemicOrbLayerFocus}
         governanceStress={epistemicGovStress}
@@ -11032,29 +11292,35 @@ export default function AppRhizoh528() {
       </RhizohEpistemicWorldGravity>
       <div className="absolute inset-0 z-[5] pointer-events-none">
         
-        <SwarmCollectiveAuraV1 collectiveField={visualCognitionState.collectiveField} className="z-[1]" />
-        <div className={`absolute inset-0 bg-gradient-to-br ${governanceFx.tone}`} />
-        <div
-          className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2"
-          style={{ opacity: Math.min(0.35 + visualCognitionState.swarmField.intensity * 0.5, 0.95) }}
-        >
-          <div
-            className="absolute left-1/2 top-1/2 h-[min(72vw,520px)] w-[min(72vw,520px)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-400/15"
-            style={{
-              background: `conic-gradient(from 0deg, transparent 0deg, rgba(34,211,238,0.12) 60deg, transparent 120deg, rgba(168,85,247,0.08) 200deg, transparent 280deg)`,
-              animation: "spin 28s linear infinite"
-            }}
-          />
-          <div className="absolute left-1/2 top-1/2 flex h-36 w-36 -translate-x-1/2 -translate-y-1/2 items-center justify-center">
-            <div className={`h-32 w-32 rounded-full border-2 ${governanceFx.orb === "crystal" ? "border-red-300/70" : governanceFx.orb === "tense" ? "border-amber-300/60" : "border-cyan-300/70"} animate-pulse shadow-[0_0_60px_rgba(34,211,238,0.35)]`} />
-            <div className="absolute inset-[-28px] rounded-full border border-cyan-200/25 animate-ping" />
-            <div className="absolute inset-[-48px] rounded-full border border-fuchsia-400/10" />
-          </div>
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-[5.5rem] text-[9px] tracking-[0.2em] text-cyan-200/80 normal-case whitespace-nowrap">
-            {entityCount} field pulses ┬À swarm {visualCognitionState.swarmField.level}
-          </div>
-        </div>
-        {showReplayGhostTrails || replayTimelinePct > 0 ? (
+        {!T0_FIRST_MATCH_IDENTITY_V0 ? (
+          <>
+            <SwarmCollectiveAuraV1 collectiveField={visualCognitionState.collectiveField} className="z-[1]" />
+            <div className={`absolute inset-0 bg-gradient-to-br ${governanceFx.tone}`} />
+            <div
+              className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2"
+              style={{ opacity: Math.min(0.35 + visualCognitionState.swarmField.intensity * 0.5, 0.95) }}
+            >
+              <div
+                className="absolute left-1/2 top-1/2 h-[min(72vw,520px)] w-[min(72vw,520px)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-400/15"
+                style={{
+                  background: `conic-gradient(from 0deg, transparent 0deg, rgba(34,211,238,0.12) 60deg, transparent 120deg, rgba(168,85,247,0.08) 200deg, transparent 280deg)`,
+                  animation: "spin 28s linear infinite"
+                }}
+              />
+              <div className="absolute left-1/2 top-1/2 flex h-36 w-36 -translate-x-1/2 -translate-y-1/2 items-center justify-center">
+                <div className={`h-32 w-32 rounded-full border-2 ${governanceFx.orb === "crystal" ? "border-red-300/70" : governanceFx.orb === "tense" ? "border-amber-300/60" : "border-cyan-300/70"} animate-pulse shadow-[0_0_60px_rgba(34,211,238,0.35)]`} />
+                <div className="absolute inset-[-28px] rounded-full border border-cyan-200/25 animate-ping" />
+                <div className="absolute inset-[-48px] rounded-full border border-fuchsia-400/10" />
+              </div>
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-[5.5rem] text-[9px] tracking-[0.2em] text-cyan-200/80 normal-case whitespace-nowrap">
+                {entityCount} field pulses ┬À swarm {visualCognitionState.swarmField.level}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-b from-[#010103]/20 via-transparent to-[#010103]/40" />
+        )}
+        {!T0_FIRST_MATCH_IDENTITY_V0 && (showReplayGhostTrails || replayTimelinePct > 0) ? (
           <div className="absolute inset-x-10 bottom-28 z-[6] flex flex-col gap-2">
             <div className="h-1.5 w-full max-w-md mx-auto rounded-full bg-white/10 overflow-hidden">
               <div
@@ -11071,6 +11337,47 @@ export default function AppRhizoh528() {
         ) : null}
       </div>
 
+      {!T0_FIRST_MATCH_IDENTITY_V0 && !thoughtFieldExpanded && attentionRhythm.show_cognitive_field_chip ? (
+        <RhizohCognitiveFieldV0
+          activeSurface={productSurface}
+          userIntent={t0UserIntent}
+          rhizohFieldState={rhizohFieldState}
+          collectiveDensity={visualCognitionState?.collectiveField?.density ?? 0.4}
+          anchorActive={Boolean(readUserAnchorV0())}
+          evolutionTrace={cognitionEvolutionTrace}
+          agentActivity={thinkingExposure.agentActivity}
+        />
+      ) : null}
+      {!T0_FIRST_MATCH_IDENTITY_V0 ? (
+        <>
+          <RhizohThoughtField3DV0
+            activeSurface={productSurface}
+            userIntent={t0UserIntent}
+            rhizohFieldState={rhizohFieldState}
+            collectiveDensity={visualCognitionState?.collectiveField?.density ?? 0.4}
+            anchorActive={Boolean(readUserAnchorV0())}
+            evolutionTrace={cognitionEvolutionTrace}
+            expanded={thoughtFieldExpanded}
+          />
+          <RhizohCognitionExposureBarV0
+            rhizohFieldState={rhizohFieldState}
+            localeTr={localeTr}
+            showThinkingPhaseChip={attentionRhythm.show_thinking_phase_chip}
+          />
+        </>
+      ) : null}
+      <T0ContinuitySurfaceRailV0
+        activeSurface={productSurface}
+        rhizohFieldState={rhizohFieldState}
+        localeTr={localeTr}
+        anchorEmphasisOverride={attentionRhythm.anchor_emphasis}
+        flowContinuity={flowContinuity}
+        ceol={ceolChoreography}
+        onFlowReturn={onFlowReturnV0}
+        onSelectSurface={onProductShellSelect}
+        onSoftAffordance={onT0SoftAffordanceV0}
+        onIntentChange={() => setT0UserIntent(readT0UserIntentV0())}
+      />
       <UnifiedProductShellBar active={productSurface} onSelect={onProductShellSelect} />
 
       {immersiveLiveTrace ? (
@@ -11103,7 +11410,7 @@ export default function AppRhizoh528() {
             </div>
           )}
           <div className="pointer-events-auto flex max-w-[18rem] flex-col gap-2">
-            {(location.pathname === "/" || location.pathname === "") ? (
+            {!T0_FIRST_MATCH_IDENTITY_V0 && (location.pathname === "/" || location.pathname === "") ? (
               <Link
                 to="/academy/observe"
                 className="rounded-2xl border border-emerald-400/35 bg-emerald-950/25 p-3 backdrop-blur-md transition-colors hover:border-emerald-300/50"
@@ -11481,17 +11788,19 @@ export default function AppRhizoh528() {
         ) : null}
 
         <div className="mt-auto flex w-full shrink-0 flex-col gap-1">
-        <RhizohCapabilityHaloV1
-          className="pointer-events-auto z-[12] mb-1"
-          collectivePulse={visualCognitionState.collectiveField?.density ?? 0.4}
-          onSeedIntent={(s) => {
-            setCmd(s);
-            setRhizohFieldState("LISTENING");
-          }}
-          onFocusLayer={(id) => {
-            uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: id });
-          }}
-        />
+        {!T0_FIRST_MATCH_IDENTITY_V0 ? (
+          <RhizohCapabilityHaloV1
+            className="pointer-events-auto z-[12] mb-1"
+            collectivePulse={visualCognitionState.collectiveField?.density ?? 0.4}
+            onSeedIntent={(s) => {
+              setCmd(s);
+              setRhizohFieldState("LISTENING");
+            }}
+            onFocusLayer={(id) => {
+              uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: id });
+            }}
+          />
+        ) : null}
 
         <RhizohT0ShellChromeV1
           phaseLabel={rhizohConversationUx.label}
@@ -11527,8 +11836,12 @@ export default function AppRhizoh528() {
             setCmd(seed);
             setRhizohFieldState("LISTENING");
           }}
-          showSemanticChips={cinematicOutput.showSemanticHints && shouldShowSemanticHintChipsV0()}
-          showVerboseHints={shouldShowVerboseCommandHintV0()}
+          showSemanticChips={
+            !T0_FIRST_MATCH_IDENTITY_V0 &&
+            cinematicOutput.showSemanticHints &&
+            shouldShowSemanticHintChipsV0()
+          }
+          showVerboseHints={!T0_FIRST_MATCH_IDENTITY_V0 && shouldShowVerboseCommandHintV0()}
           commandHint={resolveCommandHintV0()}
           commandLog={commandLog}
           showCommandLog={showCommandLog}

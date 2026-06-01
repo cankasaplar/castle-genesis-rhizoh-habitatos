@@ -38,6 +38,8 @@
 
 Expansion without dissolving ground: [`docs/LAYER_EXPANSION_PROTOCOL.md`](LAYER_EXPANSION_PROTOCOL.md) · habitat sprints — **not** silent edits to frozen `phase*.js` without stabilization graph.
 
+**Cognition exposure (T0 v0 — product, not frozen core):** [`RHIZOH_THINKING_MODEL_V0.md`](RHIZOH_THINKING_MODEL_V0.md) · [`RHIZOH_HONEST_COGNITION_SURFACE_V0.md`](RHIZOH_HONEST_COGNITION_SURFACE_V0.md) — visible transition field; opt-in 3D thought field; no fake chain-of-thought theater.
+
 ---
 
 ## 3. Paradigm: LLM = geçici motor · Rhizoh = süreklilik protokolü

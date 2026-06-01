@@ -94,7 +94,8 @@ export function initRhizoh() {
     opsAbuseReport: "/rhizoh/ops/abuse-report",
     opsModerationQueue: "/rhizoh/ops/moderation/queue",
     opsAgentSnapshots: "/rhizoh/ops/agent-snapshots",
-    opsHardeningStatus: "/rhizoh/ops/hardening/status"
+    opsHardeningStatus: "/rhizoh/ops/hardening/status",
+    academicObservatoryExport: "/rhizoh/academic/observatory/export"
   };
 
   return {

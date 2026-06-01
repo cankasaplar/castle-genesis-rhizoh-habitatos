@@ -8,14 +8,21 @@ import React, { Suspense } from "react";
 import { isRhizohSpatialProductShellEnabled } from "./rhizoh/runtime/castleWorldLayerGateV0.js";
 import AppRhizoh528T0 from "./AppRhizoh528T0.jsx";
 import AppRhizoh528LivingEntry from "./AppRhizoh528LivingEntry.jsx";
+import { ExpressiveRealityTransitionHostV0 } from "./rhizoh/runtime/ExpressiveRealityTransitionHostV0.jsx";
 
 export default function AppRhizoh528() {
   if (isRhizohSpatialProductShellEnabled()) {
-    return <AppRhizoh528LivingEntry />;
+    return (
+      <>
+        <ExpressiveRealityTransitionHostV0 />
+        <AppRhizoh528LivingEntry />
+      </>
+    );
   }
 
   return (
     <Suspense fallback={<div className="min-h-screen bg-black" data-rhizoh-t0-boot="1" />}>
+      <ExpressiveRealityTransitionHostV0 />
       <AppRhizoh528T0 />
     </Suspense>
   );

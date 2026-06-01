@@ -3,6 +3,8 @@
  * Backend motorundan ayrı; istemci ürün yüzeyi + gateway context besler.
  */
 
+import { isRhizohCreativeSurfaceEnabledV0 } from "../runtime/castleCreativeSurfaceGateV0.js";
+
 export const RHIZOH_CONVERSATION_ORCHESTRATOR_VERSION = "1.0.0";
 
 /** @typedef {"NEW_USER"|"INTRO"|"TRUST_BUILD"|"NORMAL_CHAT"|"POWER_MODE"} RhizohConversationPhase */
@@ -197,6 +199,14 @@ export function buildRhizohProductCapabilityEnvelope(phase, opts = {}) {
   ) {
     surfaces.governanceOpsBadge = false;
     backendHints.exposeGovernanceShadowUi = false;
+  }
+
+  if (isRhizohCreativeSurfaceEnabledV0()) {
+    surfaces.intentRoutingFull = true;
+    surfaces.constitutionalProductionDrawer = true;
+    surfaces.kernelHeavyPanels = true;
+    backendHints.attachFullRhizohProduction = true;
+    backendHints.sendConstitutionalFeedbackField = true;
   }
 
   return {

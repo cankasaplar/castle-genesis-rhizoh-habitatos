@@ -1,0 +1,92 @@
+{
+  "description": "L2-alpha — Metehan / Ankara castle; map emerges from located_at + owns edges.",
+  "graph": {
+    "nodes": [
+      {
+        "contract_version": "life-entity-v0",
+        "entity_id": "usr_metehan",
+        "entity_kind": "user",
+        "user_id": "usr_metehan",
+        "label": "Metehan",
+        "status": "active",
+        "created_at": "2026-05-01T00:00:00.000Z",
+        "updated_at": "2026-06-01T00:00:00.000Z"
+      },
+      {
+        "contract_version": "life-entity-v0",
+        "entity_id": "cst_ankara_home",
+        "entity_kind": "castle",
+        "user_id": "usr_metehan",
+        "label": "Ankara Castle",
+        "status": "active",
+        "created_at": "2026-05-10T00:00:00.000Z",
+        "updated_at": "2026-06-01T00:00:00.000Z"
+      },
+      {
+        "contract_version": "life-entity-v0",
+        "entity_id": "loc_ankara_tr",
+        "entity_kind": "location",
+        "user_id": "usr_metehan",
+        "label": "Ankara",
+        "status": "active",
+        "created_at": "2026-05-10T00:00:00.000Z",
+        "updated_at": "2026-06-01T00:00:00.000Z",
+        "payload": { "lat": 39.9334, "lon": 32.8597, "place_name": "Ankara, TR" }
+      }
+    ],
+    "edges": [
+      {
+        "contract_version": "life-entity-v0",
+        "edge_id": "edge_own_01",
+        "user_id": "usr_metehan",
+        "rel": "owns",
+        "from_id": "usr_metehan",
+        "to_id": "cst_ankara_home",
+        "status": "active",
+        "created_at": "2026-05-10T00:00:00.000Z"
+      },
+      {
+        "contract_version": "life-entity-v0",
+        "edge_id": "edge_loc_01",
+        "user_id": "usr_metehan",
+        "rel": "located_at",
+        "from_id": "cst_ankara_home",
+        "to_id": "loc_ankara_tr",
+        "status": "active",
+        "created_at": "2026-05-10T00:00:00.000Z"
+      },
+      {
+        "contract_version": "life-entity-v0",
+        "edge_id": "edge_thr_01",
+        "user_id": "usr_metehan",
+        "rel": "linked_thread",
+        "from_id": "cst_ankara_home",
+        "to_id": "mem_thr_a1",
+        "status": "active",
+        "created_at": "2026-05-26T14:00:00.000Z",
+        "payload": { "thread_id": "thr_20260526_a1" }
+      }
+    ]
+  },
+  "projection_bundle": {
+    "contract_version": "life-entity-v0",
+    "user_id": "usr_metehan",
+    "as_of": "2026-06-01T12:00:00.000Z",
+    "projections": [
+      {
+        "projection_kind": "map_pin",
+        "entity_id": "cst_ankara_home",
+        "label": "Ankara Castle",
+        "source_entity_ids": ["cst_ankara_home", "loc_ankara_tr"],
+        "location": { "lat": 39.9334, "lon": 32.8597, "place_name": "Ankara, TR" }
+      },
+      {
+        "projection_kind": "continuity_strip",
+        "entity_id": "cst_ankara_home",
+        "label": "Continue at Ankara Castle",
+        "source_entity_ids": ["cst_ankara_home"],
+        "thread_id": "thr_20260526_a1"
+      }
+    ]
+  }
+}

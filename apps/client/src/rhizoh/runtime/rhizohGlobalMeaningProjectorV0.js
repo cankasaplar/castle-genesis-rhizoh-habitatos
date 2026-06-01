@@ -36,6 +36,62 @@ const PROJECTION_MATRIX_V0 = Object.freeze({
     discourseStyle: "context_compressed",
     pauseMultiplier: 1.12
   }),
+  ja: Object.freeze({
+    explicitness01: 0.52,
+    compression01: 1.15,
+    rhythmBias: "calm",
+    discourseStyle: "context_compressed",
+    pauseMultiplier: 1.12
+  }),
+  de: Object.freeze({
+    explicitness01: 0.8,
+    compression01: 0.86,
+    rhythmBias: "measured",
+    discourseStyle: "linear_discourse",
+    pauseMultiplier: 0.96
+  }),
+  fr: Object.freeze({
+    explicitness01: 0.88,
+    compression01: 0.76,
+    rhythmBias: "flowing",
+    discourseStyle: "expressive_rhythm",
+    pauseMultiplier: 0.92
+  }),
+  pt: Object.freeze({
+    explicitness01: 0.95,
+    compression01: 0.72,
+    rhythmBias: "engaged",
+    discourseStyle: "expressive_rhythm",
+    pauseMultiplier: 0.9
+  }),
+  ru: Object.freeze({
+    explicitness01: 0.85,
+    compression01: 0.88,
+    rhythmBias: "measured",
+    discourseStyle: "linear_discourse",
+    pauseMultiplier: 1.02
+  }),
+  zh: Object.freeze({
+    explicitness01: 0.55,
+    compression01: 1.1,
+    rhythmBias: "calm",
+    discourseStyle: "context_compressed",
+    pauseMultiplier: 1.08
+  }),
+  ko: Object.freeze({
+    explicitness01: 0.58,
+    compression01: 1.05,
+    rhythmBias: "calm",
+    discourseStyle: "context_compressed",
+    pauseMultiplier: 1.06
+  }),
+  ar: Object.freeze({
+    explicitness01: 0.7,
+    compression01: 0.9,
+    rhythmBias: "calm",
+    discourseStyle: "balanced",
+    pauseMultiplier: 1.04
+  }),
   mixed: Object.freeze({
     explicitness01: 0.75,
     compression01: 0.85,

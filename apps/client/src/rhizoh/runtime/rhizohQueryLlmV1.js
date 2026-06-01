@@ -51,6 +51,16 @@ import {
   buildRhizohProductCapabilityEnvelope,
   describeRhizohPhaseExitProgressV0
 } from "../product/rhizohConversationOrchestratorV1.js";
+import { registerRhizohConversationRtlAfterTurnV0 } from "../product/rhizohConversationRtlBridgeV0.js";
+import {
+  buildLifeContinuityContextHintsV0,
+  readUserAnchorV0
+} from "./memoryAnchorSystemV0.js";
+import {
+  buildRhizohMultilingualPackV0,
+  pushRhizohTurnContinuityPulseV0
+} from "./rhizohMultilingualBridgeV0.js";
+import { extractPalAnchorFromLifeProjectionV0 } from "./expressiveRealityTransitionV0.js";
 import {
   loadRhizohProductSession,
   readRhizohExplicitPowerUnlock,
@@ -359,8 +369,9 @@ export async function queryRhizohLLM({
       });
     }
   }
+  const rhizohPhaseBeforeTurn = rhizohProductSnap.conversationPhase;
   const rhizohPhaseForTurn = advanceRhizohConversationPhase(
-    rhizohProductSnap.conversationPhase,
+    rhizohPhaseBeforeTurn,
     {
       trust: Number(relPhase.trust || 0),
       familiarity: Number(relPhase.familiarity || 0),
@@ -693,6 +704,11 @@ export async function queryRhizohLLM({
         ? { Authorization: `Bearer ${cfg.rhizohLlmToken}` }
         : {};
 
+  const rhizohMultilingualPack = buildRhizohMultilingualPackV0({
+    message: trimmed,
+    navLocale: typeof navigator !== "undefined" ? navigator.language : ""
+  });
+
   try {
     const fetchOpts = {
       method: "POST",
@@ -723,19 +739,25 @@ export async function queryRhizohLLM({
             capabilityEnvelope: rhizohCapabilityEnvelope
           },
           rhizohConversationLlmDirective: rhizohLlmDirective,
+          rhizohMultilingual: rhizohMultilingualPack.context,
+          rhizohMultilingualDirective: rhizohMultilingualPack.directive,
           /** Passive cohort routing — gateway resolves schema; client does not select. */
           ...(getRhizohCohortIdForRequestV0()
             ? { cohortId: getRhizohCohortIdForRequestV0() }
             : {}),
+          life_continuity: buildLifeContinuityContextHintsV0(),
           rhizohMemoryContract: `${[
-            "continuity state is authoritative session memory (identity, castleState, ghostPet, recentReality, codex, relationship). Do not invent facts beyond it; answer in natural Turkish and reference it when relevant. When you should hold quiet companionship without spoken reply, output only the tag <SILENCE> (optional attributes: intensity=0..1 resonance=0..1 durationMs=milliseconds state=listening|present).",
+            "continuity state is authoritative session memory (identity, castleState, ghostPet, recentReality, codex, relationship). Do not invent facts beyond it; reference continuity when relevant.",
+            rhizohMultilingualPack.memoryContractAddon,
+            "",
+            rhizohMultilingualPack.directive,
             "",
             rhizohLlmDirective
           ].join("\n")}`
         },
         options: {
           maxTokens: maxTok,
-          language: "tr-TR",
+          language: rhizohMultilingualPack.respondBcp47,
           generationMode: modeKey
         }
       }),
@@ -788,6 +810,22 @@ export async function queryRhizohLLM({
     }
     const turnTraceId = resolveRhizohTurnTraceIdV0(json?.traceId, clientTraceId);
     const normalized = publishRhizohLlmReplyNormalizedV0(normalizeRhizohLlmGatewayResponseV0(json));
+    registerRhizohConversationRtlAfterTurnV0({
+      prevPhase: rhizohPhaseBeforeTurn,
+      nextPhase: rhizohPhaseForTurn,
+      message: trimmed,
+      normalized: { ...normalized, traceId: turnTraceId },
+      prevThreadId: String(readUserAnchorV0()?.thread_id || "").trim() || undefined
+    });
+    const palForPulse = extractPalAnchorFromLifeProjectionV0(
+      normalized.lifeEntityProjection,
+      normalized.lifeEntityResolver
+    );
+    pushRhizohTurnContinuityPulseV0({
+      message: trimmed,
+      normalized: { ...normalized, traceId: turnTraceId },
+      palLabel: palForPulse.label
+    });
     const cohortIdSent = getRhizohCohortIdForRequestV0();
     publishRhizohSchemaRuntimeAuditV0({
       traceId: turnTraceId,

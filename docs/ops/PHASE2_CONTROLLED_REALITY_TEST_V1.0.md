@@ -23,7 +23,7 @@
 | 4 | **Continuity** | Return after 10–15 min shows strip / visit echo change |
 | 5 | **Mutation feedback** | User action produces **felt** UX echo, not console-only log |
 
-**Explicitly off:** Studio, SpiralMMO, robotics, voice agent (Phase 3), Phase1 data-plane signal.
+**Explicitly off (MODE 2 cohort scope — ops, not core freeze law):** Studio, SpiralMMO, robotics, voice agent (Phase 3), Phase1 data-plane signal. See [`RHIZOH_SURFACE_LAYER_OPERATING_MODEL_V0.md`](../RHIZOH_SURFACE_LAYER_OPERATING_MODEL_V0.md) — target product opens Studio/Map as **interactive surface** while L1/L2 stay frozen.
 
 **Positioning (public):** *“Closed technical and experience test environment”* — not *“Rhizoh is now live for everyone.”*
 
@@ -35,6 +35,7 @@
 |------|-----|------|-------|---------|-------|
 | **MODE 1 — DEV OBSERVE** | Founder only | Local **or** dedicated staging subdomain — **avoid** `VITE_DEBUG=1` on shared prod if others may hit URL | `VITE_DEBUG=1` or granular `VITE_RHIZOH_*_DEBUG=1` | All core ON; Spiral/voice OFF | Internal |
 | **MODE 2 — COHORT REAL** | 1–10 invitees | `rhizoh.com` | **`VITE_DEBUG=0`** | Castle + continuity ON; Studio/Spiral OFF | Phase 0-lite + invite consent |
+| **MODE 4 — CREATIVE SURFACE** | 1–10 invitees | prod host | **`VITE_DEBUG=0`** | **E2-X** — Studio + Map + L1/L2 ON | [`DEPLOY_MATRIX` §7](../../apps/client/docs/DEPLOY_MATRIX_V1.0.md) |
 | **MODE 3 — EXPERIMENTAL** | Founder only | **Separate** staging host (not cohort prod) | Per staging policy | Voice/agent when flags exist | Counsel before any cohort exposure |
 
 **Rule:** MODE 2 is the only mode that uses **production hostname** for external humans.

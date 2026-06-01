@@ -11,4 +11,5 @@ test("production bootstrap exposes genesis runtime + SSE paths (mount contract)"
   assert.equal(r.genesisReplay, "/rhizoh/genesis/replay");
   assert.equal(r.genesisReplayEquivalence, "/rhizoh/genesis/replay/equivalence");
   assert.equal(r.genesisReplayEvolution, "/rhizoh/genesis/replay/evolution");
+  assert.equal(r.academicObservatoryExport, "/rhizoh/academic/observatory/export");
 });

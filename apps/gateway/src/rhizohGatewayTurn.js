@@ -18,6 +18,8 @@ import { addTranscript } from "./studioOpsStore.js";
 import { applyRhizohProductionLayer } from "./rhizohProductionLayerGateway.js";
 import { runRhizohLlmTurnWithOtelSpan } from "./infra/opentelemetryGateway.js";
 import { recordRhizohLlmTurnCompleted } from "./infra/rhizohEnterpriseMetrics.js";
+import { appendLifeContinuityAfterGatewayTurnV0 } from "./rhizoh/lifeContinuityGatewayHookV0.js";
+import { attachAcademicObservatoryAfterGatewayTurnV0 } from "./rhizoh/academicObservationExportV0.js";
 
 function maskOpaqueId(value) {
   const t = String(value || "");
@@ -190,6 +192,29 @@ async function executeRhizohGatewayTurn(traceId, input) {
         meta: { directive: result?.directive, provider: result?.provider, llmKeyBillingOwner: result.llmKeyBillingOwner, traceId }
       });
       await autoCompactMemories({ scope: "users", id: auth.uid });
+    }
+
+    mark("life_continuity");
+    if (auth.ok && result) {
+      const lifeAppend = appendLifeContinuityAfterGatewayTurnV0({
+        auth,
+        safePayload,
+        result,
+        traceId
+      });
+      if (lifeAppend?.ok === false && process.env.CASTLE_LIFE_CONTINUITY_APPEND === "1") {
+        console.warn(
+          "[rhizoh.life_continuity]",
+          JSON.stringify({ traceId, code: lifeAppend.code, phase: lifeAppend.phase })
+        );
+      }
+      attachAcademicObservatoryAfterGatewayTurnV0({
+        auth,
+        safePayload,
+        result,
+        traceId,
+        lifeAppend
+      });
     }
 
     mark("done");

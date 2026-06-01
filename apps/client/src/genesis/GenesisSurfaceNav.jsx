@@ -24,6 +24,9 @@ export function GenesisSurfaceNav({ active }) {
       <Link to="/academy/observe" className={`${linkCls} ${pill("observe")}`} title="SSE · replay · evolution (product surface)">
         Observe live
       </Link>
+      <Link to="/academy/research" className={`${linkCls} text-teal-200/70 hover:text-teal-100`}>
+        Research
+      </Link>
       <Link to="/genesis/academy" className={`${linkCls} ${pill("academy")}`}>
         Academy
       </Link>

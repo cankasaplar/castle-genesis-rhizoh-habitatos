@@ -4,6 +4,11 @@
  */
 
 import { projectReplySchemaFromGatewayV1, RHIZOH_REPLY_SCHEMA_V1 } from "./rhizohReplySchemaRegistryV1.js";
+import { dispatchExpressiveRealityContextV0 } from "./expressiveRealityTransitionV0.js";
+import {
+  isExpressiveRealityBootCompleteV0,
+  triggerMemoryRecallMicroRtlV0
+} from "./expressiveRealityMicroTransitionV0.js";
 
 export const RHIZOH_LLM_REPLY_NORMALIZED_SCHEMA_V0 = "castle.rhizoh.llm_reply_normalized.v0";
 
@@ -76,7 +81,11 @@ export function normalizeRhizohLlmGatewayResponseV0(gatewayJson) {
     intents: Array.isArray(json.intents) ? Object.freeze([...json.intents]) : Object.freeze([]),
     llmKeyBillingOwner: json.llmKeyBillingOwner ?? null,
     llmKeyOrigin: json.llmKeyOrigin ?? null,
-    llmKeySourceUsed: json.llmKeySourceUsed ?? null
+    llmKeySourceUsed: json.llmKeySourceUsed ?? null,
+    lifeContinuity: json.lifeContinuity ?? null,
+    lifeEntityProjection: json.lifeEntityProjection ?? null,
+    lifeEntityResolver: json.lifeEntityResolver ?? null,
+    lifeContinuityRecall: json.lifeContinuityRecall ?? null
   });
 }
 
@@ -114,5 +123,23 @@ export function toReplyFormatDriftSampleV0(normalized, traceId = "") {
 export function publishRhizohLlmReplyNormalizedV0(normalized) {
   if (typeof window === "undefined") return normalized;
   window.__CASTLE_RHIZOH_LLM_REPLY_NORMALIZED__ = normalized;
+  if (normalized.lifeContinuity || normalized.lifeEntityProjection) {
+    const lc =
+      normalized.lifeContinuity && typeof normalized.lifeContinuity === "object"
+        ? /** @type {Record<string, unknown>} */ (normalized.lifeContinuity)
+        : null;
+    dispatchExpressiveRealityContextV0({
+      threadId: lc ? String(lc.thread_id || "") : "",
+      traceId: normalized.traceId,
+      lifeContinuity: normalized.lifeContinuity,
+      lifeEntityProjection: normalized.lifeEntityProjection,
+      lifeEntityResolver: normalized.lifeEntityResolver
+    });
+    if (isExpressiveRealityBootCompleteV0() && normalized.lifeContinuityRecall) {
+      triggerMemoryRecallMicroRtlV0(normalized.lifeContinuityRecall, {
+        threadId: lc ? String(lc.thread_id || "") : ""
+      });
+    }
+  }
   return normalized;
 }
