@@ -1,5 +1,5 @@
 import React, { memo, useEffect } from "react";
-import { Send, Loader2, Layers } from "lucide-react";
+import { Send, Layers } from "lucide-react";
 import { isCastleLayerRenderableV1, publishCastleLayerAuditV1 } from "../castle/layers/castleLayerGateV1.js";
 import { RhizohGatewayBanner } from "./RhizohGatewayBanner.jsx";
 import { RhizohTrustUpdateStrip } from "./RhizohTrustUpdateStrip.jsx";
@@ -243,10 +243,13 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
               id="castle-rhizoh-send"
               onClick={() => onSend?.()}
               disabled={busy || !String(cmd || "").trim()}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-500/90 text-black disabled:opacity-40"
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-500/90 text-black disabled:opacity-40 ${
+                busy ? "opacity-55" : ""
+              }`}
               aria-label="Gönder"
+              aria-busy={busy}
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              <Send className="h-4 w-4" />
             </button>
           </div>
         ) : null}

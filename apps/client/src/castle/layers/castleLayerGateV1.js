@@ -8,7 +8,6 @@ import { isRhizohT0FirstMatchIdentityV0 } from "../../rhizoh/runtime/rhizohT0Fir
 const FIRST_MATCH_BLOCKED_LAYER_IDS_V1 = new Set([
   "debug_overlay_panels",
   "t0_slot_layer_toggle",
-  "t0_capability_wheel",
   "gateway_banner_panel",
   "first_interaction_chips",
   "trust_strip_expanded"

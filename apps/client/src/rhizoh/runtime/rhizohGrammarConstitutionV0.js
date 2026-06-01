@@ -112,12 +112,13 @@ export function resolveGrammarFromUtteranceV0(utterance) {
   if (!text) return empty;
 
   const enter =
-    /\b(geç|geçelim|aç|open|enter|go to|switch)\b/.test(text) ||
-    text.includes("katman");
-  const studio = /\b(studio|stüdyo)\b/.test(text);
-  const map = /\b(map|harita|world|dünya)\b/.test(text);
+    /\b(geç|geçelim|geçer|gidelim|git|gidelim|aç|open|enter|go to|switch|göster)\b/.test(text) ||
+    text.includes("katman") ||
+    /\b(ya|ye)\s*geç\b/.test(text);
+  const studio = /\b(studio|stüdyo|studyo)\b/.test(text);
+  const map = /\b(map|harita|world|dünya|dunya)\b/.test(text);
 
-  if (studio && enter) {
+  if (studio && (enter || /\b(studio|stüdyo)\s*(ya|ye)?\s*geç/.test(text))) {
     const dict = RHIZOH_GRAMMAR_DICTIONARY_V0.studio;
     return Object.freeze({
       action: "ENTER_SURFACE",

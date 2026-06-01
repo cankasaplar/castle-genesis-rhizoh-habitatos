@@ -95,6 +95,10 @@ import {
   resolveCeolChoreographyV0
 } from "./rhizoh/runtime/rhizohCeolV0.js";
 import {
+  MICRO_MAP_SURFACE_OPEN_V0,
+  triggerMicroExpressiveRealityTransitionV0
+} from "./rhizoh/runtime/expressiveRealityMicroTransitionV0.js";
+import {
   isRhizohT0FirstMatchIdentityV0,
   resolveRhizohT0ChatBottomCssV0
 } from "./rhizoh/runtime/rhizohT0FirstMatchIdentityV0.js";
@@ -8163,10 +8167,18 @@ export default function AppRhizoh528() {
   useEffect(() => {
     const s = productSurface;
     if (s === "world") {
-      void setRealityMode("GLOBE", { source: "PRODUCT_SHELL" });
+      void setRealityMode(
+        T0_FIRST_MATCH_IDENTITY_V0 ? "REAL_MAP" : "GLOBE",
+        { source: T0_FIRST_MATCH_IDENTITY_V0 ? "PRODUCT_SHELL_WORLD_MAP" : "PRODUCT_SHELL" }
+      );
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
       uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
       setShowDetailDrawer(false);
+      if (T0_FIRST_MATCH_IDENTITY_V0) {
+        window.setTimeout(() => {
+          window.__CASTLE_CESIUM__?.flyToIstanbul?.();
+        }, 120);
+      }
       return;
     }
     if (s === "hall") {
@@ -8215,6 +8227,9 @@ export default function AppRhizoh528() {
     (id) => {
       const surface = String(id || "world");
       writeProductSurfaceV0(surface);
+      triggerMicroExpressiveRealityTransitionV0(MICRO_MAP_SURFACE_OPEN_V0, {
+        detail: { surface, source: "product_shell_v0" }
+      });
       if (surface === "world" && productSurface === "world") {
         setShowDetailDrawer(false);
         void setRealityMode("GLOBE", { source: "PRODUCT_SHELL_WORLD_RECENTER" });
@@ -10783,7 +10798,7 @@ export default function AppRhizoh528() {
         idToken = "";
       }
 
-      const out = await queryRhizohLLM({
+      let out = await queryRhizohLLM({
         message: raw,
         provider: "openai",
         connectionId: "",
@@ -10800,6 +10815,24 @@ export default function AppRhizoh528() {
         persistRhizohEmotions: persistRhizohEmotionSession,
         productDecisionOverlay: rhizohProductDecisionOverlayRef.current
       });
+
+      if (out.source === "fallback") {
+        const grammarRetry = applyGrammarFromUtteranceV0(raw, {
+          onEnterSurface: onProductShellSelect
+        });
+        if (grammarRetry?.action === "ENTER_SURFACE" && grammarRetry.surface) {
+          const surfaceLabel =
+            grammarRetry.surface === "studio"
+              ? "Stüdyo"
+              : grammarRetry.surface === "world"
+                ? "Dünya"
+                : grammarRetry.surface;
+          out = {
+            ...out,
+            reply: `${out.reply} · ${surfaceLabel} katmanına geçildi.`
+          };
+        }
+      }
 
       const normExec = buildRhizohNormalizedLlmOutput(out, gatewayUx, mapSurfaceActive);
       const procExec = materializeCommsFromNormalized(normExec, out.reply);
@@ -11321,7 +11354,15 @@ export default function AppRhizoh528() {
             </div>
           </>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-b from-[#010103]/20 via-transparent to-[#010103]/40" />
+          <>
+            <div className="absolute inset-0 bg-gradient-to-b from-[#010103]/25 via-transparent to-[#010103]/55" />
+            <div className="absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+              <div className="h-24 w-24 rounded-full border border-cyan-400/25 bg-cyan-500/5 shadow-[0_0_48px_rgba(34,211,238,0.18)]" />
+              <p className="mt-3 text-center text-[9px] tracking-[0.18em] text-cyan-200/70 normal-case">
+                İstanbul · dünya katmanı
+              </p>
+            </div>
+          </>
         )}
         {!T0_FIRST_MATCH_IDENTITY_V0 && (showReplayGhostTrails || replayTimelinePct > 0) ? (
           <div className="absolute inset-x-10 bottom-28 z-[6] flex flex-col gap-2">
@@ -11435,6 +11476,7 @@ export default function AppRhizoh528() {
               </Link>
             ) : null}
             <CastleAccountBadge auth={castleAuth} />
+            {!T0_FIRST_MATCH_IDENTITY_V0 ? (
             <div className="rounded-2xl border border-indigo-300/35 bg-indigo-300/15 p-3 backdrop-blur-md">
               <div className="text-[10px] tracking-wide text-indigo-100 normal-case leading-relaxed whitespace-pre-wrap">
                 {welcomeCard.primary}
@@ -11453,6 +11495,15 @@ export default function AppRhizoh528() {
                 {showDetailDrawer ? "Close details" : "More ┬À agents ┬À events ┬À share"}
               </button>
             </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowDetailDrawer((v) => !v)}
+                className="rounded-xl border border-white/12 bg-black/40 px-3 py-2 text-[9px] tracking-[0.12em] text-white/55 normal-case hover:text-white/80"
+              >
+                {showDetailDrawer ? "Detayları kapat" : "Detay"}
+              </button>
+            )}
           </div>
         </div>
 
@@ -11796,20 +11847,20 @@ export default function AppRhizoh528() {
           aria-hidden
         />
 
-        {!T0_FIRST_MATCH_IDENTITY_V0 ? (
-          <RhizohCapabilityHaloV1
-            className="pointer-events-auto fixed left-1/2 z-[62] mb-0 max-w-3xl w-full -translate-x-1/2 px-2 sm:px-4"
-            style={{ bottom: `calc(${resolveRhizohT0ChatBottomCssV0({ compactRail: false })} + 5.5rem)` }}
-            collectivePulse={visualCognitionState.collectiveField?.density ?? 0.4}
-            onSeedIntent={(s) => {
-              setCmd(s);
-              setRhizohFieldState("LISTENING");
-            }}
-            onFocusLayer={(id) => {
-              uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: id });
-            }}
-          />
-        ) : null}
+        <RhizohCapabilityHaloV1
+          className={`pointer-events-auto fixed left-1/2 z-[62] mb-0 max-w-3xl w-full -translate-x-1/2 px-2 sm:px-4 ${
+            T0_FIRST_MATCH_IDENTITY_V0 ? "scale-[0.88] origin-bottom opacity-90" : ""
+          }`}
+          style={{ bottom: `calc(${resolveRhizohT0ChatBottomCssV0()} + 5.25rem)` }}
+          collectivePulse={visualCognitionState.collectiveField?.density ?? 0.4}
+          onSeedIntent={(s) => {
+            setCmd(s);
+            setRhizohFieldState("LISTENING");
+          }}
+          onFocusLayer={(id) => {
+            uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: id });
+          }}
+        />
 
         <div
           className="pointer-events-none fixed inset-x-0 z-[62] flex justify-center px-2 sm:px-4"

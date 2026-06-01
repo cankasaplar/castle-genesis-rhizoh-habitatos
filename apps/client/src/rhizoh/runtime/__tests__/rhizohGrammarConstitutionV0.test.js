@@ -27,6 +27,12 @@ describe("rhizohGrammarConstitutionV0", () => {
     expect(r.seal).toBe("dictionary_seal_v0");
   });
 
+  it("maps informal studio ya geç to ENTER_SURFACE", () => {
+    const r = resolveGrammarFromUtteranceV0("studio ya geçer misin");
+    expect(r.action).toBe("ENTER_SURFACE");
+    expect(r.surface).toBe("studio");
+  });
+
   it("evolution binding sentence is locked", () => {
     expect(RGCS_EVOLUTION_BINDING_SENTENCE_V0).toContain("meaning space");
   });
