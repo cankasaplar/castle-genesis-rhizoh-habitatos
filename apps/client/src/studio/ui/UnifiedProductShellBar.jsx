@@ -1,15 +1,15 @@
 import React from "react";
-import { RHIZOH_PRODUCT_TOPOLOGY_V0 } from "../../rhizoh/product/rhizohProductTopologyV0.js";
+import { RHIZOH_PRODUCT_SURFACE_COPY_TR_V0 } from "../../rhizoh/runtime/rhizohProductCopyV0.js";
 
-/** Phase P1 — single product navigation (one UX language with the studio drawer). */
-export const PRODUCT_SHELL_ITEMS = [
-  { id: "world", label: "World" },
-  { id: "hall", label: "Hall" },
-  { id: "greenroom", label: "Green Room" },
-  { id: "broadcast", label: "Broadcast" },
-  { id: "studio", label: "Studio" },
-  { id: "profile", label: "Profile" }
-];
+/** Phase P1 — single product navigation (Turkish-first copy SSOT). */
+export const PRODUCT_SHELL_ITEMS = Object.freeze([
+  { id: "world", label: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.world.shell },
+  { id: "hall", label: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.hall.shell },
+  { id: "greenroom", label: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.greenroom.shell },
+  { id: "broadcast", label: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.broadcast.shell },
+  { id: "studio", label: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.studio.shell },
+  { id: "profile", label: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.profile.shell }
+]);
 
 export const PRODUCT_SHELL_IDS = new Set(PRODUCT_SHELL_ITEMS.map((x) => x.id));
 
@@ -29,7 +29,7 @@ export function UnifiedProductShellBar({ active, onSelect }) {
             <button
               key={item.id}
               type="button"
-              title={RHIZOH_PRODUCT_TOPOLOGY_V0[item.id]?.labelTr || item.label}
+              title={item.label}
               onClick={() => onSelect(item.id)}
               className={`min-w-[3.25rem] flex-1 touch-manipulation rounded-lg border px-1 py-2 text-[8px] font-black uppercase tracking-[0.14em] transition-colors sm:min-w-0 sm:px-2 sm:text-[9px] sm:tracking-[0.18em] ${
                 on

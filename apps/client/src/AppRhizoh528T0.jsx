@@ -69,6 +69,11 @@ import { readT0UserIntentV0, writeT0UserIntentV0 } from "./rhizoh/runtime/t0Cont
 import { readUserAnchorV0 } from "./rhizoh/runtime/memoryAnchorSystemV0.js";
 import { applyGrammarFromUtteranceV0 } from "./rhizoh/runtime/rhizohGrammarBridgeV0.js";
 import {
+  emitLocalActionAuthorityV0,
+  LOCAL_AUTHORITY_LOCAL_V0,
+  resolveLocalActionAuthorityV0
+} from "./rhizoh/runtime/rhizohLocalActionAuthorityV0.js";
+import {
   readHonestCognitionAmbientEnabledV0,
   readThoughtFieldExpandedV0
 } from "./rhizoh/runtime/rhizohHonestCognitionSurfaceV0.js";
@@ -10739,9 +10744,40 @@ export default function AppRhizoh528() {
     setRhizohMainHudReply(null);
     const intent = raw.toUpperCase();
     const isBroadcastIntent =
-      /YAYIN|BROADCAST|GREENROOM|LIVE|STUDIO|CANLI/.test(intent) ||
-      /canl─▒|yay─▒n|yay─▒n─▒|yay─▒nla|\byayin\b|\bcanli\b/i.test(raw);
+      /\b(YAYIN|BROADCAST|GREENROOM|LIVE|CANLI)\b/.test(intent) ||
+      /\b(yayın|yayin|yayınla|canlı|canli|green\s*room)\b/i.test(raw);
     const traceId = `TRC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+
+    const localAction = resolveLocalActionAuthorityV0(raw);
+    if (localAction.authority === LOCAL_AUTHORITY_LOCAL_V0) {
+      applyGrammarFromUtteranceV0(raw, { onEnterSurface: onProductShellSelect });
+      recordFlowIntentV0(
+        raw,
+        localAction.surface || productSurface,
+        localAction.intentBias || t0UserIntent || readT0UserIntentV0()
+      );
+      emitLocalActionAuthorityV0(localAction);
+      logRhizohHealth("local_action", {
+        kind: localAction.kind,
+        surface: localAction.surface,
+        intent: localAction.intentBias
+      });
+      pushT0ContinuityPulseV0(localAction.pulse_line, "local_action");
+      setRhizohMainHudReply({
+        text: localAction.user_reply_tr,
+        source: "local-rhizoh",
+        at: Date.now()
+      });
+      setCommandLog((prev) => [
+        { ts: Date.now(), raw, source: "local-rhizoh" },
+        ...prev
+      ].slice(0, 24));
+      setRhizohFieldState("IDLE");
+      setRealityState("WORLD_STABLE");
+      setDemoLoopState("IDLE");
+      setCmd("");
+      return;
+    }
     setGreenRoomLive(null);
     greenRoomSparklineRef.current = [];
     setSparklineVersion(0);
@@ -10815,24 +10851,6 @@ export default function AppRhizoh528() {
         persistRhizohEmotions: persistRhizohEmotionSession,
         productDecisionOverlay: rhizohProductDecisionOverlayRef.current
       });
-
-      if (out.source === "fallback") {
-        const grammarRetry = applyGrammarFromUtteranceV0(raw, {
-          onEnterSurface: onProductShellSelect
-        });
-        if (grammarRetry?.action === "ENTER_SURFACE" && grammarRetry.surface) {
-          const surfaceLabel =
-            grammarRetry.surface === "studio"
-              ? "Stüdyo"
-              : grammarRetry.surface === "world"
-                ? "Dünya"
-                : grammarRetry.surface;
-          out = {
-            ...out,
-            reply: `${out.reply} · ${surfaceLabel} katmanına geçildi.`
-          };
-        }
-      }
 
       const normExec = buildRhizohNormalizedLlmOutput(out, gatewayUx, mapSurfaceActive);
       const procExec = materializeCommsFromNormalized(normExec, out.reply);

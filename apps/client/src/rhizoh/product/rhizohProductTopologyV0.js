@@ -5,13 +5,33 @@
 
 /** @typedef {'world'|'hall'|'greenroom'|'broadcast'|'studio'|'profile'} RhizohProductSurfaceIdV0 */
 
+import { RHIZOH_PRODUCT_SURFACE_COPY_TR_V0 } from "../runtime/rhizohProductCopyV0.js";
+
 export const RHIZOH_PRODUCT_TOPOLOGY_V0 = Object.freeze({
-  world: Object.freeze({ path: "/", labelTr: "Dünya / çekirdek" }),
-  hall: Object.freeze({ path: "/hall/main", labelTr: "Salon" }),
-  greenroom: Object.freeze({ path: "/greenroom/main", labelTr: "Green Room" }),
-  broadcast: Object.freeze({ path: "/broadcast/main", labelTr: "Yayın" }),
-  studio: Object.freeze({ path: "/studio", labelTr: "Stüdyo" }),
-  profile: Object.freeze({ path: "/settings", labelTr: "Profil" })
+  world: Object.freeze({
+    path: "/",
+    labelTr: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.world.shell
+  }),
+  hall: Object.freeze({
+    path: "/hall/main",
+    labelTr: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.hall.shell
+  }),
+  greenroom: Object.freeze({
+    path: "/greenroom/main",
+    labelTr: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.greenroom.shell
+  }),
+  broadcast: Object.freeze({
+    path: "/broadcast/main",
+    labelTr: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.broadcast.shell
+  }),
+  studio: Object.freeze({
+    path: "/studio",
+    labelTr: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.studio.shell
+  }),
+  profile: Object.freeze({
+    path: "/settings",
+    labelTr: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.profile.shell
+  })
 });
 
 /**

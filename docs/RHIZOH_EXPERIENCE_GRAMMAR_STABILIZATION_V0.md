@@ -17,6 +17,7 @@
 | 3 | **Rhythm** | When does it show? | ARL |
 | 4 | **Stability** | How much can it carry? | Exposure budget |
 | 5 | **Continuity** | Where from · where to? | FCL |
+| — | **LAA** (routing) | Local action before remote LLM | [`RHIZOH_LOCAL_ACTION_AUTHORITY_V0.md`](RHIZOH_LOCAL_ACTION_AUTHORITY_V0.md) |
 
 ---
 

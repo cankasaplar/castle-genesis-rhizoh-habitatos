@@ -49,6 +49,30 @@ export const RHIZOH_GRAMMAR_DICTIONARY_V0 = Object.freeze({
     intentBias: T0_INTENT_PRODUCE_V0,
     pillar: T0_GRAMMAR_AXIS_STATE_V0
   }),
+  hall: Object.freeze({
+    seal: "dictionary_seal_v0",
+    surface: "hall",
+    intentBias: T0_INTENT_OBSERVE_V0,
+    pillar: T0_GRAMMAR_AXIS_STATE_V0
+  }),
+  greenroom: Object.freeze({
+    seal: "dictionary_seal_v0",
+    surface: "greenroom",
+    intentBias: T0_INTENT_CONNECT_V0,
+    pillar: T0_GRAMMAR_AXIS_STATE_V0
+  }),
+  broadcast: Object.freeze({
+    seal: "dictionary_seal_v0",
+    surface: "broadcast",
+    intentBias: T0_INTENT_CONNECT_V0,
+    pillar: T0_GRAMMAR_AXIS_STATE_V0
+  }),
+  profile: Object.freeze({
+    seal: "dictionary_seal_v0",
+    surface: "profile",
+    intentBias: T0_INTENT_OBSERVE_V0,
+    pillar: T0_GRAMMAR_AXIS_STATE_V0
+  }),
   map: Object.freeze({
     seal: "dictionary_seal_v0",
     surface: "world",
@@ -115,30 +139,51 @@ export function resolveGrammarFromUtteranceV0(utterance) {
     /\b(geç|geçelim|geçer|gidelim|git|gidelim|aç|open|enter|go to|switch|göster)\b/.test(text) ||
     text.includes("katman") ||
     /\b(ya|ye)\s*geç\b/.test(text);
-  const studio = /\b(studio|stüdyo|studyo)\b/.test(text);
-  const map = /\b(map|harita|world|dünya|dunya)\b/.test(text);
+  const bareSurface =
+    /^(studio|stüdyo|studyo|dünya|dunya|harita|map|world|salon|hall|green\s*room|greenroom|yayın|yayin|broadcast|profil|profile|akademi|academy)\s*[!.?]*$/.test(
+      text
+    );
 
-  if (studio && (enter || /\b(studio|stüdyo)\s*(ya|ye)?\s*geç/.test(text))) {
-    const dict = RHIZOH_GRAMMAR_DICTIONARY_V0.studio;
+  /** @type {Array<{ match: boolean, dict: typeof RHIZOH_GRAMMAR_DICTIONARY_V0.studio }>} */
+  const surfaceRules = [
+    {
+      match:
+        /\b(studio|stüdyo|studyo)\b/.test(text) &&
+        (enter || bareSurface || /\b(studio|stüdyo)\s*(ya|ye)?\s*geç/.test(text)),
+      dict: RHIZOH_GRAMMAR_DICTIONARY_V0.studio
+    },
+    {
+      match:
+        /\b(map|harita|world|dünya|dunya)\b/.test(text) && (enter || bareSurface),
+      dict: RHIZOH_GRAMMAR_DICTIONARY_V0.map
+    },
+    {
+      match: /\b(salon|hall)\b/.test(text) && (enter || bareSurface),
+      dict: RHIZOH_GRAMMAR_DICTIONARY_V0.hall
+    },
+    {
+      match: /\b(green\s*room|greenroom|yeşil\s*oda)\b/.test(text) && (enter || bareSurface),
+      dict: RHIZOH_GRAMMAR_DICTIONARY_V0.greenroom
+    },
+    {
+      match: /\b(yayın|yayin|broadcast|canlı|canli)\b/.test(text) && (enter || bareSurface),
+      dict: RHIZOH_GRAMMAR_DICTIONARY_V0.broadcast
+    },
+    {
+      match: /\b(profil|profile|ayarlar|settings|akademi|academy)\b/.test(text) && (enter || bareSurface),
+      dict: RHIZOH_GRAMMAR_DICTIONARY_V0.profile
+    }
+  ];
+
+  for (const rule of surfaceRules) {
+    if (!rule.match) continue;
     return Object.freeze({
       action: "ENTER_SURFACE",
-      surface: dict.surface,
-      intentBias: dict.intentBias,
+      surface: rule.dict.surface,
+      intentBias: rule.dict.intentBias,
       mutation: Object.freeze({ allowed: true, reason: "meaning_variation" }),
-      seal: dict.seal,
-      pillar: dict.pillar
-    });
-  }
-
-  if (map && enter) {
-    const dict = RHIZOH_GRAMMAR_DICTIONARY_V0.map;
-    return Object.freeze({
-      action: "ENTER_SURFACE",
-      surface: dict.surface,
-      intentBias: dict.intentBias,
-      mutation: Object.freeze({ allowed: true, reason: "meaning_variation" }),
-      seal: dict.seal,
-      pillar: dict.pillar
+      seal: rule.dict.seal,
+      pillar: rule.dict.pillar
     });
   }
 

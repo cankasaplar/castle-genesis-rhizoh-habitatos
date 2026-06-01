@@ -33,6 +33,12 @@ describe("rhizohGrammarConstitutionV0", () => {
     expect(r.surface).toBe("studio");
   });
 
+  it("maps bare salon to hall surface", () => {
+    const r = resolveGrammarFromUtteranceV0("salon");
+    expect(r.action).toBe("ENTER_SURFACE");
+    expect(r.surface).toBe("hall");
+  });
+
   it("evolution binding sentence is locked", () => {
     expect(RGCS_EVOLUTION_BINDING_SENTENCE_V0).toContain("meaning space");
   });
