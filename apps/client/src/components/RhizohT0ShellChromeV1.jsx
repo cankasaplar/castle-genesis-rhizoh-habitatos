@@ -82,7 +82,7 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
 
   return (
     <div
-      className="flex justify-center mb-6 px-2"
+      className="flex justify-center mb-0 px-0"
       data-rhizoh-t0-shell="1"
       data-advanced={advancedOpen ? "1" : "0"}
     >

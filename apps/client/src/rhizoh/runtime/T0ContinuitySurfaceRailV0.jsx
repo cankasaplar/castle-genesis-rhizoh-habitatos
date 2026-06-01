@@ -20,6 +20,7 @@ import {
 import { emitNextActionAnchorV0, resolveNextActionAnchorV0 } from "./rhizohActionCoherenceV0.js";
 import { RhizohNextActionAnchorV0 } from "./RhizohNextActionAnchorV0.jsx";
 import { RhizohFlowContinuityStripV0 } from "./RhizohFlowContinuityStripV0.jsx";
+import { isRhizohT0FirstMatchIdentityV0 } from "./rhizohT0FirstMatchIdentityV0.js";
 
 /**
  * T0 continuity surface — context strip (play call) + intent anchors + rail + optional stream.
@@ -89,6 +90,7 @@ export function T0ContinuitySurfaceRailV0({
     setUserIntent(readT0UserIntentV0());
   }, [activeSurface]);
 
+  const compactIdentity = isRhizohT0FirstMatchIdentityV0();
   const affordances = listT0SoftAffordancesV0();
   const recent = pulses.slice(-3).reverse();
 
@@ -118,12 +120,15 @@ export function T0ContinuitySurfaceRailV0({
 
   return (
     <div
-      className="pointer-events-auto fixed bottom-[3.35rem] left-0 right-0 z-[60] border-t border-white/8 bg-[#030711]/88 backdrop-blur-xl"
+      className={`pointer-events-auto fixed left-0 right-0 z-[58] border-t border-white/8 bg-[#030711]/88 backdrop-blur-xl ${
+        compactIdentity ? "bottom-[3.35rem] max-h-[5.75rem] overflow-y-auto no-scrollbar" : "bottom-[3.35rem]"
+      }`}
       data-rhizoh-t0-continuity-surface="1"
       data-ceol-state={ceol?.choreography_state || "PLAY_READY"}
+      data-compact-identity={compactIdentity ? "1" : "0"}
       aria-label="T0 continuity surface"
     >
-      <div className="mx-auto flex max-w-5xl flex-col gap-1 px-2 py-1.5 sm:px-3">
+      <div className="mx-auto flex max-w-5xl flex-col gap-1 px-2 py-1 sm:px-3 sm:py-1.5">
         <div className={`flex flex-wrap items-center gap-2 min-h-[1.25rem] ${fade(vis.show_context_strip)}`}>
           <p
             className="text-[10px] font-semibold text-teal-100/95 normal-case tracking-wide"
@@ -178,6 +183,7 @@ export function T0ContinuitySurfaceRailV0({
           })}
         </div>
 
+        {!compactIdentity ? (
         <div className={`flex flex-wrap items-center gap-1.5 ${fade(vis.show_surface_rail)}`}>
           <span className="text-[7px] font-black uppercase tracking-[0.2em] text-cyan-200/60 shrink-0">
             Yüzey
@@ -201,7 +207,9 @@ export function T0ContinuitySurfaceRailV0({
             );
           })}
         </div>
+        ) : null}
 
+        {!compactIdentity ? (
         <div className={`flex flex-wrap items-center gap-1.5 ${fade(vis.show_soft_affordances)}`}>
           {affordances.map((a) => (
             <button
@@ -221,8 +229,9 @@ export function T0ContinuitySurfaceRailV0({
             {streamOpen ? "Akışı gizle" : "Akış"}
           </button>
         </div>
+        ) : null}
 
-        {streamOpen && recent.length > 0 ? (
+        {!compactIdentity && streamOpen && recent.length > 0 ? (
           <div
             className="max-h-[3.25rem] overflow-y-auto no-scrollbar rounded-lg border border-white/6 bg-black/35 px-2 py-1 space-y-0.5"
             data-rhizoh-continuity-stream="1"

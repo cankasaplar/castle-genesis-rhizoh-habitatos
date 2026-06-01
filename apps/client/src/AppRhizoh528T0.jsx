@@ -94,7 +94,10 @@ import {
   emitCeolStartV0,
   resolveCeolChoreographyV0
 } from "./rhizoh/runtime/rhizohCeolV0.js";
-import { isRhizohT0FirstMatchIdentityV0 } from "./rhizoh/runtime/rhizohT0FirstMatchIdentityV0.js";
+import {
+  isRhizohT0FirstMatchIdentityV0,
+  resolveRhizohT0ChatBottomCssV0
+} from "./rhizoh/runtime/rhizohT0FirstMatchIdentityV0.js";
 import { emitT0SoftAffordanceHintV0 } from "./rhizoh/runtime/t0ContinuitySurfaceV0.js";
 import { pushT0ContinuityPulseV0 } from "./rhizoh/runtime/t0ContinuitySurfaceStreamV0.js";
 import { ProductProfilePanel } from "./studio/ui/ProductProfilePanel";
@@ -11787,10 +11790,16 @@ export default function AppRhizoh528() {
           </div>
         ) : null}
 
-        <div className="mt-auto flex w-full shrink-0 flex-col gap-1">
+        <div
+          className="shrink-0 w-full"
+          style={{ minHeight: resolveRhizohT0ChatBottomCssV0() }}
+          aria-hidden
+        />
+
         {!T0_FIRST_MATCH_IDENTITY_V0 ? (
           <RhizohCapabilityHaloV1
-            className="pointer-events-auto z-[12] mb-1"
+            className="pointer-events-auto fixed left-1/2 z-[62] mb-0 max-w-3xl w-full -translate-x-1/2 px-2 sm:px-4"
+            style={{ bottom: `calc(${resolveRhizohT0ChatBottomCssV0({ compactRail: false })} + 5.5rem)` }}
             collectivePulse={visualCognitionState.collectiveField?.density ?? 0.4}
             onSeedIntent={(s) => {
               setCmd(s);
@@ -11802,6 +11811,12 @@ export default function AppRhizoh528() {
           />
         ) : null}
 
+        <div
+          className="pointer-events-none fixed inset-x-0 z-[62] flex justify-center px-2 sm:px-4"
+          style={{ bottom: resolveRhizohT0ChatBottomCssV0() }}
+          data-rhizoh-t0-chat-dock="1"
+        >
+          <div className="pointer-events-auto w-full max-w-3xl">
         <RhizohT0ShellChromeV1
           phaseLabel={rhizohConversationUx.label}
           goals={rhizohConversationUx.goals}
@@ -11848,6 +11863,7 @@ export default function AppRhizoh528() {
           onToggleCommandLog={() => setShowCommandLog((v) => !v)}
           runtimeHealth={runtimeHealth}
         />
+          </div>
         </div>
       </div>
 

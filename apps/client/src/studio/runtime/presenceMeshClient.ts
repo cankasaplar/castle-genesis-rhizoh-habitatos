@@ -139,7 +139,9 @@ export class PresenceMeshClient {
         body: JSON.stringify({ roomUid })
       });
       if (!jr.ok) {
-        console.warn("[presenceMeshClient] join failed", jr.status);
+        if (import.meta.env?.DEV) {
+          console.warn("[presenceMeshClient] join failed", jr.status);
+        }
         return false;
       }
     } catch (e) {

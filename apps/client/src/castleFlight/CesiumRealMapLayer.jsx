@@ -2,6 +2,7 @@ import React, { memo, useEffect, useRef } from "react";
 import * as Cesium from "cesium";
 import { ISTANBUL_GEO, ISTANBUL_POI } from "./geo.js";
 import { getCastleFlightConfig } from "./castleFlightConfig.js";
+import { isCesiumIonTokenUsableV0 } from "./cesiumIonGateV0.js";
 import { cesiumSceneOverBudget } from "./cesiumSceneBudget.js";
 import { isWorldLayerEnabled } from "../rhizoh/runtime/castleWorldLayerGateV0.js";
 import { subscribeCastleDroneTelemetry } from "./telemetryHub.js";
@@ -312,7 +313,11 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       if (!hostRef.current || viewerRef.current || dead || cancelled) return;
 
-      if (cfg.cesiumIonToken) Cesium.Ion.defaultAccessToken = cfg.cesiumIonToken;
+      const ionUsable = isCesiumIonTokenUsableV0(cfg.cesiumIonToken);
+      if (ionUsable) Cesium.Ion.defaultAccessToken = cfg.cesiumIonToken;
+      const bootOsm = new Cesium.OpenStreetMapImageryProvider({
+        url: "https://tile.openstreetmap.org/"
+      });
       const viewer = new Cesium.Viewer(hostRef.current, {
         animation: false,
         timeline: false,
@@ -322,7 +327,9 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         navigationHelpButton: false,
         infoBox: false,
         selectionIndicator: false,
-        baseLayerPicker: true,
+        baseLayerPicker: ionUsable,
+        baseLayer: ionUsable ? undefined : false,
+        imageryProvider: ionUsable ? undefined : bootOsm,
         shouldAnimate: true,
         requestRenderMode: true,
         maximumRenderTimeChange: Infinity
@@ -636,7 +643,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       await runBootStage(
         "world_terrain",
         async () => {
-          if (!vanilla && cfg.cesiumIonToken && cfg.cesiumWorldTerrain) {
+          if (!vanilla && ionUsable && cfg.cesiumWorldTerrain) {
             const terrain = await Cesium.createWorldTerrainAsync();
             if (dead || cancelled || viewerRef.current !== viewer) return;
             viewer.terrainProvider = terrain;
@@ -672,7 +679,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       await runBootStage(
         "osm_buildings",
         async () => {
-          if (!vanilla && cfg.cesiumOsmBuildings) {
+          if (!vanilla && ionUsable && cfg.cesiumOsmBuildings) {
             osmBuildingsPrimitive = await Cesium.createOsmBuildingsAsync();
             if (dead || cancelled || viewerRef.current !== viewer) return;
             viewer.scene.primitives.add(osmBuildingsPrimitive);

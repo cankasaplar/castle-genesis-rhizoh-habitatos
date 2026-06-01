@@ -81,8 +81,13 @@ function runPublishTips() {
  * Connects mesh for the canonical Green Room hall. No-op if `VITE_GATEWAY_HTTP` / health base is unset.
  * @returns disposer
  */
+function isPresenceMeshEnabledV0(): boolean {
+  const v = String(import.meta.env?.VITE_PRESENCE_MESH ?? "1").trim().toLowerCase();
+  return v !== "0" && v !== "false" && v !== "off";
+}
+
 export function startGreenRoomPresenceMesh(): () => void {
-  if (!resolvePresenceMeshHttpBase()) return () => {};
+  if (!isPresenceMeshEnabledV0() || !resolvePresenceMeshHttpBase()) return () => {};
 
   ensureGreenRoomMainHallBound();
   const roomUid = GREENROOM_MAIN_HALL_ROOM_UID;

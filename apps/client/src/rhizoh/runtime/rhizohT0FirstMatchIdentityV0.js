@@ -19,3 +19,15 @@ export function isRhizohT0FirstMatchIdentityV0() {
   if (env.DEV) return false;
   return String(env.VITE_DEBUG ?? "").trim() !== "1";
 }
+
+/** Product shell bar (`UnifiedProductShellBar`) fixed height. */
+export const RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0 = 3.35;
+
+/**
+ * Chat dock `bottom` offset — clears continuity rail + product bar.
+ * @param {{ compactRail?: boolean }} [opts]
+ */
+export function resolveRhizohT0ChatBottomCssV0(opts = {}) {
+  const railRem = opts.compactRail !== false && isRhizohT0FirstMatchIdentityV0() ? 5.75 : 8.75;
+  return `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + ${railRem}rem + env(safe-area-inset-bottom, 0px))`;
+}
