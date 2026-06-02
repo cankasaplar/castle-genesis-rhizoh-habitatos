@@ -4,7 +4,9 @@
  */
 
 import { logVoiceInfoV0, logVoiceWarnV0 } from "./rhizohProductionLogNamespacesV0.js";
-import { STT_TEMPORAL_PROFILE_ID_V0 } from "./sttTemporalSmoothingV0.js";
+/** Mirror sttTemporalSmoothing profile ids — avoid circular import at bundle time. */
+const STT_PROFILE_QUIET_V0 = "quiet";
+const STT_PROFILE_NOISY_V0 = "noisy";
 import {
   clearVoiceEnvProfilesFromIdbV0,
   readVoiceEnvProfileFromIdbV0,
@@ -76,7 +78,7 @@ export function buildVoiceEnvironmentRoomHintV0(turn = {}) {
   const rms = Number(turn.maxRms);
   const rmsBucket = Number.isFinite(rms) ? Math.min(5, Math.floor(rms * 120)) : 0;
   const pid = String(turn.profileId || "");
-  const noisyRateBucket = pid === STT_TEMPORAL_PROFILE_ID_V0.NOISY ? 2 : pid === STT_TEMPORAL_PROFILE_ID_V0.QUIET ? 0 : 1;
+  const noisyRateBucket = pid === STT_PROFILE_NOISY_V0 ? 2 : pid === STT_PROFILE_QUIET_V0 ? 0 : 1;
   const coh = Number(turn.scriptCoherence);
   const scriptEntropyBucket = coh >= 0.8 ? 0 : coh >= 0.55 ? 1 : 2;
   const majority = String(turn.majorityScript || "mixed").slice(0, 12);
@@ -135,7 +137,7 @@ function createEmptyProfileV0(fingerprint) {
     schema: VOICE_ENV_PROFILE_MEMORY_SCHEMA_V0,
     profileKey: fingerprint.profileKey,
     fingerprint,
-    preferredProfileId: STT_TEMPORAL_PROFILE_ID_V0.QUIET,
+    preferredProfileId: STT_PROFILE_QUIET_V0,
     noiseScoreEnter: 3,
     spikeThresholdQuiet: 0.22,
     spikeThresholdNoisy: 0.18,
@@ -158,7 +160,7 @@ function createEmptyProfileV0(fingerprint) {
  */
 function updateProfileFromTurnV0(profile, sample, weight) {
   const w = clampV0(weight, 0.05, 1);
-  const noisy = String(sample.profileId) === STT_TEMPORAL_PROFILE_ID_V0.NOISY;
+  const noisy = String(sample.profileId) === STT_PROFILE_NOISY_V0;
   const noisyVotes = (profile.noisyVoteEma || 0) * (1 - w) + (noisy ? 1 : 0) * w;
 
   const next = {
@@ -172,7 +174,7 @@ function updateProfileFromTurnV0(profile, sample, weight) {
     ),
     noisyVoteEma: noisyVotes,
     preferredProfileId:
-      noisyVotes >= 0.55 ? STT_TEMPORAL_PROFILE_ID_V0.NOISY : STT_TEMPORAL_PROFILE_ID_V0.QUIET,
+      noisyVotes >= 0.55 ? STT_PROFILE_NOISY_V0 : STT_PROFILE_QUIET_V0,
     noiseScoreEnter: Math.round(
       clampV0(
         lerpV0(profile.noiseScoreEnter, sample.noiseScore >= 4 ? 2 : sample.noiseScore <= 1.5 ? 4 : 3, w),
@@ -291,7 +293,7 @@ export function applyVoiceEnvironmentThresholdOverrideV0(ctx = {}) {
   const pid =
     temporal.id && temporal.id !== "fixed"
       ? temporal.id
-      : profile.preferredProfileId || STT_TEMPORAL_PROFILE_ID_V0.QUIET;
+      : profile.preferredProfileId || STT_PROFILE_QUIET_V0;
 
   const baseNoiseEnter = fieldCal.enabled
     ? fieldCal.noiseScoreEnter
