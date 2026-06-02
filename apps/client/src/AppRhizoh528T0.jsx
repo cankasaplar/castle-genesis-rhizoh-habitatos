@@ -11773,10 +11773,15 @@ export default function AppRhizoh528() {
     const phase = String(gatewayUx.phase || "");
     if (!phase) return;
     try {
-      if (phase === "connected") bootLogRef.current?.ok?.("app.gateway.connected", "Rhizoh gateway online");
-      else if (phase === "degraded" || phase === "degraded_llm" || phase === "degraded_storage")
+      if (phase === "connected") {
+        bootLogRef.current?.ok?.("app.gateway.connected", "Rhizoh gateway online");
+        void import("./rhizoh/epistemic/epistemicLedgerStreamV529.js").then((m) => {
+          m.onEpistemicTelemetryGatewayAttachV1("gateway_connected");
+        });
+      } else if (phase === "degraded" || phase === "degraded_llm" || phase === "degraded_storage")
         bootLogRef.current?.warn?.("app.gateway.degraded", phase);
-      else if (phase === "offline" || phase === "offline_dns") bootLogRef.current?.warn?.("app.gateway.offline", phase);
+      else if (phase === "offline" || phase === "offline_dns")
+        bootLogRef.current?.warn?.("app.gateway.offline", phase);
     } catch {
       /* noop */
     }

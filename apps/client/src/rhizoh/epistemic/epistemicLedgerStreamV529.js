@@ -7,8 +7,46 @@ import {
   markEpistemicGatewayRoutesOk
 } from "./epistemicGatewayCapability.js";
 import { isRhizohProductIngressHostV0 } from "../runtime/rhizohUiLocaleV0.js";
+import {
+  attachEpistemicTelemetryChannelV1,
+  drainEpistemicTelemetryShadowV1,
+  getEpistemicTelemetryShadowCountV1,
+  isEpistemicTelemetryChannelAttachedV1,
+  pushEpistemicTelemetryShadowV1
+} from "./epistemicTelemetryBarrierV1.js";
 
 let warnedMissingGatewayToken = false;
+
+function publishEpistemicTelemetryStateV0(status, detail = {}) {
+  if (typeof window === "undefined") return;
+  try {
+    window.__CASTLE_EPISTEMIC_TELEMETRY__ = Object.freeze({
+      lastStatus: status,
+      lastError: detail.lastError ?? null,
+      shadowCount: getEpistemicTelemetryShadowCountV1(),
+      channelAttached: isEpistemicTelemetryChannelAttachedV1(),
+      at: Date.now(),
+      ...detail
+    });
+  } catch {
+    /* noop */
+  }
+}
+
+function hasEpistemicTransportCredentials(idToken = "") {
+  const tok = String(idToken || "").trim();
+  const cfg = getCastleFlightConfig();
+  const gt = String(cfg.gatewayToken || "").trim();
+  const devUid = getOrCreateCastleDevUid();
+  return Boolean(tok || (gt && devUid));
+}
+
+function canRemoteEpistemicTransmit(idToken = "") {
+  if (getEpistemicGatewayRoutesReachable() === false) return false;
+  if (!getRhizohGatewayHealthBase()) return false;
+  if (!hasEpistemicTransportCredentials(idToken)) return false;
+  return isEpistemicTelemetryChannelAttachedV1();
+}
 
 const QUEUE = [];
 let flushTimer = 0;
@@ -63,17 +101,7 @@ async function postBatch(entries, idToken) {
     }
     if (!res.ok || !j?.ok) return { ok: false, error: j.error || `http_${res.status}` };
     markEpistemicGatewayRoutesOk();
-    if (typeof window !== "undefined") {
-      try {
-        window.__CASTLE_EPISTEMIC_TELEMETRY__ = Object.freeze({
-          lastStatus: "ok",
-          lastError: null,
-          at: Date.now()
-        });
-      } catch {
-        /* noop */
-      }
-    }
+    publishEpistemicTelemetryStateV0("ok", { flushedCount: entries.length });
     return { ok: true, latest: j.latest || null };
   } catch (e) {
     return { ok: false, error: String(e?.message || e || "epistemic_log_upload_failed") };
@@ -90,17 +118,9 @@ async function flushNow() {
   const r = await postBatch(entries, idToken);
   inFlight = false;
   if (!r.ok) {
-    if (typeof window !== "undefined") {
-      try {
-        window.__CASTLE_EPISTEMIC_TELEMETRY__ = Object.freeze({
-          lastStatus: r.skipRetry ? "skipped" : "error",
-          lastError: r.error || "batch_failed",
-          at: Date.now()
-        });
-      } catch {
-        /* noop */
-      }
-    }
+    publishEpistemicTelemetryStateV0(r.skipRetry ? "skipped" : "error", {
+      lastError: r.error || "batch_failed"
+    });
     if (r.skipRetry) {
       return;
     }
@@ -129,6 +149,31 @@ function scheduleFlush() {
   }, WINDOW_MS);
 }
 
+export function flushEpistemicTelemetryShadowBufferV1() {
+  const drained = drainEpistemicTelemetryShadowV1();
+  if (!drained.length) return 0;
+  for (const row of drained) {
+    QUEUE.push({ entry: row.entry, idToken: row.idToken });
+  }
+  if (QUEUE.length > 200) QUEUE.splice(0, QUEUE.length - 200);
+  publishEpistemicTelemetryStateV0("flush_pending", { drainedCount: drained.length });
+  scheduleFlush();
+  return drained.length;
+}
+
+/**
+ * Attach epistemic core channel (gateway connected) and flush shadow buffer.
+ * @param {string} [reason]
+ */
+export function onEpistemicTelemetryGatewayAttachV1(reason = "gateway_connected") {
+  const attach = attachEpistemicTelemetryChannelV1(reason);
+  const drained = flushEpistemicTelemetryShadowBufferV1();
+  if (!drained && attach.reattached) {
+    publishEpistemicTelemetryStateV0("attached", { attachReason: reason });
+  }
+  return Object.freeze({ ...attach, drainedCount: drained });
+}
+
 export function enqueueEpistemicLedgerEntry(entry, idToken = "") {
   if (!entry || typeof entry !== "object") return;
   if (getEpistemicGatewayRoutesReachable() === false) return;
@@ -143,7 +188,12 @@ export function enqueueEpistemicLedgerEntry(entry, idToken = "") {
         "scripts/setup-rhizoh-t0-production.ps1 ile .env.production üretin ve Firebase hosting yeniden deploy edin."
     );
   }
-  if (!tok && (!gt || !devUid)) return;
+  if (!hasEpistemicTransportCredentials(tok)) return;
+  if (!canRemoteEpistemicTransmit(tok)) {
+    pushEpistemicTelemetryShadowV1({ entry, idToken: tok });
+    publishEpistemicTelemetryStateV0("buffering", { lastError: null });
+    return;
+  }
   QUEUE.push({ entry, idToken: tok });
   if (QUEUE.length > 200) QUEUE.splice(0, QUEUE.length - 200);
   scheduleFlush();

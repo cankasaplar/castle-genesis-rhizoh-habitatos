@@ -5,7 +5,7 @@ export {
   requestEpistemicSealFromGateway,
   sealRhizohEpistemicTrace
 } from "./gatewaySealV529.js";
-export { enqueueEpistemicLedgerEntry } from "./epistemicLedgerStreamV529.js";
+export { enqueueEpistemicLedgerEntry, onEpistemicTelemetryGatewayAttachV1 } from "./epistemicLedgerStreamV529.js";
 export { buildEpistemicOrbSurface, CASTLE_RHIZOH_EPISTEMIC_SURFACE_EVENT } from "./buildEpistemicOrbSurfaceV529.js";
 export { useRhizohEpistemicSurface } from "./useRhizohEpistemicSurface.js";
 export { RhizohEpistemicOrb } from "./RhizohEpistemicOrb.jsx";

@@ -93,10 +93,17 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
     {
       id: "telemetry",
       label: "Epistemic telemetry",
-      on: epistemic?.lastStatus === "ok",
+      on:
+        epistemic?.lastStatus === "ok" ||
+        epistemic?.lastStatus === "attached" ||
+        epistemic?.lastStatus === "flush_pending",
       detail: epistemic?.lastError
         ? String(epistemic.lastError).slice(0, 48)
-        : epistemic?.lastStatus || "idle"
+        : epistemic?.lastStatus === "buffering"
+          ? `buffering · ${epistemic?.shadowCount ?? 0} shadow`
+          : epistemic?.lastStatus === "attach_pending"
+            ? "await gateway attach"
+            : epistemic?.lastStatus || "idle"
     }
   ];
 

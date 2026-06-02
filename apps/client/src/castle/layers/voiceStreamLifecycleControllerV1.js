@@ -6,6 +6,7 @@
 
 import { castleLayerDecisionTraceLogDetailV1 } from "./castleLayerDecisionTraceV1.js";
 import { evaluateCastleLayerVoiceExecutionV1 } from "./castleLayerVoiceExecutionGateV1.js";
+import { getEpistemicTelemetryBarrierSnapshotV1 } from "../../rhizoh/epistemic/epistemicTelemetryBarrierV1.js";
 import { witnessVoiceStreamLifecycleV0 } from "../../rhizoh/runtime/voiceTranscriptWitnessPipelineV0.js";
 
 export const VOICE_STREAM_LIFECYCLE_CONTROLLER_SCHEMA_V1 = "castle.voice_stream_lifecycle.v1";
@@ -98,6 +99,7 @@ export function acquireVoiceStreamLayerLockV1(input = {}) {
     sessionId: input.sessionId ? String(input.sessionId) : null,
     traceId: gate.trace.traceId,
     voiceContext: gate.voiceContext,
+    telemetryBarrier: getEpistemicTelemetryBarrierSnapshotV1(),
     atMs: Date.now()
   });
   publishStreamLockSnapshot();
