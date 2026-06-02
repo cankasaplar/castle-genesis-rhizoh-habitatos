@@ -105,20 +105,38 @@ jobs:
           VITE_WORLD_EXECUTION_MODE: ${{ steps.track.outputs.world_layer == '1' && 'active' || '' }}
           VITE_SATELLITE_NODE_REGISTRY_V0: ${{ inputs.deploy_track == 't0-interface-lock' && '0' || secrets.VITE_SATELLITE_NODE_REGISTRY_V0 }}
           VITE_SOVEREIGN_NODE_ONBOARDING: ${{ inputs.deploy_track == 't0-interface-lock' && '0' || secrets.VITE_SOVEREIGN_NODE_ONBOARDING }}
-          VITE_RHIZOH_VOICE_ENGINE_V3: ${{ secrets.VITE_RHIZOH_VOICE_ENGINE_V3 }}
-          VITE_RHIZOH_VOICE_WITNESS_SHADOW: ${{ secrets.VITE_RHIZOH_VOICE_WITNESS_SHADOW }}
-          VITE_RHIZOH_VOICE_ENV_PROFILE: ${{ secrets.VITE_RHIZOH_VOICE_ENV_PROFILE }}
-          VITE_RHIZOH_FAST_SPEECH_MODE: ${{ secrets.VITE_RHIZOH_FAST_SPEECH_MODE }}
-          VITE_RHIZOH_VOICE_ATTENTION_MODE: ${{ secrets.VITE_RHIZOH_VOICE_ATTENTION_MODE }}
-          VITE_RHIZOH_SHARED_ATTENTION_TYPE: ${{ secrets.VITE_RHIZOH_SHARED_ATTENTION_TYPE }}
-          VITE_RHIZOH_ORIGIN_SEED_LABEL: ${{ secrets.VITE_RHIZOH_ORIGIN_SEED_LABEL }}
-          VITE_RHIZOH_ORIGIN_SEED_PLACE: ${{ secrets.VITE_RHIZOH_ORIGIN_SEED_PLACE }}
+          VITE_RHIZOH_VOICE_ENGINE_V3: ${{ secrets.VITE_RHIZOH_VOICE_ENGINE_V3 || '1' }}
+          VITE_RHIZOH_VOICE_WITNESS_SHADOW: ${{ secrets.VITE_RHIZOH_VOICE_WITNESS_SHADOW || '1' }}
+          VITE_RHIZOH_VOICE_ENV_PROFILE: ${{ secrets.VITE_RHIZOH_VOICE_ENV_PROFILE || '1' }}
+          VITE_RHIZOH_FAST_SPEECH_MODE: ${{ secrets.VITE_RHIZOH_FAST_SPEECH_MODE || '1' }}
+          VITE_RHIZOH_VOICE_ATTENTION_MODE: ${{ secrets.VITE_RHIZOH_VOICE_ATTENTION_MODE || 'moving_context' }}
+          VITE_RHIZOH_SHARED_ATTENTION_TYPE: ${{ secrets.VITE_RHIZOH_SHARED_ATTENTION_TYPE || 'co_presence' }}
+          VITE_RHIZOH_ORIGIN_SEED_LABEL: ${{ secrets.VITE_RHIZOH_ORIGIN_SEED_LABEL || 'Serencebey Castle' }}
+          VITE_RHIZOH_ORIGIN_SEED_PLACE: ${{ secrets.VITE_RHIZOH_ORIGIN_SEED_PLACE || 'Beşiktaş · shared seed topology' }}
+          VITE_CASTLE_LAYERS_DEBUG: ${{ secrets.VITE_CASTLE_LAYERS_DEBUG || '1' }}
+
+      - name: Verify spatial-main voice profile materialized
+        if: inputs.deploy_track == 'spatial-main'
+        run: node scripts/verify-rhizoh-prod-voice-profile-ci.mjs
 
       - name: Build client
         run: npm run build
         env:
           CI: "true"
           GITHUB_ACTIONS: "true"
+          VITE_RHIZOH_VOICE_ENGINE_V3: ${{ secrets.VITE_RHIZOH_VOICE_ENGINE_V3 || '1' }}
+          VITE_RHIZOH_VOICE_WITNESS_SHADOW: ${{ secrets.VITE_RHIZOH_VOICE_WITNESS_SHADOW || '1' }}
+          VITE_RHIZOH_VOICE_ENV_PROFILE: ${{ secrets.VITE_RHIZOH_VOICE_ENV_PROFILE || '1' }}
+          VITE_RHIZOH_FAST_SPEECH_MODE: ${{ secrets.VITE_RHIZOH_FAST_SPEECH_MODE || '1' }}
+          VITE_RHIZOH_VOICE_ATTENTION_MODE: ${{ secrets.VITE_RHIZOH_VOICE_ATTENTION_MODE || 'moving_context' }}
+          VITE_RHIZOH_SHARED_ATTENTION_TYPE: ${{ secrets.VITE_RHIZOH_SHARED_ATTENTION_TYPE || 'co_presence' }}
+          VITE_RHIZOH_ORIGIN_SEED_LABEL: ${{ secrets.VITE_RHIZOH_ORIGIN_SEED_LABEL || 'Serencebey Castle' }}
+          VITE_RHIZOH_ORIGIN_SEED_PLACE: ${{ secrets.VITE_RHIZOH_ORIGIN_SEED_PLACE || 'Beşiktaş · shared seed topology' }}
+          VITE_RHIZOH_STT_TEMPORAL_CALIBRATION: "1"
+          VITE_RHIZOH_STT_TEMPORAL_ADAPTIVE: "1"
+          VITE_CASTLE_LAYERS_DEBUG: ${{ secrets.VITE_CASTLE_LAYERS_DEBUG || '1' }}
+          VITE_WORLD_LAYER: ${{ steps.track.outputs.world_layer || '1' }}
+          VITE_WORLD_EXECUTION_MODE: ${{ steps.track.outputs.world_layer == '1' && 'active' || '' }}
 
       - name: Write Firebase service account
         run: node -e "require('fs').writeFileSync('firebase-ci.json', process.env.GOOGLE_CREDENTIALS)"
