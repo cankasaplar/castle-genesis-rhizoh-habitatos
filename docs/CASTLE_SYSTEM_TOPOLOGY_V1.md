@@ -2,7 +2,8 @@
 
 **Tag:** `CORE-ELIGIBLE` · **Status:** SSOT (spec + code registry)  
 **Code mirror:** [`apps/client/src/castle/layers/castleLayerRegistryV1.js`](../apps/client/src/castle/layers/castleLayerRegistryV1.js)  
-**Gates:** [`castleLayerGateV1.js`](../apps/client/src/castle/layers/castleLayerGateV1.js)
+**Gates:** [`castleLayerGateV1.js`](../apps/client/src/castle/layers/castleLayerGateV1.js)  
+**Evolution pipeline:** [`RHIZOH_CASTLE_LAYERS_EVOLUTION_PIPELINE_V1.md`](RHIZOH_CASTLE_LAYERS_EVOLUTION_PIPELINE_V1.md) · graph `castle.layers.v1.1`
 
 ## Purpose
 

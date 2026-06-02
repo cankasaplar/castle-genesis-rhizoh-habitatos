@@ -3,6 +3,8 @@
  * Chrome native "No available adapters" = WebGPU only; suppress during navigator.gpu.requestAdapter().
  */
 
+import { resolveCastleLayerVoiceContextV1 } from "../../castle/layers/castleLayerRuntimeResolverV1.js";
+
 const WEBGPU_ADAPTER_NOISE = /no available adapters/i;
 
 /** @param {unknown[]} args */
@@ -54,12 +56,36 @@ export async function requestWebGpuAdapterQuietlyV0(options = {}) {
 
 /** @param {string} tag @param {Record<string, unknown>} [detail] */
 export function logVoiceInfoV0(tag, detail = {}) {
-  console.info(`[VOICE_${String(tag || "INFO")}]`, detail);
+  let enriched = detail;
+  try {
+    const castleLayer = resolveCastleLayerVoiceContextV1({
+      eventTag: tag,
+      uiDomain: detail.uiDomain || detail.scope,
+      intentClass: detail.intentClass,
+      executionAccepted: detail.executionAccepted
+    });
+    enriched = { ...detail, castleLayer };
+  } catch {
+    /* resolver optional during boot */
+  }
+  console.info(`[VOICE_${String(tag || "INFO")}]`, enriched);
 }
 
 /** @param {string} tag @param {Record<string, unknown>} [detail] */
 export function logVoiceWarnV0(tag, detail = {}) {
-  console.warn(`[VOICE_${String(tag || "WARN")}]`, detail);
+  let enriched = detail;
+  try {
+    const castleLayer = resolveCastleLayerVoiceContextV1({
+      eventTag: tag,
+      uiDomain: detail.uiDomain || detail.scope,
+      intentClass: detail.intentClass,
+      executionAccepted: detail.executionAccepted ?? false
+    });
+    enriched = { ...detail, castleLayer };
+  } catch {
+    /* noop */
+  }
+  console.warn(`[VOICE_${String(tag || "WARN")}]`, enriched);
 }
 
 /** @param {string} tag @param {Record<string, unknown>} [detail] */

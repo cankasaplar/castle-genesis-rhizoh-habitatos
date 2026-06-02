@@ -1,10 +1,20 @@
 import React, { useEffect, useState } from "react";
+import { isCastleLayerRenderableV1 } from "../../castle/layers/castleLayerGateV1.js";
+import { CASTLE_LAYERS_BEHAVIOR_GRAPH_VERSION_V1 } from "../../castle/layers/castleLayerBehaviorGraphV1.js";
+import { getCastleLayerDecisionTraceSnapshotV1 } from "../../castle/layers/castleLayerDecisionTraceV1.js";
+import { resolveRhizohVoiceUiDomainV0 } from "./rhizohVoiceUiDomainV0.js";
 import { getVoiceAdapterRegistrySnapshot } from "./voiceInputAdapterRegistryV0.js";
+
 export function isCastleLayersDebugEnabledV0() {
   if (typeof import.meta === "undefined" || !import.meta.env) return false;
   if (import.meta.env.DEV) return true;
   const raw = String(import.meta.env.VITE_CASTLE_LAYERS_DEBUG || "").trim().toLowerCase();
   return raw === "1" || raw === "true" || raw === "on";
+}
+
+function isCastleLayersPipelineHudRenderableV0() {
+  if (import.meta.env?.DEV) return isCastleLayersDebugEnabledV0();
+  return isCastleLayerRenderableV1("castle_layers_pipeline_hud");
 }
 
 /**
@@ -18,13 +28,19 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
     return () => window.clearInterval(id);
   }, []);
 
-  if (!isCastleLayersDebugEnabledV0()) return null;
+  if (!isCastleLayersPipelineHudRenderableV0()) return null;
 
+  const layersRuntime = typeof window !== "undefined" ? window.__CASTLE_LAYERS_RUNTIME__ : null;
+  const activeUiDomain = layersRuntime?.activeUiDomain || resolveRhizohVoiceUiDomainV0();
   const llm = typeof window !== "undefined" ? window.__CASTLE_RHIZOH_LLM_LAST_RESPONSE__ : null;
   const cesium = typeof window !== "undefined" ? window.__CASTLE_CESIUM__ : null;
   const voice = getVoiceAdapterRegistrySnapshot();
   const layerAudit = typeof window !== "undefined" ? window.__CASTLE_LAYER_AUDIT__ : null;
   const epistemic = typeof window !== "undefined" ? window.__CASTLE_EPISTEMIC_TELEMETRY__ : null;
+  const decisionTrace =
+    typeof window !== "undefined"
+      ? window.__CASTLE_LAYERS_RUNTIME__?.lastDecisionTrace || getCastleLayerDecisionTraceSnapshotV1()?.last
+      : null;
   const gw = String(gatewayPhase || "").toLowerCase();
   const gwOn = gw === "connected" || gw === "ready" || gw === "live" || gw === "uncertain";
 
@@ -90,6 +106,9 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
       data-tick={tick}
     >
       <div className="mb-1 text-[8px] font-bold tracking-[0.18em] text-amber-200/80">CASTLE LAYERS</div>
+      <div className="mb-1 text-[7px] text-amber-100/70">
+        {CASTLE_LAYERS_BEHAVIOR_GRAPH_VERSION_V1} · ui={activeUiDomain}
+      </div>
       <div className={`mb-1 ${driftTone}`}>
         drift: {drift}
         {llm?.traceId ? ` · ${String(llm.traceId).slice(0, 14)}` : ""}
@@ -109,6 +128,37 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
       </ul>
       {layerAudit?.mismatches?.length ? (
         <div className="mt-1 text-rose-300/90">layer mismatch: {layerAudit.mismatches.join(", ")}</div>
+      ) : null}
+      {decisionTrace ? (
+        <div className="mt-2 border-t border-amber-400/20 pt-1">
+          <div className="text-[7px] font-bold tracking-[0.14em] text-amber-200/70">DECISION TRACE</div>
+          <div className="text-[7px] text-white/60">
+            {decisionTrace.traceId?.slice(0, 18)} · {decisionTrace.outcome}
+            {decisionTrace.eventTag ? ` · ${decisionTrace.eventTag}` : ""}
+          </div>
+          {decisionTrace.primaryRejectReason ? (
+            <div className="text-[7px] text-rose-300/90">
+              reject: {decisionTrace.primaryRejectLayer} / {decisionTrace.primaryRejectReason}
+            </div>
+          ) : (
+            <div className="text-[7px] text-emerald-300/80">eligible: execute</div>
+          )}
+          {decisionTrace.decisionPath?.length ? (
+            <div className="mt-0.5 max-h-16 overflow-y-auto text-[6px] leading-tight text-white/45">
+              {decisionTrace.decisionPath.map((s) => (
+                <div key={`${s.layer}-${s.rule}`}>
+                  {s.passed ? "✓" : "✗"} {s.rule} ({s.layer.slice(0, 2)})
+                  {s.detail ? `: ${s.detail.slice(0, 40)}` : ""}
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {decisionTrace.scopeMismatchChain?.length ? (
+            <div className="text-[6px] text-cyan-300/80">
+              scope: {decisionTrace.scopeMismatchChain.map((c) => `${c.got}≠${c.expected}`).join(" · ")}
+            </div>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

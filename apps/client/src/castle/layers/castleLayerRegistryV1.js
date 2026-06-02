@@ -113,7 +113,16 @@ export const CASTLE_LAYER_REGISTRY_V1 = Object.freeze({
     owner: "AppRhizoh528T0",
     mount: "advanced_aux",
     render: false,
-    renderInAdvanced: true
+    renderInAdvanced: true,
+    replacedBy: "castle_layers_pipeline_hud"
+  }),
+  castle_layers_pipeline_hud: Object.freeze({
+    status: "active",
+    owner: "RhizohCastleLayersDebugV0",
+    mount: "runtime_only",
+    render: true,
+    envGate: "VITE_CASTLE_LAYERS_DEBUG=1",
+    note: "Evolution pipeline HUD — L0-L4 + graph version; all users same spec, env-gated observability"
   }),
   metehan_observability: Object.freeze({
     status: "active",

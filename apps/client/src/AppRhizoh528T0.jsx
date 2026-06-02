@@ -290,6 +290,8 @@ import {
   logVoiceWarnV0,
   resolveRhizohTurnTraceIdV0
 } from "./rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
+import { castleLayerDecisionTraceLogDetailV1 } from "./castle/layers/castleLayerDecisionTraceV1.js";
+import { evaluateCastleLayerVoiceExecutionV1 } from "./castle/layers/castleLayerVoiceExecutionGateV1.js";
 import { extractSpeechRecognitionTranscriptV0 } from "./rhizoh/runtime/extractSpeechRecognitionTranscriptV0.js";
 import {
   blockVoiceSttAutoRestartV0,
@@ -9528,12 +9530,24 @@ export default function AppRhizoh528() {
         pipelineCommitment = pipe.commitment;
         pipelinePreCommitment = pipe.preCommitment;
         if (!pipe.sanityGate.accepted) {
+          const layerDecision = evaluateCastleLayerVoiceExecutionV1({
+            eventTag: "STT_DISPATCH_REJECT",
+            preview: trimmed,
+            source: voiceSource,
+            eligibility: {
+              sanityAccepted: false,
+              sanityReason: pipe.sane.reason,
+              routerAccepted: false,
+              commitmentAllowed: false
+            }
+          });
           logVoiceWarnV0("STT_DISPATCH_REJECT", {
             reason: pipe.sane.reason,
             source: voiceSource,
             preview: trimmed.slice(0, 96),
             confidence: pipe.sane.confidence,
-            band: pipe.witnessed.observation.band
+            band: pipe.witnessed.observation.band,
+            ...castleLayerDecisionTraceLogDetailV1(layerDecision.trace)
           });
           if (manageVoiceTurn) finishVoiceTurnIfNeeded();
           return;
@@ -9556,11 +9570,23 @@ export default function AppRhizoh528() {
         pipelineCommitment = pipe.commitment;
         pipelinePreCommitment = pipe.preCommitment;
         if (!pipe.sanityGate.accepted) {
+          const layerDecision = evaluateCastleLayerVoiceExecutionV1({
+            eventTag: "STT_DISPATCH_REJECT",
+            preview: trimmed,
+            source: voiceSource,
+            eligibility: {
+              sanityAccepted: false,
+              sanityReason: pipe.sane.reason,
+              routerAccepted: false,
+              commitmentAllowed: false
+            }
+          });
           logVoiceWarnV0("STT_DISPATCH_REJECT", {
             reason: pipe.sane.reason,
             source: voiceSource,
             preview: trimmed.slice(0, 96),
-            band: pipe.witnessed.observation.band
+            band: pipe.witnessed.observation.band,
+            ...castleLayerDecisionTraceLogDetailV1(layerDecision.trace)
           });
           if (manageVoiceTurn) finishVoiceTurnIfNeeded();
           return;
@@ -9593,6 +9619,17 @@ export default function AppRhizoh528() {
           checkRepeat: voiceSource !== "mic_v3" || !witnessCompleted
         });
         if (!execRoute.executionAccepted) {
+          const layerDecision = evaluateCastleLayerVoiceExecutionV1({
+            eventTag: "STT_DISPATCH_BLOCKED",
+            preview: trimmed,
+            source: voiceSource,
+            eligibility: {
+              sanityAccepted: true,
+              routerAccepted: false,
+              routerReason: execRoute.reason,
+              commitmentAllowed: false
+            }
+          });
           if (execRoute.observationForward) {
             forwardVoiceTranscriptShadowV0({
               text: trimmed,
@@ -9607,7 +9644,8 @@ export default function AppRhizoh528() {
           }
           logVoiceInfoV0("STT_DISPATCH_BLOCKED", {
             ...voiceConfidenceRouterLogDetailV0(execRoute),
-            preview: trimmed.slice(0, 96)
+            preview: trimmed.slice(0, 96),
+            ...castleLayerDecisionTraceLogDetailV1(layerDecision.trace)
           });
           if (execRoute.observationForward) {
             speakShadowObservationAckV0({
@@ -9627,6 +9665,17 @@ export default function AppRhizoh528() {
             { source: voiceSource }
           );
         if (!shouldDispatchVoiceToLlmV0(pre, { sanityAccepted: true })) {
+          const layerDecision = evaluateCastleLayerVoiceExecutionV1({
+            eventTag: "BEHAVIOR_LLM_SKIP",
+            preview: trimmed,
+            source: voiceSource,
+            eligibility: {
+              sanityAccepted: true,
+              routerAccepted: true,
+              commitmentAllowed: false,
+              commitmentReason: "llm_skip"
+            }
+          });
           const observeOnly = finalizeVoiceBehavioralCommitmentV0({
             band: witnessed?.observation?.band || pre.band,
             source: voiceSource,
@@ -9640,7 +9689,8 @@ export default function AppRhizoh528() {
           logVoiceInfoV0("BEHAVIOR_LLM_SKIP", {
             band: pre.band,
             commitment: observeOnly.commitment,
-            preview: trimmed.slice(0, 96)
+            preview: trimmed.slice(0, 96),
+            ...castleLayerDecisionTraceLogDetailV1(layerDecision.trace)
           });
           recordVoiceInfluenceAttributionV0(
             deriveVoiceInfluenceAttributionV0({
@@ -9660,22 +9710,64 @@ export default function AppRhizoh528() {
 
       const dedup = probeVoiceTranscriptDispatchV0(trimmed);
       if (!dedup.ok) {
+        const layerDecision = evaluateCastleLayerVoiceExecutionV1({
+          eventTag: "STT_DISPATCH_DEDUP",
+          preview: trimmed,
+          source: voiceSource,
+          eligibility: {
+            sanityAccepted: true,
+            routerAccepted: true,
+            commitmentAllowed: true,
+            dedupOk: false,
+            dedupReason: dedup.reason
+          }
+        });
         logVoiceWarnV0("STT_DISPATCH_DEDUP", {
           reason: dedup.reason,
           preview: trimmed.slice(0, 96),
           ageMs: dedup.ageMs,
-          source
+          source,
+          ...castleLayerDecisionTraceLogDetailV1(layerDecision.trace)
         });
         if (manageVoiceTurn) finishVoiceTurnIfNeeded();
         return;
       }
+
+      const layerGate = evaluateCastleLayerVoiceExecutionV1({
+        eventTag: "STT_DISPATCH",
+        preview: trimmed,
+        source: voiceSource,
+        eligibility: {
+          sanityAccepted: true,
+          routerAccepted: true,
+          commitmentAllowed: true,
+          dedupOk: true
+        }
+      });
+      if (!layerGate.allowExecution) {
+        const rejectTag = layerGate.scopeDrop ? "STT_DISPATCH_SCOPE_REJECT" : "STT_DISPATCH_LAYER_REJECT";
+        logVoiceWarnV0(rejectTag, {
+          preview: trimmed.slice(0, 96),
+          source: voiceSource,
+          ...castleLayerDecisionTraceLogDetailV1(layerGate.trace)
+        });
+        if (manageVoiceTurn) finishVoiceTurnIfNeeded();
+        return;
+      }
+
       noteVoiceTranscriptDispatchedV0(trimmed);
       voiceTurnBusyRef.current = true;
       voiceTurnBusySinceRef.current = Date.now();
       setMicListening(false);
       const dispatchAtMs = Date.now();
       markVoiceTurnDispatchV0(dispatchAtMs);
-      logVoiceInfoV0("STT_DISPATCH", { chars: trimmed.length, preview: trimmed.slice(0, 96), source, dispatchAtMs });
+      logVoiceInfoV0("STT_DISPATCH", {
+        chars: trimmed.length,
+        preview: trimmed.slice(0, 96),
+        source,
+        dispatchAtMs,
+        ...castleLayerDecisionTraceLogDetailV1(layerGate.trace)
+      });
       recordVoiceTimelineFromRouteV0(
         {
           executionAccepted: true,
