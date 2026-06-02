@@ -4,6 +4,10 @@
 
 import { getCastleFlightConfig } from "../../../castleFlight/castleFlightConfig.js";
 import { readSttLanguageCodeHintV0 } from "../rhizohConversationLanguageV0.js";
+import {
+  buildRhizohLanguagePropagationBundleV0,
+  mergeRhizohLanguagePropagationHeadersV0
+} from "../rhizohLanguagePropagationV0.js";
 import { throttleVoiceTranscribePostV3 } from "./voiceThrottleV3.js";
 
 export const RHIZOH_VOICE_TRANSCRIBE_ROUTE_V3 = "/rhizoh/voice/transcribe/v3";
@@ -53,7 +57,12 @@ export async function queryRhizohVoiceTranscribeV3(audio, opts = {}) {
 
   const b64 = arrayBufferToBase64V3(bytes);
 
-  const headers = { "Content-Type": "application/json" };
+  const langBundle = buildRhizohLanguagePropagationBundleV0();
+  const headers = mergeRhizohLanguagePropagationHeadersV0(
+    { "Content-Type": "application/json" },
+    "",
+    langBundle
+  );
   const token = gatewayToken();
   if (token) headers["X-Castle-Gateway-Token"] = token;
 
@@ -63,14 +72,20 @@ export async function queryRhizohVoiceTranscribeV3(audio, opts = {}) {
   let abortCtl = null;
   /** @type {ReturnType<typeof setTimeout> | null} */
   let timeoutId = null;
-  const fetchOpts = { method: "POST", headers, body: JSON.stringify({
+  const languageCode = opts.languageCode || readSttLanguageCodeHintV0();
+  const fetchOpts = {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
       path,
       audioBase64: b64,
       mimeType,
-      languageCode: opts.languageCode || readSttLanguageCodeHintV0(),
+      languageCode,
+      ...langBundle.bodyFields,
       traceId: opts.traceId || "",
       sessionId: opts.sessionId || ""
-    }) };
+    })
+  };
 
   if (timeoutMs > 0 && typeof AbortController !== "undefined") {
     abortCtl = new AbortController();

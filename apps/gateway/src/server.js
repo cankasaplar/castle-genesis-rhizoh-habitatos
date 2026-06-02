@@ -29,6 +29,12 @@ import {
 } from "./rhizohVoiceTranscribeV3.js";
 import { createHttpCorsPolicy, normalizeHttpOrigin, parseAllowedOriginsFromEnv } from "./httpCorsPolicyV1.js";
 import {
+  applyLanguagePropagationToLlmPayloadV1,
+  applyLanguagePropagationToVoiceBodyV1,
+  buildRhizohLanguagePropagationEchoV1,
+  parseRhizohLanguagePropagationV1
+} from "./rhizohLanguagePropagationV1.js";
+import {
   meshAppendDelta,
   meshContinuityAggregate,
   meshJoin,
@@ -2836,8 +2842,11 @@ const httpServer = createServer(async (req, res) => {
   }
 
   if (req.method === "POST" && pathname === RHIZOH_VOICE_TRANSCRIBE_ROUTE_V3) {
+    let payload = {};
+    let langProp = parseRhizohLanguagePropagationV1(req, {});
     try {
-      const payload = await readHttpJson(req, 6 * 1024 * 1024);
+      payload = await readHttpJson(req, 6 * 1024 * 1024);
+      langProp = parseRhizohLanguagePropagationV1(req, payload);
       const auth = await resolveHttpUser(req);
       const ip = getHttpClientIp(req);
       if (REQUIRED_GATEWAY_TOKEN) {
@@ -2865,25 +2874,39 @@ const httpServer = createServer(async (req, res) => {
         });
         return;
       }
-      const result = await runRhizohVoiceTranscribeV3(payload);
+      if (langProp.partialPropagation) {
+        logRhizohHealth("language_propagation_partial", {
+          route: RHIZOH_VOICE_TRANSCRIBE_ROUTE_V3,
+          traceId: langProp.traceId || String(payload?.traceId || ""),
+          gaps: langProp.propagationGaps
+        });
+      }
+      const result = await runRhizohVoiceTranscribeV3(
+        applyLanguagePropagationToVoiceBodyV1(payload, langProp)
+      );
       sendJson(res, result.ok ? 200 : 422, {
         ...result,
         traceId: String(payload?.traceId || ""),
+        ...buildRhizohLanguagePropagationEchoV1(langProp),
         atMs: Date.now()
       });
     } catch (error) {
       sendJson(res, 500, {
         ok: false,
         error: "voice_transcribe_failed",
-        detail: String(error?.message || error)
+        detail: String(error?.message || error),
+        ...buildRhizohLanguagePropagationEchoV1(langProp)
       });
     }
     return;
   }
 
   if (req.method === "POST" && req.url === rhizohRuntime.routes.rhizohLlm) {
+    let payload = {};
+    let langProp = parseRhizohLanguagePropagationV1(req, {});
     try {
-      const payload = await readHttpJson(req);
+      payload = await readHttpJson(req);
+      langProp = parseRhizohLanguagePropagationV1(req, payload);
       const auth = await resolveHttpUser(req);
       const ip = getHttpClientIp(req);
       logRhizohHealth("gateway_accept", {
@@ -2953,7 +2976,17 @@ const httpServer = createServer(async (req, res) => {
         }
       }
 
-      const safePayload = { ...(payload || {}) };
+      if (langProp.partialPropagation) {
+        logRhizohHealth("language_propagation_partial", {
+          route: rhizohRuntime.routes.rhizohLlm,
+          traceId: langProp.traceId || String(payload?.traceId || ""),
+          gaps: langProp.propagationGaps
+        });
+      }
+      const safePayload = applyLanguagePropagationToLlmPayloadV1(
+        { ...(payload || {}) },
+        langProp
+      );
       delete safePayload.apiKey;
       delete safePayload.llmKeySource;
       delete safePayload.keySource;
@@ -2993,6 +3026,7 @@ const httpServer = createServer(async (req, res) => {
         ...result,
         connectionId: conn?.id || null,
         llmKeySourceUsed: keyMode,
+        ...buildRhizohLanguagePropagationEchoV1(langProp),
         traceId,
         turnLatencyMs,
         ...(spinePhases ? { spinePhases } : {}),
@@ -3068,10 +3102,12 @@ const httpServer = createServer(async (req, res) => {
         rhizohFailureKind,
         ...(providerHttpMatch ? { providerHttpStatus: Number(providerHttpMatch[1]) } : {}),
         error: code || msg || "rhizoh_llm_failed",
+        detail: msg || code || undefined,
         reply:
           error?.reply ||
           (status === 500 ? "Rhizoh bağlantısı geçici olarak kesildi." : msg),
         directive: error?.directive || "NONE",
+        ...buildRhizohLanguagePropagationEchoV1(langProp),
         ...stressTaxonomy
       });
     }

@@ -60,6 +60,11 @@ import {
   buildRhizohMultilingualPackV0,
   pushRhizohTurnContinuityPulseV0
 } from "./rhizohMultilingualBridgeV0.js";
+import {
+  buildRhizohLanguagePropagationBundleV0,
+  mergeRhizohLanguagePropagationHeadersV0,
+  resolveRhizohLlmLanguageV0
+} from "./rhizohLanguagePropagationV0.js";
 import { extractPalAnchorFromLifeProjectionV0 } from "./expressiveRealityTransitionV0.js";
 import {
   loadRhizohProductSession,
@@ -713,6 +718,7 @@ export async function queryRhizohLLM({
     message: trimmed,
     navLocale: typeof navigator !== "undefined" ? navigator.language : ""
   });
+  const langBundle = buildRhizohLanguagePropagationBundleV0();
 
   try {
     const fetchOpts = {
@@ -723,6 +729,7 @@ export async function queryRhizohLLM({
         provider,
         llmKeySource,
         connectionId: connectionId || "",
+        ...langBundle.bodyFields,
         context: {
           agentId: agentId || "",
           layerId: layerSpec.id,
@@ -746,6 +753,7 @@ export async function queryRhizohLLM({
           rhizohConversationLlmDirective: rhizohLlmDirective,
           rhizohMultilingual: rhizohMultilingualPack.context,
           rhizohMultilingualDirective: rhizohMultilingualPack.directive,
+          languagePropagation: langBundle.bodyFields.languagePropagation,
           /** Passive cohort routing — gateway resolves schema; client does not select. */
           ...(getRhizohCohortIdForRequestV0()
             ? { cohortId: getRhizohCohortIdForRequestV0() }
@@ -762,15 +770,19 @@ export async function queryRhizohLLM({
         },
         options: {
           maxTokens: maxTok,
-          language: rhizohMultilingualPack.respondBcp47,
+          language: resolveRhizohLlmLanguageV0().bcp47 || rhizohMultilingualPack.respondBcp47,
           generationMode: modeKey
         }
       }),
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeader,
-        "X-Castle-Dev-Uid": getOrCreateCastleDevUid()
-      }
+      headers: mergeRhizohLanguagePropagationHeadersV0(
+        {
+          "Content-Type": "application/json",
+          ...authHeader,
+          "X-Castle-Dev-Uid": getOrCreateCastleDevUid()
+        },
+        "",
+        langBundle
+      )
     };
     let timeoutCtrl = null;
     let timeoutId = 0;
@@ -802,7 +814,13 @@ export async function queryRhizohLLM({
       if (errBody && typeof errBody === "object") {
         if (errBody.rhizohFailureKind) e.rhizohFailureKind = String(errBody.rhizohFailureKind);
         if (errBody.providerHttpStatus != null) e.providerHttpStatus = Number(errBody.providerHttpStatus);
+        if (errBody.languagePropagation) e.languagePropagation = errBody.languagePropagation;
+        if (errBody.partialPropagation != null) e.partialPropagation = errBody.partialPropagation;
+        if (errBody.rhizoh_language_trace_id) e.languageTraceId = String(errBody.rhizoh_language_trace_id);
+        if (errBody.detail) e.gatewayDetail = String(errBody.detail);
+        if (errBody.error) e.gatewayError = String(errBody.error);
       }
+      e.languageTraceId = e.languageTraceId || langBundle.traceId;
       throw e;
     }
     let json;

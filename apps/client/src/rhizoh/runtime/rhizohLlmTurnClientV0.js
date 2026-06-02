@@ -12,6 +12,11 @@ import {
   normalizeRhizohLlmGatewayResponseV0,
   resolveRhizohReplyForDisplayV0
 } from "./rhizohLlmReplyNormalizeV0.js";
+import {
+  buildRhizohLanguagePropagationBundleV0,
+  mergeRhizohLanguagePropagationHeadersV0,
+  resolveRhizohLlmLanguageV0
+} from "./rhizohLanguagePropagationV0.js";
 
 export const RHIZOH_LLM_TURN_CLIENT_SCHEMA_V0 = "castle.rhizoh.llm_turn_client.v0";
 
@@ -78,10 +83,16 @@ export async function postRhizohLlmTurnV0(input = {}) {
     runtime.scheduling = fastPatch.scheduling;
   }
 
-  const headers = {
-    "Content-Type": "application/json",
-    "X-Castle-Dev-Uid": getOrCreateCastleDevUid()
-  };
+  const langBundle = buildRhizohLanguagePropagationBundleV0();
+  const llmLang = resolveRhizohLlmLanguageV0();
+  const headers = mergeRhizohLanguagePropagationHeadersV0(
+    {
+      "Content-Type": "application/json",
+      "X-Castle-Dev-Uid": getOrCreateCastleDevUid()
+    },
+    "",
+    langBundle
+  );
   if (input.idToken && String(input.idToken).trim()) {
     headers.Authorization = `Bearer ${String(input.idToken).trim()}`;
   } else if (cfg.rhizohLlmToken) {
@@ -93,14 +104,16 @@ export async function postRhizohLlmTurnV0(input = {}) {
     provider: input.provider ?? "openai",
     llmKeySource: input.llmKeySource ?? "auto",
     connectionId: String(input.connectionId || ""),
+    ...langBundle.bodyFields,
     context: {
       ...baseContext,
       continuity: { ...continuity, runtime },
-      rhizohExpression: prep?.turn?.expression || null
+      rhizohExpression: prep?.turn?.expression || null,
+      languagePropagation: langBundle.bodyFields.languagePropagation
     },
     options: {
       maxTokens: input.options?.maxTokens ?? 768,
-      language: input.options?.language ?? fastPatch?.projectionLanguage ?? "tr-TR"
+      language: input.options?.language ?? llmLang.bcp47
     }
   };
 
@@ -116,11 +129,22 @@ export async function postRhizohLlmTurnV0(input = {}) {
     });
 
     if (!res.ok) {
+      let errBody = null;
+      try {
+        errBody = await res.json();
+      } catch {
+        /* noop */
+      }
       return Object.freeze({
         ok: false,
         error: `rhizoh_llm_http_${res.status}`,
         prep,
-        traceId: input.traceId
+        traceId: input.traceId,
+        languageTraceId: langBundle.traceId,
+        languagePropagation: errBody?.languagePropagation ?? langBundle.snapshot,
+        partialPropagation: errBody?.partialPropagation,
+        gatewayError: errBody?.error,
+        gatewayDetail: errBody?.detail
       });
     }
 

@@ -16,7 +16,7 @@ export const RHIZOH_BROWSER_ORIGINS_V1 = Object.freeze([
 ]);
 
 export const HTTP_CORS_ALLOW_HEADERS_V1 =
-  "Content-Type, Authorization, X-Castle-Dev-Uid, X-Castle-Guest-Id, X-Castle-Gateway-Token, X-Castle-Ingress-Contract, X-Rhizoh-Outcome-Signature, X-Rhizoh-Outcome-Source-Token, X-Castle-Academic-Observatory-Key, X-Castle-Moderation-Key";
+  "Content-Type, Authorization, X-Castle-Dev-Uid, X-Castle-Guest-Id, X-Castle-Gateway-Token, X-Castle-Ingress-Contract, X-Rhizoh-Outcome-Signature, X-Rhizoh-Outcome-Source-Token, X-Castle-Academic-Observatory-Key, X-Castle-Moderation-Key, X-Rhizoh-Ui-Lang, X-Rhizoh-Speech-Lang, X-Rhizoh-Llm-Lang, X-Rhizoh-Language-Trace-Id";
 
 export function normalizeHttpOrigin(origin) {
   return String(origin || "")

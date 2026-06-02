@@ -1,4 +1,6 @@
 import { describe, expect, it, beforeEach } from "vitest";
+import { clearRhizohSpeechProfileForTestV0 } from "../../runtime/rhizohSpeechProfileV0.js";
+import { clearUiLocalePickedForTestV0, writeUiLocaleV0 } from "../../runtime/rhizohUiLocaleV0.js";
 import {
   acknowledgeLegalAccessV0,
   acknowledgeLegalPreambleV0,
@@ -26,6 +28,8 @@ describe("ingress_router v0.1", () => {
   beforeEach(() => {
     clearLegalPreambleAckForTestV0();
     clearClosedAdmissionSessionForTestV0();
+    clearUiLocalePickedForTestV0();
+    clearRhizohSpeechProfileForTestV0();
     clearEngine();
   });
 
@@ -86,6 +90,7 @@ describe("ingress_router v0.1", () => {
   });
 
   it("legal copy uses access gate framing + separate checkboxes", () => {
+    writeUiLocaleV0("tr");
     const copy = getLegalPreambleCopyV0();
     expect(copy.kicker).toMatch(/GEÇİT/);
     expect(copy.checkboxes.terms).toMatch(/Kullanım Şartları/i);
@@ -105,11 +110,11 @@ describe("ingress_router v0.1", () => {
     expect(flags).toHaveProperty("prod");
   });
 
-  it("deriveIngressPhase matches route when legal required", () => {
+  it("deriveIngressPhase shows language before legal when speech profile missing", () => {
     const orig = import.meta.env.VITE_RHIZOH_LEGAL_PREAMBLE;
     import.meta.env.VITE_RHIZOH_LEGAL_PREAMBLE = "1";
     try {
-      expect(deriveIngressPhaseV0()).toBe(INGRESS_ROUTE_V0.LEGAL_PREAMBLE);
+      expect(deriveIngressPhaseV0()).toBe(INGRESS_ROUTE_V0.LANGUAGE);
     } finally {
       import.meta.env.VITE_RHIZOH_LEGAL_PREAMBLE = orig;
     }

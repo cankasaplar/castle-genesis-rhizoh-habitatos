@@ -146,6 +146,14 @@ function pickGatewayProxyForwardHeaders(req, path = "") {
 
   if (gwTok) headers["X-Castle-Gateway-Token"] = String(gwTok);
   if (auth) headers.Authorization = String(auth);
+  const uiLang = req.headers["x-rhizoh-ui-lang"];
+  const speechLang = req.headers["x-rhizoh-speech-lang"];
+  const llmLang = req.headers["x-rhizoh-llm-lang"];
+  const langTrace = req.headers["x-rhizoh-language-trace-id"];
+  if (uiLang) headers["X-Rhizoh-Ui-Lang"] = String(uiLang);
+  if (speechLang) headers["X-Rhizoh-Speech-Lang"] = String(speechLang);
+  if (llmLang) headers["X-Rhizoh-Llm-Lang"] = String(llmLang);
+  if (langTrace) headers["X-Rhizoh-Language-Trace-Id"] = String(langTrace);
   return headers;
 }
 

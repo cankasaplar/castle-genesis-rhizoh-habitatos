@@ -15,15 +15,31 @@ const LEGAL_DOCS_NOTE_EN =
 const LANGUAGE_PICKER_COPY = Object.freeze({
   en: Object.freeze({
     kicker: "LANGUAGE",
-    title: "Choose your language",
-    lead: "Rhizoh will use this for the app, legal gate, and conversation. You can change it later in settings.",
-    continueLabel: "Continue"
+    title: "App language",
+    lead: "Menus, buttons, and the legal screen. You can change this later in settings.",
+    continueLabel: "Continue",
+    rhizohKicker: "RHIZOH SPEECH",
+    rhizohTitle: "How should Rhizoh listen?",
+    rhizohLead:
+      "Voice recognition and commands use this profile — separate from app language. Auto is recommended.",
+    rhizohAutoLabel: "Auto (recommended)",
+    rhizohMirrorLabel: "Same as app language",
+    rhizohManualLabel: "Choose speech language",
+    rhizohFinishLabel: "Continue to legal gate"
   }),
   tr: Object.freeze({
     kicker: "DİL",
-    title: "Dilinizi seçin",
-    lead: "Rhizoh bunu uygulama, hukuki geçit ve konuşma için kullanır. Daha sonra ayarlardan değiştirebilirsiniz.",
-    continueLabel: "Devam et"
+    title: "Uygulama dili",
+    lead: "Menüler, düğmeler ve hukuki geçit. Bunu daha sonra ayarlardan değiştirebilirsiniz.",
+    continueLabel: "Devam et",
+    rhizohKicker: "RHIZOH KONUŞMA",
+    rhizohTitle: "Rhizoh nasıl dinlesin?",
+    rhizohLead:
+      "Ses tanıma ve komutlar bu profili kullanır — uygulama dilinden ayrıdır. Otomatik önerilir.",
+    rhizohAutoLabel: "Otomatik (önerilen)",
+    rhizohMirrorLabel: "Uygulama diliyle aynı",
+    rhizohManualLabel: "Konuşma dilini seç",
+    rhizohFinishLabel: "Hukuki geçide devam"
   }),
   fi: Object.freeze({
     kicker: "KIELI",

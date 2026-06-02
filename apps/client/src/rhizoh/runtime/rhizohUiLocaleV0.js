@@ -11,6 +11,7 @@ import {
 } from "./rhizohMultilingualBridgeV0.js";
 import { bootstrapCastleLanguageRuntimeV0 } from "./rhizohLanguageRuntimeV0.js";
 import { applyUiLanguagePreferenceToOlpV0 } from "./rhizohOutputLanguagePolicyV0.js";
+import { hasRhizohSpeechProfileConfiguredV0 } from "./rhizohSpeechProfileV0.js";
 
 export const RHIZOH_UI_LOCALE_CONTRACT_V0 = "rhizoh-ui-locale-v0";
 export const RHIZOH_UI_LOCALE_CHANGE_EVENT_V0 = "rhizoh:ui-locale";
@@ -203,5 +204,6 @@ export function isLanguagePickerRequiredForIngressV0() {
   }
   if (!hasUiLocaleBeenPickedV0()) return true;
   if (!hasIngressLocalePickContractV0()) return true;
+  if (!hasRhizohSpeechProfileConfiguredV0()) return true;
   return false;
 }

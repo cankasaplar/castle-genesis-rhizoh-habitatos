@@ -20,6 +20,7 @@ import {
 import { dispatchLocalCommandHandlerV0 } from "./rhizohLocalCommandHandlersV0.js";
 import { prewarmCommandRoutingV0 } from "./rhizohCommandRoutePreheatV0.js";
 import { routeVoiceInputWithCommandGateV0 } from "./rhizohCommandGateV0.js";
+import { normalizeRhizohSttBrandPhoneticsV0 } from "./rhizohSttBrandNormalizeV0.js";
 
 export const RHIZOH_VOICE_COMMAND_ROUTER_CONTRACT_V0 = "rhizoh.voice_command_router.v0";
 export { RHIZOH_VOICE_COMMAND_EVENT_V0 } from "./rhizohLocalCommandHandlersV0.js";
@@ -65,7 +66,8 @@ const LOCAL_COMMAND_REPLY_V0 = Object.freeze({
  * @param {string} s
  */
 export function normalizeVoiceCommandTokenV0(s) {
-  return String(s || "")
+  const brand = normalizeRhizohSttBrandPhoneticsV0(s);
+  return String(brand.text || "")
     .trim()
     .toLowerCase()
     .normalize("NFD")

@@ -313,9 +313,21 @@ export function isLanguagePickerRequiredV0() {
 }
 
 /**
+ * Product hosts: language + speech profile before localized legal gate.
+ */
+export function isPreLegalLanguageGateRequiredV0() {
+  if (!isLanguagePickerRequiredV0()) return false;
+  if (!isLegalPreambleRequiredV0()) return false;
+  if (hasLegalPreambleAckV0()) return false;
+  return true;
+}
+
+/**
  * UI phase for RhizohIngressFlow (not an execution route).
+ * Order: language (+ Rhizoh speech profile) → legal → cohort → app.
  */
 export function deriveIngressPhaseV0() {
+  if (isPreLegalLanguageGateRequiredV0()) return INGRESS_ROUTE_V0.LANGUAGE;
   if (isLanguagePickerRequiredV0()) return INGRESS_ROUTE_V0.LANGUAGE;
   const ingress = resolveIngressRouteV0();
   if (ingress.route === INGRESS_ROUTE_V0.LEGAL_PREAMBLE) return INGRESS_ROUTE_V0.LEGAL_PREAMBLE;

@@ -5,6 +5,7 @@
 
 import { resolveRhizohBcp47V0, resolveRhizohLanguageCatalogRowV0 } from "./rhizohMultilingualBridgeV0.js";
 import { normalizeUiLocaleV0, resolveDefaultUiLocaleV0, RHIZOH_UI_LAUNCH_LOCALES_V0 } from "./rhizohUiLocaleV0.js";
+import { resolveRhizohSpeechSttLanguageCodeV0 } from "./rhizohSpeechProfileV0.js";
 
 export const RHIZOH_OUTPUT_LANGUAGE_POLICY_CONTRACT_V0 = "rhizoh.output_language_policy.v0";
 export const RHIZOH_UI_LANGUAGE_PREFERENCE_EVENT_V0 = "rhizoh:ui-language-preference";
@@ -138,6 +139,8 @@ export function resolveOutputBcp47V0(detectedInputCode = "") {
 export function readSttInputLanguageCodeHintV0() {
   const forced = readForcedSttLanguageFromEnvV0();
   if (forced) return forced;
+  const speech = resolveRhizohSpeechSttLanguageCodeV0();
+  if (speech) return speech;
   return resolveRhizohLanguageCatalogRowV0(readOlpOwnedPreferenceLocaleV0()).bcp47;
 }
 
