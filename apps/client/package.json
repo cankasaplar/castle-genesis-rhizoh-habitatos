@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "node ../../scripts/validate-rhizoh-client-prod-env.mjs && vite build",
+    "build:ci": "vite build",
     "typecheck": "tsc --noEmit -p .",
     "test": "vitest run",
     "test:predeploy-substrate": "vitest run src/rhizoh/runtime/__tests__/preDeploySubstrateGateV0.test.js",

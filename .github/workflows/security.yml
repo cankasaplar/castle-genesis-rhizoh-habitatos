@@ -25,8 +25,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build client
-        run: npm run build
+      - name: Build client (compile smoke — prod gateway secrets not required)
+        run: npm run build:ci -w apps/client
 
       - name: NPM audit (high+)
         run: npm run security:audit
