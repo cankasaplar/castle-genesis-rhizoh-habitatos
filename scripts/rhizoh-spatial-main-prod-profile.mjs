@@ -114,6 +114,9 @@ export const RHIZOH_PROD_ENV_KEYS_V0 = Object.freeze([
   ...RHIZOH_PROD_OPTIONAL_KEYS_V0
 ]);
 
+/** Keys where explicit empty CI env omits the key (no profile fallback). */
+export const RHIZOH_PROD_EMPTY_MEANS_OMIT_V0 = new Set(["VITE_WORLD_EXECUTION_MODE"]);
+
 /**
  * @param {string} key
  * @param {NodeJS.ProcessEnv} [env]
@@ -123,8 +126,9 @@ export function resolveRhizohProdEnvValueV0(key, env = process.env) {
   if (Object.prototype.hasOwnProperty.call(env, key)) {
     const raw = env[key];
     if (raw != null && String(raw).trim()) return String(raw).trim();
-    // Explicit empty CI env (e.g. world_layer=0 → no execution mode) — skip, no profile fallback
-    if (raw === "") return null;
+    // GitHub Actions sets unset secrets to "" — fall through to profile default
+    // except keys where empty explicitly means "omit from .env.production".
+    if (raw === "" && RHIZOH_PROD_EMPTY_MEANS_OMIT_V0.has(key)) return null;
   }
   const fallback = RHIZOH_SPATIAL_MAIN_PROD_DEFAULTS_V0[key];
   return fallback != null ? String(fallback) : null;
