@@ -18,6 +18,7 @@ import {
 } from "../rhizohConversationLanguageV0.js";
 import { prepareRhizohLlmTurnV0 } from "../rhizohLlmTurnHotWireV0.js";
 import { emitVoiceEngineTelemetryV3, setVoiceEngineStateV3 } from "./voiceEngineTelemetryV3.js";
+import { noteVoiceRuntimePressureV1 } from "../gatewaySessionKeeperV1.js";
 
 export const VOICE_MIN_RECORD_MS_V3 = 1200;
 export const VOICE_MIN_AUDIO_BYTES_V3 = 25000;
@@ -49,6 +50,10 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
   function setSessionState(next) {
     sessionState = String(next || VOICE_ENGINE_STATE_V3.IDLE);
     setVoiceEngineStateV3(sessionState, sessionId);
+    noteVoiceRuntimePressureV1(
+      sessionState === VOICE_ENGINE_STATE_V3.RECORDING ||
+        sessionState === VOICE_ENGINE_STATE_V3.WAIT_WHISPER_FINAL
+    );
   }
 
   return Object.freeze({

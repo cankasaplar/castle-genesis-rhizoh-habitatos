@@ -3,6 +3,18 @@ import { getCastleFlightConfig } from "../castleFlight/castleFlightConfig.js";
 import { emitRhizohEngineActionTrace } from "./telemetry/rhizohUiIntentTraceV0.js";
 import { computeGatewayFlapPressure } from "./runtime/runtimeFrameCorrelationV0.js";
 import { setActiveConnectionId, setGatewayHealth } from "./runtime/gatewayIdentityStoreV0.js";
+import {
+  computeGatewayHeartbeatDelayV1,
+  getGatewayOfflineDebounceThresholdV1,
+  getGatewayReconnectBackoffMsV1,
+  noteGatewayPhaseTransitionV1,
+  noteGatewayReconnectRequestedV1,
+  noteGatewayHealthTickDeferredV1,
+  noteGatewaySessionHealthOkV1,
+  scheduleGatewayHeartbeatTaskV1,
+  shouldDeferGatewayHealthTickV1,
+  shouldPreserveSessionOnTransientFailureV1
+} from "./runtime/gatewaySessionKeeperV1.js";
 
 const MAX_ATTEMPTS = 5;
 const HEALTH_TIMEOUT_MS = 6500;
@@ -13,7 +25,8 @@ const HEALTH_CHURN_MIN_FAILS = 6;
 
 function backoffWithFlapAndJitter(attemptIndex) {
   const flap = computeGatewayFlapPressure();
-  const base = 700 + attemptIndex * 350 + flap.suggestedRetryExtraMs;
+  const keeperBackoff = getGatewayReconnectBackoffMsV1(attemptIndex);
+  const base = Math.max(700 + attemptIndex * 350 + flap.suggestedRetryExtraMs, keeperBackoff);
   return base + Math.floor(Math.random() * 550);
 }
 
@@ -301,6 +314,7 @@ export function useRhizohGatewayMonitor() {
       });
     }
     setSessionTick((x) => x + 1);
+    noteGatewayReconnectRequestedV1();
     setDetail("");
     setSlowGate(false);
     setHealthDeps(null);
@@ -354,12 +368,14 @@ export function useRhizohGatewayMonitor() {
           setDetail(det || "");
           if (ph === "connected" || ph === "degraded_llm" || ph === "degraded_storage" || ph === "degraded") {
             setPhase(ph);
+            noteGatewayPhaseTransitionV1(ph);
             const gwStatus = gatewayStatusFromPhase(ph);
             setGatewayHealth(gwStatus);
             const candidateConn = extractCandidateConnectionId(raw?.json);
             if (gwStatus === "connected" && candidateConn) {
               setActiveConnectionId(candidateConn, { status: gwStatus, at: Date.now() });
             }
+            noteGatewaySessionHealthOkV1({ connectionId: candidateConn || null });
             setAttempt(a);
             setHealthPollSerial((n) => n + 1);
             /** Monotonic tick id: stale async completions must not overwrite newer poll state (ordering guard). */
@@ -393,6 +409,11 @@ export function useRhizohGatewayMonitor() {
 
             async function runHealthTick() {
               if (cancelled) return;
+              if (shouldDeferGatewayHealthTickV1()) {
+                noteGatewayHealthTickDeferredV1();
+                scheduleHealthPoll();
+                return;
+              }
               const myIssueId = ++healthPollIssueId;
               try {
                 const r = await fetchGatewayDepsOnce(httpBase);
@@ -415,6 +436,7 @@ export function useRhizohGatewayMonitor() {
                   pushHealthOutcome(true);
                   setHealthDeps(r.json && typeof r.json === "object" ? r.json : null);
                   setPhase(cl.phase);
+                  noteGatewayPhaseTransitionV1(cl.phase);
                   const gwStatus2 = gatewayStatusFromPhase(cl.phase);
                   setGatewayHealth(gwStatus2);
                   const candidateConn2 = extractCandidateConnectionId(r?.json);
@@ -423,18 +445,22 @@ export function useRhizohGatewayMonitor() {
                   } else if (gwStatus2 === "disconnected") {
                     setActiveConnectionId(null, { at: Date.now() });
                   }
+                  noteGatewaySessionHealthOkV1({ connectionId: candidateConn2 || null });
                   setDetail(cl.detail || "");
                   setHealthPollSerial((n) => n + 1);
                 } else {
                   offlinePollStreak += 1;
                   const churnBypass = pushHealthOutcome(false);
-                  if (offlinePollStreak < 2 && !churnBypass) {
+                  const offlineThreshold = getGatewayOfflineDebounceThresholdV1();
+                  const preserveSession = shouldPreserveSessionOnTransientFailureV1();
+                  if (offlinePollStreak < offlineThreshold && !churnBypass && preserveSession) {
                     setPhase("uncertain");
+                    noteGatewayPhaseTransitionV1("uncertain");
                     setGatewayHealth("connected");
                     setDetail(
                       [
                         cl.detail || "Sağlık kontrolü geçici başarısız.",
-                        "Tam offline için ardışık 2 başarısız tur veya yoğun rolling başarısızlık (otomatik yükseltme)."
+                        `Tam offline için ardışık ${offlineThreshold} başarısız tur veya yoğun rolling başarısızlık (session keeper).`
                       ]
                         .filter(Boolean)
                         .join(" ")
@@ -448,6 +474,7 @@ export function useRhizohGatewayMonitor() {
                     }
                     setHealthDeps(r.json && typeof r.json === "object" ? r.json : null);
                     setPhase(cl.phase);
+                    noteGatewayPhaseTransitionV1(cl.phase);
                     setGatewayHealth("disconnected");
                     setActiveConnectionId(null, { at: Date.now() });
                     setDetail(cl.detail || "");
@@ -463,6 +490,7 @@ export function useRhizohGatewayMonitor() {
                   offlinePollStreak = 0;
                   pushHealthOutcome(false);
                   setPhase("maintenance");
+                  noteGatewayPhaseTransitionV1("maintenance");
                   setGatewayHealth("disconnected");
                   setActiveConnectionId(null, { at: Date.now() });
                   setDetail(cl.detail || "");
@@ -473,6 +501,7 @@ export function useRhizohGatewayMonitor() {
                   pushHealthOutcome(true);
                   setHealthDeps(null);
                   setPhase(cl.phase);
+                  noteGatewayPhaseTransitionV1(cl.phase);
                   const gwStatus2 = gatewayStatusFromPhase(cl.phase);
                   setGatewayHealth(gwStatus2);
                   if (gwStatus2 === "disconnected") {
@@ -483,13 +512,16 @@ export function useRhizohGatewayMonitor() {
                 } else {
                   offlinePollStreak += 1;
                   const churnBypass = pushHealthOutcome(false);
-                  if (offlinePollStreak < 2 && !churnBypass) {
+                  const offlineThreshold = getGatewayOfflineDebounceThresholdV1();
+                  const preserveSession = shouldPreserveSessionOnTransientFailureV1();
+                  if (offlinePollStreak < offlineThreshold && !churnBypass && preserveSession) {
                     setPhase("uncertain");
+                    noteGatewayPhaseTransitionV1("uncertain");
                     setGatewayHealth("connected");
                     setDetail(
                       [
                         cl.detail || "Sağlık kontrolü geçici başarısız.",
-                        "Tam offline için ardışık 2 başarısız tur veya yoğun rolling başarısızlık (otomatik yükseltme)."
+                        `Tam offline için ardışık ${offlineThreshold} başarısız tur veya yoğun rolling başarısızlık (session keeper).`
                       ]
                         .filter(Boolean)
                         .join(" ")
@@ -503,6 +535,7 @@ export function useRhizohGatewayMonitor() {
                     }
                     setHealthDeps(null);
                     setPhase(cl.phase);
+                    noteGatewayPhaseTransitionV1(cl.phase);
                     setGatewayHealth("disconnected");
                     setActiveConnectionId(null, { at: Date.now() });
                     setDetail(cl.detail || "");
@@ -514,15 +547,18 @@ export function useRhizohGatewayMonitor() {
             }
             function scheduleHealthPoll() {
               if (cancelled) return;
-              const flap = computeGatewayFlapPressure();
-              const delay = 12_000 + flap.suggestedPollExtraMs + Math.floor(Math.random() * 2200);
-              pollRef.current = window.setTimeout(() => void runHealthTick(), delay);
+              const delay = computeGatewayHeartbeatDelayV1();
+              pollRef.current = window.setTimeout(
+                () => scheduleGatewayHeartbeatTaskV1(() => void runHealthTick(), { timeoutMs: 4_000 }),
+                delay
+              );
             }
             scheduleHealthPoll();
             return;
           }
           if (ph === "maintenance") {
             setPhase("maintenance");
+            noteGatewayPhaseTransitionV1("maintenance");
             setGatewayHealth("disconnected");
             setActiveConnectionId(null, { at: Date.now() });
             return;
