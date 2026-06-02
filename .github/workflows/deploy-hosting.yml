@@ -29,11 +29,11 @@ on:
       deploy_track:
         description: "Entry shell track (spatial-main = current main; t0-interface-lock = full monolith @ 8bd4ff9)"
         required: true
-        default: t0-interface-lock
+        default: spatial-main
         type: choice
         options:
-          - t0-interface-lock
           - spatial-main
+          - t0-interface-lock
 
 jobs:
   deploy:
@@ -44,7 +44,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.deploy_track == 't0-interface-lock' && 't0-interface-lock' || github.ref }}
+          ref: ${{ inputs.deploy_track == 't0-interface-lock' && 't0-interface-lock' || 'main' }}
 
       - name: Resolve deploy track
         id: track
