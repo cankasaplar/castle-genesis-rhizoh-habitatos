@@ -3,6 +3,7 @@
  */
 
 import { evaluateSttScriptAgainstUiLocaleV0 } from "../sttScriptLocaleGuardV0.js";
+import { normalizeSttCrossScriptForTurkishUiV0 } from "../rhizohSttCrossScriptNormalizeV0.js";
 
 export const VOICE_TRANSCRIPT_SANITY_V3_SCHEMA = "castle.rhizoh.voice.transcript_sanity.v3";
 export const VOICE_TRANSCRIPT_MIN_CONFIDENCE_V3 = 0.35;
@@ -147,7 +148,10 @@ export function sanitizeVoiceTranscriptForDispatchV3(text, opts = {}) {
   const trimmed = String(text || "").trim();
   if (!trimmed) return { ok: false, reason: "empty", text: "" };
 
-  const scriptGuard = evaluateSttScriptAgainstUiLocaleV0(trimmed, {
+  const cross = normalizeSttCrossScriptForTurkishUiV0(trimmed);
+  const dispatchText = cross.text || trimmed;
+
+  const scriptGuard = evaluateSttScriptAgainstUiLocaleV0(dispatchText, {
     confidence: opts.confidence,
     strategy: opts.strategy
   });
@@ -155,28 +159,28 @@ export function sanitizeVoiceTranscriptForDispatchV3(text, opts = {}) {
     return {
       ok: false,
       reason: scriptGuard.reason || "script_locale_mismatch",
-      text: trimmed,
+      text: dispatchText,
       scriptGuard
     };
   }
 
-  if (trimmed.length < VOICE_TRANSCRIPT_MIN_CHARS_V3) {
-    return { ok: false, reason: "too_short", text: trimmed };
+  if (dispatchText.length < VOICE_TRANSCRIPT_MIN_CHARS_V3) {
+    return { ok: false, reason: "too_short", text: dispatchText };
   }
 
   const conf = Number(opts.confidence);
   const strategy = String(opts.strategy || "");
 
   if (Number.isFinite(conf) && conf < VOICE_TRANSCRIPT_MIN_CONFIDENCE_V3) {
-    return { ok: false, reason: "low_confidence", text: trimmed, confidence: conf };
+    return { ok: false, reason: "low_confidence", text: dispatchText, confidence: conf };
   }
 
-  if (isSuspiciousWhisperArtifactV3(trimmed, conf)) {
-    return { ok: false, reason: "whisper_artifact", text: trimmed, confidence: conf };
+  if (isSuspiciousWhisperArtifactV3(dispatchText, conf)) {
+    return { ok: false, reason: "whisper_artifact", text: dispatchText, confidence: conf };
   }
 
-  if (hasInternalTranscriptRepetitionV3(trimmed)) {
-    return { ok: false, reason: "internal_repetition", text: trimmed, confidence: conf };
+  if (hasInternalTranscriptRepetitionV3(dispatchText)) {
+    return { ok: false, reason: "internal_repetition", text: dispatchText, confidence: conf };
   }
 
   if (isWhisperDefaultConfidenceV3(conf, strategy)) {
@@ -184,14 +188,14 @@ export function sanitizeVoiceTranscriptForDispatchV3(text, opts = {}) {
     const longCapture =
       Number.isFinite(recordedMs) && recordedMs >= VOICE_TRANSCRIPT_MIN_RECORD_MS_V3;
     const shortTextFragile =
-      trimmed.length <= 48 || hasInternalTranscriptRepetitionV3(trimmed, 10);
-    const conversational = isConversationalTurkishUtteranceV3(trimmed);
+      dispatchText.length <= 48 || hasInternalTranscriptRepetitionV3(dispatchText, 10);
+    const conversational = isConversationalTurkishUtteranceV3(dispatchText);
 
-    if (longCapture && conversational && !hasInternalTranscriptRepetitionV3(trimmed, 10)) {
+    if (longCapture && conversational && !hasInternalTranscriptRepetitionV3(dispatchText, 10)) {
       return {
         ok: false,
         reason: "whisper_default_conf",
-        text: trimmed,
+        text: dispatchText,
         confidence: conf,
         strategy,
         shadowForward: true
@@ -202,7 +206,7 @@ export function sanitizeVoiceTranscriptForDispatchV3(text, opts = {}) {
       return {
         ok: false,
         reason: "whisper_default_conf",
-        text: trimmed,
+        text: dispatchText,
         confidence: conf,
         strategy,
         shadowForward: true
@@ -213,7 +217,7 @@ export function sanitizeVoiceTranscriptForDispatchV3(text, opts = {}) {
       return {
         ok: false,
         reason: "whisper_default_conf",
-        text: trimmed,
+        text: dispatchText,
         confidence: conf,
         strategy,
         shadowForward: conversational
@@ -222,13 +226,24 @@ export function sanitizeVoiceTranscriptForDispatchV3(text, opts = {}) {
   }
 
   if (opts.checkRepeat !== false) {
-    const rep = noteVoiceTranscriptRepeatV3(trimmed);
+    const rep = noteVoiceTranscriptRepeatV3(dispatchText);
     if (rep.repeated) {
-      return { ok: false, reason: "repeated_hallucination", text: trimmed, confidence: conf, streak: rep.streak };
+      return {
+        ok: false,
+        reason: "repeated_hallucination",
+        text: dispatchText,
+        confidence: conf,
+        streak: rep.streak
+      };
     }
   }
 
-  return { ok: true, text: trimmed, confidence: Number.isFinite(conf) ? conf : undefined };
+  return {
+    ok: true,
+    text: dispatchText,
+    confidence: Number.isFinite(conf) ? conf : undefined,
+    crossScriptRemap: cross.remapped === true
+  };
 }
 
 /** @deprecated */

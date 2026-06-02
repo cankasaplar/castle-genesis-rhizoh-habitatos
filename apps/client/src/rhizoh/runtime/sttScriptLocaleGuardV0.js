@@ -7,6 +7,7 @@ import { detectRhizohMultilingualLocaleV0 } from "./rhizohMultilingualBridgeV0.j
 import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
 import { readSttInputLanguageCodeHintV0 } from "./rhizohOutputLanguagePolicyV0.js";
 import { isConversationalTurkishUtteranceV3 } from "./voiceEngineV3/voiceTranscriptSanityV3.js";
+import { normalizeSttCrossScriptForTurkishUiV0 } from "./rhizohSttCrossScriptNormalizeV0.js";
 
 export const STT_SCRIPT_LOCALE_GUARD_SCHEMA_V0 = "castle.rhizoh.stt_script_locale_guard.v0";
 
@@ -133,14 +134,17 @@ export function evaluateSttScriptAgainstUiLocaleV0(text, opts = {}) {
   const expected = String(opts.expectedLocale || resolveOutputLanguageCodeV0() || "tr")
     .toLowerCase()
     .replace(/-.*/, "");
+  const cross =
+    expected === "tr" ? normalizeSttCrossScriptForTurkishUiV0(raw) : { text: raw, remapped: false };
+  const evalText = cross.text;
   const sttHint = String(opts.sttLanguageHint || readSttInputLanguageCodeHintV0() || "")
     .toLowerCase()
     .replace(/-.*/, "");
 
-  const arabicRatio = measureArabicScriptRatioV0(raw);
-  const cyrillicRatio = measureCyrillicScriptRatioV0(raw);
-  const latinRatio = measureLatinScriptRatioV0(raw);
-  const semantic = evaluateSemanticPlausibilityV0(raw, opts);
+  const arabicRatio = measureArabicScriptRatioV0(evalText);
+  const cyrillicRatio = measureCyrillicScriptRatioV0(evalText);
+  const latinRatio = measureLatinScriptRatioV0(evalText);
+  const semantic = evaluateSemanticPlausibilityV0(evalText, opts);
 
   const langMatch =
     expected === "tr"
@@ -150,7 +154,7 @@ export function evaluateSttScriptAgainstUiLocaleV0(text, opts = {}) {
   const scriptMatch =
     expected === "tr"
       ? arabicRatio < ARABIC_SOFT_RATIO_V0 && cyrillicRatio < 0.35 && latinRatio >= 0.4
-      : arabicRatio < 0.35 && /[a-z]/i.test(raw);
+      : arabicRatio < 0.35 && /[a-z]/i.test(evalText);
 
   const pass =
     expected !== "tr"
@@ -215,6 +219,8 @@ export function evaluateSttScriptAgainstUiLocaleV0(text, opts = {}) {
     scriptMatch,
     semantic,
     expectedLocale: expected,
+    normalizedText: cross.remapped ? evalText : undefined,
+    crossScriptRemap: cross.remapped === true,
     arabicRatio,
     latinRatio,
     cyrillicRatio

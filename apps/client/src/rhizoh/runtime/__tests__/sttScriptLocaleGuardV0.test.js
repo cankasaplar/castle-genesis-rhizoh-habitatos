@@ -36,6 +36,13 @@ describe("sttScriptLocaleGuardV0", () => {
     expect(["script", "semantic", "lang_only"]).toContain(guard.passMode);
   });
 
+  it("allows Arabic-script marhaba remapped to Turkish Latin", () => {
+    const guard = evaluateSttScriptAgainstUiLocaleV0("مرحبا مرحبا مرحبا مرحبا");
+    expect(guard.ok).toBe(true);
+    expect(guard.crossScriptRemap).toBe(true);
+    expect(guard.normalizedText).toBe("merhaba");
+  });
+
   it("rejects Persian script even when confidence is moderate", () => {
     const fa = "سیزن ایکایی میشه، دوام ایده همیشه این ایکایی؟";
     const guard = evaluateSttScriptAgainstUiLocaleV0(fa, { confidence: 0.62, sttLanguageHint: "tr" });
