@@ -110,6 +110,21 @@ VITE_GATEWAY_HTTP=https://HOST/rhizoh/llm
 | `VITE_RHIZOH_COHORT_SERVER_GATE` | Hayır | `1` | Açıksa oturumdan sonra `cohortGateV0` HTTPS ile doğrulama zorunlu; istemci `VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST` yetki için kullanılmaz. |
 | `VITE_RHIZOH_COHORT_GATE_URL` | Hayır | Tam HTTPS URL | Boşsa `window.location.origin + /api/cohortGateV0` (Hosting rewrite gerekir). |
 | `VITE_ONTOLOGICAL_BOOT_GATE` | Hayır | `0` \| `1` / boş | **`1`** → ön-yükleme gate açık (IDB seal + `mayBootstrapRuntime`). **`0` veya tanımsız** → gate kapalı (üretim cold start / kohort). `VITE_SUBSTRATE_CONTINUITY_IDB=1` iken gate açılır. |
+| `VITE_RHIZOH_FAST_SPEECH_MODE` | Hayır | `1` (varsayılan) \| `0` | Async fast speech dock; `0` = legacy senkron yol. **spatial-main CI profile varsayılanı `1`.** |
+| `VITE_RHIZOH_VOICE_ENGINE_V3` | Hayır | `1` | MediaRecorder + gateway STT (Whisper/Google). **spatial-main CI profile varsayılanı `1`** — kohort + tüm kullanıcılar build-time. |
+| `VITE_RHIZOH_VOICE_WITNESS_SHADOW` | Hayır | `1` | Witness shadow pipeline; directed speech gate. Profile varsayılanı `1`. |
+| `VITE_RHIZOH_VOICE_ENV_PROFILE` | Hayır | `1` | VEPM v0.1 — çok oturumlu ortam profili (IndexedDB). Profile varsayılanı `1`. |
+| `VITE_RHIZOH_VOICE_ATTENTION_MODE` | Hayır | `moving_context` | Voice attention context. |
+| `VITE_RHIZOH_SHARED_ATTENTION_TYPE` | Hayır | `co_presence` | Shared attention type. |
+| `VITE_RHIZOH_STT_TEMPORAL_CALIBRATION` | Hayır | `1` | STT temporal field calibration. |
+| `VITE_RHIZOH_STT_TEMPORAL_ADAPTIVE` | Hayır | `1` | STT temporal smoothing adaptive window. |
+| `VITE_RHIZOH_STT_LANGUAGE` | Hayır | BCP-47 veya `auto` | STT dili; boşsa UI locale (OLP). |
+| `VITE_RHIZOH_ORIGIN_SEED_LABEL` | Hayır | Metin | Serencebey semantic seed etiketi; varsayılan `Serencebey Castle`. |
+| `VITE_RHIZOH_ORIGIN_SEED_PLACE` | Hayır | Metin | Seed topology place; varsayılan `Beşiktaş · shared seed topology`. |
+| `VITE_RHIZOH_OUTPUT_LANGUAGE_POLICY` | Hayır | `ui_locked_output` | LLM çıktı dili kilidi (kohort çok dilli). |
+| `VITE_RHIZOH_DEFAULT_LOCALE` | Hayır | `en` | Ingress varsayılan UI dili. |
+| `VITE_RHIZOH_REQUIRE_LANGUAGE_PICKER` | Hayır | `1` | Legal öncesi dil seçici. |
+| `VITE_WORLD_LAYER` | Hayır | `1` | spatial-main profile: aktif world mesh (Serencebey seed topology). |
 
 **Dosyalar:** `.env.example`, `.env.production.example` → kopya `.env.local` / `.env.production`.
 
@@ -206,3 +221,5 @@ Kullanıcı verisi **Firestore** `users/{uid}`: `displayName`, `onboardingComple
 ## 6. CI / GitHub Actions
 
 Deploy workflow için örnek gizli adları: `FIREBASE_SERVICE_ACCOUNT_CASTLE_GENESIS`, `VITE_FIREBASE_CONFIG`, `VITE_GATEWAY_WS_URL`, `VITE_GATEWAY_TOKEN`, `VITE_CASTLE_APP_ID`, … — `.github/workflows/deploy-hosting.yml`.
+
+**spatial-main ses profili (SSOT):** `scripts/rhizoh-spatial-main-prod-profile.mjs` — GitHub secret yoksa bu varsayılanlar vite build'e gömülür (Serencebey kök + voice v3 + VEPM). Secret ile override edilebilir; boş secret artık varsayılanı silmez (`write-rhizoh-client-prod-env-ci.mjs`).

@@ -20,6 +20,10 @@
 #   VITE_RHIZOH_COHORT_SERVER_GATE — `1` → cohortGateV0 HTTPS zorunlu (Functions + COHORT_EMAIL_ALLOWLIST param)
 #   VITE_RHIZOH_COHORT_GATE_URL — tam URL; boşsa origin+/api/cohortGateV0
 #   VITE_ONTOLOGICAL_BOOT_GATE — `1` = seal öncesi ontological gate açık (IDB living world zorunlu). `0` veya secret yok = kapalı (kohort cold start).
+#   Ses / STT (spatial-main varsayılanları scripts/rhizoh-spatial-main-prod-profile.mjs — secret yoksa profile geçerli):
+#   VITE_RHIZOH_VOICE_ENGINE_V3, VITE_RHIZOH_VOICE_WITNESS_SHADOW, VITE_RHIZOH_VOICE_ENV_PROFILE,
+#   VITE_RHIZOH_FAST_SPEECH_MODE, VITE_RHIZOH_VOICE_ATTENTION_MODE, VITE_RHIZOH_SHARED_ATTENTION_TYPE,
+#   VITE_RHIZOH_ORIGIN_SEED_LABEL, VITE_RHIZOH_ORIGIN_SEED_PLACE (Serencebey kök düğüm)
 
 name: Deploy Firebase (hosting + rules)
 
@@ -53,7 +57,7 @@ jobs:
             echo "world_layer=1" >> "$GITHUB_OUTPUT"
             echo "deploy_label=t0-interface-lock" >> "$GITHUB_OUTPUT"
           else
-            echo "world_layer=${{ secrets.VITE_WORLD_LAYER || '0' }}" >> "$GITHUB_OUTPUT"
+            echo "world_layer=${{ secrets.VITE_WORLD_LAYER || '1' }}" >> "$GITHUB_OUTPUT"
             echo "deploy_label=spatial-main" >> "$GITHUB_OUTPUT"
           fi
           echo "Deploy track: ${{ inputs.deploy_track }}" >> "$GITHUB_STEP_SUMMARY"
@@ -67,7 +71,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Materialize client .env.production from secrets
+      - name: Materialize client .env.production (spatial-main profile + secrets)
         run: node scripts/write-rhizoh-client-prod-env-ci.mjs
         env:
           VITE_GATEWAY_TOKEN: ${{ secrets.VITE_GATEWAY_TOKEN }}
@@ -78,18 +82,6 @@ jobs:
           VITE_GATEWAY_WS: ${{ secrets.VITE_GATEWAY_WS }}
           VITE_GATEWAY_WS_URL: ${{ secrets.VITE_GATEWAY_WS_URL }}
           VITE_FIREBASE_CONFIG: ${{ secrets.VITE_FIREBASE_CONFIG }}
-          VITE_ENV: ${{ secrets.VITE_ENV || 'production' }}
-          VITE_CASTLE_APP_ID: ${{ secrets.VITE_CASTLE_APP_ID || 'castle-vnext-core' }}
-          VITE_GENESIS_DEPLOY_MODE: ${{ secrets.VITE_GENESIS_DEPLOY_MODE || 'observability' }}
-          VITE_RHIZOH_VOICE_ENGINE_V3: ${{ secrets.VITE_RHIZOH_VOICE_ENGINE_V3 || (inputs.deploy_track == 't0-interface-lock' && '1' || '') }}
-          VITE_RHIZOH_VOICE_WITNESS_SHADOW: ${{ secrets.VITE_RHIZOH_VOICE_WITNESS_SHADOW || (inputs.deploy_track == 't0-interface-lock' && '1' || '') }}
-
-      - name: Build client
-        run: npm run build
-        env:
-          CI: "true"
-          GITHUB_ACTIONS: "true"
-          VITE_FIREBASE_CONFIG: ${{ secrets.VITE_FIREBASE_CONFIG || '{}' }}
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
           VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
@@ -98,38 +90,35 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
           VITE_FIREBASE_DATABASE_URL: ${{ secrets.VITE_FIREBASE_DATABASE_URL }}
-          VITE_GATEWAY_WS: ${{ secrets.VITE_GATEWAY_WS }}
-          VITE_GATEWAY_WS_URL: ${{ secrets.VITE_GATEWAY_WS_URL }}
-          VITE_GATEWAY_HTTP: ${{ secrets.VITE_GATEWAY_HTTP }}
-          VITE_LIVE_GATEWAY_BASE: ${{ secrets.VITE_LIVE_GATEWAY_BASE }}
-          VITE_GATEWAY_TOKEN: ${{ secrets.VITE_GATEWAY_TOKEN }}
+          VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST: ${{ secrets.VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST }}
+          VITE_RHIZOH_COHORT_OBSERVATION_LOG: ${{ secrets.VITE_RHIZOH_COHORT_OBSERVATION_LOG }}
+          VITE_RHIZOH_COHORT_GATE_URL: ${{ secrets.VITE_RHIZOH_COHORT_GATE_URL }}
+          VITE_RHIZOH_LLM_TOKEN: ${{ secrets.VITE_RHIZOH_LLM_TOKEN }}
+          VITE_RHIZOH_STT_LANGUAGE: ${{ secrets.VITE_RHIZOH_STT_LANGUAGE }}
           VITE_DRONE_TELEMETRY_WS: ${{ secrets.VITE_DRONE_TELEMETRY_WS }}
           VITE_FLIGHT_VIEWER_HTTP: ${{ secrets.VITE_FLIGHT_VIEWER_HTTP }}
           VITE_SATELLITE_TILE_TEMPLATE: ${{ secrets.VITE_SATELLITE_TILE_TEMPLATE }}
           VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
           VITE_CESIUM_ION_TOKEN: ${{ secrets.VITE_CESIUM_ION_TOKEN }}
-          VITE_RHIZOH_LLM_HTTP: ${{ secrets.VITE_RHIZOH_LLM_HTTP }}
-          VITE_ENV: ${{ secrets.VITE_ENV || 'production' }}
-          VITE_RHIZOH_LLM_TOKEN: ${{ secrets.VITE_RHIZOH_LLM_TOKEN }}
-          VITE_TELEMETRY_MAX_HZ: ${{ secrets.VITE_TELEMETRY_MAX_HZ || '30' }}
-          VITE_SIM_DRONE_COUNT: ${{ secrets.VITE_SIM_DRONE_COUNT || '4' }}
-          VITE_CASTLE_APP_ID: ${{ secrets.VITE_CASTLE_APP_ID || 'castle-vnext-core' }}
-          VITE_GENESIS_DEPLOY_MODE: ${{ secrets.VITE_GENESIS_DEPLOY_MODE || 'observability' }}
-          VITE_GENESIS_PASSIVE_EPOCH_MAX: ${{ secrets.VITE_GENESIS_PASSIVE_EPOCH_MAX || '100' }}
-          VITE_RHIZOH_INVITE_ONLY_GOOGLE: ${{ secrets.VITE_RHIZOH_INVITE_ONLY_GOOGLE }}
-          VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST: ${{ secrets.VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST }}
-          VITE_RHIZOH_COHORT_OBSERVATION_LOG: ${{ secrets.VITE_RHIZOH_COHORT_OBSERVATION_LOG }}
-          VITE_RHIZOH_COHORT_SERVER_GATE: ${{ secrets.VITE_RHIZOH_COHORT_SERVER_GATE }}
-          VITE_RHIZOH_COHORT_GATE_URL: ${{ secrets.VITE_RHIZOH_COHORT_GATE_URL }}
-          VITE_ONTOLOGICAL_BOOT_GATE: ${{ secrets.VITE_ONTOLOGICAL_BOOT_GATE }}
+          VITE_CASTLE_LAYERS_DEBUG: ${{ secrets.VITE_CASTLE_LAYERS_DEBUG }}
           VITE_WORLD_LAYER: ${{ steps.track.outputs.world_layer }}
           VITE_WORLD_EXECUTION_MODE: ${{ steps.track.outputs.world_layer == '1' && 'active' || '' }}
           VITE_SATELLITE_NODE_REGISTRY_V0: ${{ inputs.deploy_track == 't0-interface-lock' && '0' || secrets.VITE_SATELLITE_NODE_REGISTRY_V0 }}
           VITE_SOVEREIGN_NODE_ONBOARDING: ${{ inputs.deploy_track == 't0-interface-lock' && '0' || secrets.VITE_SOVEREIGN_NODE_ONBOARDING }}
-          VITE_RHIZOH_VOICE_ENGINE_V3: ${{ secrets.VITE_RHIZOH_VOICE_ENGINE_V3 || (inputs.deploy_track == 't0-interface-lock' && '1' || '') }}
-          VITE_RHIZOH_VOICE_WITNESS_SHADOW: ${{ secrets.VITE_RHIZOH_VOICE_WITNESS_SHADOW || (inputs.deploy_track == 't0-interface-lock' && '1' || '') }}
+          VITE_RHIZOH_VOICE_ENGINE_V3: ${{ secrets.VITE_RHIZOH_VOICE_ENGINE_V3 }}
+          VITE_RHIZOH_VOICE_WITNESS_SHADOW: ${{ secrets.VITE_RHIZOH_VOICE_WITNESS_SHADOW }}
+          VITE_RHIZOH_VOICE_ENV_PROFILE: ${{ secrets.VITE_RHIZOH_VOICE_ENV_PROFILE }}
+          VITE_RHIZOH_FAST_SPEECH_MODE: ${{ secrets.VITE_RHIZOH_FAST_SPEECH_MODE }}
           VITE_RHIZOH_VOICE_ATTENTION_MODE: ${{ secrets.VITE_RHIZOH_VOICE_ATTENTION_MODE }}
           VITE_RHIZOH_SHARED_ATTENTION_TYPE: ${{ secrets.VITE_RHIZOH_SHARED_ATTENTION_TYPE }}
+          VITE_RHIZOH_ORIGIN_SEED_LABEL: ${{ secrets.VITE_RHIZOH_ORIGIN_SEED_LABEL }}
+          VITE_RHIZOH_ORIGIN_SEED_PLACE: ${{ secrets.VITE_RHIZOH_ORIGIN_SEED_PLACE }}
+
+      - name: Build client
+        run: npm run build
+        env:
+          CI: "true"
+          GITHUB_ACTIONS: "true"
 
       - name: Write Firebase service account
         run: node -e "require('fs').writeFileSync('firebase-ci.json', process.env.GOOGLE_CREDENTIALS)"
