@@ -83,8 +83,12 @@ export function resolveContinuationHoldReplyV0(fragment, locale) {
   });
 }
 
-export { LLM_FALLBACK_CONFIDENCE_MIN_V0 } from "./rhizohConfidenceDecayGateV0.js";
-import { applyConfidenceDecayGateV0 } from "./rhizohConfidenceDecayGateV0.js";
+import {
+  applyConfidenceDecayGateV0,
+  LLM_FALLBACK_CONFIDENCE_MIN_V0
+} from "./rhizohConfidenceDecayGateV0.js";
+
+export { LLM_FALLBACK_CONFIDENCE_MIN_V0 };
 
 const QUESTION_RE_V0 =
   /(\?|^(ne|nedir|nasıl|nasil|neden|niçin|nicin|kim|nerede|kaç|kac|what|why|how|who|where|when)\b)/i;
