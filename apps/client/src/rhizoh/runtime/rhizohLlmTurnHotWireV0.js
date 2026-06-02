@@ -4,6 +4,7 @@
  */
 
 import { runRhizohClagForLlmTurnV0 } from "./rhizohClagTurnBridgeV0.js";
+import { pickVoiceInstantAckPhraseV0, readVoiceLanguageLockV0 } from "./rhizohConversationLanguageV0.js";
 import {
   markVoiceTurnDispatchV0,
   speakVoiceInstantAckV0
@@ -51,9 +52,12 @@ export function prepareRhizohLlmTurnV0(input = {}) {
   }
 
   const ackPhrase =
-    turn.fastAck ||
-    turn.expression?.instantAckPhrase ||
-    (typeof window !== "undefined" ? window.__CASTLE_RHIZOH_HOT_SPEECH__?.instantAckPhrase : null);
+    input.voiceTurn === true
+      ? pickVoiceInstantAckPhraseV0(readVoiceLanguageLockV0())
+      : turn.fastAck ||
+        turn.expression?.instantAckPhrase ||
+        (typeof window !== "undefined" ? window.__CASTLE_RHIZOH_HOT_SPEECH__?.instantAckPhrase : null) ||
+        pickVoiceInstantAckPhraseV0();
 
   if (input.speakInstantAck !== false && ackPhrase) {
     speakVoiceInstantAckV0(String(ackPhrase));

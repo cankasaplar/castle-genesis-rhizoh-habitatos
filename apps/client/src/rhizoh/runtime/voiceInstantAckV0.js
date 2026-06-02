@@ -4,7 +4,10 @@
  */
 
 import { logCastleLifecycleV0, logVoiceInfoV0, logVoiceWarnV0 } from "./rhizohProductionLogNamespacesV0.js";
-import { readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
+import {
+  pickVoiceInstantAckPhraseV0,
+  readVoiceLanguageLockV0
+} from "./rhizohConversationLanguageV0.js";
 import {
   resolveSpeechBcp47ForUiLocaleV0,
   resolveSpeechVoiceForUiLocaleV0
@@ -14,12 +17,6 @@ import { recordConversationMirrorFirstSpeechV0 } from "./rhizohConversationBehav
 export const VOICE_INSTANT_ACK_SCHEMA = "castle.voice_instant_ack.v0";
 export const VOICE_ACK_SMOOTH_MAX_WAIT_MS = 2600;
 export const VOICE_ACK_SMOOTH_GAP_MS = 110;
-
-const ACK_PHRASES_TR = Object.freeze([
-  "Anladım, bakıyorum.",
-  "Tamam, dinliyorum.",
-  "Evet, bir saniye."
-]);
 
 let lastDispatchAtMs = 0;
 let ackSession = 0;
@@ -44,9 +41,7 @@ export function markVoiceTurnDispatchV0(atMs = Date.now()) {
   lastDispatchAtMs = Number(atMs) || Date.now();
 }
 
-export function pickVoiceInstantAckPhraseV0() {
-  return ACK_PHRASES_TR[Math.floor(Math.random() * ACK_PHRASES_TR.length)];
-}
+export { pickVoiceInstantAckPhraseV0 } from "./rhizohConversationLanguageV0.js";
 
 export function isVoiceInstantAckPlayingV0() {
   if (typeof window !== "undefined" && window.speechSynthesis?.speaking && ackPlaying) return true;
@@ -125,7 +120,7 @@ export function speakVoiceInstantAckV0(phrase = pickVoiceInstantAckPhraseV0()) {
   const text = String(phrase || pickVoiceInstantAckPhraseV0()).trim();
   if (!text) return false;
 
-  const uiLocale = readUiLocaleV0();
+  const uiLocale = readVoiceLanguageLockV0();
   const utterance = new SpeechSynthesisUtterance(text.slice(0, 120));
   utterance.lang = resolveSpeechBcp47ForUiLocaleV0(uiLocale);
   utterance.rate = 1.08;

@@ -4,6 +4,7 @@ import { VOICE_ENGINE_STATE_V3 } from "./voiceEngineStateV3.js";
 import { noteVoiceSttEventV0 } from "../voiceSttTelemetryV0.js";
 import { logVoiceInfoV0, logVoiceWarnV0 } from "../rhizohProductionLogNamespacesV0.js";
 import { stampVoiceUserGestureV0 } from "../voiceUserGestureAnchorV0.js";
+import { endVoiceSessionLanguageLockV0 } from "../rhizohConversationLanguageV0.js";
 import { handleRhizohVoiceTranscriptV0 } from "../rhizohVoiceLlmDispatchV0.js";
 export const VOICE_V3_MAX_RECORD_MS = 8000;
 
@@ -78,6 +79,7 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     refs.voiceEngineV3.current = null;
     refs.voiceSttStartInFlight.current = false;
     releaseSessionLock(sessionId);
+    endVoiceSessionLanguageLockV0();
     callbacks.setMicListening(false);
   }
 
@@ -107,6 +109,7 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     refs.voiceEngineV3.current = null;
     refs.voiceSttStartInFlight.current = false;
     releaseSessionLock(sessionId);
+    endVoiceSessionLanguageLockV0();
 
     if (result.ok && result.merged?.text) {
       refs.voiceSttGotAnyResult.current = true;

@@ -4,7 +4,10 @@
  */
 
 import { logCastleLifecycleV0, logVoiceInfoV0 } from "./rhizohProductionLogNamespacesV0.js";
-import { readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
+import {
+  pickShadowAckPhraseV0,
+  readVoiceLanguageLockV0
+} from "./rhizohConversationLanguageV0.js";
 import {
   resolveSpeechBcp47ForUiLocaleV0,
   resolveSpeechVoiceForUiLocaleV0
@@ -23,12 +26,6 @@ export const SHADOW_ACK_MODE_V0 = Object.freeze({
   LIGHT: "light",
   DELAYED: "delayed"
 });
-
-const SHADOW_ACK_PHRASES_LIGHT_TR = Object.freeze(["Tamam.", "Duyuyorum.", "Aldım."]);
-const SHADOW_ACK_PHRASES_DELAYED_TR = Object.freeze([
-  "Duyuyorum, bir saniye.",
-  "Buradayım, işliyorum."
-]);
 
 const SHADOW_ACK_MIN_GAP_MS = 8000;
 const SHADOW_ACK_DELAYED_MS = 1500;
@@ -76,9 +73,10 @@ export function resolveShadowAckModeV0(meta = {}) {
  * @param {string} mode
  */
 function pickPhraseForModeV0(mode) {
-  const pool =
-    mode === SHADOW_ACK_MODE_V0.DELAYED ? SHADOW_ACK_PHRASES_DELAYED_TR : SHADOW_ACK_PHRASES_LIGHT_TR;
-  return pool[Math.floor(Math.random() * pool.length)];
+  return pickShadowAckPhraseV0(
+    mode === SHADOW_ACK_MODE_V0.DELAYED ? "delayed" : "light",
+    readVoiceLanguageLockV0()
+  );
 }
 
 /**
@@ -100,7 +98,7 @@ export function shouldSpeakShadowObservationAckV0(meta = {}) {
 function speakShadowAckUtteranceV0(text, meta, mode, session) {
   if (typeof window === "undefined" || !window.speechSynthesis) return false;
 
-  const uiLocale = readUiLocaleV0();
+  const uiLocale = readVoiceLanguageLockV0();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = resolveSpeechBcp47ForUiLocaleV0(uiLocale);
   const voice = resolveSpeechVoiceForUiLocaleV0(uiLocale);

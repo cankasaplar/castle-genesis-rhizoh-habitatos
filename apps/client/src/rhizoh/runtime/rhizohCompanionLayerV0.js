@@ -180,14 +180,14 @@ export function mergeCompanionIntoConversationBehaviorV0(conversationBehavior, c
  * @param {string} language
  */
 export function resolveCompanionFlowAckV0(language) {
-  const lang = String(language || "tr").toLowerCase();
+  const lang = String(language || "en").toLowerCase();
   const table = {
     tr: "Buradayız — akış devam edebilir.",
     en: "We're here — the flow can continue.",
     es: "Aquí estamos — el flujo puede seguir.",
     jp: "ここにいます。流れを続けられます。"
   };
-  return table[lang] || table.tr;
+  return table[lang] || table.en;
 }
 
 /** @deprecated Use resolveCompanionFlowAckV0 */

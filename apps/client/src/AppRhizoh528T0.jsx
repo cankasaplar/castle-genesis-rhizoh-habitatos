@@ -236,6 +236,7 @@ import {
 } from "./rhizoh/experience/livingWorldFirstInteractionV0.js";
 import { prewarmSpeechSynthesisV0 } from "./rhizoh/runtime/prewarmSpeechSynthesisV0.js";
 import {
+  readSpeechLocaleForVoiceV0,
   resolveSpeechBcp47ForUiLocaleV0,
   resolveSpeechVoiceForUiLocaleV0
 } from "./rhizoh/runtime/rhizohSpeechLocaleV0.js";
@@ -9378,13 +9379,13 @@ export default function AppRhizoh528() {
         return;
       }
       const sessionId = ++voiceTtsSessionIdRef.current;
-      const uiLocale = readUiLocaleV0();
+      const voiceLocale = readSpeechLocaleForVoiceV0();
       const utterance = new SpeechSynthesisUtterance(String(text).slice(0, 1800));
-      utterance.lang = resolveSpeechBcp47ForUiLocaleV0(uiLocale);
+      utterance.lang = resolveSpeechBcp47ForUiLocaleV0(voiceLocale);
       utterance.rate = 1;
       utterance.pitch = 1.05;
       utterance.volume = 0.92;
-      const localeVoice = resolveSpeechVoiceForUiLocaleV0(uiLocale);
+      const localeVoice = resolveSpeechVoiceForUiLocaleV0(voiceLocale);
       if (localeVoice) utterance.voice = localeVoice;
       utterance.onstart = () => {
         if (sessionId !== voiceTtsSessionIdRef.current) return;

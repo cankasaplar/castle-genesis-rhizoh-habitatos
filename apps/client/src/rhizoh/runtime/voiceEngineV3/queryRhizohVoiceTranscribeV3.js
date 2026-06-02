@@ -3,6 +3,7 @@
  */
 
 import { getCastleFlightConfig } from "../../../castleFlight/castleFlightConfig.js";
+import { readSttLanguageCodeHintV0 } from "../rhizohConversationLanguageV0.js";
 import { throttleVoiceTranscribePostV3 } from "./voiceThrottleV3.js";
 
 export const RHIZOH_VOICE_TRANSCRIBE_ROUTE_V3 = "/rhizoh/voice/transcribe/v3";
@@ -63,7 +64,7 @@ export async function queryRhizohVoiceTranscribeV3(audio, opts = {}) {
       path,
       audioBase64: b64,
       mimeType,
-      languageCode: opts.languageCode || "tr-TR",
+      languageCode: opts.languageCode || readSttLanguageCodeHintV0(),
       traceId: opts.traceId || "",
       sessionId: opts.sessionId || ""
     })

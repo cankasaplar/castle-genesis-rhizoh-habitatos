@@ -3,14 +3,20 @@
  */
 
 import { resolveRhizohBcp47V0 } from "./rhizohMultilingualBridgeV0.js";
+import { readVoiceLanguageLockV0 } from "./rhizohConversationLanguageV0.js";
 import { readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
+
+/** Voice/TTS locale — prefers per-session lock, else UI conversation language. */
+export function readSpeechLocaleForVoiceV0() {
+  return readVoiceLanguageLockV0();
+}
 
 /**
  * @param {string} [localeCode]
  * @returns {string}
  */
 export function resolveSpeechBcp47ForUiLocaleV0(localeCode) {
-  const code = String(localeCode || readUiLocaleV0() || "en").toLowerCase();
+  const code = String(localeCode || readSpeechLocaleForVoiceV0() || "en").toLowerCase();
   return resolveRhizohBcp47V0(code);
 }
 

@@ -5,6 +5,7 @@
  * Restart policy: STT events only; onend+no-result = silent abort (hard block); decay is advisory.
  */
 
+import { voiceSttEmptyPromptForConversationV0 } from "./rhizohConversationLanguageV0.js";
 import { getVoiceGestureTrustV0, hasActiveVoiceUserGestureV0 } from "./voiceUserGestureAnchorV0.js";
 
 /** Cooldown after Chrome silent abort (onend without onresult). Manual gesture clears. */
@@ -322,13 +323,7 @@ export function resetVoiceSttSessionGuardForTestV0() {
   autoRestartBlockedUntilMs = 0;
 }
 
-/** @param {string} [promptKey] */
+/** @param {string} [promptKey] @deprecated use voiceSttEmptyPromptForConversationV0 */
 export function voiceSttEmptyPromptTrV0(promptKey = "retry") {
-  const key = String(promptKey || "retry");
-  if (key === "tab") return "Sekme arka plandayken ses tanıma durur. Rhizoh sekmesine dönüp mikrofona tekrar bas.";
-  if (key === "gesture" || key === "gesture_rebind") return "Konuşmaya devam etmek için mikrofona tekrar bas.";
-  if (key === "audio") return "Ses bağlamı askıda. Mikrofona tekrar dokun.";
-  if (key === "low_confidence") return "Ses net duyulmadı. Mikrofona biraz daha yakın, biraz daha uzun konuş.";
-  if (key === "silent") return "Mikrofon ses almıyor gibi. Cihazında doğru mikrofon seçili mi kontrol et, sonra tekrar dene.";
-  return "Ses algılanmadı. Mikrofona tekrar basıp en az bir saniye konuş.";
+  return voiceSttEmptyPromptForConversationV0(promptKey);
 }

@@ -2,7 +2,7 @@
  * Chrome/Safari TTS cold-start mitigation — load voices early.
  */
 
-import { readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
+import { readSpeechLocaleForVoiceV0 } from "./rhizohSpeechLocaleV0.js";
 import {
   resolveSpeechBcp47ForUiLocaleV0,
   resolveSpeechVoiceForUiLocaleV0
@@ -18,7 +18,7 @@ export function resolveTurkishSpeechVoiceV0() {
 export function prewarmSpeechSynthesisV0(localeCode) {
   if (typeof window === "undefined" || prewarmed || !("speechSynthesis" in window)) return false;
   const run = () => {
-    const locale = localeCode || readUiLocaleV0();
+    const locale = localeCode || readSpeechLocaleForVoiceV0();
     const voice = resolveSpeechVoiceForUiLocaleV0(locale);
     if (!voice && window.speechSynthesis.getVoices().length === 0) return;
     prewarmed = true;

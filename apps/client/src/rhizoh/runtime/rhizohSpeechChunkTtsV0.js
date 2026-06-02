@@ -2,7 +2,7 @@
  * Chunk-first TTS — applies hot speech skeleton + micro-rhythm to Web Speech API.
  */
 
-import { readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
+import { readSpeechLocaleForVoiceV0 } from "./rhizohSpeechLocaleV0.js";
 import {
   resolveSpeechBcp47ForUiLocaleV0,
   resolveSpeechVoiceForUiLocaleV0
@@ -23,7 +23,7 @@ export const RHIZOH_SPEECH_CHUNK_TTS_SCHEMA_V0 = "castle.rhizoh.speech_chunk_tts
 export function applyRhizohSpeechHintsToUtteranceV0(utterance, hints = {}) {
   const feel = hints.microRhythmFeel || hints.skeleton?.microRhythmFeel;
   const sk = hints.skeleton;
-  const locale = String(hints.language || readUiLocaleV0() || "en").toLowerCase();
+  const locale = String(hints.language || readSpeechLocaleForVoiceV0() || "en").toLowerCase();
   utterance.lang = resolveSpeechBcp47ForUiLocaleV0(locale);
 
   const pacing = String(sk?.pacing || feel?.breakStyle === "hot_skeleton" ? "calm" : "").toLowerCase();
@@ -85,7 +85,7 @@ export async function speakRhizohReplyChunkedV0(text, opts = {}) {
       applyRhizohSpeechHintsToUtteranceV0(u, {
         skeleton: sk,
         microRhythmFeel: feel,
-        language: opts.language || expr?.projection?.language || glue?.language || readUiLocaleV0()
+        language: opts.language || expr?.projection?.language || glue?.language || readSpeechLocaleForVoiceV0()
       });
       if (prosody) {
         u.rate = prosody.rate;

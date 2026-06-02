@@ -11,6 +11,11 @@ import {
   runVoiceTranscriptWitnessPipelineV0,
   witnessVoiceStreamLifecycleV0
 } from "../voiceTranscriptWitnessPipelineV0.js";
+import {
+  beginVoiceSessionLanguageLockV0,
+  endVoiceSessionLanguageLockV0,
+  readSttLanguageCodeHintV0
+} from "../rhizohConversationLanguageV0.js";
 import { prepareRhizohLlmTurnV0 } from "../rhizohLlmTurnHotWireV0.js";
 import { emitVoiceEngineTelemetryV3, setVoiceEngineStateV3 } from "./voiceEngineTelemetryV3.js";
 
@@ -35,8 +40,9 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
   let sessionState = VOICE_ENGINE_STATE_V3.IDLE;
   let recordStartAtMs = 0;
 
-  const languageCode = opts.languageCode || "tr-TR";
   const sessionId = opts.sessionId || `v3_${Date.now().toString(36)}`;
+  beginVoiceSessionLanguageLockV0({ sessionId, locale: opts.locale });
+  const languageCode = opts.languageCode || readSttLanguageCodeHintV0();
 
   setVoiceEngineStateV3(VOICE_ENGINE_STATE_V3.IDLE, sessionId);
 
@@ -258,6 +264,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       capture?.abort?.();
       capture = null;
       busy = false;
+      endVoiceSessionLanguageLockV0();
       setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
       witnessVoiceStreamLifecycleV0({ code: "abort", stage: "stream_lifecycle", source: "mic_v3" });
       emitVoiceEngineTelemetryV3("ABORT");
