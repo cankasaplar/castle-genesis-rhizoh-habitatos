@@ -10,6 +10,10 @@ import {
   triggerMemoryRecallMicroRtlV0
 } from "./expressiveRealityMicroTransitionV0.js";
 import { coerceRhizohUiReplyTextV0 } from "./rhizohLlmUiContractV0.js";
+import {
+  commitFinalUserVisibleLanguageV0,
+  LANGUAGE_COMMIT_LOCK_KEY_V0
+} from "./rhizohFinalLanguageCommitV0.js";
 
 export const RHIZOH_LLM_REPLY_NORMALIZED_SCHEMA_V0 = "castle.rhizoh.llm_reply_normalized.v0";
 
@@ -99,8 +103,15 @@ export function resolveRhizohReplyForDisplayV0(normalized, opts = {}) {
   const emptyFallback = String(opts.emptyFallback ?? "");
   if (normalized.deliveryKind === "semantic_silence") return "";
   const reply = coerceRhizohUiReplyTextV0(normalized.reply, { fallback: emptyFallback });
-  if (reply) return reply;
-  return emptyFallback;
+  if (!reply) return emptyFallback;
+  const traceId = String(opts.traceId || normalized.traceId || "").trim() || undefined;
+  const commit = commitFinalUserVisibleLanguageV0(reply, {
+    source: "llm",
+    traceId,
+    idempotencyKey: traceId,
+    lockKey: LANGUAGE_COMMIT_LOCK_KEY_V0
+  });
+  return commit.text || emptyFallback;
 }
 
 /**

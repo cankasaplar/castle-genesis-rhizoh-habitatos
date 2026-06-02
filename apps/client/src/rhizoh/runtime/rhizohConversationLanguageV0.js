@@ -1,9 +1,17 @@
 /**
- * Conversation language contract — UI pick is authoritative for LLM + voice session.
- * STT may emit hints; it must not override the per-session voice lock.
+ * Voice session output locale + fast phrase binding.
+ * Output Language Policy (OLP): rhizohOutputLanguagePolicyV0.js
+ * STT input capture uses readSttInputLanguageCodeHintV0() ("auto" under ui_locked_output).
  */
 
 import { resolveRhizohBcp47V0 } from "./rhizohMultilingualBridgeV0.js";
+import {
+  readOutputLanguagePolicyV0,
+  readSttInputLanguageCodeHintV0,
+  resolveOutputBcp47V0,
+  resolveOutputLanguageCodeV0
+} from "./rhizohOutputLanguagePolicyV0.js";
+import { publishRhizohLanguageRuntimeSnapshotV0 } from "./rhizohLanguageRuntimeV0.js";
 import { normalizeUiLocaleV0, readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
 
 export const RHIZOH_CONVERSATION_LANGUAGE_CONTRACT_V0 = "rhizoh.conversation_language.v0";
@@ -11,19 +19,14 @@ export const RHIZOH_CONVERSATION_LANGUAGE_CONTRACT_V0 = "rhizoh.conversation_lan
 /** @type {{ locale: string, bcp47: string, sessionId: string, atMs: number } | null} */
 let voiceLanguageLock = null;
 
-/**
- * LLM + product conversation locale (explicit UI / ingress pick).
- * @returns {string}
- */
+/** @deprecated Use readUiLocaleV0 for chrome; resolveOutputLanguageCodeV0 for LLM/TTS. */
 export function readConversationLanguageV0() {
   return readUiLocaleV0();
 }
 
-/**
- * @returns {string}
- */
+/** @deprecated Use resolveOutputBcp47V0 */
 export function readConversationBcp47V0() {
-  return resolveRhizohBcp47V0(readConversationLanguageV0());
+  return resolveOutputBcp47V0();
 }
 
 /**
@@ -31,7 +34,7 @@ export function readConversationBcp47V0() {
  * @param {{ locale?: string, sessionId?: string }} [opts]
  */
 export function beginVoiceSessionLanguageLockV0(opts = {}) {
-  const locale = normalizeUiLocaleV0(opts.locale ?? readConversationLanguageV0());
+  const locale = normalizeUiLocaleV0(opts.locale ?? resolveOutputLanguageCodeV0());
   const bcp47 = resolveRhizohBcp47V0(locale);
   voiceLanguageLock = Object.freeze({
     locale,
@@ -42,6 +45,7 @@ export function beginVoiceSessionLanguageLockV0(opts = {}) {
   if (typeof window !== "undefined") {
     window.__CASTLE_RHIZOH_VOICE_LANGUAGE_LOCK__ = voiceLanguageLock;
   }
+  publishRhizohLanguageRuntimeSnapshotV0({ sessionId: voiceLanguageLock.sessionId });
   return voiceLanguageLock;
 }
 
@@ -60,45 +64,41 @@ export function endVoiceSessionLanguageLockV0() {
  * @returns {string}
  */
 export function readVoiceLanguageLockV0() {
-  return voiceLanguageLock?.locale ?? readConversationLanguageV0();
+  return voiceLanguageLock?.locale ?? resolveOutputLanguageCodeV0();
 }
 
 /**
  * @returns {string}
  */
 export function readVoiceLanguageLockBcp47V0() {
-  return voiceLanguageLock?.bcp47 ?? readConversationBcp47V0();
+  return voiceLanguageLock?.bcp47 ?? resolveOutputBcp47V0();
 }
 
-/**
- * STT / Whisper languageCode hint — non-authoritative; always follows voice lock.
- * @returns {string}
- */
+/** STT input capture — not output policy (often "auto" for cross-lingual). */
 export function readSttLanguageCodeHintV0() {
-  return readVoiceLanguageLockBcp47V0();
+  return readSttInputLanguageCodeHintV0();
 }
 
 /**
- * Log-only — STT inference must not mutate the lock.
+ * Log-only — STT inference does not change OLP output locale.
  * @param {string} inferredCode
  */
 export function recordSttInferredLanguageHintV0(inferredCode) {
-  return Object.freeze({
-    hint: String(inferredCode || "").toLowerCase(),
-    authoritativeLocale: readVoiceLanguageLockV0(),
-    authoritativeBcp47: readVoiceLanguageLockBcp47V0()
+  const hint = String(inferredCode || "").toLowerCase();
+  const obs = Object.freeze({
+    hint,
+    outputPolicy: readOutputLanguagePolicyV0(),
+    outputLocale: resolveOutputLanguageCodeV0(hint),
+    outputBcp47: resolveOutputBcp47V0(hint)
   });
+  publishRhizohLanguageRuntimeSnapshotV0({
+    sttInferred: hint,
+    sessionId: voiceLanguageLock?.sessionId || ""
+  });
+  return obs;
 }
 
-const INSTANT_ACK_PHRASES_V0 = Object.freeze({
-  en: Object.freeze(["Got it, listening.", "Okay, one moment.", "Yes, give me a second."]),
-  tr: Object.freeze(["Anladım, bakıyorum.", "Tamam, dinliyorum.", "Evet, bir saniye."]),
-  es: Object.freeze(["Entendido, escucho.", "Un momento.", "Sí, un segundo."]),
-  fr: Object.freeze(["Compris, j'écoute.", "Un instant.", "Oui, une seconde."]),
-  fi: Object.freeze(["Selvä, kuuntelen.", "Hetki.", "Kyllä, hetki."]),
-  zh: Object.freeze(["好的，在听。", "请稍等。", "嗯，一秒钟。"]),
-  ja: Object.freeze(["わかりました、聞いています。", "少々お待ちください。", "はい、少し待って。"])
-});
+export { pickVoiceInstantAckPhraseV0, selectInstantAckV0 } from "./rhizohInstantAckSelectV0.js";
 
 const SHADOW_ACK_LIGHT_V0 = Object.freeze({
   en: Object.freeze(["Okay.", "I hear you.", "Got it."]),
@@ -138,20 +138,12 @@ function pickFromPool(pool, locale) {
 }
 
 /**
- * @param {string} [locale]
- * @returns {string}
- */
-export function pickVoiceInstantAckPhraseV0(locale) {
-  return pickFromPool(INSTANT_ACK_PHRASES_V0, locale ?? readVoiceLanguageLockV0());
-}
-
-/**
  * @param {"light"|"delayed"} mode
  * @param {string} [locale]
  */
 export function pickShadowAckPhraseV0(mode, locale) {
   const pool = mode === "delayed" ? SHADOW_ACK_DELAYED_V0 : SHADOW_ACK_LIGHT_V0;
-  return pickFromPool(pool, locale ?? readVoiceLanguageLockV0());
+  return pickFromPool(pool, locale ?? resolveOutputLanguageCodeV0());
 }
 
 /**
@@ -160,7 +152,7 @@ export function pickShadowAckPhraseV0(mode, locale) {
  */
 export function voiceSttEmptyPromptForConversationV0(promptKey = "retry", locale) {
   const key = String(promptKey || "retry");
-  const loc = normalizeUiLocaleV0(locale ?? readVoiceLanguageLockV0());
+  const loc = normalizeUiLocaleV0(locale ?? resolveOutputLanguageCodeV0());
   const table = STT_EMPTY_PROMPTS_V0[loc] || STT_EMPTY_PROMPTS_V0.en;
   return table[key] || table.retry;
 }

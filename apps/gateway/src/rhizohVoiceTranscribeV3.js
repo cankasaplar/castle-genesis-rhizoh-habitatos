@@ -121,17 +121,25 @@ export async function transcribeWhisperAccurateV3(audioBytes, config = {}) {
   if (!audioBytes || !audioBytes.length) return { ok: false, error: "audio_empty" };
 
   const mimeType = String(config.mimeType || "audio/webm");
-  const langRaw = String(config.languageCode || "tr-TR");
-  const language = langRaw.toLowerCase().startsWith("tr") ? "tr" : langRaw.slice(0, 2);
+  const langRaw = String(config.languageCode || "tr-TR").trim().toLowerCase();
+  const autoLang = !langRaw || langRaw === "auto" || langRaw === "und";
+  const language = autoLang
+    ? null
+    : langRaw.startsWith("tr")
+      ? "tr"
+      : langRaw.replace(/-.*/, "").slice(0, 2);
 
   try {
     const blob = new Blob([audioBytes], { type: mimeType });
     const form = new FormData();
     form.append("file", blob, mimeType.includes("webm") ? "audio.webm" : "audio.wav");
     form.append("model", "whisper-1");
-    form.append("language", language);
+    if (language) form.append("language", language);
     form.append("temperature", "0");
-    form.append("prompt", "Türkçe konuşma transkripti.");
+    form.append(
+      "prompt",
+      autoLang ? "Transcribe spoken words faithfully in the speaker's language." : "Speech transcript."
+    );
     form.append("response_format", "verbose_json");
 
     const res = await fetch(OPENAI_WHISPER_URL, {

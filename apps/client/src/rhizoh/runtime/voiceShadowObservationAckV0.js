@@ -4,10 +4,9 @@
  */
 
 import { logCastleLifecycleV0, logVoiceInfoV0 } from "./rhizohProductionLogNamespacesV0.js";
-import {
-  pickShadowAckPhraseV0,
-  readVoiceLanguageLockV0
-} from "./rhizohConversationLanguageV0.js";
+import { pickShadowAckPhraseV0 } from "./rhizohConversationLanguageV0.js";
+import { enforceUserVisibleTextLocaleV0 } from "./rhizohLanguageInvariantV0.js";
+import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
 import {
   resolveSpeechBcp47ForUiLocaleV0,
   resolveSpeechVoiceForUiLocaleV0
@@ -73,10 +72,11 @@ export function resolveShadowAckModeV0(meta = {}) {
  * @param {string} mode
  */
 function pickPhraseForModeV0(mode) {
-  return pickShadowAckPhraseV0(
+  const raw = pickShadowAckPhraseV0(
     mode === SHADOW_ACK_MODE_V0.DELAYED ? "delayed" : "light",
-    readVoiceLanguageLockV0()
+    resolveOutputLanguageCodeV0()
   );
+  return enforceUserVisibleTextLocaleV0("instant_ack", raw).text;
 }
 
 /**
@@ -98,7 +98,7 @@ export function shouldSpeakShadowObservationAckV0(meta = {}) {
 function speakShadowAckUtteranceV0(text, meta, mode, session) {
   if (typeof window === "undefined" || !window.speechSynthesis) return false;
 
-  const uiLocale = readVoiceLanguageLockV0();
+  const uiLocale = resolveOutputLanguageCodeV0();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = resolveSpeechBcp47ForUiLocaleV0(uiLocale);
   const voice = resolveSpeechVoiceForUiLocaleV0(uiLocale);

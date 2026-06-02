@@ -4,7 +4,7 @@
  */
 
 import { runRhizohClagForLlmTurnV0 } from "./rhizohClagTurnBridgeV0.js";
-import { pickVoiceInstantAckPhraseV0, readVoiceLanguageLockV0 } from "./rhizohConversationLanguageV0.js";
+import { selectInstantAckV0 } from "./rhizohConversationLanguageV0.js";
 import {
   markVoiceTurnDispatchV0,
   speakVoiceInstantAckV0
@@ -51,16 +51,13 @@ export function prepareRhizohLlmTurnV0(input = {}) {
     });
   }
 
-  const ackPhrase =
+  const ack =
     input.voiceTurn === true
-      ? pickVoiceInstantAckPhraseV0(readVoiceLanguageLockV0())
-      : turn.fastAck ||
-        turn.expression?.instantAckPhrase ||
-        (typeof window !== "undefined" ? window.__CASTLE_RHIZOH_HOT_SPEECH__?.instantAckPhrase : null) ||
-        pickVoiceInstantAckPhraseV0();
+      ? selectInstantAckV0({ intent: "acknowledge" })
+      : selectInstantAckV0({ intent: "acknowledge" });
 
-  if (input.speakInstantAck !== false && ackPhrase) {
-    speakVoiceInstantAckV0(String(ackPhrase));
+  if (input.speakInstantAck !== false && ack?.text) {
+    speakVoiceInstantAckV0(String(ack.text));
   }
 
   const expr = turn.expression;
@@ -80,7 +77,7 @@ export function prepareRhizohLlmTurnV0(input = {}) {
   return Object.freeze({
     schema: RHIZOH_LLM_TURN_HOT_WIRE_SCHEMA_V0,
     turn,
-    ackSpoken: input.speakInstantAck !== false && Boolean(ackPhrase),
+    ackSpoken: input.speakInstantAck !== false && Boolean(ack?.text),
     fastPath: turn.route?.fastPath === true,
     scheduling: turn.expression?.scheduling || "speech_first"
   });

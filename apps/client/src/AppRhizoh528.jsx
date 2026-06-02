@@ -1,8 +1,8 @@
 /**
  * CORE-ELIGIBLE — Rhizoh canonical entry router (AppRhizoh528).
  *
- * Default (rhizoh.com): T0 full Castle shell — Three.js globe / swarm, agent HUD, product bar.
- * Opt-in: `VITE_RHIZOH_SPATIAL_SHELL=1` → map-first `RhizohSpatialWorldShell` (spatial-main track).
+ * Default (rhizoh.com): `AppRhizoh528T0` — GLOBE + swarm core, mic/text dock, capability wheel, bottom drawers.
+ * Opt-in: `VITE_RHIZOH_SPATIAL_SHELL=1` → map-first `RhizohSpatialWorldShell` (spatial research track; not main product).
  */
 import React, { Suspense } from "react";
 import { isRhizohSpatialProductShellEnabled } from "./rhizoh/runtime/castleWorldLayerGateV0.js";

@@ -4,10 +4,9 @@
  */
 
 import { logCastleLifecycleV0, logVoiceInfoV0, logVoiceWarnV0 } from "./rhizohProductionLogNamespacesV0.js";
-import {
-  pickVoiceInstantAckPhraseV0,
-  readVoiceLanguageLockV0
-} from "./rhizohConversationLanguageV0.js";
+import { selectInstantAckV0 } from "./rhizohConversationLanguageV0.js";
+import { enforceUserVisibleTextLocaleV0 } from "./rhizohLanguageInvariantV0.js";
+import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
 import {
   resolveSpeechBcp47ForUiLocaleV0,
   resolveSpeechVoiceForUiLocaleV0
@@ -41,7 +40,7 @@ export function markVoiceTurnDispatchV0(atMs = Date.now()) {
   lastDispatchAtMs = Number(atMs) || Date.now();
 }
 
-export { pickVoiceInstantAckPhraseV0 } from "./rhizohConversationLanguageV0.js";
+export { pickVoiceInstantAckPhraseV0, selectInstantAckV0 } from "./rhizohConversationLanguageV0.js";
 
 export function isVoiceInstantAckPlayingV0() {
   if (typeof window !== "undefined" && window.speechSynthesis?.speaking && ackPlaying) return true;
@@ -112,15 +111,21 @@ export async function speakAfterVoiceInstantAckSmoothV0(speakReplyFn, opts = {})
  * @param {string} [phrase]
  * @returns {boolean}
  */
-export function speakVoiceInstantAckV0(phrase = pickVoiceInstantAckPhraseV0()) {
+export function speakVoiceInstantAckV0(phrase) {
   if (typeof window === "undefined" || !window.speechSynthesis) return false;
   const dispatchAtMs = lastDispatchAtMs || Date.now();
   const session = ++ackSession;
   armAckReleaseWaiter();
-  const text = String(phrase || pickVoiceInstantAckPhraseV0()).trim();
+  const ackPick =
+    typeof phrase === "string" && phrase.trim()
+      ? Object.freeze({ text: phrase.trim(), semanticIntent: "acknowledge", renderLocale: resolveOutputLanguageCodeV0(), tone: "steady" })
+      : selectInstantAckV0({ intent: "acknowledge" });
+  let text = String(ackPick.text || "").trim();
   if (!text) return false;
+  const enforced = enforceUserVisibleTextLocaleV0("instant_ack", text);
+  text = enforced.text;
 
-  const uiLocale = readVoiceLanguageLockV0();
+  const uiLocale = resolveOutputLanguageCodeV0();
   const utterance = new SpeechSynthesisUtterance(text.slice(0, 120));
   utterance.lang = resolveSpeechBcp47ForUiLocaleV0(uiLocale);
   utterance.rate = 1.08;
@@ -147,7 +152,14 @@ export function speakVoiceInstantAckV0(phrase = pickVoiceInstantAckPhraseV0()) {
       window.__rhizoh.voiceInstantAckPlaying = true;
     }
     const firstSpeechMs = Math.max(0, Date.now() - dispatchAtMs);
-    const meta = { firstSpeechMs, kind: "instant_ack", phrase: text };
+    const meta = {
+      firstSpeechMs,
+      kind: "instant_ack",
+      phrase: text,
+      semanticIntent: ackPick.semanticIntent,
+      renderLocale: ackPick.renderLocale,
+      tone: ackPick.tone
+    };
     recordConversationMirrorFirstSpeechV0({ firstSpeechMs, phraseKind: "instant_ack" });
     logVoiceInfoV0("FIRST_SPEECH", meta);
     logCastleLifecycleV0("first_speech", meta);

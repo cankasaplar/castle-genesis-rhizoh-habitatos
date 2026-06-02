@@ -4,6 +4,12 @@
  */
 
 import { detectInputLanguageV0, MF0_DETECTED_LANGUAGE_V0 } from "./rhizohMeaningFrameV0.js";
+import {
+  OLP_MODE_V0,
+  buildOutputLanguagePolicyDirectiveV0,
+  readOutputLanguagePolicyV0,
+  resolveOutputLanguageCodeV0
+} from "./rhizohOutputLanguagePolicyV0.js";
 import { detectLanguageContextV0 } from "../social/socialRuntime/languageContextDetectorV0.js";
 import { pushT0ContinuityPulseV0 } from "./t0ContinuitySurfaceStreamV0.js";
 
@@ -234,21 +240,30 @@ function buildBridgeLinesForLocaleV0(row, userCode) {
 export function buildRhizohMultilingualPackV0(input = {}) {
   const message = String(input.message || "");
   const detected = detectRhizohMultilingualLocaleV0(message, input.navLocale);
-  const code = String(input.preferredCode || detected.code);
+  const olp = readOutputLanguagePolicyV0();
+  const code = resolveOutputLanguageCodeV0(
+    input.preferredCode ? String(input.preferredCode) : detected.code
+  );
   const row = resolveRhizohLanguageCatalogRowV0(code);
   writeRhizohSessionLanguagePreferenceV0(row.code);
 
   const bridgeLines = buildBridgeLinesForLocaleV0(row, detected.code);
   const respondLabel = row.label;
+  const olpBlock = buildOutputLanguagePolicyDirectiveV0(detected.code, detected.confidence);
+
+  const matchUserLangLine =
+    olp.mode === OLP_MODE_V0.UI_LOCKED_OUTPUT
+      ? "Input language may differ from output; follow OUTPUT_LANGUAGE_POLICY above."
+      : "Match the user's language when clear; if mixed, follow the dominant language of the latest message.";
 
   const directive = [
     "[RHIZOH_MULTILINGUAL_BRIDGE_V0]",
+    olpBlock,
     `Respond primarily in: ${respondLabel} (${row.bcp47}).`,
-    `Detected user locale: ${detected.code} (source=${detected.source}, confidence=${detected.confidence}).`,
-    "Match the user's language when clear; if mixed, follow the dominant language of the latest message.",
+    `Detected user input locale: ${detected.code} (source=${detected.source}, confidence=${detected.confidence}).`,
+    matchUserLangLine,
     "Keep proper names, castle labels, and thread IDs untranslated.",
     "Rhizoh grows through curiosity — use cross-language bridges only to sharpen meaning, never as a lesson plan.",
-    "User may read continuity pulse logs in any language; your reply stays in the matched language.",
     bridgeLines.length ? `Bridge hints: ${bridgeLines.join(" · ")}` : "",
     `Catalog size: ${RHIZOH_LANGUAGE_CATALOG_V0.length} locales registered.`
   ]
@@ -256,7 +271,9 @@ export function buildRhizohMultilingualPackV0(input = {}) {
     .join("\n");
 
   const memoryContractAddon = [
-    `Answer in ${respondLabel} when the user writes in that language.`,
+    olp.mode === OLP_MODE_V0.UI_LOCKED_OUTPUT
+      ? `Always answer in ${respondLabel} (output language policy), regardless of input language.`
+      : `Answer in ${respondLabel} when the user writes in that language.`,
     "Continuity state remains authoritative; do not invent facts beyond session memory.",
     "When companionship without speech is right, output only <SILENCE> with optional attributes."
   ].join(" ");
@@ -274,9 +291,11 @@ export function buildRhizohMultilingualPackV0(input = {}) {
       detected_locale: detected.code,
       respond_locale: row.code,
       respond_bcp47: row.bcp47,
+      output_language_policy: olp.mode,
       confidence: detected.confidence,
       catalog_codes: RHIZOH_LANGUAGE_CATALOG_V0.map((r) => r.code)
-    })
+    }),
+    outputLanguagePolicy: olp
   });
 }
 

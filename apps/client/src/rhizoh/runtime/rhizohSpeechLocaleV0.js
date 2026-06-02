@@ -4,7 +4,6 @@
 
 import { resolveRhizohBcp47V0 } from "./rhizohMultilingualBridgeV0.js";
 import { readVoiceLanguageLockV0 } from "./rhizohConversationLanguageV0.js";
-import { readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
 
 /** Voice/TTS locale — prefers per-session lock, else UI conversation language. */
 export function readSpeechLocaleForVoiceV0() {

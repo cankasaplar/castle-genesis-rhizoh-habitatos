@@ -25,6 +25,8 @@
 
 **T0 shell (life principle):** [`RHIZOH_T0_CONTINUITY_SURFACE_V0.md`](RHIZOH_T0_CONTINUITY_SURFACE_V0.md) — **Ready Flow, not Empty State**; restoration never returns to a blank screen.
 
+**World layout hierarchy (deploy SSOT):** [`RHIZOH_WORLD_SURFACE_HIERARCHY_V0.md`](RHIZOH_WORLD_SURFACE_HIERARCHY_V0.md) — WORLD = main stage (swarm · wheel · voice · chat · drawers · map sub-layer); T0 = overlay only.
+
 **T0 cognitive grammar (architecture SSOT):** [`RHIZOH_T0_COGNITIVE_GRAMMAR_V0.md`](RHIZOH_T0_COGNITIVE_GRAMMAR_V0.md) — STATE · INTENT · FIELD · TRANSITION; build order **meaning → language → behavior → UI → surface**.
 
 **Semantic evolution (policy):** [`RHIZOH_GRAMMAR_CONSTITUTION_SYSTEM_V0.md`](RHIZOH_GRAMMAR_CONSTITUTION_SYSTEM_V0.md) — RGCS / CSES; language grows in **meaning space**, not rule space.

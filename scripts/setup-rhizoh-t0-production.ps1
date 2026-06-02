@@ -73,6 +73,8 @@ $lines = @(
   "",
   "# UI locale - founder default English; ingress language picker before legal",
   "VITE_RHIZOH_DEFAULT_LOCALE=en",
+  "# OLP: ui_locked_output = always reply in UI language (cross-lingual); mirror | adaptive",
+  "VITE_RHIZOH_OUTPUT_LANGUAGE_POLICY=ui_locked_output",
   "VITE_RHIZOH_REQUIRE_LANGUAGE_PICKER=1",
   "# Castle Layers observation panel on rhizoh.com (topology + schema drift)",
   "VITE_CASTLE_LAYERS_DEBUG=1",

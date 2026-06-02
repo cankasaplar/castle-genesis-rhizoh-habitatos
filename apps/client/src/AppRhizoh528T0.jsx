@@ -234,6 +234,7 @@ import {
   shouldShowSemanticHintChipsV0,
   shouldShowVerboseCommandHintV0
 } from "./rhizoh/experience/livingWorldFirstInteractionV0.js";
+import { bootstrapCastleLanguageRuntimeV0 } from "./rhizoh/runtime/rhizohLanguageRuntimeV0.js";
 import { prewarmSpeechSynthesisV0 } from "./rhizoh/runtime/prewarmSpeechSynthesisV0.js";
 import {
   readSpeechLocaleForVoiceV0,
@@ -3593,6 +3594,10 @@ const SovereignHud = memo(({ engineRef }) => {
   const realityMode = useUISelector((s) => s.realityMode);
   const isSatActive = useUISelector((s) => s.isSatelliteActive);
   const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    bootstrapCastleLanguageRuntimeV0();
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => setTick(Math.floor(coreWorld.simTime * 10) / 10), 100);

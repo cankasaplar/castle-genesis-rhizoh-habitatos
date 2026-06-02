@@ -1,39 +1,36 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { resetClagGraphV0 } from "../rhizohCrossLayerAwarenessGraphV0.js";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { prepareRhizohLlmTurnV0 } from "../rhizohLlmTurnHotWireV0.js";
 import {
-  prepareRhizohLlmTurnV0,
-  buildRhizohLlmContextPatchFromPrepV0
-} from "../rhizohLlmTurnHotWireV0.js";
-import * as voiceInstantAck from "../voiceInstantAckV0.js";
+  __resetOlpStateForTestV0,
+  hydrateOlpFromPersistedPreferenceV0
+} from "../rhizohOutputLanguagePolicyV0.js";
 
-describe("rhizohLlmTurnHotWireV0", () => {
+vi.mock("../voiceInstantAckV0.js", () => ({
+  markVoiceTurnDispatchV0: vi.fn(),
+  speakVoiceInstantAckV0: vi.fn()
+}));
+
+import { speakVoiceInstantAckV0 } from "../voiceInstantAckV0.js";
+
+describe("rhizohLlmTurnHotWireV0 fast-path ack", () => {
   beforeEach(() => {
-    resetClagGraphV0();
-    vi.restoreAllMocks();
+    __resetOlpStateForTestV0();
+    localStorage.setItem("rhizoh.user.language.v0", "en");
+    hydrateOlpFromPersistedPreferenceV0();
+    vi.mocked(speakVoiceInstantAckV0).mockClear();
   });
 
-  it("prepareRhizohLlmTurnV0 publishes speech-first expression", () => {
-    const spy = vi.spyOn(voiceInstantAck, "speakVoiceInstantAckV0").mockReturnValue(true);
-    const prep = prepareRhizohLlmTurnV0({
-      traceId: "TRC-HW-1",
-      message: "Merhaba",
-      speakInstantAck: true
+  it("does not use turn.fastAck phrase pool bypass", () => {
+    const turn = prepareRhizohLlmTurnV0({
+      message: "hello",
+      voiceTurn: true,
+      speakInstantAck: true,
+      fastAck: "Tamam, dinliyorum."
     });
-    expect(prep.scheduling).toBe("speech_first");
-    expect(prep.turn.expression.scheduling).toBe("speech_first");
-    expect(window.__CASTLE_RHIZOH_HOT_SPEECH__).toBeTruthy();
-    expect(spy).toHaveBeenCalled();
-    const patch = buildRhizohLlmContextPatchFromPrepV0(prep);
-    expect(patch.fastPath).toBe(true);
-    expect(patch.speechSkeleton?.preCommit).toBe(true);
-  });
-
-  it("skips instant ack when speakInstantAck false", () => {
-    const spy = vi.spyOn(voiceInstantAck, "speakVoiceInstantAckV0").mockReturnValue(true);
-    prepareRhizohLlmTurnV0({
-      message: "Kısa soru",
-      speakInstantAck: false
-    });
-    expect(spy).not.toHaveBeenCalled();
+    expect(turn.turn?.fastAck).not.toBe("Tamam, dinliyorum.");
+    expect(speakVoiceInstantAckV0).toHaveBeenCalled();
+    const phrase = String(vi.mocked(speakVoiceInstantAckV0).mock.calls[0]?.[0] || "");
+    expect(phrase).toMatch(/listening|moment|second/i);
+    expect(phrase).not.toMatch(/dinliyorum/i);
   });
 });

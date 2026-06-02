@@ -44,7 +44,24 @@ Event: `rhizoh:local-action` · log: `[CASTLE_local_action]`
 
 ---
 
-## 3. Copy SSOT (Turkish-first cohort)
+## 3. OS command layer (roadmap — post cohort gate)
+
+v0 ships surface + intent routing. **Next expansion** (local, no LLM):
+
+| Command class | Examples |
+|---------------|----------|
+| Map tool | *haritaya geç* → `OPEN_MAP_TOOL` (not WORLD replacement) |
+| Place | *pin bırak*, *şurayı işaretle* |
+| Castle | *kale kur*, *castle oluştur* |
+| Live | *yayın başlat*, *mikrofonu aç* |
+| Memory | *anı kaydet*, *event oluştur* |
+| Navigate | *şuraya git*, *şunu bağla* |
+
+Until wired: remote LLM may answer, but product identity treats these as **Local Rhizoh** targets.
+
+---
+
+## 4. Copy SSOT (Turkish-first cohort)
 
 [`rhizohProductCopyV0.js`](../apps/client/src/rhizoh/runtime/rhizohProductCopyV0.js) — shell labels:
 

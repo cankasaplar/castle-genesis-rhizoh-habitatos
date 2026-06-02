@@ -56,7 +56,6 @@ import {
   buildLifeContinuityContextHintsV0,
   readUserAnchorV0
 } from "./memoryAnchorSystemV0.js";
-import { readConversationLanguageV0 } from "./rhizohConversationLanguageV0.js";
 import {
   buildRhizohMultilingualPackV0,
   pushRhizohTurnContinuityPulseV0
@@ -707,8 +706,7 @@ export async function queryRhizohLLM({
 
   const rhizohMultilingualPack = buildRhizohMultilingualPackV0({
     message: trimmed,
-    navLocale: typeof navigator !== "undefined" ? navigator.language : "",
-    preferredCode: readConversationLanguageV0()
+    navLocale: typeof navigator !== "undefined" ? navigator.language : ""
   });
 
   try {

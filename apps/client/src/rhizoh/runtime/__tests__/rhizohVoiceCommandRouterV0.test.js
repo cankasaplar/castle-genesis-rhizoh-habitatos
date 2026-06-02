@@ -1,0 +1,40 @@
+import { describe, expect, it, beforeEach } from "vitest";
+import {
+  classifyVoiceIntentV0,
+  normalizeVoiceCommandSpaceV0,
+  routeVoiceInputV0,
+  VOICE_INTENT_TYPE_V0,
+  VOICE_ROUTE_EXECUTION_V0
+} from "../rhizohVoiceCommandRouterV0.js";
+import {
+  __resetOlpStateForTestV0,
+  hydrateOlpFromPersistedPreferenceV0
+} from "../rhizohOutputLanguagePolicyV0.js";
+
+describe("rhizohVoiceCommandRouterV0", () => {
+  beforeEach(() => {
+    __resetOlpStateForTestV0();
+    localStorage.setItem("rhizoh.user.language.v0", "en");
+    hydrateOlpFromPersistedPreferenceV0();
+  });
+
+  it("maps TR stop slang to canonical stop_listening (not bare stop → media)", () => {
+    const space = normalizeVoiceCommandSpaceV0("tamam dur");
+    expect(space.canonical).toBe("stop_listening");
+    expect(normalizeVoiceCommandSpaceV0("stop").canonical).toBe("media_stop");
+    const intent = classifyVoiceIntentV0("tamam dur");
+    expect(intent.type).toBe(VOICE_INTENT_TYPE_V0.COMMAND);
+    expect(intent.localOnly).toBe(true);
+  });
+
+  it("routes open questions to LLM not local registry", () => {
+    const route = routeVoiceInputV0("explain quantum physics briefly");
+    expect(route.execution).toBe(VOICE_ROUTE_EXECUTION_V0.LLM);
+  });
+
+  it("routes grammar local surface before LLM", () => {
+    const route = routeVoiceInputV0("dünya");
+    expect(route.execution).toBe(VOICE_ROUTE_EXECUTION_V0.LOCAL);
+    expect(route.grammarLocal?.kind).toBe("ENTER_SURFACE");
+  });
+});

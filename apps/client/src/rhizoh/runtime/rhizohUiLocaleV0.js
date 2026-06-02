@@ -9,6 +9,8 @@ import {
   resolveRhizohLanguageCatalogRowV0,
   writeRhizohSessionLanguagePreferenceV0
 } from "./rhizohMultilingualBridgeV0.js";
+import { bootstrapCastleLanguageRuntimeV0 } from "./rhizohLanguageRuntimeV0.js";
+import { applyUiLanguagePreferenceToOlpV0 } from "./rhizohOutputLanguagePolicyV0.js";
 
 export const RHIZOH_UI_LOCALE_CONTRACT_V0 = "rhizoh-ui-locale-v0";
 export const RHIZOH_UI_LOCALE_CHANGE_EVENT_V0 = "rhizoh:ui-locale";
@@ -137,6 +139,7 @@ export function writeUiLocaleV0(code) {
     /* noop */
   }
   writeRhizohSessionLanguagePreferenceV0(locale);
+  applyUiLanguagePreferenceToOlpV0(locale, "ui_write");
   if (typeof document !== "undefined") {
     document.documentElement.lang = resolveRhizohBcp47V0(locale).split("-")[0];
   }
@@ -146,6 +149,7 @@ export function writeUiLocaleV0(code) {
         detail: Object.freeze({ locale })
       })
     );
+    bootstrapCastleLanguageRuntimeV0();
   }
   return locale;
 }
