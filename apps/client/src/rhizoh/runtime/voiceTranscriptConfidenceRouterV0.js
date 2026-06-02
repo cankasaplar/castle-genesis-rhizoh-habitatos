@@ -187,14 +187,18 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
     confidence: Number.isFinite(conf) ? conf : undefined,
     strategy,
     checkRepeat: meta.checkRepeat !== false,
-    recordedMs: Number.isFinite(recordedMs) ? recordedMs : undefined
+    recordedMs: Number.isFinite(recordedMs) ? recordedMs : undefined,
+    sttLanguageHint: meta.sttLanguageHint,
+    vepmConfidence: meta.vepmConfidence,
+    phantomLikely: meta.phantomLikely === true
   });
 
   if (!sane.ok) {
     const reason = String(sane.reason || "quality_reject");
     const confNum = Number.isFinite(conf) ? conf : Number(sane.confidence);
     const observationForward =
-      text.length >= 3 && SHADOW_FORWARD_REASONS.has(reason);
+      text.length >= 3 &&
+      (sane.shadowForward === true || sane.softScriptMismatch === true || SHADOW_FORWARD_REASONS.has(reason));
     const observationPassThrough =
       text.length >= 6 &&
       Number.isFinite(confNum) &&

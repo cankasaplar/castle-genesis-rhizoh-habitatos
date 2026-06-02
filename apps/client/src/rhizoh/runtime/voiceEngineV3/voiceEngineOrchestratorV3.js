@@ -17,6 +17,7 @@ import {
   readSttLanguageCodeHintV0
 } from "../rhizohConversationLanguageV0.js";
 import { prepareRhizohLlmTurnV0 } from "../rhizohLlmTurnHotWireV0.js";
+import { rescoreVoiceTranscriptAfterMergeV0 } from "../rhizohPostMergeTranscriptRescoreV0.js";
 import { emitVoiceEngineTelemetryV3, setVoiceEngineStateV3 } from "./voiceEngineTelemetryV3.js";
 import { noteVoiceRuntimePressureV1 } from "../gatewaySessionKeeperV1.js";
 import {
@@ -212,9 +213,15 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         }
 
         const merged = res.merged || resolveVoiceTranscriptV3(res.google || res.fast, res.whisper);
-        const pipe = runVoiceTranscriptWitnessPipelineV0({
+        const rescored = rescoreVoiceTranscriptAfterMergeV0({
           text: merged.text,
           confidence: merged.confidence,
+          strategy: merged.strategy,
+          languageHint: readSttLanguageCodeHintV0()
+        });
+        const pipe = runVoiceTranscriptWitnessPipelineV0({
+          text: rescored.text,
+          confidence: rescored.confidence ?? merged.confidence,
           strategy: merged.strategy,
           source: "mic_v3",
           maxRms,
@@ -222,23 +229,40 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           stage: "v3_orchestrator_raw",
           checkRepeat: false,
           runTurnGate: false,
-          shadowForwardOnReject: true
+          shadowForwardOnReject: true,
+          sttLanguageHint: rescored.languageHint,
+          vepmConfidence: rescored.vepmConfidence,
+          phantomLikely: rescored.phantomLikely,
+          postMergeRescore: rescored
         });
 
         if (!pipe.route?.executionAccepted) {
           busy = false;
           setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
-          emitVoiceEngineTelemetryV3("FINAL_TRANSCRIPT_REJECT", {
-            reason: pipe.sane.reason,
-            preview: String(pipe.sane.text || merged.text).slice(0, 96),
-            confidence: pipe.sane.confidence,
-            band: pipe.witnessed.observation.band
-          });
-          opts.onError?.({ code: pipe.sane.reason || "no_transcript" });
+          const shadowDrop =
+            pipe.sane?.shadowForward === true ||
+            pipe.sane?.softScriptMismatch === true ||
+            pipe.route?.observationForward === true;
+          emitVoiceEngineTelemetryV3(
+            shadowDrop ? "FINAL_TRANSCRIPT_SHADOW_DROP" : "FINAL_TRANSCRIPT_REJECT",
+            {
+              reason: pipe.sane.reason,
+              preview: String(pipe.sane.text || rescored.text).slice(0, 96),
+              confidence: pipe.sane.confidence,
+              band: pipe.witnessed.observation.band,
+              phantomLikely: rescored.phantomLikely === true,
+              vepmLowConfidence: rescored.vepmLowConfidence === true
+            }
+          );
+          if (!shadowDrop) {
+            opts.onError?.({ code: pipe.sane.reason || "no_transcript" });
+          }
           return {
             ok: false,
             error: pipe.sane.reason || "no_transcript",
+            shadowDrop,
             merged,
+            rescored,
             sane: pipe.sane,
             witnessed: pipe.witnessed
           };

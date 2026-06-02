@@ -31,6 +31,7 @@ const TR_LATIN_HINT_RE =
 const SEMANTIC_CONF_MIN_V0 = 0.55;
 const ARABIC_REJECT_RATIO_V0 = 0.42;
 const ARABIC_SOFT_RATIO_V0 = 0.22;
+export const VEPM_SCRIPT_GATE_SOFT_CONF_MAX_V0 = 0.7;
 
 /**
  * @param {string} text
@@ -137,9 +138,16 @@ export function evaluateSttScriptAgainstUiLocaleV0(text, opts = {}) {
   const cross =
     expected === "tr" ? normalizeSttCrossScriptForTurkishUiV0(raw) : { text: raw, remapped: false };
   const evalText = cross.text;
-  const sttHint = String(opts.sttLanguageHint || readSttInputLanguageCodeHintV0() || "")
+  const sttHint = String(
+    opts.sttLanguageHint || readSttInputLanguageCodeHintV0() || ""
+  )
     .toLowerCase()
     .replace(/-.*/, "");
+
+  const vepmConfidence = Number(opts.vepmConfidence);
+  const vepmLow =
+    Number.isFinite(vepmConfidence) && vepmConfidence < VEPM_SCRIPT_GATE_SOFT_CONF_MAX_V0;
+  const phantomLikely = opts.phantomLikely === true;
 
   const arabicRatio = measureArabicScriptRatioV0(evalText);
   const cyrillicRatio = measureCyrillicScriptRatioV0(evalText);
@@ -161,7 +169,34 @@ export function evaluateSttScriptAgainstUiLocaleV0(text, opts = {}) {
       ? scriptMatch || semantic.semanticHigh
       : langMatch && (scriptMatch || semantic.semanticHigh);
 
+  const softMismatchEligible =
+    expected === "tr" &&
+    !pass &&
+    !semantic.semanticHigh &&
+    (phantomLikely || vepmLow || arabicRatio >= ARABIC_SOFT_RATIO_V0) &&
+    cross.remapped !== true;
+
   if (!pass && expected === "tr" && arabicRatio >= ARABIC_SOFT_RATIO_V0 && !semantic.semanticHigh) {
+    if (softMismatchEligible) {
+      return Object.freeze({
+        schema: STT_SCRIPT_LOCALE_GUARD_SCHEMA_V0,
+        ok: false,
+        reason: "script_locale_mismatch",
+        softMismatch: true,
+        shadowForward: true,
+        passMode: arabicRatio >= ARABIC_REJECT_RATIO_V0 ? "reject_soft" : "reject_soft",
+        expectedLocale: expected,
+        sttLanguageHint: sttHint,
+        langMatch,
+        scriptMatch,
+        semantic,
+        arabicRatio,
+        latinRatio,
+        preview: raw.slice(0, 96),
+        phantomLikely,
+        vepmLowConfidence: vepmLow
+      });
+    }
     return Object.freeze({
       schema: STT_SCRIPT_LOCALE_GUARD_SCHEMA_V0,
       ok: false,

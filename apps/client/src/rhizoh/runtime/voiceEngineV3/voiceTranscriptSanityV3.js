@@ -153,14 +153,19 @@ export function sanitizeVoiceTranscriptForDispatchV3(text, opts = {}) {
 
   const scriptGuard = evaluateSttScriptAgainstUiLocaleV0(dispatchText, {
     confidence: opts.confidence,
-    strategy: opts.strategy
+    strategy: opts.strategy,
+    sttLanguageHint: opts.sttLanguageHint,
+    vepmConfidence: opts.vepmConfidence,
+    phantomLikely: opts.phantomLikely === true
   });
   if (!scriptGuard.ok) {
     return {
       ok: false,
       reason: scriptGuard.reason || "script_locale_mismatch",
       text: dispatchText,
-      scriptGuard
+      scriptGuard,
+      shadowForward: scriptGuard.softMismatch === true || scriptGuard.shadowForward === true,
+      softScriptMismatch: scriptGuard.softMismatch === true
     };
   }
 

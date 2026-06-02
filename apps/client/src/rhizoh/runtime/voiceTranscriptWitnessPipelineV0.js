@@ -285,7 +285,10 @@ export function runVoiceTranscriptWitnessPipelineV0(meta = {}) {
     source,
     recordedMs: meta.recordedMs,
     checkRepeat: meta.checkRepeat !== false,
-    band: witnessed.observation.band
+    band: witnessed.observation.band,
+    sttLanguageHint: meta.sttLanguageHint,
+    vepmConfidence: meta.vepmConfidence,
+    phantomLikely: meta.phantomLikely
   });
 
   const sanityGate = Object.freeze({
@@ -300,7 +303,9 @@ export function runVoiceTranscriptWitnessPipelineV0(meta = {}) {
     reason: route.reason,
     confidence: route.confidence,
     strategy: meta.strategy,
-    shadowForward: route.shadowForward === true
+    shadowForward: route.shadowForward === true,
+    softScriptMismatch:
+      route.reason === "script_locale_mismatch" && route.observationForward === true
   });
 
   logVoiceInfoV0("GATE_CONFIDENCE_ROUTER", {

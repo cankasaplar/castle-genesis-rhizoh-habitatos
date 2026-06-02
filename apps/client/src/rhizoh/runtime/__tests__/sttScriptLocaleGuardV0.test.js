@@ -43,9 +43,15 @@ describe("sttScriptLocaleGuardV0", () => {
     expect(guard.normalizedText).toBe("merhaba");
   });
 
-  it("rejects Persian script even when confidence is moderate", () => {
+  it("rejects Persian script with soft mismatch when flagged phantom", () => {
     const fa = "سیزن ایکایی میشه، دوام ایده همیشه این ایکایی؟";
-    const guard = evaluateSttScriptAgainstUiLocaleV0(fa, { confidence: 0.62, sttLanguageHint: "tr" });
+    const guard = evaluateSttScriptAgainstUiLocaleV0(fa, {
+      confidence: 0.62,
+      sttLanguageHint: "tr",
+      phantomLikely: true,
+      vepmConfidence: 0.63
+    });
     expect(guard.ok).toBe(false);
+    expect(guard.softMismatch).toBe(true);
   });
 });
