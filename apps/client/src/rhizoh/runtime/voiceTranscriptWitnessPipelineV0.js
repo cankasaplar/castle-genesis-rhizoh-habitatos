@@ -204,7 +204,9 @@ export function runVoiceTranscriptWitnessPipelineV0(meta = {}) {
     stage,
     band: meta.band,
     ambientScore: meta.ambientScore,
-    noiseDetectedHigh: meta.noiseDetectedHigh
+    noiseDetectedHigh: meta.noiseDetectedHigh,
+    userId: meta.userId,
+    micDeviceId: meta.micDeviceId
   });
 
   const gateConfidence =

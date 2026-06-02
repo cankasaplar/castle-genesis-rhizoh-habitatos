@@ -15,6 +15,10 @@ import {
   recordSttTemporalFieldTurnV0,
   resetSttTemporalFieldCalibrationV0
 } from "./sttTemporalFieldCalibrationV0.js";
+import {
+  applyVoiceEnvironmentThresholdOverrideV0,
+  recordVoiceEnvironmentTurnV0
+} from "./voiceEnvironmentProfileMemoryV0.js";
 
 export const STT_TEMPORAL_SMOOTHING_SCHEMA_V0 = "castle.rhizoh.stt_temporal_smoothing.v0";
 
@@ -206,13 +210,19 @@ export function detectSttTemporalNoiseV0(meta = {}, frames = frameBuffer) {
   }
 
   const cal = getSttTemporalFieldCalibrationV0();
-  const noiseEnter = cal.enabled ? cal.noiseScoreEnter : NOISE_SCORE_ENTER_V0;
+  let noiseEnter = cal.enabled ? cal.noiseScoreEnter : NOISE_SCORE_ENTER_V0;
+  const vepm = applyVoiceEnvironmentThresholdOverrideV0({
+    fieldCalibration: cal,
+    temporalProfile: { id: activeProfileId }
+  });
+  if (vepm.enabled) noiseEnter = vepm.noiseScoreEnter;
 
   return Object.freeze({
     noiseDetectedHigh: score >= noiseEnter,
     score,
     noiseScoreEnter: noiseEnter,
     fieldCalibration: cal.enabled ? cal : null,
+    vepmOverride: vepm.enabled ? vepm : null,
     reasons: Object.freeze([...new Set(reasons)])
   });
 }
@@ -273,21 +283,44 @@ export function resolveSttTemporalProfileV0(meta = {}, frames = frameBuffer) {
 
   const base = resolveSttTemporalProfileByIdV0(activeProfileId);
   const cal = getSttTemporalFieldCalibrationV0();
-  const spikeThreshold =
+  let spikeThreshold =
     cal.enabled && Number.isFinite(Number(cal.spikeThresholdQuiet))
       ? activeProfileId === STT_TEMPORAL_PROFILE_ID_V0.NOISY
         ? cal.spikeThresholdNoisy
         : cal.spikeThresholdQuiet
       : base.spikeThreshold;
 
+  const vepm = applyVoiceEnvironmentThresholdOverrideV0({
+    fieldCalibration: cal,
+    temporalProfile: { ...base, id: activeProfileId, spikeThreshold }
+  });
+
+  if (vepm.enabled) {
+    if (
+      vepm.activeProfileId === STT_TEMPORAL_PROFILE_ID_V0.NOISY ||
+      vepm.activeProfileId === STT_TEMPORAL_PROFILE_ID_V0.QUIET
+    ) {
+      activeProfileId = vepm.activeProfileId;
+    }
+    spikeThreshold =
+      activeProfileId === STT_TEMPORAL_PROFILE_ID_V0.NOISY
+        ? vepm.spikeThresholdNoisy
+        : vepm.spikeThresholdQuiet;
+  }
+
+  const merged = resolveSttTemporalProfileByIdV0(activeProfileId);
+
   return Object.freeze({
-    ...base,
+    ...merged,
+    windowSize: vepm.enabled ? vepm.windowSize : merged.windowSize,
+    emaAlpha: vepm.enabled ? vepm.emaAlpha : merged.emaAlpha,
     spikeThreshold,
     adaptive: true,
     noiseDetectedHigh: noise.noiseDetectedHigh,
     noiseScore: noise.score,
     noiseReasons: noise.reasons,
-    fieldCalibration: cal.enabled ? cal : null
+    fieldCalibration: cal.enabled ? cal : null,
+    vepmOverride: vepm.enabled ? vepm : null
   });
 }
 
@@ -409,7 +442,9 @@ function pruneFrameBufferV0(windowSize, nowMs = Date.now()) {
  *   isFinal?: boolean,
  *   band?: string,
  *   ambientScore?: number,
- *   noiseDetectedHigh?: boolean
+ *   noiseDetectedHigh?: boolean,
+ *   userId?: string,
+ *   micDeviceId?: string
  * }} meta
  */
 export function ingestSttTemporalFrameV0(meta = {}) {
@@ -560,6 +595,17 @@ export function applySttTemporalSmoothingV0(meta = {}) {
       source: meta.source
     });
 
+    void recordVoiceEnvironmentTurnV0({
+      noiseScore: entry.noiseScore,
+      profileId: entry.profileId,
+      suppress: entry.suppress,
+      scriptCoherence: entry.scriptCoherence,
+      majorityScript: entry.majorityScript,
+      maxRms: meta.maxRms,
+      userId: meta.userId,
+      micDeviceId: meta.micDeviceId
+    });
+
     logVoiceInfoV0("STT_TEMPORAL", {
       stage: meta.stage || "",
       source: meta.source || "",
@@ -568,6 +614,7 @@ export function applySttTemporalSmoothingV0(meta = {}) {
       emaAlpha: entry.profile?.emaAlpha,
       spikeThreshold: entry.profile?.spikeThreshold,
       fieldCalibration: fieldCal.enabled ? fieldCal : null,
+      vepmOverride: entry.profile?.vepmOverride || null,
       noiseDetectedHigh: entry.noiseDetectedHigh,
       noiseScore: entry.noiseScore,
       frameCount: entry.frameCount,

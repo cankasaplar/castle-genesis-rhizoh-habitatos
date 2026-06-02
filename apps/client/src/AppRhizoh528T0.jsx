@@ -271,6 +271,7 @@ import {
   resetSttTemporalFrameBufferV0,
   resetSttTemporalSmoothingV0
 } from "./rhizoh/runtime/sttTemporalSmoothingV0.js";
+import { primeVoiceEnvironmentProfileV0 } from "./rhizoh/runtime/voiceEnvironmentProfileMemoryV0.js";
 import { isHardSilentCommandRouteV0 } from "./rhizoh/runtime/rhizohCommandGateV0.js";
 import { recordRhizohReplySurfaceV0 } from "./rhizoh/runtime/rhizohReplyRhythmDiagnosticV0.js";
 import {
@@ -7644,6 +7645,7 @@ export default function AppRhizoh528() {
   const voicePendingTranscriptRef = useRef("");
   const voiceSttDispatchedRef = useRef(false);
   const voiceSttGotAnyResultRef = useRef(false);
+  const voiceEnvMicIdRef = useRef("default");
   const voiceAutoRestartBlockedRef = useRef(false);
   const voiceSttStartInFlightRef = useRef(false);
   const voiceMicRestartTimerRef = useRef(0);
@@ -9517,7 +9519,9 @@ export default function AppRhizoh528() {
           maxRms: Number.isFinite(Number(maxRms)) ? Number(maxRms) : undefined,
           stage: "chrome_dispatch_raw",
           checkRepeat: true,
-          runTurnGate: false
+          runTurnGate: false,
+          userId: castleAuth.user?.uid || "anon",
+          micDeviceId: voiceEnvMicIdRef.current || "default"
         });
         witnessed = pipe.witnessed;
         temporalSnap = pipe.temporal || temporalSnap;
@@ -9543,7 +9547,9 @@ export default function AppRhizoh528() {
           maxRms: Number.isFinite(Number(maxRms)) ? Number(maxRms) : undefined,
           stage: "mic_v3_dispatch_fallback",
           checkRepeat: true,
-          runTurnGate: false
+          runTurnGate: false,
+          userId: castleAuth.user?.uid || "anon",
+          micDeviceId: voiceEnvMicIdRef.current || "default"
         });
         witnessed = pipe.witnessed;
         temporalSnap = pipe.temporal || temporalSnap;
@@ -10373,6 +10379,10 @@ export default function AppRhizoh528() {
       });
       rec.onstart = () => {
         resetSttTemporalSmoothingV0();
+        void primeVoiceEnvironmentProfileV0({
+          userId: castleAuth.user?.uid || "anon",
+          micDeviceId: voiceEnvMicIdRef.current || "default"
+        });
         noteVoiceSttEventV0("STT_START", { lang: rec.lang });
         logVoiceInfoV0("STT_START", { lang: rec.lang, keepAlive });
       };
