@@ -19,14 +19,34 @@ function isCastleLayersPipelineHudRenderableV0() {
 
 /**
  * Runtime topology panel — observation only, no execution authority.
+ * @param {{ gatewayPhase?: string }} props
  */
 export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
   const [tick, setTick] = useState(0);
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("castle.layers.hud.collapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     const id = window.setInterval(() => setTick((n) => n + 1), 1200);
     return () => window.clearInterval(id);
   }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem("castle.layers.hud.collapsed", next ? "1" : "0");
+      } catch {
+        /* noop */
+      }
+      return next;
+    });
+  };
 
   if (!isCastleLayersPipelineHudRenderableV0()) return null;
 
@@ -110,11 +130,30 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
 
   return (
     <div
-      className="pointer-events-auto fixed right-2 top-2 z-[90] max-w-[min(19rem,44vw)] rounded-xl border border-amber-400/35 bg-black/80 p-2 text-[9px] font-mono normal-case text-amber-50/90 backdrop-blur-md"
+      className="pointer-events-auto fixed left-2 z-[88] max-w-[min(19rem,44vw)] rounded-xl border border-amber-400/35 bg-black/85 p-2 text-[9px] font-mono normal-case text-amber-50/90 shadow-lg backdrop-blur-md"
+      style={{ top: "max(0.5rem, env(safe-area-inset-top))" }}
       data-rhizoh-castle-layers-debug="1"
       data-tick={tick}
+      data-collapsed={collapsed ? "1" : "0"}
     >
-      <div className="mb-1 text-[8px] font-bold tracking-[0.18em] text-amber-200/80">CASTLE LAYERS</div>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <div className="text-[8px] font-bold tracking-[0.18em] text-amber-200/80">CASTLE LAYERS</div>
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          className="shrink-0 rounded border border-amber-400/30 px-1.5 py-0.5 text-[7px] text-amber-100/80 hover:bg-amber-400/10"
+          aria-expanded={!collapsed}
+          title={collapsed ? "Expand layers HUD" : "Collapse layers HUD"}
+        >
+          {collapsed ? "+" : "−"}
+        </button>
+      </div>
+      {collapsed ? (
+        <div className="text-[7px] text-amber-100/65">
+          {CASTLE_LAYERS_BEHAVIOR_GRAPH_VERSION_V1} · {activeUiDomain} · gw={gw || "?"}
+        </div>
+      ) : (
+        <>
       <div className="mb-1 text-[7px] text-amber-100/70">
         {CASTLE_LAYERS_BEHAVIOR_GRAPH_VERSION_V1} · ui={activeUiDomain}
         {streamLock?.active ? ` · lock=${String(streamLock.active.lockId).slice(0, 12)}` : " · lock=idle"}
@@ -171,6 +210,8 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
           ) : null}
         </div>
       ) : null}
+        </>
+      )}
     </div>
   );
 }

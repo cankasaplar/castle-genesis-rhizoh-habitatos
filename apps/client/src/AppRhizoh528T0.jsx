@@ -12053,7 +12053,7 @@ export default function AppRhizoh528() {
       ) : null}
 
       <div className="absolute inset-0 z-10 pointer-events-none flex min-h-full flex-col p-4 md:p-5">
-        <div className="flex shrink-0 justify-end items-start gap-3">
+        <div className="relative z-[100] flex shrink-0 justify-end items-start gap-3">
           {!immersiveLiveTrace ? (
             <div className="pointer-events-auto mr-auto" />
           ) : (
@@ -12098,7 +12098,9 @@ export default function AppRhizoh528() {
               <button
                 type="button"
                 onClick={() => setShowDetailDrawer((v) => !v)}
-                className="mt-2 w-full rounded-xl border border-white/15 py-1.5 text-[9px] tracking-[0.12em] text-white/70"
+                aria-expanded={showDetailDrawer}
+                aria-controls="rhizoh-detail-drawer"
+                className="mt-2 w-full rounded-xl border border-white/15 py-1.5 text-[9px] tracking-[0.12em] text-white/70 hover:border-cyan-400/35"
               >
                 {showDetailDrawer ? "Close details" : "More ┬À agents ┬À events ┬À share"}
               </button>
@@ -12107,7 +12109,9 @@ export default function AppRhizoh528() {
               <button
                 type="button"
                 onClick={() => setShowDetailDrawer((v) => !v)}
-                className="rounded-xl border border-white/12 bg-black/40 px-3 py-2 text-[9px] tracking-[0.12em] text-white/55 normal-case hover:text-white/80"
+                aria-expanded={showDetailDrawer}
+                aria-controls="rhizoh-detail-drawer"
+                className="relative z-[101] rounded-xl border border-white/12 bg-black/40 px-3 py-2 text-[9px] tracking-[0.12em] text-white/55 normal-case hover:text-white/80 hover:border-cyan-400/35"
               >
                 {showDetailDrawer ? detailChromeCopyV0.close : detailChromeCopyV0.open}
               </button>
@@ -12116,7 +12120,12 @@ export default function AppRhizoh528() {
         </div>
 
         {showDetailDrawer ? (
-          <div className="pointer-events-auto fixed inset-y-0 right-0 z-[55] w-full max-w-md border-l border-cyan-400/25 bg-[#050a14]/95 p-4 shadow-2xl backdrop-blur-xl overflow-y-auto">
+          <div
+            id="rhizoh-detail-drawer"
+            className="pointer-events-auto fixed inset-y-0 right-0 z-[110] w-full max-w-md border-l border-cyan-400/25 bg-[#050a14]/95 p-4 shadow-2xl backdrop-blur-xl overflow-y-auto"
+            role="dialog"
+            aria-label={detailChromeCopyV0.open}
+          >
             <div className="mb-3 flex items-center justify-between">
               <span className="text-[10px] tracking-[0.2em] text-cyan-200">DETAILS ┬À {CASTLE_RUNTIME_VERSION}</span>
               <button type="button" onClick={() => setShowDetailDrawer(false)} className="text-[10px] text-white/50">
