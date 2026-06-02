@@ -191,6 +191,11 @@ const CODE_MAP = Object.freeze({
     stressClass: STRESS_CLASS_V0.OUTAGE,
     responseAction: RESPONSE_ACTION_V0.FALLBACK,
     userMessageTr: "İstek zaman aşımı."
+  },
+  payload_too_large: {
+    stressClass: STRESS_CLASS_V0.OVERLOAD,
+    responseAction: RESPONSE_ACTION_V0.DEGRADE,
+    userMessageTr: "İstek gövdesi çok büyük — bağlam otomatik kısaltılmalı; kısa mesajla tekrar deneyin."
   }
 });
 

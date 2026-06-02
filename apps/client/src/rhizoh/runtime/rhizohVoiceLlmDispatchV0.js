@@ -16,9 +16,17 @@ import { normalizeSttTranscriptForOlpV0 } from "./normalizeSttTranscriptForOlpV0
 import { validateLocalCommandPostSttV0 } from "./castleCommandInvariantV0.js";
 import {
   executeLocalVoiceCommandV0,
-  routeVoiceInputV0,
   VOICE_ROUTE_EXECUTION_V0
 } from "./rhizohVoiceCommandRouterV0.js";
+import { runRhizohSpeechPipelineV0 } from "./rhizohSpeechPipelineV0.js";
+import { executeMicroIntentVoiceV0 } from "./rhizohMicroIntentRouterV0.js";
+import { classifyRhizohIntentV0, resolveLlmTransitionAckV0 } from "./rhizohIntentRouterV0.js";
+import {
+  applyReflexEffectivenessFeedbackV0,
+  noteLocalReflexFailureV0
+} from "./rhizohConfidenceDecayGateV0.js";
+import { normalizeForFastPrecheckV0 } from "./rhizohFastPrecheckV0.js";
+import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
 import {
   commitFinalUserVisibleLanguageV0,
   LANGUAGE_COMMIT_LOCK_KEY_V0
@@ -73,9 +81,88 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     return Object.freeze({ ok: false, error: "empty_transcript" });
   }
 
-  const route = traceRoutePhaseV0(traceId, () =>
-    routeVoiceInputV0(msg, { sttInferred: sttNorm.inferredInputLocale })
+  const pipeline = traceRoutePhaseV0(traceId, () =>
+    runRhizohSpeechPipelineV0(raw, {
+      sttInferred: sttNorm.inferredInputLocale,
+      traceId,
+      localFailed: false,
+      reflexLatencyMs: 0
+    })
   );
+
+  if (pipeline.escalateToLlm && pipeline.intentPlan?.decay?.reasons?.length) {
+    noteLocalReflexFailureV0(true);
+  }
+
+  if (pipeline.stage === "fast_precheck" || pipeline.stage === "ambient" || pipeline.stage === "continuation") {
+    const reply = pipeline.reply || "";
+    if (opts.speakReply !== false && reply && !pipeline.silencePreferred) {
+      await speakRhizohReplyChunkedV0(reply, {
+        smoothAfterAck: false,
+        committedText: true,
+        traceId
+      });
+    }
+    recordOlpBehavioralTurnV0({ channel: "voice", depthMode: pipeline.stage });
+    const graph = closeVoiceExecutionTraceV0(traceId, {
+      ok: true,
+      execution: pipeline.stage,
+      precheck: pipeline.precheck?.source
+    });
+    return Object.freeze({
+      ok: true,
+      fastPrecheck: pipeline.stage === "fast_precheck",
+      ambient: pipeline.ambient === true,
+      continuation: pipeline.continuation === true,
+      reply,
+      traceId,
+      pipeline,
+      graph,
+      llmBypass: true
+    });
+  }
+
+  const route = pipeline.route;
+  if (!route) {
+    closeVoiceExecutionTraceV0(traceId, { ok: false, execution: "no_route" });
+    return Object.freeze({ ok: false, error: "pipeline_no_route", pipeline });
+  }
+
+  if (pipeline.escalateToLlm && route.execution === VOICE_ROUTE_EXECUTION_V0.LLM) {
+    /* decay gate → skip reflex; fall through to LLM dispatch below */
+  } else if (route.execution === VOICE_ROUTE_EXECUTION_V0.FAST_LOCAL) {
+    const microT0 = typeof performance !== "undefined" ? performance.now() : Date.now();
+    const micro = executeMicroIntentVoiceV0(route, { traceId });
+    const microMs =
+      (typeof performance !== "undefined" ? performance.now() : Date.now()) - microT0;
+    traceLocalExecPhaseV0(traceId, String(route.microIntent || "micro"), microMs);
+
+    if (opts.speakReply !== false && micro.reply) {
+      await speakRhizohReplyChunkedV0(micro.reply, {
+        smoothAfterAck: false,
+        committedText: true,
+        traceId
+      });
+    }
+    recordOlpBehavioralTurnV0({ channel: "voice", depthMode: "micro_intent" });
+    const graph = closeVoiceExecutionTraceV0(traceId, {
+      ok: true,
+      execution: "fast_local",
+      microIntent: route.microIntent
+    });
+    const replayTape = buildExecutionReplayTapeFromTraceV0(traceId);
+    return Object.freeze({
+      ok: true,
+      fastLocal: true,
+      microIntent: route.microIntent,
+      route,
+      reply: micro.reply || "",
+      traceId,
+      graph,
+      replayTape,
+      llmBypass: true
+    });
+  }
 
   if (route.execution === VOICE_ROUTE_EXECUTION_V0.LOCAL) {
     const invariant = validateLocalCommandPostSttV0(route);
@@ -233,7 +320,24 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     atMs: Date.now()
   });
 
-  logVoiceInfoV0("VOICE_LLM_DISPATCH", { traceId, chars: msg.length, source: opts.source });
+  const intentPlan = classifyRhizohIntentV0(msg, { sttInferred: sttNorm.inferredInputLocale });
+
+  logVoiceInfoV0("VOICE_LLM_DISPATCH", {
+    traceId,
+    chars: msg.length,
+    source: opts.source,
+    routeClass: intentPlan.routeClass,
+    confidence: intentPlan.confidence
+  });
+
+  if (opts.speakTransitionAck !== false) {
+    const ack = resolveLlmTransitionAckV0(resolveOutputLanguageCodeV0());
+    await speakRhizohReplyChunkedV0(ack, {
+      smoothAfterAck: true,
+      committedText: false,
+      traceId
+    });
+  }
 
   const llmT0 = Date.now();
   const out = await postRhizohLlmTurnV0({

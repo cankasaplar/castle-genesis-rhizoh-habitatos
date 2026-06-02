@@ -17,6 +17,7 @@ import {
   mergeRhizohLanguagePropagationHeadersV0,
   resolveRhizohLlmLanguageV0
 } from "./rhizohLanguagePropagationV0.js";
+import { trimRhizohLlmRequestBodyV0 } from "./rhizohLlmPayloadTrimV0.js";
 
 export const RHIZOH_LLM_TURN_CLIENT_SCHEMA_V0 = "castle.rhizoh.llm_turn_client.v0";
 
@@ -99,23 +100,25 @@ export async function postRhizohLlmTurnV0(input = {}) {
     headers.Authorization = `Bearer ${cfg.rhizohLlmToken}`;
   }
 
-  const body = {
-    message,
-    provider: input.provider ?? "openai",
-    llmKeySource: input.llmKeySource ?? "auto",
-    connectionId: String(input.connectionId || ""),
-    ...langBundle.bodyFields,
-    context: {
-      ...baseContext,
-      continuity: { ...continuity, runtime },
-      rhizohExpression: prep?.turn?.expression || null,
-      languagePropagation: langBundle.bodyFields.languagePropagation
+  const { body } = trimRhizohLlmRequestBodyV0(
+    {
+      message,
+      provider: input.provider ?? "openai",
+      llmKeySource: input.llmKeySource ?? "auto",
+      connectionId: String(input.connectionId || ""),
+      ...langBundle.bodyFields,
+      context: {
+        ...baseContext,
+        continuity: { ...continuity, runtime },
+        rhizohExpression: prep?.turn?.expression || null
+      },
+      options: {
+        maxTokens: input.options?.maxTokens ?? 768,
+        language: input.options?.language ?? llmLang.bcp47
+      }
     },
-    options: {
-      maxTokens: input.options?.maxTokens ?? 768,
-      language: input.options?.language ?? llmLang.bcp47
-    }
-  };
+    { voiceTurn: input.voiceTurn === true }
+  );
 
   try {
     const res = await fetchFn(endpoint, {

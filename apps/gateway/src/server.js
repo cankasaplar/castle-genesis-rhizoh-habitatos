@@ -34,6 +34,7 @@ import {
   buildRhizohLanguagePropagationEchoV1,
   parseRhizohLanguagePropagationV1
 } from "./rhizohLanguagePropagationV1.js";
+import { trimRhizohLlmGatewayPayloadV1 } from "./rhizohLlmPayloadTrimV1.js";
 import {
   meshAppendDelta,
   meshContinuityAggregate,
@@ -2905,7 +2906,7 @@ const httpServer = createServer(async (req, res) => {
     let payload = {};
     let langProp = parseRhizohLanguagePropagationV1(req, {});
     try {
-      payload = await readHttpJson(req);
+      payload = await readHttpJson(req, 128 * 1024);
       langProp = parseRhizohLanguagePropagationV1(req, payload);
       const auth = await resolveHttpUser(req);
       const ip = getHttpClientIp(req);
@@ -2983,10 +2984,16 @@ const httpServer = createServer(async (req, res) => {
           gaps: langProp.propagationGaps
         });
       }
-      const safePayload = applyLanguagePropagationToLlmPayloadV1(
-        { ...(payload || {}) },
-        langProp
-      );
+      let safePayload = applyLanguagePropagationToLlmPayloadV1({ ...(payload || {}) }, langProp);
+      const trimOut = trimRhizohLlmGatewayPayloadV1(safePayload);
+      if (trimOut.meta.trimmed) {
+        logRhizohHealth("llm_payload_trimmed", {
+          traceId: langProp.traceId || String(payload?.traceId || ""),
+          bytesBefore: trimOut.meta.bytesBefore,
+          bytesAfter: trimOut.meta.bytesAfter
+        });
+      }
+      safePayload = trimOut.payload;
       delete safePayload.apiKey;
       delete safePayload.llmKeySource;
       delete safePayload.keySource;
@@ -3036,7 +3043,8 @@ const httpServer = createServer(async (req, res) => {
       const msg = String(error?.message || "");
       const code = error?.code || "";
       let status = 500;
-      if (msg === "rate_limit_exceeded") status = 429;
+      if (msg === "payload_too_large") status = 413;
+      else if (msg === "rate_limit_exceeded") status = 429;
       else if (
         code === "cost_hard_limit" ||
         code === "phased_rollout_capacity" ||
@@ -3050,7 +3058,7 @@ const httpServer = createServer(async (req, res) => {
       let rhizohFailureKind = "provider_error";
       if (msg === "rate_limit_exceeded" || status === 429) rhizohFailureKind = "rate_limit";
       else if (status === 403) rhizohFailureKind = "policy_block";
-      else if (status === 400) rhizohFailureKind = "client_config";
+      else if (status === 400 || status === 413) rhizohFailureKind = "client_config";
       else if (msg.startsWith("provider_http_")) {
         const st = Number(msg.replace("provider_http_", ""));
         if (st === 408 || st === 504) rhizohFailureKind = "timeout";

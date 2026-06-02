@@ -405,6 +405,10 @@ export const RHIZOH_LOCAL_COMMAND_REGISTRY_V0 = Object.freeze({
 
 /** Hybrid: local snapshot + optional LLM enrichment — never pure registry match. */
 export const RHIZOH_HYBRID_COMMAND_PATTERNS_V0 = Object.freeze([
+  Object.freeze({
+    id: "capabilities_ask",
+    re: /^(ne yapabilirsin|neler yapabilirsin|what can you do|bana kısa motivasyon ver)/i
+  }),
   Object.freeze({ id: "state_query", re: /^(what is my (current )?state|show (my )?state|durumum ne)/i }),
   Object.freeze({ id: "session_summary", re: /^(summarize (this )?session|session summary|oturumu özetle)/i }),
   Object.freeze({ id: "last_messages", re: /^(show (my )?last messages|last messages|son mesajlar)/i }),

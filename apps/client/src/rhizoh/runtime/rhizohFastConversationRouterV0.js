@@ -51,14 +51,14 @@ export function routeFastConversationV0(input = {}) {
   }
 
   if (GREET_RE_V0.test(text) && text.length < 48) {
-    return freezeRoute(FAST_ROUTE_V0.FAST_GREET, "greet_pattern", 280, false, true);
+    return freezeRoute(FAST_ROUTE_V0.FAST_GREET, "greet_pattern", 280, false, false);
   }
 
   if (
     text.length < 56 &&
     (SIMPLE_ASK_RE_V0.test(text) || (mf?.intent === MF0_INTENT_V0.ASK && !/\b(çünkü|because|porque)\b/ui.test(text)))
   ) {
-    return freezeRoute(FAST_ROUTE_V0.FAST_SIMPLE, "simple_ask", 360, false, true);
+    return freezeRoute(FAST_ROUTE_V0.FAST_SIMPLE, "simple_ask", 360, false, false);
   }
 
   if (
@@ -68,7 +68,7 @@ export function routeFastConversationV0(input = {}) {
     text.length < 200 &&
     depth <= 3
   ) {
-    return freezeRoute(FAST_ROUTE_V0.CONTINUATION, "continuity_frame_reuse", 400, false, true);
+    return freezeRoute(FAST_ROUTE_V0.CONTINUATION, "continuity_frame_reuse", 400, false, false);
   }
 
   const heavyMode =

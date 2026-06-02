@@ -21,9 +21,12 @@ export const COMMAND_EXECUTE_CONFIDENCE_MIN_V0 = 0.82;
 export const COMMAND_MATCH_KIND_V0 = Object.freeze({
   REGISTRY_HARD: "registry_hard",
   GRAMMAR_HARD: "grammar_hard",
+  MICRO_FAST: "micro_fast",
   FUZZY: "fuzzy",
   NONE: "none"
 });
+
+const MICRO_FAST_CONFIDENCE_V0 = 0.94;
 
 const REGISTRY_HARD_CONFIDENCE_V0 = 0.97;
 const GRAMMAR_HARD_CONFIDENCE_V0 = 0.88;
@@ -65,6 +68,19 @@ export function resolveCommandGateV0(input, ctx = {}) {
       canonical: grammar.kind,
       normalized: space.normalized,
       grammarLocal: grammar
+    });
+  }
+
+  if (intent.type === VOICE_INTENT_TYPE_V0.MICRO && intent.microIntent) {
+    return Object.freeze({
+      schema: RHIZOH_COMMAND_GATE_SCHEMA_V0,
+      matchKind: COMMAND_MATCH_KIND_V0.MICRO_FAST,
+      commandConfidence: MICRO_FAST_CONFIDENCE_V0,
+      silentExecute: true,
+      intent,
+      canonical: null,
+      normalized: space.normalized,
+      microIntent: intent.microIntent
     });
   }
 
@@ -125,6 +141,19 @@ export function routeVoiceInputWithCommandGateV0(input, ctx = {}) {
       grammarLocal: gate.grammarLocal,
       commandGate: gate,
       priorityScore: priorityWinner?.score,
+      priorityRanked
+    });
+  }
+
+  if (gate.silentExecute && gate.matchKind === COMMAND_MATCH_KIND_V0.MICRO_FAST && gate.microIntent) {
+    return Object.freeze({
+      schema: "castle.rhizoh.voice_command_router.v0",
+      execution: VOICE_ROUTE_EXECUTION_V0.FAST_LOCAL,
+      intent: gate.intent,
+      microIntent: gate.microIntent,
+      canonical: null,
+      normalized: gate.normalized,
+      commandGate: gate,
       priorityRanked
     });
   }

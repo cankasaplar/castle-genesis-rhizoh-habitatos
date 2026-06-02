@@ -65,6 +65,14 @@ import {
   mergeRhizohLanguagePropagationHeadersV0,
   resolveRhizohLlmLanguageV0
 } from "./rhizohLanguagePropagationV0.js";
+import { trimRhizohLlmRequestBodyV0 } from "./rhizohLlmPayloadTrimV0.js";
+import { tryLocalReflexReplyV0 } from "./rhizohLocalReflexLayerV0.js";
+import {
+  runFastPrecheckFromTextV0,
+  publishFastPrecheckHitV0
+} from "./rhizohFastPrecheckV0.js";
+import { applyReflexEffectivenessFeedbackV0 } from "./rhizohConfidenceDecayGateV0.js";
+import { commitFinalUserVisibleLanguageV0 } from "./rhizohFinalLanguageCommitV0.js";
 import { extractPalAnchorFromLifeProjectionV0 } from "./expressiveRealityTransitionV0.js";
 import {
   loadRhizohProductSession,
@@ -268,6 +276,54 @@ export async function queryRhizohLLM({
   const trimmed = String(message || "").trim();
   const clientTraceId = createRhizohClientTraceIdV0();
   logRhizohHealth("ui_send", { traceId: clientTraceId, chars: trimmed.length });
+
+  applyReflexEffectivenessFeedbackV0(trimmed);
+
+  const precheck = runFastPrecheckFromTextV0(trimmed, { traceId: clientTraceId });
+  if (precheck) {
+    publishFastPrecheckHitV0(precheck, { traceId: clientTraceId, channel: "text" });
+    const committed = commitFinalUserVisibleLanguageV0(precheck.reply, {
+      source: "fast_precheck",
+      traceId: clientTraceId,
+      lockKey: "language_commit_lock"
+    });
+    logRhizohHealth("fast_precheck_bypass", {
+      traceId: clientTraceId,
+      intent: precheck.intent,
+      source: precheck.source,
+      latencyMs: precheck.latencyMs
+    });
+    return {
+      reply: committed.text,
+      directive: "FOCUS_RHIZOH",
+      source: "fast_precheck",
+      traceId: clientTraceId,
+      microIntent: precheck.intent,
+      llmBypass: true,
+      precheckLatencyMs: precheck.latencyMs
+    };
+  }
+
+  const reflexReply = tryLocalReflexReplyV0(trimmed, { traceId: clientTraceId });
+  if (reflexReply) {
+    logRhizohHealth("local_reflex_bypass", {
+      traceId: clientTraceId,
+      routeClass: reflexReply.routeClass,
+      microIntent: reflexReply.microIntent,
+      confidence: reflexReply.confidence
+    });
+    return {
+      reply: reflexReply.reply,
+      directive: reflexReply.directive,
+      source: reflexReply.source,
+      traceId: clientTraceId,
+      routeClass: reflexReply.routeClass,
+      microIntent: reflexReply.microIntent,
+      llmBypass: true,
+      reflexLatencyMs: reflexReply.latencyMs
+    };
+  }
+
   const dslParsed = parseDSL(trimmed);
   if (dslParsed) {
     if (typeof _deps.applyPersonalCastleDsl !== "function") {
@@ -642,7 +698,8 @@ export async function queryRhizohLLM({
       ...(rhizohRecallIdentityFeedback ? { rhizohRecallIdentityFeedback } : {})
     }
   };
-  if (slimVoicePath) {
+  const slimVoicePathEffective = slimVoicePath || isVoiceTurn;
+  if (slimVoicePathEffective) {
     contForLlm.rhizohMemoryEpisodes = Array.isArray(contForLlm.rhizohMemoryEpisodes)
       ? contForLlm.rhizohMemoryEpisodes.slice(-4)
       : [];
@@ -721,9 +778,8 @@ export async function queryRhizohLLM({
   const langBundle = buildRhizohLanguagePropagationBundleV0();
 
   try {
-    const fetchOpts = {
-      method: "POST",
-      body: JSON.stringify({
+    const { body: llmBody } = trimRhizohLlmRequestBodyV0(
+      {
         message,
         traceId: clientTraceId,
         provider,
@@ -753,7 +809,6 @@ export async function queryRhizohLLM({
           rhizohConversationLlmDirective: rhizohLlmDirective,
           rhizohMultilingual: rhizohMultilingualPack.context,
           rhizohMultilingualDirective: rhizohMultilingualPack.directive,
-          languagePropagation: langBundle.bodyFields.languagePropagation,
           /** Passive cohort routing — gateway resolves schema; client does not select. */
           ...(getRhizohCohortIdForRequestV0()
             ? { cohortId: getRhizohCohortIdForRequestV0() }
@@ -773,7 +828,13 @@ export async function queryRhizohLLM({
           language: resolveRhizohLlmLanguageV0().bcp47 || rhizohMultilingualPack.respondBcp47,
           generationMode: modeKey
         }
-      }),
+      },
+      { voiceTurn: isVoiceTurn }
+    );
+
+    const fetchOpts = {
+      method: "POST",
+      body: JSON.stringify(llmBody),
       headers: mergeRhizohLanguagePropagationHeadersV0(
         {
           "Content-Type": "application/json",

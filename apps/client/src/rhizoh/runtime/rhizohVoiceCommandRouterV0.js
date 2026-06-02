@@ -21,18 +21,22 @@ import { dispatchLocalCommandHandlerV0 } from "./rhizohLocalCommandHandlersV0.js
 import { prewarmCommandRoutingV0 } from "./rhizohCommandRoutePreheatV0.js";
 import { routeVoiceInputWithCommandGateV0 } from "./rhizohCommandGateV0.js";
 import { normalizeRhizohSttBrandPhoneticsV0 } from "./rhizohSttBrandNormalizeV0.js";
+import { classifyMicroIntentFromTextV0 } from "./rhizohMicroIntentRouterV0.js";
 
 export const RHIZOH_VOICE_COMMAND_ROUTER_CONTRACT_V0 = "rhizoh.voice_command_router.v0";
 export { RHIZOH_VOICE_COMMAND_EVENT_V0 } from "./rhizohLocalCommandHandlersV0.js";
 
 export const VOICE_INTENT_TYPE_V0 = Object.freeze({
   COMMAND: "command",
+  MICRO: "micro",
   HYBRID: "hybrid",
   LLM: "llm"
 });
 
 export const VOICE_ROUTE_EXECUTION_V0 = Object.freeze({
   LOCAL: "local",
+  /** Template / micro-dialogue — no LLM, no heavy context. */
+  FAST_LOCAL: "fast_local",
   /** @deprecated use HYBRID_LOCAL_FIRST */
   HYBRID: "hybrid_local_first",
   HYBRID_LOCAL_FIRST: "hybrid_local_first",
@@ -117,6 +121,19 @@ export function classifyVoiceIntentV0(input, ctx = {}) {
       semanticPayload: space.raw,
       localOnly: row?.localOnly === true,
       layer: row?.layer || null,
+      sttInferred: ctx.sttInferred || null
+    });
+  }
+
+  const micro = classifyMicroIntentFromTextV0(space.raw);
+  if (micro) {
+    return Object.freeze({
+      type: VOICE_INTENT_TYPE_V0.MICRO,
+      confidence: micro.confidence,
+      commandCandidate: null,
+      microIntent: micro.id,
+      semanticPayload: space.raw,
+      localOnly: true,
       sttInferred: ctx.sttInferred || null
     });
   }
