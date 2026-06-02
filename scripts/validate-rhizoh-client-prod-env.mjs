@@ -68,8 +68,11 @@ if (!hasEnvFile && !isCi) {
 }
 
 const token = String(env.VITE_GATEWAY_TOKEN || "").trim();
-const llm = String(env.VITE_GATEWAY_HTTP || env.VITE_RHIZOH_LLM_HTTP || "").trim();
-const live = String(env.VITE_LIVE_GATEWAY_BASE || "").trim();
+const gatewayUrl = String(env.VITE_GATEWAY_URL || "").trim().replace(/\/$/, "");
+const llm = String(
+  env.VITE_GATEWAY_HTTP || env.VITE_RHIZOH_LLM_HTTP || (gatewayUrl ? `${gatewayUrl}/rhizoh/llm` : "")
+).trim();
+const live = String(env.VITE_LIVE_GATEWAY_BASE || gatewayUrl || "").trim();
 const errors = [];
 
 if (token.length < 8) {
@@ -92,9 +95,23 @@ if (/localhost|127\.0\.0\.1/i.test(`${llm} ${live}`)) {
 
 if (errors.length) {
   console.error("[rhizoh-prod-env] Production build blocked:\n" + errors.map((e) => `  - ${e}`).join("\n"));
-  if (isCi && !hasEnvFile) {
+  console.error(
+    "[rhizoh-prod-env] diag:",
+    JSON.stringify({
+      isCi,
+      hasEnvFile,
+      tokenLen: token.length,
+      hasGatewayHttp: Boolean(llm),
+      hasLiveBase: Boolean(live),
+      hasGatewayUrl: Boolean(gatewayUrl),
+      viteGatewayKeys: Object.keys(readProcessViteEnv()).filter((k) => /GATEWAY|RHIZOH_LLM|LIVE_GATEWAY/i.test(k))
+    })
+  );
+  if (isCi) {
     console.error(
-      "[rhizoh-prod-env] CI hint: set secrets VITE_GATEWAY_TOKEN, VITE_GATEWAY_HTTP (or VITE_LIVE_GATEWAY_BASE) on the deploy workflow."
+      "[rhizoh-prod-env] CI hint: Repository secrets → Settings → Secrets → Actions:\n" +
+        "  VITE_GATEWAY_TOKEN (≥8 chars, same as Render CASTLE_GATEWAY_TOKEN)\n" +
+        "  VITE_GATEWAY_HTTP or VITE_RHIZOH_LLM_HTTP or VITE_GATEWAY_URL or VITE_LIVE_GATEWAY_BASE"
     );
   }
   process.exit(1);
