@@ -4,7 +4,11 @@
  */
 
 import { logCastleLifecycleV0, logVoiceInfoV0, logVoiceWarnV0 } from "./rhizohProductionLogNamespacesV0.js";
-import { resolveTurkishSpeechVoiceV0 } from "./prewarmSpeechSynthesisV0.js";
+import { readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
+import {
+  resolveSpeechBcp47ForUiLocaleV0,
+  resolveSpeechVoiceForUiLocaleV0
+} from "./rhizohSpeechLocaleV0.js";
 import { recordConversationMirrorFirstSpeechV0 } from "./rhizohConversationBehaviorMirrorV0.js";
 
 export const VOICE_INSTANT_ACK_SCHEMA = "castle.voice_instant_ack.v0";
@@ -121,13 +125,14 @@ export function speakVoiceInstantAckV0(phrase = pickVoiceInstantAckPhraseV0()) {
   const text = String(phrase || pickVoiceInstantAckPhraseV0()).trim();
   if (!text) return false;
 
+  const uiLocale = readUiLocaleV0();
   const utterance = new SpeechSynthesisUtterance(text.slice(0, 120));
-  utterance.lang = "tr-TR";
+  utterance.lang = resolveSpeechBcp47ForUiLocaleV0(uiLocale);
   utterance.rate = 1.08;
   utterance.pitch = 1.02;
   utterance.volume = 0.9;
-  const trVoice = resolveTurkishSpeechVoiceV0();
-  if (trVoice) utterance.voice = trVoice;
+  const localeVoice = resolveSpeechVoiceForUiLocaleV0(uiLocale);
+  if (localeVoice) utterance.voice = localeVoice;
 
   const finishAck = (reason) => {
     if (session !== ackSession) return;

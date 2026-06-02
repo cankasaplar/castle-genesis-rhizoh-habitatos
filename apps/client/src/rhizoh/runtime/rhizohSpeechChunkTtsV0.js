@@ -2,7 +2,11 @@
  * Chunk-first TTS — applies hot speech skeleton + micro-rhythm to Web Speech API.
  */
 
-import { resolveTurkishSpeechVoiceV0 } from "./prewarmSpeechSynthesisV0.js";
+import { readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
+import {
+  resolveSpeechBcp47ForUiLocaleV0,
+  resolveSpeechVoiceForUiLocaleV0
+} from "./rhizohSpeechLocaleV0.js";
 import { segmentSpeechTextV0 } from "./rhizohSpeechSentenceSegmenterV0.js";
 import {
   buildConversationContinuityGlueV0,
@@ -19,8 +23,8 @@ export const RHIZOH_SPEECH_CHUNK_TTS_SCHEMA_V0 = "castle.rhizoh.speech_chunk_tts
 export function applyRhizohSpeechHintsToUtteranceV0(utterance, hints = {}) {
   const feel = hints.microRhythmFeel || hints.skeleton?.microRhythmFeel;
   const sk = hints.skeleton;
-  const lang = String(hints.language || "tr").toLowerCase();
-  utterance.lang = lang.startsWith("tr") ? "tr-TR" : lang.startsWith("en") ? "en-US" : "tr-TR";
+  const locale = String(hints.language || readUiLocaleV0() || "en").toLowerCase();
+  utterance.lang = resolveSpeechBcp47ForUiLocaleV0(locale);
 
   const pacing = String(sk?.pacing || feel?.breakStyle === "hot_skeleton" ? "calm" : "").toLowerCase();
   if (pacing === "measured" || pacing === "hold") {
@@ -37,7 +41,7 @@ export function applyRhizohSpeechHintsToUtteranceV0(utterance, hints = {}) {
   const preempt = Number(feel?.preemptiveStart01);
   if (preempt > 0.12) utterance.rate = Math.min(1.12, utterance.rate + 0.04);
 
-  const voice = resolveTurkishSpeechVoiceV0();
+  const voice = resolveSpeechVoiceForUiLocaleV0(locale);
   if (voice) utterance.voice = voice;
   utterance.volume = 0.92;
 }
@@ -81,7 +85,7 @@ export async function speakRhizohReplyChunkedV0(text, opts = {}) {
       applyRhizohSpeechHintsToUtteranceV0(u, {
         skeleton: sk,
         microRhythmFeel: feel,
-        language: opts.language || expr?.projection?.language || glue?.language
+        language: opts.language || expr?.projection?.language || glue?.language || readUiLocaleV0()
       });
       if (prosody) {
         u.rate = prosody.rate;

@@ -123,16 +123,29 @@ function resolveGatewayProxySubPath(req) {
   return pathOnly.startsWith("/") ? pathOnly : `/${pathOnly}`;
 }
 
-function pickGatewayProxyForwardHeaders(req) {
+/**
+ * Explicit allowlist forward — do not spread req.headers (Firebase may pass unrelated keys).
+ * Epistemic: inject CASTLE_GATEWAY_TOKEN from Functions env so a tokenless client bundle still ingests.
+ */
+function pickGatewayProxyForwardHeaders(req, path = "") {
   const headers = {};
   const auth = req.headers.authorization;
   const ctype = req.headers["content-type"];
   const devUid = req.headers["x-castle-dev-uid"];
   const gwTok = req.headers["x-castle-gateway-token"];
-  if (auth) headers.Authorization = String(auth);
   if (ctype) headers["Content-Type"] = String(ctype);
   if (devUid) headers["X-Castle-Dev-Uid"] = String(devUid);
+
+  const isEpistemic = String(path || "").includes("/rhizoh/epistemic/");
+  const serverGw = String(process.env.CASTLE_GATEWAY_TOKEN || "").trim();
+
+  if (isEpistemic && serverGw) {
+    headers["X-Castle-Gateway-Token"] = serverGw;
+    return headers;
+  }
+
   if (gwTok) headers["X-Castle-Gateway-Token"] = String(gwTok);
+  if (auth) headers.Authorization = String(auth);
   return headers;
 }
 
@@ -161,7 +174,7 @@ exports.gatewayProxyV0 = onRequest(
     const url = `${upstream}${path}`;
     const timeoutMs = path.includes("/rhizoh/llm") ? 90000 : 15000;
     try {
-      const headers = pickGatewayProxyForwardHeaders(req);
+      const headers = pickGatewayProxyForwardHeaders(req, path);
       /** @type {RequestInit} */
       const init = { method: req.method, headers };
       try {

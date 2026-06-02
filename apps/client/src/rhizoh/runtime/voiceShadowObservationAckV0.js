@@ -4,7 +4,11 @@
  */
 
 import { logCastleLifecycleV0, logVoiceInfoV0 } from "./rhizohProductionLogNamespacesV0.js";
-import { resolveTurkishSpeechVoiceV0 } from "./prewarmSpeechSynthesisV0.js";
+import { readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
+import {
+  resolveSpeechBcp47ForUiLocaleV0,
+  resolveSpeechVoiceForUiLocaleV0
+} from "./rhizohSpeechLocaleV0.js";
 import { VOICE_DIRECTED_SPEECH_BAND } from "./voiceDirectedSpeechObservationV0.js";
 import { VOICE_ROUTER_REJECTION_LAYER_V0 } from "./voiceTranscriptConfidenceRouterV0.js";
 import {
@@ -96,9 +100,10 @@ export function shouldSpeakShadowObservationAckV0(meta = {}) {
 function speakShadowAckUtteranceV0(text, meta, mode, session) {
   if (typeof window === "undefined" || !window.speechSynthesis) return false;
 
+  const uiLocale = readUiLocaleV0();
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "tr-TR";
-  const voice = resolveTurkishSpeechVoiceV0();
+  utterance.lang = resolveSpeechBcp47ForUiLocaleV0(uiLocale);
+  const voice = resolveSpeechVoiceForUiLocaleV0(uiLocale);
   if (voice) utterance.voice = voice;
   utterance.rate = mode === SHADOW_ACK_MODE_V0.LIGHT ? 1.05 : 1.02;
   utterance.volume = mode === SHADOW_ACK_MODE_V0.LIGHT ? 0.75 : 0.88;

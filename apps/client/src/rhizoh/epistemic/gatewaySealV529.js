@@ -6,7 +6,10 @@ import {
   markEpistemicGatewayRoutesMissing,
   markEpistemicGatewayRoutesOk
 } from "./epistemicGatewayCapability.js";
-import { enqueueEpistemicLedgerEntry } from "./epistemicLedgerStreamV529.js";
+import {
+  buildEpistemicTransportHeadersV0,
+  enqueueEpistemicLedgerEntry
+} from "./epistemicLedgerStreamV529.js";
 
 /**
  * @param {string} text
@@ -30,15 +33,7 @@ export async function requestEpistemicSealFromGateway(body, idToken = "") {
   if (getEpistemicGatewayRoutesReachable() === false) {
     return { ok: false, error: "epistemic_remote_routes_missing" };
   }
-  const cfg = getCastleFlightConfig();
-  const headers = {
-    "Content-Type": "application/json",
-    "X-Castle-Dev-Uid": getOrCreateCastleDevUid()
-  };
-  const gt = String(cfg.gatewayToken || "").trim();
-  if (gt) headers["X-Castle-Gateway-Token"] = gt;
-  const tok = String(idToken || "").trim();
-  if (tok) headers.Authorization = `Bearer ${tok}`;
+  const headers = buildEpistemicTransportHeadersV0(idToken);
   try {
     const fetchOpts = {
       method: "POST",

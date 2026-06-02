@@ -229,4 +229,6 @@ Write-Host "OK $envProd" -ForegroundColor Green
 if (-not $firebaseMerged) {
   Write-Host "WARN: Firebase keys missing - Google sign-in will not work until VITE_FIREBASE_* is set." -ForegroundColor Yellow
 }
-Write-Host "Build: npm run build -w apps/client"
+Write-Host "Build (validates VITE_GATEWAY_TOKEN in .env.production): npm run build -w apps/client"
+Write-Host "Deploy order: 1) client build  2) firebase deploy --only hosting  3) firebase deploy --only functions:gatewayProxyV0"
+Write-Host "Functions env: CASTLE_GATEWAY_TOKEN must match VITE_GATEWAY_TOKEN (Firebase Console or firebase functions:secrets)"

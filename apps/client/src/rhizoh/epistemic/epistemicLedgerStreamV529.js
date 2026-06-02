@@ -6,20 +6,32 @@ import {
   markEpistemicGatewayRoutesMissing,
   markEpistemicGatewayRoutesOk
 } from "./epistemicGatewayCapability.js";
+import { isRhizohProductIngressHostV0 } from "../runtime/rhizohUiLocaleV0.js";
+
+let warnedMissingGatewayToken = false;
 
 const QUEUE = [];
 let flushTimer = 0;
 let inFlight = false;
 const WINDOW_MS = 220;
 
-function buildHeaders(idToken = "") {
+/**
+ * Epistemic ingest auth: prefer gateway transport (token + dev uid).
+ * Do not attach Firebase Bearer when gateway token is present — Render prod often
+ * has no Firebase Admin / CASTLE_JWT_SECRET; Bearer would shadow the transport path.
+ * @param {string} [idToken]
+ */
+export function buildEpistemicTransportHeadersV0(idToken = "") {
   const cfg = getCastleFlightConfig();
   const h = {
     "Content-Type": "application/json",
     "X-Castle-Dev-Uid": getOrCreateCastleDevUid()
   };
   const gt = String(cfg.gatewayToken || "").trim();
-  if (gt) h["X-Castle-Gateway-Token"] = gt;
+  if (gt) {
+    h["X-Castle-Gateway-Token"] = gt;
+    return h;
+  }
   const tok = String(idToken || "").trim();
   if (tok) h.Authorization = `Bearer ${tok}`;
   return h;
@@ -34,7 +46,7 @@ async function postBatch(entries, idToken) {
   try {
     const res = await fetch(`${String(base).replace(/\/+$/, "")}/rhizoh/epistemic/logs/batch`, {
       method: "POST",
-      headers: buildHeaders(idToken),
+      headers: buildEpistemicTransportHeadersV0(idToken),
       body: JSON.stringify({ entries }),
       ...(typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function"
         ? { signal: AbortSignal.timeout(12000) }
@@ -124,6 +136,13 @@ export function enqueueEpistemicLedgerEntry(entry, idToken = "") {
   const cfg = getCastleFlightConfig();
   const gt = String(cfg.gatewayToken || "").trim();
   const devUid = getOrCreateCastleDevUid();
+  if (!gt && !tok && isRhizohProductIngressHostV0() && !warnedMissingGatewayToken) {
+    warnedMissingGatewayToken = true;
+    console.warn(
+      "[Rhizoh epistemic] VITE_GATEWAY_TOKEN build'e gömülü değil — ledger batch atlanıyor. " +
+        "scripts/setup-rhizoh-t0-production.ps1 ile .env.production üretin ve Firebase hosting yeniden deploy edin."
+    );
+  }
   if (!tok && (!gt || !devUid)) return;
   QUEUE.push({ entry, idToken: tok });
   if (QUEUE.length > 200) QUEUE.splice(0, QUEUE.length - 200);

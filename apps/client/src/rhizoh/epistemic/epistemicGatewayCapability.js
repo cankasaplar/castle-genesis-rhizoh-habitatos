@@ -44,10 +44,15 @@ export function markEpistemicGatewayAuthFailedV0(kind, detail = "") {
   warned401 = true;
   const path =
     kind === "seal" ? "/rhizoh/epistemic/seal" : "/rhizoh/epistemic/logs/batch";
+  const jwtHint =
+    String(detail || "").includes("CASTLE_JWT_SECRET") || String(detail || "").includes("firebase")
+      ? " İstemci muhtemelen Firebase Bearer gönderiyor; build'de VITE_GATEWAY_TOKEN yok veya proxy token iletmiyor."
+      : "";
   console.warn(
     `[Rhizoh epistemic] POST ${path} → 401${detail ? ` (${detail})` : ""}. ` +
-      "Sohbet (/rhizoh/llm) çalışabilir; gözlem batch için Firebase oturumu veya gateway token + X-Castle-Dev-Uid gerekir. " +
-      "Render: CASTLE_GATEWAY_TOKEN istemci VITE_GATEWAY_TOKEN ile eşleşmeli; güncel gateway resolveEpistemicIngestActor deploy edilmeli."
+      "Sohbet (/rhizoh/llm) çalışabilir; gözlem batch için X-Castle-Gateway-Token + X-Castle-Dev-Uid (Firebase şart değil). " +
+      "Render: CASTLE_GATEWAY_TOKEN = VITE_GATEWAY_TOKEN; gateway resolveEpistemicIngestActor deploy edilmiş olmalı." +
+      jwtHint
   );
 }
 
