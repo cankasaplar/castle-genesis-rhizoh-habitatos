@@ -685,6 +685,29 @@ async function resolveHttpUser(req) {
   return { ok: false, reason: authResult?.reason || "auth_required" };
 }
 
+/**
+ * Epistemic ledger ingest — Firebase uid OR valid transport token + X-Castle-Dev-Uid.
+ * Prod disables CASTLE_ALLOW_DEV_HTTP_UID; LLM may still work while telemetry 401'd without this.
+ */
+async function resolveEpistemicIngestActor(req) {
+  if (REQUIRED_GATEWAY_TOKEN) {
+    const tok = readGatewayHttpToken(req);
+    if (tok && tok === REQUIRED_GATEWAY_TOKEN) {
+      const devUid = String(req.headers?.["x-castle-dev-uid"] || "").trim();
+      if (devUid) {
+        return { ok: true, uid: `gw-telemetry-${devUid.slice(0, 64)}`, mode: "gateway-token-dev-uid" };
+      }
+      return { ok: false, reason: "dev_uid_required" };
+    }
+    if (tok) {
+      return { ok: false, reason: "gateway_token_mismatch" };
+    }
+  }
+  const auth = await resolveHttpUser(req);
+  if (auth.ok) return auth;
+  return { ok: false, reason: auth.reason || "auth_required" };
+}
+
 /** Mesh actor: Firebase uid, dev header, or `guest:<uuid>` via header / `guestId` query (SSE cannot set headers). */
 async function resolveMeshActor(req) {
   const auth = await resolveHttpUser(req);
@@ -774,6 +797,20 @@ const httpServer = createServer(async (req, res) => {
       entry: __filename,
       time: Date.now(),
       genesis: true
+    });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/rhizoh/epistemic/__probe") {
+    sendJson(res, 200, {
+      ok: true,
+      epistemicIngestActorV2: true,
+      routes: {
+        seal: rhizohRuntime.routes.epistemicSeal,
+        logsBatch: rhizohRuntime.routes.epistemicLogsBatch
+      },
+      hasGatewayToken: Boolean(REQUIRED_GATEWAY_TOKEN),
+      gatewayTokenLen: REQUIRED_GATEWAY_TOKEN ? REQUIRED_GATEWAY_TOKEN.length : 0
     });
     return;
   }
@@ -3124,14 +3161,7 @@ const httpServer = createServer(async (req, res) => {
 
   if (req.method === "POST" && pathname === rhizohRuntime.routes.epistemicLogsBatch) {
     try {
-      if (REQUIRED_GATEWAY_TOKEN) {
-        const tok = readGatewayHttpToken(req);
-        if (tok !== REQUIRED_GATEWAY_TOKEN) {
-          sendJson(res, 401, { ok: false, error: "gateway_token_required" });
-          return;
-        }
-      }
-      const auth = await resolveHttpUser(req);
+      const auth = await resolveEpistemicIngestActor(req);
       if (!auth.ok) {
         sendJson(res, 401, { ok: false, error: auth.reason || "auth_required" });
         return;

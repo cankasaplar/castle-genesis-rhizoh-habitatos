@@ -26,7 +26,10 @@ export function initRhizoh() {
   console.log("🧭 [GENESIS_BOOT] routes initializing...");
   console.log("🧭 [GENESIS_BOOT] expected routes:", {
     runtime: "/rhizoh/genesis/runtime",
-    stream: "/rhizoh/genesis/stream"
+    stream: "/rhizoh/genesis/stream",
+    epistemicSeal: "/rhizoh/epistemic/seal",
+    epistemicLogsBatch: "/rhizoh/epistemic/logs/batch",
+    rhizohLlm: "/rhizoh/llm"
   });
   const telemetry = {
     initOpenTelemetry: () => initCastleGatewayOpenTelemetry()
