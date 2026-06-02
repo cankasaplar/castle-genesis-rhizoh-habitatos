@@ -151,6 +151,34 @@ function finishPrecheckHitV0({ intent, reply, source, normalized, t0 }) {
  * @param {ReturnType<typeof runFastPrecheckFromTextV0>} hit
  * @param {{ traceId?: string, channel?: string }} [opts]
  */
+/** Read-only probe for voice gate — no logging or hot-phrase writes. */
+export function probeFastPrecheckMatchV0(input) {
+  return runFastPrecheckFromTextV0(input);
+}
+
+/**
+ * Prod-safe idle globals until first reflex turn (avoids `undefined` in DevTools).
+ */
+export function installRhizohReflexDebugGlobalsV0() {
+  if (typeof window === "undefined") return;
+  try {
+    if (!window.__CASTLE_RHIZOH_FAST_PRECHECK__) {
+      window.__CASTLE_RHIZOH_FAST_PRECHECK__ = Object.freeze({
+        status: "awaiting_first_turn",
+        schema: RHIZOH_FAST_PRECHECK_SCHEMA_V0
+      });
+    }
+    if (!window.__CASTLE_RHIZOH_REFLEX_STABILITY__) {
+      window.__CASTLE_RHIZOH_REFLEX_STABILITY__ = Object.freeze({
+        status: "awaiting_first_turn",
+        heatmap: Object.freeze({ local_fast: 0, local: 0, llm: 0, total: 0, suppressionRate01: 0 })
+      });
+    }
+  } catch {
+    /* noop */
+  }
+}
+
 export function publishFastPrecheckHitV0(hit, opts = {}) {
   if (!hit) return;
   const loc = resolveOutputLanguageCodeV0();

@@ -14,6 +14,10 @@ import {
 import { isDirectedSpeechGateReleaseEnabledV0 } from "./isDirectedSpeechGateReleaseEnabledV0.js";
 import { recordConversationMirrorVoiceRouteV0 } from "./rhizohConversationBehaviorMirrorV0.js";
 import { buildVoiceConfidenceBreakdownV0 } from "./voiceConfidenceBreakdownV0.js";
+import { probeFastPrecheckMatchV0 } from "./rhizohFastPrecheckV0.js";
+
+/** Known micro-intent phrases may execute below interaction threshold (not hallucinations). */
+const REFLEX_PRECHECK_VOICE_CONF_FLOOR_V0 = 0.45;
 
 export const VOICE_TRANSCRIPT_CONFIDENCE_ROUTER_SCHEMA =
   "castle.rhizoh.voice_transcript_confidence_router.v0";
@@ -250,6 +254,19 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
   }
 
   if (Number.isFinite(conf) && conf < VOICE_TRANSCRIPT_SUSPICIOUS_CONF_V3) {
+    if (conf >= REFLEX_PRECHECK_VOICE_CONF_FLOOR_V0 && probeFastPrecheckMatchV0(text)) {
+      return finalizeRouteV0({
+        executionAccepted: true,
+        observationForward: false,
+        reason: "reflex_precheck_bypass",
+        source,
+        band: observation.band,
+        confidence: conf,
+        threshold: VOICE_TRANSCRIPT_SUSPICIOUS_CONF_V3,
+        reflexPrecheck: true,
+        sanityAccepted: true
+      });
+    }
     return finalizeRouteV0({
       executionAccepted: false,
       observationForward: text.length >= 3,

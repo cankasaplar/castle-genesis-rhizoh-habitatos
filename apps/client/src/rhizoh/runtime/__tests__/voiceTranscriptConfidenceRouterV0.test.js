@@ -38,6 +38,18 @@ describe("voiceTranscriptConfidenceRouterV0", () => {
     expect(route.rejectionLayer).toBe(VOICE_ROUTER_REJECTION_LAYER_V0.INTERACTION);
   });
 
+  it("reflex precheck bypasses interaction low_confidence for short greeting", () => {
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "merhaba",
+      confidence: 0.55,
+      strategy: "split_merged",
+      source: "mic_v3",
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(["reflex_precheck_bypass", "voice_ok"].includes(route.reason)).toBe(true);
+  });
+
   it("accepts execution above threshold", () => {
     const route = routeVoiceTranscriptConfidenceV0({
       text: "Rhizoh, şimdi beni duyabiliyor musun?",
