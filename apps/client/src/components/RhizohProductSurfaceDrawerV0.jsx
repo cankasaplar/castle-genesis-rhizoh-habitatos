@@ -1,33 +1,15 @@
-import React, { memo } from "react";
+import React, { memo, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { KernelConsolePanel } from "../studio/ui/KernelConsolePanel";
 import { DirectorDeckPanel } from "../studio/ui/DirectorDeckPanel";
 import { WorldLivingMapPanel } from "../studio/ui/WorldLivingMapPanel";
 import { ProductProfilePanel } from "../studio/ui/ProductProfilePanel";
 import { RuntimeHealthPanel } from "../studio/ui/RuntimeHealthPanel";
-
-const SURFACE_COPY = Object.freeze({
-  hall: {
-    title: "Hall",
-    blurb: "Main Hall presence · avatar projection · voice ring."
-  },
-  greenroom: {
-    title: "Green Room",
-    blurb: "Canlı oturum hazırlığı · mesh presence · yayın köprüsü."
-  },
-  broadcast: {
-    title: "Broadcast",
-    blurb: "Yayın yönlendirme · GreenRoom live trace · audience mesh."
-  },
-  studio: {
-    title: "Studio",
-    blurb: "Kernel console · agent runtime · yaratım oturumu."
-  },
-  profile: {
-    title: "Profile",
-    blurb: "Kimlik · Academy gözlem · süreklilik profili."
-  }
-});
+import {
+  resolveProductDrawerChromeCopyV0,
+  resolveProductDrawerSurfaceCopyV0
+} from "../rhizoh/runtime/rhizohProductCopyI18nV0.js";
+import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
 
 /**
  * @param {{
@@ -35,7 +17,9 @@ const SURFACE_COPY = Object.freeze({
  *   open: boolean,
  *   onClose: () => void,
  *   auth?: object | null,
- *   gatewayOrigin?: string
+ *   gatewayOrigin?: string,
+ *   runtimeHealth?: object | null,
+ *   uiLocale?: string
  * }} props
  */
 export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDrawerV0({
@@ -43,11 +27,15 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
   open,
   onClose,
   auth = null,
-  gatewayOrigin = ""
+  gatewayOrigin = "",
+  runtimeHealth = null,
+  uiLocale
 }) {
-  if (!open || surface === "world") return null;
+  const locale = uiLocale || readUiLocaleV0();
+  const chrome = useMemo(() => resolveProductDrawerChromeCopyV0(locale), [locale]);
+  const meta = useMemo(() => resolveProductDrawerSurfaceCopyV0(surface, locale), [surface, locale]);
 
-  const meta = SURFACE_COPY[surface] || { title: surface, blurb: "" };
+  if (!open || surface === "world") return null;
 
   return (
     <div
@@ -66,7 +54,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
           onClick={onClose}
           className="rounded-lg border border-white/15 px-2 py-1 text-[9px] uppercase tracking-wide text-white/60 hover:text-white"
         >
-          Kapat
+          {chrome.close}
         </button>
       </div>
 
@@ -88,7 +76,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
             <DirectorDeckPanel />
             {surface === "broadcast" ? (
               <p className="rounded-lg border border-fuchsia-400/25 bg-fuchsia-950/20 px-3 py-2 text-[10px] text-fuchsia-100/85 normal-case">
-                Live broadcast mesh gateway üzerinden açılır. Bağlantı rozeti yeşil olmalı.
+                {chrome.broadcastNote}
               </p>
             ) : null}
           </div>
@@ -105,7 +93,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
         {surface === "profile" ? (
           <div className="space-y-3">
             <ProductProfilePanel auth={auth} />
-            <RuntimeHealthPanel gatewayBaseUrl={gatewayOrigin} />
+            <RuntimeHealthPanel health={runtimeHealth} gatewayBaseUrl={gatewayOrigin} />
             <QuickLinks
               links={[
                 { to: "/academy/research", label: "Academy · Research" },

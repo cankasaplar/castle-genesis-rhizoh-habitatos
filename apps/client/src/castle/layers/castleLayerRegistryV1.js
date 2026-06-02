@@ -66,12 +66,17 @@ export const CASTLE_LAYER_REGISTRY_V1 = Object.freeze({
   }),
   voice_v3_dock_mic: Object.freeze({
     status: "active",
-    owner: "RhizohConversationDockV0",
-    mount: "advanced_aux",
-    render: false,
-    renderInAdvanced: true,
-    envGate: "VITE_RHIZOH_VOICE_ENGINE_V3=1",
-    note: "Push-to-talk mic in conversation dock — Gelişmiş only"
+    owner: "RhizohT0ShellChromeV1",
+    mount: "t0_shell",
+    render: true,
+    note: "Product dock mic — unified input row (always visible in T0 shell)"
+  }),
+  product_camera_dock: Object.freeze({
+    status: "active",
+    owner: "RhizohT0ShellChromeV1",
+    mount: "t0_shell",
+    render: true,
+    note: "Product dock camera — unified input row"
   }),
   spatial_product_shell: Object.freeze({
     status: "deprecated",

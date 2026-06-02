@@ -1,5 +1,9 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { isRhizohT0FirstMatchIdentityV0 } from "../rhizohT0FirstMatchIdentityV0.js";
+import {
+  isRhizohT0FirstMatchIdentityV0,
+  resolveRhizohT0CapabilityHaloLayoutV0,
+  resolveRhizohT0ChatBottomCssV0
+} from "../rhizohT0FirstMatchIdentityV0.js";
 
 describe("rhizohT0FirstMatchIdentityV0", () => {
   afterEach(() => {
@@ -22,5 +26,12 @@ describe("rhizohT0FirstMatchIdentityV0", () => {
     vi.stubEnv("DEV", false);
     vi.stubEnv("VITE_RHIZOH_T0_FIRST_MATCH", "0");
     expect(isRhizohT0FirstMatchIdentityV0()).toBe(false);
+  });
+
+  it("places capability halo at viewport interaction hub", () => {
+    const layout = resolveRhizohT0CapabilityHaloLayoutV0();
+    expect(layout.top).toContain("vh");
+    expect(layout.transform).toContain("translate");
+    expect(layout.zIndex).toBeGreaterThanOrEqual(68);
   });
 });

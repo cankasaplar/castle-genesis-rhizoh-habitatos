@@ -4,6 +4,12 @@ import { ISTANBUL_GEO, ISTANBUL_POI } from "./geo.js";
 import { getCastleFlightConfig } from "./castleFlightConfig.js";
 import { isCesiumIonTokenUsableV0 } from "./cesiumIonGateV0.js";
 import { cesiumSceneOverBudget } from "./cesiumSceneBudget.js";
+import {
+  configureOsmBuildingsTilesetV0,
+  isCesiumCanvasRenderableV0,
+  removeOsmBuildingsTilesetV0,
+  sanitizeCesiumCameraV0
+} from "./cesiumRenderGuardV0.js";
 import { isWorldLayerEnabled } from "../rhizoh/runtime/castleWorldLayerGateV0.js";
 import { subscribeCastleDroneTelemetry } from "./telemetryHub.js";
 import { installCesiumWorldProjectionBind } from "./cesiumWorldProjectionBind.js";
@@ -19,6 +25,8 @@ import {
   buildRhizohEpistemicWorldPresenceForBootstrapV0
 } from "../rhizoh/spatial/cesiumEpistemicBootstrapV0.js";
 import { resyncCesiumEpistemicRuntimeWindowMirrorV0 } from "../rhizoh/spatial/cesiumEpistemicRuntimeStoreV0.js";
+import { applyCesiumImageryForMapToolV0 } from "../rhizoh/runtime/rhizohCesiumImageryProfileV0.js";
+import { readRhizohWorldMapToolV0 } from "../rhizoh/runtime/rhizohWorldMapToolV0.js";
 import { maybeInstallPerceptionDebugObserverV0 } from "../rhizoh/spatial/perceptionDebugRuntimeV0.js";
 import {
   isEpistemicSimResearchEnabledV0,
@@ -382,6 +390,14 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         });
       };
 
+      const cameraSafeAnchor = () => ({
+        lon: fatihSafe.lon,
+        lat: fatihSafe.lat,
+        height: 5200,
+        headingDeg: 18,
+        pitchDeg: -35
+      });
+
       const applyCesiumSafeMode = () => {
         try {
           viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
@@ -395,13 +411,41 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
           /* noop */
         }
         try {
-          if (osmBuildingsPrimitive && !osmBuildingsPrimitive.isDestroyed?.()) {
-            viewer.scene.primitives.remove(osmBuildingsPrimitive);
-            osmBuildingsPrimitive = null;
-          }
+          removeOsmBuildingsTilesetV0(viewer, osmBuildingsPrimitive);
+          osmBuildingsPrimitive = null;
         } catch {
           /* noop */
         }
+        try {
+          teardownRhizohEpistemicBootstrap();
+        } catch {
+          /* noop */
+        }
+        teardownRhizohEpistemicBootstrap = () => {};
+        try {
+          teardownEpistemicGraphViz();
+        } catch {
+          /* noop */
+        }
+        teardownEpistemicGraphViz = () => {};
+        try {
+          teardownEpistemicSimResearch();
+        } catch {
+          /* noop */
+        }
+        teardownEpistemicSimResearch = () => {};
+        try {
+          teardownPerceptionDebug();
+        } catch {
+          /* noop */
+        }
+        teardownPerceptionDebug = () => {};
+        try {
+          teardownSovereignGeographicPick();
+        } catch {
+          /* noop */
+        }
+        teardownSovereignGeographicPick = () => {};
         try {
           uninstallWorldProjection();
           uninstallWorldProjection = () => {};
@@ -433,14 +477,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
           /* noop */
         }
         try {
-          viewer.camera.setView({
-            destination: Cesium.Cartesian3.fromDegrees(fatihSafe.lon, fatihSafe.lat, 5200),
-            orientation: {
-              heading: Cesium.Math.toRadians(18),
-              pitch: Cesium.Math.toRadians(-35),
-              roll: 0
-            }
-          });
+          sanitizeCesiumCameraV0(viewer, Cesium, cameraSafeAnchor());
         } catch {
           /* noop */
         }
@@ -464,15 +501,26 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
           }
         }
 
-        // İlk hatada güvenli mod; her kare requestRender() sonsuz RangeError döngüsü yapıyordu.
+        applyCesiumSafeMode();
+
         if (renderErrorCount === 1) {
-          applyCesiumSafeMode();
+          // Aynı karede requestRender → PVS hâlâ patlayabilir; bir sonraki karede tek deneme.
           try {
-            viewer.useDefaultRenderLoop = true;
-            viewer.scene.requestRender();
+            viewer.useDefaultRenderLoop = false;
           } catch {
             /* noop */
           }
+          requestAnimationFrame(() => {
+            if (dead || cancelled || viewerRef.current !== viewer) return;
+            try {
+              sanitizeCesiumCameraV0(viewer, Cesium, cameraSafeAnchor());
+              if (!isCesiumCanvasRenderableV0(viewer)) return;
+              viewer.useDefaultRenderLoop = true;
+              viewer.scene.requestRender();
+            } catch {
+              /* noop */
+            }
+          });
           return;
         }
 
@@ -682,6 +730,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
           if (!vanilla && ionUsable && cfg.cesiumOsmBuildings) {
             osmBuildingsPrimitive = await Cesium.createOsmBuildingsAsync();
             if (dead || cancelled || viewerRef.current !== viewer) return;
+            configureOsmBuildingsTilesetV0(osmBuildingsPrimitive);
             viewer.scene.primitives.add(osmBuildingsPrimitive);
             hasOsmBuildings = true;
             viewer.scene.requestRender();
@@ -690,9 +739,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         },
         () => {
           try {
-            if (osmBuildingsPrimitive && !osmBuildingsPrimitive.isDestroyed?.()) {
-              viewer.scene.primitives.remove(osmBuildingsPrimitive);
-            }
+            removeOsmBuildingsTilesetV0(viewer, osmBuildingsPrimitive);
           } catch {
             /* noop */
           }
@@ -819,8 +866,82 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         applyCesiumSafeMode();
       }
 
+      let currentImageryProfile = cfg.satelliteTileTemplate ? "satellite" : "city_3d";
+
+      const applyImageryProfile = async (profileId) => {
+        if (!viewer || viewer.isDestroyed?.()) return false;
+        const profile = String(profileId || "streets");
+        currentImageryProfile = profile;
+        try {
+          viewer.imageryLayers.removeAll(true);
+          if (profile === "satellite") {
+            if (cfg.satelliteTileTemplate) {
+              viewer.imageryLayers.addImageryProvider(
+                new Cesium.UrlTemplateImageryProvider({ url: cfg.satelliteTileTemplate })
+              );
+            } else if (ionUsable) {
+              try {
+                const provider = await Cesium.IonImageryProvider.fromAssetId(2);
+                viewer.imageryLayers.addImageryProvider(provider);
+              } catch {
+                viewer.imageryLayers.addImageryProvider(
+                  new Cesium.OpenStreetMapImageryProvider({ url: "https://tile.openstreetmap.org/" })
+                );
+              }
+            } else {
+              viewer.imageryLayers.addImageryProvider(
+                new Cesium.OpenStreetMapImageryProvider({ url: "https://tile.openstreetmap.org/" })
+              );
+            }
+          } else {
+            viewer.imageryLayers.addImageryProvider(
+              new Cesium.OpenStreetMapImageryProvider({ url: "https://tile.openstreetmap.org/" })
+            );
+          }
+
+          const wantBuildings = profile === "city_3d";
+          if (osmBuildingsPrimitive && !osmBuildingsPrimitive.isDestroyed?.()) {
+            osmBuildingsPrimitive.show = wantBuildings;
+          }
+
+          if (profile === "terrain" && !vanilla && ionUsable && cfg.cesiumWorldTerrain) {
+            try {
+              const terrain = await Cesium.createWorldTerrainAsync();
+              viewer.terrainProvider = terrain;
+              viewer.scene.globe.depthTestAgainstTerrain = true;
+            } catch {
+              viewer.scene.globe.depthTestAgainstTerrain = false;
+            }
+          } else {
+            try {
+              viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+            } catch {
+              /* noop */
+            }
+            viewer.scene.globe.depthTestAgainstTerrain = false;
+          }
+
+          viewer.scene.requestRender();
+          return true;
+        } catch (e) {
+          console.warn("[CASTLE_CESIUM] setImageryProfile", profile, e);
+          return false;
+        }
+      };
+
       window.__CASTLE_CESIUM__ = {
         ready: true,
+        /** streets | satellite | city_3d | terrain */
+        getImageryProfile() {
+          return currentImageryProfile;
+        },
+        setImageryProfile: applyImageryProfile,
+        setOsmBuildingsVisible(visible) {
+          if (osmBuildingsPrimitive && !osmBuildingsPrimitive.isDestroyed?.()) {
+            osmBuildingsPrimitive.show = !!visible;
+            viewer.scene.requestRender();
+          }
+        },
         /** RealityDirector + Apex kuyruk kapısı — trackedCameraFlyTo ile güncellenir */
         isFlying: false,
         vanillaRealMap: vanilla,
@@ -964,6 +1085,11 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         /* noop */
       }
 
+      const bootMapTool = readRhizohWorldMapToolV0();
+      if (bootMapTool !== "globe") {
+        applyCesiumImageryForMapToolV0(bootMapTool, { maxAttempts: 64 });
+      }
+
       try {
         teardownPerceptionDebug = maybeInstallPerceptionDebugObserverV0(viewer, Cesium, () => {
           try {
@@ -1059,6 +1185,14 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       if (!vanilla) {
         preRender = () => {
           const v = viewerRef.current;
+          if (v && v === viewer) {
+            try {
+              if (!isCesiumCanvasRenderableV0(v)) return;
+              sanitizeCesiumCameraV0(v, Cesium, cameraSafeAnchor());
+            } catch {
+              /* noop */
+            }
+          }
           if (v && activeRef.current && navStateRef.current.enabled) {
             try {
               const keys = navStateRef.current.keys;

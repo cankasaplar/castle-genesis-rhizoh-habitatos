@@ -25,7 +25,6 @@ const RETRYABLE_EMPTY_CODES = new Set([
   "whisper_artifact",
   "repeated_hallucination",
   "internal_repetition",
-  "whisper_default_conf",
   "empty"
 ]);
 

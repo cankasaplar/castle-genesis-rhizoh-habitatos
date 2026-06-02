@@ -52,7 +52,7 @@ function surfaceLabelV0(surface, tr) {
         studio: "Stüdyo",
         broadcast: "Yayın",
         hall: "Salon",
-        greenroom: "Green Room",
+        greenroom: "Hazırlık",
         profile: "Profil"
       }
     : {
@@ -60,7 +60,7 @@ function surfaceLabelV0(surface, tr) {
         studio: "Studio",
         broadcast: "Broadcast",
         hall: "Hall",
-        greenroom: "Green Room",
+        greenroom: "Hazırlık",
         profile: "Profile"
       };
   return map[s] || s;
@@ -144,15 +144,15 @@ export function resolveEntryContinuityV0(input = {}) {
   let orientationLine;
   if (entryMode === FCL_ENTRY_FIRST_V0) {
     orientationLine = tr
-      ? "Buradasın · süreklilik yüzeyi hazır · Keşfet ile başlayabilirsin"
+      ? "Hoş geldin · Ana sahne hazır — yaz, konuş veya ortadaki tekerlekten başla"
       : "You are here · continuity surface ready · start with Explore";
   } else if (entryMode === FCL_ENTRY_RETURN_V0) {
     orientationLine = tr
-      ? `Geri geldin · son: ${intentLabelV0(lastVisit.intent, true)} · ${surfaceLabelV0(lastVisit.surface, true)}`
+      ? `Tekrar hoş geldin · Son kaldığın yer: ${surfaceLabelV0(lastVisit.surface, true)}`
       : `Welcome back · last: ${intentLabelV0(lastVisit.intent, false)} · ${surfaceLabelV0(lastVisit.surface, false)}`;
   } else {
     orientationLine = tr
-      ? `Buradasın · ${intentLabelV0(intent, true)} · ${surfaceLabelV0(surface, true)}`
+      ? `Buradasın · ${surfaceLabelV0(surface, true)}`
       : `You are here · ${intentLabelV0(intent, false)} · ${surfaceLabelV0(surface, false)}`;
   }
 
@@ -410,22 +410,22 @@ export function resolveFlowContinuityV0(input = {}) {
   const returnIntent = hasPrior ? priorIntent : originIntent;
 
   const originLine = tr
-    ? `Başlangıç · ${intentLabelV0(originIntent, true)} · ${surfaceLabelV0(originSurface, true)}`
+    ? `Başladığın yer: ${surfaceLabelV0(originSurface, true)}`
     : `Origin · ${intentLabelV0(originIntent, false)} · ${surfaceLabelV0(originSurface, false)}`;
 
   const continueLine = tr
-    ? `Devam · ${intentLabelV0(currentIntent, true)} · ${surfaceLabelV0(currentSurface, true)}`
+    ? `Şimdi: ${surfaceLabelV0(currentSurface, true)}`
     : `Continue · ${intentLabelV0(currentIntent, false)} · ${surfaceLabelV0(currentSurface, false)}`;
 
-  const rhythmLine = tr ? `Ritim · ${rhythm}` : `Rhythm · ${rhythm}`;
+  const rhythmLine = tr ? "" : `Rhythm · ${rhythm}`;
 
   const returnLine = canReturn
     ? tr
-      ? `Geri dönebilirsin · ${surfaceLabelV0(returnSurface, true)}`
+      ? `Önceki yere dön (${surfaceLabelV0(returnSurface, true)})`
       : `You may return · ${surfaceLabelV0(returnSurface, false)}`
     : null;
 
-  const flowLine = `${originLine} → ${continueLine}`;
+  const flowLine = tr ? `${continueLine}` : `${originLine} → ${continueLine}`;
 
   const core = Object.freeze({
     contract_version: RHIZOH_FLOW_CONTINUITY_CONTRACT_V0,

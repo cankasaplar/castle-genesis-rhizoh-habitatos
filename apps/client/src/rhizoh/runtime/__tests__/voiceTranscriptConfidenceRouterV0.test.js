@@ -6,7 +6,7 @@ import {
 import { VOICE_DIRECTED_SPEECH_BAND } from "../voiceDirectedSpeechObservationV0.js";
 
 describe("voiceTranscriptConfidenceRouterV0", () => {
-  it("shadow-forwards whisper_default_conf on long capture + conversational TR", () => {
+  it("observation-passes whisper_default_conf instead of killing execution", () => {
     const route = routeVoiceTranscriptConfidenceV0({
       text: "Mesela bugün nasılsın? Biraz sohbet edelim.",
       confidence: 0.55,
@@ -14,11 +14,12 @@ describe("voiceTranscriptConfidenceRouterV0", () => {
       source: "mic_v3",
       recordedMs: 8400
     });
-    expect(route.executionAccepted).toBe(false);
+    expect(route.executionAccepted).toBe(true);
     expect(route.observationForward).toBe(true);
     expect(route.reason).toBe("whisper_default_conf");
     expect(route.shadowForward).toBe(true);
-    expect(route.rejectionLayer).toBe(VOICE_ROUTER_REJECTION_LAYER_V0.SANITY);
+    expect(route.observationPass).toBe(true);
+    expect(route.sanityAccepted).toBe(false);
   });
 
   it("blocks execution on low_confidence without lowering threshold", () => {

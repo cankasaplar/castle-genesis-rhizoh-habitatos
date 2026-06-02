@@ -66,28 +66,16 @@ function stateForElapsedV0(elapsedMs, timeline) {
  * @param {string} state
  * @param {string} entryMode
  */
-function visibilityForStateV0(state, entryMode) {
-  const isReturn = entryMode === FCL_ENTRY_RETURN_V0;
-  const playReady = state === CEOL_STATE_PLAY_READY_V0;
-
+function visibilityForStateV0(_state, _entryMode) {
+  /** CEOL no longer floods the screen — chrome panels default closed; user toggles open. */
   return Object.freeze({
     show_world_substrate: true,
-    show_context_strip:
-      playReady ||
-      state === CEOL_STATE_ORIENTATION_EMERGE_V0 ||
-      state === CEOL_STATE_SOFT_INVITE_V0 ||
-      state === CEOL_STATE_FLOW_THREAD_V0,
-    show_soft_affordances:
-      playReady ||
-      state === CEOL_STATE_SOFT_INVITE_V0 ||
-      (isReturn && state === CEOL_STATE_FLOW_THREAD_V0),
-    show_flow_continuity:
-      playReady ||
-      state === CEOL_STATE_FLOW_THREAD_V0 ||
-      (isReturn && state === CEOL_STATE_ORIENTATION_EMERGE_V0),
-    show_intent_anchors: playReady,
-    show_surface_rail: playReady,
-    show_next_action_anchor: playReady,
+    show_context_strip: false,
+    show_soft_affordances: false,
+    show_flow_continuity: false,
+    show_intent_anchors: false,
+    show_surface_rail: false,
+    show_next_action_anchor: false,
     allow_input_focus: true
   });
 }

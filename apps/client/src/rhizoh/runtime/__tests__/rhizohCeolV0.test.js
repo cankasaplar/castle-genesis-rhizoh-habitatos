@@ -20,10 +20,12 @@ describe("rhizohCeolV0", () => {
     expect(c.no_empty_screen_guarantee).toBeTruthy();
   });
 
-  it("PLAY_READY after 5s first-time", () => {
+  it("PLAY_READY after 5s without auto-opening chrome panels", () => {
     const c = resolveCeolChoreographyV0({ elapsedMs: 5200, entryMode: FCL_ENTRY_FIRST_V0 });
     expect(c.choreography_state).toBe(CEOL_STATE_PLAY_READY_V0);
-    expect(c.visibility.show_intent_anchors).toBe(true);
+    expect(c.play_ready).toBe(true);
+    expect(c.visibility.show_intent_anchors).toBe(false);
+    expect(c.visibility.show_world_substrate).toBe(true);
   });
 
   it("return path compresses to FLOW_THREAD earlier", () => {

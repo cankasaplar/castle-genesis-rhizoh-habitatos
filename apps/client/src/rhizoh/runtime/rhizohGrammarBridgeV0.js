@@ -12,7 +12,12 @@ import { triggerMessageMicroRtlV0 } from "./expressiveRealityMicroTransitionV0.j
 
 /**
  * @param {string} utterance
- * @param {{ onEnterSurface?: (surface: string) => void, emitMicroRtl?: boolean }} [opts]
+ * @param {{
+ *   onEnterSurface?: (surface: string) => void,
+ *   onOpenMapTool?: (mapTool?: string) => void,
+ *   onOpenPanel?: (panelId: string) => void,
+ *   emitMicroRtl?: boolean
+ * }} [opts]
  */
 export function applyGrammarFromUtteranceV0(utterance, opts = {}) {
   const resolution = resolveGrammarFromUtteranceV0(utterance);
@@ -27,7 +32,22 @@ export function applyGrammarFromUtteranceV0(utterance, opts = {}) {
     );
   }
 
-  if (resolution.action === "ENTER_SURFACE" && resolution.surface) {
+  if (resolution.action === "OPEN_PANEL" && resolution.panel) {
+    opts.onOpenPanel?.(String(resolution.panel));
+    pushT0ContinuityPulseV0(`Grammar · panel ${resolution.panel}`, "grammar_panel");
+    if (opts.emitMicroRtl !== false) {
+      triggerMessageMicroRtlV0({ detail: { source: "grammar_panel_v0" } });
+    }
+  } else if (resolution.action === "OPEN_MAP_TOOL") {
+    opts.onOpenMapTool?.(String(resolution.mapTool || "city_map"));
+    pushT0ContinuityPulseV0(
+      `Grammar · harita · ${String(resolution.mapTool || "city_map")}`,
+      "grammar_map_tool"
+    );
+    if (opts.emitMicroRtl !== false) {
+      triggerMessageMicroRtlV0({ detail: { source: "grammar_map_tool_v0" } });
+    }
+  } else if (resolution.action === "ENTER_SURFACE" && resolution.surface) {
     opts.onEnterSurface?.(String(resolution.surface));
     pushT0ContinuityPulseV0(
       `Grammar · ${resolution.surface}`,

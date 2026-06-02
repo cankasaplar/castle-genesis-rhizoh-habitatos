@@ -5,11 +5,16 @@
 
 import { resolveGrammarFromUtteranceV0 } from "./rhizohGrammarConstitutionV0.js";
 import {
-  formatLocalIntentReplyTrV0,
-  formatLocalSurfaceEnterReplyTrV0,
-  RHIZOH_LOCAL_ACTION_BINDING_V0
-} from "./rhizohProductCopyV0.js";
+  formatLocalSurfaceEnterReplyV0,
+  formatPlainIntentChosenV0,
+  resolveLocalMapToolLineV0,
+  resolveLocalPanelOpenLineV0
+} from "./rhizohProductCopyI18nV0.js";
+import { readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
 import { T0_INTENT_ANCHORS_V0 } from "./t0ContextStripV0.js";
+
+export const RHIZOH_LOCAL_ACTION_BINDING_V0 =
+  "Local Rhizoh acts first — surface, grammar, and continuity without the remote model.";
 
 export const RHIZOH_LOCAL_ACTION_AUTHORITY_CONTRACT_V0 = "rhizoh-local-action-authority-v0";
 export const RHIZOH_LOCAL_ACTION_EVENT_V0 = "rhizoh:local-action";
@@ -21,6 +26,39 @@ export const LOCAL_AUTHORITY_REMOTE_V0 = "remote";
  * @param {ReturnType<typeof resolveGrammarFromUtteranceV0>} grammar
  */
 function buildLocalPayloadFromGrammarV0(grammar, utterance) {
+  const locale = readUiLocaleV0();
+  if (grammar.action === "OPEN_PANEL" && grammar.panel) {
+    const panel = String(grammar.panel);
+    const label = resolveLocalPanelOpenLineV0(panel, locale);
+    return Object.freeze({
+      authority: LOCAL_AUTHORITY_LOCAL_V0,
+      kind: "OPEN_PANEL",
+      panel,
+      surface: null,
+      intentBias: grammar.intentBias,
+      user_reply_tr: label,
+      pulse_line: `Local · ${label}`,
+      grammar,
+      utterance: String(utterance || "").slice(0, 240),
+      binding: RHIZOH_LOCAL_ACTION_BINDING_V0
+    });
+  }
+  if (grammar.action === "OPEN_MAP_TOOL") {
+    const mapTool = String(grammar.mapTool || "city_map");
+    const label = resolveLocalMapToolLineV0(mapTool, locale);
+    return Object.freeze({
+      authority: LOCAL_AUTHORITY_LOCAL_V0,
+      kind: "OPEN_MAP_TOOL",
+      mapTool,
+      surface: "world",
+      intentBias: grammar.intentBias,
+      user_reply_tr: label,
+      pulse_line: `Local · ${label}`,
+      grammar,
+      utterance: String(utterance || "").slice(0, 240),
+      binding: RHIZOH_LOCAL_ACTION_BINDING_V0
+    });
+  }
   if (grammar.action === "ENTER_SURFACE" && grammar.surface) {
     const surface = String(grammar.surface);
     return Object.freeze({
@@ -28,8 +66,8 @@ function buildLocalPayloadFromGrammarV0(grammar, utterance) {
       kind: "ENTER_SURFACE",
       surface,
       intentBias: grammar.intentBias,
-      user_reply_tr: formatLocalSurfaceEnterReplyTrV0(surface),
-      pulse_line: `Yerel · ${formatLocalSurfaceEnterReplyTrV0(surface)}`,
+      user_reply_tr: formatLocalSurfaceEnterReplyV0(surface, locale),
+      pulse_line: `Local · ${formatLocalSurfaceEnterReplyV0(surface, locale)}`,
       grammar,
       utterance: String(utterance || "").slice(0, 240),
       binding: RHIZOH_LOCAL_ACTION_BINDING_V0
@@ -37,14 +75,16 @@ function buildLocalPayloadFromGrammarV0(grammar, utterance) {
   }
   if (grammar.action === "SET_INTENT" && grammar.intentBias) {
     const intent = String(grammar.intentBias);
-    const label = T0_INTENT_ANCHORS_V0.find((a) => a.id === intent)?.label_tr || intent;
+    const row = T0_INTENT_ANCHORS_V0.find((a) => a.id === intent);
+    const label = locale === "tr" ? row?.label_tr || intent : row?.label_en || intent;
+    const reply = formatPlainIntentChosenV0(intent, locale);
     return Object.freeze({
       authority: LOCAL_AUTHORITY_LOCAL_V0,
       kind: "SET_INTENT",
       surface: null,
       intentBias: intent,
-      user_reply_tr: formatLocalIntentReplyTrV0(intent),
-      pulse_line: `Yerel · ${label}`,
+      user_reply_tr: reply,
+      pulse_line: `Local · ${label}`,
       grammar,
       utterance: String(utterance || "").slice(0, 240),
       binding: RHIZOH_LOCAL_ACTION_BINDING_V0

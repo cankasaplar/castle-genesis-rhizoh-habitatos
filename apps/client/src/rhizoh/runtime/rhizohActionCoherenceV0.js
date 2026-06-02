@@ -24,12 +24,12 @@ export const RHIZOH_NEXT_ACTION_ANCHOR_EVENT_V0 = "rhizoh:next-action-anchor";
 
 /** @type {Readonly<Record<string, { tr: string, en: string }>>} */
 const SURFACE_ANCHOR_V0 = Object.freeze({
-  studio: Object.freeze({ tr: "Üretim alanı açık", en: "Production space open" }),
-  world: Object.freeze({ tr: "Keşif alanı aktif", en: "Exploration field active" }),
-  broadcast: Object.freeze({ tr: "Bağlantı alanı aktif", en: "Connection field active" }),
-  hall: Object.freeze({ tr: "Süreklilik devam ediyor", en: "Continuity in progress" }),
-  greenroom: Object.freeze({ tr: "Canlı hazırlık alanı", en: "Live prep space" }),
-  profile: Object.freeze({ tr: "Kimlik çapası görünür", en: "Identity anchor visible" })
+  studio: Object.freeze({ tr: "Stüdyo — üretim ve oturum", en: "Studio — production" }),
+  world: Object.freeze({ tr: "Ana sahne — konuş veya tekerlekten seç", en: "Main stage — speak or use the wheel" }),
+  broadcast: Object.freeze({ tr: "Yayın — canlı ve paylaşım", en: "Broadcast — live" }),
+  hall: Object.freeze({ tr: "Salon — gözlem ve kayıt", en: "Hall — observe" }),
+  greenroom: Object.freeze({ tr: "Hazırlık odası — yayına hazırlık", en: "Green room — prep" }),
+  profile: Object.freeze({ tr: "Profil — hesap ve ayarlar", en: "Profile — settings" })
 });
 
 /**
@@ -48,15 +48,15 @@ function anchorForSurfaceV0(surface, tr) {
 function anchorHintForIntentV0(intent, tr) {
   const id = String(intent || T0_INTENT_EXPLORE_V0);
   if (id === T0_INTENT_PRODUCE_V0) {
-    return tr ? "üretime odaklan" : "focus on production";
+    return tr ? "Stüdyo'ya geçebilirsin" : "focus on production";
   }
   if (id === T0_INTENT_CONNECT_V0) {
-    return tr ? "bağlantıya odaklan" : "focus on connection";
+    return tr ? "Yayın veya hazırlık odası" : "focus on connection";
   }
   if (id === T0_INTENT_OBSERVE_V0) {
-    return tr ? "gözlemle devam et" : "continue observing";
+    return tr ? "Salon ve kayıtlar" : "continue observing";
   }
-  return tr ? "keşfe devam et" : "continue exploring";
+  return tr ? "Ana sahne ve tekerlek" : "continue exploring";
 }
 
 /**
@@ -82,7 +82,7 @@ export function resolveNextActionAnchorV0(input = {}) {
 
   const line = busy
     ? tr
-      ? `Yönün korunuyor · ${surfaceLine.toLowerCase()}`
+      ? `Bir saniye… · ${surfaceLine}`
       : `Direction held · ${surfaceLine}`
     : surfaceLine;
 

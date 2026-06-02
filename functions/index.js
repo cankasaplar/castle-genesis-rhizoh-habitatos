@@ -137,7 +137,7 @@ function pickGatewayProxyForwardHeaders(req) {
 }
 
 /**
- * Same-origin proxy — rhizoh.com: GET /health/* + POST /rhizoh/llm (CORS + Render cold-start).
+ * Same-origin proxy — rhizoh.com: GET /health/* + POST /rhizoh/llm + POST /rhizoh/epistemic/* (CORS + Render cold-start).
  */
 exports.gatewayProxyV0 = onRequest(
   {

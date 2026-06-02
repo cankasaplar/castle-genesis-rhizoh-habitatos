@@ -1,0 +1,246 @@
+/**
+ * World map tools — GLOBE home + explicit REAL_MAP sub-layers (continuity + LAA).
+ * @see docs/RHIZOH_WORLD_SURFACE_HIERARCHY_V0.md
+ */
+
+import { getOriginSeedAnchorV0, resolveDisplayAnchorV0 } from "./memoryAnchorSystemV0.js";
+import { ISTANBUL_POI } from "../../castleFlight/geo.js";
+import { applyCesiumImageryForMapToolV0 } from "./rhizohCesiumImageryProfileV0.js";
+
+export const RHIZOH_WORLD_MAP_TOOL_CONTRACT_V0 = "rhizoh-world-map-tool-v0";
+export const RHIZOH_WORLD_MAP_TOOL_CHANGE_EVENT_V0 = "rhizoh:world-map-tool-change";
+
+/** @typedef {'globe' | 'city_map' | 'satellite' | 'streets' | 'terrain' | 'anchor_map'} RhizohWorldMapToolIdV0 */
+
+export const RHIZOH_WORLD_MAP_TOOL_IDS_V0 = Object.freeze([
+  "globe",
+  "city_map",
+  "satellite",
+  "streets",
+  "terrain",
+  "anchor_map"
+]);
+
+const STORAGE_KEY_V0 = "rhizoh.world.map_tool.v0";
+
+/**
+ * @param {string} toolId
+ * @returns {RhizohWorldMapToolIdV0}
+ */
+export function normalizeRhizohWorldMapToolIdV0(toolId) {
+  const id = String(toolId || "globe");
+  return RHIZOH_WORLD_MAP_TOOL_IDS_V0.includes(/** @type {RhizohWorldMapToolIdV0} */ (id))
+    ? /** @type {RhizohWorldMapToolIdV0} */ (id)
+    : "globe";
+}
+
+/**
+ * @returns {RhizohWorldMapToolIdV0}
+ */
+export function readRhizohWorldMapToolV0() {
+  if (typeof localStorage === "undefined") return "globe";
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_V0);
+    return normalizeRhizohWorldMapToolIdV0(raw || "globe");
+  } catch {
+    return "globe";
+  }
+}
+
+/**
+ * @param {RhizohWorldMapToolIdV0 | string} toolId
+ */
+export function writeRhizohWorldMapToolV0(toolId) {
+  const id = normalizeRhizohWorldMapToolIdV0(toolId);
+  if (typeof localStorage !== "undefined") {
+    try {
+      localStorage.setItem(STORAGE_KEY_V0, id);
+    } catch {
+      /* noop */
+    }
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(RHIZOH_WORLD_MAP_TOOL_CHANGE_EVENT_V0, {
+        detail: Object.freeze({ tool: id })
+      })
+    );
+  }
+  return id;
+}
+
+/**
+ * @param {RhizohWorldMapToolIdV0 | string} [from]
+ * @returns {RhizohWorldMapToolIdV0}
+ */
+export function cycleRhizohWorldMapToolV0(from) {
+  const current = normalizeRhizohWorldMapToolIdV0(from ?? readRhizohWorldMapToolV0());
+  const idx = RHIZOH_WORLD_MAP_TOOL_IDS_V0.indexOf(current);
+  return RHIZOH_WORLD_MAP_TOOL_IDS_V0[(idx + 1) % RHIZOH_WORLD_MAP_TOOL_IDS_V0.length];
+}
+
+/**
+ * @param {RhizohWorldMapToolIdV0 | string} toolId
+ * @param {boolean} [tr]
+ */
+export function resolveRhizohWorldMapToolLabelTrV0(toolId, tr = true) {
+  const id = normalizeRhizohWorldMapToolIdV0(toolId);
+  if (!tr) {
+    if (id === "globe") return "Globe";
+    if (id === "city_map") return "City 3D";
+    if (id === "satellite") return "Satellite";
+    if (id === "streets") return "Streets";
+    if (id === "terrain") return "Terrain";
+    return "Anchor";
+  }
+  if (id === "globe") return "Küre";
+  if (id === "city_map") return "3D şehir";
+  if (id === "satellite") return "Uydu";
+  if (id === "streets") return "Sokak";
+  if (id === "terrain") return "Arazi";
+  return "Bağlantı";
+}
+
+/**
+ * @param {RhizohWorldMapToolIdV0 | string} toolId
+ * @param {{ nexusGeo?: { lat?: number, lon?: number } | null, castles?: Array<{ lat?: number, lon?: number, label?: string }> }} [ctx]
+ * @returns {{ lat: number, lon: number, alt?: number, label?: string } | null}
+ */
+export function resolveRhizohWorldMapFlyTargetV0(toolId, ctx = {}) {
+  const id = normalizeRhizohWorldMapToolIdV0(toolId);
+  if (id === "globe") return null;
+
+  if (id === "city_map") {
+    return Object.freeze({
+      lat: ISTANBUL_POI.FATIH.lat,
+      lon: ISTANBUL_POI.FATIH.lon,
+      alt: 820,
+      label: "İstanbul"
+    });
+  }
+
+  if (id === "terrain") {
+    const geo = ctx.nexusGeo;
+    const lat = Number.isFinite(geo?.lat) ? Number(geo.lat) : ISTANBUL_POI.FATIH.lat;
+    const lon = Number.isFinite(geo?.lon) ? Number(geo.lon) : ISTANBUL_POI.FATIH.lon;
+    return Object.freeze({ lat, lon, alt: 4200, label: "Terrain" });
+  }
+
+  if (id === "satellite" || id === "streets") {
+    const geo = ctx.nexusGeo;
+    const lat = Number.isFinite(geo?.lat) ? Number(geo.lat) : ISTANBUL_POI.FATIH.lat;
+    const lon = Number.isFinite(geo?.lon) ? Number(geo.lon) : ISTANBUL_POI.FATIH.lon;
+    return Object.freeze({
+      lat,
+      lon,
+      alt: id === "satellite" ? 2400 : 1400,
+      label: id === "satellite" ? "Satellite" : "Streets"
+    });
+  }
+
+  const castles = Array.isArray(ctx.castles) ? ctx.castles : [];
+  for (const c of castles) {
+    if (Number.isFinite(c?.lat) && Number.isFinite(c?.lon)) {
+      return Object.freeze({
+        lat: Number(c.lat),
+        lon: Number(c.lon),
+        alt: 1180,
+        label: String(c.label || "Kale")
+      });
+    }
+  }
+
+  const geo = ctx.nexusGeo;
+  if (Number.isFinite(geo?.lat) && Number.isFinite(geo?.lon)) {
+    return Object.freeze({
+      lat: Number(geo.lat),
+      lon: Number(geo.lon),
+      alt: 1180,
+      label: "Konumun"
+    });
+  }
+
+  const display = resolveDisplayAnchorV0();
+  const seed = getOriginSeedAnchorV0();
+  if (seed?.location?.lat != null && seed?.location?.lon != null) {
+    return Object.freeze({
+      lat: Number(seed.location.lat),
+      lon: Number(seed.location.lon),
+      alt: 1180,
+      label: String(display?.primary_label || seed.label || "Bağlantı")
+    });
+  }
+
+  return null;
+}
+
+/**
+ * @param {RhizohWorldMapToolIdV0 | string} toolId
+ * @param {{ lat: number, lon: number, alt?: number }} target
+ */
+function scheduleRhizohWorldMapFlyV0(toolId, target) {
+  if (typeof window === "undefined") return;
+  window.setTimeout(() => {
+    const c = window.__CASTLE_CESIUM__;
+    if (!c) return;
+    const id = normalizeRhizohWorldMapToolIdV0(toolId);
+    if (target && Number.isFinite(target.lat) && Number.isFinite(target.lon) && c.flyToCustom) {
+      c.flyToCustom(target.lat, target.lon, target.alt ?? 1180);
+      return;
+    }
+    if (id === "city_map") c.flyToIstanbul?.();
+  }, 140);
+}
+
+/**
+ * Apply map tool inside WORLD (map is sub-layer; GLOBE = home).
+ * @param {RhizohWorldMapToolIdV0 | string} toolId
+ * @param {{
+ *   setRealityMode?: (mode: string, opts?: object) => Promise<unknown>,
+ *   flyContext?: { nexusGeo?: object, castles?: object[] },
+ *   source?: string
+ * }} [opts]
+ */
+export async function applyRhizohWorldMapToolV0(toolId, opts = {}) {
+  const tool = writeRhizohWorldMapToolV0(toolId);
+  const setMode =
+    opts.setRealityMode ??
+    (await import("../../reality/realityDirector.js")).setRealityMode;
+  const source = String(opts.source || "WORLD_MAP_TOOL");
+
+  if (tool === "globe") {
+    await setMode("GLOBE", {
+      source: `${source}_GLOBE`,
+      productSurface: "world"
+    });
+    return Object.freeze({ tool, realityMode: "GLOBE", fly: null });
+  }
+
+  await setMode("REAL_MAP", {
+    source: "MAP_TOOL_EXPLICIT",
+    productSurface: "world"
+  });
+
+  const fly = resolveRhizohWorldMapFlyTargetV0(tool, opts.flyContext || {});
+  scheduleRhizohWorldMapFlyV0(tool, fly);
+  applyCesiumImageryForMapToolV0(tool);
+  return Object.freeze({ tool, realityMode: "REAL_MAP", fly });
+}
+
+/** @returns {RhizohWorldMapToolIdV0} */
+export function getRhizohWorldMapToolSnapshotV0() {
+  return readRhizohWorldMapToolV0();
+}
+
+/** @param {() => void} onChange */
+export function subscribeRhizohWorldMapToolV0(onChange) {
+  if (typeof window === "undefined") return () => {};
+  const handler = () => onChange();
+  window.addEventListener(RHIZOH_WORLD_MAP_TOOL_CHANGE_EVENT_V0, handler);
+  window.addEventListener("storage", (e) => {
+    if (e.key === STORAGE_KEY_V0 || e.key === null) handler();
+  });
+  return () => {
+    window.removeEventListener(RHIZOH_WORLD_MAP_TOOL_CHANGE_EVENT_V0, handler);
+  };
+}

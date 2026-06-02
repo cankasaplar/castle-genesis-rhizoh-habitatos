@@ -477,8 +477,7 @@ export function installCesiumWorldProjectionBind(viewer, fatih) {
           return new Cesium.Cartesian3(b, b, b + 4);
         }, false),
         material: Cesium.Color.CYAN.withAlpha(0.42),
-        outlineColor: Cesium.Color.WHITE.withAlpha(0.35),
-        outlineWidth: 1
+        outline: false
       }
     });
 
@@ -747,8 +746,7 @@ export function installCesiumWorldProjectionBind(viewer, fatih) {
         ellipsoid: {
           radii: new Cesium.Cartesian3(92, 92, 108),
           material: pr.color.withAlpha(0.14),
-          outlineColor: pr.color.withAlpha(0.45),
-          outlineWidth: 1
+          outline: false
         }
       });
       entities.push(shell);

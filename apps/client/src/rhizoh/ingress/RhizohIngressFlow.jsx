@@ -5,6 +5,7 @@ import { ClosedAdmissionCohortScreen } from "./ClosedAdmissionCohortScreen.jsx";
 import { ClosedAdmissionHoldScreen } from "./ClosedAdmissionHoldScreen.jsx";
 import { IngressErrorScreen } from "./IngressErrorScreen.jsx";
 import { CookieConsentBanner } from "./CookieConsentBanner.jsx";
+import { LanguagePickerScreen } from "./LanguagePickerScreen.jsx";
 import {
   clearClosedAdmissionSessionForTestV0,
   deriveIngressPhaseV0,
@@ -60,6 +61,14 @@ export function RhizohIngressFlow() {
       mountApp();
     }
   }, [mountApp]);
+
+  const refreshAfterLanguage = useCallback(() => {
+    setPhase(normalizeIngressPhaseV0(deriveIngressPhaseV0()));
+  }, []);
+
+  if (phase === INGRESS_ROUTE_V0.LANGUAGE) {
+    return <LanguagePickerScreen onProceed={refreshAfterLanguage} />;
+  }
 
   if (phase === INGRESS_ROUTE_V0.ERROR) {
     return (

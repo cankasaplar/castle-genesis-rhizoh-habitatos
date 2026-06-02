@@ -73,11 +73,13 @@ export const RHIZOH_GRAMMAR_DICTIONARY_V0 = Object.freeze({
     intentBias: T0_INTENT_OBSERVE_V0,
     pillar: T0_GRAMMAR_AXIS_STATE_V0
   }),
-  map: Object.freeze({
+  map_tool: Object.freeze({
     seal: "dictionary_seal_v0",
     surface: "world",
+    mapTool: "city_map",
     intentBias: T0_INTENT_EXPLORE_V0,
-    pillar: T0_GRAMMAR_AXIS_STATE_V0
+    pillar: T0_GRAMMAR_AXIS_STATE_V0,
+    opensMapTool: true
   }),
   world: Object.freeze({
     seal: "dictionary_seal_v0",
@@ -137,8 +139,10 @@ export function resolveGrammarFromUtteranceV0(utterance) {
 
   const enter =
     /\b(geç|geçelim|geçer|gidelim|git|gidelim|aç|open|enter|go to|switch|göster)\b/.test(text) ||
+    /(?:^|\s)(geç|geçelim|geçer|gidelim|git|aç|göster|goster)(?:\s|$|[!.?])/i.test(text) ||
     text.includes("katman") ||
-    /\b(ya|ye)\s*geç\b/.test(text);
+    /\b(ya|ye)\s*geç\b/.test(text) ||
+    /(?:^|\s)(ya|ye)\s*geç(?:\s|$|[!.?])/i.test(text);
   const bareSurface =
     /^(studio|stüdyo|studyo|dünya|dunya|harita|map|world|salon|hall|green\s*room|greenroom|yayın|yayin|broadcast|profil|profile|akademi|academy)\s*[!.?]*$/.test(
       text
@@ -148,14 +152,51 @@ export function resolveGrammarFromUtteranceV0(utterance) {
   const surfaceRules = [
     {
       match:
+        (/\b(küre|kure|globe|soyut)\b/.test(text) || /\bküreye\b/.test(text) || /\bkureye\b/.test(text)) &&
+        (enter || bareSurface),
+      dict: Object.freeze({
+        ...RHIZOH_GRAMMAR_DICTIONARY_V0.map_tool,
+        mapTool: "globe"
+      })
+    },
+    {
+      match:
+        /\b(istanbul|şehir\s*haritası|sehir\s*haritasi|city\s*map)\b/.test(text) &&
+        (enter || bareSurface),
+      dict: Object.freeze({
+        ...RHIZOH_GRAMMAR_DICTIONARY_V0.map_tool,
+        mapTool: "city_map"
+      })
+    },
+    {
+      match:
+        /\b(bağlantı\s*nokt|baglanti\s*nokt|anchor|kaleme\s*git|kalene)\b/.test(text) &&
+        (enter || bareSurface),
+      dict: Object.freeze({
+        ...RHIZOH_GRAMMAR_DICTIONARY_V0.map_tool,
+        mapTool: "anchor_map"
+      })
+    },
+    {
+      match:
         /\b(studio|stüdyo|studyo)\b/.test(text) &&
         (enter || bareSurface || /\b(studio|stüdyo)\s*(ya|ye)?\s*geç/.test(text)),
       dict: RHIZOH_GRAMMAR_DICTIONARY_V0.studio
     },
     {
       match:
-        /\b(map|harita|world|dünya|dunya)\b/.test(text) && (enter || bareSurface),
-      dict: RHIZOH_GRAMMAR_DICTIONARY_V0.map
+        (/\b(harita|map)\b/.test(text) || /\bharitaya\b/.test(text) || /haritas/i.test(text)) &&
+        !/\b(dünya|dunyaya|dunya|world)\b/.test(text) &&
+        (enter || bareSurface || /\bharitaya\s+geç/.test(text)),
+      dict: RHIZOH_GRAMMAR_DICTIONARY_V0.map_tool
+    },
+    {
+      match:
+        (/\b(dünya|dunya|world)\b/.test(text) || /\bdünyaya\b/.test(text)) &&
+        !/\b(harita|map)\b/.test(text) &&
+        !/\bharitaya\b/.test(text) &&
+        (enter || bareSurface || /\bdünyaya\s+geç/.test(text)),
+      dict: RHIZOH_GRAMMAR_DICTIONARY_V0.world
     },
     {
       match: /\b(salon|hall)\b/.test(text) && (enter || bareSurface),
@@ -177,6 +218,17 @@ export function resolveGrammarFromUtteranceV0(utterance) {
 
   for (const rule of surfaceRules) {
     if (!rule.match) continue;
+    if (rule.dict.opensMapTool) {
+      return Object.freeze({
+        action: "OPEN_MAP_TOOL",
+        surface: rule.dict.surface,
+        mapTool: rule.dict.mapTool || "city_map",
+        intentBias: rule.dict.intentBias,
+        mutation: Object.freeze({ allowed: true, reason: "meaning_variation" }),
+        seal: rule.dict.seal,
+        pillar: rule.dict.pillar
+      });
+    }
     return Object.freeze({
       action: "ENTER_SURFACE",
       surface: rule.dict.surface,
@@ -184,6 +236,36 @@ export function resolveGrammarFromUtteranceV0(utterance) {
       mutation: Object.freeze({ allowed: true, reason: "meaning_variation" }),
       seal: rule.dict.seal,
       pillar: rule.dict.pillar
+    });
+  }
+
+  if (
+    (/\b(tekerlek|yetenek|dünya|dunya)\b/.test(text) || /\b(world|wheel)\b/.test(text)) &&
+    (/\b(aç|göster|goster|açık|acik)\b/.test(text) || enter)
+  ) {
+    return Object.freeze({
+      action: "OPEN_PANEL",
+      surface: "world",
+      panel: "world",
+      intentBias: T0_INTENT_EXPLORE_V0,
+      mutation: Object.freeze({ allowed: true, reason: "meaning_variation" }),
+      seal: "dictionary_seal_v0",
+      pillar: T0_GRAMMAR_AXIS_STATE_V0
+    });
+  }
+
+  if (
+    /\b(salon|hall)\b/.test(text) &&
+    (/\b(aç|göster|goster|açık|acik)\b/.test(text) || enter)
+  ) {
+    return Object.freeze({
+      action: "OPEN_PANEL",
+      surface: "hall",
+      panel: "hall",
+      intentBias: T0_INTENT_OBSERVE_V0,
+      mutation: Object.freeze({ allowed: true, reason: "meaning_variation" }),
+      seal: "dictionary_seal_v0",
+      pillar: T0_GRAMMAR_AXIS_STATE_V0
     });
   }
 

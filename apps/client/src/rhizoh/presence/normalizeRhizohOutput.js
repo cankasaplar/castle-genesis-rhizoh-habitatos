@@ -4,6 +4,7 @@
 
 import { deriveCognitiveTraceLabel } from "./deriveCognitiveTraceLabel.js";
 import { RHIZOH_INTENT } from "../router/intentTypes.js";
+import { coerceRhizohUiReplyTextV0 } from "../runtime/rhizohLlmUiContractV0.js";
 
 /** @param {number} x */
 function clamp01(x) {
@@ -166,8 +167,11 @@ export function materializeCommsFromNormalized(norm, rawReply = "") {
       qppPayload: norm.payload
     };
   }
+  const uiReply = coerceRhizohUiReplyTextV0(norm.payload, {
+    fallback: coerceRhizohUiReplyTextV0(rawReply)
+  });
   return {
-    uiReply: norm.payload,
+    uiReply,
     skipSpeech: false,
     quietSpec: null,
     qppPayload: null

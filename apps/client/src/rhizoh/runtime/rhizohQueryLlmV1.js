@@ -860,11 +860,17 @@ export async function queryRhizohLLM({
       observedFormat: normalized.observedFormat,
       rawProviderChars: normalized.rhizohCompressionLedger?.rawProviderChars ?? null
     });
-    if (import.meta.env?.DEV && typeof window !== "undefined") {
+    const mirrorLlmObs =
+      import.meta.env?.DEV ||
+      String(import.meta.env.VITE_CASTLE_LAYERS_DEBUG || "").trim() === "1";
+    if (mirrorLlmObs && typeof window !== "undefined") {
       window.__CASTLE_RHIZOH_LLM_LAST_RESPONSE__ = Object.freeze({
         at: Date.now(),
         traceId: turnTraceId,
         replyPreview: normalized.reply.slice(0, 240),
+        replyChars: normalized.reply.length,
+        replySchemaVersion: normalized.replySchemaVersion,
+        replyContractDriftClass: normalized.replyContractDriftClass,
         rhizohDeliveryKind: normalized.deliveryKind,
         replyExtractPath: normalized.extractPath,
         replyParsingConfidence,

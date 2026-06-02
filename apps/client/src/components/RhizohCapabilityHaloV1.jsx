@@ -1,21 +1,31 @@
 import React, { useCallback, useMemo, useState } from "react";
 import {
-  RHIZOH_CAPABILITY_HALO_NODES_V1,
-  RHIZOH_CAPABILITY_HALO_INTRO_WHISPER,
   RHIZOH_ROBOTICS_DEVICE_CHIPS_V1,
   RHIZOH_LIBRARY_ROUTE_V1
 } from "../kernel/visual/rhizohCapabilityHaloConfigV1.js";
+import {
+  resolveHaloHeadlineV0,
+  resolveHaloIntroV0,
+  resolveHaloNodesV0
+} from "../rhizoh/runtime/rhizohProductCopyI18nV0.js";
+import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
 
 const RING_R = 118;
-const NODE_COUNT = RHIZOH_CAPABILITY_HALO_NODES_V1.length;
 
 /** Capability Wheel — cognition-only (layerFocus + seedIntent). Navigation = Product Bar. */
 export function RhizohCapabilityHaloV1({
   onSeedIntent,
   onFocusLayer,
   collectivePulse = 1,
-  className = ""
+  className = "",
+  uiLocale
 }) {
+  const locale = uiLocale || readUiLocaleV0();
+  const haloNodes = useMemo(() => resolveHaloNodesV0(locale), [locale]);
+  const haloHeadline = useMemo(() => resolveHaloHeadlineV0(locale), [locale]);
+  const haloIntro = useMemo(() => resolveHaloIntroV0(locale), [locale]);
+  const nodeCount = haloNodes.length;
+
   const [hoverId, setHoverId] = useState(null);
   const [roboticsOpen, setRoboticsOpen] = useState(false);
   const [deviceHoverId, setDeviceHoverId] = useState(null);
@@ -23,13 +33,13 @@ export function RhizohCapabilityHaloV1({
   const whisper = useMemo(() => {
     if (deviceHoverId) {
       const d = RHIZOH_ROBOTICS_DEVICE_CHIPS_V1.find((x) => x.id === deviceHoverId);
-      return d?.whisper || RHIZOH_CAPABILITY_HALO_INTRO_WHISPER;
+      return d?.whisper || haloIntro;
     }
     if (hoverId === "library") return RHIZOH_LIBRARY_ROUTE_V1.whisper;
-    if (!hoverId) return RHIZOH_CAPABILITY_HALO_INTRO_WHISPER;
-    const n = RHIZOH_CAPABILITY_HALO_NODES_V1.find((x) => x.id === hoverId);
-    return n?.whisper || RHIZOH_CAPABILITY_HALO_INTRO_WHISPER;
-  }, [hoverId, deviceHoverId]);
+    if (!hoverId) return haloIntro;
+    const n = haloNodes.find((x) => x.id === hoverId);
+    return n?.whisper || haloIntro;
+  }, [hoverId, deviceHoverId, haloNodes, haloIntro]);
 
   const handleNodeEnter = useCallback((node) => {
     setHoverId(node.id);
@@ -74,7 +84,9 @@ export function RhizohCapabilityHaloV1({
         className="relative mb-2 min-h-[3.25rem] max-w-[min(36rem,92vw)] rounded-2xl border border-cyan-400/25 bg-black/55 px-4 py-2.5 text-center backdrop-blur-md pointer-events-none"
         style={{ boxShadow: "0 0 40px rgba(34,211,238,0.08)" }}
       >
-        <div className="text-[8px] tracking-[0.28em] text-cyan-300/80 mb-1">RHIZOH · CAPABILITY WHISPER</div>
+        <div className="text-[10px] font-semibold tracking-wide text-cyan-200/90 mb-1 normal-case">
+          {haloHeadline}
+        </div>
         <div className="text-[11px] font-medium normal-case leading-snug text-cyan-50/95">{whisper}</div>
       </div>
 
@@ -86,8 +98,8 @@ export function RhizohCapabilityHaloV1({
         }}
       >
         <div className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400/80 shadow-[0_0_24px_rgba(34,211,238,0.7)]" />
-        {RHIZOH_CAPABILITY_HALO_NODES_V1.map((node, i) => {
-          const deg = (360 / NODE_COUNT) * i - 90;
+        {haloNodes.map((node, i) => {
+          const deg = (360 / nodeCount) * i - 90;
           const rad = (deg * Math.PI) / 180;
           const x = Math.cos(rad) * RING_R;
           const y = Math.sin(rad) * RING_R;

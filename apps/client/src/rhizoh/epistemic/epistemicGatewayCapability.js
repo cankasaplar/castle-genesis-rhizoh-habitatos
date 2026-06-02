@@ -6,6 +6,7 @@
 /** @type {null | boolean} null bilinmiyor, true uçlar en az bir kez 200 ile doğrulandı, false 404 ile kapandı */
 let routesReachable = null;
 let warned404 = false;
+let warned401 = false;
 
 export function getEpistemicGatewayRoutesReachable() {
   return routesReachable;
@@ -34,8 +35,25 @@ export function markEpistemicGatewayRoutesMissing(kind, base = "") {
   );
 }
 
+/**
+ * @param {"batch"|"batch_auth"|"seal"} kind
+ * @param {string} [detail]
+ */
+export function markEpistemicGatewayAuthFailedV0(kind, detail = "") {
+  if (warned401) return;
+  warned401 = true;
+  const path =
+    kind === "seal" ? "/rhizoh/epistemic/seal" : "/rhizoh/epistemic/logs/batch";
+  console.warn(
+    `[Rhizoh epistemic] POST ${path} → 401${detail ? ` (${detail})` : ""}. ` +
+      "Sohbet (/rhizoh/llm) çalışabilir; gözlem batch için Firebase oturumu veya gateway token + X-Castle-Dev-Uid gerekir. " +
+      "Render: CASTLE_GATEWAY_TOKEN istemci VITE_GATEWAY_TOKEN ile eşleşmeli; güncel gateway resolveEpistemicIngestActor deploy edilmeli."
+  );
+}
+
 /** @internal vitest */
 export function __resetEpistemicGatewayCapabilityForTests() {
   routesReachable = null;
   warned404 = false;
+  warned401 = false;
 }

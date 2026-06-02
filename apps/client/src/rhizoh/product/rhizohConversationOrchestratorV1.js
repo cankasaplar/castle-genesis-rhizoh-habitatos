@@ -256,11 +256,11 @@ export function buildRhizohConversationLlmDirective(phase) {
 /** @param {string | undefined} phase */
 export function rhizohConversationPhaseShortLabelTr(phase) {
   const map = {
-    [RHIZOH_CONVERSATION_PHASE.NEW_USER]: "İlk temas",
-    [RHIZOH_CONVERSATION_PHASE.INTRO]: "Tanışma",
-    [RHIZOH_CONVERSATION_PHASE.TRUST_BUILD]: "Güven",
+    [RHIZOH_CONVERSATION_PHASE.NEW_USER]: "Yeni kullanıcı",
+    [RHIZOH_CONVERSATION_PHASE.INTRO]: "Tanışıyoruz",
+    [RHIZOH_CONVERSATION_PHASE.TRUST_BUILD]: "Güven kuruluyor",
     [RHIZOH_CONVERSATION_PHASE.NORMAL_CHAT]: "Sohbet",
-    [RHIZOH_CONVERSATION_PHASE.POWER_MODE]: "Gelişmiş"
+    [RHIZOH_CONVERSATION_PHASE.POWER_MODE]: "Gelişmiş mod"
   };
-  return map[String(phase)] || "—";
+  return map[String(phase)] || "Rhizoh";
 }

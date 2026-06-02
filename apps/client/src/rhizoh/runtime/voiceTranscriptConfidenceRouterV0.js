@@ -13,6 +13,7 @@ import {
 } from "./voiceDirectedSpeechObservationV0.js";
 import { isDirectedSpeechGateReleaseEnabledV0 } from "./isDirectedSpeechGateReleaseEnabledV0.js";
 import { recordConversationMirrorVoiceRouteV0 } from "./rhizohConversationBehaviorMirrorV0.js";
+import { buildVoiceConfidenceBreakdownV0 } from "./voiceConfidenceBreakdownV0.js";
 
 export const VOICE_TRANSCRIPT_CONFIDENCE_ROUTER_SCHEMA =
   "castle.rhizoh.voice_transcript_confidence_router.v0";
@@ -183,12 +184,35 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
   });
 
   if (!sane.ok) {
+    const reason = String(sane.reason || "quality_reject");
+    const confNum = Number.isFinite(conf) ? conf : Number(sane.confidence);
     const observationForward =
-      text.length >= 3 && SHADOW_FORWARD_REASONS.has(String(sane.reason || ""));
+      text.length >= 3 && SHADOW_FORWARD_REASONS.has(reason);
+    const observationPassThrough =
+      text.length >= 6 &&
+      Number.isFinite(confNum) &&
+      confNum >= 0.48 &&
+      (sane.shadowForward === true || SHADOW_FORWARD_REASONS.has(reason));
+
+    if (observationPassThrough) {
+      return finalizeRouteV0({
+        executionAccepted: true,
+        observationForward: true,
+        reason,
+        source,
+        band: observation.band,
+        confidence: confNum,
+        strategy: strategy || undefined,
+        shadowForward: true,
+        sanityAccepted: false,
+        observationPass: true
+      });
+    }
+
     return finalizeRouteV0({
       executionAccepted: false,
       observationForward,
-      reason: sane.reason || "quality_reject",
+      reason,
       source,
       band: observation.band,
       confidence: sane.confidence,
@@ -251,7 +275,18 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
 /**
  * @param {ReturnType<typeof routeVoiceTranscriptConfidenceV0>} route
  */
-export function voiceConfidenceRouterLogDetailV0(route) {
+export function voiceConfidenceRouterLogDetailV0(route, meta = {}) {
+  const breakdown = buildVoiceConfidenceBreakdownV0(
+    {
+      confidence: route.confidence ?? meta.confidence,
+      strategy: route.strategy ?? meta.strategy,
+      directedScore: meta.directedScore,
+      ambientScore: meta.ambientScore,
+      band: route.band ?? meta.band,
+      source: route.source ?? meta.source
+    },
+    route
+  );
   return Object.freeze({
     executionAccepted: route.executionAccepted === true,
     observationForward: route.observationForward === true,
@@ -262,6 +297,10 @@ export function voiceConfidenceRouterLogDetailV0(route) {
     confidence: route.confidence,
     threshold: route.threshold,
     band: route.band,
-    shadowForward: route.shadowForward === true
+    shadowForward: route.shadowForward === true,
+    whisperConfidence: breakdown.whisperConfidence,
+    semanticConfidence: breakdown.semanticConfidence,
+    attentionConfidence: breakdown.attentionConfidence,
+    finalConfidence: breakdown.finalConfidence
   });
 }

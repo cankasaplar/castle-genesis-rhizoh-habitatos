@@ -4,6 +4,8 @@ import {
   getLegalDocumentPathsV0,
   setCookieConsentV0
 } from "./ingress_router.js";
+import { getCookieConsentCopyForLocaleV0 } from "./ingressCopyI18nV0.js";
+import { readUiLocaleV0 } from "../runtime/rhizohUiLocaleV0.js";
 
 /**
  * Minimal cookie layer — analytics default OFF.
@@ -12,13 +14,14 @@ export function CookieConsentBanner() {
   const initial = getCookieConsentV0();
   const [visible, setVisible] = useState(!initial.decided);
   const docs = getLegalDocumentPathsV0();
+  const copy = getCookieConsentCopyForLocaleV0(readUiLocaleV0());
 
   if (!visible) return null;
 
   return (
     <div
       role="dialog"
-      aria-label="Çerez tercihi"
+      aria-label="Cookie preference"
       style={{
         position: "fixed",
         bottom: 0,
@@ -35,9 +38,9 @@ export function CookieConsentBanner() {
       }}
     >
       <p style={{ margin: "0 0 10px", maxWidth: 720, marginLeft: "auto", marginRight: "auto" }}>
-        Zorunlu çerezler hizmet için kullanılır. <strong>Analitik çerezler varsayılan kapalıdır.</strong>{" "}
+        {copy.message}{" "}
         <a href={docs.cookies} style={{ color: "#7dd3fc" }}>
-          Çerez Politikası
+          Cookies
         </a>
       </p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, maxWidth: 720, margin: "0 auto" }}>
@@ -57,7 +60,7 @@ export function CookieConsentBanner() {
             cursor: "pointer"
           }}
         >
-          Zorunlu — analitik kapalı
+          {copy.necessaryOnly}
         </button>
       </div>
     </div>

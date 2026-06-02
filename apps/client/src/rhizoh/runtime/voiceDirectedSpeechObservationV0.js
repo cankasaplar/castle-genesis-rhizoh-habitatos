@@ -49,7 +49,12 @@ const DIRECTED_ADDRESS_PATTERNS_V0 = [
   /bana\s+(söyle|anlat|cevap)/i,
   /nas[ıi]ls[ıi]n/i,
   /sohbet\s+et/i,
-  /biraz\s+sohbet/i
+  /biraz\s+sohbet/i,
+  /\b(karışıklık|yanlış\s+anlaşıldı)\b/i,
+  /\b(yeniden|tekrar)\b.{0,24}\b(konuş|deneyelim|başlayalım)\b/i,
+  /\b(ingilizce|english|türkçe|turkish)\b.{0,32}\b(konuş|speak|devam)\b/i,
+  /\bbence\b.{0,40}\b(karışıklık|yanlış|düzelt|tekrar)\b/i,
+  /\bkonuşmalıyız\b/i
 ];
 
 function normalizeWitnessTextV0(text) {
@@ -112,6 +117,38 @@ function scoreDirectedV0(norm) {
 }
 
 /**
+ * @param {string} band
+ * @param {{ score: number, hints: string[] }} directed
+ * @param {{ score: number, hints: string[] }} ambient
+ */
+function resolveDirectedSpeechBandReasonV0(band, directed, ambient) {
+  if (band === VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE) {
+    if (directed.score >= 2) return "directed_score_ge_2";
+    if (directed.score >= 1 && ambient.score === 0) return "directed_only_no_ambient";
+    return "directed_beats_ambient";
+  }
+  if (band === VOICE_DIRECTED_SPEECH_BAND.AMBIENT) {
+    if (ambient.score >= 2) return "ambient_score_ge_2";
+    return "ambient_dominant";
+  }
+  if (directed.score === 0 && ambient.score === 0) return "no_directed_or_ambient_signals";
+  if (directed.score >= 1 && ambient.score >= 1) return "mixed_scores_stay_unknown";
+  if (directed.score >= 1) return "directed_too_weak_for_candidate";
+  return "unknown_default";
+}
+
+/**
+ * @param {number} directedScore
+ * @param {number} ambientScore
+ */
+function computeUnknownScoreV0(directedScore, ambientScore) {
+  const d = Math.max(0, Number(directedScore) || 0);
+  const a = Math.max(0, Number(ambientScore) || 0);
+  if (d === 0 && a === 0) return 1;
+  return Math.max(0, Math.min(1, 1 - Math.max(d, a) / (d + a + 2)));
+}
+
+/**
  * @param {{
  *   text?: string,
  *   confidence?: number,
@@ -130,6 +167,8 @@ export function classifyVoiceDirectedSpeechBandV0(meta = {}) {
       hints: ["empty", ...energy.hints],
       ambientScore: 0,
       directedScore: 0,
+      unknownScore: 1,
+      reason: "empty_transcript",
       energyTier: energy.tier,
       energyRatio: energy.ratio,
       roomBaselineRms: energy.baseline
@@ -168,11 +207,16 @@ export function classifyVoiceDirectedSpeechBandV0(meta = {}) {
     hints.push("energy_distant_to_ambient_witness");
   }
 
+  const unknownScore = computeUnknownScoreV0(directed.score, ambient.score);
+  const reason = resolveDirectedSpeechBandReasonV0(band, directed, ambient);
+
   return Object.freeze({
     band,
     hints,
     ambientScore: ambient.score,
     directedScore: directed.score,
+    unknownScore: Number(unknownScore.toFixed(3)),
+    reason,
     energyTier: energy.tier,
     energyRatio: energy.ratio,
     roomBaselineRms: energy.baseline,

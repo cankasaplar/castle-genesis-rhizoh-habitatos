@@ -347,20 +347,37 @@ async function runTransition(mode, opts) {
  * @param {{ source?: string }} [opts]
  */
 export async function setRealityMode(mode, opts = {}) {
+  let resolvedMode = mode;
+  try {
+    const { coerceRhizohProductRealityModeV0 } = await import(
+      "../rhizoh/runtime/rhizohWorldSurfacePolicyV0.js"
+    );
+    resolvedMode = coerceRhizohProductRealityModeV0(mode, opts);
+    if (resolvedMode !== mode && typeof console !== "undefined" && console.warn) {
+      console.warn("[CASTLE_world_policy] REAL_MAP blocked for product Dünya", {
+        requested: mode,
+        applied: resolvedMode,
+        source: opts?.source
+      });
+    }
+  } catch {
+    /* policy module optional in tests */
+  }
+
   if (!infra?.getEngine) {
     return new Promise((resolve, reject) => {
-      intentQueue.push({ mode, opts, resolve, reject });
+      intentQueue.push({ mode: resolvedMode, opts, resolve, reject });
     });
   }
 
   if (!infra.getEngine()) {
     return new Promise((resolve, reject) => {
-      intentQueue.push({ mode, opts, resolve, reject });
+      intentQueue.push({ mode: resolvedMode, opts, resolve, reject });
     });
   }
 
-  const result = await withGate(() => runTransition(mode, opts));
-  if (mode === "REAL_MAP" && result?.ok) {
+  const result = await withGate(() => runTransition(resolvedMode, opts));
+  if (resolvedMode === "REAL_MAP" && result?.ok) {
     try {
       const { maybeTriggerMapSurfaceMicroRtlV0 } = await import(
         "../rhizoh/runtime/expressiveRealityMicroTransitionV0.js"

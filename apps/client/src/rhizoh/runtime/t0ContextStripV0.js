@@ -10,6 +10,8 @@ import {
   readRhizohSessionLanguagePreferenceV0,
   resolveRhizohLanguageCatalogRowV0
 } from "./rhizohMultilingualBridgeV0.js";
+import { resolveProductStatusHeadlineTrV0 } from "./rhizohProductPlainCopyV0.js";
+import { isRhizohT0FirstMatchIdentityV0 } from "./rhizohT0FirstMatchIdentityV0.js";
 
 export const T0_CONTEXT_STRIP_CONTRACT_V0 = "t0-context-strip-v0";
 const SESSION_INTENT_KEY_V0 = "rhizoh.t0.user_intent.v0";
@@ -148,11 +150,14 @@ export function resolveT0ContextStripV0(input = {}) {
     stateLabel = tr ? "Hazırsın" : "Ready";
   }
 
-  if (expressiveMode === "E2-X" && creative && intent !== T0_INTENT_OBSERVE_V0) {
+  if (expressiveMode === "E2-X" && creative && intent !== T0_INTENT_OBSERVE_V0 && !isRhizohT0FirstMatchIdentityV0()) {
     stateLabel = `${stateLabel} · E2-X`;
   }
 
-  const strip = `${modeLabel} · ${stateLabel}`;
+  const strip =
+    tr && (isRhizohT0FirstMatchIdentityV0() || langCode === "tr")
+      ? resolveProductStatusHeadlineTrV0({ activeSurface, intent })
+      : `${modeLabel} · ${stateLabel}`;
 
   return Object.freeze({
     contract_version: T0_CONTEXT_STRIP_CONTRACT_V0,
@@ -164,6 +169,6 @@ export function resolveT0ContextStripV0(input = {}) {
     language_code: langRow.code,
     language_label: langRow.label,
     has_user_anchor: hasUserAnchor,
-    play_call: tr ? "Şu an hangi oyundasın?" : "Which play are you in?"
+    play_call: tr ? "Bugün ne yapmak istiyorsun?" : "Which play are you in?"
   });
 }

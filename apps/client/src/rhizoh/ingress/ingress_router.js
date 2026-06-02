@@ -11,6 +11,16 @@ import {
   isSubjectAdmittedV0
 } from "./closedUserAdmissionEngineV0.js";
 import { formatDataControllerLineV0 } from "./legalEntityConstantsV0.js";
+import {
+  getClosedAdmissionCohortCopyForLocaleV0,
+  getClosedAdmissionHoldCopyForLocaleV0,
+  getIngressErrorCopyForLocaleV0,
+  getLegalPreambleCopyForLocaleV0
+} from "./ingressCopyI18nV0.js";
+import {
+  isLanguagePickerRequiredForIngressV0,
+  readUiLocaleV0
+} from "../runtime/rhizohUiLocaleV0.js";
 
 export const INGRESS_ROUTER_SCHEMA_V0 = "castle.rhizoh.ingress_router.v0";
 
@@ -20,6 +30,7 @@ export const MANIFESTO_PACK_ACK_ID_V0 = "manifesto_distribution_pack_v0.1";
 export const LEGAL_REALITY_SPEC_REF_V0 = "LEGAL_REALITY_SPEC_V0.1";
 
 export const INGRESS_ROUTE_V0 = Object.freeze({
+  LANGUAGE: "language",
   LEGAL_PREAMBLE: "legal_preamble",
   COHORT: "cohort",
   HOLD: "hold",
@@ -28,6 +39,7 @@ export const INGRESS_ROUTE_V0 = Object.freeze({
 });
 
 const VALID_INGRESS_PHASES_V0 = Object.freeze([
+  INGRESS_ROUTE_V0.LANGUAGE,
   INGRESS_ROUTE_V0.LEGAL_PREAMBLE,
   INGRESS_ROUTE_V0.COHORT,
   INGRESS_ROUTE_V0.HOLD,
@@ -296,10 +308,15 @@ export function normalizeIngressPhaseV0(phase) {
   return hardResetIngressToEntryPhaseV0();
 }
 
+export function isLanguagePickerRequiredV0() {
+  return isLanguagePickerRequiredForIngressV0();
+}
+
 /**
  * UI phase for RhizohIngressFlow (not an execution route).
  */
 export function deriveIngressPhaseV0() {
+  if (isLanguagePickerRequiredV0()) return INGRESS_ROUTE_V0.LANGUAGE;
   const ingress = resolveIngressRouteV0();
   if (ingress.route === INGRESS_ROUTE_V0.LEGAL_PREAMBLE) return INGRESS_ROUTE_V0.LEGAL_PREAMBLE;
   if (ingress.route === "closed_admission_hold") return INGRESS_ROUTE_V0.HOLD;
@@ -461,55 +478,23 @@ export function getLegalDocumentPathsV0() {
 }
 
 export function getIngressErrorCopyV0(kind = "unknown") {
-  const base = Object.freeze({
-    kicker: "BAĞLANTI",
-    retryLabel: "Yeniden dene"
-  });
-  const byKind = {
-    offline: Object.freeze({
-      title: "İnternet bağlantısı yok",
-      lead: "Rhizoh’a devam etmek için ağ bağlantısı gerekir. Bağlantınızı kontrol edip tekrar deneyin."
-    }),
-    timeout: Object.freeze({
-      title: "Yanıt süresi aşıldı",
-      lead: "Sunucu zamanında yanıt vermedi. Lütfen bir süre sonra tekrar deneyin."
-    }),
-    gateway: Object.freeze({
-      title: "Hizmet geçici olarak kapalı",
-      lead: "Ağ geçidi veya kenar hizmeti şu an erişilemiyor. Bu bir yürütme hatası değildir; bağlantı düzelince tekrar deneyin."
-    }),
-    unknown: Object.freeze({
-      title: "Giriş tamamlanamadı",
-      lead: "Beklenmeyen bir bağlantı sorunu oluştu. Sayfayı yenileyin veya daha sonra tekrar deneyin."
-    })
-  };
-  const part = byKind[kind] || byKind.unknown;
-  return Object.freeze({ ...base, ...part });
+  return getIngressErrorCopyForLocaleV0(kind, readUiLocaleV0());
 }
 
 export function getClosedAdmissionCohortCopyV0() {
-  return Object.freeze({
-    kicker: "ERİŞİM ONAYI",
-    title: "Devam etmek istiyor musunuz?",
-    lead:
-      "Bu bir kayıt veya onboarding formu değildir; yalnızca tek seferlik erişim onayıdır. Skor veya profil oluşturulmaz.",
-    acceptLabel: "Evet, devam et",
-    declineLabel: "Hayır",
-    declineTitle: "Devam edilmedi",
-    declineLead: "Erişim onayı verilmedi. Sayfayı yenileyerek tekrar seçim yapabilirsiniz."
-  });
+  return getClosedAdmissionCohortCopyForLocaleV0(readUiLocaleV0());
 }
 
 export function getClosedAdmissionHoldCopyV0() {
-  return Object.freeze({
-    kicker: "BETA",
-    title: "Erişim beklemede",
-    lead: "Kapalı beta için operatör onayı veya yeniden deneme gerekir.",
-    retryLabel: "Tekrar dene"
-  });
+  return getClosedAdmissionHoldCopyForLocaleV0(readUiLocaleV0());
 }
 
 export function getLegalPreambleCopyV0() {
+  return getLegalPreambleCopyForLocaleV0(readUiLocaleV0());
+}
+
+/** @deprecated use getLegalPreambleCopyV0 — kept for tests */
+export function getLegalPreambleCopyTrLegacyV0() {
   return Object.freeze({
     kicker: "HUKUKİ GEÇİT",
     title: "Erişim ve onay",

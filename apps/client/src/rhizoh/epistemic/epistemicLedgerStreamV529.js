@@ -2,6 +2,7 @@ import { getCastleFlightConfig } from "../../castleFlight/castleFlightConfig.js"
 import { getOrCreateCastleDevUid, getRhizohGatewayHealthBase } from "../useRhizohGatewayMonitor.js";
 import {
   getEpistemicGatewayRoutesReachable,
+  markEpistemicGatewayAuthFailedV0,
   markEpistemicGatewayRoutesMissing,
   markEpistemicGatewayRoutesOk
 } from "./epistemicGatewayCapability.js";
@@ -44,8 +45,23 @@ async function postBatch(entries, idToken) {
       markEpistemicGatewayRoutesMissing("batch", base);
       return { ok: false, error: j.error || "http_404", skipRetry: true };
     }
+    if (res.status === 401 || res.status === 403) {
+      markEpistemicGatewayAuthFailedV0("batch_auth", j.error || `http_${res.status}`);
+      return { ok: false, error: j.error || `http_${res.status}`, skipRetry: true };
+    }
     if (!res.ok || !j?.ok) return { ok: false, error: j.error || `http_${res.status}` };
     markEpistemicGatewayRoutesOk();
+    if (typeof window !== "undefined") {
+      try {
+        window.__CASTLE_EPISTEMIC_TELEMETRY__ = Object.freeze({
+          lastStatus: "ok",
+          lastError: null,
+          at: Date.now()
+        });
+      } catch {
+        /* noop */
+      }
+    }
     return { ok: true, latest: j.latest || null };
   } catch (e) {
     return { ok: false, error: String(e?.message || e || "epistemic_log_upload_failed") };
@@ -62,6 +78,17 @@ async function flushNow() {
   const r = await postBatch(entries, idToken);
   inFlight = false;
   if (!r.ok) {
+    if (typeof window !== "undefined") {
+      try {
+        window.__CASTLE_EPISTEMIC_TELEMETRY__ = Object.freeze({
+          lastStatus: r.skipRetry ? "skipped" : "error",
+          lastError: r.error || "batch_failed",
+          at: Date.now()
+        });
+      } catch {
+        /* noop */
+      }
+    }
     if (r.skipRetry) {
       return;
     }
@@ -92,7 +119,13 @@ function scheduleFlush() {
 
 export function enqueueEpistemicLedgerEntry(entry, idToken = "") {
   if (!entry || typeof entry !== "object") return;
-  QUEUE.push({ entry, idToken: String(idToken || "").trim() });
+  if (getEpistemicGatewayRoutesReachable() === false) return;
+  const tok = String(idToken || "").trim();
+  const cfg = getCastleFlightConfig();
+  const gt = String(cfg.gatewayToken || "").trim();
+  const devUid = getOrCreateCastleDevUid();
+  if (!tok && (!gt || !devUid)) return;
+  QUEUE.push({ entry, idToken: tok });
   if (QUEUE.length > 200) QUEUE.splice(0, QUEUE.length - 200);
   scheduleFlush();
 }

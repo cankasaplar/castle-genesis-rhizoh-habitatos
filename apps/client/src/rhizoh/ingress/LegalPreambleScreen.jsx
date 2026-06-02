@@ -44,21 +44,24 @@ export function LegalPreambleScreen({ onProceed, specSha256 = null }) {
         </p>
         <nav style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 20, fontSize: 13 }}>
           <a href={docs.terms} target="_blank" rel="noopener noreferrer" style={INGRESS_SURFACE_V0.link}>
-            Kullanım Şartları
+            {copy.docLinks?.terms || "Terms"}
           </a>
           <a href={docs.privacy} target="_blank" rel="noopener noreferrer" style={INGRESS_SURFACE_V0.link}>
-            Gizlilik
+            {copy.docLinks?.privacy || "Privacy"}
           </a>
           <a href={docs.kvkk} target="_blank" rel="noopener noreferrer" style={INGRESS_SURFACE_V0.link}>
-            KVKK Aydınlatma
+            {copy.docLinks?.kvkk || "KVKK"}
           </a>
           <a href={docs.aiOpenConsent} target="_blank" rel="noopener noreferrer" style={INGRESS_SURFACE_V0.link}>
-            Açık Rıza (AI)
+            {copy.docLinks?.ai || "AI consent"}
           </a>
           <a href={docs.cookies} target="_blank" rel="noopener noreferrer" style={INGRESS_SURFACE_V0.link}>
-            Çerezler
+            {copy.docLinks?.cookies || "Cookies"}
           </a>
         </nav>
+        {copy.docsNote ? (
+          <p style={{ fontSize: 12, lineHeight: 1.5, opacity: 0.75, margin: "0 0 16px" }}>{copy.docsNote}</p>
+        ) : null}
         <label style={checkboxStyle}>
           <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} style={{ marginTop: 4 }} />
           <span>{copy.checkboxes.terms}</span>

@@ -55,6 +55,8 @@ export function witnessRawVoiceTranscriptV0(meta = {}) {
     preview: observation.preview,
     ambientScore: observation.ambientScore,
     directedScore: observation.directedScore,
+    unknownScore: observation.unknownScore,
+    reason: observation.reason,
     energyTier: observation.energyTier,
     energyRatio: observation.energyRatio,
     roomBaselineRms: observation.roomBaselineRms,
@@ -62,6 +64,15 @@ export function witnessRawVoiceTranscriptV0(meta = {}) {
     strategy: observation.strategy,
     source: observation.source,
     maxRms: Number.isFinite(Number(meta.maxRms)) ? Number(meta.maxRms) : undefined
+  });
+  logVoiceInfoV0("DIRECTED_SPEECH_CLASSIFIER", {
+    stage,
+    band: observation.band,
+    directedScore: observation.directedScore,
+    ambientScore: observation.ambientScore,
+    unknownScore: observation.unknownScore,
+    reason: observation.reason,
+    preview: observation.preview
   });
 
   const shadow = isVoiceWitnessShadowEnabledV0() ? evaluateVoiceShadowReleaseV0(meta) : null;
@@ -214,7 +225,14 @@ export function runVoiceTranscriptWitnessPipelineV0(meta = {}) {
 
   logVoiceInfoV0("GATE_CONFIDENCE_ROUTER", {
     stage,
-    ...voiceConfidenceRouterLogDetailV0(route),
+    ...voiceConfidenceRouterLogDetailV0(route, {
+      confidence: meta.confidence,
+      strategy: meta.strategy,
+      directedScore: witnessed.observation.directedScore,
+      ambientScore: witnessed.observation.ambientScore,
+      band: witnessed.observation.band,
+      source
+    }),
     band: witnessed.observation.band,
     preview: text.slice(0, 96)
   });

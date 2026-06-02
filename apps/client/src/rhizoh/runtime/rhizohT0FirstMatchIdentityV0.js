@@ -4,9 +4,14 @@
  * @see docs/SURFACE_REDUCTION_PASS_LIVE_V0.md
  */
 
+import { isRhizohProductSurfaceDrawerOpenV0 } from "./rhizohProductChromePanelsV0.js";
+
+/** Bottom product drawer (`RhizohProductSurfaceDrawerV0`) approximate height reserve. */
+export const RHIZOH_PRODUCT_SURFACE_DRAWER_H_REM_V0 = 13.5;
+
 /**
- * Visible in first-match mode: CEOL + continuity rail, anchor/intent, chat, map, studio shell.
- * Hidden: cognition debug, advanced panels, observatory links, swarm telemetry copy.
+ * Visible in first-match mode: CEOL + continuity rail, GLOBE/swarm world, anchor/intent, chat, bottom drawers.
+ * Hidden: cognition debug, advanced panels, observatory links, verbose lab copy (not core swarm visuals).
  *
  * @returns {boolean}
  */
@@ -23,11 +28,28 @@ export function isRhizohT0FirstMatchIdentityV0() {
 /** Product shell bar (`UnifiedProductShellBar`) fixed height. */
 export const RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0 = 3.35;
 
+/** @deprecated separate toggle strip removed — bottom nav toggles panels. */
+export const RHIZOH_CHROME_TOGGLE_STRIP_H_REM_V0 = 0;
+
 /**
- * Chat dock `bottom` offset — clears continuity rail + product bar.
- * @param {{ compactRail?: boolean }} [opts]
+ * Chat dock `bottom` offset — product bar + optional surface drawer.
+ * @param {{ drawerOpen?: boolean }} [opts]
  */
 export function resolveRhizohT0ChatBottomCssV0(opts = {}) {
-  const railRem = opts.compactRail !== false && isRhizohT0FirstMatchIdentityV0() ? 5.75 : 8.75;
-  return `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + ${railRem}rem + env(safe-area-inset-bottom, 0px))`;
+  const drawerOpen =
+    opts.drawerOpen !== undefined ? opts.drawerOpen === true : isRhizohProductSurfaceDrawerOpenV0();
+  const drawerRem = drawerOpen ? RHIZOH_PRODUCT_SURFACE_DRAWER_H_REM_V0 : 0;
+  return `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + ${drawerRem}rem + env(safe-area-inset-bottom, 0px))`;
+}
+
+/** Capability wheel — product interaction hub (viewport center, not chat stack). */
+export function resolveRhizohT0CapabilityHaloLayoutV0() {
+  return Object.freeze({
+    position: "fixed",
+    left: "50%",
+    top: "clamp(36vh, 44%, 50vh)",
+    bottom: "auto",
+    transform: "translate(-50%, -50%)",
+    zIndex: 68
+  });
 }

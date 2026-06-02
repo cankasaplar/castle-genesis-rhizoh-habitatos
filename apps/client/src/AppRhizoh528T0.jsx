@@ -38,7 +38,7 @@ import {
 import SovereignRuntimePanel from "./sovereign/SovereignRuntimePanel.jsx";
 import { sovereignRuntimeSingleton } from "./sovereign/sovereignRuntimeSpec.js";
 import { ISTANBUL_GEO, ISTANBUL_POI, latLonToSceneXZ, sceneXZToLatLon } from "./castleFlight/geo.js";
-import { getCastleFlightConfig } from "./castleFlight/castleFlightConfig.js";
+import { getCastleFlightConfig, getGenesisProtocolGatewayOrigin } from "./castleFlight/castleFlightConfig.js";
 import { DroneFlightBridge } from "./castleFlight/DroneFlightBridge.js";
 import "./castleFlight/registerGlobals.js";
 import { installWebglContextLostReporter } from "./boot/castleCrashTelemetry.js";
@@ -60,7 +60,6 @@ import { DirectorDeckPanel } from "./studio/ui/DirectorDeckPanel";
 import { KernelConsolePanel } from "./studio/ui/KernelConsolePanel";
 import { WorldLivingMapPanel } from "./studio/ui/WorldLivingMapPanel";
 import { UnifiedProductShellBar } from "./studio/ui/UnifiedProductShellBar";
-import { T0ContinuitySurfaceRailV0 } from "./rhizoh/runtime/T0ContinuitySurfaceRailV0.jsx";
 import { RhizohCognitiveFieldV0 } from "./rhizoh/runtime/RhizohCognitiveFieldV0.jsx";
 import { RhizohHonestCognitionAmbientV0 } from "./rhizoh/runtime/RhizohHonestCognitionAmbientV0.jsx";
 import { RhizohThoughtField3DV0 } from "./rhizoh/runtime/RhizohThoughtField3DV0.jsx";
@@ -105,8 +104,49 @@ import {
 } from "./rhizoh/runtime/expressiveRealityMicroTransitionV0.js";
 import {
   isRhizohT0FirstMatchIdentityV0,
-  resolveRhizohT0ChatBottomCssV0
+  resolveRhizohT0ChatBottomCssV0,
+  resolveRhizohT0CapabilityHaloLayoutV0
 } from "./rhizoh/runtime/rhizohT0FirstMatchIdentityV0.js";
+import {
+  applyRhizohWorldLandingLockV0,
+  isRhizohCapabilityWheelVisibleV0,
+  resolveRhizohProductWorldRealityModeV0,
+  shouldRhizohFlyToIstanbulV0
+} from "./rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
+import { coerceRhizohUiReplyTextV0 } from "./rhizoh/runtime/rhizohLlmUiContractV0.js";
+import { RhizohCastleLayersDebugV0 } from "./rhizoh/runtime/RhizohCastleLayersDebugV0.jsx";
+import {
+  resolveChatPlaceholderV0,
+  resolveProductDetailChromeCopyV0,
+  resolveWorldCenterSubtitleV0,
+  resolveWorldMapToolLabelV0
+} from "./rhizoh/runtime/rhizohProductCopyI18nV0.js";
+import {
+  getUiLocaleSnapshotV0,
+  isTrUiLocaleV0,
+  readUiLocaleV0,
+  subscribeUiLocaleV0
+} from "./rhizoh/runtime/rhizohUiLocaleV0.js";
+import { RhizohProductSurfaceDrawerV0 } from "./components/RhizohProductSurfaceDrawerV0.jsx";
+import {
+  getRhizohChromePanelsSnapshotV0,
+  isRhizohProductChromePanelOpenV0,
+  isRhizohProductSurfaceDrawerOpenV0,
+  resolveOpenProductSurfaceDrawerIdV0,
+  setRhizohProductChromePanelOpenV0,
+  setRhizohProductSurfacePanelExclusiveV0,
+  subscribeRhizohChromePanelsV0,
+  toggleRhizohProductSurfacePanelV0
+} from "./rhizoh/runtime/rhizohProductChromePanelsV0.js";
+import {
+  applyRhizohWorldMapToolV0,
+  cycleRhizohWorldMapToolV0,
+  getRhizohWorldMapToolSnapshotV0,
+  readRhizohWorldMapToolV0,
+  resolveRhizohWorldMapToolLabelTrV0,
+  subscribeRhizohWorldMapToolV0
+} from "./rhizoh/runtime/rhizohWorldMapToolV0.js";
+import { RhizohWorldMapToolStripV0 } from "./rhizoh/runtime/RhizohWorldMapToolStripV0.jsx";
 import { emitT0SoftAffordanceHintV0 } from "./rhizoh/runtime/t0ContinuitySurfaceV0.js";
 import { pushT0ContinuityPulseV0 } from "./rhizoh/runtime/t0ContinuitySurfaceStreamV0.js";
 import { ProductProfilePanel } from "./studio/ui/ProductProfilePanel";
@@ -194,7 +234,11 @@ import {
   shouldShowSemanticHintChipsV0,
   shouldShowVerboseCommandHintV0
 } from "./rhizoh/experience/livingWorldFirstInteractionV0.js";
-import { prewarmSpeechSynthesisV0, resolveTurkishSpeechVoiceV0 } from "./rhizoh/runtime/prewarmSpeechSynthesisV0.js";
+import { prewarmSpeechSynthesisV0 } from "./rhizoh/runtime/prewarmSpeechSynthesisV0.js";
+import {
+  resolveSpeechBcp47ForUiLocaleV0,
+  resolveSpeechVoiceForUiLocaleV0
+} from "./rhizoh/runtime/rhizohSpeechLocaleV0.js";
 import {
   markVoiceTurnDispatchV0,
   speakAfterVoiceInstantAckSmoothV0,
@@ -7153,6 +7197,8 @@ export default function AppRhizoh528() {
   /** Uzak LLM ├╝retim rejimi ÔÇö cohort/zen: FAST_DIALOGUE (k─▒sa + h─▒zl─▒ ses). */
   const [rhizohGenerationMode, setRhizohGenerationMode] = useState(() => resolveDefaultRhizohGenerationModeV0());
   const [micListening, setMicListening] = useState(false);
+  const [productCameraOn, setProductCameraOn] = useState(false);
+  const productCameraStreamRef = useRef(null);
   const commandInputRef = useRef(null);
   const gatewayUx = useRhizohGatewayMonitor();
   const gatewaySnapshotRef = useRef({ phase: "initializing" });
@@ -8073,7 +8119,15 @@ export default function AppRhizoh528() {
     window.setTimeout(() => {
       const c = window.__CASTLE_CESIUM__;
       if (c?.focusCastle) c.focusCastle();
-      else c?.flyToIstanbul?.();
+      else if (
+        shouldRhizohFlyToIstanbulV0({
+          productSurface: "broadcast",
+          realityMode: uiStore.getState().realityMode,
+          source: "BROADCAST_PRESENCE"
+        })
+      ) {
+        c?.flyToIstanbul?.();
+      }
     }, 60);
   }, []);
 
@@ -8172,25 +8226,19 @@ export default function AppRhizoh528() {
   useEffect(() => {
     const s = productSurface;
     if (s === "world") {
-      void setRealityMode(
-        T0_FIRST_MATCH_IDENTITY_V0 ? "REAL_MAP" : "GLOBE",
-        { source: T0_FIRST_MATCH_IDENTITY_V0 ? "PRODUCT_SHELL_WORLD_MAP" : "PRODUCT_SHELL" }
-      );
+      void setRealityMode(resolveRhizohProductWorldRealityModeV0("world"), {
+        source: "PRODUCT_SHELL_WORLD",
+        productSurface: "world"
+      });
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
       uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
       setShowDetailDrawer(false);
-      if (T0_FIRST_MATCH_IDENTITY_V0) {
-        window.setTimeout(() => {
-          window.__CASTLE_CESIUM__?.flyToIstanbul?.();
-        }, 120);
-      }
       return;
     }
     if (s === "hall") {
       void setRealityMode("REAL_MAP", { source: "PRODUCT_SHELL_HALL" });
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
       uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
-      setShowDetailDrawer(true);
       setDrawerStudioTab("explore");
       return;
     }
@@ -8199,7 +8247,6 @@ export default function AppRhizoh528() {
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 5 });
       uiStore.dispatch({ type: "SET_GREENROOM", payload: true });
       ensureGreenRoomMainHallBound();
-      setShowDetailDrawer(true);
       setDrawerStudioTab("build");
       return;
     }
@@ -8207,7 +8254,6 @@ export default function AppRhizoh528() {
       void setRealityMode("REAL_MAP", { source: "PRODUCT_SHELL_BROADCAST" });
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 9 });
       uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
-      setShowDetailDrawer(true);
       setDrawerStudioTab("build");
       return;
     }
@@ -8215,7 +8261,6 @@ export default function AppRhizoh528() {
       void setRealityMode("REAL_MAP", { source: "PRODUCT_SHELL_STUDIO" });
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 12 });
       uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
-      setShowDetailDrawer(true);
       setDrawerStudioTab("analyze");
       return;
     }
@@ -8223,7 +8268,6 @@ export default function AppRhizoh528() {
       void setRealityMode("REAL_MAP", { source: "PRODUCT_SHELL_PROFILE" });
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 11 });
       uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
-      setShowDetailDrawer(true);
       setDrawerStudioTab("sovereign");
     }
   }, [productSurface]);
@@ -8232,25 +8276,159 @@ export default function AppRhizoh528() {
     (id) => {
       const surface = String(id || "world");
       writeProductSurfaceV0(surface);
+
+      if (
+        surface === "world" &&
+        productSurface === "world" &&
+        isRhizohProductChromePanelOpenV0("world")
+      ) {
+        setRhizohProductSurfacePanelExclusiveV0("world", false);
+        void applyRhizohWorldMapToolV0("globe", {
+          setRealityMode,
+          flyContext: {
+            nexusGeo: typeof window !== "undefined" ? window.__CASTLE_NEXUS_GEO__ : null,
+            castles: remoteCastles
+          },
+          source: "PRODUCT_SHELL_WORLD_PANEL_CLOSE"
+        });
+        return;
+      }
+
+      const toggled = toggleRhizohProductSurfacePanelV0(surface, productSurface);
+
+      if (toggled.closed) {
+        if (surface === "world") {
+          void applyRhizohWorldMapToolV0("globe", {
+            setRealityMode,
+            flyContext: {
+              nexusGeo: typeof window !== "undefined" ? window.__CASTLE_NEXUS_GEO__ : null,
+              castles: remoteCastles
+            },
+            source: "PRODUCT_SHELL_WORLD_PANEL_CLOSE"
+          });
+        }
+        if (surface !== "world") {
+          uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
+          void setRealityMode("GLOBE", { source: "PRODUCT_SHELL_PANEL_CLOSE" });
+          uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
+          uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
+          if (location.pathname !== "/") navigate("/");
+        }
+        return;
+      }
+
       triggerMicroExpressiveRealityTransitionV0(MICRO_MAP_SURFACE_OPEN_V0, {
         detail: { surface, source: "product_shell_v0" }
       });
-      if (surface === "world" && productSurface === "world") {
-        setShowDetailDrawer(false);
-        void setRealityMode("GLOBE", { source: "PRODUCT_SHELL_WORLD_RECENTER" });
+
+      if (productSurface !== surface) {
+        uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: surface });
+        const target = resolveRhizohProductPathV0(surface);
+        if (target && location.pathname !== target) {
+          navigateRhizohProductSurfaceV0(surface, navigate, location.pathname);
+        }
+      } else if (surface === "world") {
         uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
         uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
         if (location.pathname !== "/") navigate("/");
-        return;
       }
-      uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: surface });
-      const target = resolveRhizohProductPathV0(surface);
-      if (target && location.pathname !== target) {
-        navigateRhizohProductSurfaceV0(surface, navigate, location.pathname);
+
+      if (surface === "world" && toggled.open) {
+        void applyRhizohWorldMapToolV0("globe", {
+          setRealityMode,
+          flyContext: {
+            nexusGeo: typeof window !== "undefined" ? window.__CASTLE_NEXUS_GEO__ : null,
+            castles: remoteCastles
+          },
+          source: "PRODUCT_SHELL_WORLD_OPEN"
+        });
       }
     },
-    [productSurface, location.pathname, navigate]
+    [productSurface, location.pathname, navigate, remoteCastles]
   );
+
+  const onApplyWorldMapToolV0 = useCallback(
+    (mapTool, source = "MAP_TOOL_EXPLICIT") => {
+      setRhizohProductSurfacePanelExclusiveV0("world", true);
+      uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
+      void applyRhizohWorldMapToolV0(mapTool, {
+        setRealityMode,
+        flyContext: {
+          nexusGeo: typeof window !== "undefined" ? window.__CASTLE_NEXUS_GEO__ : null,
+          castles: remoteCastles
+        },
+        source
+      });
+      pushT0ContinuityPulseV0(
+        `${readUiLocaleV0() === "tr" ? "Harita" : "Map"} · ${resolveWorldMapToolLabelV0(mapTool, readUiLocaleV0())}`,
+        "world_map_tool"
+      );
+      recordFlowContinuityStepV0({ activeSurface: "world", userIntent: "explore" });
+    },
+    [remoteCastles]
+  );
+
+  const onOpenChromePanelV0 = useCallback((panelId) => {
+    const id = String(panelId || "") === "wheel" ? "world" : String(panelId || "world");
+    setRhizohProductSurfacePanelExclusiveV0(id, true);
+    if (id !== productSurface) {
+      onProductShellSelect(id);
+    }
+  }, [productSurface, onProductShellSelect]);
+
+  const onOpenMapToolV0 = useCallback(
+    (mapTool = "city_map") => {
+      setRhizohProductSurfacePanelExclusiveV0("world", true);
+      uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
+      onApplyWorldMapToolV0(mapTool, "MAP_TOOL_EXPLICIT");
+    },
+    [onApplyWorldMapToolV0]
+  );
+
+  const grammarBridgeOptsV0 = useMemo(
+    () => ({
+      onEnterSurface: onProductShellSelect,
+      onOpenMapTool: onOpenMapToolV0,
+      onOpenPanel: onOpenChromePanelV0
+    }),
+    [onProductShellSelect, onOpenMapToolV0, onOpenChromePanelV0]
+  );
+
+  const chromePanelsV0 = useSyncExternalStore(
+    subscribeRhizohChromePanelsV0,
+    getRhizohChromePanelsSnapshotV0,
+    getRhizohChromePanelsSnapshotV0
+  );
+
+  const worldMapToolV0 = useSyncExternalStore(
+    subscribeRhizohWorldMapToolV0,
+    getRhizohWorldMapToolSnapshotV0,
+    getRhizohWorldMapToolSnapshotV0
+  );
+
+  const showGlobeHomeOverlayV0 =
+    worldMapToolV0 === "globe" || !mapSurfaceActive || realityMode !== "REAL_MAP";
+
+  const showCapabilityWheelV0 = isRhizohCapabilityWheelVisibleV0(productSurface);
+
+  const openSurfaceDrawerIdV0 = resolveOpenProductSurfaceDrawerIdV0();
+
+  const chatDockBottomCssV0 = useMemo(
+    () =>
+      resolveRhizohT0ChatBottomCssV0({
+        drawerOpen: isRhizohProductSurfaceDrawerOpenV0()
+      }),
+    [chromePanelsV0, openSurfaceDrawerIdV0]
+  );
+
+  const onCloseSurfaceDrawerV0 = useCallback(() => {
+    if (openSurfaceDrawerIdV0) {
+      setRhizohProductSurfacePanelExclusiveV0(openSurfaceDrawerIdV0, false);
+    }
+    uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
+    void setRealityMode("GLOBE", { source: "PRODUCT_SHELL_DRAWER_CLOSE" });
+    if (location.pathname !== "/") navigate("/");
+  }, [openSurfaceDrawerIdV0, location.pathname, navigate]);
 
   const onT0SoftAffordanceV0 = useCallback(
     (affordanceId) => {
@@ -8383,10 +8561,17 @@ export default function AppRhizoh528() {
     [rhizohFieldState]
   );
 
-  const localeTr = useMemo(() => {
-    const code = readRhizohSessionLanguagePreferenceV0();
-    return !code || code === "tr" || code === "und";
-  }, []);
+  const uiLocaleV0 = useSyncExternalStore(
+    subscribeUiLocaleV0,
+    getUiLocaleSnapshotV0,
+    getUiLocaleSnapshotV0
+  );
+
+  const localeTr = isTrUiLocaleV0(uiLocaleV0);
+  const detailChromeCopyV0 = useMemo(
+    () => resolveProductDetailChromeCopyV0(uiLocaleV0),
+    [uiLocaleV0]
+  );
 
   const lastBusyEndAtRef = useRef(Date.now());
   const ceolStartAtRef = useRef(Date.now());
@@ -9193,13 +9378,14 @@ export default function AppRhizoh528() {
         return;
       }
       const sessionId = ++voiceTtsSessionIdRef.current;
+      const uiLocale = readUiLocaleV0();
       const utterance = new SpeechSynthesisUtterance(String(text).slice(0, 1800));
-      utterance.lang = "tr-TR";
+      utterance.lang = resolveSpeechBcp47ForUiLocaleV0(uiLocale);
       utterance.rate = 1;
       utterance.pitch = 1.05;
       utterance.volume = 0.92;
-      const trVoice = resolveTurkishSpeechVoiceV0();
-      if (trVoice) utterance.voice = trVoice;
+      const localeVoice = resolveSpeechVoiceForUiLocaleV0(uiLocale);
+      if (localeVoice) utterance.voice = localeVoice;
       utterance.onstart = () => {
         if (sessionId !== voiceTtsSessionIdRef.current) return;
         if (voiceTurn) {
@@ -9507,7 +9693,7 @@ export default function AppRhizoh528() {
         const normV = buildRhizohNormalizedLlmOutput(out, gatewayUx, mapSurfaceActive);
         const procV = materializeCommsFromNormalized(normV, out.reply);
         setRhizohMainHudReply({
-          text: procV.uiReply,
+          text: coerceRhizohUiReplyTextV0(out.reply, { fallback: procV.uiReply }),
           source: String(out.source || "voice"),
           at: Date.now()
         });
@@ -10402,6 +10588,37 @@ export default function AppRhizoh528() {
     startVoiceLoop();
   }, [voiceLoopEnabled, micListening, rhizohFieldState, stopVoiceLoop, startVoiceLoop, startVoiceToRhizoh]);
 
+  const handleCameraButtonClick = useCallback(async () => {
+    if (productCameraOn) {
+      productCameraStreamRef.current?.getTracks().forEach((t) => t.stop());
+      productCameraStreamRef.current = null;
+      setProductCameraOn(false);
+      pushT0ContinuityPulseV0("Kamera kapalı", "camera_off");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: false
+      });
+      productCameraStreamRef.current = stream;
+      setProductCameraOn(true);
+      pushT0ContinuityPulseV0("Kamera açık", "camera_on");
+    } catch {
+      setRhizohInlineError({
+        title: "Kamera",
+        detail: "İzin verilmedi veya cihaz bulunamadı."
+      });
+    }
+  }, [productCameraOn]);
+
+  useEffect(() => {
+    return () => {
+      productCameraStreamRef.current?.getTracks().forEach((t) => t.stop());
+      productCameraStreamRef.current = null;
+    };
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
     let simRaf = null;
@@ -10739,6 +10956,17 @@ export default function AppRhizoh528() {
   const handleExecute = async (overrideRaw) => {
     const raw = (overrideRaw ?? cmd).trim();
     if (!raw) return;
+    const gwPhase = String(gatewayUx?.phase || "").toLowerCase();
+    if (["offline", "offline_dns", "connecting", "reconnecting", "initializing"].includes(gwPhase)) {
+      const connecting = gwPhase === "connecting" || gwPhase === "reconnecting" || gwPhase === "initializing";
+      setRhizohInlineError({
+        title: connecting ? "Rhizoh hattına bağlanılıyor" : "Rhizoh hattı şu an kapalı",
+        detail: connecting
+          ? "Gateway birkaç saniye içinde hazır olur; lütfen bekleyip tekrar dene."
+          : "Ağ geçidi yanıt vermiyor. Üst durum çubuğundaki yeniden dene veya birkaç saniye sonra yaz."
+      });
+      return;
+    }
     setHasSentRhizohCommand(true);
     setRhizohInlineError(null);
     setRhizohMainHudReply(null);
@@ -10750,7 +10978,13 @@ export default function AppRhizoh528() {
 
     const localAction = resolveLocalActionAuthorityV0(raw);
     if (localAction.authority === LOCAL_AUTHORITY_LOCAL_V0) {
-      applyGrammarFromUtteranceV0(raw, { onEnterSurface: onProductShellSelect });
+      if (localAction.kind === "OPEN_PANEL" && localAction.panel) {
+        onOpenChromePanelV0(String(localAction.panel));
+      } else if (localAction.kind === "OPEN_MAP_TOOL") {
+        onOpenMapToolV0(localAction.mapTool || "city_map");
+      } else {
+        applyGrammarFromUtteranceV0(raw, grammarBridgeOptsV0);
+      }
       recordFlowIntentV0(
         raw,
         localAction.surface || productSurface,
@@ -10791,9 +11025,7 @@ export default function AppRhizoh528() {
     setLastIntentRaw(raw);
     setDemoLoopState("CREATING");
 
-    const grammarResolution = applyGrammarFromUtteranceV0(raw, {
-      onEnterSurface: onProductShellSelect
-    });
+    const grammarResolution = applyGrammarFromUtteranceV0(raw, grammarBridgeOptsV0);
     recordFlowIntentV0(
       raw,
       grammarResolution?.surface || productSurface,
@@ -10855,7 +11087,7 @@ export default function AppRhizoh528() {
       const normExec = buildRhizohNormalizedLlmOutput(out, gatewayUx, mapSurfaceActive);
       const procExec = materializeCommsFromNormalized(normExec, out.reply);
       setRhizohMainHudReply({
-        text: procExec.uiReply,
+        text: coerceRhizohUiReplyTextV0(out.reply, { fallback: procExec.uiReply }),
         source: String(out.source || "unknown"),
         at: Date.now()
       });
@@ -11200,6 +11432,15 @@ export default function AppRhizoh528() {
     } catch {
       /* noop */
     }
+    if (
+      !shouldRhizohFlyToIstanbulV0({
+        productSurface,
+        realityMode,
+        source: "BOOT_ENGINE_READY"
+      })
+    ) {
+      return;
+    }
     let tries = 0;
     const id = window.setInterval(() => {
       tries += 1;
@@ -11210,7 +11451,22 @@ export default function AppRhizoh528() {
       } else if (tries > 40) window.clearInterval(id);
     }, 250);
     return () => window.clearInterval(id);
-  }, [booted]);
+  }, [booted, realityMode, productSurface]);
+
+  useEffect(() => {
+    if (!booted || productSurface !== "world") return;
+    void applyRhizohWorldLandingLockV0({
+      setRealityMode,
+      flyContext: {
+        nexusGeo: typeof window !== "undefined" ? window.__CASTLE_NEXUS_GEO__ : null,
+        castles: remoteCastles
+      }
+    });
+  }, [booted, productSurface, remoteCastles]);
+
+  const voiceInputReadyV0 = Boolean(
+    voiceReady && getRhizohVoiceInputAdapterV0() && !getVoiceAdapterRegistrySnapshot().fallbackMode
+  );
 
   useEffect(() => {
     const phase = String(gatewayUx.phase || "");
@@ -11344,44 +11600,38 @@ export default function AppRhizoh528() {
         <div ref={containerRef} className="absolute inset-0 z-0 bg-black" />
         <CesiumRealMapLayer active={mapSurfaceActive} />
       </RhizohEpistemicWorldGravity>
+      {showGlobeHomeOverlayV0 ? (
       <div className="absolute inset-0 z-[5] pointer-events-none">
         
-        {!T0_FIRST_MATCH_IDENTITY_V0 ? (
-          <>
-            <SwarmCollectiveAuraV1 collectiveField={visualCognitionState.collectiveField} className="z-[1]" />
-            <div className={`absolute inset-0 bg-gradient-to-br ${governanceFx.tone}`} />
-            <div
-              className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2"
-              style={{ opacity: Math.min(0.35 + visualCognitionState.swarmField.intensity * 0.5, 0.95) }}
-            >
-              <div
-                className="absolute left-1/2 top-1/2 h-[min(72vw,520px)] w-[min(72vw,520px)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-400/15"
-                style={{
-                  background: `conic-gradient(from 0deg, transparent 0deg, rgba(34,211,238,0.12) 60deg, transparent 120deg, rgba(168,85,247,0.08) 200deg, transparent 280deg)`,
-                  animation: "spin 28s linear infinite"
-                }}
-              />
-              <div className="absolute left-1/2 top-1/2 flex h-36 w-36 -translate-x-1/2 -translate-y-1/2 items-center justify-center">
-                <div className={`h-32 w-32 rounded-full border-2 ${governanceFx.orb === "crystal" ? "border-red-300/70" : governanceFx.orb === "tense" ? "border-amber-300/60" : "border-cyan-300/70"} animate-pulse shadow-[0_0_60px_rgba(34,211,238,0.35)]`} />
-                <div className="absolute inset-[-28px] rounded-full border border-cyan-200/25 animate-ping" />
-                <div className="absolute inset-[-48px] rounded-full border border-fuchsia-400/10" />
-              </div>
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-[5.5rem] text-[9px] tracking-[0.2em] text-cyan-200/80 normal-case whitespace-nowrap">
-                {entityCount} field pulses ┬À swarm {visualCognitionState.swarmField.level}
-              </div>
+        <SwarmCollectiveAuraV1 collectiveField={visualCognitionState.collectiveField} className="z-[1]" />
+        <div className={`absolute inset-0 bg-gradient-to-br ${governanceFx.tone}`} />
+        <div
+          className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2"
+          style={{ opacity: Math.min(0.35 + visualCognitionState.swarmField.intensity * 0.5, 0.95) }}
+        >
+          <div
+            className="absolute left-1/2 top-1/2 h-[min(72vw,520px)] w-[min(72vw,520px)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-400/15"
+            style={{
+              background: `conic-gradient(from 0deg, transparent 0deg, rgba(34,211,238,0.12) 60deg, transparent 120deg, rgba(168,85,247,0.08) 200deg, transparent 280deg)`,
+              animation: "spin 28s linear infinite"
+            }}
+          />
+          <div className="absolute left-1/2 top-1/2 flex h-36 w-36 -translate-x-1/2 -translate-y-1/2 items-center justify-center">
+            <div className={`h-32 w-32 rounded-full border-2 ${governanceFx.orb === "crystal" ? "border-red-300/70" : governanceFx.orb === "tense" ? "border-amber-300/60" : "border-cyan-300/70"} animate-pulse shadow-[0_0_60px_rgba(34,211,238,0.35)]`} />
+            <div className="absolute inset-[-28px] rounded-full border border-cyan-200/25 animate-ping" />
+            <div className="absolute inset-[-48px] rounded-full border border-fuchsia-400/10" />
+          </div>
+          {!T0_FIRST_MATCH_IDENTITY_V0 ? (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-[5.5rem] text-[9px] tracking-[0.2em] text-cyan-200/80 normal-case whitespace-nowrap">
+              {entityCount} field pulses · swarm {visualCognitionState.swarmField.level}
             </div>
-          </>
-        ) : (
-          <>
-            <div className="absolute inset-0 bg-gradient-to-b from-[#010103]/25 via-transparent to-[#010103]/55" />
-            <div className="absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-              <div className="h-24 w-24 rounded-full border border-cyan-400/25 bg-cyan-500/5 shadow-[0_0_48px_rgba(34,211,238,0.18)]" />
-              <p className="mt-3 text-center text-[9px] tracking-[0.18em] text-cyan-200/70 normal-case">
-                İstanbul · dünya katmanı
-              </p>
+          ) : (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-[5.5rem] text-[10px] text-cyan-200/80 normal-case text-center max-w-[16rem] leading-snug">
+              {resolveWorldCenterSubtitleV0(uiLocaleV0)}
             </div>
-          </>
-        )}
+
+          )}
+        </div>
         {!T0_FIRST_MATCH_IDENTITY_V0 && (showReplayGhostTrails || replayTimelinePct > 0) ? (
           <div className="absolute inset-x-10 bottom-28 z-[6] flex flex-col gap-2">
             <div className="h-1.5 w-full max-w-md mx-auto rounded-full bg-white/10 overflow-hidden">
@@ -11398,6 +11648,7 @@ export default function AppRhizoh528() {
           </div>
         ) : null}
       </div>
+      ) : null}
 
       {!T0_FIRST_MATCH_IDENTITY_V0 && !thoughtFieldExpanded && attentionRhythm.show_cognitive_field_chip ? (
         <RhizohCognitiveFieldV0
@@ -11428,19 +11679,52 @@ export default function AppRhizoh528() {
           />
         </>
       ) : null}
-      <T0ContinuitySurfaceRailV0
-        activeSurface={productSurface}
-        rhizohFieldState={rhizohFieldState}
-        localeTr={localeTr}
-        anchorEmphasisOverride={attentionRhythm.anchor_emphasis}
-        flowContinuity={flowContinuity}
-        ceol={ceolChoreography}
-        onFlowReturn={onFlowReturnV0}
-        onSelectSurface={onProductShellSelect}
-        onSoftAffordance={onT0SoftAffordanceV0}
-        onIntentChange={() => setT0UserIntent(readT0UserIntentV0())}
+
+      {showCapabilityWheelV0 ? (
+        <>
+          <RhizohWorldMapToolStripV0
+            className="fixed left-1/2 z-[67] -translate-x-1/2"
+            style={{ top: "clamp(26vh, 32%, 38vh)" }}
+            activeTool={worldMapToolV0}
+            uiLocale={uiLocaleV0}
+            onSelect={(id) => onApplyWorldMapToolV0(id, "WORLD_MAP_STRIP")}
+          />
+          <RhizohCapabilityHaloV1
+            className="pointer-events-auto fixed left-1/2 z-[68] max-w-3xl w-full -translate-x-1/2 px-2 sm:px-4"
+            style={resolveRhizohT0CapabilityHaloLayoutV0()}
+            data-rhizoh-product-interaction-hub="1"
+            data-rhizoh-capability-wheel-always="1"
+            uiLocale={uiLocaleV0}
+            collectivePulse={visualCognitionState.collectiveField?.density ?? 0.4}
+            onSeedIntent={(s) => {
+              setCmd(s);
+              setRhizohFieldState("LISTENING");
+            }}
+            onFocusLayer={(id) => {
+              uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: id });
+            }}
+          />
+        </>
+      ) : null}
+
+      <UnifiedProductShellBar
+        active={productSurface}
+        panelOpen={chromePanelsV0}
+        onSelect={onProductShellSelect}
+        uiLocale={uiLocaleV0}
       />
-      <UnifiedProductShellBar active={productSurface} onSelect={onProductShellSelect} />
+
+      {openSurfaceDrawerIdV0 ? (
+        <RhizohProductSurfaceDrawerV0
+          surface={openSurfaceDrawerIdV0}
+          open
+          onClose={onCloseSurfaceDrawerV0}
+          auth={castleAuth}
+          gatewayOrigin={getGenesisProtocolGatewayOrigin()}
+          runtimeHealth={runtimeHealth}
+          uiLocale={uiLocaleV0}
+        />
+      ) : null}
 
       {immersiveLiveTrace ? (
         <div className="pointer-events-auto fixed bottom-[5.25rem] left-1/2 z-[58] flex max-w-[95vw] -translate-x-1/2 items-center gap-3 rounded-full border border-fuchsia-400/45 bg-black/75 px-4 py-2 text-[9px] text-fuchsia-100/95 shadow-[0_0_24px_rgba(192,38,211,0.2)] normal-case">
@@ -11519,7 +11803,7 @@ export default function AppRhizoh528() {
                 onClick={() => setShowDetailDrawer((v) => !v)}
                 className="rounded-xl border border-white/12 bg-black/40 px-3 py-2 text-[9px] tracking-[0.12em] text-white/55 normal-case hover:text-white/80"
               >
-                {showDetailDrawer ? "Detayları kapat" : "Detay"}
+                {showDetailDrawer ? detailChromeCopyV0.close : detailChromeCopyV0.open}
               </button>
             )}
           </div>
@@ -11861,32 +12145,18 @@ export default function AppRhizoh528() {
 
         <div
           className="shrink-0 w-full"
-          style={{ minHeight: resolveRhizohT0ChatBottomCssV0() }}
+          style={{ minHeight: chatDockBottomCssV0 }}
           aria-hidden
         />
 
-        <RhizohCapabilityHaloV1
-          className={`pointer-events-auto fixed left-1/2 z-[62] mb-0 max-w-3xl w-full -translate-x-1/2 px-2 sm:px-4 ${
-            T0_FIRST_MATCH_IDENTITY_V0 ? "scale-[0.88] origin-bottom opacity-90" : ""
-          }`}
-          style={{ bottom: `calc(${resolveRhizohT0ChatBottomCssV0()} + 5.25rem)` }}
-          collectivePulse={visualCognitionState.collectiveField?.density ?? 0.4}
-          onSeedIntent={(s) => {
-            setCmd(s);
-            setRhizohFieldState("LISTENING");
-          }}
-          onFocusLayer={(id) => {
-            uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: id });
-          }}
-        />
-
         <div
-          className="pointer-events-none fixed inset-x-0 z-[62] flex justify-center px-2 sm:px-4"
-          style={{ bottom: resolveRhizohT0ChatBottomCssV0() }}
+          className="pointer-events-none fixed inset-x-0 z-[64] flex justify-center px-2 sm:px-4"
+          style={{ bottom: chatDockBottomCssV0 }}
           data-rhizoh-t0-chat-dock="1"
         >
           <div className="pointer-events-auto w-full max-w-3xl">
         <RhizohT0ShellChromeV1
+          uiLocale={uiLocaleV0}
           phaseLabel={rhizohConversationUx.label}
           goals={rhizohConversationUx.goals}
           gatewayUx={gatewayUx}
@@ -11902,9 +12172,7 @@ export default function AppRhizoh528() {
           onSend={() => void handleExecute()}
           busy={rhizohCommandBusy}
           inputRef={commandInputRef}
-          placeholder={resolveCommandPlaceholderV0({
-            fullPlaceholder: "Rhizoh'a yaz…"
-          })}
+          placeholder={resolveChatPlaceholderV0(uiLocaleV0)}
           fieldState={rhizohFieldState}
           inlineError={rhizohInlineError}
           onDismissError={() => setRhizohInlineError(null)}
@@ -11931,11 +12199,22 @@ export default function AppRhizoh528() {
           showCommandLog={showCommandLog}
           onToggleCommandLog={() => setShowCommandLog((v) => !v)}
           runtimeHealth={runtimeHealth}
+          unifiedDock
+          collectiveDensity={visualCognitionState?.collectiveField?.density ?? 0.4}
+          showProductMic={true}
+          showProductCamera
+          voiceInputReady={voiceInputReadyV0}
+          micActive={micListening || voiceLoopEnabled}
+          onMicClick={handleMicButtonClick}
+          cameraActive={productCameraOn}
+          onCameraClick={handleCameraButtonClick}
         />
           </div>
         </div>
+
       </div>
 
+      <RhizohCastleLayersDebugV0 gatewayPhase={gatewayUx?.phase} />
       <CastleAuthOverlay auth={castleAuth} />
       <RhizohSceneAnchorWindow />
 
@@ -11962,7 +12241,13 @@ export default function AppRhizoh528() {
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes shimmer { 100% { transform: translateX(100%); } }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        input::placeholder { font-size: 11px; letter-spacing: 0.6em; opacity: 0.3; font-weight: 900; }
+        #castle-rhizoh-command::placeholder {
+          font-size: 12px;
+          letter-spacing: normal;
+          opacity: 0.4;
+          font-weight: 400;
+          text-transform: none;
+        }
         .backdrop-blur-5xl { backdrop-filter: blur(80px); }
       `}</style>
     </div>

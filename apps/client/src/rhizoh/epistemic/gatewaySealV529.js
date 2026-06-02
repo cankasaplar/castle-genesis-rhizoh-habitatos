@@ -2,6 +2,7 @@ import { getCastleFlightConfig } from "../../castleFlight/castleFlightConfig.js"
 import { getOrCreateCastleDevUid, getRhizohGatewayHealthBase } from "../useRhizohGatewayMonitor.js";
 import {
   getEpistemicGatewayRoutesReachable,
+  markEpistemicGatewayAuthFailedV0,
   markEpistemicGatewayRoutesMissing,
   markEpistemicGatewayRoutesOk
 } from "./epistemicGatewayCapability.js";
@@ -52,6 +53,10 @@ export async function requestEpistemicSealFromGateway(body, idToken = "") {
     if (res.status === 404) {
       markEpistemicGatewayRoutesMissing("seal", base);
       return { ok: false, error: j.error || "http_404" };
+    }
+    if (res.status === 401 || res.status === 403) {
+      markEpistemicGatewayAuthFailedV0("seal", j.error || `http_${res.status}`);
+      return { ok: false, error: j.error || `http_${res.status}` };
     }
     if (!res.ok || !j.ok) {
       return { ok: false, error: j.error || `http_${res.status}` };

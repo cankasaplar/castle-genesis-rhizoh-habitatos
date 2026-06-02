@@ -9,6 +9,7 @@ import {
   isExpressiveRealityBootCompleteV0,
   triggerMemoryRecallMicroRtlV0
 } from "./expressiveRealityMicroTransitionV0.js";
+import { coerceRhizohUiReplyTextV0 } from "./rhizohLlmUiContractV0.js";
 
 export const RHIZOH_LLM_REPLY_NORMALIZED_SCHEMA_V0 = "castle.rhizoh.llm_reply_normalized.v0";
 
@@ -97,7 +98,8 @@ export function normalizeRhizohLlmGatewayResponseV0(gatewayJson) {
 export function resolveRhizohReplyForDisplayV0(normalized, opts = {}) {
   const emptyFallback = String(opts.emptyFallback ?? "");
   if (normalized.deliveryKind === "semantic_silence") return "";
-  if (normalized.reply) return normalized.reply;
+  const reply = coerceRhizohUiReplyTextV0(normalized.reply, { fallback: emptyFallback });
+  if (reply) return reply;
   return emptyFallback;
 }
 

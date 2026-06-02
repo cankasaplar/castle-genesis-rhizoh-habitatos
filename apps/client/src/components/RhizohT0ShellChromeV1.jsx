@@ -1,13 +1,20 @@
 import React, { memo, useEffect } from "react";
-import { Send, Layers } from "lucide-react";
+import { Camera, CameraOff, Mic, MicOff, Send, Layers } from "lucide-react";
 import { isCastleLayerRenderableV1, publishCastleLayerAuditV1 } from "../castle/layers/castleLayerGateV1.js";
 import { RhizohGatewayBanner } from "./RhizohGatewayBanner.jsx";
 import { RhizohTrustUpdateStrip } from "./RhizohTrustUpdateStrip.jsx";
 import { RhizohCohortInspectStrip } from "./RhizohCohortInspectStrip.jsx";
 import { RhizohWorldContinuityStrip } from "./RhizohWorldContinuityStrip.jsx";
+import { RhizohInputThoughtGlowV0 } from "./RhizohInputThoughtGlowV0.jsx";
+import {
+  resolveChatStatusLineV0,
+  resolveChatPlaceholderV0,
+  resolveVoiceAvailableHintV0
+} from "../rhizoh/runtime/rhizohProductCopyI18nV0.js";
+import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
 
 /**
- * T0 clean shell — chat + minimal state + advanced layer toggle only.
+ * T0 product shell — unified input (mic · camera · thought glow · text · send).
  */
 export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
   phaseLabel,
@@ -27,6 +34,7 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
   inputRef,
   placeholder = "Rhizoh'a yaz…",
   fieldState = "IDLE",
+  collectiveDensity = 0.4,
   inlineError,
   onDismissError,
   mainHudReply,
@@ -44,9 +52,24 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
   commandLog = [],
   showCommandLog,
   onToggleCommandLog,
-  runtimeHealth
+  runtimeHealth,
+  unifiedDock = false,
+  showProductMic = true,
+  showProductCamera = true,
+  micActive = false,
+  onMicClick,
+  voiceInputReady = false,
+  cameraActive = false,
+  onCameraClick,
+  uiLocale
 }) {
-  const showVoiceUi = isCastleLayerRenderableV1("voice_v1_loop_mic_ui", { advancedOpen });
+  const locale = uiLocale || readUiLocaleV0();
+  const showLegacyVoiceMic =
+    !unifiedDock && isCastleLayerRenderableV1("voice_v1_loop_mic_ui", { advancedOpen });
+  const showMic =
+    showProductMic !== false && (unifiedDock ? true : showProductMic || showLegacyVoiceMic);
+  const showVoiceReadyHint = showMic && voiceInputReady && !micActive && fieldState === "IDLE";
+  const showCamera = unifiedDock ? showProductCamera !== false : showProductCamera;
   const showGatewayBanner =
     isCastleLayerRenderableV1("gateway_banner_panel", { advancedOpen }) &&
     (advancedOpen || (gatewayUx?.phase && gatewayUx.phase !== "connected"));
@@ -59,26 +82,187 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
     publishCastleLayerAuditV1({
       advancedOpen,
       mounted: {
-        voice_v1_loop_mic_ui: showVoiceUi,
-        voice_v3_dock_mic: false,
+        voice_v1_loop_mic_ui: showLegacyVoiceMic,
+        voice_v3_dock_mic: showMic,
+        product_camera_dock: showCamera,
         gateway_banner_panel: showGatewayBanner,
         trust_strip_expanded: showTrustStrip,
         first_interaction_chips: showChips,
         t0_slot_chat_surface: true,
-        t0_slot_state_indicator: true,
-        t0_slot_layer_toggle: true
+        t0_slot_state_indicator: !unifiedDock,
+        t0_slot_layer_toggle: !unifiedDock
       }
     });
-  }, [advancedOpen, showVoiceUi, showGatewayBanner, showTrustStrip, showChips]);
+  }, [
+    advancedOpen,
+    showLegacyVoiceMic,
+    showMic,
+    showCamera,
+    showGatewayBanner,
+    showTrustStrip,
+    showChips,
+    unifiedDock
+  ]);
 
-  const stateLine =
-    fieldState === "SPEAKING"
-      ? "yanıt"
-      : fieldState === "INTERPRETING"
-        ? "düşünüyor"
-        : busy
-          ? "işliyor"
-          : "hazır";
+  const stateLine = resolveChatStatusLineV0(
+    {
+      connected: gatewayConnected,
+      busy,
+      fieldState
+    },
+    locale
+  );
+  const inputPlaceholder = placeholder === "Rhizoh'a yaz…" || placeholder === "Message Rhizoh…"
+    ? resolveChatPlaceholderV0(locale)
+    : placeholder;
+
+  const inputRow = (
+    <div className="relative flex flex-col gap-1 px-2 py-2">
+      {showVoiceReadyHint ? (
+        <div
+          className="flex items-center justify-center gap-2 px-1 text-[10px] font-medium normal-case tracking-normal text-cyan-200/90"
+          data-rhizoh-voice-available="1"
+          role="status"
+        >
+          <span className="h-2 w-2 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.75)] animate-pulse" />
+          {resolveVoiceAvailableHintV0(locale)}
+        </div>
+      ) : null}
+      <div className="relative flex items-center gap-1.5">
+      {showCamera ? (
+        <button
+          type="button"
+          title={cameraActive ? "Kamerayı kapat" : "Kamera"}
+          onClick={() => onCameraClick?.()}
+          disabled={busy && !cameraActive}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition ${
+            cameraActive
+              ? "border-violet-400/50 bg-violet-500/20 text-violet-100"
+              : "border-white/15 bg-white/5 text-white/75 hover:border-violet-400/40 hover:text-violet-100"
+          }`}
+          aria-pressed={cameraActive}
+          aria-label={cameraActive ? "Kamera açık" : "Kamera"}
+        >
+          {cameraActive ? <CameraOff className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
+        </button>
+      ) : null}
+      {showMic ? (
+        <button
+          type="button"
+          title={micActive ? "Dinlemeyi durdur" : "Mikrofon"}
+          onClick={() => onMicClick?.()}
+          disabled={busy && !micActive}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition ${
+            micActive
+              ? "border-rose-400/50 bg-rose-500/20 text-rose-100"
+              : "border-white/15 bg-white/5 text-white/75 hover:border-cyan-400/40 hover:text-cyan-100"
+          }`}
+          aria-pressed={micActive}
+          aria-label={micActive ? "Mikrofon açık" : "Mikrofon"}
+        >
+          {micActive ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+        </button>
+      ) : null}
+      <input
+        ref={inputRef}
+        id="castle-rhizoh-command"
+        value={cmd}
+        onChange={(e) => setCmd(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey && !busy) {
+            e.preventDefault();
+            onSend?.();
+          }
+        }}
+        autoComplete="off"
+        disabled={busy}
+        placeholder={inputPlaceholder}
+        className="min-w-0 flex-1 bg-transparent text-[13px] text-white outline-none normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-white/40"
+        aria-label="Mesaj"
+      />
+      <button
+        type="button"
+        id="castle-rhizoh-send"
+        onClick={() => onSend?.()}
+        disabled={busy || !String(cmd || "").trim()}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-500/90 text-black disabled:opacity-40 ${
+          busy ? "opacity-55" : ""
+        }`}
+        aria-label="Gönder"
+        aria-busy={busy}
+      >
+        <Send className="h-4 w-4" />
+      </button>
+      </div>
+    </div>
+  );
+
+  if (unifiedDock) {
+    return (
+      <div className="flex justify-center mb-0 px-0" data-rhizoh-t0-shell="1" data-unified-dock="1">
+        <div className="w-full max-w-3xl flex flex-col gap-2 pointer-events-auto">
+          {showGatewayBanner && gatewayUx ? (
+            <RhizohGatewayBanner
+              model={gatewayUx}
+              onRetry={onGatewayRetry}
+              hasHttpOrigin={hasHttpOrigin}
+              conversationPhaseLabel={conversationPhaseLabel}
+              className="text-[10px]"
+            />
+          ) : null}
+
+          {inlineError ? (
+            <div
+              role="alert"
+              className="rounded-lg border border-red-400/40 bg-red-950/40 px-3 py-2 text-[10px] normal-case backdrop-blur-md"
+            >
+              <div className="font-semibold text-red-100">{inlineError.title}</div>
+              <p className="mt-1 text-white/85">{inlineError.detail}</p>
+              {onDismissError ? (
+                <button type="button" className="mt-2 text-[9px] text-white/70 underline" onClick={onDismissError}>
+                  Kapat
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
+          {mainHudReply?.text ? (
+            <div
+              role="status"
+              className="rounded-lg border border-emerald-400/30 bg-emerald-950/30 px-3 py-2 text-[11px] text-white/90 normal-case whitespace-pre-wrap backdrop-blur-md"
+            >
+              {mainHudReply.text.slice(0, 400)}
+              {mainHudReply.text.length > 400 ? "…" : ""}
+              {onDismissReply ? (
+                <button type="button" className="mt-1 block text-[9px] text-white/55 underline" onClick={onDismissReply}>
+                  Kapat
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
+          {isCastleLayerRenderableV1("t0_slot_chat_surface") ? (
+            <div
+              className="relative overflow-hidden rounded-2xl border border-white/15 bg-black/75 shadow-[0_0_32px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+              data-rhizoh-unified-input="1"
+            >
+              <RhizohInputThoughtGlowV0 fieldState={fieldState} collectiveDensity={collectiveDensity} />
+              {inputRow}
+              <div className="flex items-center gap-2 border-t border-white/8 px-3 py-1.5 text-[8px] normal-case text-white/45">
+                <span
+                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                    gatewayConnected ? "bg-emerald-400" : "bg-amber-400"
+                  }`}
+                  aria-hidden
+                />
+                <span className="truncate">{stateLine}</span>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -95,12 +279,11 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
               }`}
               aria-hidden
             />
-            <span className="font-semibold text-white/85">{phaseLabel || "—"}</span>
-            <span className="text-white/45">
-              güven {goals?.bondScore != null ? Number(goals.bondScore).toFixed(2) : "—"} · {stateLine}
-            </span>
-            {gatewayUx?.headline ? (
-              <span className="text-white/40 truncate max-w-[10rem]">{gatewayUx.headline}</span>
+            <span className="font-semibold text-white/85 normal-case">{stateLine}</span>
+            {!gatewayConnected && gatewayUx?.headline ? (
+              <span className="text-white/45 truncate max-w-[12rem] normal-case text-[8px]">
+                {gatewayUx.headline}
+              </span>
             ) : null}
             {isCastleLayerRenderableV1("t0_slot_layer_toggle") ? (
               <button
@@ -220,37 +403,9 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
         ) : null}
 
         {isCastleLayerRenderableV1("t0_slot_chat_surface") ? (
-          <div className="flex items-center gap-2 rounded-xl border border-white/12 bg-black/50 px-2 py-1.5">
-            <input
-              ref={inputRef}
-              id="castle-rhizoh-command"
-              value={cmd}
-              onChange={(e) => setCmd(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey && !busy) {
-                  e.preventDefault();
-                  onSend?.();
-                }
-              }}
-              autoComplete="off"
-              disabled={busy}
-              placeholder={placeholder}
-              className="min-w-0 flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-white/35 normal-case"
-              aria-label="Mesaj"
-            />
-            <button
-              type="button"
-              id="castle-rhizoh-send"
-              onClick={() => onSend?.()}
-              disabled={busy || !String(cmd || "").trim()}
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-500/90 text-black disabled:opacity-40 ${
-                busy ? "opacity-55" : ""
-              }`}
-              aria-label="Gönder"
-              aria-busy={busy}
-            >
-              <Send className="h-4 w-4" />
-            </button>
+          <div className="relative overflow-hidden rounded-xl border border-white/12 bg-black/50">
+            <RhizohInputThoughtGlowV0 fieldState={fieldState} collectiveDensity={collectiveDensity} />
+            {inputRow}
           </div>
         ) : null}
 

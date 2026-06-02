@@ -20,7 +20,12 @@ import {
 import { emitNextActionAnchorV0, resolveNextActionAnchorV0 } from "./rhizohActionCoherenceV0.js";
 import { RhizohNextActionAnchorV0 } from "./RhizohNextActionAnchorV0.jsx";
 import { RhizohFlowContinuityStripV0 } from "./RhizohFlowContinuityStripV0.jsx";
-import { isRhizohT0FirstMatchIdentityV0 } from "./rhizohT0FirstMatchIdentityV0.js";
+import {
+  isRhizohT0FirstMatchIdentityV0,
+  RHIZOH_CHROME_TOGGLE_STRIP_H_REM_V0,
+  RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0
+} from "./rhizohT0FirstMatchIdentityV0.js";
+import { RHIZOH_INTENT_PLAIN_TR_V0 } from "./rhizohProductPlainCopyV0.js";
 
 /**
  * T0 continuity surface — context strip (play call) + intent anchors + rail + optional stream.
@@ -94,16 +99,16 @@ export function T0ContinuitySurfaceRailV0({
   const affordances = listT0SoftAffordancesV0();
   const recent = pulses.slice(-3).reverse();
 
-  const vis = ceol?.visibility ?? {
+  const vis = Object.freeze({
     show_world_substrate: true,
     show_context_strip: true,
-    show_soft_affordances: true,
-    show_flow_continuity: true,
+    show_soft_affordances: !compactIdentity,
+    show_flow_continuity: !compactIdentity,
     show_intent_anchors: true,
-    show_surface_rail: true,
+    show_surface_rail: !compactIdentity,
     show_next_action_anchor: true,
     allow_input_focus: true
-  };
+  });
 
   const fade = (on) =>
     `transition-opacity duration-500 ease-out ${on ? "opacity-100" : "opacity-0 max-h-0 overflow-hidden pointer-events-none"}`;
@@ -121,8 +126,11 @@ export function T0ContinuitySurfaceRailV0({
   return (
     <div
       className={`pointer-events-auto fixed left-0 right-0 z-[58] border-t border-white/8 bg-[#030711]/88 backdrop-blur-xl ${
-        compactIdentity ? "bottom-[3.35rem] max-h-[5.75rem] overflow-y-auto no-scrollbar" : "bottom-[3.35rem]"
+        compactIdentity ? "max-h-[5.75rem] overflow-y-auto no-scrollbar" : ""
       }`}
+      style={{
+        bottom: `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + ${RHIZOH_CHROME_TOGGLE_STRIP_H_REM_V0}rem)`
+      }}
       data-rhizoh-t0-continuity-surface="1"
       data-ceol-state={ceol?.choreography_state || "PLAY_READY"}
       data-compact-identity={compactIdentity ? "1" : "0"}
@@ -153,31 +161,35 @@ export function T0ContinuitySurfaceRailV0({
           />
         </div>
 
-        <div className={fade(vis.show_flow_continuity)}>
-          <RhizohFlowContinuityStripV0 flow={flowContinuity} onReturn={onFlowReturn} />
-        </div>
+        {!compactIdentity ? (
+          <div className={fade(vis.show_flow_continuity)}>
+            <RhizohFlowContinuityStripV0 flow={flowContinuity} onReturn={onFlowReturn} />
+          </div>
+        ) : null}
 
         <div
           className={`flex flex-wrap items-center gap-1 ${fade(vis.show_intent_anchors)}`}
           data-rhizoh-intent-anchors="1"
         >
-          <span className="text-[7px] font-black uppercase tracking-[0.18em] text-white/35 shrink-0">
-            Niyet
+          <span className="text-[8px] font-semibold text-white/55 shrink-0 normal-case">
+            Ne yapmak istersin?
           </span>
           {T0_INTENT_ANCHORS_V0.map((item) => {
             const on = userIntent === item.id;
+            const plain = RHIZOH_INTENT_PLAIN_TR_V0[item.id];
             return (
               <button
                 key={item.id}
                 type="button"
+                title={plain?.hint || item.label_tr}
                 onClick={() => pickIntent(item.id)}
-                className={`touch-manipulation rounded-md border px-2 py-0.5 text-[8px] font-semibold normal-case transition-colors ${
+                className={`touch-manipulation rounded-md border px-2 py-0.5 text-[9px] font-semibold normal-case transition-colors ${
                   on
                     ? "border-teal-400/45 bg-teal-500/20 text-teal-100"
                     : "border-white/10 bg-black/25 text-white/50 hover:border-white/20 hover:text-white/75"
                 }`}
               >
-                {item.label_tr}
+                {plain?.label || item.label_tr}
               </button>
             );
           })}

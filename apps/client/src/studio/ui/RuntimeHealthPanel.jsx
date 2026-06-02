@@ -2,6 +2,21 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CASTLE_RUNTIME_MODULE_VERSIONS, CASTLE_RUNTIME_VERSION } from "../runtime/castleRuntimeVersion";
 
+const DEFAULT_RUNTIME_HEALTH_V0 = Object.freeze({
+  gatewayConnected: false,
+  gatewayPhase: "initializing",
+  meshConnected: false,
+  worldActive: false,
+  presenceActive: false,
+  broadcastLive: false,
+  rhizohHeartbeat: false,
+  studioDegraded: true,
+  studioTier: null,
+  studioDetail: null,
+  economyHealthy: false,
+  memoryFresh: false
+});
+
 function StatusRow({ label, on, detail }) {
   return (
     <div className="flex items-center justify-between gap-2 rounded-md border border-white/10 bg-black/25 px-2 py-1.5">
@@ -15,6 +30,7 @@ function StatusRow({ label, on, detail }) {
 }
 
 export function RuntimeHealthPanel({ health, gatewayBaseUrl = "", workerInfraUrl = "" }) {
+  const h = health ?? DEFAULT_RUNTIME_HEALTH_V0;
   const [infra, setInfra] = useState({ status: "unknown", score: 0, reasons: [], worker: null });
   const gatewayHealthUrl = useMemo(() => {
     const base = String(gatewayBaseUrl || "").trim();
@@ -55,23 +71,23 @@ export function RuntimeHealthPanel({ health, gatewayBaseUrl = "", workerInfraUrl
         <div className="text-[8px] text-cyan-100/70">{CASTLE_RUNTIME_VERSION}</div>
       </div>
       <div className="grid gap-1.5">
-        <StatusRow label="Gateway" on={health.gatewayConnected} detail={health.gatewayConnected ? "connected" : health.gatewayPhase} />
-        <StatusRow label="Mesh" on={health.meshConnected} detail={health.meshConnected ? "connected" : "idle"} />
-        <StatusRow label="World" on={health.worldActive} detail={health.worldActive ? "active" : "idle"} />
-        <StatusRow label="Presence" on={health.presenceActive} detail={health.presenceActive ? "active" : "idle"} />
-        <StatusRow label="Broadcast" on={health.broadcastLive} detail={health.broadcastLive ? "live" : "idle"} />
-        <StatusRow label="Rhizoh" on={health.rhizohHeartbeat} detail={health.rhizohHeartbeat ? "heartbeat" : "cold"} />
+        <StatusRow label="Gateway" on={h.gatewayConnected} detail={h.gatewayConnected ? "connected" : h.gatewayPhase} />
+        <StatusRow label="Mesh" on={h.meshConnected} detail={h.meshConnected ? "connected" : "idle"} />
+        <StatusRow label="World" on={h.worldActive} detail={h.worldActive ? "active" : "idle"} />
+        <StatusRow label="Presence" on={h.presenceActive} detail={h.presenceActive ? "active" : "idle"} />
+        <StatusRow label="Broadcast" on={h.broadcastLive} detail={h.broadcastLive ? "live" : "idle"} />
+        <StatusRow label="Rhizoh" on={h.rhizohHeartbeat} detail={h.rhizohHeartbeat ? "heartbeat" : "cold"} />
         <StatusRow
           label="Studio tier"
-          on={!health.studioDegraded}
+          on={!h.studioDegraded}
           detail={
-            health.studioTier
-              ? `${String(health.studioTier)}${health.studioDetail ? ` · ${health.studioDetail}` : ""}`
+            h.studioTier
+              ? `${String(h.studioTier)}${h.studioDetail ? ` · ${h.studioDetail}` : ""}`
               : "pending"
           }
         />
-        <StatusRow label="Economy" on={health.economyHealthy} detail={health.economyHealthy ? "healthy" : "draining"} />
-        <StatusRow label="Memory Pack" on={health.memoryFresh} detail={health.memoryFresh ? "fresh" : "stale"} />
+        <StatusRow label="Economy" on={h.economyHealthy} detail={h.economyHealthy ? "healthy" : "draining"} />
+        <StatusRow label="Memory Pack" on={h.memoryFresh} detail={h.memoryFresh ? "fresh" : "stale"} />
         <StatusRow
           label="Determinism"
           on={infra.status !== "readonly"}

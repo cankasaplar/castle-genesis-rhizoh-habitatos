@@ -18,10 +18,14 @@ $root = if ($RepoRoot.Trim()) { $RepoRoot.Trim() } else { $castleMain }
 
 if ($FromMainLocal) {
   $localEnv = Join-Path $castleMain "apps\client\.env.local"
+  $localExtras = @{}
   if (Test-Path $localEnv) {
     foreach ($line in Get-Content $localEnv) {
       if ($line -match '^\s*VITE_GATEWAY_TOKEN=(.+)$') { $GatewayToken = $matches[1].Trim() }
       if ($line -match '^\s*VITE_LIVE_GATEWAY_BASE=(.+)$') { $GatewayHost = $matches[1].Trim() }
+      if ($line -match '^\s*(VITE_[A-Z0-9_]+)=(.+)$') {
+        $localExtras[$matches[1]] = $matches[2].Trim()
+      }
     }
   }
 }
@@ -65,8 +69,32 @@ $lines = @(
   "VITE_RHIZOH_LEGAL_PREAMBLE=1",
   "VITE_RHIZOH_CLOSED_ADMISSION=1",
   "VITE_RHIZOH_INVITE_ONLY_GOOGLE=1",
-  "VITE_ONTOLOGICAL_BOOT_GATE=0"
+  "VITE_ONTOLOGICAL_BOOT_GATE=0",
+  "",
+  "# UI locale - founder default English; ingress language picker before legal",
+  "VITE_RHIZOH_DEFAULT_LOCALE=en",
+  "VITE_RHIZOH_REQUIRE_LANGUAGE_PICKER=1",
+  "# Castle Layers observation panel on rhizoh.com (topology + schema drift)",
+  "VITE_CASTLE_LAYERS_DEBUG=1",
+  "",
+  "# E2-X creative surface - full product (World/Hall/Studio/Map)",
+  "VITE_RHIZOH_SURFACE_CREATIVE=1",
+  "VITE_RHIZOH_ENTITY_PROJECTION_MAP=1",
+  "VITE_CESIUM_WORLD_PROJECTION_BIND=1",
+  "# Map strip full open deferred to next deploy (guards ready in cesiumRenderGuardV0)",
+  "VITE_CESIUM_OSM_BUILDINGS=0",
+  "VITE_CESIUM_WORLD_TERRAIN=0"
 )
+
+$cohortJson = Join-Path $castleMain "functions\cohort-email-allowlist.v0.json"
+if (-not $CohortAllowlist.Trim() -and (Test-Path $cohortJson)) {
+  try {
+    $cj = Get-Content $cohortJson -Raw | ConvertFrom-Json
+    if ($cj.emails -and $cj.emails.Count -gt 0) {
+      $CohortAllowlist = ($cj.emails | ForEach-Object { $_.Trim() }) -join ","
+    }
+  } catch { }
+}
 
 if ($CohortAllowlist.Trim()) {
   $lines += "VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST=$($CohortAllowlist.Trim())"
@@ -76,9 +104,42 @@ if ($CohortAllowlist.Trim()) {
 
 $lines += @(
   "",
-  "# Firebase: copy VITE_FIREBASE_CONFIG from main apps/client/.env.production if needed"
+  "VITE_CASTLE_AUTHORITY_PROFILE=production",
+  "",
+  "# Firebase Web (castle-genesis) - auto or preserved from existing .env.production"
 )
 
+function Add-FirebaseSdkLinesFromJson {
+  param([string]$JsonText)
+  try {
+    $fb = $JsonText | ConvertFrom-Json
+    if (-not $fb.apiKey) { return }
+    $cfg = @{
+      apiKey = $fb.apiKey
+      authDomain = $fb.authDomain
+      projectId = $fb.projectId
+      storageBucket = $fb.storageBucket
+      messagingSenderId = $fb.messagingSenderId
+      appId = $fb.appId
+    }
+    if ($fb.measurementId) { $cfg.measurementId = $fb.measurementId }
+    if ($fb.databaseURL) { $cfg.databaseURL = $fb.databaseURL }
+    $oneLine = ($cfg | ConvertTo-Json -Compress)
+    $script:lines += "VITE_FIREBASE_CONFIG=$oneLine"
+    $script:lines += "VITE_FIREBASE_API_KEY=$($fb.apiKey)"
+    $script:lines += "VITE_FIREBASE_AUTH_DOMAIN=$($fb.authDomain)"
+    $script:lines += "VITE_FIREBASE_PROJECT_ID=$($fb.projectId)"
+    $script:lines += "VITE_FIREBASE_STORAGE_BUCKET=$($fb.storageBucket)"
+    $script:lines += "VITE_FIREBASE_MESSAGING_SENDER_ID=$($fb.messagingSenderId)"
+    $script:lines += "VITE_FIREBASE_APP_ID=$($fb.appId)"
+    if ($fb.measurementId) { $script:lines += "VITE_FIREBASE_MEASUREMENT_ID=$($fb.measurementId)" }
+    if ($fb.databaseURL) { $script:lines += "VITE_FIREBASE_DATABASE_URL=$($fb.databaseURL)" }
+  } catch {
+    Write-Warning "Firebase SDK JSON parse failed: $_"
+  }
+}
+
+$firebaseMerged = $false
 if ($FromMainLocal) {
   $mainProd = Join-Path $castleMain "apps\client\.env.production"
   if (Test-Path $mainProd) {
@@ -86,14 +147,86 @@ if ($FromMainLocal) {
       if ($line -match '^\s*VITE_FIREBASE_CONFIG=(.+)$') {
         $lines += "VITE_FIREBASE_CONFIG=$($matches[1].Trim())"
       }
-      if ($line -match '^\s*VITE_CESIUM_ION_TOKEN=(.+)$') {
-        $lines += "VITE_CESIUM_ION_TOKEN=$($matches[1].Trim())"
+      if ($line -match '^\s*VITE_FIREBASE_API_KEY=(.+)$') {
+        $lines += "VITE_FIREBASE_API_KEY=$($matches[1].Trim())"
+      }
+      if ($line -match '^\s*VITE_FIREBASE_APP_ID=(.+)$') {
+        $lines += "VITE_FIREBASE_APP_ID=$($matches[1].Trim())"
+      }
+      if ($line -match '^\s*VITE_FIREBASE_MESSAGING_SENDER_ID=(.+)$') {
+        $lines += "VITE_FIREBASE_MESSAGING_SENDER_ID=$($matches[1].Trim())"
+      }
+    }
+  }
+  if ($localExtras) {
+    foreach ($key in @(
+      'VITE_CESIUM_ION_TOKEN',
+      'VITE_FIREBASE_CONFIG',
+      'VITE_FIREBASE_API_KEY',
+      'VITE_FIREBASE_APP_ID',
+      'VITE_FIREBASE_MESSAGING_SENDER_ID',
+      'VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST',
+      'VITE_RHIZOH_COHORT_SERVER_GATE'
+    )) {
+      if ($localExtras.ContainsKey($key) -and $localExtras[$key]) {
+        $lines += "$key=$($localExtras[$key])"
+        if ($key -match '^VITE_FIREBASE') { $firebaseMerged = $true }
       }
     }
   }
 }
 
+if (-not $firebaseMerged) {
+  $prevProd = Join-Path $castleMain "apps\client\.env.production"
+  if (Test-Path $prevProd) {
+    foreach ($line in Get-Content $prevProd) {
+      if ($line -match '^\s*VITE_FIREBASE_CONFIG=(.+)$') {
+        Add-FirebaseSdkLinesFromJson -JsonText $matches[1].Trim()
+        $firebaseMerged = $true
+        break
+      }
+      if ($line -match '^\s*VITE_FIREBASE_API_KEY=(.+)$' -and $matches[1].Trim()) {
+        $script:lines += $line.Trim()
+        $firebaseMerged = $true
+      }
+    }
+  }
+}
+
+if (-not $firebaseMerged) {
+  try {
+    Push-Location $castleMain
+    $sdk = npx firebase-tools apps:sdkconfig WEB --project castle-genesis 2>&1 | Out-String
+    if ($sdk -match '(\{[\s\S]*?"apiKey"[\s\S]*?\})') {
+      Add-FirebaseSdkLinesFromJson -JsonText $Matches[1]
+      $firebaseMerged = $true
+      Write-Host "Firebase Web config from CLI (castle-genesis)" -ForegroundColor Cyan
+    }
+  } catch {
+    Write-Warning "firebase apps:sdkconfig failed - add VITE_FIREBASE_* manually"
+  } finally {
+    Pop-Location -ErrorAction SilentlyContinue
+  }
+}
+
+if ($CohortAllowlist.Trim()) {
+  $hasCohortLine = $false
+  foreach ($l in $lines) {
+    if ($l -match '^VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST=') { $hasCohortLine = $true; break }
+  }
+  if (-not $hasCohortLine) {
+    $lines = $lines | Where-Object { $_ -notmatch '^# VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST=' }
+    $lines += "VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST=$($CohortAllowlist.Trim())"
+  }
+}
+
+if (-not ($lines -match '^VITE_RHIZOH_COHORT_SERVER_GATE=')) {
+  $lines += "VITE_RHIZOH_COHORT_SERVER_GATE=1"
+}
+
 Set-Content -Path $envProd -Value ($lines -join "`n") -Encoding UTF8
 Write-Host "OK $envProd" -ForegroundColor Green
-Write-Host "Fill VITE_FIREBASE_CONFIG if Google/cohort auth needed."
+if (-not $firebaseMerged) {
+  Write-Host "WARN: Firebase keys missing - Google sign-in will not work until VITE_FIREBASE_* is set." -ForegroundColor Yellow
+}
 Write-Host "Build: npm run build -w apps/client"

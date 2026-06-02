@@ -44,6 +44,19 @@ describe("voiceDirectedSpeechObservationV0", () => {
       confidence: 0.55
     });
     expect(out.band).toBe(VOICE_DIRECTED_SPEECH_BAND.UNKNOWN);
+    expect(out.reason).toBe("no_directed_or_ambient_signals");
+    expect(out.unknownScore).toBe(1);
+  });
+
+  it("labels Turkish repair / language switch as directed_candidate", () => {
+    const out = classifyVoiceDirectedSpeechBandV0({
+      text: "Bence bir karışıklık var. Yeniden İngilizce konuşmalıyız.",
+      confidence: 0.55,
+      strategy: "whisper_only"
+    });
+    expect(out.band).toBe(VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE);
+    expect(out.directedScore).toBeGreaterThanOrEqual(1);
+    expect(out.reason).not.toBe("no_directed_or_ambient_signals");
   });
 });
 

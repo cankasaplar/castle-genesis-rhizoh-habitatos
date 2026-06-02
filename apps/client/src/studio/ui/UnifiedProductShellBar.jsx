@@ -1,40 +1,78 @@
 import React from "react";
-import { RHIZOH_PRODUCT_SURFACE_COPY_TR_V0 } from "../../rhizoh/runtime/rhizohProductCopyV0.js";
+import {
+  resolveProductSurfaceCopyV0,
+  resolveShellHintsV0
+} from "../../rhizoh/runtime/rhizohProductCopyI18nV0.js";
+import { readUiLocaleV0 } from "../../rhizoh/runtime/rhizohUiLocaleV0.js";
 
-/** Phase P1 — single product navigation (Turkish-first copy SSOT). */
-export const PRODUCT_SHELL_ITEMS = Object.freeze([
-  { id: "world", label: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.world.shell },
-  { id: "hall", label: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.hall.shell },
-  { id: "greenroom", label: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.greenroom.shell },
-  { id: "broadcast", label: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.broadcast.shell },
-  { id: "studio", label: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.studio.shell },
-  { id: "profile", label: RHIZOH_PRODUCT_SURFACE_COPY_TR_V0.profile.shell }
+const PRODUCT_SHELL_IDS_V0 = Object.freeze([
+  "world",
+  "hall",
+  "greenroom",
+  "broadcast",
+  "studio",
+  "profile"
 ]);
 
-export const PRODUCT_SHELL_IDS = new Set(PRODUCT_SHELL_ITEMS.map((x) => x.id));
+export const PRODUCT_SHELL_IDS = new Set(PRODUCT_SHELL_IDS_V0);
 
 /**
- * @param {{ active: string, onSelect: (id: string) => void }} props
+ * @param {string} [locale]
  */
-export function UnifiedProductShellBar({ active, onSelect }) {
+function resolveProductShellItemsV0(locale) {
+  const surfaces = resolveProductSurfaceCopyV0(locale);
+  const hints = resolveShellHintsV0(locale);
+  return PRODUCT_SHELL_IDS_V0.map((id) => {
+    const row = surfaces[id];
+    return Object.freeze({
+      id,
+      label: row?.shell || id,
+      hint: hints[id] || row?.pathHint || id
+    });
+  });
+}
+
+/** @deprecated use resolveProductShellItemsV0 at runtime */
+export const PRODUCT_SHELL_ITEMS = resolveProductShellItemsV0(readUiLocaleV0());
+
+/**
+ * @param {{ active: string, panelOpen?: Record<string, boolean>, onSelect: (id: string) => void, uiLocale?: string }} props
+ */
+export function UnifiedProductShellBar({ active, panelOpen = {}, onSelect, uiLocale }) {
+  const locale = uiLocale || readUiLocaleV0();
+  const items = resolveProductShellItemsV0(locale);
+  const tr = locale === "tr";
   return (
     <nav
       className="pointer-events-auto fixed bottom-0 left-0 right-0 z-[61] border-t border-cyan-400/20 bg-[#030711]/92 backdrop-blur-xl"
-      aria-label="Rhizoh product"
+      aria-label={tr ? "Rhizoh bölümleri" : "Rhizoh sections"}
     >
       <div className="mx-auto flex max-w-4xl items-stretch justify-between gap-0.5 overflow-x-auto px-1 py-1.5 pb-[max(0.35rem,env(safe-area-inset-bottom))] no-scrollbar sm:gap-1 sm:px-2">
-        {PRODUCT_SHELL_ITEMS.map((item) => {
-          const on = active === item.id;
+        {items.map((item) => {
+          const isActive = active === item.id;
+          const isOpen = panelOpen[item.id] === true;
           return (
             <button
               key={item.id}
               type="button"
-              title={item.label}
+              title={
+                isOpen
+                  ? tr
+                    ? `${item.hint || item.label} · açık (kapatmak için tekrar dokun)`
+                    : `${item.hint || item.label} · open (tap again to close)`
+                  : tr
+                    ? `${item.hint || item.label} · açmak için dokun`
+                    : `${item.hint || item.label} · tap to open`
+              }
+              aria-pressed={isOpen}
+              aria-current={isActive ? "page" : undefined}
               onClick={() => onSelect(item.id)}
-              className={`min-w-[3.25rem] flex-1 touch-manipulation rounded-lg border px-1 py-2 text-[8px] font-black uppercase tracking-[0.14em] transition-colors sm:min-w-0 sm:px-2 sm:text-[9px] sm:tracking-[0.18em] ${
-                on
-                  ? "border-cyan-400/45 bg-cyan-500/20 text-cyan-100 shadow-[0_0_16px_rgba(34,211,238,0.12)]"
-                  : "border-transparent bg-black/20 text-white/50 hover:border-white/10 hover:text-white/75"
+              className={`min-w-[3.25rem] flex-1 touch-manipulation rounded-lg border px-1 py-2 text-[9px] font-bold normal-case tracking-normal transition-colors sm:min-w-0 sm:px-2 sm:text-[10px] ${
+                isOpen
+                  ? "border-cyan-400/55 bg-cyan-500/25 text-cyan-50 shadow-[0_0_16px_rgba(34,211,238,0.18)]"
+                  : isActive
+                    ? "border-cyan-400/30 bg-cyan-500/10 text-cyan-100/90"
+                    : "border-transparent bg-black/20 text-white/50 hover:border-white/10 hover:text-white/75"
               }`}
             >
               <span className="block truncate normal-case tracking-normal opacity-95 sm:hidden">{item.label.split(" ")[0]}</span>
