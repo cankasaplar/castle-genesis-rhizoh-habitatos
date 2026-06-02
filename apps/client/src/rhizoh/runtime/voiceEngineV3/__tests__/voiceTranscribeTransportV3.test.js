@@ -6,10 +6,18 @@ import {
   VOICE_TRANSCRIBE_TRANSPORT_V3
 } from "../voiceTranscribeTransportV3.js";
 import { planVoiceTranscribePreflightV3 } from "../voiceTranscribePreflightV3.js";
+import { noteGatewaySessionHealthOkV1 } from "../../gatewaySessionKeeperV1.js";
+import {
+  noteTranscribeGatewayConnectV1,
+  resetTranscribeCoordinatorForTestV1
+} from "../../voiceTranscribeSessionCoordinatorV1.js";
 import * as queryModule from "../queryRhizohVoiceTranscribeV3.js";
 
 describe("voiceTranscribeTransportV3", () => {
   beforeEach(() => {
+    resetTranscribeCoordinatorForTestV1();
+    noteGatewaySessionHealthOkV1({ atMs: Date.now() - 10_000 });
+    noteTranscribeGatewayConnectV1(Date.now() - 10_000);
     vi.spyOn(queryModule, "queryRhizohVoiceTranscribeV3");
   });
 
@@ -56,7 +64,8 @@ describe("voiceTranscribeTransportV3", () => {
       recordedMs: 9_595,
       chunks,
       chunkCount: chunks.length,
-      mimeType: "audio/webm"
+      mimeType: "audio/webm",
+      sessionId: "v3_test_split"
     });
 
     expect(res.ok).toBe(true);
@@ -77,7 +86,10 @@ describe("voiceTranscribeTransportV3", () => {
       });
 
     const blob = new Blob([new Uint8Array([1, 2, 3])], { type: "audio/webm" });
-    const res = await queryRhizohVoiceTranscribeResilientV3(blob, { bytes: 120_000 });
+    const res = await queryRhizohVoiceTranscribeResilientV3(blob, {
+      bytes: 120_000,
+      sessionId: "v3_test_retry"
+    });
 
     expect(res.ok).toBe(true);
     expect(res.transportAttempt).toBe(2);
@@ -93,7 +105,10 @@ describe("voiceTranscribeTransportV3", () => {
     });
 
     const blob = new Blob([new Uint8Array([1, 2, 3])], { type: "audio/webm" });
-    const res = await queryRhizohVoiceTranscribeResilientV3(blob, { bytes: 1000 });
+    const res = await queryRhizohVoiceTranscribeResilientV3(blob, {
+      bytes: 1000,
+      sessionId: "v3_test_no_retry"
+    });
 
     expect(res.ok).toBe(false);
     expect(res.error).toBe("no_transcript");

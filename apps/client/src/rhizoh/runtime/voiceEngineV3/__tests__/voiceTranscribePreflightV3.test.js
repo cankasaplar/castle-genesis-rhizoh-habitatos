@@ -16,7 +16,8 @@ describe("voiceTranscribePreflightV3", () => {
     expect(plan.mode).toBe("split");
     expect(plan.path).toBe("accurate");
     expect(plan.reason).toBe("bytes_and_duration");
-    expect(plan.segmentCount).toBeGreaterThanOrEqual(2);
+    expect(plan.segmentCount).toBe(2);
+    expect(plan.maxSegmentBytes).toBeGreaterThanOrEqual(61_000);
   });
 
   it("uses fast direct route for large payload without chunk metadata", () => {

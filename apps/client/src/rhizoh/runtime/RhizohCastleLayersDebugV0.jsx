@@ -25,10 +25,13 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
   const [tick, setTick] = useState(0);
   const [collapsed, setCollapsed] = useState(() => {
     try {
-      return localStorage.getItem("castle.layers.hud.collapsed") === "1";
+      const stored = localStorage.getItem("castle.layers.hud.collapsed");
+      if (stored === "1") return true;
+      if (stored === "0") return false;
     } catch {
-      return false;
+      /* noop */
     }
+    return !import.meta.env?.DEV;
   });
 
   useEffect(() => {
@@ -154,8 +157,10 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
 
   return (
     <div
-      className="pointer-events-auto fixed bottom-[5.75rem] left-2 z-[62] max-w-[min(19rem,44vw)] rounded-xl border border-amber-400/35 bg-black/85 p-2 text-[9px] font-mono normal-case text-amber-50/90 shadow-lg backdrop-blur-md"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="pointer-events-auto fixed right-2 z-[61] max-w-[min(17rem,40vw)] rounded-xl border border-amber-400/35 bg-black/85 p-2 text-[9px] font-mono normal-case text-amber-50/90 shadow-lg backdrop-blur-md"
+      style={{
+        bottom: "calc(3.35rem + 6.25rem + env(safe-area-inset-bottom, 0px))"
+      }}
       data-rhizoh-castle-layers-debug="1"
       data-tick={tick}
       data-collapsed={collapsed ? "1" : "0"}

@@ -13,7 +13,13 @@ export const VOICE_STT_SILENT_ABORT_COOLDOWN_MS = 10_000;
 export const VOICE_STT_SILENT_ABORT_COOLDOWN_MEDIUM_MS = 2_500;
 
 /** STT event contexts that may request mic auto-restart (never bare onend silent abort). */
-const STT_RESTART_CONTEXTS = new Set(["after_tts", "onresult_empty", "onend_ambiguous", "v3_empty_retry"]);
+const STT_RESTART_CONTEXTS = new Set([
+  "after_tts",
+  "onresult_empty",
+  "onend_ambiguous",
+  "v3_empty_retry",
+  "v3_network_retry"
+]);
 
 let autoRestartBlockedUntilMs = 0;
 
@@ -76,8 +82,8 @@ export function canRequestVoiceSttAutoRestartV0(opts = {}) {
   if (context === "onresult_empty" && !lastSessionHadResult) {
     return { ok: false, reason: "onresult_empty_no_prior_result" };
   }
-  if (context === "v3_empty_retry") {
-    return { ok: true, reason: "v3_empty_retry" };
+  if (context === "v3_empty_retry" || context === "v3_network_retry") {
+    return { ok: true, reason: context };
   }
   return {
     ok: true,

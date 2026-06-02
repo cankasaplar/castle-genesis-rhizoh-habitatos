@@ -19,6 +19,10 @@ import {
 import { prepareRhizohLlmTurnV0 } from "../rhizohLlmTurnHotWireV0.js";
 import { emitVoiceEngineTelemetryV3, setVoiceEngineStateV3 } from "./voiceEngineTelemetryV3.js";
 import { noteVoiceRuntimePressureV1 } from "../gatewaySessionKeeperV1.js";
+import {
+  beginRecordingWarmProbeV1,
+  finalizeRecordingWarmProbeV1
+} from "../voiceTranscribePredictivePreflightV1.js";
 
 export const VOICE_MIN_RECORD_MS_V3 = 1200;
 export const VOICE_MIN_AUDIO_BYTES_V3 = 25000;
@@ -81,6 +85,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         });
         mimeType = capture.mimeType;
         capture.start();
+        beginRecordingWarmProbeV1(sessionId);
         setSessionState(VOICE_ENGINE_STATE_V3.RECORDING);
         emitVoiceEngineTelemetryV3("RECORDING_START", { mimeType });
         return { ok: true };
@@ -169,10 +174,13 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       }
 
       setSessionState(VOICE_ENGINE_STATE_V3.FINAL_TRANSCRIPT_RESOLVE);
+      const warmProbe = finalizeRecordingWarmProbeV1(sessionId);
       emitVoiceEngineTelemetryV3("FINAL_TRANSCRIBE_START", {
         bytes,
         recordedMs,
-        chunkCount: captureChunks.length
+        chunkCount: captureChunks.length,
+        warmScore: warmProbe.avgWarmScore,
+        minWarmScore: warmProbe.minWarmScore
       });
 
       try {
@@ -184,7 +192,8 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           bytes,
           recordedMs,
           chunks: captureChunks,
-          chunkCount: captureChunks.length
+          chunkCount: captureChunks.length,
+          warmProbe
         });
 
         if (activeGen !== generation) {

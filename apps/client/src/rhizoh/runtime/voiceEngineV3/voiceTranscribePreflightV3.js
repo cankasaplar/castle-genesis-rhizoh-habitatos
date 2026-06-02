@@ -14,7 +14,9 @@ export const VOICE_TRANSCRIBE_PREFLIGHT_V3 = Object.freeze({
   splitMinBytes: 96_000,
   splitMinMs: 7_500,
   splitMinChunks: 3,
-  maxSegmentBytes: 58_000
+  maxSegmentBytes: 58_000,
+  /** Typical ~10s take → at most two upload segments. */
+  splitTargetMaxSegments: 2
 });
 
 /**
@@ -30,7 +32,14 @@ export function planVoiceTranscribePreflightV3(input = {}) {
   const canSplit = chunkCount >= VOICE_TRANSCRIBE_PREFLIGHT_V3.splitMinChunks;
 
   if ((largeBytes || longTake) && canSplit) {
-    const estSegments = Math.max(2, Math.ceil(bytes / VOICE_TRANSCRIBE_PREFLIGHT_V3.maxSegmentBytes));
+    const maxSegmentBytes = Math.max(
+      VOICE_TRANSCRIBE_PREFLIGHT_V3.maxSegmentBytes,
+      Math.ceil(bytes / VOICE_TRANSCRIBE_PREFLIGHT_V3.splitTargetMaxSegments)
+    );
+    const estSegments = Math.min(
+      VOICE_TRANSCRIBE_PREFLIGHT_V3.splitTargetMaxSegments,
+      Math.max(2, Math.ceil(bytes / maxSegmentBytes))
+    );
     return Object.freeze({
       mode: "split",
       path: "accurate",
@@ -38,8 +47,8 @@ export function planVoiceTranscribePreflightV3(input = {}) {
       bytes,
       recordedMs,
       chunkCount,
-      segmentCount: Math.min(estSegments, chunkCount),
-      maxSegmentBytes: VOICE_TRANSCRIBE_PREFLIGHT_V3.maxSegmentBytes
+      segmentCount: estSegments,
+      maxSegmentBytes
     });
   }
 

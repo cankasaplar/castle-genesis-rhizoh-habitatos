@@ -10374,6 +10374,13 @@ export default function AppRhizoh528() {
               setMicListening,
               handleVoiceTranscriptRef,
               scheduleVoiceMicRestart: (k, o) => scheduleVoiceMicRestartV0(k, o),
+              restartVoiceTurnV3: (keepAlive) => {
+                window.setTimeout(() => {
+                  if (!voiceLoopEnabledRef.current) return;
+                  if (voiceSttStartInFlightRef.current) return;
+                  void startVoiceToRhizohRef.current(keepAlive, { userGestureUrgent: true });
+                }, VOICE_AFTER_TURN_RESTART_MS);
+              },
               maybeWarnVoiceSilentStop: maybeWarnVoiceSilentStopV0,
               speakRhizoh
             }
@@ -10396,7 +10403,9 @@ export default function AppRhizoh528() {
           logVoiceWarnV0("V3_START_SKIPPED", { reason: "engine_busy", state: engineState });
           return;
         }
-        await voiceEngineV3BridgeRef.current.startTurn(keepAlive);
+        await voiceEngineV3BridgeRef.current.startTurn(keepAlive, {
+          urgent: opts?.userGestureUrgent === true
+        });
         return;
       }
       const Ctor = getSpeechRecognitionCtor();
@@ -12051,71 +12060,7 @@ export default function AppRhizoh528() {
       ) : null}
 
       <div className="absolute inset-0 z-10 pointer-events-none flex min-h-full flex-col p-4 md:p-5">
-        <div className="relative z-[100] flex shrink-0 justify-end items-start gap-3">
-          {!immersiveLiveTrace ? (
-            <div className="pointer-events-auto mr-auto" />
-          ) : (
-            <div className="pointer-events-auto mr-auto rounded-2xl border border-fuchsia-400/35 bg-black/55 px-3 py-2 text-[9px] text-fuchsia-100/90 normal-case backdrop-blur-md">
-              Immersive broadcast ┬À world synced to anchor
-            </div>
-          )}
-          <div className="pointer-events-auto flex max-w-[18rem] flex-col gap-2">
-            {!T0_FIRST_MATCH_IDENTITY_V0 && (location.pathname === "/" || location.pathname === "") ? (
-              <Link
-                to="/academy/observe"
-                className="rounded-2xl border border-emerald-400/35 bg-emerald-950/25 p-3 backdrop-blur-md transition-colors hover:border-emerald-300/50"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[9px] font-black uppercase tracking-[0.22em] text-emerald-200/95">Live system</span>
-                  <span className="flex items-center gap-1.5 text-[8px] font-semibold text-emerald-100/90 normal-case">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.75)]" />
-                    SSE path live
-                  </span>
-                </div>
-                <div className="mt-2 text-[10px] font-semibold text-white/90 normal-case">Temporal stream ┬À replay lab</div>
-                <div className="mt-1 text-[9px] text-white/55 normal-case leading-relaxed">
-                  Gateway-only observability ÔÇö EventSource continuity, fingerprint, evolution panels.
-                </div>
-                <span className="mt-2 inline-block text-[9px] font-black uppercase tracking-[0.18em] text-emerald-200/90 underline-offset-2">
-                  Open Observe ÔåÆ
-                </span>
-              </Link>
-            ) : null}
-            <CastleAccountBadge auth={castleAuth} />
-            {!T0_FIRST_MATCH_IDENTITY_V0 ? (
-            <div className="rounded-2xl border border-indigo-300/35 bg-indigo-300/15 p-3 backdrop-blur-md">
-              <div className="text-[10px] tracking-wide text-indigo-100 normal-case leading-relaxed whitespace-pre-wrap">
-                {welcomeCard.primary}
-              </div>
-              <div className="mt-1.5 text-[10px] text-white/85 normal-case">
-                {welcomeCard.secondary}
-              </div>
-              <div className="mt-1 text-[10px] text-cyan-200/90 normal-case">
-                Istanbul anchor live ÔÇö speak or type to shape it.
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowDetailDrawer((v) => !v)}
-                aria-expanded={showDetailDrawer}
-                aria-controls="rhizoh-detail-drawer"
-                className="mt-2 w-full rounded-xl border border-white/15 py-1.5 text-[9px] tracking-[0.12em] text-white/70 hover:border-cyan-400/35"
-              >
-                {showDetailDrawer ? "Close details" : "More ┬À agents ┬À events ┬À share"}
-              </button>
-            </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowDetailDrawer((v) => !v)}
-                aria-expanded={showDetailDrawer}
-                aria-controls="rhizoh-detail-drawer"
-                className="relative z-[101] rounded-xl border border-white/12 bg-black/40 px-3 py-2 text-[9px] tracking-[0.12em] text-white/55 normal-case hover:text-white/80 hover:border-cyan-400/35"
-              >
-                {showDetailDrawer ? detailChromeCopyV0.close : detailChromeCopyV0.open}
-              </button>
-            )}
-          </div>
-        </div>
+        <div className="relative z-[100] flex shrink-0 justify-end items-start gap-3 min-h-[3rem]" aria-hidden />
 
 
         <div
@@ -12527,6 +12472,74 @@ export default function AppRhizoh528() {
             </div>
           </div>
         ) : null}
+
+      {immersiveLiveTrace ? (
+        <div className="pointer-events-auto fixed left-4 top-4 z-[225] rounded-2xl border border-fuchsia-400/35 bg-black/55 px-3 py-2 text-[9px] text-fuchsia-100/90 normal-case backdrop-blur-md">
+          Immersive broadcast · world synced to anchor
+        </div>
+      ) : null}
+
+      <div
+        className="pointer-events-none fixed right-4 z-[225] flex max-w-[18rem] flex-col items-end gap-2"
+        style={{ top: "max(1rem, env(safe-area-inset-top))" }}
+        data-rhizoh-t0-top-chrome="1"
+      >
+        <div className="pointer-events-auto flex w-full flex-col items-end gap-2">
+          {!T0_FIRST_MATCH_IDENTITY_V0 && (location.pathname === "/" || location.pathname === "") ? (
+            <Link
+              to="/academy/observe"
+              className="rounded-2xl border border-emerald-400/35 bg-emerald-950/25 p-3 backdrop-blur-md transition-colors hover:border-emerald-300/50"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[9px] font-black uppercase tracking-[0.22em] text-emerald-200/95">Live system</span>
+                <span className="flex items-center gap-1.5 text-[8px] font-semibold text-emerald-100/90 normal-case">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.75)]" />
+                  SSE path live
+                </span>
+              </div>
+              <div className="mt-2 text-[10px] font-semibold text-white/90 normal-case">Temporal stream · replay lab</div>
+              <div className="mt-1 text-[9px] text-white/55 normal-case leading-relaxed">
+                Gateway-only observability — EventSource continuity, fingerprint, evolution panels.
+              </div>
+              <span className="mt-2 inline-block text-[9px] font-black uppercase tracking-[0.18em] text-emerald-200/90 underline-offset-2">
+                Open Observe →
+              </span>
+            </Link>
+          ) : null}
+          <CastleAccountBadge auth={castleAuth} />
+          {!T0_FIRST_MATCH_IDENTITY_V0 ? (
+            <div className="rounded-2xl border border-indigo-300/35 bg-indigo-300/15 p-3 backdrop-blur-md">
+              <div className="text-[10px] tracking-wide text-indigo-100 normal-case leading-relaxed whitespace-pre-wrap">
+                {welcomeCard.primary}
+              </div>
+              <div className="mt-1.5 text-[10px] text-white/85 normal-case">{welcomeCard.secondary}</div>
+              <div className="mt-1 text-[10px] text-cyan-200/90 normal-case">
+                Istanbul anchor live — speak or type to shape it.
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDetailDrawer((v) => !v)}
+                aria-expanded={showDetailDrawer}
+                aria-controls="rhizoh-detail-drawer"
+                className="mt-2 w-full rounded-xl border border-white/15 py-1.5 text-[9px] tracking-[0.12em] text-white/70 hover:border-cyan-400/35"
+              >
+                {showDetailDrawer ? "Close details" : "More · agents · events · share"}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowDetailDrawer((v) => !v)}
+              aria-expanded={showDetailDrawer}
+              aria-controls="rhizoh-detail-drawer"
+              className="rounded-xl border border-white/12 bg-black/40 px-3 py-2 text-[9px] tracking-[0.12em] text-white/55 normal-case hover:text-white/80 hover:border-cyan-400/35"
+            >
+              {showDetailDrawer ? detailChromeCopyV0.close : detailChromeCopyV0.open}
+            </button>
+          )}
+        </div>
+      </div>
+
       <RhizohCastleLayersDebugV0 gatewayPhase={gatewayUx?.phase} />
       <CastleAuthOverlay auth={castleAuth} />
       <RhizohSceneAnchorWindow />

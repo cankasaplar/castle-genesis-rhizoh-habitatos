@@ -13,6 +13,8 @@ import {
   releaseVoiceStreamLayerLockV1,
   VOICE_STREAM_ABORT_REASON_V1
 } from "../../../castle/layers/voiceStreamLifecycleControllerV1.js";
+import { deferRecordingUntilGatewayWarmV1 } from "../voiceTranscribePredictivePreflightV1.js";
+import { emitVoiceEngineTelemetryV3 } from "./voiceEngineTelemetryV3.js";
 export const VOICE_V3_MAX_RECORD_MS = 8000;
 
 let v3SessionLockActive = false;
@@ -70,6 +72,9 @@ function emptyPromptKey(error) {
  *     setMicListening: (v: boolean) => void,
  *     handleVoiceTranscriptRef: { current: (text: string, opts: object) => Promise<void> },
  *     scheduleVoiceMicRestart: (keepAlive: boolean, opts?: object) => void,
+ *     restartVoiceTurnV3?: (keepAlive: boolean) => void,
+ *     urgentStart?: boolean
+ *   }
  *     maybeWarnVoiceSilentStop: (key: string) => void,
  *     speakRhizoh?: (text: string, opts?: object) => void
  *   }
@@ -199,10 +204,14 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
           voiceTurn: true,
           instantAck: true
         });
-        callbacks.scheduleVoiceMicRestart(keepAlive, {
-          context: "v3_network_retry",
-          lastSessionHadResult: refs.voiceSttGotAnyResult.current
-        });
+        if (typeof callbacks.restartVoiceTurnV3 === "function") {
+          callbacks.restartVoiceTurnV3(keepAlive);
+        } else {
+          callbacks.scheduleVoiceMicRestart(keepAlive, {
+            context: "v3_network_retry",
+            lastSessionHadResult: refs.voiceSttGotAnyResult.current
+          });
+        }
         callbacks.setRhizohFieldState("IDLE");
         return { ok: false, error: err, networkRetry: true };
       }
@@ -218,7 +227,7 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     return { ok: false, error: err };
   }
 
-  async function startTurn(keepAlive = false) {
+  async function startTurn(keepAlive = false, startOpts = {}) {
     if (v3StopInFlight) {
       logVoiceWarnV0("V3_START_BLOCKED", { reason: "stop_in_flight" });
       refs.voiceSttStartInFlight.current = false;
@@ -301,6 +310,18 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     refs.voiceEngineV3.current = engine;
     bindVoiceStreamLayerLockSessionV1(engine.sessionId);
     stampVoiceUserGestureV0("v3_session_begin");
+
+    const warmDefer = await deferRecordingUntilGatewayWarmV1({
+      urgent: startOpts.urgent === true
+    });
+    if (warmDefer.deferredMs > 0) {
+      logVoiceInfoV0("V3_GATEWAY_WARM_DEFER", {
+        deferredMs: warmDefer.deferredMs,
+        reason: warmDefer.reason,
+        warmScore: warmDefer.warmScore
+      });
+      emitVoiceEngineTelemetryV3("GATEWAY_WARM_DEFER", warmDefer);
+    }
 
     const startRes = await engine.start();
     if (!startRes.ok) {

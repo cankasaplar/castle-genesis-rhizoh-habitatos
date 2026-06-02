@@ -15,6 +15,7 @@ import {
   shouldDeferGatewayHealthTickV1,
   shouldPreserveSessionOnTransientFailureV1
 } from "./runtime/gatewaySessionKeeperV1.js";
+import { noteTranscribeGatewayConnectV1 } from "./runtime/voiceTranscribeSessionCoordinatorV1.js";
 
 const MAX_ATTEMPTS = 5;
 const HEALTH_TIMEOUT_MS = 6500;
@@ -376,6 +377,7 @@ export function useRhizohGatewayMonitor() {
               setActiveConnectionId(candidateConn, { status: gwStatus, at: Date.now() });
             }
             noteGatewaySessionHealthOkV1({ connectionId: candidateConn || null });
+            noteTranscribeGatewayConnectV1();
             setAttempt(a);
             setHealthPollSerial((n) => n + 1);
             /** Monotonic tick id: stale async completions must not overwrite newer poll state (ordering guard). */
@@ -446,6 +448,7 @@ export function useRhizohGatewayMonitor() {
                     setActiveConnectionId(null, { at: Date.now() });
                   }
                   noteGatewaySessionHealthOkV1({ connectionId: candidateConn2 || null });
+                  noteTranscribeGatewayConnectV1();
                   setDetail(cl.detail || "");
                   setHealthPollSerial((n) => n + 1);
                 } else {
