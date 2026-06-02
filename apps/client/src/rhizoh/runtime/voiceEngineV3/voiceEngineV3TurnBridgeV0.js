@@ -6,6 +6,13 @@ import { logVoiceInfoV0, logVoiceWarnV0 } from "../rhizohProductionLogNamespaces
 import { stampVoiceUserGestureV0 } from "../voiceUserGestureAnchorV0.js";
 import { endVoiceSessionLanguageLockV0 } from "../rhizohConversationLanguageV0.js";
 import { handleRhizohVoiceTranscriptV0 } from "../rhizohVoiceLlmDispatchV0.js";
+import { castleLayerDecisionTraceLogDetailV1 } from "../../../castle/layers/castleLayerDecisionTraceV1.js";
+import {
+  acquireVoiceStreamLayerLockV1,
+  bindVoiceStreamLayerLockSessionV1,
+  releaseVoiceStreamLayerLockV1,
+  VOICE_STREAM_ABORT_REASON_V1
+} from "../../../castle/layers/voiceStreamLifecycleControllerV1.js";
 export const VOICE_V3_MAX_RECORD_MS = 8000;
 
 let v3SessionLockActive = false;
@@ -72,15 +79,16 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     }
   }
 
-  function abortTurn() {
+  function abortTurn(reason = VOICE_STREAM_ABORT_REASON_V1.LIFECYCLE_ABORT, detail = {}) {
     const sessionId = refs.voiceEngineV3.current?.sessionId;
     clearMaxRecordTimer();
-    refs.voiceEngineV3.current?.abort?.();
+    refs.voiceEngineV3.current?.abort?.({ reason, layerSynced: true, ...detail });
     refs.voiceEngineV3.current = null;
     refs.voiceSttStartInFlight.current = false;
     releaseSessionLock(sessionId);
     endVoiceSessionLanguageLockV0();
     callbacks.setMicListening(false);
+    releaseVoiceStreamLayerLockV1(reason, { sessionId, source: "mic_v3", ...detail });
   }
 
   async function finishTurn(keepAlive) {
@@ -112,6 +120,10 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     endVoiceSessionLanguageLockV0();
 
     if (result.ok && result.merged?.text) {
+      releaseVoiceStreamLayerLockV1(VOICE_STREAM_ABORT_REASON_V1.FINISH_OK, {
+        sessionId,
+        source: "mic_v3"
+      });
       refs.voiceSttGotAnyResult.current = true;
       noteVoiceSttEventV0("V3_FINAL", {
         chars: result.merged.text.length,
@@ -142,6 +154,10 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     }
 
     const err = String(result.error || "transcribe_failed");
+    releaseVoiceStreamLayerLockV1(
+      RETRYABLE_EMPTY_CODES.has(err) ? VOICE_STREAM_ABORT_REASON_V1.FINISH_OK : err,
+      { sessionId, source: "mic_v3", error: err }
+    );
     if (RETRYABLE_EMPTY_CODES.has(err)) {
       callbacks.maybeWarnVoiceSilentStop(emptyPromptKey(err));
       if (keepAlive) {
@@ -209,10 +225,27 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     }
 
     refs.voiceSttGotAnyResult.current = false;
+
+    const lockRes = acquireVoiceStreamLayerLockV1({ source: "mic_v3" });
+    if (!lockRes.acquired) {
+      refs.voiceSttStartInFlight.current = false;
+      callbacks.setMicListening(false);
+      callbacks.setRhizohFieldState("IDLE");
+      logVoiceWarnV0("V3_LAYER_STREAM_DENIED", {
+        error: lockRes.error || "layer_stream_denied",
+        ...castleLayerDecisionTraceLogDetailV1(lockRes.gate?.trace)
+      });
+      return { ok: false, error: lockRes.error || "layer_stream_denied" };
+    }
+
     callbacks.setRhizohFieldState("LISTENING");
     callbacks.setMicListening(true);
     noteVoiceSttEventV0("V3_SESSION_BEGIN", { keepAlive });
-    logVoiceInfoV0("V3_SESSION_BEGIN", { keepAlive });
+    logVoiceInfoV0("V3_SESSION_BEGIN", {
+      keepAlive,
+      streamLockId: lockRes.lock?.lockId,
+      ...castleLayerDecisionTraceLogDetailV1(lockRes.gate?.trace)
+    });
 
     const engine = createVoiceEngineOrchestratorV3({
       onError: ({ code }) => {
@@ -222,6 +255,10 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     });
 
     if (engine.sessionId === v3LastStartedSessionId && v3SessionLockActive) {
+      releaseVoiceStreamLayerLockV1(VOICE_STREAM_ABORT_REASON_V1.LIFECYCLE_ABORT, {
+        sessionId: engine.sessionId,
+        error: "duplicate_session"
+      });
       logVoiceWarnV0("V3_DUPLICATE_SESSION", { sessionId: engine.sessionId });
       refs.voiceSttStartInFlight.current = false;
       callbacks.setMicListening(false);
@@ -232,11 +269,12 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     v3SessionLockActive = true;
     v3LastStartedSessionId = engine.sessionId;
     refs.voiceEngineV3.current = engine;
+    bindVoiceStreamLayerLockSessionV1(engine.sessionId);
     stampVoiceUserGestureV0("v3_session_begin");
 
     const startRes = await engine.start();
     if (!startRes.ok) {
-      abortTurn();
+      abortTurn(VOICE_STREAM_ABORT_REASON_V1.CAPTURE_START_FAILED, { error: startRes.error });
       callbacks.setRhizohFieldState("IDLE");
       if (startRes.error === "session_not_idle") {
         logVoiceWarnV0("V3_START_BLOCKED", { state: startRes.state });

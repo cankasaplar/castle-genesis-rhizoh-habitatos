@@ -46,6 +46,18 @@ Each reject / dispatch records:
 
 HUD (`RhizohCastleLayersDebugV0`) shows last trace under **DECISION TRACE**. Window snapshot: `window.__CASTLE_LAYERS_DECISION_TRACE__`.
 
+### Stream ↔ layer coupling (v1.1 completion)
+
+**Code:** [`voiceStreamLifecycleControllerV1.js`](../apps/client/src/castle/layers/voiceStreamLifecycleControllerV1.js)
+
+| Phase | Behavior |
+|-------|----------|
+| **Pre-stream** | `acquireVoiceStreamLayerLockV1()` before `engine.start()` — deny if L2 scope rejects |
+| **Recording stop** | Mic loop stop while RECORDING → `finishTurn()` (not raw abort) |
+| **Abort** | Normalized reason via `releaseVoiceStreamLayerLockV1()` + single `WITNESS_STREAM` |
+
+Window snapshot: `window.__CASTLE_VOICE_STREAM_LOCK__`.
+
 ## Voice event contract (mandatory)
 
 Every voice log / dispatch path resolves:

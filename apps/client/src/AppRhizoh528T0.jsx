@@ -10769,6 +10769,9 @@ export default function AppRhizoh528() {
   }, [startVoiceToRhizoh]);
 
   const stopVoiceLoop = useCallback(() => {
+    const engineState = voiceEngineV3Ref.current?.getState?.();
+    const shouldFinishRecording =
+      engineState === "RECORDING" || engineState === "WAIT_WHISPER_FINAL";
     setVoiceLoopEnabled(false);
     voiceTurnBusyRef.current = false;
     voiceTurnBusySinceRef.current = 0;
@@ -10778,7 +10781,11 @@ export default function AppRhizoh528() {
       window.clearTimeout(voiceSttMaxRecordTimerRef.current);
       voiceSttMaxRecordTimerRef.current = 0;
     }
-    voiceEngineV3BridgeRef.current?.abortTurn?.();
+    if (shouldFinishRecording) {
+      void voiceEngineV3BridgeRef.current?.finishTurn?.(false);
+    } else {
+      voiceEngineV3BridgeRef.current?.abortTurn?.("user_loop_stop");
+    }
     if (voiceSttNoSpeechRetryTimerRef.current) {
       window.clearTimeout(voiceSttNoSpeechRetryTimerRef.current);
       voiceSttNoSpeechRetryTimerRef.current = 0;

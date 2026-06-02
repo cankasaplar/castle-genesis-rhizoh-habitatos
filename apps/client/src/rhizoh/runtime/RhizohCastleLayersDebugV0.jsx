@@ -41,6 +41,7 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
     typeof window !== "undefined"
       ? window.__CASTLE_LAYERS_RUNTIME__?.lastDecisionTrace || getCastleLayerDecisionTraceSnapshotV1()?.last
       : null;
+  const streamLock = typeof window !== "undefined" ? window.__CASTLE_VOICE_STREAM_LOCK__ : null;
   const gw = String(gatewayPhase || "").toLowerCase();
   const gwOn = gw === "connected" || gw === "ready" || gw === "live" || gw === "uncertain";
 
@@ -108,6 +109,7 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
       <div className="mb-1 text-[8px] font-bold tracking-[0.18em] text-amber-200/80">CASTLE LAYERS</div>
       <div className="mb-1 text-[7px] text-amber-100/70">
         {CASTLE_LAYERS_BEHAVIOR_GRAPH_VERSION_V1} · ui={activeUiDomain}
+        {streamLock?.active ? ` · lock=${String(streamLock.active.lockId).slice(0, 12)}` : " · lock=idle"}
       </div>
       <div className={`mb-1 ${driftTone}`}>
         drift: {drift}

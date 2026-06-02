@@ -260,15 +260,23 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       }
     },
 
-    abort() {
+    abort(opts = {}) {
       generation += 1;
       capture?.abort?.();
       capture = null;
       busy = false;
       endVoiceSessionLanguageLockV0();
       setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
-      witnessVoiceStreamLifecycleV0({ code: "abort", stage: "stream_lifecycle", source: "mic_v3" });
-      emitVoiceEngineTelemetryV3("ABORT");
+      const reason = String(opts.reason || "abort");
+      if (!opts.layerSynced) {
+        witnessVoiceStreamLifecycleV0({
+          code: reason,
+          stage: "stream_lifecycle",
+          source: "mic_v3",
+          detail: opts.detail || null
+        });
+      }
+      emitVoiceEngineTelemetryV3("ABORT", { reason });
     }
   });
 }
