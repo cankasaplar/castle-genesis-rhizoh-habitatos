@@ -32,8 +32,14 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
   });
 
   useEffect(() => {
-    const id = window.setInterval(() => setTick((n) => n + 1), 1200);
-    return () => window.clearInterval(id);
+    const bump = () => setTick((n) => n + 1);
+    const id = window.setInterval(bump, 400);
+    const events = ["castle:reality-changed", "castle:reality-shift", "rhizoh:voice-init", "rhizoh:gateway-phase"];
+    events.forEach((name) => window.addEventListener(name, bump));
+    return () => {
+      window.clearInterval(id);
+      events.forEach((name) => window.removeEventListener(name, bump));
+    };
   }, []);
 
   const toggleCollapsed = () => {
@@ -57,6 +63,8 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
   const voice = getVoiceAdapterRegistrySnapshot();
   const layerAudit = typeof window !== "undefined" ? window.__CASTLE_LAYER_AUDIT__ : null;
   const epistemic = typeof window !== "undefined" ? window.__CASTLE_EPISTEMIC_TELEMETRY__ : null;
+  const telemetryBarrier =
+    typeof window !== "undefined" ? window.__CASTLE_EPISTEMIC_TELEMETRY_BARRIER__ : null;
   const decisionTrace =
     typeof window !== "undefined"
       ? window.__CASTLE_LAYERS_RUNTIME__?.lastDecisionTrace || getCastleLayerDecisionTraceSnapshotV1()?.last
@@ -67,6 +75,19 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
   const gwOn = gw === "connected" || gw === "ready" || gw === "live" || gw === "uncertain";
 
   const drift = String(llm?.replyContractDriftClass || "—");
+  const llmPipelineReady =
+    gwOn &&
+    (voice.hydrated || voice.sttStatus === "engine_v3_registered" || Boolean(voice.sttProvider));
+  const llmMirrorReady = drift === "ok" || drift === "informative";
+  const telemetryStatus = String(epistemic?.lastStatus || "idle");
+  const telemetryReady =
+    telemetryStatus === "ok" ||
+    telemetryStatus === "attached" ||
+    telemetryStatus === "flush_pending" ||
+    telemetryStatus === "buffering" ||
+    telemetryStatus === "attach_pending" ||
+    telemetryBarrier?.channelAttached === true ||
+    (gwOn && telemetryStatus !== "error" && telemetryStatus !== "skipped");
   const driftTone =
     drift === "ok"
       ? "text-emerald-300"
@@ -86,10 +107,12 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
     {
       id: "llm",
       label: "LLM schema",
-      on: drift === "ok" || drift === "informative",
+      on: llmMirrorReady || llmPipelineReady,
       detail: llm?.replySchemaVersion
         ? `${llm.replySchemaVersion.split(".").pop() || "v1"} · ${llm.replyChars ?? "?"} chars`
-        : "no mirror"
+        : llmPipelineReady
+          ? "standby · pipeline ready"
+          : "no mirror"
     },
     {
       id: "voice",
@@ -114,24 +137,25 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
     {
       id: "telemetry",
       label: "Epistemic telemetry",
-      on:
-        epistemic?.lastStatus === "ok" ||
-        epistemic?.lastStatus === "attached" ||
-        epistemic?.lastStatus === "flush_pending",
+      on: telemetryReady,
       detail: epistemic?.lastError
         ? String(epistemic.lastError).slice(0, 48)
-        : epistemic?.lastStatus === "buffering"
-          ? `buffering · ${epistemic?.shadowCount ?? 0} shadow`
-          : epistemic?.lastStatus === "attach_pending"
-            ? "await gateway attach"
-            : epistemic?.lastStatus || "idle"
+        : telemetryBarrier?.channelAttached
+          ? "attached · channel live"
+          : telemetryStatus === "buffering"
+            ? `buffering · ${epistemic?.shadowCount ?? telemetryBarrier?.shadowCount ?? 0} shadow`
+            : telemetryStatus === "attach_pending"
+              ? "await gateway attach"
+              : gwOn && telemetryStatus === "idle"
+                ? "standby · gateway ready"
+                : telemetryStatus
     }
   ];
 
   return (
     <div
-      className="pointer-events-auto fixed left-2 z-[88] max-w-[min(19rem,44vw)] rounded-xl border border-amber-400/35 bg-black/85 p-2 text-[9px] font-mono normal-case text-amber-50/90 shadow-lg backdrop-blur-md"
-      style={{ top: "max(0.5rem, env(safe-area-inset-top))" }}
+      className="pointer-events-auto fixed bottom-[5.75rem] left-2 z-[62] max-w-[min(19rem,44vw)] rounded-xl border border-amber-400/35 bg-black/85 p-2 text-[9px] font-mono normal-case text-amber-50/90 shadow-lg backdrop-blur-md"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       data-rhizoh-castle-layers-debug="1"
       data-tick={tick}
       data-collapsed={collapsed ? "1" : "0"}

@@ -6,6 +6,18 @@ export { isVoiceEngineV3EnabledV0, isVoiceEngineV3ChromeTriggerOnlyV0 } from "./
 export { createVoiceEngineOrchestratorV3 } from "./voiceEngineOrchestratorV3.js";
 export { createVoiceAudioCaptureV3 } from "./voiceAudioCaptureV3.js";
 export { queryRhizohVoiceTranscribeV3, RHIZOH_VOICE_TRANSCRIBE_ROUTE_V3 } from "./queryRhizohVoiceTranscribeV3.js";
+export {
+  queryRhizohVoiceTranscribeResilientV3,
+  isRetryableTranscribeFailureV3,
+  resolveTranscribePathStrategyV3,
+  VOICE_TRANSCRIBE_TRANSPORT_V3
+} from "./voiceTranscribeTransportV3.js";
+export {
+  planVoiceTranscribePreflightV3,
+  resolveTranscribeRetryPathV3,
+  VOICE_TRANSCRIBE_PREFLIGHT_V3
+} from "./voiceTranscribePreflightV3.js";
+export { buildWebmSegmentBlobsV3, mergeSegmentTranscriptsV3 } from "./voiceWebmSegmentSplitV3.js";
 export { resolveVoiceTranscriptV3 } from "./voiceTranscriptMergerV3.js";
 export { VOICE_ENGINE_STATE_V3 } from "./voiceEngineStateV3.js";
 export {

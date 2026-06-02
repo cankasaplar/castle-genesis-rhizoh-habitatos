@@ -60,15 +60,23 @@ export async function createVoiceAudioCaptureV3(opts = {}) {
     },
     stop() {
       return new Promise((resolve, reject) => {
+        const finalize = () => {
+          const type = recorder?.mimeType || mimeType;
+          resolve({
+            blob: buildBlob(chunks, type),
+            chunks: chunks.slice(),
+            chunkCount: chunks.length
+          });
+        };
         if (stopped) {
-          resolve(buildBlob(chunks, recorder?.mimeType || mimeType));
+          finalize();
           return;
         }
         stopped = true;
         recorder.onstop = () => {
           levelProbe.stop();
           for (const track of stream.getTracks()) track.stop();
-          resolve(buildBlob(chunks, recorder?.mimeType || mimeType));
+          finalize();
         };
         recorder.onerror = () => reject(new Error("media_recorder_stop_error"));
         try {

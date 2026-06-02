@@ -8261,7 +8261,6 @@ export default function AppRhizoh528() {
 
     if (pathname === "/" || pathname === "") {
       uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
-      setShowDetailDrawer(false);
     }
   }, [location.pathname, location.search, applyBroadcastPresence]);
 
@@ -8274,7 +8273,6 @@ export default function AppRhizoh528() {
       });
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
       uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
-      setShowDetailDrawer(false);
       return;
     }
     if (s === "hall") {
@@ -12119,10 +12117,82 @@ export default function AppRhizoh528() {
           </div>
         </div>
 
-        {showDetailDrawer ? (
+
+        <div
+          className="shrink-0 w-full"
+          style={{ minHeight: chatDockBottomCssV0 }}
+          aria-hidden
+        />
+
+        <div
+          className="pointer-events-none fixed inset-x-0 z-[64] flex justify-center px-2 sm:px-4"
+          style={{ bottom: chatDockBottomCssV0 }}
+          data-rhizoh-t0-chat-dock="1"
+        >
+          <div className="pointer-events-auto w-full max-w-3xl">
+        <RhizohT0ShellChromeV1
+          uiLocale={uiLocaleV0}
+          phaseLabel={rhizohConversationUx.label}
+          goals={rhizohConversationUx.goals}
+          gatewayUx={gatewayUx}
+          gatewayConnected={runtimeHealth.gatewayConnected}
+          hasHttpOrigin={hasRhizohHttpOrigin}
+          llmHostLabel={rhizohLlmHostLabel}
+          conversationPhaseLabel={rhizohConversationUx.label}
+          onGatewayRetry={gatewayUx.retry}
+          advancedOpen={commandPanelAux}
+          onToggleAdvanced={toggleCommandPanelAux}
+          cmd={cmd}
+          setCmd={setCmd}
+          onSend={() => void handleExecute()}
+          busy={rhizohCommandBusy}
+          inputRef={commandInputRef}
+          placeholder={resolveChatPlaceholderV0(uiLocaleV0)}
+          fieldState={rhizohFieldState}
+          inlineError={rhizohInlineError}
+          onDismissError={() => setRhizohInlineError(null)}
+          mainHudReply={rhizohMainHudReply}
+          onDismissReply={() => setRhizohMainHudReply(null)}
+          rhizohGenerationMode={rhizohGenerationMode}
+          onGenerationModeChange={setRhizohGenerationMode}
+          generationModeOptions={RHIZOH_GENERATION_MODE_UI}
+          generationModeMax={RHIZOH_GENERATION_MODE_MAX}
+          showOnboardingLine={!onboardingDone}
+          firstInteractionSeeds={firstInteractionIntents}
+          onSeedIntent={(seed) => {
+            setCmd(seed);
+            setRhizohFieldState("LISTENING");
+          }}
+          showSemanticChips={
+            !T0_FIRST_MATCH_IDENTITY_V0 &&
+            cinematicOutput.showSemanticHints &&
+            shouldShowSemanticHintChipsV0()
+          }
+          showVerboseHints={!T0_FIRST_MATCH_IDENTITY_V0 && shouldShowVerboseCommandHintV0()}
+          commandHint={resolveCommandHintV0()}
+          commandLog={commandLog}
+          showCommandLog={showCommandLog}
+          onToggleCommandLog={() => setShowCommandLog((v) => !v)}
+          runtimeHealth={runtimeHealth}
+          unifiedDock
+          collectiveDensity={visualCognitionState?.collectiveField?.density ?? 0.4}
+          showProductMic={true}
+          showProductCamera
+          voiceInputReady={voiceInputReadyV0}
+          micActive={micListening || voiceLoopEnabled}
+          onMicClick={handleMicButtonClick}
+          cameraActive={productCameraOn}
+          onCameraClick={handleCameraButtonClick}
+        />
+          </div>
+        </div>
+
+      </div>
+
+      {showDetailDrawer ? (
           <div
             id="rhizoh-detail-drawer"
-            className="pointer-events-auto fixed inset-y-0 right-0 z-[110] w-full max-w-md border-l border-cyan-400/25 bg-[#050a14]/95 p-4 shadow-2xl backdrop-blur-xl overflow-y-auto"
+            className="pointer-events-auto fixed inset-y-0 right-0 z-[220] w-full max-w-md border-l border-cyan-400/25 bg-[#050a14]/95 p-4 shadow-2xl backdrop-blur-xl overflow-y-auto"
             role="dialog"
             aria-label={detailChromeCopyV0.open}
           >
@@ -12457,78 +12527,6 @@ export default function AppRhizoh528() {
             </div>
           </div>
         ) : null}
-
-        <div
-          className="shrink-0 w-full"
-          style={{ minHeight: chatDockBottomCssV0 }}
-          aria-hidden
-        />
-
-        <div
-          className="pointer-events-none fixed inset-x-0 z-[64] flex justify-center px-2 sm:px-4"
-          style={{ bottom: chatDockBottomCssV0 }}
-          data-rhizoh-t0-chat-dock="1"
-        >
-          <div className="pointer-events-auto w-full max-w-3xl">
-        <RhizohT0ShellChromeV1
-          uiLocale={uiLocaleV0}
-          phaseLabel={rhizohConversationUx.label}
-          goals={rhizohConversationUx.goals}
-          gatewayUx={gatewayUx}
-          gatewayConnected={runtimeHealth.gatewayConnected}
-          hasHttpOrigin={hasRhizohHttpOrigin}
-          llmHostLabel={rhizohLlmHostLabel}
-          conversationPhaseLabel={rhizohConversationUx.label}
-          onGatewayRetry={gatewayUx.retry}
-          advancedOpen={commandPanelAux}
-          onToggleAdvanced={toggleCommandPanelAux}
-          cmd={cmd}
-          setCmd={setCmd}
-          onSend={() => void handleExecute()}
-          busy={rhizohCommandBusy}
-          inputRef={commandInputRef}
-          placeholder={resolveChatPlaceholderV0(uiLocaleV0)}
-          fieldState={rhizohFieldState}
-          inlineError={rhizohInlineError}
-          onDismissError={() => setRhizohInlineError(null)}
-          mainHudReply={rhizohMainHudReply}
-          onDismissReply={() => setRhizohMainHudReply(null)}
-          rhizohGenerationMode={rhizohGenerationMode}
-          onGenerationModeChange={setRhizohGenerationMode}
-          generationModeOptions={RHIZOH_GENERATION_MODE_UI}
-          generationModeMax={RHIZOH_GENERATION_MODE_MAX}
-          showOnboardingLine={!onboardingDone}
-          firstInteractionSeeds={firstInteractionIntents}
-          onSeedIntent={(seed) => {
-            setCmd(seed);
-            setRhizohFieldState("LISTENING");
-          }}
-          showSemanticChips={
-            !T0_FIRST_MATCH_IDENTITY_V0 &&
-            cinematicOutput.showSemanticHints &&
-            shouldShowSemanticHintChipsV0()
-          }
-          showVerboseHints={!T0_FIRST_MATCH_IDENTITY_V0 && shouldShowVerboseCommandHintV0()}
-          commandHint={resolveCommandHintV0()}
-          commandLog={commandLog}
-          showCommandLog={showCommandLog}
-          onToggleCommandLog={() => setShowCommandLog((v) => !v)}
-          runtimeHealth={runtimeHealth}
-          unifiedDock
-          collectiveDensity={visualCognitionState?.collectiveField?.density ?? 0.4}
-          showProductMic={true}
-          showProductCamera
-          voiceInputReady={voiceInputReadyV0}
-          micActive={micListening || voiceLoopEnabled}
-          onMicClick={handleMicButtonClick}
-          cameraActive={productCameraOn}
-          onCameraClick={handleCameraButtonClick}
-        />
-          </div>
-        </div>
-
-      </div>
-
       <RhizohCastleLayersDebugV0 gatewayPhase={gatewayUx?.phase} />
       <CastleAuthOverlay auth={castleAuth} />
       <RhizohSceneAnchorWindow />

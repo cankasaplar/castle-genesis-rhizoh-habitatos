@@ -5,7 +5,7 @@
 import { VOICE_ENGINE_STATE_V3 } from "./voiceEngineStateV3.js";
 import { createVoiceAudioCaptureV3, VOICE_CAPTURE_CHUNK_MS_V3 } from "./voiceAudioCaptureV3.js";
 import { hasVoiceCaptureSpeechEnergyV3 } from "./voiceAudioLevelV3.js";
-import { queryRhizohVoiceTranscribeV3 } from "./queryRhizohVoiceTranscribeV3.js";
+import { queryRhizohVoiceTranscribeResilientV3 } from "./voiceTranscribeTransportV3.js";
 import { resolveVoiceTranscriptV3 } from "./voiceTranscriptMergerV3.js";
 import {
   runVoiceTranscriptWitnessPipelineV0,
@@ -106,10 +106,14 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       emitVoiceEngineTelemetryV3("RECORDING_STOP");
 
       let fullBlob;
+      /** @type {Blob[]} */
+      let captureChunks = [];
       let maxRms = 0;
       try {
         maxRms = capture?.getMaxRms?.() ?? 0;
-        fullBlob = await capture.stop();
+        const captureResult = await capture.stop();
+        fullBlob = captureResult?.blob || captureResult;
+        captureChunks = Array.isArray(captureResult?.chunks) ? captureResult.chunks : [];
       } catch (e) {
         busy = false;
         setSessionState(VOICE_ENGINE_STATE_V3.ERROR);
@@ -165,15 +169,22 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       }
 
       setSessionState(VOICE_ENGINE_STATE_V3.FINAL_TRANSCRIPT_RESOLVE);
-      emitVoiceEngineTelemetryV3("FINAL_TRANSCRIBE_START", { bytes, recordedMs });
+      emitVoiceEngineTelemetryV3("FINAL_TRANSCRIBE_START", {
+        bytes,
+        recordedMs,
+        chunkCount: captureChunks.length
+      });
 
       try {
-        const res = await queryRhizohVoiceTranscribeV3(fullBlob, {
-          path: "both",
+        const res = await queryRhizohVoiceTranscribeResilientV3(fullBlob, {
           mimeType,
           languageCode,
           traceId: opts.traceId,
-          sessionId
+          sessionId,
+          bytes,
+          recordedMs,
+          chunks: captureChunks,
+          chunkCount: captureChunks.length
         });
 
         if (activeGen !== generation) {
@@ -185,9 +196,10 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         if (!res.ok) {
           busy = false;
           setSessionState(VOICE_ENGINE_STATE_V3.ERROR);
-          opts.onError?.({ code: res.error || "transcribe_failed" });
+          const failCode = res.error || "transcribe_failed";
+          opts.onError?.({ code: failCode, detail: res.detail ? String(res.detail) : undefined });
           setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
-          return { ok: false, error: res.error };
+          return { ok: false, error: failCode, transportAttempt: res.transportAttempt };
         }
 
         const merged = res.merged || resolveVoiceTranscriptV3(res.google || res.fast, res.whisper);
@@ -259,9 +271,10 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       } catch (e) {
         busy = false;
         setSessionState(VOICE_ENGINE_STATE_V3.ERROR);
-        opts.onError?.({ code: "transcribe_network", detail: String(e?.message || e) });
+        const detail = String(e?.message || e);
+        opts.onError?.({ code: "transcribe_network", detail });
         setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
-        return { ok: false, error: "transcribe_network" };
+        return { ok: false, error: "transcribe_network", detail };
       }
     },
 

@@ -31,7 +31,8 @@ function gatewayToken() {
  *   mimeType?: string,
  *   languageCode?: string,
  *   traceId?: string,
- *   sessionId?: string
+ *   sessionId?: string,
+ *   timeoutMs?: number
  * }} [opts]
  */
 export async function queryRhizohVoiceTranscribeV3(audio, opts = {}) {
@@ -57,18 +58,39 @@ export async function queryRhizohVoiceTranscribeV3(audio, opts = {}) {
   if (token) headers["X-Castle-Gateway-Token"] = token;
 
   const path = String(opts.path || "both");
-  const res = await fetch(`${base}${RHIZOH_VOICE_TRANSCRIBE_ROUTE_V3}`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
+  const timeoutMs = Number(opts.timeoutMs) > 0 ? Number(opts.timeoutMs) : 0;
+  /** @type {AbortController | null} */
+  let abortCtl = null;
+  /** @type {ReturnType<typeof setTimeout> | null} */
+  let timeoutId = null;
+  const fetchOpts = { method: "POST", headers, body: JSON.stringify({
       path,
       audioBase64: b64,
       mimeType,
       languageCode: opts.languageCode || readSttLanguageCodeHintV0(),
       traceId: opts.traceId || "",
       sessionId: opts.sessionId || ""
-    })
-  });
+    }) };
+
+  if (timeoutMs > 0 && typeof AbortController !== "undefined") {
+    abortCtl = new AbortController();
+    fetchOpts.signal = abortCtl.signal;
+    timeoutId = setTimeout(() => abortCtl?.abort(), timeoutMs);
+  }
+
+  let res;
+  try {
+    res = await fetch(`${base}${RHIZOH_VOICE_TRANSCRIBE_ROUTE_V3}`, fetchOpts);
+  } catch (e) {
+    if (timeoutId) clearTimeout(timeoutId);
+    const aborted = abortCtl?.signal?.aborted || String(e?.name || "") === "AbortError";
+    return {
+      ok: false,
+      error: aborted ? "fetch_timeout" : "transcribe_network",
+      detail: String(e?.message || e)
+    };
+  }
+  if (timeoutId) clearTimeout(timeoutId);
 
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {

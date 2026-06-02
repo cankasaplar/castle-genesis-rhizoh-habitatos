@@ -20,7 +20,19 @@ let v3LastStartedSessionId = null;
 let v3StopInFlight = null;
 let v3LastEmptyRetryAtMs = 0;
 
+const RETRYABLE_NETWORK_CODES = new Set([
+  "transcribe_network",
+  "fetch_timeout",
+  "fetch_failed",
+  "http_502",
+  "http_503",
+  "http_504",
+  "http_429"
+]);
+
+let v3LastNetworkRetryAtMs = 0;
 const V3_EMPTY_RETRY_DEBOUNCE_MS = 1400;
+const V3_NETWORK_RETRY_DEBOUNCE_MS = 2200;
 
 const RETRYABLE_EMPTY_CODES = new Set([
   "no_speech",
@@ -176,6 +188,24 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
         callbacks.setRhizohFieldState("IDLE");
       }
       return { ok: false, error: err };
+    }
+
+    if (RETRYABLE_NETWORK_CODES.has(err) && keepAlive) {
+      const now = Date.now();
+      if (now - v3LastNetworkRetryAtMs >= V3_NETWORK_RETRY_DEBOUNCE_MS) {
+        v3LastNetworkRetryAtMs = now;
+        logVoiceWarnV0("V3_NETWORK_RETRY", { error: err });
+        callbacks.speakRhizoh?.("Bağlantı koptu, bir kez daha deniyorum.", {
+          voiceTurn: true,
+          instantAck: true
+        });
+        callbacks.scheduleVoiceMicRestart(keepAlive, {
+          context: "v3_network_retry",
+          lastSessionHadResult: refs.voiceSttGotAnyResult.current
+        });
+        callbacks.setRhizohFieldState("IDLE");
+        return { ok: false, error: err, networkRetry: true };
+      }
     }
 
     if (err === "session_not_idle") {
