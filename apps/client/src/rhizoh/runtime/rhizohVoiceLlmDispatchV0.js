@@ -242,7 +242,7 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     sessionId: opts.sessionId,
     connectionId: opts.connectionId,
     voiceTurn: true,
-    speakInstantAck: true,
+    speakInstantAck: false,
     userTurnCount: opts.userTurnCount,
     conversationPhase: opts.conversationPhase,
     idToken: opts.idToken,

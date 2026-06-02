@@ -3,6 +3,7 @@
  * Contextual modes: none | light | delayed
  */
 
+import { isSpokenShadowObservationAckEnabledV0 } from "./rhizohDialoguePresencePolicyV0.js";
 import { logCastleLifecycleV0, logVoiceInfoV0 } from "./rhizohProductionLogNamespacesV0.js";
 import { pickShadowAckPhraseV0 } from "./rhizohConversationLanguageV0.js";
 import { enforceUserVisibleTextLocaleV0 } from "./rhizohLanguageInvariantV0.js";
@@ -34,11 +35,7 @@ let shadowAckSession = 0;
 let shadowAckTimer = 0;
 
 export function isVoiceShadowObservationAckEnabledV0() {
-  if (typeof import.meta !== "undefined" && import.meta.env) {
-    const v = import.meta.env.VITE_RHIZOH_VOICE_SHADOW_OBS_ACK;
-    if (v === "0" || v === "false") return false;
-  }
-  return true;
+  return isSpokenShadowObservationAckEnabledV0();
 }
 
 /**

@@ -20,17 +20,25 @@ describe("rhizohLlmTurnHotWireV0 fast-path ack", () => {
     vi.mocked(speakVoiceInstantAckV0).mockClear();
   });
 
-  it("does not use turn.fastAck phrase pool bypass", () => {
+  it("does not speak instant ack by default (quiet presence)", () => {
     const turn = prepareRhizohLlmTurnV0({
       message: "hello",
       voiceTurn: true,
-      speakInstantAck: true,
       fastAck: "Tamam, dinliyorum."
     });
     expect(turn.turn?.fastAck).not.toBe("Tamam, dinliyorum.");
+    expect(speakVoiceInstantAckV0).not.toHaveBeenCalled();
+    expect(turn.ackSpoken).toBe(false);
+  });
+
+  it("speaks instant ack when explicitly requested", () => {
+    vi.stubEnv("VITE_RHIZOH_SPOKEN_INSTANT_ACK", "1");
+    prepareRhizohLlmTurnV0({
+      message: "hello",
+      voiceTurn: true,
+      speakInstantAck: true
+    });
     expect(speakVoiceInstantAckV0).toHaveBeenCalled();
-    const phrase = String(vi.mocked(speakVoiceInstantAckV0).mock.calls[0]?.[0] || "");
-    expect(phrase).toMatch(/listening|moment|second/i);
-    expect(phrase).not.toMatch(/dinliyorum/i);
+    vi.unstubAllEnvs();
   });
 });

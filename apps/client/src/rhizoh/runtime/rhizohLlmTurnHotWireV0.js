@@ -5,6 +5,7 @@
 
 import { runRhizohClagForLlmTurnV0 } from "./rhizohClagTurnBridgeV0.js";
 import { selectInstantAckV0 } from "./rhizohConversationLanguageV0.js";
+import { shouldSpeakInstantAckForTurnV0 } from "./rhizohDialoguePresencePolicyV0.js";
 import {
   markVoiceTurnDispatchV0,
   speakVoiceInstantAckV0
@@ -56,7 +57,8 @@ export function prepareRhizohLlmTurnV0(input = {}) {
       ? selectInstantAckV0({ intent: "acknowledge" })
       : selectInstantAckV0({ intent: "acknowledge" });
 
-  if (input.speakInstantAck !== false && ack?.text) {
+  const speakAck = shouldSpeakInstantAckForTurnV0(input);
+  if (speakAck && ack?.text) {
     speakVoiceInstantAckV0(String(ack.text));
   }
 
@@ -77,7 +79,7 @@ export function prepareRhizohLlmTurnV0(input = {}) {
   return Object.freeze({
     schema: RHIZOH_LLM_TURN_HOT_WIRE_SCHEMA_V0,
     turn,
-    ackSpoken: input.speakInstantAck !== false && Boolean(ack?.text),
+    ackSpoken: speakAck && Boolean(ack?.text),
     fastPath: turn.route?.fastPath === true,
     scheduling: turn.expression?.scheduling || "speech_first"
   });

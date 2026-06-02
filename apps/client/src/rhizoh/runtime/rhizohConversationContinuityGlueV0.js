@@ -3,6 +3,7 @@
  * Not a new pipeline layer: timing + prosody carry from hot speech → reply chunks.
  */
 
+import { isConversationMicroBridgeTtsEnabledV0 } from "./rhizohDialoguePresencePolicyV0.js";
 import { logCastleLifecycleV0, logVoiceInfoV0 } from "./rhizohProductionLogNamespacesV0.js";
 import { recordConversationMirrorGlueV0 } from "./rhizohConversationBehaviorMirrorV0.js";
 import {
@@ -63,7 +64,8 @@ export function buildConversationContinuityGlueV0(input = {}) {
   if (pacing === "energetic") bridgeGapMs = clampMs(bridgeGapMs - 18, 55, 180);
 
   const longLlmWait = llmWaitMs > 900;
-  const useMicroBridge = longLlmWait && !isVoiceInstantAckPlayingV0();
+  const useMicroBridge =
+    longLlmWait && !isVoiceInstantAckPlayingV0() && isConversationMicroBridgeTtsEnabledV0();
   const bridgeTable = BRIDGE_PHRASES_TR[lang] || BRIDGE_PHRASES_TR.tr;
   const microBridgePhrase = useMicroBridge ? bridgeTable[0] : null;
 

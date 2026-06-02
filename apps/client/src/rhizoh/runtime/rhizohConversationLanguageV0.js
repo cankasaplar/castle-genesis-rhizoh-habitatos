@@ -1,7 +1,7 @@
 /**
  * Voice session output locale + fast phrase binding.
  * Output Language Policy (OLP): rhizohOutputLanguagePolicyV0.js
- * STT input capture uses readSttInputLanguageCodeHintV0() ("auto" under ui_locked_output).
+ * STT input capture uses readSttInputLanguageCodeHintV0() (UI locale BCP-47; env override optional).
  */
 
 import { resolveRhizohBcp47V0 } from "./rhizohMultilingualBridgeV0.js";

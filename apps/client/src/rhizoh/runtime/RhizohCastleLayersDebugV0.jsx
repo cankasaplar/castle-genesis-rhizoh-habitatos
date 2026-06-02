@@ -57,7 +57,7 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
       id: "voice",
       label: "Voice v3",
       on: voice.hydrated && !voice.fallbackMode,
-      detail: `${voice.sttStatus || "?"} · ${voice.providerId || "no adapter"}`
+      detail: `${voice.sttStatus || "?"} · ${voice.sttProvider || voice.voice?.provider || "no adapter"}`
     },
     {
       id: "spatial",

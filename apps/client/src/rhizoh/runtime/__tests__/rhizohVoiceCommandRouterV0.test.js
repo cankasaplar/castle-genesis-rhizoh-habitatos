@@ -37,4 +37,10 @@ describe("rhizohVoiceCommandRouterV0", () => {
     expect(route.execution).toBe(VOICE_ROUTE_EXECUTION_V0.LOCAL);
     expect(route.grammarLocal?.kind).toBe("ENTER_SURFACE");
   });
+
+  it("routes haritayı aç as local map command (no LLM)", () => {
+    const route = routeVoiceInputV0("haritayı aç");
+    expect(route.execution).toBe(VOICE_ROUTE_EXECUTION_V0.LOCAL);
+    expect(route.canonical).toBe("map_open");
+  });
 });

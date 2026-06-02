@@ -4,6 +4,11 @@
  */
 
 import { readUserAnchorV0, resolveDisplayAnchorV0 } from "./memoryAnchorSystemV0.js";
+import {
+  isQuietDialoguePresenceV0,
+  resolveQuietBusyStatusLineV0,
+  resolveQuietReadyStatusLineV0
+} from "./rhizohDialoguePresencePolicyV0.js";
 import { T0_INTENT_ANCHORS_V0, T0_INTENT_CONNECT_V0, T0_INTENT_EXPLORE_V0, T0_INTENT_OBSERVE_V0, T0_INTENT_PRODUCE_V0 } from "./t0ContextStripV0.js";
 
 /** Capability wheel — başlık ve giriş cümlesi */
@@ -125,6 +130,13 @@ export function resolveProductStatusHeadlineTrV0(input = {}) {
 export function resolveChatStatusLineTrV0(input = {}) {
   const busy = Boolean(input.busy);
   const connected = input.connected !== false;
+  if (isQuietDialoguePresenceV0()) {
+    if (busy) return resolveQuietBusyStatusLineV0();
+    if (input.fieldState === "SPEAKING") return "Rhizoh konuşuyor…";
+    if (input.fieldState === "LISTENING") return resolveQuietReadyStatusLineV0(true);
+    if (!connected) return "Bağlanıyor… · yine de yazabilirsin";
+    return resolveQuietReadyStatusLineV0(true);
+  }
   if (busy) return "Rhizoh düşünüyor…";
   if (input.fieldState === "SPEAKING") return "Rhizoh konuşuyor…";
   if (input.fieldState === "LISTENING") return "Seni dinliyorum…";

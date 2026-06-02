@@ -77,6 +77,23 @@ function readOlpOwnedPreferenceLocaleV0() {
   return olpPreferenceLocale || resolveDefaultUiLocaleV0();
 }
 
+function readForcedSttLanguageFromEnvV0() {
+  const raw = String(
+    typeof import.meta !== "undefined" ? import.meta.env?.VITE_RHIZOH_STT_LANGUAGE || "" : ""
+  )
+    .trim()
+    .toLowerCase();
+  if (!raw) return null;
+  if (raw === "auto" || raw === "und") return "auto";
+  return resolveRhizohLanguageCatalogRowV0(normalizeUiLocaleV0(raw)).bcp47;
+}
+
+function sttInputLanguageBcp47ForRowV0(row) {
+  const forced = readForcedSttLanguageFromEnvV0();
+  if (forced) return forced;
+  return row.bcp47;
+}
+
 function publishOlpSnapshotV0(row, source = "read") {
   const mode = readPolicyModeFromEnvV0();
   const policy = Object.freeze({
@@ -84,7 +101,7 @@ function publishOlpSnapshotV0(row, source = "read") {
     language: row.code,
     bcp47: row.bcp47,
     label: row.label,
-    inputLanguage: "auto",
+    inputLanguage: sttInputLanguageBcp47ForRowV0(row),
     preferenceSource: String(source || "read")
   });
   if (typeof window !== "undefined") {
@@ -113,8 +130,15 @@ export function resolveOutputBcp47V0(detectedInputCode = "") {
   return resolveRhizohBcp47V0(resolveOutputLanguageCodeV0(detectedInputCode));
 }
 
+/**
+ * STT capture language — mirrors OLP UI locale (BCP-47) unless VITE_RHIZOH_STT_LANGUAGE overrides.
+ * Output locale policy is unchanged; this only steers Google STT / Whisper input decoding.
+ * @returns {string} e.g. tr-TR, en-US, or "auto" when env forces auto
+ */
 export function readSttInputLanguageCodeHintV0() {
-  return "auto";
+  const forced = readForcedSttLanguageFromEnvV0();
+  if (forced) return forced;
+  return resolveRhizohLanguageCatalogRowV0(readOlpOwnedPreferenceLocaleV0()).bcp47;
 }
 
 export { readOlpInteractionToneV0, recordOlpBehavioralTurnV0 } from "./rhizohOlpInteractionToneV0.js";

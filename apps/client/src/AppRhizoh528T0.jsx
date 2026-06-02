@@ -242,6 +242,38 @@ import {
   resolveSpeechVoiceForUiLocaleV0
 } from "./rhizoh/runtime/rhizohSpeechLocaleV0.js";
 import {
+  classifyRhizohInputClassV0,
+  publishRhizohInputClassV0,
+  RHIZOH_INPUT_CLASS_V0
+} from "./rhizoh/runtime/rhizohConversationIntentV0.js";
+import {
+  shouldSpeakInstantAckForTurnV0,
+  shouldSpeakLocalCommandFeedbackV0
+} from "./rhizoh/runtime/rhizohDialoguePresencePolicyV0.js";
+import {
+  executeLocalVoiceCommandV0,
+  routeVoiceInputV0,
+  VOICE_ROUTE_EXECUTION_V0
+} from "./rhizoh/runtime/rhizohVoiceCommandRouterV0.js";
+import { evaluateSttScriptAgainstUiLocaleV0 } from "./rhizoh/runtime/sttScriptLocaleGuardV0.js";
+import {
+  CMD_EXEC_DECISION_V0,
+  logRhizohCommandExecutionTraceV0
+} from "./rhizoh/runtime/rhizohCommandExecutionTraceV0.js";
+import {
+  beginVoiceTurnLeakAuditV0,
+  finishVoiceTurnLeakAuditV0,
+  noteVoiceTurnLeakAuditV0,
+  patchVoiceTurnLeakAuditV0
+} from "./rhizoh/runtime/rhizohVoiceTurnLeakAuditV0.js";
+import {
+  ingestSttTemporalFrameV0,
+  resetSttTemporalFrameBufferV0,
+  resetSttTemporalSmoothingV0
+} from "./rhizoh/runtime/sttTemporalSmoothingV0.js";
+import { isHardSilentCommandRouteV0 } from "./rhizoh/runtime/rhizohCommandGateV0.js";
+import { recordRhizohReplySurfaceV0 } from "./rhizoh/runtime/rhizohReplyRhythmDiagnosticV0.js";
+import {
   markVoiceTurnDispatchV0,
   speakAfterVoiceInstantAckSmoothV0,
   speakVoiceInstantAckV0
@@ -9342,6 +9374,8 @@ export default function AppRhizoh528() {
 
   /** S├╝rekli dinleme: TTS sonras─▒ STT event ile mic yeniden a├ğ─▒l─▒r (gateway ba─ş─▒ms─▒z). */
   const finishVoiceTurnIfNeeded = useCallback(() => {
+    finishVoiceTurnLeakAuditV0();
+    resetSttTemporalFrameBufferV0();
     voiceTurnBusyRef.current = false;
     voiceTurnBusySinceRef.current = 0;
     if (!voiceLoopEnabledRef.current) return;
@@ -9385,7 +9419,14 @@ export default function AppRhizoh528() {
       }
       const sessionId = ++voiceTtsSessionIdRef.current;
       const voiceLocale = readSpeechLocaleForVoiceV0();
-      const utterance = new SpeechSynthesisUtterance(String(text).slice(0, 1800));
+      const spoken = String(text).slice(0, 1800);
+      recordRhizohReplySurfaceV0({
+        channel: "tts",
+        text: spoken,
+        source: "speakRhizoh",
+        meta: Object.freeze({ voiceTurn, capped: String(text).length > 1800 })
+      });
+      const utterance = new SpeechSynthesisUtterance(spoken);
       utterance.lang = resolveSpeechBcp47ForUiLocaleV0(voiceLocale);
       utterance.rate = 1;
       utterance.pitch = 1.05;
@@ -9441,7 +9482,8 @@ export default function AppRhizoh528() {
         strategy,
         maxRms,
         witnessed: witnessedIn,
-        witnessCompleted = false
+        witnessCompleted = false,
+        temporal: temporalIn
       } = {}
     ) => {
       const trimmed = String(text || "").trim();
@@ -9451,6 +9493,8 @@ export default function AppRhizoh528() {
       }
 
       const voiceSource = String(source || "mic");
+      /** @type {ReturnType<typeof import("./rhizoh/runtime/sttTemporalSmoothingV0.js").applySttTemporalSmoothingV0> | null} */
+      let temporalSnap = temporalIn || null;
       /** @type {ReturnType<typeof import("./rhizoh/runtime/voiceTranscriptWitnessPipelineV0.js").witnessRawVoiceTranscriptV0> | null} */
       let witnessed = witnessedIn || null;
       /** @type {ReturnType<typeof finalizeVoiceBehavioralCommitmentV0> | null} */
@@ -9476,6 +9520,7 @@ export default function AppRhizoh528() {
           runTurnGate: false
         });
         witnessed = pipe.witnessed;
+        temporalSnap = pipe.temporal || temporalSnap;
         pipelineCommitment = pipe.commitment;
         pipelinePreCommitment = pipe.preCommitment;
         if (!pipe.sanityGate.accepted) {
@@ -9501,6 +9546,7 @@ export default function AppRhizoh528() {
           runTurnGate: false
         });
         witnessed = pipe.witnessed;
+        temporalSnap = pipe.temporal || temporalSnap;
         pipelineCommitment = pipe.commitment;
         pipelinePreCommitment = pipe.preCommitment;
         if (!pipe.sanityGate.accepted) {
@@ -9519,6 +9565,12 @@ export default function AppRhizoh528() {
         });
       }
 
+      const effectiveConfidence = Number.isFinite(Number(temporalSnap?.effectiveConfidence))
+        ? Number(temporalSnap.effectiveConfidence)
+        : Number.isFinite(Number(confidence))
+          ? Number(confidence)
+          : undefined;
+
       const isVoiceDispatch =
         voiceSource === "barge_in" ||
         voiceSource === "mic" ||
@@ -9527,7 +9579,7 @@ export default function AppRhizoh528() {
       if (isVoiceDispatch) {
         const execRoute = routeVoiceTranscriptConfidenceV0({
           text: trimmed,
-          confidence: Number.isFinite(Number(confidence)) ? Number(confidence) : undefined,
+          confidence: effectiveConfidence,
           strategy: strategy || undefined,
           maxRms: Number.isFinite(Number(maxRms)) ? Number(maxRms) : undefined,
           source: voiceSource,
@@ -9630,9 +9682,128 @@ export default function AppRhizoh528() {
         },
         { preview: trimmed, source: voiceSource, stage: "stt_dispatch" }
       );
+      beginVoiceTurnLeakAuditV0({
+        source: voiceSource,
+        preview: trimmed.slice(0, 96)
+      });
+
+      const scriptGuard = evaluateSttScriptAgainstUiLocaleV0(trimmed, {
+        confidence: effectiveConfidence,
+        strategy: strategy || undefined
+      });
+      if (!scriptGuard.ok) {
+        noteVoiceTurnLeakAuditV0("stt_script_reject", {
+          passMode: scriptGuard.passMode,
+          arabicRatio: scriptGuard.arabicRatio,
+          semantic: scriptGuard.semantic
+        });
+        logVoiceWarnV0("STT_SCRIPT_MISMATCH", {
+          preview: trimmed.slice(0, 96),
+          expectedLocale: scriptGuard.expectedLocale,
+          arabicRatio: scriptGuard.arabicRatio,
+          passMode: scriptGuard.passMode
+        });
+        voiceTurnBusyRef.current = false;
+        voiceTurnBusySinceRef.current = 0;
+        setRhizohFieldState("IDLE");
+        if (manageVoiceTurn) {
+          maybeWarnVoiceSilentStop("low_confidence");
+          finishVoiceTurnIfNeeded();
+        }
+        return;
+      }
+      noteVoiceTurnLeakAuditV0("stt_validated", {
+        passMode: scriptGuard.passMode,
+        whisperConfidence: scriptGuard.semantic?.whisperConfidence
+      });
+
       setCmd(trimmed);
+      noteVoiceTurnLeakAuditV0("input_box_written");
       setRhizohFieldState("INTERPRETING");
-      speakVoiceInstantAckV0();
+
+      const inputClassSnap = publishRhizohInputClassV0(classifyRhizohInputClassV0(trimmed));
+      const voiceRoute = routeVoiceInputV0(trimmed);
+
+      patchVoiceTurnLeakAuditV0({
+        inputClass: inputClassSnap.class,
+        cmdDecision: isHardSilentCommandRouteV0(voiceRoute)
+          ? CMD_EXEC_DECISION_V0.SILENT_EXECUTE
+          : voiceRoute.execution === VOICE_ROUTE_EXECUTION_V0.HYBRID_LOCAL_FIRST
+            ? CMD_EXEC_DECISION_V0.HYBRID
+            : CMD_EXEC_DECISION_V0.LLM,
+        matchKind: voiceRoute.commandGate?.matchKind,
+        commandConfidence: voiceRoute.commandGate?.commandConfidence
+      });
+
+      if (isHardSilentCommandRouteV0(voiceRoute)) {
+        const localTraceId = `TRC-LOC-${Date.now().toString(36)}`;
+        const gate = voiceRoute.commandGate;
+        logRhizohCommandExecutionTraceV0({
+          decision: CMD_EXEC_DECISION_V0.SILENT_EXECUTE,
+          matchKind: gate?.matchKind,
+          commandConfidence: gate?.commandConfidence,
+          canonical: voiceRoute.canonical || voiceRoute.grammarLocal?.kind,
+          normalized: voiceRoute.normalized,
+          traceId: localTraceId,
+          source: voiceSource
+        });
+        const local = executeLocalVoiceCommandV0(voiceRoute, { traceId: localTraceId });
+        noteVoiceTurnLeakAuditV0("local_execute", {
+          canonical: voiceRoute.canonical || local.kind
+        });
+        setRhizohFieldState("EXECUTING");
+        logVoiceInfoV0("VOICE_LOCAL_COMMAND", {
+          class: RHIZOH_INPUT_CLASS_V0.COMMAND,
+          canonical: voiceRoute.canonical || local.kind,
+          grammar: voiceRoute.grammarLocal?.kind || null,
+          matchKind: gate?.matchKind,
+          commandConfidence: gate?.commandConfidence,
+          speech: shouldSpeakLocalCommandFeedbackV0()
+        });
+        if (shouldSpeakLocalCommandFeedbackV0() && local.reply) {
+          speakRhizoh(local.reply, { voiceTurn: manageVoiceTurn });
+        } else {
+          setRhizohFieldState("IDLE");
+          if (manageVoiceTurn) finishVoiceTurnIfNeeded();
+        }
+        voiceTurnBusyRef.current = false;
+        voiceTurnBusySinceRef.current = 0;
+        return;
+      }
+
+      if (voiceRoute.execution === VOICE_ROUTE_EXECUTION_V0.HYBRID_LOCAL_FIRST) {
+        logRhizohCommandExecutionTraceV0({
+          decision: CMD_EXEC_DECISION_V0.HYBRID,
+          matchKind: voiceRoute.commandGate?.matchKind,
+          commandConfidence: voiceRoute.commandGate?.commandConfidence,
+          normalized: voiceRoute.normalized,
+          source: voiceSource
+        });
+      } else if (voiceRoute.execution === VOICE_ROUTE_EXECUTION_V0.LLM) {
+        const gate = voiceRoute.commandGate;
+        logRhizohCommandExecutionTraceV0({
+          decision:
+            gate?.matchKind === "fuzzy" ? CMD_EXEC_DECISION_V0.LLM_FALLBACK : CMD_EXEC_DECISION_V0.LLM,
+          matchKind: gate?.matchKind,
+          commandConfidence: gate?.commandConfidence,
+          normalized: voiceRoute.normalized,
+          source: voiceSource,
+          leakFlags:
+            gate?.matchKind === "fuzzy" && gate?.commandConfidence >= 0.5
+              ? ["fuzzy_not_hard_command"]
+              : []
+        });
+      }
+
+      if (
+        shouldSpeakInstantAckForTurnV0({
+          inputClass: inputClassSnap.class,
+          suppressInstantAck: inputClassSnap.suppressInstantAck
+        })
+      ) {
+        speakVoiceInstantAckV0();
+        noteVoiceTurnLeakAuditV0("instant_ack_spoken");
+      }
       try {
         const focusPre = uiStore.getState().layerFocus;
         enqueueCastleRuntimeTransaction({
@@ -9650,6 +9821,7 @@ export default function AppRhizoh528() {
           /* noop */
         }
         const llmStartedAt = Date.now();
+        noteVoiceTurnLeakAuditV0("llm_query_started");
         const out = await queryRhizohLLM({
           message: trimmed,
           provider: "openai",
@@ -9669,7 +9841,8 @@ export default function AppRhizoh528() {
           voiceTurnMeta: {
             source: voiceSource,
             text: trimmed,
-            confidence: Number.isFinite(Number(confidence)) ? Number(confidence) : undefined,
+            confidence: effectiveConfidence,
+            temporal: temporalSnap || undefined,
             strategy: strategy || undefined,
             maxRms: Number.isFinite(Number(maxRms)) ? Number(maxRms) : undefined,
             witnessed: witnessed || undefined,
@@ -9698,10 +9871,17 @@ export default function AppRhizoh528() {
         applyRhizohDirective(out.directive, engineRef);
         const normV = buildRhizohNormalizedLlmOutput(out, gatewayUx, mapSurfaceActive);
         const procV = materializeCommsFromNormalized(normV, out.reply);
+        const hudText = coerceRhizohUiReplyTextV0(out.reply, { fallback: procV.uiReply });
         setRhizohMainHudReply({
-          text: coerceRhizohUiReplyTextV0(out.reply, { fallback: procV.uiReply }),
+          text: hudText,
           source: String(out.source || "voice"),
           at: Date.now()
+        });
+        recordRhizohReplySurfaceV0({
+          channel: "chat_ui",
+          text: hudText,
+          traceId: out.traceId || "",
+          source: String(out.source || "voice")
         });
         publishAgentSpokeObservationV0({
           text: procV.uiReply,
@@ -10192,6 +10372,7 @@ export default function AppRhizoh528() {
         userGestureUrgent
       });
       rec.onstart = () => {
+        resetSttTemporalSmoothingV0();
         noteVoiceSttEventV0("STT_START", { lang: rec.lang });
         logVoiceInfoV0("STT_START", { lang: rec.lang, keepAlive });
       };
@@ -10232,6 +10413,11 @@ export default function AppRhizoh528() {
           if (!isFinal) {
             noteVoiceSttEventV0("STT_INTERIM", { chars: text.length, preview: text.slice(0, 48) });
             logVoiceInfoV0("STT_INTERIM", { chars: text.length, preview: text.slice(0, 48) });
+            ingestSttTemporalFrameV0({
+              text,
+              source: "mic",
+              isFinal: false
+            });
             setMicListening(true);
             return;
           }

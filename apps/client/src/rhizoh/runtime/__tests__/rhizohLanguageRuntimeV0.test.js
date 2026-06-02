@@ -20,11 +20,11 @@ describe("rhizohLanguageRuntimeV0", () => {
     __resetVoiceLanguageLockForTestV0();
   });
 
-  it("separates ui presentation from stt auto and olp output", () => {
+  it("separates ui presentation from stt locale mirror and olp output", () => {
     beginVoiceSessionLanguageLockV0({ locale: "en", sessionId: "s1" });
     const snap = buildRhizohLanguageRuntimeSnapshotV0({ sttInferred: "tr" });
     expect(snap.ui.role).toBe("presentation_only");
-    expect(snap.stt.inputHint).toBe("auto");
+    expect(snap.stt.inputHint).toBe("en-US");
     expect(snap.stt.inferred).toBe("tr");
     expect(snap.olp.outputLocale).toBe("en");
     expect(snap.tts.voiceLocale).toBe("en");

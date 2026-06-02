@@ -1,6 +1,10 @@
 import React, { memo, useEffect, useSyncExternalStore } from "react";
 import { Mic, MicOff, Send, Loader2 } from "lucide-react";
 import { isCastleLayerRenderableV1, publishCastleLayerAuditV1 } from "../castle/layers/castleLayerGateV1.js";
+import {
+  isQuietDialoguePresenceV0,
+  resolveQuietConversationFieldLabelV0
+} from "../rhizoh/runtime/rhizohDialoguePresencePolicyV0.js";
 import { useRhizohConversationDockV0 } from "../rhizoh/runtime/useRhizohConversationDockV0.js";
 import {
   getRhizohCommandPanelAuxExpandedSnapshotV0,
@@ -54,7 +58,9 @@ export const RhizohConversationDockV0 = memo(function RhizohConversationDockV0({
     >
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="text-[9px] font-medium uppercase tracking-[0.12em] text-violet-200/80">
-          {FIELD_LABELS[dock.fieldState] || FIELD_LABELS.idle}
+          {isQuietDialoguePresenceV0()
+            ? resolveQuietConversationFieldLabelV0(dock.fieldState, true)
+            : FIELD_LABELS[dock.fieldState] || FIELD_LABELS.idle}
         </span>
         {dock.busy || dock.fieldState === "thinking" ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-300/90" aria-hidden />

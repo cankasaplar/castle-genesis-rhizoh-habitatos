@@ -15,6 +15,11 @@ import {
   resolveChatStatusLineTrV0,
   resolveProductStatusHeadlineTrV0
 } from "./rhizohProductPlainCopyV0.js";
+import {
+  isQuietDialoguePresenceV0,
+  resolveQuietBusyStatusLineV0,
+  resolveQuietReadyStatusLineV0
+} from "./rhizohDialoguePresencePolicyV0.js";
 import { RHIZOH_PRODUCT_SURFACE_COPY_TR_V0 } from "./rhizohProductCopyV0.js";
 import { normalizeUiLocaleV0, readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
 
@@ -152,6 +157,13 @@ export function resolveChatStatusLineV0(input = {}, locale) {
   if (tr) return resolveChatStatusLineTrV0(input);
   const busy = Boolean(input.busy);
   const connected = input.connected !== false;
+  if (isQuietDialoguePresenceV0()) {
+    if (busy) return resolveQuietBusyStatusLineV0();
+    if (input.fieldState === "SPEAKING") return "Rhizoh is speaking…";
+    if (input.fieldState === "LISTENING") return resolveQuietReadyStatusLineV0(false);
+    if (!connected) return "Connecting… · you can still type";
+    return resolveQuietReadyStatusLineV0(false);
+  }
   if (busy) return "Rhizoh is thinking…";
   if (input.fieldState === "SPEAKING") return "Rhizoh is speaking…";
   if (input.fieldState === "LISTENING") return "Listening…";

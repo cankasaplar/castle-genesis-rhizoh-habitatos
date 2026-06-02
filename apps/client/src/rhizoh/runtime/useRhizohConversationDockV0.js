@@ -118,7 +118,7 @@ export function useRhizohConversationDockV0(opts = {}) {
     try {
       const out = await postRhizohLlmTurnV0({
         message: msg,
-        speakInstantAck: true,
+        speakInstantAck: false,
         userTurnCount: userTurnRef.current,
         conversationPhase: opts.conversationPhase,
         idToken,

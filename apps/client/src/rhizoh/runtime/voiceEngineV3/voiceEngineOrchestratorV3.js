@@ -248,7 +248,8 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           google: res.google,
           whisper: res.whisper,
           maxRms,
-          witnessed: pipe.witnessed
+          witnessed: pipe.witnessed,
+          temporal: pipe.temporal
         };
       } catch (e) {
         busy = false;

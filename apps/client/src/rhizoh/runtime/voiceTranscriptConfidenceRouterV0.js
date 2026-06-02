@@ -51,7 +51,10 @@ const SANITY_REJECT_REASONS = new Set([
   "internal_repetition",
   "repeated_hallucination",
   "whisper_default_conf",
-  "quality_reject"
+  "quality_reject",
+  "script_locale_mismatch",
+  "temporal_script_outlier",
+  "temporal_noise_spike"
 ]);
 
 /**

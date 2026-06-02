@@ -89,6 +89,7 @@ import {
   applyMemoryDominanceCap
 } from "../stability/index.js";
 import { readIdentityGraph } from "../../kernel/rhizohIdentityKernelV1.js";
+import { resolveRhizohLlmMaxTokensV0 } from "./rhizohLlmMaxTokensV0.js";
 
 
 export const RHIZOH_QUERY_LLM_SCHEMA_V1 = "castle.rhizoh.query_llm.v1";
@@ -666,7 +667,11 @@ export async function queryRhizohLLM({
   const cfg = getCastleFlightConfig();
   const endpoint = cfg.rhizohLlmHttp;
   const modeKey = normalizeRhizohGenerationModeId(generationMode);
-  const maxTok = RHIZOH_GENERATION_MODE_MAX[modeKey] ?? 320;
+  const maxTok = resolveRhizohLlmMaxTokensV0({
+    generationMode: modeKey,
+    userMessageChars: trimmed.length,
+    voiceTurn: isVoiceTurn
+  });
   if (!endpoint) {
     const replyStub = `Rhizoh: ${layerProfile.mission}. Talep al─▒nd─▒ -> ${message}. LLM i├ğin a─ş ge├ğidi (VITE_GATEWAY_HTTP veya VITE_RHIZOH_LLM_HTTP) tan─▒mlay─▒n; anahtar sunucuda OPENAI_API_KEY.`;
     const post = finalizeRhizohAfterLlm(rhizohEmotions, {

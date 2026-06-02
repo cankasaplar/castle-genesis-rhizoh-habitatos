@@ -27,7 +27,7 @@ describe("rhizohConversationLanguageV0", () => {
   it("locks voice output locale at session begin", () => {
     beginVoiceSessionLanguageLockV0({ locale: "en", sessionId: "s1" });
     expect(readVoiceLanguageLockV0()).toBe("en");
-    expect(readSttLanguageCodeHintV0()).toBe("auto");
+    expect(readSttLanguageCodeHintV0()).toBe("en-US");
   });
 
   it("STT hint records inference without changing output policy locale", () => {
@@ -35,7 +35,7 @@ describe("rhizohConversationLanguageV0", () => {
     const obs = recordSttInferredLanguageHintV0("tr");
     expect(obs.hint).toBe("tr");
     expect(obs.outputLocale).toBe("en");
-    expect(readSttLanguageCodeHintV0()).toBe("auto");
+    expect(readSttLanguageCodeHintV0()).toBe("en-US");
   });
 
   it("instant ack phrases follow locked locale", () => {

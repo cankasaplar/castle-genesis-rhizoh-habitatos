@@ -7,6 +7,7 @@ import {
   resolveSpeechBcp47ForUiLocaleV0,
   resolveSpeechVoiceForUiLocaleV0
 } from "./rhizohSpeechLocaleV0.js";
+import { recordRhizohReplySurfaceV0 } from "./rhizohReplyRhythmDiagnosticV0.js";
 import { segmentSpeechTextV0 } from "./rhizohSpeechSentenceSegmenterV0.js";
 import {
   buildConversationContinuityGlueV0,
@@ -66,8 +67,12 @@ export async function speakRhizohReplyChunkedV0(text, opts = {}) {
   const feel = opts.microRhythmFeel || expr?.speechShape?.microRhythmFeel || expr?.conversationBehavior?.microRhythmFeel;
 
   const seg = segmentSpeechTextV0(full, { maxClauseChars: 120 });
-  const plan = seg.segments.map((s) => s.text).filter(Boolean).slice(0, 6);
+  const allSegments = seg.segments.map((s) => s.text).filter(Boolean);
+  const MAX_TTS_SEGMENTS_V0 = 32;
+  const plan = allSegments.slice(0, MAX_TTS_SEGMENTS_V0);
+  const droppedSegments = Math.max(0, allSegments.length - plan.length);
   const chunks = plan.length ? plan : [full];
+  const ttsSpokenText = chunks.join(" ");
 
   const glue = opts.glue;
   const speakChunks = () => {
@@ -112,14 +117,27 @@ export async function speakRhizohReplyChunkedV0(text, opts = {}) {
     speakChunks();
   }
 
+  recordRhizohReplySurfaceV0({
+    channel: "tts",
+    text: ttsSpokenText,
+    source: "chunked_tts",
+    meta: Object.freeze({
+      chunks: chunks.length,
+      droppedSegments,
+      fullChars: full.length,
+      spokenChars: ttsSpokenText.length
+    })
+  });
+
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
     window.__rhizoh.lastChunkedTts = Object.freeze({
       schema: RHIZOH_SPEECH_CHUNK_TTS_SCHEMA_V0,
       chunks: chunks.length,
+      droppedSegments,
       atMs: Date.now()
     });
   }
 
-  return Object.freeze({ ok: true, chunks: chunks.length, handoff });
+  return Object.freeze({ ok: true, chunks: chunks.length, handoff, droppedSegments });
 }

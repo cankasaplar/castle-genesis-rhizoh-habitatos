@@ -19,7 +19,7 @@ import {
 } from "./rhizohLocalCommandRegistryV0.js";
 import { dispatchLocalCommandHandlerV0 } from "./rhizohLocalCommandHandlersV0.js";
 import { prewarmCommandRoutingV0 } from "./rhizohCommandRoutePreheatV0.js";
-import { pickHighestPriorityVoiceRouteV0, scoreVoiceRouteCandidatesV0 } from "./rhizohVoiceCommandPriorityV0.js";
+import { routeVoiceInputWithCommandGateV0 } from "./rhizohCommandGateV0.js";
 
 export const RHIZOH_VOICE_COMMAND_ROUTER_CONTRACT_V0 = "rhizoh.voice_command_router.v0";
 export { RHIZOH_VOICE_COMMAND_EVENT_V0 } from "./rhizohLocalCommandHandlersV0.js";
@@ -161,61 +161,12 @@ export function classifyVoiceIntentV0(input, ctx = {}) {
 export function routeVoiceInputV0(input, ctx = {}) {
   prewarmCommandRoutingV0();
   publishCastleCommandInvariantV0();
-  const intent = classifyVoiceIntentV0(input, ctx);
-  const space = normalizeVoiceCommandSpaceV0(input);
-  const priorityWinner = pickHighestPriorityVoiceRouteV0(input);
-  const priorityRanked = scoreVoiceRouteCandidatesV0(input);
-
-  if (priorityWinner?.kind === "registry" && space.canonical) {
-    const route = Object.freeze({
-      schema: RHIZOH_VOICE_COMMAND_ROUTER_CONTRACT_V0,
-      execution: VOICE_ROUTE_EXECUTION_V0.LOCAL,
-      intent,
-      canonical: space.canonical,
-      normalized: space.normalized,
-      registryRow: readLocalCommandRowV0(space.canonical),
-      priorityScore: priorityWinner.score,
-      priorityRanked
-    });
+  const route = routeVoiceInputWithCommandGateV0(input, ctx);
+  if (route.execution === VOICE_ROUTE_EXECUTION_V0.LOCAL) {
     validateLocalCommandPostSttV0(route);
     assertCommandNeverUsesLlmV0("local");
-    return route;
   }
-
-  if (priorityWinner?.kind === "grammar" && priorityWinner.grammarLocal) {
-    const route = Object.freeze({
-      schema: RHIZOH_VOICE_COMMAND_ROUTER_CONTRACT_V0,
-      execution: VOICE_ROUTE_EXECUTION_V0.LOCAL,
-      intent,
-      canonical: priorityWinner.canonical,
-      normalized: space.normalized,
-      grammarLocal: priorityWinner.grammarLocal,
-      priorityScore: priorityWinner.score,
-      priorityRanked
-    });
-    validateLocalCommandPostSttV0(route);
-    assertCommandNeverUsesLlmV0("local");
-    return route;
-  }
-
-  if (intent.type === VOICE_INTENT_TYPE_V0.HYBRID) {
-    return Object.freeze({
-      schema: RHIZOH_VOICE_COMMAND_ROUTER_CONTRACT_V0,
-      execution: VOICE_ROUTE_EXECUTION_V0.HYBRID_LOCAL_FIRST,
-      hybridPhases: Object.freeze(["local_snapshot", "llm_confirm"]),
-      intent,
-      canonical: null,
-      normalized: space.normalized
-    });
-  }
-
-  return Object.freeze({
-    schema: RHIZOH_VOICE_COMMAND_ROUTER_CONTRACT_V0,
-    execution: VOICE_ROUTE_EXECUTION_V0.LLM,
-    intent,
-    canonical: null,
-    normalized: space.normalized
-  });
+  return route;
 }
 
 /** Reply text only — no FINAL_COMMIT (replay simulation). */

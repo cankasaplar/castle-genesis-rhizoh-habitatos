@@ -1,5 +1,4 @@
-import { describe, expect, it } from "vitest";
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
   OLP_MODE_V0,
   __resetOlpStateForTestV0,
@@ -21,15 +20,26 @@ describe("rhizohOutputLanguagePolicyV0", () => {
   it("defaults to ui_locked_output with UI locale", () => {
     const olp = readOutputLanguagePolicyV0();
     expect(olp.mode).toBe(OLP_MODE_V0.UI_LOCKED_OUTPUT);
-    expect(olp.inputLanguage).toBe("auto");
+    expect(olp.inputLanguage).toBe("en-US");
   });
 
   it("forces English output when UI is en even if input detected tr", () => {
     expect(resolveOutputLanguageCodeV0("tr")).toBe("en");
   });
 
-  it("STT hint is auto under ui_locked (not output locale)", () => {
+  it("STT hint mirrors UI locale BCP-47 (output policy stays ui_locked)", () => {
+    expect(readSttInputLanguageCodeHintV0()).toBe("en-US");
+    applyUiLanguagePreferenceToOlpV0("tr", "ui_write");
+    expect(readSttInputLanguageCodeHintV0()).toBe("tr-TR");
+    expect(resolveOutputLanguageCodeV0("en")).toBe("tr");
+  });
+
+  it("VITE_RHIZOH_STT_LANGUAGE overrides UI locale hint", () => {
+    vi.stubEnv("VITE_RHIZOH_STT_LANGUAGE", "tr");
+    expect(readSttInputLanguageCodeHintV0()).toBe("tr-TR");
+    vi.stubEnv("VITE_RHIZOH_STT_LANGUAGE", "auto");
     expect(readSttInputLanguageCodeHintV0()).toBe("auto");
+    vi.unstubAllEnvs();
   });
 
   it("directive mandates output language only", () => {

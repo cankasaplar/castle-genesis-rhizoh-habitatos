@@ -129,7 +129,8 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
         strategy: result.merged.strategy,
         maxRms: result.maxRms,
         witnessed: result.witnessed,
-        witnessCompleted: true
+        witnessCompleted: true,
+        temporal: result.temporal
       };
       const handler = callbacks.handleVoiceTranscriptRef?.current;
       if (typeof handler === "function") {

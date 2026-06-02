@@ -2,6 +2,8 @@
  * Voice Engine v3 — transcript accept/retry gate (confidence + Whisper artifact band).
  */
 
+import { evaluateSttScriptAgainstUiLocaleV0 } from "../sttScriptLocaleGuardV0.js";
+
 export const VOICE_TRANSCRIPT_SANITY_V3_SCHEMA = "castle.rhizoh.voice.transcript_sanity.v3";
 export const VOICE_TRANSCRIPT_MIN_CONFIDENCE_V3 = 0.35;
 export const VOICE_TRANSCRIPT_SUSPICIOUS_CONF_V3 = 0.62;
@@ -144,6 +146,20 @@ export function resetVoiceTranscriptRepeatForTestV3() {
 export function sanitizeVoiceTranscriptForDispatchV3(text, opts = {}) {
   const trimmed = String(text || "").trim();
   if (!trimmed) return { ok: false, reason: "empty", text: "" };
+
+  const scriptGuard = evaluateSttScriptAgainstUiLocaleV0(trimmed, {
+    confidence: opts.confidence,
+    strategy: opts.strategy
+  });
+  if (!scriptGuard.ok) {
+    return {
+      ok: false,
+      reason: scriptGuard.reason || "script_locale_mismatch",
+      text: trimmed,
+      scriptGuard
+    };
+  }
+
   if (trimmed.length < VOICE_TRANSCRIPT_MIN_CHARS_V3) {
     return { ok: false, reason: "too_short", text: trimmed };
   }

@@ -30,6 +30,8 @@ import { recordVoiceInfluenceAttributionV0, deriveVoiceInfluenceAttributionV0 } 
 import { emitPipelineVoiceInfluenceAttributionV0 } from "./voiceInfluenceAttributionPipelineHookV0.js";
 import { publishRhizohRelationshipKernelV0, resolveRhizohRelationshipKernelV0 } from "./rhizohRelationshipKernelV0.js";
 import { publishVoiceAttentionContextV0, resolveVoiceAttentionContextV0 } from "./voiceAttentionContextV0.js";
+import { applySttTemporalSmoothingV0 } from "./sttTemporalSmoothingV0.js";
+import { VOICE_ROUTER_REJECTION_LAYER_V0 } from "./voiceTranscriptConfidenceRouterV0.js";
 
 export const VOICE_TRANSCRIPT_WITNESS_PIPELINE_SCHEMA =
   "castle.rhizoh.voice_transcript_witness_pipeline.v0";
@@ -193,13 +195,89 @@ export function runVoiceTranscriptWitnessPipelineV0(meta = {}) {
   const source = String(meta.source || "mic");
   const stage = String(meta.stage || "raw_transcript");
 
-  const witnessed = witnessRawVoiceTranscriptV0({ ...meta, text, source, stage });
+  const temporal = applySttTemporalSmoothingV0({
+    text,
+    confidence: meta.confidence,
+    maxRms: meta.maxRms,
+    source,
+    isFinal: meta.isFinal !== false,
+    stage,
+    band: meta.band,
+    ambientScore: meta.ambientScore,
+    noiseDetectedHigh: meta.noiseDetectedHigh
+  });
+
+  const gateConfidence =
+    temporal.effectiveConfidence ?? meta.confidence;
+
+  if (temporal.suppress) {
+    const witnessed = witnessRawVoiceTranscriptV0({
+      ...meta,
+      text,
+      source,
+      stage,
+      confidence: gateConfidence
+    });
+    const preCommitment = evaluateVoiceCommitmentFromBandV0(witnessed.observation.band, { source });
+    publishVoiceBehavioralCommitmentV0(preCommitment, { stage, phase: "pre_gate" });
+    const reason = temporal.scriptOutlier ? "temporal_script_outlier" : "temporal_noise_spike";
+    const route = Object.freeze({
+      executionAccepted: false,
+      observationForward: temporal.scriptOutlier === true,
+      reason,
+      source,
+      rejectionLayer: VOICE_ROUTER_REJECTION_LAYER_V0.SANITY,
+      preview: text.slice(0, 96),
+      confidence: gateConfidence
+    });
+    const sanityGate = Object.freeze({
+      accepted: false,
+      reason,
+      observationForward: route.observationForward === true
+    });
+    const sane = Object.freeze({
+      ok: false,
+      text,
+      reason,
+      confidence: gateConfidence,
+      strategy: meta.strategy,
+      shadowForward: route.observationForward === true
+    });
+    logVoiceWarnV0("GATE_TEMPORAL_SUPPRESS", {
+      stage,
+      reason,
+      majorityScript: temporal.majorityScript,
+      scriptCoherence: temporal.scriptCoherence,
+      preview: text.slice(0, 96)
+    });
+    const commitment = finalizeVoiceBehavioralCommitmentV0({
+      band: witnessed.observation.band,
+      source,
+      sanityAccepted: false,
+      turnAccepted: false,
+      turnReason: reason
+    });
+    return Object.freeze({
+      witnessed,
+      preCommitment,
+      commitment,
+      attribution: null,
+      sane,
+      sanityGate,
+      route,
+      turnAcceptance: null,
+      temporal,
+      snapshot: getVoiceWitnessPipelineSnapshotV0()
+    });
+  }
+
+  const witnessed = witnessRawVoiceTranscriptV0({ ...meta, text, source, stage, confidence: gateConfidence });
   const preCommitment = evaluateVoiceCommitmentFromBandV0(witnessed.observation.band, { source });
   publishVoiceBehavioralCommitmentV0(preCommitment, { stage, phase: "pre_gate" });
 
   const route = routeVoiceTranscriptConfidenceV0({
     text,
-    confidence: meta.confidence,
+    confidence: gateConfidence,
     strategy: meta.strategy,
     maxRms: meta.maxRms,
     source,
@@ -352,6 +430,7 @@ export function runVoiceTranscriptWitnessPipelineV0(meta = {}) {
     sanityGate,
     route,
     turnAcceptance,
+    temporal,
     snapshot
   });
 }
