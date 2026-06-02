@@ -32,7 +32,36 @@ export const LS_RHIZOH_LLM_HTTP = "castle.rhizohLlmHttp";
  * Build’de `VITE_LIVE_GATEWAY_BASE` boşsa kullanılan varsayılan gateway kökü (LLM = `${base}/rhizoh/llm`, Genesis SSE aynı origin).
  * Kendi Render servisin farklıysa: hem `VITE_GATEWAY_HTTP` hem `VITE_LIVE_GATEWAY_BASE` aynı host’a kilitlenmeli (split gateway yok).
  */
-const DEFAULT_LIVE_GATEWAY_BASE = "https://castle-genesis-rhizoh-habitatos.onrender.com";
+export const DEFAULT_LIVE_GATEWAY_BASE = "https://castle-genesis-rhizoh-habitatos.onrender.com";
+
+/** CI/doc placeholder hosts baked into prod by mistake — never call these. */
+const INVALID_BAKED_GATEWAY_URL_RE =
+  /(?:^|\/)xxx\.onrender\.com|YOUR-RENDER-HOST|YOUR-STAGING-GATEWAY|your-render-host/i;
+
+export function isInvalidBakedGatewayUrl(url) {
+  const s = String(url || "").trim();
+  if (!s) return false;
+  return INVALID_BAKED_GATEWAY_URL_RE.test(s);
+}
+
+/** @param {string} primary @param {string} [fallback] */
+export function coalesceValidGatewayUrl(primary, fallback = DEFAULT_LIVE_GATEWAY_BASE) {
+  const p = String(primary || "").trim();
+  if (p && !isInvalidBakedGatewayUrl(p)) return p;
+  const f = String(fallback || "").trim();
+  if (f && !isInvalidBakedGatewayUrl(f)) return f;
+  return DEFAULT_LIVE_GATEWAY_BASE;
+}
+
+function sanitizeGatewayUrlOrEmpty(url) {
+  const s = String(url || "").trim();
+  if (!s) return "";
+  return isInvalidBakedGatewayUrl(s) ? "" : s;
+}
+
+function resolveLiveGatewayBaseFromEnv(env) {
+  return coalesceValidGatewayUrl(env.VITE_LIVE_GATEWAY_BASE || "", DEFAULT_LIVE_GATEWAY_BASE).replace(/\/$/, "");
+}
 
 function readLlmHttpFromLocalStorage() {
   try {
@@ -54,14 +83,12 @@ export function getCastleFlightConfig() {
   const gatewayOff = String(env.VITE_CASTLE_GATEWAY_OFF || "").trim() === "1";
   const gatewayBase = gatewayOff
     ? ""
-    : String(env.VITE_GATEWAY_URL || "")
-        .trim()
-        .replace(/\/$/, "");
+    : sanitizeGatewayUrlOrEmpty(String(env.VITE_GATEWAY_URL || "").trim().replace(/\/$/, ""));
   const wsFromBase = gatewayBase
     ? gatewayBase.replace(/^https:/i, "wss:").replace(/^http:/i, "ws:")
     : "";
   const llmFromBase = gatewayBase ? `${gatewayBase}/rhizoh/llm` : "";
-  const liveGatewayBase = String(env.VITE_LIVE_GATEWAY_BASE || DEFAULT_LIVE_GATEWAY_BASE).trim().replace(/\/$/, "");
+  const liveGatewayBase = resolveLiveGatewayBaseFromEnv(env);
   const wsLiveFallback = liveGatewayBase ? liveGatewayBase.replace(/^https:/i, "wss:").replace(/^http:/i, "ws:") : "";
   const llmLiveFallback = liveGatewayBase ? `${liveGatewayBase}/rhizoh/llm` : "";
   const wsLocalFallback = isLocalHost ? "ws://localhost:8090" : "";
@@ -77,27 +104,31 @@ export function getCastleFlightConfig() {
     : preferLocalGateway
       ? llmLocalFallback
       : llmLiveFallback || llmLocalFallback;
-  const llmExplicit = resolveMaybeRelativeHttp(env.VITE_GATEWAY_HTTP || env.VITE_RHIZOH_LLM_HTTP || "");
+  const llmExplicitRaw = resolveMaybeRelativeHttp(env.VITE_GATEWAY_HTTP || env.VITE_RHIZOH_LLM_HTTP || "");
+  const llmExplicit = isInvalidBakedGatewayUrl(llmExplicitRaw) ? "" : llmExplicitRaw;
   const { force: llmStorageForce, fill: llmStorageFill } = readLlmHttpFromLocalStorage();
   const envLlmChain = llmExplicit || llmFromBase || llmFallback;
   // Production'da eski localStorage override/fill değerleri yanlış gateway'e kilitleyebiliyor.
   // Varsayılan olarak sadece localhost geliştirmede localStorage override'larını dikkate al.
   const allowStorageLlmOverride = isLocalHost || String(env.VITE_ALLOW_LLM_STORAGE_OVERRIDE || "").trim() === "1";
   let rhizohLlmHttpResolved = allowStorageLlmOverride ? llmStorageForce || envLlmChain || llmStorageFill : envLlmChain;
-  // Barındırılan sitede (Firebase vb.) build'e yanlışlıkla gömülü localhost URL kullanıcı tarayıcısında çalışmaz.
+  // Barındırılan sitede (Firebase vb.) build'e yanlışlıkla gömülü localhost / placeholder URL çalışmaz.
   if (typeof window !== "undefined" && !isLocalHost) {
     const baked = String(rhizohLlmHttpResolved || "").trim();
-    if (baked && /localhost|127\.0\.0\.1/i.test(baked)) {
+    if (baked && (/localhost|127\.0\.0\.1/i.test(baked) || isInvalidBakedGatewayUrl(baked))) {
       const altCandidates = [llmLiveFallback, llmFromBase].map((s) => String(s || "").trim()).filter(Boolean);
-      const alt = altCandidates.find((u) => u && !/localhost|127\.0\.0\.1/i.test(u)) || "";
+      const alt = altCandidates.find((u) => u && !/localhost|127\.0\.0\.1/i.test(u) && !isInvalidBakedGatewayUrl(u)) || "";
       if (alt) rhizohLlmHttpResolved = alt;
     }
   }
+  rhizohLlmHttpResolved = coalesceValidGatewayUrl(rhizohLlmHttpResolved, llmLiveFallback);
+  const gatewayWsResolved = coalesceValidGatewayUrl(
+    gatewayOff ? "" : env.VITE_GATEWAY_WS || env.VITE_GATEWAY_WS_URL || wsFromBase || wsFallback,
+    wsLiveFallback
+  );
   return {
     /** Yayın kısa adlar: VITE_GATEWAY_WS — eski: VITE_GATEWAY_WS_URL — veya VITE_GATEWAY_URL tabanı */
-    gatewayWsUrl: gatewayOff
-      ? ""
-      : env.VITE_GATEWAY_WS || env.VITE_GATEWAY_WS_URL || wsFromBase || wsFallback,
+    gatewayWsUrl: gatewayOff ? "" : gatewayWsResolved,
     gatewayToken: gatewayOff ? "" : env.VITE_GATEWAY_TOKEN || "",
     /** MAVLink / ROS bridge / özel telemetri WS (boş = yalnızca sahne içi simülasyon) */
     droneTelemetryWs: gatewayOff ? "" : env.VITE_DRONE_TELEMETRY_WS || "",
@@ -154,12 +185,24 @@ export function getCastleFlightConfig() {
  * bu durumda statik SPA HTML döner (`text/html` ≠ `text/event-stream`). O zaman canlı gateway tabanı kullanılır.
  * @returns {string}
  */
+function isStaticSpaProductHost(pageHost) {
+  const h = String(pageHost || "").toLowerCase();
+  return (
+    h === "rhizoh.com" ||
+    h === "www.rhizoh.com" ||
+    h.endsWith(".rhizoh.com") ||
+    h === "castle-genesis.web.app" ||
+    h === "castle-genesis.firebaseapp.com" ||
+    /\.(web\.app|firebaseapp\.com)$/i.test(h)
+  );
+}
+
 export function getGenesisProtocolGatewayOrigin() {
   const env = import.meta.env;
   const cfg = getCastleFlightConfig();
   const host = typeof window !== "undefined" ? window.location.hostname : "";
   const isLocalHost = host === "localhost" || host === "127.0.0.1" || host === "::1";
-  const liveBase = String(env.VITE_LIVE_GATEWAY_BASE || DEFAULT_LIVE_GATEWAY_BASE).trim().replace(/\/+$/, "");
+  const liveBase = resolveLiveGatewayBaseFromEnv(env).replace(/\/+$/, "");
 
   let liveOrigin = "";
   if (liveBase) {
@@ -192,12 +235,10 @@ export function getGenesisProtocolGatewayOrigin() {
   } catch {
     pageHost = "";
   }
-  const onFirebaseHosting = /\.(web\.app|firebaseapp\.com)$/i.test(pageHost);
-
   /**
    * Hosting aynı origin'de `/rhizoh/*` yok → SPA `index.html` (`text/html`). Genesis/SSE mutlaka ayrı gateway origin.
    */
-  if (!isLocalHost && pageOrigin && origin === pageOrigin && onFirebaseHosting) {
+  if (!isLocalHost && pageOrigin && origin === pageOrigin && isStaticSpaProductHost(pageHost)) {
     if (liveOrigin && liveOrigin !== pageOrigin) return liveOrigin;
     try {
       const defOrigin = new URL(DEFAULT_LIVE_GATEWAY_BASE).origin;
@@ -208,6 +249,14 @@ export function getGenesisProtocolGatewayOrigin() {
   }
 
   if (!isLocalHost && pageOrigin && origin === pageOrigin && liveOrigin) return liveOrigin;
+
+  if (isInvalidBakedGatewayUrl(origin)) {
+    try {
+      return new URL(DEFAULT_LIVE_GATEWAY_BASE).origin;
+    } catch {
+      return liveOrigin;
+    }
+  }
 
   return origin;
 }

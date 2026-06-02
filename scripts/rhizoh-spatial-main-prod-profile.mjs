@@ -52,6 +52,9 @@ export const RHIZOH_SPATIAL_MAIN_WORLD_DEFAULTS_V0 = Object.freeze({
   VITE_CESIUM_WORLD_TERRAIN: "0"
 });
 
+/** Canonical Render gateway — override via GitHub secret when host changes. */
+export const RHIZOH_SPATIAL_MAIN_GATEWAY_BASE_V0 = "https://castle-genesis-rhizoh-habitatos.onrender.com";
+
 /** Merged spatial-main defaults (secrets override per-key). */
 export const RHIZOH_SPATIAL_MAIN_PROD_DEFAULTS_V0 = Object.freeze({
   ...RHIZOH_SPATIAL_MAIN_WORLD_DEFAULTS_V0,
@@ -67,17 +70,17 @@ export const RHIZOH_SPATIAL_MAIN_PROD_DEFAULTS_V0 = Object.freeze({
   VITE_TELEMETRY_MAX_HZ: "30",
   VITE_SIM_DRONE_COUNT: "4",
   /** T0 parity — Castle Layers topology / schema drift panel (Serencebey metrics). */
-  VITE_CASTLE_LAYERS_DEBUG: "1"
+  VITE_CASTLE_LAYERS_DEBUG: "1",
+  VITE_GATEWAY_HTTP: `${RHIZOH_SPATIAL_MAIN_GATEWAY_BASE_V0}/rhizoh/llm`,
+  VITE_LIVE_GATEWAY_BASE: RHIZOH_SPATIAL_MAIN_GATEWAY_BASE_V0,
+  VITE_GATEWAY_WS: `wss://castle-genesis-rhizoh-habitatos.onrender.com`
 });
 
 /** Must be supplied via GitHub secret or local .env.production — no repo default. */
 export const RHIZOH_PROD_SECRET_ONLY_KEYS_V0 = Object.freeze([
   "VITE_GATEWAY_TOKEN",
-  "VITE_GATEWAY_HTTP",
   "VITE_RHIZOH_LLM_HTTP",
-  "VITE_LIVE_GATEWAY_BASE",
   "VITE_GATEWAY_URL",
-  "VITE_GATEWAY_WS",
   "VITE_GATEWAY_WS_URL",
   "VITE_FIREBASE_CONFIG",
   "VITE_FIREBASE_API_KEY",
@@ -117,6 +120,17 @@ export const RHIZOH_PROD_ENV_KEYS_V0 = Object.freeze([
 /** Keys where explicit empty CI env omits the key (no profile fallback). */
 export const RHIZOH_PROD_EMPTY_MEANS_OMIT_V0 = new Set(["VITE_WORLD_EXECUTION_MODE"]);
 
+const INVALID_PROD_GATEWAY_URL_RE =
+  /(?:^|\/)xxx\.onrender\.com|YOUR-RENDER-HOST|YOUR-STAGING-GATEWAY|your-render-host/i;
+
+function sanitizeProdGatewayEnvValue(key, value) {
+  if (value == null || !String(value).trim()) return value;
+  if (!/^VITE_(GATEWAY|LIVE_GATEWAY|RHIZOH_LLM)/.test(key)) return value;
+  if (!INVALID_PROD_GATEWAY_URL_RE.test(String(value))) return value;
+  const fallback = RHIZOH_SPATIAL_MAIN_PROD_DEFAULTS_V0[key];
+  return fallback != null ? String(fallback) : null;
+}
+
 /**
  * @param {string} key
  * @param {NodeJS.ProcessEnv} [env]
@@ -125,7 +139,9 @@ export const RHIZOH_PROD_EMPTY_MEANS_OMIT_V0 = new Set(["VITE_WORLD_EXECUTION_MO
 export function resolveRhizohProdEnvValueV0(key, env = process.env) {
   if (Object.prototype.hasOwnProperty.call(env, key)) {
     const raw = env[key];
-    if (raw != null && String(raw).trim()) return String(raw).trim();
+    if (raw != null && String(raw).trim()) {
+      return sanitizeProdGatewayEnvValue(key, String(raw).trim());
+    }
     // GitHub Actions sets unset secrets to "" — fall through to profile default
     // except keys where empty explicitly means "omit from .env.production".
     if (raw === "" && RHIZOH_PROD_EMPTY_MEANS_OMIT_V0.has(key)) return null;
