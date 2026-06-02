@@ -217,8 +217,33 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           text: merged.text,
           confidence: merged.confidence,
           strategy: merged.strategy,
-          languageHint: readSttLanguageCodeHintV0()
+          languageHint: readSttLanguageCodeHintV0(),
+          maxRms,
+          recordedMs
         });
+
+        if (rescored.skipLanguageInference) {
+          busy = false;
+          setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
+          emitVoiceEngineTelemetryV3("FINAL_TRANSCRIPT_SHADOW_DROP", {
+            reason: "language_inference_skipped",
+            preview: String(rescored.text || merged.text).slice(0, 96),
+            skipReasons: rescored.skipReasons,
+            maxRms,
+            confidence: merged.confidence,
+            strategy: merged.strategy,
+            scriptEntropy: rescored.scriptEntropy
+          });
+          return {
+            ok: false,
+            error: "language_inference_skipped",
+            shadowDrop: true,
+            silent: true,
+            merged,
+            rescored
+          };
+        }
+
         const pipe = runVoiceTranscriptWitnessPipelineV0({
           text: rescored.text,
           confidence: rescored.confidence ?? merged.confidence,

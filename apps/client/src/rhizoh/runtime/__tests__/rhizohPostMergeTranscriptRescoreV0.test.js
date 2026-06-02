@@ -1,6 +1,9 @@
 import { describe, expect, it, beforeEach } from "vitest";
+import {
+  rescoreVoiceTranscriptAfterMergeV0,
+  shouldSkipLanguageInferenceForTranscriptV0
+} from "../rhizohPostMergeTranscriptRescoreV0.js";
 import { evaluateSttScriptAgainstUiLocaleV0 } from "../sttScriptLocaleGuardV0.js";
-import { rescoreVoiceTranscriptAfterMergeV0 } from "../rhizohPostMergeTranscriptRescoreV0.js";
 import {
   __resetOlpStateForTestV0,
   applyUiLanguagePreferenceToOlpV0
@@ -12,14 +15,37 @@ describe("rhizohPostMergeTranscriptRescoreV0", () => {
     applyUiLanguagePreferenceToOlpV0("tr", "test");
   });
 
-  it("flags Persian-script merge as phantom for rescore", () => {
+  it("skips language inference for high-entropy RTL split merge at low confidence", () => {
     const fa = "سیزن ایکایی میشه، دوام ایده همیشه این ایکایی؟";
+    const skip = shouldSkipLanguageInferenceForTranscriptV0({
+      text: fa,
+      strategy: "split_merged",
+      confidence: 0.55,
+      maxRms: 0.016
+    });
+    expect(skip.skip).toBe(true);
+    expect(skip.reasons.length).toBeGreaterThan(0);
+
     const scored = rescoreVoiceTranscriptAfterMergeV0({
       text: fa,
-      strategy: "split_merged"
+      strategy: "split_merged",
+      confidence: 0.55,
+      maxRms: 0.016
     });
+    expect(scored.skipLanguageInference).toBe(true);
+    expect(scored.detectedLocale).toBeUndefined();
     expect(scored.phantomLikely).toBe(true);
-    expect(scored.languageHint).toBe("tr");
+  });
+
+  it("does not skip when Arabic greeting remaps to merhaba", () => {
+    const skip = shouldSkipLanguageInferenceForTranscriptV0({
+      text: "مرحبا",
+      strategy: "split_merged",
+      confidence: 0.55,
+      maxRms: 0.04
+    });
+    expect(skip.skip).toBe(false);
+    expect(skip.crossScriptRemap).toBe(true);
   });
 
   it("soft script mismatch for phantom with low VEPM confidence", () => {
