@@ -27,6 +27,7 @@ import {
   runRhizohVoiceTranscribeV3,
   rhizohVoiceTranscribeEnvV3
 } from "./rhizohVoiceTranscribeV3.js";
+import { createHttpCorsPolicy, normalizeHttpOrigin, parseAllowedOriginsFromEnv } from "./httpCorsPolicyV1.js";
 import {
   meshAppendDelta,
   meshContinuityAggregate,
@@ -180,57 +181,16 @@ const PORT =
 let spiralWssForGenesis = null;
 const MAX_MESSAGE_BYTES = Number(process.env.CASTLE_MAX_MESSAGE_BYTES || 32 * 1024);
 const REQUIRED_GATEWAY_TOKEN = process.env.CASTLE_GATEWAY_TOKEN || "";
-const ALLOWED_ORIGINS = (process.env.CASTLE_ALLOWED_ORIGINS || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
+const ALLOWED_ORIGINS = parseAllowedOriginsFromEnv().fromList;
+const httpCors = createHttpCorsPolicy();
 
-function normalizeHttpOrigin(origin) {
-  return String(origin || "")
-    .trim()
-    .replace(/\/+$/, "");
-}
-
-/** HTTP CORS: `CASTLE_ALLOWED_ORIGINS` + `CASTLE_HTTP_CORS_ORIGIN` (tek origin); `CASTLE_HTTP_CORS_ORIGIN=*` → wildcard. */
-function buildHttpCorsOriginAllowSet() {
-  const set = new Set();
-  for (const o of ALLOWED_ORIGINS) {
-    const n = normalizeHttpOrigin(o);
-    if (n) set.add(n);
-  }
-  const primary = normalizeHttpOrigin(process.env.CASTLE_HTTP_CORS_ORIGIN);
-  if (primary && primary !== "*") set.add(primary);
-  return set;
-}
-
-const HTTP_CORS_ORIGIN_ALLOW_SET = buildHttpCorsOriginAllowSet();
-
-/**
- * Tarayıcı `Origin` ile tam eşleşme ister. Tek sabit `CASTLE_HTTP_CORS_ORIGIN` yeterli değil:
- * örn. `web.app` vs `firebaseapp.com` veya Render’da yanlış/eksik env.
- * @returns {string|null} `Access-Control-Allow-Origin` değeri; null = başlık yok (istemci CORS fail).
- */
+/** @returns {string|null} `Access-Control-Allow-Origin`; null = browser CORS fail. */
 function accessControlAllowOriginValue(req) {
-  const primaryEnv = normalizeHttpOrigin(process.env.CASTLE_HTTP_CORS_ORIGIN);
-  if (primaryEnv === "*") return "*";
-  const reqOrigin = normalizeHttpOrigin(req.headers?.origin);
-  if (HTTP_CORS_ORIGIN_ALLOW_SET.size === 0) return "*";
-  if (!reqOrigin) return "*";
-  if (HTTP_CORS_ORIGIN_ALLOW_SET.has(reqOrigin)) return reqOrigin;
-  return null;
+  return httpCors.accessControlAllowOriginValue(req);
 }
 
 function applyHttpCorsHeaders(req, res) {
-  const allow = accessControlAllowOriginValue(req);
-  if (allow) {
-    res.setHeader("Access-Control-Allow-Origin", allow);
-    if (allow !== "*") res.setHeader("Vary", "Origin");
-  }
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Castle-Dev-Uid, X-Castle-Guest-Id, X-Castle-Gateway-Token, X-Castle-Ingress-Contract, X-Rhizoh-Outcome-Signature, X-Rhizoh-Outcome-Source-Token, X-Castle-Academic-Observatory-Key, X-Castle-Moderation-Key"
-  );
+  return httpCors.applyHttpCorsHeaders(req, res);
 }
 const REQUIRE_AUTH = process.env.CASTLE_REQUIRE_AUTH === "true";
 const ALLOW_DEV_ANON = process.env.CASTLE_ALLOW_DEV_ANON !== "false";
@@ -269,7 +229,7 @@ function logProductionObservatorySurfaceGuardsV0() {
   const corsListEmpty = ALLOWED_ORIGINS.length === 0;
   if (corsListEmpty && !primaryCors) {
     console.warn(
-      `${tag} CORS: CASTLE_ALLOWED_ORIGINS empty and CASTLE_HTTP_CORS_ORIGIN empty — browser SSE/replay may fail; set explicit Firebase Hosting origins`
+      `${tag} CORS: CASTLE_ALLOWED_ORIGINS empty and CASTLE_HTTP_CORS_ORIGIN empty — production still merges RHIZOH_BROWSER_ORIGINS_V1 defaults; set env for preview/staging hosts`
     );
   } else if (corsListEmpty && primaryCors && primaryCors !== "*") {
     console.warn(
@@ -781,9 +741,12 @@ async function buildGenesisRuntimeSurfacePayloadLive() {
 }
 
 const httpServer = createServer(async (req, res) => {
-  applyHttpCorsHeaders(req, res);
+  const corsAllow = applyHttpCorsHeaders(req, res);
   if (req.method === "OPTIONS") {
-    res.writeHead(204);
+    if (!corsAllow && req.headers?.origin) {
+      console.warn("[GATEWAY_CORS] preflight rejected for origin:", req.headers.origin);
+    }
+    res.writeHead(corsAllow ? 204 : 403);
     res.end();
     return;
   }
@@ -831,6 +794,20 @@ const httpServer = createServer(async (req, res) => {
       return;
     }
     sendJson(res, 200, { ok: true, live: true, dns: true, service: "castle-gateway", ts: Date.now() });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/health/cors") {
+    const reqOrigin = normalizeHttpOrigin(req.headers?.origin);
+    const allowOrigin = accessControlAllowOriginValue(req);
+    sendJson(res, 200, {
+      ok: true,
+      service: "castle-gateway",
+      requestOrigin: reqOrigin || null,
+      allowed: Boolean(allowOrigin),
+      allowOrigin: allowOrigin || null,
+      allowSetSize: httpCors.allowSet.size
+    });
     return;
   }
 
@@ -3503,7 +3480,7 @@ function sanitizeRawMessage(raw) {
 
 wss.on("connection", async (socket, req) => {
   const origin = req?.headers?.origin || "";
-  if (ALLOWED_ORIGINS.length && !ALLOWED_ORIGINS.includes(origin)) {
+  if (!httpCors.isWebSocketOriginAllowed(origin)) {
     socket.close(1008, "Origin not allowed");
     return;
   }
