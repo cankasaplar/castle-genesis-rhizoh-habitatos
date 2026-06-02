@@ -14,7 +14,10 @@ import {
 import { isDirectedSpeechGateReleaseEnabledV0 } from "./isDirectedSpeechGateReleaseEnabledV0.js";
 import { recordConversationMirrorVoiceRouteV0 } from "./rhizohConversationBehaviorMirrorV0.js";
 import { buildVoiceConfidenceBreakdownV0 } from "./voiceConfidenceBreakdownV0.js";
-import { probeFastPrecheckMatchV0 } from "./rhizohFastPrecheckV0.js";
+import {
+  normalizeForFastPrecheckV0,
+  probeFastPrecheckMatchV0
+} from "./rhizohFastPrecheckV0.js";
 
 /** Known micro-intent phrases may execute below interaction threshold (not hallucinations). */
 const REFLEX_PRECHECK_VOICE_CONF_FLOOR_V0 = 0.45;
@@ -22,14 +25,11 @@ const REFLEX_PRECHECK_VOICE_CONF_FLOOR_V0 = 0.45;
 export const VOICE_TRANSCRIPT_CONFIDENCE_ROUTER_SCHEMA =
   "castle.rhizoh.voice_transcript_confidence_router.v0";
 
-/** Reasons that still emit shadow-forward observation (no STT dispatch / no turn count). */
-const SHADOW_FORWARD_REASONS = new Set([
-  "whisper_default_conf",
-  "low_confidence",
-  "whisper_artifact",
-  "internal_repetition",
-  "repeated_hallucination"
-]);
+/** Sanity fail reasons that may still reach LLM — only weak-default-conf on directed speech. */
+const EXECUTION_OBSERVATION_PASS_REASONS_V0 = new Set(["whisper_default_conf"]);
+
+/** Micro-reflex allowed on unknown band (short greeting/ack only — not thanks/outro). */
+const UNKNOWN_BAND_REFLEX_INTENTS_V0 = new Set(["greeting", "ack", "yes", "no", "wellbeing"]);
 
 const VOICE_SOURCES = new Set([
   "mic_v3",
@@ -58,7 +58,12 @@ const SANITY_REJECT_REASONS = new Set([
   "quality_reject",
   "script_locale_mismatch",
   "temporal_script_outlier",
-  "temporal_noise_spike"
+  "temporal_noise_spike",
+  "platform_template_leak",
+  "ui_chrome_echo",
+  "stt_loop_artifact",
+  "unknown_band_hold",
+  "ambient_speech_hold"
 ]);
 
 /**
@@ -104,6 +109,50 @@ function finalizeRouteV0(route) {
     source: finalized.source
   });
   return finalized;
+}
+
+/**
+ * @param {string} text
+ * @param {string} [band]
+ */
+function allowUnknownBandMicroReflexV0(text, band) {
+  if (band !== VOICE_DIRECTED_SPEECH_BAND.UNKNOWN) return false;
+  const hit = probeFastPrecheckMatchV0(text);
+  if (!hit) return false;
+  const words = normalizeForFastPrecheckV0(text).split(/\s+/).filter(Boolean).length;
+  return words <= 2 && UNKNOWN_BAND_REFLEX_INTENTS_V0.has(hit.intent);
+}
+
+/**
+ * @param {typeof observation} observation
+ * @param {string} text
+ */
+function rejectNonDirectedVoiceBandV0(observation, text) {
+  const band = observation.band;
+  if (band === VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE) return null;
+  if (allowUnknownBandMicroReflexV0(text, band)) return null;
+
+  if (band === VOICE_DIRECTED_SPEECH_BAND.AMBIENT) {
+    return Object.freeze({
+      executionAccepted: false,
+      observationForward: text.length >= 3,
+      reason: "ambient_speech_hold",
+      shadowForward: true,
+      sanityAccepted: true
+    });
+  }
+
+  if (band === VOICE_DIRECTED_SPEECH_BAND.UNKNOWN) {
+    return Object.freeze({
+      executionAccepted: false,
+      observationForward: text.length >= 3,
+      reason: "unknown_band_hold",
+      shadowForward: true,
+      sanityAccepted: true
+    });
+  }
+
+  return null;
 }
 
 /**
@@ -198,12 +247,13 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
     const confNum = Number.isFinite(conf) ? conf : Number(sane.confidence);
     const observationForward =
       text.length >= 3 &&
-      (sane.shadowForward === true || sane.softScriptMismatch === true || SHADOW_FORWARD_REASONS.has(reason));
+      (sane.shadowForward === true || sane.softScriptMismatch === true);
     const observationPassThrough =
       text.length >= 6 &&
       Number.isFinite(confNum) &&
       confNum >= 0.48 &&
-      (sane.shadowForward === true || SHADOW_FORWARD_REASONS.has(reason));
+      EXECUTION_OBSERVATION_PASS_REASONS_V0.has(reason) &&
+      observation.band === VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE;
 
     if (observationPassThrough) {
       return finalizeRouteV0({
@@ -233,6 +283,17 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
     });
   }
 
+  const bandHold = rejectNonDirectedVoiceBandV0(observation, text);
+  if (bandHold) {
+    return finalizeRouteV0({
+      ...bandHold,
+      source,
+      band: observation.band,
+      confidence: Number.isFinite(conf) ? conf : undefined,
+      strategy: strategy || undefined
+    });
+  }
+
   if (isDirectedSpeechGateReleaseEnabledV0()) {
     const directedObs = classifyVoiceDirectedSpeechBandV0({
       text,
@@ -258,7 +319,10 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
   }
 
   if (Number.isFinite(conf) && conf < VOICE_TRANSCRIPT_SUSPICIOUS_CONF_V3) {
-    if (conf >= REFLEX_PRECHECK_VOICE_CONF_FLOOR_V0 && probeFastPrecheckMatchV0(text)) {
+    if (
+      conf >= REFLEX_PRECHECK_VOICE_CONF_FLOOR_V0 &&
+      allowUnknownBandMicroReflexV0(text, observation.band)
+    ) {
       return finalizeRouteV0({
         executionAccepted: true,
         observationForward: false,
@@ -281,6 +345,17 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
       threshold: VOICE_TRANSCRIPT_SUSPICIOUS_CONF_V3,
       shadowForward: true,
       sanityAccepted: true
+    });
+  }
+
+  const highConfHold = rejectNonDirectedVoiceBandV0(observation, text);
+  if (highConfHold) {
+    return finalizeRouteV0({
+      ...highConfHold,
+      source,
+      band: observation.band,
+      confidence: Number.isFinite(conf) ? conf : undefined,
+      strategy: strategy || undefined
     });
   }
 

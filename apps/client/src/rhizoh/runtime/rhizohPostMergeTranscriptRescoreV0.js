@@ -5,6 +5,8 @@
 
 import { detectRhizohMultilingualLocaleV0 } from "./rhizohMultilingualBridgeV0.js";
 import { normalizeSttCrossScriptForTurkishUiV0 } from "./rhizohSttCrossScriptNormalizeV0.js";
+import { hasInternalTranscriptRepetitionV3 } from "./voiceEngineV3/voiceTranscriptSanityV3.js";
+import { evaluateSttContaminationV0 } from "./voiceSttContaminationGuardV0.js";
 import {
   measureArabicScriptRatioV0,
   measureLatinScriptRatioV0,
@@ -60,19 +62,45 @@ export function shouldSkipLanguageInferenceForTranscriptV0(input = {}) {
   const lowConfidence = !Number.isFinite(confidence) || confidence < LOW_CONF_INFERENCE_SKIP_V0;
   const highEntropyRtl = arabicRatio >= 0.42 && latinRatio < 0.12;
   const splitMergedWeak = strategy === "split_merged" && lowConfidence;
+  const internalLoop = hasInternalTranscriptRepetitionV3(text, 8);
 
   /** @type {string[]} */
   const reasons = [];
+
+  const contamination = evaluateSttContaminationV0(text, { strategy });
+  if (contamination.contaminated) {
+    reasons.push(contamination.reason || "platform_template_leak");
+    return Object.freeze({
+      skip: true,
+      reasons: Object.freeze(reasons),
+      entropy,
+      arabicRatio,
+      latinRatio,
+      lowRms,
+      lowConfidence,
+      crossScriptRemap: cross.remapped === true,
+      contaminationKind: contamination.kind
+    });
+  }
+
   if (lowRms) reasons.push("low_rms");
   if (lowConfidence) reasons.push("low_confidence");
   if (highEntropyRtl) reasons.push("high_entropy_rtl");
   if (splitMergedWeak) reasons.push("split_merge_weak");
   if (entropy >= HIGH_SCRIPT_ENTROPY_V0 && latinRatio < 0.2) reasons.push("script_entropy");
+  if (internalLoop && (highEntropyRtl || strategy === "split_merged")) {
+    reasons.push("internal_repetition");
+  }
 
   const skip =
     cross.remapped !== true &&
-    highEntropyRtl &&
-    (lowRms || lowConfidence || splitMergedWeak || entropy >= HIGH_SCRIPT_ENTROPY_V0);
+    (contamination.contaminated ||
+      (highEntropyRtl &&
+        (lowRms ||
+          lowConfidence ||
+          splitMergedWeak ||
+          entropy >= HIGH_SCRIPT_ENTROPY_V0 ||
+          internalLoop)));
 
   return Object.freeze({
     skip,

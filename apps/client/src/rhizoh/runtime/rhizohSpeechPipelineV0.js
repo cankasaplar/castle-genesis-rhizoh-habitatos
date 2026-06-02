@@ -6,6 +6,7 @@ import { normalizeForFastPrecheckV0 } from "./rhizohFastPrecheckV0.js";
 import { applyReflexEffectivenessFeedbackV0 } from "./rhizohConfidenceDecayGateV0.js";
 import { adaptMicroPersonalityFromReactionV0 } from "./rhizohMicroPersonalityV0.js";
 import { normalizeSttTranscriptForOlpV0 } from "./normalizeSttTranscriptForOlpV0.js";
+import { evaluateSttContaminationV0 } from "./voiceSttContaminationGuardV0.js";
 import { runFastPrecheckFromTextV0, publishFastPrecheckHitV0 } from "./rhizohFastPrecheckV0.js";
 import { routeVoiceInputV0, VOICE_ROUTE_EXECUTION_V0 } from "./rhizohVoiceCommandRouterV0.js";
 import { classifyRhizohIntentV0 } from "./rhizohIntentRouterV0.js";
@@ -49,6 +50,23 @@ export function runRhizohSpeechPipelineV0(rawText, ctx = {}) {
   }
 
   const locale = resolveOutputLanguageCodeV0();
+
+  const contamination = evaluateSttContaminationV0(msg);
+  if (contamination.contaminated) {
+    return finalizePipelineResultV0(
+      {
+        ok: false,
+        stage: "contamination_reject",
+        error: contamination.reason,
+        contamination,
+        llmBypass: true,
+        silencePreferred: true,
+        latencyMs: Math.round((typeof performance !== "undefined" ? performance.now() : Date.now()) - t0)
+      },
+      ctx
+    );
+  }
+
   const precheck = runFastPrecheckFromTextV0(msg, { locale, traceId: ctx.traceId });
   if (precheck) {
     publishFastPrecheckHitV0(precheck, {

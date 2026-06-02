@@ -4,6 +4,7 @@
  */
 
 import { isSuspiciousWhisperArtifactV3 } from "./voiceEngineV3/voiceTranscriptSanityV3.js";
+import { evaluateSttContaminationV0 } from "./voiceSttContaminationGuardV0.js";
 import {
   observeAmbientEnergyV0,
   VOICE_AMBIENT_ENERGY_TIER
@@ -30,7 +31,11 @@ const AMBIENT_PHRASE_PATTERNS_V0 = [
   /iyi\s+akşamlar/i,
   /iyi\s+günler/i,
   /sunucu|yayıncı|kanal\s+\d/i,
-  /seyirciler|izleyiciler/i
+  /seyirciler|izleyiciler/i,
+  /don['']?t\s+forget\s+to\s+like/i,
+  /like\s*,?\s*comment.*subscribe/i,
+  /kanal(a|ıma|ima)\s+abone/i,
+  /abone\s+ol(duğunuz|dugunuz)/i
 ];
 
 const DIRECTED_WAKE_PATTERNS_V0 = [
@@ -76,6 +81,11 @@ function scoreAmbientV0(norm) {
   if (isSuspiciousWhisperArtifactV3(norm, 0.5)) {
     score += 2;
     hints.push("whisper_artifact_phrase");
+  }
+  const contamination = evaluateSttContaminationV0(norm);
+  if (contamination.contaminated) {
+    score += 3;
+    hints.push(`contamination:${contamination.kind || contamination.reason}`);
   }
   for (const re of AMBIENT_PHRASE_PATTERNS_V0) {
     if (re.test(norm)) {

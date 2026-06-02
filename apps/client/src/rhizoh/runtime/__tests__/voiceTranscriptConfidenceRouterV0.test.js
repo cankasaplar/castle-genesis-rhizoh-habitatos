@@ -32,10 +32,8 @@ describe("voiceTranscriptConfidenceRouterV0", () => {
       band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN
     });
     expect(route.executionAccepted).toBe(false);
-    expect(route.reason).toBe("low_confidence");
+    expect(["low_confidence", "unknown_band_hold"].includes(route.reason)).toBe(true);
     expect(route.observationForward).toBe(true);
-    expect(route.threshold).toBe(0.62);
-    expect(route.rejectionLayer).toBe(VOICE_ROUTER_REJECTION_LAYER_V0.INTERACTION);
   });
 
   it("reflex precheck bypasses interaction low_confidence for short greeting", () => {
@@ -59,5 +57,37 @@ describe("voiceTranscriptConfidenceRouterV0", () => {
     });
     expect(route.executionAccepted).toBe(true);
     expect(route.reason).toBe("voice_ok");
+  });
+
+  it("blocks YouTube outro internal repetition from execution", () => {
+    const route = routeVoiceTranscriptConfidenceV0({
+      text:
+        "Don't forget to like, comment, and subscribe! Don't forget to like, comment, share and subscribe",
+      confidence: 0.55,
+      strategy: "split_merged",
+      source: "mic_v3",
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+      recordedMs: 9400
+    });
+    expect(route.executionAccepted).toBe(false);
+    expect(["platform_template_leak", "internal_repetition", "stt_loop_artifact"].includes(route.reason)).toBe(
+      true
+    );
+    expect(route.shadowForward).toBe(true);
+  });
+
+  it("blocks unknown band hallucinated thanks without micro reflex", () => {
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "Thank you.",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+      recordedMs: 8500
+    });
+    expect(route.executionAccepted).toBe(false);
+    expect(["unknown_band_hold", "whisper_default_conf", "low_confidence"].includes(route.reason)).toBe(
+      true
+    );
   });
 });

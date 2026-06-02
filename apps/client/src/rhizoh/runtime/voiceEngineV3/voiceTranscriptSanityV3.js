@@ -4,6 +4,7 @@
 
 import { evaluateSttScriptAgainstUiLocaleV0 } from "../sttScriptLocaleGuardV0.js";
 import { normalizeSttCrossScriptForTurkishUiV0 } from "../rhizohSttCrossScriptNormalizeV0.js";
+import { evaluateSttContaminationV0 } from "../voiceSttContaminationGuardV0.js";
 
 export const VOICE_TRANSCRIPT_SANITY_V3_SCHEMA = "castle.rhizoh.voice.transcript_sanity.v3";
 export const VOICE_TRANSCRIPT_MIN_CONFIDENCE_V3 = 0.35;
@@ -150,6 +151,17 @@ export function sanitizeVoiceTranscriptForDispatchV3(text, opts = {}) {
 
   const cross = normalizeSttCrossScriptForTurkishUiV0(trimmed);
   const dispatchText = cross.text || trimmed;
+
+  const contamination = evaluateSttContaminationV0(dispatchText, { strategy: opts.strategy });
+  if (contamination.contaminated) {
+    return {
+      ok: false,
+      reason: contamination.reason || "platform_template_leak",
+      text: dispatchText,
+      contamination,
+      shadowForward: contamination.shadowOnly === true
+    };
+  }
 
   const scriptGuard = evaluateSttScriptAgainstUiLocaleV0(dispatchText, {
     confidence: opts.confidence,
