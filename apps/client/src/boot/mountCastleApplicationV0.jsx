@@ -7,6 +7,7 @@ import { resolveIngressRouteV0 } from "../rhizoh/ingress/ingress_router.js";
 import { RhizohIngressFlow } from "../rhizoh/ingress/RhizohIngressFlow.jsx";
 import { hideLegacyIndexHudV0 } from "./castleCrashTelemetry.js";
 import { installRhizohReflexDebugGlobalsV0 } from "../rhizoh/runtime/rhizohFastPrecheckV0.js";
+import { startProdWorldObservabilityBridgeV0 } from "../rhizoh/runtime/rhizohProdWorldObservabilityBridgeV0.js";
 
 /**
  * CORE-ELIGIBLE: mount after ontological gate (pre-render).
@@ -49,6 +50,11 @@ export async function mountCastleApplicationV0(ctx) {
     "boot.ontological_gate",
     `CONTINUITY_OK world=${gate.bootContext?.livingWorldId || "?"} tick=${gate.bootContext?.targetTick ?? "?"}`
   );
+
+  const observability = startProdWorldObservabilityBridgeV0();
+  if (observability.started) {
+    bootLog?.ok?.("boot.world_observability", "presence + liveMonitor bridge active");
+  }
 
   const ingress = resolveIngressRouteV0();
   const needsIngressFlow =

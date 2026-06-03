@@ -15,6 +15,7 @@ import {
   normalizeIngressPhaseV0
 } from "./ingress_router.js";
 import { recordCohortObservationV0 } from "./cohortObservationLogV0.js";
+import { startProdWorldObservabilityBridgeV0 } from "../runtime/rhizohProdWorldObservabilityBridgeV0.js";
 
 /**
  * rhizoh.com: legal → (optional) beta accept → app. Errors surface explicitly.
@@ -22,6 +23,10 @@ import { recordCohortObservationV0 } from "./cohortObservationLogV0.js";
 export function RhizohIngressFlow() {
   const [phase, setPhase] = useState(() => normalizeIngressPhaseV0(deriveIngressPhaseV0()));
   const [errorKind, setErrorKind] = useState("unknown");
+
+  useEffect(() => {
+    startProdWorldObservabilityBridgeV0();
+  }, []);
 
   useEffect(() => {
     const onOffline = () => {
