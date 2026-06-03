@@ -23,6 +23,9 @@ import {
   finalizeVoiceBehavioralCommitmentV0,
   publishVoiceBehavioralCommitmentV0
 } from "./voiceBehavioralCommitmentV0.js";
+import { publishRhizohVoiceTurnMetaDebugV0 } from "./rhizohVoiceTurnMetaDebugV0.js";
+import { resolvePostGateCommitmentV0 } from "./voicePostGateConsistencyV0.js";
+import { resolveSttGateConfidenceV0 } from "./sttGateConfidenceV0.js";
 import { VOICE_DIRECTED_SPEECH_BAND } from "./voiceDirectedSpeechObservationV0.js";
 import { buildRhizohContinuityHealthDetailV0, publishRhizohTrustDebugV0 } from "./rhizohTrustDebugV0.js";
 import { recordReplyFormatDriftSampleV0, getReplyFormatDriftRollingV0 } from "./replyFormatDriftTrackerV0.js";
@@ -363,14 +366,49 @@ export async function queryRhizohLLM({
     typeof voiceTurnMeta === "object" &&
     voiceTurnMeta.source &&
     voiceTurnMeta.source !== "text";
+  /** @type {ReturnType<typeof finalizeVoiceBehavioralCommitmentV0> | null} */
+  let pipelineCommitment = null;
   if (isVoiceTurn) {
-    if (voiceTurnMeta.witnessed) {
-      turnAcceptance = runVoiceTurnGateAfterWitnessV0(voiceTurnMeta.witnessed, {
+    const dispatchRoute =
+      voiceTurnMeta.dispatchRoute && typeof voiceTurnMeta.dispatchRoute === "object"
+        ? voiceTurnMeta.dispatchRoute
+        : null;
+    const gateConfSnap = resolveSttGateConfidenceV0({
+      temporal: voiceTurnMeta.temporal,
+      confidence: voiceTurnMeta.confidence
+    });
+
+    if (dispatchRoute) {
+      turnAcceptance = Object.freeze({
+        accepted: dispatchRoute.executionAccepted === true,
+        reason: String(dispatchRoute.reason || "dispatch_route"),
+        source: voiceTurnMeta.source || "mic_v3"
+      });
+      const band =
+        voiceTurnMeta.witnessed?.observation?.band ||
+        voiceTurnMeta.band ||
+        dispatchRoute.band ||
+        VOICE_DIRECTED_SPEECH_BAND.UNKNOWN;
+      pipelineCommitment = resolvePostGateCommitmentV0({
+        route: dispatchRoute,
+        turnAcceptance,
+        band,
+        source: voiceTurnMeta.source,
+        gateConfidence: voiceTurnMeta.gateConfidence ?? gateConfSnap.gateConfidence,
+        rawConfidence: voiceTurnMeta.rawConfidence ?? gateConfSnap.rawConfidence,
+        dispatchAuthoritative: true
+      }).commitment;
+    } else if (voiceTurnMeta.witnessed) {
+      const gateOut = runVoiceTurnGateAfterWitnessV0(voiceTurnMeta.witnessed, {
         ...(voiceTurnMeta && typeof voiceTurnMeta === "object" ? voiceTurnMeta : {}),
         text: trimmed,
         source: voiceTurnMeta.source || "mic",
+        confidence: gateConfSnap.gateConfidence ?? voiceTurnMeta.confidence,
+        recordedMs: voiceTurnMeta.recordedMs,
         stage: "turn_gate"
       });
+      turnAcceptance = gateOut;
+      pipelineCommitment = gateOut.commitment || null;
     } else {
       const pipe = runVoiceTranscriptWitnessPipelineV0({
         text: trimmed,
@@ -380,7 +418,11 @@ export async function queryRhizohLLM({
         source: voiceTurnMeta.source,
         stage: "turn_gate_full",
         checkRepeat: false,
-        runTurnGate: true
+        runTurnGate: true,
+        skipTemporalIngest: Boolean(voiceTurnMeta.temporal),
+        temporal: voiceTurnMeta.temporal,
+        gateConfidence: gateConfSnap.gateConfidence,
+        recordedMs: voiceTurnMeta.recordedMs
       });
       turnAcceptance =
         pipe.turnAcceptance ||
@@ -388,6 +430,7 @@ export async function queryRhizohLLM({
           text: trimmed,
           source: voiceTurnMeta.source || "mic"
         });
+      pipelineCommitment = pipe.commitment || null;
     }
   } else {
     turnAcceptance = evaluateVoiceTurnAcceptanceV0({
@@ -399,10 +442,11 @@ export async function queryRhizohLLM({
   let behavioralCommitment =
     voiceTurnMeta?.commitment && typeof voiceTurnMeta.commitment === "object"
       ? voiceTurnMeta.commitment
-      : null;
+      : pipelineCommitment;
   if (isVoiceTurn && !behavioralCommitment) {
     const band =
       voiceTurnMeta.witnessed?.observation?.band ||
+      voiceTurnMeta.band ||
       voiceTurnMeta.preCommitment?.band ||
       VOICE_DIRECTED_SPEECH_BAND.UNKNOWN;
     behavioralCommitment = finalizeVoiceBehavioralCommitmentV0({
@@ -413,6 +457,16 @@ export async function queryRhizohLLM({
       turnReason: turnAcceptance.reason
     });
     publishVoiceBehavioralCommitmentV0(behavioralCommitment, { stage: "turn_gate", phase: "final" });
+    publishRhizohVoiceTurnMetaDebugV0({
+      witnessed: voiceTurnMeta.witnessed,
+      band: voiceTurnMeta.band,
+      preCommitment: voiceTurnMeta.preCommitment,
+      commitment: behavioralCommitment,
+      turnAccepted: turnAcceptance.accepted === true,
+      turnReason: turnAcceptance.reason,
+      source: voiceTurnMeta.source,
+      preview: trimmed.slice(0, 96)
+    });
   }
   const countsAsUserTurn = behavioralCommitment
     ? behavioralCommitment.turnCounts === true
@@ -722,7 +776,26 @@ export async function queryRhizohLLM({
     logVoiceInfoV0("MEMORY_COMMIT_SKIP", {
       band: behavioralCommitment.band,
       commitment: behavioralCommitment.commitment,
-      memoryEligible: behavioralCommitment.memoryEligible
+      memoryEligible: behavioralCommitment.memoryEligible,
+      behaviorEligible: behavioralCommitment.behaviorEligible,
+      turnCounts: behavioralCommitment.turnCounts,
+      memoryMode: behavioralCommitment.memoryMode,
+      voiceMetaBand: voiceTurnMeta?.band || null,
+      witnessedBand: voiceTurnMeta?.witnessed?.observation?.band || null,
+      preCommitmentBand: voiceTurnMeta?.preCommitment?.band || null,
+      turnAccepted: turnAcceptance?.accepted === true,
+      turnReason: turnAcceptance?.reason || null,
+      eligibility: "voice_emotion_session_blocked"
+    });
+    publishRhizohVoiceTurnMetaDebugV0({
+      witnessed: voiceTurnMeta?.witnessed,
+      band: voiceTurnMeta?.band,
+      preCommitment: voiceTurnMeta?.preCommitment,
+      commitment: behavioralCommitment,
+      turnAccepted: turnAcceptance?.accepted === true,
+      turnReason: turnAcceptance?.reason,
+      source: voiceTurnMeta?.source,
+      preview: trimmed.slice(0, 96)
     });
   }
 

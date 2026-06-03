@@ -147,15 +147,54 @@ function publishFamiliarityWindowV0(field) {
 }
 
 export function publishMutualFamiliarityObservationV0(field, detail = {}) {
+  const habitKey = field.habitMemory?.key || "";
+  const habitVisitCount = field.habitMemory?.visitCount || 0;
   logVoiceInfoV0("MUTUAL_FAMILIARITY", {
+    storageKey: LS_KEY,
+    habitKey,
+    habitVisitCount,
+    isFirstHabitHit: habitVisitCount === 1,
+    globalHabitKeys: habitCounts.size,
     familiarityScore: field.familiarityScore,
-    visitCount: field.habitMemory.visitCount,
+    visitCount: habitVisitCount,
+    lastSeenAtMs: field.habitMemory?.lastAtMs,
     timeBucket: field.habitMemory.parts.time,
     audio: field.habitMemory.parts.audio,
     route: field.habitMemory.parts.route,
+    policyNote: "habit_key_visit_not_continuity_turns",
     ...detail
   });
+  if (typeof window !== "undefined") {
+    window.__CASTLE_RHIZOH_MUTUAL_FAMILIARITY__ = Object.freeze({
+      schema: RHIZOH_MUTUAL_FAMILIARITY_SCHEMA,
+      storageKey: LS_KEY,
+      atMs: Date.now(),
+      habitKey,
+      habitVisitCount,
+      globalHabitKeys: habitCounts.size,
+      familiarityScore: field.familiarityScore,
+      recentKeys: field.habitMemory?.recentKeys || []
+    });
+  }
   return field;
+}
+
+/** DevTools: dump habit ring (not continuity turns). */
+export function dumpMutualFamiliarityStorageV0() {
+  const habits = [...habitCounts.entries()]
+    .sort((a, b) => b[1].lastAtMs - a[1].lastAtMs)
+    .slice(0, 12)
+    .map(([key, v]) => ({
+      key,
+      visitCount: v.count,
+      lastSeenAtMs: v.lastAtMs
+    }));
+  return Object.freeze({
+    schema: RHIZOH_MUTUAL_FAMILIARITY_SCHEMA,
+    storageKey: LS_KEY,
+    globalHabitKeys: habitCounts.size,
+    habits
+  });
 }
 
 export function resetMutualFamiliarityFieldForTestV0() {

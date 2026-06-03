@@ -26,6 +26,7 @@ import {
   finalizeVoiceBehavioralCommitmentV0,
   publishVoiceBehavioralCommitmentV0
 } from "./voiceBehavioralCommitmentV0.js";
+import { resolvePostGateCommitmentV0 } from "./voicePostGateConsistencyV0.js";
 import { recordVoiceInfluenceAttributionV0, deriveVoiceInfluenceAttributionV0 } from "./voiceInfluenceAttributionV0.js";
 import { emitPipelineVoiceInfluenceAttributionV0 } from "./voiceInfluenceAttributionPipelineHookV0.js";
 import { publishRhizohRelationshipKernelV0, resolveRhizohRelationshipKernelV0 } from "./rhizohRelationshipKernelV0.js";
@@ -195,22 +196,27 @@ export function runVoiceTranscriptWitnessPipelineV0(meta = {}) {
   const source = String(meta.source || "mic");
   const stage = String(meta.stage || "raw_transcript");
 
-  const temporal = applySttTemporalSmoothingV0({
-    text,
-    confidence: meta.confidence,
-    maxRms: meta.maxRms,
-    source,
-    isFinal: meta.isFinal !== false,
-    stage,
-    band: meta.band,
-    ambientScore: meta.ambientScore,
-    noiseDetectedHigh: meta.noiseDetectedHigh,
-    userId: meta.userId,
-    micDeviceId: meta.micDeviceId
-  });
+  const temporal =
+    meta.skipTemporalIngest === true && meta.temporal && typeof meta.temporal === "object"
+      ? meta.temporal
+      : applySttTemporalSmoothingV0({
+          text,
+          confidence: meta.confidence,
+          maxRms: meta.maxRms,
+          source,
+          isFinal: meta.isFinal !== false,
+          stage,
+          band: meta.band,
+          ambientScore: meta.ambientScore,
+          noiseDetectedHigh: meta.noiseDetectedHigh,
+          userId: meta.userId,
+          micDeviceId: meta.micDeviceId
+        });
 
   const gateConfidence =
-    temporal.effectiveConfidence ?? meta.confidence;
+    Number.isFinite(Number(meta.gateConfidence)) && meta.skipTemporalIngest === true
+      ? Number(meta.gateConfidence)
+      : temporal.effectiveConfidence ?? meta.confidence;
 
   if (temporal.suppress) {
     const witnessed = witnessRawVoiceTranscriptV0({
@@ -361,7 +367,7 @@ export function runVoiceTranscriptWitnessPipelineV0(meta = {}) {
   if (meta.runTurnGate === true) {
     turnAcceptance = evaluateVoiceTurnAcceptanceV0({
       text,
-      confidence: meta.confidence,
+      confidence: gateConfidence,
       strategy: meta.strategy,
       maxRms: meta.maxRms,
       source,
@@ -408,14 +414,20 @@ export function runVoiceTranscriptWitnessPipelineV0(meta = {}) {
 
   finalizeVoiceWitnessShadowV0(witnessed, actualGate);
 
-  const commitment = finalizeVoiceBehavioralCommitmentV0({
+  const { commitment, consistency } = resolvePostGateCommitmentV0({
+    route,
+    turnAcceptance,
     band: witnessed.observation.band,
-    source,
-    sanityAccepted: route.sanityAccepted !== false,
-    turnAccepted: route.executionAccepted === true,
-    turnReason: route.reason
+    source
   });
-  publishVoiceBehavioralCommitmentV0(commitment, { stage, phase: "post_gate" });
+  publishVoiceBehavioralCommitmentV0(commitment, {
+    stage,
+    phase: "post_gate",
+    routeExecutionAccepted: consistency.routeExecutionAccepted,
+    turnExecutionAccepted: consistency.turnExecutionAccepted,
+    turnRouteMismatch: consistency.turnRouteMismatch,
+    policyDivergence: consistency.policyDivergence
+  });
 
   const attribution = emitPipelineVoiceInfluenceAttributionV0(
     {
@@ -490,14 +502,28 @@ export function runVoiceTurnGateAfterWitnessV0(witnessed, meta = {}) {
     });
   }
   finalizeVoiceWitnessShadowV0(witnessed, turnAcceptance);
-  const commitment = finalizeVoiceBehavioralCommitmentV0({
-    band: witnessed.observation.band,
+  const route = routeVoiceTranscriptConfidenceV0({
+    text: meta.text,
+    confidence: meta.confidence,
+    strategy: meta.strategy,
+    maxRms: meta.maxRms,
     source: meta.source,
-    sanityAccepted: true,
-    turnAccepted: turnAcceptance.accepted === true,
-    turnReason: turnAcceptance.reason
+    recordedMs: meta.recordedMs,
+    checkRepeat: false,
+    band: witnessed.observation.band
   });
-  publishVoiceBehavioralCommitmentV0(commitment, { stage, phase: "post_turn_gate" });
+  const { commitment, consistency } = resolvePostGateCommitmentV0({
+    route,
+    turnAcceptance,
+    band: witnessed.observation.band,
+    source: meta.source
+  });
+  publishVoiceBehavioralCommitmentV0(commitment, {
+    stage,
+    phase: "post_turn_gate",
+    policyDivergence: consistency.policyDivergence,
+    turnRouteMismatch: consistency.turnRouteMismatch
+  });
   recordVoiceInfluenceAttributionV0(
     deriveVoiceInfluenceAttributionV0({
       band: witnessed.observation.band,
@@ -509,5 +535,9 @@ export function runVoiceTurnGateAfterWitnessV0(witnessed, meta = {}) {
     }),
     { preview: String(meta.text || "").slice(0, 96), phase: "post_turn_gate" }
   );
-  return turnAcceptance;
+  return Object.freeze({
+    ...turnAcceptance,
+    commitment,
+    consistency
+  });
 }

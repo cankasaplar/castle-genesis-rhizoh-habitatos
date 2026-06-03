@@ -109,6 +109,19 @@ describe("rhizohVoicePreSttInputSanitizationGateV0", () => {
     expect(v.action).toBe(PRE_STT_GATE_ACTION_V0.PROCEED);
   });
 
+  it("proceeds on borderline RMS when warm probe is healthy", () => {
+    const v = evaluatePreSttInputSanitizationV0({
+      maxRms: 0.0104,
+      recordedMs: 9473,
+      bytes: 123575,
+      warmProbe: { avgWarmScore: 0.88, minWarmScore: 0.78 },
+      sampleCount: 6
+    });
+    expect(v.pass).toBe(true);
+    expect(v.reason).toBe("pre_stt_borderline_warm_ok");
+    expect(v.borderlineWarm).toBe(true);
+  });
+
   it("classifies large low-RMS clip as silent capture not low energy", () => {
     const v = evaluatePreSttInputSanitizationV0({
       maxRms: 0.0014,

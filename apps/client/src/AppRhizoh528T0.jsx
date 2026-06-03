@@ -336,6 +336,8 @@ import {
   runVoiceTranscriptWitnessPipelineV0,
   runVoiceTurnGateAfterWitnessV0
 } from "./rhizoh/runtime/voiceTranscriptWitnessPipelineV0.js";
+import { applySttTemporalSmoothingV0 } from "./rhizoh/runtime/sttTemporalSmoothingV0.js";
+import { resolveSttGateConfidenceV0 } from "./rhizoh/runtime/sttGateConfidenceV0.js";
 import {
   routeVoiceTranscriptConfidenceV0,
   voiceConfidenceRouterLogDetailV0
@@ -9502,6 +9504,8 @@ export default function AppRhizoh528() {
         maxRms,
         witnessed: witnessedIn,
         witnessCompleted = false,
+        band: bandIn,
+        recordedMs: recordedMsIn,
         temporal: temporalIn,
         decision,
         pipelinePath,
@@ -9620,23 +9624,45 @@ export default function AppRhizoh528() {
           if (manageVoiceTurn) finishVoiceTurnIfNeeded();
           return;
         }
-      } else if (voiceSource === "mic_v3" && witnessCompleted && witnessed) {
-        pipelinePreCommitment = evaluateVoiceCommitmentFromBandV0(witnessed.observation.band, {
-          source: voiceSource
-        });
+      } else if (voiceSource === "mic_v3" && witnessCompleted) {
+        const bandForPre =
+          witnessed?.observation?.band || String(bandIn || "").trim() || null;
+        if (bandForPre) {
+          pipelinePreCommitment = evaluateVoiceCommitmentFromBandV0(bandForPre, {
+            source: voiceSource
+          });
+        }
       }
-
-      const effectiveConfidence = Number.isFinite(Number(temporalSnap?.effectiveConfidence))
-        ? Number(temporalSnap.effectiveConfidence)
-        : Number.isFinite(Number(confidence))
-          ? Number(confidence)
-          : undefined;
 
       const isVoiceDispatch =
         voiceSource === "barge_in" ||
         voiceSource === "mic" ||
         voiceSource === "mic_onend" ||
         voiceSource === "mic_v3";
+
+      if (isVoiceDispatch && !temporalSnap) {
+        temporalSnap = applySttTemporalSmoothingV0({
+          text: trimmed,
+          confidence,
+          strategy: strategy || undefined,
+          maxRms: Number.isFinite(Number(maxRms)) ? Number(maxRms) : undefined,
+          recordedMs: Number.isFinite(Number(recordedMsIn)) ? Number(recordedMsIn) : undefined,
+          source: voiceSource,
+          isFinal: true,
+          stage: "app_voice_dispatch",
+          band: witnessed?.observation?.band || String(bandIn || "").trim() || undefined
+        });
+      }
+
+      const gateConf = resolveSttGateConfidenceV0({
+        temporal: temporalSnap,
+        confidence
+      });
+      const effectiveConfidence = gateConf.gateConfidence;
+
+      /** @type {ReturnType<typeof routeVoiceTranscriptConfidenceV0> | null} */
+      let dispatchRouteSnap = null;
+
       if (isVoiceDispatch) {
         const execRoute = routeVoiceTranscriptConfidenceV0({
           text: trimmed,
@@ -9644,7 +9670,8 @@ export default function AppRhizoh528() {
           strategy: strategy || undefined,
           maxRms: Number.isFinite(Number(maxRms)) ? Number(maxRms) : undefined,
           source: voiceSource,
-          band: witnessed?.observation?.band,
+          band: witnessed?.observation?.band || String(bandIn || "").trim() || undefined,
+          recordedMs: Number.isFinite(Number(recordedMsIn)) ? Number(recordedMsIn) : undefined,
           checkRepeat: voiceSource !== "mic_v3" || !witnessCompleted
         });
         if (!execRoute.executionAccepted) {
@@ -9687,6 +9714,7 @@ export default function AppRhizoh528() {
           if (manageVoiceTurn) finishVoiceTurnIfNeeded();
           return;
         }
+        dispatchRouteSnap = Object.freeze({ ...execRoute });
         const pre =
           pipelinePreCommitment ||
           evaluateVoiceCommitmentFromBandV0(
@@ -9969,11 +9997,21 @@ export default function AppRhizoh528() {
             source: voiceSource,
             text: trimmed,
             confidence: effectiveConfidence,
+            rawConfidence: gateConf.rawConfidence ?? confidence,
+            gateConfidence: gateConf.gateConfidence,
+            confidenceDrift01: gateConf.drift01,
             temporal: temporalSnap || undefined,
             strategy: strategy || undefined,
             maxRms: Number.isFinite(Number(maxRms)) ? Number(maxRms) : undefined,
+            recordedMs: Number.isFinite(Number(recordedMsIn)) ? Number(recordedMsIn) : undefined,
             witnessed: witnessed || undefined,
             witnessCompleted: witnessCompleted || Boolean(witnessed),
+            dispatchRoute: dispatchRouteSnap || undefined,
+            band:
+              witnessed?.observation?.band ||
+              String(bandIn || "").trim() ||
+              pipelinePreCommitment?.band ||
+              undefined,
             commitment: pipelineCommitment || undefined,
             preCommitment: pipelinePreCommitment || undefined
           }

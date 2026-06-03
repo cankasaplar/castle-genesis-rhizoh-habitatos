@@ -15,7 +15,10 @@ import { hasVoiceCaptureSpeechEnergyV3 } from "./voiceAudioLevelV3.js";
 import { publishPostSttOriginFilterDebugV0 } from "../rhizohVoicePostSttSemanticOriginFilterV0.js";
 import { queryRhizohVoiceTranscribeResilientV3 } from "./voiceTranscribeTransportV3.js";
 import { resolveVoiceTranscriptV3 } from "./voiceTranscriptMergerV3.js";
-import { witnessVoiceStreamLifecycleV0 } from "../voiceTranscriptWitnessPipelineV0.js";
+import {
+  witnessRawVoiceTranscriptV0,
+  witnessVoiceStreamLifecycleV0
+} from "../voiceTranscriptWitnessPipelineV0.js";
 import {
   beginVoiceSessionLanguageLockV0,
   endVoiceSessionLanguageLockV0,
@@ -62,9 +65,40 @@ import {
 } from "../rhizohVoiceAudioArtifactDetectorV0.js";
 import { enqueueVoiceTranscriptRetryV0 } from "../rhizohVoiceTranscriptRetryQueueV0.js";
 import { pushSttQuarantineEntryV0 } from "../rhizohSttQuarantineBufferV0.js";
+import { applySttTemporalSmoothingV0 } from "../sttTemporalSmoothingV0.js";
 
 export const VOICE_MIN_RECORD_MS_V3 = 1200;
 export const VOICE_MIN_AUDIO_BYTES_V3 = 25000;
+
+/**
+ * @param {{ text: string, confidence: number, strategy: string, maxRms?: number, recordedMs?: number }} merged
+ * @param {{ band: string }} bandObs
+ */
+function buildV3TemporalSnapV0(merged, bandObs, maxRms, recordedMs) {
+  return applySttTemporalSmoothingV0({
+    text: merged.text,
+    confidence: merged.confidence,
+    strategy: merged.strategy,
+    maxRms,
+    recordedMs,
+    source: "mic_v3",
+    isFinal: true,
+    stage: "voice_engine_v3_final",
+    band: bandObs?.band
+  });
+}
+
+function buildV3FinalWitnessedV0(merged, bandObs, maxRms, recordedMs) {
+  return witnessRawVoiceTranscriptV0({
+    text: merged.text,
+    confidence: merged.confidence,
+    strategy: merged.strategy,
+    maxRms,
+    recordedMs,
+    source: "mic_v3",
+    stage: "voice_engine_v3_final"
+  });
+}
 
 /**
  * @param {{
@@ -697,7 +731,10 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
             maxRms,
             holdPath: true,
             decision,
-            bandObs
+            bandObs,
+            witnessed: buildV3FinalWitnessedV0(merged, bandObs, maxRms, recordedMs),
+            temporal: buildV3TemporalSnapV0(merged, bandObs, maxRms, recordedMs),
+            recordedMs
           };
         }
 
@@ -731,7 +768,10 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
             maxRms,
             fastPath: true,
             decision,
-            bandObs
+            bandObs,
+            witnessed: buildV3FinalWitnessedV0(merged, bandObs, maxRms, recordedMs),
+            temporal: buildV3TemporalSnapV0(merged, bandObs, maxRms, recordedMs),
+            recordedMs
           };
         }
 
@@ -780,7 +820,10 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
             slowPath: true,
             decision,
             bandObs,
-            provenance
+            provenance,
+            witnessed: buildV3FinalWitnessedV0(merged, bandObs, maxRms, recordedMs),
+            temporal: buildV3TemporalSnapV0(merged, bandObs, maxRms, recordedMs),
+            recordedMs
           };
         }
 

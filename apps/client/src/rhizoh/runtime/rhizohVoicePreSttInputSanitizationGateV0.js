@@ -97,6 +97,31 @@ export const PRE_STT_SILENT_CAPTURE_MAX_RMS_V0 = 0.004;
 export const PRE_STT_SILENT_CAPTURE_MIN_BYTES_V0 = 96_000;
 export const PRE_STT_SILENT_CAPTURE_MIN_MS_V0 = 6000;
 
+/** Borderline mic energy — proceed when warm probe proves live signal (prod log ~0.0104). */
+export const PRE_STT_BORDERLINE_RMS_MIN_V0 = 0.0095;
+export const PRE_STT_BORDERLINE_WARM_MIN_V0 = 0.72;
+export const PRE_STT_BORDERLINE_MIN_SAMPLES_V0 = 4;
+export const PRE_STT_BORDERLINE_MIN_MS_V0 = 1200;
+
+/**
+ * @param {{ maxRms?: number, recordedMs?: number, warmProbe?: object, sampleCount?: number }} input
+ * @param {number} energy
+ */
+export function isPreSttBorderlineWarmProceedV0(input = {}, energy) {
+  const avgWarm = Number(input.warmProbe?.avgWarmScore);
+  const sampleCount = Math.max(0, Number(input.sampleCount) || 0);
+  const recordedMs = Math.max(0, Number(input.recordedMs) || 0);
+  return (
+    Number.isFinite(energy) &&
+    energy >= PRE_STT_BORDERLINE_RMS_MIN_V0 &&
+    energy < VOICE_MIN_SPEECH_RMS_V3 &&
+    recordedMs >= PRE_STT_BORDERLINE_MIN_MS_V0 &&
+    sampleCount >= PRE_STT_BORDERLINE_MIN_SAMPLES_V0 &&
+    Number.isFinite(avgWarm) &&
+    avgWarm >= PRE_STT_BORDERLINE_WARM_MIN_V0
+  );
+}
+
 /**
  * @param {{
  *   maxRms?: number,
@@ -130,6 +155,15 @@ export function evaluatePreSttInputSanitizationV0(input = {}) {
   });
 
   if (!Number.isFinite(energy) || energy < VOICE_MIN_SPEECH_RMS_V3) {
+    if (isPreSttBorderlineWarmProceedV0(input, energy)) {
+      return Object.freeze({
+        ...base,
+        pass: true,
+        action: PRE_STT_GATE_ACTION_V0.PROCEED,
+        reason: "pre_stt_borderline_warm_ok",
+        borderlineWarm: true
+      });
+    }
     const silentCapture =
       bytes >= PRE_STT_SILENT_CAPTURE_MIN_BYTES_V0 &&
       recordedMs >= PRE_STT_SILENT_CAPTURE_MIN_MS_V0 &&

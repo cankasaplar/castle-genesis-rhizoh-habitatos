@@ -180,7 +180,8 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
         band: result.bandObs?.band,
         witnessed: result.witnessed,
         witnessCompleted: true,
-        temporal: result.temporal
+        temporal: result.temporal,
+        recordedMs: result.recordedMs
       };
 
       const authority = resolveConversationAuthorityV0({
