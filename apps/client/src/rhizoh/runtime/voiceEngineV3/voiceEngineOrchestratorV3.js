@@ -11,7 +11,9 @@ import { witnessVoiceStreamLifecycleV0 } from "../voiceTranscriptWitnessPipeline
 import {
   beginVoiceSessionLanguageLockV0,
   endVoiceSessionLanguageLockV0,
-  readSttLanguageCodeHintV0
+  readSttLanguageCodeHintV0,
+  readVoiceLanguageLockBcp47V0,
+  readVoiceLanguageLockV0
 } from "../rhizohConversationLanguageV0.js";
 import { prepareRhizohLlmTurnV0 } from "../rhizohLlmTurnHotWireV0.js";
 import { classifyVoiceDirectedSpeechBandV0 } from "../voiceDirectedSpeechObservationV0.js";
@@ -29,6 +31,7 @@ import {
   RHIZOH_INPUT_SOURCE_V0
 } from "../rhizohInputProvenanceV0.js";
 import { emitVoiceEngineTelemetryV3, setVoiceEngineStateV3 } from "./voiceEngineTelemetryV3.js";
+import { rescoreVoiceTranscriptAfterMergeV0 } from "../rhizohPostMergeTranscriptRescoreV0.js";
 import { noteVoiceRuntimePressureV1 } from "../gatewaySessionKeeperV1.js";
 import {
   beginRecordingWarmProbeV1,
@@ -198,7 +201,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       try {
         const res = await queryRhizohVoiceTranscribeResilientV3(fullBlob, {
           mimeType,
-          languageCode,
+          languageCode: readVoiceLanguageLockBcp47V0() || languageCode,
           traceId: opts.traceId,
           sessionId,
           bytes,
@@ -223,7 +226,44 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           return { ok: false, error: failCode, transportAttempt: res.transportAttempt };
         }
 
-        const merged = res.merged || resolveVoiceTranscriptV3(res.google || res.fast, res.whisper);
+        let merged = res.merged || resolveVoiceTranscriptV3(res.google || res.fast, res.whisper);
+        const scored = rescoreVoiceTranscriptAfterMergeV0({
+          text: merged.text,
+          confidence: merged.confidence,
+          strategy: merged.strategy,
+          maxRms,
+          recordedMs,
+          languageHint: readVoiceLanguageLockV0()
+        });
+
+        if (scored.quarantine) {
+          busy = false;
+          setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
+          emitVoiceEngineTelemetryV3("FINAL_TRANSCRIPT_SHADOW_DROP", {
+            reason: scored.skipReasons?.[0] || "stt_quarantine",
+            dropKind: "noise_drop",
+            preview: String(merged.text || "").slice(0, 96),
+            quarantineId: scored.quarantineId,
+            silent: true
+          });
+          return {
+            ok: false,
+            error: "stt_quarantine",
+            shadowDrop: true,
+            merged,
+            scored,
+            maxRms
+          };
+        }
+
+        merged = Object.freeze({
+          ...merged,
+          text: scored.text || merged.text,
+          confidence: Number.isFinite(Number(scored.confidence))
+            ? Number(scored.confidence)
+            : merged.confidence
+        });
+
         const bandObs = classifyVoiceDirectedSpeechBandV0({
           text: merged.text,
           confidence: merged.confidence,

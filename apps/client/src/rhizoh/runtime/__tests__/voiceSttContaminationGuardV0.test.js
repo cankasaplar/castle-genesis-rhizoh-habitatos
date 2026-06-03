@@ -31,6 +31,18 @@ describe("voiceSttContaminationGuardV0", () => {
     expect(ev.reason).toBe("ui_chrome_echo");
   });
 
+  it("flags mixed Arabic+Latin tab leak", () => {
+    const t =
+      "سبحانك اللهم Duyduğum sonuçta bu. Duyguya duyan";
+    const ev = evaluateSttContaminationV0(t, { strategy: "split_merged" });
+    expect(ev.contaminated).toBe(true);
+    expect(["script_locale_mismatch", "platform_template_leak"].includes(ev.reason)).toBe(true);
+  });
+
+  it("flags phantom polite closure", () => {
+    expect(evaluateSttContaminationV0("rica ederim").contaminated).toBe(true);
+  });
+
   it("does not flag short genuine greeting", () => {
     expect(evaluateSttContaminationV0("merhaba").contaminated).toBe(false);
   });

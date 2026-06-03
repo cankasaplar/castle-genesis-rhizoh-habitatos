@@ -5,7 +5,7 @@
 
 import { computeGatewayFlapPressure } from "./runtimeFrameCorrelationV0.js";
 import { isGatewaySessionStableV1 } from "./gatewaySessionKeeperV1.js";
-import { planVoiceTranscribePreflightV3 } from "./voiceEngineV3/voiceTranscribePreflightV3.js";
+import { planVoiceTranscribePreflightV3, VOICE_TRANSCRIBE_PREFLIGHT_V3 } from "./voiceEngineV3/voiceTranscribePreflightV3.js";
 
 export const PREDICTIVE_PREFLIGHT_V1 = Object.freeze({
   minWarmScoreToRecord: 0.38,

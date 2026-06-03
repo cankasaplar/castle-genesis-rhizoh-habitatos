@@ -472,13 +472,13 @@ async function executeSplitTranscribeV3(chunks, plan, opts) {
 
         segmentIndex: i,
 
-        cascade: i === 0 ? "segment0_immediate" : "segment_fail"
+        cascade: "discard_segment"
 
       });
 
 
 
-      emitVoiceEngineTelemetryV3("TRANSCRIBE_SEGMENT_CASCADE", {
+      emitVoiceEngineTelemetryV3("TRANSCRIBE_SEGMENT_SKIP", {
 
         failedSegment: i + 1,
 
@@ -486,39 +486,11 @@ async function executeSplitTranscribeV3(chunks, plan, opts) {
 
         error: lastSegErr,
 
-        policy: i === 0 ? "segment0_no_isolated_loop" : "segment_fail"
+        policy: "discard_segment_no_cascade"
 
       });
 
-
-
-      if (fullBlob) {
-
-        return cascadeToDirectV3(fullBlob, opts, plan, "segment_cascade", {
-
-          failedSegment: i + 1,
-
-          error: lastSegErr
-
-        });
-
-      }
-
-
-
-      return {
-
-        ok: false,
-
-        error: lastSegErr,
-
-        preflight: plan,
-
-        failedSegment: i + 1,
-
-        segmentCount: segments.length
-
-      };
+      continue;
 
     }
 
@@ -529,12 +501,6 @@ async function executeSplitTranscribeV3(chunks, plan, opts) {
   const merged = mergeSegmentTranscriptsV3(mergedParts);
 
   if (!merged.text) {
-
-    if (fullBlob) {
-
-      return cascadeToDirectV3(fullBlob, opts, plan, "split_empty_merge");
-
-    }
 
     return { ok: false, error: "no_transcript", preflight: plan, segmentCount: segments.length };
 

@@ -186,7 +186,7 @@ export function classifyVoiceFastIntentV0(text) {
   const precheck = probeFastPrecheckMatchV0(t);
   if (
     precheck &&
-    ["greeting", "ack", "wellbeing", "yes", "no"].includes(String(precheck.intent || ""))
+    ["greeting", "ack", "wellbeing", "yes", "no", "hearing_check"].includes(String(precheck.intent || ""))
   ) {
     return Object.freeze({
       intent: VOICE_FAST_INTENT_V0.GREETING,

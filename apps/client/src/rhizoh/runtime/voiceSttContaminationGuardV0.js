@@ -4,6 +4,10 @@
  */
 
 import { hasInternalTranscriptRepetitionV3 } from "./voiceEngineV3/voiceTranscriptSanityV3.js";
+import {
+  measureArabicScriptRatioV0,
+  measureLatinScriptRatioV0
+} from "./sttScriptLocaleGuardV0.js";
 
 export const VOICE_STT_CONTAMINATION_GUARD_SCHEMA_V0 =
   "castle.rhizoh.voice_stt_contamination_guard.v0";
@@ -19,8 +23,24 @@ const PLATFORM_OUTRO_PATTERNS_V0 = [
   /smash\s+that\s+like/i,
   /thanks?\s+for\s+watching/i,
   /thank\s+you\s+for\s+watching/i,
-  /see\s+you\s+in\s+the\s+next/i
+  /see\s+you\s+in\s+the\s+next/i,
+  /\bamen\.?\s*(amen\.?\s*){1,4}$/i,
+  /in the name of the father/i,
+  /father,\s*and of the son/i,
+  /holy spirit\.?\s*amen/i
 ];
+
+/** Arabic / multilingual tab-audio spam (not user speech). */
+const STT_TAB_AUDIO_PATTERNS_V0 = [
+  /المترجم/i,
+  /للإعجاب بالفيديو/i,
+  /سبحانك اللهم/i,
+  /استغفرك واتوب اليك/i
+];
+
+/** Phantom polite closure — STT echo of assistant lines, not user intent. */
+const STT_PHANTOM_POLITE_ONLY_RE_V0 =
+  /^(rica ederim|teşekkür ederim|tesekkur ederim|you'?re welcome|thank you)\.?\s*$/i;
 
 /** TR UI footer / creator chrome — not conversational user input. */
 const UI_CHROME_ECHO_PATTERNS_V0 = [
@@ -66,6 +86,26 @@ export function isUiChromeEchoTemplateV0(text) {
  */
 export function hasPlatformSignatureV0(text) {
   return isPlatformOutroTemplateV0(text) || isUiChromeEchoTemplateV0(text);
+}
+
+/**
+ * Mixed-script tab leak (Arabic + Latin in one STT blob).
+ * @param {string} text
+ */
+export function isMixedScriptTabLeakV0(text) {
+  const raw = String(text || "").trim();
+  if (raw.length < 12) return false;
+  const arabic = measureArabicScriptRatioV0(raw);
+  const latin = measureLatinScriptRatioV0(raw);
+  return arabic >= 0.22 && latin >= 0.12;
+}
+
+/**
+ * @param {string} text
+ */
+export function isSttPhantomPoliteClosureV0(text) {
+  const norm = normalizeContaminationTextV0(text);
+  return STT_PHANTOM_POLITE_ONLY_RE_V0.test(norm);
 }
 
 /**
@@ -126,6 +166,33 @@ export function evaluateSttContaminationV0(text, opts = {}) {
       contaminated: true,
       kind: "ui_chrome_echo",
       reason: "ui_chrome_echo",
+      shadowOnly: true
+    });
+  }
+
+  if (STT_TAB_AUDIO_PATTERNS_V0.some((re) => re.test(raw))) {
+    return Object.freeze({
+      contaminated: true,
+      kind: "tab_audio_spam",
+      reason: "platform_template_leak",
+      shadowOnly: true
+    });
+  }
+
+  if (isMixedScriptTabLeakV0(raw)) {
+    return Object.freeze({
+      contaminated: true,
+      kind: "mixed_script_leak",
+      reason: "script_locale_mismatch",
+      shadowOnly: true
+    });
+  }
+
+  if (isSttPhantomPoliteClosureV0(raw)) {
+    return Object.freeze({
+      contaminated: true,
+      kind: "phantom_polite_closure",
+      reason: "stt_phantom_polite",
       shadowOnly: true
     });
   }

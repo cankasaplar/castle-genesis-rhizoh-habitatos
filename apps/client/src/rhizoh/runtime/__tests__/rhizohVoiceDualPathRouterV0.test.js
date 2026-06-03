@@ -48,7 +48,19 @@ describe("rhizohVoiceDualPathRouterV0", () => {
       strategy: "split_merged"
     });
     expect(d.speakMode).toBe(VOICE_SPEAK_MODE_V0.SILENT);
-    expect(d.reason).toBe("script_locale_mismatch");
+    expect(d.reason).toMatch(/script_locale_mismatch|platform_template_leak/);
+  });
+
+  it("directed hearing check uses fast reflex not LLM", () => {
+    const d = resolveVoicePipelineDecisionV0({
+      text: "merhaba rhizoh beni duyabiliyor musun",
+      confidence: 0.72,
+      band: VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE,
+      strategy: "whisper_only"
+    });
+    expect(d.speakMode).toBe(VOICE_SPEAK_MODE_V0.SPEAK);
+    expect(d.execMode).toBe(VOICE_EXEC_MODE_V0.FAST_REFLEX);
+    expect(d.action).toBe(VOICE_PIPELINE_ACTION_V0.REFLEX);
   });
 
   it("YouTube outro is silent noise_drop", () => {
@@ -106,9 +118,9 @@ describe("rhizohVoiceDualPathRouterV0", () => {
     expect(d.speakMode === VOICE_SPEAK_MODE_V0.HOLD || d.uxGray === false).toBe(true);
   });
 
-  it("directed question with high confidence opens slow LLM path", () => {
+  it("directed non-hearing question with high confidence opens slow LLM path", () => {
     const d = resolveVoicePipelineDecisionV0({
-      text: "Rhizoh, şimdi beni duyabiliyor musun?",
+      text: "Rhizoh şimdi ne yapmalıyım sence?",
       confidence: 0.72,
       band: VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE,
       strategy: "whisper_only"

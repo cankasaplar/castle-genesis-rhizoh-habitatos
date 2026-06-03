@@ -57,6 +57,18 @@ const FAST_EXACT_MAP_V0 = Object.freeze({
 /** @type {ReadonlyArray<{ intent: string, re: RegExp, tr: string, en: string }>} */
 const FAST_REGEX_MICRO_V0 = Object.freeze([
   { intent: "greeting", re: /^(selam|merhaba|hey|hi|hello)\b/i, tr: "Merhaba.", en: "Hello." },
+  {
+    intent: "hearing_check",
+    re: /(?:merhaba|selam).{0,32}\b(rhizoh|rizo)\b.{0,32}\b(duyabiliyor|duyuyor)\s*musun/i,
+    tr: "Merhaba — evet, duyuyorum. Ne konuşmak istersin?",
+    en: "Hello — yes, I hear you. What would you like to talk about?"
+  },
+  {
+    intent: "hearing_check",
+    re: /\b(rhizoh|rizo)\b.{0,24}\b(duyabiliyor|duyuyor)\s*musun/i,
+    tr: "Evet, duyuyorum — buradayım.",
+    en: "Yes, I hear you — I'm here."
+  },
   { intent: "wellbeing", re: /^(nasılsın|nasilsin|how are you)\b/i, tr: "İyiyim, sen nasılsın?", en: "I'm well — and you?" },
   { intent: "thanks", re: /^(teşekkür|tesekkur|thanks)\b/i, tr: "Rica ederim.", en: "You're welcome." }
 ]);
@@ -105,7 +117,7 @@ export function runFastPrecheckV0(normalized, locale) {
   }
 
   for (const row of FAST_REGEX_MICRO_V0) {
-    if (row.re.test(n) && n.split(/\s+/).length <= 6) {
+    if (row.re.test(n) && n.split(/\s+/).length <= 8) {
       return finishPrecheckHitV0({
         intent: row.intent,
         reply: loc === "tr" ? row.tr : row.en,

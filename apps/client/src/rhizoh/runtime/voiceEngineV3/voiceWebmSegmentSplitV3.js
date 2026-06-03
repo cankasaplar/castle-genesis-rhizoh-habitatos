@@ -2,6 +2,17 @@
  * Voice v3 — MediaRecorder chunk → upload segments (webm header preserved per segment).
  */
 
+import { evaluateSttContaminationV0 } from "../voiceSttContaminationGuardV0.js";
+import { evaluateSttScriptAgainstUiLocaleV0 } from "../sttScriptLocaleGuardV0.js";
+
+function isCleanSegmentTranscriptV3(text) {
+  const t = String(text || "").trim();
+  if (!t) return false;
+  if (evaluateSttContaminationV0(t, { strategy: "split_merged" }).contaminated) return false;
+  if (!evaluateSttScriptAgainstUiLocaleV0(t).ok) return false;
+  return true;
+}
+
 /**
  * @param {Blob[]} chunks
  * @param {string} mimeType
@@ -41,8 +52,12 @@ export function buildWebmSegmentBlobsV3(chunks, mimeType, maxSegmentBytes) {
  * @param {{ text?: string, confidence?: number, strategy?: string, source?: string }[]} parts
  */
 export function mergeSegmentTranscriptsV3(parts) {
-  const texts = (parts || []).map((p) => String(p?.text || "").trim()).filter(Boolean);
+  const texts = (parts || [])
+    .filter((p) => isCleanSegmentTranscriptV3(p?.text))
+    .map((p) => String(p?.text || "").trim())
+    .filter(Boolean);
   const confidences = (parts || [])
+    .filter((p) => isCleanSegmentTranscriptV3(p?.text))
     .map((p) => Number(p?.confidence))
     .filter((n) => Number.isFinite(n) && n > 0);
   if (!texts.length) {
