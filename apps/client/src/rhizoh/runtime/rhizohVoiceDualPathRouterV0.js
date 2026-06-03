@@ -22,6 +22,7 @@ import {
   getVoiceVerifyCountV0,
   isVoiceVerifyBudgetExhaustedV0
 } from "./rhizohVoiceVerifyBudgetV0.js";
+import { evaluateSttScriptAgainstUiLocaleV0 } from "./sttScriptLocaleGuardV0.js";
 
 export const RHIZOH_VOICE_DUAL_PATH_ROUTER_SCHEMA_V0 = "castle.rhizoh.voice_dual_path_router.v0";
 
@@ -376,6 +377,17 @@ export function resolveVoicePipelineDecisionV0(input = {}) {
   if (!guards.allowSlow && guards.contamination) {
     return buildSilentDecision(fast.intent, guards.reason || "noise_drop", band, VOICE_DROP_KIND_V0.NOISE, {
       guards
+    });
+  }
+
+  const scriptGuard = evaluateSttScriptAgainstUiLocaleV0(text, {
+    confidence,
+    strategy: input.strategy
+  });
+  if (!scriptGuard.ok) {
+    return buildSilentDecision(fast.intent, "script_locale_mismatch", band, VOICE_DROP_KIND_V0.NOISE, {
+      guards,
+      scriptGuard
     });
   }
 

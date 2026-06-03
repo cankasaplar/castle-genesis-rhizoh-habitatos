@@ -175,6 +175,12 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
         witnessCompleted: true,
         temporal: result.temporal
       };
+
+      if (result.decision?.speakMode === VOICE_SPEAK_MODE_V0.HOLD) {
+        await handleRhizohVoiceTranscriptV0(result.merged.text, transcriptOpts);
+        return { ok: true };
+      }
+
       const handler = callbacks.handleVoiceTranscriptRef?.current;
       if (typeof handler === "function") {
         await handler(result.merged.text, transcriptOpts);

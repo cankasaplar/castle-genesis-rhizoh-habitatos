@@ -38,17 +38,14 @@ describe("voiceTranscribePredictivePreflightV1", () => {
     expect(pred.predictiveAction).toBe("coerce_direct_fast");
   });
 
-  it("coerces high latency trend to direct fast", () => {
-    for (let i = 0; i < 4; i += 1) {
-      noteTranscribeLatencySampleV1({ latencyMs: 14_000, ok: false });
-    }
+  it("does not promote split below splitMinMs even when gateway is warm", () => {
     const pred = predictTranscribeRouteV1({
-      bytes: 123_000,
-      recordedMs: 9_500,
+      bytes: 128_719,
+      recordedMs: 9_315,
       chunkCount: 6,
-      warmProbe: { avgWarmScore: 0.8, minWarmScore: 0.75 }
+      warmProbe: { avgWarmScore: 1, minWarmScore: 1 }
     });
-    expect(pred.plan.path).toBe("fast");
-    expect(pred.latencyRisk).toBe("high");
+    expect(pred.plan.mode).toBe("direct");
+    expect(pred.predictiveAction).not.toBe("promote_split");
   });
 });

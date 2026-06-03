@@ -131,7 +131,13 @@ export function predictTranscribeRouteV1(input = {}) {
     });
     reason = plan.reason;
     predictiveAction = "coerce_direct_fast";
-  } else if (warmGateway && plan.mode === "direct" && bytes >= 96_000 && chunkCount >= 3) {
+  } else if (
+    warmGateway &&
+    plan.mode === "direct" &&
+    recordedMs >= VOICE_TRANSCRIBE_PREFLIGHT_V3.splitMinMs &&
+    bytes >= VOICE_TRANSCRIBE_PREFLIGHT_V3.splitMinBytes &&
+    chunkCount >= VOICE_TRANSCRIBE_PREFLIGHT_V3.splitMinChunks
+  ) {
     plan = Object.freeze({
       ...plan,
       mode: "split",

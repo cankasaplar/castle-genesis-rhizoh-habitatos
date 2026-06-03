@@ -40,6 +40,17 @@ describe("rhizohVoiceDualPathRouterV0", () => {
     expect(d.action).toBe(VOICE_PIPELINE_ACTION_V0.REFLEX);
   });
 
+  it("Arabic script hallucination is silent drop not hold", () => {
+    const d = resolveVoicePipelineDecisionV0({
+      text: "المترجمين للمجال للإعجاب بالفيديو Amen. Amen.",
+      confidence: 0.72,
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+      strategy: "split_merged"
+    });
+    expect(d.speakMode).toBe(VOICE_SPEAK_MODE_V0.SILENT);
+    expect(d.reason).toBe("script_locale_mismatch");
+  });
+
   it("YouTube outro is silent noise_drop", () => {
     const d = resolveVoicePipelineDecisionV0({
       text: "Don't forget to like, comment, and subscribe!",
