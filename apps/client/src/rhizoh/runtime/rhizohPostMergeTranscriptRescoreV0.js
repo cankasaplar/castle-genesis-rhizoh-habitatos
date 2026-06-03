@@ -5,8 +5,12 @@
 
 import { detectRhizohMultilingualLocaleV0 } from "./rhizohMultilingualBridgeV0.js";
 import { normalizeSttCrossScriptForTurkishUiV0 } from "./rhizohSttCrossScriptNormalizeV0.js";
-import { hasInternalTranscriptRepetitionV3 } from "./voiceEngineV3/voiceTranscriptSanityV3.js";
 import { evaluateSttContaminationV0 } from "./voiceSttContaminationGuardV0.js";
+import { pushSttQuarantineEntryV0 } from "./rhizohSttQuarantineBufferV0.js";
+import {
+  buildInputProvenanceEnvelopeV0,
+  computeInputOriginHashV0
+} from "./rhizohInputProvenanceV0.js";
 import {
   measureArabicScriptRatioV0,
   measureLatinScriptRatioV0,
@@ -62,7 +66,6 @@ export function shouldSkipLanguageInferenceForTranscriptV0(input = {}) {
   const lowConfidence = !Number.isFinite(confidence) || confidence < LOW_CONF_INFERENCE_SKIP_V0;
   const highEntropyRtl = arabicRatio >= 0.42 && latinRatio < 0.12;
   const splitMergedWeak = strategy === "split_merged" && lowConfidence;
-  const internalLoop = hasInternalTranscriptRepetitionV3(text, 8);
 
   /** @type {string[]} */
   const reasons = [];
@@ -72,6 +75,7 @@ export function shouldSkipLanguageInferenceForTranscriptV0(input = {}) {
     reasons.push(contamination.reason || "platform_template_leak");
     return Object.freeze({
       skip: true,
+      quarantine: true,
       reasons: Object.freeze(reasons),
       entropy,
       arabicRatio,
@@ -88,22 +92,15 @@ export function shouldSkipLanguageInferenceForTranscriptV0(input = {}) {
   if (highEntropyRtl) reasons.push("high_entropy_rtl");
   if (splitMergedWeak) reasons.push("split_merge_weak");
   if (entropy >= HIGH_SCRIPT_ENTROPY_V0 && latinRatio < 0.2) reasons.push("script_entropy");
-  if (internalLoop && (highEntropyRtl || strategy === "split_merged")) {
-    reasons.push("internal_repetition");
-  }
 
   const skip =
     cross.remapped !== true &&
-    (contamination.contaminated ||
-      (highEntropyRtl &&
-        (lowRms ||
-          lowConfidence ||
-          splitMergedWeak ||
-          entropy >= HIGH_SCRIPT_ENTROPY_V0 ||
-          internalLoop)));
+    highEntropyRtl &&
+    (lowRms || lowConfidence || splitMergedWeak || entropy >= HIGH_SCRIPT_ENTROPY_V0);
 
   return Object.freeze({
     skip,
+    quarantine: skip,
     reasons: Object.freeze(reasons),
     entropy,
     arabicRatio,
@@ -121,13 +118,23 @@ export function shouldSkipLanguageInferenceForTranscriptV0(input = {}) {
  *   strategy?: string,
  *   languageHint?: string,
  *   maxRms?: number,
- *   recordedMs?: number
+ *   recordedMs?: number,
+ *   provenance?: ReturnType<typeof buildInputProvenanceEnvelopeV0>
  * }} input
  */
 export function rescoreVoiceTranscriptAfterMergeV0(input = {}) {
   const originalText = String(input.text || "").trim();
   const strategy = String(input.strategy || "");
   const uiLocale = resolveOutputLanguageCodeV0();
+  const provenance =
+    input.provenance ||
+    buildInputProvenanceEnvelopeV0({
+      text: originalText,
+      source: "mic_v3",
+      modality: "stt",
+      confidence: input.confidence,
+      strategy
+    });
   const cross =
     uiLocale === "tr"
       ? normalizeSttCrossScriptForTurkishUiV0(originalText)
@@ -142,12 +149,25 @@ export function rescoreVoiceTranscriptAfterMergeV0(input = {}) {
   });
 
   if (skipEval.skip) {
+    const quarantineRow = pushSttQuarantineEntryV0({
+      text: originalText,
+      reasons: skipEval.reasons,
+      originHash: provenance.originHash || computeInputOriginHashV0(provenance),
+      source: provenance.source,
+      confidence: input.confidence,
+      strategy,
+      maxRms: input.maxRms,
+      scriptEntropy: skipEval.entropy
+    });
     return Object.freeze({
       schema: RHIZOH_POST_MERGE_TRANSCRIPT_RESCORE_SCHEMA_V0,
       text,
       originalText,
       crossScriptRemap: cross.remapped === true,
       skipLanguageInference: true,
+      quarantine: true,
+      quarantineId: quarantineRow.id,
+      provenance,
       skipReasons: skipEval.reasons,
       scriptEntropy: skipEval.entropy,
       phantomLikely: true,

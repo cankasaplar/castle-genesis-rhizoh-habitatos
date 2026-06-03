@@ -4,7 +4,7 @@
 
 import { evaluateSttScriptAgainstUiLocaleV0 } from "../sttScriptLocaleGuardV0.js";
 import { normalizeSttCrossScriptForTurkishUiV0 } from "../rhizohSttCrossScriptNormalizeV0.js";
-import { evaluateSttContaminationV0 } from "../voiceSttContaminationGuardV0.js";
+import { evaluateSttContaminationV0, evaluateInternalRepetitionRiskV0 } from "../voiceSttContaminationGuardV0.js";
 
 export const VOICE_TRANSCRIPT_SANITY_V3_SCHEMA = "castle.rhizoh.voice.transcript_sanity.v3";
 export const VOICE_TRANSCRIPT_MIN_CONFIDENCE_V3 = 0.35;
@@ -197,7 +197,20 @@ export function sanitizeVoiceTranscriptForDispatchV3(text, opts = {}) {
   }
 
   if (hasInternalTranscriptRepetitionV3(dispatchText)) {
-    return { ok: false, reason: "internal_repetition", text: dispatchText, confidence: conf };
+    const repRisk = evaluateInternalRepetitionRiskV0(dispatchText, {
+      confidence: conf,
+      band: opts.band,
+      strategy
+    });
+    if (repRisk.risky) {
+      return {
+        ok: false,
+        reason: "internal_repetition",
+        text: dispatchText,
+        confidence: conf,
+        shadowForward: true
+      };
+    }
   }
 
   if (isWhisperDefaultConfidenceV3(conf, strategy)) {

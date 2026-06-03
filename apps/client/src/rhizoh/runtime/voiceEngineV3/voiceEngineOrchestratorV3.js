@@ -18,6 +18,11 @@ import {
 } from "../rhizohConversationLanguageV0.js";
 import { prepareRhizohLlmTurnV0 } from "../rhizohLlmTurnHotWireV0.js";
 import { rescoreVoiceTranscriptAfterMergeV0 } from "../rhizohPostMergeTranscriptRescoreV0.js";
+import {
+  buildInputProvenanceEnvelopeV0,
+  RHIZOH_INPUT_MODALITY_V0,
+  RHIZOH_INPUT_SOURCE_V0
+} from "../rhizohInputProvenanceV0.js";
 import { emitVoiceEngineTelemetryV3, setVoiceEngineStateV3 } from "./voiceEngineTelemetryV3.js";
 import { noteVoiceRuntimePressureV1 } from "../gatewaySessionKeeperV1.js";
 import {
@@ -213,31 +218,46 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         }
 
         const merged = res.merged || resolveVoiceTranscriptV3(res.google || res.fast, res.whisper);
+        const provenance = buildInputProvenanceEnvelopeV0({
+          text: merged.text,
+          source: RHIZOH_INPUT_SOURCE_V0.MIC_V3,
+          modality: RHIZOH_INPUT_MODALITY_V0.STT,
+          confidence: merged.confidence,
+          strategy: merged.strategy
+        });
         const rescored = rescoreVoiceTranscriptAfterMergeV0({
           text: merged.text,
           confidence: merged.confidence,
           strategy: merged.strategy,
           languageHint: readSttLanguageCodeHintV0(),
           maxRms,
-          recordedMs
+          recordedMs,
+          provenance
         });
 
         if (rescored.skipLanguageInference) {
           busy = false;
           setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
-          emitVoiceEngineTelemetryV3("FINAL_TRANSCRIPT_SHADOW_DROP", {
-            reason: "language_inference_skipped",
-            preview: String(rescored.text || merged.text).slice(0, 96),
-            skipReasons: rescored.skipReasons,
-            maxRms,
-            confidence: merged.confidence,
-            strategy: merged.strategy,
-            scriptEntropy: rescored.scriptEntropy
-          });
+          emitVoiceEngineTelemetryV3(
+            rescored.quarantine ? "FINAL_TRANSCRIPT_QUARANTINE" : "FINAL_TRANSCRIPT_SHADOW_DROP",
+            {
+              reason: "language_inference_quarantined",
+              preview: String(rescored.text || merged.text).slice(0, 96),
+              skipReasons: rescored.skipReasons,
+              quarantineId: rescored.quarantineId,
+              originHash: rescored.provenance?.originHash,
+              maxRms,
+              confidence: merged.confidence,
+              strategy: merged.strategy,
+              scriptEntropy: rescored.scriptEntropy
+            }
+          );
           return {
             ok: false,
-            error: "language_inference_skipped",
+            error: "language_inference_quarantined",
             shadowDrop: true,
+            quarantine: rescored.quarantine === true,
+            quarantineId: rescored.quarantineId,
             silent: true,
             merged,
             rescored

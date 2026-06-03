@@ -7,6 +7,12 @@ import { applyReflexEffectivenessFeedbackV0 } from "./rhizohConfidenceDecayGateV
 import { adaptMicroPersonalityFromReactionV0 } from "./rhizohMicroPersonalityV0.js";
 import { normalizeSttTranscriptForOlpV0 } from "./normalizeSttTranscriptForOlpV0.js";
 import { evaluateSttContaminationV0 } from "./voiceSttContaminationGuardV0.js";
+import {
+  buildInputProvenanceEnvelopeV0,
+  validateMicIntentProvenanceV0,
+  RHIZOH_INPUT_MODALITY_V0,
+  RHIZOH_INPUT_SOURCE_V0
+} from "./rhizohInputProvenanceV0.js";
 import { runFastPrecheckFromTextV0, publishFastPrecheckHitV0 } from "./rhizohFastPrecheckV0.js";
 import { routeVoiceInputV0, VOICE_ROUTE_EXECUTION_V0 } from "./rhizohVoiceCommandRouterV0.js";
 import { classifyRhizohIntentV0 } from "./rhizohIntentRouterV0.js";
@@ -36,10 +42,37 @@ export const RHIZOH_SPEECH_PIPELINE_SCHEMA_V0 = "castle.rhizoh.speech_pipeline.v
 
 /**
  * @param {string} rawText
- * @param {{ sttInferred?: string, traceId?: string }} [ctx]
+ * @param {{ sttInferred?: string, traceId?: string, source?: string, modality?: string, confidence?: number, band?: string, strategy?: string, provenance?: object }} [ctx]
  */
 export function runRhizohSpeechPipelineV0(rawText, ctx = {}) {
   const t0 = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const provenance =
+    ctx.provenance ||
+    buildInputProvenanceEnvelopeV0({
+      text: rawText,
+      source: ctx.source || RHIZOH_INPUT_SOURCE_V0.MIC_V3,
+      modality: ctx.modality || RHIZOH_INPUT_MODALITY_V0.STT,
+      confidence: ctx.confidence,
+      band: ctx.band,
+      strategy: ctx.strategy,
+      traceId: ctx.traceId
+    });
+  const provenanceGate = validateMicIntentProvenanceV0(provenance);
+  if (!provenanceGate.ok) {
+    return finalizePipelineResultV0(
+      {
+        ok: false,
+        stage: "provenance_reject",
+        error: provenanceGate.error,
+        provenance,
+        llmBypass: true,
+        silencePreferred: true,
+        latencyMs: Math.round((typeof performance !== "undefined" ? performance.now() : Date.now()) - t0)
+      },
+      ctx
+    );
+  }
+
   const reaction = applyReflexEffectivenessFeedbackV0(rawText);
   if (reaction && reaction !== "none") adaptMicroPersonalityFromReactionV0(reaction);
 

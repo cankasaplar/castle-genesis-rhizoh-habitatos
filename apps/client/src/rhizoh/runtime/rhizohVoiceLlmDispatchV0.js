@@ -46,6 +46,12 @@ import {
   traceRoutePhaseV0,
   traceSttNormalizePhaseV0
 } from "./rhizohVoiceExecutionKernelV0.js";
+import {
+  buildInputProvenanceEnvelopeV0,
+  validateMicIntentProvenanceV0,
+  RHIZOH_INPUT_MODALITY_V0,
+  RHIZOH_INPUT_SOURCE_V0
+} from "./rhizohInputProvenanceV0.js";
 
 export const RHIZOH_VOICE_LLM_DISPATCH_SCHEMA_V0 = "castle.rhizoh.voice_llm_dispatch.v0";
 
@@ -69,7 +75,31 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
 
   const traceId = String(opts.traceId || makeTraceIdV0());
   const sttBudgetMs = Number(opts.sttBudgetMs) || 0;
-  openVoiceExecutionTraceV0(traceId, { input: raw, source: opts.source || "voice_llm_dispatch" });
+  const provenance = buildInputProvenanceEnvelopeV0({
+    text: raw,
+    source: opts.source || RHIZOH_INPUT_SOURCE_V0.MIC_V3,
+    modality: opts.modality || RHIZOH_INPUT_MODALITY_V0.STT,
+    confidence: opts.confidence,
+    band: opts.witnessed?.observation?.band || opts.band,
+    strategy: opts.strategy,
+    traceId
+  });
+  const provenanceGate = validateMicIntentProvenanceV0(provenance);
+  if (!provenanceGate.ok) {
+    logVoiceWarnV0("VOICE_PROVENANCE_REJECT", {
+      error: provenanceGate.error,
+      originHash: provenance.originHash,
+      source: provenance.source,
+      preview: raw.slice(0, 96)
+    });
+    return Object.freeze({ ok: false, error: provenanceGate.error, provenance });
+  }
+
+  openVoiceExecutionTraceV0(traceId, {
+    input: raw,
+    source: provenance.source,
+    originHash: provenance.originHash
+  });
 
   const sttNorm = traceSttNormalizePhaseV0(traceId, () => normalizeSttTranscriptForOlpV0(raw));
   if (sttBudgetMs > 0) {
@@ -86,7 +116,13 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
       sttInferred: sttNorm.inferredInputLocale,
       traceId,
       localFailed: false,
-      reflexLatencyMs: 0
+      reflexLatencyMs: 0,
+      source: provenance.source,
+      modality: provenance.modality,
+      confidence: provenance.confidence,
+      band: provenance.band,
+      strategy: provenance.strategy,
+      provenance
     })
   );
 

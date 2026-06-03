@@ -239,7 +239,8 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
     recordedMs: Number.isFinite(recordedMs) ? recordedMs : undefined,
     sttLanguageHint: meta.sttLanguageHint,
     vepmConfidence: meta.vepmConfidence,
-    phantomLikely: meta.phantomLikely === true
+    phantomLikely: meta.phantomLikely === true,
+    band: observation.band
   });
 
   if (!sane.ok) {

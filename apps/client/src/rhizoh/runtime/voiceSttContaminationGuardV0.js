@@ -1,6 +1,6 @@
 /**
  * STT contamination guard — platform outro / UI chrome / loop artifacts.
- * These are never user-directed speech; shadow-only observation.
+ * internal_repetition alone is NOT sufficient to drop (stutter-safe).
  */
 
 import { hasInternalTranscriptRepetitionV3 } from "./voiceEngineV3/voiceTranscriptSanityV3.js";
@@ -61,8 +61,48 @@ export function isUiChromeEchoTemplateV0(text) {
 }
 
 /**
+ * Platform / UI chrome signature (outro, footer, subscribe CTA).
  * @param {string} text
- * @param {{ strategy?: string }} [opts]
+ */
+export function hasPlatformSignatureV0(text) {
+  return isPlatformOutroTemplateV0(text) || isUiChromeEchoTemplateV0(text);
+}
+
+/**
+ * internal_repetition + platform_signature → drop; high_conf_directed → allow stutter.
+ * @param {string} text
+ * @param {{ confidence?: number, band?: string, strategy?: string, minChunkLen?: number }} [opts]
+ */
+export function evaluateInternalRepetitionRiskV0(text, opts = {}) {
+  const raw = String(text || "").trim();
+  const internal = hasInternalTranscriptRepetitionV3(raw, opts.minChunkLen ?? 14);
+  if (!internal) {
+    return Object.freeze({ risky: false, reason: null, allowStutter: false });
+  }
+
+  const conf = Number(opts.confidence);
+  const band = String(opts.band || "");
+  const highConfDirected =
+    band === "directed_candidate" && Number.isFinite(conf) && conf >= 0.62;
+
+  if (highConfDirected) {
+    return Object.freeze({ risky: false, reason: "stutter_allowed", allowStutter: true });
+  }
+
+  if (hasPlatformSignatureV0(raw)) {
+    return Object.freeze({
+      risky: true,
+      reason: "internal_repetition_platform_sig",
+      allowStutter: false
+    });
+  }
+
+  return Object.freeze({ risky: false, reason: null, allowStutter: true });
+}
+
+/**
+ * @param {string} text
+ * @param {{ strategy?: string, confidence?: number, band?: string }} [opts]
  */
 export function evaluateSttContaminationV0(text, opts = {}) {
   const raw = String(text || "").trim();
@@ -90,25 +130,12 @@ export function evaluateSttContaminationV0(text, opts = {}) {
     });
   }
 
-  if (hasInternalTranscriptRepetitionV3(raw) && norm.length >= 40) {
+  const repRisk = evaluateInternalRepetitionRiskV0(raw, opts);
+  if (repRisk.risky) {
     return Object.freeze({
       contaminated: true,
       kind: "stt_loop",
-      reason: "stt_loop_artifact",
-      shadowOnly: true
-    });
-  }
-
-  const strategy = String(opts.strategy || "");
-  if (
-    strategy === "split_merged" &&
-    hasInternalTranscriptRepetitionV3(raw, 10) &&
-    norm.split(/\s+/).length >= 8
-  ) {
-    return Object.freeze({
-      contaminated: true,
-      kind: "stt_loop",
-      reason: "internal_repetition",
+      reason: repRisk.reason || "internal_repetition",
       shadowOnly: true
     });
   }

@@ -8,10 +8,12 @@ import {
   __resetOlpStateForTestV0,
   applyUiLanguagePreferenceToOlpV0
 } from "../rhizohOutputLanguagePolicyV0.js";
+import { __resetSttQuarantineBufferForTestV0 } from "../rhizohSttQuarantineBufferV0.js";
 
 describe("rhizohPostMergeTranscriptRescoreV0", () => {
   beforeEach(() => {
     __resetOlpStateForTestV0();
+    __resetSttQuarantineBufferForTestV0();
     applyUiLanguagePreferenceToOlpV0("tr", "test");
   });
 
@@ -33,6 +35,8 @@ describe("rhizohPostMergeTranscriptRescoreV0", () => {
       maxRms: 0.016
     });
     expect(scored.skipLanguageInference).toBe(true);
+    expect(scored.quarantine).toBe(true);
+    expect(scored.quarantineId).toMatch(/^stq_/);
     expect(scored.detectedLocale).toBeUndefined();
     expect(scored.phantomLikely).toBe(true);
   });
