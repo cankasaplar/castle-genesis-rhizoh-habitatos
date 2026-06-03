@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   RHIZOH_ROBOTICS_DEVICE_CHIPS_V1,
   RHIZOH_LIBRARY_ROUTE_V1
@@ -9,22 +9,39 @@ import {
   resolveHaloNodesV0
 } from "../rhizoh/runtime/rhizohProductCopyI18nV0.js";
 import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
+import { RSBL_SURFACE_ID_V0 } from "../rhizoh/runtime/rhizohSurfaceBindingLayerV0.js";
+import { assertReverseOwnershipV0 } from "../rhizoh/runtime/rhizohSurfaceCitizenshipRuntimeV0.js";
+import { useSurfaceCitizenProjectionV0 } from "../rhizoh/runtime/useSurfaceCitizenProjectionV0.js";
+import { useRhizohStudioProductionOrganismV0 } from "../rhizoh/runtime/useRhizohStudioProductionOrganismV0.js";
+import { STUDIO_ORGANISM_SURFACE_ROLE_V0 } from "../rhizoh/runtime/rhizohStudioOrganismSurfaceRolesV0.js";
 
 const RING_R = 118;
 
-/** Capability Wheel — cognition-only (layerFocus + seedIntent). Navigation = Product Bar. */
+/** Capability Wheel — SCR citizen; T0 projection only (reverse ownership). */
 export function RhizohCapabilityHaloV1({
   onSeedIntent,
   onFocusLayer,
-  collectivePulse = 1,
+  /** @deprecated SCR reverse ownership — ignored; records violation if set */
+  collectivePulse,
   className = "",
   uiLocale
 }) {
   const locale = uiLocale || readUiLocaleV0();
+  const capProjection = useSurfaceCitizenProjectionV0(RSBL_SURFACE_ID_V0.CAP_WHEEL);
+  const organism = useRhizohStudioProductionOrganismV0();
+  const gesture = organism?.gesture_field;
   const haloNodes = useMemo(() => resolveHaloNodesV0(locale), [locale]);
   const haloHeadline = useMemo(() => resolveHaloHeadlineV0(locale), [locale]);
   const haloIntro = useMemo(() => resolveHaloIntroV0(locale), [locale]);
   const nodeCount = haloNodes.length;
+
+  useEffect(() => {
+    if (collectivePulse != null) {
+      assertReverseOwnershipV0(RSBL_SURFACE_ID_V0.CAP_WHEEL, {
+        externalPulse: collectivePulse
+      });
+    }
+  }, [collectivePulse]);
 
   const [hoverId, setHoverId] = useState(null);
   const [roboticsOpen, setRoboticsOpen] = useState(false);
@@ -69,10 +86,20 @@ export function RhizohCapabilityHaloV1({
     [onFocusLayer, onSeedIntent]
   );
 
-  const scaleBreath = 0.96 + collectivePulse * 0.04;
+  const scaleBreath = 0.94 + (Number(capProjection?.breathe01) || 0) * 0.08;
 
   return (
-    <div className={`relative mx-auto flex flex-col items-center ${className}`} data-rhizoh-capability-halo="1">
+    <div
+      className={`relative mx-auto flex flex-col items-center ${className}`}
+      data-rhizoh-capability-halo="1"
+      data-rhizoh-scr-surface={RSBL_SURFACE_ID_V0.CAP_WHEEL}
+      data-rhizoh-ssl-surface={RSBL_SURFACE_ID_V0.CAP_WHEEL}
+      data-rhizoh-studio-organ-role={STUDIO_ORGANISM_SURFACE_ROLE_V0.CAP_WHEEL}
+      data-rhizoh-coherence-id={organism?.coherence_id || capProjection?.coherence_id || ""}
+      data-rhizoh-episode-seq={organism?.episode_seq ?? ""}
+      data-rhizoh-pet-inhabited={organism?.pet_actor?.inhabited ? "1" : "0"}
+      data-rhizoh-gesture-bound={gesture?.bound ? "1" : "0"}
+    >
       <div
         className="pointer-events-none absolute -inset-8 rounded-full opacity-[0.14] blur-2xl transition-transform duration-[2.8s] ease-in-out"
         style={{

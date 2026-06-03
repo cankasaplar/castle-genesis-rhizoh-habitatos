@@ -1,0 +1,16 @@
+# Rhizoh core runtime — Render service spec (reference).
+# SCR runtime · WAL API · ICL service · Pet spatial sync · Castle projection API
+# @see docs/RHIZOH_PRODUCTION_AUTOMATION_LAYER_V0.md
+services:
+  - type: web
+    name: rhizoh-core
+    env: node
+    plan: starter
+    buildCommand: npm ci && npm run build:ci -w apps/client
+    startCommand: node apps/gateway/src/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: RHIZOH_WORLD_MODE
+        value: production_world

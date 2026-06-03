@@ -10,6 +10,11 @@ import {
   resolveProductDrawerSurfaceCopyV0
 } from "../rhizoh/runtime/rhizohProductCopyI18nV0.js";
 import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
+import { SSL_SURFACE_ID_V0 } from "../rhizoh/runtime/rhizohSurfaceSingularityLayerV0.js";
+import { RhizohStudioCitizenShellV0 } from "./RhizohStudioCitizenShellV0.jsx";
+import { useSurfaceCitizenProjectionV0 } from "../rhizoh/runtime/useSurfaceCitizenProjectionV0.js";
+import { useRhizohStudioProductionOrganismV0 } from "../rhizoh/runtime/useRhizohStudioProductionOrganismV0.js";
+import { STUDIO_ORGANISM_SURFACE_ROLE_V0 } from "../rhizoh/runtime/rhizohStudioOrganismSurfaceRolesV0.js";
 
 /**
  * @param {{
@@ -32,6 +37,9 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
   uiLocale
 }) {
   const locale = uiLocale || readUiLocaleV0();
+  const drawerProjection = useSurfaceCitizenProjectionV0(SSL_SURFACE_ID_V0.UI_DRAWER);
+  const organism = useRhizohStudioProductionOrganismV0();
+  const memory = organism?.memory_organ;
   const chrome = useMemo(() => resolveProductDrawerChromeCopyV0(locale), [locale]);
   const meta = useMemo(() => resolveProductDrawerSurfaceCopyV0(surface, locale), [surface, locale]);
 
@@ -43,6 +51,13 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
       role="dialog"
       aria-label={`${meta.title} surface`}
       data-rhizoh-product-drawer={surface}
+      data-rhizoh-scr-surface={SSL_SURFACE_ID_V0.UI_DRAWER}
+      data-rhizoh-ssl-surface={SSL_SURFACE_ID_V0.UI_DRAWER}
+      data-rhizoh-studio-organ-role={STUDIO_ORGANISM_SURFACE_ROLE_V0.UI_DRAWER}
+      data-rhizoh-coherence-id={organism?.coherence_id || drawerProjection?.coherence_id || ""}
+      data-rhizoh-episode-seq={memory?.episode_seq ?? ""}
+      data-rhizoh-wal-entry={memory?.wal_entry_id ?? ""}
+      data-rhizoh-pack-id={memory?.pack_id ?? ""}
     >
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
         <div>
@@ -60,7 +75,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
 
       <div className="max-h-[calc(min(52vh,28rem)-3rem)] overflow-y-auto px-3 py-3 no-scrollbar">
         {surface === "hall" ? (
-          <div className="space-y-3">
+          <RhizohStudioCitizenShellV0 surfaceKind="hall">
             <KernelConsolePanel />
             <QuickLinks
               links={[
@@ -68,30 +83,30 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
                 { to: "/academy/observe", label: "Academy observe" }
               ]}
             />
-          </div>
+          </RhizohStudioCitizenShellV0>
         ) : null}
 
         {surface === "greenroom" || surface === "broadcast" ? (
-          <div className="space-y-3">
+          <RhizohStudioCitizenShellV0 surfaceKind={surface}>
             <DirectorDeckPanel />
             {surface === "broadcast" ? (
               <p className="rounded-lg border border-fuchsia-400/25 bg-fuchsia-950/20 px-3 py-2 text-[10px] text-fuchsia-100/85 normal-case">
                 {chrome.broadcastNote}
               </p>
             ) : null}
-          </div>
+          </RhizohStudioCitizenShellV0>
         ) : null}
 
         {surface === "studio" ? (
-          <div className="space-y-3">
+          <RhizohStudioCitizenShellV0 surfaceKind="studio">
             <WorldLivingMapPanel />
             <KernelConsolePanel />
             <QuickLinks links={[{ to: "/genesis/portal", label: "Genesis runtime observation" }]} />
-          </div>
+          </RhizohStudioCitizenShellV0>
         ) : null}
 
         {surface === "profile" ? (
-          <div className="space-y-3">
+          <RhizohStudioCitizenShellV0 surfaceKind="profile">
             <ProductProfilePanel auth={auth} />
             <RuntimeHealthPanel health={runtimeHealth} gatewayBaseUrl={gatewayOrigin} />
             <QuickLinks
@@ -101,7 +116,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
                 { to: "/genesis/hub", label: "Genesis hub" }
               ]}
             />
-          </div>
+          </RhizohStudioCitizenShellV0>
         ) : null}
       </div>
     </div>

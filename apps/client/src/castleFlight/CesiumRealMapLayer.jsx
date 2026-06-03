@@ -32,6 +32,7 @@ import {
   isEpistemicSimResearchEnabledV0,
   maybeInstallEpistemicSimResearchOnCesiumV0
 } from "../rhizoh/runtime/epistemicSimResearchWireV0.js";
+import { maybeInstallRhizohPetCesiumSpatialBindingV0 } from "../rhizoh/spatial/rhizohPetCesiumSpatialBindingV0.js";
 import { recordCameraKeyObserverTelemetryV0, recordPoiSelectObserverTelemetryV0 } from "../rhizoh/runtime/epistemicObserverTelemetryV0.js";
 import { maybeInstallEpistemicGraphVisualizationOnCesiumV0 } from "../rhizoh/runtime/sovereign/epistemicGraphCesiumV0.js";
 import { installCesiumSovereignGeographicPickV0 } from "../rhizoh/runtime/sovereign/cesiumSovereignGeographicPickV0.js";
@@ -374,6 +375,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       let teardownRhizohEpistemicBootstrap = () => {};
       let teardownPerceptionDebug = () => {};
       let teardownEpistemicSimResearch = () => {};
+      let teardownPetSpatialBinding = () => {};
       let teardownEpistemicGraphViz = () => {};
       let teardownSovereignGeographicPick = () => {};
 
@@ -434,6 +436,12 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
           /* noop */
         }
         teardownEpistemicSimResearch = () => {};
+        try {
+          teardownPetSpatialBinding();
+        } catch {
+          /* noop */
+        }
+        teardownPetSpatialBinding = () => {};
         try {
           teardownPerceptionDebug();
         } catch {
@@ -1111,6 +1119,12 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       }
 
       try {
+        teardownPetSpatialBinding = maybeInstallRhizohPetCesiumSpatialBindingV0(viewer);
+      } catch {
+        /* noop */
+      }
+
+      try {
         teardownEpistemicGraphViz = maybeInstallEpistemicGraphVisualizationOnCesiumV0(viewer);
       } catch {
         /* noop */
@@ -1301,6 +1315,12 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
           /* noop */
         }
         teardownEpistemicSimResearch = () => {};
+        try {
+          teardownPetSpatialBinding();
+        } catch {
+          /* noop */
+        }
+        teardownPetSpatialBinding = () => {};
         try {
           teardownEpistemicGraphViz();
         } catch {

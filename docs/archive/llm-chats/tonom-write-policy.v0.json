@@ -97,20 +97,20 @@
                                                         ]
                              },
     "state":  {
-                  "last_batch_id":  "llm-20260528-221101",
-                  "last_updated_utc":  "2026-05-28T19:11:35.6671242Z",
-                  "total_ingested":  12,
+                  "last_batch_id":  "llm-20260601-185016",
+                  "last_updated_utc":  "2026-06-01T15:51:00.4049367Z",
+                  "total_ingested":  13,
                   "layer_hits":  {
-                                     "comment":  21,
-                                     "music":  11,
-                                     "fun":  14,
-                                     "text":  24,
-                                     "meaning":  36,
-                                     "competition":  19,
-                                     "sport":  25,
-                                     "real_layer":  18,
-                                     "art":  24,
-                                     "file":  20
+                                     "comment":  24,
+                                     "music":  12,
+                                     "text":  28,
+                                     "sport":  28,
+                                     "meaning":  43,
+                                     "real_layer":  21,
+                                     "competition":  22,
+                                     "fun":  16,
+                                     "art":  27,
+                                     "file":  22
                                  }
               }
 }

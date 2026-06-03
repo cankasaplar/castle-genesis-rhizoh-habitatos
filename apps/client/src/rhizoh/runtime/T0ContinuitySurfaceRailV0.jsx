@@ -20,12 +20,26 @@ import {
 import { emitNextActionAnchorV0, resolveNextActionAnchorV0 } from "./rhizohActionCoherenceV0.js";
 import { RhizohNextActionAnchorV0 } from "./RhizohNextActionAnchorV0.jsx";
 import { RhizohFlowContinuityStripV0 } from "./RhizohFlowContinuityStripV0.jsx";
+import { RhizohPresenceSurfaceStripV0 } from "./RhizohPresenceSurfaceStripV0.jsx";
+import {
+  resolveReslPresentationV0,
+  readLastReslPresentationV0,
+  RHIZOH_PRESENCE_STATE_EVENT_V0,
+  RHIZOH_RESL_PRESENTATION_EVENT_V0
+} from "./rhizohReslPresentationPolicyV0.js";
+import { readLastRhizohPresenceStateV0 } from "./rhizohPresenceStateEngineV0.js";
+import { useRhizohT0PresenceFrameV0 } from "./useRhizohT0PresenceFrameV0.js";
 import {
   isRhizohT0FirstMatchIdentityV0,
   RHIZOH_CHROME_TOGGLE_STRIP_H_REM_V0,
   RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0
 } from "./rhizohT0FirstMatchIdentityV0.js";
 import { RHIZOH_INTENT_PLAIN_TR_V0 } from "./rhizohProductPlainCopyV0.js";
+import {
+  bootstrapRhizohContinuityFirstPaintV0,
+  RHIZOH_CONTINUITY_FIRST_PAINT_EVENT_V0
+} from "./rhizohT0FirstFrameBootstrapV0.js";
+import { resolveT0ZeroFramePresenceV0 } from "./rhizohDeployReadyPresenceV0.js";
 
 /**
  * T0 continuity surface — context strip (play call) + intent anchors + rail + optional stream.
@@ -45,6 +59,10 @@ export function T0ContinuitySurfaceRailV0({
   const [pulses, setPulses] = useState(() => readT0ContinuityPulseStreamV0());
   const [streamOpen, setStreamOpen] = useState(false);
   const [userIntent, setUserIntent] = useState(() => readT0UserIntentV0());
+  const [reslPresentation, setReslPresentation] = useState(() =>
+    resolveReslPresentationV0(readLastRhizohPresenceStateV0() || { rhizoh_is_present: true })
+  );
+  const presenceFrame = useRhizohT0PresenceFrameV0();
 
   const context = useMemo(
     () =>
@@ -70,6 +88,55 @@ export function T0ContinuitySurfaceRailV0({
   useEffect(() => {
     emitNextActionAnchorV0(nextActionAnchor);
   }, [nextActionAnchor]);
+
+  useEffect(() => {
+    bootstrapRhizohContinuityFirstPaintV0({
+      fieldState: rhizohFieldState,
+      returningUser: true,
+      hasAnchor: true
+    }).catch(() => {});
+    const onFirstPaint = (ev) => {
+      const resl = ev?.detail?.paint?.continuity_line;
+      if (resl) {
+        setReslPresentation((prev) =>
+          Object.freeze({
+            ...prev,
+            continuityLine: resl,
+            presenceBadge: prev?.presenceBadge || { label: localeTr ? "Burada" : "Here", tone: "teal-soft" }
+          })
+        );
+      }
+    };
+    window.addEventListener(RHIZOH_CONTINUITY_FIRST_PAINT_EVENT_V0, onFirstPaint);
+    return () => window.removeEventListener(RHIZOH_CONTINUITY_FIRST_PAINT_EVENT_V0, onFirstPaint);
+  }, []);
+
+  useEffect(() => {
+    const syncResl = () => {
+      const cached = readLastReslPresentationV0();
+      if (cached) {
+        setReslPresentation(cached);
+        return;
+      }
+      const st = readLastRhizohPresenceStateV0();
+      if (st) setReslPresentation(resolveReslPresentationV0(st));
+    };
+    syncResl();
+    window.addEventListener(RHIZOH_PRESENCE_STATE_EVENT_V0, syncResl);
+    window.addEventListener(RHIZOH_RESL_PRESENTATION_EVENT_V0, syncResl);
+    return () => {
+      window.removeEventListener(RHIZOH_PRESENCE_STATE_EVENT_V0, syncResl);
+      window.removeEventListener(RHIZOH_RESL_PRESENTATION_EVENT_V0, syncResl);
+    };
+  }, []);
+
+  useEffect(() => {
+    setReslPresentation(
+      resolveReslPresentationV0(readLastRhizohPresenceStateV0() || { rhizoh_is_present: true }, {
+        locale: localeTr ? "tr" : "en"
+      })
+    );
+  }, [rhizohFieldState, localeTr]);
 
   useEffect(() => {
     seedT0ContinuityPulseStreamV0();
@@ -160,6 +227,32 @@ export function T0ContinuitySurfaceRailV0({
             emphasisOverride={anchorEmphasisOverride}
           />
         </div>
+
+        <RhizohPresenceSurfaceStripV0
+          {...resolveT0ZeroFramePresenceV0({
+            continuityLine:
+              presenceFrame?.narrativeStream?.continuity_line ??
+              reslPresentation?.continuityLine,
+            presenceBadge: reslPresentation?.presenceBadge,
+            localeTr
+          })}
+          transition={reslPresentation?.transition}
+          transitionFeel={
+            reslPresentation?.transitionFeel ??
+            presenceFrame?.narrativeStream?.fade_semantics
+          }
+          microTransition={presenceFrame?.narrativeStream?.micro_transition}
+          narrativeVelocity={presenceFrame?.narrativeStream?.narrative_velocity}
+          stripOpacity01={Math.max(
+            0.42,
+            presenceFrame?.surfaces?.strip?.opacity01 ?? 1
+          )}
+          intensity01={
+            presenceFrame?.surfaces?.orb?.intensity01 ??
+            reslPresentation?.orbModulation?.intensity01
+          }
+          localeTr={localeTr}
+        />
 
         {!compactIdentity ? (
           <div className={fade(vis.show_flow_continuity)}>

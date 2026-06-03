@@ -58,6 +58,7 @@ import {
   resolveSemanticGrayLlmShapingV0,
   shouldNoteVoiceVerifyBudgetV0
 } from "./rhizohVoiceGrayZoneVerifyV0.js";
+import { resolveMvicV0 } from "./rhizohMinimumPresenceExpressionV0.js";
 import { noteVoiceVerifyAttemptV0, isVoiceVerifyBudgetExhaustedV0 } from "./rhizohVoiceVerifyBudgetV0.js";
 import { resolveConversationAuthorityV0 } from "./rhizohVoiceConversationAuthorityV0.js";
 
@@ -140,7 +141,12 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
       execution: "authority_silent",
       authoritySilent: true
     });
-    return Object.freeze({ ok: true, authoritySilent: true, authority });
+    const mvic = resolveMvicV0({
+      reason: authority.reason || "authority_silent",
+      eventTag: "VOICE_AUTHORITY_SILENT",
+      sessionId: opts.sessionId
+    });
+    return Object.freeze({ ok: true, authoritySilent: true, authority, mvic });
   }
 
   const uxFallback = resolveVoiceUxFallbackV0(opts.decision, msg, {

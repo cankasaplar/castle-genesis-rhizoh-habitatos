@@ -1,14 +1,27 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useScrCitizenCollectiveFieldV0 } from "../rhizoh/runtime/useScrCitizenCollectiveFieldV0.js";
+import { assertScrCollectiveDensityOwnershipV0 } from "../rhizoh/runtime/rhizohScrCitizenVisualProjectionV0.js";
+import { RSBL_SURFACE_ID_V0 } from "../rhizoh/runtime/rhizohSurfaceBindingLayerV0.js";
 
 /**
- * “50k collective” hissi — hafif heat / nefes / akış katmanı (pointer-events: none).
+ * “50k collective” — SCR citizen only (T0 projection).
  */
-export function SwarmCollectiveAuraV1({ collectiveField, className = "" }) {
-  const density = collectiveField?.density ?? 0.35;
-  const heat = collectiveField?.heat ?? 0.25;
-  const threads = collectiveField?.threads ?? 0.35;
-  const flow = collectiveField?.flowActive ? 1 : 0;
-  const breath = collectiveField?.breathMs ?? 4200;
+export function SwarmCollectiveAuraV1({
+  /** @deprecated B3 — records violation; use SCR only */
+  collectiveField,
+  className = ""
+}) {
+  const scrField = useScrCitizenCollectiveFieldV0();
+
+  useEffect(() => {
+    if (collectiveField != null) assertScrCollectiveDensityOwnershipV0(collectiveField?.density);
+  }, [collectiveField]);
+
+  const density = scrField.density;
+  const heat = scrField.heat;
+  const threads = scrField.threads;
+  const flow = scrField.flowActive ? 1 : 0;
+  const breath = scrField.breathMs;
 
   const a = 0.06 + heat * 0.22;
   const b = 0.04 + density * 0.18;
@@ -18,8 +31,9 @@ export function SwarmCollectiveAuraV1({ collectiveField, className = "" }) {
     <div
       className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}
       aria-hidden
-    >
-      <div
+      data-rhizoh-scr-surface={RSBL_SURFACE_ID_V0.SWARM}
+      data-rhizoh-coherence-id={scrField.coherence_id || ""}
+    >      <div
         className="absolute -left-[20%] top-[18%] h-[55%] w-[70%] rounded-full opacity-40 blur-3xl"
         style={{
           background: `radial-gradient(ellipse at 30% 50%, rgba(251,146,60,${a}) 0%, transparent 55%)`,

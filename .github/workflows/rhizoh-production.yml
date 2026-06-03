@@ -1,0 +1,88 @@
+# Rhizoh Production Deployment — world runtime automation layer v0
+# Manual dispatch by default; push-to-main runs CI gates only (no infra without secrets).
+# @see docs/RHIZOH_PRODUCTION_AUTOMATION_LAYER_V0.md
+
+name: Rhizoh Production Deployment
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      deploy_infra:
+        description: "Run Render / Firebase / Vercel deploy steps"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+concurrency:
+  group: rhizoh-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  ci-gates:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install
+        run: npm ci
+
+      - name: CI gates
+        run: |
+          npm run ops:production-rhythm-stress-v0
+          npm run ops:world-identity-consistency-v0
+          npm run ops:castle-coherence-hardening-v0
+          npm run ops:production-deploy-gates-v0
+
+      - name: Build (CI)
+        run: npm run build:ci -w apps/client
+
+      - name: Materialize + verify world artifacts
+        run: |
+          node scripts/materialize-world-artifacts-v0.mjs
+          node scripts/verify-world-artifacts-v0.mjs
+
+      - name: Bootstrap + post-deploy monitor (compressed)
+        run: |
+          node scripts/bootstrap-world-v0.mjs --skip-gates
+          node scripts/post-deploy-monitor-v0.mjs --compressed
+
+  deploy-world:
+    needs: ci-gates
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy_infra == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install
+        run: npm ci
+
+      - name: Deploy world (infra — requires operator secrets locally)
+        run: bash ops/deploy-world-v0.sh
+        env:
+          DRY_RUN: "0"
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CASTLE_GENESIS }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

@@ -1,21 +1,30 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { resolveThinkingExposureV0 } from "../rhizoh/runtime/rhizohThinkingModelV0.js";
+import { useScrCitizenCollectiveFieldV0 } from "../rhizoh/runtime/useScrCitizenCollectiveFieldV0.js";
+import { assertScrCollectiveDensityOwnershipV0 } from "../rhizoh/runtime/rhizohScrCitizenVisualProjectionV0.js";
 
 /**
  * Inline thought signal — lives inside the unified chat input (not a separate viewport layer).
  */
 export function RhizohInputThoughtGlowV0({
   fieldState = "IDLE",
-  collectiveDensity = 0.4,
+  /** @deprecated B3 SCR-only */
+  collectiveDensity,
   className = ""
 }) {
+  const scrField = useScrCitizenCollectiveFieldV0();
+
+  useEffect(() => {
+    if (collectiveDensity != null) assertScrCollectiveDensityOwnershipV0(collectiveDensity);
+  }, [collectiveDensity]);
+
   const exposure = useMemo(
     () => resolveThinkingExposureV0(fieldState),
     [fieldState]
   );
   const active = fieldState !== "IDLE" && fieldState !== "DEGRADED";
   const { ambient } = exposure;
-  const warmth = 0.28 + collectiveDensity * 0.22 + (active ? exposure.fieldIntensity * 0.35 : 0);
+  const warmth = 0.28 + scrField.density * 0.22 + (active ? exposure.fieldIntensity * 0.35 : 0);
 
   return (
     <div

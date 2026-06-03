@@ -201,8 +201,6 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
     [productSurface]
   );
 
-  const collectivePulse = entryModel?.worldState?.castlePresence?.pulse01 ?? 0.45;
-
   return (
     <div
       className="fixed inset-0 overflow-hidden bg-black text-white"
@@ -382,7 +380,6 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
         <div className="pointer-events-none absolute inset-x-0 bottom-[3.5rem] z-[57] flex justify-center px-2">
           <RhizohCapabilityHaloV1
             className="pointer-events-auto max-w-[min(100%,420px)] scale-[0.88] sm:scale-100"
-            collectivePulse={collectivePulse}
             onFocusLayer={() => {}}
             onSeedIntent={(intent) => {
               if (typeof window !== "undefined") {

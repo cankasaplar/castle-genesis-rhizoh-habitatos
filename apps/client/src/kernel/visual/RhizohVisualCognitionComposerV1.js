@@ -85,8 +85,9 @@ export function composeRhizohVisualCognitionStateV1(input) {
       marsReadySignal: input?.lastIntentRaw?.toLowerCase().includes("mars") ?? false
     },
     rhizohCorePresence: {
-      breathingCore: true,
-      hum: "low",
+      breathingCore: input?.reslOrbModulation?.breathe !== false,
+      hum: input?.reslOrbModulation?.breathe ? "presence-idle" : "low",
+      coreIntensity: input?.reslOrbModulation?.intensity01 ?? 0.65,
       thinkingOrbits: input?.rhizohFieldState === "GENERATING",
       routingBeam: input?.rhizohFieldState === "EXECUTING"
     },

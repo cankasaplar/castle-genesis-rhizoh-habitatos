@@ -196,6 +196,7 @@ import { startGreenRoomPresenceMesh } from "./studio/runtime/greenRoomPresenceMe
 import { ensureCastleWorldTopology } from "./studio/lib/bootstrapWorldTopology";
 import { startRhizohAgentRuntime } from "./studio/runtime/agentRuntimeLoop";
 import { SwarmCollectiveAuraV1 } from "./components/SwarmCollectiveAuraV1.jsx";
+import { RhizohPetCitizenMarkerV0 } from "./components/RhizohPetCitizenMarkerV0.jsx";
 import { RhizohPresenceField } from "./components/RhizohPresenceField.jsx";
 import { RhizohGroupPresenceField } from "./components/RhizohGroupPresenceField.jsx";
 import {
@@ -345,6 +346,45 @@ import {
 import { forwardVoiceTranscriptShadowV0 } from "./rhizoh/runtime/voiceTranscriptShadowForwardV0.js";
 import { speakShadowObservationAckV0 } from "./rhizoh/runtime/voiceShadowObservationAckV0.js";
 import { shouldSuppressShadowObservationAckV0 } from "./rhizoh/runtime/rhizohVoiceConversationAuthorityV0.js";
+import { buildMvicHudReplyV0 } from "./rhizoh/runtime/rhizohMinimumPresenceExpressionV0.js";
+import {
+  noteFelFailureExpressionV0,
+  readLastRhizohPresenceStateV0,
+  RHIZOH_SILENCE_FORM_V0,
+  tickRhizohPresenceStateV0
+} from "./rhizoh/runtime/rhizohPresenceStateEngineV0.js";
+import {
+  readLastReslPresentationV0,
+  resolveReslPresentationV0,
+  RHIZOH_RESL_PRESENTATION_EVENT_V0,
+  shouldAllowFelChatV0
+} from "./rhizoh/runtime/rhizohReslPresentationPolicyV0.js";
+import {
+  applyReslGlobeTickV0,
+  reslGlobeRotationDeltaV0
+} from "./rhizoh/runtime/rhizohReslGlobeModulationV0.js";
+import {
+  reslToPresenceFieldLabelV0,
+  reslToQppKineticsV0
+} from "./rhizoh/runtime/rhizohReslKineticsBridgeV0.js";
+import {
+  sampleT0PresenceFrameV0,
+  startT0PresenceFrameSamplerV0,
+  stopT0PresenceFrameSamplerV0
+} from "./rhizoh/runtime/rhizohT0UnifiedPresenceFrameV0.js";
+import { syncCognitiveAttentionAfterPresenceV0 } from "./rhizoh/runtime/rhizohCognitiveAttentionLayerV0.js";
+import { bootstrapRhizohContinuityFirstPaintV0 } from "./rhizoh/runtime/rhizohT0FirstFrameBootstrapV0.js";
+import {
+  evaluateVoiceEntryGateV0,
+  prewarmVoicePresenceContinuityV0
+} from "./rhizoh/runtime/rhizohDeployReadyPresenceV0.js";
+import {
+  noteVoiceEntryObservabilityV0,
+  recordContinuityObservabilitySampleV0
+} from "./rhizoh/runtime/rhizohContinuityObservabilityV0.js";
+import { markContinuitySessionOriginV0 } from "./rhizoh/runtime/rhizohFirst3sCoherenceStabilityV0.js";
+import { useScrCitizenCollectiveFieldV0 } from "./rhizoh/runtime/useScrCitizenCollectiveFieldV0.js";
+import { deriveScrSwarmFieldV0 } from "./rhizoh/runtime/rhizohScrCitizenVisualProjectionV0.js";
 import { installShadowVoiceAnalysisExportV0 } from "./rhizoh/runtime/voiceShadowAnalysisExportV0.js";
 import { recordVoiceTimelineFromRouteV0 } from "./rhizoh/runtime/voiceShadowTimelineV0.js";
 import {
@@ -3255,10 +3295,9 @@ class ApexEngine {
           5000 + Math.sin(simTime * 0.2) * 1500,
           Math.sin(camAngle) * 14000 * orbitBoost
         );
-        this.globe.rotation.y += 0.0003;
+        this.globe.rotation.y += reslGlobeRotationDeltaV0(this.globe, 0.0003);
         this.globeGroup.visible = true;
-        const globMat = this.globe?.material;
-        if (globMat && !Array.isArray(globMat) && typeof globMat.opacity === "number" && globMat.opacity < 0.9) globMat.opacity += 0.02;
+        applyReslGlobeTickV0(this.globe, simTime);
       } else {
         const cityPan = simTime * 0.05;
         this.targetCamPos.set(Math.cos(cityPan) * 5200, 2100 + Math.sin(simTime * 0.03) * 400, Math.sin(cityPan) * 5200);
@@ -6927,6 +6966,16 @@ const RhizohCommsPanel = memo(
       ? socialRegistryPreview.presenceTelemetry
       : {};
   let mergedPresenceTelemetry = basePresenceTel;
+  const reslFromWindow =
+    typeof window !== "undefined" ? window.__rhizoh?.reslPresentation : null;
+  const presenceFrame =
+    typeof window !== "undefined" ? sampleT0PresenceFrameV0() : null;
+  const reslKinetics = reslFromWindow
+    ? reslToQppKineticsV0(reslFromWindow, presenceFrame)
+    : null;
+  if (reslKinetics) {
+    mergedPresenceTelemetry = { ...mergedPresenceTelemetry, qppKinetics: reslKinetics };
+  }
   if (focus === 10 && browserPresenceRef?.current) {
     const snap = snapshotBrowserPresenceForCsil(browserPresenceRef.current);
     mergedPresenceTelemetry = { ...basePresenceTel };
@@ -6948,12 +6997,15 @@ const RhizohCommsPanel = memo(
       }
     }
   }
+  const reslFieldLabel = reslFromWindow ? reslToPresenceFieldLabelV0(reslFromWindow) : null;
   const fieldLabel =
     presenceFsm.phase !== QPP_PHASE.IDLE
       ? cognitiveTraceLabel
-      : focus === 10 && mergedPresenceTelemetry?.qppLabel
-        ? String(mergedPresenceTelemetry.qppLabel)
-        : cognitiveTraceLabel;
+      : reslFieldLabel
+        ? reslFieldLabel
+        : focus === 10 && mergedPresenceTelemetry?.qppLabel
+          ? String(mergedPresenceTelemetry.qppLabel)
+          : cognitiveTraceLabel;
   const inputPlaceholder =
     inQuietPresence
       ? "Rhizoh dinliyorÔÇĞ"
@@ -7039,14 +7091,24 @@ const RhizohCommsPanel = memo(
       ) : null}
       <RhizohPresenceField
         phase={presenceFsm.phase}
-        intensity={presenceFsm.intensity}
+        intensity={
+          Number(presenceFrame?.surfaces?.orb?.intensity01) ||
+          Number(reslFromWindow?.orbModulation?.intensity01) ||
+          presenceFsm.intensity
+        }
         resonance={presenceFsm.resonance}
         label={fieldLabel}
         pulseNonce={sendPulseNonce}
-        presenceTelemetry={focus === 10 ? mergedPresenceTelemetry : null}
-        csilVisualActive={focus === 10 && !!mergedPresenceTelemetry && !!mergedPresenceTelemetry.qppLabel}
+        presenceTelemetry={reslKinetics || focus === 10 ? mergedPresenceTelemetry : null}
+        csilVisualActive={
+          !!reslKinetics ||
+          (focus === 10 && !!mergedPresenceTelemetry && !!mergedPresenceTelemetry.qppLabel)
+        }
         resonanceActive={
           isThinking ||
+          Number(presenceFrame?.surfaces?.field?.pulse01) > 0.05 ||
+          reslFromWindow?.transitionFeel?.reEngagePulse === true ||
+          Number(presenceFrame?.surfaces?.field?.breathe01) > 0.2 ||
           presenceFsm.phase === QPP_PHASE.QUIET ||
           presenceFsm.phase === QPP_PHASE.FADE ||
           presenceFsm.phase === QPP_PHASE.ABSORBING ||
@@ -7279,6 +7341,7 @@ export default function AppRhizoh528() {
   const [showCommandLog, setShowCommandLog] = useState(false);
   /** Ana komut / ses hatt─▒: LLM yan─▒t─▒ yaz─▒l─▒ (TTS kapal─▒ olsa da g├Âr├╝ns├╝n). */
   const [rhizohMainHudReply, setRhizohMainHudReply] = useState(null);
+  const [reslPresentation, setReslPresentation] = useState(() => readLastReslPresentationV0());
   const [cinematicElapsedMs, setCinematicElapsedMs] = useState(0);
   const [returningUser, setReturningUser] = useState(false);
   const [showReplayGhostTrails, setShowReplayGhostTrails] = useState(false);
@@ -7667,6 +7730,9 @@ export default function AppRhizoh528() {
   const voiceSttDispatchedRef = useRef(false);
   const voiceSttGotAnyResultRef = useRef(false);
   const voiceEnvMicIdRef = useRef("default");
+  const lastUserActivityMsRef = useRef(0);
+  const lastRhizohSurfaceAtRef = useRef(0);
+  const lastFelChatAtMsRef = useRef(0);
   const voiceAutoRestartBlockedRef = useRef(false);
   const voiceSttStartInFlightRef = useRef(false);
   const voiceMicRestartTimerRef = useRef(0);
@@ -8794,6 +8860,7 @@ export default function AppRhizoh528() {
       snapshot: substrateSnapshot,
       events: substrateEvents,
       governanceState,
+      reslOrbModulation: reslPresentation?.orbModulation,
       rhizohFieldState,
       demoLoopState,
       lastIntentRaw,
@@ -8818,8 +8885,15 @@ export default function AppRhizoh528() {
       unfinishedJourneys,
       dormantAgents,
       launchSceneOverlay.swarmIntensityDelta,
-      launchSceneOverlay.launchMemoryEchoBoost
+      launchSceneOverlay.launchMemoryEchoBoost,
+      reslPresentation?.orbModulation?.breathe,
+      reslPresentation?.orbModulation?.intensity01
     ]
+  );
+  const scrCollectiveField = useScrCitizenCollectiveFieldV0();
+  const scrSwarmField = useMemo(
+    () => deriveScrSwarmFieldV0(),
+    [scrCollectiveField.density, scrCollectiveField.coherence_id]
   );
   const relationalPresenceState = useMemo(() =>
     composeRelationalPresenceStateV1({
@@ -9493,6 +9567,136 @@ export default function AppRhizoh528() {
     [finishVoiceTurnIfNeeded, stopBargeInMic]
   );
 
+  const publishMvicPresenceV0 = useCallback(
+    (opts = {}) => {
+      noteFelFailureExpressionV0({
+        reason: opts.reason,
+        eventTag: opts.eventTag
+      });
+      const presence = readLastRhizohPresenceStateV0();
+      const resl = resolveReslPresentationV0(presence, {
+        lastFelChatAtMs: lastFelChatAtMsRef.current
+      });
+      if (!shouldAllowFelChatV0(resl, lastFelChatAtMsRef.current)) {
+        tickRhizohPresenceStateV0({
+          fieldState: rhizohFieldState,
+          lastUserActivityMs: lastUserActivityMsRef.current,
+          lastRhizohActivityMs: lastRhizohSurfaceAtRef.current,
+          returningUser: Boolean(readUserAnchorV0() || castleAuth.user?.uid),
+          hasAnchor: Boolean(readUserAnchorV0()),
+          voiceListening: rhizohFieldState === "LISTENING"
+        });
+        return null;
+      }
+      const hud = buildMvicHudReplyV0({
+        ...opts,
+        returningUser: Boolean(readUserAnchorV0() || castleAuth.user?.uid)
+      });
+      if (!hud?.text) return null;
+      lastFelChatAtMsRef.current = Date.now();
+      if (typeof window !== "undefined") {
+        window.__rhizoh = window.__rhizoh || {};
+        window.__rhizoh._reslLastFelChatAtMs = lastFelChatAtMsRef.current;
+      }
+      setRhizohMainHudReply(hud);
+      lastRhizohSurfaceAtRef.current = Date.now();
+      recordRhizohReplySurfaceV0({
+        channel: "chat_ui",
+        text: hud.text,
+        source: "fel_mvic",
+        meta: hud.meta
+      });
+      logVoiceInfoV0("FEL_MVIC_RENDER", {
+        mvicId: hud.mvicId,
+        presenceMode: hud.presenceMode,
+        intensity: hud.intensity,
+        reason: hud.meta?.reason,
+        eventTag: hud.meta?.eventTag
+      });
+      tickRhizohPresenceStateV0({
+        fieldState: rhizohFieldState,
+        lastUserActivityMs: lastUserActivityMsRef.current,
+        lastRhizohActivityMs: lastRhizohSurfaceAtRef.current,
+        returningUser: Boolean(readUserAnchorV0() || castleAuth.user?.uid),
+        hasAnchor: Boolean(readUserAnchorV0()),
+        voiceListening: rhizohFieldState === "LISTENING"
+      });
+      return hud;
+    },
+    [castleAuth.user, rhizohFieldState]
+  );
+
+  useEffect(() => {
+    markContinuitySessionOriginV0();
+    startT0PresenceFrameSamplerV0();
+    bootstrapRhizohContinuityFirstPaintV0({
+      fieldState: rhizohFieldState,
+      returningUser: Boolean(readUserAnchorV0() || castleAuth.user?.uid),
+      hasAnchor: Boolean(readUserAnchorV0()),
+      lastUserActivityMs: lastUserActivityMsRef.current || Date.now() - 45_000
+    }).catch(() => {});
+    return () => stopT0PresenceFrameSamplerV0();
+  }, []);
+
+  useEffect(() => {
+    const sampleCis = () => {
+      try {
+        const adapter = typeof window !== "undefined" ? window.__rhizoh?.voiceAdapter : null;
+        recordContinuityObservabilitySampleV0({
+          fieldState: rhizohFieldState,
+          voiceReady,
+          voiceAdapterReady: adapter?.ready === true || adapter?.status === "ready",
+          uiShowsListening: rhizohFieldState === "LISTENING"
+        });
+      } catch {
+        /* noop */
+      }
+    };
+    sampleCis();
+    const id = window.setInterval(sampleCis, 8000);
+    return () => window.clearInterval(id);
+  }, [rhizohFieldState, voiceReady]);
+
+  useEffect(() => {
+    const syncResl = () => setReslPresentation(readLastReslPresentationV0());
+    syncResl();
+    window.addEventListener(RHIZOH_RESL_PRESENTATION_EVENT_V0, syncResl);
+    return () => window.removeEventListener(RHIZOH_RESL_PRESENTATION_EVENT_V0, syncResl);
+  }, []);
+
+  const syncPresenceAndAttentionV0 = useCallback(() => {
+    const state = tickRhizohPresenceStateV0({
+      fieldState: rhizohFieldState,
+      lastUserActivityMs: lastUserActivityMsRef.current,
+      lastRhizohActivityMs: lastRhizohSurfaceAtRef.current,
+      returningUser: Boolean(readUserAnchorV0() || castleAuth.user?.uid),
+      hasAnchor: Boolean(readUserAnchorV0()),
+      voiceListening: rhizohFieldState === "LISTENING"
+    });
+    syncCognitiveAttentionAfterPresenceV0({
+      presence: state,
+      t0Intent: readT0UserIntentV0(),
+      activeSurface: productSurface,
+      routerIntent: lastIntentRawRef.current || lastIntentRaw,
+      lastUserActivityMs: lastUserActivityMsRef.current,
+      nowMs: state?.atMs
+    });
+  }, [castleAuth.user, rhizohFieldState, productSurface, lastIntentRaw]);
+
+  useEffect(() => {
+    syncPresenceAndAttentionV0();
+    const id = window.setInterval(() => {
+      syncPresenceAndAttentionV0();
+      const st = readLastRhizohPresenceStateV0();
+      if (st?.silence_form === RHIZOH_SILENCE_FORM_V0.ACTIVE_IDLE) {
+        setRhizohMainHudReply((prev) =>
+          prev?.source === "mvic" ? null : prev
+        );
+      }
+    }, 4000);
+    return () => window.clearInterval(id);
+  }, [syncPresenceAndAttentionV0]);
+
   const handleVoiceTranscript = useCallback(
     async (
       text,
@@ -9518,6 +9722,7 @@ export default function AppRhizoh528() {
         if (manageVoiceTurn) finishVoiceTurnIfNeeded();
         return;
       }
+      lastUserActivityMsRef.current = Date.now();
 
       const voiceSource = String(source || "mic");
       if (voiceSource === "mic_v3" && authority && authority.maySpeak === false) {
@@ -9526,6 +9731,11 @@ export default function AppRhizoh528() {
           path: authority.path,
           strict: authority.strict,
           preview: trimmed.slice(0, 96)
+        });
+        publishMvicPresenceV0({
+          reason: authority.reason || "authority_silent",
+          eventTag: "VOICE_AUTHORITY_SILENT",
+          sessionId
         });
         if (manageVoiceTurn) finishVoiceTurnIfNeeded();
         return;
@@ -9582,6 +9792,11 @@ export default function AppRhizoh528() {
             band: pipe.witnessed.observation.band,
             ...castleLayerDecisionTraceLogDetailV1(layerDecision.trace)
           });
+          publishMvicPresenceV0({
+            reason: pipe.sane.reason,
+            eventTag: "STT_DISPATCH_REJECT",
+            sessionId
+          });
           if (manageVoiceTurn) finishVoiceTurnIfNeeded();
           return;
         }
@@ -9620,6 +9835,11 @@ export default function AppRhizoh528() {
             preview: trimmed.slice(0, 96),
             band: pipe.witnessed.observation.band,
             ...castleLayerDecisionTraceLogDetailV1(layerDecision.trace)
+          });
+          publishMvicPresenceV0({
+            reason: pipe.sane.reason,
+            eventTag: "STT_DISPATCH_REJECT",
+            sessionId
           });
           if (manageVoiceTurn) finishVoiceTurnIfNeeded();
           return;
@@ -9702,6 +9922,11 @@ export default function AppRhizoh528() {
             ...voiceConfidenceRouterLogDetailV0(execRoute),
             preview: trimmed.slice(0, 96),
             ...castleLayerDecisionTraceLogDetailV1(layerDecision.trace)
+          });
+          publishMvicPresenceV0({
+            reason: execRoute.reason,
+            eventTag: "STT_DISPATCH_BLOCKED",
+            sessionId
           });
           if (execRoute.observationForward && !shouldSuppressShadowObservationAckV0()) {
             speakShadowObservationAckV0({
@@ -10114,7 +10339,8 @@ export default function AppRhizoh528() {
       persistRhizohEmotionSession,
       gatewayUx,
       mapSurfaceActive,
-      rhizohGenerationMode
+      rhizohGenerationMode,
+      publishMvicPresenceV0
     ]
   );
 
@@ -10407,6 +10633,53 @@ export default function AppRhizoh528() {
         speakRhizoh("Bu taray─▒c─▒da ses tan─▒ma yok. A┼şa─ş─▒ya yaz─▒p g├Ânder.");
         return;
       }
+
+      const tryVoiceEntry = () =>
+        evaluateVoiceEntryGateV0({
+          voiceReady,
+          voiceAdapterReady: true,
+          fieldState: rhizohFieldState,
+          presence: readLastRhizohPresenceStateV0(),
+          firstPaintOk:
+            typeof window !== "undefined"
+              ? window.__rhizoh?.continuityFirstPaint?.ok
+              : undefined
+        });
+
+      let voiceEntry = tryVoiceEntry();
+      if (!voiceEntry.allow_listen) {
+        await prewarmVoicePresenceContinuityV0({
+          fieldState: rhizohFieldState,
+          returningUser: Boolean(readUserAnchorV0() || castleAuth.user?.uid),
+          hasAnchor: Boolean(readUserAnchorV0())
+        });
+        tickRhizohPresenceStateV0({
+          fieldState: rhizohFieldState,
+          lastUserActivityMs: lastUserActivityMsRef.current,
+          lastRhizohActivityMs: lastRhizohSurfaceAtRef.current,
+          returningUser: Boolean(readUserAnchorV0() || castleAuth.user?.uid),
+          hasAnchor: Boolean(readUserAnchorV0()),
+          voiceListening: false
+        });
+        voiceEntry = tryVoiceEntry();
+      }
+      if (!voiceEntry.allow_listen) {
+        voiceSttStartInFlightRef.current = false;
+        noteVoiceEntryObservabilityV0({ deferred: true });
+        recordContinuityObservabilitySampleV0({
+          fieldState: rhizohFieldState,
+          voiceReady,
+          voiceEntryDeferred: true,
+          voiceEntryAttempt: true
+        });
+        logVoiceInfoV0("VOICE_ENTRY_DEFERRED", {
+          reason: voiceEntry.reason,
+          silent_presence: voiceEntry.silent_presence
+        });
+        return;
+      }
+      noteVoiceEntryObservabilityV0({ deferred: false });
+
       if (isVoiceEngineV3EnabledV0()) {
         stopBargeInMic();
         const preStartV3 = probeVoiceSttStartPreconditionsV0(ambientCtxRef.current, { softGesture: keepAlive });
@@ -12004,11 +12277,12 @@ export default function AppRhizoh528() {
       {showGlobeHomeOverlayV0 ? (
       <div className="absolute inset-0 z-[5] pointer-events-none">
         
-        <SwarmCollectiveAuraV1 collectiveField={visualCognitionState.collectiveField} className="z-[1]" />
+        <SwarmCollectiveAuraV1 className="z-[1]" />
+        <RhizohPetCitizenMarkerV0 />
         <div className={`absolute inset-0 bg-gradient-to-br ${governanceFx.tone}`} />
         <div
           className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2"
-          style={{ opacity: Math.min(0.35 + visualCognitionState.swarmField.intensity * 0.5, 0.95) }}
+          style={{ opacity: Math.min(0.35 + scrSwarmField.intensity * 0.5, 0.95) }}
         >
           <div
             className="absolute left-1/2 top-1/2 h-[min(72vw,520px)] w-[min(72vw,520px)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-400/15"
@@ -12024,7 +12298,7 @@ export default function AppRhizoh528() {
           </div>
           {!T0_FIRST_MATCH_IDENTITY_V0 ? (
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-[5.5rem] text-[9px] tracking-[0.2em] text-cyan-200/80 normal-case whitespace-nowrap">
-              {entityCount} field pulses · swarm {visualCognitionState.swarmField.level}
+              {entityCount} field pulses · swarm {scrSwarmField.level}
             </div>
           ) : (
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-[5.5rem] text-[10px] text-cyan-200/80 normal-case text-center max-w-[16rem] leading-snug">
@@ -12056,7 +12330,6 @@ export default function AppRhizoh528() {
           activeSurface={productSurface}
           userIntent={t0UserIntent}
           rhizohFieldState={rhizohFieldState}
-          collectiveDensity={visualCognitionState?.collectiveField?.density ?? 0.4}
           anchorActive={Boolean(readUserAnchorV0())}
           evolutionTrace={cognitionEvolutionTrace}
           agentActivity={thinkingExposure.agentActivity}
@@ -12068,7 +12341,6 @@ export default function AppRhizoh528() {
             activeSurface={productSurface}
             userIntent={t0UserIntent}
             rhizohFieldState={rhizohFieldState}
-            collectiveDensity={visualCognitionState?.collectiveField?.density ?? 0.4}
             anchorActive={Boolean(readUserAnchorV0())}
             evolutionTrace={cognitionEvolutionTrace}
             expanded={thoughtFieldExpanded}
@@ -12096,7 +12368,6 @@ export default function AppRhizoh528() {
             data-rhizoh-product-interaction-hub="1"
             data-rhizoh-capability-wheel-always="1"
             uiLocale={uiLocaleV0}
-            collectivePulse={visualCognitionState.collectiveField?.density ?? 0.4}
             onSeedIntent={(s) => {
               setCmd(s);
               setRhizohFieldState("LISTENING");
@@ -12208,7 +12479,6 @@ export default function AppRhizoh528() {
           onToggleCommandLog={() => setShowCommandLog((v) => !v)}
           runtimeHealth={runtimeHealth}
           unifiedDock
-          collectiveDensity={visualCognitionState?.collectiveField?.density ?? 0.4}
           showProductMic={true}
           showProductCamera
           voiceInputReady={voiceInputReadyV0}

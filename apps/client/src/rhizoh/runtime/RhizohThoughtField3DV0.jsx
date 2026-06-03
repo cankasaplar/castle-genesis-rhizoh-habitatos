@@ -1,6 +1,8 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { composeRhizohCognitiveFieldV0 } from "./rhizohVisualCognitiveLanguageV0.js";
 import { resolveThinkingExposureV0 } from "./rhizohThinkingModelV0.js";
+import { useScrCitizenCollectiveFieldV0 } from "./useScrCitizenCollectiveFieldV0.js";
+import { assertScrCollectiveDensityOwnershipV0 } from "./rhizohScrCitizenVisualProjectionV0.js";
 
 /**
  * Opt-in 3D thought field — CSS perspective crystal (Honest Baseline v0).
@@ -9,12 +11,19 @@ export function RhizohThoughtField3DV0({
   activeSurface = "world",
   userIntent = null,
   rhizohFieldState = "IDLE",
-  collectiveDensity = 0.4,
+  /** @deprecated B3 SCR-only */
+  collectiveDensity,
   anchorActive = false,
   evolutionTrace = 0,
   expanded = true,
   className = ""
 }) {
+  useEffect(() => {
+    if (collectiveDensity != null) assertScrCollectiveDensityOwnershipV0(collectiveDensity);
+  }, [collectiveDensity]);
+
+  const scrField = useScrCitizenCollectiveFieldV0();
+  const scrDensity = scrField.density;
   const exposure = useMemo(
     () => resolveThinkingExposureV0(rhizohFieldState),
     [rhizohFieldState]
@@ -26,7 +35,7 @@ export function RhizohThoughtField3DV0({
         activeSurface,
         userIntent,
         rhizohFieldState,
-        collectiveDensity,
+        collectiveDensity: scrDensity,
         anchorActive,
         evolutionTrace,
         agentActivity: exposure.agentActivity
@@ -35,7 +44,7 @@ export function RhizohThoughtField3DV0({
       activeSurface,
       userIntent,
       rhizohFieldState,
-      collectiveDensity,
+      scrDensity,
       anchorActive,
       evolutionTrace,
       exposure.agentActivity

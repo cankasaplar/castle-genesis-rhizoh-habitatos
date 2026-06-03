@@ -34,7 +34,8 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
   inputRef,
   placeholder = "Rhizoh'a yaz…",
   fieldState = "IDLE",
-  collectiveDensity = 0.4,
+  /** @deprecated B3 — SCR supplies density inside RhizohInputThoughtGlowV0 */
+  collectiveDensity,
   inlineError,
   onDismissError,
   mainHudReply,
@@ -247,7 +248,7 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
               className="relative overflow-hidden rounded-2xl border border-white/15 bg-black/75 shadow-[0_0_32px_rgba(0,0,0,0.45)] backdrop-blur-xl"
               data-rhizoh-unified-input="1"
             >
-              <RhizohInputThoughtGlowV0 fieldState={fieldState} collectiveDensity={collectiveDensity} />
+              <RhizohInputThoughtGlowV0 fieldState={fieldState} />
               {inputRow}
               <div className="flex items-center gap-2 border-t border-white/8 px-3 py-1.5 text-[8px] normal-case text-white/45">
                 <span

@@ -1,5 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { composeRhizohCognitiveFieldV0 } from "./rhizohVisualCognitiveLanguageV0.js";
+import { useScrCitizenCollectiveFieldV0 } from "./useScrCitizenCollectiveFieldV0.js";
+import { assertScrCollectiveDensityOwnershipV0 } from "./rhizohScrCitizenVisualProjectionV0.js";
 
 /**
  * Ambient liquid-crystal cognition field — field response, not hover UI.
@@ -18,19 +20,27 @@ export function RhizohCognitiveFieldV0({
   activeSurface = "world",
   userIntent = null,
   rhizohFieldState = "IDLE",
-  collectiveDensity = 0.4,
+  /** @deprecated B3 SCR-only */
+  collectiveDensity,
   anchorActive = false,
   evolutionTrace = 0,
   agentActivity,
   className = ""
 }) {
+  useEffect(() => {
+    if (collectiveDensity != null) assertScrCollectiveDensityOwnershipV0(collectiveDensity);
+  }, [collectiveDensity]);
+
+  const scrField = useScrCitizenCollectiveFieldV0();
+  const scrDensity = scrField.density;
+
   const field = useMemo(
     () =>
       composeRhizohCognitiveFieldV0({
         activeSurface,
         userIntent,
         rhizohFieldState,
-        collectiveDensity,
+        collectiveDensity: scrDensity,
         anchorActive,
         evolutionTrace,
         agentActivity
@@ -39,7 +49,7 @@ export function RhizohCognitiveFieldV0({
       activeSurface,
       userIntent,
       rhizohFieldState,
-      collectiveDensity,
+      scrDensity,
       anchorActive,
       evolutionTrace,
       agentActivity
