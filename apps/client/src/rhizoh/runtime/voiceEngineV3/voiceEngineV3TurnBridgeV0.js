@@ -19,6 +19,10 @@ import {
   VOICE_EXEC_MODE_V0,
   VOICE_SPEAK_MODE_V0
 } from "../rhizohVoiceDualPathRouterV0.js";
+import {
+  publishConversationAuthorityDebugV0,
+  resolveConversationAuthorityV0
+} from "../rhizohVoiceConversationAuthorityV0.js";
 export const VOICE_V3_MAX_RECORD_MS = 8000;
 
 let v3SessionLockActive = false;
@@ -176,9 +180,32 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
         temporal: result.temporal
       };
 
-      if (result.decision?.speakMode === VOICE_SPEAK_MODE_V0.HOLD) {
-        await handleRhizohVoiceTranscriptV0(result.merged.text, transcriptOpts);
-        return { ok: true };
+      const authority = resolveConversationAuthorityV0({
+        decision: result.decision,
+        band: result.bandObs?.band,
+        pipelinePath,
+        text: result.merged.text
+      });
+      publishConversationAuthorityDebugV0(authority);
+      transcriptOpts.authority = authority;
+
+      if (!authority.maySpeak) {
+        logVoiceInfoV0("VOICE_AUTHORITY_SILENT", {
+          reason: authority.reason,
+          path: authority.path,
+          strict: authority.strict,
+          preview: result.merged.text.slice(0, 96),
+          decisionReason: result.decision?.reason
+        });
+        if (keepAlive) {
+          callbacks.scheduleVoiceMicRestart(keepAlive, {
+            context: "v3_authority_silent",
+            lastSessionHadResult: refs.voiceSttGotAnyResult.current
+          });
+        } else {
+          callbacks.setRhizohFieldState("IDLE");
+        }
+        return { ok: true, authoritySilent: true, reason: authority.reason };
       }
 
       const handler = callbacks.handleVoiceTranscriptRef?.current;
@@ -188,6 +215,29 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
         await handleRhizohVoiceTranscriptV0(result.merged.text, transcriptOpts);
       }
       return { ok: true };
+    }
+
+    if (result.shadowDrop) {
+      releaseVoiceStreamLayerLockV1(VOICE_STREAM_ABORT_REASON_V1.FINISH_OK, {
+        sessionId,
+        source: "mic_v3",
+        shadowDrop: true,
+        reason: result.error
+      });
+      logVoiceInfoV0("V3_SHADOW_DROP", {
+        reason: result.error,
+        preview: String(result.merged?.text || "").slice(0, 96),
+        dropKind: result.decision?.dropKind
+      });
+      if (keepAlive) {
+        callbacks.scheduleVoiceMicRestart(keepAlive, {
+          context: "v3_shadow_drop",
+          lastSessionHadResult: refs.voiceSttGotAnyResult.current
+        });
+      } else {
+        callbacks.setRhizohFieldState("IDLE");
+      }
+      return { ok: true, shadowDrop: true, reason: result.error };
     }
 
     const err = String(result.error || "transcribe_failed");

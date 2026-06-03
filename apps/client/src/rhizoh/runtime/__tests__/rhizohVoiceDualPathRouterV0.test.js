@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import {
   classifyVoiceFastIntentV0,
   resolveVoicePipelineDecisionV0,
@@ -138,5 +138,43 @@ describe("rhizohVoiceDualPathRouterV0", () => {
     expect(d.speakMode).toBe(VOICE_SPEAK_MODE_V0.HOLD);
     expect(d.action).toBe(VOICE_PIPELINE_ACTION_V0.HOLD);
     expect(d.silent).toBe(false);
+  });
+
+  describe("strict ingest clamp", () => {
+    /** @type {Record<string, string | undefined>} */
+    let envBackup;
+
+    beforeEach(() => {
+      envBackup = { ...import.meta.env };
+      import.meta.env.VITE_RHIZOH_VOICE_ENGINE_V3 = "1";
+      import.meta.env.VITE_RHIZOH_VOICE_INGEST_STRICT = "1";
+    });
+
+    afterEach(() => {
+      Object.assign(import.meta.env, envBackup);
+    });
+
+    it("converts uncertainty hold to silent drop", () => {
+      const d = resolveVoicePipelineDecisionV0({
+        text: "bunu nasıl düzeltirim?",
+        confidence: 0.28,
+        band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN
+      });
+      expect(d.speakMode).toBe(VOICE_SPEAK_MODE_V0.SILENT);
+      expect(d.reason).toBe("strict_hold_suppressed");
+      expect(d.silent).toBe(true);
+    });
+
+    it("strips uxGray on gray slow path", () => {
+      const d = resolveVoicePipelineDecisionV0({
+        text: "şimdi sistem durumunu kontrol edelim",
+        confidence: 0.42,
+        band: VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE,
+        strategy: "whisper_only"
+      });
+      expect(d.execMode).toBe(VOICE_EXEC_MODE_V0.SLOW_LLM);
+      expect(d.uxGray).toBe(false);
+      expect(d.semanticGray).toBe(true);
+    });
   });
 });

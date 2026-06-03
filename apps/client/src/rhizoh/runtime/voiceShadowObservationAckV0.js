@@ -18,6 +18,7 @@ import {
   recordVoiceTimelineEventV0,
   VOICE_TIMELINE_EVENT_KIND_V0
 } from "./voiceShadowTimelineV0.js";
+import { shouldSuppressShadowObservationAckV0 } from "./rhizohVoiceConversationAuthorityV0.js";
 
 export const VOICE_SHADOW_OBSERVATION_ACK_SCHEMA = "castle.rhizoh.voice_shadow_observation_ack.v0";
 
@@ -85,6 +86,7 @@ function pickPhraseForModeV0(mode) {
  * }} [meta]
  */
 export function shouldSpeakShadowObservationAckV0(meta = {}) {
+  if (shouldSuppressShadowObservationAckV0()) return false;
   if (!isVoiceShadowObservationAckEnabledV0()) return false;
   if (resolveShadowAckModeV0(meta) === SHADOW_ACK_MODE_V0.NONE) return false;
   const now = Date.now();
@@ -153,6 +155,7 @@ function speakShadowAckUtteranceV0(text, meta, mode, session) {
  * }} [meta]
  */
 export function speakShadowObservationAckV0(meta = {}) {
+  if (shouldSuppressShadowObservationAckV0()) return false;
   const mode = resolveShadowAckModeV0(meta);
   if (mode === SHADOW_ACK_MODE_V0.NONE) return false;
   if (!shouldSpeakShadowObservationAckV0(meta)) return false;

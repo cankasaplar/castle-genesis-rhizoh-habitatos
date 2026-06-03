@@ -14,7 +14,8 @@ export const RHIZOH_SPATIAL_MAIN_VOICE_DEFAULTS_V0 = Object.freeze({
   VITE_RHIZOH_VOICE_ATTENTION_MODE: "moving_context",
   VITE_RHIZOH_SHARED_ATTENTION_TYPE: "co_presence",
   VITE_RHIZOH_STT_TEMPORAL_CALIBRATION: "1",
-  VITE_RHIZOH_STT_TEMPORAL_ADAPTIVE: "1"
+  VITE_RHIZOH_STT_TEMPORAL_ADAPTIVE: "1",
+  VITE_RHIZOH_VOICE_INGEST_STRICT: "1"
 });
 
 /** Serencebey semantic gravity seed — deploy label overrides only when secret set. */

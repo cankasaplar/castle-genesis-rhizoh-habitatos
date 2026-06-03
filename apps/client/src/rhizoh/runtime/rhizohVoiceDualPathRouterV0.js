@@ -23,6 +23,7 @@ import {
   isVoiceVerifyBudgetExhaustedV0
 } from "./rhizohVoiceVerifyBudgetV0.js";
 import { evaluateSttScriptAgainstUiLocaleV0 } from "./sttScriptLocaleGuardV0.js";
+import { isVoiceIngestStrictV0 } from "./rhizohVoiceConversationAuthorityV0.js";
 
 export const RHIZOH_VOICE_DUAL_PATH_ROUTER_SCHEMA_V0 = "castle.rhizoh.voice_dual_path_router.v0";
 
@@ -391,18 +392,67 @@ export function resolveVoicePipelineDecisionV0(input = {}) {
     });
   }
 
-  return resolveDecisionSpineV0({
-    text,
-    fast,
-    tier,
-    directed,
-    meaningful,
-    guards,
-    band,
-    verifyCount,
-    verifyBudgetExhausted,
-    locale
-  });
+  return applyStrictIngestDecisionClampV0(
+    resolveDecisionSpineV0({
+      text,
+      fast,
+      tier,
+      directed,
+      meaningful,
+      guards,
+      band,
+      verifyCount,
+      verifyBudgetExhausted,
+      locale
+    }),
+    { band }
+  );
+}
+
+function applyStrictIngestDecisionClampV0(decision, ctx = {}) {
+  if (!isVoiceIngestStrictV0() || !decision) return decision;
+  if (decision.speakMode === VOICE_SPEAK_MODE_V0.SILENT) return decision;
+
+  if (decision.speakMode === VOICE_SPEAK_MODE_V0.HOLD) {
+    return buildSilentDecision(
+      decision.fastIntent || VOICE_FAST_INTENT_V0.NOISE,
+      "strict_hold_suppressed",
+      decision.band || ctx.band,
+      VOICE_DROP_KIND_V0.NOISE,
+      { confidenceTier: decision.confidenceTier, guards: decision.guards }
+    );
+  }
+
+  if (
+    decision.speakMode === VOICE_SPEAK_MODE_V0.SPEAK &&
+    decision.execMode === VOICE_EXEC_MODE_V0.SLOW_LLM
+  ) {
+    if (decision.guards && decision.guards.allowSlow === false) {
+      return buildSilentDecision(
+        decision.fastIntent || VOICE_FAST_INTENT_V0.NOISE,
+        "strict_guard_block",
+        decision.band || ctx.band,
+        VOICE_DROP_KIND_V0.NOISE,
+        { guards: decision.guards }
+      );
+    }
+    if (decision.uxGray) {
+      const gray = resolveVoiceGrayFlagsV0(decision.confidenceTier, {
+        semanticGray: decision.semanticGray === true,
+        uxGray: false
+      });
+      return attachLegacyFields(
+        Object.freeze({
+          ...decision,
+          ...gray,
+          uxGray: false,
+          grayModifier: decision.semanticGray === true
+        })
+      );
+    }
+  }
+
+  return decision;
 }
 
 /**

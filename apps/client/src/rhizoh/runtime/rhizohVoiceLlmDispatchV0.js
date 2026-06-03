@@ -59,6 +59,7 @@ import {
   shouldNoteVoiceVerifyBudgetV0
 } from "./rhizohVoiceGrayZoneVerifyV0.js";
 import { noteVoiceVerifyAttemptV0, isVoiceVerifyBudgetExhaustedV0 } from "./rhizohVoiceVerifyBudgetV0.js";
+import { resolveConversationAuthorityV0 } from "./rhizohVoiceConversationAuthorityV0.js";
 
 export const RHIZOH_VOICE_LLM_DISPATCH_SCHEMA_V0 = "castle.rhizoh.voice_llm_dispatch.v0";
 
@@ -116,6 +117,30 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
   if (!msg) {
     closeVoiceExecutionTraceV0(traceId, { ok: false, execution: "empty" });
     return Object.freeze({ ok: false, error: "empty_transcript" });
+  }
+
+  const authority =
+    opts.authority ||
+    resolveConversationAuthorityV0({
+      decision: opts.decision,
+      band: opts.band || opts.witnessed?.observation?.band,
+      pipelinePath: opts.pipelinePath,
+      text: msg
+    });
+  if (!authority.maySpeak) {
+    logVoiceInfoV0("VOICE_AUTHORITY_SILENT", {
+      reason: authority.reason,
+      path: authority.path,
+      strict: authority.strict,
+      preview: msg.slice(0, 96),
+      source: provenance.source
+    });
+    closeVoiceExecutionTraceV0(traceId, {
+      ok: true,
+      execution: "authority_silent",
+      authoritySilent: true
+    });
+    return Object.freeze({ ok: true, authoritySilent: true, authority });
   }
 
   const uxFallback = resolveVoiceUxFallbackV0(opts.decision, msg, {

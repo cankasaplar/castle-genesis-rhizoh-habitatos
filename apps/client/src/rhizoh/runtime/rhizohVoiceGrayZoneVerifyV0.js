@@ -4,6 +4,7 @@
  */
 
 import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
+import { shouldSuppressUxFallbackV0 } from "./rhizohVoiceConversationAuthorityV0.js";
 import {
   getVoiceVerifyCountV0,
   isVoiceVerifyBudgetExhaustedV0
@@ -176,6 +177,7 @@ export function isClearQuestionPatternV0(text) {
  * @param {{ locale?: string, sessionId?: string }} [opts]
  */
 export function resolveVoiceUxFallbackV0(decision, text, opts = {}) {
+  if (shouldSuppressUxFallbackV0()) return null;
   if (!decision || decision.speakMode === "silent") return null;
 
   const locale = String(opts.locale || resolveOutputLanguageCodeV0() || "tr").slice(0, 2);

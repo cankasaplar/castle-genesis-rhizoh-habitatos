@@ -342,6 +342,7 @@ import {
 } from "./rhizoh/runtime/voiceTranscriptConfidenceRouterV0.js";
 import { forwardVoiceTranscriptShadowV0 } from "./rhizoh/runtime/voiceTranscriptShadowForwardV0.js";
 import { speakShadowObservationAckV0 } from "./rhizoh/runtime/voiceShadowObservationAckV0.js";
+import { shouldSuppressShadowObservationAckV0 } from "./rhizoh/runtime/rhizohVoiceConversationAuthorityV0.js";
 import { installShadowVoiceAnalysisExportV0 } from "./rhizoh/runtime/voiceShadowAnalysisExportV0.js";
 import { recordVoiceTimelineFromRouteV0 } from "./rhizoh/runtime/voiceShadowTimelineV0.js";
 import {
@@ -9485,7 +9486,11 @@ export default function AppRhizoh528() {
         maxRms,
         witnessed: witnessedIn,
         witnessCompleted = false,
-        temporal: temporalIn
+        temporal: temporalIn,
+        decision,
+        pipelinePath,
+        sessionId,
+        authority
       } = {}
     ) => {
       const trimmed = String(text || "").trim();
@@ -9495,6 +9500,16 @@ export default function AppRhizoh528() {
       }
 
       const voiceSource = String(source || "mic");
+      if (voiceSource === "mic_v3" && authority && authority.maySpeak === false) {
+        logVoiceInfoV0("VOICE_AUTHORITY_SILENT", {
+          reason: authority.reason,
+          path: authority.path,
+          strict: authority.strict,
+          preview: trimmed.slice(0, 96)
+        });
+        if (manageVoiceTurn) finishVoiceTurnIfNeeded();
+        return;
+      }
       /** @type {ReturnType<typeof import("./rhizoh/runtime/sttTemporalSmoothingV0.js").applySttTemporalSmoothingV0> | null} */
       let temporalSnap = temporalIn || null;
       /** @type {ReturnType<typeof import("./rhizoh/runtime/voiceTranscriptWitnessPipelineV0.js").witnessRawVoiceTranscriptV0> | null} */
@@ -9645,7 +9660,7 @@ export default function AppRhizoh528() {
             preview: trimmed.slice(0, 96),
             ...castleLayerDecisionTraceLogDetailV1(layerDecision.trace)
           });
-          if (execRoute.observationForward) {
+          if (execRoute.observationForward && !shouldSuppressShadowObservationAckV0()) {
             speakShadowObservationAckV0({
               band: execRoute.band,
               reason: execRoute.reason,
