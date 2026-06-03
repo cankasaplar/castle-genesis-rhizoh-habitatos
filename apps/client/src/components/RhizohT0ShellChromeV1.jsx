@@ -57,6 +57,7 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
   showProductMic = true,
   showProductCamera = true,
   micActive = false,
+  voiceMicDeviceLabel = "",
   onMicClick,
   voiceInputReady = false,
   cameraActive = false,
@@ -256,6 +257,15 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
                   aria-hidden
                 />
                 <span className="truncate">{stateLine}</span>
+                {voiceMicDeviceLabel ? (
+                  <span
+                    className="ml-auto truncate max-w-[10rem] text-cyan-200/70"
+                    title={voiceMicDeviceLabel}
+                    data-rhizoh-active-mic="1"
+                  >
+                    Mic: {voiceMicDeviceLabel}
+                  </span>
+                ) : null}
               </div>
             </div>
           ) : null}

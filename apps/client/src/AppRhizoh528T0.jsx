@@ -405,6 +405,8 @@ import {
   sha256HexUtf8
 } from "./rhizoh/epistemic/index.js";
 import { enqueueRhizohMessageIntent, drainRhizohMessageIntentQueue } from "./castleFlight/castleIntentQueue.js";
+import { drainVoiceTranscriptRetryQueueV0 } from "./rhizoh/runtime/rhizohVoiceTranscriptRetryQueueV0.js";
+import { resolveVoiceMicCaptureDeviceV0 } from "./rhizoh/runtime/rhizohVoiceMicDeviceLockV0.js";
 import { parseDSL, detectCastleIntentWithoutCoords } from "./kernel/rhizohCommandParser.js";
 import {
   TCEE_PHASE,
@@ -6562,8 +6564,21 @@ const RhizohCommsPanel = memo(
     prevGatewayPhaseRef.current = cur;
     if (cur !== "connected" || prev === "connected") return;
     const items = drainRhizohMessageIntentQueue();
-    if (!items.length) return;
+    const voiceRetry = drainVoiceTranscriptRetryQueueV0();
+    if (!items.length && !voiceRetry.length) return;
     void (async () => {
+      for (const vt of voiceRetry) {
+        if (vt.type !== "VOICE_TRANSCRIPT_DEFERRED" || !String(vt.text || "").trim()) continue;
+        const handler = handleVoiceTranscriptRef?.current;
+        if (typeof handler !== "function") continue;
+        await handler(String(vt.text), {
+          manageVoiceTurn: voiceLoopEnabledRef.current,
+          source: "mic_v3_gateway_retry",
+          confidence: vt.confidence,
+          strategy: vt.strategy,
+          sessionId: vt.sessionId
+        });
+      }
       for (const it of items) {
         if (it.type !== "SEND_MESSAGE") continue;
         setSendPulseNonce((n) => n + 1);
@@ -7239,6 +7254,7 @@ export default function AppRhizoh528() {
   /** Uzak LLM ├╝retim rejimi ÔÇö cohort/zen: FAST_DIALOGUE (k─▒sa + h─▒zl─▒ ses). */
   const [rhizohGenerationMode, setRhizohGenerationMode] = useState(() => resolveDefaultRhizohGenerationModeV0());
   const [micListening, setMicListening] = useState(false);
+  const [voiceMicDeviceLabel, setVoiceMicDeviceLabel] = useState("");
   const [productCameraOn, setProductCameraOn] = useState(false);
   const productCameraStreamRef = useRef(null);
   const commandInputRef = useRef(null);
@@ -10376,6 +10392,23 @@ export default function AppRhizoh528() {
             trustLevel: preStartV3.trustLevel
           });
         }
+        const micLock = await resolveVoiceMicCaptureDeviceV0({
+          preferredDeviceId: voiceEnvMicIdRef.current
+        });
+        if (!micLock.ok) {
+          voiceSttStartInFlightRef.current = false;
+          setMicListening(false);
+          setRhizohFieldState("IDLE");
+          logVoiceWarnV0("V3_MIC_DEVICE_BLOCKED", { reason: micLock.reason, blocked: micLock.blockedLabels });
+          speakRhizoh(
+            micLock.reason === "virtual_mic_only"
+              ? "Sanal veya sistem sesi algılandı. Gerçek mikrofon seçin veya Stereo Mix'i kapatın."
+              : "Güvenli mikrofon bulunamadı."
+          );
+          return;
+        }
+        voiceEnvMicIdRef.current = micLock.deviceId;
+        setVoiceMicDeviceLabel(micLock.label);
         if (!voiceEngineV3BridgeRef.current) {
           voiceEngineV3BridgeRef.current = createVoiceEngineV3TurnBridgeV0({
             refs: {
@@ -10419,7 +10452,9 @@ export default function AppRhizoh528() {
           return;
         }
         await voiceEngineV3BridgeRef.current.startTurn(keepAlive, {
-          urgent: opts?.userGestureUrgent === true
+          urgent: opts?.userGestureUrgent === true,
+          micDeviceId: micLock.deviceId,
+          gatewayPhase: gatewayUx?.phase || gatewayModel?.phase
         });
         return;
       }
@@ -12140,6 +12175,7 @@ export default function AppRhizoh528() {
           showProductCamera
           voiceInputReady={voiceInputReadyV0}
           micActive={micListening || voiceLoopEnabled}
+          voiceMicDeviceLabel={voiceMicDeviceLabel}
           onMicClick={handleMicButtonClick}
           cameraActive={productCameraOn}
           onCameraClick={handleCameraButtonClick}

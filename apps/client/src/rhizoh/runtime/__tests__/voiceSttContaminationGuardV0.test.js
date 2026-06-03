@@ -25,6 +25,16 @@ describe("voiceSttContaminationGuardV0", () => {
     expect(ev.reason).toBe("platform_template_leak");
   });
 
+  it("flags TR YouTube subscribe+like outro from tab audio", () => {
+    const t = "Abone olmayı ve videoyu beğenmeyi unutmayın.";
+    expect(isUiChromeEchoTemplateV0(t)).toBe(true);
+    const ev = evaluateSttContaminationV0(t, { strategy: "whisper_only" });
+    expect(ev.contaminated).toBe(true);
+    expect(ev.reason).toBe("ui_chrome_echo");
+    const scores = scoreSttTemplateLeakV0(t, { confidence: 0.55 });
+    expect(scores.templateScore).toBeGreaterThan(0.75);
+  });
+
   it("flags TR channel subscribe footer", () => {
     const t = "Kanalıma abone olduğunuz için teşekkür ederim";
     expect(isUiChromeEchoTemplateV0(t)).toBe(true);

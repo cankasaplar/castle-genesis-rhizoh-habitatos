@@ -18,7 +18,9 @@ const STT_RESTART_CONTEXTS = new Set([
   "onresult_empty",
   "onend_ambiguous",
   "v3_empty_retry",
-  "v3_network_retry"
+  "v3_network_retry",
+  "v3_shadow_drop",
+  "v3_authority_silent"
 ]);
 
 let autoRestartBlockedUntilMs = 0;

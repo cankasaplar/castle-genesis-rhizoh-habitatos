@@ -96,6 +96,11 @@ export function releaseTranscribeSessionV1(voiceSessionId) {
   publishCoordinatorSnapshot({ event: "release" });
 }
 
+/** @returns {string | null} */
+export function getActiveTranscribeVoiceSessionIdV1() {
+  return activeVoiceSessionId;
+}
+
 /**
  * @param {number} segmentIndex zero-based
  * @param {"ok" | "fail" | "skipped"} status

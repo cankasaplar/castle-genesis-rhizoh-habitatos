@@ -360,6 +360,8 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     });
 
     const engine = createVoiceEngineOrchestratorV3({
+      micDeviceId: startOpts.micDeviceId,
+      gatewayPhase: startOpts.gatewayPhase,
       onError: ({ code }) => {
         if (RETRYABLE_EMPTY_CODES.has(String(code || ""))) return;
         logVoiceWarnV0("V3_ERROR", { code });

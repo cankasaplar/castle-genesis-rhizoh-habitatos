@@ -35,6 +35,7 @@ import { noteVoiceVerifyAttemptV0, resetVoiceVerifyBudgetV0 } from "../rhizohVoi
 import { shouldNoteVoiceVerifyBudgetV0 } from "../rhizohVoiceGrayZoneVerifyV0.js";
 import {
   buildInputProvenanceEnvelopeV0,
+  computeInputOriginHashV0,
   RHIZOH_INPUT_MODALITY_V0,
   RHIZOH_INPUT_SOURCE_V0
 } from "../rhizohInputProvenanceV0.js";
@@ -50,6 +51,17 @@ import {
   beginRecordingWarmProbeV1,
   finalizeRecordingWarmProbeV1
 } from "../voiceTranscribePredictivePreflightV1.js";
+import {
+  evaluateVoiceGatewayTranscribeGuardV0,
+  evaluateVoiceTranscriptAcceptGuardV0,
+  publishVoiceGatewayAcceptGuardDebugV0
+} from "../rhizohVoiceGatewayAcceptGuardV0.js";
+import {
+  classifyVoiceSttArtifactV0,
+  publishVoiceSttArtifactDebugV0
+} from "../rhizohVoiceAudioArtifactDetectorV0.js";
+import { enqueueVoiceTranscriptRetryV0 } from "../rhizohVoiceTranscriptRetryQueueV0.js";
+import { pushSttQuarantineEntryV0 } from "../rhizohSttQuarantineBufferV0.js";
 
 export const VOICE_MIN_RECORD_MS_V3 = 1200;
 export const VOICE_MIN_AUDIO_BYTES_V3 = 25000;
@@ -59,6 +71,8 @@ export const VOICE_MIN_AUDIO_BYTES_V3 = 25000;
  *   languageCode?: string,
  *   traceId?: string,
  *   sessionId?: string,
+ *   micDeviceId?: string,
+ *   gatewayPhase?: string,
  *   onFinalTranscript?: (payload: { text: string, confidence: number, source: string, strategy: string }) => void,
  *   onError?: (err: { code: string, detail?: string }) => void
  * }} [opts]
@@ -87,6 +101,27 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
     );
   }
 
+  function pushPipelineQuarantineV0(text, reasons, extra = {}) {
+    const provenance = buildInputProvenanceEnvelopeV0({
+      text,
+      source: "mic_v3",
+      modality: "stt",
+      confidence: extra.confidence,
+      strategy: extra.strategy
+    });
+    return pushSttQuarantineEntryV0({
+      text,
+      reasons,
+      originHash: provenance.originHash || computeInputOriginHashV0(provenance),
+      source: provenance.source,
+      confidence: extra.confidence,
+      strategy: extra.strategy,
+      maxRms: extra.maxRms,
+      scriptEntropy: extra.scriptEntropy,
+      band: extra.band
+    });
+  }
+
   return Object.freeze({
     sessionId,
     isBusy: () => busy,
@@ -107,6 +142,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
 
       try {
         capture = await createVoiceAudioCaptureV3({
+          deviceId: opts.micDeviceId,
           timesliceMs: VOICE_CAPTURE_CHUNK_MS_V3,
           onError: (err) => {
             opts.onError?.({ code: "capture_error", detail: String(err?.message || err) });
@@ -116,7 +152,10 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         capture.start();
         beginRecordingWarmProbeV1(sessionId);
         setSessionState(VOICE_ENGINE_STATE_V3.RECORDING);
-        emitVoiceEngineTelemetryV3("RECORDING_START", { mimeType });
+        emitVoiceEngineTelemetryV3("RECORDING_START", {
+          mimeType,
+          micDeviceId: capture.deviceId || opts.micDeviceId || null
+        });
         return { ok: true };
       } catch (e) {
         busy = false;
@@ -267,6 +306,31 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       }
 
       setSessionState(VOICE_ENGINE_STATE_V3.FINAL_TRANSCRIPT_RESOLVE);
+
+      const transcribeGuard = evaluateVoiceGatewayTranscribeGuardV0({
+        gatewayPhase: opts.gatewayPhase,
+        sessionId
+      });
+      publishVoiceGatewayAcceptGuardDebugV0(transcribeGuard);
+      if (!transcribeGuard.allowTranscribe) {
+        busy = false;
+        setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
+        emitVoiceEngineTelemetryV3("TRANSCRIBE_SKIP", {
+          reason: transcribeGuard.reason,
+          recordedMs,
+          bytes,
+          gatewayPhase: transcribeGuard.phase
+        });
+        return {
+          ok: false,
+          error: transcribeGuard.reason,
+          gatewayBlocked: true,
+          recordedMs,
+          bytes,
+          maxRms
+        };
+      }
+
       emitVoiceEngineTelemetryV3("FINAL_TRANSCRIBE_START", {
         bytes,
         recordedMs,
@@ -450,6 +514,80 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
             : merged.confidence
         });
 
+        const artifact = classifyVoiceSttArtifactV0(merged.text, {
+          confidence: merged.confidence,
+          strategy: merged.strategy
+        });
+        publishVoiceSttArtifactDebugV0(artifact);
+        if (artifact.block) {
+          const quarantineRow = pushPipelineQuarantineV0(merged.text, [artifact.reason || artifact.artifactClass], {
+            confidence: merged.confidence,
+            strategy: merged.strategy,
+            maxRms
+          });
+          busy = false;
+          setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
+          emitVoiceEngineTelemetryV3("FINAL_TRANSCRIPT_SHADOW_DROP", {
+            reason: artifact.reason,
+            artifactClass: artifact.artifactClass,
+            dropKind: "noise_drop",
+            preview: String(merged.text || "").slice(0, 96),
+            quarantineId: quarantineRow.id,
+            silent: true
+          });
+          return {
+            ok: false,
+            error: artifact.reason || "stt_artifact",
+            shadowDrop: true,
+            merged,
+            scored,
+            maxRms,
+            artifact
+          };
+        }
+
+        const acceptGuard = evaluateVoiceTranscriptAcceptGuardV0({
+          gatewayPhase: opts.gatewayPhase,
+          sessionId
+        });
+        publishVoiceGatewayAcceptGuardDebugV0(acceptGuard);
+        if (!acceptGuard.allowAccept) {
+          const quarantineRow = pushPipelineQuarantineV0(merged.text, [acceptGuard.reason], {
+            confidence: merged.confidence,
+            strategy: merged.strategy,
+            maxRms
+          });
+          if (acceptGuard.reason === "gateway_offline" || acceptGuard.reason === "gateway_unstable") {
+            enqueueVoiceTranscriptRetryV0({
+              type: "VOICE_TRANSCRIPT_DEFERRED",
+              text: merged.text,
+              confidence: merged.confidence,
+              strategy: merged.strategy,
+              sessionId,
+              reason: acceptGuard.reason
+            });
+          }
+          busy = false;
+          setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
+          emitVoiceEngineTelemetryV3("FINAL_TRANSCRIPT_SHADOW_DROP", {
+            reason: acceptGuard.reason,
+            dropKind: "noise_drop",
+            preview: String(merged.text || "").slice(0, 96),
+            quarantineId: quarantineRow.id,
+            queued: acceptGuard.reason === "gateway_offline",
+            silent: true
+          });
+          return {
+            ok: false,
+            error: acceptGuard.reason,
+            shadowDrop: true,
+            gatewayBlocked: true,
+            merged,
+            scored,
+            maxRms
+          };
+        }
+
         const bandObs = classifyVoiceDirectedSpeechBandV0({
           text: merged.text,
           confidence: merged.confidence,
@@ -494,6 +632,16 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         });
 
         if (decision.speakMode === VOICE_SPEAK_MODE_V0.SILENT) {
+          const quarantineRow = pushPipelineQuarantineV0(
+            merged.text,
+            [decision.reason || "shadow_drop"],
+            {
+              confidence: merged.confidence,
+              strategy: merged.strategy,
+              maxRms,
+              band: bandObs.band
+            }
+          );
           busy = false;
           setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
           emitVoiceEngineTelemetryV3("FINAL_TRANSCRIPT_SHADOW_DROP", {
@@ -502,6 +650,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
             preview: String(merged.text || "").slice(0, 96),
             band: bandObs.band,
             confidenceTier: decision.confidenceTier,
+            quarantineId: quarantineRow.id,
             silent: true
           });
           return {
@@ -511,7 +660,8 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
             fastPath: true,
             merged,
             decision,
-            bandObs
+            bandObs,
+            quarantineId: quarantineRow.id
           };
         }
 

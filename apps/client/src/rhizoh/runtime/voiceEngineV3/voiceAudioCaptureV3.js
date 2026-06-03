@@ -8,19 +8,25 @@ export const VOICE_AUDIO_CAPTURE_V3_SCHEMA = "castle.rhizoh.voice_audio_capture.
 export const VOICE_CAPTURE_CHUNK_MS_V3 = 1500;
 
 /**
- * @param {{ timesliceMs?: number, mimeType?: string, onChunk?: (blob: Blob) => void, onError?: (err: Error) => void }} [opts]
+ * @param {{ timesliceMs?: number, mimeType?: string, deviceId?: string, onChunk?: (blob: Blob) => void, onError?: (err: Error) => void }} [opts]
  */
 export async function createVoiceAudioCaptureV3(opts = {}) {
   if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
     throw new Error("getUserMedia_unavailable");
   }
+  const deviceId = String(opts.deviceId || "").trim();
+  /** @type {MediaTrackConstraints} */
+  const audioConstraints = {
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+    channelCount: 1
+  };
+  if (deviceId) {
+    audioConstraints.deviceId = { exact: deviceId };
+  }
   const stream = await navigator.mediaDevices.getUserMedia({
-    audio: {
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true,
-      channelCount: 1
-    }
+    audio: audioConstraints
   });
   const mimeType =
     opts.mimeType ||
@@ -52,6 +58,7 @@ export async function createVoiceAudioCaptureV3(opts = {}) {
   return Object.freeze({
     stream,
     mimeType: recorder.mimeType || mimeType,
+    deviceId: deviceId || null,
     getMaxRms: () => levelProbe.getMaxRms(),
     getLevelSampleCount: () => levelProbe.getSampleCount(),
     start() {
