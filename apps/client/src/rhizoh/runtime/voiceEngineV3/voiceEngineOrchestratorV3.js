@@ -252,18 +252,23 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           reason: decision.reason,
           fastIntent: decision.fastIntent,
           band: bandObs.band,
+          confidenceTier: decision.confidenceTier,
+          dropKind: decision.dropKind,
           preview: String(merged.text || "").slice(0, 96)
         });
 
-        if (decision.path === VOICE_PIPELINE_PATH_V0.FAST) {
+        if (decision.path === VOICE_PIPELINE_PATH_V0.FAST || decision.path === VOICE_PIPELINE_PATH_V0.GRAY) {
           busy = false;
           setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
+
           if (decision.action === VOICE_PIPELINE_ACTION_V0.DROP) {
             emitVoiceEngineTelemetryV3("FINAL_TRANSCRIPT_SHADOW_DROP", {
               reason: decision.reason,
+              dropKind: decision.dropKind,
               preview: String(merged.text || "").slice(0, 96),
               band: bandObs.band,
-              fastPath: true
+              confidenceTier: decision.confidenceTier,
+              silent: decision.silent !== false
             });
             return {
               ok: false,
@@ -275,6 +280,41 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
               bandObs
             };
           }
+
+          if (
+            decision.action === VOICE_PIPELINE_ACTION_V0.VERIFY ||
+            decision.action === VOICE_PIPELINE_ACTION_V0.HOLD
+          ) {
+            opts.onFinalTranscript?.({
+              text: merged.text,
+              confidence: merged.confidence,
+              source: merged.source || "mic_v3",
+              strategy: merged.strategy,
+              pipelinePath: "gray",
+              verifyReply: decision.reply,
+              band: bandObs.band,
+              decision
+            });
+            emitVoiceEngineTelemetryV3("FINAL_TRANSCRIPT_GRAY_VERIFY", {
+              action: decision.action,
+              reason: decision.reason,
+              preview: String(merged.text || "").slice(0, 96),
+              replyPreview: String(decision.reply || "").slice(0, 64),
+              band: bandObs.band,
+              confidenceTier: decision.confidenceTier
+            });
+            return {
+              ok: true,
+              merged,
+              google: res.google,
+              whisper: res.whisper,
+              maxRms,
+              grayPath: true,
+              decision,
+              bandObs
+            };
+          }
+
           opts.onFinalTranscript?.({
             text: merged.text,
             confidence: merged.confidence,

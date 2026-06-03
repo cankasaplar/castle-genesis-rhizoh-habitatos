@@ -152,13 +152,21 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
         strategy: result.merged.strategy,
         preview: result.merged.text.slice(0, 96)
       });
+      const pipelinePath =
+        result.decision?.path === VOICE_PIPELINE_PATH_V0.SLOW
+          ? "slow"
+          : result.decision?.path === VOICE_PIPELINE_PATH_V0.GRAY
+            ? "gray"
+            : "fast";
       const transcriptOpts = {
         manageVoiceTurn: keepAlive,
         source: "mic_v3",
         confidence: result.merged.confidence,
         strategy: result.merged.strategy,
         maxRms: result.maxRms,
-        pipelinePath: result.decision?.path === VOICE_PIPELINE_PATH_V0.SLOW ? "slow" : "fast",
+        pipelinePath,
+        verifyReply: result.decision?.reply,
+        decision: result.decision,
         band: result.bandObs?.band,
         witnessed: result.witnessed,
         witnessCompleted: true,

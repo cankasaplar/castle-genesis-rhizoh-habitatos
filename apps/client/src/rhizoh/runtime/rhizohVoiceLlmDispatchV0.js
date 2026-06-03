@@ -112,6 +112,33 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     return Object.freeze({ ok: false, error: "empty_transcript" });
   }
 
+  if (opts.pipelinePath === "gray" && opts.verifyReply) {
+    const reply = String(opts.verifyReply || "").trim();
+    if (opts.speakReply !== false && reply) {
+      await speakRhizohReplyChunkedV0(reply, {
+        smoothAfterAck: false,
+        committedText: true,
+        traceId
+      });
+    }
+    recordOlpBehavioralTurnV0({ channel: "voice", depthMode: "gray_verify" });
+    const graph = closeVoiceExecutionTraceV0(traceId, {
+      ok: true,
+      execution: opts.decision?.action || "gray_verify",
+      grayZone: true
+    });
+    return Object.freeze({
+      ok: true,
+      grayVerify: true,
+      uncertaintyHold: opts.decision?.action === "hold",
+      reply,
+      traceId,
+      decision: opts.decision,
+      graph,
+      llmBypass: true
+    });
+  }
+
   const pipeline = traceRoutePhaseV0(traceId, () =>
     runRhizohSpeechPipelineV0(raw, {
       sttInferred: sttNorm.inferredInputLocale,
