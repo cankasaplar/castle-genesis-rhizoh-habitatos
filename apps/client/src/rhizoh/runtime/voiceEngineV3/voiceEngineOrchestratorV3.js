@@ -7,17 +7,20 @@ import { createVoiceAudioCaptureV3, VOICE_CAPTURE_CHUNK_MS_V3 } from "./voiceAud
 import { hasVoiceCaptureSpeechEnergyV3 } from "./voiceAudioLevelV3.js";
 import { queryRhizohVoiceTranscribeResilientV3 } from "./voiceTranscribeTransportV3.js";
 import { resolveVoiceTranscriptV3 } from "./voiceTranscriptMergerV3.js";
-import {
-  runVoiceTranscriptWitnessPipelineV0,
-  witnessVoiceStreamLifecycleV0
-} from "../voiceTranscriptWitnessPipelineV0.js";
+import { witnessVoiceStreamLifecycleV0 } from "../voiceTranscriptWitnessPipelineV0.js";
 import {
   beginVoiceSessionLanguageLockV0,
   endVoiceSessionLanguageLockV0,
   readSttLanguageCodeHintV0
 } from "../rhizohConversationLanguageV0.js";
 import { prepareRhizohLlmTurnV0 } from "../rhizohLlmTurnHotWireV0.js";
-import { rescoreVoiceTranscriptAfterMergeV0 } from "../rhizohPostMergeTranscriptRescoreV0.js";
+import { classifyVoiceDirectedSpeechBandV0 } from "../voiceDirectedSpeechObservationV0.js";
+import {
+  resolveVoicePipelineDecisionV0,
+  publishVoicePipelineDecisionDebugV0,
+  VOICE_PIPELINE_ACTION_V0,
+  VOICE_PIPELINE_PATH_V0
+} from "../rhizohVoiceDualPathRouterV0.js";
 import {
   buildInputProvenanceEnvelopeV0,
   RHIZOH_INPUT_MODALITY_V0,
@@ -218,133 +221,126 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         }
 
         const merged = res.merged || resolveVoiceTranscriptV3(res.google || res.fast, res.whisper);
+        const bandObs = classifyVoiceDirectedSpeechBandV0({
+          text: merged.text,
+          confidence: merged.confidence,
+          strategy: merged.strategy,
+          maxRms,
+          source: "mic_v3"
+        });
         const provenance = buildInputProvenanceEnvelopeV0({
           text: merged.text,
           source: RHIZOH_INPUT_SOURCE_V0.MIC_V3,
           modality: RHIZOH_INPUT_MODALITY_V0.STT,
           confidence: merged.confidence,
-          strategy: merged.strategy
+          strategy: merged.strategy,
+          band: bandObs.band
         });
-        const rescored = rescoreVoiceTranscriptAfterMergeV0({
+        const decision = resolveVoicePipelineDecisionV0({
           text: merged.text,
           confidence: merged.confidence,
           strategy: merged.strategy,
-          languageHint: readSttLanguageCodeHintV0(),
           maxRms,
           recordedMs,
+          band: bandObs.band,
           provenance
         });
-
-        if (rescored.skipLanguageInference) {
-          busy = false;
-          setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
-          emitVoiceEngineTelemetryV3(
-            rescored.quarantine ? "FINAL_TRANSCRIPT_QUARANTINE" : "FINAL_TRANSCRIPT_SHADOW_DROP",
-            {
-              reason: "language_inference_quarantined",
-              preview: String(rescored.text || merged.text).slice(0, 96),
-              skipReasons: rescored.skipReasons,
-              quarantineId: rescored.quarantineId,
-              originHash: rescored.provenance?.originHash,
-              maxRms,
-              confidence: merged.confidence,
-              strategy: merged.strategy,
-              scriptEntropy: rescored.scriptEntropy
-            }
-          );
-          return {
-            ok: false,
-            error: "language_inference_quarantined",
-            shadowDrop: true,
-            quarantine: rescored.quarantine === true,
-            quarantineId: rescored.quarantineId,
-            silent: true,
-            merged,
-            rescored
-          };
-        }
-
-        const pipe = runVoiceTranscriptWitnessPipelineV0({
-          text: rescored.text,
-          confidence: rescored.confidence ?? merged.confidence,
-          strategy: merged.strategy,
-          source: "mic_v3",
-          maxRms,
-          recordedMs,
-          stage: "v3_orchestrator_raw",
-          checkRepeat: false,
-          runTurnGate: false,
-          shadowForwardOnReject: true,
-          sttLanguageHint: rescored.languageHint,
-          vepmConfidence: rescored.vepmConfidence,
-          phantomLikely: rescored.phantomLikely,
-          postMergeRescore: rescored
+        publishVoicePipelineDecisionDebugV0(decision);
+        emitVoiceEngineTelemetryV3("PIPELINE_DECISION", {
+          path: decision.path,
+          action: decision.action,
+          reason: decision.reason,
+          fastIntent: decision.fastIntent,
+          band: bandObs.band,
+          preview: String(merged.text || "").slice(0, 96)
         });
 
-        if (!pipe.route?.executionAccepted) {
+        if (decision.path === VOICE_PIPELINE_PATH_V0.FAST) {
           busy = false;
           setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
-          const shadowDrop =
-            pipe.sane?.shadowForward === true ||
-            pipe.sane?.softScriptMismatch === true ||
-            pipe.route?.observationForward === true;
-          emitVoiceEngineTelemetryV3(
-            shadowDrop ? "FINAL_TRANSCRIPT_SHADOW_DROP" : "FINAL_TRANSCRIPT_REJECT",
-            {
-              reason: pipe.sane.reason,
-              preview: String(pipe.sane.text || rescored.text).slice(0, 96),
-              confidence: pipe.sane.confidence,
-              band: pipe.witnessed.observation.band,
-              phantomLikely: rescored.phantomLikely === true,
-              vepmLowConfidence: rescored.vepmLowConfidence === true
-            }
-          );
-          if (!shadowDrop) {
-            opts.onError?.({ code: pipe.sane.reason || "no_transcript" });
+          if (decision.action === VOICE_PIPELINE_ACTION_V0.DROP) {
+            emitVoiceEngineTelemetryV3("FINAL_TRANSCRIPT_SHADOW_DROP", {
+              reason: decision.reason,
+              preview: String(merged.text || "").slice(0, 96),
+              band: bandObs.band,
+              fastPath: true
+            });
+            return {
+              ok: false,
+              error: decision.reason,
+              shadowDrop: true,
+              fastPath: true,
+              merged,
+              decision,
+              bandObs
+            };
           }
+          opts.onFinalTranscript?.({
+            text: merged.text,
+            confidence: merged.confidence,
+            source: merged.source || "mic_v3",
+            strategy: merged.strategy,
+            pipelinePath: "fast",
+            band: bandObs.band,
+            decision
+          });
+          emitVoiceEngineTelemetryV3("FINAL_TRANSCRIPT", {
+            text: String(merged.text || "").slice(0, 160),
+            strategy: merged.strategy,
+            confidence: merged.confidence,
+            band: bandObs.band,
+            pipelinePath: "fast"
+          });
           return {
-            ok: false,
-            error: pipe.sane.reason || "no_transcript",
-            shadowDrop,
+            ok: true,
             merged,
-            rescored,
-            sane: pipe.sane,
-            witnessed: pipe.witnessed
+            google: res.google,
+            whisper: res.whisper,
+            maxRms,
+            fastPath: true,
+            decision,
+            bandObs
           };
         }
 
         prepareRhizohLlmTurnV0({
-          message: pipe.sane.text,
+          message: merged.text,
           traceId: opts.traceId,
           sessionId,
           voiceTurn: true,
           speakInstantAck: false,
-          sourcePath: "voice_engine_v3"
+          sourcePath: "voice_engine_v3_slow"
         });
 
         opts.onFinalTranscript?.({
-          text: pipe.sane.text,
+          text: merged.text,
           confidence: merged.confidence,
-          source: merged.source,
+          source: merged.source || "mic_v3",
           strategy: merged.strategy,
-          witnessed: pipe.witnessed
+          pipelinePath: "slow",
+          band: bandObs.band,
+          provenance,
+          decision
         });
         emitVoiceEngineTelemetryV3("FINAL_TRANSCRIPT", {
-          text: pipe.sane.text.slice(0, 160),
+          text: String(merged.text || "").slice(0, 160),
           strategy: merged.strategy,
           confidence: merged.confidence,
-          band: pipe.witnessed.observation.band
+          band: bandObs.band,
+          pipelinePath: "slow"
         });
         busy = false;
         setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
         return {
           ok: true,
-          merged: { ...merged, text: pipe.sane.text },
+          merged,
           google: res.google,
           whisper: res.whisper,
           maxRms,
-          witnessed: pipe.witnessed,
-          temporal: pipe.temporal
+          slowPath: true,
+          decision,
+          bandObs,
+          provenance
         };
       } catch (e) {
         busy = false;

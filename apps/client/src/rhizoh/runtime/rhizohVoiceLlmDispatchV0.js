@@ -52,6 +52,7 @@ import {
   RHIZOH_INPUT_MODALITY_V0,
   RHIZOH_INPUT_SOURCE_V0
 } from "./rhizohInputProvenanceV0.js";
+import { VOICE_PIPELINE_PATH_V0 } from "./rhizohVoiceDualPathRouterV0.js";
 
 export const RHIZOH_VOICE_LLM_DISPATCH_SCHEMA_V0 = "castle.rhizoh.voice_llm_dispatch.v0";
 
@@ -120,13 +121,20 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
       source: provenance.source,
       modality: provenance.modality,
       confidence: provenance.confidence,
-      band: provenance.band,
+      band: provenance.band || opts.band,
       strategy: provenance.strategy,
-      provenance
+      provenance,
+      pipelinePath:
+        opts.pipelinePath === "slow" ? VOICE_PIPELINE_PATH_V0.SLOW : VOICE_PIPELINE_PATH_V0.FAST
     })
   );
 
-  if (pipeline.escalateToLlm && pipeline.intentPlan?.decay?.reasons?.length) {
+  if (opts.pipelinePath === "fast" && pipeline.stage === "fast_drop") {
+    closeVoiceExecutionTraceV0(traceId, { ok: false, execution: "fast_drop" });
+    return Object.freeze({ ok: false, error: pipeline.error || "fast_path_no_reflex", pipeline });
+  }
+
+  if (opts.pipelinePath !== "fast" && pipeline.escalateToLlm && pipeline.intentPlan?.decay?.reasons?.length) {
     noteLocalReflexFailureV0(true);
   }
 
@@ -156,6 +164,11 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
       graph,
       llmBypass: true
     });
+  }
+
+  if (opts.pipelinePath === "fast") {
+    closeVoiceExecutionTraceV0(traceId, { ok: false, execution: "fast_path_llm_blocked" });
+    return Object.freeze({ ok: false, error: "fast_path_llm_blocked", pipeline });
   }
 
   const route = pipeline.route;

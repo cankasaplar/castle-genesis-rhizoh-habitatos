@@ -15,6 +15,7 @@ import {
 } from "../../../castle/layers/voiceStreamLifecycleControllerV1.js";
 import { deferRecordingUntilGatewayWarmV1 } from "../voiceTranscribePredictivePreflightV1.js";
 import { emitVoiceEngineTelemetryV3 } from "./voiceEngineTelemetryV3.js";
+import { VOICE_PIPELINE_PATH_V0 } from "../rhizohVoiceDualPathRouterV0.js";
 export const VOICE_V3_MAX_RECORD_MS = 8000;
 
 let v3SessionLockActive = false;
@@ -157,6 +158,8 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
         confidence: result.merged.confidence,
         strategy: result.merged.strategy,
         maxRms: result.maxRms,
+        pipelinePath: result.decision?.path === VOICE_PIPELINE_PATH_V0.SLOW ? "slow" : "fast",
+        band: result.bandObs?.band,
         witnessed: result.witnessed,
         witnessCompleted: true,
         temporal: result.temporal

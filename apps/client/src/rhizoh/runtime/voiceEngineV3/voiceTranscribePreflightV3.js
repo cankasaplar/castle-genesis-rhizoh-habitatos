@@ -10,9 +10,9 @@ export const VOICE_TRANSCRIBE_PREFLIGHT_V3 = Object.freeze({
   /** Single-upload fast path band. */
   directFastMinBytes: 96_000,
   directFastMinMs: 7_200,
-  /** Split upload when payload exceeds either threshold. */
-  splitMinBytes: 96_000,
-  splitMinMs: 7_500,
+  /** Split upload when payload exceeds duration threshold (default: 12s single pass). */
+  splitMinBytes: 180_000,
+  splitMinMs: 12_000,
   splitMinChunks: 3,
   maxSegmentBytes: 58_000,
   /** Typical ~10s take → at most two upload segments. */

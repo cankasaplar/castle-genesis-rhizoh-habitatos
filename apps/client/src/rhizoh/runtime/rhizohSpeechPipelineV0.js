@@ -26,6 +26,10 @@ import {
   resolveContinuationHoldReplyV0
 } from "./rhizohIntentRouterV0.js";
 import { recordReflexStabilityTurnV0 } from "./rhizohReflexStabilityTraceV0.js";
+import {
+  classifyVoiceFastIntentV0,
+  VOICE_PIPELINE_PATH_V0
+} from "./rhizohVoiceDualPathRouterV0.js";
 
 function finalizePipelineResultV0(result, ctx = {}) {
   const frozen = Object.freeze(result);
@@ -42,10 +46,11 @@ export const RHIZOH_SPEECH_PIPELINE_SCHEMA_V0 = "castle.rhizoh.speech_pipeline.v
 
 /**
  * @param {string} rawText
- * @param {{ sttInferred?: string, traceId?: string, source?: string, modality?: string, confidence?: number, band?: string, strategy?: string, provenance?: object }} [ctx]
+ * @param {{ sttInferred?: string, traceId?: string, source?: string, modality?: string, confidence?: number, band?: string, strategy?: string, provenance?: object, pipelinePath?: string }} [ctx]
  */
 export function runRhizohSpeechPipelineV0(rawText, ctx = {}) {
   const t0 = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const pipelinePath = String(ctx.pipelinePath || VOICE_PIPELINE_PATH_V0.FAST);
   const provenance =
     ctx.provenance ||
     buildInputProvenanceEnvelopeV0({
@@ -84,7 +89,50 @@ export function runRhizohSpeechPipelineV0(rawText, ctx = {}) {
 
   const locale = resolveOutputLanguageCodeV0();
 
-  const contamination = evaluateSttContaminationV0(msg);
+  if (pipelinePath === VOICE_PIPELINE_PATH_V0.FAST) {
+    const precheck = runFastPrecheckFromTextV0(msg, { locale, traceId: ctx.traceId });
+    if (precheck) {
+      publishFastPrecheckHitV0(precheck, {
+        traceId: ctx.traceId,
+        channel: "voice",
+        routeClass: "greeting"
+      });
+      const committed = commitFinalUserVisibleLanguageV0(precheck.reply, {
+        source: "fast_precheck",
+        traceId: ctx.traceId,
+        lockKey: "language_commit_lock"
+      });
+      return finalizePipelineResultV0(
+        {
+          ok: true,
+          stage: "fast_precheck",
+          execution: VOICE_ROUTE_EXECUTION_V0.FAST_LOCAL,
+          precheck,
+          reply: committed.text,
+          llmBypass: true,
+          pipelinePath,
+          latencyMs: Math.round((typeof performance !== "undefined" ? performance.now() : Date.now()) - t0)
+        },
+        ctx
+      );
+    }
+    const fastIntent = classifyVoiceFastIntentV0(msg);
+    return finalizePipelineResultV0(
+      {
+        ok: false,
+        stage: "fast_drop",
+        error: "fast_path_no_reflex",
+        fastIntent: fastIntent.intent,
+        llmBypass: true,
+        silencePreferred: true,
+        pipelinePath,
+        latencyMs: Math.round((typeof performance !== "undefined" ? performance.now() : Date.now()) - t0)
+      },
+      ctx
+    );
+  }
+
+  const contamination = evaluateSttContaminationV0(msg, { strategy: ctx.strategy });
   if (contamination.contaminated) {
     return finalizePipelineResultV0(
       {

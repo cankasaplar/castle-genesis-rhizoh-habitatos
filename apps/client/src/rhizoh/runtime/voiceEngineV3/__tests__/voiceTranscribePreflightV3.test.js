@@ -7,17 +7,24 @@ import {
 import { buildWebmSegmentBlobsV3, mergeSegmentTranscriptsV3 } from "../voiceWebmSegmentSplitV3.js";
 
 describe("voiceTranscribePreflightV3", () => {
-  it("routes 123KB / ~9.5s session to split before upload", () => {
+  it("uses single pass for takes under 12s", () => {
     const plan = planVoiceTranscribePreflightV3({
       bytes: 123_873,
       recordedMs: 9_595,
       chunkCount: 7
     });
+    expect(plan.mode).toBe("direct");
+    expect(plan.segmentCount).toBe(1);
+  });
+
+  it("routes very long sessions to split", () => {
+    const plan = planVoiceTranscribePreflightV3({
+      bytes: 200_000,
+      recordedMs: 13_500,
+      chunkCount: 7
+    });
     expect(plan.mode).toBe("split");
     expect(plan.path).toBe("accurate");
-    expect(plan.reason).toBe("bytes_and_duration");
-    expect(plan.segmentCount).toBe(2);
-    expect(plan.maxSegmentBytes).toBeGreaterThanOrEqual(61_000);
   });
 
   it("uses fast direct route for large payload without chunk metadata", () => {
@@ -43,8 +50,8 @@ describe("voiceTranscribePreflightV3", () => {
 
   it("retry path defers to preflight first attempt", () => {
     const plan = planVoiceTranscribePreflightV3({
-      bytes: 123_873,
-      recordedMs: 9_595,
+      bytes: 200_000,
+      recordedMs: 13_500,
       chunkCount: 7
     });
     expect(resolveTranscribeRetryPathV3(plan, 0)).toBe("accurate");
