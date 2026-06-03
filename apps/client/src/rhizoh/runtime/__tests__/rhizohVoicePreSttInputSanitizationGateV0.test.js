@@ -122,12 +122,27 @@ describe("rhizohVoicePreSttInputSanitizationGateV0", () => {
     expect(v.borderlineWarm).toBe(true);
   });
 
-  it("classifies large low-RMS clip as silent capture not low energy", () => {
+  it("defers large silent-capture clip to post-STT when warm probe is healthy", () => {
     const v = evaluatePreSttInputSanitizationV0({
       maxRms: 0.0014,
       recordedMs: 8500,
       bytes: 128719,
       warmProbe: { avgWarmScore: 0.9, minWarmScore: 0.68 },
+      sampleCount: 6
+    });
+    expect(v.pass).toBe(true);
+    expect(v.action).toBe(PRE_STT_GATE_ACTION_V0.PROCEED);
+    expect(v.reason).toBe("pre_stt_silent_capture_warm_defer");
+    expect(v.warmDefer).toBe(true);
+    expect(v.warmVoiceEnergy).toBeGreaterThanOrEqual(0.72);
+  });
+
+  it("drops large silent-capture clip when warm probe is cold", () => {
+    const v = evaluatePreSttInputSanitizationV0({
+      maxRms: 0.0014,
+      recordedMs: 8500,
+      bytes: 128719,
+      warmProbe: { avgWarmScore: 0.4, minWarmScore: 0.3 },
       sampleCount: 6
     });
     expect(v.pass).toBe(false);

@@ -103,6 +103,9 @@ export const PRE_STT_BORDERLINE_WARM_MIN_V0 = 0.72;
 export const PRE_STT_BORDERLINE_MIN_SAMPLES_V0 = 4;
 export const PRE_STT_BORDERLINE_MIN_MS_V0 = 1200;
 
+/** Large silent-capture shape but warm probe healthy — defer kill to post-STT (Whisper). */
+export const PRE_STT_SILENT_CAPTURE_WARM_DEFER_MIN_V0 = 0.72;
+
 /**
  * @param {{ maxRms?: number, recordedMs?: number, warmProbe?: object, sampleCount?: number }} input
  * @param {number} energy
@@ -139,6 +142,8 @@ export function evaluatePreSttInputSanitizationV0(input = {}) {
   const speechProbability = estimatePreSttSpeechProbabilityV0(input);
   const acousticEntropy = measurePreSttAcousticEntropyV0({ ...input, speechProbability });
   const shortUtterance = recordedMs > 0 && recordedMs <= PRE_STT_SHORT_UTTERANCE_EXEMPT_MS_V0;
+  const avgWarm = Number(input.warmProbe?.avgWarmScore);
+  const minWarm = Number(input.warmProbe?.minWarmScore);
 
   const base = Object.freeze({
     schema: RHIZOH_VOICE_PRE_STT_SANITIZATION_SCHEMA_V0,
@@ -151,7 +156,15 @@ export function evaluatePreSttInputSanitizationV0(input = {}) {
     minSpeechProbability: PRE_STT_MIN_SPEECH_PROBABILITY_V0,
     entropyHoldThreshold: PRE_STT_ACOUSTIC_ENTROPY_HOLD_V0,
     holdSpeechProbMax: PRE_STT_HOLD_SPEECH_PROB_MAX_V0,
-    holdMinDurationMs: PRE_STT_HOLD_MIN_DURATION_MS_V0
+    holdMinDurationMs: PRE_STT_HOLD_MIN_DURATION_MS_V0,
+    warmVoiceEnergy: Number.isFinite(avgWarm) ? clamp01(avgWarm) : null,
+    warmSpeechConfidence: Number.isFinite(minWarm) ? clamp01(minWarm) : null,
+    warmLatencyRisk:
+      Number.isFinite(minWarm) && minWarm < 0.34
+        ? "high"
+        : Number.isFinite(avgWarm) && avgWarm >= 0.72
+          ? "low"
+          : "unknown"
   });
 
   if (!Number.isFinite(energy) || energy < VOICE_MIN_SPEECH_RMS_V3) {
@@ -168,6 +181,20 @@ export function evaluatePreSttInputSanitizationV0(input = {}) {
       bytes >= PRE_STT_SILENT_CAPTURE_MIN_BYTES_V0 &&
       recordedMs >= PRE_STT_SILENT_CAPTURE_MIN_MS_V0 &&
       energy < PRE_STT_SILENT_CAPTURE_MAX_RMS_V0;
+    if (
+      silentCapture &&
+      Number.isFinite(avgWarm) &&
+      avgWarm >= PRE_STT_SILENT_CAPTURE_WARM_DEFER_MIN_V0
+    ) {
+      return Object.freeze({
+        ...base,
+        pass: true,
+        action: PRE_STT_GATE_ACTION_V0.PROCEED,
+        reason: "pre_stt_silent_capture_warm_defer",
+        silentCapture: true,
+        warmDefer: true
+      });
+    }
     return Object.freeze({
       ...base,
       pass: false,

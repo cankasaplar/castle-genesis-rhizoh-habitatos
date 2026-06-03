@@ -118,6 +118,18 @@ describe("rhizohVoiceDualPathRouterV0", () => {
     expect(d.speakMode === VOICE_SPEAK_MODE_V0.HOLD || d.uxGray === false).toBe(true);
   });
 
+  it("unknown band slow_ready conversational text opens slow LLM path", () => {
+    const d = resolveVoicePipelineDecisionV0({
+      text: "Evet, çok fazla dinlenmeye ihtiyacım var. Hem kafam yoruldu, hem bedenim.",
+      confidence: 0.55,
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+      strategy: "whisper_only"
+    });
+    expect(d.speakMode).toBe(VOICE_SPEAK_MODE_V0.SPEAK);
+    expect(d.execMode).toBe(VOICE_EXEC_MODE_V0.SLOW_LLM);
+    expect(d.reason).toBe("unknown_band_slow_completion");
+  });
+
   it("directed non-hearing question with high confidence opens slow LLM path", () => {
     const d = resolveVoicePipelineDecisionV0({
       text: "Rhizoh şimdi ne yapmalıyım sence?",
@@ -154,7 +166,7 @@ describe("rhizohVoiceDualPathRouterV0", () => {
       Object.assign(import.meta.env, envBackup);
     });
 
-    it("converts uncertainty hold to silent drop", () => {
+    it("converts hard-drop uncertainty hold to silent drop", () => {
       const d = resolveVoicePipelineDecisionV0({
         text: "bunu nasıl düzeltirim?",
         confidence: 0.28,
@@ -163,6 +175,30 @@ describe("rhizohVoiceDualPathRouterV0", () => {
       expect(d.speakMode).toBe(VOICE_SPEAK_MODE_V0.SILENT);
       expect(d.reason).toBe("strict_hold_suppressed");
       expect(d.silent).toBe(true);
+    });
+
+    it("allows unknown band slow_ready conversational completion in strict mode", () => {
+      const d = resolveVoicePipelineDecisionV0({
+        text: "Evet, çok fazla dinlenmeye ihtiyacım var. Hem kafam yoruldu, hem bedenim.",
+        confidence: 0.55,
+        band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+        strategy: "whisper_only"
+      });
+      expect(d.speakMode).toBe(VOICE_SPEAK_MODE_V0.SPEAK);
+      expect(d.execMode).toBe(VOICE_EXEC_MODE_V0.SLOW_LLM);
+      expect(d.reason).toBe("unknown_band_slow_completion");
+      expect(d.silent).toBe(false);
+    });
+
+    it("still silent-drops unknown band noise without meaningful signal", () => {
+      const d = resolveVoicePipelineDecisionV0({
+        text: "ah",
+        confidence: 0.55,
+        band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+        strategy: "whisper_only"
+      });
+      expect(d.speakMode).toBe(VOICE_SPEAK_MODE_V0.SILENT);
+      expect(d.reason).toMatch(/fast_noise_drop|strict_hold_suppressed/);
     });
 
     it("strips uxGray on gray slow path", () => {

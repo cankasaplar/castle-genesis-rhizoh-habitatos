@@ -209,7 +209,14 @@ export function classifyVoiceFastIntentV0(text) {
 
 /**
  * @param {string} text
- * @param {{ intent?: string, band?: string, guards?: object, directed?: boolean }} ctx
+ * @param {{
+ *   intent?: string,
+ *   band?: string,
+ *   tier?: string,
+ *   guards?: object,
+ *   directed?: boolean,
+ *   meaningful?: boolean
+ * }} ctx
  */
 function trySlowPathEligibilityV0(text, ctx = {}) {
   const guards = ctx.guards;
@@ -218,6 +225,15 @@ function trySlowPathEligibilityV0(text, ctx = {}) {
   const words = text.split(/\s+/).filter(Boolean).length;
   const clearQuestion = isClearQuestionPatternV0(text);
   if (clearQuestion) return true;
+  const band = String(ctx.band || "");
+  if (
+    band === VOICE_DIRECTED_SPEECH_BAND.UNKNOWN &&
+    ctx.tier === VOICE_CONFIDENCE_TIER_V0.SLOW_READY &&
+    ctx.meaningful === true &&
+    words >= 4
+  ) {
+    return true;
+  }
   return directed && (ctx.intent === VOICE_FAST_INTENT_V0.QUESTION || words >= 4);
 }
 
@@ -253,7 +269,10 @@ function resolveDecisionSpineV0(ctx) {
   const slowEligible = trySlowPathEligibilityV0(text, {
     guards,
     directed,
-    intent: fast.intent
+    intent: fast.intent,
+    band,
+    tier,
+    meaningful
   });
   const clearQuestion = isClearQuestionPatternV0(text);
 
@@ -270,7 +289,11 @@ function resolveDecisionSpineV0(ctx) {
   }
 
   if (tier === VOICE_CONFIDENCE_TIER_V0.SLOW_READY && slowEligible) {
-    return buildSpeakSlowDecision(fast.intent, "directed_slow_llm", band, tier, guards, {
+    const slowReason =
+      band === VOICE_DIRECTED_SPEECH_BAND.UNKNOWN && !directed
+        ? "unknown_band_slow_completion"
+        : "directed_slow_llm";
+    return buildSpeakSlowDecision(fast.intent, slowReason, band, tier, guards, {
       verifyCount
     });
   }
@@ -405,8 +428,23 @@ export function resolveVoicePipelineDecisionV0(input = {}) {
       verifyBudgetExhausted,
       locale
     }),
-    { band }
+    { band, text }
   );
+}
+
+function shouldStrictPromoteUncertaintyToSlowV0(decision, ctx = {}) {
+  if (!decision || decision.speakMode !== VOICE_SPEAK_MODE_V0.HOLD) return false;
+  if (decision.confidenceTier !== VOICE_CONFIDENCE_TIER_V0.SLOW_READY) return false;
+  const band = String(decision.band || ctx.band || "");
+  if (band !== VOICE_DIRECTED_SPEECH_BAND.UNKNOWN) return false;
+  if (!decision.guards?.allowSlow) return false;
+  const text = String(ctx.text || "").trim();
+  if (!text) return false;
+  const meaningful = hasMeaningfulSpeechSignalV0(text, {
+    fastIntent: decision.fastIntent || VOICE_FAST_INTENT_V0.NOISE
+  });
+  const words = text.split(/\s+/).filter(Boolean).length;
+  return meaningful && words >= 4;
 }
 
 function applyStrictIngestDecisionClampV0(decision, ctx = {}) {
@@ -414,6 +452,16 @@ function applyStrictIngestDecisionClampV0(decision, ctx = {}) {
   if (decision.speakMode === VOICE_SPEAK_MODE_V0.SILENT) return decision;
 
   if (decision.speakMode === VOICE_SPEAK_MODE_V0.HOLD) {
+    if (shouldStrictPromoteUncertaintyToSlowV0(decision, ctx)) {
+      return buildSpeakSlowDecision(
+        decision.fastIntent || VOICE_FAST_INTENT_V0.NOISE,
+        "unknown_band_slow_completion",
+        decision.band || ctx.band,
+        decision.confidenceTier || VOICE_CONFIDENCE_TIER_V0.SLOW_READY,
+        decision.guards,
+        { verifyCount: decision.verifyCount, strictPromoted: true }
+      );
+    }
     return buildSilentDecision(
       decision.fastIntent || VOICE_FAST_INTENT_V0.NOISE,
       "strict_hold_suppressed",
