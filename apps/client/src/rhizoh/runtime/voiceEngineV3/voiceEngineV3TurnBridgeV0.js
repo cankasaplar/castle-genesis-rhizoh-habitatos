@@ -227,14 +227,31 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
         shadowDrop: true,
         reason: result.error
       });
+      const restartCtx = result.preSttDrop ? "v3_pre_stt_drop" : "v3_shadow_drop";
       logVoiceInfoV0("V3_SHADOW_DROP", {
         reason: result.error,
         preview: String(result.merged?.text || "").slice(0, 96),
-        dropKind: result.decision?.dropKind
+        dropKind: result.decision?.dropKind,
+        restartCtx,
+        maxRms: result.maxRms,
+        preSttReason: result.preStt?.reason
       });
       if (keepAlive) {
+        if (
+          result.preSttDrop &&
+          (result.preStt?.reason === "pre_stt_silent_capture" ||
+            result.preStt?.reason === "pre_stt_low_energy") &&
+          typeof callbacks.speakRhizoh === "function"
+        ) {
+          callbacks.speakRhizoh(
+            result.preStt?.silentCapture === true
+              ? "Mikrofon ses almıyor gibi — kulaklık kullanın veya Windows mikrofon seviyesini yükseltin."
+              : "Sesinizi duyamadım — mikrofona biraz daha yakın konuşun.",
+            { voiceTurn: true, instantAck: true }
+          );
+        }
         callbacks.scheduleVoiceMicRestart(keepAlive, {
-          context: "v3_shadow_drop",
+          context: restartCtx,
           lastSessionHadResult: refs.voiceSttGotAnyResult.current
         });
       } else {

@@ -278,7 +278,8 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           opts.onError?.({ code: skipReason, detail: String(maxRms) });
           return {
             ok: false,
-            error: skipReason === "pre_stt_low_energy" ? "audio_silent" : skipReason,
+            error: skipReason,
+            preSttDrop: true,
             shadowDrop: true,
             maxRms,
             recordedMs,

@@ -20,7 +20,8 @@ const STT_RESTART_CONTEXTS = new Set([
   "v3_empty_retry",
   "v3_network_retry",
   "v3_shadow_drop",
-  "v3_authority_silent"
+  "v3_authority_silent",
+  "v3_pre_stt_drop"
 ]);
 
 let autoRestartBlockedUntilMs = 0;

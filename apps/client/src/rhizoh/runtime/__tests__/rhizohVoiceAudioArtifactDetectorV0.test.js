@@ -13,6 +13,12 @@ describe("rhizohVoiceAudioArtifactDetectorV0", () => {
     expect(v.artifactClass).toBe(VOICE_STT_ARTIFACT_CLASS_V0.UI_CHROME);
   });
 
+  it("blocks Turkish TV subtitle credit hallucination", () => {
+    const v = classifyVoiceSttArtifactV0("Altyazı M.K.", { confidence: 0.55 });
+    expect(v.block).toBe(true);
+    expect(v.artifactClass).toBe(VOICE_STT_ARTIFACT_CLASS_V0.UI_CHROME);
+  });
+
   it("blocks English outro template", () => {
     const v = classifyVoiceSttArtifactV0("Thank you for watching! Don't forget to subscribe!", {
       confidence: 0.7

@@ -25,6 +25,9 @@ export function attachVoiceCaptureLevelProbeV3(stream, opts = {}) {
     const Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) return { stop: () => {}, getMaxRms: () => 0, getSampleCount: () => 0 };
     audioCtx = new Ctx();
+    if (audioCtx.state === "suspended") {
+      void audioCtx.resume().catch(() => {});
+    }
     const source = audioCtx.createMediaStreamSource(stream);
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 2048;
@@ -32,6 +35,9 @@ export function attachVoiceCaptureLevelProbeV3(stream, opts = {}) {
     const buf = new Float32Array(analyser.fftSize);
 
     const tick = () => {
+      if (audioCtx?.state === "suspended") {
+        void audioCtx.resume().catch(() => {});
+      }
       analyser.getFloatTimeDomainData(buf);
       let sum = 0;
       for (let i = 0; i < buf.length; i += 1) sum += buf[i] * buf[i];

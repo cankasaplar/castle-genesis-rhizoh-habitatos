@@ -108,4 +108,17 @@ describe("rhizohVoicePreSttInputSanitizationGateV0", () => {
     expect(v.pass).toBe(true);
     expect(v.action).toBe(PRE_STT_GATE_ACTION_V0.PROCEED);
   });
+
+  it("classifies large low-RMS clip as silent capture not low energy", () => {
+    const v = evaluatePreSttInputSanitizationV0({
+      maxRms: 0.0014,
+      recordedMs: 8500,
+      bytes: 128719,
+      warmProbe: { avgWarmScore: 0.9, minWarmScore: 0.68 },
+      sampleCount: 6
+    });
+    expect(v.pass).toBe(false);
+    expect(v.reason).toBe("pre_stt_silent_capture");
+    expect(v.silentCapture).toBe(true);
+  });
 });

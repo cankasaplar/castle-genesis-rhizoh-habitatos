@@ -92,6 +92,11 @@ export function measurePreSttAcousticEntropyV0(input = {}) {
   return clamp01(warmSpread * 0.45 + borderlineEnergy * 0.35 + longAmbiguous + coldGateway);
 }
 
+/** Encoded silence / tab hum — large payload but near-zero RMS. */
+export const PRE_STT_SILENT_CAPTURE_MAX_RMS_V0 = 0.004;
+export const PRE_STT_SILENT_CAPTURE_MIN_BYTES_V0 = 96_000;
+export const PRE_STT_SILENT_CAPTURE_MIN_MS_V0 = 6000;
+
 /**
  * @param {{
  *   maxRms?: number,
@@ -104,6 +109,7 @@ export function measurePreSttAcousticEntropyV0(input = {}) {
 export function evaluatePreSttInputSanitizationV0(input = {}) {
   const maxRms = Number(input.maxRms);
   const recordedMs = Math.max(0, Number(input.recordedMs) || 0);
+  const bytes = Math.max(0, Number(input.bytes) || 0);
   const energy = maxRms;
   const speechProbability = estimatePreSttSpeechProbabilityV0(input);
   const acousticEntropy = measurePreSttAcousticEntropyV0({ ...input, speechProbability });
@@ -124,11 +130,16 @@ export function evaluatePreSttInputSanitizationV0(input = {}) {
   });
 
   if (!Number.isFinite(energy) || energy < VOICE_MIN_SPEECH_RMS_V3) {
+    const silentCapture =
+      bytes >= PRE_STT_SILENT_CAPTURE_MIN_BYTES_V0 &&
+      recordedMs >= PRE_STT_SILENT_CAPTURE_MIN_MS_V0 &&
+      energy < PRE_STT_SILENT_CAPTURE_MAX_RMS_V0;
     return Object.freeze({
       ...base,
       pass: false,
       action: PRE_STT_GATE_ACTION_V0.DROP,
-      reason: "pre_stt_low_energy"
+      reason: silentCapture ? "pre_stt_silent_capture" : "pre_stt_low_energy",
+      silentCapture
     });
   }
 

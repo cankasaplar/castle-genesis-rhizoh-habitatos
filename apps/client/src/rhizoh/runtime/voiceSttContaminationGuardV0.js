@@ -56,7 +56,9 @@ const UI_CHROME_ECHO_PATTERNS_V0 = [
   /payla[sş]may[iı]\s+unut/i,
   /bu\s+videoyu\s+be[gğ]en/i,
   /mikrofon\s+ses\s+alm/i,
-  /en\s+az\s+bir\s+saniye\s+konuş/i
+  /en\s+az\s+bir\s+saniye\s+konuş/i,
+  /altyaz[ıi]\s+m\.?\s*k\.?/i,
+  /^altyaz[ıi](\s+m\.?\s*k\.?)?\s*$/i
 ];
 
 /** Strong leak signatures — high weight in fuzzy scorer. */
@@ -69,7 +71,8 @@ const STRONG_PLATFORM_SCORE_PATTERNS_V0 = [
   { re: /kanal(a|ıma|ima)\s+(abone|subscribe)/i, weight: 0.34 },
   { re: /abone\s+olmay[iı].*be[gğ]enmey[iı].*unutmay/i, weight: 0.4 },
   { re: /be[gğ]enmey[iı]\s+unutmay/i, weight: 0.34 },
-  { re: /izledi[ğg]iniz\s+i[çc]in\s+te[sş]ekk/i, weight: 0.32 },
+  { re: /altyaz[ıi]\s+m\.?\s*k\.?/i, weight: 0.38 },
+  { re: /^altyaz[ıi]\s*$/i, weight: 0.32 },
   { re: /المترجم/i, weight: 0.42 },
   { re: /للإعجاب بالفيديو/i, weight: 0.4 },
   { re: /سبحانك اللهم/i, weight: 0.42 }
