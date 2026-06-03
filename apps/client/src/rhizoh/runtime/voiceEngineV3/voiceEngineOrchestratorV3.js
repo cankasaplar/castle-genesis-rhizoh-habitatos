@@ -4,7 +4,15 @@
 
 import { VOICE_ENGINE_STATE_V3 } from "./voiceEngineStateV3.js";
 import { createVoiceAudioCaptureV3, VOICE_CAPTURE_CHUNK_MS_V3 } from "./voiceAudioCaptureV3.js";
+import {
+  evaluatePreSttInputSanitizationV0,
+  estimatePreSttSpeechProbabilityV0,
+  PRE_STT_GATE_ACTION_V0,
+  publishPreSttSanitizationDebugV0
+} from "../rhizohVoicePreSttInputSanitizationGateV0.js";
+import { isVoicePreSttGateEnabledV0 } from "../rhizohVoiceIngestGateFlagsV0.js";
 import { hasVoiceCaptureSpeechEnergyV3 } from "./voiceAudioLevelV3.js";
+import { publishPostSttOriginFilterDebugV0 } from "../rhizohVoicePostSttSemanticOriginFilterV0.js";
 import { queryRhizohVoiceTranscribeResilientV3 } from "./voiceTranscribeTransportV3.js";
 import { resolveVoiceTranscriptV3 } from "./voiceTranscriptMergerV3.js";
 import { witnessVoiceStreamLifecycleV0 } from "../voiceTranscriptWitnessPipelineV0.js";
@@ -33,6 +41,11 @@ import {
 import { emitVoiceEngineTelemetryV3, setVoiceEngineStateV3 } from "./voiceEngineTelemetryV3.js";
 import { rescoreVoiceTranscriptAfterMergeV0 } from "../rhizohPostMergeTranscriptRescoreV0.js";
 import { noteVoiceRuntimePressureV1 } from "../gatewaySessionKeeperV1.js";
+import {
+  noteOriginRetryConsumedV0,
+  peekOriginRetryBudgetV0,
+  resetOriginRetryBudgetForSessionV0
+} from "../rhizohSttOriginRetryBudgetV0.js";
 import {
   beginRecordingWarmProbeV1,
   finalizeRecordingWarmProbeV1
@@ -90,6 +103,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       busy = true;
       recordStartAtMs = Date.now();
       resetVoiceVerifyBudgetV0(sessionId);
+      resetOriginRetryBudgetForSessionV0(sessionId);
 
       try {
         capture = await createVoiceAudioCaptureV3({
@@ -129,8 +143,10 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       /** @type {Blob[]} */
       let captureChunks = [];
       let maxRms = 0;
+      let levelSampleCount = 0;
       try {
         maxRms = capture?.getMaxRms?.() ?? 0;
+        levelSampleCount = capture?.getLevelSampleCount?.() ?? 0;
         const captureResult = await capture.stop();
         fullBlob = captureResult?.blob || captureResult;
         captureChunks = Array.isArray(captureResult?.chunks) ? captureResult.chunks : [];
@@ -168,7 +184,69 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         return { ok: false, error: "audio_too_small", bytes, recordedMs };
       }
 
-      if (!hasVoiceCaptureSpeechEnergyV3(maxRms)) {
+      const warmProbe = finalizeRecordingWarmProbeV1(sessionId);
+      const preSttInput = {
+        maxRms,
+        recordedMs,
+        bytes,
+        warmProbe,
+        sampleCount: levelSampleCount
+      };
+      let preSttSpeechProbability = null;
+
+      if (isVoicePreSttGateEnabledV0()) {
+        const preStt = evaluatePreSttInputSanitizationV0(preSttInput);
+        preSttSpeechProbability = preStt.speechProbability;
+        publishPreSttSanitizationDebugV0(preStt);
+
+        if (!preStt.pass) {
+          busy = false;
+          setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
+          const skipReason = preStt.reason || "pre_stt_blocked";
+          witnessVoiceStreamLifecycleV0({
+            code: skipReason,
+            stage: "pre_stt_gate",
+            source: "mic_v3",
+            detail: {
+              recordedMs,
+              bytes,
+              maxRms,
+              action: preStt.action,
+              speechProbability: preStt.speechProbability,
+              acousticEntropy: preStt.acousticEntropy
+            }
+          });
+          emitVoiceEngineTelemetryV3("PRE_STT_GATE", {
+            action: preStt.action,
+            reason: skipReason,
+            recordedMs,
+            bytes,
+            maxRms,
+            speechProbability: preStt.speechProbability,
+            acousticEntropy: preStt.acousticEntropy
+          });
+          if (preStt.action === PRE_STT_GATE_ACTION_V0.HOLD) {
+            opts.onError?.({ code: skipReason, detail: "hold_no_transcription" });
+            return {
+              ok: false,
+              error: skipReason,
+              preSttHold: true,
+              shadowDrop: true,
+              maxRms,
+              recordedMs
+            };
+          }
+          opts.onError?.({ code: skipReason, detail: String(maxRms) });
+          return {
+            ok: false,
+            error: skipReason === "pre_stt_low_energy" ? "audio_silent" : skipReason,
+            shadowDrop: true,
+            maxRms,
+            recordedMs,
+            preStt
+          };
+        }
+      } else if (!hasVoiceCaptureSpeechEnergyV3(maxRms)) {
         busy = false;
         setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
         witnessVoiceStreamLifecycleV0({
@@ -189,13 +267,15 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       }
 
       setSessionState(VOICE_ENGINE_STATE_V3.FINAL_TRANSCRIPT_RESOLVE);
-      const warmProbe = finalizeRecordingWarmProbeV1(sessionId);
       emitVoiceEngineTelemetryV3("FINAL_TRANSCRIBE_START", {
         bytes,
         recordedMs,
         chunkCount: captureChunks.length,
         warmScore: warmProbe.avgWarmScore,
-        minWarmScore: warmProbe.minWarmScore
+        minWarmScore: warmProbe.minWarmScore,
+        speechProbability:
+          preSttSpeechProbability ??
+          estimatePreSttSpeechProbabilityV0(preSttInput)
       });
 
       try {
@@ -227,7 +307,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         }
 
         let merged = res.merged || resolveVoiceTranscriptV3(res.google || res.fast, res.whisper);
-        const scored = rescoreVoiceTranscriptAfterMergeV0({
+        let scored = rescoreVoiceTranscriptAfterMergeV0({
           text: merged.text,
           confidence: merged.confidence,
           strategy: merged.strategy,
@@ -236,15 +316,121 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           languageHint: readVoiceLanguageLockV0()
         });
 
-        if (scored.quarantine) {
+        if (scored.originRetry) {
+          const retryBudget = peekOriginRetryBudgetV0({
+            sessionId,
+            recordedMs,
+            strategy: merged.strategy
+          });
+          if (!retryBudget.allowed) {
+            busy = false;
+            setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
+            emitVoiceEngineTelemetryV3("ORIGIN_RETRY_SKIPPED", {
+              reason: retryBudget.reason,
+              preview: String(merged.text || "").slice(0, 96),
+              sessionId
+            });
+            return {
+              ok: false,
+              error: retryBudget.reason,
+              shadowDrop: true,
+              originRetrySkipped: true,
+              merged,
+              scored,
+              maxRms,
+              recordedMs
+            };
+          }
+          noteOriginRetryConsumedV0(sessionId);
+          emitVoiceEngineTelemetryV3("ORIGIN_QUARANTINE_RETRY", {
+            reason: scored.skipReasons?.[0] || "post_stt_template_quarantine",
+            preview: String(merged.text || "").slice(0, 96),
+            sessionId
+          });
+          const retryRes = await queryRhizohVoiceTranscribeResilientV3(fullBlob, {
+            mimeType,
+            languageCode: readVoiceLanguageLockBcp47V0() || languageCode,
+            traceId: opts.traceId,
+            sessionId,
+            bytes,
+            recordedMs,
+            chunks: captureChunks,
+            chunkCount: captureChunks.length,
+            warmProbe,
+            originReeval: true
+          });
+          if (retryRes.ok) {
+            const retryMerged =
+              retryRes.merged || resolveVoiceTranscriptV3(retryRes.google || retryRes.fast, retryRes.whisper);
+            const retryScored = rescoreVoiceTranscriptAfterMergeV0({
+              text: retryMerged.text,
+              confidence: retryMerged.confidence,
+              strategy: retryMerged.strategy || "origin_reeval_direct",
+              maxRms,
+              recordedMs,
+              languageHint: readVoiceLanguageLockV0(),
+              originReevalPass: true
+            });
+            if (!retryScored.skip) {
+              merged = Object.freeze({
+                ...retryMerged,
+                text: retryScored.text || retryMerged.text,
+                confidence: Number.isFinite(Number(retryScored.confidence))
+                  ? Number(retryScored.confidence)
+                  : retryMerged.confidence,
+                strategy: retryMerged.strategy || "origin_reeval_direct"
+              });
+              scored = retryScored;
+            } else if (retryScored.terminalDrop) {
+              publishPostSttOriginFilterDebugV0(retryScored.originFilter);
+              emitVoiceEngineTelemetryV3("FINAL_TRANSCRIPT_SHADOW_DROP", {
+                reason: retryScored.skipReasons?.[0] || "stt_quarantine",
+                preview: String(retryMerged.text || "").slice(0, 96),
+                postSttOrigin: retryScored.originFilter?.reason,
+                originRetryFailed: true
+              });
+              return {
+                ok: false,
+                error: "stt_quarantine",
+                shadowDrop: true,
+                merged: retryMerged,
+                scored: retryScored,
+                maxRms
+              };
+            } else {
+              emitVoiceEngineTelemetryV3("ORIGIN_QUARANTINE_RETRY_EXHAUSTED", {
+                preview: String(merged.text || "").slice(0, 96)
+              });
+              return {
+                ok: false,
+                error: "origin_quarantine_retry_exhausted",
+                shadowDrop: true,
+                maxRms,
+                recordedMs
+              };
+            }
+          } else {
+            return {
+              ok: false,
+              error: retryRes.error || "origin_reeval_failed",
+              shadowDrop: true,
+              maxRms,
+              recordedMs
+            };
+          }
+        }
+
+        if (scored.quarantine && scored.terminalDrop) {
           busy = false;
           setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
+          publishPostSttOriginFilterDebugV0(scored.originFilter);
           emitVoiceEngineTelemetryV3("FINAL_TRANSCRIPT_SHADOW_DROP", {
             reason: scored.skipReasons?.[0] || "stt_quarantine",
             dropKind: "noise_drop",
             preview: String(merged.text || "").slice(0, 96),
             quarantineId: scored.quarantineId,
-            silent: true
+            silent: true,
+            postSttOrigin: scored.originFilter?.reason
           });
           return {
             ok: false,

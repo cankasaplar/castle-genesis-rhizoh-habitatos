@@ -640,7 +640,15 @@ export async function queryRhizohVoiceTranscribeResilientV3(audio, opts = {}) {
 
     plan = coerceTranscribePlanForGatewayV1(plan);
 
-
+    if (opts.originReeval === true) {
+      plan = Object.freeze({
+        ...plan,
+        mode: "direct",
+        path: "fast",
+        segmentCount: 1,
+        reason: "origin_quarantine_reeval"
+      });
+    }
 
     emitVoiceEngineTelemetryV3("TRANSCRIBE_PREDICTIVE", {
 

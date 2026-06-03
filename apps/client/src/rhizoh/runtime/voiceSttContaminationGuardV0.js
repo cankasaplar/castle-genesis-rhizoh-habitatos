@@ -8,6 +8,7 @@ import {
   measureArabicScriptRatioV0,
   measureLatinScriptRatioV0
 } from "./sttScriptLocaleGuardV0.js";
+import { isConversationalTurkishUtteranceV3 } from "./voiceEngineV3/voiceTranscriptSanityV3.js";
 
 export const VOICE_STT_CONTAMINATION_GUARD_SCHEMA_V0 =
   "castle.rhizoh.voice_stt_contamination_guard.v0";
@@ -53,6 +54,140 @@ const UI_CHROME_ECHO_PATTERNS_V0 = [
   /mikrofon\s+ses\s+alm/i,
   /en\s+az\s+bir\s+saniye\s+konuş/i
 ];
+
+/** Strong leak signatures — high weight in fuzzy scorer. */
+const STRONG_PLATFORM_SCORE_PATTERNS_V0 = [
+  { re: /don['']?t\s+forget\s+to\s+like/i, weight: 0.38 },
+  { re: /thank\s+you\s+for\s+watching/i, weight: 0.4 },
+  { re: /thanks?\s+for\s+watching/i, weight: 0.38 },
+  { re: /share\s+and\s+subscribe/i, weight: 0.36 },
+  { re: /subscribe\s+to\s+(my\s+)?(channel|kanal)/i, weight: 0.34 },
+  { re: /kanal(a|ıma|ima)\s+(abone|subscribe)/i, weight: 0.34 },
+  { re: /izledi[ğg]iniz\s+i[çc]in\s+te[sş]ekk/i, weight: 0.32 },
+  { re: /المترجم/i, weight: 0.42 },
+  { re: /للإعجاب بالفيديو/i, weight: 0.4 },
+  { re: /سبحانك اللهم/i, weight: 0.42 }
+];
+
+/** Weak cues — conversational mention should not hard-drop alone. */
+const WEAK_TEMPLATE_SCORE_PATTERNS_V0 = [
+  { re: /\bsubscribe\b/i, weight: 0.12 },
+  { re: /\bthank you\b/i, weight: 0.1 },
+  { re: /\bte[sş]ekk[üu]r/i, weight: 0.08 },
+  { re: /\babone\b/i, weight: 0.11 }
+];
+
+const CAPTION_SUBTITLE_SCORE_PATTERNS_V0 = [
+  { re: /(?:^|\s)(?:\[?\s*(?:caption|subtitle|altyaz[ıi]|cc)\s*\]?)/iu, weight: 0.45 },
+  { re: />>|<<|\(\s*music\s*\)/iu, weight: 0.28 }
+];
+
+export const TEMPLATE_SCORE_HARD_DROP_V0 = 0.92;
+export const TEMPLATE_SCORE_QUARANTINE_MIN_V0 = 0.75;
+
+function clamp01(n) {
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(1, n));
+}
+
+function maxPatternScoreV0(text, patterns) {
+  const norm = normalizeContaminationTextV0(text);
+  if (!norm) return 0;
+  let max = 0;
+  for (const { re, weight } of patterns) {
+    if (re.test(norm) || re.test(String(text || ""))) {
+      max = Math.max(max, weight);
+    }
+  }
+  return max;
+}
+
+/**
+ * Fuzzy template / UI / subtitle leak score (0..1).
+ * @param {string} text
+ * @param {{ confidence?: number, strategy?: string, band?: string }} [opts]
+ */
+export function scoreSttTemplateLeakV0(text, opts = {}) {
+  const raw = String(text || "").trim();
+  const norm = normalizeContaminationTextV0(raw);
+  if (!norm) {
+    return Object.freeze({
+      templateScore: 0,
+      uiLeak: 0,
+      subtitleLeak: 0,
+      platformOutro: 0,
+      uiChrome: 0
+    });
+  }
+
+  let platformOutro = 0;
+  let strongHits = 0;
+  for (const { re, weight } of STRONG_PLATFORM_SCORE_PATTERNS_V0) {
+    if (re.test(norm) || re.test(raw)) {
+      strongHits += 1;
+      platformOutro = clamp01(platformOutro + weight * 0.82);
+    }
+  }
+  if (strongHits >= 2) platformOutro = clamp01(platformOutro + 0.22);
+  if (isPlatformOutroTemplateV0(raw)) platformOutro = Math.max(platformOutro, 0.93);
+
+  let uiChrome = 0;
+  for (const re of UI_CHROME_ECHO_PATTERNS_V0) {
+    if (re.test(norm)) uiChrome = Math.max(uiChrome, 0.34);
+  }
+  if (isUiChromeEchoTemplateV0(raw)) uiChrome = Math.max(uiChrome, 0.82);
+
+  let subtitleLeak = maxPatternScoreV0(raw, CAPTION_SUBTITLE_SCORE_PATTERNS_V0);
+  if (STT_TAB_AUDIO_PATTERNS_V0.some((re) => re.test(raw))) {
+    subtitleLeak = Math.max(subtitleLeak, 0.78);
+  }
+  if (isMixedScriptTabLeakV0(raw)) subtitleLeak = Math.max(subtitleLeak, 0.62);
+
+  let weakCue = 0;
+  let weakHits = 0;
+  for (const { re, weight } of WEAK_TEMPLATE_SCORE_PATTERNS_V0) {
+    if (re.test(norm) || re.test(raw)) {
+      weakHits += 1;
+      weakCue = Math.max(weakCue, weight);
+    }
+  }
+  if (weakHits >= 2) weakCue = clamp01(Math.max(weakCue, 0.53 + weakHits * 0.11));
+  if (weakHits >= 3) weakCue = clamp01(Math.max(weakCue, 0.84));
+  platformOutro = Math.max(platformOutro, weakCue);
+
+  if (hasInternalTranscriptRepetitionV3(raw, 14) && (platformOutro > 0.2 || uiChrome > 0.2)) {
+    platformOutro = clamp01(platformOutro + 0.16);
+    uiChrome = clamp01(uiChrome + 0.12);
+  }
+
+  const confirmedPlatformTemplate =
+    isPlatformOutroTemplateV0(raw) || isUiChromeEchoTemplateV0(raw);
+
+  const conf = Number(opts.confidence);
+  const conversational = isConversationalTurkishUtteranceV3(raw);
+  if (!confirmedPlatformTemplate) {
+    if (Number.isFinite(conf) && conf >= 0.62 && conversational) {
+      platformOutro *= 0.55;
+      uiChrome *= 0.5;
+      weakCue *= 0.45;
+    } else if (Number.isFinite(conf) && conf >= 0.55 && raw.split(/\s+/).length >= 4) {
+      platformOutro *= 0.72;
+      uiChrome *= 0.68;
+    }
+  }
+
+  const uiLeak = clamp01(Math.max(uiChrome, platformOutro * 0.88));
+  subtitleLeak = clamp01(subtitleLeak);
+  const templateScore = clamp01(Math.max(platformOutro, uiLeak * 0.95, subtitleLeak * 0.92));
+
+  return Object.freeze({
+    templateScore,
+    uiLeak,
+    subtitleLeak,
+    platformOutro: clamp01(platformOutro),
+    uiChrome: clamp01(uiChrome)
+  });
+}
 
 function normalizeContaminationTextV0(text) {
   return String(text || "")

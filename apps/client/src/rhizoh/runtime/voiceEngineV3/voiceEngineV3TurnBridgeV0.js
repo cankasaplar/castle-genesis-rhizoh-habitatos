@@ -5,6 +5,7 @@ import { noteVoiceSttEventV0 } from "../voiceSttTelemetryV0.js";
 import { logVoiceInfoV0, logVoiceWarnV0 } from "../rhizohProductionLogNamespacesV0.js";
 import { stampVoiceUserGestureV0 } from "../voiceUserGestureAnchorV0.js";
 import { endVoiceSessionLanguageLockV0 } from "../rhizohConversationLanguageV0.js";
+import { endOriginConfidenceEmaSessionV0 } from "../rhizohSttOriginConfidenceEmaV0.js";
 import { handleRhizohVoiceTranscriptV0 } from "../rhizohVoiceLlmDispatchV0.js";
 import { castleLayerDecisionTraceLogDetailV1 } from "../../../castle/layers/castleLayerDecisionTraceV1.js";
 import {
@@ -112,6 +113,7 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     refs.voiceSttStartInFlight.current = false;
     releaseSessionLock(sessionId);
     endVoiceSessionLanguageLockV0();
+    endOriginConfidenceEmaSessionV0();
     callbacks.setMicListening(false);
     releaseVoiceStreamLayerLockV1(reason, { sessionId, source: "mic_v3", ...detail });
   }
@@ -143,6 +145,7 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     refs.voiceSttStartInFlight.current = false;
     releaseSessionLock(sessionId);
     endVoiceSessionLanguageLockV0();
+    endOriginConfidenceEmaSessionV0();
 
     if (result.ok && result.merged?.text) {
       releaseVoiceStreamLayerLockV1(VOICE_STREAM_ABORT_REASON_V1.FINISH_OK, {

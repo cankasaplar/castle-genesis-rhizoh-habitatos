@@ -18,6 +18,11 @@ import {
 } from "./sttScriptLocaleGuardV0.js";
 import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
 import { getActiveVoiceEnvironmentSessionV0 } from "./voiceEnvironmentProfileMemoryV0.js";
+import {
+  evaluatePostSttSemanticOriginV0,
+  measureTranscriptScriptEntropyV0
+} from "./rhizohVoicePostSttSemanticOriginFilterV0.js";
+import { isVoicePostSttOriginFilterEnabledV0 } from "./rhizohVoiceIngestGateFlagsV0.js";
 
 export const RHIZOH_POST_MERGE_TRANSCRIPT_RESCORE_SCHEMA_V0 =
   "castle.rhizoh.post_merge_transcript_rescore.v0";
@@ -27,18 +32,7 @@ const LOW_RMS_INFERENCE_SKIP_V0 = 0.018;
 const LOW_CONF_INFERENCE_SKIP_V0 = 0.58;
 const HIGH_SCRIPT_ENTROPY_V0 = 0.72;
 
-/**
- * @param {string} text
- */
-export function measureTranscriptScriptEntropyV0(text) {
-  const t = String(text || "");
-  const compact = t.replace(/\s+/g, "");
-  if (!compact) return 0;
-  const unique = new Set([...compact]).size;
-  const uniqueRatio = unique / compact.length;
-  const arabicRatio = measureArabicScriptRatioV0(t);
-  return Math.max(0, Math.min(1, uniqueRatio * 0.55 + arabicRatio * 0.45));
-}
+export { measureTranscriptScriptEntropyV0 };
 
 /**
  * @param {{
@@ -49,6 +43,45 @@ export function measureTranscriptScriptEntropyV0(text) {
  * }} input
  */
 export function shouldSkipLanguageInferenceForTranscriptV0(input = {}) {
+  if (isVoicePostSttOriginFilterEnabledV0()) {
+    const origin = evaluatePostSttSemanticOriginV0(input);
+    if (!origin.pass) {
+      return Object.freeze({
+        skip: true,
+        quarantine: origin.terminalDrop === true,
+        originRetry: origin.retryStt === true,
+        terminalDrop: origin.terminalDrop === true,
+        reasons: Object.freeze([origin.reason]),
+        entropy: origin.entropy,
+        arabicRatio: origin.arabicRatio,
+        latinRatio: origin.latinRatio,
+        lowRms: Number.isFinite(Number(input.maxRms)) && Number(input.maxRms) < LOW_RMS_INFERENCE_SKIP_V0,
+        lowConfidence:
+          !Number.isFinite(Number(input.confidence)) ||
+          Number(input.confidence) < LOW_CONF_INFERENCE_SKIP_V0,
+        crossScriptRemap: origin.crossScriptRemap === true,
+        contaminationKind: origin.originKind || null,
+        originFilter: origin,
+        originConfidence: origin.originConfidence,
+        originConfidenceStable: origin.originConfidenceStable
+      });
+    }
+    return Object.freeze({
+      skip: false,
+      quarantine: false,
+      originRetry: false,
+      terminalDrop: false,
+      reasons: Object.freeze([]),
+      entropy: origin.entropy,
+      arabicRatio: origin.arabicRatio,
+      latinRatio: origin.latinRatio,
+      crossScriptRemap: origin.crossScriptRemap === true,
+      originFilter: origin,
+      originConfidence: origin.originConfidence,
+      originConfidenceStable: origin.originConfidenceStable
+    });
+  }
+
   const text = String(input.text || "").trim();
   const strategy = String(input.strategy || "");
   const maxRms = Number(input.maxRms);
@@ -145,10 +178,32 @@ export function rescoreVoiceTranscriptAfterMergeV0(input = {}) {
     text: originalText,
     confidence: input.confidence,
     strategy,
-    maxRms: input.maxRms
+    maxRms: input.maxRms,
+    originReevalPass: input.originReevalPass === true
   });
 
   if (skipEval.skip) {
+    if (skipEval.originRetry) {
+      return Object.freeze({
+        schema: RHIZOH_POST_MERGE_TRANSCRIPT_RESCORE_SCHEMA_V0,
+        text,
+        originalText,
+        crossScriptRemap: cross.remapped === true,
+        skipLanguageInference: true,
+        originRetry: true,
+        terminalDrop: false,
+        quarantine: false,
+        provenance,
+        skipReasons: skipEval.reasons,
+        scriptEntropy: skipEval.entropy,
+        originFilter: skipEval.originFilter,
+        originConfidenceStable: skipEval.originConfidenceStable,
+        maxRms: Number.isFinite(Number(input.maxRms)) ? Number(input.maxRms) : null,
+        confidence: Number.isFinite(Number(input.confidence)) ? Number(input.confidence) : undefined,
+        strategy
+      });
+    }
+
     const quarantineRow = pushSttQuarantineEntryV0({
       text: originalText,
       reasons: skipEval.reasons,
@@ -166,10 +221,13 @@ export function rescoreVoiceTranscriptAfterMergeV0(input = {}) {
       crossScriptRemap: cross.remapped === true,
       skipLanguageInference: true,
       quarantine: true,
+      terminalDrop: true,
+      originRetry: false,
       quarantineId: quarantineRow.id,
       provenance,
       skipReasons: skipEval.reasons,
       scriptEntropy: skipEval.entropy,
+      originFilter: skipEval.originFilter,
       phantomLikely: true,
       maxRms: Number.isFinite(Number(input.maxRms)) ? Number(input.maxRms) : null,
       confidence: Number.isFinite(Number(input.confidence)) ? Number(input.confidence) : undefined,

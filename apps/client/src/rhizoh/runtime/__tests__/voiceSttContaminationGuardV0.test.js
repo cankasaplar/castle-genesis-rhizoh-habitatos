@@ -3,7 +3,8 @@ import {
   evaluateInternalRepetitionRiskV0,
   evaluateSttContaminationV0,
   isPlatformOutroTemplateV0,
-  isUiChromeEchoTemplateV0
+  isUiChromeEchoTemplateV0,
+  scoreSttTemplateLeakV0
 } from "../voiceSttContaminationGuardV0.js";
 import {
   __resetSttQuarantineBufferForTestV0,
@@ -41,6 +42,19 @@ describe("voiceSttContaminationGuardV0", () => {
 
   it("flags phantom polite closure", () => {
     expect(evaluateSttContaminationV0("rica ederim").contaminated).toBe(true);
+  });
+
+  it("scores fuzzy template leak for outro vs conversational subscribe", () => {
+    const outro = scoreSttTemplateLeakV0(
+      "Thank you for watching! Don't forget to like and subscribe!",
+      { confidence: 0.7 }
+    );
+    const conversational = scoreSttTemplateLeakV0(
+      "Rhizoh subscribe kelimesi ne demek",
+      { confidence: 0.74 }
+    );
+    expect(outro.templateScore).toBeGreaterThan(0.92);
+    expect(conversational.templateScore).toBeLessThan(0.75);
   });
 
   it("does not flag short genuine greeting", () => {
