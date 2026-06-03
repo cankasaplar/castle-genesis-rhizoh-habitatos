@@ -114,7 +114,10 @@ export async function postRhizohLlmTurnV0(input = {}) {
       },
       options: {
         maxTokens: input.options?.maxTokens ?? 768,
-        language: input.options?.language ?? llmLang.bcp47
+        language: input.options?.language ?? llmLang.bcp47,
+        ...(typeof input.options?.temperature === "number"
+          ? { temperature: input.options.temperature }
+          : {})
       }
     },
     { voiceTurn: input.voiceTurn === true }

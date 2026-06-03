@@ -53,6 +53,12 @@ import {
   RHIZOH_INPUT_SOURCE_V0
 } from "./rhizohInputProvenanceV0.js";
 import { VOICE_PIPELINE_PATH_V0 } from "./rhizohVoiceDualPathRouterV0.js";
+import {
+  resolveVoiceUxFallbackV0,
+  resolveSemanticGrayLlmShapingV0,
+  shouldNoteVoiceVerifyBudgetV0
+} from "./rhizohVoiceGrayZoneVerifyV0.js";
+import { noteVoiceVerifyAttemptV0, isVoiceVerifyBudgetExhaustedV0 } from "./rhizohVoiceVerifyBudgetV0.js";
 
 export const RHIZOH_VOICE_LLM_DISPATCH_SCHEMA_V0 = "castle.rhizoh.voice_llm_dispatch.v0";
 
@@ -112,8 +118,15 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     return Object.freeze({ ok: false, error: "empty_transcript" });
   }
 
-  if (opts.pipelinePath === "gray" && opts.verifyReply) {
-    const reply = String(opts.verifyReply || "").trim();
+  const uxFallback = resolveVoiceUxFallbackV0(opts.decision, msg, {
+    locale: resolveOutputLanguageCodeV0(),
+    sessionId: opts.sessionId
+  });
+  if (uxFallback?.reply) {
+    const reply = String(uxFallback.reply || "").trim();
+    if (shouldNoteVoiceVerifyBudgetV0(opts.decision, opts.sessionId)) {
+      noteVoiceVerifyAttemptV0(opts.sessionId);
+    }
     if (opts.speakReply !== false && reply) {
       await speakRhizohReplyChunkedV0(reply, {
         smoothAfterAck: false,
@@ -121,17 +134,38 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
         traceId
       });
     }
-    recordOlpBehavioralTurnV0({ channel: "voice", depthMode: "gray_verify" });
+    recordOlpBehavioralTurnV0({
+      channel: "voice",
+      depthMode: uxFallback.kind === "uncertainty_hold" ? "uncertainty_hold" : "gray_verify"
+    });
     const graph = closeVoiceExecutionTraceV0(traceId, {
       ok: true,
-      execution: opts.decision?.action || "gray_verify",
-      grayZone: true
+      execution: uxFallback.kind || "ux_fallback",
+      uxFallback: true
     });
     return Object.freeze({
       ok: true,
-      grayVerify: true,
-      uncertaintyHold: opts.decision?.action === "hold",
+      uxFallback: true,
+      grayVerify: uxFallback.kind !== "uncertainty_hold",
+      uncertaintyHold: uxFallback.kind === "uncertainty_hold",
       reply,
+      traceId,
+      decision: opts.decision,
+      graph,
+      llmBypass: true
+    });
+  }
+
+  if (opts.decision?.speakMode === "hold") {
+    const graph = closeVoiceExecutionTraceV0(traceId, {
+      ok: true,
+      execution: "ux_budget_silent_hold",
+      uxBudgetExhausted: isVoiceVerifyBudgetExhaustedV0(opts.sessionId)
+    });
+    return Object.freeze({
+      ok: true,
+      silentHold: true,
+      uxBudgetExhausted: true,
       traceId,
       decision: opts.decision,
       graph,
@@ -416,6 +450,7 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
   }
 
   const llmT0 = Date.now();
+  const semanticGray = resolveSemanticGrayLlmShapingV0(opts.decision);
   const out = await postRhizohLlmTurnV0({
     message: msg,
     traceId,
@@ -426,7 +461,18 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     userTurnCount: opts.userTurnCount,
     conversationPhase: opts.conversationPhase,
     idToken: opts.idToken,
-    sourcePath: "voice_llm_dispatch"
+    sourcePath: semanticGray ? "voice_llm_dispatch_semantic_gray" : "voice_llm_dispatch",
+    context: semanticGray
+      ? {
+          voicePipeline: Object.freeze({
+            semanticGray: true,
+            shaping: semanticGray
+          })
+        }
+      : undefined,
+    options: semanticGray
+      ? { maxTokens: semanticGray.maxTokens, temperature: semanticGray.temperatureCap }
+      : undefined
   });
   const llmWaitMs = Date.now() - llmT0;
   const glue = buildConversationContinuityGlueV0({ prep: out.prep, llmWaitMs });

@@ -1,6 +1,7 @@
 /**
- * Dual-path voice router — decision BEFORE analysis.
- * Tiers: hard_drop (<0.35) | gray verify (0.35–0.55) | slow LLM (>0.55).
+ * Dual-path voice router — single decision spine.
+ * SHOULD_SPEAK (silent | hold | speak) → HOW (fast_reflex | slow_llm).
+ * Gray tier is a SLOW modifier only; VERIFY is execution UX, not routing.
  */
 
 import { probeFastPrecheckMatchV0, runFastPrecheckFromTextV0 } from "./rhizohFastPrecheckV0.js";
@@ -10,19 +11,36 @@ import { isUiChromeEchoTemplateV0, isPlatformOutroTemplateV0 } from "./voiceSttC
 import { VOICE_DIRECTED_SPEECH_BAND } from "./voiceDirectedSpeechObservationV0.js";
 import {
   hasMeaningfulSpeechSignalV0,
-  resolveGrayZoneVerifyReplyV0,
+  isClearQuestionPatternV0,
   resolveUncertaintyHoldReplyV0,
   resolveVoiceConfidenceTierV0,
+  resolveVoiceGrayFlagsV0,
   VOICE_CONFIDENCE_TIER_V0,
   VOICE_DROP_KIND_V0
 } from "./rhizohVoiceGrayZoneVerifyV0.js";
+import {
+  getVoiceVerifyCountV0,
+  isVoiceVerifyBudgetExhaustedV0
+} from "./rhizohVoiceVerifyBudgetV0.js";
 
 export const RHIZOH_VOICE_DUAL_PATH_ROUTER_SCHEMA_V0 = "castle.rhizoh.voice_dual_path_router.v0";
 
+/** @deprecated telemetry alias — prefer speakMode + execMode */
 export const VOICE_PIPELINE_PATH_V0 = Object.freeze({
   FAST: "fast_path",
   GRAY: "gray_zone",
   SLOW: "slow_path"
+});
+
+export const VOICE_SPEAK_MODE_V0 = Object.freeze({
+  SILENT: "silent",
+  HOLD: "hold",
+  SPEAK: "speak"
+});
+
+export const VOICE_EXEC_MODE_V0 = Object.freeze({
+  FAST_REFLEX: "fast_reflex",
+  SLOW_LLM: "slow_llm"
 });
 
 export const VOICE_FAST_INTENT_V0 = Object.freeze({
@@ -31,6 +49,7 @@ export const VOICE_FAST_INTENT_V0 = Object.freeze({
   NOISE: "noise"
 });
 
+/** @deprecated telemetry alias — derived from speakMode + execMode */
 export const VOICE_PIPELINE_ACTION_V0 = Object.freeze({
   REFLEX: "reflex",
   DROP: "drop",
@@ -45,55 +64,113 @@ const TECH_QUESTION_RE_V0 = /\b(nasıl|nasil|how|düzelt|duzelt|fix|neden|why)\b
 const DIRECTED_HINT_RE_V0 =
   /\b(rhizoh|rizo|dostum|duyabiliyor\s+musun|beni\s+duy|sohbet)\b/i;
 
-function buildDropDecision(fastIntent, reason, band, dropKind, extra = {}) {
+function attachLegacyFields(decision) {
+  let action = VOICE_PIPELINE_ACTION_V0.DROP;
+  let path = VOICE_PIPELINE_PATH_V0.FAST;
+  let reply;
+
+  if (decision.speakMode === VOICE_SPEAK_MODE_V0.HOLD) {
+    action = VOICE_PIPELINE_ACTION_V0.HOLD;
+    path = VOICE_PIPELINE_PATH_V0.FAST;
+    reply = resolveUncertaintyHoldReplyV0();
+  } else if (decision.speakMode === VOICE_SPEAK_MODE_V0.SPEAK) {
+    if (decision.execMode === VOICE_EXEC_MODE_V0.FAST_REFLEX) {
+      action = VOICE_PIPELINE_ACTION_V0.REFLEX;
+      path = VOICE_PIPELINE_PATH_V0.FAST;
+    } else if (decision.execMode === VOICE_EXEC_MODE_V0.SLOW_LLM) {
+      action = VOICE_PIPELINE_ACTION_V0.LLM;
+      path = VOICE_PIPELINE_PATH_V0.SLOW;
+    }
+  }
+
   return Object.freeze({
-    schema: RHIZOH_VOICE_DUAL_PATH_ROUTER_SCHEMA_V0,
-    path: VOICE_PIPELINE_PATH_V0.FAST,
-    action: VOICE_PIPELINE_ACTION_V0.DROP,
-    fastIntent,
-    reason,
-    dropKind,
-    silent: true,
-    band,
-    latencyClass: "0-150ms",
-    ...extra
+    ...decision,
+    action,
+    path,
+    reply,
+    silent: decision.speakMode === VOICE_SPEAK_MODE_V0.SILENT
   });
 }
 
-function buildVerifyDecision(text, fastIntent, reason, band, tier, extra = {}) {
-  const locale = resolveOutputLanguageCodeV0();
-  const verify = resolveGrayZoneVerifyReplyV0(text, { locale, fastIntent });
-  return Object.freeze({
-    schema: RHIZOH_VOICE_DUAL_PATH_ROUTER_SCHEMA_V0,
-    path: VOICE_PIPELINE_PATH_V0.GRAY,
-    action: VOICE_PIPELINE_ACTION_V0.VERIFY,
-    fastIntent,
-    reason,
-    band,
-    confidenceTier: tier,
-    verify,
-    reply: verify.reply,
-    silent: false,
-    latencyClass: "gray_verify",
-    ...extra
+function buildSilentDecision(fastIntent, reason, band, dropKind, extra = {}) {
+  const gray = resolveVoiceGrayFlagsV0(VOICE_CONFIDENCE_TIER_V0.HARD_DROP, {
+    semanticGray: false,
+    uxGray: false
   });
+  return attachLegacyFields(
+    Object.freeze({
+      schema: RHIZOH_VOICE_DUAL_PATH_ROUTER_SCHEMA_V0,
+      speakMode: VOICE_SPEAK_MODE_V0.SILENT,
+      execMode: null,
+      ...gray,
+      fastIntent,
+      reason,
+      dropKind,
+      band,
+      latencyClass: "0-150ms",
+      ...extra
+    })
+  );
 }
 
 function buildHoldDecision(fastIntent, reason, band, tier, extra = {}) {
-  const locale = resolveOutputLanguageCodeV0();
-  return Object.freeze({
-    schema: RHIZOH_VOICE_DUAL_PATH_ROUTER_SCHEMA_V0,
-    path: VOICE_PIPELINE_PATH_V0.GRAY,
-    action: VOICE_PIPELINE_ACTION_V0.HOLD,
-    fastIntent,
-    reason,
-    band,
-    confidenceTier: tier,
-    reply: resolveUncertaintyHoldReplyV0(locale),
-    silent: false,
-    latencyClass: "uncertainty_hold",
-    ...extra
-  });
+  const gray = resolveVoiceGrayFlagsV0(tier, { uxGray: false });
+  return attachLegacyFields(
+    Object.freeze({
+      schema: RHIZOH_VOICE_DUAL_PATH_ROUTER_SCHEMA_V0,
+      speakMode: VOICE_SPEAK_MODE_V0.HOLD,
+      execMode: null,
+      semanticGray: gray.semanticGray,
+      uxGray: false,
+      grayModifier: false,
+      fastIntent,
+      reason,
+      band,
+      confidenceTier: tier,
+      latencyClass: "uncertainty_hold",
+      ...extra
+    })
+  );
+}
+
+function buildSpeakFastDecision(fastIntent, reason, band, tier, precheck, extra = {}) {
+  const gray = resolveVoiceGrayFlagsV0(tier, { semanticGray: false, uxGray: false });
+  return attachLegacyFields(
+    Object.freeze({
+      schema: RHIZOH_VOICE_DUAL_PATH_ROUTER_SCHEMA_V0,
+      speakMode: VOICE_SPEAK_MODE_V0.SPEAK,
+      execMode: VOICE_EXEC_MODE_V0.FAST_REFLEX,
+      ...gray,
+      fastIntent,
+      reason,
+      band,
+      confidenceTier: tier,
+      precheck,
+      latencyClass: "0-150ms",
+      ...extra
+    })
+  );
+}
+
+function buildSpeakSlowDecision(fastIntent, reason, band, tier, guards, extra = {}) {
+  const gray = resolveVoiceGrayFlagsV0(tier, extra);
+  return attachLegacyFields(
+    Object.freeze({
+      schema: RHIZOH_VOICE_DUAL_PATH_ROUTER_SCHEMA_V0,
+      speakMode: VOICE_SPEAK_MODE_V0.SPEAK,
+      execMode: VOICE_EXEC_MODE_V0.SLOW_LLM,
+      semanticGray: gray.semanticGray,
+      uxGray: gray.uxGray,
+      grayModifier: gray.grayModifier,
+      fastIntent,
+      reason,
+      band,
+      confidenceTier: tier,
+      guards,
+      latencyClass: gray.uxGray ? "slow_ux_gray" : gray.semanticGray ? "slow_semantic_gray" : "llm_when_needed",
+      ...extra
+    })
+  );
 }
 
 /**
@@ -129,46 +206,155 @@ export function classifyVoiceFastIntentV0(text) {
 }
 
 /**
+ * @param {string} text
+ * @param {{ intent?: string, band?: string, guards?: object, directed?: boolean }} ctx
+ */
+function trySlowPathEligibilityV0(text, ctx = {}) {
+  const guards = ctx.guards;
+  if (!guards?.allowSlow) return false;
+  const directed = ctx.directed === true;
+  const words = text.split(/\s+/).filter(Boolean).length;
+  const clearQuestion = isClearQuestionPatternV0(text);
+  if (clearQuestion) return true;
+  return directed && (ctx.intent === VOICE_FAST_INTENT_V0.QUESTION || words >= 4);
+}
+
+/**
+ * Single spine: intent + confidence + guards → one decision.
+ * @param {object} ctx
+ */
+function resolveDecisionSpineV0(ctx) {
+  const {
+    text,
+    fast,
+    tier,
+    directed,
+    meaningful,
+    guards,
+    band,
+    verifyCount,
+    verifyBudgetExhausted,
+    locale
+  } = ctx;
+
+  if (fast.intent === VOICE_FAST_INTENT_V0.GREETING && fast.precheck) {
+    const hit = runFastPrecheckFromTextV0(text, { locale });
+    return buildSpeakFastDecision(
+      VOICE_FAST_INTENT_V0.GREETING,
+      directed ? "fast_greeting_reflex" : "unknown_band_fast_reflex_only",
+      band,
+      tier,
+      hit
+    );
+  }
+
+  const slowEligible = trySlowPathEligibilityV0(text, {
+    guards,
+    directed,
+    intent: fast.intent
+  });
+  const clearQuestion = isClearQuestionPatternV0(text);
+
+  if (
+    tier !== VOICE_CONFIDENCE_TIER_V0.HARD_DROP &&
+    clearQuestion &&
+    slowEligible
+  ) {
+    return buildSpeakSlowDecision(fast.intent, "intent_override_slow_ready", band, tier, guards, {
+      intentOverride: true,
+      verifyCount,
+      uxGray: false
+    });
+  }
+
+  if (tier === VOICE_CONFIDENCE_TIER_V0.SLOW_READY && slowEligible) {
+    return buildSpeakSlowDecision(fast.intent, "directed_slow_llm", band, tier, guards, {
+      verifyCount
+    });
+  }
+
+  if (tier === VOICE_CONFIDENCE_TIER_V0.GRAY_ZONE) {
+    if (verifyBudgetExhausted && slowEligible) {
+      return buildSpeakSlowDecision(fast.intent, "verify_budget_force_slow", band, tier, guards, {
+        verifyCount,
+        verifyBudgetExhausted: true,
+        uxGray: false
+      });
+    }
+    if (slowEligible && (fast.intent === VOICE_FAST_INTENT_V0.QUESTION || meaningful)) {
+      return buildSpeakSlowDecision(fast.intent, "gray_slow_modifier", band, tier, guards, {
+        verifyCount
+      });
+    }
+    if (meaningful || fast.intent === VOICE_FAST_INTENT_V0.QUESTION) {
+      return buildHoldDecision(fast.intent, "gray_uncertainty_hold", band, tier, {
+        guards,
+        verifyCount
+      });
+    }
+  }
+
+  if (tier === VOICE_CONFIDENCE_TIER_V0.HARD_DROP) {
+    if (meaningful || fast.intent === VOICE_FAST_INTENT_V0.QUESTION) {
+      return buildHoldDecision(fast.intent, "hard_drop_meaningful_hold", band, tier, { guards });
+    }
+    if (fast.intent === VOICE_FAST_INTENT_V0.NOISE) {
+      return buildSilentDecision(fast.intent, "fast_noise_drop", band, VOICE_DROP_KIND_V0.NOISE, {
+        guards
+      });
+    }
+  }
+
+  if (verifyBudgetExhausted && slowEligible) {
+    return buildSpeakSlowDecision(fast.intent, "verify_budget_force_slow", band, tier, guards, {
+      verifyCount,
+      verifyBudgetExhausted: true,
+      uxGray: false
+    });
+  }
+
+  if (meaningful) {
+    return buildHoldDecision(fast.intent, "uncertainty_hold", band, tier, { guards, verifyCount });
+  }
+
+  return buildSilentDecision(
+    fast.intent,
+    tier === VOICE_CONFIDENCE_TIER_V0.HARD_DROP ? "hard_drop_noise" : "fast_noise_drop",
+    band,
+    VOICE_DROP_KIND_V0.NOISE,
+    { guards, confidenceTier: tier }
+  );
+}
+
+/**
  * @param {{
  *   text?: string,
  *   confidence?: number,
  *   band?: string,
  *   maxRms?: number,
  *   strategy?: string,
- *   provenance?: object
+ *   provenance?: object,
+ *   sessionId?: string
  * }} input
  */
 export function resolveVoicePipelineDecisionV0(input = {}) {
   const text = String(input.text || "").trim();
   const confidence = Number(input.confidence);
   const band = String(input.band || VOICE_DIRECTED_SPEECH_BAND.UNKNOWN);
+  const sessionId = String(input.sessionId || "");
   const fast = classifyVoiceFastIntentV0(text);
   const tier = resolveVoiceConfidenceTierV0(confidence);
   const directed = band === VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE;
   const meaningful = hasMeaningfulSpeechSignalV0(text, { fastIntent: fast.intent });
   const locale = resolveOutputLanguageCodeV0();
+  const verifyCount = getVoiceVerifyCountV0(sessionId);
+  const verifyBudgetExhausted = isVoiceVerifyBudgetExhaustedV0(sessionId);
 
   if (isUiChromeEchoTemplateV0(text)) {
-    return buildDropDecision(fast.intent, "ui_chrome_echo", band, VOICE_DROP_KIND_V0.UI);
+    return buildSilentDecision(fast.intent, "ui_chrome_echo", band, VOICE_DROP_KIND_V0.UI);
   }
   if (isPlatformOutroTemplateV0(text)) {
-    return buildDropDecision(fast.intent, "platform_template_leak", band, VOICE_DROP_KIND_V0.NOISE);
-  }
-
-  if (fast.intent === VOICE_FAST_INTENT_V0.GREETING && fast.precheck) {
-    const hit = runFastPrecheckFromTextV0(text, { locale });
-    return Object.freeze({
-      schema: RHIZOH_VOICE_DUAL_PATH_ROUTER_SCHEMA_V0,
-      path: VOICE_PIPELINE_PATH_V0.FAST,
-      action: VOICE_PIPELINE_ACTION_V0.REFLEX,
-      fastIntent: VOICE_FAST_INTENT_V0.GREETING,
-      reason: directed ? "fast_greeting_reflex" : "unknown_band_fast_reflex_only",
-      band,
-      confidenceTier: tier,
-      precheck: hit,
-      silent: false,
-      latencyClass: "0-150ms"
-    });
+    return buildSilentDecision(fast.intent, "platform_template_leak", band, VOICE_DROP_KIND_V0.NOISE);
   }
 
   const guards = evaluateSlowPathGuardSnapshotV0(text, {
@@ -179,66 +365,32 @@ export function resolveVoicePipelineDecisionV0(input = {}) {
   });
 
   if (guards.contamination?.kind === "ui_chrome_echo") {
-    return buildDropDecision(fast.intent, guards.reason || "ui_chrome_echo", band, VOICE_DROP_KIND_V0.UI, {
-      guards
-    });
+    return buildSilentDecision(
+      fast.intent,
+      guards.reason || "ui_chrome_echo",
+      band,
+      VOICE_DROP_KIND_V0.UI,
+      { guards }
+    );
   }
   if (!guards.allowSlow && guards.contamination) {
-    return buildDropDecision(fast.intent, guards.reason || "noise_drop", band, VOICE_DROP_KIND_V0.NOISE, {
+    return buildSilentDecision(fast.intent, guards.reason || "noise_drop", band, VOICE_DROP_KIND_V0.NOISE, {
       guards
     });
   }
 
-  if (tier === VOICE_CONFIDENCE_TIER_V0.SLOW_READY) {
-    const slowEligible =
-      guards.allowSlow === true &&
-      directed &&
-      (fast.intent === VOICE_FAST_INTENT_V0.QUESTION || text.split(/\s+/).filter(Boolean).length >= 4);
-    if (slowEligible) {
-      return Object.freeze({
-        schema: RHIZOH_VOICE_DUAL_PATH_ROUTER_SCHEMA_V0,
-        path: VOICE_PIPELINE_PATH_V0.SLOW,
-        action: VOICE_PIPELINE_ACTION_V0.LLM,
-        fastIntent: fast.intent,
-        reason: "directed_slow_llm",
-        band,
-        confidenceTier: tier,
-        guards,
-        silent: false,
-        latencyClass: "llm_when_needed"
-      });
-    }
-  }
-
-  if (tier === VOICE_CONFIDENCE_TIER_V0.GRAY_ZONE) {
-    if (fast.intent === VOICE_FAST_INTENT_V0.QUESTION || meaningful) {
-      return buildVerifyDecision(text, fast.intent, "gray_zone_micro_verify", band, tier, { guards });
-    }
-    if (meaningful) {
-      return buildHoldDecision(fast.intent, "gray_zone_uncertainty_hold", band, tier, { guards });
-    }
-  }
-
-  if (tier === VOICE_CONFIDENCE_TIER_V0.HARD_DROP) {
-    if (meaningful || fast.intent === VOICE_FAST_INTENT_V0.QUESTION) {
-      return buildHoldDecision(fast.intent, "hard_drop_meaningful_hold", band, tier, { guards });
-    }
-    if (fast.intent === VOICE_FAST_INTENT_V0.NOISE) {
-      return buildDropDecision(fast.intent, "fast_noise_drop", band, VOICE_DROP_KIND_V0.NOISE, { guards });
-    }
-  }
-
-  if (meaningful) {
-    return buildHoldDecision(fast.intent, "uncertainty_hold", band, tier, { guards });
-  }
-
-  return buildDropDecision(
-    fast.intent,
-    tier === VOICE_CONFIDENCE_TIER_V0.HARD_DROP ? "hard_drop_noise" : "fast_noise_drop",
+  return resolveDecisionSpineV0({
+    text,
+    fast,
+    tier,
+    directed,
+    meaningful,
+    guards,
     band,
-    VOICE_DROP_KIND_V0.NOISE,
-    { guards, confidenceTier: tier }
-  );
+    verifyCount,
+    verifyBudgetExhausted,
+    locale
+  });
 }
 
 /**

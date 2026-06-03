@@ -2,11 +2,17 @@ import { describe, expect, it, beforeEach } from "vitest";
 import {
   classifyVoiceFastIntentV0,
   resolveVoicePipelineDecisionV0,
+  VOICE_EXEC_MODE_V0,
   VOICE_FAST_INTENT_V0,
   VOICE_PIPELINE_ACTION_V0,
-  VOICE_PIPELINE_PATH_V0
+  VOICE_PIPELINE_PATH_V0,
+  VOICE_SPEAK_MODE_V0
 } from "../rhizohVoiceDualPathRouterV0.js";
 import { VOICE_DROP_KIND_V0 } from "../rhizohVoiceGrayZoneVerifyV0.js";
+import {
+  __resetVoiceVerifyBudgetForTestV0,
+  noteVoiceVerifyAttemptV0
+} from "../rhizohVoiceVerifyBudgetV0.js";
 import {
   __resetOlpStateForTestV0,
   applyUiLanguagePreferenceToOlpV0
@@ -16,6 +22,7 @@ import { VOICE_DIRECTED_SPEECH_BAND } from "../voiceDirectedSpeechObservationV0.
 describe("rhizohVoiceDualPathRouterV0", () => {
   beforeEach(() => {
     __resetOlpStateForTestV0();
+    __resetVoiceVerifyBudgetForTestV0();
     applyUiLanguagePreferenceToOlpV0("tr", "test");
   });
 
@@ -45,17 +52,47 @@ describe("rhizohVoiceDualPathRouterV0", () => {
     expect(d.silent).toBe(true);
   });
 
-  it("borderline technical question uses gray verify not silent drop", () => {
+  it("clear technical question bypasses gray verify via intent override", () => {
     const d = resolveVoicePipelineDecisionV0({
       text: "bunu nasıl düzeltirim?",
       confidence: 0.48,
       band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
       strategy: "whisper_only"
     });
-    expect(d.path).toBe(VOICE_PIPELINE_PATH_V0.GRAY);
-    expect(d.action).toBe(VOICE_PIPELINE_ACTION_V0.VERIFY);
-    expect(d.silent).toBe(false);
-    expect(String(d.reply || "").length).toBeGreaterThan(8);
+    expect(d.speakMode).toBe(VOICE_SPEAK_MODE_V0.SPEAK);
+    expect(d.execMode).toBe(VOICE_EXEC_MODE_V0.SLOW_LLM);
+    expect(d.semanticGray).toBe(true);
+    expect(d.uxGray).toBe(false);
+    expect(d.reason).toBe("intent_override_slow_ready");
+  });
+
+  it("gray tier splits semanticGray and uxGray on slow path", () => {
+    const d = resolveVoicePipelineDecisionV0({
+      text: "şimdi sistem durumunu kontrol edelim",
+      confidence: 0.42,
+      band: VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE,
+      strategy: "whisper_only"
+    });
+    expect(d.reason).toBe("gray_slow_modifier");
+    expect(d.semanticGray).toBe(true);
+    expect(d.uxGray).toBe(true);
+    expect(d.action).toBe(VOICE_PIPELINE_ACTION_V0.LLM);
+  });
+
+  it("verify budget cap forces slow or hold after two gray attempts", () => {
+    const sid = "test_session_budget";
+    noteVoiceVerifyAttemptV0(sid);
+    noteVoiceVerifyAttemptV0(sid);
+    const d = resolveVoicePipelineDecisionV0({
+      text: "bir şey sormak istiyorum aslında",
+      confidence: 0.42,
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+      sessionId: sid
+    });
+    expect(
+      ["verify_budget_force_slow", "gray_uncertainty_hold", "uncertainty_hold"].includes(d.reason)
+    ).toBe(true);
+    expect(d.speakMode === VOICE_SPEAK_MODE_V0.HOLD || d.uxGray === false).toBe(true);
   });
 
   it("directed question with high confidence opens slow LLM path", () => {
@@ -75,6 +112,7 @@ describe("rhizohVoiceDualPathRouterV0", () => {
       confidence: 0.28,
       band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN
     });
+    expect(d.speakMode).toBe(VOICE_SPEAK_MODE_V0.HOLD);
     expect(d.action).toBe(VOICE_PIPELINE_ACTION_V0.HOLD);
     expect(d.silent).toBe(false);
   });

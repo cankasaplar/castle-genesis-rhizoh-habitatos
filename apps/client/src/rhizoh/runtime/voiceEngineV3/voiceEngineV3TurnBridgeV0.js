@@ -15,7 +15,10 @@ import {
 } from "../../../castle/layers/voiceStreamLifecycleControllerV1.js";
 import { deferRecordingUntilGatewayWarmV1 } from "../voiceTranscribePredictivePreflightV1.js";
 import { emitVoiceEngineTelemetryV3 } from "./voiceEngineTelemetryV3.js";
-import { VOICE_PIPELINE_PATH_V0 } from "../rhizohVoiceDualPathRouterV0.js";
+import {
+  VOICE_EXEC_MODE_V0,
+  VOICE_SPEAK_MODE_V0
+} from "../rhizohVoiceDualPathRouterV0.js";
 export const VOICE_V3_MAX_RECORD_MS = 8000;
 
 let v3SessionLockActive = false;
@@ -153,10 +156,10 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
         preview: result.merged.text.slice(0, 96)
       });
       const pipelinePath =
-        result.decision?.path === VOICE_PIPELINE_PATH_V0.SLOW
+        result.decision?.execMode === VOICE_EXEC_MODE_V0.SLOW_LLM
           ? "slow"
-          : result.decision?.path === VOICE_PIPELINE_PATH_V0.GRAY
-            ? "gray"
+          : result.decision?.speakMode === VOICE_SPEAK_MODE_V0.HOLD
+            ? "hold"
             : "fast";
       const transcriptOpts = {
         manageVoiceTurn: keepAlive,
@@ -165,8 +168,8 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
         strategy: result.merged.strategy,
         maxRms: result.maxRms,
         pipelinePath,
-        verifyReply: result.decision?.reply,
         decision: result.decision,
+        sessionId,
         band: result.bandObs?.band,
         witnessed: result.witnessed,
         witnessCompleted: true,
