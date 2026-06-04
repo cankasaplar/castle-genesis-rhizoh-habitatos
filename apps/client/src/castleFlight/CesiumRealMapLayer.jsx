@@ -50,6 +50,10 @@ import {
   unregisterLiveRuntimeProjectionConsumerV0
 } from "../rhizoh/runtime/liveRuntimeOrchestratorV0.js";
 import { applyLiveRuntimeProjectionHintsToCesiumSceneV0 } from "./liveRuntimeCesiumAtmosphereBridgeV0.js";
+import {
+  loadCastleWorldBuildingFootprintsV0,
+  loadCastleWorldImportantPlacesV0
+} from "./castleWorldDataProviderV0.js";
 
 const IMPORTANT_OVERPASS_TAGS = [
   ["tourism", "museum"],
@@ -156,92 +160,6 @@ async function waitForHostLayout(el, { minSize = 48, timeoutMs = 4000 } = {}) {
     await new Promise((r) => requestAnimationFrame(r));
   }
   return el.clientWidth > 4 && el.clientHeight > 4;
-}
-
-function createFallbackImportantPlaces() {
-  return Object.entries(ISTANBUL_POI).map(([id, p]) => ({
-    id: `fallback-${id}`,
-    lat: p.lat,
-    lon: p.lon,
-    name: p.label,
-    tags: { tourism: "attraction" }
-  }));
-}
-
-async function loadIstanbulImportantPlaces(limit = 220) {
-  const bbox = `${ISTANBUL_GEO.latMin},${ISTANBUL_GEO.lonMin},${ISTANBUL_GEO.latMax},${ISTANBUL_GEO.lonMax}`;
-  const queryParts = IMPORTANT_OVERPASS_TAGS.map(([k, v]) => `node["${k}"="${v}"](${bbox});`).join("\n");
-  const q = `
-[out:json][timeout:30];
-(
-${queryParts}
-);
-out body;
-`;
-
-  try {
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), 14000);
-    const res = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      body: q,
-      signal: controller.signal,
-      headers: { "Content-Type": "text/plain" }
-    });
-    clearTimeout(t);
-    if (!res.ok) throw new Error(`Overpass ${res.status}`);
-    const json = await res.json();
-    const rows = Array.isArray(json?.elements) ? json.elements : [];
-    return rows
-      .filter((r) => Number.isFinite(r?.lat) && Number.isFinite(r?.lon))
-      .slice(0, limit)
-      .map((r, i) => ({
-        id: String(r.id ?? `n-${i}`),
-        lat: Number(r.lat),
-        lon: Number(r.lon),
-        name: String(r?.tags?.name || r?.tags?.name_en || r?.tags?.operator || "Unnamed place"),
-        tags: r.tags || {}
-      }));
-  } catch {
-    return createFallbackImportantPlaces();
-  }
-}
-
-async function loadIstanbulBuildingFootprints(limit = 280) {
-  const bbox = `${ISTANBUL_GEO.latMin},${ISTANBUL_GEO.lonMin},${ISTANBUL_GEO.latMax},${ISTANBUL_GEO.lonMax}`;
-  const q = `
-[out:json][timeout:25];
-(
-  way["building"](${bbox});
-);
-out center tags;
-`;
-  try {
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), 10000);
-    const res = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      body: q,
-      signal: controller.signal,
-      headers: { "Content-Type": "text/plain" }
-    });
-    clearTimeout(t);
-    if (!res.ok) throw new Error(`Overpass buildings ${res.status}`);
-    const json = await res.json();
-    const rows = Array.isArray(json?.elements) ? json.elements : [];
-    return rows
-      .filter((r) => Number.isFinite(r?.center?.lat) && Number.isFinite(r?.center?.lon))
-      .slice(0, limit)
-      .map((r, i) => ({
-        id: String(r.id ?? `b-${i}`),
-        lat: Number(r.center.lat),
-        lon: Number(r.center.lon),
-        levels: Number(r?.tags?.["building:levels"] || 0),
-        height: Number(r?.tags?.height || 0)
-      }));
-  } catch {
-    return [];
-  }
 }
 
 function setCesiumActivity(viewer, on) {
@@ -810,7 +728,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         "fallback_footprints",
         async () => {
           if (!vanilla && !hasOsmBuildings) {
-            const footprints = await loadIstanbulBuildingFootprints();
+            const { rows: footprints } = await loadCastleWorldBuildingFootprintsV0();
             if (!dead && viewerRef.current && footprints.length > 0) {
               fallbackBuildingEntitiesRef.current = footprints.map((b, idx) => {
                 const h =
@@ -854,7 +772,10 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       await runBootStage(
         "important_places",
         async () => {
-          important = vanilla ? [] : await loadIstanbulImportantPlaces();
+          if (!vanilla) {
+            const { rows } = await loadCastleWorldImportantPlacesV0(IMPORTANT_OVERPASS_TAGS);
+            important = rows;
+          }
           if (!vanilla && important.length > 2000) important = important.slice(0, 2000);
           importantRowsRef.current = important.map((p) => ({ ...p, category: classifyCategory(p.tags) }));
           if (!vanilla && !dead && viewerRef.current) {

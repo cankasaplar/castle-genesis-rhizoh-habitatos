@@ -15,6 +15,7 @@ import {
   RHIZOH_PRODUCT_BINDING_EVENT_V0
 } from "../runtime/rhizohProductBindingV0.js";
 import { readProductionLiveMonitorV0 } from "../runtime/rhizohProductionDeploymentRunbookV0.js";
+import { getCastleWorldDataStateV0 } from "../../castleFlight/castleWorldDataProviderV0.js";
 
 export const CASTLE_DEBUG_LAYER_SCHEMA_V1 = "castle.debug.layer.v1";
 export const CASTLE_DEBUG_LAYER_STORAGE_KEY_V1 = "castle.debug.layer.v1";
@@ -90,8 +91,6 @@ function pushBindingEvent(detail) {
   if (!detail) return;
   bindingRing.push(detail);
   while (bindingRing.length > BINDING_RING_MAX) bindingRing.shift();
-  cachedSnapshotV0 = null;
-  cachedSnapshotKeyV0 = "";
   notify();
 }
 
@@ -120,6 +119,7 @@ function controlCenterSnapshotKeyV0() {
   const dom = readDomProbesV0();
   const tail = bindingRing.slice(-12);
   const last = tail[tail.length - 1];
+  const wd = getCastleWorldDataStateV0();
   let tickSeq = "";
   let rhythmOk = "";
   try {
@@ -144,7 +144,11 @@ function controlCenterSnapshotKeyV0() {
     rhythmOk,
     rh.gatewayPhase,
     rh.replayMode ? "1" : "0",
-    String(rh.worldActionLog?.count ?? "")
+    String(rh.worldActionLog?.count ?? ""),
+    wd.provider,
+    String(wd.poiCount),
+    String(wd.buildingCount),
+    wd.lastError
   ].join("|");
 }
 
@@ -195,7 +199,8 @@ export function snapshotRhizohControlCenterV0() {
       : null,
     gatewayPhase: rh.gatewayPhase || null,
     replayMode: rh.replayMode === true,
-    walCount: rh.worldActionLog?.count ?? null
+    walCount: rh.worldActionLog?.count ?? null,
+    worldData: getCastleWorldDataStateV0()
   });
   return cachedSnapshotV0;
 }
