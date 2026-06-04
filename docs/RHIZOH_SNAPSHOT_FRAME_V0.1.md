@@ -145,7 +145,93 @@ This snapshot is **pre–Observable Reality Layer v0.1**. It proves:
 
 ---
 
-## Related
+## 6. Observation log
+
+### Log #1 — First Living World (2026-06-03)
+
+Baseline @ `3400b3b` · gateway ~945ms · scr_tick after engine · 58 keys. See [`RHIZOH_PROD_FLOW_V0.2.md`](RHIZOH_PROD_FLOW_V0.2.md) First Living World Record.
+
+### Log #2 — Gateway flap + rhythm watch (2026-06-04)
+
+**Bundle:** `index-C_Zwx7x_.js` · **route:** app · **session:** returning user
+
+**Boot timeline:**
+
+| Δms | Event |
+|-----|--------|
+| +16 | world_observability |
+| +448 | app.engine.ready |
+| +6693 | **app.gateway.offline** |
+| +14744 | **app.gateway.offline** (repeat) |
+| +17807 | app.gateway.connected |
+
+**Two console captures (~62s apart):**
+
+| Signal | T1 `00:29:38Z` | T2 `00:30:40Z` | Δ | Verdict |
+|--------|----------------|----------------|---|---------|
+| `scr_tick` | 18 | 52 | +34 | SCR alive · ticking |
+| `rhythm_ok` | false | false | — | **watch** |
+| `jitter_ms` | 163 | 174 | +11 | elevated · not runaway |
+| `identity_ok` | true | true | — | stable |
+| `castle_split` | false | false | — | ok |
+| `fork_risk` | false | false | — | ok |
+
+**Interpretation:**
+
+- **Motor:** alive — SCR progressed 18→52 in ~62s; identity/castle stable.
+- **Gateway:** transient offline 6.7s–17.8s — Render cold start / network; **not** World OS failure. Correlates with rhythm jitter window.
+- **Rhythm `ok: false`:** observation watch item — likely gateway reconnect + organism loop threshold; **not** identity drift or castle split.
+- **Phase 1 UI:** not shipped — runtime keys present only.
+
+**Phase readiness (corrected — not UI):**
+
+| Check | Runtime | Phase 1 UI |
+|-------|---------|------------|
+| `worldActionLog` exists | yes | **no** timeline |
+| `liveMonitor` exists | yes | **no** panel |
+| Cap Wheel intent log | **no** `productBinding` | **no** |
+| WAL replay UI | N/A (fn not on window) | **no** |
+
+**Observation action:** continue Phase 0 · log gateway offline frequency · re-capture after 24h idle session.
+
+### Canonical observation script (console)
+
+Use this instead of voiceAdapter heuristics for `phaseReadiness`:
+
+```javascript
+(async () => {
+  const r = window.__rhizoh || {};
+  const get = (p) => p.split(".").reduce((o, k) => (o ? o[k] : undefined), r);
+  const snapshot = Object.freeze({
+    time: new Date().toISOString(),
+    health: Object.freeze({
+      rhythm_ok: get("organismRhythm.ok"),
+      jitter_ms: get("organismRhythm.max_jitter_ms"),
+      scr_tick: get("liveMonitor.scr.tick_seq"),
+      identity_ok: get("liveMonitor.identity.structural") === false,
+      castle_split: get("liveMonitor.castle.castle_surface_split"),
+      fork_risk: get("liveMonitor.castle.fork_risk")
+    }),
+    phase0: Object.freeze({ observation: true }),
+    phase1: Object.freeze({
+      wal_runtime: Boolean(get("worldActionLog")),
+      wal_ui: false,
+      live_monitor_runtime: Boolean(get("liveMonitor")),
+      live_monitor_ui: false,
+      cap_intent_log: Boolean(get("productBinding")),
+      gateway_last: get("liveMonitor") ? "see boot log" : null
+    }),
+    wal_entry_count: get("worldActionLog.entries")?.length ?? null
+  });
+  console.table(snapshot.health);
+  console.log("phase1 (corrected):", snapshot.phase1);
+  window.__rhizoh_snapshot = snapshot;
+  return snapshot;
+})();
+```
+
+---
+
 
 - [`RHIZOH_OBSERVABLE_REALITY_LAYER_V0.1.md`](RHIZOH_OBSERVABLE_REALITY_LAYER_V0.1.md) — Phase 1 spec
 - [`RHIZOH_PRODUCT_BINDING_LAYER_V0.md`](RHIZOH_PRODUCT_BINDING_LAYER_V0.md) — epistemic boundary · Phases 0–5
