@@ -341,10 +341,9 @@ export async function queryRhizohLLM({
   }
   if (detectCastleIntentWithoutCoords(trimmed)) {
     return {
-      reply:
-        "Ki┼şisel kale i├ğin taray─▒c─▒ konumu gerekir ÔÇö detay ├ğekmecesinde ┬½Sovereign Castle┬╗ panelinden ┬½Konum ile kur┬╗ kullan─▒n. Ya da tam komut: SPAWN CASTLE --owner sizin-id --lat 41.0082 --lon 28.9784 --type SANCTUARY",
-      directive: "FOCUS_RHIZOH",
-      source: "dsl-hint"
+      reply: "Kale kurulum ritüeli başlatılıyor — konum seçeneklerini onaylayın.",
+      directive: "OPEN_CASTLE_INIT",
+      source: "castle-init-gate"
     };
   }
 

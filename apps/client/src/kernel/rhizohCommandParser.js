@@ -75,7 +75,7 @@ export function detectCastleIntentWithoutCoords(message) {
   const m = String(message || "").toLowerCase();
   if (/spawn\s+castle\s+--/.test(m) && /--lat\b/.test(m) && /--lon\b/.test(m)) return null;
   if (
-    /kendi\s+kalemi|kişisel\s+kale|kisisel\s+kale|personal\s+castle|sovereign\s+castle|kalemi\s+kur|kale\s+kur|locate\s*&\s*spawn/i.test(
+    /kendi\s+kalemi|kişisel\s+kale|kisisel\s+kale|personal\s+castle|sovereign\s+castle|kalemi\s+kur|kale\s+kur|rhizoh\s+kale\s+kur|locate\s*&\s*spawn/i.test(
       m
     )
   ) {

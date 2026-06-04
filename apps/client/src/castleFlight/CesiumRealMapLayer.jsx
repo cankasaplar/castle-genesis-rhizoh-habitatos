@@ -57,6 +57,7 @@ import {
 } from "./castleWorldDataProviderV2.js";
 import { createCastleWorldAnchorV0 } from "./castleWorldAnchorV0.js";
 import { installCastleStudioMapBridgeV0 } from "./castleStudioMapBridgeV0.js";
+import { isCastleLightRuntimeV0 } from "./castleInitiationProtocolV0.js";
 
 const IMPORTANT_OVERPASS_TAGS = [
   ["tourism", "museum"],
@@ -241,8 +242,8 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
     let dead = false;
     let uninstallWorldProjection = () => {};
     let removeRenderErrorListener = () => {};
-    const cfg = getCastleFlightConfig();
-    const vanilla = !!cfg.cesiumVanillaRealMap;
+      const cfg = getCastleFlightConfig();
+      const vanilla = !!cfg.cesiumVanillaRealMap || isCastleLightRuntimeV0();
     let cesiumFatalTelemetryOnce = false;
 
     const boot = async () => {

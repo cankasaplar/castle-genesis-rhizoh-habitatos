@@ -199,6 +199,11 @@ import { ensureCastleWorldTopology } from "./studio/lib/bootstrapWorldTopology";
 import { startRhizohAgentRuntime } from "./studio/runtime/agentRuntimeLoop";
 import { SwarmCollectiveAuraV1 } from "./components/SwarmCollectiveAuraV1.jsx";
 import { RhizohPetCitizenMarkerV0 } from "./components/RhizohPetCitizenMarkerV0.jsx";
+import { CastleInitiationGateV0 } from "./components/CastleInitiationGateV0.jsx";
+import {
+  completeCastleInitFromMapAnchorV0,
+  installCastleInitMapPickListenerV0
+} from "./castleFlight/castleInitiationProtocolV0.js";
 import { RhizohPresenceField } from "./components/RhizohPresenceField.jsx";
 import { RhizohGroupPresenceField } from "./components/RhizohGroupPresenceField.jsx";
 import {
@@ -1757,6 +1762,14 @@ function applyRhizohDirective(directive, engineRef) {
   }
   if (d === "ISTANBUL_OVERVIEW") {
     window.__CASTLE_CESIUM__?.flyToIstanbul?.();
+    return;
+  }
+  if (d === "OPEN_CASTLE_INIT") {
+    try {
+      window.dispatchEvent(new CustomEvent("castle:open-init-gate-v0"));
+    } catch {
+      /* noop */
+    }
   }
 }
 
@@ -7454,6 +7467,7 @@ export default function AppRhizoh528() {
       return getRhizohPolicyProductionInsight(undefined);
     }
   }, [continuitySocialTick]);
+  const [castleInitGateOpen, setCastleInitGateOpen] = useState(false);
   const [liveReactionToast, setLiveReactionToast] = useState(null);
   const [immersiveLiveTrace, setImmersiveLiveTrace] = useState(null);
   const [replayTimelinePct, setReplayTimelinePct] = useState(0);
@@ -12297,6 +12311,27 @@ export default function AppRhizoh528() {
     return () => window.clearTimeout(t);
   }, [rhizohInlineError]);
 
+  useEffect(() => {
+    const onOpenGate = () => setCastleInitGateOpen(true);
+    window.addEventListener("castle:open-init-gate-v0", onOpenGate);
+    return () => window.removeEventListener("castle:open-init-gate-v0", onOpenGate);
+  }, []);
+
+  useEffect(() => {
+    const owner = castleAuth?.user?.uid || "GUEST";
+    return installCastleInitMapPickListenerV0((anchorDetail) => {
+      void completeCastleInitFromMapAnchorV0(anchorDetail, {
+        owner,
+        castleType: "SANCTUARY",
+        applyPersonalCastleDsl
+      }).then((out) => {
+        if (out.ok) setCastleInitGateOpen(false);
+      });
+    });
+  }, [castleAuth?.user?.uid]);
+
+  const castleInitOwner = castleAuth?.user?.uid || "GUEST";
+
   return (
     <div className="min-h-screen w-full bg-[#010103] text-white font-mono overflow-x-hidden overflow-y-auto relative select-none uppercase font-black selection:bg-cyan-400/40">
       {!T0_FIRST_MATCH_IDENTITY_V0 ? (
@@ -12988,6 +13023,19 @@ export default function AppRhizoh528() {
           </span>
         </div>
       )}
+
+      <CastleInitiationGateV0
+        open={castleInitGateOpen}
+        onClose={() => setCastleInitGateOpen(false)}
+        owner={castleInitOwner}
+        castleType="SANCTUARY"
+        applyPersonalCastleDsl={applyPersonalCastleDsl}
+        setRealityMode={setRealityMode}
+        onProductShellSelect={onProductShellSelect}
+        readClientContinuity={readClientContinuity}
+        writeClientContinuity={writeClientContinuity}
+        onComplete={() => setCastleInitGateOpen(false)}
+      />
 
       <style>{`
         .animate-spin-slow { animation: spin 25s linear infinite; }
