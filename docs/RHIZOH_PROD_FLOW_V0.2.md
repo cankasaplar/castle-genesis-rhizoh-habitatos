@@ -226,6 +226,8 @@ window.__rhizoh.worldWalPersistence
 
 First implement lane (Phase 1 · read-only): WAL replay surface · liveMonitor normalize · Cap Wheel intent log.
 
+**Phase 1 spec:** [`RHIZOH_OBSERVABLE_REALITY_LAYER_V0.1.md`](RHIZOH_OBSERVABLE_REALITY_LAYER_V0.1.md) · **Pre-impl snapshot:** [`RHIZOH_SNAPSHOT_FRAME_V0.1.md`](RHIZOH_SNAPSHOT_FRAME_V0.1.md)
+
 ### Phase C — Full System Audit Lane (non-blocking) · **DEFERRED**
 
 **Do not run during observation.** After Phase 1 binding stable:

@@ -419,6 +419,8 @@ Ends: ~2026-06-05 (see [`RHIZOH_PROD_FLOW_V0.2.md`](RHIZOH_PROD_FLOW_V0.2.md))
 
 **Phase 1 exit criteria:** Drawer shows WAL history; liveMonitor panel is unified; every Cap Wheel click is logged with truth label `INTENT`.
 
+**Implementation spec:** [`RHIZOH_OBSERVABLE_REALITY_LAYER_V0.1.md`](RHIZOH_OBSERVABLE_REALITY_LAYER_V0.1.md) · **Baseline snapshot:** [`RHIZOH_SNAPSHOT_FRAME_V0.1.md`](RHIZOH_SNAPSHOT_FRAME_V0.1.md)
+
 ---
 
 ### Phase 2 — Single-direction binding · **Risk: Medium**
