@@ -24,8 +24,14 @@ const BINDING_RING_MAX = 24;
 const bindingRing = [];
 /** @type {Set<() => void>} */
 const listeners = new Set();
+/** @type {object | null} */
+let cachedSnapshotV0 = null;
+/** @type {string} */
+let cachedSnapshotKeyV0 = "";
 
 function notify() {
+  cachedSnapshotV0 = null;
+  cachedSnapshotKeyV0 = "";
   for (const fn of listeners) {
     try {
       fn();
@@ -84,6 +90,8 @@ function pushBindingEvent(detail) {
   if (!detail) return;
   bindingRing.push(detail);
   while (bindingRing.length > BINDING_RING_MAX) bindingRing.shift();
+  cachedSnapshotV0 = null;
+  cachedSnapshotKeyV0 = "";
   notify();
 }
 
@@ -102,9 +110,53 @@ function readDomProbesV0() {
 }
 
 /**
+ * Stable cache key — must not include Date.now() (breaks useSyncExternalStore / setState loops).
+ * @returns {string}
+ */
+function controlCenterSnapshotKeyV0() {
+  const rh = typeof window !== "undefined" ? window.__rhizoh || {} : {};
+  const panels = getRhizohChromePanelsSnapshotV0();
+  const openDrawerId = resolveOpenProductSurfaceDrawerIdV0();
+  const dom = readDomProbesV0();
+  const tail = bindingRing.slice(-12);
+  const last = tail[tail.length - 1];
+  let tickSeq = "";
+  let rhythmOk = "";
+  try {
+    const m = readProductionLiveMonitorV0() || rh.liveMonitor;
+    tickSeq = String(m?.scr?.tick_seq ?? "");
+    rhythmOk = String(m?.rhythm?.ok ?? "");
+  } catch {
+    /* noop */
+  }
+  return [
+    typeof window !== "undefined" ? window.location.pathname : "",
+    openDrawerId,
+    JSON.stringify(panels),
+    dom.drawer,
+    dom.reality,
+    dom.detailDrawer ? "1" : "0",
+    String(rh.productBinding?.count ?? bindingRing.length),
+    last?.atMs,
+    last?.action,
+    tail.length,
+    tickSeq,
+    rhythmOk,
+    rh.gatewayPhase,
+    rh.replayMode ? "1" : "0",
+    String(rh.worldActionLog?.count ?? "")
+  ].join("|");
+}
+
+/**
  * @returns {object}
  */
 export function snapshotRhizohControlCenterV0() {
+  const key = controlCenterSnapshotKeyV0();
+  if (key === cachedSnapshotKeyV0 && cachedSnapshotV0) {
+    return cachedSnapshotV0;
+  }
+
   const rh = typeof window !== "undefined" ? window.__rhizoh || {} : {};
   let monitor = null;
   try {
@@ -114,7 +166,11 @@ export function snapshotRhizohControlCenterV0() {
   }
   const panels = getRhizohChromePanelsSnapshotV0();
   const openDrawerId = resolveOpenProductSurfaceDrawerIdV0();
-  return Object.freeze({
+  const dom = readDomProbesV0();
+  const tail = Object.freeze(bindingRing.slice(-12));
+
+  cachedSnapshotKeyV0 = key;
+  cachedSnapshotV0 = Object.freeze({
     schema: CASTLE_DEBUG_LAYER_SCHEMA_V1,
     atMs: Date.now(),
     pathname: typeof window !== "undefined" ? window.location.pathname : "",
@@ -123,11 +179,11 @@ export function snapshotRhizohControlCenterV0() {
       openDrawerId,
       drawerDomHint: openDrawerId ? `[data-rhizoh-product-drawer="${openDrawerId}"]` : null
     }),
-    dom: readDomProbesV0(),
+    dom,
     productBinding: Object.freeze({
       count: rh.productBinding?.count ?? bindingRing.length,
       last: rh.productBinding?.last || bindingRing[bindingRing.length - 1] || null,
-      tail: Object.freeze(bindingRing.slice(-12))
+      tail
     }),
     liveMonitor: monitor
       ? Object.freeze({
@@ -141,6 +197,7 @@ export function snapshotRhizohControlCenterV0() {
     replayMode: rh.replayMode === true,
     walCount: rh.worldActionLog?.count ?? null
   });
+  return cachedSnapshotV0;
 }
 
 let installed = false;

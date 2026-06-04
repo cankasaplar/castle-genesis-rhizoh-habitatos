@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState, useSyncExternalStore } from "react";
+import React, { memo, useEffect, useState } from "react";
 import {
   disableRhizohControlCenterV0,
   isRhizohControlCenterEnabledV0,
@@ -6,12 +6,23 @@ import {
   subscribeRhizohControlCenterV0
 } from "./rhizohControlCenterV0.js";
 
+/** useSyncExternalStore requires referentially stable getSnapshot — avoid #185 infinite loop. */
 function useControlCenterSnapshotV0() {
-  return useSyncExternalStore(
-    subscribeRhizohControlCenterV0,
-    snapshotRhizohControlCenterV0,
-    snapshotRhizohControlCenterV0
-  );
+  const [snap, setSnap] = useState(() => snapshotRhizohControlCenterV0());
+
+  useEffect(() => {
+    setSnap(snapshotRhizohControlCenterV0());
+    return subscribeRhizohControlCenterV0(() => {
+      setSnap(snapshotRhizohControlCenterV0());
+    });
+  }, []);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setSnap(snapshotRhizohControlCenterV0()), 3000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  return snap;
 }
 
 /**
@@ -20,13 +31,7 @@ function useControlCenterSnapshotV0() {
 export const RhizohControlCenterPanelV0 = memo(function RhizohControlCenterPanelV0() {
   const [collapsed, setCollapsed] = useState(false);
   const [enabled, setEnabled] = useState(() => isRhizohControlCenterEnabledV0());
-  const [, setPoll] = useState(0);
   const snap = useControlCenterSnapshotV0();
-
-  useEffect(() => {
-    const id = window.setInterval(() => setPoll((n) => n + 1), 3000);
-    return () => window.clearInterval(id);
-  }, []);
 
   if (!enabled) {
     return (
