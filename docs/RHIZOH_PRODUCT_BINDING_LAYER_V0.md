@@ -313,40 +313,133 @@ Fix **deployStatus schema split** (browser alias vs Node success report) in same
 
 ---
 
-## 8. Phase alignment (locked order)
+## 8. Implementation roadmap (locked · post-observation)
+
+> **Bottleneck:** not the motor — the **nervous system (binding layer)**.  
+> Rhizoh is no longer a product that accumulates features; it is a **runtime organism that becomes alive as connections are made**.
+
+### Immutable boundary (never break)
 
 ```
-🟢 Phase A — Observation (NOW)
-   Watch deployStatus · organismRhythm · worldIdentity · liveMonitor · worldWalPersistence
-   NO deploy · NO code · NO new features
-
-🟡 Phase B — Control Surface Truth Fix + Binding Layer v0
-   This spec → implement router + event bus + honest labels
-   P0: Drawer WAL replay · Cap Wheel ROUTE map · voice WAL append · deployStatus schema
-
-🔵 Phase C — Product Activation Layer
-   UI → world connected; user can "build world" through product
-
-🟣 Phase D — Feature unlock
-   Voice v3.1 · Castle Socials · Academy export · Economy ledger · Cesium promote
+PRODUCT → proposes
+BINDING → translates
+WORLD   → executes
+WAL     → records
 ```
+
+**PRODUCT layer never owns SCR/WAL truth.**
 
 ---
 
-## 9. Priority implementation order (post-observation)
+### Phase 0 — Observation (ACTIVE)
 
-| # | Binding | Why first |
-|---|---------|-----------|
-| 1 | Drawer WAL list + replay | Memory organ truth |
-| 2 | Cap Wheel ROUTE vs INTENT labels + wire create/broadcast/learn | Stops whisper lie |
-| 3 | Voice turn → WAL append | Closes input graph |
-| 4 | `initRhizohWorldWalPersistenceV0` on boot | Persistence truth |
-| 5 | Product binding event bus + `productBinding` key | Observability |
-| 6 | Shell bar SIM vs ROUTE labels | Studio confusion fix |
-| 7 | Academy export gate wiring | Research surface |
-| 8 | Social WS install behind flag | Castle Socials |
-| 9 | YouTube emitter → liveMonitor stream | Broadcast product |
-| 10 | Economy WAL tag ledger | Economy v0 |
+**Risk:** none · **Code:** none · **Deploy:** none
+
+Watch: `deployStatus` · `organismRhythm` · `worldIdentity` · `liveMonitor` · `worldWalPersistence`
+
+Ends: ~2026-06-05 (see [`RHIZOH_PROD_FLOW_V0.2.md`](RHIZOH_PROD_FLOW_V0.2.md))
+
+---
+
+### Phase 1 — Read-only truth alignment · **Risk: Low**
+
+**Goal:** show memory and unify observability before any world influence.
+
+| # | Item | Priority | Binds | UI target | Rules |
+|---|------|----------|-------|-----------|-------|
+| **1** | **WAL Replay Surface** | P0 | `worldActionLog` · `worldWalPersistence` · `replayWorldActionLogEntryV0` | Drawer → episode timeline · WAL entry list · replay scrub (**read-only**) | User must **see what happened** before routing is safe |
+| **2** | **LiveMonitor exposure normalization** | P0 | `liveMonitor` · `deployStatus` · `organismRhythm` | Single read-only dashboard: rhythm / SCR / identity unified panel | One truth surface; fix browser vs Node `deployStatus` schema split |
+| **3** | **Cap Wheel → intent logger** | P0 | Cap Wheel clicks | `capWheel.intent = { node, payload, timestamp }` on `window.__rhizoh.productBinding` | ❌ no SCR trigger · ❌ log + preview only (extends chat prefill) |
+
+**Phase 1 exit criteria:** Drawer shows WAL history; liveMonitor panel is unified; every Cap Wheel click is logged with truth label `INTENT`.
+
+---
+
+### Phase 2 — Single-direction binding · **Risk: Medium**
+
+**Goal:** first real **world influence** — product proposes, binding translates, world executes.
+
+| # | Item | Priority | Flow | Rules |
+|---|------|----------|------|-------|
+| **4** | **Cap Wheel → SCR trigger bridge** | P1 | Cap Wheel → Product Binding → SCR tick **suggestion** → WAL append | UI **never** writes SCR directly |
+| **5** | **Drawer → episode query engine** | P1 | Query WAL by time · event type · castle · pet interaction | ❌ no replay write · read + filter only |
+| **6** | **Voice → input binding graph** | P1 | Voice v3 → transcript → intent → Cap Wheel / SCR **suggestion** | Speech = **input node** · no autonomous action |
+
+**Phase 2 exit criteria:** Committed Cap Wheel ROUTE actions append WAL; voice turns append WAL; drawer queries filter entries.
+
+---
+
+### Phase 3 — World action bridging · **Risk: Medium–High**
+
+**Goal:** sim surfaces become **control candidates**; knowledge and multi-node perception become observable.
+
+| # | Item | Priority | Flow | Rules |
+|---|------|----------|------|-------|
+| **7** | **Studio → SCR suggestion layer** | P2 | Studio tick → suggestion → SCR queue | ❌ no direct execution · **proposal system only** |
+| **8** | **Academy activation layer** | P2 | `academicObservatoryClientV0` → WAL analytics · SCR trends | Research feed · **passive export only** |
+| **9** | **Social / Castle graph bridge** | P2 | `coPresence` · `castleGraph` · WAL sync events | Shared presence **view** · no editing power yet |
+
+**Phase 3 exit criteria:** Academy feed live (export gated); co-presence visible in drawer; studio proposals appear in SCR queue (not auto-run).
+
+---
+
+### Phase 4 — Spatial & external systems · **Risk: High**
+
+**Goal:** spatial projection and external output — still no new world ontology.
+
+| # | Item | Priority | Flow | Rules |
+|---|------|----------|------|-------|
+| **10** | **Cesium / spatial shell entry** | P3 | Cap Wheel WORLD node OR Studio map focus → T0 frame → spatial projection | ❌ spatial ≠ new world · **projection layer only** |
+| **11** | **Economy / perceptual layer** | P3 | `perceptualEntropyEconomyV0` · interaction density · WAL activity | **Metrics only** · no financial logic |
+| **12** | **YouTube / broadcast bridge** | P3 | WAL event → publish emitter → external API (future) | ❌ no auto publish · **manual trigger only** |
+
+**Phase 4 exit criteria:** Spatial entry explicit env flag; economy metrics on dashboard; broadcast manual emit with audit trail.
+
+---
+
+### Phase 5 — Full closed loop · **Risk: Very High**
+
+**Goal:** bidirectional control and multi-user write — only after Phases 1–4 stable.
+
+| # | Item | Priority | Scope |
+|---|------|----------|-------|
+| **13** | **Bidirectional control surface** | P4 | Cap Wheel ↔ SCR ↔ Studio ↔ Drawer live feedback loop |
+| **14** | **Multi-user binding** | P4 | coPresence **write mode** · shared WAL streams |
+| **15** | **Economy + social full activation** | P4 | Monetization · audience graph · creator loops |
+
+**Phase 5 gate:** Requires 24–48h+ stable observation data + Phase 1–3 smoke pass. Not before Product Layer proof.
+
+---
+
+### Roadmap summary
+
+| Phase | When | Risk | Focus |
+|-------|------|------|-------|
+| **0** | Now | — | Observe only |
+| **1** 🔵 | First implement | Low | WAL replay UI · liveMonitor normalize · intent log |
+| **2** 🟢 | After Phase 1 | Medium | Cap Wheel→SCR · drawer query · voice input graph |
+| **3** 🟡 | After Phase 2 | Med–High | Studio proposals · Academy feed · social view |
+| **4** 🟠 | After Phase 3 | High | Cesium · economy metrics · broadcast |
+| **5** 🔴 | Last | Very High | Bidirectional · multi-user write · full social/economy loop |
+
+---
+
+## 9. Legacy priority table (superseded by §8)
+
+See Phase 1–5 above. Original flat list retained for traceability:
+
+| # | Binding | Phase |
+|---|---------|-------|
+| 1 | Drawer WAL list + replay | **1** |
+| 2 | Cap Wheel intent log → ROUTE | **1 → 2** |
+| 3 | Voice turn → WAL append | **2** |
+| 4 | `initRhizohWorldWalPersistenceV0` on boot | **1** |
+| 5 | Product binding event bus | **1–2** |
+| 6 | Shell bar SIM vs ROUTE labels | **1** |
+| 7 | Academy export gate | **3** |
+| 8 | Social WS behind flag | **3** |
+| 9 | YouTube → liveMonitor stream | **4** |
+| 10 | Economy WAL tag ledger | **4** |
 
 ---
 

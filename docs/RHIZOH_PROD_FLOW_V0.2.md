@@ -220,11 +220,15 @@ window.__rhizoh.worldWalPersistence
 **Wrong reflex now:** new layers · voice fixes · engine patches.  
 **Right reflex now:** let the system live · watch drift · prepare product layer transition.
 
-### Phase B — Full System Audit Lane (non-blocking) · **DEFERRED**
+### Phase B — Product Binding Layer (post-observation)
 
-**Do not run during observation.** Deploy is green; audit would add noise before stability is verified.
+**SSOT:** [`RHIZOH_PRODUCT_BINDING_LAYER_V0.md`](RHIZOH_PRODUCT_BINDING_LAYER_V0.md) — Phases 0–5 locked roadmap.
 
-After observation completes:
+First implement lane (Phase 1 · read-only): WAL replay surface · liveMonitor normalize · Cap Wheel intent log.
+
+### Phase C — Full System Audit Lane (non-blocking) · **DEFERRED**
+
+**Do not run during observation.** After Phase 1 binding stable:
 
 ```bash
 npm run ops:full-system-audit-v0
@@ -239,7 +243,7 @@ Triage lane for peripheral failures:
 
 Deploy gates remain: `npm run ops:deploy-test-phase-v0` only.
 
-### Phase C — Product Layer iteration
+### Phase D — Product Layer iteration
 
 World OS core is **stable enough**. Next value is product surface — not new core ontology.
 
