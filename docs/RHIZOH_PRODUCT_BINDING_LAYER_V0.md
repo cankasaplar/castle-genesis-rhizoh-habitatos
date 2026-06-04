@@ -8,6 +8,72 @@
 
 ---
 
+## Epistemic boundary addendum
+
+**Role:** This section is not documentation commentary and not implementation spec. It is an **epistemic boundary definition** — it answers *what this system is not*, so future work cannot misread the architecture.
+
+### What Rhizoh is
+
+**Rhizoh is an observable reality system** — not an execution engine, not a feature factory, not a UI framework.
+
+The design shift is complete:
+
+| Old frame | Current frame |
+|-----------|---------------|
+| feature → UI → backend | **intent → translation → execution → memory** |
+| feature = product value | **binding quality = product value** |
+| “Sistem tasarlamak” | **Gerçeklik modellemek** |
+
+This is not UI architecture alone. It is a **consciousness separation model**:
+
+```
+PRODUCT → proposes     (intent only — no world truth)
+BINDING → translates   (Capability → Runtime Action Bridge)
+WORLD   → executes     (SCR / WAL / Pet — frozen core)
+WAL     → records      (memory — what actually happened)
+```
+
+**Immutable:** PRODUCT never owns SCR/WAL truth.
+
+### What Rhizoh is not
+
+| Wrong reading | Why it fails |
+|---------------|--------------|
+| “UI framework” | UI reflects world; it does not define it |
+| “Feature engine” | Latent code (Cesium, Academy, Social, Economy, Voice) is **Phase 3+ activation**, not the next sprint |
+| “Product app” | Product surface proposes; world executes |
+| “Kara kutu AI simülasyonu” | Without Phase 1 visibility, users infer life they cannot verify |
+
+Cesium · Academy · Social · Economy · Voice are **not features to add**. They are **activation nodes** unlocked only after binding quality proves the system is observable and trustworthy.
+
+### Phase system = experiential progression (not UI roadmap)
+
+| Phase | Meaning | User question answered |
+|-------|---------|------------------------|
+| **0** | Observation | Is the world stable while unattended? |
+| **1** 🔵 | Reality opening | *What is happening inside?* (WAL visible · state readable · intent transparent) |
+| **2** 🟢 | Causality | *Does my action have effect?* (intent → SCR · voice as input · drawer as query) |
+| **3** 🟡 | Reflection | Studio proposes · Academy analyzes · Social observes |
+| **4** 🟠 | Extension | Spatial projection · density metrics · manual broadcast output |
+| **5** 🔴 | Environment | Closed loop · multi-user reality graph — system as **ortam**, not product |
+
+**Phase 1 is existential, not technical:** Can the system show its own memory to the user?
+
+- **Yes** → observable reality → trust + direction  
+- **No** → black-box simulation regardless of motor health  
+
+### Current risk (named)
+
+Prod motor is alive (`3400b3b`). Users feel presence, voice, globe — but cannot read WAL lineage, rhythm, or intent history. They conclude “it works” without **seeing** that it lives. Phase 1 closes that gap: **visibility = trust**, not new capability.
+
+### SSOT one-liner (interpretation lock)
+
+> **Rhizoh does not produce features — it makes reality visible.**
+
+Binding layer exists because the bottleneck is not the motor; it is the **nervous system** between intent and memory.
+
+---
+
 ## 0. System definition
 
 | Layer | State (2026-06-03 prod) | User feels |
