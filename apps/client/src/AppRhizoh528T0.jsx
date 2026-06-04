@@ -11669,6 +11669,8 @@ export default function AppRhizoh528() {
         onOpenChromePanelV0(String(localAction.panel));
       } else if (localAction.kind === "OPEN_MAP_TOOL") {
         onOpenMapToolV0(localAction.mapTool || "city_map");
+      } else if (localAction.kind === "ENTER_SURFACE" && localAction.surface) {
+        onProductShellSelect(String(localAction.surface));
       } else {
         applyGrammarFromUtteranceV0(raw, grammarBridgeOptsV0);
       }

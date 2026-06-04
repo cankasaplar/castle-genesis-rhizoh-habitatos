@@ -109,6 +109,18 @@ export function writeRhizohChromePanelsOpenV0(patch) {
     }
   }
   if (typeof window !== "undefined") {
+    window.__rhizoh = window.__rhizoh || {};
+    const openDrawerId = RHIZOH_PRODUCT_SURFACE_PANEL_IDS_V0.find(
+      (id) => id !== "world" && next[id]
+    );
+    window.__rhizoh.uiChrome = Object.freeze({
+      schema: "castle.rhizoh.ui_chrome.v0",
+      panels: next,
+      openDrawerId: openDrawerId || null,
+      drawerDomHint: openDrawerId
+        ? `[data-rhizoh-product-drawer="${openDrawerId}"]`
+        : null
+    });
     window.dispatchEvent(
       new CustomEvent(RHIZOH_CHROME_PANEL_CHANGE_EVENT_V0, {
         detail: Object.freeze({ panels: next })
