@@ -123,7 +123,9 @@ Drawer    → query + replay (Phase 1 read-only first)
 
 ## 4. Re-capture protocol
 
-**When:** end of observation · after each Phase 1 PR · before Phase 2 gate.
+**SSOT:** [`RHIZOH_OBSERVATION_PROTOCOL_V0.2.md`](RHIZOH_OBSERVATION_PROTOCOL_V0.2.md) — every 2–3h · Full Snapshot v2 · transition gate (§6).
+
+**When:** end of observation · after each Phase 1 PR · before Phase 2 gate · daily during Phase 0.
 
 1. Hard refresh rhizoh.com (Ctrl+Shift+R)
 2. Run runtime snapshot JSON (§1)
