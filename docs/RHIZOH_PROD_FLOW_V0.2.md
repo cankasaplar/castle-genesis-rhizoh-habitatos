@@ -197,7 +197,8 @@ JSON.parse(JSON.stringify({
 ### Phase A — Observation window (24–48h) · **ACTIVE**
 
 **Started:** 2026-06-03 · **Ends:** ~2026-06-05  
-**Rule:** No new core layers · no voice fixes · no engine changes. **Observe only.**
+**Rule:** No new core layers · no voice fixes · no engine changes. **Observe only.**  
+**Protocol:** [`RHIZOH_OBSERVATION_PROTOCOL_V0.2.md`](RHIZOH_OBSERVATION_PROTOCOL_V0.2.md) — 2–3h rhythm · Full Snapshot v2 · Phase 1 gate
 
 Watch only:
 
