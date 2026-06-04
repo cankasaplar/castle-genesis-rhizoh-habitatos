@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { KernelConsolePanel } from "../studio/ui/KernelConsolePanel";
 import { DirectorDeckPanel } from "../studio/ui/DirectorDeckPanel";
@@ -15,6 +15,13 @@ import { RhizohStudioCitizenShellV0 } from "./RhizohStudioCitizenShellV0.jsx";
 import { useSurfaceCitizenProjectionV0 } from "../rhizoh/runtime/useSurfaceCitizenProjectionV0.js";
 import { useRhizohStudioProductionOrganismV0 } from "../rhizoh/runtime/useRhizohStudioProductionOrganismV0.js";
 import { STUDIO_ORGANISM_SURFACE_ROLE_V0 } from "../rhizoh/runtime/rhizohStudioOrganismSurfaceRolesV0.js";
+import { RhizohObservableRealityPanelV0 } from "./RhizohObservableRealityPanelV0.jsx";
+
+const PROFILE_OBS_TABS_V0 = Object.freeze([
+  { id: "reality", label: "Reality" },
+  { id: "bindings", label: "Bindings" },
+  { id: "timeline", label: "Timeline" }
+]);
 
 /**
  * @param {{
@@ -42,6 +49,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
   const memory = organism?.memory_organ;
   const chrome = useMemo(() => resolveProductDrawerChromeCopyV0(locale), [locale]);
   const meta = useMemo(() => resolveProductDrawerSurfaceCopyV0(surface, locale), [surface, locale]);
+  const [profileObsTab, setProfileObsTab] = useState("reality");
 
   if (!open || surface === "world") return null;
 
@@ -107,15 +115,40 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
 
         {surface === "profile" ? (
           <RhizohStudioCitizenShellV0 surfaceKind="profile">
-            <ProductProfilePanel auth={auth} />
-            <RuntimeHealthPanel health={runtimeHealth} gatewayBaseUrl={gatewayOrigin} />
-            <QuickLinks
-              links={[
-                { to: "/academy/research", label: "Academy · Research" },
-                { to: "/academy/observe", label: "Academy · Observe" },
-                { to: "/genesis/hub", label: "Genesis hub" }
-              ]}
-            />
+            <div
+              className="mb-3 flex gap-1 rounded-lg border border-white/10 bg-black/30 p-1"
+              role="tablist"
+              aria-label="Observable reality"
+            >
+              {PROFILE_OBS_TABS_V0.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={profileObsTab === tab.id}
+                  className={`flex-1 rounded-md px-2 py-1.5 text-[9px] font-semibold uppercase tracking-wide transition ${
+                    profileObsTab === tab.id
+                      ? "bg-cyan-500/20 text-cyan-100 border border-cyan-400/35"
+                      : "text-white/50 hover:text-white/80 border border-transparent"
+                  }`}
+                  onClick={() => setProfileObsTab(tab.id)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <RhizohObservableRealityPanelV0 section={profileObsTab} />
+            <div className="mt-4 space-y-3 border-t border-white/10 pt-3">
+              <ProductProfilePanel auth={auth} />
+              <RuntimeHealthPanel health={runtimeHealth} gatewayBaseUrl={gatewayOrigin} />
+              <QuickLinks
+                links={[
+                  { to: "/academy/research", label: "Academy · Research" },
+                  { to: "/academy/observe", label: "Academy · Observe" },
+                  { to: "/genesis/hub", label: "Genesis hub" }
+                ]}
+              />
+            </div>
           </RhizohStudioCitizenShellV0>
         ) : null}
       </div>

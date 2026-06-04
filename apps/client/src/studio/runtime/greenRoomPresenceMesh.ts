@@ -95,12 +95,20 @@ export function startGreenRoomPresenceMesh(): () => void {
 
   if (client) client.disconnect();
   client = new PresenceMeshClient();
+  const meshClient = client;
 
   void (async () => {
-    const ok = await client!.connect(roomUid);
-    if (!ok) return;
-    const raw = await client!.replay({ fromSeq: 1 });
-    applyReplayTail(roomUid, raw);
+    try {
+      const ok = await meshClient.connect(roomUid);
+      if (!ok || client !== meshClient) return;
+      const raw = await meshClient.replay({ fromSeq: 1 });
+      if (client !== meshClient) return;
+      applyReplayTail(roomUid, raw);
+    } catch (err) {
+      if (import.meta.env?.DEV) {
+        console.warn("[greenRoomPresenceMesh] bootstrap replay failed", err);
+      }
+    }
   })();
 
   unsubMesh?.();

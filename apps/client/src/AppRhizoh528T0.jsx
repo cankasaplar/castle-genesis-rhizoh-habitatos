@@ -134,6 +134,7 @@ import {
   isRhizohProductSurfaceDrawerOpenV0,
   resolveOpenProductSurfaceDrawerIdV0,
   setRhizohProductChromePanelOpenV0,
+  closeAllRhizohProductSurfacePanelsV0,
   setRhizohProductSurfacePanelExclusiveV0,
   subscribeRhizohChromePanelsV0,
   toggleRhizohProductSurfacePanelV0
@@ -148,6 +149,7 @@ import {
 } from "./rhizoh/runtime/rhizohWorldMapToolV0.js";
 import { RhizohWorldMapToolStripV0 } from "./rhizoh/runtime/RhizohWorldMapToolStripV0.jsx";
 import { emitT0SoftAffordanceHintV0 } from "./rhizoh/runtime/t0ContinuitySurfaceV0.js";
+import { emitProductBindingActionV0 } from "./rhizoh/runtime/rhizohProductBindingV0.js";
 import { pushT0ContinuityPulseV0 } from "./rhizoh/runtime/t0ContinuitySurfaceStreamV0.js";
 import { ProductProfilePanel } from "./studio/ui/ProductProfilePanel";
 import { RuntimeHealthPanel } from "./studio/ui/RuntimeHealthPanel";
@@ -211,6 +213,8 @@ import {
   deriveCognitiveTraceLabel
 } from "./rhizoh/presence/index.js";
 import { useRhizohGatewayMonitor, getRhizohApiBase } from "./rhizoh/useRhizohGatewayMonitor.js";
+import { resolveGatewayBootObservabilityLogV0 } from "./rhizoh/runtime/gatewayBootObservabilityFilterV0.js";
+import { getGatewaySessionKeeperSnapshotV1 } from "./rhizoh/runtime/gatewaySessionKeeperV1.js";
 import { startGenesisContinuityClientWireV0 } from "./rhizoh/runtime/genesisContinuityClientWireV0.js";
 import {
   maybePublishWorldTickObservationV0,
@@ -7460,6 +7464,7 @@ export default function AppRhizoh528() {
   const unfinishedJourneysRef = useRef(0);
   const flowTimersRef = useRef([]);
   const introStartedAtRef = useRef(Date.now());
+  const gatewayEverConnectedRef = useRef(false);
   const voicedPhasesRef = useRef(new Set());
   const launchSwarmIgniteDoneRef = useRef(false);
   const ambientCtxRef = useRef(null);
@@ -8267,7 +8272,6 @@ export default function AppRhizoh528() {
     if (liveMatch?.params?.traceId) {
       const tid = decodeURIComponent(String(liveMatch.params.traceId));
       uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "broadcast" });
-      setShowDetailDrawer(true);
       applyBroadcastPresence(tid);
       return;
     }
@@ -8280,7 +8284,6 @@ export default function AppRhizoh528() {
 
     if (matchPath({ path: "/studio", end: true }, pathname)) {
       uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "studio" });
-      setShowDetailDrawer(true);
       const sp = new URLSearchParams(search);
       if (sp.get("focus") === "octo") {
         uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 7 });
@@ -8291,7 +8294,6 @@ export default function AppRhizoh528() {
     const greenSlugMatch = matchPath({ path: "/greenroom/:roomUid", end: true }, pathname);
     if (greenSlugMatch?.params?.roomUid) {
       uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "greenroom" });
-      setShowDetailDrawer(true);
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 5 });
       void setRealityMode("REAL_MAP", { source: "ROUTE_GREENROOM" });
       const slug = decodeURIComponent(String(greenSlugMatch.params.roomUid));
@@ -8303,13 +8305,11 @@ export default function AppRhizoh528() {
 
     if (matchPath({ path: "/broadcast/:broadcastUid", end: true }, pathname)) {
       uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "broadcast" });
-      setShowDetailDrawer(true);
       return;
     }
 
     if (matchPath({ path: "/hall/:roomUid", end: true }, pathname)) {
       uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "hall" });
-      setShowDetailDrawer(true);
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
       void setRealityMode("REAL_MAP", { source: "ROUTE_HALL" });
       return;
@@ -8323,7 +8323,6 @@ export default function AppRhizoh528() {
 
     if (matchPath({ path: "/academy", end: true }, pathname)) {
       uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "profile" });
-      setShowDetailDrawer(true);
       setDrawerStudioTab("chat");
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 11 });
       void setRealityMode("REAL_MAP", { source: "ROUTE_ACADEMY" });
@@ -8339,7 +8338,6 @@ export default function AppRhizoh528() {
 
     if (matchPath({ path: "/settings", end: true }, pathname)) {
       uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "profile" });
-      setShowDetailDrawer(true);
       setDrawerStudioTab("chat");
       return;
     }
@@ -8397,9 +8395,28 @@ export default function AppRhizoh528() {
     }
   }, [productSurface]);
 
+  const toggleDetailDrawerV0 = useCallback(() => {
+    setShowDetailDrawer((open) => {
+      const next = !open;
+      if (next) {
+        closeAllRhizohProductSurfacePanelsV0();
+      }
+      return next;
+    });
+  }, []);
+
   const onProductShellSelect = useCallback(
     (id) => {
       const surface = String(id || "world");
+      setShowDetailDrawer(false);
+      const shellMode =
+        surface === "world" || surface === "profile" ? "ROUTE" : surface === "hall" ? "SIM" : "SIM";
+      emitProductBindingActionV0({
+        source: "shell_bar",
+        mode: shellMode,
+        action: `select:${surface}`,
+        payload: { surface }
+      });
       writeProductSurfaceV0(surface);
 
       if (
@@ -8561,6 +8578,7 @@ export default function AppRhizoh528() {
       const id = String(affordanceId || "");
       if (id === "spawn_castle") {
         onProductShellSelect("world");
+        closeAllRhizohProductSurfacePanelsV0();
         setShowDetailDrawer(true);
         setCmd("Kalemi burada kurmak istiyorum — ");
         setRhizohFieldState("LISTENING");
@@ -12141,15 +12159,34 @@ export default function AppRhizoh528() {
     const phase = String(gatewayUx.phase || "");
     if (!phase) return;
     try {
-      if (phase === "connected") {
-        bootLogRef.current?.ok?.("app.gateway.connected", "Rhizoh gateway online");
+      const sinceNavMs =
+        typeof performance !== "undefined" && typeof performance.timeOrigin === "number"
+          ? Date.now() - performance.timeOrigin
+          : Date.now() - introStartedAtRef.current;
+      const keeper = getGatewaySessionKeeperSnapshotV1();
+      const logEvent = resolveGatewayBootObservabilityLogV0({
+        phase,
+        everConnected: gatewayEverConnectedRef.current,
+        sinceNavMs,
+        reconnectAttempts: keeper.reconnectAttempts
+      });
+      if (!logEvent) return;
+
+      if (logEvent.semantic === "healthy" || logEvent.semantic === "degraded") {
+        gatewayEverConnectedRef.current = true;
+      }
+
+      if (logEvent.event === "app.gateway.connected") {
         void import("./rhizoh/epistemic/epistemicLedgerStreamV529.js").then((m) => {
           m.onEpistemicTelemetryGatewayAttachV1("gateway_connected");
         });
-      } else if (phase === "degraded" || phase === "degraded_llm" || phase === "degraded_storage")
-        bootLogRef.current?.warn?.("app.gateway.degraded", phase);
-      else if (phase === "offline" || phase === "offline_dns")
-        bootLogRef.current?.warn?.("app.gateway.offline", phase);
+      }
+
+      if (logEvent.level === "ok") {
+        bootLogRef.current?.ok?.(logEvent.event, logEvent.message);
+      } else {
+        bootLogRef.current?.warn?.(logEvent.event, logEvent.detail || logEvent.message);
+      }
     } catch {
       /* noop */
     }
@@ -12368,6 +12405,18 @@ export default function AppRhizoh528() {
             data-rhizoh-product-interaction-hub="1"
             data-rhizoh-capability-wheel-always="1"
             uiLocale={uiLocaleV0}
+            onCapNodeIntent={(node) => {
+              emitProductBindingActionV0({
+                source: "cap_wheel",
+                mode: "INTENT",
+                action: `node:${node.id}`,
+                payload: {
+                  node: node.id,
+                  seed: node.seedIntent,
+                  layerFocus: node.layerFocus ?? null
+                }
+              });
+            }}
             onSeedIntent={(s) => {
               setCmd(s);
               setRhizohFieldState("LISTENING");
@@ -12464,6 +12513,12 @@ export default function AppRhizoh528() {
           showOnboardingLine={!onboardingDone}
           firstInteractionSeeds={firstInteractionIntents}
           onSeedIntent={(seed) => {
+            emitProductBindingActionV0({
+              source: "cap_wheel",
+              mode: "INTENT",
+              action: "seed_intent",
+              payload: { seed, origin: "chat_dock" }
+            });
             setCmd(seed);
             setRhizohFieldState("LISTENING");
           }}
@@ -12501,9 +12556,16 @@ export default function AppRhizoh528() {
             aria-label={detailChromeCopyV0.open}
           >
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-[10px] tracking-[0.2em] text-cyan-200">DETAILS ┬À {CASTLE_RUNTIME_VERSION}</span>
-              <button type="button" onClick={() => setShowDetailDrawer(false)} className="text-[10px] text-white/50">
-                Ô£ò
+              <span className="text-[10px] tracking-[0.2em] text-cyan-200">
+                {detailChromeCopyV0.header} · {CASTLE_RUNTIME_VERSION}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowDetailDrawer(false)}
+                className="text-[10px] text-white/50 hover:text-white"
+                aria-label={detailChromeCopyV0.closeDrawer}
+              >
+                {detailChromeCopyV0.closeGlyph}
               </button>
             </div>
             <div className="mb-4">
@@ -12516,17 +12578,17 @@ export default function AppRhizoh528() {
                 />
               ) : (
                 <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-[9px] normal-case text-white/55 leading-relaxed">
-                  G├Âzlemevi hen├╝z kapal─▒ ÔÇö g├╝ven faz─▒na gelince niyet omurgas─▒ g├Âr├╝n├╝r.
+                  {detailChromeCopyV0.observatoryClosed}
                 </div>
               )}
             </div>
             <div className="mb-3 flex gap-0.5 overflow-x-auto rounded-lg border border-white/10 bg-black/30 p-0.5 no-scrollbar">
               {[
-                { id: "chat", label: "CHAT" },
-                { id: "explore", label: "EXPLORE" },
-                { id: "build", label: "BUILD" },
-                { id: "analyze", label: "ANALYZE" },
-                { id: "sovereign", label: "SOVEREIGN" }
+                { id: "chat", label: detailChromeCopyV0.tabs.chat },
+                { id: "explore", label: detailChromeCopyV0.tabs.explore },
+                { id: "build", label: detailChromeCopyV0.tabs.build },
+                { id: "analyze", label: detailChromeCopyV0.tabs.analyze },
+                { id: "sovereign", label: detailChromeCopyV0.tabs.sovereign }
               ].map((t) => {
                 const kernelLocked = t.id === "analyze" && !rhizohConversationUx.surfaces.kernelHeavyPanels;
                 return (
@@ -12534,7 +12596,7 @@ export default function AppRhizoh528() {
                     key={t.id}
                     type="button"
                     disabled={kernelLocked}
-                    title={kernelLocked ? "Tam sohbet band─▒nda a├ğ─▒l─▒r" : undefined}
+                    title={kernelLocked ? detailChromeCopyV0.kernelLockedTabHint : undefined}
                     onClick={() => {
                       if (kernelLocked) return;
                       setDrawerStudioTab(t.id);
@@ -12548,7 +12610,7 @@ export default function AppRhizoh528() {
                     }`}
                   >
                     {t.label}
-                    {kernelLocked ? " ┬À Ôùï" : ""}
+                    {kernelLocked ? " · ○" : ""}
                   </button>
                 );
               })}
@@ -12561,8 +12623,7 @@ export default function AppRhizoh528() {
                 <KernelConsolePanel />
               ) : (
                 <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-4 text-[10px] normal-case text-white/55 leading-relaxed">
-                  KERNEL konsolu bu evrede kilitli. Bond ve tur say─▒s─▒ artt─▒k├ğa ÔÇ£Tam sohbetÔÇØ band─▒nda a├ğ─▒l─▒r ÔÇö ├╝stteki
-                  deneyim ┼şeridinde ilerlemeyi g├Ârebilirsin.
+                  {detailChromeCopyV0.kernelLocked}
                 </div>
               )
             ) : null}
@@ -12576,7 +12637,10 @@ export default function AppRhizoh528() {
                   bridgeRegistryReady={bridgeRegistryReady}
                   onInitiateMirrorBridge={initiateMirrorBridge}
                   onCastleLifecycleChange={handleCastleLifecycle}
-                  onOpenRhizohKernelDrawer={() => setShowDetailDrawer(true)}
+                  onOpenRhizohKernelDrawer={() => {
+                    closeAllRhizohProductSurfacePanelsV0();
+                    setShowDetailDrawer(true);
+                  }}
                 />
               </div>
             ) : null}
@@ -12597,7 +12661,7 @@ export default function AppRhizoh528() {
               </div>
             ) : (
               <div className="mt-3 mb-2 rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-[9px] normal-case text-white/50 leading-relaxed">
-                Epistemik k├╝re ┬À tam sohbet band─▒nda g├Âr├╝n├╝r.
+                {detailChromeCopyV0.epistemicOrbLocked}
               </div>
             )}
             <RhizohCommsPanel
@@ -12633,7 +12697,9 @@ export default function AppRhizoh528() {
                       <span className="text-white/50"> ┬À L{a.level} ┬À E{a.energy} ┬À {a.lat.toFixed(4)}, {a.lon.toFixed(4)}</span>
                     </div>
                   ))}
-                  {!liveAgents.length ? <div className="text-white/45">Hen├╝z g├Âr├╝n├╝r ajan yok.</div> : null}
+                  {!liveAgents.length ? (
+                    <div className="text-white/45">{detailChromeCopyV0.noAgentsYet}</div>
+                  ) : null}
                 </div>
               </div>
               <div className="flex flex-wrap gap-1">
@@ -12877,18 +12943,18 @@ export default function AppRhizoh528() {
               </div>
               <button
                 type="button"
-                onClick={() => setShowDetailDrawer((v) => !v)}
+                onClick={toggleDetailDrawerV0}
                 aria-expanded={showDetailDrawer}
                 aria-controls="rhizoh-detail-drawer"
                 className="mt-2 w-full rounded-xl border border-white/15 py-1.5 text-[9px] tracking-[0.12em] text-white/70 hover:border-cyan-400/35"
               >
-                {showDetailDrawer ? "Close details" : "More · agents · events · share"}
+                {showDetailDrawer ? detailChromeCopyV0.closeDrawer : detailChromeCopyV0.moreButton}
               </button>
             </div>
           ) : (
             <button
               type="button"
-              onClick={() => setShowDetailDrawer((v) => !v)}
+              onClick={toggleDetailDrawerV0}
               aria-expanded={showDetailDrawer}
               aria-controls="rhizoh-detail-drawer"
               className="rounded-xl border border-white/12 bg-black/40 px-3 py-2 text-[9px] tracking-[0.12em] text-white/55 normal-case hover:text-white/80 hover:border-cyan-400/35"
@@ -12913,10 +12979,10 @@ export default function AppRhizoh528() {
           </div>
           <div className="text-4xl font-black tracking-[2em] text-cyan-400/50 ml-[2em] animate-pulse uppercase italic">RHIZOH_Genesis</div>
           <p className="mt-8 max-w-md text-center text-[11px] font-medium normal-case tracking-normal text-white/55 leading-relaxed">
-            Oturum ve sahne ba┼şlat─▒l─▒yorÔÇĞ A─ş ge├ğidi kontrol├╝ ana ekranda devam eder.
+            {detailChromeCopyV0.bootStarting}
           </p>
           <span className="sr-only" aria-live="polite">
-            Ba┼şlat─▒l─▒yor
+            {detailChromeCopyV0.bootSr}
           </span>
         </div>
       )}

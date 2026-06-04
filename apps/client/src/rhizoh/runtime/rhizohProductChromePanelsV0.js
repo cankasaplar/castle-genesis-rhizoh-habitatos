@@ -223,3 +223,13 @@ export function resolveOpenProductSurfaceDrawerIdV0() {
   const p = readRhizohChromePanelsOpenV0();
   return RHIZOH_PRODUCT_SURFACE_PANEL_IDS_V0.find((id) => id !== "world" && p[id]) || null;
 }
+
+/** Close every bottom shell drawer (world panel flag included). */
+export function closeAllRhizohProductSurfacePanelsV0() {
+  /** @type {Partial<Record<RhizohProductSurfacePanelIdV0, boolean>>} */
+  const patch = {};
+  for (const id of RHIZOH_PRODUCT_SURFACE_PANEL_IDS_V0) {
+    patch[id] = false;
+  }
+  return writeRhizohChromePanelsOpenV0(patch);
+}

@@ -21,6 +21,8 @@ const RING_R = 118;
 export function RhizohCapabilityHaloV1({
   onSeedIntent,
   onFocusLayer,
+  /** @param {{ id: string, seedIntent?: string, layerFocus?: number }} node */
+  onCapNodeIntent,
   /** @deprecated SCR reverse ownership — ignored; records violation if set */
   collectivePulse,
   className = "",
@@ -72,6 +74,9 @@ export function RhizohCapabilityHaloV1({
 
   const applyNode = useCallback(
     (node) => {
+      if (onCapNodeIntent) {
+        onCapNodeIntent(node);
+      }
       if (node.layerFocus != null && onFocusLayer) {
         onFocusLayer(node.layerFocus);
       }
@@ -83,7 +88,7 @@ export function RhizohCapabilityHaloV1({
         if (onFocusLayer) onFocusLayer(13);
       }
     },
-    [onFocusLayer, onSeedIntent]
+    [onCapNodeIntent, onFocusLayer, onSeedIntent]
   );
 
   const scaleBreath = 0.94 + (Number(capProjection?.breathe01) || 0) * 0.08;

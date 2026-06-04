@@ -81,16 +81,55 @@ export const RHIZOH_PRODUCT_DRAWER_COPY_TR_V0 = Object.freeze({
   broadcastNote: "Canlı yayın mesh gateway üzerinden açılır. Bağlantı rozeti yeşil olmalı."
 });
 
-export const RHIZOH_PRODUCT_DETAIL_CHROME_EN_V0 = Object.freeze({
-  open: "Details",
-  close: "Close panel",
-  closeDrawer: "Close details"
-});
-
 export const RHIZOH_PRODUCT_DETAIL_CHROME_TR_V0 = Object.freeze({
   open: "Ayrıntılar",
   close: "Paneli kapat",
-  closeDrawer: "Ayrıntıları kapat"
+  closeDrawer: "Ayrıntıları kapat",
+  closeGlyph: "✕",
+  header: "AYRINTILAR",
+  moreButton: "Daha fazla · ajanlar · olaylar · paylaş",
+  observatoryClosed:
+    "Gözlemevi henüz kapalı — güven fazına gelince niyet omurgası görünür.",
+  kernelLocked:
+    "KERNEL konsolu bu evrede kilitli. Bond ve tur sayısı arttıkça «Tam sohbet» bandında açılır — üstteki deneyim şeridinde ilerlemeyi görebilirsin.",
+  kernelLockedTabHint: "Tam sohbet bandında açılır",
+  epistemicOrbLocked: "Epistemik küre · tam sohbet bandında görünür.",
+  noAgentsYet: "Henüz görünür ajan yok.",
+  bootStarting:
+    "Oturum ve sahne başlatılıyor… Ağ geçidi kontrolü ana ekranda devam eder.",
+  bootSr: "Başlatılıyor",
+  tabs: Object.freeze({
+    chat: "SOHBET",
+    explore: "KEŞFET",
+    build: "KUR",
+    analyze: "ANALİZ",
+    sovereign: "EGEMEN"
+  })
+});
+
+export const RHIZOH_PRODUCT_DETAIL_CHROME_EN_V0 = Object.freeze({
+  open: "Details",
+  close: "Close panel",
+  closeDrawer: "Close details",
+  closeGlyph: "✕",
+  header: "DETAILS",
+  moreButton: "More · agents · events · share",
+  observatoryClosed:
+    "Observatory is not open yet — intent spine appears after the trust phase.",
+  kernelLocked:
+    "KERNEL console is locked in this phase. It opens in the full chat band as bond and turns grow.",
+  kernelLockedTabHint: "Opens in full chat band",
+  epistemicOrbLocked: "Epistemic orb · visible in full chat band.",
+  noAgentsYet: "No visible agents yet.",
+  bootStarting: "Starting session and stage… Gateway check continues on the main screen.",
+  bootSr: "Starting",
+  tabs: Object.freeze({
+    chat: "CHAT",
+    explore: "EXPLORE",
+    build: "BUILD",
+    analyze: "ANALYZE",
+    sovereign: "SOVEREIGN"
+  })
 });
 
 export function resolveUiCopyLocaleV0(locale) {
@@ -151,6 +190,9 @@ export function resolveProductDetailChromeCopyV0(locale) {
     ? RHIZOH_PRODUCT_DETAIL_CHROME_TR_V0
     : RHIZOH_PRODUCT_DETAIL_CHROME_EN_V0;
 }
+
+/** @deprecated use resolveProductDetailChromeCopyV0 */
+export const resolveRhizohDetailDrawerCopyV0 = resolveProductDetailChromeCopyV0;
 
 export function resolveChatStatusLineV0(input = {}, locale) {
   const tr = resolveUiCopyLocaleV0(locale) === "tr";

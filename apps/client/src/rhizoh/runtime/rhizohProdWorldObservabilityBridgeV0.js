@@ -11,6 +11,7 @@ import {
   publishRhizohPresenceStateV0
 } from "./rhizohPresenceStateEngineV0.js";
 import { publishReslPresentationV0 } from "./rhizohReslPresentationPolicyV0.js";
+import { initRhizohProductBindingV0 } from "./rhizohProductBindingV0.js";
 
 let bridgeStarted = false;
 /** @type {ReturnType<typeof setInterval> | null} */
@@ -72,6 +73,7 @@ export function startProdWorldObservabilityBridgeV0(ctx = {}) {
   }
   bridgeStarted = true;
 
+  initRhizohProductBindingV0();
   publishProdWorldObservabilitySnapshotV0(ctx);
   void primeProdWorldObservabilityBridgeV0(ctx).catch(() => {});
 

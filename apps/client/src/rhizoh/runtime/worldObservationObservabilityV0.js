@@ -15,8 +15,33 @@ import { installFridayPromptRunnerV0 } from "../cohort/cohortFridayPromptRunnerV
 
 export const WORLD_OBSERVATION_SNAPSHOT_SCHEMA_V0 = "castle.world_observation.snapshot.v0";
 
+/**
+ * Coerce observe.snapshot args — label lives under `meta`, never spread as string indices.
+ * @param {string | Record<string, unknown>} [extra]
+ * @returns {{ meta: Record<string, unknown> }}
+ */
+export function normalizeWorldObservationSnapshotExtraV0(extra = {}) {
+  if (typeof extra === "string") {
+    const label = extra.trim();
+    return { meta: label ? { label } : {} };
+  }
+  if (extra && typeof extra === "object") {
+    if (extra.meta && typeof extra.meta === "object") {
+      return { meta: { ...extra.meta } };
+    }
+    const { label, laptop, ...rest } = extra;
+    const meta = {
+      ...(label != null && String(label).trim() ? { label: String(label).trim() } : {}),
+      ...(laptop != null ? { laptop: String(laptop) } : {})
+    };
+    return { meta, ...rest };
+  }
+  return { meta: {} };
+}
+
 export function captureWorldObservationSnapshotV0(extra = {}) {
   ensureVoiceAdapterRegistered();
+  const { meta, ...rest } = normalizeWorldObservationSnapshotExtraV0(extra);
   return Object.freeze({
     schema: WORLD_OBSERVATION_SNAPSHOT_SCHEMA_V0,
     atMs: Date.now(),
@@ -26,7 +51,8 @@ export function captureWorldObservationSnapshotV0(extra = {}) {
     uiTextVisibility: getRhizohUiTextVisibilityV0(),
     voiceAdapter: getVoiceAdapterRegistrySnapshot(),
     page: typeof window !== "undefined" ? window.location.href : "",
-    ...extra
+    meta: Object.freeze({ ...meta }),
+    ...rest
   });
 }
 
