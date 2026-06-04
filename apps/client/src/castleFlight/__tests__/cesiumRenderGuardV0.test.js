@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   configureOsmBuildingsTilesetV0,
   isCesiumCanvasRenderableV0,
+  isCesiumPvsRangeErrorV0,
   isFiniteCartesian3V0,
   sanitizeCesiumCameraV0
 } from "../cesiumRenderGuardV0.js";
@@ -46,6 +47,11 @@ describe("cesiumRenderGuardV0", () => {
         canvas: { clientWidth: 0, clientHeight: 0, width: 0, height: 0 }
       })
     ).toBe(false);
+  });
+
+  it("isCesiumPvsRangeErrorV0 detects PVS overflow message", () => {
+    expect(isCesiumPvsRangeErrorV0(new Error("Invalid array length"))).toBe(true);
+    expect(isCesiumPvsRangeErrorV0(new Error("other"))).toBe(false);
   });
 
   it("configureOsmBuildingsTilesetV0 raises SSE floor", () => {

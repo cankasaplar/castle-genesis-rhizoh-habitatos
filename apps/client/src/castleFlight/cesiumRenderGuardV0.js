@@ -122,6 +122,71 @@ export function configureOsmBuildingsTilesetV0(tileset) {
  * @param {import("cesium").Viewer} viewer
  * @param {import("cesium").Cesium3DTileset | null} tilesetRef
  */
+/**
+ * Cesium PVS / createPotentiallyVisibleSet — Invalid array length.
+ * @param {unknown} error
+ */
+export function isCesiumPvsRangeErrorV0(error) {
+  const msg = String(error?.message || error || "").toLowerCase();
+  return msg.includes("invalid array length") || msg.includes("potentiallyvisible");
+}
+
+/**
+ * Güvenli mod: globe dışı tüm primitives kaldırılır (tileset / custom primitive yükü).
+ *
+ * @param {import("cesium").Viewer | null | undefined} viewer
+ * @returns {number} removed count
+ */
+export function pruneCesiumScenePrimitivesForSafeRenderV0(viewer) {
+  if (!viewer?.scene?.primitives) return 0;
+  let removed = 0;
+  const prims = viewer.scene.primitives;
+  try {
+    for (let i = prims.length - 1; i >= 0; i--) {
+      const p = prims.get(i);
+      const name = p?.constructor?.name || "";
+      if (name === "Globe" || name === "SkyBox" || name === "Sun" || name === "Moon") continue;
+      try {
+        prims.remove(p);
+        removed += 1;
+        if (typeof p?.isDestroyed === "function" && !p.isDestroyed()) {
+          p.destroy();
+        }
+      } catch {
+        /* noop */
+      }
+    }
+  } catch {
+    /* noop */
+  }
+  return removed;
+}
+
+/**
+ * @param {import("cesium").Viewer | null | undefined} viewer
+ */
+export function stopCesiumDefaultRenderLoopV0(viewer) {
+  if (!viewer || viewer.isDestroyed?.()) return;
+  try {
+    viewer.useDefaultRenderLoop = false;
+  } catch {
+    /* noop */
+  }
+}
+
+/**
+ * @param {import("cesium").Viewer | null | undefined} viewer
+ */
+export function startCesiumDefaultRenderLoopV0(viewer) {
+  if (!viewer || viewer.isDestroyed?.()) return;
+  try {
+    viewer.useDefaultRenderLoop = true;
+    viewer.scene?.requestRender?.();
+  } catch {
+    /* noop */
+  }
+}
+
 export function removeOsmBuildingsTilesetV0(viewer, tilesetRef) {
   const tileset = tilesetRef;
   if (!tileset) return;

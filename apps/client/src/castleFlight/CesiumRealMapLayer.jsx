@@ -7,8 +7,12 @@ import { cesiumSceneOverBudget } from "./cesiumSceneBudget.js";
 import {
   configureOsmBuildingsTilesetV0,
   isCesiumCanvasRenderableV0,
+  isCesiumPvsRangeErrorV0,
+  pruneCesiumScenePrimitivesForSafeRenderV0,
   removeOsmBuildingsTilesetV0,
-  sanitizeCesiumCameraV0
+  sanitizeCesiumCameraV0,
+  startCesiumDefaultRenderLoopV0,
+  stopCesiumDefaultRenderLoopV0
 } from "./cesiumRenderGuardV0.js";
 import { isWorldLayerEnabled } from "../rhizoh/runtime/castleWorldLayerGateV0.js";
 import { subscribeCastleDroneTelemetry } from "./telemetryHub.js";
@@ -243,10 +247,15 @@ out center tags;
 function setCesiumActivity(viewer, on) {
   if (!viewer || viewer.isDestroyed?.()) return;
   try {
+    if (on) {
+      startCesiumDefaultRenderLoopV0(viewer);
+    } else {
+      stopCesiumDefaultRenderLoopV0(viewer);
+    }
     viewer.clock.shouldAnimate = !!on;
     viewer.scene.requestRenderMode = true;
     viewer.scene.screenSpaceCameraController.enableInputs = !!on;
-    if (on) viewer.scene.requestRender();
+    if (on && isCesiumCanvasRenderableV0(viewer)) viewer.scene.requestRender();
   } catch {
     /* noop */
   }
@@ -371,6 +380,10 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       const fatihSafe = ISTANBUL_POI.FATIH;
       let osmBuildingsPrimitive = null;
       let renderErrorCount = 0;
+      let renderRecoveryGen = 0;
+      let renderOkFrames = 0;
+      let renderDegraded = false;
+      let removePostRenderOk = () => {};
       let sceneBudgetDowngraded = false;
       let teardownRhizohEpistemicBootstrap = () => {};
       let teardownPerceptionDebug = () => {};
@@ -489,11 +502,55 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         } catch {
           /* noop */
         }
+        try {
+          pruneCesiumScenePrimitivesForSafeRenderV0(viewer);
+        } catch {
+          /* noop */
+        }
+        sceneBudgetDowngraded = true;
+        renderDegraded = true;
+      };
+
+      const publishCesiumRenderHealth = () => {
+        if (!window.__CASTLE_CESIUM__) return;
+        window.__CASTLE_CESIUM__.renderDegraded = renderDegraded;
+        window.__CASTLE_CESIUM__.renderErrorCount = renderErrorCount;
+      };
+
+      const scheduleRenderRecovery = () => {
+        const gen = ++renderRecoveryGen;
+        stopCesiumDefaultRenderLoopV0(viewer);
+        applyCesiumSafeMode();
+        window.setTimeout(() => {
+          if (dead || cancelled || viewerRef.current !== viewer || gen !== renderRecoveryGen) return;
+          if (!activeRef.current || !isCesiumCanvasRenderableV0(viewer)) return;
+          try {
+            sanitizeCesiumCameraV0(viewer, Cesium, cameraSafeAnchor());
+            viewer.scene.requestRender();
+          } catch {
+            /* noop */
+          }
+        }, 320);
+      };
+
+      const onPostRenderOk = () => {
+        if (!renderErrorCount && !renderDegraded) return;
+        renderOkFrames += 1;
+        if (renderOkFrames < 2) return;
+        renderErrorCount = 0;
+        renderOkFrames = 0;
+        if (activeRef.current && isCesiumCanvasRenderableV0(viewer)) {
+          renderDegraded = false;
+          startCesiumDefaultRenderLoopV0(viewer);
+        }
+        publishCesiumRenderHealth();
       };
 
       const onRenderError = (_scene, error) => {
+        renderOkFrames = 0;
         renderErrorCount += 1;
         const msg = String(error?.message || error || "");
+        stopCesiumDefaultRenderLoopV0(viewer);
         console.error("[CASTLE_CESIUM] render_error", renderErrorCount, error);
 
         if (!cesiumFatalTelemetryOnce) {
@@ -502,7 +559,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
             reportCastleFatal(
               "cesium_render_error",
               error instanceof Error ? error : new Error(String(error)),
-              { recovered: renderErrorCount === 1, renderErrorCount }
+              { recovered: renderErrorCount <= 2, renderErrorCount, pvs: isCesiumPvsRangeErrorV0(error) }
             );
           } catch {
             /* noop */
@@ -510,38 +567,29 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         }
 
         applyCesiumSafeMode();
+        publishCesiumRenderHealth();
 
-        if (renderErrorCount === 1) {
-          // Aynı karede requestRender → PVS hâlâ patlayabilir; bir sonraki karede tek deneme.
-          try {
-            viewer.useDefaultRenderLoop = false;
-          } catch {
-            /* noop */
-          }
-          requestAnimationFrame(() => {
-            if (dead || cancelled || viewerRef.current !== viewer) return;
-            try {
-              sanitizeCesiumCameraV0(viewer, Cesium, cameraSafeAnchor());
-              if (!isCesiumCanvasRenderableV0(viewer)) return;
-              viewer.useDefaultRenderLoop = true;
-              viewer.scene.requestRender();
-            } catch {
-              /* noop */
-            }
-          });
+        if (renderErrorCount <= 3) {
+          scheduleRenderRecovery();
           return;
         }
 
-        if (renderErrorCount >= 2) {
+        console.error("[CASTLE_CESIUM] render loop stopped after repeated errors:", msg.slice(0, 200));
+      };
+
+      removeRenderErrorListener = viewer.scene.renderError.addEventListener(onRenderError);
+      try {
+        viewer.scene.postRender.addEventListener(onPostRenderOk);
+        removePostRenderOk = () => {
           try {
-            viewer.useDefaultRenderLoop = false;
+            viewer.scene.postRender.removeEventListener(onPostRenderOk);
           } catch {
             /* noop */
           }
-          console.error("[CASTLE_CESIUM] render loop stopped after repeated errors:", msg.slice(0, 200));
-        }
-      };
-      removeRenderErrorListener = viewer.scene.renderError.addEventListener(onRenderError);
+        };
+      } catch {
+        removePostRenderOk = () => {};
+      }
       installWebglContextLostReporter(viewer.canvas, "cesium");
       viewer.scene.requestRender();
 
@@ -939,6 +987,8 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
 
       window.__CASTLE_CESIUM__ = {
         ready: true,
+        renderDegraded: false,
+        renderErrorCount: 0,
         /** streets | satellite | city_3d | terrain */
         getImageryProfile() {
           return currentImageryProfile;
@@ -1201,7 +1251,10 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
           const v = viewerRef.current;
           if (v && v === viewer) {
             try {
-              if (!isCesiumCanvasRenderableV0(v)) return;
+              if (!activeRef.current || !isCesiumCanvasRenderableV0(v)) {
+                stopCesiumDefaultRenderLoopV0(v);
+                return;
+              }
               sanitizeCesiumCameraV0(v, Cesium, cameraSafeAnchor());
             } catch {
               /* noop */
@@ -1354,6 +1407,12 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         } catch {
           /* noop */
         }
+        try {
+          removePostRenderOk();
+        } catch {
+          /* noop */
+        }
+        removePostRenderOk = () => {};
         try {
           uninstallWorldProjection();
         } catch {
