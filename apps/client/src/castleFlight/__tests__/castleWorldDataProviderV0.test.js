@@ -1,25 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  createFallbackBuildingFootprintsV0,
-  createFallbackImportantPlacesV0,
-  getCastleWorldDataStateV0,
-  loadCastleWorldBuildingFootprintsV0,
-  loadCastleWorldImportantPlacesV0,
-  publishCastleWorldDataStateV0
-} from "../castleWorldDataProviderV0.js";
+  getCastleWorldDataStateV2,
+  loadCastleWorldBuildingFootprintsV2,
+  loadCastleWorldImportantPlacesV2,
+  publishCastleWorldDataStateV2,
+  CASTLE_WORLD_NO_FICTION_POLICY_V2
+} from "../castleWorldDataProviderV2.js";
 
-describe("castleWorldDataProviderV0", () => {
+describe("castleWorldDataProviderV2 (no-fiction)", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
     localStorage.clear();
-    publishCastleWorldDataStateV0({
-      provider: "idle",
+    publishCastleWorldDataStateV2({
+      feed: "unavailable",
+      representation: "idle",
       lastSuccessAtMs: null,
       lastFailAtMs: null,
       lastError: null,
       endpoint: null,
       poiCount: 0,
-      buildingCount: 0
+      buildingCount: 0,
+      userHint: null
     });
   });
 
@@ -27,37 +28,30 @@ describe("castleWorldDataProviderV0", () => {
     vi.unstubAllGlobals();
   });
 
-  it("createFallbackImportantPlacesV0 returns Istanbul POI seed", () => {
-    const rows = createFallbackImportantPlacesV0();
-    expect(rows.length).toBeGreaterThanOrEqual(4);
-    expect(rows[0].tags?.castle_seed).toBe("1");
+  it("enforces no-fiction policy constant", () => {
+    expect(CASTLE_WORLD_NO_FICTION_POLICY_V2).toContain("degradation");
   });
 
-  it("createFallbackBuildingFootprintsV0 returns seed boxes", () => {
-    const rows = createFallbackBuildingFootprintsV0();
-    expect(rows.length).toBeGreaterThan(10);
-    expect(rows[0].height).toBeGreaterThan(0);
-  });
-
-  it("loadCastleWorldImportantPlacesV0 uses seed when Overpass fails", async () => {
+  it("returns empty POI on Overpass fail without cache (no seed)", async () => {
     fetch.mockRejectedValue(new Error("Overpass 504"));
     const tags = [["tourism", "museum"]];
-    const { rows, source } = await loadCastleWorldImportantPlacesV0(tags, 50);
-    expect(source).toBe("seed");
-    expect(rows.length).toBeGreaterThan(0);
-    expect(getCastleWorldDataStateV0().provider).toBe("seed");
-    expect(getCastleWorldDataStateV0().lastError).toContain("504");
+    const result = await loadCastleWorldImportantPlacesV2(tags, 50);
+    expect(result.rows).toEqual([]);
+    expect(result.feed).toBe("unavailable");
+    expect(result.representation).toBe("degraded_empty");
+    expect(getCastleWorldDataStateV2().synthesis).toBe(false);
+    expect(getCastleWorldDataStateV2().poiCount).toBe(0);
   });
 
-  it("loadCastleWorldBuildingFootprintsV0 uses seed when Overpass fails", async () => {
+  it("returns empty buildings on Overpass fail without cache", async () => {
     fetch.mockRejectedValue(new Error("timeout"));
-    const { rows, source } = await loadCastleWorldBuildingFootprintsV0(50);
-    expect(source).toBe("seed");
-    expect(rows.length).toBeGreaterThan(0);
-    expect(getCastleWorldDataStateV0().buildingCount).toBeGreaterThan(0);
+    const result = await loadCastleWorldBuildingFootprintsV2(50);
+    expect(result.rows).toEqual([]);
+    expect(result.feed).toBe("unavailable");
+    expect(getCastleWorldDataStateV2().buildingCount).toBe(0);
   });
 
-  it("loadCastleWorldImportantPlacesV0 caches successful Overpass response", async () => {
+  it("uses cache after successful Overpass (temporal memory, not synthesis)", async () => {
     fetch.mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -65,13 +59,14 @@ describe("castleWorldDataProviderV0", () => {
       })
     });
     const tags = [["tourism", "museum"]];
-    const first = await loadCastleWorldImportantPlacesV0(tags, 50);
-    expect(first.source).toBe("overpass");
+    const first = await loadCastleWorldImportantPlacesV2(tags, 50);
+    expect(first.feed).toBe("overpass");
     expect(first.rows).toHaveLength(1);
 
     fetch.mockRejectedValue(new Error("Overpass 504"));
-    const second = await loadCastleWorldImportantPlacesV0(tags, 50);
-    expect(second.source).toBe("cache");
+    const second = await loadCastleWorldImportantPlacesV2(tags, 50);
+    expect(second.feed).toBe("cache");
+    expect(second.representation).toBe("cached");
     expect(second.rows).toHaveLength(1);
   });
 });

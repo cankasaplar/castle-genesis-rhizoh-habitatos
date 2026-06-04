@@ -120,11 +120,12 @@ export const RhizohControlCenterPanelV0 = memo(function RhizohControlCenterPanel
         <Row label="DOM reality" value={snap.dom.reality || "—"} />
         <Row label="detail panel" value={snap.dom.detailDrawer ? "open" : "closed"} />
         <Row label="binding #" value={String(snap.productBinding.count)} />
-        <Row label="world data" value={snap.worldData?.provider || "—"} />
+        <Row label="world feed" value={snap.worldData?.feed || "—"} />
+        <Row label="represent" value={snap.worldData?.representation || "—"} />
         <Row label="POI / bld" value={`${snap.worldData?.poiCount ?? "—"} / ${snap.worldData?.buildingCount ?? "—"}`} />
         <Row
-          label="overpass"
-          value={snap.worldData?.lastError ? snap.worldData.lastError.slice(0, 36) : "ok"}
+          label="data err"
+          value={snap.worldData?.lastError ? snap.worldData.lastError.slice(0, 32) : "—"}
         />
         <Row label="rhythm" value={snap.liveMonitor?.rhythmOk == null ? "—" : snap.liveMonitor.rhythmOk ? "ok" : "no"} />
         <Row label="SCR tick" value={String(snap.liveMonitor?.tickSeq ?? "—")} />

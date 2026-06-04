@@ -51,9 +51,12 @@ import {
 } from "../rhizoh/runtime/liveRuntimeOrchestratorV0.js";
 import { applyLiveRuntimeProjectionHintsToCesiumSceneV0 } from "./liveRuntimeCesiumAtmosphereBridgeV0.js";
 import {
-  loadCastleWorldBuildingFootprintsV0,
-  loadCastleWorldImportantPlacesV0
-} from "./castleWorldDataProviderV0.js";
+  getCastleWorldDataStateV2,
+  loadCastleWorldBuildingFootprintsV2,
+  loadCastleWorldImportantPlacesV2
+} from "./castleWorldDataProviderV2.js";
+import { createCastleWorldAnchorV0 } from "./castleWorldAnchorV0.js";
+import { installCastleStudioMapBridgeV0 } from "./castleStudioMapBridgeV0.js";
 
 const IMPORTANT_OVERPASS_TAGS = [
   ["tourism", "museum"],
@@ -728,7 +731,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         "fallback_footprints",
         async () => {
           if (!vanilla && !hasOsmBuildings) {
-            const { rows: footprints } = await loadCastleWorldBuildingFootprintsV0();
+            const { rows: footprints } = await loadCastleWorldBuildingFootprintsV2();
             if (!dead && viewerRef.current && footprints.length > 0) {
               fallbackBuildingEntitiesRef.current = footprints.map((b, idx) => {
                 const h =
@@ -773,8 +776,8 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         "important_places",
         async () => {
           if (!vanilla) {
-            const { rows } = await loadCastleWorldImportantPlacesV0(IMPORTANT_OVERPASS_TAGS);
-            important = rows;
+            const poiLoad = await loadCastleWorldImportantPlacesV2(IMPORTANT_OVERPASS_TAGS);
+            important = poiLoad.rows;
           }
           if (!vanilla && important.length > 2000) important = important.slice(0, 2000);
           importantRowsRef.current = important.map((p) => ({ ...p, category: classifyCategory(p.tags) }));
@@ -906,10 +909,16 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         }
       };
 
+      installCastleStudioMapBridgeV0();
+
+      const wdSnap = getCastleWorldDataStateV2();
       window.__CASTLE_CESIUM__ = {
         ready: true,
         renderDegraded: false,
         renderErrorCount: 0,
+        worldRepresentation: wdSnap.representation,
+        worldFeed: wdSnap.feed,
+        worldDataHint: wdSnap.userHint,
         /** streets | satellite | city_3d | terrain */
         getImageryProfile() {
           return currentImageryProfile;
@@ -1164,10 +1173,37 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       });
 
       let preRender = null;
+      let mapPickHandler = null;
       let unsub = () => {};
       let onKeyDown = () => {};
       let onKeyUp = () => {};
       if (!vanilla) {
+        try {
+          mapPickHandler = new Cesium.ScreenSpaceEventHandler(viewer.canvas);
+          mapPickHandler.setInputAction((click) => {
+            if (!activeRef.current) return;
+            const ray = viewer.camera.getPickRay(click.position);
+            if (!ray) return;
+            const cartesian =
+              viewer.scene.globe.pick(ray, viewer.scene) ||
+              viewer.camera.pickEllipsoid(click.position, viewer.scene.globe.ellipsoid);
+            if (!cartesian) return;
+            const carto = Cesium.Cartographic.fromCartesian(cartesian);
+            const lat = Cesium.Math.toDegrees(carto.latitude);
+            const lon = Cesium.Math.toDegrees(carto.longitude);
+            const wd = getCastleWorldDataStateV2();
+            createCastleWorldAnchorV0({
+              lat,
+              lon,
+              label: `${lat.toFixed(4)}, ${lon.toFixed(4)}`,
+              source: "map_pick",
+              feed: wd.feed
+            });
+          }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+        } catch {
+          /* noop */
+        }
+
         preRender = () => {
           const v = viewerRef.current;
           if (v && v === viewer) {
@@ -1320,6 +1356,12 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
             /* noop */
           }
         }
+        try {
+          mapPickHandler?.destroy?.();
+        } catch {
+          /* noop */
+        }
+        mapPickHandler = null;
         unsub?.();
         window.removeEventListener("keydown", onKeyDown);
         window.removeEventListener("keyup", onKeyUp);
