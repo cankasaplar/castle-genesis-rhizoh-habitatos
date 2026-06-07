@@ -7,6 +7,48 @@
         "signals":  "empty_or_stub"
     },
     {
+        "source":  "llm_chat",
+        "reference":  "20260528-193748_claude_claude-share-a86c3aa3.md",
+        "severity":  "low",
+        "signal_count":  1,
+        "signals":  "observation != execution"
+    },
+    {
+        "source":  "llm_chat",
+        "reference":  "20260528-194830_claude_claude-share-a86c3aa3.md",
+        "severity":  "low",
+        "signal_count":  1,
+        "signals":  "empty_or_stub"
+    },
+    {
+        "source":  "llm_chat",
+        "reference":  "20260528-215915_gemini_desktop-rtf-chat.md",
+        "severity":  "medium",
+        "signal_count":  2,
+        "signals":  "drift, yalan"
+    },
+    {
+        "source":  "llm_chat",
+        "reference":  "20260528-220528_gemini_desktop-rtf-chat.md",
+        "severity":  "medium",
+        "signal_count":  2,
+        "signals":  "drift, yalan"
+    },
+    {
+        "source":  "llm_chat",
+        "reference":  "20260528-221134_gemini_desktop-rtf-chat.md",
+        "severity":  "medium",
+        "signal_count":  2,
+        "signals":  "drift, yalan"
+    },
+    {
+        "source":  "llm_chat",
+        "reference":  "20260601-185059_chatgpt_desktop-rtf-chat.md",
+        "severity":  "medium",
+        "signal_count":  2,
+        "signals":  "drift, yalan"
+    },
+    {
         "source":  "html_surface",
         "reference":  "assets\\SPIRALMMO HTML\\02_intro.html",
         "severity":  "high",
@@ -287,108 +329,10 @@
         "signals":  "insufficient_code"
     },
     {
-        "source":  "duplicate_basename",
-        "reference":  "__init__.py",
-        "severity":  "medium",
-        "signal_count":  106,
-        "signals":  "possible_mirror_duplicate_paths"
-    },
-    {
-        "source":  "duplicate_basename",
-        "reference":  "__init__.cpython-313.pyc",
-        "severity":  "medium",
-        "signal_count":  102,
-        "signals":  "possible_mirror_duplicate_paths"
-    },
-    {
-        "source":  "duplicate_basename",
-        "reference":  "index.html",
-        "severity":  "medium",
-        "signal_count":  58,
-        "signals":  "possible_mirror_duplicate_paths"
-    },
-    {
-        "source":  "duplicate_basename",
-        "reference":  "main.js",
-        "severity":  "medium",
-        "signal_count":  22,
-        "signals":  "possible_mirror_duplicate_paths"
-    },
-    {
-        "source":  "duplicate_basename",
-        "reference":  "README.md",
-        "severity":  "medium",
-        "signal_count":  22,
-        "signals":  "possible_mirror_duplicate_paths"
-    },
-    {
-        "source":  "duplicate_basename",
-        "reference":  "py.typed",
-        "severity":  "medium",
-        "signal_count":  19,
-        "signals":  "possible_mirror_duplicate_paths"
-    },
-    {
-        "source":  "duplicate_basename",
-        "reference":  "__init__.pyi",
-        "severity":  "medium",
-        "signal_count":  18,
-        "signals":  "possible_mirror_duplicate_paths"
-    },
-    {
-        "source":  "duplicate_basename",
-        "reference":  "package.json",
-        "severity":  "medium",
-        "signal_count":  17,
-        "signals":  "possible_mirror_duplicate_paths"
-    },
-    {
-        "source":  "duplicate_basename",
-        "reference":  "style.css",
-        "severity":  "medium",
-        "signal_count":  16,
-        "signals":  "possible_mirror_duplicate_paths"
-    },
-    {
-        "source":  "duplicate_basename",
-        "reference":  "game.js",
-        "severity":  "medium",
-        "signal_count":  14,
-        "signals":  "possible_mirror_duplicate_paths"
-    },
-    {
-        "source":  "duplicate_basename",
-        "reference":  "WHEEL",
-        "severity":  "medium",
+        "source":  "temporal_skew",
+        "reference":  "2026-05-28",
+        "severity":  "low",
         "signal_count":  11,
-        "signals":  "possible_mirror_duplicate_paths"
-    },
-    {
-        "source":  "duplicate_basename",
-        "reference":  "METADATA",
-        "severity":  "medium",
-        "signal_count":  11,
-        "signals":  "possible_mirror_duplicate_paths"
-    },
-    {
-        "source":  "duplicate_basename",
-        "reference":  "LICENSE.txt",
-        "severity":  "medium",
-        "signal_count":  11,
-        "signals":  "possible_mirror_duplicate_paths"
-    },
-    {
-        "source":  "duplicate_basename",
-        "reference":  "RECORD",
-        "severity":  "medium",
-        "signal_count":  11,
-        "signals":  "possible_mirror_duplicate_paths"
-    },
-    {
-        "source":  "duplicate_basename",
-        "reference":  "INSTALLER",
-        "severity":  "medium",
-        "signal_count":  11,
-        "signals":  "possible_mirror_duplicate_paths"
+        "signals":  "single_day_ingest_dominance"
     }
 ]

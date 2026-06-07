@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <title>Rhizoh Lab A — L0.5 paste helper</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 24px auto; padding: 0 16px; }
+    h1 { font-size: 1.25rem; }
+    ol { line-height: 1.6; }
+    button { padding: 10px 16px; font-size: 14px; cursor: pointer; margin: 8px 8px 8px 0; }
+    textarea { width: 100%; height: 200px; font: 12px/1.4 monospace; }
+    .ok { color: #0a0; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>Laptop A — L0.5 script kopyala</h1>
+  <ol>
+    <li><strong>rhizoh.com</strong> aç → F12 → Console</li>
+    <li>Aşağıdaki <strong>「Script kopyala」</strong> → Console’da <strong>Ctrl+V</strong> → Enter</li>
+    <li><code>typeof rhizohLabL05</code> → <code>"object"</code> olmalı</li>
+    <li>「Komutları kopyala」→ yapıştır → 120 sn bekle → ikinci komut bloğu</li>
+  </ol>
+  <p>
+    <button type="button" id="copyScript">① Script kopyala (rhizohLabL05)</button>
+    <button type="button" id="copyCmd1">② Komut A_t0</button>
+    <button type="button" id="copyCmd2">③ Komut A_t2 + report</button>
+  </p>
+  <p id="status"></p>
+  <textarea id="script" readonly></textarea>
+  <script id="loader" type="text/plain"></script>
+  <script>
+    const SCRIPT = `(function(){const P="__rhizoh_lab_l05_prev",JR="__rhizoh_lab_l05_jitter_ring",EPS=2.5;const g=p=>p.split(".").reduce((o,k)=>(o?o[k]:void 0),window.__rhizoh||{});const pct=(a,p)=>{if(!a.length)return null;const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor((s.length-1)*p))]};function capture(arg){const label=typeof arg==="string"?arg:String(arg?.label??"l05");const laptop=arg?.laptop!=null?String(arg.laptop):null;const q=g("ingressQueue")||window.__rhizoh?.observe?.ingressQueue?.()||{};const now=Date.now(),seq=+q.lastAcceptedSeq,tick=+g("presenceFrame.tickSeq"),queued=+q.queued||0;const prev=window[P];let drain=null,ingest=null,dms=null,dseq=null;if(prev?.lastAcceptedSeq!=null&&seq){dms=now-prev.atMs;dseq=seq-prev.lastAcceptedSeq;if(dms>0)drain=+(dseq/(dms/1000)).toFixed(3)}if(prev?.tickSeq!=null&&tick&&dms>0)ingest=+((tick-prev.tickSeq)/(dms/1000)).toFixed(3);window[P]={atMs:now,lastAcceptedSeq:seq,tickSeq:tick||prev?.tickSeq,queued};const maxJ=g("organismRhythm.max_jitter_ms");const ring=window[JR]||[];if(Number.isFinite(maxJ)){ring.push(maxJ);while(ring.length>48)ring.shift()}window[JR]=ring;const layers=(g("organismStabilization.rhythm.layers")||[]).map(l=>+l.jitter_ms).filter(Number.isFinite);let plateau=null;if(drain!=null&&ingest!=null){const gap=Math.abs(ingest-drain);plateau={producer_approx_consumer:gap<=EPS,rate_gap_per_sec:+gap.toFixed(3),ingest,drain}}const snap={schema:"castle.rhizoh.lab_l05_inline.v0",atMs:now,meta:{label,phase:"L0.5",...(laptop?{laptop}:{})},anchors:{world_id:g("worldIdentity.world_identity_id"),cis01:g("continuityIntegrityScore.cis01"),identity_locked:g("castleCoherenceLock.ok")===true},ingress:{queued,backpressure:q.backpressure===true,lastAcceptedSeq:seq||null,drain_rate_per_sec:drain,ingest_rate_per_sec_proxy:ingest,delta_ms:dms,delta_seq:dseq,plateau},rhythm:{ok:g("organismRhythm.ok")===true,max_jitter_ms:maxJ??null,jitter_p50_ms:pct(ring,.5),jitter_p95_ms:pct(ring,.95),layer_p95_ms:pct(layers,.95)},gateway:{phase:window.__CASTLE_GATEWAY_SESSION_KEEPER__?.lastPhase??null,boot_age_ms:performance.timeOrigin?now-performance.timeOrigin:null},ssot:{STATE:"HEALTHY_OVERLOAD_EQUILIBRIUM",FAILURE_CLASS:"none_observed"}};(window.__rhizoh_lab_l05_log=window.__rhizoh_lab_l05_log||[]).push(snap);return snap}function report(){const log=window.__rhizoh_lab_l05_log||[];if(log.length<2)return{ok:false,need:"2x capture",n:log.length};const b=log[log.length-1];return{ok:true,from:log[log.length-2].meta?.label,to:b.meta?.label,drain_rate_per_sec:b.ingress.drain_rate_per_sec,ingest_rate_per_sec_proxy:b.ingress.ingest_rate_per_sec_proxy,plateau:b.ingress.plateau,jitter_p95_ms:b.rhythm.jitter_p95_ms}}window.rhizohLabL05={capture,report};console.log("✅ rhizohLabL05 ready")})();`;
+
+    const CMD1 = `const A_t0 = rhizohLabL05.capture({ label: "A_t0", laptop: "A" });
+console.log("A_t0", A_t0.ingress, A_t0.rhythm, A_t0.ssot);`;
+
+    const CMD2 = `const A_t2 = rhizohLabL05.capture({ label: "A_t2", laptop: "A" });
+console.log("report", rhizohLabL05.report());
+console.log("log", window.__rhizoh_lab_l05_log);`;
+
+    document.getElementById("script").value = SCRIPT;
+
+    async function copyText(text, msg) {
+      const st = document.getElementById("status");
+      try {
+        await navigator.clipboard.writeText(text);
+        st.innerHTML = '<span class="ok">' + msg + " — panoya kopyalandı. rhizoh.com Console → Ctrl+V → Enter</span>";
+      } catch (e) {
+        st.textContent = "Kopyalanamadı — textarea'dan elle Ctrl+C yap.";
+      }
+    }
+
+    document.getElementById("copyScript").onclick = () => copyText(SCRIPT, "Script");
+    document.getElementById("copyCmd1").onclick = () => copyText(CMD1, "A_t0");
+    document.getElementById("copyCmd2").onclick = () => copyText(CMD2, "A_t2");
+  </script>
+</body>
+</html>

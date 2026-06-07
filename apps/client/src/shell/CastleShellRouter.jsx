@@ -7,6 +7,16 @@ import AcademicObservatoryPageV0 from "../surface/AcademicObservatoryPageV0.jsx"
 import { PhysicalCognitionEngineExampleV0 } from "../rhizoh/experience/examples/PhysicalCognitionEngineExampleV0.jsx";
 import { TemporalSemanticEngineExampleV0 } from "../rhizoh/experience/examples/TemporalSemanticEngineExampleV0.jsx";
 import { RhizohThinkingEngineExampleV0 } from "../rhizoh/experience/examples/RhizohThinkingEngineExampleV0.jsx";
+import { StudioLiveRoomV1 } from "../studio/StudioLiveRoomV1.jsx";
+import { FoxConversationLabPageV1 } from "../studio/FoxConversationLabPageV1.jsx";
+
+/**
+ * Product rule: single continuous world — `/` always mounts AppRhizoh528 → AppRhizoh528T0.
+ * @see docs/RHIZOH_T0_EXPERIENCE_SHELL_V1.md
+ * Secondary: /dev/octo-lab · env-gated /studio-live · genesis/academy hubs (not main product).
+ */
+const STUDIO_LIVE_ROUTE_ENABLED_V0 =
+  String(import.meta.env.VITE_ENABLE_STUDIO_LIVE_ROUTE ?? "").trim() === "1";
 
 /**
  * SPA shell — Genesis hub `/genesis/hub` and product alias `/academy/observe`; legacy portal `/genesis/portal`. Rhizoh: `AppRhizoh528` syncs `useLocation()`.
@@ -15,6 +25,11 @@ export function CastleShellRouter() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/world" element={<Navigate to="/world/space" replace />} />
+        <Route path="/world/space" element={<AppRhizoh528 />} />
+        <Route path="/world/social" element={<AppRhizoh528 />} />
+        <Route path="/world/modes" element={<AppRhizoh528 />} />
+        <Route path="/" element={<AppRhizoh528 />} />
         <Route path="/genesis" element={<Navigate to="/genesis/hub" replace />} />
         <Route path="/genesis/observe" element={<Navigate to="/academy/observe" replace />} />
         <Route path="/genesis/hub" element={<GenesisObservabilityHubPage />} />
@@ -36,6 +51,22 @@ export function CastleShellRouter() {
           path="/rhizoh/examples/thinking-engine-v0"
           element={<RhizohThinkingEngineExampleV0 />}
         />
+        {STUDIO_LIVE_ROUTE_ENABLED_V0 ? (
+          <Route path="/studio-live" element={<StudioLiveRoomV1 />} />
+        ) : (
+          <Route path="/studio-live" element={<Navigate to="/" replace />} />
+        )}
+        <Route path="/dev/fox-lab" element={<FoxConversationLabPageV1 />} />
+        <Route path="/dev/octo-lab" element={<FoxConversationLabPageV1 />} />
+        <Route path="/hall/*" element={<AppRhizoh528 />} />
+        <Route path="/greenroom/*" element={<AppRhizoh528 />} />
+        <Route path="/broadcast/*" element={<AppRhizoh528 />} />
+        <Route path="/studio" element={<AppRhizoh528 />} />
+        <Route path="/spiral" element={<AppRhizoh528 />} />
+        <Route path="/map" element={<AppRhizoh528 />} />
+        <Route path="/settings" element={<AppRhizoh528 />} />
+        <Route path="/observer/settings" element={<AppRhizoh528 />} />
+        <Route path="/academy" element={<AppRhizoh528 />} />
         <Route path="*" element={<AppRhizoh528 />} />
       </Routes>
     </BrowserRouter>

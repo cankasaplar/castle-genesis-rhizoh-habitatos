@@ -45,6 +45,12 @@ function notify() {
 /**
  * @returns {boolean}
  */
+export function shouldMountRhizohControlCenterV0() {
+  if (typeof window === "undefined") return false;
+  if (new URLSearchParams(window.location.search).get("castle_debug") === "1") return true;
+  return isRhizohControlCenterEnabledV0();
+}
+
 export function isRhizohControlCenterEnabledV0() {
   if (typeof window === "undefined") return false;
   if (import.meta.env?.DEV) {
@@ -201,7 +207,7 @@ export function snapshotRhizohControlCenterV0() {
     gatewayPhase: rh.gatewayPhase || null,
     replayMode: rh.replayMode === true,
     walCount: rh.worldActionLog?.count ?? null,
-    worldData: getCastleWorldDataStateV0()
+    worldData: getCastleWorldDataStateV2()
   });
   return cachedSnapshotV0;
 }

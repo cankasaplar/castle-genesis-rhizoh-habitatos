@@ -1,6 +1,11 @@
 import React, { memo, useCallback, useEffect, useState } from "react";
 import { RealityDirector } from "../reality/realityDirector.js";
 import { subscribeRealityTransition } from "../reality/realityEventBus.js";
+import { routeCesiumCommandV0 } from "../castleFlight/cesiumCommandRouterV0.js";
+import {
+  readRhizohWorldMapToolV0,
+  writeRhizohWorldMapToolV0
+} from "../rhizoh/runtime/rhizohWorldMapToolV0.js";
 import { WORLD_MESH_LABELS_V0 } from "../rhizoh/spatial/worldMeshLabelsV0.js";
 
 /**
@@ -17,10 +22,11 @@ export const RhizohRealityModeChromeV0 = memo(function RhizohRealityModeChromeV0
   }, []);
 
   const applyCameraForMode = useCallback((next) => {
-    const c = typeof window !== "undefined" ? window.__CASTLE_CESIUM__ : null;
-    if (!c?.ready) return;
-    if (next === "GLOBE") c.flyToTopologyGlobe?.();
-    else c.flyToBootstrapViewport?.();
+    routeCesiumCommandV0({
+      op: next === "GLOBE" ? "topology_globe" : "bootstrap_viewport",
+      source: "reality_chrome_v0",
+      meta: Object.freeze({ ingress: "RhizohRealityModeChromeV0", realityMode: next })
+    });
   }, []);
 
   const selectMode = useCallback(
@@ -28,6 +34,11 @@ export const RhizohRealityModeChromeV0 = memo(function RhizohRealityModeChromeV0
       if (busy || next === mode) return;
       setBusy(true);
       try {
+        if (next === "REAL_MAP" && readRhizohWorldMapToolV0() === "globe") {
+          writeRhizohWorldMapToolV0("city_map");
+        } else if (next === "GLOBE") {
+          writeRhizohWorldMapToolV0("globe");
+        }
         await RealityDirector.setMode(next, { source: "reality_chrome_v0" });
         applyCameraForMode(next);
       } catch (e) {

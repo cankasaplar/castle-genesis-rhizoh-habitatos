@@ -28,7 +28,9 @@ describe("passivePerceptionFieldCoherenceV0", () => {
     const field = derivePassivePerceptionFieldV0({ worldInstanceId: "wi_field" });
     const merged = mergePerceptionFieldIntoCollectiveFeelingV0(collective, field);
     expect(merged.perceptionField?.sharedState).toBe(false);
-    expect(merged.secondary).toMatch(/perception field|state değil/i);
+    expect(merged.secondary).toMatch(
+      /perception field|state değil|state'ini paylaşmıyorlar|aynı alanı hissediyorlar/i
+    );
     expect(merged.primary).not.toMatch(/\d/);
   });
 });

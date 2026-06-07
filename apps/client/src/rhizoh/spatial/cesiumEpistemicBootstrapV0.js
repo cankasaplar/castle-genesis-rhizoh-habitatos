@@ -19,6 +19,7 @@ import { anchorProjectionToCesiumAtmosphereParamsV0 } from "./cesiumSpatialAdapt
 import { buildWorldPresenceStateV0 } from "../runtime/worldPresenceRuntimeV0.js";
 import { getCachedWeatherAtmosphereFeedV0 } from "../runtime/worldPresenceStoreV0.js";
 import { setCesiumEpistemicRuntimeInstallV0, clearCesiumEpistemicRuntimeInstallV0 } from "./cesiumEpistemicRuntimeStoreV0.js";
+import { cesiumSafeFromDegreesV0 } from "../../castleFlight/cesiumRenderGuardV0.js";
 
 /** @type {string} */
 export const RHIZOH_CALIBRATION_ROOT_ENTITY_ID = "rhizoh_calibration_root_v0";
@@ -109,17 +110,20 @@ export function installRhizohEpistemicCesiumBootstrapV0(viewer, Cesium, worldPre
     if (existing) {
       viewer.entities.remove(existing);
     }
-    entity = viewer.entities.add({
-      id: RHIZOH_CALIBRATION_ROOT_ENTITY_ID,
-      name: "Rhizoh calibration root (Sarıyer)",
-      position: Cesium.Cartesian3.fromDegrees(root.lon, root.lat, 95),
-      point: {
-        pixelSize: 11,
-        color: Cesium.Color.fromCssColorString("#22d3ee").withAlpha(0.9),
-        outlineColor: Cesium.Color.BLACK,
-        outlineWidth: 1.5
-      }
-    });
+    const position = cesiumSafeFromDegreesV0(Cesium, root.lon, root.lat, 95);
+    if (position) {
+      entity = viewer.entities.add({
+        id: RHIZOH_CALIBRATION_ROOT_ENTITY_ID,
+        name: "Rhizoh calibration root (Sarıyer)",
+        position,
+        point: {
+          pixelSize: 11,
+          color: Cesium.Color.fromCssColorString("#22d3ee").withAlpha(0.9),
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 1.5
+        }
+      });
+    }
   } catch {
     /* noop */
   }

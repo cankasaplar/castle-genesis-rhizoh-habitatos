@@ -5,6 +5,8 @@
  * Kohort kapısı: `cohortGateV0` — ID token + sunucu allowlist (`COHORT_EMAIL_ALLOWLIST` env, Gen2 function env).
  * Deploy analizinde `defineString` / ağır üst-seviye init zaman aşımına yol açmaması için env + lazy Admin.
  */
+const { Readable } = require("stream");
+const { pipeline } = require("stream/promises");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { onRequest } = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
@@ -123,6 +125,21 @@ function resolveGatewayProxySubPath(req) {
   return pathOnly.startsWith("/") ? pathOnly : `/${pathOnly}`;
 }
 
+function resolveGatewayProxyQuery(req) {
+  const urlStr = String(req.originalUrl || req.url || req.path || "");
+  const qsIdx = urlStr.indexOf("?");
+  return qsIdx >= 0 ? urlStr.slice(qsIdx) : "";
+}
+
+function resolveGatewayProxyUpstreamUrl(req, upstream, path) {
+  const base = String(upstream).replace(/\/$/, "");
+  return `${base}${path}${resolveGatewayProxyQuery(req)}`;
+}
+
+function isGatewayProxyStreamingPath(path) {
+  return String(path || "").includes("/rhizoh/genesis/stream");
+}
+
 /**
  * Explicit allowlist forward — do not spread req.headers (Firebase may pass unrelated keys).
  * Epistemic: inject CASTLE_GATEWAY_TOKEN from Functions env so a tokenless client bundle still ingests.
@@ -136,10 +153,10 @@ function pickGatewayProxyForwardHeaders(req, path = "") {
   if (ctype) headers["Content-Type"] = String(ctype);
   if (devUid) headers["X-Castle-Dev-Uid"] = String(devUid);
 
-  const isEpistemic = String(path || "").includes("/rhizoh/epistemic/");
+  const isRhizohPath = String(path || "").includes("/rhizoh/");
   const serverGw = String(process.env.CASTLE_GATEWAY_TOKEN || "").trim();
 
-  if (isEpistemic && serverGw) {
+  if (isRhizohPath && serverGw) {
     headers["X-Castle-Gateway-Token"] = serverGw;
     return headers;
   }
@@ -179,22 +196,33 @@ exports.gatewayProxyV0 = onRequest(
     }
     const path = resolveGatewayProxySubPath(req);
     const upstream = String(GATEWAY_PROXY_UPSTREAM).replace(/\/$/, "");
-    const url = `${upstream}${path}`;
-    const timeoutMs = path.includes("/rhizoh/llm") ? 90000 : 15000;
+    const url = resolveGatewayProxyUpstreamUrl(req, upstream, path);
+    const streaming = isGatewayProxyStreamingPath(path);
+    const timeoutMs = streaming ? 0 : path.includes("/rhizoh/llm") ? 90000 : 15000;
     try {
       const headers = pickGatewayProxyForwardHeaders(req, path);
       /** @type {RequestInit} */
       const init = { method: req.method, headers };
-      try {
-        init.signal = AbortSignal.timeout(timeoutMs);
-      } catch {
-        /* noop — older Node */
+      if (timeoutMs > 0) {
+        try {
+          init.signal = AbortSignal.timeout(timeoutMs);
+        } catch {
+          /* noop — older Node */
+        }
       }
       if (req.method === "POST") {
         const body = await readRequestBodyBuffer(req);
         if (body.length) init.body = body;
       }
       const r = await fetch(url, init);
+      if (streaming && r.body) {
+        res.status(r.status);
+        const ct = r.headers.get("content-type");
+        if (ct) res.set("Content-Type", ct);
+        res.set("Cache-Control", "no-cache");
+        await pipeline(Readable.fromWeb(r.body), res);
+        return;
+      }
       const text = await r.text();
       res
         .status(r.status)

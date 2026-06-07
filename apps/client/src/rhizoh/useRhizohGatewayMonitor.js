@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getCastleFlightConfig } from "../castleFlight/castleFlightConfig.js";
+import {
+  getCastleFlightConfig,
+  shouldUseSameOriginGatewayProxyV0,
+  getRhizohSameOriginGatewayProxyBaseV0
+} from "../castleFlight/castleFlightConfig.js";
 import { emitRhizohEngineActionTrace } from "./telemetry/rhizohUiIntentTraceV0.js";
 import { computeGatewayFlapPressure } from "./runtime/runtimeFrameCorrelationV0.js";
 import { setActiveConnectionId, setGatewayHealth } from "./runtime/gatewayIdentityStoreV0.js";
@@ -97,15 +101,7 @@ export function getRhizohHttpOrigin() {
  */
 /** rhizoh.com / Firebase Hosting: health + LLM aynı origin proxy (Render doğrudan kopunca sinyal düşmesin). */
 export function shouldUseSameOriginGatewayHealthProxyV0() {
-  if (typeof window === "undefined") return false;
-  const h = String(window.location.hostname || "").toLowerCase();
-  return (
-    h === "rhizoh.com" ||
-    h === "www.rhizoh.com" ||
-    h.endsWith(".rhizoh.com") ||
-    h === "castle-genesis.web.app" ||
-    h === "castle-genesis.firebaseapp.com"
-  );
+  return shouldUseSameOriginGatewayProxyV0();
 }
 
 export function getRhizohDirectGatewayHealthBase() {
@@ -127,9 +123,8 @@ export function getRhizohDirectGatewayHealthBase() {
 }
 
 export function getRhizohGatewayHealthBase() {
-  if (shouldUseSameOriginGatewayHealthProxyV0()) {
-    return `${window.location.origin}/api/gatewayProxy`;
-  }
+  const proxyBase = getRhizohSameOriginGatewayProxyBaseV0();
+  if (proxyBase) return proxyBase;
   return getRhizohDirectGatewayHealthBase();
 }
 

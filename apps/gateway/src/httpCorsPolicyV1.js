@@ -24,6 +24,33 @@ export function normalizeHttpOrigin(origin) {
     .replace(/\/+$/, "");
 }
 
+/** Any localhost port — Vite dev may bind 5174+ when 5173 is taken. */
+export function isLocalhostDevOrigin(origin) {
+  const n = normalizeHttpOrigin(origin);
+  if (!n) return false;
+  try {
+    const host = new URL(n).hostname.toLowerCase();
+    return host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+  } catch {
+    return false;
+  }
+}
+
+/** Firebase Hosting preview channels: castle-genesis--<channel>.web.app */
+export function isCastleGenesisFirebasePreviewOrigin(origin) {
+  const n = normalizeHttpOrigin(origin);
+  if (!n) return false;
+  try {
+    const host = new URL(n).hostname.toLowerCase();
+    return (
+      host.startsWith("castle-genesis--") &&
+      (host.endsWith(".web.app") || host.endsWith(".firebaseapp.com"))
+    );
+  } catch {
+    return false;
+  }
+}
+
 /** @param {NodeJS.ProcessEnv} [env] */
 export function parseAllowedOriginsFromEnv(env = process.env) {
   const fromList = String(env.CASTLE_ALLOWED_ORIGINS || "")
@@ -72,6 +99,8 @@ export function createHttpCorsPolicy(env = process.env) {
     if (allowSet.size === 0) return "*";
     if (!reqOrigin) return "*";
     if (allowSet.has(reqOrigin)) return reqOrigin;
+    if (isCastleGenesisFirebasePreviewOrigin(reqOrigin)) return reqOrigin;
+    if (isLocalhostDevOrigin(reqOrigin)) return reqOrigin;
     return null;
   }
 
@@ -92,7 +121,7 @@ export function createHttpCorsPolicy(env = process.env) {
     if (allowSet.size === 0) return true;
     const n = normalizeHttpOrigin(origin);
     if (!n) return true;
-    return allowSet.has(n);
+    return allowSet.has(n) || isCastleGenesisFirebasePreviewOrigin(n) || isLocalhostDevOrigin(n);
   }
 
   return {

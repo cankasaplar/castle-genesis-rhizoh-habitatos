@@ -87,6 +87,12 @@ export function isLegalPreambleRequiredV0() {
   if (typeof window !== "undefined") {
     const host = String(window.location?.hostname || "").toLowerCase();
     if (host === "rhizoh.com" || host.endsWith(".rhizoh.com")) return true;
+    if (
+      host.startsWith("castle-genesis--") &&
+      (host.endsWith(".web.app") || host.endsWith(".firebaseapp.com"))
+    ) {
+      return false;
+    }
   }
   if (typeof import.meta !== "undefined" && import.meta.env?.VITE_RHIZOH_LEGAL_PREAMBLE === "0") {
     return false;

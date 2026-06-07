@@ -1,505 +1,505 @@
 ﻿{
-    "total_files":  125593,
+    "total_files":  74514,
     "target_clusters":  50,
     "clusters":  [
                      {
                          "cluster_id":  "C01",
-                         "signature":  "ext.js|runtime_vendor|spiral_core|spİralchİp and tech|spiralzeka_alphacodex, xs",
-                         "file_count":  14113,
+                         "signature":  "assets|ext.html|spiral_core|spiralmmo html|web_surface|sm",
+                         "file_count":  221,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\compat-data\\corejs2-built-ins.js",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\compat-data\\corejs3-shipped-proposals.js",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\compat-data\\native-modules.js"
+                                              "assets\\SPIRALMMO HTML\\01_intro.html",
+                                              "assets\\SPIRALMMO HTML\\03_intro.html",
+                                              "assets\\SPIRALMMO HTML\\04_intro.html"
                                           ]
                      },
                      {
                          "cluster_id":  "C02",
-                         "signature":  "ext.js|runtime_vendor|spiral_core|spİralchİp and tech|spiralzeka_alphacodex, sm",
-                         "file_count":  7594,
+                         "signature":  "assets|ext.html|spiral_core|spiralmmo html|web_surface|xs",
+                         "file_count":  185,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@alloc\\quick-lru\\index.js",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\code-frame\\lib\\index.js",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\core\\lib\\index.js"
+                                              "assets\\SPIRALMMO HTML\\02_intro.html",
+                                              "assets\\SPIRALMMO HTML\\23_map_missions.html",
+                                              "assets\\SPIRALMMO HTML\\24_map_missions.html"
                                           ]
                      },
                      {
                          "cluster_id":  "C03",
-                         "signature":  "ext.ts|runtime_vendor|spiral_core|spiralmmo cursor new|yeni klasör (3), xs",
-                         "file_count":  6199,
+                         "signature":  "assets|ext.html|spiral_core|spiralmmo html|web_surface|md",
+                         "file_count":  60,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\Yeni klasör (3)\\Yeni klasör\\spiralmmo-final\\node_modules\\@ampproject\\remapping\\dist\\types\\build-source-map-tree.d.ts",
-                                              "spiralmmo cursor new\\Yeni klasör (3)\\Yeni klasör\\spiralmmo-final\\node_modules\\@ampproject\\remapping\\dist\\types\\source-map.d.ts",
-                                              "spiralmmo cursor new\\Yeni klasör (3)\\Yeni klasör\\spiralmmo-final\\node_modules\\@ampproject\\remapping\\dist\\types\\types.d.ts"
+                                              "assets\\SPIRALMMO HTML\\addingpower.html",
+                                              "assets\\SPIRALMMO HTML\\beginnngofthelegendspiralmmo.html",
+                                              "assets\\SPIRALMMO HTML\\betterdnaspiral.html"
                                           ]
                      },
                      {
                          "cluster_id":  "C04",
-                         "signature":  "ext.js|node_modules|runtime_vendor|spiral_core|spiralmmo cursor new, sm",
-                         "file_count":  5313,
+                         "signature":  "ext.png|media|spiral_core|spİralchİp and tech|spiralchip_project|lg",
+                         "file_count":  34,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\node_modules\\@babel\\code-frame\\lib\\index.js",
-                                              "spiralmmo cursor new\\node_modules\\@babel\\core\\lib\\index.js",
-                                              "spiralmmo cursor new\\node_modules\\@babel\\core\\lib\\parse.js"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\1_IfmzhzF1_rw_ILklBKjZlA.png",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\2-Figure1-1.png",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Blockchain-takeaway-platform-architecture-plan.png"
                                           ]
                      },
                      {
                          "cluster_id":  "C05",
-                         "signature":  "ext.js|runtime_vendor|spiral_core|spİralchİp and tech|spiralchip_project, sm",
-                         "file_count":  4619,
+                         "signature":  "ext.png|media|spiral_core|spİralchİp and tech|yeni klasör (2)|lg",
+                         "file_count":  33,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@alloc\\quick-lru\\index.js",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@babel\\code-frame\\lib\\index.js",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@babel\\core\\lib\\config\\caching.js"
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\1_IfmzhzF1_rw_ILklBKjZlA.png",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\2-Figure1-1.png",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Blockchain-takeaway-platform-architecture-plan.png"
                                           ]
                      },
                      {
                          "cluster_id":  "C06",
-                         "signature":  "ext.js|runtime_vendor|spiral_core|spİralchİp and tech|spiralchip_project, xs",
-                         "file_count":  4286,
+                         "signature":  "docs|ext.md|spiral_core|spİralchİp and tech|spiralchip_project|sm",
+                         "file_count":  26,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@babel\\compat-data\\corejs2-built-ins.js",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@babel\\compat-data\\corejs3-shipped-proposals.js",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@babel\\compat-data\\native-modules.js"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\CODE_OF_CONDUCT.md",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\CONTRIBUTING.md",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\README.md"
                                           ]
                      },
                      {
                          "cluster_id":  "C07",
-                         "signature":  "ext.js|node_modules|runtime_vendor|spiral_core|spiralmmo cursor new, xs",
-                         "file_count":  4131,
+                         "signature":  ".git|dashboard|rh-dashboard|xs",
+                         "file_count":  26,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\node_modules\\.vite\\deps\\chunk-BUSYA2B4.js",
-                                              "spiralmmo cursor new\\node_modules\\@babel\\compat-data\\corejs2-built-ins.js",
-                                              "spiralmmo cursor new\\node_modules\\@babel\\compat-data\\corejs3-shipped-proposals.js"
+                                              "rh-dashboard\\.git\\COMMIT_EDITMSG",
+                                              "rh-dashboard\\.git\\config",
+                                              "rh-dashboard\\.git\\description"
                                           ]
                      },
                      {
                          "cluster_id":  "C08",
-                         "signature":  "ext.ts|node_modules|runtime_vendor|spiral_core|spiralmmo cursor new, sm",
-                         "file_count":  3553,
+                         "signature":  "ext.js|spiral_core|spİralchİp and tech|spiralzeka_alphacodex|xs",
+                         "file_count":  21,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\node_modules\\@ampproject\\remapping\\dist\\types\\remapping.d.ts",
-                                              "spiralmmo cursor new\\node_modules\\@ampproject\\remapping\\dist\\types\\source-map-tree.d.ts",
-                                              "spiralmmo cursor new\\node_modules\\@babel\\core\\src\\transform-file.ts"
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_FullOnlineStarter\\backend\\proxy-server.js",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_FullOnlineStarter\\src\\main.js",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_MirrorAIPack\\src\\ai\\GhostEffect.js"
                                           ]
                      },
                      {
                          "cluster_id":  "C09",
-                         "signature":  "ext.ts|runtime_vendor|spiral_core|spiralmmo cursor new|yeni klasör (3), sm",
-                         "file_count":  3309,
+                         "signature":  "ext.pdf|spiral_core|spİralchİp and tech|yeni klasör (2)|sm",
+                         "file_count":  18,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\Yeni klasör (3)\\Yeni klasör\\spiralmmo-final\\node_modules\\@ampproject\\remapping\\dist\\types\\remapping.d.ts",
-                                              "spiralmmo cursor new\\Yeni klasör (3)\\Yeni klasör\\spiralmmo-final\\node_modules\\@ampproject\\remapping\\dist\\types\\source-map-tree.d.ts",
-                                              "spiralmmo cursor new\\Yeni klasör (3)\\Yeni klasör\\spiralmmo-final\\node_modules\\@babel\\core\\src\\transform-file.ts"
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\SpiralMMO_Feedback_Horizon_Europe.pdf",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\SpiralMMO_Feedback_TUBITAK.pdf",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\SpiralMMO_Feedback_Venture_Capital.pdf"
                                           ]
                      },
                      {
                          "cluster_id":  "C10",
-                         "signature":  "ext.ts|node_modules|runtime_vendor|spiral_core|spiralmmo cursor new, xs",
-                         "file_count":  3213,
+                         "signature":  "assets|ext.js|src|sm",
+                         "file_count":  17,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\node_modules\\@ampproject\\remapping\\dist\\types\\build-source-map-tree.d.ts",
-                                              "spiralmmo cursor new\\node_modules\\@ampproject\\remapping\\dist\\types\\source-map.d.ts",
-                                              "spiralmmo cursor new\\node_modules\\@ampproject\\remapping\\dist\\types\\types.d.ts"
+                                              "assets\\src\\main.js",
+                                              "assets\\src\\js\\main.js",
+                                              "assets\\src\\js\\config\\theme.js"
                                           ]
                      },
                      {
                          "cluster_id":  "C11",
-                         "signature":  "ext.js|runtime_vendor|spiral_core|spiralmmo cursor new|yeni klasör (3), sm",
-                         "file_count":  3050,
+                         "signature":  "ext.py|spiral_core|spİralchİp and tech|spiralchip_project|sm",
+                         "file_count":  17,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\Yeni klasör (3)\\Yeni klasör\\spiralmmo-final\\node_modules\\.vite\\deps\\chunk-T5TOICTN.js",
-                                              "spiralmmo cursor new\\Yeni klasör (3)\\Yeni klasör\\spiralmmo-final\\node_modules\\.vite\\deps\\three_examples_jsm_postprocessing_EffectComposer__js.js",
-                                              "spiralmmo cursor new\\Yeni klasör (3)\\Yeni klasör\\spiralmmo-final\\node_modules\\.vite\\deps\\three_examples_jsm_postprocessing_RenderPass__js.js"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\examples\\basic_usage.py",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\examples\\basic_usage.py",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\examples\\basic\\text_classification.py"
                                           ]
                      },
                      {
                          "cluster_id":  "C12",
-                         "signature":  "ext.ts|runtime_vendor|spiral_core|spİralchİp and tech|spiralzeka_alphacodex, xs",
-                         "file_count":  2676,
+                         "signature":  "ext.docx|spiral_core|spİralchİp and tech|yeni klasör (2)|md",
+                         "file_count":  15,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@ampproject\\remapping\\dist\\types\\build-source-map-tree.d.ts",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@ampproject\\remapping\\dist\\types\\source-map.d.ts",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@ampproject\\remapping\\dist\\types\\types.d.ts"
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Hebbian_Spiral_TUBITAK_Proposal.docx",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\SpiralMMO_HorizonEU_OnePager.docx",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Hebbian_Spiral_TUBITAK_Package\\Hebbian_Spiral_TUBITAK_Proposal.docx"
                                           ]
                      },
                      {
                          "cluster_id":  "C13",
-                         "signature":  "dashboard|ext.js|rh voice asistant|rh-dashboard|runtime_vendor, sm",
-                         "file_count":  2603,
+                         "signature":  "bundle|ext.zip|spiral_core|spİralchİp and tech|spiralzeka_alphacodex|sm",
+                         "file_count":  15,
                          "sample_paths":  [
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\cli.js",
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\inMemory.js",
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\client\\sse.js"
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_AlphaCodex.zip",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_AutoEvolveSystem.zip",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_EvolutionPanel.zip"
                                           ]
                      },
                      {
                          "cluster_id":  "C14",
-                         "signature":  "ext.ts|runtime_vendor|spiral_core|spİralchİp and tech|spiralchip_project, xs",
-                         "file_count":  2004,
+                         "signature":  "ext.js|spiral_core|spİralchİp and tech|spiralzeka_alphacodex|sm",
+                         "file_count":  13,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@ampproject\\remapping\\dist\\types\\build-source-map-tree.d.ts",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@ampproject\\remapping\\dist\\types\\source-map.d.ts",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@ampproject\\remapping\\dist\\types\\types.d.ts"
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_EvolutionPanel\\src\\vision\\visualizerApp.js",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_Project\\src\\core\\spiralzeka.js",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\src\\audio\\voiceAgent.js"
                                           ]
                      },
                      {
                          "cluster_id":  "C15",
-                         "signature":  "dashboard|ext.js|rh voice asistant|rh-dashboard|runtime_vendor, xs",
-                         "file_count":  1636,
+                         "signature":  "ext.html|spiral_core|spİralchİp and tech|spiralchip_project|web_surface|sm",
+                         "file_count":  11,
                          "sample_paths":  [
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\server\\auth\\clients.js",
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\server\\auth\\provider.js",
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\server\\auth\\types.js"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\index.html",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\hebbian_spiral_simulation (1).html",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\hebbian_spiral_simulation.html"
                                           ]
                      },
                      {
                          "cluster_id":  "C16",
-                         "signature":  "ext.js|runtime_vendor|spiral_core|spiralmmo cursor new|yeni klasör (3), xs",
-                         "file_count":  1516,
+                         "signature":  "ext.js|spiral_core|spİralchİp and tech|spiralchip_project|sm",
+                         "file_count":  11,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\Yeni klasör (3)\\Yeni klasör\\spiralmmo-final\\node_modules\\.vite\\deps\\chunk-OLTXGRDG.js",
-                                              "spiralmmo cursor new\\Yeni klasör (3)\\Yeni klasör\\spiralmmo-final\\node_modules\\@babel\\compat-data\\corejs2-built-ins.js",
-                                              "spiralmmo cursor new\\Yeni klasör (3)\\Yeni klasör\\spiralmmo-final\\node_modules\\@babel\\compat-data\\corejs3-shipped-proposals.js"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\main.js",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\main.js",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\src\\theme.js"
                                           ]
                      },
                      {
                          "cluster_id":  "C17",
-                         "signature":  "dashboard|ext.map|rh voice asistant|rh-dashboard|runtime_vendor, xs",
-                         "file_count":  1458,
+                         "signature":  "ext.txt|spiral_core|spİralchİp and tech|spiralchip_project|xs",
+                         "file_count":  10,
                          "sample_paths":  [
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\cli.d.ts.map",
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\inMemory.d.ts.map",
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\client\\websocket.d.ts.map"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\README.txt",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\requirements-dev.txt",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\requirements.txt"
                                           ]
                      },
                      {
                          "cluster_id":  "C18",
-                         "signature":  "dashboard|ext.ts|rh voice asistant|rh-dashboard|runtime_vendor, xs",
-                         "file_count":  1445,
+                         "signature":  "ext.txt|spİralchİp and tech|yeni klasör (2)|xs",
+                         "file_count":  10,
                          "sample_paths":  [
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\cli.d.ts",
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\client\\websocket.d.ts",
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\examples\\client\\multipleClientsParallel.d.ts"
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\1_Proje_Ozeti_TR.txt",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\2_Proje_Aciklamasi.txt",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\3_Teknoloji_Hazirlik_Seviyesi.txt"
                                           ]
                      },
                      {
                          "cluster_id":  "C19",
-                         "signature":  "ext.map|node_modules|runtime_vendor|spiral_core|spiralmmo cursor new, xs",
-                         "file_count":  1410,
+                         "signature":  "ext.docx|spiral_core|spİralchİp and tech|spiralchip_project|md",
+                         "file_count":  10,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\node_modules\\.vite\\deps\\chunk-BUSYA2B4.js.map",
-                                              "spiralmmo cursor new\\node_modules\\.vite\\deps\\three.js.map",
-                                              "spiralmmo cursor new\\node_modules\\@babel\\core\\lib\\config\\cache-contexts.js.map"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Hebbian_Spiral_HorizonEurope_Proposal.docx",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Hebbian_Spiral_Proposal_HorizonEurope.docx",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Hebbian_Spiral_Proposal_OpenAI.docx"
                                           ]
                      },
                      {
                          "cluster_id":  "C20",
-                         "signature":  "ext.map|node_modules|runtime_vendor|spiral_core|spiralmmo cursor new, sm",
-                         "file_count":  1324,
+                         "signature":  ".git|dashboard|ext.sample|rh-dashboard|sm",
+                         "file_count":  8,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\node_modules\\@babel\\core\\lib\\index.js.map",
-                                              "spiralmmo cursor new\\node_modules\\@babel\\core\\lib\\parse.js.map",
-                                              "spiralmmo cursor new\\node_modules\\@babel\\core\\lib\\transform-ast.js.map"
+                                              "rh-dashboard\\.git\\hooks\\fsmonitor-watchman.sample",
+                                              "rh-dashboard\\.git\\hooks\\pre-commit.sample",
+                                              "rh-dashboard\\.git\\hooks\\pre-push.sample"
                                           ]
                      },
                      {
                          "cluster_id":  "C21",
-                         "signature":  "docs|ext.md|runtime_vendor|spiral_core|spİralchİp and tech|spiralzeka_alphacodex, sm",
-                         "file_count":  1288,
+                         "signature":  "dashboard|data|ext.json|rh voice asistant|rh-dashboard|xs",
+                         "file_count":  8,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@alloc\\quick-lru\\readme.md",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@ampproject\\remapping\\README.md",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\eslint-parser\\README.md"
+                                              "rh-dashboard\\rh voice asistant\\package.json",
+                                              "rh-dashboard\\rh voice asistant\\tsconfig.json",
+                                              "rh-dashboard\\rh voice asistant\\.next\\build-manifest.json"
                                           ]
                      },
                      {
                          "cluster_id":  "C22",
-                         "signature":  "ext.js|runtime_vendor|spiral_core|spİralchİp and tech|spiralzeka_alphacodex, md",
-                         "file_count":  1275,
+                         "signature":  "dashboard|ext.js|rh voice asistant|rh-dashboard|xs",
+                         "file_count":  7,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\core\\lib\\config\\config-chain.js",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\core\\lib\\config\\full.js",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\core\\lib\\config\\files\\configuration.js"
+                                              "rh-dashboard\\rh voice asistant\\next.config.js",
+                                              "rh-dashboard\\rh voice asistant\\.next\\server\\middleware-build-manifest.js",
+                                              "rh-dashboard\\rh voice asistant\\.next\\server\\middleware-react-loadable-manifest.js"
                                           ]
                      },
                      {
                          "cluster_id":  "C23",
-                         "signature":  "ext.ts|runtime_vendor|spiral_core|spİralchİp and tech|spiralzeka_alphacodex, sm",
-                         "file_count":  1262,
+                         "signature":  "ext.png|media|spiral_core|spİralchİp and tech|spiralchip_project|xl",
+                         "file_count":  7,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@alloc\\quick-lru\\index.d.ts",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@ampproject\\remapping\\dist\\types\\remapping.d.ts",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@ampproject\\remapping\\dist\\types\\source-map-tree.d.ts"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\SpiralChip_Mimari_Diagram.png",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\SpiralChip_Mimari_Diagram.png",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Gemini_Generated_Image_1osh3n1osh3n1osh.png"
                                           ]
                      },
                      {
                          "cluster_id":  "C24",
-                         "signature":  "runtime_vendor|spiral_core|spİralchİp and tech|spiralchip_project, sm",
-                         "file_count":  1226,
+                         "signature":  "ext.js|spiral_core|spİralchİp and tech|spiralzeka_project|sm",
+                         "file_count":  7,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@adobe\\css-tools\\LICENSE",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@alloc\\quick-lru\\license",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@babel\\code-frame\\LICENSE"
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_Project\\game.js",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_Project\\memoryExplorer.js",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_Project\\mongo-init.js"
                                           ]
                      },
                      {
                          "cluster_id":  "C25",
-                         "signature":  "dashboard|ext.map|rh voice asistant|rh-dashboard|runtime_vendor, sm",
-                         "file_count":  1139,
+                         "signature":  "ext.glb|spiral_core|spİralchİp and tech|spiralchip_project|lg",
+                         "file_count":  7,
                          "sample_paths":  [
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\cli.js.map",
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\inMemory.js.map",
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\client\\auth.d.ts.map"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\spiral_ai_chip.glb",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\spiral_ai_chip.glb",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\spiral_chip_network_animated.glb"
                                           ]
                      },
                      {
                          "cluster_id":  "C26",
-                         "signature":  "runtime_vendor|spiral_core|spİralchİp and tech|spiralzeka_alphacodex, sm",
-                         "file_count":  1088,
+                         "signature":  "ext.html|spiral_core|spİralchİp and tech|web_surface|yeni klasör (2)|sm",
+                         "file_count":  7,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@alloc\\quick-lru\\license",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\code-frame\\LICENSE",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\compat-data\\LICENSE"
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\hebbian_spiral_simulation (1).html",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\hebbian_spiral_simulation.html",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\hebbian_spiral_simulation_v2.html"
                                           ]
                      },
                      {
                          "cluster_id":  "C27",
-                         "signature":  "docs|ext.md|runtime_vendor|spiral_core|spİralchİp and tech|spiralchip_project, sm",
-                         "file_count":  1082,
+                         "signature":  ".git|dashboard|ext.sample|rh-dashboard|xs",
+                         "file_count":  6,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@alloc\\quick-lru\\readme.md",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@ampproject\\remapping\\README.md",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@babel\\core\\node_modules\\convert-source-map\\README.md"
+                                              "rh-dashboard\\.git\\hooks\\applypatch-msg.sample",
+                                              "rh-dashboard\\.git\\hooks\\commit-msg.sample",
+                                              "rh-dashboard\\.git\\hooks\\post-update.sample"
                                           ]
                      },
                      {
                          "cluster_id":  "C28",
-                         "signature":  "ext.js|node_modules|runtime_vendor|spiral_core|spiralmmo cursor new, md",
-                         "file_count":  1028,
+                         "signature":  "assets|dashboard|ext.html|spiral_core|spiralmmo html|web_surface|sm",
+                         "file_count":  6,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\node_modules\\.vite\\deps\\howler.js",
-                                              "spiralmmo cursor new\\node_modules\\.vite\\deps\\socket__io-client.js",
-                                              "spiralmmo cursor new\\node_modules\\.vite\\deps\\three.js"
+                                              "assets\\SPIRALMMO HTML\\06_dashboard.html",
+                                              "assets\\SPIRALMMO HTML\\07_dashboard.html",
+                                              "assets\\SPIRALMMO HTML\\08_dashboard.html"
                                           ]
                      },
                      {
                          "cluster_id":  "C29",
-                         "signature":  "ext.map|runtime_vendor|spiral_core|spİralchİp and tech|spiralzeka_alphacodex, xs",
-                         "file_count":  1007,
+                         "signature":  "assets|ext.js|spiral_core|src|sm",
+                         "file_count":  6,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\core\\lib\\config\\cache-contexts.js.map",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\core\\lib\\config\\files\\import.cjs.map",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\core\\lib\\config\\helpers\\environment.js.map"
+                                              "assets\\src\\components\\compass\\SpiralCompass.js",
+                                              "assets\\src\\components\\controls\\SpiralTouchControls.js",
+                                              "assets\\src\\components\\overlay\\SpiralTransitionOverlay.js"
                                           ]
                      },
                      {
                          "cluster_id":  "C30",
-                         "signature":  "ext.js|runtime_vendor|spiral_core|spİralchİp and tech|spiralchip_project, md",
-                         "file_count":  956,
+                         "signature":  "ext.jpg|spiral_core|spİralchİp and tech|spiralchip_project|md",
+                         "file_count":  6,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@babel\\core\\lib\\config\\config-chain.js",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@babel\\core\\lib\\config\\full.js",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@babel\\core\\lib\\config\\files\\configuration.js"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\conexion-neuronal-1024x512.jpg",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Development-of-neuromorphic-devices-Building-neuromorphic-systems-based-on-Hebbian_Q320.jpg",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Selection-of-ion-channels-by-plasticity-rules-Hebbian-equation-4-and-anti-Hebbian_Q640.jpg"
                                           ]
                      },
                      {
                          "cluster_id":  "C31",
-                         "signature":  "data|ext.json|runtime_vendor|spiral_core|spİralchİp and tech|spiralzeka_alphacodex, sm",
-                         "file_count":  927,
+                         "signature":  "ext.pdf|spiral_core|spİralchİp and tech|spiralchip_project|xs",
+                         "file_count":  6,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@ampproject\\remapping\\package.json",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\compat-data\\package.json",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\compat-data\\data\\overlapping-plugins.json"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\Ethics_and_Security_Guidelines.pdf",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\SpiralChip_Technical_Overview.pdf",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\UseCases_Scenarios.pdf"
                                           ]
                      },
                      {
                          "cluster_id":  "C32",
-                         "signature":  "data|ext.json|runtime_vendor|spiral_core|spİralchİp and tech|spiralzeka_alphacodex, xs",
-                         "file_count":  885,
+                         "signature":  "ext.pdf|spİralchİp and tech|yeni klasör (2)|sm",
+                         "file_count":  6,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@alloc\\quick-lru\\package.json",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\code-frame\\package.json",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\compat-data\\data\\corejs3-shipped-proposals.json"
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Horizon_Europe_Application_Letter_CanKasaplar.pdf",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Horizon_Europe_HSMC_Application_Summary_ReportLab.pdf",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\OpenAI_Feedback_Reflection.pdf"
                                           ]
                      },
                      {
                          "cluster_id":  "C33",
-                         "signature":  "data|ext.json|runtime_vendor|spiral_core|spİralchİp and tech|spiralchip_project, xs",
-                         "file_count":  855,
+                         "signature":  "data|ext.json|spiral_core|spİralchİp and tech|spiralzeka_alphacodex|xs",
+                         "file_count":  5,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@alloc\\quick-lru\\package.json",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@babel\\code-frame\\package.json",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@babel\\compat-data\\data\\corejs3-shipped-proposals.json"
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_OnlineStarter\\package.json",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_Project\\src\\data\\dna\\eren.json",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\package.json"
                                           ]
                      },
                      {
                          "cluster_id":  "C34",
-                         "signature":  "data|ext.json|runtime_vendor|spiral_core|spİralchİp and tech|spiralchip_project, sm",
-                         "file_count":  841,
+                         "signature":  "ext.png|media|spiral_core|spİralchİp and tech|spiralchip_project|md",
+                         "file_count":  5,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@adobe\\css-tools\\package.json",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@ampproject\\remapping\\package.json",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@babel\\compat-data\\package.json"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Fabrication-steps-of-spiral-microchip.png",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\output (5).png",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\output (6).png"
                                           ]
                      },
                      {
                          "cluster_id":  "C35",
-                         "signature":  "ext.ts|runtime_vendor|spiral_core|spİralchİp and tech|spiralchip_project, sm",
-                         "file_count":  833,
+                         "signature":  "ext.tex|spiral_core|spİralchİp and tech|spiralchip_project|sm",
+                         "file_count":  5,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@adobe\\css-tools\\dist\\types.d.ts",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@alloc\\quick-lru\\index.d.ts",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@ampproject\\remapping\\dist\\types\\remapping.d.ts"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\SpiralChip-WebXR-Demo\\spiral_technologies_book.tex",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\SpiralChip-WebXR-Demo\\spiral_technologies_book_interactive.tex",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\SpiralChip-WebXR-Demo\\spiral_technologies_book_styled.tex"
                                           ]
                      },
                      {
                          "cluster_id":  "C36",
-                         "signature":  "ext.map|runtime_vendor|spiral_core|spİralchİp and tech|spiralzeka_alphacodex, sm",
-                         "file_count":  831,
+                         "signature":  "assets|dashboard|ext.html|spiral_core|spiralmmo html|web_surface|xs",
+                         "file_count":  5,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\core\\lib\\index.js.map",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\core\\lib\\parse.js.map",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\core\\lib\\transform-ast.js.map"
+                                              "assets\\SPIRALMMO HTML\\09_dashboard.html",
+                                              "assets\\SPIRALMMO HTML\\10_dashboard.html",
+                                              "assets\\SPIRALMMO HTML\\11_dashboard.html"
                                           ]
                      },
                      {
                          "cluster_id":  "C37",
-                         "signature":  "node_modules|runtime_vendor|spiral_core|spiralmmo cursor new, sm",
-                         "file_count":  763,
+                         "signature":  "ext.jpg|spiral_core|spİralchİp and tech|yeni klasör (2)|md",
+                         "file_count":  5,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\node_modules\\@babel\\code-frame\\LICENSE",
-                                              "spiralmmo cursor new\\node_modules\\@babel\\compat-data\\LICENSE",
-                                              "spiralmmo cursor new\\node_modules\\@babel\\core\\LICENSE"
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\conexion-neuronal-1024x512.jpg",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Development-of-neuromorphic-devices-Building-neuromorphic-systems-based-on-Hebbian_Q320.jpg",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Selection-of-ion-channels-by-plasticity-rules-Hebbian-equation-4-and-anti-Hebbian_Q640.jpg"
                                           ]
                      },
                      {
                          "cluster_id":  "C38",
-                         "signature":  "docs|ext.md|node_modules|runtime_vendor|spiral_core|spiralmmo cursor new, sm",
-                         "file_count":  729,
+                         "signature":  "ext.txt|spiral_core|spİralchİp and tech|yeni klasör (2)|xs",
+                         "file_count":  5,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\node_modules\\@ampproject\\remapping\\README.md",
-                                              "spiralmmo cursor new\\node_modules\\@bcoe\\v8-coverage\\CHANGELOG.md",
-                                              "spiralmmo cursor new\\node_modules\\@bcoe\\v8-coverage\\LICENSE.md"
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Hebbian_Spiral_Chip_TUBITAK_Application\\1_Proje_Ozeti_TR.txt",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Hebbian_Spiral_Chip_TUBITAK_Application\\2_Proje_Aciklamasi.txt",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Hebbian_Spiral_Chip_TUBITAK_Application\\3_Teknoloji_Hazirlik_Seviyesi.txt"
                                           ]
                      },
                      {
                          "cluster_id":  "C39",
-                         "signature":  "node_modules|runtime_vendor|spiral_core|spiralmmo cursor new, xs",
-                         "file_count":  710,
+                         "signature":  "ext.png|media|spiral_core|spİralchİp and tech|yeni klasör (2)|xl",
+                         "file_count":  5,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\node_modules\\.bin\\browserslist",
-                                              "spiralmmo cursor new\\node_modules\\.bin\\crc32",
-                                              "spiralmmo cursor new\\node_modules\\.bin\\create-jest"
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Gemini_Generated_Image_1osh3n1osh3n1osh.png",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Gemini_Generated_Image_8h8xtr8h8xtr8h8x.png",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Gemini_Generated_Image_r9hdoar9hdoar9hd.png"
                                           ]
                      },
                      {
                          "cluster_id":  "C40",
-                         "signature":  "ext.js|runtime_vendor|spiral_core|spiralmmo cursor new|yeni klasör (3), md",
-                         "file_count":  710,
+                         "signature":  "bundle|ext.zip|spiral_core|spİralchİp and tech|spiralchip_project|xl",
+                         "file_count":  5,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\Yeni klasör (3)\\Yeni klasör\\spiralmmo-final\\node_modules\\.vite\\deps\\three.js",
-                                              "spiralmmo cursor new\\Yeni klasör (3)\\Yeni klasör\\spiralmmo-final\\node_modules\\.vite\\deps\\three_examples_jsm_controls_OrbitControls__js.js",
-                                              "spiralmmo cursor new\\Yeni klasör (3)\\Yeni klasör\\spiralmmo-final\\node_modules\\@babel\\core\\lib\\config\\config-chain.js"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare.zip",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\Yeni klasör (2).zip",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\SpiralChip_Project.zip"
                                           ]
                      },
                      {
                          "cluster_id":  "C41",
-                         "signature":  "data|ext.json|node_modules|runtime_vendor|spiral_core|spiralmmo cursor new, xs",
-                         "file_count":  676,
+                         "signature":  "ext.png|media|spiral_core|spİralchİp and tech|yeni klasör (2)|md",
+                         "file_count":  5,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\node_modules\\.vite\\deps\\package.json",
-                                              "spiralmmo cursor new\\node_modules\\@apidevtools\\json-schema-ref-parser\\node_modules\\argparse\\package.json",
-                                              "spiralmmo cursor new\\node_modules\\@babel\\code-frame\\package.json"
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Fabrication-steps-of-spiral-microchip.png",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\output (5).png",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\output (6).png"
                                           ]
                      },
                      {
                          "cluster_id":  "C42",
-                         "signature":  "data|ext.json|node_modules|runtime_vendor|spiral_core|spiralmmo cursor new, sm",
-                         "file_count":  613,
+                         "signature":  "ext.py|spiral_core|spİralchİp and tech|spiralchip_project|xs",
+                         "file_count":  4,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\node_modules\\.vite\\deps\\_metadata.json",
-                                              "spiralmmo cursor new\\node_modules\\@ampproject\\remapping\\package.json",
-                                              "spiralmmo cursor new\\node_modules\\@apidevtools\\json-schema-ref-parser\\package.json"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\src\\__init__.py",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\tests\\__init__.py",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\src\\__init__.py"
                                           ]
                      },
                      {
                          "cluster_id":  "C43",
-                         "signature":  "assets|ext.js|node_modules|runtime_vendor, sm",
-                         "file_count":  577,
+                         "signature":  "assets|ext.js|js|sm",
+                         "file_count":  4,
                          "sample_paths":  [
-                                              "assets\\node_modules\\gsap\\all.js",
-                                              "assets\\node_modules\\gsap\\CSSRulePlugin.js",
-                                              "assets\\node_modules\\gsap\\CustomBounce.js"
+                                              "assets\\js\\main.js",
+                                              "assets\\js\\config\\dna-patterns.js",
+                                              "assets\\js\\core\\fusion-system.js"
                                           ]
                      },
                      {
                          "cluster_id":  "C44",
-                         "signature":  "ext.js|runtime_vendor|spİralchİp and tech|yeni klasör (2), sm",
-                         "file_count":  552,
+                         "signature":  "ext.html|spiral_core|spİralchİp and tech|spiralzeka_alphacodex|web_surface|sm",
+                         "file_count":  4,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\node_modules\\.vite\\deps\\three_addons_webxr_ARButton__js.js",
-                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\node_modules\\.vite\\deps\\three_addons_webxr_VRButton__js.js",
-                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\node_modules\\anymatch\\index.js"
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\index.html",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_EvolutionPanel\\public\\index.html",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\index.html"
                                           ]
                      },
                      {
                          "cluster_id":  "C45",
-                         "signature":  "dashboard|ext.ts|rh voice asistant|rh-dashboard|runtime_vendor, sm",
-                         "file_count":  543,
+                         "signature":  "ext.pdf|spiral_core|spİralchİp and tech|spiralchip_project|sm",
+                         "file_count":  4,
                          "sample_paths":  [
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\inMemory.d.ts",
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\client\\auth.d.ts",
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\client\\sse.d.ts"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Hebbian_Spiral_Chip_Final.pdf",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\HSMC_Project_Funding_Guide.pdf",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\SpiralMMO_Endorsement_Highlighted.pdf"
                                           ]
                      },
                      {
                          "cluster_id":  "C46",
-                         "signature":  "dashboard|ext.js|rh voice asistant|rh-dashboard|runtime_vendor, md",
-                         "file_count":  510,
+                         "signature":  "assets|css|ext.css|sm",
+                         "file_count":  4,
                          "sample_paths":  [
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\types.js",
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\client\\auth.js",
-                                              "rh-dashboard\\rh voice asistant\\node_modules\\@modelcontextprotocol\\sdk\\dist\\cjs\\client\\index.js"
+                                              "assets\\css\\dna-fusion-center.css",
+                                              "assets\\css\\dna-styles.css",
+                                              "assets\\css\\main.css"
                                           ]
                      },
                      {
                          "cluster_id":  "C47",
-                         "signature":  "docs|ext.md|runtime_vendor|spiral_core|spİralchİp and tech|spiralzeka_alphacodex, xs",
-                         "file_count":  508,
+                         "signature":  "ext.js|spİralchİp and tech|yeni klasör (2)|sm",
+                         "file_count":  4,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\code-frame\\README.md",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\compat-data\\README.md",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\node_modules\\@babel\\core\\README.md"
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\server.js",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\src\\api.js",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\src\\layers\\ShaderLayer.js"
                                           ]
                      },
                      {
                          "cluster_id":  "C48",
-                         "signature":  "docs|ext.md|runtime_vendor|spiral_core|spİralchİp and tech|spiralchip_project, xs",
-                         "file_count":  461,
+                         "signature":  "ext.js|spİralchİp and tech|yeni klasör (2)|md",
+                         "file_count":  4,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@babel\\code-frame\\README.md",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@babel\\compat-data\\README.md",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\spiralchip-web\\node_modules\\@babel\\core\\README.md"
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\src\\hardwareSimulator.js",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\src\\main.js",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\src\\modelManager.js"
                                           ]
                      },
                      {
                          "cluster_id":  "C49",
-                         "signature":  "ext.py|shapednalibrary|spiral_core|spiralmmo cursor new, sm",
-                         "file_count":  458,
+                         "signature":  "assets|ext.js|rc|sm",
+                         "file_count":  4,
                          "sample_paths":  [
-                                              "spiralmmo cursor new\\shapednalibrary\\app.py",
-                                              "spiralmmo cursor new\\shapednalibrary\\dna_3d.py",
-                                              "spiralmmo cursor new\\shapednalibrary\\dna_types.py"
+                                              "assets\\rc\\js\\modules\\DNALab.js",
+                                              "assets\\rc\\js\\modules\\DNASystem.js",
+                                              "assets\\rc\\js\\modules\\DNAVisualizer.js"
                                           ]
                      },
                      {
                          "cluster_id":  "C50",
                          "signature":  "OTHER|mixed_tail",
-                         "file_count":  25808,
+                         "file_count":  73597,
                          "sample_paths":  [
 
                                           ]
                      }
                  ],
-    "remainder_unassigned_estimate":  25808
+    "remainder_unassigned_estimate":  73597
 }

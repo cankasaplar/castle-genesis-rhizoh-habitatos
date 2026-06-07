@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rhizoh Observability Panel v1</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --card: #121923;
+      --border: #1f2a38;
+      --text: #d7e1ea;
+      --muted: #8a9bb0;
+      --ok: #5cff9a;
+      --warn: #ffcc66;
+      --bad: #ff6b6b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+      line-height: 1.4;
+    }
+
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    .sub { color: var(--muted); font-size: 12px; margin-bottom: 16px; }
+
+    .banner {
+      background: #1a2332;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 12px;
+    }
+
+    .banner.bad { border-color: var(--bad); color: #ffc9c9; }
+    .banner.ok { border-color: var(--ok); }
+
+    .toolbar { margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+    button {
+      background: var(--border);
+      color: white;
+      border: 0;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+    }
+
+    button:hover { background: #2a3848; }
+    button.primary { background: #1e4d3a; }
+    button.danger { background: #4d1e1e; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--card);
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+
+    .pill {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #1a2332;
+      border: 1px solid var(--border);
+    }
+
+    .pill.ok { color: var(--ok); border-color: #2a5c40; }
+    .pill.warn { color: var(--warn); border-color: #5c4a2a; }
+    .pill.bad { color: var(--bad); border-color: #5c2a2a; }
+
+    .spark {
+      height: 40px;
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      margin-top: 8px;
+    }
+
+    .spark i {
+      flex: 1;
+      min-width: 3px;
+      background: #3a5a78;
+      border-radius: 2px 2px 0 0;
+    }
+
+    #rhizoh-observe-overlay {
+      position: fixed;
+      inset: auto 16px 16px auto;
+      width: min(520px, calc(100vw - 32px));
+      max-height: min(85vh, 720px);
+      overflow: auto;
+      z-index: 2147483646;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      padding: 16px;
+    }
+
+    #rhizoh-observe-overlay .close-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="rhizoh-observe-root">
+  <h1>RHIZOH Observability Panel v1</h1>
+  <p class="sub">Phase 0 · read-only · panel = consumer · runtime = source</p>
+
+  <div id="connection-banner" class="banner bad">
+    Waiting for <code>window.__rhizoh</code> — open rhizoh.com main app, then inject overlay or reload this page on same origin.
+  </div>
+
+  <div class="toolbar">
+    <button onclick="RhizohPanel.tick()">Tick</button>
+    <button onclick="RhizohPanel.start(10000)">Auto 10s</button>
+    <button onclick="RhizohPanel.start(120000)">Auto 2m</button>
+    <button class="danger" onclick="RhizohPanel.stop()">Stop</button>
+    <button onclick="RhizohPanel.exportLog()">Export JSON</button>
+    <button class="primary" onclick="RhizohPanel.mountOverlay()">Inject on rhizoh.com</button>
+  </div>
+
+  <div class="pills" id="status-pills"></div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Signal</h3>
+      <pre id="signal">—</pre>
+      <div class="spark" id="tick-spark" title="SCR tick series"></div>
+    </div>
+
+    <div class="card">
+      <h3>System</h3>
+      <pre id="system">—</pre>
+    </div>
+
+    <div class="card">
+      <h3>Delta</h3>
+      <pre id="delta">—</pre>
+      <div class="spark" id="jitter-spark" title="Jitter series"></div>
+    </div>
+
+    <div class="card">
+      <h3>Report</h3>
+      <pre id="report">—</pre>
+    </div>
+
+    <div class="card">
+      <h3>Gateway Health Index</h3>
+      <pre id="gateway">—</pre>
+    </div>
+
+    <div class="card">
+      <h3>Ground Truth Lock</h3>
+      <pre id="ground_truth">—</pre>
+    </div>
+
+    <div class="card">
+      <h3>Drift classifier (v0.7 multi-axis)</h3>
+      <pre id="drift">—</pre>
+    </div>
+
+    <div class="card">
+      <h3>Readiness</h3>
+      <pre id="readiness">—</pre>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const MAX = 50;
+
+  function rhizohRoot() {
+    return window.__rhizoh || window.opener?.__rhizoh || null;
+  }
+
+  function g(path) {
+    const r = rhizohRoot();
+    if (!r) return undefined;
+    return path.split(".").reduce((o, k) => (o ? o[k] : undefined), r);
+  }
+
+  function readGatewayBundle() {
+    if (typeof window.rhizohGatewayHealth?.read === "function") {
+      return window.rhizohGatewayHealth.read();
+    }
+
+    const keeper = window.__CASTLE_GATEWAY_SESSION_KEEPER__ || null;
+    let gatewayState = null;
+    try {
+      gatewayState =
+        typeof window.__CASTLE_BUILD_RUNTIME_SNAPSHOT__ === "function"
+          ? window.__CASTLE_BUILD_RUNTIME_SNAPSHOT__()?.gatewayState
+          : null;
+    } catch {
+      gatewayState = null;
+    }
+
+    const phase = gatewayState?.phase || keeper?.lastPhase || null;
+    return {
+      schema: "inline.gateway.v1",
+      sources: {
+        phase,
+        session_stable: keeper?.sessionStable,
+        reconnect_attempts: keeper?.reconnectAttempts,
+        since_health_ok_ms:
+          keeper?.lastHealthOkAt > 0 ? Date.now() - Number(keeper.lastHealthOkAt) : null
+      },
+      index: { score: null, gate: "LOAD_INDEX", note: "paste rhizohGatewayHealthIndexV1.js for full score" }
+    };
+  }
+
+  function read() {
+    const core = window.rhizohObserveCore;
+    if (core) return core.buildObserveSnapshot({ origin: "RhizohPanel" });
+
+    const structural = g("liveMonitor.identity.structural");
+    const identityBreak = g("liveMonitor.identity.identity_break");
+    return {
+      t: Date.now(),
+      ground_truth: { ts: Date.now(), wall_ts: performance.now?.(), lock: "degraded" },
+      signal: {
+        rhythm_ok: g("organismRhythm.ok"),
+        jitter_ms: g("organismRhythm.max_jitter_ms"),
+        scr_tick: g("liveMonitor.scr.tick_seq"),
+        identity_ok: structural !== true && identityBreak !== true,
+        fork_risk: g("liveMonitor.castle.fork_risk"),
+        castle_split: g("liveMonitor.castle.castle_surface_split")
+      },
+      system: {
+        gateway_phase: readGatewayBundle().sources?.phase ?? null,
+        live: !!g("liveMonitor"),
+        wal: !!g("worldActionLog"),
+        wal_entries: g("worldActionLog.entries")?.length ?? null,
+        memory: !!g("worldWalPersistence")
+      },
+      phase0_guard: { observation_only: true, panel_is_consumer: true }
+    };
+  }
+
+  function classifyDrift(history) {
+    const core = window.rhizohObserveCore;
+    if (core) return core.classifyDriftMultiAxisV1(history);
+    return classifyDriftLegacy(history);
+  }
+
+  function readinessScore(history) {
+    const h = history;
+    if (h.length < 3) {
+      return { score: null, gate: "HOLD", reason: "need >= 3 samples" };
+    }
+
+    let score = 100;
+    const notes = [];
+
+    const tickDiffs = h.slice(1).map((s, i) => (s.signal.scr_tick ?? 0) - (h[i].signal.scr_tick ?? 0));
+    const stalled = tickDiffs.filter((d) => d <= 0).length;
+    if (stalled > 0) {
+      score -= Math.min(40, stalled * 15);
+      notes.push(`${stalled} interval(s) with no SCR tick growth`);
+    }
+
+    const jitterTrend = (h[h.length - 1].signal.jitter_ms ?? 0) - (h[0].signal.jitter_ms ?? 0);
+    if (jitterTrend > 50) {
+      score -= 20;
+      notes.push(`jitter up ${jitterTrend}ms`);
+    } else if (jitterTrend > 25) {
+      score -= 10;
+      notes.push(`jitter up ${jitterTrend}ms (watch)`);
+    }
+
+    const badIdentity = h.filter((s) => !s.signal.identity_ok).length;
+    if (badIdentity > 0) {
+      score -= Math.min(30, badIdentity * 10);
+      notes.push(`${badIdentity} sample(s) identity not clean`);
+    }
+
+    const forkHits = h.filter((s) => s.signal.fork_risk || s.signal.castle_split).length;
+    if (forkHits > 0) {
+      score -= 40;
+      notes.push("fork_risk or castle_split detected");
+    }
+
+    const gw = h.map((s) => s.session?.gateway_phase ?? s.system?.gateway_phase);
+    let gwFlips = 0;
+    for (let i = 1; i < gw.length; i++) {
+      if (gw[i] != null && gw[i - 1] != null && gw[i] !== gw[i - 1]) gwFlips++;
+    }
+    if (gwFlips > 2) {
+      score -= Math.min(25, gwFlips * 5);
+      notes.push(`${gwFlips} gateway status flips`);
+    } else if (gwFlips > 0) {
+      score -= 5;
+      notes.push(`${gwFlips} gateway flip(s) (cold start ok)`);
+    }
+
+    if (h.every((s) => s.signal.rhythm_ok === false)) {
+      score -= 10;
+      notes.push("rhythm_ok false all samples");
+    }
+
+    score = Math.max(0, Math.min(100, score));
+
+    const gate =
+      score >= 75 && stalled === 0 && badIdentity === 0 && forkHits === 0
+        ? "WATCH"
+        : score >= 50
+          ? "HOLD"
+          : "BLOCK";
+
+    return { score, gate, notes, samples: h.length };
+  }
+
+  function classifyDriftLegacy(history) {
+    if (history.length < 2) {
+      return { status: "warming_up", classes: [] };
+    }
+
+    const classes = [];
+    const h = history;
+    const last = h[h.length - 1];
+    const jitterTrend = (last.signal.jitter_ms ?? 0) - (h[0].signal.jitter_ms ?? 0);
+    const tickDiffs = h.slice(1).map((s, i) => (s.signal.scr_tick ?? 0) - (h[i].signal.scr_tick ?? 0));
+    const stalled = tickDiffs.filter((d) => d <= 0).length;
+
+    const gw = h.map((s) => s.system.gateway_phase);
+    let gwFlips = 0;
+    for (let i = 1; i < gw.length; i++) {
+      if (gw[i] != null && gw[i - 1] != null && gw[i] !== gw[i - 1]) gwFlips++;
+    }
+
+    if (stalled === 0 && Math.abs(jitterTrend) <= 25 && gwFlips <= 1) {
+      classes.push({ kind: "normal_jitter", level: "ok", note: "SCR advancing · jitter within noise band" });
+    } else if (gwFlips >= 2 && stalled === 0) {
+      classes.push({ kind: "gateway_noise", level: "warn", note: `${gwFlips} gateway flips · SCR still alive` });
+    }
+
+    if (Math.abs(jitterTrend) > 50 && last.signal.rhythm_ok === false) {
+      classes.push({ kind: "timing_jitter", level: "warn", note: `jitter trend ${jitterTrend}ms · rhythm threshold` });
+    }
+
+    if (stalled >= 2) {
+      classes.push({ kind: "real_instability", level: "bad", note: "SCR tick stalled across intervals" });
+    }
+
+    if (last.signal.fork_risk || last.signal.castle_split || !last.signal.identity_ok) {
+      classes.push({ kind: "identity_risk", level: "bad", note: "fork · split · or identity break" });
+    }
+
+    if (classes.length === 0) {
+      classes.push({ kind: "mixed_signal", level: "warn", note: "watch trend · not yet classified" });
+    }
+
+    return {
+      status: classes.some((c) => c.level === "bad") ? "investigate" : "observe",
+      classes,
+      gateway_flips: gwFlips,
+      jitter_trend: jitterTrend,
+      scr_stalls: stalled
+    };
+  }
+
+  function buildReport(history) {
+    if (history.length < 2) return { status: "warming up", samples: history.length };
+
+    const first = history[0];
+    const last = history[history.length - 1];
+
+    return {
+      duration_ms: (last.ground_truth?.ts ?? last.t) - (first.ground_truth?.ts ?? first.t),
+      tick_growth: (last.signal.scr_tick ?? 0) - (first.signal.scr_tick ?? 0),
+      jitter_trend: (last.signal.jitter_ms ?? 0) - (first.signal.jitter_ms ?? 0),
+      samples: history.length,
+      gateway_first: first.session?.gateway_phase ?? first.system?.gateway_phase,
+      gateway_last: last.session?.gateway_phase ?? last.system?.gateway_phase,
+      avg_tick_velocity: (() => {
+        const v = history.map((s) => s.delta?.tick_velocity_per_s).filter((x) => typeof x === "number");
+        return v.length ? Number((v.reduce((a, b) => a + b, 0) / v.length).toFixed(4)) : null;
+      })()
+    };
+  }
+
+  function renderSpark(containerId, values, root = document) {
+    const el = root.getElementById(containerId);
+    if (!el || !values.length) return;
+    const max = Math.max(...values, 1);
+    el.innerHTML = values
+      .map((v) => `<i style="height:${Math.max(4, Math.round((v / max) * 100))}%"></i>`)
+      .join("");
+  }
+
+  function renderPills(snap, readiness, root = document) {
+    const el = root.getElementById("status-pills");
+    if (!el) return;
+
+    const pills = [];
+
+    if (!rhizohRoot()) {
+      pills.push({ text: "NO __rhizoh", cls: "bad" });
+    } else {
+      pills.push({ text: "LIVE", cls: "ok" });
+    }
+
+    pills.push({ text: snap.signal.rhythm_ok ? "rhythm ok" : "rhythm watch", cls: snap.signal.rhythm_ok ? "ok" : "warn" });
+    pills.push({ text: snap.signal.identity_ok ? "identity ok" : "identity bad", cls: snap.signal.identity_ok ? "ok" : "bad" });
+    pills.push({ text: snap.signal.fork_risk ? "fork risk" : "no fork", cls: snap.signal.fork_risk ? "bad" : "ok" });
+    pills.push({
+      text: `gateway: ${snap.system.gateway_phase ?? "—"}`,
+      cls: snap.system.gateway_phase === "connected" || snap.system.gateway_phase === "uncertain" ? "ok" : "warn"
+    });
+
+    if (readiness?.score != null) {
+      pills.push({ text: `readiness ${readiness.score} (${readiness.gate})`, cls: readiness.gate === "WATCH" ? "ok" : readiness.gate === "HOLD" ? "warn" : "bad" });
+    }
+
+    el.innerHTML = pills.map((p) => `<span class="pill ${p.cls}">${p.text}</span>`).join("");
+  }
+
+  function setBanner(root = document) {
+    const el = root.getElementById("connection-banner");
+    if (!el) return;
+    const root = rhizohRoot();
+    if (root) {
+      el.className = "banner ok";
+      el.textContent = "Connected to window.__rhizoh · observation only · Phase 0";
+    } else {
+      el.className = "banner bad";
+      el.textContent = "No __rhizoh — open rhizoh.com main app tab, then click Inject or paste RhizohPanel.mountOverlay() in console.";
+    }
+  }
+
+  function render(id, obj, root = document) {
+    const el = root.getElementById(id);
+    if (el) el.textContent = JSON.stringify(obj, null, 2);
+  }
+
+  const state = {
+    timer: null,
+    last: null,
+    history: [],
+    uiRoot: document,
+
+    tick() {
+      if (!rhizohRoot()) {
+        setBanner(this.uiRoot);
+        return null;
+      }
+
+      const snap = read();
+      const root = this.uiRoot;
+      const core = window.rhizohObserveCore;
+
+      if (this.last?.signal && core) {
+        snap.delta = core.computeGroundTruthDelta(this.last, snap);
+      } else if (this.last?.signal) {
+        snap.delta = {
+          tick_diff: (snap.signal.scr_tick ?? 0) - (this.last.signal.scr_tick ?? 0),
+          jitter_diff: (snap.signal.jitter_ms ?? 0) - (this.last.signal.jitter_ms ?? 0),
+          ms_since_prev: (snap.ground_truth?.ts ?? Date.now()) - (this.last.ground_truth?.ts ?? this.last.t ?? 0)
+        };
+      }
+
+      this.last = snap;
+      this.history.push(snap);
+      if (this.history.length > MAX) this.history.shift();
+
+      window.__rhizoh_observe_log = window.__rhizoh_observe_log || [];
+      window.__rhizoh_observe_log.push(snap);
+
+      const report = buildReport(this.history);
+      const readiness = readinessScore(this.history);
+      const drift = classifyDrift(this.history);
+      const gateway = readGatewayBundle();
+
+      render("signal", snap.signal, root);
+      render("system", snap.system, root);
+      render("ground_truth", snap.ground_truth || {}, root);
+      render("delta", snap.delta || {}, root);
+      render("report", report, root);
+      render("drift", drift, root);
+      render("readiness", readiness, root);
+      render("gateway", gateway, root);
+
+      renderSpark("tick-spark", this.history.map((s) => s.signal.scr_tick ?? 0), root);
+      renderSpark("jitter-spark", this.history.map((s) => s.signal.jitter_ms ?? 0), root);
+      renderPills(snap, readiness, root);
+      setBanner(root);
+
+      return snap;
+    },
+
+    report() {
+      const report = buildReport(this.history);
+      report.readiness = readinessScore(this.history);
+      report.drift = classifyDrift(this.history);
+      const root = this.uiRoot;
+      render("report", report, root);
+      render("drift", report.drift, root);
+      render("readiness", report.readiness, root);
+      return report;
+    },
+
+    start(intervalMs) {
+      if (this.timer) clearInterval(this.timer);
+      this.tick();
+      this.timer = setInterval(() => this.tick(), intervalMs);
+      console.log("RHIZOH PANEL auto:", intervalMs + "ms");
+    },
+
+    stop() {
+      if (this.timer) clearInterval(this.timer);
+      this.timer = null;
+      console.log("RHIZOH PANEL stopped");
+    },
+
+    exportLog() {
+      const json = JSON.stringify(this.history, null, 2);
+      console.log(json);
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(json).then(() => console.log("Copied to clipboard"));
+      }
+      return json;
+    },
+
+    mountOverlay() {
+      if (!window.__rhizoh) {
+        alert("Open rhizoh.com main app first — __rhizoh must exist on this page.");
+        return;
+      }
+
+      if (document.getElementById("rhizoh-observe-overlay")) {
+        console.warn("Overlay already mounted");
+        return;
+      }
+
+      const overlay = document.createElement("div");
+      overlay.id = "rhizoh-observe-overlay";
+      overlay.innerHTML = document.getElementById("rhizoh-observe-root").innerHTML;
+
+      const close = document.createElement("button");
+      close.textContent = "Close";
+      close.className = "danger";
+      close.onclick = () => {
+        RhizohPanel.stop();
+        RhizohPanel.uiRoot = document;
+        overlay.remove();
+      };
+
+      const row = document.createElement("div");
+      row.className = "close-row";
+      row.innerHTML = "<strong>Observability Panel</strong>";
+      row.appendChild(close);
+      overlay.prepend(row);
+
+      document.body.appendChild(overlay);
+      this.uiRoot = overlay;
+
+      overlay.querySelectorAll("button").forEach((btn) => {
+        const onclick = btn.getAttribute("onclick");
+        if (!onclick) return;
+        btn.removeAttribute("onclick");
+        btn.addEventListener("click", () => {
+          if (onclick.includes("RhizohPanel.tick()")) RhizohPanel.tick();
+          else if (onclick.includes("start(10000)")) RhizohPanel.start(10000);
+          else if (onclick.includes("start(120000)")) RhizohPanel.start(120000);
+          else if (onclick.includes("stop()")) RhizohPanel.stop();
+          else if (onclick.includes("exportLog()")) RhizohPanel.exportLog();
+          else if (onclick.includes("mountOverlay()")) console.log("Already in overlay");
+        });
+      });
+
+      RhizohPanel.tick();
+      console.log("RHIZOH observability overlay mounted");
+    },
+
+    syncFromAuto() {
+      const auto = window.__rhizoh_auto_observer || window.rhizohAuto;
+      if (auto?.history?.length) {
+        this.history = auto.history.slice(-MAX);
+        this.last = this.history[this.history.length - 1] || null;
+        this.report();
+      }
+    }
+  };
+
+  window.RhizohPanel = state;
+
+  setBanner();
+  if (rhizohRoot()) {
+    state.tick();
+    state.syncFromAuto();
+  }
+
+  console.log("RHIZOH Observability Panel v1 ready");
+  console.log("→ RhizohPanel.mountOverlay() on rhizoh.com");
+  console.log("→ RhizohPanel.start(10000)");
+})();
+</script>
+
+</body>
+</html>

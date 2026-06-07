@@ -65,6 +65,30 @@ test("WebSocket origin check uses normalized allow set", () => {
   assert.equal(policy.isWebSocketOriginAllowed("https://blocked.example"), false);
 });
 
+test("firebase preview channel origin is allowed in production", () => {
+  const policy = createHttpCorsPolicy({
+    NODE_ENV: "production",
+    CASTLE_ALLOWED_ORIGINS: "",
+    CASTLE_HTTP_CORS_ORIGIN: "https://rhizoh.com"
+  });
+  const preview = "https://castle-genesis--t0-companion-obs-pzyoelen.web.app";
+  const req = { headers: { origin: preview } };
+  assert.equal(policy.accessControlAllowOriginValue(req), preview);
+  assert.equal(policy.isWebSocketOriginAllowed(preview), true);
+});
+
+test("localhost dev on any port is allowed in production", () => {
+  const policy = createHttpCorsPolicy({
+    NODE_ENV: "production",
+    CASTLE_ALLOWED_ORIGINS: "",
+    CASTLE_HTTP_CORS_ORIGIN: "https://rhizoh.com"
+  });
+  const dev5174 = "http://localhost:5174";
+  const req = { headers: { origin: dev5174 } };
+  assert.equal(policy.accessControlAllowOriginValue(req), dev5174);
+  assert.equal(policy.isWebSocketOriginAllowed(dev5174), true);
+});
+
 test("applyHttpCorsHeaders sets ACAO for OPTIONS path", () => {
   const policy = createHttpCorsPolicy({ NODE_ENV: "production" });
   /** @type {Record<string, string>} */

@@ -7,7 +7,8 @@ import {
 } from "../castleFlight/castleInitiationProtocolV0.js";
 
 /**
- * CASTLE Setup Dialog — 3-path location gate (GPS · map pin · skip).
+ * İsteğe bağlı Castle anchor — kullanıcının dünyadaki merkezi (bina simülasyonu değil).
+ * GPS · harita pin · soyut. Dünya gözlemi için WorldObservationGateV0 kullanılır.
  */
 export const CastleInitiationGateV0 = memo(function CastleInitiationGateV0({
   open,
@@ -70,11 +71,11 @@ export const CastleInitiationGateV0 = memo(function CastleInitiationGateV0({
       <div className="w-full max-w-md rounded-2xl border border-cyan-400/30 bg-[#050a14]/95 shadow-2xl p-4 space-y-4">
         <div>
           <h2 id="castle-init-title" className="text-sm font-black uppercase tracking-[0.2em] text-cyan-200">
-            Kale kurulumu
+            Castle anchor
           </h2>
-          <p className="mt-2 text-[11px] text-white/70 leading-relaxed">
-            Konum isteğe bağlıdır. Gerçek dünya verisi yoksa sistem uydurma POI üretmez — boş temsil veya
-            önbellek kullanılır.
+          <p className="mt-2 text-[11px] text-white/70 leading-relaxed normal-case">
+            Bu dünyada bir merkez (ev, park, masa veya soyut koordinat) oluşturmak ister misin? Zorunlu değil —
+            dünya, studio ve pet castle olmadan da çalışır.
           </p>
         </div>
 

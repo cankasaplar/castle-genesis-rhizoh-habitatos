@@ -25,6 +25,7 @@ import { bindIdentityDriftContextV0 } from "./rhizoh/experience/identityDriftBin
 import { resolveLivingWorldInstanceV0 } from "./rhizoh/runtime/worldInstanceFromLocationSeedV0.js";
 import { runRhizohClagForLivingWorldFrameV0 } from "./rhizoh/runtime/rhizohClagTurnBridgeV0.js";
 import { RhizohSpatialWorldShell } from "./components/RhizohSpatialWorldShell.jsx";
+import { openCastleAnchorOfferV0 } from "./castleFlight/worldFirstObservationV0.js";
 
 const SPIRAL_PERCEPTION_BRIDGE_V0 =
   typeof import.meta !== "undefined" &&
@@ -132,6 +133,7 @@ export default function AppRhizoh528LivingEntry() {
 
   const onEnterCastle = useCallback(() => {
     recordMutation(WORLD_MUTATION_ACTION_V0.ENTER_CASTLE);
+    openCastleAnchorOfferV0();
   }, [recordMutation]);
 
   const entryModel = useMemo(

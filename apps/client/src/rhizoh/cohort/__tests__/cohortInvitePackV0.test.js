@@ -8,9 +8,9 @@ import {
 import { getFridayPromptRunnerStateV0, resetFridayPromptRunnerV0 } from "../cohortFridayPromptRunnerV0.js";
 
 test("cohort invite URL encodes reviewer slot", () => {
-  const url = buildCohortInviteUrlV0({ reviewerId: "metehan", cohort: "review" });
+  const url = buildCohortInviteUrlV0({ reviewerId: "friday", cohort: "review" });
   assert.match(url, /cohort=review/);
-  assert.match(url, /reviewer=metehan/);
+  assert.match(url, /reviewer=friday/);
 });
 
 test("Friday script has three ordered steps", () => {

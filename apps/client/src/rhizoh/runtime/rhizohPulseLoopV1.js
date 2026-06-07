@@ -26,6 +26,7 @@ import {
 } from "./rhizohPulseGovernanceV0.js";
 import { filterIdentityNoiseV0 } from "./rhizohSemanticCompressionFilterV0.js";
 import { evaluatePresencePrimitiveOnPulseV1 } from "./rhizohPresencePrimitiveV1.js";
+import { evaluateEmergencyOnPulseV0 } from "./rhizohEmergencySignalLayerV0.js";
 
 export const RHIZOH_PULSE_LOOP_SCHEMA_V1 = "rhizoh.pulse_loop.v1";
 
@@ -184,6 +185,12 @@ export function runRhizohPulseTickV1() {
     }
   }
 
+  const emergencyStage = safePulseStageV0(
+    "emergency_signal",
+    () => evaluateEmergencyOnPulseV0({ pulseSeq: pulseSeqV1 }),
+    Object.freeze({ emitted: false, risk: { riskScore: 0 } })
+  );
+
   const stagesV1 = Object.freeze({
     identity_lifecycle: lifecycleStage,
     transport: transportStage,
@@ -193,7 +200,8 @@ export function runRhizohPulseTickV1() {
     event_log: eventLogStage,
     semantic_filter: semanticFilter,
     compute_probe: computeStage,
-    scheduler: schedulerStage
+    scheduler: schedulerStage,
+    emergency_signal: emergencyStage
   });
 
   const stageHealth = Object.freeze(

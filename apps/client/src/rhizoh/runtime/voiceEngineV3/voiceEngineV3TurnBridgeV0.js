@@ -13,6 +13,7 @@ import {
   recordTranscriptDeferredV0,
   recordTranscriptRejectedV0
 } from "../rhizohTranscriptAcceptanceLedgerV0.js";
+import { ingestVoiceSessionForEmergencyV0 } from "../rhizohEmergencySignalLayerV0.js";
 import { castleLayerDecisionTraceLogDetailV1 } from "../../../castle/layers/castleLayerDecisionTraceV1.js";
 import {
   acquireVoiceStreamLayerLockV1,
@@ -236,6 +237,14 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
         });
       }
 
+      ingestVoiceSessionForEmergencyV0({
+        text: result.merged.text,
+        confidence: result.merged.confidence,
+        maxRms: result.maxRms,
+        recordedMs: result.recordedMs,
+        sessionId
+      });
+
       const handler = callbacks.handleVoiceTranscriptRef?.current;
       if (typeof handler === "function") {
         await handler(result.merged.text, transcriptOpts);
@@ -247,13 +256,22 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
 
     if (result.shadowDrop) {
       recordTranscriptRejectedV0(buildV3TranscriptLedgerContextV0(result, sessionId));
+      const restartCtx = result.preSttDrop ? "v3_pre_stt_drop" : "v3_shadow_drop";
+      ingestVoiceSessionForEmergencyV0({
+        text: result.merged?.text,
+        confidence: result.merged?.confidence,
+        maxRms: result.maxRms,
+        recordedMs: result.recordedMs,
+        sessionId,
+        shadowDrop: true,
+        restartCtx: keepAlive ? restartCtx : undefined
+      });
       releaseVoiceStreamLayerLockV1(VOICE_STREAM_ABORT_REASON_V1.FINISH_OK, {
         sessionId,
         source: "mic_v3",
         shadowDrop: true,
         reason: result.error
       });
-      const restartCtx = result.preSttDrop ? "v3_pre_stt_drop" : "v3_shadow_drop";
       logVoiceInfoV0("V3_SHADOW_DROP", {
         reason: result.error,
         preview: String(result.merged?.text || "").slice(0, 96),

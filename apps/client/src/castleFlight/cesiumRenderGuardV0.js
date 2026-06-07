@@ -132,6 +132,36 @@ export function isCesiumPvsRangeErrorV0(error) {
 }
 
 /**
+ * NaN Cartesian / destroyed primitive during recovery — downgrade to safe render mode.
+ * @param {unknown} error
+ */
+export function isCesiumNaNCartesianErrorV0(error) {
+  const msg = String(error?.message || error || "").toLowerCase();
+  return msg.includes("cartesian has a nan component") || msg.includes("was destroyed");
+}
+
+/** PVS blow-up or NaN geometry — strip heavy layers and keep globe-only. */
+export function isCesiumSafeModeRenderErrorV0(error) {
+  return isCesiumPvsRangeErrorV0(error) || isCesiumNaNCartesianErrorV0(error);
+}
+
+/**
+ * @param {typeof import("cesium")} Cesium
+ * @param {number} lon
+ * @param {number} lat
+ * @param {number} [alt]
+ * @returns {import("cesium").Cartesian3 | null}
+ */
+export function cesiumSafeFromDegreesV0(Cesium, lon, lat, alt = 0) {
+  const lo = Number(lon);
+  const la = Number(lat);
+  const a = Number(alt);
+  if (!Number.isFinite(lo) || !Number.isFinite(la)) return null;
+  const cart = Cesium.Cartesian3.fromDegrees(lo, la, Number.isFinite(a) ? a : 0);
+  return isFiniteCartesian3V0(cart) ? cart : null;
+}
+
+/**
  * Güvenli mod: globe dışı tüm primitives kaldırılır (tileset / custom primitive yükü).
  *
  * @param {import("cesium").Viewer | null | undefined} viewer
@@ -174,6 +204,18 @@ export function stopCesiumDefaultRenderLoopV0(viewer) {
   }
 }
 
+export function activateCesiumViewerRenderV0(viewer, Cesium, anchor) {
+  if (!viewer || viewer.isDestroyed?.()) return;
+  stopCesiumDefaultRenderLoopV0(viewer);
+  sanitizeCesiumCameraV0(viewer, Cesium, anchor);
+  try {
+    viewer.scene.requestRender();
+  } catch {
+    /* noop */
+  }
+  startCesiumDefaultRenderLoopV0(viewer);
+}
+
 /**
  * @param {import("cesium").Viewer | null | undefined} viewer
  */
@@ -185,6 +227,109 @@ export function startCesiumDefaultRenderLoopV0(viewer) {
   } catch {
     /* noop */
   }
+}
+
+/**
+ * Wait for N consecutive postRender frames (viewer must be rendering).
+ * @param {import("cesium").Viewer} viewer
+ * @param {number} [frameCount]
+ * @param {number} [timeoutMs]
+ * @returns {Promise<boolean>}
+ */
+export function waitForCesiumRenderStableFramesV0(viewer, frameCount = 2, timeoutMs = 8_000) {
+  if (!viewer || viewer.isDestroyed?.() || frameCount <= 0) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    let ok = 0;
+    let done = false;
+    const finish = (result) => {
+      if (done) return;
+      done = true;
+      try {
+        viewer.scene?.postRender?.removeEventListener?.(onFrame);
+      } catch {
+        /* noop */
+      }
+      window.clearTimeout(timer);
+      resolve(result);
+    };
+    const onFrame = () => {
+      ok += 1;
+      if (ok >= frameCount) finish(true);
+    };
+    const timer = window.setTimeout(() => finish(false), timeoutMs);
+    try {
+      viewer.scene.postRender.addEventListener(onFrame);
+      viewer.scene.requestRender();
+    } catch {
+      finish(false);
+    }
+  });
+}
+
+/**
+ * Stop in-flight camera motion before adding geometry batches (NaN mid-flyTo guard).
+ * @param {import("cesium").Viewer | null | undefined} viewer
+ */
+export function cancelCesiumCameraFlightV0(viewer) {
+  if (!viewer?.camera) return;
+  try {
+    if (typeof viewer.camera.cancelFlight === "function") {
+      viewer.camera.cancelFlight();
+    }
+  } catch {
+    /* noop */
+  }
+}
+
+/**
+ * Strip dynamic map overlays while keeping globe / imagery (safe-mode / recovery).
+ * Call entity teardown hooks before this when they manage their own entities.
+ *
+ * @param {import("cesium").Viewer | null | undefined} viewer
+ */
+export function clearCesiumViewerSceneOverlaysV0(viewer) {
+  if (!viewer || viewer.isDestroyed?.()) return;
+  stopCesiumDefaultRenderLoopV0(viewer);
+  cancelCesiumCameraFlightV0(viewer);
+  try {
+    viewer.entities.removeAll();
+  } catch {
+    /* noop */
+  }
+  try {
+    viewer.dataSources.removeAll();
+  } catch {
+    /* noop */
+  }
+  pruneCesiumScenePrimitivesForSafeRenderV0(viewer);
+}
+
+/**
+ * Reset invalid camera before each frame (prevents batch bounding-sphere NaN during flyTo).
+ *
+ * @param {import("cesium").Viewer} viewer
+ * @param {typeof import("cesium")} Cesium
+ * @param {() => object} getAnchor
+ * @returns {() => void}
+ */
+export function installCesiumCameraPreRenderGuardV0(viewer, Cesium, getAnchor) {
+  if (!viewer?.scene?.preRender) return () => {};
+  const onPreRender = () => {
+    try {
+      const anchor = typeof getAnchor === "function" ? getAnchor() : getAnchor;
+      sanitizeCesiumCameraV0(viewer, Cesium, anchor || {});
+    } catch {
+      /* noop */
+    }
+  };
+  viewer.scene.preRender.addEventListener(onPreRender);
+  return () => {
+    try {
+      viewer.scene.preRender.removeEventListener(onPreRender);
+    } catch {
+      /* noop */
+    }
+  };
 }
 
 export function removeOsmBuildingsTilesetV0(viewer, tilesetRef) {

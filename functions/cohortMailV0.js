@@ -14,7 +14,7 @@ function escapeHtml(s) {
  * @param {string | null} tokenEmail verified token email if any
  */
 async function handleCohortSessionFeedbackMailV0(body, tokenEmail) {
-  const reviewerId = String(body?.reviewerId || "metehan").trim().toLowerCase();
+  const reviewerId = String(body?.reviewerId || "friday").trim().toLowerCase();
   const sessionRef = String(body?.sessionRef || "").trim();
   const feedbackUrl =
     String(body?.feedbackUrl || "").trim() ||
@@ -50,7 +50,7 @@ async function handleCohortSessionFeedbackMailV0(body, tokenEmail) {
  * @param {string | null} tokenEmail
  */
 async function handleCohortFeedbackSubmitV0(body, tokenEmail) {
-  const reviewerId = String(body?.reviewerId || "metehan").trim().toLowerCase();
+  const reviewerId = String(body?.reviewerId || "friday").trim().toLowerCase();
   const sessionRef = String(body?.sessionRef || "").trim();
   const notes = String(body?.notes || "").trim().slice(0, 4000);
   if (!notes) return { ok: false, reason: "empty_notes" };

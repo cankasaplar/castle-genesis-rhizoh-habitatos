@@ -5,7 +5,7 @@
 param(
   [string]$RepoRoot = "",
   [string]$GatewayHost = "https://castle-genesis-rhizoh-habitatos.onrender.com",
-  [string]$GatewayToken = "castle_dev_token_2026",
+  [string]$GatewayToken = "",
   [string]$CohortAllowlist = "",
   [switch]$FromMainLocal
 )
@@ -15,6 +15,19 @@ $ErrorActionPreference = "Stop"
 
 $castleMain = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $root = if ($RepoRoot.Trim()) { $RepoRoot.Trim() } else { $castleMain }
+
+. (Join-Path $castleMain "scripts\read-rhizoh-secrets-vault.ps1")
+$vaultSecrets = Read-RhizohSecretsVaultV0 -RepoRoot $castleMain
+if ($vaultSecrets.ContainsKey("VITE_LIVE_GATEWAY_BASE") -and $vaultSecrets["VITE_LIVE_GATEWAY_BASE"]) {
+  $GatewayHost = $vaultSecrets["VITE_LIVE_GATEWAY_BASE"]
+}
+if (-not $GatewayToken.Trim()) {
+  if ($vaultSecrets.ContainsKey("VITE_GATEWAY_TOKEN") -and $vaultSecrets["VITE_GATEWAY_TOKEN"]) {
+    $GatewayToken = $vaultSecrets["VITE_GATEWAY_TOKEN"]
+  } else {
+    $GatewayToken = "castle_dev_token_2026"
+  }
+}
 
 if ($FromMainLocal) {
   $localEnv = Join-Path $castleMain "apps\client\.env.local"
@@ -63,7 +76,7 @@ $lines = @(
   "VITE_RHIZOH_VOICE_ENGINE_V3=1",
   "VITE_RHIZOH_VOICE_WITNESS_SHADOW=1",
   "VITE_RHIZOH_VOICE_ENV_PROFILE=1",
-  "VITE_RHIZOH_VOICE_ATTENTION_MODE=moving_context",
+  "VITE_RHIZOH_VOICE_ATTENTION_MODE=direct_listen",
   "VITE_RHIZOH_SHARED_ATTENTION_TYPE=co_presence",
   "VITE_RHIZOH_STT_TEMPORAL_CALIBRATION=1",
   "VITE_RHIZOH_STT_TEMPORAL_ADAPTIVE=1",
@@ -74,19 +87,20 @@ $lines = @(
   "VITE_RHIZOH_INVITE_ONLY_GOOGLE=1",
   "VITE_ONTOLOGICAL_BOOT_GATE=0",
   "",
-  "# UI locale - founder default English; ingress language picker before legal",
+  "# UI cohort invite - davetliler kendi dilini secer",
   "VITE_RHIZOH_DEFAULT_LOCALE=en",
-  "# OLP: ui_locked_output = always reply in UI language (cross-lingual); mirror | adaptive",
   "VITE_RHIZOH_OUTPUT_LANGUAGE_POLICY=ui_locked_output",
   "VITE_RHIZOH_REQUIRE_LANGUAGE_PICKER=1",
-  "# Castle Layers observation panel on rhizoh.com (topology + schema drift)",
-  "VITE_CASTLE_LAYERS_DEBUG=1",
+  "VITE_CASTLE_LAYERS_DEBUG=0",
   "",
-  "# E2-X creative surface - full product (World/Hall/Studio/Map)",
+  "# T0 product surfaces - map arka plan, spatial shell kapali",
   "VITE_RHIZOH_SURFACE_CREATIVE=1",
   "VITE_RHIZOH_ENTITY_PROJECTION_MAP=1",
-  "VITE_CESIUM_WORLD_PROJECTION_BIND=1",
-  "# Map strip full open deferred to next deploy (guards ready in cesiumRenderGuardV0)",
+  "# World projection bind off at boot - PVS RangeError risk reduction",
+  "VITE_CESIUM_WORLD_PROJECTION_BIND=0",
+  "# Companion anchor fox_v1",
+  "VITE_RHIZOH_CONVERSATION_ANCHOR_SPECIES=fox_v1",
+  "# Map strip guards in cesiumRenderGuardV0",
   "VITE_CESIUM_OSM_BUILDINGS=0",
   "VITE_CESIUM_WORLD_TERRAIN=0"
 )
@@ -146,23 +160,6 @@ function Add-FirebaseSdkLinesFromJson {
 
 $firebaseMerged = $false
 if ($FromMainLocal) {
-  $mainProd = Join-Path $castleMain "apps\client\.env.production"
-  if (Test-Path $mainProd) {
-    foreach ($line in Get-Content $mainProd) {
-      if ($line -match '^\s*VITE_FIREBASE_CONFIG=(.+)$') {
-        $lines += "VITE_FIREBASE_CONFIG=$($matches[1].Trim())"
-      }
-      if ($line -match '^\s*VITE_FIREBASE_API_KEY=(.+)$') {
-        $lines += "VITE_FIREBASE_API_KEY=$($matches[1].Trim())"
-      }
-      if ($line -match '^\s*VITE_FIREBASE_APP_ID=(.+)$') {
-        $lines += "VITE_FIREBASE_APP_ID=$($matches[1].Trim())"
-      }
-      if ($line -match '^\s*VITE_FIREBASE_MESSAGING_SENDER_ID=(.+)$') {
-        $lines += "VITE_FIREBASE_MESSAGING_SENDER_ID=$($matches[1].Trim())"
-      }
-    }
-  }
   if ($localExtras) {
     foreach ($key in @(
       'VITE_CESIUM_ION_TOKEN',
@@ -171,13 +168,30 @@ if ($FromMainLocal) {
       'VITE_FIREBASE_APP_ID',
       'VITE_FIREBASE_MESSAGING_SENDER_ID',
       'VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST',
-      'VITE_RHIZOH_COHORT_SERVER_GATE'
+      'VITE_RHIZOH_COHORT_SERVER_GATE',
+      'VITE_RHIZOH_CONVERSATION_ANCHOR_SPECIES',
+      'VITE_RHIZOH_SURFACE_CREATIVE',
+      'VITE_RHIZOH_ENTITY_PROJECTION_MAP',
+      'VITE_RHIZOH_T0_FIRST_MATCH'
     )) {
       if ($localExtras.ContainsKey($key) -and $localExtras[$key]) {
         $lines += "$key=$($localExtras[$key])"
         if ($key -match '^VITE_FIREBASE') { $firebaseMerged = $true }
       }
     }
+  }
+}
+
+$vaultKeys = @(
+  'VITE_CESIUM_ION_TOKEN',
+  'VITE_GATEWAY_TOKEN',
+  'VITE_MAPBOX_TOKEN',
+  'VITE_RHIZOH_LLM_TOKEN'
+)
+foreach ($vk in $vaultKeys) {
+  if ($vaultSecrets.ContainsKey($vk) -and $vaultSecrets[$vk]) {
+    $lines = @($lines | Where-Object { $_ -notmatch "^$vk=" })
+    $lines += "$vk=$($vaultSecrets[$vk])"
   }
 }
 
@@ -199,17 +213,25 @@ if (-not $firebaseMerged) {
 }
 
 if (-not $firebaseMerged) {
+  # firebase-tools writes progress to stderr; with ErrorActionPreference=Stop PowerShell 5.1
+  # turns that into a terminating NativeCommandError and we lose a perfectly good config.
+  # Relax error handling for just this fetch so the Web config actually bakes into the build.
+  $prevEAP = $ErrorActionPreference
   try {
+    $ErrorActionPreference = 'Continue'
     Push-Location $castleMain
-    $sdk = npx firebase-tools apps:sdkconfig WEB --project castle-genesis 2>&1 | Out-String
+    $sdk = (npx firebase-tools apps:sdkconfig WEB --project castle-genesis 2>&1 | Out-String)
     if ($sdk -match '(\{[\s\S]*?"apiKey"[\s\S]*?\})') {
       Add-FirebaseSdkLinesFromJson -JsonText $Matches[1]
       $firebaseMerged = $true
       Write-Host "Firebase Web config from CLI (castle-genesis)" -ForegroundColor Cyan
+    } else {
+      Write-Warning "firebase apps:sdkconfig returned no parseable config - add VITE_FIREBASE_* manually"
     }
   } catch {
     Write-Warning "firebase apps:sdkconfig failed - add VITE_FIREBASE_* manually"
   } finally {
+    $ErrorActionPreference = $prevEAP
     Pop-Location -ErrorAction SilentlyContinue
   }
 }
@@ -234,6 +256,11 @@ Write-Host "OK $envProd" -ForegroundColor Green
 if (-not $firebaseMerged) {
   Write-Host "WARN: Firebase keys missing - Google sign-in will not work until VITE_FIREBASE_* is set." -ForegroundColor Yellow
 }
+$hasIon = ($lines | Where-Object { $_ -match '^VITE_CESIUM_ION_TOKEN=\S' }) -ne $null
+if (-not $hasIon) {
+  Write-Host "WARN: VITE_CESIUM_ION_TOKEN bos - ANAHTARLAR_BURAYA.local.txt doldurun." -ForegroundColor Yellow
+}
+Write-Host "Secrets vault: ANAHTARLAR_BURAYA.local.txt (gitignore)" -ForegroundColor Cyan
 Write-Host "Build (validates VITE_GATEWAY_TOKEN in .env.production): npm run build -w apps/client"
 Write-Host "Deploy order: 1) client build  2) firebase deploy --only hosting  3) firebase deploy --only functions:gatewayProxyV0"
 Write-Host "Functions env: CASTLE_GATEWAY_TOKEN must match VITE_GATEWAY_TOKEN (Firebase Console or firebase functions:secrets)"

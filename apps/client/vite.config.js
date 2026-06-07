@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, readFileSync } from "fs";
+import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, statSync } from "fs";
 import path from "path";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
@@ -27,6 +27,71 @@ function legacyStudioHtmlRedirectsPlugin() {
     name: "castle-legacy-studio-html-redirects",
     configureServer: attach,
     configurePreviewServer: attach
+  };
+}
+
+/**
+ * vite-plugin-cesium copies the Cesium runtime (Cesium.js + Assets/ThirdParty/Workers/Widgets)
+ * inside a single try/catch that only console.errors on failure. On this Windows/Defender host
+ * those fs-extra copies fail transiently and SILENTLY — shipping a build whose index.html
+ * references /cesium/Cesium.js (+ /cesium/Widgets/widgets.css) while the files are absent.
+ * Firebase then serves the SPA shell for the missing asset (MIME text/html) → "Cesium is not
+ * defined" and a blank globe on rhizoh.com.
+ *
+ * This guard is the safety net: it re-copies any missing piece of the runtime from
+ * node_modules using Node's built-in fs (reliable here), then HARD-FAILS the build if the
+ * essential entrypoints cannot be produced. A broken globe can no longer reach production.
+ */
+function assertCesiumRuntimeCopied({ cesiumBuildPath, cesiumBaseUrl }) {
+  const MIN_CESIUM_JS_BYTES = 1024 * 1024; // real Cesium.js is ~5.8MB; tiny means a bad copy
+  const RUNTIME_DIRS = ["Assets", "ThirdParty", "Workers", "Widgets"];
+  return {
+    name: "castle-assert-cesium-runtime-copied",
+    closeBundle() {
+      const srcRoot = path.resolve(process.cwd(), cesiumBuildPath);
+      const destRoot = path.resolve(process.cwd(), "dist", cesiumBaseUrl);
+      mkdirSync(destRoot, { recursive: true });
+
+      // Cesium.js entrypoint (referenced by a <script> tag in index.html).
+      const srcJs = path.join(srcRoot, "Cesium.js");
+      const destJs = path.join(destRoot, "Cesium.js");
+      const needJs = !existsSync(destJs) || statSync(destJs).size < MIN_CESIUM_JS_BYTES;
+      if (needJs) {
+        if (!existsSync(srcJs)) {
+          throw new Error(
+            `[cesium-guard] Source Cesium.js missing at ${srcJs}. Run \`npm install\` (cesium build assets absent) before building.`
+          );
+        }
+        copyFileSync(srcJs, destJs);
+      }
+
+      // Runtime asset folders (Workers/Assets/ThirdParty/Widgets) loaded from CESIUM_BASE_URL.
+      for (const dir of RUNTIME_DIRS) {
+        const destDir = path.join(destRoot, dir);
+        if (!existsSync(destDir)) {
+          const srcDir = path.join(srcRoot, dir);
+          if (existsSync(srcDir)) {
+            cpSync(srcDir, destDir, { recursive: true });
+          }
+        }
+      }
+
+      // Hard verification of the two entrypoints index.html references directly.
+      const bytes = existsSync(destJs) ? statSync(destJs).size : 0;
+      if (bytes < MIN_CESIUM_JS_BYTES) {
+        throw new Error(
+          `[cesium-guard] dist/${cesiumBaseUrl}Cesium.js missing or too small (${bytes} bytes, expected >= ${MIN_CESIUM_JS_BYTES}).`
+        );
+      }
+      const widgetsCss = path.join(destRoot, "Widgets", "widgets.css");
+      if (!existsSync(widgetsCss)) {
+        throw new Error(`[cesium-guard] dist/${cesiumBaseUrl}Widgets/widgets.css missing — Cesium UI styles absent.`);
+      }
+      // eslint-disable-next-line no-console
+      console.log(
+        `[cesium-guard] OK — Cesium runtime verified in dist/${cesiumBaseUrl} (Cesium.js ${bytes} bytes + ${RUNTIME_DIRS.join(", ")}).`
+      );
+    }
   };
 }
 
@@ -83,6 +148,11 @@ function resolveFirebaseConfigObject(env) {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  const gatewayUpstream = String(
+    env.VITE_LIVE_GATEWAY_BASE || "https://castle-genesis-rhizoh-habitatos.onrender.com"
+  )
+    .trim()
+    .replace(/\/+$/, "");
   const firebaseObj = resolveFirebaseConfigObject(env);
   const castleAppId = env.VITE_CASTLE_APP_ID || "castle-vnext-core";
   const cesiumBuildRootPath = "../../node_modules/cesium/Build";
@@ -99,15 +169,38 @@ export default defineConfig(({ mode }) => {
   return {
     // İleride SharedArrayBuffer + Worker ECS için: COOP + COEP (Cesium harici varlıkları etkileyebilir).
     server: {
+      host: true,
+      port: 5173,
+      strictPort: false,
+      open: "/",
       headers: {
         "Cross-Origin-Opener-Policy": "same-origin",
         "Cross-Origin-Embedder-Policy": "credentialless"
+      },
+      /** Local dev: same-origin proxy (Firebase `gatewayProxyV0` parity). Avoids CORS when port !== 5173. */
+      proxy: {
+        "/api/gatewayProxy": {
+          target: gatewayUpstream,
+          changeOrigin: true,
+          secure: true,
+          ws: true,
+          rewrite: (path) => path.replace(/^\/api\/gatewayProxy\/?/, "") || "/"
+        }
       }
     },
     preview: {
       headers: {
         "Cross-Origin-Opener-Policy": "same-origin",
         "Cross-Origin-Embedder-Policy": "credentialless"
+      },
+      proxy: {
+        "/api/gatewayProxy": {
+          target: gatewayUpstream,
+          changeOrigin: true,
+          secure: true,
+          ws: true,
+          rewrite: (path) => path.replace(/^\/api\/gatewayProxy\/?/, "") || "/"
+        }
       }
     },
     plugins: [
@@ -117,6 +210,7 @@ export default defineConfig(({ mode }) => {
         cesiumBuildPath,
         cesiumBaseUrl: "cesium/"
       }),
+      assertCesiumRuntimeCopied({ cesiumBuildPath, cesiumBaseUrl: "cesium/" }),
       emitFirebaseSpaFallback(),
       legacyStudioHtmlRedirectsPlugin()
     ],

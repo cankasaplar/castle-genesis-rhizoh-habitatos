@@ -8,8 +8,79 @@ export const CESIUM_SCENE_BUDGET = Object.freeze({
   /** Tüm trail polilinelerindeki toplam nokta üst sınırı */
   MAX_POLYLINE_POINTS_TOTAL: 120_000,
   /** İleride terrain önbellek / SSE ile eşleştirilebilir (MB hedefi: ~384) */
-  TARGET_TILE_MEMORY_MB: 384
+  TARGET_TILE_MEMORY_MB: 384,
+  /** OSM footprint box entities on globe (PVS / Invalid array length guard) */
+  MAX_FOOTPRINT_ENTITIES: 48,
+  /** POI point entities on globe (labels add draw cost) */
+  MAX_POI_ENTITIES: 64
 });
+
+/**
+ * @template T
+ * @param {T[]} rows
+ * @param {number} cap
+ * @returns {{ rows: T[], truncated: boolean, total: number }}
+ */
+/**
+ * @param {{ lat?: unknown, lon?: unknown }} row
+ * @returns {boolean}
+ */
+export function isValidCesiumGeoRowV0(row) {
+  const lat = Number(row?.lat);
+  const lon = Number(row?.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+  if (lat < -85 || lat > 85 || lon < -180 || lon > 180) return false;
+  return true;
+}
+
+/**
+ * Drop cached / legacy rows with NaN or out-of-range coordinates before Cesium entity creation.
+ * @template T
+ * @param {T[]} rows
+ * @returns {{ rows: T[], dropped: number }}
+ */
+export function filterCesiumGeoRowsV0(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  const kept = list.filter((r) => isValidCesiumGeoRowV0(r));
+  return Object.freeze({ rows: kept, dropped: list.length - kept.length });
+}
+
+/**
+ * @param {number} levels
+ * @param {number} idx
+ * @returns {number}
+ */
+export function finiteCesiumBuildingHeightV0(levels, idx = 0) {
+  const fromLevels = Number(levels);
+  const derived =
+    Number.isFinite(fromLevels) && fromLevels > 0 ? fromLevels * 3.2 : 28 + (idx % 6) * 8;
+  return Math.max(8, Math.min(420, derived));
+}
+
+export function capRowsForCesiumRenderV0(rows, cap) {
+  const list = Array.isArray(rows) ? rows : [];
+  const limit = Math.max(0, Math.floor(Number(cap) || 0));
+  if (!limit || list.length <= limit) {
+    return { rows: list, truncated: false, total: list.length };
+  }
+  return { rows: list.slice(0, limit), truncated: true, total: list.length };
+}
+
+/** Rendering stabilizer — 3D footprint boxes on globe. */
+export function logCesiumFootprintRenderCapV0(details) {
+  console.warn("[CASTLE_CESIUM_RENDER_BUDGET] footprint_cap", {
+    stabilizer: "rendering",
+    ...details
+  });
+}
+
+/** UX stabilizer — POI labels/points on map (data may stay full in memory). */
+export function logCesiumPoiUxCapV0(details) {
+  console.warn("[CASTLE_CESIUM_UX_BUDGET] poi_cap", {
+    stabilizer: "ux",
+    ...details
+  });
+}
 
 /**
  * @param {import("cesium").Viewer | null | undefined} viewer

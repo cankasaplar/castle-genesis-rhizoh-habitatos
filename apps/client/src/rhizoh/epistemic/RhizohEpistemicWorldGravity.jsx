@@ -7,6 +7,7 @@ import { memo, useEffect, useRef } from "react";
 export const RhizohEpistemicWorldGravity = memo(function RhizohEpistemicWorldGravity({
   layerFocus = 10,
   governanceStress = false,
+  className = "",
   children
 }) {
   const wrapRef = useRef(null);
@@ -51,7 +52,7 @@ export const RhizohEpistemicWorldGravity = memo(function RhizohEpistemicWorldGra
   }, [governanceStress]);
 
   return (
-    <div ref={wrapRef} className="absolute inset-0 will-change-transform">
+    <div ref={wrapRef} className={`absolute inset-0 will-change-transform ${className}`.trim()}>
       {children}
     </div>
   );

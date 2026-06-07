@@ -25,15 +25,38 @@ function useControlCenterSnapshotV0() {
   return snap;
 }
 
+const RCC_DRAWER_COLLAPSED_KEY_V0 = "castle.debug.rcc.drawer.collapsed.v0";
+
 /**
  * CASTLE_DEBUG_LAYER_V1 — live surface · drawer · binding · monitor (opt-in).
+ * @param {{ variant?: "floating" | "drawer" }} props
  */
-export const RhizohControlCenterPanelV0 = memo(function RhizohControlCenterPanelV0() {
-  const [collapsed, setCollapsed] = useState(false);
+export const RhizohControlCenterPanelV0 = memo(function RhizohControlCenterPanelV0({
+  variant = "floating"
+}) {
+  const inDrawer = variant === "drawer";
+  const [collapsed, setCollapsed] = useState(() => {
+    if (!inDrawer) return false;
+    try {
+      return localStorage.getItem(RCC_DRAWER_COLLAPSED_KEY_V0) === "1";
+    } catch {
+      return false;
+    }
+  });
   const [enabled, setEnabled] = useState(() => isRhizohControlCenterEnabledV0());
   const snap = useControlCenterSnapshotV0();
 
-  if (!enabled) {
+  const setDrawerCollapsed = (next) => {
+    setCollapsed(next);
+    if (!inDrawer) return;
+    try {
+      localStorage.setItem(RCC_DRAWER_COLLAPSED_KEY_V0, next ? "1" : "0");
+    } catch {
+      /* noop */
+    }
+  };
+
+  if (!enabled && !inDrawer) {
     return (
       <button
         type="button"
@@ -53,23 +76,70 @@ export const RhizohControlCenterPanelV0 = memo(function RhizohControlCenterPanel
     );
   }
 
-  if (collapsed) {
+  if (!enabled && inDrawer) {
     return (
-      <button
-        type="button"
-        className="pointer-events-auto fixed left-2 bottom-[4.5rem] z-[300] rounded-lg border border-amber-400/40 bg-black/85 px-2 py-1 text-[8px] font-bold text-amber-100"
-        onClick={() => setCollapsed(false)}
-      >
-        RCC
-      </button>
+      <div className="mb-2 flex items-center gap-2" data-rhizoh-control-center="drawer-off">
+        <button
+          type="button"
+          className="rounded-lg border border-amber-400/35 bg-black/50 px-2 py-1 text-[8px] font-bold uppercase text-amber-200/90"
+          onClick={() => {
+            try {
+              localStorage.setItem("castle.debug.layer.v1", "1");
+            } catch {
+              /* noop */
+            }
+            setEnabled(true);
+            window.location.reload();
+          }}
+        >
+          RCC aç
+        </button>
+      </div>
     );
   }
 
+  if (collapsed) {
+    return (
+      <div
+        className={inDrawer ? "mb-2 flex items-start" : ""}
+        data-rhizoh-control-center={inDrawer ? "drawer-collapsed" : "collapsed"}
+      >
+        <button
+          type="button"
+          className={
+            inDrawer
+              ? "rounded-lg border border-amber-400/40 bg-black/70 px-2 py-1 text-[8px] font-bold uppercase tracking-wide text-amber-100"
+              : "pointer-events-auto fixed left-2 bottom-[4.5rem] z-[300] rounded-lg border border-amber-400/40 bg-black/85 px-2 py-1 text-[8px] font-bold text-amber-100"
+          }
+          onClick={() => setDrawerCollapsed(false)}
+          aria-expanded={false}
+        >
+          RCC
+        </button>
+      </div>
+    );
+  }
+
+  const shellClass = inDrawer
+    ? "w-full max-w-[14rem] max-h-[28vh] overflow-hidden rounded-xl border border-amber-400/35 bg-[#050a12]/95 shadow-lg"
+    : "pointer-events-auto fixed left-2 bottom-[4.5rem] z-[300] w-[min(100vw-1rem,22rem)] max-h-[40vh] overflow-hidden rounded-xl border border-amber-400/35 bg-[#050a12]/95 shadow-xl backdrop-blur-md";
+
   return (
-    <div
-      className="pointer-events-auto fixed left-2 bottom-[4.5rem] z-[300] w-[min(100vw-1rem,22rem)] max-h-[40vh] overflow-hidden rounded-xl border border-amber-400/35 bg-[#050a12]/95 shadow-xl backdrop-blur-md"
-      data-rhizoh-control-center="1"
-    >
+    <div className={inDrawer ? "mb-3" : ""} data-rhizoh-control-center-slot={inDrawer ? "hall-drawer" : "floating"}>
+      {inDrawer ? (
+        <div className="mb-1 flex items-center justify-start">
+          <button
+            type="button"
+            className="rounded-md border border-amber-400/30 bg-black/60 px-2 py-0.5 text-[8px] font-bold uppercase text-amber-100/90"
+            onClick={() => setDrawerCollapsed(true)}
+            aria-expanded
+            title="Control Center gizle"
+          >
+            RCC −
+          </button>
+        </div>
+      ) : null}
+      <div className={shellClass} data-rhizoh-control-center="1">
       <div className="flex items-center justify-between border-b border-amber-400/25 px-2 py-1.5">
         <span className="text-[8px] font-black uppercase tracking-[0.2em] text-amber-200">
           Rhizoh Control Center
@@ -85,13 +155,15 @@ export const RhizohControlCenterPanelV0 = memo(function RhizohControlCenterPanel
           >
             Log
           </button>
-          <button
-            type="button"
-            className="text-[8px] text-white/50 hover:text-white"
-            onClick={() => setCollapsed(true)}
-          >
-            −
-          </button>
+          {!inDrawer ? (
+            <button
+              type="button"
+              className="text-[8px] text-white/50 hover:text-white"
+              onClick={() => setDrawerCollapsed(true)}
+            >
+              −
+            </button>
+          ) : null}
           <button
             type="button"
             className="text-[8px] text-white/50 hover:text-rose-300"
@@ -148,6 +220,7 @@ export const RhizohControlCenterPanelV0 = memo(function RhizohControlCenterPanel
             )}
           </ul>
         </div>
+      </div>
       </div>
     </div>
   );

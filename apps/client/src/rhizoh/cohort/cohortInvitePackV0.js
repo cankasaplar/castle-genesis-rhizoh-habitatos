@@ -1,5 +1,5 @@
 /**
- * Cohort invite pack — Metehan (human observer) + Friday (prompt script runner).
+ * Cohort invite pack — Friday (prompt script runner) + ad-hoc reviewer ids.
  * Export: snapshot JSON, replay URL, Friday test script.
  */
 
@@ -8,13 +8,9 @@ import { getWorldObservationIngressQueueSnapshotV0 } from "../runtime/worldObser
 
 export const COHORT_INVITE_PACK_SCHEMA_V0 = "castle.rhizoh.cohort_invite_pack.v0";
 
+export const COHORT_DEFAULT_REVIEWER_ID_V0 = "friday";
+
 export const COHORT_REVIEWER_SLOTS_V0 = Object.freeze({
-  metehan: Object.freeze({
-    id: "metehan",
-    role: "human_observer",
-    label: "Metehan",
-    focus: ["screenshot", "live_session", "subjective_read"]
-  }),
   friday: Object.freeze({
     id: "friday",
     role: "prompt_runner",
@@ -57,7 +53,7 @@ function pageOrigin() {
  * @param {{ reviewerId?: string, cohort?: string }} [opts]
  */
 export function buildCohortInviteUrlV0(opts = {}) {
-  const reviewer = String(opts.reviewerId || "metehan").trim().toLowerCase();
+  const reviewer = String(opts.reviewerId || COHORT_DEFAULT_REVIEWER_ID_V0).trim().toLowerCase();
   const cohort = String(opts.cohort || "review").trim();
   const u = new URL("/", pageOrigin());
   u.searchParams.set("cohort", cohort);
@@ -83,7 +79,7 @@ function resolveReplayBand() {
  * @param {{ reviewerId?: string, label?: string, sessionNotes?: string, extra?: Record<string, unknown> }} [opts]
  */
 export function buildCohortInvitePackV0(opts = {}) {
-  const reviewerId = String(opts.reviewerId || "metehan").trim().toLowerCase();
+  const reviewerId = String(opts.reviewerId || COHORT_DEFAULT_REVIEWER_ID_V0).trim().toLowerCase();
   const reviewer =
     COHORT_REVIEWER_SLOTS_V0[reviewerId] ||
     Object.freeze({ id: reviewerId, role: "reviewer", label: opts.label || reviewerId });
@@ -160,7 +156,7 @@ export function isCohortReviewSessionV0() {
   try {
     if (import.meta.env?.VITE_RHIZOH_COHORT_INSPECT === "1") return true;
     const q = new URLSearchParams(window.location.search);
-    return q.get("cohort") === "review" || q.get("cohort") === "metehan-friday";
+    return q.get("cohort") === "review";
   } catch {
     return false;
   }

@@ -116,6 +116,8 @@ export function isCastleBenignDomErrorV0(errOrMsg, extra = {}) {
   if (combined.includes("metamask")) return true;
   if (combined.includes("googletagmanager.com")) return true;
   if (combined.includes("google-analytics.com")) return true;
+  // Chrome benign: ResizeObserver callback triggered nested layout in same frame (Cesium/dock).
+  if (/resizeobserver loop completed with undelivered notifications/i.test(combined)) return true;
   return false;
 }
 

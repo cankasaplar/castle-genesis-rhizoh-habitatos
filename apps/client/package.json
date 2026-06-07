@@ -12,7 +12,8 @@
     "test:predeploy-substrate": "vitest run src/rhizoh/runtime/__tests__/preDeploySubstrateGateV0.test.js",
     "test:substrate-authority": "vitest run src/rhizoh/runtime/__tests__/substrateAuthorityProfileV0.test.js src/rhizoh/runtime/__tests__/realityHealthMetricsV0.test.js",
     "test:interaction-geometry": "vitest run src/rhizoh/interactionGeometry",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "probe:local-system": "vitest run src/rhizoh/runtime/__tests__/rhizohFullSystemReportV0.test.js src/rhizoh/runtime/__tests__/rhizohLiveConsistencyAuditV0.test.js src/rhizoh/runtime/__tests__/rhizohDomainGateV0.test.js"
   },
   "dependencies": {
     "@castle/protocol": "1.0.0",

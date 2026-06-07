@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getCastleWorldDataStateV2,
+  isOverpassFetchBlockedV0,
   loadCastleWorldBuildingFootprintsV2,
   loadCastleWorldImportantPlacesV2,
   publishCastleWorldDataStateV2,
+  resetOverpassRateLimitStateForTestV0,
   CASTLE_WORLD_NO_FICTION_POLICY_V2
 } from "../castleWorldDataProviderV2.js";
 
@@ -11,6 +13,7 @@ describe("castleWorldDataProviderV2 (no-fiction)", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
     localStorage.clear();
+    resetOverpassRateLimitStateForTestV0();
     publishCastleWorldDataStateV2({
       feed: "unavailable",
       representation: "idle",
@@ -68,5 +71,48 @@ describe("castleWorldDataProviderV2 (no-fiction)", () => {
     expect(second.feed).toBe("cache");
     expect(second.representation).toBe("cached");
     expect(second.rows).toHaveLength(1);
+  });
+
+  it("enters cooldown after Overpass 429 and skips live buildings fetch", async () => {
+    fetch.mockResolvedValue({ ok: false, status: 429 });
+    const poi = await loadCastleWorldImportantPlacesV2([["tourism", "museum"]], 10);
+    expect(poi.feed).toBe("unavailable");
+    expect(isOverpassFetchBlockedV0()).toBe(true);
+
+    fetch.mockClear();
+    const buildings = await loadCastleWorldBuildingFootprintsV2(50);
+    expect(buildings.rows).toEqual([]);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("bootLazy skips live Overpass for buildings", async () => {
+    const result = await loadCastleWorldBuildingFootprintsV2(50, { bootLazy: true });
+    expect(result.rows).toEqual([]);
+    expect(result.deferred).toBe(true);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("dedupes identical in-flight Overpass queries", async () => {
+    /** @type {((value: unknown) => void) | null} */
+    let pendingResolve = null;
+    fetch.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          pendingResolve = resolve;
+        })
+    );
+    const tags = [["tourism", "museum"]];
+    const p1 = loadCastleWorldImportantPlacesV2(tags, 10);
+    await Promise.resolve();
+    const p2 = loadCastleWorldImportantPlacesV2(tags, 10);
+    await Promise.resolve();
+    pendingResolve?.({
+      ok: true,
+      json: async () => ({
+        elements: [{ id: 1, lat: 41.01, lon: 28.98, tags: { name: "A" } }]
+      })
+    });
+    await Promise.all([p1, p2]);
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 });

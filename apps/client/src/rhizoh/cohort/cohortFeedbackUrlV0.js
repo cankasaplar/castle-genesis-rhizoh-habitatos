@@ -2,6 +2,8 @@
  * Cohort session feedback URLs — human-facing only (no seq/ingress in copy).
  */
 
+import { COHORT_DEFAULT_REVIEWER_ID_V0 } from "./cohortInvitePackV0.js";
+
 export function ensureCohortSessionRefV0() {
   if (typeof sessionStorage === "undefined") return `cs_${Date.now()}`;
   const key = "rhizoh.cohort.session_ref.v0";
@@ -25,7 +27,7 @@ function pageOrigin() {
  * @param {{ reviewerId?: string, sessionRef?: string }} [opts]
  */
 export function buildCohortFeedbackUrlV0(opts = {}) {
-  const reviewer = String(opts.reviewerId || "metehan").trim().toLowerCase();
+  const reviewer = String(opts.reviewerId || COHORT_DEFAULT_REVIEWER_ID_V0).trim().toLowerCase();
   const sessionRef = String(opts.sessionRef || ensureCohortSessionRefV0()).trim();
   const u = new URL("/", pageOrigin());
   u.searchParams.set("cohort", "feedback");
@@ -45,15 +47,15 @@ export function isCohortFeedbackRouteV0() {
 
 export function readCohortFeedbackParamsFromUrlV0() {
   if (typeof window === "undefined") {
-    return { reviewerId: "metehan", sessionRef: "" };
+    return { reviewerId: COHORT_DEFAULT_REVIEWER_ID_V0, sessionRef: "" };
   }
   try {
     const q = new URLSearchParams(window.location.search);
     return {
-      reviewerId: String(q.get("reviewer") || "metehan").trim().toLowerCase(),
+      reviewerId: String(q.get("reviewer") || COHORT_DEFAULT_REVIEWER_ID_V0).trim().toLowerCase(),
       sessionRef: String(q.get("session") || "").trim()
     };
   } catch {
-    return { reviewerId: "metehan", sessionRef: "" };
+    return { reviewerId: COHORT_DEFAULT_REVIEWER_ID_V0, sessionRef: "" };
   }
 }

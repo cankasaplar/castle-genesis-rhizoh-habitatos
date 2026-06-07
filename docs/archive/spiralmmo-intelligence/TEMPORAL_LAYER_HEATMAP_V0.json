@@ -1,6 +1,7 @@
 ﻿{
     "days":  [
-                 "2026-05-28"
+                 "2026-05-28",
+                 "2026-06-01"
              ],
     "matrix":  [
                    {
@@ -8,100 +9,140 @@
                        "cells":  [
                                      {
                                          "day":  "2026-05-28",
-                                         "value":  3
+                                         "value":  18
+                                     },
+                                     {
+                                         "day":  "2026-06-01",
+                                         "value":  2
                                      }
                                  ],
-                       "max":  3
+                       "max":  18
                    },
                    {
                        "layer":  "text",
                        "cells":  [
                                      {
                                          "day":  "2026-05-28",
-                                         "value":  1
+                                         "value":  21
+                                     },
+                                     {
+                                         "day":  "2026-06-01",
+                                         "value":  4
                                      }
                                  ],
-                       "max":  1
+                       "max":  21
                    },
                    {
                        "layer":  "comment",
                        "cells":  [
                                      {
                                          "day":  "2026-05-28",
-                                         "value":  0
+                                         "value":  18
+                                     },
+                                     {
+                                         "day":  "2026-06-01",
+                                         "value":  3
                                      }
                                  ],
-                       "max":  0
+                       "max":  18
                    },
                    {
                        "layer":  "meaning",
                        "cells":  [
                                      {
                                          "day":  "2026-05-28",
-                                         "value":  0
+                                         "value":  29
+                                     },
+                                     {
+                                         "day":  "2026-06-01",
+                                         "value":  7
                                      }
                                  ],
-                       "max":  0
+                       "max":  29
                    },
                    {
                        "layer":  "fun",
                        "cells":  [
                                      {
                                          "day":  "2026-05-28",
-                                         "value":  0
+                                         "value":  12
+                                     },
+                                     {
+                                         "day":  "2026-06-01",
+                                         "value":  2
                                      }
                                  ],
-                       "max":  0
+                       "max":  12
                    },
                    {
                        "layer":  "music",
                        "cells":  [
                                      {
                                          "day":  "2026-05-28",
-                                         "value":  0
+                                         "value":  10
+                                     },
+                                     {
+                                         "day":  "2026-06-01",
+                                         "value":  1
                                      }
                                  ],
-                       "max":  0
+                       "max":  10
                    },
                    {
                        "layer":  "art",
                        "cells":  [
                                      {
                                          "day":  "2026-05-28",
-                                         "value":  0
+                                         "value":  21
+                                     },
+                                     {
+                                         "day":  "2026-06-01",
+                                         "value":  3
                                      }
                                  ],
-                       "max":  0
+                       "max":  21
                    },
                    {
                        "layer":  "sport",
                        "cells":  [
                                      {
                                          "day":  "2026-05-28",
-                                         "value":  0
+                                         "value":  22
+                                     },
+                                     {
+                                         "day":  "2026-06-01",
+                                         "value":  3
                                      }
                                  ],
-                       "max":  0
+                       "max":  22
                    },
                    {
                        "layer":  "competition",
                        "cells":  [
                                      {
                                          "day":  "2026-05-28",
-                                         "value":  0
+                                         "value":  16
+                                     },
+                                     {
+                                         "day":  "2026-06-01",
+                                         "value":  3
                                      }
                                  ],
-                       "max":  0
+                       "max":  16
                    },
                    {
                        "layer":  "real_layer",
                        "cells":  [
                                      {
                                          "day":  "2026-05-28",
-                                         "value":  0
+                                         "value":  15
+                                     },
+                                     {
+                                         "day":  "2026-06-01",
+                                         "value":  3
                                      }
                                  ],
-                       "max":  0
+                       "max":  15
                    }
                ]
 }

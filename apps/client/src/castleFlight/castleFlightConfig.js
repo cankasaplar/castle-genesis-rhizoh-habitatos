@@ -122,13 +122,24 @@ export function getCastleFlightConfig() {
     }
   }
   rhizohLlmHttpResolved = coalesceValidGatewayUrl(rhizohLlmHttpResolved, llmLiveFallback);
+  const proxyBase = getRhizohSameOriginGatewayProxyBaseV0();
+  if (proxyBase) {
+    rhizohLlmHttpResolved = `${proxyBase}/rhizoh/llm`;
+  }
   const gatewayWsResolved = coalesceValidGatewayUrl(
     gatewayOff ? "" : env.VITE_GATEWAY_WS || env.VITE_GATEWAY_WS_URL || wsFromBase || wsFallback,
     wsLiveFallback
   );
+  let gatewayWsFinal = gatewayWsResolved;
+  // HTTP same-origin proxy (Firebase gatewayProxyV0 / Vite) is fetch-only — no WebSocket upgrade.
+  // Local dev: Vite proxy forwards WS; hosted Firebase: keep direct Render WSS.
+  if (proxyBase && typeof window !== "undefined" && isRhizohLocalDevHostV0(window.location.hostname)) {
+    const wsProto = window.location.protocol === "https:" ? "wss:" : "ws:";
+    gatewayWsFinal = `${wsProto}//${window.location.host}/api/gatewayProxy`;
+  }
   return {
     /** Yayın kısa adlar: VITE_GATEWAY_WS — eski: VITE_GATEWAY_WS_URL — veya VITE_GATEWAY_URL tabanı */
-    gatewayWsUrl: gatewayOff ? "" : gatewayWsResolved,
+    gatewayWsUrl: gatewayOff ? "" : gatewayWsFinal,
     gatewayToken: gatewayOff ? "" : env.VITE_GATEWAY_TOKEN || "",
     /** MAVLink / ROS bridge / özel telemetri WS (boş = yalnızca sahne içi simülasyon) */
     droneTelemetryWs: gatewayOff ? "" : env.VITE_DRONE_TELEMETRY_WS || "",
@@ -185,23 +196,87 @@ export function getCastleFlightConfig() {
  * bu durumda statik SPA HTML döner (`text/html` ≠ `text/event-stream`). O zaman canlı gateway tabanı kullanılır.
  * @returns {string}
  */
+/** Firebase preview channel — CORS not on gateway allowlist; route via same-origin proxy. */
+export function isRhizohLocalDevHostV0(hostname) {
+  const h = String(hostname || "").toLowerCase();
+  return h === "localhost" || h === "127.0.0.1" || h === "::1";
+}
+
+export function isCastleGenesisFirebasePreviewHostV0(hostname) {
+  const h = String(hostname || "").toLowerCase();
+  return (
+    h.startsWith("castle-genesis--") &&
+    (h.endsWith(".web.app") || h.endsWith(".firebaseapp.com"))
+  );
+}
+
+export function isRhizohFirebaseHostingSurfaceV0(hostname) {
+  const h = String(hostname || "").toLowerCase();
+  if (!h) return false;
+  if (h === "castle-genesis.web.app" || h === "castle-genesis.firebaseapp.com") return true;
+  return isCastleGenesisFirebasePreviewHostV0(h);
+}
+
+export function shouldUseSameOriginGatewayProxyV0() {
+  if (typeof window === "undefined") return false;
+  const h = String(window.location.hostname || "").toLowerCase();
+  if (h === "rhizoh.com" || h === "www.rhizoh.com" || h.endsWith(".rhizoh.com")) return true;
+  if (isRhizohFirebaseHostingSurfaceV0(h)) return true;
+  /** Localhost + remote cloud gateway → same-origin Vite proxy (any port; Render CORS is 5173-only). */
+  if (isRhizohLocalDevHostV0(h)) {
+    if (String(import.meta.env.VITE_PREFER_LOCAL_GATEWAY || "").trim() === "1") return false;
+    const llm = String(
+      import.meta.env.VITE_GATEWAY_HTTP || import.meta.env.VITE_RHIZOH_LLM_HTTP || ""
+    ).trim();
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(llm) || /:8090\b/.test(llm)) return false;
+    return true;
+  }
+  return false;
+}
+
+function localDevGatewayProxyOriginV0() {
+  if (typeof window === "undefined") return "";
+  const host = window.location.hostname;
+  if (!isRhizohLocalDevHostV0(host)) return "";
+  if (String(import.meta.env.VITE_PREFER_LOCAL_GATEWAY || "").trim() === "1") return "";
+  const llm = String(
+    import.meta.env.VITE_GATEWAY_HTTP || import.meta.env.VITE_RHIZOH_LLM_HTTP || ""
+  ).trim();
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(llm) || /:8090\b/.test(llm)) return "";
+  return `${window.location.origin}/api/gatewayProxy`.replace(/\/+$/, "");
+}
+
+/** Genesis / ingress HTTP base (fetch + SSE). */
+export function resolveGenesisGatewayHttpBaseV0() {
+  return String(getGenesisProtocolGatewayOrigin() || "")
+    .trim()
+    .replace(/\/+$/, "");
+}
+
+export function getRhizohSameOriginGatewayProxyBaseV0() {
+  if (!shouldUseSameOriginGatewayProxyV0() || typeof window === "undefined") return "";
+  return `${window.location.origin}/api/gatewayProxy`;
+}
+
 function isStaticSpaProductHost(pageHost) {
   const h = String(pageHost || "").toLowerCase();
   return (
     h === "rhizoh.com" ||
     h === "www.rhizoh.com" ||
     h.endsWith(".rhizoh.com") ||
-    h === "castle-genesis.web.app" ||
-    h === "castle-genesis.firebaseapp.com" ||
-    /\.(web\.app|firebaseapp\.com)$/i.test(h)
+    isRhizohFirebaseHostingSurfaceV0(h)
   );
 }
 
 export function getGenesisProtocolGatewayOrigin() {
+  const localProxy = localDevGatewayProxyOriginV0();
+  if (localProxy) return localProxy;
   const env = import.meta.env;
   const cfg = getCastleFlightConfig();
   const host = typeof window !== "undefined" ? window.location.hostname : "";
-  const isLocalHost = host === "localhost" || host === "127.0.0.1" || host === "::1";
+  const isLocalHost = isRhizohLocalDevHostV0(host);
+  const proxyBase = getRhizohSameOriginGatewayProxyBaseV0();
+  if (proxyBase) return proxyBase;
   const liveBase = resolveLiveGatewayBaseFromEnv(env).replace(/\/+$/, "");
 
   let liveOrigin = "";
@@ -235,9 +310,6 @@ export function getGenesisProtocolGatewayOrigin() {
   } catch {
     pageHost = "";
   }
-  /**
-   * Hosting aynı origin'de `/rhizoh/*` yok → SPA `index.html` (`text/html`). Genesis/SSE mutlaka ayrı gateway origin.
-   */
   if (!isLocalHost && pageOrigin && origin === pageOrigin && isStaticSpaProductHost(pageHost)) {
     if (liveOrigin && liveOrigin !== pageOrigin) return liveOrigin;
     try {

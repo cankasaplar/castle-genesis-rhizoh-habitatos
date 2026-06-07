@@ -109,7 +109,8 @@ describe("rhizohGroundingLayerV1", () => {
     const snap = runRhizohPulseTickV1();
     expect(snap.role).toBe("live_first_governor");
     expect(snap.systemHealth).toBeDefined();
-    expect(snap.liveLayer).toBeNull();
+    expect(snap.liveLayer?.signature?.kind).toBe("presence_pulse");
+    expect(snap.liveLayer?.llmBypass).toBe(true);
   });
 
   it("isGovernanceFastPath for user initiated presence", () => {

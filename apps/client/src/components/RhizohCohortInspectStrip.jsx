@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import {
   buildCohortInvitePackV0,
   exportCohortInvitePackV0,
+  COHORT_DEFAULT_REVIEWER_ID_V0,
   getActiveCohortReviewerFromUrlV0,
   isCohortReviewSessionV0
 } from "../rhizoh/cohort/cohortInvitePackV0.js";
@@ -16,7 +17,7 @@ import {
  */
 export function RhizohCohortInspectStrip() {
   const active = isCohortReviewSessionV0();
-  const reviewer = getActiveCohortReviewerFromUrlV0() || "metehan";
+  const reviewer = getActiveCohortReviewerFromUrlV0() || COHORT_DEFAULT_REVIEWER_ID_V0;
   const [friday, setFriday] = useState(() => getFridayPromptRunnerStateV0());
   const [exportStatus, setExportStatus] = useState("");
 

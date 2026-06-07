@@ -14,6 +14,7 @@ import {
   RHIZOH_GUARANTEE_TIER
 } from "./rhizohRuntimeGuarantees.js";
 import { buildFormalClosureBridgePayload } from "./rhizohFormalClosureBridgeV1.js";
+import { requestWebGpuAdapterQuietlyV0 } from "../rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
 
 let _adapter = null;
 let _device = null;
@@ -30,11 +31,10 @@ export async function getSwarmGpuDevice() {
     _initPromise = (async () => {
       try {
         const win = /Windows/i.test(String(navigator.userAgent || ""));
-        _adapter = await navigator.gpu.requestAdapter(win ? {} : { powerPreference: "high-performance" });
+        _adapter = await requestWebGpuAdapterQuietlyV0(
+          win ? {} : { powerPreference: "high-performance" }
+        );
         if (!_adapter) {
-          console.info(
-            "[WEBGPU_ADAPTER] no gpu adapter (Chrome may log 'No available adapters' — unrelated to voice STT)"
-          );
           return null;
         }
         _device = await _adapter.requestDevice();

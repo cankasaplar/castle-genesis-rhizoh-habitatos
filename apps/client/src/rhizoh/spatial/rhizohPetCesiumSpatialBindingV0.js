@@ -12,6 +12,15 @@ import {
   buildPetSpatialBindingSnapshotV0,
   rcalXYToCartographicV0
 } from "./rhizohPetSpatialGeoV0.js";
+import {
+  CASTLE_PWE_EVENT_V0,
+  readCastlePweCartographicV0,
+  readCastlePweV0
+} from "../../castleFlight/castlePersistentWorldEntityV0.js";
+import {
+  COMPANION_OBS_PRESENCE_EVENT_V0,
+  isCompanionObservableV0
+} from "../../castleFlight/castleCompanionObservationPresenceV0.js";
 
 export const PET_CESIUM_ENTITY_ID_V0 = "rhizoh-pet-citizen-v0";
 
@@ -31,6 +40,22 @@ let onScrHandler = null;
 
 function readPetForSpatialV0() {
   return readPetCitizenV0();
+}
+
+function readPetCartographicForCesiumV0(citizen) {
+  const pweCarto = readCastlePweCartographicV0();
+  if (pweCarto) return pweCarto;
+  if (!citizen?.inhabited || !citizen.position) return null;
+  return rcalXYToCartographicV0(citizen.position.x, citizen.position.y, citizen);
+}
+
+function shouldBindPetToCesiumV0(citizen) {
+  const pwe = readCastlePweV0();
+  if (pwe?.mounted && pwe.lifecycle === "always_mounted") {
+    if (isCompanionObservableV0() && readCastlePweCartographicV0()) return true;
+    if (!pwe.presence && readCastlePweCartographicV0()) return true;
+  }
+  return Boolean(citizen?.inhabited);
 }
 
 function publishPetSpatialBindingV0(snap) {
@@ -72,12 +97,8 @@ function ensurePetEntityV0(viewer) {
     position: new Cesium.CallbackProperty((time, result) => {
       void time;
       const citizen = readPetForSpatialV0();
-      if (!citizen?.inhabited || !citizen.position) return undefined;
-      const carto = rcalXYToCartographicV0(
-        citizen.position.x,
-        citizen.position.y,
-        citizen
-      );
+      const carto = readPetCartographicForCesiumV0(citizen);
+      if (!carto) return undefined;
       return Cesium.Cartesian3.fromDegrees(carto.lon, carto.lat, carto.heightM, undefined, result);
     }, false),
     point: {
@@ -116,9 +137,23 @@ function ensurePetEntityV0(viewer) {
 export function syncPetSpatialBindingToCesiumV0(viewer = boundViewer) {
   const v = viewer || boundViewer;
   const citizen = readPetForSpatialV0();
-  const snap = buildPetSpatialBindingSnapshotV0(citizen);
+  const pweCarto = readCastlePweCartographicV0();
+  const snap = pweCarto
+    ? Object.freeze({
+        ...buildPetSpatialBindingSnapshotV0(citizen),
+        bound: true,
+        cartographic: Object.freeze({
+          schema: "castle.rhizoh.pet_spatial_geo.v0",
+          lat: pweCarto.lat,
+          lon: pweCarto.lon,
+          heightM: pweCarto.heightM,
+          world_projection: false,
+          pwe_source: pweCarto.source
+        })
+      })
+    : buildPetSpatialBindingSnapshotV0(citizen);
 
-  if (!v || v.isDestroyed?.() || !citizen?.inhabited) {
+  if (!v || v.isDestroyed?.() || !shouldBindPetToCesiumV0(citizen)) {
     if (v && !v.isDestroyed?.()) removePetEntityV0(v);
     publishPetSpatialBindingV0(
       Object.freeze({ ...snap, cesium_bound: false, entity_id: PET_CESIUM_ENTITY_ID_V0 })
@@ -158,15 +193,21 @@ export function installRhizohPetCesiumSpatialBindingV0(viewer) {
   onPetHandler = () => syncPetSpatialBindingToCesiumV0(viewer);
   onScrHandler = () => syncPetSpatialBindingToCesiumV0(viewer);
 
+  const onPweHandler = () => syncPetSpatialBindingToCesiumV0(viewer);
+
   if (typeof window !== "undefined") {
     window.addEventListener(RHIZOH_PET_CITIZEN_EVENT_V0, onPetHandler);
     window.addEventListener(RHIZOH_SURFACE_CITIZENSHIP_EVENT_V0, onScrHandler);
+    window.addEventListener(CASTLE_PWE_EVENT_V0, onPweHandler);
+    window.addEventListener(COMPANION_OBS_PRESENCE_EVENT_V0, onPweHandler);
   }
 
   return () => {
     if (typeof window !== "undefined") {
       if (onPetHandler) window.removeEventListener(RHIZOH_PET_CITIZEN_EVENT_V0, onPetHandler);
       if (onScrHandler) window.removeEventListener(RHIZOH_SURFACE_CITIZENSHIP_EVENT_V0, onScrHandler);
+      window.removeEventListener(CASTLE_PWE_EVENT_V0, onPweHandler);
+      window.removeEventListener(COMPANION_OBS_PRESENCE_EVENT_V0, onPweHandler);
     }
     onPetHandler = null;
     onScrHandler = null;

@@ -1,0 +1,37 @@
+{
+  "schema": "castle.companion_observation_baseline.v0",
+  "label": "staging-pre-sprint-e",
+  "capturedAt": "2026-06-05T18:34:14.892Z",
+  "stagingUrl": "https://castle-genesis--t0-companion-obs-pzyoelen.web.app/dev/octo-lab",
+  "passiveCoupling": true,
+  "ledBy": "octo",
+  "explorationIntegrityNote": "integrity ~0.89 at capture; drift 0.00; regimeShift false",
+  "inbox": [
+    {
+      "source": "octo",
+      "observation": "persistent_stretch_interest",
+      "confidence": 0.6333333333333334,
+      "geometry": "stretch",
+      "visits": 7,
+      "dwellTimeMs": 123076.76100000787,
+      "reportedAtMs": 1780684262136,
+      "receivedAtMs": 1780684262143
+    },
+    {
+      "source": "octo",
+      "observation": "persistent_interest_in_stretch",
+      "confidence": 0.7066666666666667,
+      "geometry": "stretch",
+      "visits": 8,
+      "dwellTimeMs": 146210.65900000389,
+      "reportedAtMs": 1780684298995,
+      "receivedAtMs": 1780684299005
+    }
+  ],
+  "attentionField": {
+    "branching": 0.07455566781331953,
+    "stretch": 0.021263826208172385,
+    "map": 0.056352313958846774
+  },
+  "notes": "Sprint A–D verified on staging. Inbox did not feed attentionField (passiveCoupling). Use as Sprint E drift reference."
+}

@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useSyncExternalStore } from "react";
+import React, { memo, useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { Mic, MicOff, Send, Loader2 } from "lucide-react";
 import { isCastleLayerRenderableV1, publishCastleLayerAuditV1 } from "../castle/layers/castleLayerGateV1.js";
 import {
@@ -6,6 +6,8 @@ import {
   resolveQuietConversationFieldLabelV0
 } from "../rhizoh/runtime/rhizohDialoguePresencePolicyV0.js";
 import { useRhizohConversationDockV0 } from "../rhizoh/runtime/useRhizohConversationDockV0.js";
+import { OctoConversationStageV1 } from "../studio/OctoConversationStageV1.jsx";
+import { resolveConversationAnchorSpeciesIdV0 } from "../studio/conversationAnchorSpeciesV0.js";
 import {
   getRhizohCommandPanelAuxExpandedSnapshotV0,
   subscribeRhizohCommandPanelAuxExpandedV0
@@ -35,6 +37,12 @@ export const RhizohConversationDockV0 = memo(function RhizohConversationDockV0({
   );
   const advancedOpen = advancedOpenProp ?? advancedFromStore;
   const dock = useRhizohConversationDockV0({ firebaseUser, conversationPhase: "EXPLORE" });
+  const [submitPulse, setSubmitPulse] = useState(0);
+  const sendWithGrab = useCallback(() => {
+    if (!String(dock.draft || "").trim()) return;
+    setSubmitPulse((p) => p + 1);
+    void dock.sendText();
+  }, [dock]);
   const showMic =
     dock.voiceV3Enabled && isCastleLayerRenderableV1("voice_v3_dock_mic", { advancedOpen });
 
@@ -51,11 +59,21 @@ export const RhizohConversationDockV0 = memo(function RhizohConversationDockV0({
 
   return (
     <div
-      className={`pointer-events-auto rounded-2xl border border-white/12 bg-black/72 px-3 py-2.5 shadow-lg backdrop-blur-md ${className}`}
+      className={`pointer-events-auto overflow-hidden rounded-2xl border border-white/12 bg-black/72 shadow-lg backdrop-blur-md ${className}`}
       data-rhizoh-conversation-dock="1"
       data-field-state={dock.fieldState}
       data-voice-mic-render={showMic ? "1" : "0"}
     >
+      <OctoConversationStageV1
+        fieldState={dock.fieldState}
+        replyText={dock.lastReply || ""}
+        draftText={dock.draft}
+        busy={dock.busy}
+        submitPulse={submitPulse}
+        height={100}
+        anchorSpeciesId={resolveConversationAnchorSpeciesIdV0()}
+      />
+      <div className="px-3 py-2.5">
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="text-[9px] font-medium uppercase tracking-[0.12em] text-violet-200/80">
           {isQuietDialoguePresenceV0()
@@ -75,7 +93,7 @@ export const RhizohConversationDockV0 = memo(function RhizohConversationDockV0({
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              void dock.sendText();
+              sendWithGrab();
             }
           }}
           placeholder="Rhizoh ile konuş…"
@@ -103,7 +121,7 @@ export const RhizohConversationDockV0 = memo(function RhizohConversationDockV0({
         <button
           type="button"
           title="Gönder"
-          onClick={() => void dock.sendText()}
+          onClick={sendWithGrab}
           disabled={dock.busy || !String(dock.draft || "").trim()}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-emerald-400/40 bg-emerald-500/15 text-emerald-100 transition hover:bg-emerald-500/25 disabled:opacity-40"
         >
@@ -118,11 +136,12 @@ export const RhizohConversationDockV0 = memo(function RhizohConversationDockV0({
       ) : null}
 
       {dock.lastReply && dock.fieldState === "idle" ? (
-        <p className="mt-2 line-clamp-2 text-[9px] text-white/55" aria-live="polite">
+        <p className="mt-2 line-clamp-3 text-[9px] text-white/55" aria-live="polite">
           {dock.lastReply.slice(0, 160)}
           {dock.lastReply.length > 160 ? "…" : ""}
         </p>
       ) : null}
+      </div>
     </div>
   );
 });

@@ -43,6 +43,17 @@ import {
 } from "../rhizoh/spatial/rhizohProductShellBridgeV0.js";
 import { reconcileMapSurfaceFromGateway } from "../reality/realityDirector.js";
 import { configureSpatialRealityInfraV0, clearSpatialRealityInfraV0 } from "../rhizoh/spatial/spatialRealityInfraV0.js";
+import { setRealityMode } from "../reality/realityDirector.js";
+import { WorldObservationGateV0 } from "./WorldObservationGateV0.jsx";
+import { shouldShowWorldObservationGateV0 } from "../castleFlight/worldFirstObservationV0.js";
+import { installCastlePweLifecycleV0 } from "../castleFlight/castlePersistentWorldEntityV0.js";
+import { installObserveFusionBridgeV0 } from "../rhizoh/runtime/rhizohObserveFusionV0.js";
+import { CastleInitiationGateV0 } from "./CastleInitiationGateV0.jsx";
+import { CompanionDormancyOverlayV0 } from "./CompanionDormancyOverlayV0.jsx";
+import {
+  completeCastleInitFromMapAnchorV0,
+  installCastleInitMapPickListenerV0
+} from "../castleFlight/castleInitiationProtocolV0.js";
 
 const SECTION_LABELS = Object.freeze({
   hero: "Karşılama",
@@ -77,13 +88,65 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
   const [drawerOpen, setDrawerOpen] = useState(() => productSurfaceOpensDrawerV0(readProductSurfaceV0()));
   const [soundUnlocked, setSoundUnlocked] = useState(false);
   const canonicalGlobeUi = isRhizohCanonicalGlobeUiV0();
-  const [realityMode, setRealityMode] = useState("REAL_MAP");
+  const [realityMode, setRealityModeLocal] = useState("REAL_MAP");
+  const [worldObsGateOpen, setWorldObsGateOpen] = useState(() => shouldShowWorldObservationGateV0());
+  const [castleAnchorOfferOpen, setCastleAnchorOfferOpen] = useState(false);
 
   useEffect(() => {
     return subscribeRealityTransition((ev) => {
-      if (ev?.to) setRealityMode(ev.to);
+      if (ev?.to) setRealityModeLocal(ev.to);
     });
   }, []);
+
+  useEffect(() => {
+    const onCastleOffer = () => setCastleAnchorOfferOpen(true);
+    window.addEventListener("castle:open-init-gate-v0", onCastleOffer);
+    window.addEventListener("castle:open-anchor-offer-v0", onCastleOffer);
+    return () => {
+      window.removeEventListener("castle:open-init-gate-v0", onCastleOffer);
+      window.removeEventListener("castle:open-anchor-offer-v0", onCastleOffer);
+    };
+  }, []);
+
+  useEffect(() => {
+    return installCastlePweLifecycleV0({
+      readClientContinuity: readSpatialClientContinuityV0,
+      writeClientContinuity: writeSpatialClientContinuityV0
+    });
+  }, []);
+
+  const applySpatialCastleAnchorDsl = useCallback(async (parsed) => {
+    if (!parsed?.verb) return { ok: false, reply: "Geçersiz DSL." };
+    if (parsed.verb !== "SPAWN_CASTLE") {
+      return { ok: false, reply: "Spatial shell: yalnızca castle anchor." };
+    }
+    const lat = Number(parsed.args.lat);
+    const lon = Number(parsed.args.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      return { ok: false, reply: "lat/lon gerekli." };
+    }
+    try {
+      window.__CASTLE_NEXUS_GEO__ = { mode: "geo", lat, lon };
+      window.__CASTLE_CLIENT_CASTLE_STATE__ = "ACTIVE";
+    } catch {
+      /* noop */
+    }
+    return { ok: true, reply: "Castle anchor bağlandı." };
+  }, []);
+
+  const castleInitOwner = castleAuth?.user?.uid || "GUEST";
+
+  useEffect(() => {
+    return installCastleInitMapPickListenerV0((anchorDetail) => {
+      void completeCastleInitFromMapAnchorV0(anchorDetail, {
+        owner: castleInitOwner,
+        castleType: "SANCTUARY",
+        applyPersonalCastleDsl: applySpatialCastleAnchorDsl
+      }).then((out) => {
+        if (out.ok) setCastleAnchorOfferOpen(false);
+      });
+    });
+  }, [castleInitOwner, applySpatialCastleAnchorDsl]);
 
   const persistPrefs = useCallback((patch) => {
     setPrefs((prev) => {
@@ -124,6 +187,20 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
     if (canonicalGlobeUi) return true;
     return resolveSpatialMapSurfaceActiveV0(gateway.phase, { worldLayerEnabled: true });
   }, [canonicalGlobeUi, gateway.phase]);
+
+  useEffect(() => {
+    return installObserveFusionBridgeV0(
+      () => {
+        if (!isWorldLayerEnabled()) return false;
+        if (canonicalGlobeUi) return realityMode === "REAL_MAP";
+        return realityMode === "REAL_MAP" && mapSurfaceActive;
+      },
+      {
+        readClientContinuity: readSpatialClientContinuityV0,
+        writeClientContinuity: writeSpatialClientContinuityV0
+      }
+    );
+  }, [canonicalGlobeUi, realityMode, mapSurfaceActive]);
 
   const epistemicUiEnv = useMemo(
     () => ({
@@ -210,6 +287,7 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
       data-product-surface={productSurface}
     >
       <CesiumRealMapLayer active={mapSurfaceActive} />
+      <CompanionDormancyOverlayV0 />
 
       {canonicalGlobeUi ? (
         <RhizohEpistemicHud
@@ -412,9 +490,54 @@ export const RhizohSpatialWorldShell = memo(function RhizohSpatialWorldShell({
       ) : null}
 
       <UnifiedProductShellBar active={productSurface} onSelect={onProductShellSelect} />
+
+      <WorldObservationGateV0
+        open={worldObsGateOpen}
+        onClose={() => setWorldObsGateOpen(false)}
+        setRealityMode={setRealityMode}
+        onProductShellSelect={onProductShellSelect}
+        readClientContinuity={readSpatialClientContinuityV0}
+        writeClientContinuity={writeSpatialClientContinuityV0}
+      />
+
+      <CastleInitiationGateV0
+        open={castleAnchorOfferOpen}
+        onClose={() => setCastleAnchorOfferOpen(false)}
+        owner={castleInitOwner}
+        castleType="SANCTUARY"
+        applyPersonalCastleDsl={applySpatialCastleAnchorDsl}
+        setRealityMode={setRealityMode}
+        onProductShellSelect={onProductShellSelect}
+        readClientContinuity={readSpatialClientContinuityV0}
+        writeClientContinuity={writeSpatialClientContinuityV0}
+        onComplete={() => setCastleAnchorOfferOpen(false)}
+      />
     </div>
   );
 });
+
+function readSpatialClientContinuityV0() {
+  try {
+    const raw = window.localStorage.getItem("rhizoh.continuity.v1") || "";
+    if (!raw) return { turns: [], persona: {}, meta: {} };
+    const parsed = JSON.parse(raw);
+    return {
+      turns: Array.isArray(parsed?.turns) ? parsed.turns.slice(-10) : [],
+      persona: parsed?.persona && typeof parsed.persona === "object" ? parsed.persona : {},
+      meta: parsed?.meta && typeof parsed.meta === "object" ? parsed.meta : {}
+    };
+  } catch {
+    return { turns: [], persona: {}, meta: {} };
+  }
+}
+
+function writeSpatialClientContinuityV0(next) {
+  try {
+    window.localStorage.setItem("rhizoh.continuity.v1", JSON.stringify(next));
+  } catch {
+    /* noop */
+  }
+}
 
 /** @param {{ active: boolean, label: string, onClick: () => void, icon: React.ComponentType<{ className?: string }> }} props */
 function ChromeToggle({ active, label, onClick, icon: Icon }) {

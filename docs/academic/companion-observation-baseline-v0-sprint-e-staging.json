@@ -1,0 +1,72 @@
+{
+  "schema": "castle.companion_observation_baseline.v0",
+  "label": "staging-post-sprint-e",
+  "capturedAt": "2026-06-05T21:45:00.000Z",
+  "stagingUrl": "https://castle-genesis--t0-companion-obs-pzyoelen.web.app/dev/octo-lab",
+  "bundle": "index-C40dbzQ4.js",
+  "preBaselineRef": "docs/academic/companion-observation-baseline-v0-staging.json",
+  "passiveCoupling": false,
+  "softInboxCoupling": true,
+  "ledBy": "octo",
+  "explorationIntegrity": {
+    "explorationIntegrityScore": 0.81,
+    "noveltyContribution": 0.59,
+    "baselineDriftIndex": 0.0,
+    "regimeShift": false
+  },
+  "inbox": [
+    {
+      "source": "octo",
+      "observation": "persistent_stretch_interest",
+      "confidence": 0.63,
+      "geometry": "stretch",
+      "visits": 7,
+      "dwellTimeMs": 123000,
+      "reportedAtMs": null,
+      "receivedAtMs": null
+    },
+    {
+      "source": "octo",
+      "observation": "persistent_interest_in_stretch",
+      "confidence": 0.71,
+      "geometry": "stretch",
+      "visits": 8,
+      "dwellTimeMs": 146000,
+      "reportedAtMs": null,
+      "receivedAtMs": null
+    },
+    {
+      "source": "octo",
+      "observation": "persistent_branching_interest",
+      "confidence": 0.63,
+      "geometry": "branching",
+      "visits": 7,
+      "dwellTimeMs": 120000,
+      "reportedAtMs": null,
+      "receivedAtMs": null
+    },
+    {
+      "source": "octo",
+      "observation": "persistent_interest_in_branching",
+      "confidence": 0.71,
+      "geometry": "branching",
+      "visits": 8,
+      "dwellTimeMs": 140000,
+      "reportedAtMs": null,
+      "receivedAtMs": null
+    }
+  ],
+  "attentionField": {
+    "stretch": 0.06179178356239575,
+    "branching": 0.27212936089553774,
+    "map": 0.21960162681327494
+  },
+  "deltaFromPreE": {
+    "stretchAttention": "+0.041 (0.021 → 0.062)",
+    "inboxCount": "+2 (2 → 4 geometries)",
+    "passiveCoupling": "true → false",
+    "ledBy": "octo (stable)",
+    "integrity": "0.89 → 0.81 (soft E influence, acceptable)"
+  },
+  "notes": "Sprint E verified: observationInbox → attentionField soft coupling (max 0.07/deposit). Cube-centric architecture next. Observer field spec Stage 2."
+}

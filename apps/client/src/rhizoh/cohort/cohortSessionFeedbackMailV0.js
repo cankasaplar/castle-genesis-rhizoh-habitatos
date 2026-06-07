@@ -4,7 +4,11 @@
 
 import { getAuth } from "firebase/auth";
 import { getFirebaseApp, firebaseConfigured } from "../../firebase/castleFirebase.js";
-import { getActiveCohortReviewerFromUrlV0, isCohortReviewSessionV0 } from "./cohortInvitePackV0.js";
+import {
+  COHORT_DEFAULT_REVIEWER_ID_V0,
+  getActiveCohortReviewerFromUrlV0,
+  isCohortReviewSessionV0
+} from "./cohortInvitePackV0.js";
 import { buildCohortFeedbackUrlV0, ensureCohortSessionRefV0 } from "./cohortFeedbackUrlV0.js";
 
 const SENT_KEY = "rhizoh.cohort.feedback_mail_sent.v0";
@@ -69,7 +73,11 @@ function markFeedbackMailSentV0(sessionRef) {
 export async function requestCohortSessionFeedbackMailV0(opts = {}) {
   if (!isCohortReviewSessionV0()) return { ok: false, reason: "not_cohort_review" };
 
-  const reviewerId = String(opts.reviewerId || getActiveCohortReviewerFromUrlV0() || "metehan").trim().toLowerCase();
+  const reviewerId = String(
+    opts.reviewerId || getActiveCohortReviewerFromUrlV0() || COHORT_DEFAULT_REVIEWER_ID_V0
+  )
+    .trim()
+    .toLowerCase();
   const sessionRef = String(opts.sessionRef || ensureCohortSessionRefV0()).trim();
   if (feedbackMailAlreadySentV0(sessionRef)) return { ok: true, reason: "already_sent" };
 

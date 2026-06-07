@@ -1,0 +1,62 @@
+{
+  "schema": "castle.companion_observation_baseline.v0",
+  "label": "staging-sprint-e-verified-laptop-b",
+  "capturedAt": "2026-06-05T23:15:00.000Z",
+  "stagingUrl": "https://castle-genesis--t0-companion-obs-pzyoelen.web.app/dev/octo-lab",
+  "bundle": "index-CDH5eSds.js",
+  "preBaselineRef": "docs/academic/companion-observation-baseline-v0-sprint-e-staging.json",
+  "captureMethod": "structuredClone(window.__RHIZOH_COMPANION_OBSERVABILITY__)",
+  "passiveCoupling": false,
+  "softInboxCoupling": true,
+  "ledBy": "octo",
+  "explorationIntegrity": {
+    "explorationIntegrityScore": 0.7701910567380693,
+    "noveltyContribution": 0.5791408159353242,
+    "rhizohInfluenceFactor": 0.17280353718156938,
+    "baselineDriftIndex": 0.0027712764672971346,
+    "rollingIntegrityMean": 0.7674197802707722,
+    "regimeShift": false
+  },
+  "inboxCount": 2,
+  "observationReportsCount": 2,
+  "unacknowledgedPatternsAtCapture": 0,
+  "inboxCouplingAppliedAtCapture": 0,
+  "inbox": [
+    {
+      "source": "octo",
+      "observation": "persistent_stretch_interest",
+      "geometry": "stretch",
+      "note": "verified discovery — exact confidence from live inbox expand"
+    },
+    {
+      "source": "octo",
+      "observation": "persistent_branching_interest",
+      "geometry": "branching",
+      "note": "verified discovery — exact confidence from live inbox expand"
+    }
+  ],
+  "attentionField": {
+    "branching": 0.22588880984462198,
+    "stretch": 0.045587201985454316,
+    "map": 0.22588880984462198
+  },
+  "sessionTransition": {
+    "forming": "unacknowledgedPatterns: 2 → discovery pending",
+    "verified": "observationInbox: 2, ledBy: octo, integrity: 0.77"
+  },
+  "deltaFromPreVerified": {
+    "ledBy": "mixed (0.70) → octo (0.77) after ritual cycle",
+    "inbox": "0 → 2 after visits/confidence thresholds",
+    "rhizohInfluence": "0.234 → 0.173 (Octo-led regime)"
+  },
+  "nextDeploy": {
+    "includes": [
+      "cubeTopologyOwnershipInvariantV0",
+      "observerSpeciesRegistryV0",
+      "topologyOwnership + observerSpecies in observability snapshot"
+    ]
+  },
+  "notes": "Laptop B verified Sprint E discovery path. Ritual: merhaba göster bak yeni açık + hatırla geçmiş bellek dün. DevTools: use structuredClone for tick-safe snapshots. Cube-centric camera on index-CDH5eSds.js.",
+  "regimeCheckpointsRef": "docs/academic/regime-checkpoints/sprint-e/",
+  "relatedCheckpoint": "docs/academic/regime-checkpoints/sprint-e/companion-observation-sprint-e-regime-verified-checkpoint-v0.json"
+}

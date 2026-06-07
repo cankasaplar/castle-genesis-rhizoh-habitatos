@@ -101,7 +101,11 @@ export async function executeCastleInitGpsV0(deps) {
         const lon = pos.coords.longitude;
         const cmd = `SPAWN CASTLE --owner ${owner} --lat ${lat} --lon ${lon} --type ${castleType}`;
         const parsed = parseDSL(cmd);
-        const out = parsed ? await deps.applyPersonalCastleDsl(parsed) : { ok: false, reply: "DSL parse failed" };
+        const out = parsed
+          ? deps.applyPersonalCastleDsl
+            ? await deps.applyPersonalCastleDsl(parsed)
+            : { ok: true, reply: "Castle anchor kaydedildi." }
+          : { ok: false, reply: "DSL parse failed" };
         const anchor = createCastleWorldAnchorV0({
           lat,
           lon,
@@ -163,7 +167,11 @@ export async function completeCastleInitFromMapAnchorV0(anchorDetail, deps) {
   const lon = anchorDetail.lon;
   const cmd = `SPAWN CASTLE --owner ${owner} --lat ${lat} --lon ${lon} --type ${castleType}`;
   const parsed = parseDSL(cmd);
-  const out = parsed ? await deps.applyPersonalCastleDsl(parsed) : { ok: false };
+  const out = parsed
+    ? deps.applyPersonalCastleDsl
+      ? await deps.applyPersonalCastleDsl(parsed)
+      : { ok: true, reply: "Castle anchor kaydedildi." }
+    : { ok: false };
   emitCastleCreateEventV0({
     source: "map",
     anchor: { ...anchorDetail, source: "map" },

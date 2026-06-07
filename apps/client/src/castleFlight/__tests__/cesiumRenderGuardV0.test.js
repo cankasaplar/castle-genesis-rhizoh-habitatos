@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   configureOsmBuildingsTilesetV0,
+  cesiumSafeFromDegreesV0,
   isCesiumCanvasRenderableV0,
+  isCesiumNaNCartesianErrorV0,
   isCesiumPvsRangeErrorV0,
+  isCesiumSafeModeRenderErrorV0,
   isFiniteCartesian3V0,
   sanitizeCesiumCameraV0
 } from "../cesiumRenderGuardV0.js";
@@ -52,6 +55,22 @@ describe("cesiumRenderGuardV0", () => {
   it("isCesiumPvsRangeErrorV0 detects PVS overflow message", () => {
     expect(isCesiumPvsRangeErrorV0(new Error("Invalid array length"))).toBe(true);
     expect(isCesiumPvsRangeErrorV0(new Error("other"))).toBe(false);
+  });
+
+  it("isCesiumNaNCartesianErrorV0 detects NaN and destroyed primitive", () => {
+    expect(isCesiumNaNCartesianErrorV0(new Error("cartesian has a NaN component"))).toBe(true);
+    expect(isCesiumNaNCartesianErrorV0(new Error("This object was destroyed"))).toBe(true);
+    expect(isCesiumSafeModeRenderErrorV0(new Error("cartesian has a NaN component"))).toBe(true);
+  });
+
+  it("cesiumSafeFromDegreesV0 rejects invalid coordinates", () => {
+    const Cesium = {
+      Cartesian3: {
+        fromDegrees: (lon, lat, alt) => ({ x: lon, y: lat, z: alt })
+      }
+    };
+    expect(cesiumSafeFromDegreesV0(Cesium, NaN, 41, 10)).toBeNull();
+    expect(cesiumSafeFromDegreesV0(Cesium, 29, 41, 10)).toEqual({ x: 29, y: 41, z: 10 });
   });
 
   it("configureOsmBuildingsTilesetV0 raises SSE floor", () => {

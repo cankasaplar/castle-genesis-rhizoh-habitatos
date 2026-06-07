@@ -1,4 +1,5 @@
-import React, { memo, useMemo, useState } from "react";
+import React, { memo, useEffect, useMemo, useState, Suspense, lazy } from "react";
+import { shouldMountRhizohControlCenterV0, installRhizohControlCenterV0 } from "../rhizoh/debug/rhizohControlCenterV0.js";
 import { Link } from "react-router-dom";
 import { KernelConsolePanel } from "../studio/ui/KernelConsolePanel";
 import { DirectorDeckPanel } from "../studio/ui/DirectorDeckPanel";
@@ -16,6 +17,20 @@ import { useSurfaceCitizenProjectionV0 } from "../rhizoh/runtime/useSurfaceCitiz
 import { useRhizohStudioProductionOrganismV0 } from "../rhizoh/runtime/useRhizohStudioProductionOrganismV0.js";
 import { STUDIO_ORGANISM_SURFACE_ROLE_V0 } from "../rhizoh/runtime/rhizohStudioOrganismSurfaceRolesV0.js";
 import { RhizohObservableRealityPanelV0 } from "./RhizohObservableRealityPanelV0.jsx";
+import { CastlePetStudioPanelV0 } from "./CastlePetStudioPanelV0.jsx";
+import { RhizohEventCreatePanelV12 } from "./RhizohEventCreatePanelV12.jsx";
+
+const RhizohControlCenterPanelV0 = lazy(() =>
+  import("../rhizoh/debug/RhizohControlCenterPanelV0.jsx").then((m) => ({
+    default: m.RhizohControlCenterPanelV0
+  }))
+);
+
+const RhizohCastleLayersDebugV0 = lazy(() =>
+  import("../rhizoh/runtime/RhizohCastleLayersDebugV0.jsx").then((m) => ({
+    default: m.RhizohCastleLayersDebugV0
+  }))
+);
 
 const PROFILE_OBS_TABS_V0 = Object.freeze([
   { id: "reality", label: "Reality" },
@@ -31,7 +46,9 @@ const PROFILE_OBS_TABS_V0 = Object.freeze([
  *   auth?: object | null,
  *   gatewayOrigin?: string,
  *   runtimeHealth?: object | null,
- *   uiLocale?: string
+ *   uiLocale?: string,
+ *   experienceSessionId?: string | null,
+ *   productSessionId?: string | null
  * }} props
  */
 export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDrawerV0({
@@ -41,7 +58,9 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
   auth = null,
   gatewayOrigin = "",
   runtimeHealth = null,
-  uiLocale
+  uiLocale,
+  experienceSessionId = null,
+  productSessionId = null
 }) {
   const locale = uiLocale || readUiLocaleV0();
   const drawerProjection = useSurfaceCitizenProjectionV0(SSL_SURFACE_ID_V0.UI_DRAWER);
@@ -50,6 +69,11 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
   const chrome = useMemo(() => resolveProductDrawerChromeCopyV0(locale), [locale]);
   const meta = useMemo(() => resolveProductDrawerSurfaceCopyV0(surface, locale), [surface, locale]);
   const [profileObsTab, setProfileObsTab] = useState("reality");
+  const showControlCenter = shouldMountRhizohControlCenterV0();
+
+  useEffect(() => {
+    if (showControlCenter && surface === "hall" && open) installRhizohControlCenterV0();
+  }, [showControlCenter, surface, open]);
 
   if (!open || surface === "world") return null;
 
@@ -84,6 +108,18 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
       <div className="max-h-[calc(min(52vh,28rem)-3rem)] overflow-y-auto px-3 py-3 no-scrollbar">
         {surface === "hall" ? (
           <RhizohStudioCitizenShellV0 surfaceKind="hall">
+            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start">
+              {showControlCenter ? (
+                <Suspense fallback={null}>
+                  <RhizohControlCenterPanelV0 variant="drawer" />
+                </Suspense>
+              ) : null}
+              <Suspense fallback={null}>
+                <div className="min-w-0 flex-1">
+                  <RhizohCastleLayersDebugV0 variant="drawer" gatewayPhase="" />
+                </div>
+              </Suspense>
+            </div>
             <KernelConsolePanel />
             <QuickLinks
               links={[
@@ -96,6 +132,12 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
 
         {surface === "greenroom" || surface === "broadcast" ? (
           <RhizohStudioCitizenShellV0 surfaceKind={surface}>
+            <RhizohEventCreatePanelV12
+              experienceSessionId={experienceSessionId}
+              productSessionId={productSessionId}
+              authUid={auth?.user?.uid || auth?.uid || null}
+              uiLocale={locale}
+            />
             <DirectorDeckPanel />
             {surface === "broadcast" ? (
               <p className="rounded-lg border border-fuchsia-400/25 bg-fuchsia-950/20 px-3 py-2 text-[10px] text-fuchsia-100/85 normal-case">
@@ -138,6 +180,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
               ))}
             </div>
             <RhizohObservableRealityPanelV0 section={profileObsTab} />
+            <CastlePetStudioPanelV0 />
             <div className="mt-4 space-y-3 border-t border-white/10 pt-3">
               <ProductProfilePanel auth={auth} />
               <RuntimeHealthPanel health={runtimeHealth} gatewayBaseUrl={gatewayOrigin} />

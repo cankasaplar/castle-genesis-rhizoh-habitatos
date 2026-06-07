@@ -1,0 +1,68 @@
+{
+  "schema": "castle.companion_observation_regime_checkpoint.v0",
+  "type": "regime_checkpoint",
+  "sprint": "E",
+  "label": "sprint-e-invariant-under-load-staging",
+  "capturedAt": "2026-06-06T00:30:00.000Z",
+  "stagingUrl": "https://castle-genesis--t0-companion-obs-pzyoelen.web.app/dev/octo-lab",
+  "bundle": "index-DdIRMzeF.js",
+  "captureMethod": "structuredClone(window.__RHIZOH_COMPANION_OBSERVABILITY__)",
+  "staticBaselineRef": "docs/academic/companion-observation-baseline-v0-sprint-e-verified-staging.json",
+  "invariant": "cube.topology is never agent-owned",
+  "invariantModule": "apps/client/src/studio/cubeTopologyOwnershipInvariantV0.js",
+  "writeCount": 42,
+  "topologyOwnership": {
+    "invariantHeld": true,
+    "owner": "cognition_ingress",
+    "agentWriteAttempts": 0,
+    "runtimeProof": "42 cognition_ingress write cycles; zero agent topology writes"
+  },
+  "inboxTransitionVerified": true,
+  "inboxLifecycle": {
+    "forming": "unacknowledgedPatterns: 2, inbox: 0",
+    "closure": "unacknowledgedPatterns: 0, inbox: 2, observationReports: 2"
+  },
+  "ledByState": "mixed",
+  "stabilityClass": "oscillatory_stable",
+  "softInboxCoupling": true,
+  "passiveCoupling": false,
+  "observerSpecies": "octo_v1",
+  "explorationIntegrityAtClosure": {
+    "explorationIntegrityScore": 0.701,
+    "noveltyContribution": null,
+    "rhizohInfluenceFactor": null,
+    "baselineDriftIndex": null,
+    "regimeShift": false
+  },
+  "regimeOscillationTimeline": [
+    { "phase": "boot_idle", "writeCount": 0, "inbox": 0, "ledBy": "octo", "integrity": 1.0 },
+    { "phase": "ritual_forming", "writeCount": 6, "inbox": 0, "ledBy": "octo", "integrity": 0.872, "unacknowledgedPatterns": 2 },
+    { "phase": "visit_accumulation", "writeCount": 12, "inbox": 0, "ledBy": "octo", "integrity": 0.831, "unacknowledgedPatterns": 2 },
+    { "phase": "coupling_pressure", "writeCount": 36, "inbox": 0, "ledBy": "mixed", "integrity": 0.683, "unacknowledgedPatterns": 2 },
+    { "phase": "discovery_closure", "writeCount": 42, "inbox": 2, "ledBy": "mixed", "integrity": 0.701, "unacknowledgedPatterns": 0 }
+  ],
+  "interpretation": {
+    "notBaseline": true,
+    "classification": "dynamic_regime_verification",
+    "ledByMixedIsFailure": false,
+    "ledByMixedMeaning": "transition_regime under active coupling — adaptive, not unstable",
+    "proofClass": "agent_system_correctness_under_active_coupling"
+  },
+  "verifiedBehaviors": [
+    "invariant held under load (42 writes)",
+    "inbox 2→0 unacknowledged transition at discovery",
+    "softInboxCoupling active throughout",
+    "discovery cycle complete",
+    "integrity within stabil band at closure (0.701)",
+    "no agent topology ownership"
+  ],
+  "futureMetrics": {
+    "regimeDistanceMetric": {
+      "status": "RESEARCH-ONLY",
+      "spec": "docs/academic/regime-checkpoints/REGIME_DISTANCE_METRIC_V0.md",
+      "module": "apps/client/src/studio/regimeDistanceMetricV0.js",
+      "purpose": "checkpoint-to-checkpoint regime shift intensity — not baselineDriftIndex"
+    }
+  },
+  "notes": "Behavioral physics proof — not a static measurement reference. Baselines live in docs/academic/companion-observation-baseline-v0-*.json. Checkpoints document live regime transitions under coupling."
+}
