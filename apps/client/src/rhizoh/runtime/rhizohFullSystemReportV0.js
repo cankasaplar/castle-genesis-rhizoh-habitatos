@@ -20,7 +20,10 @@ import { getWorldObservationIngressQueueSnapshotV0 } from "./worldObservationIng
 import { getCastleFlightConfig } from "../../castleFlight/castleFlightConfig.js";
 import { getSpatialReadyGateSnapshotV0 } from "./rhizohSpatialReadyGateV0.js";
 import { auditDomainCoherenceV0, reconcileDomainPathCoherenceV0 } from "./rhizohDomainCoherenceV0.js";
-import { getSpatialTemporalTrailSnapshotV0 } from "./rhizohSpatialTemporalTrailV0.js";
+import {
+  emitSpatialTemporalTrailV0,
+  getSpatialTemporalTrailSnapshotV0
+} from "./rhizohSpatialTemporalTrailV0.js";
 import { buildCausalMapLayerV0 } from "./rhizohCausalMapLayerV0.js";
 import { replayCausalChainV0 } from "./rhizohSpatialReplayEngineV0.js";
 import { detectLiveConflictsV0 } from "./rhizohLiveConflictDetectorV0.js";
@@ -195,10 +198,10 @@ export function runFullSystemProbeV0() {
     { acceptDeferred: true }
   );
   recordOp("spatial_temporal_trail", () =>
-    emitSpatialEventFromDomainV0(RHIZOH_DOMAIN_ID_V0.WORLD, {
-      tier: SPATIAL_NODE_TIER_V0.TEMPORAL,
+    emitSpatialTemporalTrailV0(RHIZOH_DOMAIN_ID_V0.WORLD, {
       nodeId: "probe-trail-temporal",
-      kind: "probe_trail"
+      kind: "probe_trail",
+      payload: { source: "full_system_probe" }
     })
   );
   recordOp("causal_chain_replay", () =>
@@ -349,16 +352,17 @@ export function runFullSystemReportV0(opts = {}) {
   }
 
   const probe = opts.probe === true ? runFullSystemProbeV0() : null;
+
+  if (opts.probe === true && opts.restorePath !== false && typeof window !== "undefined") {
+    runDomainGateForPathV0(pathname);
+  }
+
   const audit =
     opts.audit !== false
       ? runLiveConsistencyAuditV0({
           domain: resolveDomainIdFromPathV0(pathname)
         })
       : null;
-
-  if (opts.probe === true && opts.restorePath !== false && typeof window !== "undefined") {
-    runDomainGateForPathV0(pathname);
-  }
 
   const domainCoherence = reconcileDomainPathCoherenceV0(pathname);
   const liveConflicts = detectLiveConflictsV0(pathname);
@@ -451,7 +455,13 @@ export function printFullSystemReportV0(report) {
     `    spatial nodes: ${r.spatialNodes.total} (s:${r.spatialNodes.static} l:${r.spatialNodes.live} t:${r.spatialNodes.temporal})`,
     `    temporal trail: ${r.temporalTrail?.count ?? 0} markers`,
     `    causal map: ${r.causalMap?.nodeCount ?? 0} nodes / ${r.causalMap?.edgeCount ?? 0} edges (compressed:${r.causalMap?.compressed ? "yes" : "no"} ratio:${r.causalMap?.compression?.compressionRatio ?? 0})`,
-    `    truth loss: ${r.causalMap?.truthLoss?.pass ? "none" : `${r.causalMap?.truthLoss?.criticalLossCount ?? 0}c/${r.causalMap?.truthLoss?.weakenedPathCount ?? 0}w`}`,
+    `    truth loss: ${
+      r.causalMap?.truthLoss?.pass
+        ? r.causalMap?.truthLoss?.policyBoundedCompression
+          ? "policy-bounded (ok)"
+          : "none"
+        : `${r.causalMap?.truthLoss?.criticalLossCount ?? 0}c/${r.causalMap?.truthLoss?.weakenedPathCount ?? 0}w`
+    }`,
     `    conflicts: ${r.liveConflicts?.pass ? "none" : r.liveConflicts?.conflictCount ?? 0}`,
     `    truthTrace: ${r.truthTrace.enabled ? "on" : "off"} (${r.truthTrace.count} entries)`,
     `    spatial gate: ${r.spatialReadyGate?.open ? "open" : "buffered"} (cesium:${r.spatialReadyGate?.cesiumReady ? "ready" : "pending"} buf:${r.spatialReadyGate?.buffered ?? 0})`,

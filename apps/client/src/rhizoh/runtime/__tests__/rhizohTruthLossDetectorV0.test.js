@@ -70,6 +70,45 @@ describe("rhizohTruthLossDetectorV0", () => {
     expect(report.pass).toBe(false);
   });
 
+  it("passes for policy-bounded compression when critical skeleton preserved", () => {
+    const raw = {
+      nodes: [
+        ...Array.from({ length: 200 }, (_, i) => ({
+          id: `trail_${i}`,
+          kind: "temporal_trail",
+          domain: "world",
+          label: `poi:${i}`,
+          atMs: i
+        })),
+        {
+          id: "d1",
+          kind: TRUTH_TRACE_KIND_V0.DOMAIN_TRANSITION,
+          domain: "world",
+          label: "t0→world",
+          atMs: 9999
+        },
+        {
+          id: "t1",
+          kind: TRUTH_TRACE_KIND_V0.TENSOR_DECISION,
+          domain: "world",
+          label: "open_world_map → act",
+          atMs: 10000
+        }
+      ],
+      edges: Array.from({ length: 60 }, (_, i) => ({
+        from: `trail_${i}`,
+        to: `trail_${i + 1}`,
+        relation: CAUSAL_EDGE_RELATION_V0.TRAILS
+      }))
+    };
+    const compressed = compressCausalGraphV0(raw);
+    const report = detectTruthLossV0(raw, compressed);
+    expect(report.policyBoundedCompression).toBe(true);
+    expect(report.criticalSkeletonPreserved).toBe(true);
+    expect(report.pass).toBe(true);
+    expect(report.selfExplanation).toContain("No semantic truth loss");
+  });
+
   it("reports domain influence degradation", () => {
     const raw = {
       nodes: Array.from({ length: 10 }, (_, i) => ({

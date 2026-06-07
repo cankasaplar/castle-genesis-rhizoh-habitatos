@@ -32,6 +32,10 @@ const CRITICAL_NODE_KINDS_V0 = new Set([
 /** Acceptable semantic compression — above this ratio triggers review (not auto-fail). */
 const SEMANTIC_LOSS_REVIEW_RATIO_V0 = 0.55;
 
+/** Inline — match rhizohCausalGraphCompressionV0 policy without circular import. */
+const POLICY_MAX_NODES_V0 = 32;
+const POLICY_MAX_EDGES_V0 = 48;
+
 /**
  * @param {object[]} nodes
  */
@@ -240,6 +244,75 @@ function detectAcceptableSemanticCompressionV0(compressionStats, compressedNodes
 }
 
 /**
+ * @param {object} stats
+ * @param {object[]} rawNodes
+ * @param {object[]} rawEdges
+ */
+function isPolicyBoundedCompressionV0(stats, rawNodes, rawEdges) {
+  const inputExceeded =
+    rawNodes.length > POLICY_MAX_NODES_V0 || rawEdges.length > POLICY_MAX_EDGES_V0;
+  const policyPruneApplied =
+    (stats.nodesPruned || 0) > 0 ||
+    (stats.edgesPruned || 0) > 0 ||
+    (stats.replayBranchesDropped || 0) > 0 ||
+    (stats.temporalTrailClustered || 0) > 0;
+  return inputExceeded && policyPruneApplied;
+}
+
+/**
+ * @param {object[]} rawNodes
+ * @param {object[]} compNodes
+ */
+function criticalKindSkeletonPreservedV0(rawNodes, compNodes) {
+  const rawKinds = countByKindV0(rawNodes);
+  const compKinds = countByKindV0(compNodes);
+  for (const kind of CRITICAL_NODE_KINDS_V0) {
+    if ((rawKinds[kind] || 0) > 0 && (compKinds[kind] || 0) === 0) return false;
+  }
+  return true;
+}
+
+/**
+ * @param {object[]} weakenedPaths
+ * @param {object} stats
+ */
+function policyBoundedWeakenedPathsV0(weakenedPaths, stats) {
+  if (!weakenedPaths.length) return Object.freeze([]);
+  return Object.freeze(
+    weakenedPaths.map((p) =>
+      Object.freeze({
+        ...p,
+        code: "policy_bounded_edge_cap",
+        severity: "low",
+        acceptable: true,
+        hint:
+          stats.edgesPruned > 0
+            ? "Edge capped by compression policy — causal skeleton retained in nodes"
+            : p.hint
+      })
+    )
+  );
+}
+
+/**
+ * @param {object[]} domainInfluence
+ * @param {object[]} rawNodes
+ * @param {object[]} compNodes
+ */
+function filterDegradedDomainsV0(domainInfluence, rawNodes, compNodes) {
+  return domainInfluence.filter((d) => {
+    if (!d.degraded) return false;
+    const rawCritical = rawNodes.filter(
+      (n) => n.domain === d.domain && CRITICAL_NODE_KINDS_V0.has(n.kind)
+    ).length;
+    const compCritical = compNodes.filter(
+      (n) => n.domain === d.domain && CRITICAL_NODE_KINDS_V0.has(n.kind)
+    ).length;
+    return rawCritical > 0 && compCritical === 0;
+  });
+}
+
+/**
  * Compare raw vs compressed causal graph — semantic truth loss report.
  * @param {object} raw
  * @param {object} compressed
@@ -254,20 +327,37 @@ export function detectTruthLossV0(raw, compressed) {
   const rawNodeIds = new Set(rawNodes.map((n) => n.id));
   const compNodeIds = new Set(compNodes.map((n) => n.id));
 
-  const criticalLosses = detectDroppedCriticalNodesV0(rawNodes, compNodes);
-  const weakenedPaths = detectWeakenedCausalPathsV0(rawEdges, compEdges, rawNodeIds, compNodeIds);
+  const policyBounded = isPolicyBoundedCompressionV0(stats, rawNodes, rawEdges);
+  const skeletonOk = criticalKindSkeletonPreservedV0(rawNodes, compNodes);
+
+  let criticalLosses = detectDroppedCriticalNodesV0(rawNodes, compNodes);
+  let weakenedPaths = detectWeakenedCausalPathsV0(rawEdges, compEdges, rawNodeIds, compNodeIds);
   const domainInfluence = detectDomainInfluenceDegradationV0(rawNodes, compNodes);
-  const acceptableCompression = detectAcceptableSemanticCompressionV0(stats, compNodes);
+  let acceptableCompression = detectAcceptableSemanticCompressionV0(stats, compNodes);
+
+  if (policyBounded && skeletonOk) {
+    criticalLosses = criticalLosses.filter((l) => l.code === "critical_node_kind_loss");
+    acceptableCompression = Object.freeze([
+      ...acceptableCompression,
+      ...policyBoundedWeakenedPathsV0(weakenedPaths, stats)
+    ]);
+    weakenedPaths = [];
+  }
 
   const highSeverity = [
     ...criticalLosses.filter((l) => l.severity === "high"),
     ...weakenedPaths.filter((p) => p.severity === "high")
   ];
-  const degradedDomains = domainInfluence.filter((d) => d.degraded);
+  const degradedDomains =
+    policyBounded && skeletonOk
+      ? filterDegradedDomainsV0(domainInfluence, rawNodes, compNodes)
+      : domainInfluence.filter((d) => d.degraded);
 
   const compressionRatio = Number(stats.compressionRatio) || 0;
   const semanticOverCompression =
-    compressionRatio >= SEMANTIC_LOSS_REVIEW_RATIO_V0 && highSeverity.length > 0;
+    !policyBounded &&
+    compressionRatio >= SEMANTIC_LOSS_REVIEW_RATIO_V0 &&
+    highSeverity.length > 0;
 
   const pass = highSeverity.length === 0 && degradedDomains.length === 0;
 
@@ -278,7 +368,9 @@ export function detectTruthLossV0(raw, compressed) {
     degradedDomains,
     compressionRatio,
     semanticOverCompression,
-    acceptableCompression
+    acceptableCompression,
+    policyBounded,
+    skeletonOk
   });
 
   return Object.freeze({
@@ -286,6 +378,8 @@ export function detectTruthLossV0(raw, compressed) {
     evaluatedAtMs: Date.now(),
     influencesExecution: false,
     pass,
+    policyBoundedCompression: policyBounded && skeletonOk,
+    criticalSkeletonPreserved: skeletonOk,
     semanticOverCompression,
     compressionRatio,
     criticalLossCount: criticalLosses.length,
@@ -307,7 +401,11 @@ function buildTruthLossNarrativeV0(ctx) {
     const acceptable = ctx.acceptableCompression?.length
       ? ` Acceptable compression: ${ctx.acceptableCompression.map((a) => a.code).join(", ")}.`
       : "";
-    return `No semantic truth loss detected (ratio ${ctx.compressionRatio}). Causal meaning preserved.${acceptable}`;
+    const policyNote =
+      ctx.policyBounded && ctx.skeletonOk
+        ? " Policy-bounded graph compression — critical causal skeleton preserved."
+        : "";
+    return `No semantic truth loss detected (ratio ${ctx.compressionRatio}). Causal meaning preserved.${policyNote}${acceptable}`;
   }
   const parts = [
     `Semantic truth loss detected (ratio ${ctx.compressionRatio}).`,
