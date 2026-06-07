@@ -26,6 +26,8 @@ import { mountFullSystemReportConsoleV0 } from "./rhizohFullSystemReportV0.js";
 import { mountPersonaLoopSchedulerV0 } from "./rhizohPersonaLoopSchedulerV0.js";
 import { mountRhizohPulseLoopV1 } from "./rhizohPulseLoopV1.js";
 import { mountOutputContractConsumerV0 } from "./rhizohOutputContractConsumerV0.js";
+import { getLiveLayerSnapshotV0 } from "./rhizohLiveLayerV0.js";
+import { getThinkingLayerSnapshotV0 } from "./rhizohThinkingLayerV0.js";
 import { ensureVoiceAdapterRegistered } from "./voiceInputAdapterRegistryV0.js";
 import { resolveGatewayTransportV0 } from "./rhizohGatewayTransportFallbackV0.js";
 import {
@@ -107,6 +109,8 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
     mountPersonaLoopSchedulerV0();
     mountRhizohPulseLoopV1();
     mountOutputContractConsumerV0();
+    getLiveLayerSnapshotV0();
+    getThinkingLayerSnapshotV0();
     window.dispatchEvent(
       new CustomEvent(RHIZOH_NERVOUS_SYSTEM_EVENT_V0, {
         detail: Object.freeze({ pathname: p, domain, gate })

@@ -40,7 +40,7 @@ export function scheduleThinkingObservationV0(payload = {}) {
       setTimeout(flushThinkingQueueV0, 0);
     }
   }
-  publishThinkingSnapshotV0();
+  publishThinkingSnapshotV0(buildThinkingLayerSnapshotRawV0());
 }
 
 function flushThinkingQueueV0() {
@@ -143,7 +143,7 @@ export function runThinkingObservationV0(payload = {}) {
   return observation;
 }
 
-export function getThinkingLayerSnapshotV0() {
+function buildThinkingLayerSnapshotRawV0() {
   return Object.freeze({
     schema: RHIZOH_THINKING_LAYER_SCHEMA_V0,
     role: "observation_only",
@@ -154,10 +154,16 @@ export function getThinkingLayerSnapshotV0() {
   });
 }
 
-function publishThinkingSnapshotV0() {
+export function getThinkingLayerSnapshotV0() {
+  const snap = buildThinkingLayerSnapshotRawV0();
+  publishThinkingSnapshotV0(snap);
+  return snap;
+}
+
+function publishThinkingSnapshotV0(snap) {
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
-    window.__rhizoh.thinkingLayer = getThinkingLayerSnapshotV0();
+    window.__rhizoh.thinkingLayer = snap;
   }
 }
 

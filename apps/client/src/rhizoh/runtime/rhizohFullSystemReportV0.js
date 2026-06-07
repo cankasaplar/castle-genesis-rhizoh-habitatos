@@ -48,6 +48,7 @@ import { getGroundingLayerSnapshotV1 } from "./rhizohGroundingLayerV1.js";
 import { getOutputContractConsumerSnapshotV0 } from "./rhizohOutputContractConsumerV0.js";
 import { getLiveLayerSnapshotV0 } from "./rhizohLiveLayerV0.js";
 import { getThinkingLayerSnapshotV0 } from "./rhizohThinkingLayerV0.js";
+import { getPresencePrimitiveSnapshotV1 } from "./rhizohPresencePrimitiveV1.js";
 
 export const RHIZOH_FULL_SYSTEM_REPORT_SCHEMA_V0 = "rhizoh.full_system_report.v0";
 
@@ -361,7 +362,8 @@ function collectEpistemicSubstrateV0() {
       "grounding_layer",
       "output_contract_consumer",
       "live_layer",
-      "thinking_layer"
+      "thinking_layer",
+      "presence_primitive"
     ]),
     turnSovereignty: turnSovereignty
       ? Object.freeze({
@@ -388,6 +390,7 @@ function collectEpistemicSubstrateV0() {
     outputContractConsumer: getOutputContractConsumerSnapshotV0(),
     liveLayer: getLiveLayerSnapshotV0(),
     thinkingLayer: getThinkingLayerSnapshotV0(),
+    presencePrimitive: getPresencePrimitiveSnapshotV1(),
     consoleApis: Object.freeze([
       "__RHIZOH_FULL_REPORT__()",
       "__rhizoh.causalMap",
@@ -414,6 +417,7 @@ function collectEpistemicSubstrateV0() {
       "__rhizoh.lastLivePresence",
       "__rhizoh.liveLayer",
       "__rhizoh.thinkingLayer",
+      "__rhizoh.presencePrimitive",
       "__rhizoh.lastPresenceEvent",
       "__rhizoh.textOutputQueue",
       "__rhizoh.gatewayTransport"
@@ -434,6 +438,7 @@ function collectPresenceRuntimeDiagnosticV0() {
     typeof window !== "undefined" ? window.__rhizoh?.instantPresence ?? null : null;
   const lastLivePresence =
     typeof window !== "undefined" ? window.__rhizoh?.lastLivePresence ?? null : null;
+  const presencePrimitive = getPresencePrimitiveSnapshotV1();
 
   const livePathPass =
     live.blocksOnGovernance === false &&
@@ -470,8 +475,14 @@ function collectPresenceRuntimeDiagnosticV0() {
           blockingGovernance: lastLivePresence.blockingGovernance
         })
       : null,
-    voiceNeverSilent: voiceOut.userFacingDead === false
+    voiceNeverSilent: voiceOut.userFacingDead === false,
+    presencePrimitive,
+    expressionFired: primitiveEmitCountV1(presencePrimitive) > 0
   });
+}
+
+function primitiveEmitCountV1(snap) {
+  return Number(snap?.emitCount) || 0;
 }
 
 function collectWebsocketDiagnosticV0() {
@@ -692,6 +703,7 @@ export function printFullSystemReportV0(report) {
     `    instant presence: ${r.presenceRuntime?.instantPresence?.handled ? `✔ ${r.presenceRuntime.instantPresence.latencyClass}` : "not yet triggered"}`,
     `    pulse health: ${r.presenceRuntime?.pulseLoop?.systemHealth?.healthy !== false ? "healthy" : `degraded (${(r.presenceRuntime?.pulseLoop?.systemHealth?.degradedStages || []).map((d) => d.stage).join(", ")})`}`,
     `    thinking queue: ${r.presenceRuntime?.thinkingLayer?.queueDepth ?? 0} · observations ${r.presenceRuntime?.thinkingLayer?.observationCount ?? 0}`,
+    `    presence primitive: ${r.presenceRuntime?.presencePrimitive?.emitCount ?? 0} acts · boot ${r.presenceRuntime?.presencePrimitive?.bootFired ? "fired" : "pending"} · last ${r.presenceRuntime?.presencePrimitive?.lastEmit?.act ?? "—"}`,
     "───────────────────────────────────────────",
     "  EPISTEMIC SUBSTRATE",
     `    turn sovereignty: ${r.epistemicSubstrate?.turnSovereignty?.sovereignReality ?? "none"} (${r.epistemicSubstrate?.turnSovereignty?.enforcement ?? "log_only"})`,

@@ -26,6 +26,7 @@ import {
   resolveConversationAuthorityV0
 } from "../rhizohVoiceConversationAuthorityV0.js";
 import { noteMicListeningContinuityV0 } from "../rhizohContinuityKernelV0.js";
+import { emitMicListenPrimitiveV1 } from "../rhizohPresencePrimitiveV1.js";
 export const VOICE_V3_MAX_RECORD_MS = 8000;
 
 let v3SessionLockActive = false;
@@ -381,6 +382,7 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     callbacks.setRhizohFieldState("LISTENING");
     callbacks.setMicListening(true);
     noteMicListeningContinuityV0();
+    emitMicListenPrimitiveV1({ traceId: lockRes.gate?.trace?.traceId || lockRes.lock?.lockId });
     noteVoiceSttEventV0("V3_SESSION_BEGIN", { keepAlive });
     logVoiceInfoV0("V3_SESSION_BEGIN", {
       keepAlive,

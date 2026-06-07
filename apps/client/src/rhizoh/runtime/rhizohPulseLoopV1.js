@@ -25,6 +25,7 @@ import {
   getPulseGovernanceSnapshotV0
 } from "./rhizohPulseGovernanceV0.js";
 import { filterIdentityNoiseV0 } from "./rhizohSemanticCompressionFilterV0.js";
+import { evaluatePresencePrimitiveOnPulseV1 } from "./rhizohPresencePrimitiveV1.js";
 
 export const RHIZOH_PULSE_LOOP_SCHEMA_V1 = "rhizoh.pulse_loop.v1";
 
@@ -164,6 +165,22 @@ export function runRhizohPulseTickV1() {
         carrier: transport.mode,
         liveEvent: emission
       });
+    }
+  }
+
+  if (!emission?.ok) {
+    const primitiveStage = safePulseStageV0(
+      "presence_primitive",
+      () =>
+        evaluatePresencePrimitiveOnPulseV1({
+          seq: pulseSeqV1,
+          continuity,
+          eventLogCount: eventLog.count
+        }),
+      null
+    );
+    if (primitiveStage.result?.ok) {
+      emission = primitiveStage.result.live;
     }
   }
 

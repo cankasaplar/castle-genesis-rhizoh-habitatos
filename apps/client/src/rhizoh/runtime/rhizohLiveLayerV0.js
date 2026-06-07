@@ -21,6 +21,12 @@ export const RHIZOH_LIVE_LAYER_SCHEMA_V0 = "rhizoh.live_layer.v0";
 
 /** @type {object | null} */
 let lastLiveEmitV0 = null;
+/** @type {number} */
+let lastLiveEmitAtMsV0 = 0;
+
+export function getLastLiveEmitAtMsV0() {
+  return lastLiveEmitAtMsV0 || lastLiveEmitV0?.signature?.atMs || 0;
+}
 
 /**
  * Fire-and-forget live presence — voice/UI immediate, thinking async after.
@@ -91,6 +97,7 @@ export function emitLivePresenceV0(opts = {}) {
   });
 
   lastLiveEmitV0 = event;
+  lastLiveEmitAtMsV0 = Date.now();
 
   logVoiceInfoV0("LIVE_PRESENCE_EMIT", {
     kind: signature.kind,
@@ -128,16 +135,27 @@ export function emitLivePresenceV0(opts = {}) {
 }
 
 export function getLiveLayerSnapshotV0() {
-  return Object.freeze({
+  const snap = Object.freeze({
     schema: RHIZOH_LIVE_LAYER_SCHEMA_V0,
     role: "critical_path",
     blocksOnGovernance: false,
     lastEmit: lastLiveEmitV0,
     targetLatencyMs: 50
   });
+  if (typeof window !== "undefined") {
+    window.__rhizoh = window.__rhizoh || {};
+    window.__rhizoh.liveLayer = snap;
+  }
+  return snap;
 }
 
 /** @internal vitest */
 export function __resetLiveLayerForTestV0() {
   lastLiveEmitV0 = null;
+  lastLiveEmitAtMsV0 = 0;
+}
+
+/** @internal vitest */
+export function __setLastLiveEmitAtMsForTestV0(ms) {
+  lastLiveEmitAtMsV0 = Number(ms) || 0;
 }
