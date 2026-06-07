@@ -23,6 +23,11 @@ import {
   getLiveConsistencyAuditSnapshotV0
 } from "./rhizohLiveConsistencyAuditV0.js";
 import { mountFullSystemReportConsoleV0 } from "./rhizohFullSystemReportV0.js";
+import { mountPersonaLoopSchedulerV0 } from "./rhizohPersonaLoopSchedulerV0.js";
+import { mountRhizohPulseLoopV1 } from "./rhizohPulseLoopV1.js";
+import { mountOutputContractConsumerV0 } from "./rhizohOutputContractConsumerV0.js";
+import { ensureVoiceAdapterRegistered } from "./voiceInputAdapterRegistryV0.js";
+import { resolveGatewayTransportV0 } from "./rhizohGatewayTransportFallbackV0.js";
 import {
   getSpatialReadyGateSnapshotV0,
   installSpatialReadyGateWireV0
@@ -97,6 +102,11 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
     window.__RHIZOH_REPLAY_TENSOR__ = replayTensorIntentV0;
     window.__RHIZOH_RUN_MAP_AUDIT__ = runLiveConsistencyAuditV0;
     mountFullSystemReportConsoleV0();
+    ensureVoiceAdapterRegistered();
+    resolveGatewayTransportV0();
+    mountPersonaLoopSchedulerV0();
+    mountRhizohPulseLoopV1();
+    mountOutputContractConsumerV0();
     window.dispatchEvent(
       new CustomEvent(RHIZOH_NERVOUS_SYSTEM_EVENT_V0, {
         detail: Object.freeze({ pathname: p, domain, gate })

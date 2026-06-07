@@ -95,6 +95,18 @@ export class DroneFlightBridge {
       }
       const q = token ? `?token=${encodeURIComponent(token)}` : "";
       this.gatewayWs = new WebSocket(`${gatewayUrl}${q}`);
+      this.gatewayWs.onerror = () => {
+        import("../rhizoh/runtime/rhizohGatewayTransportFallbackV0.js")
+          .then((m) => m.noteGatewayWsUpgradeFailedV0("gateway_ws_error"))
+          .catch(() => {});
+      };
+      this.gatewayWs.onclose = (ev) => {
+        if (!ev.wasClean) {
+          import("../rhizoh/runtime/rhizohGatewayTransportFallbackV0.js")
+            .then((m) => m.noteGatewayWsUpgradeFailedV0("gateway_ws_close"))
+            .catch(() => {});
+        }
+      };
       this.gatewayWs.onmessage = (ev) => {
         try {
           const msg = JSON.parse(ev.data);

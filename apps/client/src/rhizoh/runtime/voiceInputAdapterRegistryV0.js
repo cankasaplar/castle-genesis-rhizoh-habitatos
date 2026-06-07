@@ -8,6 +8,7 @@
  */
 
 import { isVoiceEngineV3EnabledV0 } from "./voiceEngineV3/isVoiceEngineV3EnabledV0.js";
+import { getVoiceOutputAdapterSnapshotV0 } from "./rhizohVoiceOutputAdapterChainV0.js";
 
 export const VOICE_INPUT_ADAPTER_SCHEMA = "castle.voice_input_adapter_registry.v0";
 export const VOICE_STT_NETWORK_RETRY_MAX = 2;
@@ -122,11 +123,15 @@ export function getRhizohVoiceInputAdapterV0() {
 
 export function getRhizohInputAdaptersV0() {
   const voiceAvailability = !hydrated ? "unknown" : state.voice ? "available" : "unavailable";
+  const output = getVoiceOutputAdapterSnapshotV0();
   return Object.freeze({
     hydrated,
     voiceAvailability,
     voice: hydrated ? state.voice : undefined,
-    text: Object.freeze({ id: "dom-text-input", provider: "dom", alwaysAvailable: true })
+    text: Object.freeze({ id: "dom-text-input", provider: "dom", alwaysAvailable: true }),
+    output,
+    userFacingVoiceDead: false,
+    webGpuNoiseNote: output.webGpuConsoleNoise
   });
 }
 
@@ -228,11 +233,26 @@ export function recordVoiceSttErrorV0(code, message = "") {
 /** @param {string} [reason] */
 export function activateVoiceFallbackModeV0(reason = "stt_unavailable") {
   state.fallbackMode = true;
-  state.voice = null;
   state.sttStatus = reason.startsWith("fallback_") ? reason : `fallback_${reason}`;
+  if (!isVoiceEngineV3EnabledV0()) {
+    state.voice = null;
+    state.sttProvider = "none";
+  }
   const snap = publishDebugTruth();
-  console.warn("[VOICE_ADAPTER] fallback active", snap);
+  console.warn("[VOICE_ADAPTER] STT fallback active (TTS/text buffer still available)", snap);
   return snap;
+}
+
+/** Re-register v3 STT after transient fallback — output chain unaffected. */
+export function recoverVoiceAdapterFromFallbackV0() {
+  if (!isVoiceEngineV3EnabledV0()) return ensureVoiceAdapterRegistered();
+  state.fallbackMode = false;
+  state.voice = Object.freeze({ id: "rhizoh-voice-engine-v3", provider: "hybrid-google-whisper" });
+  state.sttProvider = "rhizoh-voice-engine-v3";
+  state.sttStatus = "engine_v3_registered";
+  state.lastError = null;
+  state.networkRetryCount = 0;
+  return publishDebugTruth();
 }
 
 export function clearVoiceSttRecoveryV0() {

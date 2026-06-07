@@ -32,6 +32,22 @@ import { buildTurnBehavioralDriftReportV0 } from "./turnBehavioralDriftEngineV0.
 import { buildCalibrationGovernorStateV0 } from "./rhizohCalibrationGovernorV0.js";
 import { readTurnSovereigntyEnforcementModeV0 } from "./turnSovereigntyEnforcementModeV0.js";
 import { getLastTurnSovereigntyV0 } from "./behavioralTurnSovereigntyV0.js";
+import { getVoiceAdapterRegistrySnapshot } from "./voiceInputAdapterRegistryV0.js";
+import { getVoiceOutputAdapterSnapshotV0 } from "./rhizohVoiceOutputAdapterChainV0.js";
+import { resolveGatewayTransportV0 } from "./rhizohGatewayTransportFallbackV0.js";
+import { getIdentityContinuitySnapshotV0 } from "./rhizohIdentityContinuityCoreV0.js";
+import { getPersonaSchedulerSnapshotV0 } from "./rhizohPersonaLoopSchedulerV0.js";
+import { getContinuityKernelSnapshotV0 } from "./rhizohContinuityKernelV0.js";
+import { getRhizohPulseLoopSnapshotV1 } from "./rhizohPulseLoopV1.js";
+import { getIdentityLifecycleSnapshotV0 } from "./rhizohIdentityLifecycleV0.js";
+import { getIdentityEventLogSnapshotV0 } from "./rhizohIdentityEventLogV0.js";
+import { getComputeAdapterSnapshotV0 } from "./rhizohComputeAdapterRegistryV0.js";
+import { getPulseGovernanceSnapshotV0 } from "./rhizohPulseGovernanceV0.js";
+import { filterIdentityNoiseV0 } from "./rhizohSemanticCompressionFilterV0.js";
+import { getGroundingLayerSnapshotV1 } from "./rhizohGroundingLayerV1.js";
+import { getOutputContractConsumerSnapshotV0 } from "./rhizohOutputContractConsumerV0.js";
+import { getLiveLayerSnapshotV0 } from "./rhizohLiveLayerV0.js";
+import { getThinkingLayerSnapshotV0 } from "./rhizohThinkingLayerV0.js";
 
 export const RHIZOH_FULL_SYSTEM_REPORT_SCHEMA_V0 = "rhizoh.full_system_report.v0";
 
@@ -331,7 +347,21 @@ function collectEpistemicSubstrateV0() {
       "compression",
       "truth_loss",
       "turn_sovereignty",
-      "drift_calibration"
+      "drift_calibration",
+      "identity_continuity",
+      "identity_event_log",
+      "identity_lifecycle",
+      "pulse_loop",
+      "persona_scheduler",
+      "voice_output_chain",
+      "compute_adapter_registry",
+      "pulse_governance",
+      "semantic_compression_filter",
+      "output_contract_router",
+      "grounding_layer",
+      "output_contract_consumer",
+      "live_layer",
+      "thinking_layer"
     ]),
     turnSovereignty: turnSovereignty
       ? Object.freeze({
@@ -343,6 +373,21 @@ function collectEpistemicSubstrateV0() {
     behaviorConsistency,
     behavioralDrift,
     calibrationGovernor,
+    continuityKernel: getContinuityKernelSnapshotV0(),
+    identityContinuity: getIdentityContinuitySnapshotV0(),
+    identityEventLog: getIdentityEventLogSnapshotV0(),
+    identityLifecycle: getIdentityLifecycleSnapshotV0(),
+    pulseLoop: getRhizohPulseLoopSnapshotV1(),
+    personaScheduler: getPersonaSchedulerSnapshotV0(),
+    voiceAdapter: getVoiceAdapterRegistrySnapshot(),
+    voiceOutput: getVoiceOutputAdapterSnapshotV0(),
+    computeAdapter: getComputeAdapterSnapshotV0(),
+    pulseGovernance: getPulseGovernanceSnapshotV0(),
+    semanticFilter: filterIdentityNoiseV0(getIdentityEventLogSnapshotV0()),
+    groundingLayer: getGroundingLayerSnapshotV1(),
+    outputContractConsumer: getOutputContractConsumerSnapshotV0(),
+    liveLayer: getLiveLayerSnapshotV0(),
+    thinkingLayer: getThinkingLayerSnapshotV0(),
     consoleApis: Object.freeze([
       "__RHIZOH_FULL_REPORT__()",
       "__rhizoh.causalMap",
@@ -352,12 +397,85 @@ function collectEpistemicSubstrateV0() {
       "__rhizoh.behavioralDrift",
       "__rhizoh.calibrationGovernor",
       "__rhizoh.turnBehaviorConsistency",
-      "__RHIZOH_REPLAY_CAUSAL__(domain, intent)"
+      "__RHIZOH_REPLAY_CAUSAL__(domain, intent)",
+      "__rhizoh.identityContinuity",
+      "__rhizoh.continuityKernel",
+      "__rhizoh.personaScheduler",
+      "__rhizoh.pulseLoop",
+      "__rhizoh.identityEventLog",
+      "__rhizoh.identityLifecycle",
+      "__rhizoh.computeAdapter",
+      "__rhizoh.pulseGovernance",
+      "__rhizoh.lastOutputContract",
+      "__rhizoh.outputContractRouter",
+      "__rhizoh.outputContractConsumer",
+      "__rhizoh.groundingLayer",
+      "__rhizoh.groundSignals",
+      "__rhizoh.lastLivePresence",
+      "__rhizoh.liveLayer",
+      "__rhizoh.thinkingLayer",
+      "__rhizoh.lastPresenceEvent",
+      "__rhizoh.textOutputQueue",
+      "__rhizoh.gatewayTransport"
     ])
   });
 }
 
+/**
+ * Presence runtime — Live Layer (critical path) vs Thinking Layer (async).
+ * @returns {object}
+ */
+function collectPresenceRuntimeDiagnosticV0() {
+  const live = getLiveLayerSnapshotV0();
+  const thinking = getThinkingLayerSnapshotV0();
+  const pulse = getRhizohPulseLoopSnapshotV1();
+  const voiceOut = getVoiceOutputAdapterSnapshotV0();
+  const instantPresence =
+    typeof window !== "undefined" ? window.__rhizoh?.instantPresence ?? null : null;
+  const lastLivePresence =
+    typeof window !== "undefined" ? window.__rhizoh?.lastLivePresence ?? null : null;
+
+  const livePathPass =
+    live.blocksOnGovernance === false &&
+    thinking.blocksExecution === false &&
+    voiceOut.userFacingDead === false;
+
+  return Object.freeze({
+    schema: "rhizoh.presence_runtime_diagnostic.v0",
+    architecture: "live_first_thinking_async",
+    livePathPass,
+    liveLayer: live,
+    thinkingLayer: thinking,
+    pulseLoop: Object.freeze({
+      mounted: pulse.mounted === true || pulse.unified === true,
+      role: pulse.role ?? null,
+      seq: pulse.seq ?? 0,
+      systemHealth: pulse.systemHealth ?? null,
+      godLoopRiskMitigated: pulse.godLoopRiskMitigated ?? null
+    }),
+    instantPresence: instantPresence
+      ? Object.freeze({
+          handled: instantPresence.presenceFastPath === true,
+          latencyClass: instantPresence.latencyClass ?? null,
+          llmBypass: instantPresence.llmBypass === true,
+          atMs: instantPresence.atMs ?? null
+        })
+      : null,
+    lastLivePresence: lastLivePresence
+      ? Object.freeze({
+          layer: lastLivePresence.layer,
+          latencyMs: lastLivePresence.latencyMs,
+          latencyClass: lastLivePresence.latencyClass,
+          spoke: lastLivePresence.spoke,
+          blockingGovernance: lastLivePresence.blockingGovernance
+        })
+      : null,
+    voiceNeverSilent: voiceOut.userFacingDead === false
+  });
+}
+
 function collectWebsocketDiagnosticV0() {
+  const transport = resolveGatewayTransportV0();
   let cfg = {};
   try {
     cfg = getCastleFlightConfig();
@@ -368,9 +486,10 @@ function collectWebsocketDiagnosticV0() {
   return Object.freeze({
     configured: Boolean(wsUrl),
     url: wsUrl || null,
-    note:
-      "Unexpected response code 200 on WS handshake = proxy/host not forwarding Upgrade (need 101). HTTP gateway can work while WS stays blocked.",
-    castlePresenceBlockedUntilUpgrade: Boolean(wsUrl)
+    transport,
+    note: transport.note,
+    castlePresenceBlockedUntilUpgrade: transport.castlePresenceBlockedUntilUpgrade,
+    httpFallbackActive: transport.mode === "http_preferred" || transport.mode === "http"
   });
 }
 
@@ -444,6 +563,7 @@ export function runFullSystemReportV0(opts = {}) {
 
   const domainCoherence = reconcileDomainPathCoherenceV0(pathname);
   const liveConflicts = detectLiveConflictsV0(pathname, { structuralOnly: true });
+  const presenceRuntime = collectPresenceRuntimeDiagnosticV0();
 
   const report = Object.freeze({
     schema: RHIZOH_FULL_SYSTEM_REPORT_SCHEMA_V0,
@@ -478,11 +598,14 @@ export function runFullSystemReportV0(opts = {}) {
     domainReconcile: domainCoherence,
     websocket: collectWebsocketDiagnosticV0(),
     epistemicSubstrate: collectEpistemicSubstrateV0(),
+    presenceRuntime,
     evaluation: Object.freeze({
       structuralTruthPass: causalMap.truthLoss?.structuralPass !== false,
       compressionBudget: causalMap.truthLoss?.compressionBudget ?? null,
       compressionContext: causalMap.compressionContext ?? null,
-      probeMode: probe?.isolated ? "isolated_read_only" : probe ? "live_mutating" : "none"
+      probeMode: probe?.isolated ? "isolated_read_only" : probe ? "live_mutating" : "none",
+      livePathPass: presenceRuntime.livePathPass,
+      presenceRuntimePass: presenceRuntime.livePathPass
     }),
     windowSnapshots: collectWindowSnapshotsV0(),
     probe,
@@ -549,7 +672,26 @@ export function printFullSystemReportV0(report) {
     `    probe mode: ${r.evaluation?.probeMode ?? "none"}`,
     `    truthTrace: ${r.truthTrace.enabled ? "on" : "off"} (${r.truthTrace.count} entries)`,
     `    spatial gate: ${r.spatialReadyGate?.open ? "open" : "buffered"} (cesium:${r.spatialReadyGate?.cesiumReady ? "ready" : "pending"} buf:${r.spatialReadyGate?.buffered ?? 0})`,
-    `    ws: ${r.websocket?.configured ? "configured" : "missing"} — ${r.websocket?.note ? "proxy may block 101" : ""}`,
+    `    ws: ${r.websocket?.httpFallbackActive ? "HTTP fallback active" : r.websocket?.configured ? "configured" : "missing"}`,
+    `    voice out: ${r.epistemicSubstrate?.voiceOutput?.ttsAvailable ? "tts" : "text-buffer"} (never dead)`,
+    `    compute adapter: ${r.epistemicSubstrate?.computeAdapter?.note ?? "isolated from voice"}`,
+    `    identity SSOT: ${r.epistemicSubstrate?.identityEventLog?.count ?? 0} events · lifecycle resets ${r.epistemicSubstrate?.identityLifecycle?.resets ?? 0}`,
+    `    live layer: ${r.epistemicSubstrate?.liveLayer?.blocksOnGovernance === false ? "critical path (0-50ms)" : "n/a"} · last latency ${r.epistemicSubstrate?.liveLayer?.lastEmit?.latencyMs ?? "—"}ms`,
+    `    thinking layer: ${r.epistemicSubstrate?.thinkingLayer?.blocksExecution === false ? "async observation" : "n/a"} · observations ${r.epistemicSubstrate?.thinkingLayer?.observationCount ?? 0}`,
+    `    pulse loop: ${r.epistemicSubstrate?.pulseLoop?.unified ? `seq ${r.epistemicSubstrate?.pulseLoop?.seq ?? 0} (${r.epistemicSubstrate?.pulseLoop?.role ?? "live_first"})` : "off"} · god-loop mitigated: ${r.epistemicSubstrate?.pulseLoop?.godLoopRiskMitigated ?? "n/a"}`,
+    `    governance: semantic mass ${r.epistemicSubstrate?.semanticFilter?.semanticMass ?? 0} · noise ${((r.epistemicSubstrate?.semanticFilter?.noiseRatio ?? 0) * 100).toFixed(0)}%`,
+    `    grounding: ${r.epistemicSubstrate?.groundingLayer?.worldAnchored ? "world-anchored" : "internal-only"} · ext ${r.epistemicSubstrate?.groundingLayer?.externalMass ?? 0} / int ${r.epistemicSubstrate?.groundingLayer?.internalMass ?? 0}`,
+    `    UI contract: ${r.epistemicSubstrate?.outputContractConsumer?.contractAware ? "aware" : "pending"} (violations ${r.epistemicSubstrate?.outputContractConsumer?.violationCount ?? 0})`,
+    `    identity loop: ${r.epistemicSubstrate?.identityContinuity?.turnCount ?? 0} turns · state ${r.epistemicSubstrate?.continuityKernel?.state ?? "idle"}`,
+    `    persona scheduler: ${r.epistemicSubstrate?.personaScheduler?.mounted ? "mounted (pulse-driven)" : "off"}`,
+    "───────────────────────────────────────────",
+    "  PRESENCE RUNTIME",
+    `    architecture: ${r.presenceRuntime?.architecture ?? "n/a"}`,
+    `    live path: ${r.presenceRuntime?.livePathPass ? "✔ instant (0-50ms)" : "✘ review"}`,
+    `    last live emit: ${r.presenceRuntime?.lastLivePresence?.latencyMs ?? "—"}ms · spoke:${r.presenceRuntime?.lastLivePresence?.spoke ?? "—"} · governance-block:${r.presenceRuntime?.lastLivePresence?.blockingGovernance ?? "—"}`,
+    `    instant presence: ${r.presenceRuntime?.instantPresence?.handled ? `✔ ${r.presenceRuntime.instantPresence.latencyClass}` : "not yet triggered"}`,
+    `    pulse health: ${r.presenceRuntime?.pulseLoop?.systemHealth?.healthy !== false ? "healthy" : `degraded (${(r.presenceRuntime?.pulseLoop?.systemHealth?.degradedStages || []).map((d) => d.stage).join(", ")})`}`,
+    `    thinking queue: ${r.presenceRuntime?.thinkingLayer?.queueDepth ?? 0} · observations ${r.presenceRuntime?.thinkingLayer?.observationCount ?? 0}`,
     "───────────────────────────────────────────",
     "  EPISTEMIC SUBSTRATE",
     `    turn sovereignty: ${r.epistemicSubstrate?.turnSovereignty?.sovereignReality ?? "none"} (${r.epistemicSubstrate?.turnSovereignty?.enforcement ?? "log_only"})`,

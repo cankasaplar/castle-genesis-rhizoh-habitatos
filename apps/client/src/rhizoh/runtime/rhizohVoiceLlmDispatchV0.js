@@ -69,7 +69,15 @@ import {
   ensureTurnSovereigntyLockedV0,
   gateVoiceOutputForTurnV0
 } from "./turnSovereigntyWireV0.js";
-import { shouldBlockOnBoundaryViolationV0 } from "./turnSovereigntyEnforcementModeV0.js";
+import { SOVEREIGN_REALITY_V0 } from "./behavioralTurnSovereigntyV0.js";
+import { speakVoiceInstantAckV0 } from "./voiceInstantAckV0.js";
+import {
+  tryInstantPresenceFastPathV0,
+  noteLlmThinkingAfterPresenceV0
+} from "./rhizohInstantPresenceLayerV0.js";
+import { noteThinkingContinuityV0 } from "./rhizohContinuityKernelV0.js";
+import { bindTurnIdentityV0 } from "./rhizohIdentityContinuityCoreV0.js";
+import { notePersonaSchedulerUserActivityV0 } from "./rhizohPersonaLoopSchedulerV0.js";
 import { routeRhizohInput } from "../router/routeRhizohInput.js";
 
 export const RHIZOH_VOICE_LLM_DISPATCH_SCHEMA_V0 = "castle.rhizoh.voice_llm_dispatch.v0";
@@ -157,6 +165,33 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
       sessionId: opts.sessionId
     });
     return Object.freeze({ ok: true, authoritySilent: true, authority, mvic });
+  }
+
+  const presenceFast = await tryInstantPresenceFastPathV0(msg, {
+    traceId,
+    source: provenance.source,
+    band: opts.band || opts.witnessed?.observation?.band,
+    authority,
+    speakReply: opts.speakReply !== false,
+    conversationPhase: opts.conversationPhase,
+    userTurnCount: opts.userTurnCount,
+    router: routeRhizohInput(msg, opts.continuity || {}, {
+      gatewayPhase: opts.gatewayPhase,
+      healthState: opts.healthState
+    })
+  });
+  notePersonaSchedulerUserActivityV0();
+
+  if (presenceFast.handled) {
+    const graph = closeVoiceExecutionTraceV0(traceId, {
+      ok: true,
+      execution: "instant_presence_fast_path",
+      llmBypass: true
+    });
+    if (noteLlmThinkingAfterPresenceV0(msg, traceId)) {
+      /* mixed wake+substance — caller may continue; pure wake stops here */
+    }
+    return Object.freeze({ ...presenceFast.result, graph });
   }
 
   const uxFallback = resolveVoiceUxFallbackV0(opts.decision, msg, {
@@ -483,18 +518,18 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
   });
 
   if (
-    shouldBlockOnBoundaryViolationV0() &&
     sovereigntyWire.wire?.speakPresenceAck &&
-    sovereigntyWire.lock?.sovereignOutput?.text
+    sovereigntyWire.lock?.sovereignReality === SOVEREIGN_REALITY_V0.PRESENCE_ACK
   ) {
-    const presenceText = String(sovereigntyWire.lock.sovereignOutput.text);
+    const presenceText = String(
+      sovereigntyWire.lock.sovereignOutput?.text ||
+        sovereigntyWire.lock.subReality?.phraseVariant ||
+        "Buradayım."
+    );
     const voiceGate = gateVoiceOutputForTurnV0(traceId, "presence_ack");
+    let spoke = false;
     if (!voiceGate.block && opts.speakReply !== false) {
-      await speakRhizohReplyChunkedV0(presenceText, {
-        smoothAfterAck: false,
-        committedText: true,
-        traceId
-      });
+      spoke = speakVoiceInstantAckV0(presenceText, { traceId, moduleId: "voice_llm_dispatch_presence" });
     }
     const graph = closeVoiceExecutionTraceV0(traceId, {
       ok: true,
@@ -505,12 +540,71 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
       ok: true,
       presenceAck: true,
       reply: presenceText,
+      spoke,
       traceId,
       turnSovereignty: sovereigntyWire.lock,
       graph,
       llmBypass: true
     });
   }
+
+  if (
+    sovereigntyWire.wire?.speakFastReflex &&
+    sovereigntyWire.lock?.sovereignReality === SOVEREIGN_REALITY_V0.FAST_REFLEX &&
+    sovereigntyWire.lock?.sovereignOutput?.text
+  ) {
+    const reflexText = String(sovereigntyWire.lock.sovereignOutput.text);
+    const voiceGate = gateVoiceOutputForTurnV0(traceId, "fast_reflex");
+    let spoke = false;
+    if (!voiceGate.block && opts.speakReply !== false) {
+      spoke = speakVoiceInstantAckV0(reflexText, { traceId, moduleId: "voice_llm_dispatch_fast_reflex" });
+    }
+    const graph = closeVoiceExecutionTraceV0(traceId, {
+      ok: true,
+      execution: "turn_sovereignty_fast_reflex",
+      llmBypass: true
+    });
+    return Object.freeze({
+      ok: true,
+      fastReflex: true,
+      reply: reflexText,
+      spoke,
+      traceId,
+      turnSovereignty: sovereigntyWire.lock,
+      graph,
+      llmBypass: true
+    });
+  }
+
+  if (sovereigntyWire.wire?.bypassLlm && sovereigntyWire.wire?.silentObserve) {
+    bindTurnIdentityV0({
+      turnId: traceId,
+      intent: "silent_observe",
+      preview: msg,
+      modality: "voice"
+    });
+    const graph = closeVoiceExecutionTraceV0(traceId, {
+      ok: true,
+      execution: "turn_sovereignty_silent_observe",
+      llmBypass: true
+    });
+    return Object.freeze({
+      ok: true,
+      silentObserve: true,
+      traceId,
+      turnSovereignty: sovereigntyWire.lock,
+      graph,
+      llmBypass: true
+    });
+  }
+
+  bindTurnIdentityV0({
+    turnId: traceId,
+    intent: sovereigntyWire.lock?.sovereignReality,
+    emotionalTone: sovereigntyWire.lock?.subReality?.emotionalTone,
+    preview: msg,
+    modality: "voice"
+  });
 
   const dedup = probeVoiceTranscriptDispatchV0(msg);
   if (!dedup.ok) {
@@ -550,6 +644,12 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     source: opts.source,
     routeClass: intentPlan.routeClass,
     confidence: intentPlan.confidence
+  });
+
+  noteThinkingContinuityV0({
+    source: "llm_dispatch",
+    intent: intentPlan.routeClass,
+    preview: msg
   });
 
   if (opts.speakTransitionAck !== false) {

@@ -14,6 +14,7 @@ import {
 import { recordConversationMirrorFirstSpeechV0 } from "./rhizohConversationBehaviorMirrorV0.js";
 import { gateInstantAckForTurnV0 } from "./turnSovereigntyWireV0.js";
 import { getLastTurnSovereigntyV0 } from "./behavioralTurnSovereigntyV0.js";
+import { emitVoiceOutputWithFallbackV0 } from "./rhizohVoiceOutputAdapterChainV0.js";
 
 export const VOICE_INSTANT_ACK_SCHEMA = "castle.voice_instant_ack.v0";
 export const VOICE_ACK_SMOOTH_MAX_WAIT_MS = 2600;
@@ -184,13 +185,26 @@ export function speakVoiceInstantAckV0(phrase, opts = {}) {
   utterance.onend = () => finishAck("end");
   utterance.onerror = () => finishAck("error");
 
-  try {
-    window.speechSynthesis.speak(utterance);
-  } catch {
-    finishAck("speak_error");
-    return false;
+  const out = emitVoiceOutputWithFallbackV0(
+    text,
+    () => {
+      try {
+        window.speechSynthesis.speak(utterance);
+        return true;
+      } catch {
+        finishAck("speak_error");
+        return false;
+      }
+    },
+    { source: "instant_ack", traceId: turnId, llmBypass: true }
+  );
+
+  if (out.channel === "text_output_buffer") {
+    finishAck("text_buffer");
+    return true;
   }
-  return true;
+
+  return out.ok === true;
 }
 
 export function cancelVoiceInstantAckV0() {

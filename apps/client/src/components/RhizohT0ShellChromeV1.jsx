@@ -1,17 +1,25 @@
-import React, { memo, useEffect } from "react";
+import React, { memo, useCallback, useEffect, useState } from "react";
 import { Camera, CameraOff, Mic, MicOff, Send, Layers } from "lucide-react";
 import { isCastleLayerRenderableV1, publishCastleLayerAuditV1 } from "../castle/layers/castleLayerGateV1.js";
 import { RhizohGatewayBanner } from "./RhizohGatewayBanner.jsx";
 import { RhizohTrustUpdateStrip } from "./RhizohTrustUpdateStrip.jsx";
 import { RhizohCohortInspectStrip } from "./RhizohCohortInspectStrip.jsx";
 import { RhizohWorldContinuityStrip } from "./RhizohWorldContinuityStrip.jsx";
+import { RhizohConversationContinuityStripV1 } from "./RhizohConversationContinuityStripV1.jsx";
 import { RhizohInputThoughtGlowV0 } from "./RhizohInputThoughtGlowV0.jsx";
+import { OctoConversationStageV1 } from "../studio/OctoConversationStageV1.jsx";
+import { isFoxAnchorSpeciesV0, resolveConversationAnchorSpeciesIdV0 } from "../studio/conversationAnchorSpeciesV0.js";
 import {
   resolveChatStatusLineV0,
-  resolveChatPlaceholderV0,
-  resolveVoiceAvailableHintV0
+  resolveChatPlaceholderV0
 } from "../rhizoh/runtime/rhizohProductCopyI18nV0.js";
 import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
+import { isRhizohT0FirstMatchIdentityV0 } from "../rhizoh/runtime/rhizohT0FirstMatchIdentityV0.js";
+import { OBSERVATION_FEED_COPY_TR_V0 } from "../rhizoh/runtime/rhizohObservationFeedV0.js";
+import { shouldShowPerceptionAlignmentObservationStripV0 } from "../castleFlight/perceptionAlignmentObservationV0.js";
+import { PerceptionAlignmentObservationStripV0 } from "./PerceptionAlignmentObservationStripV0.jsx";
+import { PerceptionFractureLayerV0 } from "./PerceptionFractureLayerV0.jsx";
+import { RhizohPresenceContractStripV0 } from "./RhizohPresenceContractStripV0.jsx";
 
 /**
  * T0 product shell — unified input (mic · camera · thought glow · text · send).
@@ -63,14 +71,38 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
   voiceInputReady = false,
   cameraActive = false,
   onCameraClick,
-  uiLocale
+  uiLocale,
+  habitatFocusMode = "navigation",
+  octoHeightPx = 108,
+  octoHeightMaxPx = 124,
+  /** Read-only T0 alignment inputs — mirror only, no control path. */
+  alignmentRuntime = null,
+  alignmentSnapshot = null,
+  fractureAtmosphere = null,
+  conversationContinuitySnap = null
 }) {
+  const conversationHero = habitatFocusMode === "conversation";
+  const octoMountId = unifiedDock ? "t0_shell_unified_dock" : "t0_shell_default";
+  const showAlignmentStrip = shouldShowPerceptionAlignmentObservationStripV0();
   const locale = uiLocale || readUiLocaleV0();
+  const t0FirstMatch = isRhizohT0FirstMatchIdentityV0();
+  const anchorSpeciesId = resolveConversationAnchorSpeciesIdV0();
+  const foxAnchor = isFoxAnchorSpeciesV0(anchorSpeciesId);
+  const stageHeightPx = foxAnchor ? Math.max(octoHeightPx, 176) : octoHeightPx;
+  const stageHeightMaxPx = foxAnchor ? Math.max(octoHeightMaxPx, 200) : octoHeightMaxPx;
+  const [octoSubmitPulse, setOctoSubmitPulse] = useState(0);
+  const fireOctoGrab = useCallback(() => {
+    if (!String(cmd || "").trim()) return;
+    setOctoSubmitPulse((p) => p + 1);
+  }, [cmd]);
+  const handleSend = useCallback(() => {
+    fireOctoGrab();
+    onSend?.();
+  }, [fireOctoGrab, onSend]);
   const showLegacyVoiceMic =
     !unifiedDock && isCastleLayerRenderableV1("voice_v1_loop_mic_ui", { advancedOpen });
   const showMic =
     showProductMic !== false && (unifiedDock ? true : showProductMic || showLegacyVoiceMic);
-  const showVoiceReadyHint = showMic && voiceInputReady && !micActive && fieldState === "IDLE";
   const showCamera = unifiedDock ? showProductCamera !== false : showProductCamera;
   const showGatewayBanner =
     isCastleLayerRenderableV1("gateway_banner_panel", { advancedOpen }) &&
@@ -120,21 +152,15 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
 
   const inputRow = (
     <div className="relative flex flex-col gap-1 px-2 py-2">
-      {showVoiceReadyHint ? (
-        <div
-          className="flex items-center justify-center gap-2 px-1 text-[10px] font-medium normal-case tracking-normal text-cyan-200/90"
-          data-rhizoh-voice-available="1"
-          role="status"
-        >
-          <span className="h-2 w-2 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.75)] animate-pulse" />
-          {resolveVoiceAvailableHintV0(locale)}
-        </div>
-      ) : null}
       <div className="relative flex items-center gap-1.5">
       {showCamera ? (
         <button
           type="button"
-          title={cameraActive ? "Kamerayı kapat" : "Kamera"}
+          title={
+            cameraActive
+              ? OBSERVATION_FEED_COPY_TR_V0.cameraButtonTitleOn
+              : OBSERVATION_FEED_COPY_TR_V0.cameraButtonTitle
+          }
           onClick={() => onCameraClick?.()}
           disabled={busy && !cameraActive}
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition ${
@@ -143,7 +169,10 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
               : "border-white/15 bg-white/5 text-white/75 hover:border-violet-400/40 hover:text-violet-100"
           }`}
           aria-pressed={cameraActive}
-          aria-label={cameraActive ? "Kamera açık" : "Kamera"}
+          data-rhizoh-layer="observation_feed"
+          aria-label={
+            cameraActive ? OBSERVATION_FEED_COPY_TR_V0.cameraAriaOn : OBSERVATION_FEED_COPY_TR_V0.cameraAriaOff
+          }
         >
           {cameraActive ? <CameraOff className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
         </button>
@@ -173,7 +202,7 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey && !busy) {
             e.preventDefault();
-            onSend?.();
+            handleSend();
           }
         }}
         autoComplete="off"
@@ -185,7 +214,7 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
       <button
         type="button"
         id="castle-rhizoh-send"
-        onClick={() => onSend?.()}
+        onClick={handleSend}
         disabled={busy || !String(cmd || "").trim()}
         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-500/90 text-black disabled:opacity-40 ${
           busy ? "opacity-55" : ""
@@ -213,6 +242,15 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
             />
           ) : null}
 
+          {t0FirstMatch ? null : (
+            <RhizohConversationContinuityStripV1
+              continuitySnap={conversationContinuitySnap}
+              uiLocale={uiLocale}
+            />
+          )}
+
+          <RhizohPresenceContractStripV0 className="mb-1 text-white/70" />
+
           {inlineError ? (
             <div
               role="alert"
@@ -228,24 +266,68 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
             </div>
           ) : null}
 
-          {mainHudReply?.text ? (
+          {mainHudReply?.text || (busy && fieldState !== "idle") ? (
             <div
               role="status"
               className="rounded-lg border border-emerald-400/30 bg-emerald-950/30 px-3 py-2 text-[11px] text-white/90 normal-case whitespace-pre-wrap backdrop-blur-md"
+              data-rhizoh-reply-text="1"
             >
-              {mainHudReply.text.slice(0, 400)}
-              {mainHudReply.text.length > 400 ? "…" : ""}
-              {onDismissReply ? (
-                <button type="button" className="mt-1 block text-[9px] text-white/55 underline" onClick={onDismissReply}>
-                  Kapat
-                </button>
-              ) : null}
+              <div className="min-w-0">
+                {mainHudReply?.text ? (
+                  <>
+                    {mainHudReply.text.slice(0, 400)}
+                    {mainHudReply.text.length > 400 ? "…" : ""}
+                  </>
+                ) : (
+                  <span className="text-cyan-200/70 italic">Yanıt hazırlanıyor…</span>
+                )}
+                {onDismissReply && mainHudReply?.text ? (
+                  <button
+                    type="button"
+                    className="mt-1 block text-[9px] text-white/55 underline"
+                    onClick={onDismissReply}
+                  >
+                    Kapat
+                  </button>
+                ) : null}
+              </div>
             </div>
           ) : null}
 
+          {showAlignmentStrip ? (
+            <PerceptionAlignmentObservationStripV0
+              snapshot={alignmentSnapshot}
+              className="mb-1"
+            />
+          ) : null}
+
+          <PerceptionFractureLayerV0
+            atmosphere={fractureAtmosphere}
+            layer="octo"
+            className="[perspective:900px]"
+            data-rhizoh-octo-mount={octoMountId}
+          >
+            <OctoConversationStageV1
+              fieldState={fieldState}
+              replyText={mainHudReply?.text || ""}
+              draftText={cmd}
+              busy={busy}
+              submitPulse={octoSubmitPulse}
+              height={stageHeightPx}
+              heightMax={stageHeightMaxPx}
+              fracturePhaseMs={fractureAtmosphere?.octo?.phaseMs ?? 0}
+              anchorSpeciesId={anchorSpeciesId}
+              className={`mb-0 rounded-xl transition-shadow duration-300 ${
+                conversationHero
+                  ? "shadow-[0_0_28px_rgba(34,211,238,0.18)] ring-1 ring-cyan-400/30"
+                  : ""
+              }`}
+            />
+          </PerceptionFractureLayerV0>
+
           {isCastleLayerRenderableV1("t0_slot_chat_surface") ? (
             <div
-              className="relative overflow-hidden rounded-2xl border border-white/15 bg-black/75 shadow-[0_0_32px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+              className="relative overflow-hidden rounded-b-2xl rounded-t-none border border-white/15 border-t-0 bg-black/75 shadow-[0_0_32px_rgba(0,0,0,0.45)] backdrop-blur-xl"
               data-rhizoh-unified-input="1"
             >
               <RhizohInputThoughtGlowV0 fieldState={fieldState} />
@@ -310,6 +392,13 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
           </div>
         ) : null}
 
+        {t0FirstMatch ? null : (
+          <RhizohConversationContinuityStripV1
+            continuitySnap={conversationContinuitySnap}
+            uiLocale={uiLocale}
+          />
+        )}
+
         {advancedOpen && showTrustStrip ? (
           <RhizohTrustUpdateStrip
             phaseLabel={phaseLabel}
@@ -365,18 +454,27 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
           </div>
         ) : null}
 
-        {mainHudReply?.text ? (
+        {mainHudReply?.text || (busy && fieldState !== "idle") ? (
           <div
             role="status"
             className="rounded-lg border border-emerald-400/30 bg-emerald-950/20 px-3 py-2 text-[11px] text-white/90 normal-case whitespace-pre-wrap"
+            data-rhizoh-reply-text="1"
           >
-            {mainHudReply.text.slice(0, 400)}
-            {mainHudReply.text.length > 400 ? "…" : ""}
-            {onDismissReply ? (
-              <button type="button" className="mt-1 block text-[9px] text-white/55 underline" onClick={onDismissReply}>
-                Kapat
-              </button>
-            ) : null}
+            <div className="min-w-0">
+              {mainHudReply?.text ? (
+                <>
+                  {mainHudReply.text.slice(0, 400)}
+                  {mainHudReply.text.length > 400 ? "…" : ""}
+                </>
+              ) : (
+                <span className="text-cyan-200/70 italic">Yanıt hazırlanıyor…</span>
+              )}
+              {onDismissReply && mainHudReply?.text ? (
+                <button type="button" className="mt-1 block text-[9px] text-white/55 underline" onClick={onDismissReply}>
+                  Kapat
+                </button>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
@@ -413,8 +511,36 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
           <p className="px-1 text-[9px] text-white/40 normal-case">{commandHint}</p>
         ) : null}
 
+        {showAlignmentStrip ? (
+          <PerceptionAlignmentObservationStripV0 snapshot={alignmentSnapshot} className="mb-1" />
+        ) : null}
+
+        <PerceptionFractureLayerV0
+          atmosphere={fractureAtmosphere}
+          layer="octo"
+          className="[perspective:900px]"
+          data-rhizoh-octo-mount={octoMountId}
+        >
+          <OctoConversationStageV1
+            fieldState={fieldState}
+            replyText={mainHudReply?.text || ""}
+            draftText={cmd}
+            busy={busy}
+            submitPulse={octoSubmitPulse}
+            height={stageHeightPx}
+            heightMax={stageHeightMaxPx}
+            fracturePhaseMs={fractureAtmosphere?.octo?.phaseMs ?? 0}
+            anchorSpeciesId={anchorSpeciesId}
+            className={
+              conversationHero
+                ? "rounded-xl shadow-[0_0_28px_rgba(34,211,238,0.18)] ring-1 ring-cyan-400/30"
+                : ""
+            }
+          />
+        </PerceptionFractureLayerV0>
+
         {isCastleLayerRenderableV1("t0_slot_chat_surface") ? (
-          <div className="relative overflow-hidden rounded-xl border border-white/12 bg-black/50">
+          <div className="relative overflow-hidden rounded-b-2xl rounded-t-none border border-white/12 border-t-0 bg-black/50">
             <RhizohInputThoughtGlowV0 fieldState={fieldState} collectiveDensity={collectiveDensity} />
             {inputRow}
           </div>
