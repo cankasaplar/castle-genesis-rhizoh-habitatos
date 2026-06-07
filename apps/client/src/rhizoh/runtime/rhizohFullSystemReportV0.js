@@ -49,6 +49,7 @@ import { getOutputContractConsumerSnapshotV0 } from "./rhizohOutputContractConsu
 import { getLiveLayerSnapshotV0 } from "./rhizohLiveLayerV0.js";
 import { getThinkingLayerSnapshotV0 } from "./rhizohThinkingLayerV0.js";
 import { getPresencePrimitiveSnapshotV1 } from "./rhizohPresencePrimitiveV1.js";
+import { getTranscriptAcceptanceSnapshotV0 } from "./rhizohTranscriptAcceptanceLedgerV0.js";
 
 export const RHIZOH_FULL_SYSTEM_REPORT_SCHEMA_V0 = "rhizoh.full_system_report.v0";
 
@@ -418,6 +419,7 @@ function collectEpistemicSubstrateV0() {
       "__rhizoh.liveLayer",
       "__rhizoh.thinkingLayer",
       "__rhizoh.presencePrimitive",
+      "__rhizoh.transcriptAcceptance",
       "__rhizoh.lastPresenceEvent",
       "__rhizoh.textOutputQueue",
       "__rhizoh.gatewayTransport"
@@ -439,6 +441,13 @@ function collectPresenceRuntimeDiagnosticV0() {
   const lastLivePresence =
     typeof window !== "undefined" ? window.__rhizoh?.lastLivePresence ?? null : null;
   const presencePrimitive = getPresencePrimitiveSnapshotV1();
+  const transcriptAcceptance = getTranscriptAcceptanceSnapshotV0();
+
+  const instantPresenceTriggered =
+    instantPresence?.presenceFastPath === true ||
+    presencePrimitive?.bootFired === true ||
+    primitiveEmitCountV1(presencePrimitive) > 0 ||
+    Boolean(lastLivePresence);
 
   const livePathPass =
     live.blocksOnGovernance === false &&
@@ -477,8 +486,16 @@ function collectPresenceRuntimeDiagnosticV0() {
       : null,
     voiceNeverSilent: voiceOut.userFacingDead === false,
     presencePrimitive,
-    expressionFired: primitiveEmitCountV1(presencePrimitive) > 0
+    expressionFired: primitiveEmitCountV1(presencePrimitive) > 0,
+    instantPresenceTriggered,
+    transcriptAcceptance
   });
+}
+
+function formatRejectionReasonsV0(snap) {
+  const rows = snap?.rejectionReasons || [];
+  if (!rows.length) return "none";
+  return rows.map((r) => `${r.reason}: ${r.count}`).join(", ");
 }
 
 function primitiveEmitCountV1(snap) {
@@ -700,10 +717,16 @@ export function printFullSystemReportV0(report) {
     `    architecture: ${r.presenceRuntime?.architecture ?? "n/a"}`,
     `    live path: ${r.presenceRuntime?.livePathPass ? "✔ instant (0-50ms)" : "✘ review"}`,
     `    last live emit: ${r.presenceRuntime?.lastLivePresence?.latencyMs ?? "—"}ms · spoke:${r.presenceRuntime?.lastLivePresence?.spoke ?? "—"} · governance-block:${r.presenceRuntime?.lastLivePresence?.blockingGovernance ?? "—"}`,
-    `    instant presence: ${r.presenceRuntime?.instantPresence?.handled ? `✔ ${r.presenceRuntime.instantPresence.latencyClass}` : "not yet triggered"}`,
+    `    instant presence: ${r.presenceRuntime?.instantPresenceTriggered ? "✔ triggered (primitive/live)" : r.presenceRuntime?.instantPresence?.handled ? `✔ ${r.presenceRuntime.instantPresence.latencyClass}` : "not yet triggered"}`,
     `    pulse health: ${r.presenceRuntime?.pulseLoop?.systemHealth?.healthy !== false ? "healthy" : `degraded (${(r.presenceRuntime?.pulseLoop?.systemHealth?.degradedStages || []).map((d) => d.stage).join(", ")})`}`,
     `    thinking queue: ${r.presenceRuntime?.thinkingLayer?.queueDepth ?? 0} · observations ${r.presenceRuntime?.thinkingLayer?.observationCount ?? 0}`,
     `    presence primitive: ${r.presenceRuntime?.presencePrimitive?.emitCount ?? 0} acts · boot ${r.presenceRuntime?.presencePrimitive?.bootFired ? "fired" : "pending"} · last ${r.presenceRuntime?.presencePrimitive?.lastEmit?.act ?? "—"}`,
+    "    speech:",
+    `      accepted: ${r.presenceRuntime?.transcriptAcceptance?.accepted ?? 0}`,
+    `      rejected: ${r.presenceRuntime?.transcriptAcceptance?.rejected ?? 0}`,
+    `      deferred: ${r.presenceRuntime?.transcriptAcceptance?.deferred ?? 0}`,
+    `      rejection reasons: ${formatRejectionReasonsV0(r.presenceRuntime?.transcriptAcceptance)}`,
+    `      turn gap: ${r.presenceRuntime?.transcriptAcceptance?.turnGap ? "yes — heard but no accepted turn" : "no"}`,
     "───────────────────────────────────────────",
     "  EPISTEMIC SUBSTRATE",
     `    turn sovereignty: ${r.epistemicSubstrate?.turnSovereignty?.sovereignReality ?? "none"} (${r.epistemicSubstrate?.turnSovereignty?.enforcement ?? "log_only"})`,

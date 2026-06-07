@@ -8,6 +8,7 @@ import { stampVoiceUserGestureV0 } from "../voiceUserGestureAnchorV0.js";
 import { endVoiceSessionLanguageLockV0 } from "../rhizohConversationLanguageV0.js";
 import { endOriginConfidenceEmaSessionV0 } from "../rhizohSttOriginConfidenceEmaV0.js";
 import { handleRhizohVoiceTranscriptV0 } from "../rhizohVoiceLlmDispatchV0.js";
+import { recordTranscriptRejectedV0 } from "../rhizohTranscriptAcceptanceLedgerV0.js";
 import { castleLayerDecisionTraceLogDetailV1 } from "../../../castle/layers/castleLayerDecisionTraceV1.js";
 import {
   acquireVoiceStreamLayerLockV1,
@@ -197,6 +198,15 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
       transcriptOpts.authority = authority;
 
       if (!authority.maySpeak) {
+        recordTranscriptRejectedV0({
+          text: result.merged.text,
+          reason: authority.reason || "authority_silent",
+          source: "mic_v3",
+          sessionId,
+          confidence: result.merged.confidence,
+          band: result.bandObs?.band,
+          pipelinePath
+        });
         logVoiceInfoV0("VOICE_AUTHORITY_SILENT", {
           reason: authority.reason,
           path: authority.path,
@@ -225,6 +235,16 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     }
 
     if (result.shadowDrop) {
+      recordTranscriptRejectedV0({
+        text: result.merged?.text,
+        reason: String(result.error || "shadow_drop"),
+        dropKind: result.decision?.dropKind,
+        source: "mic_v3",
+        sessionId,
+        confidence: result.merged?.confidence,
+        band: result.bandObs?.band,
+        pipelinePath: result.fastPath ? "fast" : "shadow"
+      });
       releaseVoiceStreamLayerLockV1(VOICE_STREAM_ABORT_REASON_V1.FINISH_OK, {
         sessionId,
         source: "mic_v3",

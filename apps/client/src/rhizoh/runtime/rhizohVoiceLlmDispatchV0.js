@@ -77,6 +77,10 @@ import {
 } from "./rhizohInstantPresenceLayerV0.js";
 import { noteThinkingContinuityV0 } from "./rhizohContinuityKernelV0.js";
 import { bindTurnIdentityV0 } from "./rhizohIdentityContinuityCoreV0.js";
+import {
+  recordTranscriptAcceptedV0,
+  recordTranscriptRejectedV0
+} from "./rhizohTranscriptAcceptanceLedgerV0.js";
 import { notePersonaSchedulerUserActivityV0 } from "./rhizohPersonaLoopSchedulerV0.js";
 import { routeRhizohInput } from "../router/routeRhizohInput.js";
 
@@ -113,6 +117,11 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
   });
   const provenanceGate = validateMicIntentProvenanceV0(provenance);
   if (!provenanceGate.ok) {
+    recordTranscriptRejectedV0({
+      text: raw,
+      reason: provenanceGate.error || "provenance_reject",
+      source: provenance.source
+    });
     logVoiceWarnV0("VOICE_PROVENANCE_REJECT", {
       error: provenanceGate.error,
       originHash: provenance.originHash,
@@ -147,6 +156,15 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
       text: msg
     });
   if (!authority.maySpeak) {
+    recordTranscriptRejectedV0({
+      text: msg,
+      reason: authority.reason || "authority_silent",
+      source: provenance.source,
+      sessionId: opts.sessionId,
+      confidence: opts.confidence,
+      band: opts.band,
+      pipelinePath: opts.pipelinePath
+    });
     logVoiceInfoV0("VOICE_AUTHORITY_SILENT", {
       reason: authority.reason,
       path: authority.path,
@@ -166,6 +184,15 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     });
     return Object.freeze({ ok: true, authoritySilent: true, authority, mvic });
   }
+
+  recordTranscriptAcceptedV0({
+    text: msg,
+    source: provenance.source,
+    sessionId: opts.sessionId,
+    confidence: opts.confidence,
+    band: opts.band,
+    pipelinePath: opts.pipelinePath
+  });
 
   const presenceFast = await tryInstantPresenceFastPathV0(msg, {
     traceId,
