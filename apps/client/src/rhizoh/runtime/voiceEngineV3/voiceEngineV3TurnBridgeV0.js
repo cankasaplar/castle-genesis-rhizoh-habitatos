@@ -10,6 +10,7 @@ import { endOriginConfidenceEmaSessionV0 } from "../rhizohSttOriginConfidenceEma
 import { handleRhizohVoiceTranscriptV0 } from "../rhizohVoiceLlmDispatchV0.js";
 import {
   buildV3TranscriptLedgerContextV0,
+  recordTranscriptDeferredV0,
   recordTranscriptRejectedV0
 } from "../rhizohTranscriptAcceptanceLedgerV0.js";
 import { castleLayerDecisionTraceLogDetailV1 } from "../../../castle/layers/castleLayerDecisionTraceV1.js";
@@ -222,6 +223,17 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
           callbacks.setRhizohFieldState("IDLE");
         }
         return { ok: true, authoritySilent: true, reason: authority.reason };
+      }
+
+      if (
+        result.holdPath &&
+        (result.decision?.reason === "presence_intent_hold" ||
+          result.decision?.reason === "presence_intent_slow")
+      ) {
+        recordTranscriptDeferredV0({
+          ...buildV3TranscriptLedgerContextV0(result, sessionId),
+          reason: result.decision.reason
+        });
       }
 
       const handler = callbacks.handleVoiceTranscriptRef?.current;

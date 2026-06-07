@@ -18,12 +18,16 @@ import {
   applyUiLanguagePreferenceToOlpV0
 } from "../rhizohOutputLanguagePolicyV0.js";
 import { VOICE_DIRECTED_SPEECH_BAND } from "../voiceDirectedSpeechObservationV0.js";
+import { transitionContinuityStateV0, CONTINUITY_STATE_V0 } from "../rhizohContinuityKernelV0.js";
 
 describe("rhizohVoiceDualPathRouterV0", () => {
   beforeEach(() => {
     __resetOlpStateForTestV0();
     __resetVoiceVerifyBudgetForTestV0();
     applyUiLanguagePreferenceToOlpV0("tr", "test");
+    transitionContinuityStateV0(CONTINUITY_STATE_V0.IDLE);
+    import.meta.env.VITE_RHIZOH_VOICE_ENGINE_V3 = "0";
+    import.meta.env.VITE_RHIZOH_VOICE_INGEST_STRICT = "0";
   });
 
   it("classifies greeting in 3-class fast intent", () => {
@@ -167,14 +171,32 @@ describe("rhizohVoiceDualPathRouterV0", () => {
     });
 
     it("converts hard-drop uncertainty hold to silent drop", () => {
+      transitionContinuityStateV0(CONTINUITY_STATE_V0.IDLE);
       const d = resolveVoicePipelineDecisionV0({
         text: "bunu nasıl düzeltirim?",
         confidence: 0.28,
-        band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN
+        band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+        maxRms: 0.01,
+        recordedMs: 400
       });
       expect(d.speakMode).toBe(VOICE_SPEAK_MODE_V0.SILENT);
       expect(d.reason).toBe("strict_hold_suppressed");
       expect(d.silent).toBe(true);
+    });
+
+    it("rescues strict hold when listening + RMS show user directed speech", () => {
+      transitionContinuityStateV0(CONTINUITY_STATE_V0.LISTENING, { source: "mic_open" });
+      const d = resolveVoicePipelineDecisionV0({
+        text: "Rizo ava na nasıl",
+        confidence: 0.28,
+        band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+        maxRms: 0.09,
+        recordedMs: 5500
+      });
+      expect(
+        d.speakMode === VOICE_SPEAK_MODE_V0.HOLD || d.speakMode === VOICE_SPEAK_MODE_V0.SPEAK
+      ).toBe(true);
+      expect(["presence_intent_hold", "presence_intent_slow"].includes(d.reason)).toBe(true);
     });
 
     it("allows unknown band slow_ready conversational completion in strict mode", () => {

@@ -24,6 +24,7 @@ import {
 } from "./rhizohVoiceVerifyBudgetV0.js";
 import { evaluateSttScriptAgainstUiLocaleV0 } from "./sttScriptLocaleGuardV0.js";
 import { isVoiceIngestStrictV0 } from "./rhizohVoiceConversationAuthorityV0.js";
+import { applyIntentFirstAcceptanceV0 } from "./rhizohVoiceIntentAcceptanceV0.js";
 
 export const RHIZOH_VOICE_DUAL_PATH_ROUTER_SCHEMA_V0 = "castle.rhizoh.voice_dual_path_router.v0";
 
@@ -218,6 +219,30 @@ export function classifyVoiceFastIntentV0(text) {
  *   meaningful?: boolean
  * }} ctx
  */
+function getIntentAcceptanceBuildersV0() {
+  return {
+    buildHoldDecision,
+    buildSpeakSlowDecision,
+    classifyVoiceFastIntentV0,
+    trySlowPathEligibilityV0,
+    VOICE_CONFIDENCE_TIER_V0
+  };
+}
+
+function finalizeVoicePipelineDecisionV0(decision, input, spineCtx = {}) {
+  let out = decision;
+  if (spineCtx.skipStrict !== true) {
+    out = applyStrictIngestDecisionClampV0(out, {
+      band: spineCtx.band || out?.band,
+      text: spineCtx.text || input.text
+    });
+  }
+  return applyIntentFirstAcceptanceV0(out, input, {
+    ...spineCtx,
+    builders: getIntentAcceptanceBuildersV0()
+  });
+}
+
 function trySlowPathEligibilityV0(text, ctx = {}) {
   const guards = ctx.guards;
   if (!guards?.allowSlow) return false;
@@ -375,11 +400,29 @@ export function resolveVoicePipelineDecisionV0(input = {}) {
   const verifyCount = getVoiceVerifyCountV0(sessionId);
   const verifyBudgetExhausted = isVoiceVerifyBudgetExhaustedV0(sessionId);
 
+  const spineCtx = {
+    text,
+    band,
+    tier,
+    fast,
+    meaningful,
+    verifyCount,
+    guards: null
+  };
+
   if (isUiChromeEchoTemplateV0(text)) {
-    return buildSilentDecision(fast.intent, "ui_chrome_echo", band, VOICE_DROP_KIND_V0.UI);
+    return finalizeVoicePipelineDecisionV0(
+      buildSilentDecision(fast.intent, "ui_chrome_echo", band, VOICE_DROP_KIND_V0.UI),
+      input,
+      { ...spineCtx, skipStrict: true }
+    );
   }
   if (isPlatformOutroTemplateV0(text)) {
-    return buildSilentDecision(fast.intent, "platform_template_leak", band, VOICE_DROP_KIND_V0.NOISE);
+    return finalizeVoicePipelineDecisionV0(
+      buildSilentDecision(fast.intent, "platform_template_leak", band, VOICE_DROP_KIND_V0.NOISE),
+      input,
+      { ...spineCtx, skipStrict: true }
+    );
   }
 
   const guards = evaluateSlowPathGuardSnapshotV0(text, {
@@ -388,20 +431,29 @@ export function resolveVoicePipelineDecisionV0(input = {}) {
     band,
     provenance: input.provenance
   });
+  spineCtx.guards = guards;
 
   if (guards.contamination?.kind === "ui_chrome_echo") {
-    return buildSilentDecision(
-      fast.intent,
-      guards.reason || "ui_chrome_echo",
-      band,
-      VOICE_DROP_KIND_V0.UI,
-      { guards }
+    return finalizeVoicePipelineDecisionV0(
+      buildSilentDecision(
+        fast.intent,
+        guards.reason || "ui_chrome_echo",
+        band,
+        VOICE_DROP_KIND_V0.UI,
+        { guards }
+      ),
+      input,
+      { ...spineCtx, skipStrict: true }
     );
   }
   if (!guards.allowSlow && guards.contamination) {
-    return buildSilentDecision(fast.intent, guards.reason || "noise_drop", band, VOICE_DROP_KIND_V0.NOISE, {
-      guards
-    });
+    return finalizeVoicePipelineDecisionV0(
+      buildSilentDecision(fast.intent, guards.reason || "noise_drop", band, VOICE_DROP_KIND_V0.NOISE, {
+        guards
+      }),
+      input,
+      { ...spineCtx, skipStrict: true }
+    );
   }
 
   const scriptGuard = evaluateSttScriptAgainstUiLocaleV0(text, {
@@ -415,7 +467,7 @@ export function resolveVoicePipelineDecisionV0(input = {}) {
     });
   }
 
-  return applyStrictIngestDecisionClampV0(
+  return finalizeVoicePipelineDecisionV0(
     resolveDecisionSpineV0({
       text,
       fast,
@@ -428,7 +480,8 @@ export function resolveVoicePipelineDecisionV0(input = {}) {
       verifyBudgetExhausted,
       locale
     }),
-    { band, text }
+    input,
+    spineCtx
   );
 }
 
