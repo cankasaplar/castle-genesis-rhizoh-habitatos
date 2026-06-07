@@ -120,7 +120,15 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     recordTranscriptRejectedV0({
       text: raw,
       reason: provenanceGate.error || "provenance_reject",
-      source: provenance.source
+      source: provenance.source,
+      confidence: opts.confidence,
+      band: opts.band,
+      strategy: opts.strategy,
+      maxRms: opts.maxRms,
+      recordedMs: opts.recordedMs,
+      sessionId: opts.sessionId,
+      pipelinePath: opts.pipelinePath,
+      decision: opts.decision
     });
     logVoiceWarnV0("VOICE_PROVENANCE_REJECT", {
       error: provenanceGate.error,
@@ -163,7 +171,11 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
       sessionId: opts.sessionId,
       confidence: opts.confidence,
       band: opts.band,
-      pipelinePath: opts.pipelinePath
+      strategy: opts.strategy,
+      maxRms: opts.maxRms,
+      recordedMs: opts.recordedMs,
+      pipelinePath: opts.pipelinePath,
+      decision: opts.decision
     });
     logVoiceInfoV0("VOICE_AUTHORITY_SILENT", {
       reason: authority.reason,
@@ -191,7 +203,11 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     sessionId: opts.sessionId,
     confidence: opts.confidence,
     band: opts.band,
-    pipelinePath: opts.pipelinePath
+    strategy: opts.strategy,
+    maxRms: opts.maxRms,
+    recordedMs: opts.recordedMs,
+    pipelinePath: opts.pipelinePath,
+    decision: opts.decision
   });
 
   const presenceFast = await tryInstantPresenceFastPathV0(msg, {

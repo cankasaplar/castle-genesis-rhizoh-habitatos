@@ -498,6 +498,21 @@ function formatRejectionReasonsV0(snap) {
   return rows.map((r) => `${r.reason}: ${r.count}`).join(", ");
 }
 
+function formatLastRejectionForensicsV0(row) {
+  if (!row) return "none";
+  const f = row.filter || {};
+  return [
+    `"${row.transcript || row.preview || "—"}"`,
+    `conf:${row.confidence ?? "—"}`,
+    `rms:${row.maxRms ?? "—"}`,
+    `tier:${f.confidenceTier ?? "—"}`,
+    `intent:${f.fastIntent ?? "—"}`,
+    `meaningful:${f.meaningful ?? "—"}`,
+    `template:${f.templateScore ?? "—"}`,
+    `suspect_fn:${row.suspectedFalseNegative ? "yes" : "no"}`
+  ].join(" · ");
+}
+
 function primitiveEmitCountV1(snap) {
   return Number(snap?.emitCount) || 0;
 }
@@ -726,7 +741,11 @@ export function printFullSystemReportV0(report) {
     `      rejected: ${r.presenceRuntime?.transcriptAcceptance?.rejected ?? 0}`,
     `      deferred: ${r.presenceRuntime?.transcriptAcceptance?.deferred ?? 0}`,
     `      rejection reasons: ${formatRejectionReasonsV0(r.presenceRuntime?.transcriptAcceptance)}`,
+    `      accept rate: ${r.presenceRuntime?.transcriptAcceptance?.acceptRate ?? "—"} · reject rate: ${r.presenceRuntime?.transcriptAcceptance?.rejectRate ?? "—"}`,
+    `      suspected false negatives: ${r.presenceRuntime?.transcriptAcceptance?.suspectedFalseNegatives ?? 0}`,
+    `      last rejection: ${formatLastRejectionForensicsV0(r.presenceRuntime?.transcriptAcceptance?.lastRejection)}`,
     `      turn gap: ${r.presenceRuntime?.transcriptAcceptance?.turnGap ? "yes — heard but no accepted turn" : "no"}`,
+    `      ledger tail: window.__rhizoh.transcriptAcceptance.tail (last 20 full records)`,
     "───────────────────────────────────────────",
     "  EPISTEMIC SUBSTRATE",
     `    turn sovereignty: ${r.epistemicSubstrate?.turnSovereignty?.sovereignReality ?? "none"} (${r.epistemicSubstrate?.turnSovereignty?.enforcement ?? "log_only"})`,
