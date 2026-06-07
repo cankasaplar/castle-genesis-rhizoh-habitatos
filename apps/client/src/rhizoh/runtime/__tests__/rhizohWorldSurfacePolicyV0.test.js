@@ -1,11 +1,15 @@
-import { describe, expect, it, vi, afterEach } from "vitest";
+import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import {
   resolveRhizohProductWorldRealityModeV0,
   shouldRhizohFlyToIstanbulV0,
   hasRhizohReturningUserAnchorV0,
   coerceRhizohProductRealityModeV0,
-  isRhizohCapabilityWheelVisibleV0
+  shouldRhizohT0LiveChromeVisibleV0
 } from "../rhizohWorldSurfacePolicyV0.js";
+import { isRhizohContextWheelVisibleV0 } from "../rhizohLayerContextV0.js";
+import {
+  __resetRhizohWorldDrawerDomainForTestV0
+} from "../rhizohWorldDrawerDomainV0.js";
 
 vi.mock("../memoryAnchorSystemV0.js", () => ({
   readUserAnchorV0: vi.fn(() => null)
@@ -62,9 +66,41 @@ describe("rhizohWorldSurfacePolicyV0", () => {
     expect(hasRhizohReturningUserAnchorV0()).toBe(true);
   });
 
-  it("shows capability wheel only on world surface", () => {
-    expect(isRhizohCapabilityWheelVisibleV0("world")).toBe(true);
-    expect(isRhizohCapabilityWheelVisibleV0("hall")).toBe(false);
-    expect(isRhizohCapabilityWheelVisibleV0("studio")).toBe(false);
+  it("shows context wheel only on world domain paths (not T0 live)", () => {
+    expect(isRhizohContextWheelVisibleV0({ pathname: "/" })).toBe(false);
+    expect(isRhizohContextWheelVisibleV0({ pathname: "/world/space" })).toBe(true);
+    expect(isRhizohContextWheelVisibleV0({ pathname: "/world/social" })).toBe(true);
+    expect(isRhizohContextWheelVisibleV0({ pathname: "/world/modes" })).toBe(true);
+  });
+
+  it("allows REAL_MAP on world domain route sources", () => {
+    expect(
+      coerceRhizohProductRealityModeV0("REAL_MAP", {
+        source: "ROUTE_WORLD_DOMAIN",
+        productSurface: "world"
+      })
+    ).toBe("REAL_MAP");
+    expect(
+      coerceRhizohProductRealityModeV0("REAL_MAP", {
+        source: "ROUTE_MAP",
+        productSurface: "world"
+      })
+    ).toBe("REAL_MAP");
+  });
+
+  it("hides T0 fox+chat on World Space map stage", () => {
+    expect(shouldRhizohT0LiveChromeVisibleV0({ isWorldDomainActive: false })).toBe(true);
+    expect(
+      shouldRhizohT0LiveChromeVisibleV0({
+        isWorldDomainActive: true,
+        worldDomain: "space"
+      })
+    ).toBe(false);
+    expect(
+      shouldRhizohT0LiveChromeVisibleV0({
+        isWorldDomainActive: true,
+        worldDomain: "social"
+      })
+    ).toBe(true);
   });
 });

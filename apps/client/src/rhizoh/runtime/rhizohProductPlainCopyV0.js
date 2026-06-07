@@ -14,25 +14,35 @@ import { T0_INTENT_ANCHORS_V0, T0_INTENT_CONNECT_V0, T0_INTENT_EXPLORE_V0, T0_IN
 /** Capability wheel — başlık ve giriş cümlesi */
 export const RHIZOH_HALO_HEADLINE_TR_V0 = "Ne yapmak istersin?";
 export const RHIZOH_HALO_INTRO_TR_V0 =
-  "Ortadaki düğümlere dokun veya üzerine gel — Rhizoh ne yapabileceğini söylesin.";
+  "Sembollere gel — ne yapabileceğimi söyleyeyim. Dokununca çalıştırırım.";
 
-/** @type {readonly { id: string, label: string, whisper: string, seedIntent: string, layerFocus?: number, isRoboticsHub?: boolean }[]} */
+/** @type {readonly { id: string, label: string, whisper: string, seedIntent: string, geometryKind: string, layerFocus?: number, isRoboticsHub?: boolean }[]} */
 export const RHIZOH_CAPABILITY_HALO_NODES_TR_V0 = Object.freeze([
   Object.freeze({
     id: "create",
     label: "Üret",
+    geometryKind: "cube",
     whisper: "Stüdyo veya hazırlık odasında yeni oturum açarız.",
     seedIntent: "stüdyoda yeni bir oturum aç"
   }),
   Object.freeze({
+    id: "invite",
+    label: "Davet",
+    geometryKind: "spiral",
+    whisper: "Aktif deneyimi paylaş — ya da önce bir tane oluştur.",
+    seedIntent: "bu deneyim için davet linkini paylaş"
+  }),
+  Object.freeze({
     id: "explore",
     label: "Keşfet",
+    geometryKind: "spiral",
     whisper: "Ana sahneyi veya harita katmanını gezebilirsin — komut: haritaya geç.",
     seedIntent: "haritaya geç"
   }),
   Object.freeze({
     id: "learn",
     label: "Öğren",
+    geometryKind: "cube",
     whisper: "Akademi ve gözlem katmanına gidebilirsin.",
     seedIntent: "profil ve academy alanını aç",
     layerFocus: 11
@@ -40,12 +50,14 @@ export const RHIZOH_CAPABILITY_HALO_NODES_TR_V0 = Object.freeze([
   Object.freeze({
     id: "broadcast",
     label: "Yayın",
+    geometryKind: "spiral",
     whisper: "Canlı yayın veya hazırlık odasına geçebilirsin.",
     seedIntent: "yayına geç"
   }),
   Object.freeze({
     id: "build",
     label: "Kur",
+    geometryKind: "cube",
     whisper: "Kale, pin veya görev — yerel komutlarla kurulum.",
     seedIntent: "burada kale kurmak istiyorum",
     layerFocus: 10
@@ -53,12 +65,14 @@ export const RHIZOH_CAPABILITY_HALO_NODES_TR_V0 = Object.freeze([
   Object.freeze({
     id: "companion",
     label: "Eşlik",
+    geometryKind: "spiral",
     whisper: "Octo ve karakter / diyalog yüzeyi.",
     seedIntent: "octo ile yeni bir karakter tasarla"
   }),
   Object.freeze({
     id: "robotics",
     label: "Cihaz",
+    geometryKind: "ring",
     whisper: "Kamera, sensör veya robot köprüsü (ileri).",
     isRoboticsHub: true,
     layerFocus: 13
@@ -66,6 +80,7 @@ export const RHIZOH_CAPABILITY_HALO_NODES_TR_V0 = Object.freeze([
   Object.freeze({
     id: "swarm",
     label: "Sürü",
+    geometryKind: "spiral",
     whisper: "Ajan sürüsünü ve koordinasyonu güçlendirir.",
     seedIntent: "ajan sürüsünü göster",
     layerFocus: 6
@@ -73,6 +88,7 @@ export const RHIZOH_CAPABILITY_HALO_NODES_TR_V0 = Object.freeze([
   Object.freeze({
     id: "world",
     label: "Dünya",
+    geometryKind: "cube",
     whisper: "Ana sahneye dön — küre, çekirdek ve süreklilik.",
     seedIntent: "dünyaya geç"
   })
@@ -176,3 +192,37 @@ export const RHIZOH_VOICE_AVAILABLE_HINT_EN_V0 = "Voice ready — tap the mic";
 /** Merkez orb alt yazısı (WORLD). */
 export const RHIZOH_WORLD_CENTER_SUBTITLE_TR_V0 =
   "Rhizoh alanı · Ajan sürüsü ve çekirdek";
+
+/**
+ * T0 sol üst bağlantı şeridi — davetliler için kişisel anchor yoksa Serencebey gösterme.
+ * @param {ReturnType<typeof resolveDisplayAnchorV0> | null | undefined} display
+ * @param {boolean} [localeTr]
+ */
+export function resolveT0AnchorStripCopyV0(display, localeTr = true) {
+  const src = String(display?.active_source || "seed");
+  const hasPersonal = src === "user" || src === "cohort" || src === "pal";
+
+  if (hasPersonal) {
+    const primary = String(display?.primary_label || display?.label || "").trim();
+    const seed = String(display?.origin_seed_label || "").trim();
+    return Object.freeze({
+      kicker: localeTr ? "Bağlantı" : "Anchor",
+      primary,
+      secondary: seed
+        ? localeTr
+          ? `Tohum: ${seed}`
+          : `Seed: ${seed}`
+        : String(display?.subtitle || "").trim(),
+      showSecondary: Boolean(seed || display?.subtitle)
+    });
+  }
+
+  return Object.freeze({
+    kicker: localeTr ? "Bağlantı" : "Anchor",
+    primary: localeTr ? "Rhizoh alanı" : "Rhizoh field",
+    secondary: localeTr
+      ? "Konumunu seçince kişisel bağlantın burada görünür"
+      : "Your personal anchor appears after you choose a place",
+    showSecondary: true
+  });
+}

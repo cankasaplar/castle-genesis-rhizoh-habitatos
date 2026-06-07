@@ -14,6 +14,7 @@ import {
   handoffHotSpeechToLlmReplyV0,
   resolveGlueProsodyForChunkV0
 } from "./rhizohConversationContinuityGlueV0.js";
+import { gateVoiceOutputForTurnV0 } from "./turnSovereigntyWireV0.js";
 
 export const RHIZOH_SPEECH_CHUNK_TTS_SCHEMA_V0 = "castle.rhizoh.speech_chunk_tts.v0";
 
@@ -57,6 +58,12 @@ export async function speakRhizohReplyChunkedV0(text, opts = {}) {
   const full = String(text || "").trim();
   if (!full || typeof window === "undefined" || !window.speechSynthesis) {
     return { ok: false, chunks: 0 };
+  }
+
+  const traceId = String(opts.traceId || "");
+  const voiceGate = gateVoiceOutputForTurnV0(traceId, opts.moduleId || "speakRhizohReplyChunkedV0");
+  if (voiceGate.block) {
+    return { ok: false, chunks: 0, sovereigntyBlocked: true, reason: voiceGate.reason };
   }
 
   const sk =

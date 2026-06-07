@@ -12,6 +12,8 @@ import {
   resolveSpeechVoiceForUiLocaleV0
 } from "./rhizohSpeechLocaleV0.js";
 import { recordConversationMirrorFirstSpeechV0 } from "./rhizohConversationBehaviorMirrorV0.js";
+import { gateInstantAckForTurnV0 } from "./turnSovereigntyWireV0.js";
+import { getLastTurnSovereigntyV0 } from "./behavioralTurnSovereigntyV0.js";
 
 export const VOICE_INSTANT_ACK_SCHEMA = "castle.voice_instant_ack.v0";
 export const VOICE_ACK_SMOOTH_MAX_WAIT_MS = 2600;
@@ -111,8 +113,18 @@ export async function speakAfterVoiceInstantAckSmoothV0(speakReplyFn, opts = {})
  * @param {string} [phrase]
  * @returns {boolean}
  */
-export function speakVoiceInstantAckV0(phrase) {
+export function speakVoiceInstantAckV0(phrase, opts = {}) {
   if (typeof window === "undefined" || !window.speechSynthesis) return false;
+  const turnId = String(opts.traceId || getLastTurnSovereigntyV0()?.turnId || "");
+  const ackGate = gateInstantAckForTurnV0(turnId, opts.moduleId || "voiceInstantAck");
+  if (ackGate.block) {
+    logVoiceWarnV0("TURN_SOVEREIGNTY_ACK_BLOCKED", {
+      turnId,
+      reason: ackGate.reason,
+      reality: ackGate.lock?.sovereignReality
+    });
+    return false;
+  }
   const dispatchAtMs = lastDispatchAtMs || Date.now();
   const session = ++ackSession;
   armAckReleaseWaiter();

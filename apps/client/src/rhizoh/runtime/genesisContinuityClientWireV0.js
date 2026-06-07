@@ -1,4 +1,4 @@
-import { getGenesisProtocolGatewayOrigin } from "../../castleFlight/castleFlightConfig.js";
+import { resolveGenesisGatewayHttpBaseV0 } from "../../castleFlight/castleFlightConfig.js";
 import {
   formatGenesisContinuityEventLine,
   GENESIS_CONTINUITY_EVENT_SCHEMA
@@ -57,7 +57,7 @@ function ingestGenesisEvent(j) {
  */
 export function startGenesisContinuityClientWireV0() {
   stopGenesisContinuityClientWireV0();
-  const origin = String(getGenesisProtocolGatewayOrigin() || "").trim().replace(/\/+$/, "");
+  const origin = String(resolveGenesisGatewayHttpBaseV0() || "").trim().replace(/\/+$/, "");
   if (!origin) return () => {};
 
   stopIngressWire = startWorldObservationIngressWireV0();
@@ -88,11 +88,16 @@ export function startGenesisContinuityClientWireV0() {
     });
   }
 
-  const runtimeUrl = `${origin}/rhizoh/genesis/runtime`;
   pollTimer = window.setInterval(() => {
     void (async () => {
       try {
-        const res = await fetch(runtimeUrl, { method: "GET", cache: "no-store" });
+        const pollOrigin = String(resolveGenesisGatewayHttpBaseV0() || origin)
+          .trim()
+          .replace(/\/+$/, "");
+        const res = await fetch(`${pollOrigin}/rhizoh/genesis/runtime`, {
+          method: "GET",
+          cache: "no-store"
+        });
         const j = await res.json().catch(() => null);
         if (!res.ok || !j?.ok) return;
         const seq = j.genesisStream?.lastAcceptedSeq;

@@ -5,6 +5,10 @@
 import { readOlpInteractionToneV0 } from "./rhizohOlpInteractionToneV0.js";
 import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
 import { normalizeUiLocaleV0 } from "./rhizohUiLocaleV0.js";
+import {
+  isRhizohLivingConversationSurfaceV1,
+  resolveFastReflexBridgeCopyV1
+} from "../experience/rhizohLivingConversationSurfaceV1.js";
 
 export const INSTANT_ACK_SCHEMA_V0 = "castle.instant_ack.v0";
 
@@ -38,7 +42,10 @@ export function selectInstantAckV0(opts = {}) {
   const semanticIntent = String(opts.intent || "acknowledge");
   const renderLocale = normalizeUiLocaleV0(opts.locale ?? resolveOutputLanguageCodeV0());
   const tone = readOlpInteractionToneV0();
-  const text = pickFromPool(INSTANT_ACK_PHRASES_V0, renderLocale);
+  const tr = renderLocale === "tr";
+  const text = isRhizohLivingConversationSurfaceV1()
+    ? resolveFastReflexBridgeCopyV1(tr, opts.hint || "acknowledge")
+    : pickFromPool(INSTANT_ACK_PHRASES_V0, renderLocale);
   return Object.freeze({
     schema: INSTANT_ACK_SCHEMA_V0,
     semanticIntent,

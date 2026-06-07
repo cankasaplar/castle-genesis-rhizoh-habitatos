@@ -59,7 +59,10 @@ export function prepareRhizohLlmTurnV0(input = {}) {
 
   const speakAck = shouldSpeakInstantAckForTurnV0(input);
   if (speakAck && ack?.text) {
-    speakVoiceInstantAckV0(String(ack.text));
+    speakVoiceInstantAckV0(String(ack.text), {
+      traceId: input.traceId,
+      moduleId: "llm_turn_hot_wire"
+    });
   }
 
   const expr = turn.expression;

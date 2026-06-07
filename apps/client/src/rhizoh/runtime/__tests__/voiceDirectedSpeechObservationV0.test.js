@@ -38,6 +38,16 @@ describe("voiceDirectedSpeechObservationV0", () => {
     expect(out.band).toBe(VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE);
   });
 
+  it("labels English hear-me question as directed_candidate", () => {
+    const out = classifyVoiceDirectedSpeechBandV0({
+      text: "Can you hear me? Where is all?",
+      confidence: 0.55,
+      strategy: "whisper_only"
+    });
+    expect(out.band).toBe(VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE);
+    expect(out.directedScore).toBeGreaterThanOrEqual(1);
+  });
+
   it("labels neutral speech as unknown", () => {
     const out = classifyVoiceDirectedSpeechBandV0({
       text: "Bugün hava güzeldi.",

@@ -48,6 +48,18 @@ import {
 import { deriveRhizohPolicy } from "../policy/index.js";
 import { routeRhizohInput } from "../router/routeRhizohInput.js";
 import {
+  applyTurnSovereigntyPromptScopeToContextV0,
+  ensureTurnSovereigntyLockedV0,
+  gateLlmInputForTurnV0,
+  resolveTurnSovereigntyMaxTokensV0
+} from "./turnSovereigntyWireV0.js";
+import { SOVEREIGN_REALITY_V0 } from "./behavioralTurnSovereigntyV0.js";
+import { shouldBlockOnBoundaryViolationV0 } from "./turnSovereigntyEnforcementModeV0.js";
+import {
+  isRhizohLivingConversationSurfaceV1,
+  resolveFastReflexBridgeCopyV1
+} from "../experience/rhizohLivingConversationSurfaceV1.js";
+import {
   RHIZOH_CONVERSATION_ORCHESTRATOR_VERSION,
   advanceRhizohConversationPhase,
   buildRhizohConversationLlmDirective,
@@ -282,8 +294,10 @@ export async function queryRhizohLLM({
 
   applyReflexEffectivenessFeedbackV0(trimmed);
 
+  const livingSurface = isRhizohLivingConversationSurfaceV1();
+
   const precheck = runFastPrecheckFromTextV0(trimmed, { traceId: clientTraceId });
-  if (precheck) {
+  if (precheck && !livingSurface) {
     publishFastPrecheckHitV0(precheck, { traceId: clientTraceId, channel: "text" });
     const committed = commitFinalUserVisibleLanguageV0(precheck.reply, {
       source: "fast_precheck",
@@ -308,7 +322,7 @@ export async function queryRhizohLLM({
   }
 
   const reflexReply = tryLocalReflexReplyV0(trimmed, { traceId: clientTraceId });
-  if (reflexReply) {
+  if (reflexReply && !livingSurface) {
     logRhizohHealth("local_reflex_bypass", {
       traceId: clientTraceId,
       routeClass: reflexReply.routeClass,
@@ -575,6 +589,47 @@ export async function queryRhizohLLM({
   const rhizohHealthInfluence = computeRhizohHealthInfluence(healthState);
   runtimeHints = { ...runtimeHints, healthState, rhizohHealthInfluence };
   const rhizohRouter = routeRhizohInput(trimmed, cont, runtimeHints);
+  const sovereigntyWire = ensureTurnSovereigntyLockedV0({
+    turnId: clientTraceId,
+    text: trimmed,
+    modality: isVoiceTurn ? "voice" : "text",
+    continuity: cont,
+    runtime: runtimeHints,
+    router: rhizohRouter,
+    conversationPhase: rhizohPhaseForTurn,
+    userTurnCount: effectiveTurnCount,
+    voice: isVoiceTurn
+      ? {
+          authority: voiceTurnMeta?.authority,
+          commitment: behavioralCommitment,
+          band:
+            voiceTurnMeta?.witnessed?.observation?.band ||
+            voiceTurnMeta?.band ||
+            voiceTurnMeta?.preCommitment?.band,
+          dispatchRoute: voiceTurnMeta?.dispatchRoute
+        }
+      : undefined
+  });
+  const turnSovereigntyLock = sovereigntyWire.lock;
+  if (
+    shouldBlockOnBoundaryViolationV0() &&
+    turnSovereigntyLock?.sovereignReality === SOVEREIGN_REALITY_V0.PRESENCE_ACK &&
+    turnSovereigntyLock.sovereignOutput?.text
+  ) {
+    const presenceReply = String(turnSovereigntyLock.sovereignOutput.text);
+    logVoiceInfoV0("TURN_SOVEREIGNTY_PRESENCE_BYPASS", {
+      traceId: clientTraceId,
+      reason: turnSovereigntyLock.selectionReason
+    });
+    return Object.freeze({
+      reply: presenceReply,
+      directive: "FOCUS_RHIZOH",
+      source: "turn_sovereignty_presence_ack",
+      traceId: clientTraceId,
+      llmBypass: true,
+      turnSovereignty: turnSovereigntyLock
+    });
+  }
   const rhizohPolicy = deriveRhizohPolicy({ ...runtimeHints, rhizohRouter });
   runtimeHints = { ...runtimeHints, rhizohPolicy };
   enqueueCastleRuntimeTransaction({
@@ -850,6 +905,61 @@ export async function queryRhizohLLM({
   const langBundle = buildRhizohLanguagePropagationBundleV0();
 
   try {
+    const llmBoundary = gateLlmInputForTurnV0(clientTraceId, "queryRhizohLLM");
+    if (llmBoundary.block) {
+      logVoiceInfoV0("TURN_SOVEREIGNTY_LLM_BLOCKED", {
+        traceId: clientTraceId,
+        reason: llmBoundary.reason,
+        reality: turnSovereigntyLock?.sovereignReality
+      });
+      return Object.freeze({
+        reply: turnSovereigntyLock?.sovereignOutput?.text || "",
+        directive: "",
+        source: "turn_sovereignty_llm_blocked",
+        traceId: clientTraceId,
+        llmBypass: true,
+        turnSovereignty: turnSovereigntyLock,
+        boundary: llmBoundary
+      });
+    }
+
+    const baseLlmContext = {
+      agentId: agentId || "",
+      layerId: layerSpec.id,
+      layerCode: layerSpec.code,
+      layerName: layerSpec.name,
+      mission: layerProfile.mission,
+      detail: layerProfile.detail,
+      reality: layerProfile.reality,
+      camera: layerProfile.camera,
+      simTime,
+      continuity: contForLlm,
+      rhizohRouter,
+      rhizohProductOrchestration: {
+        schemaVersion: "1.0.0",
+        orchestratorVersion: RHIZOH_CONVERSATION_ORCHESTRATOR_VERSION,
+        sessionId: rhizohProductSnap.sessionId,
+        conversationPhase: rhizohPhaseForTurn,
+        userTurnIndex: rhizohProductSnap.userTurnCount + 1,
+        capabilityEnvelope: rhizohCapabilityEnvelope
+      },
+      rhizohConversationLlmDirective: rhizohLlmDirective,
+      rhizohMultilingual: rhizohMultilingualPack.context,
+      rhizohMultilingualDirective: rhizohMultilingualPack.directive,
+      ...(getRhizohCohortIdForRequestV0() ? { cohortId: getRhizohCohortIdForRequestV0() } : {}),
+      life_continuity: buildLifeContinuityContextHintsV0(),
+      rhizohMemoryContract: `${[
+        "continuity state is authoritative session memory (identity, castleState, ghostPet, recentReality, codex, relationship). Do not invent facts beyond it; reference continuity when relevant.",
+        rhizohMultilingualPack.memoryContractAddon,
+        "",
+        rhizohMultilingualPack.directive,
+        "",
+        rhizohLlmDirective
+      ].join("\n")}`
+    };
+    const scopedContext = applyTurnSovereigntyPromptScopeToContextV0(baseLlmContext, turnSovereigntyLock);
+    const scopedMaxTok = resolveTurnSovereigntyMaxTokensV0(maxTok, turnSovereigntyLock);
+
     const { body: llmBody } = trimRhizohLlmRequestBodyV0(
       {
         message,
@@ -858,45 +968,9 @@ export async function queryRhizohLLM({
         llmKeySource,
         connectionId: connectionId || "",
         ...langBundle.bodyFields,
-        context: {
-          agentId: agentId || "",
-          layerId: layerSpec.id,
-          layerCode: layerSpec.code,
-          layerName: layerSpec.name,
-          mission: layerProfile.mission,
-          detail: layerProfile.detail,
-          reality: layerProfile.reality,
-          camera: layerProfile.camera,
-          simTime,
-          continuity: contForLlm,
-          rhizohRouter,
-          rhizohProductOrchestration: {
-            schemaVersion: "1.0.0",
-            orchestratorVersion: RHIZOH_CONVERSATION_ORCHESTRATOR_VERSION,
-            sessionId: rhizohProductSnap.sessionId,
-            conversationPhase: rhizohPhaseForTurn,
-            userTurnIndex: rhizohProductSnap.userTurnCount + 1,
-            capabilityEnvelope: rhizohCapabilityEnvelope
-          },
-          rhizohConversationLlmDirective: rhizohLlmDirective,
-          rhizohMultilingual: rhizohMultilingualPack.context,
-          rhizohMultilingualDirective: rhizohMultilingualPack.directive,
-          /** Passive cohort routing — gateway resolves schema; client does not select. */
-          ...(getRhizohCohortIdForRequestV0()
-            ? { cohortId: getRhizohCohortIdForRequestV0() }
-            : {}),
-          life_continuity: buildLifeContinuityContextHintsV0(),
-          rhizohMemoryContract: `${[
-            "continuity state is authoritative session memory (identity, castleState, ghostPet, recentReality, codex, relationship). Do not invent facts beyond it; reference continuity when relevant.",
-            rhizohMultilingualPack.memoryContractAddon,
-            "",
-            rhizohMultilingualPack.directive,
-            "",
-            rhizohLlmDirective
-          ].join("\n")}`
-        },
+        context: scopedContext,
         options: {
-          maxTokens: maxTok,
+          maxTokens: scopedMaxTok,
           language: resolveRhizohLlmLanguageV0().bcp47 || rhizohMultilingualPack.respondBcp47,
           generationMode: modeKey
         }

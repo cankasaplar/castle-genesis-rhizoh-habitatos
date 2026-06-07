@@ -44,19 +44,20 @@ export const RHIZOH_SHELL_HINT_EN_V0 = Object.freeze({
 
 export const RHIZOH_HALO_HEADLINE_EN_V0 = "What would you like to do?";
 export const RHIZOH_HALO_INTRO_EN_V0 =
-  "Tap or hover the nodes — Rhizoh will whisper what it can do.";
+  "Hover a symbol — I'll interpret. Tap to run.";
 
 /** @type {typeof RHIZOH_CAPABILITY_HALO_NODES_TR_V0} */
 export const RHIZOH_CAPABILITY_HALO_NODES_EN_V0 = Object.freeze([
-  Object.freeze({ id: "create", label: "Create", whisper: "Open a new session in Studio or prep.", seedIntent: "open a new session in studio" }),
-  Object.freeze({ id: "explore", label: "Explore", whisper: "Main stage or map layer — say: open map.", seedIntent: "open map" }),
-  Object.freeze({ id: "learn", label: "Learn", whisper: "Academy and observation layer.", seedIntent: "open profile and academy", layerFocus: 11 }),
-  Object.freeze({ id: "broadcast", label: "Broadcast", whisper: "Live stream or green room.", seedIntent: "go to broadcast" }),
-  Object.freeze({ id: "build", label: "Build", whisper: "Castle, pin, or task — local commands.", seedIntent: "I want to place a castle here", layerFocus: 10 }),
-  Object.freeze({ id: "companion", label: "Companion", whisper: "Octo character and dialogue.", seedIntent: "design a new companion with octo" }),
-  Object.freeze({ id: "robotics", label: "Devices", whisper: "Camera, sensor, or robot bridge.", isRoboticsHub: true, layerFocus: 13 }),
-  Object.freeze({ id: "swarm", label: "Swarm", whisper: "Agent swarm coordination.", seedIntent: "show agent swarm", layerFocus: 6 }),
-  Object.freeze({ id: "world", label: "World", whisper: "Return to main stage — globe and continuity.", seedIntent: "go to world" })
+  Object.freeze({ id: "create", label: "Create", geometryKind: "cube", whisper: "Open a new session in Studio or prep.", seedIntent: "open a new session in studio" }),
+  Object.freeze({ id: "invite", label: "Invite", geometryKind: "spiral", whisper: "Share your active experience — or create one first.", seedIntent: "share invite link for this experience" }),
+  Object.freeze({ id: "explore", label: "Explore", geometryKind: "spiral", whisper: "Main stage or map layer — say: open map.", seedIntent: "open map" }),
+  Object.freeze({ id: "learn", label: "Learn", geometryKind: "cube", whisper: "Academy and observation layer.", seedIntent: "open profile and academy", layerFocus: 11 }),
+  Object.freeze({ id: "broadcast", label: "Broadcast", geometryKind: "spiral", whisper: "Live stream or green room.", seedIntent: "go to broadcast" }),
+  Object.freeze({ id: "build", label: "Build", geometryKind: "cube", whisper: "Castle, pin, or task — local commands.", seedIntent: "I want to place a castle here", layerFocus: 10 }),
+  Object.freeze({ id: "companion", label: "Companion", geometryKind: "spiral", whisper: "Octo character and dialogue.", seedIntent: "design a new companion with octo" }),
+  Object.freeze({ id: "robotics", label: "Devices", geometryKind: "ring", whisper: "Camera, sensor, or robot bridge.", isRoboticsHub: true, layerFocus: 13 }),
+  Object.freeze({ id: "swarm", label: "Swarm", geometryKind: "spiral", whisper: "Agent swarm coordination.", seedIntent: "show agent swarm", layerFocus: 6 }),
+  Object.freeze({ id: "world", label: "World", geometryKind: "cube", whisper: "Return to main stage — globe and continuity.", seedIntent: "go to world" })
 ]);
 
 export const RHIZOH_WORLD_CENTER_SUBTITLE_EN_V0 = "Rhizoh field · Agent swarm and core";

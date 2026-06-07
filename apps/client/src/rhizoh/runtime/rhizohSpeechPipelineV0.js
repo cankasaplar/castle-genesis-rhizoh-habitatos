@@ -30,6 +30,7 @@ import {
   classifyVoiceFastIntentV0,
   VOICE_PIPELINE_PATH_V0
 } from "./rhizohVoiceDualPathRouterV0.js";
+import { isRhizohLivingConversationSurfaceV1 } from "../experience/rhizohLivingConversationSurfaceV1.js";
 
 function finalizePipelineResultV0(result, ctx = {}) {
   const frozen = Object.freeze(result);
@@ -51,6 +52,7 @@ export const RHIZOH_SPEECH_PIPELINE_SCHEMA_V0 = "castle.rhizoh.speech_pipeline.v
 export function runRhizohSpeechPipelineV0(rawText, ctx = {}) {
   const t0 = typeof performance !== "undefined" ? performance.now() : Date.now();
   const pipelinePath = String(ctx.pipelinePath || VOICE_PIPELINE_PATH_V0.FAST);
+  const livingSurface = isRhizohLivingConversationSurfaceV1();
   const provenance =
     ctx.provenance ||
     buildInputProvenanceEnvelopeV0({
@@ -91,7 +93,7 @@ export function runRhizohSpeechPipelineV0(rawText, ctx = {}) {
 
   if (pipelinePath === VOICE_PIPELINE_PATH_V0.FAST) {
     const precheck = runFastPrecheckFromTextV0(msg, { locale, traceId: ctx.traceId });
-    if (precheck) {
+    if (precheck && !livingSurface) {
       publishFastPrecheckHitV0(precheck, {
         traceId: ctx.traceId,
         channel: "voice",
@@ -149,7 +151,7 @@ export function runRhizohSpeechPipelineV0(rawText, ctx = {}) {
   }
 
   const precheck = runFastPrecheckFromTextV0(msg, { locale, traceId: ctx.traceId });
-  if (precheck) {
+  if (precheck && !livingSurface) {
     publishFastPrecheckHitV0(precheck, {
       traceId: ctx.traceId,
       channel: "voice",

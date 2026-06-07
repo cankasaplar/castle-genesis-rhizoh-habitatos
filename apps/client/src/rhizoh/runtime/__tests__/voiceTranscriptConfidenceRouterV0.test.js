@@ -1,11 +1,32 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi, afterEach } from "vitest";
 import {
   routeVoiceTranscriptConfidenceV0,
   VOICE_ROUTER_REJECTION_LAYER_V0
 } from "../voiceTranscriptConfidenceRouterV0.js";
 import { VOICE_DIRECTED_SPEECH_BAND } from "../voiceDirectedSpeechObservationV0.js";
+import { resetVoiceAttentionContextForTestV0 } from "../voiceAttentionContextV0.js";
 
 describe("voiceTranscriptConfidenceRouterV0", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    resetVoiceAttentionContextForTestV0();
+  });
+
+  it("observation-passes English whisper_default_conf on direct_listen cohort", () => {
+    vi.stubEnv("VITE_RHIZOH_VOICE_ATTENTION_MODE", "direct_listen");
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "May I have a resolve?",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      recordedMs: 8500,
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(route.reason).toBe("whisper_default_conf");
+    expect(route.observationPass).toBe(true);
+  });
+
   it("observation-passes whisper_default_conf instead of killing execution", () => {
     const route = routeVoiceTranscriptConfidenceV0({
       text: "Mesela bugün nasılsın? Biraz sohbet edelim.",
@@ -86,7 +107,7 @@ describe("voiceTranscriptConfidenceRouterV0", () => {
       recordedMs: 8500
     });
     expect(route.executionAccepted).toBe(false);
-    expect(["unknown_band_hold", "whisper_default_conf", "low_confidence"].includes(route.reason)).toBe(
+    expect(["unknown_band_hold", "whisper_default_conf", "low_confidence", "stt_phantom_polite"].includes(route.reason)).toBe(
       true
     );
   });

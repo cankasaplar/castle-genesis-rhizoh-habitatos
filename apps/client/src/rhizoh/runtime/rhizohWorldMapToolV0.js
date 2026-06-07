@@ -6,6 +6,7 @@
 import { getOriginSeedAnchorV0, resolveDisplayAnchorV0 } from "./memoryAnchorSystemV0.js";
 import { ISTANBUL_POI } from "../../castleFlight/geo.js";
 import { applyCesiumImageryForMapToolV0 } from "./rhizohCesiumImageryProfileV0.js";
+import { routeCesiumCommandV0 } from "../../castleFlight/cesiumCommandRouterV0.js";
 
 export const RHIZOH_WORLD_MAP_TOOL_CONTRACT_V0 = "rhizoh-world-map-tool-v0";
 export const RHIZOH_WORLD_MAP_TOOL_CHANGE_EVENT_V0 = "rhizoh:world-map-tool-change";
@@ -176,20 +177,40 @@ export function resolveRhizohWorldMapFlyTargetV0(toolId, ctx = {}) {
 
 /**
  * @param {RhizohWorldMapToolIdV0 | string} toolId
- * @param {{ lat: number, lon: number, alt?: number }} target
+ * @param {{ lat: number, lon: number, alt?: number } | null} target
+ * @param {string} source
  */
-function scheduleRhizohWorldMapFlyV0(toolId, target) {
+function routeWorldMapFlyV0(toolId, target, source) {
   if (typeof window === "undefined") return;
-  window.setTimeout(() => {
-    const c = window.__CASTLE_CESIUM__;
-    if (!c) return;
-    const id = normalizeRhizohWorldMapToolIdV0(toolId);
-    if (target && Number.isFinite(target.lat) && Number.isFinite(target.lon) && c.flyToCustom) {
-      c.flyToCustom(target.lat, target.lon, target.alt ?? 1180);
-      return;
-    }
-    if (id === "city_map") c.flyToIstanbul?.();
-  }, 140);
+  const id = normalizeRhizohWorldMapToolIdV0(toolId);
+  if (target && Number.isFinite(target.lat) && Number.isFinite(target.lon)) {
+    routeCesiumCommandV0({
+      op: "fly_to",
+      source: "world_map_tool",
+      geo: Object.freeze({
+        lat: target.lat,
+        lon: target.lon,
+        alt: target.alt ?? 1180
+      }),
+      meta: Object.freeze({
+        ingress: "applyRhizohWorldMapToolV0",
+        mapTool: id,
+        toolSource: source
+      })
+    });
+    return;
+  }
+  if (id === "city_map") {
+    routeCesiumCommandV0({
+      op: "calibration_root",
+      source: "world_map_tool",
+      meta: Object.freeze({
+        ingress: "applyRhizohWorldMapToolV0",
+        mapTool: id,
+        toolSource: source
+      })
+    });
+  }
 }
 
 /**
@@ -222,7 +243,7 @@ export async function applyRhizohWorldMapToolV0(toolId, opts = {}) {
   });
 
   const fly = resolveRhizohWorldMapFlyTargetV0(tool, opts.flyContext || {});
-  scheduleRhizohWorldMapFlyV0(tool, fly);
+  window.setTimeout(() => routeWorldMapFlyV0(tool, fly, source), 140);
   applyCesiumImageryForMapToolV0(tool);
   return Object.freeze({ tool, realityMode: "REAL_MAP", fly });
 }

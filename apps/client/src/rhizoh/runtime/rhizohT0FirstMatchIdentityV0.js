@@ -42,14 +42,15 @@ export function resolveRhizohT0ChatBottomCssV0(opts = {}) {
   return `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + ${drawerRem}rem + env(safe-area-inset-bottom, 0px))`;
 }
 
-/** Capability wheel — product interaction hub (viewport center, not chat stack). */
+/** Capability wheel — fixed top-right hub (keeps reply / octo bands clear). */
 export function resolveRhizohT0CapabilityHaloLayoutV0() {
   return Object.freeze({
     position: "fixed",
-    left: "50%",
-    top: "clamp(36vh, 44%, 50vh)",
+    top: "max(12px, env(safe-area-inset-top, 0px))",
+    right: "max(12px, env(safe-area-inset-right, 0px))",
+    left: "auto",
     bottom: "auto",
-    transform: "translate(-50%, -50%)",
+    transform: "none",
     zIndex: 68
   });
 }

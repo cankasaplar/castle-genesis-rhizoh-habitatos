@@ -59,7 +59,17 @@ const DIRECTED_ADDRESS_PATTERNS_V0 = [
   /\b(yeniden|tekrar)\b.{0,24}\b(konuş|deneyelim|başlayalım)\b/i,
   /\b(ingilizce|english|türkçe|turkish)\b.{0,32}\b(konuş|speak|devam)\b/i,
   /\bbence\b.{0,40}\b(karışıklık|yanlış|düzelt|tekrar)\b/i,
-  /\bkonuşmalıyız\b/i
+  /\bkonuşmalıyız\b/i,
+  /can\s+you\s+hear\s+me/i,
+  /are\s+you\s+there/i,
+  /can\s+we\s+talk/i,
+  /do\s+you\s+understand/i,
+  /\btell\s+me\b/i,
+  /where\s+(am\s+i|are\s+you|is\s+(this|that|everyone|all|everything))/i,
+  /may\s+i\s+(ask|have|speak|talk)/i,
+  /\bcould\s+you\b/i,
+  /\bwould\s+you\b/i,
+  /\bhello\s+(rhizoh|rizo|everyone)\b/i
 ];
 
 function normalizeWitnessTextV0(text) {

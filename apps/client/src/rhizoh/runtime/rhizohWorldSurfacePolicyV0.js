@@ -4,12 +4,24 @@
  */
 
 import { readUserAnchorV0 } from "./memoryAnchorSystemV0.js";
+import { RHIZOH_WORLD_DRAWER_DOMAIN_V0 } from "./rhizohWorldDrawerDomainV0.js";
 
 export const RHIZOH_WORLD_SURFACE_POLICY_CONTRACT_V0 = "rhizoh-world-surface-policy-v0";
 
-/** Product red line (locked): map is a tool inside WORLD, never WORLD itself. */
+/** Product red line — map/tools live in World drawer · Space; T0 = live scene only. */
 export const RHIZOH_RED_LINE_MAP_IS_NOT_WORLD_V0 =
-  "Harita Dünya değildir — Dünya = GLOBE + swarm + anchor + continuity + wheel + voice + chat.";
+  "Harita Dünya değildir — T0 = GLOBE + swarm + fox + voice + chat; Maps = drawer · Space.";
+
+/**
+ * Fox + chat dock belong on T0 live only — not on World · Space (Cesium map stage).
+ * @param {{ isWorldDomainActive?: boolean, worldDomain?: string }} [ctx]
+ * @returns {boolean}
+ */
+export function shouldRhizohT0LiveChromeVisibleV0(ctx = {}) {
+  if (!ctx.isWorldDomainActive) return true;
+  const domain = String(ctx.worldDomain || RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE).toLowerCase();
+  return domain !== RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE;
+}
 
 /** Product shell "Dünya" — abstract globe + swarm (main stage). */
 export const RHIZOH_PRODUCT_WORLD_REALITY_V0 = "GLOBE";
@@ -30,6 +42,14 @@ const WORLD_REALITY_BLOCK_SOURCES_V0 = [
   "PRODUCT_SHELL"
 ];
 
+const WORLD_REALITY_ALLOW_SOURCES_V0 = [
+  "ROUTE_WORLD_DOMAIN",
+  "PRODUCT_SHELL_WORLD_DOMAIN",
+  "ROUTE_MAP",
+  "MAP_TOOL_EXPLICIT",
+  "WORLD_DOMAIN_MAP_STRIP"
+];
+
 /**
  * Enforces red line: product "Dünya" cannot commit REAL_MAP (map tool only).
  * @param {"GLOBE" | "REAL_MAP"} mode
@@ -41,6 +61,9 @@ export function coerceRhizohProductRealityModeV0(mode, opts = {}) {
   if (next !== "REAL_MAP") return /** @type {"GLOBE" | "REAL_MAP"} */ (next || RHIZOH_PRODUCT_WORLD_REALITY_V0);
   const source = String(opts.source || "");
   const surface = String(opts.productSurface || "");
+  if (WORLD_REALITY_ALLOW_SOURCES_V0.includes(source)) {
+    return "REAL_MAP";
+  }
   if (surface === "world" && WORLD_REALITY_BLOCK_SOURCES_V0.includes(source)) {
     return RHIZOH_PRODUCT_WORLD_REALITY_V0;
   }
@@ -88,12 +111,10 @@ export function resolveRhizohWorldEntryPersonaV0() {
 }
 
 /**
- * Capability wheel = WORLD stage affordance (not tied to bottom drawer open state).
- * @param {string} [productSurface]
+ * Capability wheel = map tool only (World drawer · Space tab). Not a T0 live affordance.
+ * @param {string} [_productSurface]
  */
-export function isRhizohCapabilityWheelVisibleV0(productSurface = "world") {
-  return String(productSurface || "") === "world";
-}
+export { isRhizohCapabilityWheelVisibleV0, isRhizohMapWheelVisibleV0 } from "./rhizohLayerContextV0.js";
 
 const LANDING_LOCK_SESSION_KEY_V0 = "rhizoh.world.landing_lock.v0";
 

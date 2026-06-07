@@ -12,16 +12,24 @@ export function isCastleLayersDebugEnabledV0() {
   return raw === "1" || raw === "true" || raw === "on";
 }
 
-function isCastleLayersPipelineHudRenderableV0() {
-  if (import.meta.env?.DEV) return isCastleLayersDebugEnabledV0();
-  return isCastleLayerRenderableV1("castle_layers_pipeline_hud");
+function isCastleLayersPipelineHudRenderableV0(variant) {
+  if (variant === "drawer") return isCastleLayersDebugEnabledV0();
+  try {
+    if (localStorage.getItem("castle.layers.hud.on_page.v0") === "1") {
+      return isCastleLayersDebugEnabledV0();
+    }
+  } catch {
+    /* noop */
+  }
+  return false;
 }
 
 /**
  * Runtime topology panel — observation only, no execution authority.
  * @param {{ gatewayPhase?: string }} props
  */
-export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
+export function RhizohCastleLayersDebugV0({ gatewayPhase = "", variant = "hud" }) {
+  const inDrawer = variant === "drawer";
   const [tick, setTick] = useState(0);
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -57,7 +65,7 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
     });
   };
 
-  if (!isCastleLayersPipelineHudRenderableV0()) return null;
+  if (!isCastleLayersPipelineHudRenderableV0(variant)) return null;
 
   const layersRuntime = typeof window !== "undefined" ? window.__CASTLE_LAYERS_RUNTIME__ : null;
   const activeUiDomain = layersRuntime?.activeUiDomain || resolveRhizohVoiceUiDomainV0();
@@ -155,13 +163,20 @@ export function RhizohCastleLayersDebugV0({ gatewayPhase = "" }) {
     }
   ];
 
+  const shellClass = inDrawer
+    ? "pointer-events-auto relative w-full max-w-full rounded-xl border border-amber-400/35 bg-black/85 p-2 text-[9px] font-mono normal-case text-amber-50/90"
+    : "pointer-events-auto fixed right-2 z-[61] max-w-[min(17rem,40vw)] rounded-xl border border-amber-400/35 bg-black/85 p-2 text-[9px] font-mono normal-case text-amber-50/90 shadow-lg backdrop-blur-md";
+
   return (
     <div
-      className="pointer-events-auto fixed right-2 z-[61] max-w-[min(17rem,40vw)] rounded-xl border border-amber-400/35 bg-black/85 p-2 text-[9px] font-mono normal-case text-amber-50/90 shadow-lg backdrop-blur-md"
-      style={{
-        bottom: "calc(3.35rem + 6.25rem + env(safe-area-inset-bottom, 0px))"
-      }}
+      className={shellClass}
+      style={
+        inDrawer
+          ? undefined
+          : { bottom: "calc(3.35rem + 6.25rem + env(safe-area-inset-bottom, 0px))" }
+      }
       data-rhizoh-castle-layers-debug="1"
+      data-variant={variant}
       data-tick={tick}
       data-collapsed={collapsed ? "1" : "0"}
     >

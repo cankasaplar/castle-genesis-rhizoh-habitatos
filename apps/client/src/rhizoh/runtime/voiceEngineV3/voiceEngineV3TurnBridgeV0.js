@@ -3,6 +3,7 @@ import { isVoiceEngineV3EnabledV0 } from "./isVoiceEngineV3EnabledV0.js";
 import { VOICE_ENGINE_STATE_V3 } from "./voiceEngineStateV3.js";
 import { noteVoiceSttEventV0 } from "../voiceSttTelemetryV0.js";
 import { logVoiceInfoV0, logVoiceWarnV0 } from "../rhizohProductionLogNamespacesV0.js";
+import { emitRhizohSttHeardSurfaceV1 } from "../../experience/rhizohLivingConversationSurfaceV1.js";
 import { stampVoiceUserGestureV0 } from "../voiceUserGestureAnchorV0.js";
 import { endVoiceSessionLanguageLockV0 } from "../rhizohConversationLanguageV0.js";
 import { endOriginConfidenceEmaSessionV0 } from "../rhizohSttOriginConfidenceEmaV0.js";
@@ -236,6 +237,14 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
         restartCtx,
         maxRms: result.maxRms,
         preSttReason: result.preStt?.reason
+      });
+      emitRhizohSttHeardSurfaceV1({
+        text: String(result.merged?.text || ""),
+        reason: String(result.error || "shadow_drop"),
+        source: "mic_v3",
+        executionAccepted: false,
+        showTranscript: false,
+        tr: typeof document !== "undefined" && document.documentElement?.lang === "tr"
       });
       if (keepAlive) {
         if (

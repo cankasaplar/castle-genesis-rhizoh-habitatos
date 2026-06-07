@@ -28,10 +28,12 @@ describe("rhizohT0FirstMatchIdentityV0", () => {
     expect(isRhizohT0FirstMatchIdentityV0()).toBe(false);
   });
 
-  it("places capability halo at viewport interaction hub", () => {
+  it("places capability halo at fixed top-right hub", () => {
     const layout = resolveRhizohT0CapabilityHaloLayoutV0();
-    expect(layout.top).toContain("vh");
-    expect(layout.transform).toContain("translate");
+    expect(layout.top).toContain("safe-area");
+    expect(layout.right).toContain("safe-area");
+    expect(layout.left).toBe("auto");
+    expect(layout.transform).toBe("none");
     expect(layout.zIndex).toBeGreaterThanOrEqual(68);
   });
 });

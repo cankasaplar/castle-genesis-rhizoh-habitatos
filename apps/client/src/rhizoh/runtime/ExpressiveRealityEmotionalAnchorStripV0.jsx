@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { isRhizohCreativeSurfaceEnabledV0 } from "./castleCreativeSurfaceGateV0.js";
 import { isExpressiveRealityBootCompleteV0, readEmotionalAnchorV0 } from "./expressiveRealityMicroTransitionV0.js";
+import { isRhizohT0FirstMatchIdentityV0 } from "./rhizohT0FirstMatchIdentityV0.js";
+import { resolveT0AnchorStripCopyV0 } from "./rhizohProductPlainCopyV0.js";
+import { readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
 
 /**
  * Persistent anchor strip — only user-visible continuity cue on seamless entry ("Continued").
@@ -34,15 +37,20 @@ export function ExpressiveRealityEmotionalAnchorStripV0({ pulse = false, continu
   const ready = isExpressiveRealityBootCompleteV0() || continued;
   if (!isRhizohCreativeSurfaceEnabledV0() || !ready) return null;
 
-  const primary = String(anchor?.primary_label || anchor?.label || "").trim();
-  if (!continued && !primary) return null;
+  const localeTr = readUiLocaleV0() === "tr";
+  const firstMatch = isRhizohT0FirstMatchIdentityV0();
+  const stripCopy = resolveT0AnchorStripCopyV0(anchor, localeTr);
+  const primary = continued
+    ? String(anchor?.primary_label || anchor?.label || "").trim()
+    : stripCopy.primary;
 
-  const originSeed = String(anchor?.origin_seed_label || "").trim();
-  const subtitle = String(anchor?.subtitle || "").trim();
+  if (!continued && !primary) return null;
 
   return (
     <div
-      className={`pointer-events-none fixed left-4 top-4 z-[199] max-w-[min(18rem,70vw)] rounded-xl border px-3 py-2 backdrop-blur-md transition-all duration-300 ${
+      className={`pointer-events-none fixed left-4 z-[198] max-w-[min(14rem,58vw)] rounded-xl border px-3 py-2 backdrop-blur-md transition-all duration-300 ${
+        firstMatch ? "top-[calc(max(1rem,env(safe-area-inset-top))+2.85rem)]" : "top-4"
+      } ${
         flash
           ? "border-amber-300/50 bg-amber-950/55 shadow-[0_0_24px_rgba(251,191,36,0.25)]"
           : "border-white/12 bg-black/55"
@@ -60,19 +68,16 @@ export function ExpressiveRealityEmotionalAnchorStripV0({ pulse = false, continu
         </>
       ) : (
         <>
-          <p className="text-[8px] font-black uppercase tracking-[0.22em] text-amber-200/80">Memory anchor</p>
+          <p className="text-[8px] font-black uppercase tracking-[0.22em] text-amber-200/80">
+            {stripCopy.kicker}
+          </p>
           <p className="mt-0.5 text-[11px] font-semibold text-white/92 normal-case">{primary}</p>
         </>
       )}
-      {!continued && originSeed ? (
-        <p className="mt-0.5 text-[9px] text-white/55 normal-case">
-          Seed: {originSeed}
-          {subtitle ? ` · ${subtitle}` : null}
-        </p>
-      ) : !continued && subtitle ? (
-        <p className="mt-0.5 text-[9px] text-white/55 normal-case">{subtitle}</p>
+      {!continued && stripCopy.showSecondary && stripCopy.secondary ? (
+        <p className="mt-0.5 text-[9px] text-white/55 normal-case leading-snug">{stripCopy.secondary}</p>
       ) : null}
-      {!continued && anchor?.last_event ? (
+      {!continued && !firstMatch && anchor?.last_event ? (
         <p className="mt-0.5 font-mono text-[9px] text-white/45">{String(anchor.last_event)}</p>
       ) : null}
     </div>

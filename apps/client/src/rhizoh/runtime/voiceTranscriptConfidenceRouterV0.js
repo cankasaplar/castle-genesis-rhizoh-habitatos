@@ -12,6 +12,7 @@ import {
   VOICE_DIRECTED_SPEECH_BAND
 } from "./voiceDirectedSpeechObservationV0.js";
 import { isDirectedSpeechGateReleaseEnabledV0 } from "./isDirectedSpeechGateReleaseEnabledV0.js";
+import { resolveVoiceAttentionContextV0 } from "./voiceAttentionContextV0.js";
 import { recordConversationMirrorVoiceRouteV0 } from "./rhizohConversationBehaviorMirrorV0.js";
 import { buildVoiceConfidenceBreakdownV0 } from "./voiceConfidenceBreakdownV0.js";
 import {
@@ -123,11 +124,32 @@ function allowUnknownBandMicroReflexV0(text, band) {
   return words <= 2 && UNKNOWN_BAND_REFLEX_INTENTS_V0.has(hit.intent);
 }
 
+/** Cohort T0: direct_listen allows long mic_v3 turns that are not ambient TV. */
+const DIRECT_LISTEN_UNKNOWN_MIN_RECORD_MS_V0 = 6000;
+const DIRECT_LISTEN_UNKNOWN_MIN_CHARS_V0 = 8;
+
+/**
+ * @param {string} text
+ * @param {number | undefined} recordedMs
+ * @param {{ band?: string, ambientScore?: number, directedScore?: number }} classified
+ */
+function shouldRelaxUnknownBandForDirectListenV0(text, recordedMs, classified) {
+  if (!resolveVoiceAttentionContextV0().directedSpeechRelaxed) return false;
+  if (classified.band !== VOICE_DIRECTED_SPEECH_BAND.UNKNOWN) return false;
+  if ((classified.ambientScore || 0) >= 2) return false;
+  const ms = Number(recordedMs);
+  if (!Number.isFinite(ms) || ms < DIRECT_LISTEN_UNKNOWN_MIN_RECORD_MS_V0) return false;
+  if (text.length < DIRECT_LISTEN_UNKNOWN_MIN_CHARS_V0) return false;
+  if ((classified.directedScore || 0) >= 1) return true;
+  return text.includes("?");
+}
+
 /**
  * @param {typeof observation} observation
  * @param {string} text
+ * @param {{ recordedMs?: number, confidence?: number, strategy?: string, maxRms?: number, source?: string }} [relaxMeta]
  */
-function rejectNonDirectedVoiceBandV0(observation, text) {
+function rejectNonDirectedVoiceBandV0(observation, text, relaxMeta = {}) {
   const band = observation.band;
   if (band === VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE) return null;
   if (allowUnknownBandMicroReflexV0(text, band)) return null;
@@ -143,6 +165,19 @@ function rejectNonDirectedVoiceBandV0(observation, text) {
   }
 
   if (band === VOICE_DIRECTED_SPEECH_BAND.UNKNOWN) {
+    const classified =
+      observation.directedScore != null
+        ? observation
+        : classifyVoiceDirectedSpeechBandV0({
+            text,
+            confidence: relaxMeta.confidence,
+            strategy: relaxMeta.strategy,
+            maxRms: relaxMeta.maxRms,
+            source: relaxMeta.source
+          });
+    if (shouldRelaxUnknownBandForDirectListenV0(text, relaxMeta.recordedMs, classified)) {
+      return null;
+    }
     return Object.freeze({
       executionAccepted: false,
       observationForward: text.length >= 3,
@@ -249,12 +284,24 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
     const observationForward =
       text.length >= 3 &&
       (sane.shadowForward === true || sane.softScriptMismatch === true);
+    const classifiedForRelax =
+      observation.directedScore != null
+        ? observation
+        : classifyVoiceDirectedSpeechBandV0({
+            text,
+            confidence: conf,
+            strategy,
+            maxRms,
+            source
+          });
     const observationPassThrough =
-      text.length >= 6 &&
-      Number.isFinite(confNum) &&
-      confNum >= 0.48 &&
-      EXECUTION_OBSERVATION_PASS_REASONS_V0.has(reason) &&
-      observation.band === VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE;
+      (text.length >= 6 &&
+        Number.isFinite(confNum) &&
+        confNum >= 0.48 &&
+        EXECUTION_OBSERVATION_PASS_REASONS_V0.has(reason) &&
+        observation.band === VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE) ||
+      (EXECUTION_OBSERVATION_PASS_REASONS_V0.has(reason) &&
+        shouldRelaxUnknownBandForDirectListenV0(text, recordedMs, classifiedForRelax));
 
     if (observationPassThrough) {
       return finalizeRouteV0({
@@ -284,7 +331,15 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
     });
   }
 
-  const bandHold = rejectNonDirectedVoiceBandV0(observation, text);
+  const relaxMeta = {
+    recordedMs: Number.isFinite(recordedMs) ? recordedMs : undefined,
+    confidence: conf,
+    strategy,
+    maxRms,
+    source
+  };
+
+  const bandHold = rejectNonDirectedVoiceBandV0(observation, text, relaxMeta);
   if (bandHold) {
     return finalizeRouteV0({
       ...bandHold,
@@ -349,7 +404,7 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
     });
   }
 
-  const highConfHold = rejectNonDirectedVoiceBandV0(observation, text);
+  const highConfHold = rejectNonDirectedVoiceBandV0(observation, text, relaxMeta);
   if (highConfHold) {
     return finalizeRouteV0({
       ...highConfHold,

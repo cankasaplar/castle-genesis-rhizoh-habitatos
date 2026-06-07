@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
   runFastPrecheckFromTextV0,
   normalizeForFastPrecheckV0
@@ -35,9 +35,11 @@ describe("rhizohFastPrecheckV0", () => {
     expect(hit?.reply).toBe("İyi geceler — buradayım.");
   });
 
-  it("pipeline runs precheck before intent router", () => {
+  it("pipeline runs precheck before intent router when living surface off", () => {
+    vi.stubEnv("VITE_RHIZOH_LIVING_CONVERSATION_V1", "0");
     const out = runRhizohSpeechPipelineV0("tamam");
     expect(out.stage).toBe("fast_precheck");
     expect(out.llmBypass).toBe(true);
+    vi.unstubAllEnvs();
   });
 });

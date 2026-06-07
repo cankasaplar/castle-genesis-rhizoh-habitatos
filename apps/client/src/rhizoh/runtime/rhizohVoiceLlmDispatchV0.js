@@ -54,6 +54,10 @@ import {
 } from "./rhizohInputProvenanceV0.js";
 import { VOICE_PIPELINE_PATH_V0 } from "./rhizohVoiceDualPathRouterV0.js";
 import {
+  isRhizohLivingConversationSurfaceV1,
+  resolveFastReflexBridgeCopyV1
+} from "../experience/rhizohLivingConversationSurfaceV1.js";
+import {
   resolveVoiceUxFallbackV0,
   resolveSemanticGrayLlmShapingV0,
   shouldNoteVoiceVerifyBudgetV0
@@ -61,6 +65,12 @@ import {
 import { resolveMvicV0 } from "./rhizohMinimumPresenceExpressionV0.js";
 import { noteVoiceVerifyAttemptV0, isVoiceVerifyBudgetExhaustedV0 } from "./rhizohVoiceVerifyBudgetV0.js";
 import { resolveConversationAuthorityV0 } from "./rhizohVoiceConversationAuthorityV0.js";
+import {
+  ensureTurnSovereigntyLockedV0,
+  gateVoiceOutputForTurnV0
+} from "./turnSovereigntyWireV0.js";
+import { shouldBlockOnBoundaryViolationV0 } from "./turnSovereigntyEnforcementModeV0.js";
+import { routeRhizohInput } from "../router/routeRhizohInput.js";
 
 export const RHIZOH_VOICE_LLM_DISPATCH_SCHEMA_V0 = "castle.rhizoh.voice_llm_dispatch.v0";
 
@@ -204,7 +214,9 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     });
   }
 
-  const pipeline = traceRoutePhaseV0(traceId, () =>
+  const livingSurface = isRhizohLivingConversationSurfaceV1();
+
+  let pipeline = traceRoutePhaseV0(traceId, () =>
     runRhizohSpeechPipelineV0(raw, {
       sttInferred: sttNorm.inferredInputLocale,
       traceId,
@@ -222,15 +234,36 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
   );
 
   if (opts.pipelinePath === "fast" && pipeline.stage === "fast_drop") {
-    closeVoiceExecutionTraceV0(traceId, { ok: false, execution: "fast_drop" });
-    return Object.freeze({ ok: false, error: pipeline.error || "fast_path_no_reflex", pipeline });
+    if (livingSurface) {
+      pipeline = traceRoutePhaseV0(traceId, () =>
+        runRhizohSpeechPipelineV0(raw, {
+          sttInferred: sttNorm.inferredInputLocale,
+          traceId,
+          localFailed: false,
+          reflexLatencyMs: 0,
+          source: provenance.source,
+          modality: provenance.modality,
+          confidence: provenance.confidence,
+          band: provenance.band || opts.band,
+          strategy: provenance.strategy,
+          provenance,
+          pipelinePath: VOICE_PIPELINE_PATH_V0.SLOW
+        })
+      );
+    } else {
+      closeVoiceExecutionTraceV0(traceId, { ok: false, execution: "fast_drop" });
+      return Object.freeze({ ok: false, error: pipeline.error || "fast_path_no_reflex", pipeline });
+    }
   }
 
   if (opts.pipelinePath !== "fast" && pipeline.escalateToLlm && pipeline.intentPlan?.decay?.reasons?.length) {
     noteLocalReflexFailureV0(true);
   }
 
-  if (pipeline.stage === "fast_precheck" || pipeline.stage === "ambient" || pipeline.stage === "continuation") {
+  if (
+    !livingSurface &&
+    (pipeline.stage === "fast_precheck" || pipeline.stage === "ambient" || pipeline.stage === "continuation")
+  ) {
     const reply = pipeline.reply || "";
     if (opts.speakReply !== false && reply && !pipeline.silencePreferred) {
       await speakRhizohReplyChunkedV0(reply, {
@@ -258,7 +291,7 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     });
   }
 
-  if (opts.pipelinePath === "fast") {
+  if (opts.pipelinePath === "fast" && !livingSurface) {
     closeVoiceExecutionTraceV0(traceId, { ok: false, execution: "fast_path_llm_blocked" });
     return Object.freeze({ ok: false, error: "fast_path_llm_blocked", pipeline });
   }
@@ -431,6 +464,54 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     });
   }
 
+  const sovereigntyWire = ensureTurnSovereigntyLockedV0({
+    turnId: traceId,
+    text: msg,
+    modality: "voice",
+    source: opts.source || provenance.source,
+    conversationPhase: opts.conversationPhase,
+    userTurnCount: opts.userTurnCount,
+    voice: {
+      authority,
+      band: opts.band || opts.witnessed?.observation?.band,
+      dispatchRoute: opts.dispatchRoute
+    },
+    router: routeRhizohInput(msg, opts.continuity || {}, {
+      gatewayPhase: opts.gatewayPhase,
+      healthState: opts.healthState
+    })
+  });
+
+  if (
+    shouldBlockOnBoundaryViolationV0() &&
+    sovereigntyWire.wire?.speakPresenceAck &&
+    sovereigntyWire.lock?.sovereignOutput?.text
+  ) {
+    const presenceText = String(sovereigntyWire.lock.sovereignOutput.text);
+    const voiceGate = gateVoiceOutputForTurnV0(traceId, "presence_ack");
+    if (!voiceGate.block && opts.speakReply !== false) {
+      await speakRhizohReplyChunkedV0(presenceText, {
+        smoothAfterAck: false,
+        committedText: true,
+        traceId
+      });
+    }
+    const graph = closeVoiceExecutionTraceV0(traceId, {
+      ok: true,
+      execution: "turn_sovereignty_presence_ack",
+      llmBypass: true
+    });
+    return Object.freeze({
+      ok: true,
+      presenceAck: true,
+      reply: presenceText,
+      traceId,
+      turnSovereignty: sovereigntyWire.lock,
+      graph,
+      llmBypass: true
+    });
+  }
+
   const dedup = probeVoiceTranscriptDispatchV0(msg);
   if (!dedup.ok) {
     logVoiceWarnV0("VOICE_LLM_DISPATCH_DEDUP", dedup);
@@ -472,7 +553,10 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
   });
 
   if (opts.speakTransitionAck !== false) {
-    const ack = resolveLlmTransitionAckV0(resolveOutputLanguageCodeV0());
+    const locale = resolveOutputLanguageCodeV0();
+    const ack = livingSurface
+      ? resolveFastReflexBridgeCopyV1(String(locale || "tr").toLowerCase().startsWith("tr"), intentPlan.routeClass || "acknowledge")
+      : resolveLlmTransitionAckV0(locale);
     await speakRhizohReplyChunkedV0(ack, {
       smoothAfterAck: true,
       committedText: false,
