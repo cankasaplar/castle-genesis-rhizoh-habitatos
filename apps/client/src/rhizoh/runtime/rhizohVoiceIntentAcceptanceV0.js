@@ -8,6 +8,7 @@ import { logVoiceInfoV0 } from "./rhizohProductionLogNamespacesV0.js";
 import { getContinuityKernelSnapshotV0, CONTINUITY_STATE_V0 } from "./rhizohContinuityKernelV0.js";
 import { getGroundingLayerSnapshotV1 } from "./rhizohGroundingLayerV1.js";
 import { hasMeaningfulSpeechSignalV0 } from "./rhizohVoiceGrayZoneVerifyV0.js";
+import { isVoiceIngestStrictV0 } from "./rhizohVoiceConversationAuthorityV0.js";
 
 export const RHIZOH_VOICE_INTENT_ACCEPTANCE_SCHEMA_V0 = "rhizoh.voice_intent_acceptance.v0";
 
@@ -229,10 +230,28 @@ export function applyIntentFirstAcceptanceV0(
     });
   }
 
+  // Strict ingest suppresses hold entirely (strict_hold_suppressed) — upgrade to slow_llm when engaged.
+  if (
+    isVoiceIngestStrictV0() &&
+    rescued.speakMode === "hold" &&
+    buildSpeakSlowDecision &&
+    (slowEligible || assessment.score >= 0.5)
+  ) {
+    rescued = buildSpeakSlowDecision(
+      fast.intent,
+      "presence_intent_strict_slow",
+      band,
+      tier,
+      guards,
+      { verifyCount, intentRescue: assessment, priorReason: reason }
+    );
+  }
+
   logVoiceInfoV0("INTENT_FIRST_RESCUE", {
     priorReason: reason,
     rescueReason: rescued.reason,
     speakMode: rescued.speakMode,
+    execMode: rescued.execMode,
     score: assessment.score,
     signals: assessment.signals,
     maxRms: input.maxRms,

@@ -97,6 +97,21 @@ describe("voiceTranscriptConfidenceRouterV0", () => {
     expect(route.shadowForward).toBe(true);
   });
 
+  it("observation-passes English statement without question mark on direct_listen", () => {
+    vi.stubEnv("VITE_RHIZOH_VOICE_ATTENTION_MODE", "direct_listen");
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "I'm going to try to open some of these up.",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      recordedMs: 8500,
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(route.reason).toBe("whisper_default_conf");
+    expect(route.observationPass).toBe(true);
+  });
+
   it("blocks unknown band hallucinated thanks without micro reflex", () => {
     const route = routeVoiceTranscriptConfidenceV0({
       text: "Thank you.",

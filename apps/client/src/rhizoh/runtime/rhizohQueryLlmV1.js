@@ -28,6 +28,7 @@ import { resolvePostGateCommitmentV0 } from "./voicePostGateConsistencyV0.js";
 import { resolveSttGateConfidenceV0 } from "./sttGateConfidenceV0.js";
 import { VOICE_DIRECTED_SPEECH_BAND } from "./voiceDirectedSpeechObservationV0.js";
 import { buildRhizohContinuityHealthDetailV0, publishRhizohTrustDebugV0 } from "./rhizohTrustDebugV0.js";
+import { bindTurnIdentityV0 } from "./rhizohIdentityContinuityCoreV0.js";
 import { recordReplyFormatDriftSampleV0, getReplyFormatDriftRollingV0 } from "./replyFormatDriftTrackerV0.js";
 import {
   normalizeRhizohLlmGatewayResponseV0,
@@ -1148,6 +1149,15 @@ export async function queryRhizohLLM({
     });
     logRhizohHealth("continuity_saved", continuityHealthDetail);
     publishRhizohTrustDebugV0(continuityHealthDetail);
+    if (!isVoiceTurn && countsAsUserTurn) {
+      bindTurnIdentityV0({
+        turnId: turnTraceId,
+        intent: rhizohRouter?.intent ?? null,
+        preview: trimmed.slice(0, 120),
+        modality: "text",
+        emotionalTone: postOk.relationalTone?.tone ?? null
+      });
+    }
     return {
       reply: replyOk,
       directive: normalized.directive,

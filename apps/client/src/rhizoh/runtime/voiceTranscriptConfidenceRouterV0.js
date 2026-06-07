@@ -141,7 +141,13 @@ function shouldRelaxUnknownBandForDirectListenV0(text, recordedMs, classified) {
   if (!Number.isFinite(ms) || ms < DIRECT_LISTEN_UNKNOWN_MIN_RECORD_MS_V0) return false;
   if (text.length < DIRECT_LISTEN_UNKNOWN_MIN_CHARS_V0) return false;
   if ((classified.directedScore || 0) >= 1) return true;
-  return text.includes("?");
+  if (text.includes("?")) return true;
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
+  // Long mic capture + multi-word statement (English/Turkish) — not phantom "Result." chips.
+  if (wordCount >= 4 && text.length >= 20 && ms >= DIRECT_LISTEN_UNKNOWN_MIN_RECORD_MS_V0) {
+    return true;
+  }
+  return false;
 }
 
 /**

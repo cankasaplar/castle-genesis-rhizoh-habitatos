@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi, afterEach } from "vitest";
 import {
   applyIntentFirstAcceptanceV0,
   assessUserDirectedIntentV0,
@@ -9,6 +9,10 @@ import { noteGroundSignalV1, GROUND_SIGNAL_KIND_V1, __resetGroundingLayerForTest
 import { VOICE_SPEAK_MODE_V0 } from "../rhizohVoiceDualPathRouterV0.js";
 
 describe("rhizohVoiceIntentAcceptanceV0", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   beforeEach(() => {
     transitionContinuityStateV0(CONTINUITY_STATE_V0.IDLE);
     __resetGroundingLayerForTestV1();
@@ -55,6 +59,50 @@ describe("rhizohVoiceIntentAcceptanceV0", () => {
     );
     expect(rescued.speakMode).toBe(VOICE_SPEAK_MODE_V0.HOLD);
     expect(rescued.reason).toBe("presence_intent_hold");
+  });
+
+  it("strict ingest upgrades hold rescue to slow_llm speak", () => {
+    vi.stubEnv("VITE_RHIZOH_VOICE_ENGINE_V3", "1");
+    vi.stubEnv("VITE_RHIZOH_VOICE_INGEST_STRICT", "1");
+    transitionContinuityStateV0(CONTINUITY_STATE_V0.LISTENING);
+    noteGroundSignalV1(GROUND_SIGNAL_KIND_V1.MIC_OPEN);
+    const silent = {
+      speakMode: VOICE_SPEAK_MODE_V0.SILENT,
+      reason: "fast_noise_drop",
+      band: "unknown",
+      fastIntent: "noise"
+    };
+    const rescued = applyIntentFirstAcceptanceV0(
+      silent,
+      { text: "Rhizoh can you hear me", maxRms: 0.08, recordedMs: 8000 },
+      {},
+      {
+        buildHoldDecision: (intent, reason, band, tier, extra) =>
+          Object.freeze({
+            speakMode: VOICE_SPEAK_MODE_V0.HOLD,
+            reason,
+            band,
+            confidenceTier: tier,
+            ...extra
+          }),
+        buildSpeakSlowDecision: (intent, reason, band, tier, guards, extra) =>
+          Object.freeze({
+            speakMode: VOICE_SPEAK_MODE_V0.SPEAK,
+            execMode: "slow_llm",
+            reason,
+            band,
+            confidenceTier: tier,
+            guards,
+            ...extra
+          }),
+        trySlowPathEligibilityV0: () => true,
+        classifyVoiceFastIntentV0: () => ({ intent: "chat" }),
+        VOICE_CONFIDENCE_TIER_V0: { SLOW_READY: "slow_ready" }
+      }
+    );
+    expect(rescued.speakMode).toBe(VOICE_SPEAK_MODE_V0.SPEAK);
+    expect(rescued.execMode).toBe("slow_llm");
+    expect(["presence_intent_strict_slow", "presence_intent_slow"].includes(rescued.reason)).toBe(true);
   });
 
   it("does not rescue without engagement signals even when score is high", () => {
