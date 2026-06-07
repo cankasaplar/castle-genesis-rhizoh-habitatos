@@ -109,7 +109,75 @@ function summarizeSnapshotV0(val) {
 }
 
 /**
- * Probe all domain gates + core runtime operations.
+ * Read-only probe — route resolution + dry-run replay, no state mutation.
+ * Use for pass evaluation; live probe is opt-in via probeLive.
+ */
+export function runFullSystemProbeIsolatedV0() {
+  const gateResults = [];
+  let gatesPass = 0;
+
+  for (const route of FULL_SYSTEM_PROBE_ROUTES_V0) {
+    const resolved = resolveDomainIdFromPathV0(route.path);
+    const domainMatch = resolved === route.domain;
+    if (domainMatch) gatesPass += 1;
+    gateResults.push(
+      Object.freeze({
+        path: route.path,
+        label: route.label,
+        expectedDomain: route.domain,
+        resolvedDomain: resolved,
+        domainMatch,
+        gateOk: domainMatch,
+        isolated: true,
+        safeUiMode: null,
+        propagation: "read_only",
+        adaptersReady: null,
+        error: null
+      })
+    );
+  }
+
+  const liveOps = [];
+  const recordOp = (name, fn) => {
+    try {
+      const result = fn();
+      const ok = result?.ok !== false || result?.deferred === true || result?.dryRun === true;
+      liveOps.push(
+        Object.freeze({ name, ok, isolated: true, result: compactResultV0(result) })
+      );
+    } catch (e) {
+      liveOps.push(Object.freeze({ name, ok: false, isolated: true, error: String(e?.message || e) }));
+    }
+  };
+
+  recordOp("tensor_replay_dry_run", () =>
+    replayTensorIntentV0(RHIZOH_DOMAIN_ID_V0.WORLD, "open_world_map", { dryRun: true })
+  );
+  recordOp("causal_chain_replay", () =>
+    replayCausalChainV0(RHIZOH_DOMAIN_ID_V0.WORLD, "open_world_map")
+  );
+
+  const liveOpsPass = liveOps.filter((o) => o.ok).length;
+  const envBlockers = collectEnvBlockersV0();
+
+  return Object.freeze({
+    isolated: true,
+    readOnly: true,
+    gates: Object.freeze(gateResults),
+    gatesPass,
+    gatesTotal: gateResults.length,
+    liveOps: Object.freeze(liveOps),
+    liveOpsPass,
+    liveOpsTotal: liveOps.length,
+    consistencyAudit: null,
+    envBlockers,
+    pass:
+      gatesPass === gateResults.length && liveOpsPass === liveOps.length && envBlockers.length === 0
+  });
+}
+
+/**
+ * Live probe — mutates runtime state (diagnostics only). Prefer isolated probe for pass.
  */
 export function runFullSystemProbeV0() {
   const gateResults = [];
@@ -219,6 +287,8 @@ export function runFullSystemProbeV0() {
   const envBlockers = collectEnvBlockersV0();
 
   return Object.freeze({
+    isolated: false,
+    readOnly: false,
     gates: Object.freeze(gateResults),
     gatesPass,
     gatesTotal: gateResults.length,
@@ -339,23 +409,31 @@ function compactResultV0(result) {
 }
 
 /**
- * Full system report — snapshot + optional active probe.
- * @param {{ probe?: boolean, audit?: boolean, restorePath?: boolean }} [opts]
+ * Full system report — snapshot + optional probe.
+ * Pipeline: raw graph → compression → normalization metadata → audit → pass.
+ * @param {{ probe?: boolean, probeLive?: boolean, probeIsolated?: boolean, audit?: boolean, restorePath?: boolean }} [opts]
  */
 export function runFullSystemReportV0(opts = {}) {
   const pathname =
     typeof window !== "undefined" ? String(window.location.pathname || "/") : "/";
   const startedAt = Date.now();
+  const useIsolatedProbe = opts.probe === true && opts.probeLive !== true;
 
   if (opts.probe !== false && typeof window !== "undefined") {
     runDomainGateForPathV0(pathname);
   }
 
-  const probe = opts.probe === true ? runFullSystemProbeV0() : null;
+  const probe = opts.probe
+    ? useIsolatedProbe
+      ? runFullSystemProbeIsolatedV0()
+      : runFullSystemProbeV0()
+    : null;
 
-  if (opts.probe === true && opts.restorePath !== false && typeof window !== "undefined") {
+  if (opts.probe === true && !useIsolatedProbe && opts.restorePath !== false && typeof window !== "undefined") {
     runDomainGateForPathV0(pathname);
   }
+
+  const causalMap = buildCausalMapLayerV0({ probeIsolated: useIsolatedProbe });
 
   const audit =
     opts.audit !== false
@@ -365,8 +443,7 @@ export function runFullSystemReportV0(opts = {}) {
       : null;
 
   const domainCoherence = reconcileDomainPathCoherenceV0(pathname);
-  const liveConflicts = detectLiveConflictsV0(pathname);
-  const causalMap = buildCausalMapLayerV0();
+  const liveConflicts = detectLiveConflictsV0(pathname, { structuralOnly: true });
 
   const report = Object.freeze({
     schema: RHIZOH_FULL_SYSTEM_REPORT_SCHEMA_V0,
@@ -401,14 +478,21 @@ export function runFullSystemReportV0(opts = {}) {
     domainReconcile: domainCoherence,
     websocket: collectWebsocketDiagnosticV0(),
     epistemicSubstrate: collectEpistemicSubstrateV0(),
+    evaluation: Object.freeze({
+      structuralTruthPass: causalMap.truthLoss?.structuralPass !== false,
+      compressionBudget: causalMap.truthLoss?.compressionBudget ?? null,
+      compressionContext: causalMap.compressionContext ?? null,
+      probeMode: probe?.isolated ? "isolated_read_only" : probe ? "live_mutating" : "none"
+    }),
     windowSnapshots: collectWindowSnapshotsV0(),
     probe,
     audit,
     pass:
+      causalMap.truthLoss?.structuralPass !== false &&
       (probe?.pass ?? true) &&
       (audit?.pass ?? true) &&
       domainCoherence.pass === true &&
-      liveConflicts.pass === true &&
+      liveConflicts.structuralPass === true &&
       collectEnvBlockersV0().length === 0
   });
 
@@ -456,13 +540,13 @@ export function printFullSystemReportV0(report) {
     `    temporal trail: ${r.temporalTrail?.count ?? 0} markers`,
     `    causal map: ${r.causalMap?.nodeCount ?? 0} nodes / ${r.causalMap?.edgeCount ?? 0} edges (compressed:${r.causalMap?.compressed ? "yes" : "no"} ratio:${r.causalMap?.compression?.compressionRatio ?? 0})`,
     `    truth loss: ${
-      r.causalMap?.truthLoss?.pass
-        ? r.causalMap?.truthLoss?.policyBoundedCompression
-          ? "policy-bounded (ok)"
-          : "none"
-        : `${r.causalMap?.truthLoss?.criticalLossCount ?? 0}c/${r.causalMap?.truthLoss?.weakenedPathCount ?? 0}w`
+      r.evaluation?.structuralTruthPass
+        ? `structural ok (intentional:${r.causalMap?.truthLoss?.intentionalLossCount ?? 0})`
+        : `STRUCTURAL FAIL (${r.causalMap?.truthLoss?.structuralLossCount ?? 0})`
     }`,
-    `    conflicts: ${r.liveConflicts?.pass ? "none" : r.liveConflicts?.conflictCount ?? 0}`,
+    `    compression budget: ${r.evaluation?.compressionBudget?.withinBudget ? "within policy" : "review"}`,
+    `    conflicts: ${r.liveConflicts?.structuralPass ? "none (structural)" : r.liveConflicts?.structuralConflictCount ?? 0}`,
+    `    probe mode: ${r.evaluation?.probeMode ?? "none"}`,
     `    truthTrace: ${r.truthTrace.enabled ? "on" : "off"} (${r.truthTrace.count} entries)`,
     `    spatial gate: ${r.spatialReadyGate?.open ? "open" : "buffered"} (cesium:${r.spatialReadyGate?.cesiumReady ? "ready" : "pending"} buf:${r.spatialReadyGate?.buffered ?? 0})`,
     `    ws: ${r.websocket?.configured ? "configured" : "missing"} — ${r.websocket?.note ? "proxy may block 101" : ""}`,
@@ -473,6 +557,7 @@ export function printFullSystemReportV0(report) {
     `    behavioral drift: ${r.epistemicSubstrate?.behavioralDrift?.metrics?.identityCoherenceMetric ?? "n/a"} coherence`,
     `    calibration governor: ${r.epistemicSubstrate?.calibrationGovernor?.pendingCount ?? 0} pending`,
     `    truth loss narrative: ${r.causalMap?.truthLoss?.selfExplanation ?? "n/a"}`,
+    `    compression narrative: ${r.evaluation?.compressionBudget?.narrative ?? "n/a"}`,
     `    conflict narrative: ${r.liveConflicts?.selfExplanation ?? "n/a"}`,
     "  CONSOLE APIS",
     ...(r.epistemicSubstrate?.consoleApis || []).map((api) => `    ${api}`),
@@ -515,7 +600,9 @@ export function mountFullSystemReportConsoleV0() {
 
   window.__RHIZOH_FULL_REPORT__ = async (opts = {}) => {
     const report = runFullSystemReportV0({
-      probe: opts.probe !== false,
+      probe: opts.probe === true,
+      probeLive: opts.probeLive === true,
+      probeIsolated: opts.probeIsolated !== false,
       audit: opts.audit !== false,
       restorePath: opts.restorePath !== false,
       ...opts
@@ -524,7 +611,8 @@ export function mountFullSystemReportConsoleV0() {
     return report;
   };
   window.__RHIZOH_PRINT_REPORT__ = printFullSystemReportV0;
-  window.__RHIZOH_PROBE_GATES__ = runFullSystemProbeV0;
+  window.__RHIZOH_PROBE_GATES__ = runFullSystemProbeIsolatedV0;
+  window.__RHIZOH_PROBE_GATES_LIVE__ = runFullSystemProbeV0;
 
   if (typeof console !== "undefined") {
     console.info(

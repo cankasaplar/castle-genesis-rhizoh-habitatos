@@ -14,7 +14,7 @@ import {
   compressCausalGraphV0,
   publishCausalGraphCompressionV0
 } from "./rhizohCausalGraphCompressionV0.js";
-import { publishTruthLossDetectorV0 } from "./rhizohTruthLossDetectorV0.js";
+import { publishTruthLossDetectorV2 } from "./rhizohTruthLossDetectorV2.js";
 
 export const RHIZOH_CAUSAL_MAP_SCHEMA_V0 = "rhizoh.causal_map_layer.v0";
 
@@ -204,10 +204,12 @@ export function buildCausalMapLayerRawV0() {
 /**
  * Production causal map — always compressed to prevent graph explosion.
  */
-export function buildCausalMapLayerV0() {
+export function buildCausalMapLayerV0(opts = {}) {
   const raw = buildCausalMapLayerRawV0();
   const compressed = compressCausalGraphV0(raw);
-  const truthLoss = publishTruthLossDetectorV0(raw, compressed);
+  const truthLoss = publishTruthLossDetectorV2(raw, compressed, {
+    probeIsolated: opts.probeIsolated === true
+  });
   return Object.freeze({
     ...raw,
     compressed: true,
@@ -216,8 +218,15 @@ export function buildCausalMapLayerV0() {
     nodes: compressed.nodes,
     edges: compressed.edges,
     compression: compressed.stats,
+    compressionContext: compressed.compressionContext,
+    semanticBudget: compressed.semanticBudget,
     truthLoss,
     causalMapRaw: raw,
+    auditGraph: Object.freeze({
+      normalized: true,
+      source: "compressed_with_metadata",
+      structuralPass: truthLoss.structuralPass
+    }),
     selfNarrative: [compressed.selfNarrative, truthLoss.selfExplanation].filter(Boolean).join(" ")
   });
 }

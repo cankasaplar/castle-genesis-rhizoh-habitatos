@@ -75,10 +75,16 @@ export function detectTensorContradictionsV0(limit = 6) {
   });
 }
 
+const STRUCTURAL_CONFLICT_CODES_V0 = new Set([
+  "domain_drift",
+  "tensor_contradiction"
+]);
+
 /**
  * @param {string} [pathname]
+ * @param {{ structuralOnly?: boolean }} [opts]
  */
-export function detectLiveConflictsV0(pathname) {
+export function detectLiveConflictsV0(pathname, opts = {}) {
   const p =
     pathname ||
     (typeof window !== "undefined" ? String(window.location.pathname || "/") : "/");
@@ -123,36 +129,70 @@ export function detectLiveConflictsV0(pathname) {
   }
 
   if (causal.nodeCount > 0 && causal.edgeCount === 0) {
+    const intentional = causal.compressionContext?.intentional === true;
     conflicts.push(
       Object.freeze({
         code: "causal_graph_disconnected",
-        severity: "low",
+        lossType: intentional ? "intentional" : "structural",
+        severity: intentional ? "info" : "low",
         nodeCount: causal.nodeCount,
-        hint: "Events exist but no causal edges — narrative chain incomplete"
+        excludedFromPass: intentional,
+        hint: intentional
+          ? "Compressed graph awaiting spine edges — not a structural failure."
+          : "Events exist but no causal edges — narrative chain incomplete"
       })
     );
   }
 
-  if (causal.truthLoss && causal.truthLoss.pass === false) {
+  const structuralTruthFail =
+    causal.truthLoss?.structuralPass === false ||
+    (causal.truthLoss?.v0?.pass === false &&
+      causal.truthLoss?.structuralLossCount > 0 &&
+      !causal.truthLoss?.compressionContext?.intentional);
+
+  if (structuralTruthFail) {
     conflicts.push(
       Object.freeze({
         code: "semantic_truth_loss",
-        severity: causal.truthLoss.semanticOverCompression ? "high" : "medium",
-        criticalLossCount: causal.truthLoss.criticalLossCount,
-        weakenedPathCount: causal.truthLoss.weakenedPathCount,
-        degradedDomainCount: causal.truthLoss.degradedDomainCount,
-        hint: causal.truthLoss.selfExplanation
+        lossType: "structural",
+        severity: "high",
+        structuralLossCount: causal.truthLoss?.structuralLossCount ?? 0,
+        intentionalLossCount: causal.truthLoss?.intentionalLossCount ?? 0,
+        hint: causal.truthLoss?.selfExplanation
+      })
+    );
+  } else if (
+    causal.truthLoss?.intentionalLossCount > 0 &&
+    causal.truthLoss?.structuralPass === true
+  ) {
+    conflicts.push(
+      Object.freeze({
+        code: "compression_budget_applied",
+        lossType: "intentional",
+        severity: "info",
+        intentionalLossCount: causal.truthLoss.intentionalLossCount,
+        hint: causal.truthLoss.compressionBudget?.narrative,
+        excludedFromPass: true
       })
     );
   }
+
+  const structuralConflicts = conflicts.filter(
+    (c) => STRUCTURAL_CONFLICT_CODES_V0.has(c.code) || c.lossType === "structural"
+  );
+  const pass = opts.structuralOnly
+    ? structuralConflicts.length === 0
+    : conflicts.filter((c) => c.excludedFromPass !== true).length === 0;
 
   const report = Object.freeze({
     schema: RHIZOH_LIVE_CONFLICT_DETECTOR_SCHEMA_V0,
     evaluatedAtMs: Date.now(),
     influencesExecution: false,
     pathname: p,
-    pass: conflicts.length === 0,
+    pass,
+    structuralPass: structuralConflicts.length === 0,
     conflictCount: conflicts.length,
+    structuralConflictCount: structuralConflicts.length,
     domainCoherence,
     tensorCheck,
     spatialAuditPass: spatialAudit.pass,

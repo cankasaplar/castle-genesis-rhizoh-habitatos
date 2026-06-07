@@ -5,7 +5,15 @@
  */
 
 import { TRUTH_TRACE_KIND_V0 } from "./rhizohTruthTraceLayerV0.js";
-import { CAUSAL_EDGE_RELATION_V0 } from "./rhizohCausalMapLayerV0.js";
+
+/** Inline — avoid circular import with rhizohCausalMapLayerV0. */
+const CAUSAL_EDGE_RELATION_V0 = Object.freeze({
+  ENABLES: "enables",
+  CAUSES: "causes",
+  PROJECTS_TO: "projects_to",
+  TRAILS: "trails",
+  EXPLAINS: "explains"
+});
 
 export const RHIZOH_CAUSAL_GRAPH_COMPRESSION_SCHEMA_V0 = "rhizoh.causal_graph_compression.v0";
 
@@ -15,7 +23,15 @@ export const CAUSAL_COMPRESSION_POLICY_V0 = Object.freeze({
   maxTemporalTrailMembersPerCluster: 12,
   collapseReplayBranches: true,
   pruneStaleMs: 30 * 60 * 1000,
-  keepCriticalPath: true
+  keepCriticalPath: true,
+  edgeWeightPruneThreshold: 2
+});
+
+/** B-axis: minimum causal density per domain (semantic preservation budget). */
+export const SEMANTIC_PRESERVATION_BUDGET_V0 = Object.freeze({
+  minDomainTransition: 1,
+  minTensorWhenSpatial: 1,
+  minSpineEdges: 1
 });
 
 const CRITICAL_KINDS_V0 = new Set([
@@ -27,6 +43,18 @@ const CRITICAL_KINDS_V0 = new Set([
 ]);
 
 const COMPRESSIBLE_KINDS_V0 = new Set(["temporal_trail", TRUTH_TRACE_KIND_V0.TENSOR_REPLAY]);
+
+const SPINE_EDGE_RELATIONS_V0 = new Set([
+  CAUSAL_EDGE_RELATION_V0.ENABLES,
+  CAUSAL_EDGE_RELATION_V0.PROJECTS_TO,
+  CAUSAL_EDGE_RELATION_V0.CAUSES
+]);
+
+const SPINE_NODE_KINDS_V0 = new Set([
+  TRUTH_TRACE_KIND_V0.DOMAIN_TRANSITION,
+  TRUTH_TRACE_KIND_V0.TENSOR_DECISION,
+  TRUTH_TRACE_KIND_V0.SPATIAL_NODE
+]);
 
 /**
  * @param {object} node
@@ -137,15 +165,131 @@ function clusterTemporalTrailsV0(nodes) {
 }
 
 /**
+ * A-rule: domain → tensor → spatial spine nodes never collapse.
+ * @param {object[]} nodes
+ * @param {object[]} edges
+ */
+function resolveSemanticSpineV0(nodes, edges) {
+  const spineNodeIds = new Set();
+  const spineEdgeSigs = new Set();
+
+  for (const n of nodes) {
+    if (SPINE_NODE_KINDS_V0.has(n.kind)) spineNodeIds.add(n.id);
+  }
+  for (const e of edges) {
+    if (!SPINE_EDGE_RELATIONS_V0.has(e.relation)) continue;
+    const sig = `${e.from}|${e.to}|${e.relation}`;
+    spineEdgeSigs.add(sig);
+    spineNodeIds.add(e.from);
+    spineNodeIds.add(e.to);
+  }
+  return { spineNodeIds, spineEdgeSigs };
+}
+
+/**
+ * @param {object} edge
+ * @param {Map<string, object>} nodeById
+ * @param {number} now
+ */
+function edgeWeightV0(edge, nodeById, now) {
+  const relationScore =
+    edge.relation === CAUSAL_EDGE_RELATION_V0.ENABLES
+      ? 40
+      : edge.relation === CAUSAL_EDGE_RELATION_V0.PROJECTS_TO
+        ? 40
+        : edge.relation === CAUSAL_EDGE_RELATION_V0.CAUSES
+          ? 30
+          : edge.relation === CAUSAL_EDGE_RELATION_V0.EXPLAINS
+            ? 15
+            : edge.relation === CAUSAL_EDGE_RELATION_V0.TRAILS
+              ? 8
+              : 2;
+
+  const from = nodeById.get(edge.from);
+  const to = nodeById.get(edge.to);
+  const recencyMs = Math.max(from?.atMs || 0, to?.atMs || 0, edge.atMs || 0);
+  const recency =
+    recencyMs > 0 ? Math.min(20, Math.round((recencyMs / Math.max(now, 1)) * 10)) : 0;
+  const frequency = Number(edge.frequency || edge.hitCount || 1);
+  const causalDependency =
+    SPINE_EDGE_RELATIONS_V0.has(edge.relation) &&
+    (SPINE_NODE_KINDS_V0.has(from?.kind) || SPINE_NODE_KINDS_V0.has(to?.kind))
+      ? 50
+      : 0;
+
+  return relationScore + recency + frequency + causalDependency;
+}
+
+/**
+ * @param {object[]} nodes
+ * @param {object[]} edges
+ */
+function ensureSemanticBudgetV0(nodes, edges, rawNodes) {
+  const nodeById = new Map(nodes.map((n) => [n.id, n]));
+  const domains = new Set(nodes.map((n) => n.domain).filter(Boolean));
+  const restored = [...nodes];
+  const restoredIds = new Set(nodes.map((n) => n.id));
+  let budgetRestored = 0;
+
+  for (const domain of domains) {
+    const inDomain = restored.filter((n) => n.domain === domain);
+    const hasSpatial = inDomain.some((n) => n.kind === TRUTH_TRACE_KIND_V0.SPATIAL_NODE);
+    const domainTransitions = inDomain.filter(
+      (n) => n.kind === TRUTH_TRACE_KIND_V0.DOMAIN_TRANSITION
+    ).length;
+    const tensors = inDomain.filter((n) => n.kind === TRUTH_TRACE_KIND_V0.TENSOR_DECISION).length;
+
+    if (domainTransitions < SEMANTIC_PRESERVATION_BUDGET_V0.minDomainTransition) {
+      const candidate = rawNodes.find(
+        (n) => n.domain === domain && n.kind === TRUTH_TRACE_KIND_V0.DOMAIN_TRANSITION
+      );
+      if (candidate && !restoredIds.has(candidate.id)) {
+        restored.push(candidate);
+        restoredIds.add(candidate.id);
+        nodeById.set(candidate.id, candidate);
+        budgetRestored += 1;
+      }
+    }
+    if (
+      hasSpatial &&
+      tensors < SEMANTIC_PRESERVATION_BUDGET_V0.minTensorWhenSpatial
+    ) {
+      const candidate = rawNodes.find(
+        (n) => n.domain === domain && n.kind === TRUTH_TRACE_KIND_V0.TENSOR_DECISION
+      );
+      if (candidate && !restoredIds.has(candidate.id)) {
+        restored.push(candidate);
+        restoredIds.add(candidate.id);
+        nodeById.set(candidate.id, candidate);
+        budgetRestored += 1;
+      }
+    }
+  }
+
+  const spineEdges = edges.filter((e) => SPINE_EDGE_RELATIONS_V0.has(e.relation));
+  return {
+    nodes: restored,
+    edges,
+    spineEdgeCount: spineEdges.length,
+    budgetRestored
+  };
+}
+
+/**
  * @param {object[]} nodes
  * @param {number} max
+ * @param {Set<string>} spineNodeIds
  */
-function pruneByPriorityAndRecencyV0(nodes, max) {
+function pruneByPriorityAndRecencyV0(nodes, max, spineNodeIds = new Set()) {
   if (nodes.length <= max) return { nodes, pruned: 0 };
   const now = Date.now();
   const staleBefore = now - CAUSAL_COMPRESSION_POLICY_V0.pruneStaleMs;
 
-  const scored = nodes.map((n) => {
+  const spine = nodes.filter((n) => spineNodeIds.has(n.id));
+  const rest = nodes.filter((n) => !spineNodeIds.has(n.id));
+  const restBudget = Math.max(0, max - spine.length);
+
+  const scored = rest.map((n) => {
     let score = nodePriorityV0(n) * 1000;
     if (n.atMs && n.atMs >= staleBefore) score += 200;
     if (n.compressed) score += 50;
@@ -153,7 +297,8 @@ function pruneByPriorityAndRecencyV0(nodes, max) {
   });
 
   scored.sort((a, b) => b.score - a.score || (b.n.atMs || 0) - (a.n.atMs || 0));
-  const kept = scored.slice(0, max).map((s) => s.n);
+  const keptRest = scored.slice(0, restBudget).map((s) => s.n);
+  const kept = [...spine, ...keptRest];
   return { nodes: kept, pruned: nodes.length - kept.length };
 }
 
@@ -175,21 +320,48 @@ function pruneOrphanEdgesV0(edges, keptNodeIds) {
 }
 
 /**
+ * B-rule: weight-based prune forbidden when path connectivity would break.
  * @param {object[]} edges
  * @param {number} max
+ * @param {Set<string>} spineEdgeSigs
+ * @param {Map<string, object>} nodeById
  */
-function capEdgesV0(edges, max) {
+function capEdgesV0(edges, max, spineEdgeSigs = new Set(), nodeById = new Map()) {
   if (edges.length <= max) return { edges, pruned: 0 };
-  const priority = (e) => {
-    if (e.relation === CAUSAL_EDGE_RELATION_V0.ENABLES) return 4;
-    if (e.relation === CAUSAL_EDGE_RELATION_V0.PROJECTS_TO) return 4;
-    if (e.relation === CAUSAL_EDGE_RELATION_V0.CAUSES) return 3;
-    if (e.relation === CAUSAL_EDGE_RELATION_V0.EXPLAINS) return 2;
-    if (e.relation === CAUSAL_EDGE_RELATION_V0.TRAILS) return 1;
-    return 0;
+  const now = Date.now();
+  const threshold = CAUSAL_COMPRESSION_POLICY_V0.edgeWeightPruneThreshold;
+
+  const spine = [];
+  const rest = [];
+  for (const e of edges) {
+    const sig = `${e.from}|${e.to}|${e.relation}`;
+    if (spineEdgeSigs.has(sig) || SPINE_EDGE_RELATIONS_V0.has(e.relation)) {
+      spine.push(Object.freeze({ ...e, weight: edgeWeightV0(e, nodeById, now), spine: true }));
+    } else {
+      rest.push(Object.freeze({ ...e, weight: edgeWeightV0(e, nodeById, now), spine: false }));
+    }
+  }
+
+  const sortedRest = [...rest].sort((a, b) => b.weight - a.weight);
+  const keptRest = [];
+  let pruned = 0;
+  const restBudget = Math.max(0, max - spine.length);
+
+  for (const e of sortedRest) {
+    if (keptRest.length < restBudget && e.weight >= threshold) {
+      keptRest.push(e);
+    } else if (keptRest.length < restBudget) {
+      keptRest.push(e);
+    } else {
+      pruned += 1;
+    }
+  }
+
+  const kept = [...spine.slice(0, max), ...keptRest].slice(0, max);
+  return {
+    edges: kept.map(({ weight, spine: _s, ...e }) => Object.freeze(e)),
+    pruned: edges.length - kept.length
   };
-  const sorted = [...edges].sort((a, b) => priority(b) - priority(a));
-  return { edges: sorted.slice(0, max), pruned: edges.length - Math.min(max, edges.length) };
 }
 
 /**
@@ -203,30 +375,48 @@ export function compressCausalGraphV0(raw, opts = {}) {
   const inputNodes = Array.isArray(raw?.nodes) ? [...raw.nodes] : [];
   const inputEdges = Array.isArray(raw?.edges) ? [...raw.edges] : [];
 
+  const { spineNodeIds, spineEdgeSigs } = resolveSemanticSpineV0(inputNodes, inputEdges);
+
   const replay = collapseReplayBranchesV0(inputNodes);
   const trail = clusterTemporalTrailsV0(replay.nodes);
-  const nodePrune = pruneByPriorityAndRecencyV0(trail.nodes, maxNodes);
+  const nodePrune = pruneByPriorityAndRecencyV0(trail.nodes, maxNodes, spineNodeIds);
 
-  const keptIds = new Set(nodePrune.nodes.map((n) => n.id));
+  const budgetPass = ensureSemanticBudgetV0(nodePrune.nodes, inputEdges, inputNodes);
+  const budgetNodes = budgetPass.nodes;
+
+  const keptIds = new Set(budgetNodes.map((n) => n.id));
+  const nodeById = new Map(budgetNodes.map((n) => [n.id, n]));
   let edges = pruneOrphanEdgesV0(inputEdges, keptIds);
-  const edgeCap = capEdgesV0(edges, maxEdges);
+  const edgeCap = capEdgesV0(edges, maxEdges, spineEdgeSigs, nodeById);
   edges = edgeCap.edges;
 
   const stats = Object.freeze({
     inputNodes: inputNodes.length,
     inputEdges: inputEdges.length,
-    outputNodes: nodePrune.nodes.length,
+    outputNodes: budgetNodes.length,
     outputEdges: edges.length,
     replayBranchesDropped: replay.dropped,
     temporalTrailClustered: trail.clustered,
     nodesPruned: nodePrune.pruned,
+    semanticBudgetRestored: budgetPass.budgetRestored,
+    spineNodeCount: spineNodeIds.size,
+    spineEdgeCount: budgetPass.spineEdgeCount,
     edgesPruned: edgeCap.pruned + (inputEdges.length - pruneOrphanEdgesV0(inputEdges, keptIds).length),
     compressionRatio:
       inputNodes.length + inputEdges.length > 0
         ? Math.round(
-            ((1 - (nodePrune.nodes.length + edges.length) / (inputNodes.length + inputEdges.length)) * 1000)
+            ((1 - (budgetNodes.length + edges.length) / (inputNodes.length + inputEdges.length)) * 1000)
           ) / 1000
         : 0
+  });
+
+  const compressionContext = Object.freeze({
+    intentional: true,
+    mode: "policy_bounded",
+    structuralAxis: "node_edge_reduction",
+    semanticAxis: "preservation_budget",
+    skipTruthLossAsFailure: true,
+    spineProtected: true
   });
 
   return Object.freeze({
@@ -234,18 +424,23 @@ export function compressCausalGraphV0(raw, opts = {}) {
     evaluatedAtMs: Date.now(),
     influencesExecution: false,
     policy: CAUSAL_COMPRESSION_POLICY_V0,
+    semanticBudget: SEMANTIC_PRESERVATION_BUDGET_V0,
+    compressionContext,
     stats,
-    nodes: Object.freeze(nodePrune.nodes),
+    nodes: Object.freeze(budgetNodes),
     edges: Object.freeze(edges),
     selfNarrative: [
       `Compressed causal graph: ${stats.inputNodes}→${stats.outputNodes} nodes, ${stats.inputEdges}→${stats.outputEdges} edges.`,
       stats.replayBranchesDropped
-        ? `Collapsed ${stats.replayBranchesDropped} duplicate replay branch(es).`
+        ? `Collapsed ${stats.replayBranchesDropped} duplicate replay branch(es) — side branches only.`
         : null,
       stats.temporalTrailClustered
         ? `Clustered ${stats.temporalTrailClustered} temporal trail marker(s).`
         : null,
-      "Graph complexity bounded — observability without explosion."
+      stats.semanticBudgetRestored
+        ? `Semantic budget restored ${stats.semanticBudgetRestored} spine node(s).`
+        : null,
+      "Spine protected: domain→tensor→spatial never collapsed."
     ]
       .filter(Boolean)
       .join(" ")

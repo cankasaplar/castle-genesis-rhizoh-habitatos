@@ -49,6 +49,31 @@ describe("rhizohCausalGraphCompressionV0", () => {
     expect(out.influencesExecution).toBe(false);
   });
 
+  it("preserves domain→tensor→spatial spine under pressure", () => {
+    const nodes = [
+      ...Array.from({ length: 40 }, (_, i) => ({
+        id: `trail_${i}`,
+        kind: "temporal_trail",
+        domain: "world",
+        label: `poi:${i}`,
+        atMs: i
+      })),
+      { id: "d1", kind: TRUTH_TRACE_KIND_V0.DOMAIN_TRANSITION, domain: "world", label: "t0 → world", atMs: 9999 },
+      { id: "ten1", kind: TRUTH_TRACE_KIND_V0.TENSOR_DECISION, domain: "world", label: "open_world_map", atMs: 10000 },
+      { id: "sp1", kind: TRUTH_TRACE_KIND_V0.SPATIAL_NODE, domain: "world", label: "live:avatar", atMs: 10001 }
+    ];
+    const edges = [
+      { from: "d1", to: "ten1", relation: "enables" },
+      { from: "ten1", to: "sp1", relation: "projects_to" }
+    ];
+    const out = compressCausalGraphV0({ nodes, edges }, { maxNodes: 12 });
+    expect(out.nodes.some((n) => n.id === "d1")).toBe(true);
+    expect(out.nodes.some((n) => n.id === "ten1")).toBe(true);
+    expect(out.nodes.some((n) => n.id === "sp1")).toBe(true);
+    expect(out.edges.some((e) => e.from === "d1" && e.to === "ten1")).toBe(true);
+    expect(out.compressionContext.spineProtected).toBe(true);
+  });
+
   it("preserves critical path nodes under pressure", () => {
     const nodes = [
       ...Array.from({ length: 40 }, (_, i) => ({
