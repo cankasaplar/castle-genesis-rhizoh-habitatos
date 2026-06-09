@@ -61,6 +61,11 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      # Live world map feed (sports + news) — set in Render dashboard (never commit).
+      - key: FOOTBALL_DATA_ORG_TOKEN
+        sync: false
+      - key: NEWSDATA_API_KEY
+        sync: false
       # Voice Engine v3 — POST /rhizoh/voice/transcribe/v3
       # Whisper (accurate): OPENAI_API_KEY yeterli. Google STT (fast, opsiyonel): aşağıdaki anahtarlardan biri.
       - key: GOOGLE_SPEECH_API_KEY

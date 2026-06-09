@@ -121,6 +121,11 @@ import {
 import { initRhizoh } from "./rhizohProductionBootstrap.js";
 import { handleAcademicObservatoryExportGetV0 } from "./rhizoh/academicObservatoryHttpV0.js";
 import {
+  handleLiveSportsBundleGetV0,
+  handleLiveNewsHeadlinesGetV0,
+  handleLiveWorldFeedGetV0
+} from "./rhizoh/liveWorldFeedHttpV0.js";
+import {
   buildGenesisRuntimeSurfacePayload,
   recordGenesisEpistemicLedgerPersisted,
   recordGenesisEpistemicSealIssued,
@@ -215,6 +220,10 @@ const RL_RHIZOH_VOICE_TRANSCRIBE_PER_MIN = Math.max(
   Number(process.env.CASTLE_RL_RHIZOH_VOICE_TRANSCRIBE_PER_MIN || 30)
 );
 const RL_RHIZOH_EXTERNAL_TRUTH_PER_MIN = Math.max(10, Number(process.env.CASTLE_RL_RHIZOH_EXTERNAL_TRUTH_PER_MIN || 120));
+const RL_RHIZOH_LIVE_WORLD_FEED_PER_MIN = Math.max(
+  10,
+  Number(process.env.CASTLE_RL_RHIZOH_LIVE_WORLD_FEED_PER_MIN || 60)
+);
 const RL_RHIZOH_EXTERNAL_LOSS_BATCH_PER_MIN = Math.max(8, Number(process.env.CASTLE_RL_RHIZOH_EXTERNAL_LOSS_BATCH_PER_MIN || 48));
 const RL_RHIZOH_PRODUCT_OUTCOME_PER_MIN = Math.max(4, Number(process.env.CASTLE_RL_RHIZOH_PRODUCT_OUTCOME_PER_MIN || 24));
 const RL_RHIZOH_PRODUCT_OUTCOME_SUBJECT_PER_MIN = Math.max(
@@ -782,6 +791,31 @@ const httpServer = createServer(async (req, res) => {
       hasGatewayToken: Boolean(REQUIRED_GATEWAY_TOKEN),
       gatewayTokenLen: REQUIRED_GATEWAY_TOKEN ? REQUIRED_GATEWAY_TOKEN.length : 0
     });
+    return;
+  }
+
+  if (
+    req.method === "GET" &&
+    (pathname === "/rhizoh/live/world-feed" ||
+      pathname === "/rhizoh/live/sports-bundle" ||
+      pathname === "/rhizoh/live/news-headlines")
+  ) {
+    const ip = getHttpClientIp(req);
+    if (!checkHttpRateLimit(`rhizoh_live_world_feed:${ip}`, RL_RHIZOH_LIVE_WORLD_FEED_PER_MIN, 60_000)) {
+      sendJson(res, 429, { ok: false, error: "rate_limit_exceeded" });
+      return;
+    }
+    try {
+      const out =
+        pathname === "/rhizoh/live/sports-bundle"
+          ? await handleLiveSportsBundleGetV0()
+          : pathname === "/rhizoh/live/news-headlines"
+            ? await handleLiveNewsHeadlinesGetV0(req)
+            : await handleLiveWorldFeedGetV0(req);
+      sendJson(res, out.status, out.body);
+    } catch (e) {
+      sendJson(res, 502, { ok: false, error: String(e?.message || e) });
+    }
     return;
   }
 
