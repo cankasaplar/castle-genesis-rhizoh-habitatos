@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect, useLayoutEffect, useSyncExternalStore, useCallback, useMemo, memo, useReducer } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect, useSyncExternalStore, useCallback, useMemo, memo, useReducer } from "react";
 import { useLocation, useNavigate, matchPath, Link } from "react-router-dom";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
@@ -51,7 +51,6 @@ import {
 } from "./reality/realityDirector.js";
 import { computeMapSurfaceActive } from "./reality/realityEngineSurface.js";
 import CastleFlightHud from "./castleFlight/CastleFlightHud.jsx";
-import CesiumRealMapLayer from "./castleFlight/CesiumRealMapLayer.jsx";
 import { useCastleAuth } from "./firebase/useCastleAuth.js";
 import { useCastleActiveCastles } from "./firebase/useCastleActiveCastles.js";
 import { CastleAuthOverlay, CastleAccountBadge } from "./auth/CastleAuthOverlay.jsx";
@@ -110,13 +109,16 @@ import {
 import {
   applyRhizohWorldLandingLockV0,
   resolveRhizohProductWorldRealityModeV0,
+  shouldHideT0ContinuityChromeOnWorldSpaceV0,
   shouldRhizohFlyToIstanbulV0,
-  shouldRhizohT0LiveChromeVisibleV0
+  shouldRhizohT0LiveChromeVisibleV0,
+  shouldUseApexProceduralRealMapV0
 } from "./rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
 import {
   resolveActiveWorldDomainV0,
   resolveRhizohLayerModeV0,
-  resolveRhizohCesiumLayerActiveV0
+  resolveRhizohCesiumLayerActiveV0,
+  shouldMountRhizohWorldSpaceMapEngineV0
 } from "./rhizoh/runtime/rhizohLayerContextV0.js";
 import {
   isRhizohWorldDomainPathV0,
@@ -322,6 +324,7 @@ import { primeVoiceEnvironmentProfileV0 } from "./rhizoh/runtime/voiceEnvironmen
 import { isHardSilentCommandRouteV0 } from "./rhizoh/runtime/rhizohCommandGateV0.js";
 import { recordRhizohReplySurfaceV0 } from "./rhizoh/runtime/rhizohReplyRhythmDiagnosticV0.js";
 import {
+  awaitVoiceInstantAckReleaseV0,
   markVoiceTurnDispatchV0,
   speakAfterVoiceInstantAckSmoothV0,
   speakVoiceInstantAckV0
@@ -330,6 +333,17 @@ import {
   noteVoiceTranscriptDispatchedV0,
   probeVoiceTranscriptDispatchV0
 } from "./rhizoh/runtime/voiceTranscriptDispatchDedupV0.js";
+import {
+  publishFastPrecheckHitV0,
+  runFastPrecheckFromTextV0
+} from "./rhizoh/runtime/rhizohFastPrecheckV0.js";
+import { resolveWeatherReplyAsyncV1 } from "./rhizoh/runtime/rhizohCanonicalReflexSnapshotV1.js";
+import { resolveOutputLanguageCodeV0 } from "./rhizoh/runtime/rhizohOutputLanguagePolicyV0.js";
+import { tryInstantPresenceFastPathV0 } from "./rhizoh/runtime/rhizohInstantPresenceLayerV0.js";
+import {
+  isLivingSurfaceFastPrecheckEligibleV1,
+  isRhizohLivingConversationSurfaceV1
+} from "./rhizoh/experience/rhizohLivingConversationSurfaceV1.js";
 import {
   createRhizohClientTraceIdV0,
   logCastleLifecycleV0,
@@ -494,7 +508,10 @@ import {
 } from "./rhizoh/epistemic/index.js";
 import { enqueueRhizohMessageIntent, drainRhizohMessageIntentQueue } from "./castleFlight/castleIntentQueue.js";
 import { drainVoiceTranscriptRetryQueueV0 } from "./rhizoh/runtime/rhizohVoiceTranscriptRetryQueueV0.js";
-import { resolveVoiceMicCaptureDeviceV0 } from "./rhizoh/runtime/rhizohVoiceMicDeviceLockV0.js";
+import {
+  resolveVoiceMicBlockedSpeakTextV0,
+  resolveVoiceMicCaptureDeviceV0
+} from "./rhizoh/runtime/rhizohVoiceMicDeviceLockV0.js";
 import { parseDSL, detectCastleIntentWithoutCoords } from "./kernel/rhizohCommandParser.js";
 import {
   TCEE_PHASE,
@@ -3123,7 +3140,10 @@ class ApexEngine {
       const f = this.scene?.fog;
       if (f && typeof f.density === "number") f.density = d;
     };
-    if (mode === "REAL_MAP") {
+    const pathname = typeof window !== "undefined" ? String(window.location.pathname || "") : "";
+    const useProceduralRealMap =
+      mode === "REAL_MAP" && shouldUseApexProceduralRealMapV0({ pathname });
+    if (useProceduralRealMap) {
       this.realMapGroup.visible = true;
       setFog(0.00015);
     } else {
@@ -8683,8 +8703,16 @@ export default function AppRhizoh528() {
 
   const isWorldDomainActiveV0 = isRhizohWorldDomainPathV0(location.pathname);
   const activeWorldDomainV0 = resolveActiveWorldDomainV0({ pathname: location.pathname });
+  const isWorldSpaceMapStageV0 =
+    isWorldDomainActiveV0 &&
+    shouldMountRhizohWorldSpaceMapEngineV0({ pathname: location.pathname, worldDomain: activeWorldDomainV0 });
   const showT0LiveChromeV0 = shouldRhizohT0LiveChromeVisibleV0({
     isWorldDomainActive: isWorldDomainActiveV0,
+    worldDomain: activeWorldDomainV0,
+    pathname: location.pathname
+  });
+  const hideT0ContinuityChromeV0 = shouldHideT0ContinuityChromeOnWorldSpaceV0({
+    pathname: location.pathname,
     worldDomain: activeWorldDomainV0
   });
   const layerModeV0 = resolveRhizohLayerModeV0({
@@ -8763,6 +8791,15 @@ export default function AppRhizoh528() {
   );
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.__rhizoh = window.__rhizoh || {};
+    window.__rhizoh.runtimeHealth = Object.freeze({
+      ...runtimeHealth,
+      atMs: Date.now()
+    });
+  }, [runtimeHealth]);
+
+  useEffect(() => {
     if (runtimeHealth.gatewayConnected) {
       pushT0ContinuityPulseV0("İletişim açık · Rhizoh seninle", "live");
     }
@@ -8779,12 +8816,18 @@ export default function AppRhizoh528() {
     if (!booted) return undefined;
     ensureCastleWorldTopology();
     const stopAgents = startRhizohAgentRuntime({ heartbeatMs: 4200 });
-    const stopGenesisWire = startGenesisContinuityClientWireV0();
     return () => {
       stopAgents?.();
-      stopGenesisWire?.();
     };
   }, [booted]);
+
+  useEffect(() => {
+    if (!booted || !runtimeHealth.gatewayConnected) return undefined;
+    const stopGenesisWire = startGenesisContinuityClientWireV0();
+    return () => {
+      stopGenesisWire?.();
+    };
+  }, [booted, runtimeHealth.gatewayConnected]);
 
   useEffect(() => {
     if (greenRoomLive?.phase !== "LIVE") {
@@ -9737,6 +9780,7 @@ export default function AppRhizoh528() {
       };
       try {
         window.speechSynthesis.cancel();
+        window.speechSynthesis.resume?.();
       } catch {
         /* noop */
       }
@@ -10074,6 +10118,42 @@ export default function AppRhizoh528() {
           checkRepeat: voiceSource !== "mic_v3" || !witnessCompleted
         });
         if (!execRoute.executionAccepted) {
+          const blockedPrecheck = runFastPrecheckFromTextV0(trimmed, {
+            traceId: createRhizohClientTraceIdV0()
+          });
+          const livingBlockedVoice = isRhizohLivingConversationSurfaceV1();
+          if (
+            blockedPrecheck &&
+            (!livingBlockedVoice ||
+              isLivingSurfaceFastPrecheckEligibleV1(blockedPrecheck.intent))
+          ) {
+            let rescueReply = String(blockedPrecheck.reply || "").trim();
+            if (
+              blockedPrecheck.intent === "weather_stub" ||
+              blockedPrecheck.intent === "weather_live"
+            ) {
+              const weatherResolved = await resolveWeatherReplyAsyncV1(
+                resolveOutputLanguageCodeV0(),
+                { timeoutMs: 2200 }
+              );
+              rescueReply = String(weatherResolved.text || rescueReply).trim();
+            }
+            if (rescueReply) {
+              setRhizohMainHudReply({
+                text: rescueReply,
+                source: "fast_precheck_blocked_rescue",
+                at: Date.now()
+              });
+              speakRhizoh(rescueReply, { voiceTurn: manageVoiceTurn });
+              logVoiceInfoV0("FAST_PRECHECK_BLOCKED_RESCUE", {
+                intent: blockedPrecheck.intent,
+                reason: execRoute.reason,
+                preview: trimmed.slice(0, 48)
+              });
+              if (manageVoiceTurn) finishVoiceTurnIfNeeded();
+              return;
+            }
+          }
           const layerDecision = evaluateCastleLayerVoiceExecutionV1({
             eventTag: "STT_DISPATCH_BLOCKED",
             preview: trimmed,
@@ -10275,6 +10355,97 @@ export default function AppRhizoh528() {
         passMode: scriptGuard.passMode,
         whisperConfidence: scriptGuard.semantic?.whisperConfidence
       });
+
+      const voiceFastTraceId = createRhizohClientTraceIdV0();
+      const livingSurfaceVoice = isRhizohLivingConversationSurfaceV1();
+      const presenceFast = await tryInstantPresenceFastPathV0(trimmed, {
+        traceId: voiceFastTraceId,
+        source: voiceSource,
+        band: witnessed?.observation?.band,
+        speakReply: true,
+        router: routeRhizohInput(trimmed, buildContinuityPayload(trimmed), {
+          gatewayPhase: gatewayUx?.phase,
+          healthState: gatewayUx?.healthState
+        })
+      });
+      if (presenceFast.handled) {
+        const presenceReply = String(presenceFast.result?.reply || "Buradayım.").trim();
+        setRhizohMainHudReply({
+          text: presenceReply,
+          source: "presence_fast",
+          at: Date.now()
+        });
+        recordRhizohReplySurfaceV0({
+          channel: "tts",
+          text: presenceReply,
+          traceId: voiceFastTraceId,
+          source: "presence_fast"
+        });
+        publishAgentSpokeObservationV0({
+          text: presenceReply,
+          source: "presence_fast",
+          traceId: voiceFastTraceId
+        });
+        noteVoiceTurnLeakAuditV0("presence_fast_spoken", {
+          liveSpoke: presenceFast.result?.spoke === true
+        });
+        finishVoiceTurnLeakAuditV0();
+        stampVoiceUserGestureV0("presence_fast_speak");
+        speakRhizoh(presenceReply, { voiceTurn: manageVoiceTurn });
+        logVoiceInfoV0("FAST_PRESENCE_SPEAK", {
+          liveSpoke: presenceFast.result?.spoke === true,
+          preview: presenceReply.slice(0, 48)
+        });
+        if (!manageVoiceTurn) {
+          voiceTurnBusyRef.current = false;
+          voiceTurnBusySinceRef.current = 0;
+        }
+        return;
+      }
+
+      const voicePrecheck = runFastPrecheckFromTextV0(trimmed, { traceId: voiceFastTraceId });
+      if (
+        voicePrecheck &&
+        (!livingSurfaceVoice || isLivingSurfaceFastPrecheckEligibleV1(voicePrecheck.intent))
+      ) {
+        publishFastPrecheckHitV0(voicePrecheck, { traceId: voiceFastTraceId, channel: "voice" });
+        let reflexReply = String(voicePrecheck.reply || "").trim();
+        if (voicePrecheck.intent === "weather_stub" || voicePrecheck.intent === "weather_live") {
+          const weatherResolved = await resolveWeatherReplyAsyncV1(resolveOutputLanguageCodeV0(), {
+            timeoutMs: 2200
+          });
+          reflexReply = String(weatherResolved.text || reflexReply).trim();
+        }
+        setRhizohMainHudReply({
+          text: reflexReply,
+          source: "fast_precheck",
+          at: Date.now()
+        });
+        recordRhizohReplySurfaceV0({
+          channel: "tts",
+          text: reflexReply,
+          traceId: voiceFastTraceId,
+          source: "fast_precheck"
+        });
+        publishAgentSpokeObservationV0({
+          text: reflexReply,
+          source: "fast_precheck",
+          traceId: voiceFastTraceId
+        });
+        noteVoiceTurnLeakAuditV0("fast_precheck_spoken", { intent: voicePrecheck.intent });
+        finishVoiceTurnLeakAuditV0();
+        stampVoiceUserGestureV0("fast_precheck_speak");
+        speakRhizoh(reflexReply, { voiceTurn: manageVoiceTurn });
+        logVoiceInfoV0("FAST_PRECHECK_SPEAK", {
+          intent: voicePrecheck.intent,
+          preview: reflexReply.slice(0, 48)
+        });
+        if (!manageVoiceTurn) {
+          voiceTurnBusyRef.current = false;
+          voiceTurnBusySinceRef.current = 0;
+        }
+        return;
+      }
 
       setCmd(trimmed);
       noteVoiceTurnLeakAuditV0("input_box_written");
@@ -10890,11 +11061,7 @@ export default function AppRhizoh528() {
           setMicListening(false);
           setRhizohFieldState("IDLE");
           logVoiceWarnV0("V3_MIC_DEVICE_BLOCKED", { reason: micLock.reason, blocked: micLock.blockedLabels });
-          speakRhizoh(
-            micLock.reason === "virtual_mic_only"
-              ? "Sanal veya sistem sesi algılandı. Gerçek mikrofon seçin veya Stereo Mix'i kapatın."
-              : "Güvenli mikrofon bulunamadı."
-          );
+          speakRhizoh(resolveVoiceMicBlockedSpeakTextV0(micLock.reason, readUiLocaleV0()));
           return;
         }
         voiceEnvMicIdRef.current = micLock.deviceId;
@@ -11398,6 +11565,12 @@ export default function AppRhizoh528() {
     })();
   }, [startVoiceToRhizoh, fallbackToTextInput, speakRhizoh, gatewayUx?.phase]);
 
+  const speakMicOpenAckV0 = useCallback(() => {
+    stampVoiceUserGestureV0("mic_open_ack");
+    speakRhizoh("Buradayım.");
+    logVoiceInfoV0("MIC_OPEN_ACK_SPEAK", { source: "mic_button_gesture" });
+  }, [speakRhizoh]);
+
   const handleMicButtonClick = useCallback(() => {
     stampVoiceUserGestureV0("mic_button");
     voiceAutoRestartBlockedRef.current = false;
@@ -11430,11 +11603,21 @@ export default function AppRhizoh528() {
       voiceNetworkRetryRef.current = 0;
       clearVoiceSttRecoveryV0();
       logVoiceInfoV0("MIC_REBIND", { field: rhizohFieldState });
+      speakMicOpenAckV0();
       void startVoiceToRhizoh(true, { userGestureUrgent: true });
       return;
     }
+    speakMicOpenAckV0();
     startVoiceLoop();
-  }, [voiceLoopEnabled, micListening, rhizohFieldState, stopVoiceLoop, startVoiceLoop, startVoiceToRhizoh]);
+  }, [
+    voiceLoopEnabled,
+    micListening,
+    rhizohFieldState,
+    stopVoiceLoop,
+    startVoiceLoop,
+    startVoiceToRhizoh,
+    speakMicOpenAckV0
+  ]);
 
   const handleCameraButtonClick = useCallback(async () => {
     if (productCameraOn) {
@@ -12500,8 +12683,8 @@ export default function AppRhizoh528() {
         governanceStress={epistemicGovStress}
       >
         <div ref={containerRef} className="absolute inset-0 z-0 bg-black" />
-        <CesiumRealMapLayer active={cesiumLayerActiveV0} />
       </RhizohEpistemicWorldGravity>
+
       {showGlobeHomeOverlayV0 ? (
       <div className="absolute inset-0 z-[5] pointer-events-none">
         
@@ -12553,7 +12736,7 @@ export default function AppRhizoh528() {
       </div>
       ) : null}
 
-      {!T0_FIRST_MATCH_IDENTITY_V0 && !thoughtFieldExpanded && attentionRhythm.show_cognitive_field_chip ? (
+      {!isWorldSpaceMapStageV0 && !T0_FIRST_MATCH_IDENTITY_V0 && !thoughtFieldExpanded && attentionRhythm.show_cognitive_field_chip ? (
         <RhizohCognitiveFieldV0
           activeSurface={productSurface}
           userIntent={t0UserIntent}
@@ -12563,7 +12746,7 @@ export default function AppRhizoh528() {
           agentActivity={thinkingExposure.agentActivity}
         />
       ) : null}
-      {!T0_FIRST_MATCH_IDENTITY_V0 ? (
+      {!isWorldSpaceMapStageV0 && !T0_FIRST_MATCH_IDENTITY_V0 ? (
         <>
           <RhizohThoughtField3DV0
             activeSurface={productSurface}
@@ -13133,6 +13316,7 @@ export default function AppRhizoh528() {
         </div>
       ) : null}
 
+      {!hideT0ContinuityChromeV0 ? (
       <div
         className="pointer-events-none fixed right-4 z-[225] flex max-w-[18rem] flex-col items-end gap-2"
         style={{ top: "max(1rem, env(safe-area-inset-top))" }}
@@ -13193,6 +13377,7 @@ export default function AppRhizoh528() {
           )}
         </div>
       </div>
+      ) : null}
 
       <RhizohCastleLayersDebugV0 gatewayPhase={gatewayUx?.phase} />
       <CastleAuthOverlay auth={castleAuth} />

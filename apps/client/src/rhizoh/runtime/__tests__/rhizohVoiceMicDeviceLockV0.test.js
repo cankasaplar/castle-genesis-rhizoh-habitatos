@@ -3,6 +3,7 @@ import {
   __resetVoiceMicPinForTestV0,
   isVirtualOrLoopbackMicLabelV0,
   pinVoiceMicDeviceV0,
+  resolveVoiceMicBlockedSpeakTextV0,
   resolveVoiceMicCaptureDeviceV0
 } from "../rhizohVoiceMicDeviceLockV0.js";
 
@@ -29,6 +30,24 @@ describe("rhizohVoiceMicDeviceLockV0", () => {
     }
     expect(v.ok).toBe(true);
     expect(v.deviceId).toBeTruthy();
+  });
+
+  it("allows opaque default mic before permission grant", async () => {
+    const prev = navigator.mediaDevices?.enumerateDevices;
+    if (!prev) return;
+    navigator.mediaDevices.enumerateDevices = async () => [
+      { kind: "audioinput", deviceId: "", label: "", groupId: "g1" }
+    ];
+    const v = await resolveVoiceMicCaptureDeviceV0();
+    navigator.mediaDevices.enumerateDevices = prev;
+    expect(v.ok).toBe(true);
+    expect(v.reason).toBe("default_mic_pre_permission");
+    expect(v.deviceId).toBeNull();
+  });
+
+  it("localizes mic blocked speak text", () => {
+    expect(resolveVoiceMicBlockedSpeakTextV0("no_audio_input", "tr")).toMatch(/mikrofon/i);
+    expect(resolveVoiceMicBlockedSpeakTextV0("no_audio_input", "en")).toMatch(/microphone/i);
   });
 
   it("pins preferred safe device id", async () => {

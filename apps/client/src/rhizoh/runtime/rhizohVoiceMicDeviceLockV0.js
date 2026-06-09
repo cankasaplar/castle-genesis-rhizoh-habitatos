@@ -79,6 +79,21 @@ export async function resolveVoiceMicCaptureDeviceV0(opts = {}) {
   const devices = await listAudioInputDevicesV0();
   const blocked = devices.filter((d) => d.virtual);
   const safe = devices.filter((d) => d.deviceId && !d.virtual);
+  const opaqueDefault = devices.filter((d) => !d.virtual && !d.deviceId);
+
+  // Before mic permission, browsers expose audioinput rows with empty deviceId — still capturable via default getUserMedia.
+  if (!safe.length && opaqueDefault.length) {
+    return Object.freeze({
+      ok: true,
+      reason: "default_mic_pre_permission",
+      deviceId: null,
+      label: opaqueDefault[0]?.label || "Default microphone",
+      virtual: false,
+      blockedCount: blocked.length,
+      blockedLabels: Object.freeze(blocked.map((d) => d.label)),
+      candidateCount: opaqueDefault.length
+    });
+  }
 
   if (!safe.length) {
     return Object.freeze({
@@ -124,6 +139,22 @@ export function publishVoiceMicDeviceDebugV0(snapshot) {
   } catch {
     /* noop */
   }
+}
+
+/**
+ * @param {"virtual_mic_only" | "no_audio_input" | string} reason
+ * @param {string} [locale]
+ */
+export function resolveVoiceMicBlockedSpeakTextV0(reason, locale = "tr") {
+  const tr = String(locale || "tr").toLowerCase().startsWith("tr");
+  if (reason === "virtual_mic_only") {
+    return tr
+      ? "Sanal veya sistem sesi algılandı. Gerçek mikrofon seçin veya Stereo Mix'i kapatın."
+      : "Virtual or system audio input detected. Choose a real microphone or disable Stereo Mix.";
+  }
+  return tr
+    ? "Güvenli mikrofon bulunamadı. Tarayıcıda mikrofon iznini verip tekrar dene."
+    : "No safe microphone found. Grant microphone permission in the browser and try again.";
 }
 
 export function __resetVoiceMicPinForTestV0() {
