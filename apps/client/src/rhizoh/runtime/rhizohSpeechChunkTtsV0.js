@@ -15,6 +15,10 @@ import {
   resolveGlueProsodyForChunkV0
 } from "./rhizohConversationContinuityGlueV0.js";
 import { gateVoiceOutputForTurnV0 } from "./turnSovereigntyWireV0.js";
+import {
+  sanitizeSpeechTextForTtsV0,
+  splitLongTtsChunkV0
+} from "./rhizohSpeechTtsSanitizeV0.js";
 
 export const RHIZOH_SPEECH_CHUNK_TTS_SCHEMA_V0 = "castle.rhizoh.speech_chunk_tts.v0";
 
@@ -55,7 +59,7 @@ export function applyRhizohSpeechHintsToUtteranceV0(utterance, hints = {}) {
  * @returns {Promise<{ ok: boolean, chunks: number, handoff?: object }>}
  */
 export async function speakRhizohReplyChunkedV0(text, opts = {}) {
-  const full = String(text || "").trim();
+  const full = sanitizeSpeechTextForTtsV0(String(text || "").trim());
   if (!full || typeof window === "undefined" || !window.speechSynthesis) {
     return { ok: false, chunks: 0 };
   }
@@ -74,11 +78,11 @@ export async function speakRhizohReplyChunkedV0(text, opts = {}) {
   const feel = opts.microRhythmFeel || expr?.speechShape?.microRhythmFeel || expr?.conversationBehavior?.microRhythmFeel;
 
   const seg = segmentSpeechTextV0(full, { maxClauseChars: 120 });
-  const allSegments = seg.segments.map((s) => s.text).filter(Boolean);
+  const allSegments = seg.segments.flatMap((s) => splitLongTtsChunkV0(s.text, 280)).filter(Boolean);
   const MAX_TTS_SEGMENTS_V0 = 32;
   const plan = allSegments.slice(0, MAX_TTS_SEGMENTS_V0);
   const droppedSegments = Math.max(0, allSegments.length - plan.length);
-  const chunks = plan.length ? plan : [full];
+  const chunks = plan.length ? plan : splitLongTtsChunkV0(full, 280);
   const ttsSpokenText = chunks.join(" ");
 
   const glue = opts.glue;
@@ -93,7 +97,7 @@ export async function speakRhizohReplyChunkedV0(text, opts = {}) {
       const gapMs = prosody
         ? Math.max(40, prosody.gapMs)
         : Math.max(40, Number(feel?.hesitationMs) || 70);
-      const u = new SpeechSynthesisUtterance(chunk.slice(0, 280));
+      const u = new SpeechSynthesisUtterance(chunk);
       applyRhizohSpeechHintsToUtteranceV0(u, {
         skeleton: sk,
         microRhythmFeel: feel,

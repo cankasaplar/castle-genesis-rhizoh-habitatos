@@ -49,6 +49,7 @@ export const FAST_PRECHECK_WAKE_INTENTS_V0 = Object.freeze(
     "sports_fixture",
     "news_headlines",
     "map_context",
+    "briefing_query",
     "presence_query",
     "social_ack",
     "chat_invite"
@@ -73,6 +74,7 @@ export const RHIZOH_SMALL_TALK_PRECHECK_INTENTS_V0 = Object.freeze([
   "sports_fixture",
   "news_headlines",
   "map_context",
+  "briefing_query",
   "presence_query",
   "chat_invite"
 ]);
@@ -190,8 +192,8 @@ const FAST_REGEX_MICRO_V0 = Object.freeze([
   {
     intent: "greeting",
     re: /^(selam|merhaba|hey|hi|hello|günaydın|gunaydin|gunaydın)\b/i,
-    tr: "Günaydın — buradayım.",
-    en: "Good morning — I'm here."
+    tr: "Merhaba.",
+    en: "Hello."
   },
   {
     intent: "greeting",
@@ -216,6 +218,12 @@ const FAST_REGEX_MICRO_V0 = Object.freeze([
     re: /^(rhizoh|rizo|rezo)(\s|!|\?|$)/i,
     tr: "Buradayım.",
     en: "I'm here."
+  },
+  {
+    intent: "briefing_query",
+    re: /^(kısa\s+brifing|kisa\s+brifing|brifing|briefing|günlük\s+özet|gunluk\s+ozet)\b/i,
+    tr: "Kısa brifing hazırlıyorum.",
+    en: "Preparing a quick briefing."
   },
   { intent: "wellbeing", re: /^(nasılsın|nasilsin|how are you)(\s+dostum)?\b/i, tr: "İyiyim, sen nasılsın?", en: "I'm well — and you?" },
   { intent: "thanks", re: /^(teşekkür|tesekkur|thanks)\b/i, tr: "Rica ederim.", en: "You're welcome." },

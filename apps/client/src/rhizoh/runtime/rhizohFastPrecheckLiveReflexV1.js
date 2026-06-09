@@ -121,6 +121,51 @@ export function executeFastPrecheckReflexV0(canonicalIntent, snapshotData, local
       return tr ? `Öne çıkan başlıklar: ${line}.` : `Top headlines: ${line}.`;
     }
 
+    case CANONICAL_INTENT_V1.BRIEFING_QUERY: {
+      const weatherLine = snap?.weather?.live
+        ? formatWorldMapWeatherLineV0(
+            {
+              temperature: snap.weather.temperature,
+              description: snap.weather.description,
+              weatherMain: snap.weather.description,
+              cloudDensity: 0,
+              humidity: (snap.weather.humidity || 0) / 100,
+              rainIntensity: 0,
+              wind: snap.weather.windMs || 0,
+              timestamp: snap.timestamp
+            },
+            locale
+          )
+        : tr
+          ? "hava verisi yok"
+          : "no weather";
+      const trafficLine = snap?.traffic
+        ? formatWorldMapTrafficLineV0(
+            {
+              level: snap.traffic.level,
+              intensity: snap.traffic.intensity,
+              currentTravelTimeSec: 0,
+              freeFlowTravelTimeSec: 0,
+              currentSpeedKmh: 0,
+              freeFlowSpeedKmh: 0,
+              timestamp: snap.timestamp,
+              confidence: 1,
+              roadClosure: snap.traffic.level === "closed"
+            },
+            locale
+          )
+        : tr
+          ? "trafik verisi yok"
+          : "no traffic";
+      const headline = truncateHeadlineV0(snap?.news?.headlines?.[0]?.title || "", 90);
+      if (tr) {
+        const newsPart = headline ? `Gündem: ${headline}.` : "Gündem başlığı henüz yok.";
+        return `Kısa brifing. ${city} — ${weatherLine}, ${trafficLine}. ${newsPart}`;
+      }
+      const newsPart = headline ? `Headline: ${headline}.` : "No headline yet.";
+      return `Quick briefing. ${city} — ${weatherLine}, ${trafficLine}. ${newsPart}`;
+    }
+
     case CANONICAL_INTENT_V1.MAP_CONTEXT: {
       const weatherLine = snap?.weather?.live
         ? formatWorldMapWeatherLineV0(

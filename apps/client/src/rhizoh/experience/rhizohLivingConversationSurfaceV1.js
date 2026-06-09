@@ -33,6 +33,7 @@ export const LIVING_SURFACE_FAST_PRECHECK_INTENTS_V1 = Object.freeze([
   "sports_fixture",
   "news_headlines",
   "map_context",
+  "briefing_query",
   "presence_query",
   "social_ack",
   "chat_invite"

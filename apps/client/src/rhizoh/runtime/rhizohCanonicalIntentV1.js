@@ -36,6 +36,7 @@ export const CANONICAL_INTENT_V1 = Object.freeze({
   SPORTS_FIXTURE: "SPORTS_FIXTURE",
   NEWS_HEADLINES: "NEWS_HEADLINES",
   MAP_CONTEXT: "MAP_CONTEXT",
+  BRIEFING_QUERY: "BRIEFING_QUERY",
   SYSTEM_STATUS: "SYSTEM_STATUS",
   PRESENCE_QUERY: "PRESENCE_QUERY",
   CHAT_INVITE: "CHAT_INVITE",
@@ -119,6 +120,11 @@ const TOKEN_FEATURE_MAP_V1 = Object.freeze({
   wait: "command",
   devam: "command",
   start: "command",
+  brifing: "briefing",
+  briefing: "briefing",
+  ozet: "briefing",
+  summary: "briefing",
+  kisa: "briefing",
   hava: "weather",
   weather: "weather",
   tiempo: "weather",
@@ -262,10 +268,54 @@ const CLIC_LIVE_PHRASE_BOOSTS_V1 = Object.freeze([
   { phrase: "hava nasil", intent: CANONICAL_INTENT_V1.WEATHER_LIVE, boost: 4 },
   { phrase: "burada durum", intent: CANONICAL_INTENT_V1.MAP_CONTEXT, boost: 5 },
   { phrase: "disari cik", intent: CANONICAL_INTENT_V1.MAP_CONTEXT, boost: 5 },
-  { phrase: "cevrede ne", intent: CANONICAL_INTENT_V1.MAP_CONTEXT, boost: 4 }
+  { phrase: "cevrede ne", intent: CANONICAL_INTENT_V1.MAP_CONTEXT, boost: 4 },
+  { phrase: "kisa brifing", intent: CANONICAL_INTENT_V1.BRIEFING_QUERY, boost: 6 },
+  { phrase: "kısa brifing", intent: CANONICAL_INTENT_V1.BRIEFING_QUERY, boost: 6 },
+  { phrase: "gunluk ozet", intent: CANONICAL_INTENT_V1.BRIEFING_QUERY, boost: 5 },
+  { phrase: "günlük özet", intent: CANONICAL_INTENT_V1.BRIEFING_QUERY, boost: 5 }
 ]);
 
+let sessionPresenceAckedV1 = false;
+let sessionGreetingCountV1 = 0;
+
+/**
+ * Session-aware wake/greeting reply — first wake is short presence, later turns greet briefly.
+ * @param {string} [locale]
+ */
+export function resolveGreetingWakeReplyV1(locale) {
+  const tr = String(locale || resolveOutputLanguageCodeV0() || "tr")
+    .toLowerCase()
+    .startsWith("tr");
+  if (!sessionPresenceAckedV1) {
+    sessionPresenceAckedV1 = true;
+    return tr ? "Buradayım." : "I'm here.";
+  }
+  sessionGreetingCountV1 += 1;
+  if (sessionGreetingCountV1 <= 2) {
+    return tr ? "Merhaba." : "Hello.";
+  }
+  return tr ? "Buradayım." : "I'm here.";
+}
+
+/** @param {string} [locale] */
+export function resolveMorningGreetingReplyV1(locale) {
+  const tr = String(locale || resolveOutputLanguageCodeV0() || "tr")
+    .toLowerCase()
+    .startsWith("tr");
+  if (!sessionPresenceAckedV1) {
+    sessionPresenceAckedV1 = true;
+    return tr ? "Günaydın." : "Good morning.";
+  }
+  return tr ? "Günaydın." : "Good morning.";
+}
+
+export function __resetSessionGreetingStateForTestV1() {
+  sessionPresenceAckedV1 = false;
+  sessionGreetingCountV1 = 0;
+}
+
 const LIVE_INTENT_PRIORITY_V1 = Object.freeze([
+  CANONICAL_INTENT_V1.BRIEFING_QUERY,
   CANONICAL_INTENT_V1.TRAFFIC_QUERY,
   CANONICAL_INTENT_V1.SPORTS_LIVE,
   CANONICAL_INTENT_V1.NEWS_HEADLINES,
@@ -463,6 +513,9 @@ export function projectCanonicalIntentV1(bag) {
   if (has("date_query")) {
     return { canonicalIntent: CANONICAL_INTENT_V1.DATE_QUERY, confidence: 0.9 };
   }
+  if (has("briefing") && n <= 8) {
+    return { canonicalIntent: CANONICAL_INTENT_V1.BRIEFING_QUERY, confidence: 0.91 };
+  }
   if (has("system_status") && n <= 8) {
     return { canonicalIntent: CANONICAL_INTENT_V1.SYSTEM_STATUS, confidence: 0.9 };
   }
@@ -570,6 +623,17 @@ export function scoreIntentV1(norm, bag) {
   }
 
   if (
+    text.includes("brifing") ||
+    folded.includes("brifing") ||
+    text.includes("briefing") ||
+    folded.includes("briefing") ||
+    (tokens.includes("ozet") && tokens.includes("kisa")) ||
+    (tokens.includes("ozet") && tokens.includes("kisa"))
+  ) {
+    add(CANONICAL_INTENT_V1.BRIEFING_QUERY, 5);
+  }
+
+  if (
     (text.includes("trafik") || folded.includes("trafik")) &&
     (text.includes("durum") ||
       text.includes("nasil") ||
@@ -663,17 +727,9 @@ export function formatTimeReplyV1(locale) {
 }
 
 const CANONICAL_REPLY_V1 = Object.freeze({
-  [CANONICAL_INTENT_V1.GREETING_WAKE]: Object.freeze({
-    tr: "Merhaba — buradayım.",
-    en: "Hello — I'm here."
-  }),
   [CANONICAL_INTENT_V1.GREETING]: Object.freeze({
     tr: "Merhaba.",
     en: "Hello."
-  }),
-  [CANONICAL_INTENT_V1.MORNING_GREETING]: Object.freeze({
-    tr: "Günaydın — buradayım.",
-    en: "Good morning — I'm here."
   }),
   [CANONICAL_INTENT_V1.HEARING_CHECK]: Object.freeze({
     tr: "Evet, duyuyorum — buradayım.",
@@ -803,7 +859,8 @@ export function canonicalIntentToPrecheckV1(hit, locale) {
     CANONICAL_INTENT_V1.SPORTS_LIVE,
     CANONICAL_INTENT_V1.SPORTS_FIXTURE,
     CANONICAL_INTENT_V1.NEWS_HEADLINES,
-    CANONICAL_INTENT_V1.MAP_CONTEXT
+    CANONICAL_INTENT_V1.MAP_CONTEXT,
+    CANONICAL_INTENT_V1.BRIEFING_QUERY
   ]);
 
   if (LIVE_REFLEX_INTENTS_V1.has(hit.canonicalIntent)) {
@@ -846,6 +903,10 @@ export function canonicalIntentToPrecheckV1(hit, locale) {
     reply = formatSystemStatusReplyV1(loc);
   } else if (hit.canonicalIntent === CANONICAL_INTENT_V1.PRESENCE_QUERY) {
     reply = formatPresenceQueryReplyV1(loc);
+  } else if (hit.canonicalIntent === CANONICAL_INTENT_V1.GREETING_WAKE) {
+    reply = resolveGreetingWakeReplyV1(loc);
+  } else if (hit.canonicalIntent === CANONICAL_INTENT_V1.MORNING_GREETING) {
+    reply = resolveMorningGreetingReplyV1(loc);
   } else {
     const table = CANONICAL_REPLY_V1[hit.canonicalIntent];
     reply = table ? (loc === "tr" ? table.tr : table.en) : "";

@@ -5,7 +5,9 @@ import {
   buildCanonicalFeatureBagV1,
   normalizeCanonicalTokensV1,
   scoreIntentV1,
-  canonicalIntentToPrecheckV1
+  canonicalIntentToPrecheckV1,
+  resolveGreetingWakeReplyV1,
+  __resetSessionGreetingStateForTestV1
 } from "../rhizohCanonicalIntentV1.js";
 import { runFastPrecheckFromTextV0 } from "../rhizohFastPrecheckV0.js";
 import {
@@ -16,6 +18,7 @@ import {
 describe("rhizohCanonicalIntentV1", () => {
   beforeEach(() => {
     __resetOlpStateForTestV0();
+    __resetSessionGreetingStateForTestV1();
     localStorage.setItem("rhizoh.user.language.v0", "tr");
     hydrateOlpFromPersistedPreferenceV0();
   });
@@ -187,5 +190,25 @@ describe("rhizohCanonicalIntentV1", () => {
     expect(mapped?.intent).toBe("traffic_query");
     expect(mapped?.snapshotVersion).toBe("2.1");
     expect(mapped?.reply).toMatch(/trafik|yoğun|offline/i);
+  });
+
+  it("session greeting wake is short on first turn then brief hello", () => {
+    expect(resolveGreetingWakeReplyV1("tr")).toBe("Buradayım.");
+    expect(resolveGreetingWakeReplyV1("tr")).toBe("Merhaba.");
+  });
+
+  it("fast precheck greeting wake uses short first reply", () => {
+    __resetSessionGreetingStateForTestV1();
+    const hit = runFastPrecheckFromTextV0("hola rhizoh");
+    expect(hit?.reply).toBe("Buradayım.");
+  });
+
+  it("detects kısa brifing as local briefing reflex", () => {
+    expect(probeCanonicalIntentV1("kısa brifing")?.canonicalIntent).toBe(
+      CANONICAL_INTENT_V1.BRIEFING_QUERY
+    );
+    const hit = runFastPrecheckFromTextV0("kısa brifing");
+    expect(hit?.intent).toBe("briefing_query");
+    expect(hit?.reply).toMatch(/brifing|hava|trafik|gündem/i);
   });
 });

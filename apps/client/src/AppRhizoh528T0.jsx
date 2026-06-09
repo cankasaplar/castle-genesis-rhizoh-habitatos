@@ -340,6 +340,8 @@ import {
 import { resolveWeatherReplyAsyncV1 } from "./rhizoh/runtime/rhizohCanonicalReflexSnapshotV1.js";
 import { resolveOutputLanguageCodeV0 } from "./rhizoh/runtime/rhizohOutputLanguagePolicyV0.js";
 import { tryInstantPresenceFastPathV0 } from "./rhizoh/runtime/rhizohInstantPresenceLayerV0.js";
+import { sanitizeSpeechTextForTtsV0 } from "./rhizoh/runtime/rhizohSpeechTtsSanitizeV0.js";
+import { speakRhizohReplyChunkedV0 } from "./rhizoh/runtime/rhizohSpeechChunkTtsV0.js";
 import {
   isLivingSurfaceFastPrecheckEligibleV1,
   isRhizohLivingConversationSurfaceV1
@@ -9736,7 +9738,7 @@ export default function AppRhizoh528() {
       }
       const sessionId = ++voiceTtsSessionIdRef.current;
       const voiceLocale = readSpeechLocaleForVoiceV0();
-      const spoken = String(text).slice(0, 1800);
+      const spoken = sanitizeSpeechTextForTtsV0(String(text)).slice(0, 1800);
       recordRhizohReplySurfaceV0({
         channel: "tts",
         text: spoken,
@@ -10391,7 +10393,11 @@ export default function AppRhizoh528() {
         });
         finishVoiceTurnLeakAuditV0();
         stampVoiceUserGestureV0("presence_fast_speak");
-        speakRhizoh(presenceReply, { voiceTurn: manageVoiceTurn });
+        if (!presenceFast.result?.spoke) {
+          speakRhizoh(presenceReply, { voiceTurn: manageVoiceTurn });
+        } else if (manageVoiceTurn) {
+          setVoiceReady(true);
+        }
         logVoiceInfoV0("FAST_PRESENCE_SPEAK", {
           liveSpoke: presenceFast.result?.spoke === true,
           preview: presenceReply.slice(0, 48)
@@ -10435,7 +10441,16 @@ export default function AppRhizoh528() {
         noteVoiceTurnLeakAuditV0("fast_precheck_spoken", { intent: voicePrecheck.intent });
         finishVoiceTurnLeakAuditV0();
         stampVoiceUserGestureV0("fast_precheck_speak");
-        speakRhizoh(reflexReply, { voiceTurn: manageVoiceTurn });
+        if (reflexReply.length > 140) {
+          void speakRhizohReplyChunkedV0(reflexReply, {
+            smoothAfterAck: false,
+            traceId: voiceFastTraceId
+          }).finally(() => {
+            if (manageVoiceTurn) finishVoiceTurnIfNeeded();
+          });
+        } else {
+          speakRhizoh(reflexReply, { voiceTurn: manageVoiceTurn });
+        }
         logVoiceInfoV0("FAST_PRECHECK_SPEAK", {
           intent: voicePrecheck.intent,
           preview: reflexReply.slice(0, 48)
