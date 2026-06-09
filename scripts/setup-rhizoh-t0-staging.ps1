@@ -61,7 +61,7 @@ $lines = @(
   "VITE_SOVEREIGN_NODE_ONBOARDING=0",
   "",
   "VITE_RHIZOH_FAST_SPEECH_MODE=1",
-  "# Companion anchor fox_v1 — matches production setup-rhizoh-t0-production.ps1",
+  "# Companion anchor fox_v1 - matches production setup-rhizoh-t0-production.ps1",
   "VITE_RHIZOH_CONVERSATION_ANCHOR_SPECIES=fox_v1",
   "VITE_RHIZOH_VOICE_ENGINE_V3=1",
   "VITE_RHIZOH_VOICE_WITNESS_SHADOW=1",
