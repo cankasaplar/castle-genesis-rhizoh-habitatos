@@ -18,11 +18,15 @@ $root = if ($RepoRoot.Trim()) { $RepoRoot.Trim() } else { $castleMain }
 $localExtras = @{}
 if ($FromMainLocal) {
   $localEnv = Join-Path $castleMain "apps\client\.env.local"
+  if (-not (Test-Path $localEnv)) {
+    $localBak = Join-Path $castleMain "apps\client\.env.local.build-bak"
+    if (Test-Path $localBak) { $localEnv = $localBak }
+  }
   if (Test-Path $localEnv) {
     foreach ($line in Get-Content $localEnv) {
       if ($line -match '^\s*VITE_GATEWAY_TOKEN=(.+)$') { $GatewayToken = $matches[1].Trim() }
       if ($line -match '^\s*VITE_LIVE_GATEWAY_BASE=(.+)$') { $GatewayHost = $matches[1].Trim() }
-      if ($line -match '^\s*(VITE_[A-Z0-9_]+)=(.+)$') {
+      if ($line -match '^\s*(VITE_\w+)=(.+)$') {
         $localExtras[$matches[1]] = $matches[2].Trim()
       }
     }
@@ -57,6 +61,8 @@ $lines = @(
   "VITE_SOVEREIGN_NODE_ONBOARDING=0",
   "",
   "VITE_RHIZOH_FAST_SPEECH_MODE=1",
+  "# Companion anchor fox_v1 — matches production setup-rhizoh-t0-production.ps1",
+  "VITE_RHIZOH_CONVERSATION_ANCHOR_SPECIES=fox_v1",
   "VITE_RHIZOH_VOICE_ENGINE_V3=1",
   "VITE_RHIZOH_VOICE_WITNESS_SHADOW=1",
   "VITE_RHIZOH_VOICE_ENV_PROFILE=1",
@@ -77,6 +83,7 @@ $lines = @(
   "VITE_CESIUM_WORLD_PROJECTION_BIND=1",
   "VITE_CESIUM_OSM_BUILDINGS=1",
   "VITE_CESIUM_WORLD_TERRAIN=1",
+  "VITE_CESIUM_BOOT_DIAG=1",
   "",
   "VITE_CASTLE_AUTHORITY_PROFILE=staging"
 )
@@ -115,6 +122,12 @@ $firebaseMerged = $false
 if ($FromMainLocal -and $localExtras) {
   foreach ($key in @(
     'VITE_CESIUM_ION_TOKEN',
+    'VITE_OPENWEATHER_API_KEY',
+    'VITE_OPENWEATHER_LAT',
+    'VITE_OPENWEATHER_LON',
+    'VITE_TOMTOM_API_KEY',
+    'VITE_REAL_LAYER_WEATHER_INGRESS',
+    'VITE_REAL_LAYER_TRAFFIC_INGRESS',
     'VITE_FIREBASE_CONFIG',
     'VITE_FIREBASE_API_KEY',
     'VITE_FIREBASE_APP_ID',

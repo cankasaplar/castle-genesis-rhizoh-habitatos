@@ -13,6 +13,38 @@ const RING_MAX_V1 = 32;
 /** @type {object[]} */
 let memoryHeardRing = [];
 
+/** Shallow intents — instant local reply OK even in living surface (deep chat still uses LLM). */
+export const LIVING_SURFACE_FAST_PRECHECK_INTENTS_V1 = Object.freeze([
+  "greeting",
+  "ack",
+  "hearing_check",
+  "wellbeing",
+  "thanks",
+  "yes",
+  "no",
+  "help",
+  "date_today",
+  "time_query",
+  "system_status",
+  "weather_stub",
+  "weather_live",
+  "traffic_query",
+  "sports_live",
+  "sports_fixture",
+  "news_headlines",
+  "map_context",
+  "presence_query",
+  "social_ack",
+  "chat_invite"
+]);
+
+/**
+ * @param {string} [intent]
+ */
+export function isLivingSurfaceFastPrecheckEligibleV1(intent) {
+  return LIVING_SURFACE_FAST_PRECHECK_INTENTS_V1.includes(String(intent || ""));
+}
+
 /**
  * Living conversation mode — surfaces continuity; local reflex does not replace LLM.
  */

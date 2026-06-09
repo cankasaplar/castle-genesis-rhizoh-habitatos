@@ -4,6 +4,7 @@
  */
 
 import {
+  isPhantomSystemPromptUtteranceV3,
   sanitizeVoiceTranscriptForDispatchV3,
   VOICE_TRANSCRIPT_SUSPICIOUS_CONF_V3
 } from "./voiceEngineV3/voiceTranscriptSanityV3.js";
@@ -16,9 +17,13 @@ import { resolveVoiceAttentionContextV0 } from "./voiceAttentionContextV0.js";
 import { recordConversationMirrorVoiceRouteV0 } from "./rhizohConversationBehaviorMirrorV0.js";
 import { buildVoiceConfidenceBreakdownV0 } from "./voiceConfidenceBreakdownV0.js";
 import {
+  FAST_PRECHECK_WAKE_INTENTS_V0,
   normalizeForFastPrecheckV0,
   probeFastPrecheckMatchV0
 } from "./rhizohFastPrecheckV0.js";
+import { isSubstantivePlanningUtteranceV1 } from "./rhizohCanonicalIntentV1.js";
+import { evaluateAlertRecallRescueV0 } from "./rhizohVoiceOperatingModeV0.js";
+import { notePartialTranscriptForEmergencyV0 } from "./rhizohEmergencySignalLayerV0.js";
 
 /** Known micro-intent phrases may execute below interaction threshold (not hallucinations). */
 const REFLEX_PRECHECK_VOICE_CONF_FLOOR_V0 = 0.45;
@@ -29,8 +34,28 @@ export const VOICE_TRANSCRIPT_CONFIDENCE_ROUTER_SCHEMA =
 /** Sanity fail reasons that may still reach LLM — only weak-default-conf on directed speech. */
 const EXECUTION_OBSERVATION_PASS_REASONS_V0 = new Set(["whisper_default_conf"]);
 
-/** Micro-reflex allowed on unknown band (short greeting/ack only — not thanks/outro). */
-const UNKNOWN_BAND_REFLEX_INTENTS_V0 = new Set(["greeting", "ack", "yes", "no", "wellbeing"]);
+/** Micro-reflex allowed on unknown band (short greeting/ack/hearing_check — not thanks/outro). */
+const UNKNOWN_BAND_REFLEX_INTENTS_V0 = new Set([
+  "greeting",
+  "ack",
+  "yes",
+  "no",
+  "wellbeing",
+  "hearing_check",
+  "date_today",
+  "time_query",
+  "system_status",
+  "weather_stub",
+  "weather_live",
+  "traffic_query",
+  "sports_live",
+  "sports_fixture",
+  "news_headlines",
+  "map_context",
+  "presence_query",
+  "social_ack",
+  "chat_invite"
+]);
 
 const VOICE_SOURCES = new Set([
   "mic_v3",
@@ -116,16 +141,37 @@ function finalizeRouteV0(route) {
  * @param {string} text
  * @param {string} [band]
  */
-function allowUnknownBandMicroReflexV0(text, band) {
-  if (band !== VOICE_DIRECTED_SPEECH_BAND.UNKNOWN) return false;
+function allowFastPrecheckReflexV0(text, band) {
   const hit = probeFastPrecheckMatchV0(text);
   if (!hit) return false;
+  if (!UNKNOWN_BAND_REFLEX_INTENTS_V0.has(hit.intent)) return false;
   const words = normalizeForFastPrecheckV0(text).split(/\s+/).filter(Boolean).length;
-  return words <= 2 && UNKNOWN_BAND_REFLEX_INTENTS_V0.has(hit.intent);
+  if (
+    hit.intent === "hearing_check" ||
+    hit.intent === "date_today" ||
+    hit.intent === "time_query" ||
+    hit.intent === "system_status" ||
+    hit.intent === "weather_stub" ||
+    hit.intent === "weather_live" ||
+    hit.intent === "weather_stub" ||
+    hit.intent === "weather_live" ||
+    hit.intent === "presence_query" ||
+    hit.intent === "chat_invite"
+  ) {
+    return words <= 12;
+  }
+  if (band === VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE) return words <= 8;
+  if (band === VOICE_DIRECTED_SPEECH_BAND.UNKNOWN) return words <= 3;
+  return false;
+}
+
+/** @deprecated alias */
+function allowUnknownBandMicroReflexV0(text, band) {
+  return allowFastPrecheckReflexV0(text, band);
 }
 
 /** Cohort T0: direct_listen allows long mic_v3 turns that are not ambient TV. */
-const DIRECT_LISTEN_UNKNOWN_MIN_RECORD_MS_V0 = 6000;
+const DIRECT_LISTEN_UNKNOWN_MIN_RECORD_MS_V0 = 5000;
 const DIRECT_LISTEN_UNKNOWN_MIN_CHARS_V0 = 8;
 
 /**
@@ -241,6 +287,24 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
     });
   }
 
+  const alertRescue = evaluateAlertRecallRescueV0({ text, source, confidence: meta.confidence });
+  if (alertRescue.recallFirst) {
+    notePartialTranscriptForEmergencyV0({
+      text,
+      confidence: alertRescue.score,
+      source: source || "alert_recall_first"
+    });
+    return finalizeRouteV0({
+      executionAccepted: true,
+      observationForward: true,
+      reason: "alert_recall_first",
+      source,
+      band: meta.band || VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE,
+      confidence: Math.max(Number(meta.confidence) || 0, alertRescue.score),
+      alertLabel: alertRescue.label
+    });
+  }
+
   const conf = Number(meta.confidence);
   const strategy = String(meta.strategy || "");
   const maxRms = Number(meta.maxRms);
@@ -300,6 +364,51 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
             maxRms,
             source
           });
+    if (isPhantomSystemPromptUtteranceV3(text)) {
+      return finalizeRouteV0({
+        executionAccepted: false,
+        observationForward: text.length >= 3,
+        reason: "whisper_artifact",
+        source,
+        band: observation.band,
+        confidence: Number.isFinite(confNum) ? confNum : sane.confidence,
+        strategy: strategy || undefined,
+        shadowForward: true,
+        sanityAccepted: false,
+        phantomSystemPrompt: true
+      });
+    }
+
+    if (isSubstantivePlanningUtteranceV1(text)) {
+      return finalizeRouteV0({
+        executionAccepted: true,
+        observationForward: false,
+        reason: "substantive_planning_sanity_bypass",
+        source,
+        band: observation.band,
+        confidence: Number.isFinite(confNum) ? confNum : sane.confidence,
+        strategy: strategy || undefined,
+        sanityAccepted: false,
+        substantivePlanning: true
+      });
+    }
+
+    const wakeHit = probeFastPrecheckMatchV0(text);
+    if (wakeHit && FAST_PRECHECK_WAKE_INTENTS_V0.has(String(wakeHit.intent || ""))) {
+      return finalizeRouteV0({
+        executionAccepted: true,
+        observationForward: false,
+        reason: "fast_precheck_sanity_bypass",
+        source,
+        band: observation.band,
+        confidence: Number.isFinite(confNum) ? confNum : sane.confidence,
+        strategy: strategy || undefined,
+        reflexPrecheck: true,
+        sanityAccepted: false,
+        fastPrecheckIntent: wakeHit.intent
+      });
+    }
+
     const observationPassThrough =
       (text.length >= 6 &&
         Number.isFinite(confNum) &&
@@ -383,8 +492,9 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
   if (Number.isFinite(conf) && conf < VOICE_TRANSCRIPT_SUSPICIOUS_CONF_V3) {
     if (
       conf >= REFLEX_PRECHECK_VOICE_CONF_FLOOR_V0 &&
-      allowUnknownBandMicroReflexV0(text, observation.band)
+      allowFastPrecheckReflexV0(text, observation.band)
     ) {
+      const reflexHit = probeFastPrecheckMatchV0(text);
       return finalizeRouteV0({
         executionAccepted: true,
         observationForward: false,
@@ -394,7 +504,8 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
         confidence: conf,
         threshold: VOICE_TRANSCRIPT_SUSPICIOUS_CONF_V3,
         reflexPrecheck: true,
-        sanityAccepted: true
+        sanityAccepted: true,
+        fastPrecheckIntent: reflexHit?.intent
       });
     }
     return finalizeRouteV0({
@@ -421,6 +532,12 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
     });
   }
 
+  const wakeProbe = probeFastPrecheckMatchV0(text);
+  const wakeIntent =
+    wakeProbe && FAST_PRECHECK_WAKE_INTENTS_V0.has(String(wakeProbe.intent || ""))
+      ? wakeProbe.intent
+      : undefined;
+
   return finalizeRouteV0({
     executionAccepted: true,
     observationForward: false,
@@ -429,7 +546,9 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
     band: observation.band,
     confidence: Number.isFinite(conf) ? conf : undefined,
     strategy: strategy || undefined,
-    sanityAccepted: true
+    sanityAccepted: true,
+    reflexPrecheck: Boolean(wakeIntent),
+    fastPrecheckIntent: wakeIntent
   });
 }
 

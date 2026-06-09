@@ -30,7 +30,33 @@ import {
   classifyVoiceFastIntentV0,
   VOICE_PIPELINE_PATH_V0
 } from "./rhizohVoiceDualPathRouterV0.js";
-import { isRhizohLivingConversationSurfaceV1 } from "../experience/rhizohLivingConversationSurfaceV1.js";
+import {
+  isLivingSurfaceFastPrecheckEligibleV1,
+  isRhizohLivingConversationSurfaceV1
+} from "../experience/rhizohLivingConversationSurfaceV1.js";
+import { maybeRefreshWorldFeedsAfterSpeechV0 } from "./rhizohSpeechLiveFeedGlueV0.js";
+
+const LIVE_FEED_REFRESH_PRECHECK_INTENTS_V0 = new Set([
+  "weather_live",
+  "weather_stub",
+  "traffic_query",
+  "sports_live",
+  "sports_fixture",
+  "news_headlines",
+  "map_context"
+]);
+
+function shouldUseFastPrecheckInPipelineV0(precheck, livingSurface) {
+  if (!precheck) return false;
+  return !livingSurface || isLivingSurfaceFastPrecheckEligibleV1(precheck.intent);
+}
+
+function maybeRefreshFeedsAfterFastPrecheckV0(precheck) {
+  if (!precheck?.intent || !LIVE_FEED_REFRESH_PRECHECK_INTENTS_V0.has(String(precheck.intent))) {
+    return;
+  }
+  maybeRefreshWorldFeedsAfterSpeechV0({ force: true, minIntervalMs: 30_000 });
+}
 
 function finalizePipelineResultV0(result, ctx = {}) {
   const frozen = Object.freeze(result);
@@ -93,11 +119,11 @@ export function runRhizohSpeechPipelineV0(rawText, ctx = {}) {
 
   if (pipelinePath === VOICE_PIPELINE_PATH_V0.FAST) {
     const precheck = runFastPrecheckFromTextV0(msg, { locale, traceId: ctx.traceId });
-    if (precheck && !livingSurface) {
+    if (shouldUseFastPrecheckInPipelineV0(precheck, livingSurface)) {
       publishFastPrecheckHitV0(precheck, {
         traceId: ctx.traceId,
         channel: "voice",
-        routeClass: "greeting"
+        routeClass: precheck.intent || "greeting"
       });
       const committed = commitFinalUserVisibleLanguageV0(precheck.reply, {
         source: "fast_precheck",
@@ -151,12 +177,13 @@ export function runRhizohSpeechPipelineV0(rawText, ctx = {}) {
   }
 
   const precheck = runFastPrecheckFromTextV0(msg, { locale, traceId: ctx.traceId });
-  if (precheck && !livingSurface) {
+  if (shouldUseFastPrecheckInPipelineV0(precheck, livingSurface)) {
     publishFastPrecheckHitV0(precheck, {
       traceId: ctx.traceId,
       channel: "voice",
-      routeClass: "greeting"
+      routeClass: precheck.intent || "greeting"
     });
+    maybeRefreshFeedsAfterFastPrecheckV0(precheck);
     const committed = commitFinalUserVisibleLanguageV0(precheck.reply, {
       source: "fast_precheck",
       traceId: ctx.traceId,

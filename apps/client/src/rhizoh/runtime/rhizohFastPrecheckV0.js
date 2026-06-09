@@ -14,14 +14,123 @@ import {
 } from "./rhizohHotPhraseContextV0.js";
 import { applyMicroPersonalityToReplyV0 } from "./rhizohMicroPersonalityV0.js";
 import { logRhizohReflexTurnV0 } from "./rhizohReflexTurnLogV0.js";
+import { isPhantomSystemPromptUtteranceV3 } from "./voiceEngineV3/voiceTranscriptSanityV3.js";
+import {
+  canonicalIntentToPrecheckV1,
+  isSubstantivePlanningUtteranceV1,
+  probeCanonicalIntentV1
+} from "./rhizohCanonicalIntentV1.js";
 
 export const RHIZOH_FAST_PRECHECK_SCHEMA_V0 = "castle.rhizoh.fast_precheck.v0";
 
 export const PRECHECK_HIT_SOURCE_V0 = Object.freeze({
+  CANONICAL: "canonical_intent_v1",
   EXACT: "exact_map",
   HOT: "hot_phrase_memory",
   REGEX: "regex_micro"
 });
+
+/** Wake / presence micro-intents — may bypass whisper_default_conf sanity in companion mode. */
+export const FAST_PRECHECK_WAKE_INTENTS_V0 = Object.freeze(
+  new Set([
+    "greeting",
+    "ack",
+    "yes",
+    "no",
+    "wellbeing",
+    "hearing_check",
+    "date_today",
+    "time_query",
+    "system_status",
+    "weather_stub",
+    "weather_live",
+    "traffic_query",
+    "sports_live",
+    "sports_fixture",
+    "news_headlines",
+    "map_context",
+    "presence_query",
+    "social_ack",
+    "chat_invite"
+  ])
+);
+
+/** Shallow intents — local TTS reflex; deep reasoning still uses LLM. */
+export const RHIZOH_SMALL_TALK_PRECHECK_INTENTS_V0 = Object.freeze([
+  "greeting",
+  "ack",
+  "wellbeing",
+  "hearing_check",
+  "thanks",
+  "social_ack",
+  "date_today",
+  "time_query",
+  "system_status",
+  "weather_stub",
+  "weather_live",
+  "traffic_query",
+  "sports_live",
+  "sports_fixture",
+  "news_headlines",
+  "map_context",
+  "presence_query",
+  "chat_invite"
+]);
+
+const FAST_REGEX_WORD_LIMIT_V0 = Object.freeze({
+  chat_invite: 14,
+  hearing_check: 12,
+  default: 8
+});
+
+const DATE_TODAY_UTTERANCE_RE_V0 =
+  /(?:bug[uü]n(?:[uü]n)?\s+tarih|bug[uü]n\s+ka[cç]|bug[uü]n\s+hangi\s+g[uü]n|bug[uü]n\s+ne\s+g[uü]n|tarih\s+ne|what\s+(?:is\s+)?(?:the\s+)?date|today'?s?\s+date)/i;
+
+/**
+ * @param {string} [locale]
+ */
+export function formatTodayDateReplyV0(locale) {
+  const loc = String(locale || resolveOutputLanguageCodeV0() || "tr")
+    .toLowerCase()
+    .slice(0, 2);
+  const now = new Date();
+  if (loc === "tr") {
+    const formatted = now.toLocaleDateString("tr-TR", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    });
+    return `Bugün ${formatted}.`;
+  }
+  const formatted = now.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+  return `Today is ${formatted}.`;
+}
+
+/**
+ * @param {string} normalized
+ * @param {string} [locale]
+ */
+function probeDateTodayIntentV0(normalized, locale) {
+  const n = String(normalized || "").trim();
+  if (!n) return null;
+  const words = n.split(/\s+/).filter(Boolean);
+  if (words.length > 10) return null;
+  const asksDate =
+    DATE_TODAY_UTTERANCE_RE_V0.test(n) ||
+    (/\bbug[uü]n\b/i.test(n) && /\btarih/i.test(n));
+  if (!asksDate) return null;
+  return Object.freeze({
+    intent: "date_today",
+    reply: formatTodayDateReplyV0(locale),
+    normalized: n
+  });
+}
 
 /** Normalized key → { intent, tr, en } */
 const FAST_EXACT_MAP_V0 = Object.freeze({
@@ -29,6 +138,12 @@ const FAST_EXACT_MAP_V0 = Object.freeze({
   "nasılsın": { intent: "wellbeing", tr: "İyiyim, sen nasılsın?", en: "I'm well — how are you?" },
   merhaba: { intent: "greeting", tr: "Merhaba.", en: "Hello." },
   selam: { intent: "greeting", tr: "Selam — buradayım.", en: "Hi — I'm here." },
+  gunaydin: { intent: "greeting", tr: "Günaydın — buradayım.", en: "Good morning — I'm here." },
+  gunaydın: { intent: "greeting", tr: "Günaydın — buradayım.", en: "Good morning — I'm here." },
+  "günaydın": { intent: "greeting", tr: "Günaydın — buradayım.", en: "Good morning — I'm here." },
+  rhizoh: { intent: "greeting", tr: "Buradayım.", en: "I'm here." },
+  rizo: { intent: "greeting", tr: "Buradayım.", en: "I'm here." },
+  rezo: { intent: "greeting", tr: "Buradayım.", en: "I'm here." },
   hello: { intent: "greeting", tr: "Hello.", en: "Hello." },
   hi: { intent: "greeting", tr: "Hi.", en: "Hi." },
   hey: { intent: "greeting", tr: "Hey.", en: "Hey." },
@@ -51,26 +166,107 @@ const FAST_EXACT_MAP_V0 = Object.freeze({
   yardım: { intent: "help", tr: "Kısa komutlar anında çalışır — örn. haritayı aç.", en: "Short commands run instantly — e.g. open map." },
   help: { intent: "help", tr: "Short commands run instantly.", en: "Short commands run instantly." },
   start: { intent: "ack", tr: "Başlıyorum.", en: "Starting." },
-  stop: { intent: "ack", tr: "Duruyorum.", en: "Stopping." }
+  stop: { intent: "ack", tr: "Duruyorum.", en: "Stopping." },
+  guzel: { intent: "social_ack", tr: "Güzel — devam edelim.", en: "Nice — let's continue." },
+  "sag ol": { intent: "social_ack", tr: "Rica ederim.", en: "You're welcome." },
+  "sag olun": { intent: "social_ack", tr: "Rica ederim.", en: "You're welcome." },
+  eyvallah: { intent: "social_ack", tr: "Eyvallah — buradayım.", en: "Likewise — I'm here." }
 });
 
 /** @type {ReadonlyArray<{ intent: string, re: RegExp, tr: string, en: string }>} */
 const FAST_REGEX_MICRO_V0 = Object.freeze([
-  { intent: "greeting", re: /^(selam|merhaba|hey|hi|hello)\b/i, tr: "Merhaba.", en: "Hello." },
   {
     intent: "hearing_check",
-    re: /(?:merhaba|selam).{0,32}\b(rhizoh|rizo)\b.{0,32}\b(duyabiliyor|duyuyor)\s*musun/i,
+    re: /(?:merhaba|selam|günaydın|gunaydin).{0,32}\b(rhizoh|rizo|rezo)\b.{0,40}\b(duyabiliyor|duyuyor)\s*musun/i,
     tr: "Merhaba — evet, duyuyorum. Ne konuşmak istersin?",
     en: "Hello — yes, I hear you. What would you like to talk about?"
   },
   {
     intent: "hearing_check",
-    re: /\b(rhizoh|rizo)\b.{0,24}\b(duyabiliyor|duyuyor)\s*musun/i,
+    re: /\b(rhizoh|rizo|rezo)\b.{0,40}\b(duyabiliyor|duyuyor)\s*musun/i,
     tr: "Evet, duyuyorum — buradayım.",
     en: "Yes, I hear you — I'm here."
   },
-  { intent: "wellbeing", re: /^(nasılsın|nasilsin|how are you)\b/i, tr: "İyiyim, sen nasılsın?", en: "I'm well — and you?" },
-  { intent: "thanks", re: /^(teşekkür|tesekkur|thanks)\b/i, tr: "Rica ederim.", en: "You're welcome." }
+  {
+    intent: "greeting",
+    re: /^(selam|merhaba|hey|hi|hello|günaydın|gunaydin|gunaydın)\b/i,
+    tr: "Günaydın — buradayım.",
+    en: "Good morning — I'm here."
+  },
+  {
+    intent: "greeting",
+    re: /^merhaba\s+(günaydın|gunaydin|gunaydın)\b/i,
+    tr: "Günaydın — buradayım.",
+    en: "Good morning — I'm here."
+  },
+  {
+    intent: "greeting",
+    re: /^(günaydın|gunaydin|gunaydın)\s+(rhizoh|rizo|rezo)\b/i,
+    tr: "Günaydın — buradayım.",
+    en: "Good morning — I'm here."
+  },
+  {
+    intent: "greeting",
+    re: /^(rhizoh|rizo|rezo)\s+(günaydın|gunaydin|merhaba|selam)\b/i,
+    tr: "Merhaba — buradayım.",
+    en: "Hello — I'm here."
+  },
+  {
+    intent: "greeting",
+    re: /^(rhizoh|rizo|rezo)(\s|!|\?|$)/i,
+    tr: "Buradayım.",
+    en: "I'm here."
+  },
+  { intent: "wellbeing", re: /^(nasılsın|nasilsin|how are you)(\s+dostum)?\b/i, tr: "İyiyim, sen nasılsın?", en: "I'm well — and you?" },
+  { intent: "thanks", re: /^(teşekkür|tesekkur|thanks)\b/i, tr: "Rica ederim.", en: "You're welcome." },
+  {
+    intent: "social_ack",
+    re: /^eyvallah(\s+dostum)?\b/i,
+    tr: "Eyvallah — buradayım.",
+    en: "Likewise — I'm here."
+  },
+  {
+    intent: "chat_invite",
+    re: /^sohbet\s+edelim\b/i,
+    tr: "Tabii — dinliyorum. Ne konuşmak istersin?",
+    en: "Sure — I'm listening. What would you like to talk about?"
+  },
+  {
+    intent: "chat_invite",
+    re: /^(neler|ne)\s+yap\w+\b/i,
+    tr: "Buradayım — sen ne istersin?",
+    en: "I'm here — what would you like to do?"
+  },
+  {
+    intent: "chat_invite",
+    re: /^konusalim\b|^konusmak\s+isterim\b/i,
+    tr: "Olur — dinliyorum.",
+    en: "Sure — I'm listening."
+  },
+  {
+    intent: "hearing_check",
+    re: /\b(su\s+anda\s+)?(beni\s+)?(duyabiliyor|duyuyor)\s*musunuz?\b/i,
+    tr: "Evet, duyuyorum — buradayım.",
+    en: "Yes, I hear you — I'm here."
+  },
+  {
+    intent: "wellbeing",
+    re: /^(iyi\s+misin|iyi\s+misiniz|ne\s+haber)(\s+dostum)?\b/i,
+    tr: "İyiyim, sen nasılsın?",
+    en: "I'm well — how are you?"
+  },
+  {
+    intent: "greeting",
+    re: /^merhaba\s+[a-z]{2,16}\b/i,
+    tr: "Merhaba — buradayım.",
+    en: "Hello — I'm here."
+  },
+  {
+    intent: "greeting",
+    re: /^(rhizoh|rizo|rezo|resol|erizo),?\s*(merhaba|selam|hey)\b/i,
+    tr: "Merhaba — buradayım.",
+    en: "Hello — I'm here."
+  }
 ]);
 
 /**
@@ -78,6 +274,8 @@ const FAST_REGEX_MICRO_V0 = Object.freeze([
  */
 export function normalizeForFastPrecheckV0(input) {
   return normalizeVoiceCommandTokenV0(input)
+    .replace(/[,;:!?]+/g, " ")
+    .replace(/\s+/g, " ")
     .replace(/[!?.,;:]+$/g, "")
     .trim();
 }
@@ -91,6 +289,23 @@ export function runFastPrecheckV0(normalized, locale) {
   const n = String(normalized || "").trim();
   const loc = String(locale || resolveOutputLanguageCodeV0() || "tr").toLowerCase().slice(0, 2);
   if (!n) return null;
+
+  const canonicalHit = probeCanonicalIntentV1(n, { locale: loc });
+  if (canonicalHit) {
+    const mapped = canonicalIntentToPrecheckV1(canonicalHit, loc);
+    if (mapped) {
+      return finishPrecheckHitV0({
+        intent: mapped.intent,
+        reply: mapped.reply,
+        source: PRECHECK_HIT_SOURCE_V0.CANONICAL,
+        normalized: n,
+        t0,
+        canonicalIntent: mapped.canonicalIntent,
+        canonicalConfidence: mapped.canonicalConfidence,
+        entity: mapped.entity
+      });
+    }
+  }
 
   const exact = FAST_EXACT_MAP_V0[n];
   if (exact) {
@@ -116,8 +331,21 @@ export function runFastPrecheckV0(normalized, locale) {
     });
   }
 
+  const dateHit = probeDateTodayIntentV0(n, loc);
+  if (dateHit) {
+    return finishPrecheckHitV0({
+      intent: dateHit.intent,
+      reply: dateHit.reply,
+      source: PRECHECK_HIT_SOURCE_V0.REGEX,
+      normalized: dateHit.normalized,
+      t0
+    });
+  }
+
   for (const row of FAST_REGEX_MICRO_V0) {
-    if (row.re.test(n) && n.split(/\s+/).length <= 8) {
+    const wordLimit = FAST_REGEX_WORD_LIMIT_V0[row.intent] || FAST_REGEX_WORD_LIMIT_V0.default;
+    if (row.intent === "chat_invite" && isSubstantivePlanningUtteranceV1(n)) continue;
+    if (row.re.test(n) && n.split(/\s+/).length <= wordLimit) {
       return finishPrecheckHitV0({
         intent: row.intent,
         reply: loc === "tr" ? row.tr : row.en,
@@ -136,13 +364,23 @@ export function runFastPrecheckV0(normalized, locale) {
  * @param {{ locale?: string, traceId?: string }} [opts]
  */
 export function runFastPrecheckFromTextV0(input, opts = {}) {
+  if (isPhantomSystemPromptUtteranceV3(input)) return null;
   const normalized = normalizeForFastPrecheckV0(input);
   const hit = runFastPrecheckV0(normalized, opts.locale);
   if (!hit) return null;
   return Object.freeze({ ...hit, traceId: opts.traceId || null, raw: String(input || "").trim() });
 }
 
-function finishPrecheckHitV0({ intent, reply, source, normalized, t0 }) {
+function finishPrecheckHitV0({
+  intent,
+  reply,
+  source,
+  normalized,
+  t0,
+  canonicalIntent,
+  canonicalConfidence,
+  entity
+}) {
   const styled = applyMicroPersonalityToReplyV0(reply);
   const latencyMs = Math.round(
     (typeof performance !== "undefined" ? performance.now() : Date.now()) - t0
@@ -155,7 +393,10 @@ function finishPrecheckHitV0({ intent, reply, source, normalized, t0 }) {
     normalized,
     latencyMs,
     llmBypass: true,
-    layer: "fast_precheck"
+    layer: "fast_precheck",
+    canonicalIntent: canonicalIntent || undefined,
+    canonicalConfidence: canonicalConfidence ?? undefined,
+    entity: entity || undefined
   });
 }
 
@@ -166,6 +407,14 @@ function finishPrecheckHitV0({ intent, reply, source, normalized, t0 }) {
 /** Read-only probe for voice gate — no logging or hot-phrase writes. */
 export function probeFastPrecheckMatchV0(input) {
   return runFastPrecheckFromTextV0(input);
+}
+
+/**
+ * @param {string} input
+ */
+export function isFastPrecheckWakeIntentV0(input) {
+  const hit = probeFastPrecheckMatchV0(input);
+  return hit != null && FAST_PRECHECK_WAKE_INTENTS_V0.has(String(hit.intent || ""));
 }
 
 /**
