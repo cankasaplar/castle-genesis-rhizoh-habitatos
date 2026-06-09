@@ -214,7 +214,10 @@ export const CLIC_LIVE_TOKEN_BAGS_V1 = Object.freeze({
     "sports",
     "spor",
     "canli",
-    "kazandi"
+    "kazandi",
+    "sonuc",
+    "karsilasma",
+    "macsonuc"
   ]),
   [CANONICAL_INTENT_V1.SPORTS_FIXTURE]: Object.freeze(["fikstur", "fixture", "maclar", "macvar"]),
   [CANONICAL_INTENT_V1.NEWS_HEADLINES]: Object.freeze([
@@ -250,6 +253,8 @@ const CLIC_LIVE_PHRASE_BOOSTS_V1 = Object.freeze([
   { phrase: "yol yogun", intent: CANONICAL_INTENT_V1.TRAFFIC_QUERY, boost: 4 },
   { phrase: "trafik nasil", intent: CANONICAL_INTENT_V1.TRAFFIC_QUERY, boost: 4 },
   { phrase: "canli skor", intent: CANONICAL_INTENT_V1.SPORTS_LIVE, boost: 5 },
+  { phrase: "spor karsilasma", intent: CANONICAL_INTENT_V1.SPORTS_LIVE, boost: 5 },
+  { phrase: "mac sonuclari", intent: CANONICAL_INTENT_V1.SPORTS_LIVE, boost: 5 },
   { phrase: "kim kazandi", intent: CANONICAL_INTENT_V1.SPORTS_LIVE, boost: 4 },
   { phrase: "son dakika", intent: CANONICAL_INTENT_V1.NEWS_HEADLINES, boost: 4 },
   { phrase: "spor haber", intent: CANONICAL_INTENT_V1.SPORTS_LIVE, boost: 5 },

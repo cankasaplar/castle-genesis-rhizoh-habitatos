@@ -145,6 +145,12 @@ describe("rhizohCanonicalIntentV1", () => {
     );
   });
 
+  it("detects sports results phrasing", () => {
+    expect(probeCanonicalIntentV1("Spor karşılaşmalarının sonuçlarını söyler misin")?.canonicalIntent).toBe(
+      CANONICAL_INTENT_V1.SPORTS_LIVE
+    );
+  });
+
   it("scores live intents for traffic sports and news", () => {
     expect(probeCanonicalIntentV1("trafik nasıl")?.canonicalIntent).toBe(
       CANONICAL_INTENT_V1.TRAFFIC_QUERY

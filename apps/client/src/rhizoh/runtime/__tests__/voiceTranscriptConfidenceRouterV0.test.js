@@ -69,6 +69,89 @@ describe("voiceTranscriptConfidenceRouterV0", () => {
     expect(["reflex_precheck_bypass", "voice_ok"].includes(route.reason)).toBe(true);
   });
 
+  it("wake precheck bypasses whisper_default_conf on Rezo at 0.55", () => {
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "Rezo.",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+      recordedMs: 3400
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(["fast_precheck_sanity_bypass", "reflex_precheck_bypass", "voice_ok"].includes(route.reason)).toBe(
+      true
+    );
+  });
+
+  it("social ack bypasses whisper_default_conf for Güzel at 0.55", () => {
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "Güzel.",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+      recordedMs: 6746
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(route.fastPrecheckIntent || route.reflexPrecheck).toBeTruthy();
+  });
+
+  it("date question bypasses whisper_default_conf at 0.55", () => {
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "Bugün bugünün tarihimiz",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+      recordedMs: 5839
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(["fast_precheck_sanity_bypass", "reflex_precheck_bypass", "voice_ok"].includes(route.reason)).toBe(
+      true
+    );
+    expect(route.fastPrecheckIntent || route.reflexPrecheck).toBeTruthy();
+  });
+
+  it("wake precheck bypasses whisper_default_conf for günaydın rhizoh", () => {
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "günaydın rhizoh",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+      recordedMs: 4200
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(route.reflexPrecheck).toBe(true);
+  });
+
+  it("reflex precheck accepts nasılsın dostum on directed_candidate at 0.55", () => {
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "Nasılsın dostum?",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      band: VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE,
+      recordedMs: 4000
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(route.reflexPrecheck).toBe(true);
+  });
+
+  it("wake precheck bypasses unknown band hold for hearing check phrase", () => {
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "rhizoh merhaba beni duyabiliyor musun",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+      recordedMs: 4800
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(route.reflexPrecheck).toBe(true);
+  });
+
   it("accepts execution above threshold", () => {
     const route = routeVoiceTranscriptConfidenceV0({
       text: "Rhizoh, şimdi beni duyabiliyor musun?",
@@ -110,6 +193,59 @@ describe("voiceTranscriptConfidenceRouterV0", () => {
     expect(route.executionAccepted).toBe(true);
     expect(route.reason).toBe("whisper_default_conf");
     expect(route.observationPass).toBe(true);
+  });
+
+  it("blocks phantom coaching phrase sohbet edelim seni duymak istiyoruz", () => {
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "Sohbet edelim, seni duymak istiyoruz.",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+      recordedMs: 5983
+    });
+    expect(route.executionAccepted).toBe(false);
+    expect(route.reason).toBe("whisper_artifact");
+  });
+
+  it("substantive planning bypasses whisper_default_conf for istanbul garble", () => {
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "İstanbul'dan helal yapabilirim.",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+      recordedMs: 2731
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(route.reason).toBe("substantive_planning_sanity_bypass");
+    expect(route.substantivePlanning).toBe(true);
+  });
+
+  it("traffic_query on unknown band allows extended reflex (not 3-word cap)", () => {
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "Peki trafik ne durumda?",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+      recordedMs: 3200
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(route.fastPrecheckIntent).toBe("traffic_query");
+  });
+
+  it("chat_invite sohbet edelim bypasses whisper_default_conf", () => {
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "Sohbet edelim.",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+      recordedMs: 4200
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(route.fastPrecheckIntent).toBe("chat_invite");
   });
 
   it("blocks unknown band hallucinated thanks without micro reflex", () => {

@@ -57,6 +57,23 @@ const UNKNOWN_BAND_REFLEX_INTENTS_V0 = new Set([
   "chat_invite"
 ]);
 
+/** Live + utility reflex intents — allow longer unknown-band utterances (whisper 0.55). */
+const EXTENDED_UNKNOWN_REFLEX_INTENTS_V0 = new Set([
+  "hearing_check",
+  "date_today",
+  "time_query",
+  "system_status",
+  "weather_stub",
+  "weather_live",
+  "traffic_query",
+  "sports_live",
+  "sports_fixture",
+  "news_headlines",
+  "map_context",
+  "presence_query",
+  "chat_invite"
+]);
+
 const VOICE_SOURCES = new Set([
   "mic_v3",
   "mic",
@@ -146,18 +163,7 @@ function allowFastPrecheckReflexV0(text, band) {
   if (!hit) return false;
   if (!UNKNOWN_BAND_REFLEX_INTENTS_V0.has(hit.intent)) return false;
   const words = normalizeForFastPrecheckV0(text).split(/\s+/).filter(Boolean).length;
-  if (
-    hit.intent === "hearing_check" ||
-    hit.intent === "date_today" ||
-    hit.intent === "time_query" ||
-    hit.intent === "system_status" ||
-    hit.intent === "weather_stub" ||
-    hit.intent === "weather_live" ||
-    hit.intent === "weather_stub" ||
-    hit.intent === "weather_live" ||
-    hit.intent === "presence_query" ||
-    hit.intent === "chat_invite"
-  ) {
+  if (EXTENDED_UNKNOWN_REFLEX_INTENTS_V0.has(hit.intent)) {
     return words <= 12;
   }
   if (band === VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE) return words <= 8;
