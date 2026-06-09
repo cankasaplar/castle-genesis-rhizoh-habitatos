@@ -14,4 +14,20 @@ describe("rhizohSttBrandNormalizeV0", () => {
     expect(space.canonical).toBe("map_open");
     expect(space.matched).toBe(true);
   });
+
+  it("repairs Turkish lüzum/luzum whisper variants → rhizoh", () => {
+    expect(normalizeRhizohSttBrandPhoneticsV0("Merhaba lüzum.").text.toLowerCase()).toContain(
+      "rhizoh"
+    );
+    expect(normalizeRhizohSttBrandPhoneticsV0("Merhaba luzum").repaired).toBe(true);
+  });
+
+  it("repairs resol and erizo whisper variants → rhizoh", () => {
+    expect(normalizeRhizohSttBrandPhoneticsV0("Resol, merhaba.").text.toLowerCase()).toContain(
+      "rhizoh"
+    );
+    expect(normalizeRhizohSttBrandPhoneticsV0("Merhaba Erizo.").text.toLowerCase()).toContain(
+      "rhizoh"
+    );
+  });
 });

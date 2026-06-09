@@ -40,6 +40,7 @@ const LIVE_FEED_REFRESH_PRECHECK_INTENTS_V0 = new Set([
   "weather_live",
   "weather_stub",
   "traffic_query",
+  "briefing_query",
   "sports_live",
   "sports_fixture",
   "news_headlines",

@@ -48,7 +48,7 @@ function phraseForPulseKindV0(kind, phrase) {
     phrase ||
     (kind === "morning"
       ? tr
-        ? "Günaydın. Hazırım — kısa brifing için konuşabilirsin."
+        ? "Günaydın. Buradayım."
         : "Good morning. I'm ready when you are."
       : kind === "evening"
         ? tr

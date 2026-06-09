@@ -226,7 +226,12 @@ const FAST_REGEX_MICRO_V0 = Object.freeze([
     en: "Preparing a quick briefing."
   },
   { intent: "wellbeing", re: /^(nasılsın|nasilsin|how are you)(\s+dostum)?\b/i, tr: "İyiyim, sen nasılsın?", en: "I'm well — and you?" },
-  { intent: "thanks", re: /^(teşekkür|tesekkur|thanks)\b/i, tr: "Rica ederim.", en: "You're welcome." },
+  {
+    intent: "thanks",
+    re: /(?:^|\b)(teşekkür\s+ederim|tesekkur\s+ederim|teşekkürler|tesekkurler|teşekkür|tesekkur|thanks)(\s+rhizoh)?\b/i,
+    tr: "Rica ederim.",
+    en: "You're welcome."
+  },
   {
     intent: "social_ack",
     re: /^eyvallah(\s+dostum)?\b/i,

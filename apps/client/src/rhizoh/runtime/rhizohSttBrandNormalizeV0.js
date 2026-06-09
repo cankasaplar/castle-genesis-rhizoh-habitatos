@@ -12,9 +12,16 @@ const BRAND_PHONETIC_REPLACEMENTS_V0 = [
   [/\brise\s+up\b/gi, "rhizoh"],
   [/\bryzo\b/gi, "rhizoh"],
   [/\brizo\b/gi, "rhizoh"],
+  [/\brezo\b/gi, "rhizoh"],
+  [/\bresol\b/gi, "rhizoh"],
+  [/\berizo\b/gi, "rhizoh"],
+  [/\beriso\b/gi, "rhizoh"],
   [/\brhizo\b/gi, "rhizoh"],
   [/\briso\b/gi, "rhizoh"],
-  [/\brizoh\b/gi, "rhizoh"]
+  [/\brizoh\b/gi, "rhizoh"],
+  [/\blüzum\b/gi, "rhizoh"],
+  [/\bluzum\b/gi, "rhizoh"],
+  [/\brizum\b/gi, "rhizoh"]
 ];
 
 /**

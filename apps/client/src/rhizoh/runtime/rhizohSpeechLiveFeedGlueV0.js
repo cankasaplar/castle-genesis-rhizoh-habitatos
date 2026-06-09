@@ -25,3 +25,21 @@ export function maybeRefreshWorldFeedsAfterSpeechV0(opts = {}) {
   void refreshWorldMapTrafficFeedIfStaleV0({ force: true });
   void refreshWorldMapLiveFeedIfStaleV0({ force: true });
 }
+
+/**
+ * Await live feeds before traffic/briefing reflex (AppRhizoh fast path).
+ * @param {{ force?: boolean, minIntervalMs?: number }} [opts]
+ */
+export async function awaitWorldFeedsForSpeechV0(opts = {}) {
+  const minInterval = Number(opts.minIntervalMs) > 0 ? Number(opts.minIntervalMs) : DEFAULT_MIN_INTERVAL_MS;
+  const now = Date.now();
+  if (!opts.force && now - _lastRefreshAt < minInterval) return;
+  _lastRefreshAt = now;
+  await Promise.all(
+    [
+      refreshWeatherAtmosphereFeedIfStaleV0({ force: true }),
+      refreshWorldMapTrafficFeedIfStaleV0({ force: true }),
+      refreshWorldMapLiveFeedIfStaleV0({ force: true })
+    ].map((p) => Promise.resolve(p).catch(() => null))
+  );
+}

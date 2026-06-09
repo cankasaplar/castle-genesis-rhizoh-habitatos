@@ -19,6 +19,14 @@ describe("rhizohCommandGateV0", () => {
     expect(route.execution).toBe(VOICE_ROUTE_EXECUTION_V0.LOCAL);
   });
 
+  it("stop listening is a hard silent local command", () => {
+    for (const phrase of ["stop listening", "dinlemeyi durdur", "tamam dur"]) {
+      const route = routeVoiceInputWithCommandGateV0(phrase);
+      expect(route.canonical).toBe("stop_listening");
+      expect(isHardSilentCommandRouteV0(route)).toBe(true);
+    }
+  });
+
   it("fuzzy hybrid does not silent-execute", () => {
     const gate = resolveCommandGateV0("what is my current state");
     expect(gate.matchKind).toBe(COMMAND_MATCH_KIND_V0.FUZZY);

@@ -11,7 +11,7 @@ import {
 } from "./rhizohMultilingualBridgeV0.js";
 import { bootstrapCastleLanguageRuntimeV0 } from "./rhizohLanguageRuntimeV0.js";
 import { applyUiLanguagePreferenceToOlpV0 } from "./rhizohOutputLanguagePolicyV0.js";
-import { hasRhizohSpeechProfileConfiguredV0 } from "./rhizohSpeechProfileV0.js";
+import { hasRhizohSpeechProfileConfiguredV0, writeRhizohSpeechProfileV0, RHIZOH_SPEECH_MODE_V0 } from "./rhizohSpeechProfileV0.js";
 
 export const RHIZOH_UI_LOCALE_CONTRACT_V0 = "rhizoh-ui-locale-v0";
 export const RHIZOH_UI_LOCALE_CHANGE_EVENT_V0 = "rhizoh:ui-locale";
@@ -105,12 +105,18 @@ export function readUiLocaleV0() {
   }
   const session = readRhizohSessionLanguagePreferenceV0();
   if (session && RHIZOH_UI_LAUNCH_LOCALES_V0.includes(session)) return session;
+  const envDefault = resolveDefaultUiLocaleV0();
+  const hasExplicitEnvDefault =
+    typeof import.meta !== "undefined" &&
+    import.meta.env &&
+    Boolean(String(import.meta.env.VITE_RHIZOH_DEFAULT_LOCALE || "").trim());
+  if (hasExplicitEnvDefault) return envDefault;
   const nav =
     typeof navigator !== "undefined"
       ? String(navigator.language || "").toLowerCase().split("-")[0]
       : "";
   if (nav && RHIZOH_UI_LAUNCH_LOCALES_V0.includes(nav)) return nav;
-  return resolveDefaultUiLocaleV0();
+  return envDefault;
 }
 
 /**
@@ -192,6 +198,63 @@ export function clearUiLocalePickedForTestV0() {
     localStorage.removeItem(STORAGE_KEY_V0);
     localStorage.removeItem(INGRESS_PICK_CONTRACT_V0);
   }
+}
+
+/**
+ * Re-show ingress language picker on next load (keeps legal/cohort ack).
+ */
+export function resetLanguagePickerForIngressV0() {
+  if (typeof localStorage !== "undefined") {
+    localStorage.removeItem(PICKED_KEY_V0);
+    localStorage.removeItem(INGRESS_PICK_CONTRACT_V0);
+  }
+  try {
+    // dynamic import avoided — speech profile lives in sibling module
+    if (typeof localStorage !== "undefined") {
+      localStorage.removeItem("rhizoh.speech.profile.v1");
+    }
+  } catch {
+    /* noop */
+  }
+}
+
+/**
+ * Founder / direct-app entry: ?locale=tr | ?uiLocale=tr | ?lang=tr
+ * @returns {string | null} applied locale code
+ */
+export function applyUiLocaleFromLocationSearchV0() {
+  if (typeof window === "undefined") return null;
+  try {
+    const q = new URLSearchParams(window.location.search);
+    const raw = q.get("locale") || q.get("uiLocale") || q.get("lang");
+    if (!raw) return null;
+    const locale = writeUiLocaleV0(raw);
+    writeRhizohSpeechProfileV0({ mode: RHIZOH_SPEECH_MODE_V0.MIRROR_UI });
+    return locale;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * DevTools bridge — set locale without ingress language screen.
+ * @param {string} code e.g. "tr"
+ * @param {{ mirrorSpeech?: boolean }} [opts]
+ */
+export function installRhizohLocaleDebugBridgeV0() {
+  if (typeof window === "undefined") return;
+  window.__rhizoh = window.__rhizoh || {};
+  if (typeof window.__rhizoh.setUiLocale === "function") return;
+  window.__rhizoh.setUiLocale = (code) => {
+    const locale = writeUiLocaleV0(code);
+    writeRhizohSpeechProfileV0({ mode: RHIZOH_SPEECH_MODE_V0.MIRROR_UI });
+    bootstrapCastleLanguageRuntimeV0();
+    return locale;
+  };
+  window.__rhizoh.resetLanguagePicker = () => {
+    resetLanguagePickerForIngressV0();
+    return true;
+  };
 }
 
 /**

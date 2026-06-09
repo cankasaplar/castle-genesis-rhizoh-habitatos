@@ -337,7 +337,9 @@ import {
   publishFastPrecheckHitV0,
   runFastPrecheckFromTextV0
 } from "./rhizoh/runtime/rhizohFastPrecheckV0.js";
+import { normalizeRhizohSttBrandPhoneticsV0 } from "./rhizoh/runtime/rhizohSttBrandNormalizeV0.js";
 import { resolveWeatherReplyAsyncV1 } from "./rhizoh/runtime/rhizohCanonicalReflexSnapshotV1.js";
+import { awaitWorldFeedsForSpeechV0 } from "./rhizoh/runtime/rhizohSpeechLiveFeedGlueV0.js";
 import { resolveOutputLanguageCodeV0 } from "./rhizoh/runtime/rhizohOutputLanguagePolicyV0.js";
 import { tryInstantPresenceFastPathV0 } from "./rhizoh/runtime/rhizohInstantPresenceLayerV0.js";
 import { sanitizeSpeechTextForTtsV0 } from "./rhizoh/runtime/rhizohSpeechTtsSanitizeV0.js";
@@ -7796,6 +7798,7 @@ export default function AppRhizoh528() {
   const bargeInRecognitionRef = useRef(null);
   const startVoiceToRhizohRef = useRef(() => {});
   const requestVoiceMicRestartRef = useRef(() => {});
+  const stopVoiceLoopRef = useRef(() => {});
   const voiceLoopEnabledRef = useRef(false);
   const voiceNetworkBlockedRef = useRef(false);
   const voiceBargeInEnabledRef = useRef(true);
@@ -9766,7 +9769,9 @@ export default function AppRhizoh528() {
       utterance.onend = () => {
         stopBargeInMic();
         if (sessionId !== voiceTtsSessionIdRef.current) return;
-        if (voiceTurn) {
+        if (opts.stopVoiceLoopAfter) {
+          stopVoiceLoopRef.current?.();
+        } else if (voiceTurn) {
           stampVoiceUserGestureV0("tts_end_refresh");
           setRhizohFieldState("IDLE");
           finishVoiceTurnIfNeeded();
@@ -9942,10 +9947,18 @@ export default function AppRhizoh528() {
         authority
       } = {}
     ) => {
-      const trimmed = String(text || "").trim();
+      let trimmed = String(text || "").trim();
       if (!trimmed) {
         if (manageVoiceTurn) finishVoiceTurnIfNeeded();
         return;
+      }
+      const brandRepair = normalizeRhizohSttBrandPhoneticsV0(trimmed);
+      if (brandRepair.repaired) {
+        trimmed = String(brandRepair.text || trimmed).trim();
+        logVoiceInfoV0("STT_BRAND_PHONETIC_REPAIR", {
+          preview: trimmed.slice(0, 96),
+          hits: brandRepair.hits?.length || 0
+        });
       }
       lastUserActivityMsRef.current = Date.now();
 
@@ -10358,6 +10371,30 @@ export default function AppRhizoh528() {
         whisperConfidence: scriptGuard.semantic?.whisperConfidence
       });
 
+      const stopListeningRoute = routeVoiceInputV0(trimmed);
+      if (
+        isHardSilentCommandRouteV0(stopListeningRoute) &&
+        stopListeningRoute.canonical === "stop_listening"
+      ) {
+        const stopTraceId = createRhizohClientTraceIdV0();
+        const stopLocal = executeLocalVoiceCommandV0(stopListeningRoute, { traceId: stopTraceId });
+        noteVoiceTurnLeakAuditV0("local_execute", { canonical: "stop_listening" });
+        finishVoiceTurnLeakAuditV0();
+        setRhizohFieldState("EXECUTING");
+        logVoiceInfoV0("VOICE_STOP_LISTENING", {
+          preview: trimmed.slice(0, 48),
+          speech: shouldSpeakLocalCommandFeedbackV0()
+        });
+        if (shouldSpeakLocalCommandFeedbackV0() && stopLocal.reply) {
+          speakRhizoh(stopLocal.reply, { voiceTurn: false, stopVoiceLoopAfter: true });
+        } else {
+          stopVoiceLoopRef.current?.();
+        }
+        voiceTurnBusyRef.current = false;
+        voiceTurnBusySinceRef.current = 0;
+        return;
+      }
+
       const voiceFastTraceId = createRhizohClientTraceIdV0();
       const livingSurfaceVoice = isRhizohLivingConversationSurfaceV1();
       const presenceFast = await tryInstantPresenceFastPathV0(trimmed, {
@@ -10409,7 +10446,25 @@ export default function AppRhizoh528() {
         return;
       }
 
-      const voicePrecheck = runFastPrecheckFromTextV0(trimmed, { traceId: voiceFastTraceId });
+      const LIVE_FEED_PRECHECK_INTENTS_V0 = new Set([
+        "weather_live",
+        "weather_stub",
+        "traffic_query",
+        "briefing_query",
+        "sports_live",
+        "sports_fixture",
+        "news_headlines",
+        "map_context"
+      ]);
+      let voicePrecheck = runFastPrecheckFromTextV0(trimmed, { traceId: voiceFastTraceId });
+      if (
+        voicePrecheck &&
+        LIVE_FEED_PRECHECK_INTENTS_V0.has(String(voicePrecheck.intent || ""))
+      ) {
+        await awaitWorldFeedsForSpeechV0({ force: true });
+        const refreshedPrecheck = runFastPrecheckFromTextV0(trimmed, { traceId: voiceFastTraceId });
+        if (refreshedPrecheck) voicePrecheck = refreshedPrecheck;
+      }
       if (
         voicePrecheck &&
         (!livingSurfaceVoice || isLivingSurfaceFastPrecheckEligibleV1(voicePrecheck.intent))
@@ -10505,7 +10560,14 @@ export default function AppRhizoh528() {
           commandConfidence: gate?.commandConfidence,
           speech: shouldSpeakLocalCommandFeedbackV0()
         });
-        if (shouldSpeakLocalCommandFeedbackV0() && local.reply) {
+        const isStopListeningCmd = (voiceRoute.canonical || local.kind) === "stop_listening";
+        if (isStopListeningCmd) {
+          if (shouldSpeakLocalCommandFeedbackV0() && local.reply) {
+            speakRhizoh(local.reply, { voiceTurn: false, stopVoiceLoopAfter: true });
+          } else {
+            stopVoiceLoopRef.current?.();
+          }
+        } else if (shouldSpeakLocalCommandFeedbackV0() && local.reply) {
           speakRhizoh(local.reply, { voiceTurn: manageVoiceTurn });
         } else {
           setRhizohFieldState("IDLE");
@@ -11539,6 +11601,10 @@ export default function AppRhizoh528() {
     voiceNetworkRetryRef.current = 0;
     clearVoiceSttRecoveryV0();
   }, [stopBargeInMic]);
+
+  useEffect(() => {
+    stopVoiceLoopRef.current = stopVoiceLoop;
+  }, [stopVoiceLoop]);
 
   const startVoiceLoop = useCallback(() => {
     if (voiceLoopStartInFlightRef.current) return;
