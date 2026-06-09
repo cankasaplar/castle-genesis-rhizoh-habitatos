@@ -340,6 +340,7 @@ import {
 import { normalizeRhizohSttBrandPhoneticsV0 } from "./rhizoh/runtime/rhizohSttBrandNormalizeV0.js";
 import { resolveWeatherReplyAsyncV1 } from "./rhizoh/runtime/rhizohCanonicalReflexSnapshotV1.js";
 import { awaitWorldFeedsForSpeechV0 } from "./rhizoh/runtime/rhizohSpeechLiveFeedGlueV0.js";
+import { noteRecentRhizohTtsEchoV0 } from "./rhizoh/runtime/voiceTtsEchoGuardV0.js";
 import { resolveOutputLanguageCodeV0 } from "./rhizoh/runtime/rhizohOutputLanguagePolicyV0.js";
 import { tryInstantPresenceFastPathV0 } from "./rhizoh/runtime/rhizohInstantPresenceLayerV0.js";
 import { sanitizeSpeechTextForTtsV0 } from "./rhizoh/runtime/rhizohSpeechTtsSanitizeV0.js";
@@ -662,7 +663,7 @@ const RHIZOH_GENERATION_MODE_UI = [
 /** Voice loop — faster LLM + shorter watchdog so mic does not appear stuck. */
 const VOICE_LLM_TIMEOUT_MS = 22_000;
 const VOICE_TURN_BUSY_WATCHDOG_MS = 38_000;
-const VOICE_AFTER_TURN_RESTART_MS = 280;
+const VOICE_AFTER_TURN_RESTART_MS = 420;
 
 function normalizeRhizohGenerationModeId(mode) {
   return String(mode || "STANDARD").trim().toUpperCase().replace(/-/g, "_");
@@ -9705,11 +9706,16 @@ export default function AppRhizoh528() {
     if (voiceMicRestartTimerRef.current) {
       window.clearTimeout(voiceMicRestartTimerRef.current);
     }
-    voiceMicRestartTimerRef.current = window.setTimeout(() => {
-      voiceMicRestartTimerRef.current = 0;
+    const scheduleAfterTtsIdle = () => {
       if (!voiceLoopEnabledRef.current) return;
+      if (typeof window !== "undefined" && window.speechSynthesis?.speaking) {
+        voiceMicRestartTimerRef.current = window.setTimeout(scheduleAfterTtsIdle, 140);
+        return;
+      }
+      voiceMicRestartTimerRef.current = 0;
       requestVoiceMicRestartRef.current(true, "after_tts");
-    }, VOICE_AFTER_TURN_RESTART_MS);
+    };
+    voiceMicRestartTimerRef.current = window.setTimeout(scheduleAfterTtsIdle, VOICE_AFTER_TURN_RESTART_MS);
   }, []);
 
   const stopBargeInMic = useCallback(() => {
@@ -9742,6 +9748,7 @@ export default function AppRhizoh528() {
       const sessionId = ++voiceTtsSessionIdRef.current;
       const voiceLocale = readSpeechLocaleForVoiceV0();
       const spoken = sanitizeSpeechTextForTtsV0(String(text)).slice(0, 1800);
+      noteRecentRhizohTtsEchoV0(spoken);
       recordRhizohReplySurfaceV0({
         channel: "tts",
         text: spoken,
@@ -10893,6 +10900,10 @@ export default function AppRhizoh528() {
       if (voiceAutoRestartBlockedRef.current) return;
       if (voiceTurnBusyRef.current) return;
       if (voiceSttStartInFlightRef.current) return;
+      if (typeof window !== "undefined" && window.speechSynthesis?.speaking) {
+        window.setTimeout(() => requestVoiceMicRestartV0(keepAlive, context, opts), 180);
+        return;
+      }
 
       const lastSessionHadResult =
         opts.lastSessionHadResult === true ||

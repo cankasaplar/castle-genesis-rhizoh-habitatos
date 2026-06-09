@@ -246,10 +246,17 @@ export function isMixedScriptTabLeakV0(text) {
 
 /**
  * @param {string} text
+ * @param {{ maxRms?: number, speechMs?: number }} [opts]
  */
-export function isSttPhantomPoliteClosureV0(text) {
+export function isSttPhantomPoliteClosureV0(text, opts = {}) {
   const norm = normalizeContaminationTextV0(text);
-  return STT_PHANTOM_POLITE_ONLY_RE_V0.test(norm);
+  if (!STT_PHANTOM_POLITE_ONLY_RE_V0.test(norm)) return false;
+  const maxRms = Number(opts.maxRms);
+  const speechMs = Number(opts.speechMs);
+  if (Number.isFinite(maxRms) && maxRms >= 0.1 && Number.isFinite(speechMs) && speechMs >= 350) {
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -286,7 +293,7 @@ export function evaluateInternalRepetitionRiskV0(text, opts = {}) {
 
 /**
  * @param {string} text
- * @param {{ strategy?: string, confidence?: number, band?: string }} [opts]
+ * @param {{ strategy?: string, confidence?: number, band?: string, maxRms?: number, speechMs?: number }} [opts]
  */
 export function evaluateSttContaminationV0(text, opts = {}) {
   const raw = String(text || "").trim();
@@ -332,7 +339,7 @@ export function evaluateSttContaminationV0(text, opts = {}) {
     });
   }
 
-  if (isSttPhantomPoliteClosureV0(raw)) {
+  if (isSttPhantomPoliteClosureV0(raw, { maxRms: opts.maxRms, speechMs: opts.speechMs })) {
     return Object.freeze({
       contaminated: true,
       kind: "phantom_polite_closure",

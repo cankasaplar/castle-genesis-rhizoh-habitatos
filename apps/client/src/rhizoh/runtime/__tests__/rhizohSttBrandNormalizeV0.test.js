@@ -22,6 +22,12 @@ describe("rhizohSttBrandNormalizeV0", () => {
     expect(normalizeRhizohSttBrandPhoneticsV0("Merhaba luzum").repaired).toBe(true);
   });
 
+  it("repairs huzur whisper variant → rhizoh", () => {
+    expect(normalizeRhizohSttBrandPhoneticsV0("Günaydın Huzur.").text.toLowerCase()).toContain(
+      "rhizoh"
+    );
+  });
+
   it("repairs resol and erizo whisper variants → rhizoh", () => {
     expect(normalizeRhizohSttBrandPhoneticsV0("Resol, merhaba.").text.toLowerCase()).toContain(
       "rhizoh"

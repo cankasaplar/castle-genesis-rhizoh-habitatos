@@ -21,7 +21,8 @@ const BRAND_PHONETIC_REPLACEMENTS_V0 = [
   [/\brizoh\b/gi, "rhizoh"],
   [/\blüzum\b/gi, "rhizoh"],
   [/\bluzum\b/gi, "rhizoh"],
-  [/\brizum\b/gi, "rhizoh"]
+  [/\brizum\b/gi, "rhizoh"],
+  [/\bhuzur\b/gi, "rhizoh"]
 ];
 
 /**

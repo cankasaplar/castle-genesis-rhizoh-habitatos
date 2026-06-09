@@ -9,6 +9,7 @@ import {
   TEMPLATE_SCORE_QUARANTINE_MIN_V0
 } from "./voiceSttContaminationGuardV0.js";
 import { measureArabicScriptRatioV0, measureLatinScriptRatioV0 } from "./sttScriptLocaleGuardV0.js";
+import { matchesRecentRhizohTtsEchoV0 } from "./voiceTtsEchoGuardV0.js";
 
 export const RHIZOH_VOICE_AUDIO_ARTIFACT_SCHEMA_V0 = "castle.rhizoh.voice_audio_artifact.v0";
 
@@ -19,13 +20,14 @@ export const VOICE_STT_ARTIFACT_CLASS_V0 = Object.freeze({
   TAB_AUDIO: "tab_audio",
   RTL_BURST: "rtl_burst",
   PHANTOM_POLITE: "phantom_polite",
+  TTS_ECHO: "tts_echo",
   STT_LOOP: "stt_loop",
   TEMPLATE_FUZZY: "template_fuzzy"
 });
 
 /**
  * @param {string} text
- * @param {{ confidence?: number, strategy?: string, band?: string }} [opts]
+ * @param {{ confidence?: number, strategy?: string, band?: string, maxRms?: number, speechMs?: number }} [opts]
  */
 export function classifyVoiceSttArtifactV0(text, opts = {}) {
   const raw = String(text || "").trim();
@@ -35,6 +37,17 @@ export function classifyVoiceSttArtifactV0(text, opts = {}) {
       artifactClass: VOICE_STT_ARTIFACT_CLASS_V0.CLEAN,
       block: false,
       reason: null
+    });
+  }
+
+  const ttsEcho = matchesRecentRhizohTtsEchoV0(raw);
+  if (ttsEcho.echo) {
+    return Object.freeze({
+      schema: RHIZOH_VOICE_AUDIO_ARTIFACT_SCHEMA_V0,
+      artifactClass: VOICE_STT_ARTIFACT_CLASS_V0.TTS_ECHO,
+      block: true,
+      reason: "tts_echo",
+      ttsEchoMatch: ttsEcho.matched
     });
   }
 

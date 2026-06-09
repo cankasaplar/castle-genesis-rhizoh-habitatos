@@ -69,6 +69,8 @@ import { applySttTemporalSmoothingV0 } from "../sttTemporalSmoothingV0.js";
 
 export const VOICE_MIN_RECORD_MS_V3 = 1200;
 export const VOICE_MIN_AUDIO_BYTES_V3 = 25000;
+/** Companion / good-energy clips may encode smaller before ~2.8s adaptive cut. */
+export const VOICE_MIN_AUDIO_BYTES_COMPANION_V3 = 18000;
 
 /**
  * @param {{ text: string, confidence: number, strategy: string, maxRms?: number, recordedMs?: number }} merged
@@ -119,6 +121,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
   let generation = 0;
   let sessionState = VOICE_ENGINE_STATE_V3.IDLE;
   let recordStartAtMs = 0;
+  let capturePeakRmsHintV3 = 0;
 
   const sessionId = opts.sessionId || `v3_${Date.now().toString(36)}`;
   beginVoiceSessionLanguageLockV0({ sessionId, locale: opts.locale });
@@ -160,6 +163,14 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
     sessionId,
     isBusy: () => busy,
     getState: () => sessionState,
+    getRecordElapsedMs: () =>
+      recordStartAtMs > 0 ? Math.max(0, Date.now() - recordStartAtMs) : 0,
+    getLastRms: () => capture?.getLastRms?.() ?? 0,
+    getMaxRms: () => Math.max(capture?.getMaxRms?.() ?? 0, capturePeakRmsHintV3),
+    noteCapturePeakRmsV3(peak) {
+      const p = Number(peak);
+      if (Number.isFinite(p) && p > capturePeakRmsHintV3) capturePeakRmsHintV3 = p;
+    },
 
     async start() {
       if (sessionState !== VOICE_ENGINE_STATE_V3.IDLE) {
@@ -171,6 +182,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       generation += 1;
       busy = true;
       recordStartAtMs = Date.now();
+      capturePeakRmsHintV3 = 0;
       resetVoiceVerifyBudgetV0(sessionId);
       resetOriginRetryBudgetForSessionV0(sessionId);
 
@@ -218,7 +230,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       let maxRms = 0;
       let levelSampleCount = 0;
       try {
-        maxRms = capture?.getMaxRms?.() ?? 0;
+        maxRms = Math.max(capture?.getMaxRms?.() ?? 0, capturePeakRmsHintV3);
         levelSampleCount = capture?.getLevelSampleCount?.() ?? 0;
         const captureResult = await capture.stop();
         fullBlob = captureResult?.blob || captureResult;
@@ -249,12 +261,22 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         return { ok: false, error: "recording_too_short", recordedMs };
       }
 
-      if (!fullBlob || bytes < VOICE_MIN_AUDIO_BYTES_V3) {
+      const minAudioBytes =
+        Number.isFinite(maxRms) && maxRms >= 0.04 && recordedMs >= 1800
+          ? VOICE_MIN_AUDIO_BYTES_COMPANION_V3
+          : VOICE_MIN_AUDIO_BYTES_V3;
+      if (!fullBlob || bytes < minAudioBytes) {
         busy = false;
         setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
-        emitVoiceEngineTelemetryV3("TRANSCRIBE_WAIT", { reason: "audio_too_small", recordedMs, bytes });
+        emitVoiceEngineTelemetryV3("TRANSCRIBE_WAIT", {
+          reason: "audio_too_small",
+          recordedMs,
+          bytes,
+          maxRms,
+          minAudioBytes
+        });
         opts.onError?.({ code: "audio_too_small", detail: String(bytes) });
-        return { ok: false, error: "audio_too_small", bytes, recordedMs };
+        return { ok: false, error: "audio_too_small", bytes, recordedMs, maxRms };
       }
 
       const warmProbe = finalizeRecordingWarmProbeV1(sessionId);
@@ -551,7 +573,9 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
 
         const artifact = classifyVoiceSttArtifactV0(merged.text, {
           confidence: merged.confidence,
-          strategy: merged.strategy
+          strategy: merged.strategy,
+          maxRms,
+          speechMs: recordedMs
         });
         publishVoiceSttArtifactDebugV0(artifact);
         if (artifact.block) {

@@ -8,6 +8,7 @@ import {
   resolveSpeechVoiceForUiLocaleV0
 } from "./rhizohSpeechLocaleV0.js";
 import { recordRhizohReplySurfaceV0 } from "./rhizohReplyRhythmDiagnosticV0.js";
+import { noteRecentRhizohTtsEchoV0 } from "./voiceTtsEchoGuardV0.js";
 import { segmentSpeechTextV0 } from "./rhizohSpeechSentenceSegmenterV0.js";
 import {
   buildConversationContinuityGlueV0,
@@ -128,6 +129,7 @@ export async function speakRhizohReplyChunkedV0(text, opts = {}) {
     speakChunks();
   }
 
+  noteRecentRhizohTtsEchoV0(ttsSpokenText);
   recordRhizohReplySurfaceV0({
     channel: "tts",
     text: ttsSpokenText,
