@@ -4,7 +4,10 @@
  */
 
 import { speakVoiceInstantAckV0 } from "./voiceInstantAckV0.js";
-import { emitVoiceOutputWithFallbackV0 } from "./rhizohVoiceOutputAdapterChainV0.js";
+import {
+  emitVoiceOutputWithFallbackV0,
+  VOICE_OUTPUT_CHANNEL_V0
+} from "./rhizohVoiceOutputAdapterChainV0.js";
 import {
   buildPresenceSignatureV0,
   PRESENCE_EVENT_KIND_V0
@@ -51,11 +54,12 @@ export function emitLivePresenceV0(opts = {}) {
       () =>
         speakVoiceInstantAckV0(phrase, {
           traceId: opts.traceId,
-          moduleId: opts.moduleId || "live_layer"
+          moduleId: opts.moduleId || "live_layer",
+          skipSovereigntyGate: true
         }),
       { source: signature.kind, traceId: opts.traceId, llmBypass: true }
     );
-    spoke = out.ok === true;
+    spoke = out.ok === true && out.channel === VOICE_OUTPUT_CHANNEL_V0.SPEECH_SYNTHESIS;
   }
 
   if (typeof window !== "undefined") {

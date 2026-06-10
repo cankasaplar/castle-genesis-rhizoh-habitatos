@@ -49,7 +49,7 @@ describe("voiceBehavioralCommitmentV0", () => {
       sanityAccepted: true,
       turnAccepted: true
     });
-    expect(ok.memoryEligible).toBe(false);
+    expect(ok.memoryEligible).toBe(true);
     expect(ok.behaviorEligible).toBe(true);
     expect(ok.turnCounts).toBe(true);
   });

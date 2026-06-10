@@ -1,3 +1,4 @@
+import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AppRhizoh528 from "../AppRhizoh528.jsx";
 import GenesisPortalPage from "../genesis/GenesisPortalPage.jsx";
@@ -9,6 +10,12 @@ import { TemporalSemanticEngineExampleV0 } from "../rhizoh/experience/examples/T
 import { RhizohThinkingEngineExampleV0 } from "../rhizoh/experience/examples/RhizohThinkingEngineExampleV0.jsx";
 import { StudioLiveRoomV1 } from "../studio/StudioLiveRoomV1.jsx";
 import { FoxConversationLabPageV1 } from "../studio/FoxConversationLabPageV1.jsx";
+
+const AppRhizohWorldSpaceV0 = lazy(() => import("../AppRhizohWorldSpaceV0.jsx"));
+
+function WorldSpaceBootFallback() {
+  return <div className="min-h-screen bg-[#010103]" data-rhizoh-world-space-boot="1" />;
+}
 
 /**
  * Product rule: single continuous world — `/` always mounts AppRhizoh528 → AppRhizoh528T0.
@@ -26,7 +33,14 @@ export function CastleShellRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/world" element={<Navigate to="/world/space" replace />} />
-        <Route path="/world/space" element={<AppRhizoh528 />} />
+        <Route
+          path="/world/space"
+          element={
+            <Suspense fallback={<WorldSpaceBootFallback />}>
+              <AppRhizohWorldSpaceV0 />
+            </Suspense>
+          }
+        />
         <Route path="/world/social" element={<AppRhizoh528 />} />
         <Route path="/world/modes" element={<AppRhizoh528 />} />
         <Route path="/" element={<AppRhizoh528 />} />

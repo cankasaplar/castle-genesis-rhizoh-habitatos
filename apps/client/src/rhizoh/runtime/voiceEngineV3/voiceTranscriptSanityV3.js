@@ -5,6 +5,10 @@
 import { evaluateSttScriptAgainstUiLocaleV0 } from "../sttScriptLocaleGuardV0.js";
 import { normalizeSttCrossScriptForTurkishUiV0 } from "../rhizohSttCrossScriptNormalizeV0.js";
 import { evaluateSttContaminationV0, evaluateInternalRepetitionRiskV0 } from "../voiceSttContaminationGuardV0.js";
+import {
+  FAST_PRECHECK_WAKE_INTENTS_V0,
+  probeFastPrecheckMatchV0
+} from "../rhizohFastPrecheckV0.js";
 
 export const VOICE_TRANSCRIPT_SANITY_V3_SCHEMA = "castle.rhizoh.voice.transcript_sanity.v3";
 export const VOICE_TRANSCRIPT_MIN_CONFIDENCE_V3 = 0.35;
@@ -22,7 +26,31 @@ const CONVERSATIONAL_UTTERANCE_PATTERNS_V3 = [
   /duyabiliyor\s+musun/i,
   /indirebiliyor\s+musun/i,
   /beni\s+duy/i,
-  /bugün/i
+  /bugün/i,
+  /günaydın|gunaydin/i,
+  /\b(rhizoh|rizo|rezo)\b/i
+];
+
+/** Whisper TR hallucinations that mimic Rhizoh system prompts — never execute. */
+const PHANTOM_SYSTEM_PROMPT_PHRASES_V3 = [
+  /te[sş]ekk[üu]r\s+ederim.*yak[ıi]n\s+konu[sş]/i,
+  /duyamad[ıi]k.*yak[ıi]n\s+konu[sş]/i,
+  /mikrofona\s+biraz\s+daha\s+yak[ıi]n/i,
+  /kesin\s+duyamad[ıi]m/i,
+  /bizi\s+duyamad[ıi]k/i,
+  /bu\s+konu\s+tekrar\s+bas/i,
+  /en\s+az\s+bir\s+saniye\s+bozulur/i,
+  /sosyal\s+medyada\s+bulunmaktad[ıi]r/i,
+  /huzurda\s+bulunmaktad[ıi]r/i,
+  /bir\s+duyamad[ıi]m/i,
+  /bir\s+sey\s+duyamad/i,
+  /bu\s+konu\s+biraz\s+daha\s+yak/i,
+  /dukunun\s+biraz\s+daha/i,
+  /seni\s+duymak\s+istiyor/i,
+  /nesi\s+duyamad/i,
+  /sesi\s+duyamad/i,
+  /bu\s+konuda\s+biraz\s+daha\s+yakin/i,
+  /buyuk\s+bir\s+erisim/i
 ];
 
 /** Known Whisper TR training / outro artifacts — only reject in suspicious confidence band. */
@@ -50,8 +78,18 @@ function normalizeTranscriptV3(text) {
     .normalize("NFKC")
     .toLocaleLowerCase("tr-TR")
     .replace(/\s+/g, " ")
-    .replace(/[""''`.,!?]/g, "")
+    .replace(/[""''`.,!?;:]/g, "")
     .trim();
+}
+
+/**
+ * Coaching / system-prompt-like Whisper hallucination — never execute or reflex.
+ * @param {string} text
+ */
+export function isPhantomSystemPromptUtteranceV3(text) {
+  const norm = normalizeTranscriptV3(text);
+  if (!norm) return false;
+  return PHANTOM_SYSTEM_PROMPT_PHRASES_V3.some((re) => re.test(norm));
 }
 
 /**
@@ -187,6 +225,30 @@ export function sanitizeVoiceTranscriptForDispatchV3(text, opts = {}) {
 
   const conf = Number(opts.confidence);
   const strategy = String(opts.strategy || "");
+  if (
+    isPhantomSystemPromptUtteranceV3(dispatchText) &&
+    (!Number.isFinite(conf) || conf <= VOICE_TRANSCRIPT_SUSPICIOUS_CONF_V3)
+  ) {
+    return {
+      ok: false,
+      reason: "whisper_artifact",
+      text: dispatchText,
+      confidence: conf,
+      shadowForward: true,
+      phantomSystemPrompt: true
+    };
+  }
+
+  const wakeHit = probeFastPrecheckMatchV0(dispatchText);
+  if (wakeHit && FAST_PRECHECK_WAKE_INTENTS_V0.has(String(wakeHit.intent || ""))) {
+    return {
+      ok: true,
+      text: dispatchText,
+      confidence: Number.isFinite(conf) ? conf : undefined,
+      fastPrecheckWake: true,
+      intent: wakeHit.intent
+    };
+  }
 
   if (Number.isFinite(conf) && conf < VOICE_TRANSCRIPT_MIN_CONFIDENCE_V3) {
     return { ok: false, reason: "low_confidence", text: dispatchText, confidence: conf };

@@ -60,6 +60,7 @@ export async function createVoiceAudioCaptureV3(opts = {}) {
     mimeType: recorder.mimeType || mimeType,
     deviceId: deviceId || null,
     getMaxRms: () => levelProbe.getMaxRms(),
+    getLastRms: () => levelProbe.getLastRms(),
     getLevelSampleCount: () => levelProbe.getSampleCount(),
     start() {
       if (stopped) throw new Error("capture_already_stopped");

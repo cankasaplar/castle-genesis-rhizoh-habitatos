@@ -12,6 +12,7 @@ import {
   getOpenWeatherQueryEnvV0,
   isRealLayerWeatherIngressEnabledV0
 } from "./weatherIngestV0.js";
+import { hasUserGeoForLocalFeedsV0 } from "./rhizohUserGeoConsentV0.js";
 
 export const RHIZOH_CANONICAL_REFLEX_SNAPSHOT_SCHEMA_V1 =
   "castle.rhizoh.canonical_reflex_snapshot.v1";
@@ -109,6 +110,13 @@ function deriveWeatherConditionLabelV1(feed, loc) {
  */
 export function formatWeatherReplyV1(locale, feedIn, provenanceIn) {
   const loc = String(locale || "tr").toLowerCase().slice(0, 2);
+  if (!hasUserGeoForLocalFeedsV0()) {
+    return Object.freeze({
+      mode: CANONICAL_WEATHER_MODE_V1.STUB,
+      text: formatWeatherStubReplyV1(loc, { reason: "no_user_geo" }),
+      source: "no_user_geo"
+    });
+  }
   const feed = feedIn ?? getCachedWeatherAtmosphereFeedV0();
   const prov = provenanceIn ?? getWeatherAtmosphereProvenanceV0();
   const live = prov?.source === "openweather/current" && feed != null;
@@ -152,6 +160,14 @@ export function formatWeatherReplyV1(locale, feedIn, provenanceIn) {
  * @param {{ timeoutMs?: number }} [opts]
  */
 export async function resolveWeatherReplyAsyncV1(locale, opts = {}) {
+  if (!hasUserGeoForLocalFeedsV0()) {
+    const loc = String(locale || "tr").toLowerCase().slice(0, 2);
+    return Object.freeze({
+      mode: CANONICAL_WEATHER_MODE_V1.STUB,
+      text: formatWeatherStubReplyV1(loc, { reason: "no_user_geo" }),
+      source: "no_user_geo"
+    });
+  }
   const timeoutMs = Number(opts.timeoutMs) > 0 ? Number(opts.timeoutMs) : 2200;
   if (isRealLayerWeatherIngressEnabledV0()) {
     try {
@@ -212,8 +228,14 @@ export function formatPresenceQueryReplyV1(locale) {
 /**
  * @param {string} [locale]
  */
-export function formatWeatherStubReplyV1(locale) {
+export function formatWeatherStubReplyV1(locale, opts = {}) {
   const loc = String(locale || "tr").toLowerCase().slice(0, 2);
+  if (opts?.reason === "no_user_geo") {
+    if (loc === "tr") {
+      return "Konum izni olmadan hava durumunu söyleyemem. İzin verirsen bulunduğun yeri kullanırım.";
+    }
+    return "I can't report local weather without your location. Grant permission and I'll use where you are.";
+  }
   if (loc === "tr") {
     if (!getOpenWeatherQueryEnvV0().key) {
       return "Canlı hava verisi henüz bağlı değil — OpenWeather anahtarı yapılandırılmamış.";

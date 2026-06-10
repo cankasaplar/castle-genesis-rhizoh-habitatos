@@ -65,6 +65,100 @@ function trimMemoryEpisodeV0(ep) {
 }
 
 /**
+ * Trim-proof cognition summaries — never drop perception/narrative signal entirely.
+ * @param {Record<string, unknown>} cont
+ */
+export function buildRhizohCriticalContextV0(cont) {
+  const c = cont && typeof cont === "object" ? cont : {};
+  const rel = c.relationship && typeof c.relationship === "object" ? c.relationship : {};
+  const thread =
+    c.rhizohNarrativeThread && typeof c.rhizohNarrativeThread === "object"
+      ? c.rhizohNarrativeThread
+      : null;
+  const arc =
+    c.rhizohNarrativeArc && typeof c.rhizohNarrativeArc === "object" ? c.rhizohNarrativeArc : null;
+  const dialogue =
+    c.rhizohDialogueThread && typeof c.rhizohDialogueThread === "object" ? c.rhizohDialogueThread : null;
+  const ghost =
+    c.rhizohGhostPerceptionV1 && typeof c.rhizohGhostPerceptionV1 === "object"
+      ? c.rhizohGhostPerceptionV1
+      : null;
+  const arb =
+    c.rhizohPerceptionArbitrationV1 && typeof c.rhizohPerceptionArbitrationV1 === "object"
+      ? c.rhizohPerceptionArbitrationV1
+      : null;
+
+  const narrativeSummary = [
+    thread?.focusIntent ? `focus=${String(thread.focusIntent).slice(0, 48)}` : "",
+    thread?.arcSummary ? `arc=${String(thread.arcSummary).slice(0, 220)}` : "",
+    Array.isArray(thread?.intentChain) && thread.intentChain.length
+      ? `intents=${thread.intentChain.slice(-4).join("→")}`
+      : "",
+    arc?.phase ? `phase=${String(arc.phase).slice(0, 24)}` : "",
+    arc?.direction ? `direction=${String(arc.direction).slice(0, 120)}` : ""
+  ]
+    .filter(Boolean)
+    .join(" | ");
+
+  const dialogueSummary = dialogue
+    ? [
+        dialogue.dialogueCurve?.momentum ? `momentum=${dialogue.dialogueCurve.momentum}` : "",
+        dialogue.emotionalTrajectory?.direction
+          ? `emotion=${String(dialogue.emotionalTrajectory.direction).slice(0, 24)}`
+          : "",
+        dialogue.unresolvedSemanticTension?.aggregate != null
+          ? `tension=${dialogue.unresolvedSemanticTension.aggregate}`
+          : "",
+        dialogue.previousTurn?.user
+          ? `prevUser=${trimStrV0(dialogue.previousTurn.user, 100)}`
+          : ""
+      ]
+        .filter(Boolean)
+        .join(" | ")
+    : "";
+
+  const ghostSummary = [
+    ghost?.overallTone ? `tone=${String(ghost.overallTone).slice(0, 48)}` : "",
+    ghost?.semanticPromptBlock
+      ? trimStrV0(ghost.semanticPromptBlock, 420)
+      : ghost?.promptBlock
+        ? trimStrV0(ghost.promptBlock, 420)
+        : ""
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const arbitrationSummary = [
+    arb?.dominantFrame ? `frame=${String(arb.dominantFrame).slice(0, 32)}` : "",
+    arb?.rationale ? trimStrV0(arb.rationale, 200) : "",
+    arb?.orderedPromptBlock ? trimStrV0(arb.orderedPromptBlock, 360) : ""
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const relationshipSummary = [
+    rel.bondScore != null ? `bond=${rel.bondScore}` : "",
+    rel.trust != null ? `trust=${rel.trust}` : "",
+    rel.relationalTone && typeof rel.relationalTone === "object"
+      ? `tone=${JSON.stringify(rel.relationalTone).slice(0, 120)}`
+      : typeof rel.relationalTone === "string"
+        ? trimStrV0(rel.relationalTone, 80)
+        : ""
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return Object.freeze({
+    schema: "castle.rhizoh.critical_context.v0",
+    narrativeSummary: narrativeSummary || null,
+    dialogueSummary: dialogueSummary || null,
+    ghostSummary: ghostSummary || null,
+    arbitrationSummary: arbitrationSummary || null,
+    relationshipSummary: relationshipSummary || null
+  });
+}
+
+/**
  * @param {Record<string, unknown>} cont
  * @param {{ voiceTurn?: boolean }} [opts]
  */
@@ -72,7 +166,9 @@ export function trimRhizohContinuityForLlmV0(cont, opts = {}) {
   const c = cont && typeof cont === "object" ? cont : {};
   const rel = c.relationship && typeof c.relationship === "object" ? c.relationship : {};
   const runtime = c.runtime && typeof c.runtime === "object" ? c.runtime : {};
-  const episodeCap = opts.voiceTurn === true ? 2 : 4;
+  const recallActive = Boolean(c.rhizohContinuityRecallBoost?.active);
+  const episodeCap = opts.voiceTurn === true ? (recallActive ? 3 : 2) : recallActive ? 6 : 4;
+  const recallLineCap = recallActive ? 8 : 0;
   const trimmed = {
     sessionId: String(c.sessionId || c.session_id || "").slice(0, 64),
     identity: pruneDeepV0(c.identity, 3),
@@ -96,12 +192,56 @@ export function trimRhizohContinuityForLlmV0(cont, opts = {}) {
       ? c.rhizohMemoryEpisodes.slice(-episodeCap).map(trimMemoryEpisodeV0)
       : [],
     rhizohNarrativeThread: pruneDeepV0(c.rhizohNarrativeThread, 2),
+    rhizohDialogueThread: pruneDeepV0(c.rhizohDialogueThread, 2),
+    rhizohCriticalContext: buildRhizohCriticalContextV0(c),
     rhizohRecallIdentityFeedback: c.rhizohRecallIdentityFeedback
       ? pruneDeepV0(c.rhizohRecallIdentityFeedback, 2)
+      : undefined,
+    rhizohWeightedRecollection: Array.isArray(c.rhizohWeightedRecollection)
+      ? c.rhizohWeightedRecollection.slice(0, recallActive ? 16 : 12)
+      : undefined,
+    rhizohContinuityRecallBoost: c.rhizohContinuityRecallBoost
+      ? {
+          active: c.rhizohContinuityRecallBoost.active === true,
+          tier: c.rhizohContinuityRecallBoost.tier,
+          reason: trimStrV0(c.rhizohContinuityRecallBoost.reason, 64),
+          anchorTokens: Array.isArray(c.rhizohContinuityRecallBoost.anchorTokens)
+            ? c.rhizohContinuityRecallBoost.anchorTokens.slice(0, 8)
+            : [],
+          promptDirective: trimStrV0(c.rhizohContinuityRecallBoost.promptDirective, 480),
+          lines: Array.isArray(c.rhizohContinuityRecallBoost.lines)
+            ? c.rhizohContinuityRecallBoost.lines.slice(0, recallLineCap || 6).map((row) => ({
+                ts: row?.ts,
+                user: trimStrV0(row?.user || row?.text, 180),
+                assistant: trimStrV0(row?.assistant, 220),
+                retrievalWeight: row?.retrievalWeight,
+                recallBoost: row?.recallBoost === true
+              }))
+            : []
+        }
+      : undefined,
+    rhizohSportsLiveContext: c.rhizohSportsLiveContext
+      ? {
+          active: c.rhizohSportsLiveContext.active === true,
+          team: c.rhizohSportsLiveContext.team,
+          source: trimStrV0(c.rhizohSportsLiveContext.source, 32),
+          promptDirective: trimStrV0(c.rhizohSportsLiveContext.promptDirective, 480),
+          lines: Array.isArray(c.rhizohSportsLiveContext.lines)
+            ? c.rhizohSportsLiveContext.lines.slice(0, 8).map((line) => trimStrV0(line, 180))
+            : [],
+          emptyLabel: trimStrV0(c.rhizohSportsLiveContext.emptyLabel, 160)
+        }
+      : undefined,
+    rhizohPersonaAddressing: c.rhizohPersonaAddressing
+      ? pruneDeepV0(c.rhizohPersonaAddressing, 2)
       : undefined,
     rhizohStabilityAnchor: pruneDeepV0(c.rhizohStabilityAnchor, 2)
   };
   if (!trimmed.rhizohRecallIdentityFeedback) delete trimmed.rhizohRecallIdentityFeedback;
+  if (!trimmed.rhizohWeightedRecollection?.length) delete trimmed.rhizohWeightedRecollection;
+  if (!trimmed.rhizohContinuityRecallBoost) delete trimmed.rhizohContinuityRecallBoost;
+  if (!trimmed.rhizohSportsLiveContext) delete trimmed.rhizohSportsLiveContext;
+  if (!trimmed.rhizohPersonaAddressing) delete trimmed.rhizohPersonaAddressing;
   return trimmed;
 }
 
@@ -132,7 +272,12 @@ export function trimRhizohLlmContextV0(ctx, opts = {}) {
     rhizohMultilingual: pruneDeepV0(src.rhizohMultilingual, 2),
     cohortId: src.cohortId ? trimStrV0(src.cohortId, 64) : undefined,
     life_continuity: pruneDeepV0(src.life_continuity, 2),
-    rhizohMemoryContract: trimStrV0(src.rhizohMemoryContract, 1600)
+    rhizohMemoryContract: trimStrV0(src.rhizohMemoryContract, 1600),
+    rhizohStoryContinuitySnapshot: pruneDeepV0(src.rhizohStoryContinuitySnapshot, 2),
+    rhizohConversationDepth: pruneDeepV0(src.rhizohConversationDepth, 2),
+    rhizohFoxAttentionPromptBlock: trimStrV0(src.rhizohFoxAttentionPromptBlock, 600),
+    rhizohFoxAttentionField: pruneDeepV0(src.rhizohFoxAttentionField, 2),
+    rhizohGhostAttentionBindingsV1: pruneDeepV0(src.rhizohGhostAttentionBindingsV1, 2)
   };
   if (!next.cohortId) delete next.cohortId;
   return next;
@@ -201,9 +346,17 @@ export function trimRhizohLlmRequestBodyV0(raw, opts = {}) {
       b.context.continuity = {
         sessionId: c.sessionId,
         relationship: c.relationship,
+        rhizohCriticalContext:
+          c.rhizohCriticalContext && typeof c.rhizohCriticalContext === "object"
+            ? c.rhizohCriticalContext
+            : buildRhizohCriticalContextV0(c),
         rhizohMemoryEpisodes: Array.isArray(c.rhizohMemoryEpisodes)
           ? c.rhizohMemoryEpisodes.slice(-1)
           : [],
+        rhizohWeightedRecollection: Array.isArray(c.rhizohWeightedRecollection)
+          ? c.rhizohWeightedRecollection.slice(0, c.rhizohContinuityRecallBoost?.active ? 14 : 8)
+          : undefined,
+        rhizohContinuityRecallBoost: c.rhizohContinuityRecallBoost || undefined,
         runtime: { gatewayPhase: c.runtime?.gatewayPhase ?? c.runtime?.rhizohGatewayPhase }
       };
     });

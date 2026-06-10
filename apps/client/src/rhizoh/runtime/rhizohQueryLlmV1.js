@@ -55,8 +55,10 @@ import {
   resolveTurnSovereigntyMaxTokensV0
 } from "./turnSovereigntyWireV0.js";
 import { SOVEREIGN_REALITY_V0 } from "./behavioralTurnSovereigntyV0.js";
+import { isCompanionContinuityFirstV0 } from "./rhizohVoiceOperatingModeV0.js";
 import { shouldBlockOnBoundaryViolationV0 } from "./turnSovereigntyEnforcementModeV0.js";
 import {
+  isLivingSurfaceFastPrecheckEligibleV1,
   isRhizohLivingConversationSurfaceV1,
   resolveFastReflexBridgeCopyV1
 } from "../experience/rhizohLivingConversationSurfaceV1.js";
@@ -119,6 +121,33 @@ import {
 } from "../stability/index.js";
 import { readIdentityGraph } from "../../kernel/rhizohIdentityKernelV1.js";
 import { resolveRhizohLlmMaxTokensV0 } from "./rhizohLlmMaxTokensV0.js";
+import { buildRhizohLlmDepthBundleV0 } from "./rhizohConversationDepthLlmBridgeV0.js";
+import {
+  applyFoxBehaviorGateV1,
+  FOX_BEHAVIOR_OUTCOME_V1
+} from "./foxBehaviorGateV1.js";
+import {
+  buildContinuityRecallBoostV0,
+  collectContinuityRecallCandidatesV0,
+  mergeRecallBoostIntoRecollectionV0,
+  probeContinuityRecallIntentV0
+} from "./rhizohContinuityRecallIntentV0.js";
+import {
+  applyAddressingFromUserMessageV0,
+  buildAddressingPromptDirectiveV0,
+  mergePersonaForLlmV0,
+  resolveRhizohEffectivePersonaV0
+} from "./rhizohPersonaAddressingV0.js";
+import { writeRhizohContinuityPersonaV0 } from "./rhizohContinuityDiskMetaV0.js";
+import { buildSportsLiveContextBoostV0, probeSportsLiveQueryV0 } from "./rhizohSportsLiveContextV0.js";
+import { refreshWorldMapLiveFeedIfStaleV0 } from "./worldMapLiveFeedV0.js";
+import {
+  buildRhizohDialogueThreadSnapshotV1,
+  advanceRhizohDialogueThreadV1,
+  buildRhizohDialogueThreadPromptBlockV1
+} from "./rhizohDialogueThreadV1.js";
+import { buildGhostPresentationTonePromptBlockV1 } from "./ghostStateEngineV1.js";
+import { noteProactiveFeedbackUserActivityV1, noteProactiveFeedbackEmotionalContextV1 } from "./foxProactiveAdaptationV1.js";
 
 
 export const RHIZOH_QUERY_LLM_SCHEMA_V1 = "castle.rhizoh.query_llm.v1";
@@ -282,6 +311,8 @@ export async function queryRhizohLLM({
   llmKeySource = "auto",
   /** @type {string} FAST_DIALOGUE | STANDARD | REFLECTIVE | NARRATIVE | DEEP_REASONING */
   generationMode = "STANDARD",
+  /** When true, caller generationMode wins over cognition-derived adaptive mode. */
+  pinGenerationMode = false,
   persistRhizohEmotions,
   gatewayUx,
   productDecisionOverlay,
@@ -290,15 +321,25 @@ export async function queryRhizohLLM({
   voiceTurnMeta = null
 }) {
   const trimmed = String(message || "").trim();
+  if (trimmed) {
+    noteProactiveFeedbackUserActivityV1({
+      message: trimmed,
+      voiceTurn: Boolean(voiceTurnMeta)
+    });
+  }
   const clientTraceId = createRhizohClientTraceIdV0();
   logRhizohHealth("ui_send", { traceId: clientTraceId, chars: trimmed.length });
 
   applyReflexEffectivenessFeedbackV0(trimmed);
 
+  if (probeSportsLiveQueryV0(trimmed).active) {
+    await refreshWorldMapLiveFeedIfStaleV0({ force: true }).catch(() => null);
+  }
+
   const livingSurface = isRhizohLivingConversationSurfaceV1();
 
   const precheck = runFastPrecheckFromTextV0(trimmed, { traceId: clientTraceId });
-  if (precheck && !livingSurface) {
+  if (precheck && (!livingSurface || isLivingSurfaceFastPrecheckEligibleV1(precheck.intent))) {
     publishFastPrecheckHitV0(precheck, { traceId: clientTraceId, channel: "text" });
     const committed = commitFinalUserVisibleLanguageV0(precheck.reply, {
       source: "fast_precheck",
@@ -363,6 +404,11 @@ export async function queryRhizohLLM({
   }
 
   const cont = continuity && typeof continuity === "object" ? continuity : {};
+  const diskSnapAddressing = readClientContinuity();
+  const addressingPatch = applyAddressingFromUserMessageV0(trimmed, diskSnapAddressing.persona || cont.persona);
+  if (addressingPatch) {
+    writeRhizohContinuityPersonaV0(addressingPatch);
+  }
   const diskIntro =
     typeof window !== "undefined" && window.localStorage.getItem("rhizoh_intro_seen_v1") === "1";
   const diskMetaEarly = readClientContinuity().meta || {};
@@ -590,6 +636,126 @@ export async function queryRhizohLLM({
   const rhizohHealthInfluence = computeRhizohHealthInfluence(healthState);
   runtimeHints = { ...runtimeHints, healthState, rhizohHealthInfluence };
   const rhizohRouter = routeRhizohInput(trimmed, cont, runtimeHints);
+  const diskSnapPreDepth = readClientContinuity();
+  const diskMetaPreDepth =
+    diskSnapPreDepth.meta && typeof diskSnapPreDepth.meta === "object" ? diskSnapPreDepth.meta : {};
+  const relPreDepth = cont.relationship && typeof cont.relationship === "object" ? cont.relationship : {};
+  const emotionsPreDepth =
+    relPreDepth.emotions && typeof relPreDepth.emotions === "object" ? relPreDepth.emotions : null;
+  const narrativeThreadPreDepth =
+    cont.rhizohNarrativeThread && typeof cont.rhizohNarrativeThread === "object"
+      ? cont.rhizohNarrativeThread
+      : diskMetaPreDepth.rhizohNarrativeThread && typeof diskMetaPreDepth.rhizohNarrativeThread === "object"
+        ? diskMetaPreDepth.rhizohNarrativeThread
+        : null;
+  const narrativeArcPreDepth =
+    cont.rhizohNarrativeArc && typeof cont.rhizohNarrativeArc === "object"
+      ? cont.rhizohNarrativeArc
+      : diskMetaPreDepth.rhizohNarrativeArc && typeof diskMetaPreDepth.rhizohNarrativeArc === "object"
+        ? diskMetaPreDepth.rhizohNarrativeArc
+        : null;
+  const memoryEpisodesPreDepth = Array.isArray(cont.rhizohMemoryEpisodes)
+    ? cont.rhizohMemoryEpisodes
+    : Array.isArray(diskMetaPreDepth.rhizohMemoryEpisodes)
+      ? diskMetaPreDepth.rhizohMemoryEpisodes
+      : [];
+  const recentTurnsPreDepth = Array.isArray(cont.recentTurns)
+    ? cont.recentTurns
+    : Array.isArray(cont.turns)
+      ? cont.turns
+      : [];
+  const dialogueThreadPre = buildRhizohDialogueThreadSnapshotV1({
+    prev:
+      cont.rhizohDialogueThread && typeof cont.rhizohDialogueThread === "object"
+        ? cont.rhizohDialogueThread
+        : diskMetaPreDepth.rhizohDialogueThread && typeof diskMetaPreDepth.rhizohDialogueThread === "object"
+          ? diskMetaPreDepth.rhizohDialogueThread
+          : null,
+    narrativeThread: narrativeThreadPreDepth,
+    narrativeArc: narrativeArcPreDepth,
+    memoryEpisodes: memoryEpisodesPreDepth,
+    recentTurns: recentTurnsPreDepth,
+    emotions: emotionsPreDepth,
+    userTurnCount: effectiveTurnCount
+  });
+  const llmDepthBundle = buildRhizohLlmDepthBundleV0({
+    message: trimmed,
+    conversationPhase: rhizohPhaseForTurn,
+    userTurnCount: effectiveTurnCount,
+    voiceTurn: isVoiceTurn,
+    generationModeHint: generationMode,
+    pinGenerationMode,
+    callerGenerationMode: generationMode,
+    narrativeThread: narrativeThreadPreDepth,
+    narrativeArc: narrativeArcPreDepth,
+    memoryEpisodes: memoryEpisodesPreDepth,
+    recentTurns: recentTurnsPreDepth,
+    persona: cont.persona,
+    layerMission: layerProfile?.mission,
+    traceId: clientTraceId,
+    router: rhizohRouter,
+    emotions: emotionsPreDepth,
+    runtime: runtimeHints,
+    continuity: cont,
+    dialogueThread: dialogueThreadPre
+  });
+  const conversationDepth = llmDepthBundle.depth;
+  const resolvedGenerationMode = llmDepthBundle.generationMode;
+  logVoiceInfoV0("COGNITION_DEPTH_RESOLVED", {
+    traceId: clientTraceId,
+    conversationMode: conversationDepth.conversationMode,
+    depthLevel: conversationDepth.depthLevel,
+    continuityStrength: conversationDepth.continuityStrength,
+    generationMode: resolvedGenerationMode,
+    attentionScore: llmDepthBundle.attentionScore,
+    foxComponents: llmDepthBundle.fox?.components || null,
+    voiceTurn: isVoiceTurn
+  });
+  logVoiceInfoV0("FOX_ATTENTION_RESOLVED", {
+    traceId: clientTraceId,
+    attentionScore: llmDepthBundle.fox?.attentionScore ?? null,
+    dominantSource: llmDepthBundle.foxAttentionField?.dominantSource ?? null,
+    userSignal: llmDepthBundle.foxAttentionField?.userSignal ?? null,
+    continuitySignal: llmDepthBundle.foxAttentionField?.continuitySignal ?? null,
+    emotionalSignal: llmDepthBundle.foxAttentionField?.emotionalSignal ?? null,
+    noveltySignal: llmDepthBundle.foxAttentionField?.noveltySignal ?? null,
+    worldSignal: llmDepthBundle.foxAttentionField?.worldSignal ?? null,
+    ghostBindings: llmDepthBundle.ghostAttentionBindings ?? null,
+    recommendedConversationMode: llmDepthBundle.fox?.recommendedConversationMode ?? null,
+    recommendedGenerationMode: llmDepthBundle.fox?.recommendedGenerationMode ?? null,
+    significanceScore: llmDepthBundle.foxSignificanceField?.score ?? null,
+    behaviorPosture: llmDepthBundle.foxBehaviorPosture?.posture ?? null,
+    mayInitiate: llmDepthBundle.foxBehaviorPosture?.mayInitiate === true
+  });
+
+  const foxBehaviorGate = applyFoxBehaviorGateV1(llmDepthBundle, {
+    traceId: clientTraceId,
+    forceRecord: trimmed.length === 0
+  });
+  if (!foxBehaviorGate.outcome.mayProceedToLlm) {
+    const gateSource =
+      foxBehaviorGate.outcome.outcome === FOX_BEHAVIOR_OUTCOME_V1.INITIATE_QUEUED
+        ? "fox_initiative_queued"
+        : "fox_silent_observation";
+    logVoiceInfoV0("FOX_BEHAVIOR_GATE_BLOCK", {
+      traceId: clientTraceId,
+      outcome: foxBehaviorGate.outcome.outcome,
+      reason: foxBehaviorGate.outcome.reason,
+      posture: llmDepthBundle.foxBehaviorPosture?.posture ?? null,
+      ledgerRecorded: Boolean(foxBehaviorGate.ledgerEntry),
+      initiativeQueued: Boolean(foxBehaviorGate.queueEntry)
+    });
+    return Object.freeze({
+      reply: "",
+      directive: "FOCUS_RHIZOH",
+      source: gateSource,
+      traceId: clientTraceId,
+      llmBypass: true,
+      foxBehaviorOutcome: foxBehaviorGate.outcome.outcome,
+      foxBehaviorGate
+    });
+  }
+
   const sovereigntyWire = ensureTurnSovereigntyLockedV0({
     turnId: clientTraceId,
     text: trimmed,
@@ -597,6 +763,7 @@ export async function queryRhizohLLM({
     continuity: cont,
     runtime: runtimeHints,
     router: rhizohRouter,
+    depth: conversationDepth,
     conversationPhase: rhizohPhaseForTurn,
     userTurnCount: effectiveTurnCount,
     voice: isVoiceTurn
@@ -614,6 +781,7 @@ export async function queryRhizohLLM({
   const turnSovereigntyLock = sovereigntyWire.lock;
   if (
     shouldBlockOnBoundaryViolationV0() &&
+    !isCompanionContinuityFirstV0() &&
     turnSovereigntyLock?.sovereignReality === SOVEREIGN_REALITY_V0.PRESENCE_ACK &&
     turnSovereigntyLock.sovereignOutput?.text
   ) {
@@ -695,22 +863,34 @@ export async function queryRhizohLLM({
       : Array.isArray(diskMeta.rhizohWeightedTurns)
         ? diskMeta.rhizohWeightedTurns.slice(-40)
         : [];
-  const weightedMemorySource = [...episodeSlice, ...turnSlice].slice(-52);
+  const continuityRecallIntent = probeContinuityRecallIntentV0(trimmed);
+  const continuityRecallBoost = continuityRecallIntent.active
+    ? buildContinuityRecallBoostV0(trimmed, diskSnap)
+    : null;
+  const diskTurnCandidates = continuityRecallIntent.active
+    ? collectContinuityRecallCandidatesV0(diskSnap).slice(-24)
+    : [];
+  const weightedMemorySource = [...episodeSlice, ...turnSlice, ...diskTurnCandidates].slice(-60);
   const rhizohMemoryEpisodes = Array.isArray(cont.rhizohMemoryEpisodes)
     ? cont.rhizohMemoryEpisodes
     : Array.isArray(diskMeta.rhizohMemoryEpisodes)
       ? diskMeta.rhizohMemoryEpisodes
       : [];
-  const rhizohWeightedRecollection = applyMemoryDominanceCap(
-    selectWeightedMemoryTurns(weightedMemorySource, {
-      now: Date.now(),
-      queryIntent: rhizohRouter.intent,
-      currentBond: Math.min(1, Math.max(0.08, bondForMemory || 0.35)),
-      limit: 14,
-      currentPhysics: runtimeHints.socialPhysics,
-      currentFieldTheory: runtimeHints.socialRegistry?.socialFieldTheory
-    }),
-    { maxTopShare: govCalMem.memoryMaxTopShare }
+  const recallMemoryLimit = continuityRecallIntent.active ? 18 : 14;
+  const rhizohWeightedRecollection = mergeRecallBoostIntoRecollectionV0(
+    applyMemoryDominanceCap(
+      selectWeightedMemoryTurns(weightedMemorySource, {
+        now: Date.now(),
+        queryIntent: continuityRecallIntent.active ? "CHAT" : rhizohRouter.intent,
+        currentBond: Math.min(1, Math.max(0.08, bondForMemory || 0.35)),
+        limit: recallMemoryLimit,
+        currentPhysics: runtimeHints.socialPhysics,
+        currentFieldTheory: runtimeHints.socialRegistry?.socialFieldTheory
+      }),
+      { maxTopShare: govCalMem.memoryMaxTopShare }
+    ),
+    continuityRecallBoost,
+    { limit: recallMemoryLimit }
   );
   let rhizohRecallIdentityFeedback = null;
   let rhizohRecallMerge = null;
@@ -768,8 +948,26 @@ export async function queryRhizohLLM({
     ? diskMeta.rhizohReliabilityEpisodes
     : [];
   const rhizohReliabilitySummary = formatReliabilityEpisodesSummaryForLlm(reliabilityEpisodes);
+  const diskPersonaMerged =
+    addressingPatch ||
+    (diskSnap.persona && typeof diskSnap.persona === "object" ? diskSnap.persona : cont.persona) ||
+    {};
+  const basePersona =
+    cont.persona && typeof cont.persona === "object" ? cont.persona : { firstName: "", displayName: "" };
+  const effectivePersona = resolveRhizohEffectivePersonaV0(diskPersonaMerged, {
+    authFirstName: basePersona.firstName,
+    authDisplayName: basePersona.displayName,
+    conversationPhase: rhizohPhaseForTurn,
+    userTurnCount: effectiveTurnCount
+  });
+  const personaForLlm = mergePersonaForLlmV0(effectivePersona, basePersona);
+  const rhizohPersonaAddressingDirective = buildAddressingPromptDirectiveV0(effectivePersona);
+  const sportsLiveContext = probeSportsLiveQueryV0(trimmed).active
+    ? await buildSportsLiveContextBoostV0(trimmed, { forceRefresh: false })
+    : null;
   const contForLlm = {
     ...cont,
+    persona: personaForLlm,
     runtime: {
       ...(cont.runtime && typeof cont.runtime === "object" ? cont.runtime : {}),
       gatewayPhase: runtimeHints.gatewayPhase,
@@ -792,11 +990,26 @@ export async function queryRhizohLLM({
       emotionUpdatedAt
     },
     rhizohWeightedRecollection,
+    rhizohContinuityRecallBoost: continuityRecallBoost || undefined,
+    rhizohSportsLiveContext: sportsLiveContext || undefined,
+    rhizohPersonaAddressing: rhizohPersonaAddressingDirective
+      ? Object.freeze({
+          needsAddressingPrompt: true,
+          directive: rhizohPersonaAddressingDirective,
+          preferredAddress: personaForLlm.preferredAddress || "",
+          addressingConfirmed: personaForLlm.addressingConfirmed === true
+        })
+      : Object.freeze({
+          needsAddressingPrompt: false,
+          preferredAddress: personaForLlm.preferredAddress || "",
+          addressingConfirmed: personaForLlm.addressingConfirmed === true
+        }),
     rhizohRecallIdentityFeedback,
     rhizohStabilityAnchor,
     rhizohNarrativeThread,
     rhizohMemoryEpisodes,
     rhizohNarrativeArc,
+    rhizohDialogueThread: llmDepthBundle.dialogueThread || dialogueThreadPre,
     rhizohGovernorCalibration: govCalMem,
     rhizohReliabilityEpisodes: reliabilityEpisodes.slice(-12),
     rhizohReliabilitySummary,
@@ -820,7 +1033,9 @@ export async function queryRhizohLLM({
     }
   }
   const mayWriteVoiceMemory =
-    !isVoiceTurn || behavioralCommitment?.memoryEligible === true;
+    !isVoiceTurn ||
+    behavioralCommitment?.memoryEligible === true ||
+    Number(behavioralCommitment?.memoryStrength) >= 0.18;
   if (typeof persistRhizohEmotions === "function" && mayWriteVoiceMemory) {
     try {
       persistRhizohEmotions({ emotions: rhizohEmotions, relationalTone, emotionUpdatedAt });
@@ -856,11 +1071,12 @@ export async function queryRhizohLLM({
 
   const cfg = getCastleFlightConfig();
   const endpoint = cfg.rhizohLlmHttp;
-  const modeKey = normalizeRhizohGenerationModeId(generationMode);
+  const modeKey = normalizeRhizohGenerationModeId(resolvedGenerationMode);
   const maxTok = resolveRhizohLlmMaxTokensV0({
     generationMode: modeKey,
     userMessageChars: trimmed.length,
-    voiceTurn: isVoiceTurn
+    voiceTurn: isVoiceTurn,
+    depthMaxTokensCeiling: conversationDepth.maxTokensCeiling
   });
   if (!endpoint) {
     const replyStub = `Rhizoh: ${layerProfile.mission}. Talep al─▒nd─▒ -> ${message}. LLM i├ğin a─ş ge├ğidi (VITE_GATEWAY_HTTP veya VITE_RHIZOH_LLM_HTTP) tan─▒mlay─▒n; anahtar sunucuda OPENAI_API_KEY.`;
@@ -945,6 +1161,41 @@ export async function queryRhizohLLM({
         capabilityEnvelope: rhizohCapabilityEnvelope
       },
       rhizohConversationLlmDirective: rhizohLlmDirective,
+      rhizohStoryContinuitySnapshot: conversationDepth.storySnapshot,
+      rhizohConversationDepth: {
+        schema: conversationDepth.schema,
+        conversationMode: conversationDepth.conversationMode,
+        conversationIntent: conversationDepth.conversationIntent,
+        depthLevel: conversationDepth.depthLevel,
+        continuityStrength: conversationDepth.continuityStrength,
+        attentionScore: llmDepthBundle.attentionScore,
+        generationMode: modeKey,
+        modeResolution: llmDepthBundle.modeResolution,
+        foxAttention: llmDepthBundle.fox
+          ? {
+              schema: llmDepthBundle.fox.schema,
+              attentionScore: llmDepthBundle.fox.attentionScore,
+              components: llmDepthBundle.fox.components,
+              recommendedConversationMode: llmDepthBundle.fox.recommendedConversationMode,
+              recommendedGenerationMode: llmDepthBundle.fox.recommendedGenerationMode
+            }
+          : null
+      },
+      rhizohFoxAttentionField: llmDepthBundle.foxAttentionField || null,
+      rhizohFoxSignificanceField: llmDepthBundle.foxSignificanceField || null,
+      rhizohCastleAwarenessField: llmDepthBundle.castleAwarenessField || null,
+      rhizohFoxBehaviorPosture: llmDepthBundle.foxBehaviorPosture || null,
+      rhizohGhostStateV1: llmDepthBundle.ghostState || null,
+      rhizohGhostPresentationBiasV1: llmDepthBundle.ghostPresentationBias || null,
+      rhizohGhostPresentationPromptBlock: llmDepthBundle.ghostPresentationTonePromptBlock || "",
+      rhizohGhostAttentionBindingsV1: llmDepthBundle.ghostAttentionBindings || null,
+      rhizohFoxAttentionPromptBlock: llmDepthBundle.foxAttentionPromptBlock || "",
+      rhizohFoxSignificancePromptBlock: llmDepthBundle.foxSignificancePromptBlock || "",
+      rhizohDialogueThread: llmDepthBundle.dialogueThread || dialogueThreadPre,
+      rhizohDialogueThreadPromptBlock:
+        llmDepthBundle.rhizohDialogueThreadPromptBlock ||
+        buildRhizohDialogueThreadPromptBlockV1(dialogueThreadPre),
+      rhizohFoxContinuityPressure: llmDepthBundle.foxContinuityPressure || null,
       rhizohMultilingual: rhizohMultilingualPack.context,
       rhizohMultilingualDirective: rhizohMultilingualPack.directive,
       ...(getRhizohCohortIdForRequestV0() ? { cohortId: getRhizohCohortIdForRequestV0() } : {}),
@@ -955,7 +1206,19 @@ export async function queryRhizohLLM({
         "",
         rhizohMultilingualPack.directive,
         "",
-        rhizohLlmDirective
+        rhizohLlmDirective,
+        "",
+        llmDepthBundle.rhizohDialogueThreadPromptBlock ||
+          buildRhizohDialogueThreadPromptBlockV1(dialogueThreadPre),
+        "",
+        llmDepthBundle.ghostPresentationTonePromptBlock ||
+          buildGhostPresentationTonePromptBlockV1(llmDepthBundle.ghostPresentationBias),
+        "",
+        conversationDepth.depthDirective,
+        "",
+        llmDepthBundle.foxAttentionPromptBlock || "",
+        "",
+        llmDepthBundle.foxSignificancePromptBlock || ""
       ].join("\n")}`
     };
     const scopedContext = applyTurnSovereigntyPromptScopeToContextV0(baseLlmContext, turnSovereigntyLock);
@@ -973,7 +1236,8 @@ export async function queryRhizohLLM({
         options: {
           maxTokens: scopedMaxTok,
           language: resolveRhizohLlmLanguageV0().bcp47 || rhizohMultilingualPack.respondBcp47,
-          generationMode: modeKey
+          generationMode: modeKey,
+          ...llmDepthBundle.gatewayOptions
         }
       },
       { voiceTurn: isVoiceTurn }
@@ -1149,15 +1413,27 @@ export async function queryRhizohLLM({
     });
     logRhizohHealth("continuity_saved", continuityHealthDetail);
     publishRhizohTrustDebugV0(continuityHealthDetail);
-    if (!isVoiceTurn && countsAsUserTurn) {
+    if (countsAsUserTurn) {
       bindTurnIdentityV0({
         turnId: turnTraceId,
         intent: rhizohRouter?.intent ?? null,
         preview: trimmed.slice(0, 120),
-        modality: "text",
+        modality: isVoiceTurn ? "voice" : "text",
         emotionalTone: postOk.relationalTone?.tone ?? null
       });
     }
+    const rhizohDialogueThreadNext = advanceRhizohDialogueThreadV1(dialogueThreadPre, {
+      userMessage: trimmed,
+      assistantMessage: replyOk,
+      intent: rhizohRouter?.intent || "CHAT",
+      emotions: postOk.emotions,
+      narrativeThread: rhizohNarrativeThread,
+      narrativeArc: rhizohNarrativeArc,
+      memoryEpisodes: contForLlm.rhizohMemoryEpisodes,
+      outcomeResonance: postOk.outcomeResonance,
+      turnIndex: effectiveTurnCount + 1
+    });
+    noteProactiveFeedbackEmotionalContextV1({ dialogueThread: rhizohDialogueThreadNext });
     return {
       reply: replyOk,
       directive: normalized.directive,
@@ -1179,7 +1455,12 @@ export async function queryRhizohLLM({
       outcomeResonance: postOk.outcomeResonance,
       emotionsPreOutcome: rhizohEmotions,
       outcomeSession: postOk.outcomeSession,
-      rhizohRecallMerge
+      rhizohRecallMerge,
+      rhizohConversationDepth: conversationDepth,
+      rhizohGenerationModeResolved: modeKey,
+      rhizohAttentionScore: llmDepthBundle.attentionScore,
+      rhizohDialogueThread: rhizohDialogueThreadNext,
+      rhizohFoxContinuityPressure: llmDepthBundle.foxContinuityPressure || null
     };
   } catch (err) {
     const fail = classifyRhizohLlmClientFailure(err, err?.providerHttpStatus);

@@ -282,12 +282,52 @@ function buildContinuityMemoryBlock(continuity) {
           ? ` imprint=${String(row.physicsImprint.phase || "").slice(0, 12)}`
           : "";
       const int = row?.intent ?? "";
+      const boost = row?.recallBoost === true ? " RECALL_BOOST" : "";
       const u = String(row?.user || row?.text || "").slice(0, 120);
       const a = String(row?.assistant || "").slice(0, 160);
       lines.push(
-        `- [W=${w}${mfStr}${ph} intent=${int}] user: ${u}${u.length >= 120 ? "…" : ""} | assistant: ${a}${a.length >= 160 ? "…" : ""}`
+        `- [W=${w}${mfStr}${ph}${boost} intent=${int}] user: ${u}${u.length >= 120 ? "…" : ""} | assistant: ${a}${a.length >= 160 ? "…" : ""}`
       );
     });
+  }
+
+  const rcb =
+    c.rhizohContinuityRecallBoost && typeof c.rhizohContinuityRecallBoost === "object"
+      ? c.rhizohContinuityRecallBoost
+      : null;
+  if (rcb?.active && Array.isArray(rcb.lines) && rcb.lines.length) {
+    lines.push(
+      `CONTINUITY RECALL REQUEST (tier=${String(rcb.tier || "explicit").slice(0, 24)}): ${String(rcb.promptDirective || "").slice(0, 420)}`
+    );
+    if (Array.isArray(rcb.anchorTokens) && rcb.anchorTokens.length) {
+      lines.push(`Recall topic anchors: ${rcb.anchorTokens.slice(0, 8).join(", ")}`);
+    }
+    lines.push("VERIFIED_RECALL (prior turns — ground answer here first):");
+    rcb.lines.slice(0, 8).forEach((row) => {
+      const w = row?.retrievalWeight != null ? Number(row.retrievalWeight).toFixed(4) : "?";
+      const u = String(row?.user || row?.text || "").slice(0, 140);
+      const a = String(row?.assistant || "").slice(0, 180);
+      lines.push(`- [VERIFIED W=${w}] user: ${u}${u.length >= 140 ? "…" : ""} | assistant: ${a}${a.length >= 180 ? "…" : ""}`);
+    });
+  }
+
+  const pa =
+    c.rhizohPersonaAddressing && typeof c.rhizohPersonaAddressing === "object" ? c.rhizohPersonaAddressing : null;
+  if (pa?.needsAddressingPrompt && pa.directive) {
+    lines.push(String(pa.directive).slice(0, 520));
+  } else if (pa?.preferredAddress) {
+    lines.push(`Preferred address (hitap): ${String(pa.preferredAddress).slice(0, 48)}`);
+  }
+
+  const slc =
+    c.rhizohSportsLiveContext && typeof c.rhizohSportsLiveContext === "object" ? c.rhizohSportsLiveContext : null;
+  if (slc?.active) {
+    lines.push(`LIVE_SPORTS (${String(slc.source || "gateway").slice(0, 32)}): ${String(slc.promptDirective || "").slice(0, 420)}`);
+    if (Array.isArray(slc.lines) && slc.lines.length) {
+      slc.lines.slice(0, 8).forEach((line) => lines.push(`- ${String(line).slice(0, 200)}`));
+    } else {
+      lines.push(`- ${String(slc.emptyLabel || "No live sports rows in feed.").slice(0, 200)}`);
+    }
   }
 
   const anchor = c.rhizohStabilityAnchor && typeof c.rhizohStabilityAnchor === "object" ? c.rhizohStabilityAnchor : null;
@@ -400,6 +440,10 @@ function buildContinuityMemoryBlock(continuity) {
   const cogPrompt = String(c.cognitiveSubThreadsPrompt || runt?.cognitiveSubThreadsPrompt || "").trim();
   const ghostPerc = c.rhizohGhostPerceptionV1 && typeof c.rhizohGhostPerceptionV1 === "object" ? c.rhizohGhostPerceptionV1 : null;
   const ghostPb = ghostPerc && String(ghostPerc.promptBlock || "").trim();
+  const critical =
+    c.rhizohCriticalContext && typeof c.rhizohCriticalContext === "object"
+      ? c.rhizohCriticalContext
+      : null;
 
   if (arbBlock) {
     lines.push(arbBlock.slice(0, 4800));
@@ -409,6 +453,23 @@ function buildContinuityMemoryBlock(continuity) {
     }
     if (ghostPb) {
       lines.push(ghostPb.slice(0, 3400));
+    }
+  }
+
+  if (critical) {
+    const critLines = [
+      critical.narrativeSummary ? `Critical narrative: ${String(critical.narrativeSummary).slice(0, 420)}` : "",
+      critical.ghostSummary ? `Critical ghost perception: ${String(critical.ghostSummary).slice(0, 420)}` : "",
+      critical.arbitrationSummary
+        ? `Critical arbitration: ${String(critical.arbitrationSummary).slice(0, 420)}`
+        : "",
+      critical.relationshipSummary
+        ? `Critical relationship: ${String(critical.relationshipSummary).slice(0, 220)}`
+        : ""
+    ].filter(Boolean);
+    if (critLines.length) {
+      lines.push("--- Critical cognition (trim-safe) ---");
+      critLines.forEach((line) => lines.push(line));
     }
   }
 

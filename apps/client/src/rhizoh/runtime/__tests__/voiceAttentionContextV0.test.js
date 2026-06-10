@@ -25,4 +25,13 @@ describe("voiceAttentionContextV0", () => {
       resolveVoiceAttentionContextV0({ band: VOICE_DIRECTED_SPEECH_BAND.AMBIENT }).mode
     ).toBe(VOICE_ATTENTION_MODE_V0.DIRECT_LISTEN);
   });
+
+  it("co_presence uses attention_gate authority", () => {
+    const ctx = resolveVoiceAttentionContextV0({
+      explicitMode: VOICE_ATTENTION_MODE_V0.CO_PRESENCE
+    });
+    expect(ctx.responsePolicy).toBe("attention_spike_only");
+    expect(ctx.policyAuthority).toBe("attention_gate");
+    expect(ctx.streamAlwaysOn).toBe(true);
+  });
 });

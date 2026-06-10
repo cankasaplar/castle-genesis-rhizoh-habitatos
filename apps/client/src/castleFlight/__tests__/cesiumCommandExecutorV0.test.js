@@ -123,7 +123,7 @@ describe("cesiumCommandExecutorV0", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(flyToCustom).toHaveBeenCalledWith(41.01, 28.97, 1180);
+    expect(flyToCustom).toHaveBeenCalledWith(41.01, 28.97, 1180, {});
   });
 
   it("focus_castle routes through executor", () => {

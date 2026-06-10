@@ -4,7 +4,10 @@ import {
   shouldRhizohFlyToIstanbulV0,
   hasRhizohReturningUserAnchorV0,
   coerceRhizohProductRealityModeV0,
-  shouldRhizohT0LiveChromeVisibleV0
+  shouldHideT0ContinuityChromeOnWorldSpaceV0,
+  shouldRhizohT0LiveChromeVisibleV0,
+  shouldRhizohWorldSpaceVoiceDockVisibleV0,
+  shouldUseApexProceduralRealMapV0
 } from "../rhizohWorldSurfacePolicyV0.js";
 import { isRhizohContextWheelVisibleV0 } from "../rhizohLayerContextV0.js";
 import {
@@ -88,7 +91,7 @@ describe("rhizohWorldSurfacePolicyV0", () => {
     ).toBe("REAL_MAP");
   });
 
-  it("hides T0 fox+chat on World Space map stage", () => {
+  it("T0 full chrome vs World Space voice dock", () => {
     expect(shouldRhizohT0LiveChromeVisibleV0({ isWorldDomainActive: false })).toBe(true);
     expect(
       shouldRhizohT0LiveChromeVisibleV0({
@@ -102,5 +105,19 @@ describe("rhizohWorldSurfacePolicyV0", () => {
         worldDomain: "social"
       })
     ).toBe(true);
+    expect(
+      shouldRhizohWorldSpaceVoiceDockVisibleV0({
+        isWorldDomainActive: true,
+        worldDomain: "space"
+      })
+    ).toBe(true);
+    expect(
+      shouldHideT0ContinuityChromeOnWorldSpaceV0({
+        pathname: "/world/space",
+        worldDomain: "space"
+      })
+    ).toBe(true);
+    expect(shouldUseApexProceduralRealMapV0({ pathname: "/world/space" })).toBe(false);
+    expect(shouldUseApexProceduralRealMapV0({ pathname: "/" })).toBe(true);
   });
 });

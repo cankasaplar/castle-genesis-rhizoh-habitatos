@@ -117,14 +117,16 @@ export async function speakAfterVoiceInstantAckSmoothV0(speakReplyFn, opts = {})
 export function speakVoiceInstantAckV0(phrase, opts = {}) {
   if (typeof window === "undefined" || !window.speechSynthesis) return false;
   const turnId = String(opts.traceId || getLastTurnSovereigntyV0()?.turnId || "");
-  const ackGate = gateInstantAckForTurnV0(turnId, opts.moduleId || "voiceInstantAck");
-  if (ackGate.block) {
-    logVoiceWarnV0("TURN_SOVEREIGNTY_ACK_BLOCKED", {
-      turnId,
-      reason: ackGate.reason,
-      reality: ackGate.lock?.sovereignReality
-    });
-    return false;
+  if (opts.skipSovereigntyGate !== true) {
+    const ackGate = gateInstantAckForTurnV0(turnId, opts.moduleId || "voiceInstantAck");
+    if (ackGate.block) {
+      logVoiceWarnV0("TURN_SOVEREIGNTY_ACK_BLOCKED", {
+        turnId,
+        reason: ackGate.reason,
+        reality: ackGate.lock?.sovereignReality
+      });
+      return false;
+    }
   }
   const dispatchAtMs = lastDispatchAtMs || Date.now();
   const session = ++ackSession;
@@ -189,6 +191,7 @@ export function speakVoiceInstantAckV0(phrase, opts = {}) {
     text,
     () => {
       try {
+        window.speechSynthesis.resume?.();
         window.speechSynthesis.speak(utterance);
         return true;
       } catch {

@@ -8,11 +8,14 @@ import {
   __resetOlpStateForTestV0,
   hydrateOlpFromPersistedPreferenceV0
 } from "../rhizohOutputLanguagePolicyV0.js";
+import { writeRhizohSpeechProfileV0, RHIZOH_SPEECH_MODE_V0, clearRhizohSpeechProfileForTestV0 } from "../rhizohSpeechProfileV0.js";
 
 describe("rhizohLanguageRuntimeV0", () => {
   beforeEach(() => {
     __resetOlpStateForTestV0();
+    clearRhizohSpeechProfileForTestV0();
     localStorage.setItem("rhizoh.user.language.v0", "en");
+    writeRhizohSpeechProfileV0({ mode: RHIZOH_SPEECH_MODE_V0.MIRROR_UI });
     hydrateOlpFromPersistedPreferenceV0();
   });
 

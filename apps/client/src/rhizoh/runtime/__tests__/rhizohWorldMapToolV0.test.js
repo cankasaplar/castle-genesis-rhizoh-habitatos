@@ -42,11 +42,14 @@ describe("rhizohWorldMapToolV0", () => {
     expect(t?.lon).toBeGreaterThan(28);
   });
 
-  it("apply globe uses GLOBE mode", async () => {
+  it("apply globe keeps REAL_MAP with orbit fly", async () => {
     const setRealityMode = vi.fn(async () => ({ ok: true }));
     const r = await applyRhizohWorldMapToolV0("globe", { setRealityMode });
-    expect(setRealityMode).toHaveBeenCalledWith("GLOBE", expect.objectContaining({ productSurface: "world" }));
-    expect(r.realityMode).toBe("GLOBE");
+    expect(setRealityMode).toHaveBeenCalledWith(
+      "REAL_MAP",
+      expect.objectContaining({ productSurface: "world", source: expect.stringContaining("GLOBE_ORBIT") })
+    );
+    expect(r.realityMode).toBe("REAL_MAP");
   });
 
   it("apply city map uses MAP_TOOL_EXPLICIT REAL_MAP", async () => {

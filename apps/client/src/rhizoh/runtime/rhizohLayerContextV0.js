@@ -9,6 +9,7 @@ import {
   readRhizohWorldSystemModeV0
 } from "./rhizohWorldSystemModeV0.js";
 import { resolveWorldDomainFromPathV0 } from "./rhizohWorldDomainRoutesV0.js";
+import { isRhizohProductMapExecutionEnabledV0 } from "../../reality/realityEngineSurface.js";
 
 export const RHIZOH_LAYER_MODE_V0 = Object.freeze({
   T0_LIVE: "t0_live",
@@ -116,11 +117,20 @@ export function isRhizohMapToolStripVisibleV0(ctx = {}) {
 }
 
 /**
+ * Whether the Cesium DOM subtree may mount (World · Space route only — not T0 live).
+ * @param {{ pathname?: string, worldDomain?: string | null }} [ctx]
+ * @returns {boolean}
+ */
+export function shouldMountRhizohWorldSpaceMapEngineV0(ctx = {}) {
+  return resolveRhizohLayerModeV0(ctx) === RHIZOH_LAYER_MODE_V0.MAPS_SPACE;
+}
+
+/**
  * Cesium / REAL_MAP surface — only when exploring maps in space drawer.
  * @param {{ worldDrawerOpen?: boolean, worldDrawerDomain?: string, mapSurfaceActive?: boolean }} [ctx]
  */
 export function isRhizohSpatialMapEngineActiveV0(ctx = {}) {
-  if (resolveRhizohLayerModeV0(ctx) !== RHIZOH_LAYER_MODE_V0.MAPS_SPACE) return false;
+  if (!shouldMountRhizohWorldSpaceMapEngineV0(ctx)) return false;
   return ctx.mapSurfaceActive !== false;
 }
 
@@ -138,7 +148,26 @@ export function isRhizohSpatialMapEngineActiveV0(ctx = {}) {
  * }} [ctx]
  * @returns {boolean}
  */
+/**
+ * Dedicated World · Space shell — minimal gate (no T0 drawer/detail blocking).
+ * @param {{
+ *   mapSurfaceActive?: boolean,
+ *   mapTool?: string,
+ *   pathname?: string,
+ *   worldDomain?: string | null
+ * }} [ctx]
+ * @returns {boolean}
+ */
+export function resolveRhizohWorldSpaceCesiumActiveV0(ctx = {}) {
+  if (!shouldMountRhizohWorldSpaceMapEngineV0(ctx)) return false;
+  if (isRhizohProductMapExecutionEnabledV0()) return true;
+  return ctx.mapSurfaceActive !== false;
+}
+
 export function resolveRhizohCesiumLayerActiveV0(ctx = {}) {
+  if (shouldMountRhizohWorldSpaceMapEngineV0(ctx)) {
+    return resolveRhizohWorldSpaceCesiumActiveV0(ctx);
+  }
   if (ctx.detailDrawerOpen) return false;
   if (ctx.openProductDrawerId) return false;
   if (String(ctx.realityMode || "") !== "REAL_MAP") return false;

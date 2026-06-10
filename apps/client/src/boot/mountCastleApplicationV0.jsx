@@ -7,6 +7,7 @@ import { resolveIngressRouteV0 } from "../rhizoh/ingress/ingress_router.js";
 import { RhizohIngressFlow } from "../rhizoh/ingress/RhizohIngressFlow.jsx";
 import { hideLegacyIndexHudV0 } from "./castleCrashTelemetry.js";
 import { installRhizohReflexDebugGlobalsV0 } from "../rhizoh/runtime/rhizohFastPrecheckV0.js";
+import { installRhizohVoiceSmokeGlobalsV0 } from "../rhizoh/runtime/rhizohVoiceCommandSmokeHarnessV0.js";
 import { startProdWorldObservabilityBridgeV0 } from "../rhizoh/runtime/rhizohProdWorldObservabilityBridgeV0.js";
 
 /**
@@ -23,6 +24,7 @@ export async function mountCastleApplicationV0(ctx) {
 
   hideLegacyIndexHudV0();
   installRhizohReflexDebugGlobalsV0();
+  installRhizohVoiceSmokeGlobalsV0();
   bootLog?.ok?.("boot.ontological_gate", "pre-render gate starting");
 
   const gate = await bootstrapRhizohOntologicalGateV0();

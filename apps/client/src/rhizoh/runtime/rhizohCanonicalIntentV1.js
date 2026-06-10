@@ -13,6 +13,7 @@ import {
   formatWeatherReplyV1
 } from "./rhizohCanonicalReflexSnapshotV1.js";
 import { executeFastPrecheckReflexV0 } from "./rhizohFastPrecheckLiveReflexV1.js";
+import { isEmptySportsReflexReplyV0 } from "./rhizohSportsLiveContextV0.js";
 import { readCanonicalLiveSnapshotV1 } from "./rhizohCanonicalLiveSnapshotV1.js";
 import {
   probeCanonicalClusterMemoryV1,
@@ -225,7 +226,7 @@ export const CLIC_LIVE_TOKEN_BAGS_V1 = Object.freeze({
     "karsilasma",
     "macsonuc"
   ]),
-  [CANONICAL_INTENT_V1.SPORTS_FIXTURE]: Object.freeze(["fikstur", "fixture", "maclar", "macvar"]),
+  [CANONICAL_INTENT_V1.SPORTS_FIXTURE]: Object.freeze(["fikstur", "fixture", "maclar", "macvar", "turkiye", "turkey"]),
   [CANONICAL_INTENT_V1.NEWS_HEADLINES]: Object.freeze([
     "haberler",
     "gundem",
@@ -269,7 +270,10 @@ const CLIC_LIVE_PHRASE_BOOSTS_V1 = Object.freeze([
   { phrase: "burada durum", intent: CANONICAL_INTENT_V1.MAP_CONTEXT, boost: 5 },
   { phrase: "disari cik", intent: CANONICAL_INTENT_V1.MAP_CONTEXT, boost: 5 },
   { phrase: "cevrede ne", intent: CANONICAL_INTENT_V1.MAP_CONTEXT, boost: 4 },
-  { phrase: "kisa brifing", intent: CANONICAL_INTENT_V1.BRIEFING_QUERY, boost: 6 },
+  { phrase: "turkiye mac", intent: CANONICAL_INTENT_V1.SPORTS_FIXTURE, boost: 6 },
+  { phrase: "turkiye fikstur", intent: CANONICAL_INTENT_V1.SPORTS_FIXTURE, boost: 7 },
+  { phrase: "a milli mac", intent: CANONICAL_INTENT_V1.SPORTS_FIXTURE, boost: 6 },
+  { phrase: "mac fikstur", intent: CANONICAL_INTENT_V1.SPORTS_FIXTURE, boost: 5 },
   { phrase: "kısa brifing", intent: CANONICAL_INTENT_V1.BRIEFING_QUERY, boost: 6 },
   { phrase: "gunluk ozet", intent: CANONICAL_INTENT_V1.BRIEFING_QUERY, boost: 5 },
   { phrase: "günlük özet", intent: CANONICAL_INTENT_V1.BRIEFING_QUERY, boost: 5 }
@@ -456,10 +460,13 @@ export function buildCanonicalFeatureBagV1(tokens) {
     (t) => t.startsWith("duyamad") || t.startsWith("duyulmad")
   );
   const hasHearingQuery =
-    tokens.some((t) => /^duyabiliyor|^duyuyor/.test(t)) ||
-    (tokens.some((t) => /^duy/.test(t)) &&
-      tokens.some((t) => /^(musun|musunuz|misin|misiniz)$/.test(t)));
-  if (!hasHearingFailure && (features.has("hearing") || hasHearingQuery)) {
+    tokens.some((t) => /^duyabiliyor|^duyuyor/.test(t)) &&
+    tokens.some((t) => /^(musun|musunuz|misin|misiniz)$/.test(t));
+  const assertiveHearingStatement =
+    tokens.some((t) =>
+      /^(gerekiyor|lazim|lazım|olman|olmalı|olmalısın|sanırım|sanirim|gerek)$/.test(t)
+    ) && !features.has("question");
+  if (!hasHearingFailure && !assertiveHearingStatement && hasHearingQuery) {
     features.add("hearing_check");
   }
   if (
@@ -504,8 +511,11 @@ export function projectCanonicalIntentV1(bag) {
 
   const has = (key) => f.has(key);
 
-  if (has("hearing_check") || (has("hearing") && has("entity_rhizoh"))) {
+  if (has("hearing_check")) {
     return { canonicalIntent: CANONICAL_INTENT_V1.HEARING_CHECK, confidence: 0.92 };
+  }
+  if (has("hearing") && has("entity_rhizoh") && has("question")) {
+    return { canonicalIntent: CANONICAL_INTENT_V1.HEARING_CHECK, confidence: 0.88 };
   }
   if (has("time_query") || (has("time") && has("question"))) {
     return { canonicalIntent: CANONICAL_INTENT_V1.TIME_QUERY, confidence: 0.9 };
@@ -843,8 +853,9 @@ export function probeCanonicalIntentV1(input, opts = {}) {
 /**
  * @param {ReturnType<typeof probeCanonicalIntentV1>} hit
  * @param {string} [locale]
+ * @param {string} [queryNormalized]
  */
-export function canonicalIntentToPrecheckV1(hit, locale) {
+export function canonicalIntentToPrecheckV1(hit, locale, queryNormalized = "") {
   if (!hit?.canonicalIntent) return null;
   const loc = String(locale || hit.localeHint || resolveOutputLanguageCodeV0() || "tr")
     .toLowerCase()
@@ -869,8 +880,15 @@ export function canonicalIntentToPrecheckV1(hit, locale) {
       hit.canonicalIntent === CANONICAL_INTENT_V1.WEATHER_STUB
         ? CANONICAL_INTENT_V1.WEATHER_LIVE
         : hit.canonicalIntent;
-    const liveReply = executeFastPrecheckReflexV0(reflexIntent, snapshot, loc);
+    const liveReply = executeFastPrecheckReflexV0(reflexIntent, snapshot, loc, queryNormalized);
     if (liveReply) {
+      if (
+        (hit.canonicalIntent === CANONICAL_INTENT_V1.SPORTS_FIXTURE ||
+          hit.canonicalIntent === CANONICAL_INTENT_V1.SPORTS_LIVE) &&
+        isEmptySportsReflexReplyV0(liveReply)
+      ) {
+        return null;
+      }
       const weather = formatWeatherReplyV1(loc);
       const isWeather = hit.canonicalIntent === CANONICAL_INTENT_V1.WEATHER_STUB ||
         hit.canonicalIntent === CANONICAL_INTENT_V1.WEATHER_LIVE;

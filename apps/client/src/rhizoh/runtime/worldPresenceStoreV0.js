@@ -43,7 +43,7 @@ export function getCachedWeatherAtmosphereFeedV0() {
 
 /**
  * TTL içindeyse ağa gitmez; stale ise fetch (dedupe in-flight).
- * @param {{ ttlMs?: number, signal?: AbortSignal }} [opts]
+ * @param {{ ttlMs?: number, signal?: AbortSignal, force?: boolean }} [opts]
  */
 export async function refreshWeatherAtmosphereFeedIfStaleV0(opts = {}) {
   if (isWorldExecutionOffV0()) {
@@ -51,7 +51,7 @@ export async function refreshWeatherAtmosphereFeedIfStaleV0(opts = {}) {
   }
   const ttl = typeof opts.ttlMs === "number" && opts.ttlMs > 0 ? opts.ttlMs : DEFAULT_TTL_MS;
   const now = Date.now();
-  if (now < _cacheValidUntil) return _cachedFeed;
+  if (!opts.force && now < _cacheValidUntil) return _cachedFeed;
   if (_inFlight) return _inFlight;
 
   _inFlight = (async () => {

@@ -8,6 +8,7 @@ import {
   SOVEREIGNTY_OUTPUT_CHANNEL_V0,
   classifyDirectedPatternsV0,
   isMixedSubstantiveQueryV0,
+  isShortAddressOnlyV0,
   lockTurnSovereigntyV0,
   permitTurnOutputV0,
   explainTurnSovereigntyV0,
@@ -199,6 +200,42 @@ describe("behavioralTurnSovereigntyV0", () => {
     expect(lock.sovereignReality).toBe(SOVEREIGN_REALITY_V0.FAST_REFLEX);
     expect(lock.sovereignOutput?.text).toBe("Anladım.");
     expect(lock.suppressed).toContain("llm_conversation");
+  });
+
+  it("directed_candidate band alone routes to llm_conversation", () => {
+    const lock = lockTurnSovereigntyV0(
+      baseInput({
+        input: { text: "Biraz konuşalım", modality: "voice" },
+        candidates: {
+          voice: {
+            band: VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE,
+            authority: { maySpeak: true, path: VOICE_CONVERSATION_AUTHORITY_PATH_V0.SLOW_LLM },
+            commitment: { behaviorEligible: true }
+          }
+        }
+      })
+    );
+    expect(lock.sovereignReality).toBe(SOVEREIGN_REALITY_V0.LLM_CONVERSATION);
+    expect(lock.selectionReason).toBe("llm_conversation");
+  });
+
+  it("substantive question with Rizo name is not short address ack", () => {
+    const text = "Soru sormak ister misin Rizo?";
+    expect(isShortAddressOnlyV0(text)).toBe(false);
+    expect(classifyDirectedPatternsV0(text)).not.toContain("address");
+    const lock = lockTurnSovereigntyV0(
+      baseInput({
+        input: { text, modality: "voice" },
+        candidates: {
+          voice: {
+            band: VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE,
+            authority: { maySpeak: true, path: VOICE_CONVERSATION_AUTHORITY_PATH_V0.SLOW_LLM },
+            commitment: { behaviorEligible: true }
+          }
+        }
+      })
+    );
+    expect(lock.sovereignReality).toBe(SOVEREIGN_REALITY_V0.LLM_CONVERSATION);
   });
 
   it("sub-reality varies phrase within presence_ack", () => {

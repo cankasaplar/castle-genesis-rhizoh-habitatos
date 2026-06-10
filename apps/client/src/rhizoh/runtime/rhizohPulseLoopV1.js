@@ -27,11 +27,20 @@ import {
 import { filterIdentityNoiseV0 } from "./rhizohSemanticCompressionFilterV0.js";
 import { evaluatePresencePrimitiveOnPulseV1 } from "./rhizohPresencePrimitiveV1.js";
 import { evaluateEmergencyOnPulseV0 } from "./rhizohEmergencySignalLayerV0.js";
+import { runFoxPerceptionTickV1 } from "./foxBehaviorGateV1.js";
+import { runFoxProactiveChannelTickV1 } from "./foxProactiveChannelV1.js";
+import {
+  mountFoxProactiveFeedbackObserverV1,
+  evaluateFoxProactiveOutcomeWatchV1
+} from "./foxProactiveAdaptationV1.js";
+import { publishFoxFirstContactObservationV1, mountFoxFirstContactObservationV1 } from "./foxProactiveFirstContactCohortV1.js";
 
 export const RHIZOH_PULSE_LOOP_SCHEMA_V1 = "rhizoh.pulse_loop.v1";
 
 const PULSE_TICK_MS_V1 = 2000;
 const COMPUTE_PROBE_EVERY_TICKS_V1 = 30;
+const FOX_PERCEPTION_EVERY_TICKS_V1 = 30;
+const FOX_PROACTIVE_EVERY_TICKS_V1 = 45;
 
 /** @type {number | null} */
 let pulseTimerV1 = null;
@@ -191,6 +200,38 @@ export function runRhizohPulseTickV1() {
     Object.freeze({ emitted: false, risk: { riskScore: 0 } })
   );
 
+  const foxPerceptionStage = safePulseStageV0(
+    "fox_perception",
+    () => {
+      if (pulseSeqV1 % FOX_PERCEPTION_EVERY_TICKS_V1 !== 0) {
+        return Object.freeze({ skipped: true, reason: "interval_gate" });
+      }
+      return runFoxPerceptionTickV1({
+        continuity,
+        userTurnCount: lifecycle.turnCount,
+        traceId: `pulse_fox_${pulseSeqV1}`,
+        atMs
+      });
+    },
+    Object.freeze({ skipped: true, reason: "fallback" })
+  );
+
+  const foxProactiveStage = safePulseStageV0(
+    "fox_proactive_channel",
+    () => {
+      evaluateFoxProactiveOutcomeWatchV1(atMs);
+      publishFoxFirstContactObservationV1();
+      if (pulseSeqV1 % FOX_PROACTIVE_EVERY_TICKS_V1 !== 0) {
+        return Object.freeze({ skipped: true, reason: "interval_gate" });
+      }
+      return runFoxProactiveChannelTickV1({
+        traceId: `pulse_proactive_${pulseSeqV1}`,
+        userFocused: typeof document !== "undefined" ? document.hasFocus?.() === true : false
+      });
+    },
+    Object.freeze({ skipped: true, reason: "fallback" })
+  );
+
   const stagesV1 = Object.freeze({
     identity_lifecycle: lifecycleStage,
     transport: transportStage,
@@ -201,7 +242,9 @@ export function runRhizohPulseTickV1() {
     semantic_filter: semanticFilter,
     compute_probe: computeStage,
     scheduler: schedulerStage,
-    emergency_signal: emergencyStage
+    emergency_signal: emergencyStage,
+    fox_perception: foxPerceptionStage,
+    fox_proactive_channel: foxProactiveStage
   });
 
   const stageHealth = Object.freeze(
@@ -250,6 +293,8 @@ export function runRhizohPulseTickV1() {
     }),
     semanticFilter: semanticFilter.result,
     scheduler: schedulerEval,
+    foxPerception: foxPerceptionStage.result,
+    foxProactiveChannel: foxProactiveStage.result,
     liveLayer: emission?.layer === "live" ? emission : null,
     pulseGovernance: getPulseGovernanceSnapshotV0(),
     emission,
@@ -282,6 +327,8 @@ export function mountRhizohPulseLoopV1() {
   if (typeof window === "undefined" || mountedV1) return;
   mountedV1 = true;
   notePersonaSchedulerUserActivityV0();
+  mountFoxProactiveFeedbackObserverV1();
+  mountFoxFirstContactObservationV1();
 
   const onActivity = () => notePersonaSchedulerUserActivityV0();
   window.addEventListener("pointerdown", onActivity, { passive: true });

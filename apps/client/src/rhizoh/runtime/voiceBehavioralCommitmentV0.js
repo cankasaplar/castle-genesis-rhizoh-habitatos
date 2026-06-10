@@ -115,12 +115,14 @@ export function finalizeVoiceBehavioralCommitmentV0(input = {}) {
 
   if (band === VOICE_DIRECTED_SPEECH_BAND.UNKNOWN) {
     const behaviorEligible = turnOk;
+    const memoryStrength = behaviorEligible ? 0.55 : turnOk ? 0.22 : 0.12;
     return Object.freeze({
       band,
-      memoryEligible: false,
+      memoryEligible: behaviorEligible,
+      memoryStrength,
       behaviorEligible,
       behaviorMode: "after_gate",
-      memoryMode: "statistics_only",
+      memoryMode: behaviorEligible ? "gated_pass" : "statistics_only",
       commitment: behaviorEligible ? "conditional_committed" : "statistics_only",
       turnCounts: behaviorEligible,
       sessionBumps: behaviorEligible
@@ -128,9 +130,11 @@ export function finalizeVoiceBehavioralCommitmentV0(input = {}) {
   }
 
   const committed = sanityOk && turnOk;
+  const memoryStrength = committed ? 0.85 : sanityOk ? 0.35 : 0.15;
   return Object.freeze({
     band,
     memoryEligible: committed,
+    memoryStrength,
     behaviorEligible: committed,
     behaviorMode: "after_gate",
     memoryMode: committed ? "gated_pass" : "gated_reject",

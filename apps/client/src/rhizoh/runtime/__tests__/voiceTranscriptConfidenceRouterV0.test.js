@@ -195,6 +195,35 @@ describe("voiceTranscriptConfidenceRouterV0", () => {
     expect(route.observationPass).toBe(true);
   });
 
+  it("observation-passes short Turkish question under adaptive endpoint on direct_listen", () => {
+    vi.stubEnv("VITE_RHIZOH_VOICE_ATTENTION_MODE", "direct_listen");
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "Bana kendini tanıtır mısın?",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      recordedMs: 4331,
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(route.reason).toBe("whisper_default_conf");
+    expect(route.observationPass).toBe(true);
+  });
+
+  it("observation-passes brief Turkish question at 2.2s on direct_listen", () => {
+    vi.stubEnv("VITE_RHIZOH_VOICE_ATTENTION_MODE", "direct_listen");
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "Nasıl söyleyeceğim?",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      recordedMs: 2265,
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(route.observationPass).toBe(true);
+  });
+
   it("blocks phantom coaching phrase sohbet edelim seni duymak istiyoruz", () => {
     const route = routeVoiceTranscriptConfidenceV0({
       text: "Sohbet edelim, seni duymak istiyoruz.",

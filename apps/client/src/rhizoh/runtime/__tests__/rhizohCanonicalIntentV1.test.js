@@ -129,9 +129,15 @@ describe("rhizohCanonicalIntentV1", () => {
     expect(probeCanonicalIntentV1("hava durumunu söyler misin")?.canonicalIntent).toBe(
       CANONICAL_INTENT_V1.WEATHER_STUB
     );
+    if (typeof window !== "undefined") {
+      window.__CASTLE_NEXUS_GEO__ = { lat: 36.75, lon: 28.92, source: "test" };
+    }
     expect(runFastPrecheckFromTextV0("Hava durumunu söyler misin Rizo?")?.intent).toMatch(
       /weather/
     );
+    if (typeof window !== "undefined") {
+      delete window.__CASTLE_NEXUS_GEO__;
+    }
   });
 
   it("collapses Evizo to greeting wake", () => {
@@ -143,9 +149,7 @@ describe("rhizohCanonicalIntentV1", () => {
   it("thanks wins over chat_invite in composite utterance", () => {
     const hit = probeCanonicalIntentV1("Teşekkür ederim. Biraz sohbet edelim.");
     expect(hit?.canonicalIntent).toBe(CANONICAL_INTENT_V1.THANKS);
-    expect(runFastPrecheckFromTextV0("Teşekkür ederim. Biraz sohbet edelim.")?.intent).toBe(
-      "thanks"
-    );
+    expect(runFastPrecheckFromTextV0("Teşekkür ederim. Biraz sohbet edelim.")).toBeNull();
   });
 
   it("detects sports results phrasing", () => {
@@ -164,7 +168,13 @@ describe("rhizohCanonicalIntentV1", () => {
     expect(probeCanonicalIntentV1("gündem haberleri")?.canonicalIntent).toBe(
       CANONICAL_INTENT_V1.NEWS_HEADLINES
     );
+    if (typeof window !== "undefined") {
+      window.__CASTLE_NEXUS_GEO__ = { lat: 36.75, lon: 28.92, source: "test" };
+    }
     expect(runFastPrecheckFromTextV0("trafik ne durumda")?.intent).toBe("traffic_query");
+    if (typeof window !== "undefined") {
+      delete window.__CASTLE_NEXUS_GEO__;
+    }
     expect(runFastPrecheckFromTextV0("son dakika haberler")?.intent).toBe("news_headlines");
   });
 

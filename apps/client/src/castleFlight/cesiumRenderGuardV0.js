@@ -230,6 +230,28 @@ export function startCesiumDefaultRenderLoopV0(viewer) {
 }
 
 /**
+ * Full orbit / pan / zoom — World · Space free camera.
+ * @param {import("cesium").Viewer | null | undefined} viewer
+ */
+export function enableCesiumFreeCameraControlsV0(viewer) {
+  if (!viewer || viewer.isDestroyed?.()) return;
+  try {
+    const c = viewer.scene.screenSpaceCameraController;
+    c.enableInputs = true;
+    c.enableZoom = true;
+    c.enableTranslate = true;
+    c.enableRotate = true;
+    c.enableTilt = true;
+    c.enableLook = true;
+    c.enableCollisionDetection = true;
+    c.minimumZoomDistance = 6;
+    c.maximumZoomDistance = 50_000_000;
+  } catch {
+    /* noop */
+  }
+}
+
+/**
  * Wait for N consecutive postRender frames (viewer must be rendering).
  * @param {import("cesium").Viewer} viewer
  * @param {number} [frameCount]

@@ -663,7 +663,7 @@ const RHIZOH_GENERATION_MODE_UI = [
 /** Voice loop — faster LLM + shorter watchdog so mic does not appear stuck. */
 const VOICE_LLM_TIMEOUT_MS = 22_000;
 const VOICE_TURN_BUSY_WATCHDOG_MS = 38_000;
-const VOICE_AFTER_TURN_RESTART_MS = 420;
+const VOICE_AFTER_TURN_RESTART_MS = 180;
 
 function normalizeRhizohGenerationModeId(mode) {
   return String(mode || "STANDARD").trim().toUpperCase().replace(/-/g, "_");
@@ -9587,6 +9587,9 @@ export default function AppRhizoh528() {
           rhizohWeightedTurns: weightedTurns,
           rhizohNarrativeThread: narrativeThread,
           rhizohNarrativeArc: narrativeArc,
+          ...(rhizohTrace?.rhizohDialogueThread && typeof rhizohTrace.rhizohDialogueThread === "object"
+            ? { rhizohDialogueThread: rhizohTrace.rhizohDialogueThread }
+            : {}),
           rhizohMemoryEpisodes: memoryEpisodes,
           rhizohSocialField,
           rhizohSocialRegistry: csilPost.registry,
@@ -9709,7 +9712,7 @@ export default function AppRhizoh528() {
     const scheduleAfterTtsIdle = () => {
       if (!voiceLoopEnabledRef.current) return;
       if (typeof window !== "undefined" && window.speechSynthesis?.speaking) {
-        voiceMicRestartTimerRef.current = window.setTimeout(scheduleAfterTtsIdle, 140);
+        voiceMicRestartTimerRef.current = window.setTimeout(scheduleAfterTtsIdle, 60);
         return;
       }
       voiceMicRestartTimerRef.current = 0;
@@ -10441,6 +10444,10 @@ export default function AppRhizoh528() {
           speakRhizoh(presenceReply, { voiceTurn: manageVoiceTurn });
         } else if (manageVoiceTurn) {
           setVoiceReady(true);
+          finishVoiceTurnIfNeeded();
+        } else {
+          voiceTurnBusyRef.current = false;
+          voiceTurnBusySinceRef.current = 0;
         }
         logVoiceInfoV0("FAST_PRESENCE_SPEAK", {
           liveSpoke: presenceFast.result?.spoke === true,
@@ -10648,6 +10655,7 @@ export default function AppRhizoh528() {
           gatewayUx,
           continuity: buildContinuityPayload(trimmed),
           generationMode: "FAST_DIALOGUE",
+          pinGenerationMode: false,
           fetchTimeoutMs: VOICE_LLM_TIMEOUT_MS,
           slimVoicePath: true,
           persistRhizohEmotions: persistRhizohEmotionSession,
@@ -12203,6 +12211,7 @@ export default function AppRhizoh528() {
         gatewayUx,
         continuity: buildContinuityPayload(raw),
         generationMode: shouldPreferFastDialogueForSessionV0() ? "FAST_DIALOGUE" : rhizohGenerationMode,
+        pinGenerationMode: false,
         fetchTimeoutMs: shouldPreferFastDialogueForSessionV0() ? VOICE_LLM_TIMEOUT_MS : TEXT_LLM_TIMEOUT_MS,
         slimVoicePath: shouldPreferFastDialogueForSessionV0(),
         persistRhizohEmotions: persistRhizohEmotionSession,

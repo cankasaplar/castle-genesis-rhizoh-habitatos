@@ -132,8 +132,13 @@ export function updateFoxConversationEyesV0(eyes, t, delta, drive = {}) {
   }
 
   const lidOpen = gaze.lidOpen * blinkMul;
-  const lookX = live ? Math.sin(t * 0.7) * 0.004 * (0.4 + act) : Math.sin(t * 0.35) * 0.002;
-  const lookY = live ? Math.cos(t * 0.55) * 0.003 * (0.3 + act * 0.5) : 0;
+  const gp =
+    drive.ghostPresentation && typeof drive.ghostPresentation === "object" ? drive.ghostPresentation : null;
+  const gazeHold01 = Math.min(1, Math.max(0, Number(gp?.gazeHold01) || 0));
+  const scanIntensity = Math.min(1, Math.max(0, Number(gp?.scanIntensity) || 0));
+  const driftMul = (1 - gazeHold01 * 0.72) * (1 + scanIntensity * 0.55);
+  const lookX = live ? Math.sin(t * 0.7) * 0.004 * (0.4 + act) * driftMul : Math.sin(t * 0.35) * 0.002 * driftMul;
+  const lookY = live ? Math.cos(t * 0.55) * 0.003 * (0.3 + act * 0.5) * driftMul : 0;
 
   for (const side of [eyes.left, eyes.right]) {
     if (!side) continue;

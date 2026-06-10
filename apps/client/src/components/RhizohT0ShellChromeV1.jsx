@@ -18,6 +18,9 @@ import { isRhizohT0FirstMatchIdentityV0 } from "../rhizoh/runtime/rhizohT0FirstM
 import { OBSERVATION_FEED_COPY_TR_V0 } from "../rhizoh/runtime/rhizohObservationFeedV0.js";
 import { shouldShowPerceptionAlignmentObservationStripV0 } from "../castleFlight/perceptionAlignmentObservationV0.js";
 import { PerceptionAlignmentObservationStripV0 } from "./PerceptionAlignmentObservationStripV0.jsx";
+import { StabilityLearningTraceStripGateV0 } from "./StabilityLearningTraceStripV0.jsx";
+import { RhizohFoxProactiveCalibrationChipGateV0 } from "./RhizohFoxProactiveCalibrationChipV0.jsx";
+import { RhizohFoxFirstContactStripGateV0 } from "./RhizohFoxFirstContactStripV0.jsx";
 import { PerceptionFractureLayerV0 } from "./PerceptionFractureLayerV0.jsx";
 import { RhizohPresenceContractStripV0 } from "./RhizohPresenceContractStripV0.jsx";
 
@@ -301,6 +304,12 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
             />
           ) : null}
 
+          <StabilityLearningTraceStripGateV0 className="mb-1" />
+
+          <RhizohFoxFirstContactStripGateV0 uiLocale={locale} className="mx-1 mb-1" />
+
+          <RhizohFoxProactiveCalibrationChipGateV0 uiLocale={locale} className="mx-1 mb-1" />
+
           <PerceptionFractureLayerV0
             atmosphere={fractureAtmosphere}
             layer="octo"
@@ -514,6 +523,8 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
         {showAlignmentStrip ? (
           <PerceptionAlignmentObservationStripV0 snapshot={alignmentSnapshot} className="mb-1" />
         ) : null}
+
+        <StabilityLearningTraceStripGateV0 className="mb-1" />
 
         <PerceptionFractureLayerV0
           atmosphere={fractureAtmosphere}

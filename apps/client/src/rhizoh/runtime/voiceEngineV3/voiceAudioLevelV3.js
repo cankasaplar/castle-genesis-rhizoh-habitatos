@@ -12,10 +12,11 @@ export const VOICE_MIN_SPEECH_RMS_V3 = 0.012;
  */
 export function attachVoiceCaptureLevelProbeV3(stream, opts = {}) {
   if (typeof window === "undefined" || !stream) {
-    return { stop: () => {}, getMaxRms: () => 0, getSampleCount: () => 0 };
+    return { stop: () => {}, getMaxRms: () => 0, getLastRms: () => 0, getSampleCount: () => 0 };
   }
 
   let maxRms = 0;
+  let lastRms = 0;
   let sampleCount = 0;
   let timer = 0;
   /** @type {AudioContext | null} */
@@ -42,6 +43,7 @@ export function attachVoiceCaptureLevelProbeV3(stream, opts = {}) {
       let sum = 0;
       for (let i = 0; i < buf.length; i += 1) sum += buf[i] * buf[i];
       const rms = Math.sqrt(sum / buf.length);
+      lastRms = rms;
       sampleCount += 1;
       if (rms > maxRms) maxRms = rms;
     };
@@ -52,6 +54,7 @@ export function attachVoiceCaptureLevelProbeV3(stream, opts = {}) {
 
     return {
       getMaxRms: () => maxRms,
+      getLastRms: () => lastRms,
       getSampleCount: () => sampleCount,
       stop() {
         if (timer) window.clearInterval(timer);
@@ -67,7 +70,7 @@ export function attachVoiceCaptureLevelProbeV3(stream, opts = {}) {
       }
     };
   } catch {
-    return { stop: () => {}, getMaxRms: () => 0, getSampleCount: () => 0 };
+    return { stop: () => {}, getMaxRms: () => 0, getLastRms: () => 0, getSampleCount: () => 0 };
   }
 }
 

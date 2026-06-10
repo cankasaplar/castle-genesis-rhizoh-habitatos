@@ -189,7 +189,9 @@ async function drainOnce() {
     }
     const retryable =
       res.status === 429 ||
+      res.status === 502 ||
       res.status === 503 ||
+      res.status === 504 ||
       json?.deferred === true ||
       json?.error === "rate_limited" ||
       json?.error === "agent_spoke_throttled";

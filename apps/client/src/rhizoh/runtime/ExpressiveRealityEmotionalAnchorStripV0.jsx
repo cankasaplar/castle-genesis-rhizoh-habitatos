@@ -4,6 +4,7 @@ import { isExpressiveRealityBootCompleteV0, readEmotionalAnchorV0 } from "./expr
 import { isRhizohT0FirstMatchIdentityV0 } from "./rhizohT0FirstMatchIdentityV0.js";
 import { resolveT0AnchorStripCopyV0 } from "./rhizohProductPlainCopyV0.js";
 import { readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
+import { isRhizohWorldSpaceMapStageV0 } from "./rhizohWorldSurfacePolicyV0.js";
 
 /**
  * Persistent anchor strip — only user-visible continuity cue on seamless entry ("Continued").
@@ -36,6 +37,9 @@ export function ExpressiveRealityEmotionalAnchorStripV0({ pulse = false, continu
 
   const ready = isExpressiveRealityBootCompleteV0() || continued;
   if (!isRhizohCreativeSurfaceEnabledV0() || !ready) return null;
+
+  const pathname = typeof window !== "undefined" ? String(window.location.pathname || "") : "";
+  if (isRhizohWorldSpaceMapStageV0({ pathname })) return null;
 
   const localeTr = readUiLocaleV0() === "tr";
   const firstMatch = isRhizohT0FirstMatchIdentityV0();

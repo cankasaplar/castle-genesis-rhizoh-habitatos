@@ -8,6 +8,7 @@ import {
   deriveOctoMotionDriveV1,
   mapFieldStateToOctoEmotionV1
 } from "./octoConversationMotionV1.js";
+import { applyGhostPresentationToCompanionDriveV1 } from "../rhizoh/runtime/ghostStateEngineV1.js";
 
 export const COMPANION_BEHAVIOR_ONLY_SCHEMA_V0 = "castle.companion_behavior_only.v0";
 export const COMPANION_BEHAVIOR_ONLY_ENV_V0 = "VITE_RHIZOH_COMPANION_BEHAVIOR_ONLY";
@@ -60,7 +61,12 @@ export function deriveFoxCompanionBehaviorDriveV1(input = {}) {
     busy ||
     draft.length > 0;
 
-  if (!attentive) return drive;
+  if (!attentive) {
+    return applyGhostPresentationToCompanionDriveV1(
+      drive,
+      typeof window !== "undefined" ? window.__rhizoh?.ghostPresentationBias : null
+    );
+  }
 
   const emotion = mapFieldStateToOctoEmotionV1(observerField);
   let reach = drive.reach ?? 0.35;
@@ -69,15 +75,19 @@ export function deriveFoxCompanionBehaviorDriveV1(input = {}) {
   else if (observerField === "thinking") reach = -0.14;
   else if (draft.length > 0) reach = 0.62;
 
-  return Object.freeze({
-    ...drive,
-    draftText: input.draftText,
-    live: true,
-    emotion,
-    reach,
-    companionBehaviorOnly: true,
-    observerField
-  });
+  const patched = applyGhostPresentationToCompanionDriveV1(
+    Object.freeze({
+      ...drive,
+      draftText: input.draftText,
+      live: true,
+      emotion,
+      reach,
+      companionBehaviorOnly: true,
+      observerField
+    }),
+    typeof window !== "undefined" ? window.__rhizoh?.ghostPresentationBias : null
+  );
+  return patched;
 }
 
 /**

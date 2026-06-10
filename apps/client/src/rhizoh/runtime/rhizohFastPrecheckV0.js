@@ -20,6 +20,10 @@ import {
   isSubstantivePlanningUtteranceV1,
   probeCanonicalIntentV1
 } from "./rhizohCanonicalIntentV1.js";
+import { hasUserGeoForLocalFeedsV0 } from "./rhizohUserGeoConsentV0.js";
+import { probeContinuityRecallIntentV0 } from "./rhizohContinuityRecallIntentV0.js";
+import { probeSportsLiveQueryV0 } from "./rhizohSportsLiveContextV0.js";
+import { resolveFoxIdentityPrecheckV0 } from "./rhizohFoxIdentityExplainV0.js";
 
 export const RHIZOH_FAST_PRECHECK_SCHEMA_V0 = "castle.rhizoh.fast_precheck.v0";
 
@@ -52,11 +56,63 @@ export const FAST_PRECHECK_WAKE_INTENTS_V0 = Object.freeze(
     "briefing_query",
     "presence_query",
     "social_ack",
-    "chat_invite"
+    "chat_invite",
+    "fox_identity_explain",
+    "fox_naming_defer",
+    "fox_naming_reserved"
   ])
 );
 
 /** Shallow intents — local TTS reflex; deep reasoning still uses LLM. */
+/** Location-bound reflex intents — require user geo; otherwise defer to LLM. */
+export const FAST_PRECHECK_LOCATION_BOUND_INTENTS_V0 = Object.freeze(
+  new Set(["weather_live", "weather_stub", "traffic_query", "map_context"])
+);
+
+/** Shallow hits that must not swallow compound questions. */
+const FAST_PRECHECK_SHALLOW_INTENTS_V0 = Object.freeze(
+  new Set(["greeting", "ack", "yes", "no", "social_ack", "thanks"])
+);
+
+const GREETING_ONLY_DEFER_INTENTS_V0 = Object.freeze(
+  new Set(["greeting", "ack", "yes", "no", "social_ack", "thanks"])
+);
+
+const SUBSTANTIVE_UTTERANCE_RE_V0 =
+  /(?:kendini\s+tan[ıi]t|who\s+are\s+you|what\s+are\s+you|introduce\s+yourself|biliyor\s+musun|biliyor\s+mu|misin\b|m[ıi]s[ıi]n\b|nasıl\s+söyle|nasil\s+soyle|anlat[ıi]r\s+m[ıi]s[ıi]n|briefing|brifing|ingilizce|english|français|deutsch|español)/i;
+
+/**
+ * Compound or substantive utterance — do not answer with greeting/ack reflex alone.
+ * @param {string} rawText
+ * @param {string} [hitIntent]
+ */
+export function shouldDeferFastPrecheckToLlmV0(rawText, hitIntent) {
+  const raw = String(rawText || "").trim();
+  if (!raw) return false;
+  if (probeContinuityRecallIntentV0(raw).active) return true;
+  const intent = String(hitIntent || "");
+  if (probeSportsLiveQueryV0(raw).active && FAST_PRECHECK_SHALLOW_INTENTS_V0.has(intent)) return true;
+  const words = raw.split(/\s+/).filter(Boolean);
+
+  if (SUBSTANTIVE_UTTERANCE_RE_V0.test(raw)) {
+    if (FAST_PRECHECK_SHALLOW_INTENTS_V0.has(intent)) return true;
+    if (intent === "wellbeing" && /\b(kendini|tanıt|introduce|briefing|brifing)\b/i.test(raw)) {
+      return true;
+    }
+  }
+  if (raw.includes("?") && GREETING_ONLY_DEFER_INTENTS_V0.has(intent)) return true;
+  if (words.length >= 5 && FAST_PRECHECK_SHALLOW_INTENTS_V0.has(intent)) return true;
+  if (words.length >= 4 && intent === "greeting" && /\b(rhizoh|rizo|rezo)\b/i.test(raw)) {
+    return true;
+  }
+  if (intent === "hearing_check") {
+    if (/\b(gerekiyor|lazım|lazim|olman|olmalı|sanırım|sanirim)\b/i.test(raw)) return true;
+    if (/\b(musun|musunuz|misin|misiniz)\b/i.test(raw) || raw.includes("?")) return false;
+    if (words.length >= 6) return true;
+  }
+  return false;
+}
+
 export const RHIZOH_SMALL_TALK_PRECHECK_INTENTS_V0 = Object.freeze([
   "greeting",
   "ack",
@@ -296,16 +352,29 @@ export function normalizeForFastPrecheckV0(input) {
 /**
  * @param {string} normalized
  * @param {string} [locale]
+ * @param {string} [rawText]
  */
-export function runFastPrecheckV0(normalized, locale) {
+export function runFastPrecheckV0(normalized, locale, rawText) {
   const t0 = typeof performance !== "undefined" ? performance.now() : Date.now();
   const n = String(normalized || "").trim();
+  const raw = String(rawText || normalized || "").trim();
   const loc = String(locale || resolveOutputLanguageCodeV0() || "tr").toLowerCase().slice(0, 2);
   if (!n) return null;
 
+  const foxHit = resolveFoxIdentityPrecheckV0(n, raw, loc);
+  if (foxHit) {
+    return finishPrecheckHitV0({
+      intent: foxHit.intent,
+      reply: foxHit.reply,
+      source: PRECHECK_HIT_SOURCE_V0.REGEX,
+      normalized: n,
+      t0
+    });
+  }
+
   const canonicalHit = probeCanonicalIntentV1(n, { locale: loc });
   if (canonicalHit) {
-    const mapped = canonicalIntentToPrecheckV1(canonicalHit, loc);
+    const mapped = canonicalIntentToPrecheckV1(canonicalHit, loc, n);
     if (mapped) {
       return finishPrecheckHitV0({
         intent: mapped.intent,
@@ -378,10 +447,18 @@ export function runFastPrecheckV0(normalized, locale) {
  */
 export function runFastPrecheckFromTextV0(input, opts = {}) {
   if (isPhantomSystemPromptUtteranceV3(input)) return null;
+  const raw = String(input || "").trim();
   const normalized = normalizeForFastPrecheckV0(input);
-  const hit = runFastPrecheckV0(normalized, opts.locale);
+  const hit = runFastPrecheckV0(normalized, opts.locale, raw);
   if (!hit) return null;
-  return Object.freeze({ ...hit, traceId: opts.traceId || null, raw: String(input || "").trim() });
+  if (shouldDeferFastPrecheckToLlmV0(raw, hit.intent)) return null;
+  if (
+    FAST_PRECHECK_LOCATION_BOUND_INTENTS_V0.has(String(hit.intent || "")) &&
+    !hasUserGeoForLocalFeedsV0()
+  ) {
+    return null;
+  }
+  return Object.freeze({ ...hit, traceId: opts.traceId || null, raw });
 }
 
 function finishPrecheckHitV0({

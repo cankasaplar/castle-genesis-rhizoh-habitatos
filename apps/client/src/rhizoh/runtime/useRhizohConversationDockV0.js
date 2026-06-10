@@ -6,7 +6,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createVoiceEngineV3TurnBridgeV0, isVoiceEngineV3EnabledV0 } from "./voiceEngineV3/index.js";
 import { handleRhizohVoiceTranscriptV0 } from "./rhizohVoiceLlmDispatchV0.js";
 import { postRhizohLlmTurnV0 } from "./rhizohLlmTurnClientV0.js";
-import { buildConversationContinuityGlueV0 } from "./rhizohConversationContinuityGlueV0.js";
+import {
+  buildConversationContinuityGlueV0,
+  handoffHotSpeechToLlmReplyV0
+} from "./rhizohConversationContinuityGlueV0.js";
 import { speakRhizohReplyChunkedV0 } from "./rhizohSpeechChunkTtsV0.js";
 import { stampVoiceUserGestureV0 } from "./voiceUserGestureAnchorV0.js";
 

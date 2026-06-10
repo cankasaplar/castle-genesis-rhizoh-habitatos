@@ -12,45 +12,45 @@ function mapNodesV0(tr) {
   return Object.freeze([
     Object.freeze({
       id: "zoom_in",
-      label: tr ? "Yakın" : "Zoom in",
+      label: tr ? "Yakın +" : "Zoom +",
       geometryKind: "ring",
-      whisper: tr ? "Haritayı yakınlaştır." : "Zoom the map in.",
-      seedIntent: tr ? "haritayı yakınlaştır" : "zoom map in"
+      whisper: tr ? "Kamerayı yakınlaştır (fare tekerleği veya +)." : "Zoom in (wheel or +).",
+      seedIntent: ""
     }),
     Object.freeze({
       id: "zoom_out",
-      label: tr ? "Uzak" : "Zoom out",
+      label: tr ? "Uzak −" : "Zoom −",
       geometryKind: "ring",
-      whisper: tr ? "Haritayı uzaklaştır." : "Zoom the map out.",
-      seedIntent: tr ? "haritayı uzaklaştır" : "zoom map out"
+      whisper: tr ? "Kamerayı uzaklaştır (fare tekerleği veya −)." : "Zoom out (wheel or −).",
+      seedIntent: ""
     }),
     Object.freeze({
       id: "layers",
-      label: tr ? "Katman" : "Layers",
+      label: tr ? "Katman" : "Layer",
       geometryKind: "cube",
-      whisper: tr ? "API ve harita katmanları." : "API and map layers.",
-      seedIntent: tr ? "harita katmanlarını aç" : "open map layers"
+      whisper: tr ? "Sıradaki harita katmanına geç (Küre/3D/Uydu…)." : "Cycle map layer (globe/3D/satellite…).",
+      seedIntent: ""
     }),
     Object.freeze({
       id: "view_3d",
-      label: tr ? "2D/3D" : "2D/3D",
+      label: tr ? "3D↔Sokak" : "3D↔Streets",
       geometryKind: "spiral",
-      whisper: tr ? "Görünüm modunu değiştir." : "Switch view mode.",
-      seedIntent: tr ? "3d haritaya geç" : "switch to 3d map"
+      whisper: tr ? "3D şehir ile sokak görünümü arasında geç." : "Toggle 3D city vs streets.",
+      seedIntent: ""
     }),
     Object.freeze({
       id: "archive",
       label: tr ? "Arşiv" : "Archive",
       geometryKind: "archive",
-      whisper: tr ? "Arşiv haritası yükle." : "Load archive map.",
-      seedIntent: tr ? "arşiv haritasını aç" : "open archive map"
+      whisper: tr ? "Arşiv haritası (önizleme — henüz kapalı)." : "Archive map (preview — not wired).",
+      seedIntent: ""
     }),
     Object.freeze({
       id: "fog",
-      label: tr ? "Sis" : "Fog",
+      label: tr ? "Merkez" : "Center",
       geometryKind: "spiral",
-      whisper: tr ? "Görünürlük / sis kontrolü." : "Visibility / fog control.",
-      seedIntent: tr ? "sis ayarını değiştir" : "toggle map fog"
+      whisper: tr ? "Serencebey / konumuna yeniden odaklan." : "Recenter on Serencebey / your location.",
+      seedIntent: ""
     })
   ]);
 }
@@ -292,8 +292,8 @@ const HEADLINES_V0 = Object.freeze({
 
 const INTROS_V0 = Object.freeze({
   [RHIZOH_LAYER_MODE_V0.MAPS_SPACE]: Object.freeze({
-    tr: "Dünya kontrolü — zoom, katman, görünüm.",
-    en: "Space control — zoom, layers, view."
+    tr: "Tıkla: yakın/uzak, katman değiştir, 3D↔sokak, merkeze dön.",
+    en: "Tap: zoom, cycle layer, 3D↔streets, recenter."
   }),
   [RHIZOH_LAYER_MODE_V0.MAPS_SOCIAL]: Object.freeze({
     tr: "İlişki kontrolü — davet, ses, kamera.",

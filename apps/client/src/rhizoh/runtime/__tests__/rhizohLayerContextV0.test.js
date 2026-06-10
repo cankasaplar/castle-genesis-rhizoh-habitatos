@@ -13,7 +13,9 @@ import {
   isRhizohSystemModeLayerActiveV0,
   resolveRhizohCesiumLayerActiveV0,
   resolveRhizohLayerModeV0,
-  RHIZOH_LAYER_MODE_V0
+  resolveRhizohWorldSpaceCesiumActiveV0,
+  RHIZOH_LAYER_MODE_V0,
+  shouldMountRhizohWorldSpaceMapEngineV0
 } from "../rhizohLayerContextV0.js";
 import { writeRhizohChromePanelsOpenV0 } from "../rhizohProductChromePanelsV0.js";
 
@@ -74,6 +76,40 @@ describe("rhizohLayerContextV0", () => {
     ).toBe(RHIZOH_LAYER_MODE_V0.MODE_SPIRAL);
   });
 
+  it("cesium mount gate — only /world/space, never T0 live", () => {
+    expect(shouldMountRhizohWorldSpaceMapEngineV0({ pathname: "/" })).toBe(false);
+    expect(shouldMountRhizohWorldSpaceMapEngineV0({ pathname: "/world/social" })).toBe(false);
+    expect(shouldMountRhizohWorldSpaceMapEngineV0({ pathname: "/world/modes" })).toBe(false);
+    expect(shouldMountRhizohWorldSpaceMapEngineV0({ pathname: "/world/space" })).toBe(true);
+  });
+
+  it("world space cesium gate ignores T0 drawer blockers", () => {
+    expect(
+      resolveRhizohWorldSpaceCesiumActiveV0({
+        mapSurfaceActive: true,
+        pathname: "/world/space",
+        mapTool: "city_map"
+      })
+    ).toBe(true);
+    expect(
+      resolveRhizohWorldSpaceCesiumActiveV0({
+        mapSurfaceActive: true,
+        pathname: "/world/space",
+        mapTool: "globe"
+      })
+    ).toBe(true);
+    expect(
+      resolveRhizohCesiumLayerActiveV0({
+        mapSurfaceActive: true,
+        realityMode: "REAL_MAP",
+        pathname: "/world/space",
+        mapTool: "city_map",
+        openProductDrawerId: "profile",
+        detailDrawerOpen: true
+      })
+    ).toBe(true);
+  });
+
   it("cesium layer only on world space with REAL_MAP and non-globe tool", () => {
     expect(
       resolveRhizohCesiumLayerActiveV0({
@@ -90,7 +126,7 @@ describe("rhizohLayerContextV0", () => {
         pathname: "/world/space",
         mapTool: "globe"
       })
-    ).toBe(false);
+    ).toBe(true);
     expect(
       resolveRhizohCesiumLayerActiveV0({
         mapSurfaceActive: true,

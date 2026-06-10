@@ -18,6 +18,19 @@ describe("weatherIngestV0", () => {
     expect(n?.wind).toBeGreaterThan(0);
     expect(n?.temperature).toBe(18.2);
     expect(typeof n?.timestamp).toBe("number");
+    expect(n?.weatherMain).toBe("Rain");
+    expect(n?.description).toBeUndefined();
+  });
+
+  it("normalizeOpenWeatherCurrentJsonV0 keeps description when present", () => {
+    const n = normalizeOpenWeatherCurrentJsonV0({
+      main: { temp: 12, humidity: 80 },
+      wind: { speed: 2 },
+      clouds: { all: 90 },
+      weather: [{ main: "Clouds", description: "parçalı bulutlu" }]
+    });
+    expect(n?.description).toBe("parçalı bulutlu");
+    expect(n?.weatherMain).toBe("Clouds");
   });
 
   it("normalizeOpenWeatherCurrentJsonV0 returns null for non-object", () => {

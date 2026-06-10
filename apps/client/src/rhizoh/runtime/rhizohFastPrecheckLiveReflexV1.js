@@ -5,6 +5,7 @@
 import { CANONICAL_INTENT_V1 } from "./rhizohCanonicalIntentV1.js";
 import { formatSportMatchChipV0 } from "./worldMapLiveFeedV0.js";
 import { formatWorldMapTrafficLineV0, formatWorldMapWeatherLineV0 } from "./worldMapLiveContextV0.js";
+import { filterSportMatchesForTeamV0, probeSportsLiveQueryV0 } from "./rhizohSportsLiveContextV0.js";
 
 export const RHIZOH_FAST_PRECHECK_LIVE_REFLEX_SCHEMA_V1 = "castle.rhizoh.fast_precheck_live_reflex.v1";
 
@@ -50,11 +51,14 @@ export function formatWeatherLiveReflexV1(snapshot, locale = "tr") {
  * @param {string} canonicalIntent
  * @param {ReturnType<typeof import("./rhizohCanonicalLiveSnapshotV1.js").readCanonicalLiveSnapshotV1>} snapshotData
  * @param {string} [locale]
+ * @param {string} [queryNormalized]
  */
-export function executeFastPrecheckReflexV0(canonicalIntent, snapshotData, locale = "tr") {
+export function executeFastPrecheckReflexV0(canonicalIntent, snapshotData, locale = "tr", queryNormalized = "") {
   const tr = String(locale).toLowerCase().startsWith("tr");
   const snap = snapshotData;
   const city = snap?.geo?.label || (tr ? "bölgen" : "your area");
+  const sportsProbe = queryNormalized ? probeSportsLiveQueryV0(queryNormalized) : null;
+  const teamFilter = sportsProbe?.team || null;
 
   switch (canonicalIntent) {
     case CANONICAL_INTENT_V1.WEATHER_LIVE:
@@ -89,8 +93,8 @@ export function executeFastPrecheckReflexV0(canonicalIntent, snapshotData, local
     }
 
     case CANONICAL_INTENT_V1.SPORTS_LIVE: {
-      const live = snap?.sports?.liveMatches || [];
-      const upcoming = snap?.sports?.upcomingMatches || [];
+      const live = filterSportMatchesForTeamV0(snap?.sports?.liveMatches || [], teamFilter);
+      const upcoming = filterSportMatchesForTeamV0(snap?.sports?.upcomingMatches || [], teamFilter);
       const rows = live.length ? live : upcoming;
       if (!rows.length) {
         return tr ? "Yakın zamanda güncellenmiş maç skoru bulunmuyor." : "No live matches on the feed.";
@@ -100,11 +104,19 @@ export function executeFastPrecheckReflexV0(canonicalIntent, snapshotData, local
     }
 
     case CANONICAL_INTENT_V1.SPORTS_FIXTURE: {
-      const upcoming = snap?.sports?.upcomingMatches || [];
-      if (!upcoming.length) {
-        return tr ? "Yaklaşan maç listesi henüz yüklenmedi." : "Upcoming fixtures are not loaded yet.";
+      const upcoming = filterSportMatchesForTeamV0(snap?.sports?.upcomingMatches || [], teamFilter);
+      const liveFallback = filterSportMatchesForTeamV0(snap?.sports?.liveMatches || [], teamFilter);
+      const rows = upcoming.length ? upcoming : liveFallback;
+      if (!rows.length) {
+        return tr
+          ? teamFilter === "turkey"
+            ? "Türkiye A Milli fikstür verisi şu an yüklenemedi — gateway spor akışını kontrol ediyorum."
+            : "Yaklaşan maç listesi henüz yüklenmedi."
+          : teamFilter === "turkey"
+            ? "Turkey national team fixtures are not loaded yet."
+            : "Upcoming fixtures are not loaded yet.";
       }
-      const chips = upcoming.slice(0, 3).map((m) => formatSportMatchChipV0(m, locale).replace(/^[^\s]+\s/, ""));
+      const chips = rows.slice(0, 3).map((m) => formatSportMatchChipV0(m, locale).replace(/^[^\s]+\s/, ""));
       return tr ? `Yaklaşan maçlar: ${chips.join(". ")}.` : `Upcoming fixtures: ${chips.join(". ")}.`;
     }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildRhizohCriticalContextV0,
   measureRhizohJsonUtf8BytesV0,
   RHIZOH_LLM_MAX_BODY_BYTES_V0,
   RHIZOH_LLM_TARGET_BODY_BYTES_V0,
@@ -33,5 +34,20 @@ describe("rhizohLlmPayloadTrimV0", () => {
     expect(body.context.languagePropagation).toBeUndefined();
     expect(meta.trimmed).toBe(true);
     expect(measureRhizohJsonUtf8BytesV0(body)).toBeLessThanOrEqual(RHIZOH_LLM_MAX_BODY_BYTES_V0);
+  });
+
+  it("preserves rhizohCriticalContext through continuity trim", () => {
+    const crit = buildRhizohCriticalContextV0({
+      relationship: { bondScore: 0.61, trust: 0.58, relationalTone: { warmth: 0.7 } },
+      rhizohNarrativeThread: { focusIntent: "reflect", arcSummary: "yalnızlık konusu açıldı" },
+      rhizohGhostPerceptionV1: { overallTone: "tender", promptBlock: "field tone tender" },
+      rhizohPerceptionArbitrationV1: {
+        dominantFrame: "ghost",
+        orderedPromptBlock: "primary ghost frame"
+      }
+    });
+    expect(crit.narrativeSummary).toContain("reflect");
+    expect(crit.ghostSummary).toContain("tender");
+    expect(crit.arbitrationSummary).toContain("ghost");
   });
 });

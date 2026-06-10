@@ -16,7 +16,11 @@ import {
   resolveOutputLanguageCodeV0
 } from "./rhizohOutputLanguagePolicyV0.js";
 import { readVoiceLanguageLockBcp47V0, readVoiceLanguageLockV0 } from "./rhizohConversationLanguageV0.js";
-import { readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
+import {
+  applyUiLocaleFromLocationSearchV0,
+  installRhizohLocaleDebugBridgeV0,
+  readUiLocaleV0
+} from "./rhizohUiLocaleV0.js";
 import { resolveRhizohBcp47V0 } from "./rhizohMultilingualBridgeV0.js";
 
 export const RHIZOH_LANGUAGE_RUNTIME_CONTRACT_V0 = "rhizoh.language_runtime.v0";
@@ -93,6 +97,8 @@ export function publishRhizohLanguageRuntimeSnapshotV0(opts = {}) {
  * Call once before voice/LLM paths (App mount, ingress locale write).
  */
 export function bootstrapCastleLanguageRuntimeV0() {
+  applyUiLocaleFromLocationSearchV0();
+  installRhizohLocaleDebugBridgeV0();
   hydrateOlpFromPersistedPreferenceV0();
   readOutputLanguagePolicyV0();
   readCastleLanguageInvariantV0();

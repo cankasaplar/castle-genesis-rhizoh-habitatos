@@ -43,7 +43,7 @@ function phraseForActV1(act) {
     case PRESENCE_PRIMITIVE_ACT_V1.BOOT_READY:
       return tr ? "Hazırım." : "I'm ready.";
     case PRESENCE_PRIMITIVE_ACT_V1.MIC_LISTEN:
-      return tr ? "Dinliyorum." : "Listening.";
+      return tr ? "Buradayım." : "I'm here.";
     case PRESENCE_PRIMITIVE_ACT_V1.IDLE_ALIVE:
       return tr ? "Buradayım." : "I'm here.";
     case PRESENCE_PRIMITIVE_ACT_V1.HEARTBEAT:
@@ -100,9 +100,11 @@ export function emitPresencePrimitiveV1(act, opts = {}) {
   const speakDefault =
     act === PRESENCE_PRIMITIVE_ACT_V1.BOOT_READY
       ? true
-      : act === PRESENCE_PRIMITIVE_ACT_V1.IDLE_ALIVE
-        ? opts.speak === true
-        : false;
+      : act === PRESENCE_PRIMITIVE_ACT_V1.MIC_LISTEN
+        ? true
+        : act === PRESENCE_PRIMITIVE_ACT_V1.IDLE_ALIVE
+          ? opts.speak === true
+          : false;
 
   const live = emitLivePresenceV0({
     phrase,

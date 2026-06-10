@@ -7,6 +7,8 @@
  */
 
 import { isCastleDebugGranularFlagEnabled } from "./castleDebugGateV0.js";
+import { readCastleNexusGeoV0, resolveWorldMapBootstrapGeoV0 } from "./worldMapBootstrapGeoV0.js";
+import { resolveWorldMapCameraTargetV0 } from "./worldMapCameraGeoV0.js";
 
 /**
  * @returns {boolean}
@@ -24,6 +26,8 @@ export function isRealLayerWeatherIngressEnabledV0() {
  * @property {number} wind 0–1 (OpenWeather m/s ölçekli normalize)
  * @property {number} temperature °C (units=metric)
  * @property {number} timestamp ingest anı (epoch ms)
+ * @property {string} [weatherMain] OpenWeather category (Clear, Clouds, Rain, …)
+ * @property {string} [description] localized short description when API provides it
  */
 
 const DEFAULT_LAT = 41.015137;
@@ -35,9 +39,16 @@ export function getOpenWeatherQueryEnvV0() {
   const key = String(env.VITE_OPENWEATHER_API_KEY || "").trim();
   const latRaw = env.VITE_OPENWEATHER_LAT;
   const lonRaw = env.VITE_OPENWEATHER_LON;
-  const lat = latRaw != null && String(latRaw).trim() !== "" ? Number(latRaw) : DEFAULT_LAT;
-  const lon = lonRaw != null && String(lonRaw).trim() !== "" ? Number(lonRaw) : DEFAULT_LON;
-  return { key, lat: Number.isFinite(lat) ? lat : DEFAULT_LAT, lon: Number.isFinite(lon) ? lon : DEFAULT_LON };
+  const envLat = latRaw != null && String(latRaw).trim() !== "" ? Number(latRaw) : DEFAULT_LAT;
+  const envLon = lonRaw != null && String(lonRaw).trim() !== "" ? Number(lonRaw) : DEFAULT_LON;
+  const nexus = readCastleNexusGeoV0();
+  const raw = nexus || null;
+  const cam = raw
+    ? resolveWorldMapCameraTargetV0(raw)
+    : resolveWorldMapCameraTargetV0(resolveWorldMapBootstrapGeoV0());
+  const lat = raw ? cam.lat : Number.isFinite(envLat) ? envLat : DEFAULT_LAT;
+  const lon = raw ? cam.lon : Number.isFinite(envLon) ? envLon : DEFAULT_LON;
+  return { key, lat, lon };
 }
 
 /**
@@ -59,6 +70,13 @@ export function normalizeOpenWeatherCurrentJsonV0(data) {
   const hum = Math.min(1, Math.max(0, (Number(main.humidity) || 0) / 100));
   const cloud = Math.min(1, Math.max(0, (Number(clouds.all) || 0) / 100));
   const temp = typeof main.temp === "number" && Number.isFinite(main.temp) ? main.temp : 0;
+  const weatherArr = Array.isArray(d.weather) ? d.weather : [];
+  const w0 =
+    weatherArr[0] && typeof weatherArr[0] === "object"
+      ? /** @type {Record<string, unknown>} */ (weatherArr[0])
+      : {};
+  const description = typeof w0.description === "string" ? w0.description.trim() : "";
+  const weatherMain = typeof w0.main === "string" ? w0.main.trim() : "";
 
   return {
     cloudDensity: cloud,
@@ -66,7 +84,9 @@ export function normalizeOpenWeatherCurrentJsonV0(data) {
     rainIntensity,
     wind: windNorm,
     temperature: temp,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    weatherMain: weatherMain || undefined,
+    description: description || undefined
   };
 }
 

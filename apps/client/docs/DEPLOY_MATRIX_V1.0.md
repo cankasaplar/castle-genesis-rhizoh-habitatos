@@ -15,6 +15,7 @@
 | Activation (full) | [`docs/RHIZOH_ACTIVATION_READINESS_CHECKLIST_V1.0.md`](../../../docs/RHIZOH_ACTIVATION_READINESS_CHECKLIST_V1.0.md) |
 | Go-live one page | [`GO_LIVE_CHECKLIST_ONE_PAGE_V1.0.md`](./GO_LIVE_CHECKLIST_ONE_PAGE_V1.0.md) |
 | Phase A living shell | [`docs/ops/PHASE_A_LIVING_SHELL_PASS_V1.0.md`](../../../docs/ops/PHASE_A_LIVING_SHELL_PASS_V1.0.md) |
+| Founder Living Week | [`docs/ops/FOUNDER_LIVING_WEEK_V1.0.md`](../../../docs/ops/FOUNDER_LIVING_WEEK_V1.0.md) |
 | Spatial shell lock | [`docs/ops/SPATIAL_SHELL_LOCK_V1.0.md`](../../../docs/ops/SPATIAL_SHELL_LOCK_V1.0.md) |
 | T0 interface lock | [`docs/ops/T0_INTERFACE_LOCK_V1.0.md`](../../../docs/ops/T0_INTERFACE_LOCK_V1.0.md) |
 | Phase 2 cohort ops | [`docs/ops/PHASE2_CONTROLLED_REALITY_TEST_V1.0.md`](../../../docs/ops/PHASE2_CONTROLLED_REALITY_TEST_V1.0.md) |

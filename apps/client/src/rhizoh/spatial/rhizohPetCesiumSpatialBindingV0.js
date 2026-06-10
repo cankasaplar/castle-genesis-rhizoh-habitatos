@@ -21,6 +21,10 @@ import {
   COMPANION_OBS_PRESENCE_EVENT_V0,
   isCompanionObservableV0
 } from "../../castleFlight/castleCompanionObservationPresenceV0.js";
+import {
+  isLikelyBosphorusWaterV0,
+  resolveWorldMapCameraTargetV0
+} from "../runtime/worldMapCameraGeoV0.js";
 
 export const PET_CESIUM_ENTITY_ID_V0 = "rhizoh-pet-citizen-v0";
 
@@ -42,11 +46,24 @@ function readPetForSpatialV0() {
   return readPetCitizenV0();
 }
 
+function clampPetCartographicToLandV0(carto) {
+  if (!carto || !Number.isFinite(carto.lat) || !Number.isFinite(carto.lon)) return carto;
+  if (!isLikelyBosphorusWaterV0(carto.lat, carto.lon)) return carto;
+  const land = resolveWorldMapCameraTargetV0(carto);
+  return Object.freeze({
+    ...carto,
+    lat: land.lat,
+    lon: land.lon
+  });
+}
+
 function readPetCartographicForCesiumV0(citizen) {
   const pweCarto = readCastlePweCartographicV0();
-  if (pweCarto) return pweCarto;
+  if (pweCarto) return clampPetCartographicToLandV0(pweCarto);
   if (!citizen?.inhabited || !citizen.position) return null;
-  return rcalXYToCartographicV0(citizen.position.x, citizen.position.y, citizen);
+  return clampPetCartographicToLandV0(
+    rcalXYToCartographicV0(citizen.position.x, citizen.position.y, citizen)
+  );
 }
 
 function shouldBindPetToCesiumV0(citizen) {
@@ -107,7 +124,7 @@ function ensurePetEntityV0(viewer) {
         const proj = readCesiumCitizenProjectionV0();
         const intensity = citizen?.intensity01 ?? proj?.intensity01 ?? 0.65;
         const breathe = citizen?.breathe01 ?? proj?.breathe01 ?? 0;
-        return 9 + intensity * 7 + breathe * 4;
+        return 14 + intensity * 8 + breathe * 5;
       }, false),
       color: new Cesium.CallbackProperty(() => {
         const proj = readCesiumCitizenProjectionV0();
@@ -119,12 +136,13 @@ function ensurePetEntityV0(viewer) {
     },
     label: {
       text: "Rhizoh",
-      font: "10px sans-serif",
-      fillColor: Cesium.Color.CYAN.withAlpha(0.85),
+      font: "bold 12px monospace",
+      fillColor: Cesium.Color.fromCssColorString("#ef4444").withAlpha(0.92),
       outlineColor: Cesium.Color.BLACK,
       outlineWidth: 2,
-      pixelOffset: new Cesium.Cartesian2(0, -18),
-      show: true
+      pixelOffset: new Cesium.Cartesian2(0, -26),
+      show: true,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY
     }
   });
   return petEntity;

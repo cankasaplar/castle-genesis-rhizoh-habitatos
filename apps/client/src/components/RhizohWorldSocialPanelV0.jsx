@@ -1,5 +1,11 @@
-import React, { memo, useCallback } from "react";
+import React, { memo, useCallback, useState } from "react";
 import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
+import {
+  createCastleSocialAvSessionV0,
+  patchCastleSocialAvSessionV0,
+  promoteCastleSocialAvSessionLiveV0,
+  readCastleSocialAvSessionV0
+} from "../castleSocial/castleSocialAvSessionV0.js";
 
 /**
  * Social layer — castle-to-castle, sessions, presence (not map space).
@@ -12,6 +18,15 @@ export const RhizohWorldSocialPanelV0 = memo(function RhizohWorldSocialPanelV0({
 }) {
   const locale = uiLocale || readUiLocaleV0();
   const tr = locale === "tr";
+  const [c2cStatus, setC2cStatus] = useState(() => readCastleSocialAvSessionV0()?.lifecycle || null);
+
+  const handleStartCastleLink = useCallback(() => {
+    let session = readCastleSocialAvSessionV0();
+    if (!session) session = createCastleSocialAvSessionV0({ roomKey: "castle-link" });
+    const live = promoteCastleSocialAvSessionLiveV0(session);
+    patchCastleSocialAvSessionV0(live, { micActive: true, cameraActive: false });
+    setC2cStatus(readCastleSocialAvSessionV0()?.lifecycle || "LIVE");
+  }, []);
 
   return (
     <div className="space-y-3 normal-case" data-rhizoh-world-social-panel="1">
@@ -37,14 +52,24 @@ export const RhizohWorldSocialPanelV0 = memo(function RhizohWorldSocialPanelV0({
           blurb={tr ? "Yayın yüzeyine geç" : "Open broadcast surface"}
           onClick={onOpenBroadcast}
         />
-        <div className="rounded-xl border border-violet-400/20 bg-violet-950/20 px-3 py-2.5">
+        <button
+          type="button"
+          onClick={handleStartCastleLink}
+          className="rounded-xl border border-violet-400/30 bg-violet-950/25 px-3 py-2.5 text-left transition hover:border-violet-400/50 hover:bg-violet-950/35"
+        >
           <p className="text-[9px] font-bold uppercase tracking-wide text-violet-200/90">
             {tr ? "Castle-to-Castle" : "Castle-to-Castle"}
           </p>
-          <p className="mt-1 text-[9px] text-white/45">
-            {tr ? "Video / voice link — yakında" : "Video / voice link — coming soon"}
+          <p className="mt-1 text-[9px] text-white/55">
+            {c2cStatus === "LIVE"
+              ? tr
+                ? "Oturum LIVE — mic pulse aktif (signaling stub)"
+                : "Session LIVE — mic pulse active (signaling stub)"
+              : tr
+                ? "Ses / kamera bağlantısı başlat (v0 scaffold)"
+                : "Start voice / camera link (v0 scaffold)"}
           </p>
-        </div>
+        </button>
       </div>
     </div>
   );

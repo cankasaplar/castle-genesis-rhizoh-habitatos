@@ -7,7 +7,7 @@ import { isGatewaySessionStableV1 } from "./gatewaySessionKeeperV1.js";
 
 export const TRANSCRIBE_COORDINATOR_V1 = Object.freeze({
   /** Min quiet period after gateway (re)connect before first large upload. */
-  gatewayWarmupMs: 2_800,
+  gatewayWarmupMs: 1_600,
   /** Global backoff after transport boundary failure. */
   globalBackoffMs: 1_800,
   /** Per-segment attempts before cascade (not 3× on same segment). */

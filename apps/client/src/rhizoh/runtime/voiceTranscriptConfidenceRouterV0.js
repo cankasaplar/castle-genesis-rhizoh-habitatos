@@ -176,8 +176,9 @@ function allowUnknownBandMicroReflexV0(text, band) {
   return allowFastPrecheckReflexV0(text, band);
 }
 
-/** Cohort T0: direct_listen allows long mic_v3 turns that are not ambient TV. */
-const DIRECT_LISTEN_UNKNOWN_MIN_RECORD_MS_V0 = 5000;
+/** Cohort T0: direct_listen — adaptive endpoint often ends at 2–4s; 5s gate was blocking real questions. */
+const DIRECT_LISTEN_UNKNOWN_MIN_RECORD_MS_V0 = 2200;
+const DIRECT_LISTEN_QUESTION_MIN_RECORD_MS_V0 = 1800;
 const DIRECT_LISTEN_UNKNOWN_MIN_CHARS_V0 = 8;
 
 /**
@@ -190,10 +191,14 @@ function shouldRelaxUnknownBandForDirectListenV0(text, recordedMs, classified) {
   if (classified.band !== VOICE_DIRECTED_SPEECH_BAND.UNKNOWN) return false;
   if ((classified.ambientScore || 0) >= 2) return false;
   const ms = Number(recordedMs);
-  if (!Number.isFinite(ms) || ms < DIRECT_LISTEN_UNKNOWN_MIN_RECORD_MS_V0) return false;
+  const hasQuestion = text.includes("?");
+  const minMs = hasQuestion
+    ? DIRECT_LISTEN_QUESTION_MIN_RECORD_MS_V0
+    : DIRECT_LISTEN_UNKNOWN_MIN_RECORD_MS_V0;
+  if (!Number.isFinite(ms) || ms < minMs) return false;
   if (text.length < DIRECT_LISTEN_UNKNOWN_MIN_CHARS_V0) return false;
   if ((classified.directedScore || 0) >= 1) return true;
-  if (text.includes("?")) return true;
+  if (hasQuestion) return true;
   const wordCount = text.split(/\s+/).filter(Boolean).length;
   // Long mic capture + multi-word statement (English/Turkish) — not phantom "Result." chips.
   if (wordCount >= 4 && text.length >= 20 && ms >= DIRECT_LISTEN_UNKNOWN_MIN_RECORD_MS_V0) {

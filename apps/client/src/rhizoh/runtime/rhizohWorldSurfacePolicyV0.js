@@ -5,6 +5,8 @@
 
 import { readUserAnchorV0 } from "./memoryAnchorSystemV0.js";
 import { RHIZOH_WORLD_DRAWER_DOMAIN_V0 } from "./rhizohWorldDrawerDomainV0.js";
+import { shouldMountRhizohWorldSpaceMapEngineV0 } from "./rhizohLayerContextV0.js";
+import { RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0 } from "./rhizohT0FirstMatchIdentityV0.js";
 
 export const RHIZOH_WORLD_SURFACE_POLICY_CONTRACT_V0 = "rhizoh-world-surface-policy-v0";
 
@@ -13,14 +15,63 @@ export const RHIZOH_RED_LINE_MAP_IS_NOT_WORLD_V0 =
   "Harita Dünya değildir — T0 = GLOBE + swarm + fox + voice + chat; Maps = drawer · Space.";
 
 /**
- * Fox + chat dock belong on T0 live only — not on World · Space (Cesium map stage).
+ * World · Space map stage — /world/space route (Cesium substrate).
+ * @param {{ pathname?: string, worldDomain?: string | null }} [ctx]
+ * @returns {boolean}
+ */
+export function isRhizohWorldSpaceMapStageV0(ctx = {}) {
+  if (String(ctx.worldDomain || "").toLowerCase() === RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE) {
+    return true;
+  }
+  return shouldMountRhizohWorldSpaceMapEngineV0({ pathname: ctx.pathname });
+}
+
+/**
+ * T0 fox + full chat dock — live home (/), World · Social, World · Modes.
  * @param {{ isWorldDomainActive?: boolean, worldDomain?: string }} [ctx]
  * @returns {boolean}
  */
 export function shouldRhizohT0LiveChromeVisibleV0(ctx = {}) {
   if (!ctx.isWorldDomainActive) return true;
-  const domain = String(ctx.worldDomain || RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE).toLowerCase();
-  return domain !== RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE;
+  return !isRhizohWorldSpaceMapStageV0(ctx);
+}
+
+/**
+ * Compact voice dock on World · Space — Rhizoh conversation continues on the map stage.
+ * @param {{ isWorldDomainActive?: boolean, worldDomain?: string, pathname?: string }} [ctx]
+ * @returns {boolean}
+ */
+export function shouldRhizohWorldSpaceVoiceDockVisibleV0(ctx = {}) {
+  if (!ctx.isWorldDomainActive) return false;
+  return isRhizohWorldSpaceMapStageV0(ctx);
+}
+
+/**
+ * Hide T0 continuity chrome (anchor strip, Ayrıntılar) on map stage.
+ * @param {{ pathname?: string, worldDomain?: string | null }} [ctx]
+ * @returns {boolean}
+ */
+export function shouldHideT0ContinuityChromeOnWorldSpaceV0(ctx = {}) {
+  return isRhizohWorldSpaceMapStageV0(ctx);
+}
+
+/** Map tool strip — directly above bottom nav. */
+export function resolveRhizohWorldSpaceMapStripBottomCssV0() {
+  return `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + 0.35rem + env(safe-area-inset-bottom, 0px))`;
+}
+
+/** Voice dock — above map strip + bottom nav on World · Space. */
+export function resolveRhizohWorldSpaceVoiceDockBottomCssV0() {
+  return `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + 5.25rem + env(safe-area-inset-bottom, 0px))`;
+}
+
+/**
+ * Apex procedural REAL_MAP drones — suppressed when Cesium owns World · Space.
+ * @param {{ pathname?: string, worldDomain?: string | null }} [ctx]
+ * @returns {boolean}
+ */
+export function shouldUseApexProceduralRealMapV0(ctx = {}) {
+  return !isRhizohWorldSpaceMapStageV0(ctx);
 }
 
 /** Product shell "Dünya" — abstract globe + swarm (main stage). */

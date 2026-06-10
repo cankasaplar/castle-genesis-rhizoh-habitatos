@@ -11,6 +11,7 @@ export const VOICE_ATTENTION_CONTEXT_SCHEMA = "castle.rhizoh.voice_attention_con
 export const VOICE_ATTENTION_MODE_V0 = Object.freeze({
   DIRECT_LISTEN: "direct_listen",
   MOVING_CONTEXT: "moving_context",
+  CO_PRESENCE: "co_presence",
   OBSERVER: "observer"
 });
 
@@ -40,6 +41,19 @@ const MODE_PROFILES = Object.freeze({
     fastResponseAllowed: true,
     memoryWritePolicy: "gated",
     description: "Co-presence — walk, city, split attention"
+  }),
+  [VOICE_ATTENTION_MODE_V0.CO_PRESENCE]: Object.freeze({
+    mode: VOICE_ATTENTION_MODE_V0.CO_PRESENCE,
+    channel: VOICE_ATTENTION_CHANNEL_V0.MIXED,
+    attentionWeight: 0.72,
+    ambientFilterStrength: "observe",
+    directedSpeechRelaxed: true,
+    fastResponseAllowed: true,
+    memoryWritePolicy: "accumulate",
+    responsePolicy: "attention_spike_only",
+    streamAlwaysOn: true,
+    description:
+      "Rhizoh Co-Presence — continuous stream, noise=world, respond only on attention spikes"
   }),
   [VOICE_ATTENTION_MODE_V0.OBSERVER]: Object.freeze({
     mode: VOICE_ATTENTION_MODE_V0.OBSERVER,
@@ -86,8 +100,8 @@ export function resolveVoiceAttentionContextV0(input = {}) {
     runtimeOverrideMode ||
     readEnvAttentionModeV0();
 
-  let mode = explicit || VOICE_ATTENTION_MODE_V0.MOVING_CONTEXT;
-  let reason = input.reason || (explicit ? "explicit" : "default_moving_context");
+  let mode = explicit || VOICE_ATTENTION_MODE_V0.CO_PRESENCE;
+  let reason = input.reason || (explicit ? "explicit" : "default_co_presence");
 
   if (!explicit) {
     const band = String(input.band || "");
@@ -107,7 +121,8 @@ export function resolveVoiceAttentionContextV0(input = {}) {
     stage: input.stage || undefined,
     source: input.source || undefined,
     band: input.band || undefined,
-    policyAuthority: "observation_only"
+    policyAuthority:
+      mode === VOICE_ATTENTION_MODE_V0.CO_PRESENCE ? "attention_gate" : "observation_only"
   });
 }
 

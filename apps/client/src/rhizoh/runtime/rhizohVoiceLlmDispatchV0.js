@@ -25,7 +25,7 @@ import {
   applyReflexEffectivenessFeedbackV0,
   noteLocalReflexFailureV0
 } from "./rhizohConfidenceDecayGateV0.js";
-import { normalizeForFastPrecheckV0 } from "./rhizohFastPrecheckV0.js";
+import { normalizeForFastPrecheckV0, probeFastPrecheckMatchV0 } from "./rhizohFastPrecheckV0.js";
 import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
 import {
   commitFinalUserVisibleLanguageV0,
@@ -54,6 +54,7 @@ import {
 } from "./rhizohInputProvenanceV0.js";
 import { VOICE_PIPELINE_PATH_V0 } from "./rhizohVoiceDualPathRouterV0.js";
 import {
+  isLivingSurfaceFastPrecheckEligibleV1,
   isRhizohLivingConversationSurfaceV1,
   resolveFastReflexBridgeCopyV1
 } from "../experience/rhizohLivingConversationSurfaceV1.js";
@@ -75,8 +76,10 @@ import {
   tryInstantPresenceFastPathV0,
   noteLlmThinkingAfterPresenceV0
 } from "./rhizohInstantPresenceLayerV0.js";
-import { noteThinkingContinuityV0 } from "./rhizohContinuityKernelV0.js";
+import { noteThinkingContinuityV0, notePresenceAckContinuityV0 } from "./rhizohContinuityKernelV0.js";
 import { bindTurnIdentityV0 } from "./rhizohIdentityContinuityCoreV0.js";
+import { isCompanionContinuityFirstV0 } from "./rhizohVoiceOperatingModeV0.js";
+import { scaffoldShadowTurnV0 } from "./rhizohShadowTurnScaffoldV0.js";
 import {
   recordTranscriptAcceptedV0,
   recordTranscriptRejectedV0
@@ -338,9 +341,15 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     noteLocalReflexFailureV0(true);
   }
 
+  const livingFastPrecheck =
+    livingSurface &&
+    pipeline.stage === "fast_precheck" &&
+    isLivingSurfaceFastPrecheckEligibleV1(pipeline.precheck?.intent);
+
   if (
-    !livingSurface &&
-    (pipeline.stage === "fast_precheck" || pipeline.stage === "ambient" || pipeline.stage === "continuation")
+    livingFastPrecheck ||
+    (!livingSurface &&
+      (pipeline.stage === "fast_precheck" || pipeline.stage === "ambient" || pipeline.stage === "continuation"))
   ) {
     const reply = pipeline.reply || "";
     if (opts.speakReply !== false && reply && !pipeline.silencePreferred) {
@@ -574,20 +583,47 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     if (!voiceGate.block && opts.speakReply !== false) {
       spoke = speakVoiceInstantAckV0(presenceText, { traceId, moduleId: "voice_llm_dispatch_presence" });
     }
-    const graph = closeVoiceExecutionTraceV0(traceId, {
-      ok: true,
-      execution: "turn_sovereignty_presence_ack",
-      llmBypass: true
+    bindTurnIdentityV0({
+      turnId: traceId,
+      intent: SOVEREIGN_REALITY_V0.PRESENCE_ACK,
+      preview: msg,
+      modality: "voice",
+      presenceKind: "presence_ack"
     });
-    return Object.freeze({
-      ok: true,
-      presenceAck: true,
-      reply: presenceText,
-      spoke,
+    scaffoldShadowTurnV0({
+      text: msg,
+      turnId: traceId,
+      confidence: opts.confidence,
+      band: opts.band || opts.witnessed?.observation?.band,
+      accepted: true,
+      source: opts.source || "mic",
+      stage: "presence_ack_bridge"
+    });
+    notePresenceAckContinuityV0({ phrase: presenceText });
+    noteLlmThinkingAfterPresenceV0(msg, traceId);
+
+    if (!isCompanionContinuityFirstV0()) {
+      const graph = closeVoiceExecutionTraceV0(traceId, {
+        ok: true,
+        execution: "turn_sovereignty_presence_ack",
+        llmBypass: true
+      });
+      return Object.freeze({
+        ok: true,
+        presenceAck: true,
+        reply: presenceText,
+        spoke,
+        traceId,
+        turnSovereignty: sovereigntyWire.lock,
+        graph,
+        llmBypass: true
+      });
+    }
+
+    logVoiceInfoV0("PRESENCE_ACK_LLM_CONTINUATION", {
       traceId,
-      turnSovereignty: sovereigntyWire.lock,
-      graph,
-      llmBypass: true
+      preview: msg.slice(0, 96),
+      spokePresence: spoke
     });
   }
 
@@ -602,6 +638,13 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     if (!voiceGate.block && opts.speakReply !== false) {
       spoke = speakVoiceInstantAckV0(reflexText, { traceId, moduleId: "voice_llm_dispatch_fast_reflex" });
     }
+    bindTurnIdentityV0({
+      turnId: traceId,
+      intent: SOVEREIGN_REALITY_V0.FAST_REFLEX,
+      preview: msg,
+      modality: "voice",
+      presenceKind: "fast_reflex"
+    });
     const graph = closeVoiceExecutionTraceV0(traceId, {
       ok: true,
       execution: "turn_sovereignty_fast_reflex",
@@ -695,7 +738,12 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     preview: msg
   });
 
-  if (opts.speakTransitionAck !== false) {
+  const shallowPrecheck = probeFastPrecheckMatchV0(msg);
+  const skipTransitionAck =
+    Boolean(shallowPrecheck) &&
+    (!livingSurface || isLivingSurfaceFastPrecheckEligibleV1(shallowPrecheck.intent));
+
+  if (opts.speakTransitionAck !== false && !skipTransitionAck) {
     const locale = resolveOutputLanguageCodeV0();
     const ack = livingSurface
       ? resolveFastReflexBridgeCopyV1(String(locale || "tr").toLowerCase().startsWith("tr"), intentPlan.routeClass || "acknowledge")

@@ -255,7 +255,7 @@ function executeSpatialOpV0(op, request) {
   switch (op) {
     case "fly_to":
       if (Number.isFinite(lat) && Number.isFinite(lon) && typeof api.flyToCustom === "function") {
-        api.flyToCustom(lat, lon, alt ?? 900);
+        api.flyToCustom(lat, lon, alt ?? 900, request.meta || {});
         ok = true;
       } else {
         skipReason = "invalid_fly_to_geo";

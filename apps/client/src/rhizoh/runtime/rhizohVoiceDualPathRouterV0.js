@@ -25,6 +25,11 @@ import {
 import { evaluateSttScriptAgainstUiLocaleV0 } from "./sttScriptLocaleGuardV0.js";
 import { isVoiceIngestStrictV0 } from "./rhizohVoiceConversationAuthorityV0.js";
 import { applyIntentFirstAcceptanceV0 } from "./rhizohVoiceIntentAcceptanceV0.js";
+import { processPresenceKernelIngressV1 } from "./rhizohCoPresenceKernelV1.js";
+import {
+  isCoPresenceStreamModeV0,
+  noteStreamingTranscriptChunkV0
+} from "./rhizohStreamingAttentionGateV0.js";
 
 export const RHIZOH_VOICE_DUAL_PATH_ROUTER_SCHEMA_V0 = "castle.rhizoh.voice_dual_path_router.v0";
 
@@ -400,6 +405,21 @@ export function resolveVoicePipelineDecisionV0(input = {}) {
   const verifyCount = getVoiceVerifyCountV0(sessionId);
   const verifyBudgetExhausted = isVoiceVerifyBudgetExhaustedV0(sessionId);
 
+  noteStreamingTranscriptChunkV0({
+    text,
+    confidence,
+    band,
+    maxRms: input.maxRms,
+    source: "mic_v3"
+  });
+  const kernelResult = processPresenceKernelIngressV1({ text, confidence, band, source: "mic" });
+  const coPresenceSpike = kernelResult.voiceSpike;
+
+  const strictCoPresenceBlock =
+    isVoiceIngestStrictV0() &&
+    band === VOICE_DIRECTED_SPEECH_BAND.UNKNOWN &&
+    Number(confidence) < 0.35;
+
   const spineCtx = {
     text,
     band,
@@ -407,8 +427,30 @@ export function resolveVoicePipelineDecisionV0(input = {}) {
     fast,
     meaningful,
     verifyCount,
-    guards: null
+    guards: null,
+    coPresenceSpike
   };
+
+  if (coPresenceSpike.respond && isCoPresenceStreamModeV0() && !strictCoPresenceBlock) {
+    const guardsEarly = evaluateSlowPathGuardSnapshotV0(text, {
+      confidence,
+      strategy: input.strategy,
+      band,
+      provenance: input.provenance
+    });
+    return finalizeVoicePipelineDecisionV0(
+      buildSpeakSlowDecision(
+        fast.intent,
+        `co_presence_${coPresenceSpike.kind}`,
+        band,
+        tier,
+        guardsEarly,
+        { attentionSpike: coPresenceSpike, intentOverride: true }
+      ),
+      input,
+      { ...spineCtx, guards: guardsEarly }
+    );
+  }
 
   if (isUiChromeEchoTemplateV0(text)) {
     return finalizeVoicePipelineDecisionV0(

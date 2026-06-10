@@ -5,6 +5,11 @@
 
 import { getOriginSeedAnchorV0, resolveDisplayAnchorV0 } from "./memoryAnchorSystemV0.js";
 import { ISTANBUL_POI } from "../../castleFlight/geo.js";
+import {
+  readCastleNexusGeoV0,
+  resolveWorldMapBootstrapGeoV0
+} from "./worldMapBootstrapGeoV0.js";
+import { resolveWorldMapCameraTargetV0 } from "./worldMapCameraGeoV0.js";
 import { applyCesiumImageryForMapToolV0 } from "./rhizohCesiumImageryProfileV0.js";
 import { routeCesiumCommandV0 } from "../../castleFlight/cesiumCommandRouterV0.js";
 
@@ -111,30 +116,36 @@ export function resolveRhizohWorldMapFlyTargetV0(toolId, ctx = {}) {
   const id = normalizeRhizohWorldMapToolIdV0(toolId);
   if (id === "globe") return null;
 
+  const bootstrap = resolveWorldMapBootstrapGeoV0();
+  const nexus = ctx.nexusGeo && Number.isFinite(ctx.nexusGeo.lat) ? ctx.nexusGeo : readCastleNexusGeoV0();
+
   if (id === "city_map") {
+    const rawLat = Number.isFinite(nexus?.lat) ? Number(nexus.lat) : bootstrap.lat;
+    const rawLon = Number.isFinite(nexus?.lon) ? Number(nexus.lon) : bootstrap.lon;
+    const cam = resolveWorldMapCameraTargetV0({ lat: rawLat, lon: rawLon });
     return Object.freeze({
-      lat: ISTANBUL_POI.FATIH.lat,
-      lon: ISTANBUL_POI.FATIH.lon,
-      alt: 820,
-      label: "İstanbul"
+      lat: cam.lat,
+      lon: cam.lon,
+      alt: 780,
+      label: String(bootstrap.label || "Serencebey")
     });
   }
 
   if (id === "terrain") {
-    const geo = ctx.nexusGeo;
-    const lat = Number.isFinite(geo?.lat) ? Number(geo.lat) : ISTANBUL_POI.FATIH.lat;
-    const lon = Number.isFinite(geo?.lon) ? Number(geo.lon) : ISTANBUL_POI.FATIH.lon;
-    return Object.freeze({ lat, lon, alt: 4200, label: "Terrain" });
+    const rawLat = Number.isFinite(nexus?.lat) ? Number(nexus.lat) : bootstrap.lat;
+    const rawLon = Number.isFinite(nexus?.lon) ? Number(nexus.lon) : bootstrap.lon;
+    const cam = resolveWorldMapCameraTargetV0({ lat: rawLat, lon: rawLon });
+    return Object.freeze({ lat: cam.lat, lon: cam.lon, alt: 4200, label: "Terrain" });
   }
 
   if (id === "satellite" || id === "streets") {
-    const geo = ctx.nexusGeo;
-    const lat = Number.isFinite(geo?.lat) ? Number(geo.lat) : ISTANBUL_POI.FATIH.lat;
-    const lon = Number.isFinite(geo?.lon) ? Number(geo.lon) : ISTANBUL_POI.FATIH.lon;
+    const rawLat = Number.isFinite(nexus?.lat) ? Number(nexus.lat) : bootstrap.lat;
+    const rawLon = Number.isFinite(nexus?.lon) ? Number(nexus.lon) : bootstrap.lon;
+    const cam = resolveWorldMapCameraTargetV0({ lat: rawLat, lon: rawLon });
     return Object.freeze({
-      lat,
-      lon,
-      alt: id === "satellite" ? 2400 : 1400,
+      lat: cam.lat,
+      lon: cam.lon,
+      alt: id === "satellite" ? 2800 : 1200,
       label: id === "satellite" ? "Satellite" : "Streets"
     });
   }
@@ -183,6 +194,30 @@ export function resolveRhizohWorldMapFlyTargetV0(toolId, ctx = {}) {
 function routeWorldMapFlyV0(toolId, target, source) {
   if (typeof window === "undefined") return;
   const id = normalizeRhizohWorldMapToolIdV0(toolId);
+  const meta = Object.freeze({
+    ingress: "applyRhizohWorldMapToolV0",
+    mapTool: id,
+    toolSource: source
+  });
+
+  if (id === "globe") {
+    routeCesiumCommandV0({
+      op: "topology_globe",
+      source: "world_map_tool",
+      meta
+    });
+    return;
+  }
+
+  if (id === "city_map" || id === "streets" || id === "anchor_map") {
+    routeCesiumCommandV0({
+      op: "bootstrap_viewport",
+      source: "world_map_tool",
+      meta
+    });
+    return;
+  }
+
   if (target && Number.isFinite(target.lat) && Number.isFinite(target.lon)) {
     routeCesiumCommandV0({
       op: "fly_to",
@@ -192,23 +227,7 @@ function routeWorldMapFlyV0(toolId, target, source) {
         lon: target.lon,
         alt: target.alt ?? 1180
       }),
-      meta: Object.freeze({
-        ingress: "applyRhizohWorldMapToolV0",
-        mapTool: id,
-        toolSource: source
-      })
-    });
-    return;
-  }
-  if (id === "city_map") {
-    routeCesiumCommandV0({
-      op: "calibration_root",
-      source: "world_map_tool",
-      meta: Object.freeze({
-        ingress: "applyRhizohWorldMapToolV0",
-        mapTool: id,
-        toolSource: source
-      })
+      meta
     });
   }
 }
@@ -230,11 +249,13 @@ export async function applyRhizohWorldMapToolV0(toolId, opts = {}) {
   const source = String(opts.source || "WORLD_MAP_TOOL");
 
   if (tool === "globe") {
-    await setMode("GLOBE", {
-      source: `${source}_GLOBE`,
+    await setMode("REAL_MAP", {
+      source: `${source}_GLOBE_ORBIT`,
       productSurface: "world"
     });
-    return Object.freeze({ tool, realityMode: "GLOBE", fly: null });
+    applyCesiumImageryForMapToolV0("globe");
+    window.setTimeout(() => routeWorldMapFlyV0(tool, null, source), 140);
+    return Object.freeze({ tool, realityMode: "REAL_MAP", fly: null });
   }
 
   await setMode("REAL_MAP", {

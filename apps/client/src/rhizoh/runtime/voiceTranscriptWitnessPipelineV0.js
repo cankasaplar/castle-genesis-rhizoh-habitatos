@@ -33,6 +33,12 @@ import { publishRhizohRelationshipKernelV0, resolveRhizohRelationshipKernelV0 } 
 import { publishVoiceAttentionContextV0, resolveVoiceAttentionContextV0 } from "./voiceAttentionContextV0.js";
 import { applySttTemporalSmoothingV0 } from "./sttTemporalSmoothingV0.js";
 import { VOICE_ROUTER_REJECTION_LAYER_V0 } from "./voiceTranscriptConfidenceRouterV0.js";
+import { scaffoldShadowTurnV0 } from "./rhizohShadowTurnScaffoldV0.js";
+import { resolveEffectiveOperatingModeV0 } from "./rhizohVoiceOperatingModeV0.js";
+import { publishStreamEventV1 } from "../../castlePerception/castleMultiStreamFusionBusV1.js";
+import {
+  noteStreamingTranscriptChunkV0
+} from "./rhizohStreamingAttentionGateV0.js";
 
 export const VOICE_TRANSCRIPT_WITNESS_PIPELINE_SCHEMA =
   "castle.rhizoh.voice_transcript_witness_pipeline.v0";
@@ -99,6 +105,33 @@ export function witnessRawVoiceTranscriptV0(meta = {}) {
     }),
     { preview: observation.preview, phase: "witness" }
   );
+
+  noteStreamingTranscriptChunkV0({
+    text: meta.text,
+    confidence: observation.confidence ?? meta.confidence,
+    band: observation.band,
+    maxRms: meta.maxRms,
+    source: observation.source || meta.source
+  });
+  publishStreamEventV1({
+    source: observation.source || meta.source || "mic",
+    text: meta.text,
+    confidence: observation.confidence ?? meta.confidence,
+    band: observation.band,
+    preview: observation.preview,
+    userInitiated: true
+  });
+
+  scaffoldShadowTurnV0({
+    text: meta.text,
+    confidence: observation.confidence ?? meta.confidence,
+    band: observation.band,
+    accepted: false,
+    source: observation.source || meta.source,
+    stage,
+    operatingMode: resolveEffectiveOperatingModeV0(meta.text)
+  });
+
   return Object.freeze({ observation, shadow, stage, attention, relationship });
 }
 

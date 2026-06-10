@@ -48,9 +48,9 @@ export const DIRECTED_PATTERN_V0 = Object.freeze({
 });
 
 const WAKE_PATTERNS_V0 = [
-  /^(rhizoh|rizo|riza|rizoh)\b/i,
+  /^(rhizoh|rizo|riza|rizoh|rezo)\b/i,
   /^dostum\b/i,
-  /^hey\s+(rhizoh|rizo)\b/i
+  /^hey\s+(rhizoh|rizo|rezo)\b/i
 ];
 
 const PRESENCE_PATTERNS_V0 = [
@@ -106,6 +106,17 @@ function normalizeInputTextV0(text) {
 }
 
 /**
+ * Short name-only hail (not substantive conversation mentioning Rizo/Rhizoh).
+ * @param {string} text
+ */
+export function isShortAddressOnlyV0(text) {
+  const norm = normalizeInputTextV0(text);
+  if (!norm || !/\b(rhizoh|rizo|riza|rezo)\b/i.test(norm)) return false;
+  const words = norm.split(/\s+/).filter(Boolean);
+  return words.length <= 3;
+}
+
+/**
  * @param {string} text
  * @returns {string[]}
  */
@@ -126,7 +137,7 @@ export function classifyDirectedPatternsV0(text) {
       break;
     }
   }
-  if (/\b(rhizoh|rizo|riza)\b/i.test(norm) && !out.includes(DIRECTED_PATTERN_V0.WAKE)) {
+  if (isShortAddressOnlyV0(norm) && !out.includes(DIRECTED_PATTERN_V0.WAKE)) {
     out.push(DIRECTED_PATTERN_V0.ADDRESS);
   }
   return [...new Set(out)];
@@ -353,13 +364,12 @@ export function resolveTurnSovereigntyV0(input = {}) {
       suppressed.push("llm_conversation", "instant_ack");
     }
   }
-  // STEP 2 — presence / wake (not mixed)
+  // STEP 2 — presence / wake / short hail only (not general directed speech)
   else if (
     !mixedQuery &&
-    (voice.band === VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE ||
-      directedPatterns.includes(DIRECTED_PATTERN_V0.PRESENCE_CHECK) ||
+    (directedPatterns.includes(DIRECTED_PATTERN_V0.PRESENCE_CHECK) ||
       directedPatterns.includes(DIRECTED_PATTERN_V0.WAKE) ||
-      (directedPatterns.includes(DIRECTED_PATTERN_V0.ADDRESS) && text.length <= 32))
+      (directedPatterns.includes(DIRECTED_PATTERN_V0.ADDRESS) && isShortAddressOnlyV0(text)))
   ) {
     pushCandidate(SOVEREIGN_REALITY_V0.PRESENCE_ACK, 2, "directed_presence_or_wake", 0.92);
     pushCandidate(SOVEREIGN_REALITY_V0.LLM_CONVERSATION, 5, "would_default_llm", 0.55);

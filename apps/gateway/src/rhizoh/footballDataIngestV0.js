@@ -5,6 +5,8 @@
 import { normalizeFootballDataMatchesPayloadV0 } from "./footballDataNormalizeV0.js";
 
 const BASE = "https://api.football-data.org/v4";
+/** Turkey men's national team — football-data.org v4 team id */
+const TURKEY_NATIONAL_TEAM_ID_V0 = 768;
 
 /**
  * @returns {string}
@@ -95,6 +97,17 @@ export async function fetchFootballDataOrgBundleV0(token = readFootballDataOrgTo
       label: "champions_league",
       run: async () => {
         const json = await fetchFootballDataV0("/competitions/CL/matches?limit=8", token);
+        apiCalls += 1;
+        all.push(...normalizeFootballDataMatchesPayloadV0(json));
+      }
+    },
+    {
+      label: "turkey_national",
+      run: async () => {
+        const json = await fetchFootballDataV0(
+          `/teams/${TURKEY_NATIONAL_TEAM_ID_V0}/matches?limit=20`,
+          token
+        );
         apiCalls += 1;
         all.push(...normalizeFootballDataMatchesPayloadV0(json));
       }

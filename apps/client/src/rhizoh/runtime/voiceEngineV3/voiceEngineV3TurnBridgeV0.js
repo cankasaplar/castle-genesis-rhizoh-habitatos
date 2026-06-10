@@ -33,11 +33,18 @@ import {
 } from "../rhizohVoiceConversationAuthorityV0.js";
 import { noteMicListeningContinuityV0 } from "../rhizohContinuityKernelV0.js";
 import { emitMicListenPrimitiveV1 } from "../rhizohPresencePrimitiveV1.js";
+import {
+  attachAdaptiveRecordingEndpointV3,
+  resolveVoiceMaxRecordMsV3
+} from "./voiceAdaptiveEndpointV3.js";
+
 export const VOICE_V3_MAX_RECORD_MS = 8000;
 
 let v3SessionLockActive = false;
 let v3LastStartedSessionId = null;
 let v3StopInFlight = null;
+/** @type {{ stop?: () => void } | null} */
+let v3AdaptiveEndpoint = null;
 let v3LastEmptyRetryAtMs = 0;
 
 const RETRYABLE_NETWORK_CODES = new Set([
@@ -106,6 +113,8 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
       window.clearTimeout(refs.voiceSttMaxRecordTimer.current);
       refs.voiceSttMaxRecordTimer.current = 0;
     }
+    v3AdaptiveEndpoint?.stop?.();
+    v3AdaptiveEndpoint = null;
   }
 
   function releaseSessionLock(sessionId) {
@@ -482,9 +491,23 @@ export function createVoiceEngineV3TurnBridgeV0(ctx) {
     }
 
     stampVoiceUserGestureV0("v3_recording");
+    const maxRecordMs = resolveVoiceMaxRecordMsV3();
     refs.voiceSttMaxRecordTimer.current = window.setTimeout(() => {
       void finishTurn(keepAlive);
-    }, VOICE_V3_MAX_RECORD_MS);
+    }, maxRecordMs);
+
+    v3AdaptiveEndpoint = attachAdaptiveRecordingEndpointV3({
+      getLastRms: () => engine.getLastRms?.() ?? 0,
+      getMaxRms: () => engine.getMaxRms?.() ?? 0,
+      getElapsedMs: () => engine.getRecordElapsedMs?.() ?? 0,
+      onEndpoint: (detail) => {
+        if (v3StopInFlight) return;
+        engine.noteCapturePeakRmsV3?.(detail.maxRms);
+        logVoiceInfoV0("V3_ADAPTIVE_ENDPOINT", detail);
+        emitVoiceEngineTelemetryV3("ADAPTIVE_ENDPOINT", detail);
+        void finishTurn(keepAlive);
+      }
+    });
 
     return { ok: true };
   }

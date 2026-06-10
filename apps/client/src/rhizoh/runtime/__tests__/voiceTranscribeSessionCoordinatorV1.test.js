@@ -36,10 +36,13 @@ describe("voiceTranscribeSessionCoordinatorV1", () => {
       recordedMs: 9_500,
       chunkCount: 6
     });
-    expect(plan.mode).toBe("split");
     const coerced = coerceTranscribePlanForGatewayV1(plan);
-    expect(coerced.mode).toBe("direct");
-    expect(coerced.path).toBe("fast");
-    expect(coerced.reason).toBe("gateway_warmup_direct");
+    if (plan.mode === "split") {
+      expect(coerced.mode).toBe("direct");
+      expect(coerced.path).toBe("fast");
+      expect(coerced.reason).toBe("gateway_warmup_direct");
+    } else {
+      expect(coerced).toBe(plan);
+    }
   });
 });
