@@ -36,4 +36,16 @@ describe("runFastPrecheckFromTextV0 compound guard", () => {
     const hit = runFastPrecheckFromTextV0("Ne konuşmuştuk az önce?");
     expect(hit).toBeNull();
   });
+
+  it("defers fatigue + entity from greeting wake reflex", () => {
+    expect(
+      shouldDeferFastPrecheckToLlmV0("çok yorgunum rhizoh", "greeting")
+    ).toBe(true);
+    expect(runFastPrecheckFromTextV0("çok yorgunum rhizoh")).toBeNull();
+    expect(runFastPrecheckFromTextV0("Rhizoh çok yorgunum")).toBeNull();
+  });
+
+  it("keeps pure rhizoh wake on short entity ping", () => {
+    expect(runFastPrecheckFromTextV0("Rhizoh")?.intent).toBe("greeting");
+  });
 });

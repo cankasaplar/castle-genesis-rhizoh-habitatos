@@ -18,7 +18,8 @@ import { isPhantomSystemPromptUtteranceV3 } from "./voiceEngineV3/voiceTranscrip
 import {
   canonicalIntentToPrecheckV1,
   isSubstantivePlanningUtteranceV1,
-  probeCanonicalIntentV1
+  probeCanonicalIntentV1,
+  probeEmotionalStateUtteranceV1
 } from "./rhizohCanonicalIntentV1.js";
 import { hasUserGeoForLocalFeedsV0 } from "./rhizohUserGeoConsentV0.js";
 import { probeContinuityRecallIntentV0 } from "./rhizohContinuityRecallIntentV0.js";
@@ -91,6 +92,7 @@ export function shouldDeferFastPrecheckToLlmV0(rawText, hitIntent) {
   if (!raw) return false;
   if (probeContinuityRecallIntentV0(raw).active) return true;
   const intent = String(hitIntent || "");
+  if (probeEmotionalStateUtteranceV1(raw) && FAST_PRECHECK_SHALLOW_INTENTS_V0.has(intent)) return true;
   if (probeSportsLiveQueryV0(raw).active && FAST_PRECHECK_SHALLOW_INTENTS_V0.has(intent)) return true;
   const words = raw.split(/\s+/).filter(Boolean);
 

@@ -154,8 +154,45 @@ const TOKEN_FEATURE_MAP_V1 = Object.freeze({
   beni: "filler",
   söyler: "filler",
   soyler: "filler",
-  sorma: "filler"
+  sorma: "filler",
+  cok: "filler"
 });
+
+const EMOTIONAL_STATE_PREFIXES_V1 = Object.freeze([
+  "yorgun",
+  "bitkin",
+  "uzgun",
+  "mutsuz",
+  "stres",
+  "gergin",
+  "bunalm",
+  "yoruldum",
+  "uykum",
+  "hastayim",
+  "hasta",
+  "kotu",
+  "kötü",
+  "yalniz",
+  "yalnız",
+  "yalvar",
+  "tired",
+  "exhausted",
+  "stressed",
+  "sick"
+]);
+
+/**
+ * Fatigue / emotional state — must reach LLM, not greeting wake reflex.
+ * @param {string} raw
+ */
+export function probeEmotionalStateUtteranceV1(raw) {
+  const n = foldCanonicalSurfaceV1(String(raw || "").trim());
+  if (!n) return false;
+  return EMOTIONAL_STATE_PREFIXES_V1.some((p) => {
+    const folded = foldCanonicalSurfaceV1(p);
+    return new RegExp(`\\b${folded}\\w*\\b`).test(n);
+  });
+}
 
 /** Lexeme → surface language hint (output locale bias only, not routing) */
 const LEXEME_SURFACE_LANG_V1 = Object.freeze({
@@ -432,6 +469,10 @@ export function buildCanonicalFeatureBagV1(tokens) {
 
     const lang = LEXEME_SURFACE_LANG_V1[token];
     if (lang) langVotes[lang] = (langVotes[lang] || 0) + 1;
+
+    if (EMOTIONAL_STATE_PREFIXES_V1.some((p) => token.startsWith(foldCanonicalSurfaceV1(p)))) {
+      features.add("emotional_state");
+    }
   }
 
   if (
@@ -508,6 +549,7 @@ export function projectCanonicalIntentV1(bag) {
   const n = bag.tokenCount;
   if (!n || n > 16) return null;
   if (bag.substantivePlanning) return null;
+  if (f.has("emotional_state")) return null;
 
   const has = (key) => f.has(key);
 
@@ -567,8 +609,17 @@ export function projectCanonicalIntentV1(bag) {
       confidence: 0.94
     };
   }
-  if (has("entity_rhizoh") && n <= 4) {
-    return { canonicalIntent: CANONICAL_INTENT_V1.GREETING_WAKE, confidence: 0.9 };
+  if (has("entity_rhizoh") && n <= 4 && !has("emotional_state")) {
+    const wakeOnly =
+      n <= 2 ||
+      (n <= 4 &&
+        !f.has("question") &&
+        !f.has("chat") &&
+        !f.has("command") &&
+        (has("greeting") || has("morning") || has("ack") || has("presence")));
+    if (wakeOnly) {
+      return { canonicalIntent: CANONICAL_INTENT_V1.GREETING_WAKE, confidence: 0.9 };
+    }
   }
   if (has("morning") && n <= 4) {
     return { canonicalIntent: CANONICAL_INTENT_V1.MORNING_GREETING, confidence: 0.88 };

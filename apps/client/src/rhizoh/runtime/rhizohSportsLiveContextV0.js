@@ -11,7 +11,9 @@ import {
 
 export const RHIZOH_SPORTS_LIVE_CONTEXT_SCHEMA_V0 = "castle.rhizoh.sports_live_context.v0";
 
-const TURKEY_TEAM_RE_V0 = /\b(turkiye|turkey|a\s*milli|milli\s*takim)\b/i;
+const TURKEY_TEAM_RE_V0 = /\b(turkiye\w*|turkey|a\s*milli|milli\s*takim)\b/i;
+const SPORTS_LEXICON_RE_V0 =
+  /\b(mac\w*|fikstur\w*|fixture\w*|skor\w*|gol\w*|spor\w*|match\w*|score\w*|football|soccer|rakip\w*)\b/i;
 
 /**
  * @param {string} raw
@@ -22,14 +24,13 @@ export function probeSportsLiveQueryV0(raw) {
     return Object.freeze({ active: false, team: null, kind: null, reason: "empty" });
   }
 
-  const hasSports =
-    /\b(mac|maclar|fikstur|fixture|skor|gol|spor|match|score|football|soccer)\b/.test(n);
+  const hasSports = SPORTS_LEXICON_RE_V0.test(n);
   const turkey = TURKEY_TEAM_RE_V0.test(n);
 
   if (turkey && hasSports) {
     return Object.freeze({ active: true, team: "turkey", kind: "fixture", reason: "turkey_sports" });
   }
-  if (/\b(fikstur|fixture|maclar|macvar|yaklasan\s*mac)\b/.test(n)) {
+  if (/\b(fikstur\w*|fixture\w*|mac\w*|macvar|yaklasan\s*mac)\b/.test(n)) {
     return Object.freeze({ active: true, team: turkey ? "turkey" : null, kind: "fixture", reason: "fixture_lexicon" });
   }
   if (/\b(canli\s*skor|mac\s*sonuc|kim\s*kazandi|live\s*score)\b/.test(n)) {
