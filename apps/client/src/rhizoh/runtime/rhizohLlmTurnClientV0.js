@@ -18,6 +18,7 @@ import {
   resolveRhizohLlmLanguageV0
 } from "./rhizohLanguagePropagationV0.js";
 import { trimRhizohLlmRequestBodyV0 } from "./rhizohLlmPayloadTrimV0.js";
+import { tryResolveMemoryConsentTurnV1 } from "./rhizohMemoryConsentTurnV1.js";
 
 export const RHIZOH_LLM_TURN_CLIENT_SCHEMA_V0 = "castle.rhizoh.llm_turn_client.v0";
 
@@ -42,15 +43,30 @@ export const RHIZOH_LLM_TURN_CLIENT_SCHEMA_V0 = "castle.rhizoh.llm_turn_client.v
  */
 export async function postRhizohLlmTurnV0(input = {}) {
   const fetchFn = input.fetchImpl ?? fetch;
-  const cfg = getCastleFlightConfig();
-  const endpoint = String(cfg.rhizohLlmHttp || "").trim();
-  if (!endpoint) {
-    return Object.freeze({ ok: false, error: "rhizoh_llm_http_unconfigured" });
-  }
 
   const message = String(input.message || "").trim();
   if (!message) {
     return Object.freeze({ ok: false, error: "empty_message" });
+  }
+
+  const consentTurn = tryResolveMemoryConsentTurnV1(message, { traceId: input.traceId });
+  if (consentTurn?.reply) {
+    return Object.freeze({
+      ok: true,
+      schema: RHIZOH_LLM_TURN_CLIENT_SCHEMA_V0,
+      reply: consentTurn.reply,
+      traceId: String(input.traceId || consentTurn.traceId || ""),
+      source: consentTurn.source,
+      llmBypass: true,
+      spatialAnchor: consentTurn.spatialAnchor || null,
+      consentStatus: consentTurn.consentStatus
+    });
+  }
+
+  const cfg = getCastleFlightConfig();
+  const endpoint = String(cfg.rhizohLlmHttp || "").trim();
+  if (!endpoint) {
+    return Object.freeze({ ok: false, error: "rhizoh_llm_http_unconfigured" });
   }
 
   let prep = null;

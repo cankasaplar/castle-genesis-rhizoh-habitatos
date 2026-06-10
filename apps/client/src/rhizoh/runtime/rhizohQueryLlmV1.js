@@ -84,6 +84,7 @@ import {
   resolveRhizohLlmLanguageV0
 } from "./rhizohLanguagePropagationV0.js";
 import { trimRhizohLlmRequestBodyV0 } from "./rhizohLlmPayloadTrimV0.js";
+import { tryResolveMemoryConsentTurnV1 } from "./rhizohMemoryConsentTurnV1.js";
 import { tryLocalReflexReplyV0 } from "./rhizohLocalReflexLayerV0.js";
 import {
   runFastPrecheckFromTextV0,
@@ -329,6 +330,28 @@ export async function queryRhizohLLM({
   }
   const clientTraceId = createRhizohClientTraceIdV0();
   logRhizohHealth("ui_send", { traceId: clientTraceId, chars: trimmed.length });
+
+  const consentTurn = tryResolveMemoryConsentTurnV1(trimmed, { traceId: clientTraceId });
+  if (consentTurn?.reply) {
+    logRhizohHealth("memory_consent_bypass", {
+      traceId: clientTraceId,
+      source: consentTurn.source,
+      consentStatus: consentTurn.consentStatus
+    });
+    const committed = commitFinalUserVisibleLanguageV0(consentTurn.reply, {
+      source: consentTurn.source,
+      traceId: clientTraceId,
+      lockKey: "language_commit_lock"
+    });
+    return {
+      reply: committed.text,
+      directive: "FOCUS_RHIZOH",
+      source: consentTurn.source,
+      traceId: clientTraceId,
+      llmBypass: true,
+      spatialAnchor: consentTurn.spatialAnchor || null
+    };
+  }
 
   applyReflexEffectivenessFeedbackV0(trimmed);
 
@@ -1191,6 +1214,8 @@ export async function queryRhizohLLM({
       rhizohGhostAttentionBindingsV1: llmDepthBundle.ghostAttentionBindings || null,
       rhizohFoxAttentionPromptBlock: llmDepthBundle.foxAttentionPromptBlock || "",
       rhizohFoxSignificancePromptBlock: llmDepthBundle.foxSignificancePromptBlock || "",
+      rhizohMemoryInvitationPromptBlock: llmDepthBundle.memoryInvitationPromptBlock || "",
+      rhizohSpatialCandidate: llmDepthBundle.spatialCandidate || null,
       rhizohDialogueThread: llmDepthBundle.dialogueThread || dialogueThreadPre,
       rhizohDialogueThreadPromptBlock:
         llmDepthBundle.rhizohDialogueThreadPromptBlock ||

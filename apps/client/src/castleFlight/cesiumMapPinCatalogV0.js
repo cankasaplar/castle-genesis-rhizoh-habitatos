@@ -98,6 +98,13 @@ export const CESIUM_MAP_PIN_TYPES_V0 = Object.freeze({
     label: "POI",
     pathD: "M12 2v4 M12 18v4 M4.93 4.93l2.83 2.83 M16.24 16.24l2.83 2.83 M2 12h4 M18 12h4 M4.93 19.07l2.83-2.83 M16.24 7.76l2.83-2.83",
     pulse: false
+  }),
+  memory_beacon: Object.freeze({
+    id: "memory_beacon",
+    color: "#c4b5fd",
+    label: "FUTURE NODE",
+    pathD: "M12 2a4 4 0 0 1 4 4c0 1.5-.8 2.8-2 3.5V12h4l-5 8-5-8h4V9.5A4 4 0 0 1 12 2z",
+    pulse: true
   })
 });
 

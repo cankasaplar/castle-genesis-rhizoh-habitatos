@@ -19,13 +19,17 @@ import { WORLD_MAP_GEO_REQUEST_EVENT_V0 } from "../rhizoh/runtime/worldMapGeoReq
 import { CASTLE_WORLD_ANCHOR_EVENT_V0 } from "./castleWorldAnchorV0.js";
 import { createCesiumMapPinCanvasV0 } from "./cesiumMapBillboardV0.js";
 import { syncCastleEcosystemMarkersV0 } from "./castleEcosystemMarkersV0.js";
-import { publishCastleEcosystemRegistryMirrorV0 } from "./castleEcosystemRegistryV0.js";
+import {
+  readActiveSpatialMemoryMapPinsV1,
+  SPATIAL_MEMORY_ANCHOR_EVENT_V1
+} from "../rhizoh/runtime/rhizohSpatialMemoryAnchorV1.js";
 
 export const SERENCEBEY_CASTLE_ENTITY_ID_V0 = "castle-origin-serencebey-v0";
 export const SERENCEBEY_BEACON_ENTITY_ID_V0 = "castle-origin-serencebey-beacon-v0";
 export const USER_CASTLE_ENTITY_ID_V0 = "castle-user-nexus-v0";
 const GHOST_ENTITY_PREFIX_V0 = "castle-ghost-local-";
 const WITNESS_ENTITY_PREFIX_V0 = "castle-witness-remote-";
+const SPATIAL_MEMORY_ENTITY_PREFIX_V0 = "castle-spatial-memory-";
 
 function readRemoteWitnessesV0() {
   if (typeof window === "undefined") return [];
@@ -221,6 +225,39 @@ export function installWorldMapAnchorMarkersV0(viewer, Cesium) {
     }
   };
 
+  const syncSpatialMemoryBeaconsV0 = () => {
+    removeByPrefix(SPATIAL_MEMORY_ENTITY_PREFIX_V0);
+    if (!layer().systemAnchors) return;
+    const beaconImage = createCesiumMapPinCanvasV0({ pinType: "memory_beacon", size: 44 });
+    for (const row of readActiveSpatialMemoryMapPinsV1()) {
+      if (!Number.isFinite(row?.lat) || !Number.isFinite(row?.lon)) continue;
+      const opacity = Number(row.mapRenderToken?.opacity ?? 0.65);
+      viewer.entities.add({
+        id: String(row.id),
+        name: row.label,
+        position: Cesium.Cartesian3.fromDegrees(row.lon, row.lat, 0),
+        billboard: {
+          image: beaconImage,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          scale: 0.72 + opacity * 0.2,
+          color: Cesium.Color.WHITE.withAlpha(Math.max(0.15, opacity)),
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        },
+        label: {
+          text: String(row.label || "FUTURE NODE").toUpperCase().slice(0, 22),
+          font: "bold 8px monospace",
+          fillColor: Cesium.Color.fromCssColorString("#c4b5fd").withAlpha(opacity),
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 2,
+          pixelOffset: new Cesium.Cartesian2(0, -42),
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        }
+      });
+    }
+  };
+
   const syncEcosystemNodesV0 = () => {
     publishCastleEcosystemRegistryMirrorV0();
     syncCastleEcosystemMarkersV0(viewer, Cesium);
@@ -233,6 +270,7 @@ export function installWorldMapAnchorMarkersV0(viewer, Cesium) {
     syncUserCastleV0();
     syncGhostCastlesV0();
     syncCoPresenceV0();
+    syncSpatialMemoryBeaconsV0();
     try {
       viewer.scene.requestRender();
     } catch {
@@ -248,6 +286,7 @@ export function installWorldMapAnchorMarkersV0(viewer, Cesium) {
     WORLD_MAP_MARKER_LAYER_EVENT_V0,
     WORLD_MAP_GEO_REQUEST_EVENT_V0,
     CASTLE_WORLD_ANCHOR_EVENT_V0,
+    SPATIAL_MEMORY_ANCHOR_EVENT_V1,
     "castle:remote-witnesses-v0"
   ];
   for (const ev of events) {

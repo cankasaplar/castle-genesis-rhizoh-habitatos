@@ -28,6 +28,16 @@ import {
   publishGhostPresentationBiasV1,
   buildGhostPresentationTonePromptBlockV1
 } from "./ghostStateEngineV1.js";
+import {
+  probeMemoryInvitationCandidateV1,
+  formatMemoryInvitationPromptBlockV1
+} from "./rhizohMemoryInvitationGateV1.js";
+import {
+  computeSpatialCandidateScoreV1,
+  stageSpatialMemoryInvitationV1
+} from "./rhizohSpatialMemoryAnchorV1.js";
+import { publishPendingMemoryInvitationV1 } from "./rhizohMemoryConsentTurnV1.js";
+import { probeEmotionalStateUtteranceV1 } from "./rhizohCanonicalIntentV1.js";
 
 export const RHIZOH_CONVERSATION_DEPTH_LLM_BRIDGE_SCHEMA_V0 =
   "castle.rhizoh.conversation_depth_llm_bridge.v0";
@@ -184,6 +194,25 @@ export function buildRhizohLlmDepthBundleV0(input = {}) {
     continuity: input.continuity
   });
 
+  const memoryInvitation = probeMemoryInvitationCandidateV1(String(input.message || ""), {
+    significanceScore: significance.significanceScore,
+    significanceField: significance.significanceField,
+    emotionalCharge: probeEmotionalStateUtteranceV1(String(input.message || "")) ? 0.72 : 0
+  });
+  const spatialCandidate = computeSpatialCandidateScoreV1({
+    message: input.message,
+    significanceField: significance.significanceField,
+    emotionalCharge: memoryInvitation.emotionalCharge
+  });
+  if (memoryInvitation.tier === "spatial_anchor" && memoryInvitation.active) {
+    stageSpatialMemoryInvitationV1({
+      message: input.message,
+      significanceField: significance.significanceField,
+      traceId: input.traceId
+    });
+    publishPendingMemoryInvitationV1();
+  }
+
   const awarenessField = readCastleAwarenessFieldV1();
 
   const behaviorPosture = evaluateFoxBehaviorPostureV1({
@@ -294,6 +323,12 @@ export function buildRhizohLlmDepthBundleV0(input = {}) {
     ),
     dialogueThread,
     foxContinuityPressure,
-    rhizohDialogueThreadPromptBlock: buildRhizohDialogueThreadPromptBlockV1(dialogueThread)
+    rhizohDialogueThreadPromptBlock: buildRhizohDialogueThreadPromptBlockV1(dialogueThread),
+    memoryInvitation,
+    memoryInvitationPromptBlock: formatMemoryInvitationPromptBlockV1(
+      memoryInvitation,
+      input.persona?.locale || "tr"
+    ),
+    spatialCandidate
   });
 }

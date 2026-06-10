@@ -450,6 +450,7 @@ export function runFastPrecheckV0(normalized, locale, rawText) {
 export function runFastPrecheckFromTextV0(input, opts = {}) {
   if (isPhantomSystemPromptUtteranceV3(input)) return null;
   const raw = String(input || "").trim();
+  if (probeEmotionalStateUtteranceV1(raw)) return null;
   const normalized = normalizeForFastPrecheckV0(input);
   const hit = runFastPrecheckV0(normalized, opts.locale, raw);
   if (!hit) return null;

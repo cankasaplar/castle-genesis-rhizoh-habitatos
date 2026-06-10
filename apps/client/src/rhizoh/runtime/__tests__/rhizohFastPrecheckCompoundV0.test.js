@@ -45,6 +45,10 @@ describe("runFastPrecheckFromTextV0 compound guard", () => {
     expect(runFastPrecheckFromTextV0("Rhizoh çok yorgunum")).toBeNull();
   });
 
+  it("emotion-first guard bypasses precheck before canonical", () => {
+    expect(runFastPrecheckFromTextV0("yorgunum rhizoh")).toBeNull();
+  });
+
   it("keeps pure rhizoh wake on short entity ping", () => {
     expect(runFastPrecheckFromTextV0("Rhizoh")?.intent).toBe("greeting");
   });
