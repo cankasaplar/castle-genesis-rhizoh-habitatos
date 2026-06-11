@@ -38,6 +38,7 @@ let readyPromise = null;
 let readyResolve = null;
 /** @type {Set<(snap: ReturnType<typeof getVoiceAdapterRegistrySnapshot>) => void>} */
 const listeners = new Set();
+let lastRegisteredModeV0 = "unregistered";
 
 function completeHydrationProbe() {
   if (hydrated) return;
@@ -75,6 +76,10 @@ function publishDebugTruth() {
   }
   emitAdapterUpdated(snap);
   return snap;
+}
+
+function resolveVoiceAdapterModeV0() {
+  return isVoiceEngineV3EnabledV0() ? "voice_engine_v3" : "browser_speech";
 }
 
 export function isVoiceAdapterRegistryHydratedV0() {
@@ -152,20 +157,33 @@ export function getVoiceAdapterRegistrySnapshot() {
 }
 
 export function ensureVoiceAdapterRegistered() {
+  const mode = resolveVoiceAdapterModeV0();
+  if (
+    hydrated &&
+    lastRegisteredModeV0 === mode &&
+    state.sttStatus !== "unregistered" &&
+    !(state.fallbackMode && mode === "browser_speech")
+  ) {
+    const snap = publishDebugTruth();
+    resolveReadyWaiters(snap);
+    return snap;
+  }
   if (typeof window === "undefined") {
     state.sttStatus = "no_window";
     state.fallbackMode = true;
     state.voice = null;
+    lastRegisteredModeV0 = mode;
     completeHydrationProbe();
     const snap = publishDebugTruth();
     resolveReadyWaiters(snap);
     return snap;
   }
-  if (isVoiceEngineV3EnabledV0()) {
+  if (mode === "voice_engine_v3") {
     state.voice = Object.freeze({ id: "rhizoh-voice-engine-v3", provider: "hybrid-google-whisper" });
     state.sttProvider = "rhizoh-voice-engine-v3";
     state.sttStatus = "engine_v3_registered";
     state.fallbackMode = false;
+    lastRegisteredModeV0 = mode;
     completeHydrationProbe();
     const snap = publishDebugTruth();
     resolveReadyWaiters(snap);
@@ -183,6 +201,7 @@ export function ensureVoiceAdapterRegistered() {
     state.sttStatus = "no_speech_api";
     state.fallbackMode = true;
   }
+  lastRegisteredModeV0 = mode;
   completeHydrationProbe();
   const snap = publishDebugTruth();
   resolveReadyWaiters(snap);
@@ -272,5 +291,6 @@ export function resetVoiceInputAdapterRegistryForTestV0() {
   hydrated = false;
   readyPromise = null;
   readyResolve = null;
+  lastRegisteredModeV0 = "unregistered";
   listeners.clear();
 }

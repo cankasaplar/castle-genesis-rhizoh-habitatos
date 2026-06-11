@@ -148,3 +148,18 @@ export function writeWorldMapMarkerLayerStateV0(patch) {
   }
   return next;
 }
+
+/** @param {() => void} onChange */
+export function subscribeWorldMapMarkerLayerStateV0(onChange) {
+  if (typeof window === "undefined" || typeof onChange !== "function") return () => {};
+  const handler = () => onChange();
+  const storageHandler = (e) => {
+    if (e.key === STORAGE_KEY_V0 || e.key === null) handler();
+  };
+  window.addEventListener(WORLD_MAP_MARKER_LAYER_EVENT_V0, handler);
+  window.addEventListener("storage", storageHandler);
+  return () => {
+    window.removeEventListener(WORLD_MAP_MARKER_LAYER_EVENT_V0, handler);
+    window.removeEventListener("storage", storageHandler);
+  };
+}

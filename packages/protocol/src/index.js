@@ -33,6 +33,13 @@ export const WS_MESSAGE = {
   /** Sprint C.1 — peer WAL history feed (in) + room fan-out (out). */
   CASTLE_WAL_PEER_FEED: "CASTLE_WAL_PEER_FEED",
   CASTLE_WAL_PEER_ROOM: "CASTLE_WAL_PEER_ROOM",
+  /** Voice Engine v3 — single live media lane over gateway WS (client -> gateway). */
+  RHIZOH_VOICE_LIVE_START: "RHIZOH_VOICE_LIVE_START",
+  RHIZOH_VOICE_LIVE_CHUNK: "RHIZOH_VOICE_LIVE_CHUNK",
+  RHIZOH_VOICE_LIVE_STOP: "RHIZOH_VOICE_LIVE_STOP",
+  /** Voice Engine v3 — live lane result/error (gateway -> client). */
+  RHIZOH_VOICE_LIVE_FINAL: "RHIZOH_VOICE_LIVE_FINAL",
+  RHIZOH_VOICE_LIVE_ERROR: "RHIZOH_VOICE_LIVE_ERROR",
   ERROR: "ERROR"
 };
 
