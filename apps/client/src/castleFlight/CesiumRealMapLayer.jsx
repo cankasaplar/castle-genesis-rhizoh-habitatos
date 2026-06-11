@@ -1070,12 +1070,15 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         }
         worldMapLayersApplied = true;
         sanitizeCesiumCameraV0(viewer, Cesium, cameraSafeAnchor());
+        const markerLayers = readWorldMapMarkerLayerStateV0();
+        const passivePoiLayerEnabled = markerLayers.epistemicPoi === true;
 
         await runBootStage(
           "osm_buildings",
           async () => {
             if (
               !vanilla &&
+              passivePoiLayerEnabled &&
               ionUsable &&
               cfg.cesiumOsmBuildings &&
               !pvsSafeModeLock &&
@@ -1107,6 +1110,12 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         await runBootStage(
           "important_places",
           async () => {
+            if (!passivePoiLayerEnabled) {
+              clearPoiPointCollectionV0();
+              importantRowsRef.current = [];
+              important = [];
+              return;
+            }
             if (!vanilla) {
               const poiLoad = await loadCastleWorldImportantPlacesV2(IMPORTANT_OVERPASS_TAGS);
               important = poiLoad.rows;
@@ -1178,7 +1187,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         await runBootStage(
           "fallback_footprints",
           async () => {
-            if (!vanilla && !hasOsmBuildings && !pvsSafeModeLock && !renderDegraded) {
+            if (passivePoiLayerEnabled && !vanilla && !hasOsmBuildings && !pvsSafeModeLock && !renderDegraded) {
               const { rows: footprintsRaw } = await loadCastleWorldBuildingFootprintsV2(
                 CESIUM_SCENE_BUDGET.MAX_FOOTPRINT_ENTITIES
               );
