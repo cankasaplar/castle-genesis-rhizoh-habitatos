@@ -11,6 +11,23 @@ export function readSpeechLocaleForVoiceV0() {
 }
 
 /**
+ * Prefer the actual visible text language for TTS when it is obvious.
+ * This prevents Turkish text from being spoken with an English voice after an
+ * earlier English/auto session lock.
+ * @param {string} text
+ * @param {string} [fallbackLocale]
+ */
+export function resolveSpeechLocaleForTextV0(text, fallbackLocale = readSpeechLocaleForVoiceV0()) {
+  const raw = String(text || "");
+  const folded = raw.toLowerCase();
+  if (/[çğıöşü]/i.test(raw)) return "tr";
+  if (/\b(merhaba|günaydın|gunaydin|buradayım|buradayim|harita|kale|oluştur|olustur|açıyorum|aciyorum|devam|tamam|dinliyorum|konum|dünya|dunya)\b/i.test(folded)) {
+    return "tr";
+  }
+  return String(fallbackLocale || "en").toLowerCase();
+}
+
+/**
  * @param {string} [localeCode]
  * @returns {string}
  */

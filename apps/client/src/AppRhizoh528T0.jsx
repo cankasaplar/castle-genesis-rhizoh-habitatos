@@ -287,6 +287,7 @@ import { bootstrapCastleLanguageRuntimeV0 } from "./rhizoh/runtime/rhizohLanguag
 import { prewarmSpeechSynthesisV0 } from "./rhizoh/runtime/prewarmSpeechSynthesisV0.js";
 import {
   readSpeechLocaleForVoiceV0,
+  resolveSpeechLocaleForTextV0,
   resolveSpeechBcp47ForUiLocaleV0,
   resolveSpeechVoiceForUiLocaleV0
 } from "./rhizoh/runtime/rhizohSpeechLocaleV0.js";
@@ -9749,8 +9750,8 @@ export default function AppRhizoh528() {
         return;
       }
       const sessionId = ++voiceTtsSessionIdRef.current;
-      const voiceLocale = readSpeechLocaleForVoiceV0();
       const spoken = sanitizeSpeechTextForTtsV0(String(text)).slice(0, 1800);
+      const voiceLocale = resolveSpeechLocaleForTextV0(spoken, readSpeechLocaleForVoiceV0());
       noteRecentRhizohTtsEchoV0(spoken);
       recordRhizohReplySurfaceV0({
         channel: "tts",
