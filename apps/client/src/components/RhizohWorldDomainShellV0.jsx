@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RhizohWorldMapToolStripV0 } from "../rhizoh/runtime/RhizohWorldMapToolStripV0.jsx";
 import { RhizohWorldSocialPanelV0 } from "./RhizohWorldSocialPanelV0.jsx";
@@ -30,7 +30,8 @@ import {
 import { readActiveSpatialMemoryMapPinsV1 } from "../rhizoh/runtime/rhizohSpatialMemoryAnchorV1.js";
 import {
   buildRhizohMapBrainActionsV1,
-  formatRhizohMapBrainActionLabelV1
+  formatRhizohMapBrainActionLabelV1,
+  recordRhizohMapBrainFeedbackV1
 } from "../rhizoh/runtime/rhizohMapBrainV1.js";
 
 const DOMAIN_TABS_V0 = Object.freeze([
@@ -271,19 +272,33 @@ function WorldStartCardV0({ activeTool, active, uiLocale, worldData, onSelect })
     },
     limit: 3
   });
+  const mapBrainActionSignature = mapBrain.actions.map((action) => action.id).join("|");
+
+  useEffect(() => {
+    for (const action of mapBrain.actions) {
+      recordRhizohMapBrainFeedbackV1({ actionId: action.id, kind: "impression" });
+    }
+  }, [mapBrainActionSignature]);
 
   const executeBrainAction = (action) => {
     if (!action) return;
+    recordRhizohMapBrainFeedbackV1({ actionId: action.id, kind: "selected" });
     if (action.command === "set_map_tool" && action.mapTool) {
       onSelect?.(action.mapTool);
+      recordRhizohMapBrainFeedbackV1({ actionId: action.id, kind: "result", ok: true });
       return;
     }
     if (action.command === "cesium_op" && action.op) {
-      routeCesiumCommandV0({
+      const result = routeCesiumCommandV0({
         op: action.op,
         source: "rhizoh_map_brain_v1",
         canonical: `map_brain:${action.id}`,
         meta: Object.freeze({ ingress: "RhizohWorldDomainShellV0", reason: action.reason })
+      });
+      recordRhizohMapBrainFeedbackV1({
+        actionId: action.id,
+        kind: "result",
+        ok: result?.ok !== false
       });
     }
   };
@@ -325,7 +340,7 @@ function WorldStartCardV0({ activeTool, active, uiLocale, worldData, onSelect })
             >
               <span>{formatRhizohMapBrainActionLabelV1(action, tr ? "tr" : "en")}</span>
               <span className="ml-1 text-[8px] text-white/35">
-                {Math.round(action.confidence * 100)}%
+                {Math.round(action.confidence * 100)}% · {action.contextSource}
               </span>
             </button>
           );

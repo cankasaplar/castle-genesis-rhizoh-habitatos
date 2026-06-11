@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildRhizohMapBrainActionsV1 } from "../rhizohMapBrainV1.js";
+import {
+  RHIZOH_MAP_BRAIN_CONTEXT_WEIGHTS_V1,
+  buildRhizohMapBrainActionsV1
+} from "../rhizohMapBrainV1.js";
 
 describe("rhizohMapBrainV1", () => {
   it("suggests opening the city map when the map is not active", () => {
@@ -53,5 +56,47 @@ describe("rhizohMapBrainV1", () => {
         mapTool: "anchor_map"
       })
     );
+  });
+
+  it("applies bounded positive feedback without hiding base confidence", () => {
+    const brain = buildRhizohMapBrainActionsV1({
+      conversationState: { lastIntent: "castle" },
+      mapState: {
+        active: true,
+        activeMapTool: "city_map",
+        hasActiveCastle: true
+      },
+      feedbackState: {
+        actions: {
+          focus_active_castle: {
+            impressions: 4,
+            selections: 4,
+            successes: 3,
+            failures: 0
+          }
+        }
+      }
+    });
+
+    const action = brain.actions.find((row) => row.id === "focus_active_castle");
+    expect(action.baseConfidence).toBe(0.94);
+    expect(action.feedbackBias).toBeGreaterThan(0);
+    expect(action.confidence).toBeGreaterThanOrEqual(action.baseConfidence);
+  });
+
+  it("exposes context weights for decision transparency", () => {
+    const brain = buildRhizohMapBrainActionsV1({
+      conversationState: { activeThreads: ["memory"] },
+      mapState: {
+        active: true,
+        activeMapTool: "city_map",
+        memoryNodeCount: 1
+      }
+    });
+
+    expect(brain.contextWeights).toBe(RHIZOH_MAP_BRAIN_CONTEXT_WEIGHTS_V1);
+    const memory = brain.actions.find((row) => row.id === "show_memory_nodes");
+    expect(memory.contextSource).toBe("conversation");
+    expect(memory.contextWeight).toBe(RHIZOH_MAP_BRAIN_CONTEXT_WEIGHTS_V1.conversation);
   });
 });

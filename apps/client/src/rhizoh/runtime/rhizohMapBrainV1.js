@@ -6,10 +6,20 @@
  */
 
 export const RHIZOH_MAP_BRAIN_SCHEMA_V1 = "rhizoh.map_brain.v1";
+export const RHIZOH_MAP_BRAIN_FEEDBACK_SCHEMA_V1 = "rhizoh.map_brain.feedback.v1";
+
+const FEEDBACK_STORAGE_KEY_V1 = "rhizoh.map_brain.feedback.v1";
+const FEEDBACK_MAX_ACTIONS_V1 = 32;
 
 const COMMANDS_V1 = Object.freeze({
   MAP_TOOL: "set_map_tool",
   CESIUM_OP: "cesium_op"
+});
+
+export const RHIZOH_MAP_BRAIN_CONTEXT_WEIGHTS_V1 = Object.freeze({
+  conversation: 0.42,
+  map: 0.35,
+  entity: 0.23
 });
 
 function clamp01(n) {
@@ -32,6 +42,10 @@ function normalizeActionV1(action) {
     labelEn: String(action.labelEn || action.label || ""),
     command: String(action.command || ""),
     confidence: Math.round(clamp01(action.confidence) * 100) / 100,
+    baseConfidence: Math.round(clamp01(action.baseConfidence ?? action.confidence) * 100) / 100,
+    feedbackBias: Math.round((Number(action.feedbackBias) || 0) * 100) / 100,
+    contextSource: String(action.contextSource || "map"),
+    contextWeight: Math.round(clamp01(action.contextWeight) * 100) / 100,
     reason: String(action.reason || ""),
     mapTool: action.mapTool ? String(action.mapTool) : null,
     op: action.op ? String(action.op) : null,
@@ -52,6 +66,147 @@ function uniqTopActionsV1(actions, limit = 3) {
     .slice(0, Math.max(1, Math.min(5, Number(limit) || 3)));
 }
 
+function emptyFeedbackV1() {
+  return Object.freeze({
+    schema: RHIZOH_MAP_BRAIN_FEEDBACK_SCHEMA_V1,
+    actions: Object.freeze({}),
+    updatedAtMs: 0
+  });
+}
+
+function normalizeFeedbackV1(raw) {
+  if (!raw || typeof raw !== "object") return emptyFeedbackV1();
+  const rows = raw.actions && typeof raw.actions === "object" ? raw.actions : raw;
+  /** @type {Record<string, object>} */
+  const actions = {};
+  for (const [id, value] of Object.entries(rows).slice(-FEEDBACK_MAX_ACTIONS_V1)) {
+    if (!id || !value || typeof value !== "object") continue;
+    actions[id] = Object.freeze({
+      impressions: Math.max(0, Math.floor(Number(value.impressions) || 0)),
+      selections: Math.max(0, Math.floor(Number(value.selections) || 0)),
+      successes: Math.max(0, Math.floor(Number(value.successes) || 0)),
+      failures: Math.max(0, Math.floor(Number(value.failures) || 0)),
+      dismissals: Math.max(0, Math.floor(Number(value.dismissals) || 0)),
+      lastAtMs: Math.max(0, Number(value.lastAtMs) || 0)
+    });
+  }
+  return Object.freeze({
+    schema: RHIZOH_MAP_BRAIN_FEEDBACK_SCHEMA_V1,
+    actions: Object.freeze(actions),
+    updatedAtMs: Math.max(0, Number(raw.updatedAtMs) || 0)
+  });
+}
+
+export function readRhizohMapBrainFeedbackV1() {
+  if (typeof localStorage === "undefined") return emptyFeedbackV1();
+  try {
+    const raw = localStorage.getItem(FEEDBACK_STORAGE_KEY_V1);
+    return normalizeFeedbackV1(raw ? JSON.parse(raw) : null);
+  } catch {
+    return emptyFeedbackV1();
+  }
+}
+
+function writeRhizohMapBrainFeedbackV1(feedback) {
+  const normalized = normalizeFeedbackV1(feedback);
+  if (typeof localStorage !== "undefined") {
+    try {
+      localStorage.setItem(FEEDBACK_STORAGE_KEY_V1, JSON.stringify(normalized));
+    } catch {
+      /* noop */
+    }
+  }
+  if (typeof window !== "undefined") {
+    window.__rhizoh = window.__rhizoh || {};
+    window.__rhizoh.mapBrainFeedback = normalized;
+  }
+  return normalized;
+}
+
+/**
+ * @param {{ actionId?: string, kind?: "impression" | "selected" | "result" | "dismissed", ok?: boolean }} event
+ */
+export function recordRhizohMapBrainFeedbackV1(event = {}) {
+  const actionId = String(event.actionId || "").trim();
+  if (!actionId) return readRhizohMapBrainFeedbackV1();
+  const kind = String(event.kind || "impression");
+  const prev = readRhizohMapBrainFeedbackV1();
+  const row = prev.actions[actionId] || {};
+  const nextRow = {
+    impressions: Math.max(0, Number(row.impressions) || 0),
+    selections: Math.max(0, Number(row.selections) || 0),
+    successes: Math.max(0, Number(row.successes) || 0),
+    failures: Math.max(0, Number(row.failures) || 0),
+    dismissals: Math.max(0, Number(row.dismissals) || 0),
+    lastAtMs: Date.now()
+  };
+
+  if (kind === "impression") nextRow.impressions += 1;
+  else if (kind === "selected") nextRow.selections += 1;
+  else if (kind === "dismissed") nextRow.dismissals += 1;
+  else if (kind === "result") {
+    if (event.ok === true) nextRow.successes += 1;
+    else nextRow.failures += 1;
+  }
+
+  return writeRhizohMapBrainFeedbackV1({
+    schema: RHIZOH_MAP_BRAIN_FEEDBACK_SCHEMA_V1,
+    actions: Object.freeze({ ...prev.actions, [actionId]: Object.freeze(nextRow) }),
+    updatedAtMs: Date.now()
+  });
+}
+
+export function resetRhizohMapBrainFeedbackForTestV1() {
+  if (typeof localStorage !== "undefined") {
+    try {
+      localStorage.removeItem(FEEDBACK_STORAGE_KEY_V1);
+    } catch {
+      /* noop */
+    }
+  }
+  if (typeof window !== "undefined" && window.__rhizoh) {
+    delete window.__rhizoh.mapBrainFeedback;
+  }
+}
+
+function contextSourceForActionV1(action) {
+  const id = String(action.id || "");
+  if (id.includes("memory")) return "conversation";
+  if (id.includes("castle") || id.includes("anchor")) return "entity";
+  return "map";
+}
+
+function feedbackBiasForActionV1(actionId, feedback) {
+  const row = feedback?.actions?.[actionId];
+  if (!row) return 0;
+  const impressions = Math.max(0, Number(row.impressions) || 0);
+  const selections = Math.max(0, Number(row.selections) || 0);
+  const successes = Math.max(0, Number(row.successes) || 0);
+  const failures = Math.max(0, Number(row.failures) || 0);
+  const dismissals = Math.max(0, Number(row.dismissals) || 0);
+  const selectionRate = impressions > 0 ? selections / impressions : selections > 0 ? 1 : 0;
+  const resultTotal = successes + failures;
+  const resultRate = resultTotal > 0 ? (successes - failures) / resultTotal : 0;
+  const dismissalRate = impressions > 0 ? dismissals / impressions : 0;
+  return Math.max(-0.12, Math.min(0.12, selectionRate * 0.08 + resultRate * 0.06 - dismissalRate * 0.06));
+}
+
+function applyFeedbackAndContextV1(actions, feedback) {
+  return actions.map((action) => {
+    const contextSource = contextSourceForActionV1(action);
+    const contextWeight = RHIZOH_MAP_BRAIN_CONTEXT_WEIGHTS_V1[contextSource] || 0.33;
+    const feedbackBias = feedbackBiasForActionV1(action.id, feedback);
+    return {
+      ...action,
+      baseConfidence: action.confidence,
+      confidence: clamp01(Number(action.confidence) + feedbackBias),
+      feedbackBias,
+      contextSource,
+      contextWeight
+    };
+  });
+}
+
 /**
  * @param {{
  *   conversationState?: {
@@ -68,6 +223,7 @@ function uniqTopActionsV1(actions, limit = 3) {
  *     hasUserLocation?: boolean,
  *     worldDataReady?: boolean
  *   },
+ *   feedbackState?: ReturnType<typeof readRhizohMapBrainFeedbackV1>,
  *   limit?: number
  * }} input
  */
@@ -84,6 +240,7 @@ export function buildRhizohMapBrainActionsV1(input = {}) {
   const unresolvedCount =
     (Array.isArray(conversation.activeThreads) ? conversation.activeThreads.length : 0) +
     (Array.isArray(conversation.unresolvedTasks) ? conversation.unresolvedTasks.length : 0);
+  const feedback = input.feedbackState || readRhizohMapBrainFeedbackV1();
 
   /** @type {object[]} */
   const actions = [];
@@ -169,7 +326,9 @@ export function buildRhizohMapBrainActionsV1(input = {}) {
   return Object.freeze({
     schema: RHIZOH_MAP_BRAIN_SCHEMA_V1,
     intent,
-    actions: Object.freeze(uniqTopActionsV1(actions, input.limit ?? 3))
+    contextWeights: RHIZOH_MAP_BRAIN_CONTEXT_WEIGHTS_V1,
+    feedbackUpdatedAtMs: feedback.updatedAtMs || 0,
+    actions: Object.freeze(uniqTopActionsV1(applyFeedbackAndContextV1(actions, feedback), input.limit ?? 3))
   });
 }
 
