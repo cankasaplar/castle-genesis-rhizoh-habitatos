@@ -15,11 +15,10 @@ import {
   clearRhizohOutputLanguagePreferenceV0,
   writeRhizohOutputLanguagePreferenceV0
 } from "../runtime/rhizohOutputLanguagePolicyV0.js";
-import { getLanguagePickerCopyV0 } from "./ingressCopyI18nV0.js";
+import { getLanguagePickerCopyV0, getLegalPreambleCopyForLocaleV0 } from "./ingressCopyI18nV0.js";
 import {
   acknowledgeLegalAccessV0,
   getLegalDocumentPathsV0,
-  getLegalPreambleCopyForLocaleV0,
   hasLegalAccessAckV0
 } from "./ingress_router.js";
 import { INGRESS_SURFACE_V0 } from "./ingressFlowStylesV0.js";
