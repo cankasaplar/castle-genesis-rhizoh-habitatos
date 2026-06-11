@@ -169,4 +169,18 @@ describe("castleSocialContractV0", () => {
     expect(session.transportPlan.mediaReady).toBe(false);
     expect(JSON.stringify(session)).not.toMatch(/getUserMedia|MediaStream|RTCPeerConnection/i);
   });
+
+  it("keeps Fox as observer intelligence, not a media participant", () => {
+    const session = buildCastleSpatialSessionV0({
+      sessionId: "sess_fox",
+      hostCastleId: "istanbul_castle",
+      hostAnchor: { lat: 41.04, lon: 29.0, label: "Istanbul Castle", source: "origin" }
+    });
+    const fox = session.entityLayer.rhizohEntities.find((entity) => entity.id === "fox_observer_v0");
+    expect(session.entityLayer.humanStreams.mediaParticipant).toBe(true);
+    expect(fox.role).toBe("observer_intelligence");
+    expect(fox.visibility).toBe("observer_overlay");
+    expect(fox.mediaParticipant).toBe(false);
+    expect(fox.canSpeakAsPrimary).toBe(false);
+  });
 });

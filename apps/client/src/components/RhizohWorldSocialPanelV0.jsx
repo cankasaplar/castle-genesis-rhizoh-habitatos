@@ -45,6 +45,9 @@ export const RhizohWorldSocialPanelV0 = memo(function RhizohWorldSocialPanelV0({
   const spatial = c2cSession?.spatialSession;
   const roomLabel = spatial?.roomId || c2cSession?.roomKey || "—";
   const anchorLabel = spatial?.spatialContext?.hostAnchor?.label || "—";
+  const observerEntity = spatial?.entityLayer?.rhizohEntities?.find(
+    (entity) => entity.id === spatial?.entityLayer?.defaultObserverEntityId
+  );
 
   return (
     <div className="space-y-3 normal-case" data-rhizoh-world-social-panel="1">
@@ -88,10 +91,16 @@ export const RhizohWorldSocialPanelV0 = memo(function RhizohWorldSocialPanelV0({
                 : "Prepare castle session context"}
           </p>
           {c2cSession ? (
-            <p className="mt-1 text-[8px] text-white/38">
-              {tr ? "Oda" : "Room"}: <span className="font-mono">{roomLabel}</span> ·{" "}
-              {tr ? "media beklemede" : "media pending"}
-            </p>
+            <div className="mt-1 space-y-0.5 text-[8px] text-white/38">
+              <p>
+                {tr ? "Oda" : "Room"}: <span className="font-mono">{roomLabel}</span> ·{" "}
+                {tr ? "media beklemede" : "media pending"}
+              </p>
+              <p>
+                {observerEntity?.label || "Fox"}:{" "}
+                {tr ? "observer layer · kamera katılımcısı değil" : "observer layer · not a camera participant"}
+              </p>
+            </div>
           ) : null}
         </button>
       </div>

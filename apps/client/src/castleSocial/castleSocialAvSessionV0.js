@@ -40,7 +40,8 @@ let _active = null;
  *   hostAnchor?: object | null,
  *   peerAnchor?: object | null,
  *   conversationContext?: object | null,
- *   memoryBinding?: object | null
+ *   memoryBinding?: object | null,
+ *   entityLayer?: object | null
  * }} [opts]
  */
 export function createCastleSocialAvSessionV0(opts = {}) {
@@ -58,7 +59,8 @@ export function createCastleSocialAvSessionV0(opts = {}) {
     hostAnchor: opts.hostAnchor || null,
     peerAnchor: opts.peerAnchor || null,
     conversationContext: opts.conversationContext || null,
-    memoryBinding: opts.memoryBinding || null
+    memoryBinding: opts.memoryBinding || null,
+    entityLayer: opts.entityLayer || null
   });
   const session = Object.freeze({
     schema: CASTLE_SOCIAL_AV_SESSION_SCHEMA_V0,
@@ -141,6 +143,7 @@ export function publishCastleSocialAvPulseV0(session) {
               hostCastleId: session.spatialSession.hostCastleId,
               peerCastleId: session.spatialSession.peerCastleId,
               memoryBinding: session.spatialSession.memoryBinding,
+              entityLayer: session.spatialSession.entityLayer,
               transportPlan: session.spatialSession.transportPlan
             })
           : null,

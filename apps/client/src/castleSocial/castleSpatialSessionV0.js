@@ -6,6 +6,44 @@
  */
 
 export const CASTLE_SPATIAL_SESSION_SCHEMA_V0 = "castle.spatial_session.v0";
+export const CASTLE_SESSION_ENTITY_LAYER_SCHEMA_V0 = "castle.session_entity_layer.v0";
+
+export const CASTLE_SESSION_ENTITY_ROLE_V0 = Object.freeze({
+  HUMAN_STREAM: "human_stream",
+  OBSERVER_INTELLIGENCE: "observer_intelligence",
+  MEMORY_ECHO: "memory_echo",
+  PERSONAL_COMPANION: "personal_companion"
+});
+
+const DEFAULT_RHIZOH_ENTITY_LAYER_V0 = Object.freeze([
+  Object.freeze({
+    id: "fox_observer_v0",
+    label: "Fox",
+    role: CASTLE_SESSION_ENTITY_ROLE_V0.OBSERVER_INTELLIGENCE,
+    visibility: "observer_overlay",
+    mediaParticipant: false,
+    canSpeakAsPrimary: false,
+    function: "co_presence_intelligence"
+  }),
+  Object.freeze({
+    id: "ghost_memory_echo_v0",
+    label: "Ghost",
+    role: CASTLE_SESSION_ENTITY_ROLE_V0.MEMORY_ECHO,
+    visibility: "memory_overlay",
+    mediaParticipant: false,
+    canSpeakAsPrimary: false,
+    function: "session_memory_anchor"
+  }),
+  Object.freeze({
+    id: "companion_personal_ai_v0",
+    label: "Companion",
+    role: CASTLE_SESSION_ENTITY_ROLE_V0.PERSONAL_COMPANION,
+    visibility: "gated_personal_overlay",
+    mediaParticipant: false,
+    canSpeakAsPrimary: false,
+    function: "personal_context_helper"
+  })
+]);
 
 function slugV0(value, fallback = "castle") {
   const s = String(value || fallback)
@@ -37,6 +75,38 @@ function normalizeAnchorV0(anchor, fallbackLabel = "Castle") {
   });
 }
 
+function normalizeEntityLayerV0(input = {}) {
+  const raw = Array.isArray(input.rhizohEntities) ? input.rhizohEntities : DEFAULT_RHIZOH_ENTITY_LAYER_V0;
+  const rhizohEntities = raw
+    .map((entity) => {
+      if (!entity || typeof entity !== "object") return null;
+      return Object.freeze({
+        id: String(entity.id || entity.label || "rhizoh_entity"),
+        label: String(entity.label || entity.id || "Rhizoh Entity"),
+        role: String(entity.role || CASTLE_SESSION_ENTITY_ROLE_V0.OBSERVER_INTELLIGENCE),
+        visibility: String(entity.visibility || "observer_overlay"),
+        mediaParticipant: false,
+        canSpeakAsPrimary: false,
+        function: String(entity.function || "meaning_layer")
+      });
+    })
+    .filter(Boolean);
+
+  return Object.freeze({
+    schema: CASTLE_SESSION_ENTITY_LAYER_SCHEMA_V0,
+    model: "human_stream_plus_entity_overlay",
+    humanStreams: Object.freeze({
+      enabled: true,
+      role: CASTLE_SESSION_ENTITY_ROLE_V0.HUMAN_STREAM,
+      mediaParticipant: true
+    }),
+    rhizohEntities: Object.freeze(rhizohEntities),
+    defaultObserverEntityId: "fox_observer_v0",
+    rule: "entities_interpret_never_join_media_stream",
+    readOnly: true
+  });
+}
+
 /**
  * @param {{ hostCastleId?: string, peerCastleId?: string }} input
  */
@@ -56,7 +126,8 @@ export function deriveCastleSpatialRoomIdV0(input = {}) {
  *   hostAnchor?: { lat?: number, lon?: number, label?: string, source?: string } | null,
  *   peerAnchor?: { lat?: number, lon?: number, label?: string, source?: string } | null,
  *   conversationContext?: { intent?: string, threadId?: string | null, openLoops?: string[] } | null,
- *   memoryBinding?: { enabled?: boolean, mode?: string } | null
+ *   memoryBinding?: { enabled?: boolean, mode?: string } | null,
+ *   entityLayer?: { rhizohEntities?: object[] } | null
  * }} input
  */
 export function buildCastleSpatialSessionV0(input = {}) {
@@ -108,6 +179,7 @@ export function buildCastleSpatialSessionV0(input = {}) {
       enabled: input.memoryBinding?.enabled !== false,
       mode: String(input.memoryBinding?.mode || "session_open")
     }),
+    entityLayer: normalizeEntityLayerV0(input.entityLayer || {}),
     transportPlan: Object.freeze({
       kind: "pending_media_transport",
       mediaReady: false,

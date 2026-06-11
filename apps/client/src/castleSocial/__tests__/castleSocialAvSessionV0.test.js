@@ -57,6 +57,9 @@ describe("castleSocialAvSessionV0", () => {
     expect(draft.spatialSession.peerCastleId).toBe("barcelona_castle");
     expect(draft.spatialSession.conversationContext.openLoops).toEqual(["media_transport_pending"]);
     expect(draft.spatialSession.transportPlan.mediaReady).toBe(false);
+    expect(draft.spatialSession.entityLayer.rhizohEntities.find((e) => e.id === "fox_observer_v0").mediaParticipant).toBe(
+      false
+    );
   });
 
   it("ends session", () => {
