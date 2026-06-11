@@ -30,11 +30,14 @@ const SPATIAL_LAYER_OPS_V0 = new Set([
 
 const FLY_COALESCE_MS = 500;
 const COALESCE_OPS = new Set(["fly_to", "calibration_root"]);
+const COMMAND_DEDUPE_MS = 650;
 
 /** @type {ReturnType<typeof setTimeout> | null} */
 let flyCoalesceTimer = null;
 /** @type {object | null} */
 let flyCoalescePending = null;
+let lastImmediateCommandKey = "";
+let lastImmediateCommandAt = 0;
 
 let bridgeInstalled = false;
 
@@ -44,6 +47,21 @@ let bridgeInstalled = false;
  */
 function routeCesiumCommandImmediateV0(request = {}) {
   const op = String(request.op || "").trim();
+  const canonical = String(request.canonical || "");
+  const key = `${op}:${canonical}:${request.source || ""}`;
+  const now = Date.now();
+  if ((op === "zoom_in" || op === "zoom_out") && key === lastImmediateCommandKey && now - lastImmediateCommandAt < COMMAND_DEDUPE_MS) {
+    return Object.freeze({
+      ok: true,
+      skipped: true,
+      deferred: false,
+      op,
+      skipReason: "duplicate_command_window",
+      deduped: true
+    });
+  }
+  lastImmediateCommandKey = key;
+  lastImmediateCommandAt = now;
   const result = executeCesiumCommandV0(request);
 
   if (typeof console !== "undefined" && console.info) {
@@ -172,6 +190,8 @@ export function __uninstallCesiumCommandBridgeForTestV0() {
     flyCoalesceTimer = null;
   }
   flyCoalescePending = null;
+  lastImmediateCommandKey = "";
+  lastImmediateCommandAt = 0;
 }
 
 /** @internal test hook — flush pending coalesced fly_to immediately */

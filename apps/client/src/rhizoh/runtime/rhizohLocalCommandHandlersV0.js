@@ -27,6 +27,10 @@ const LAYER_EVENT_V0 = Object.freeze({
   system: RHIZOH_SYSTEM_COMMAND_EVENT_V0
 });
 
+let lastMapCommandKeyV0 = "";
+let lastMapCommandAtMsV0 = 0;
+const MAP_COMMAND_DEDUPE_MS_V0 = 650;
+
 /**
  * @param {string} eventName
  * @param {object} detail
@@ -100,6 +104,22 @@ export function audioVoiceCommandHandlerV0(canonical, row) {
  * @param {ReturnType<typeof readLocalCommandRowV0>} row
  */
 export function mapSpatialCommandHandlerV0(canonical, row) {
+  const nowMs = Date.now();
+  const key = `${canonical}:${row.action}`;
+  if (key === lastMapCommandKeyV0 && nowMs - lastMapCommandAtMsV0 < MAP_COMMAND_DEDUPE_MS_V0) {
+    const deduped = Object.freeze({
+      canonical,
+      action: row.action,
+      layer: row.layer,
+      handler: "mapSpatialCommandHandlerV0",
+      atMs: nowMs,
+      deduped: true
+    });
+    logVoiceInfoV0("MAP_COMMAND_DEDUPED", deduped);
+    return deduped;
+  }
+  lastMapCommandKeyV0 = key;
+  lastMapCommandAtMsV0 = nowMs;
   const payload = Object.freeze({
     canonical,
     action: row.action,

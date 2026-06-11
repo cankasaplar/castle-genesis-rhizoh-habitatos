@@ -394,6 +394,22 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       let uninstallCesiumCommandBridge = () => {};
       let removeCameraPreRenderGuard = () => {};
 
+      const isBootViewerAlive = () => {
+        try {
+          return Boolean(
+            !dead &&
+              !cancelled &&
+              viewerRef.current === viewer &&
+              viewer &&
+              !viewer.isDestroyed?.() &&
+              viewer.scene &&
+              viewer.camera
+          );
+        } catch {
+          return false;
+        }
+      };
+
       const trackedCameraFlyTo = (flyOpts) => {
         if (!flyOpts || typeof flyOpts !== "object") return;
         const userComplete = flyOpts.complete;
@@ -708,6 +724,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
        * @param {(() => void) | null} [rollback]
        */
       const runBootStage = async (stage, fn, rollback = null) => {
+        if (!isBootViewerAlive()) return false;
         const t0 = performance.now();
         const snap0 = bootSnapshot();
         if (logStages) {
@@ -718,7 +735,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         }
         try {
           await fn();
-          if (dead || cancelled || viewerRef.current !== viewer) return false;
+          if (!isBootViewerAlive()) return false;
           const dt = Math.round(performance.now() - t0);
           const snap1 = bootSnapshot();
           if (logStages) {
@@ -729,6 +746,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
           }
           return true;
         } catch (err) {
+          if (!isBootViewerAlive()) return false;
           const dt = Math.round(performance.now() - t0);
           const snap1 = bootSnapshot();
           const msg = String(err?.message || err || "error");
@@ -752,7 +770,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
             }
           }
           try {
-            viewer.scene.requestRender();
+            if (isBootViewerAlive()) viewer.scene.requestRender();
           } catch {
             /* noop */
           }
@@ -1474,7 +1492,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         const t0DeferMs =
           String(import.meta.env.VITE_RHIZOH_T0_FIRST_MATCH ?? "").trim() === "1" ? 18_000 : cfg.cesiumStageMsProjection;
         await sleep(t0DeferMs);
-        if (dead || cancelled || viewerRef.current !== viewer) return;
+        if (!isBootViewerAlive()) return;
         if (t0DeferMs > cfg.cesiumStageMsProjection) {
           const stable = await waitForCesiumRenderStableFramesV0(viewer, 3, 12_000);
           if (!stable) {
@@ -1486,7 +1504,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       await runBootStage(
         "world_projection_bind",
         async () => {
-          if (!vanilla && worldProjectionBindEnabled && !dead && viewerRef.current === viewer) {
+          if (!vanilla && worldProjectionBindEnabled && isBootViewerAlive()) {
             sanitizeCesiumCameraV0(viewer, Cesium, cameraSafeAnchor());
             uninstallWorldProjection = installCesiumWorldProjectionBind(viewer, mapBootstrapGeo);
             logCesiumBootDiag("after_world_projection_bind");
@@ -1502,6 +1520,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         }
       );
 
+      if (!isBootViewerAlive()) return;
       viewer.selectedEntityChanged.addEventListener((entity) => {
         const meta = entity?.__castleMeta;
         if (!meta) return;
@@ -1526,9 +1545,10 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       let onKeyUp = () => {};
       if (!vanilla) {
         try {
+          if (!isBootViewerAlive()) return;
           mapPickHandler = new Cesium.ScreenSpaceEventHandler(viewer.canvas);
           mapPickHandler.setInputAction((click) => {
-            if (!activeRef.current || !readWorldMapClaimModeV0()) return;
+            if (!activeRef.current || !readWorldMapClaimModeV0() || !isBootViewerAlive()) return;
             const ray = viewer.camera.getPickRay(click.position);
             if (!ray) return;
             const cartesian =
@@ -1597,7 +1617,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
             }
           }
         };
-        viewer.scene.preRender.addEventListener(preRender);
+        if (isBootViewerAlive()) viewer.scene.preRender.addEventListener(preRender);
 
         onKeyDown = (e) => {
           const keys = navStateRef.current.keys;
@@ -1785,7 +1805,12 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         await boot();
         if (!cancelled && !dead && viewerRef.current) bootedRef.current = true;
       } catch (err) {
-        console.error("[castle:cesium] boot failed", err);
+        const msg = String(err?.message || err || "");
+        if (msg.includes("reading 'scene'") || msg.includes('reading "scene"')) {
+          console.warn("[castle:cesium] boot aborted after viewer transition", msg);
+        } else {
+          console.error("[castle:cesium] boot failed", err);
+        }
       } finally {
         bootingRef.current = false;
       }
