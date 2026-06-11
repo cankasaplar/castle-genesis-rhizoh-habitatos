@@ -87,14 +87,14 @@ export function mapLanguageMix01ToProductDescriptorV0(mix01) {
  * Extend only with review — false positives break legitimate engineering copy.
  */
 const LEAKAGE_RULES_V0 = Object.freeze([
-  { id: "en_you_are_a", re: /\byou\s+are\s+(a|an)\s+/i },
-  { id: "en_user_is_a", re: /\bthe\s+user\s+is\s+(a|an)\s+/i },
-  { id: "en_impulsive_user", re: /\bimpulsive\s+user\b/i },
-  { id: "en_personality_trait", re: /\bpersonality\s+trait\b/i },
-  { id: "tr_kullanici_kisilik", re: /kullanıcının\s+kişili/i },
-  { id: "tr_kullanici_soyle_biri", re: /kullanıcı\s+şöyle\s+biri/i },
-  { id: "tr_zeka_seviyesi", re: /zeka\s+seviyesi/i },
-  { id: "expertise_level", re: /\bexpertise\s+level\b/i }
+  { id: "en_you_are_a", re: /\byou\s+are\s+(a|an)\s+/gi },
+  { id: "en_user_is_a", re: /\bthe\s+user\s+is\s+(a|an)\s+/gi },
+  { id: "en_impulsive_user", re: /\bimpulsive\s+user\b/gi },
+  { id: "en_personality_trait", re: /\bpersonality\s+trait\b/gi },
+  { id: "tr_kullanici_kisilik", re: /kullanıcının\s+kişili/gi },
+  { id: "tr_kullanici_soyle_biri", re: /kullanıcı\s+şöyle\s+biri/gi },
+  { id: "tr_zeka_seviyesi", re: /zeka\s+seviyesi/gi },
+  { id: "expertise_level", re: /\bexpertise\s+level\b/gi }
 ]);
 
 /**
