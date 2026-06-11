@@ -4130,7 +4130,7 @@ const EventMeshMini = memo(() => {
   );
 });
 
-const MyLLMConnectionsPanel = memo(({ selectedConnectionId, onSelectConnection }) => {
+const MyLLMConnectionsPanel = memo(({ selectedLlmConnectionId, onSelectConnection }) => {
   const focus = useUISelector((s) => s.layerFocus);
   const theme = (LAYER_UI_PROFILES[focus] || LAYER_UI_PROFILES[10]).theme;
   const [items, setItems] = useState([]);
@@ -4153,7 +4153,7 @@ const MyLLMConnectionsPanel = memo(({ selectedConnectionId, onSelectConnection }
       const json = await res.json();
       if (json?.ok) {
         setItems(Array.isArray(json.items) ? json.items : []);
-        if (!selectedConnectionId) {
+        if (!selectedLlmConnectionId) {
           const d = (json.items || []).find((x) => x.isDefault) || json.items?.[0];
           if (d?.id) onSelectConnection(d.id);
         }
@@ -4214,7 +4214,7 @@ const MyLLMConnectionsPanel = memo(({ selectedConnectionId, onSelectConnection }
       if (json?.ok) {
         const next = json.items || [];
         setItems(next);
-        if (selectedConnectionId === id) onSelectConnection(next[0]?.id || "");
+        if (selectedLlmConnectionId === id) onSelectConnection(next[0]?.id || "");
       }
     } catch {
       /* noop */
@@ -4250,7 +4250,7 @@ const MyLLMConnectionsPanel = memo(({ selectedConnectionId, onSelectConnection }
       <div className="space-y-2 max-h-28 overflow-y-auto no-scrollbar">
         {items.length === 0 ? <div className="text-[8px] text-white/40">Kay─▒t yok.</div> : null}
         {items.map((it) => (
-          <div key={it.id} className={`rounded border px-2 py-1 text-[8px] ${selectedConnectionId === it.id ? "border-cyan-300 bg-cyan-500/10" : "border-white/10 bg-black/20"}`}>
+          <div key={it.id} className={`rounded border px-2 py-1 text-[8px] ${selectedLlmConnectionId === it.id ? "border-cyan-300 bg-cyan-500/10" : "border-white/10 bg-black/20"}`}>
             <div className="text-white/80 normal-case">{it.label || `${it.provider}:${it.model}`}</div>
             <div className="text-white/45 normal-case">{it.provider} ┬À {it.model} ┬À {it.keyMask}</div>
             <div className="flex gap-2 mt-1">
@@ -5167,7 +5167,7 @@ const RoboticsMechanicsPanel = memo(({ selectedAgentId }) => {
   );
 });
 
-const EventLayerIntelPanel = memo(({ selectedAgentId, selectedConnectionId }) => {
+const EventLayerIntelPanel = memo(({ selectedAgentId, selectedLlmConnectionId }) => {
   const focus = useUISelector((s) => s.layerFocus);
   const mapSurfaceActive = useUISelector((s) => s.mapSurfaceActive);
   const theme = (LAYER_UI_PROFILES[focus] || LAYER_UI_PROFILES[10]).theme;
@@ -5201,7 +5201,7 @@ const EventLayerIntelPanel = memo(({ selectedAgentId, selectedConnectionId }) =>
         body: JSON.stringify({
           placeName,
           agentId: selectedAgentId || "",
-          connectionId: selectedConnectionId || ""
+          connectionId: selectedLlmConnectionId || ""
         })
       });
       const json = await res.json();
@@ -5226,7 +5226,7 @@ const EventLayerIntelPanel = memo(({ selectedAgentId, selectedConnectionId }) =>
       const res = await fetch(`${apiBase}/event-layer/pdf-brief`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ title: place, url: docUrl, text: docText, agentId: selectedAgentId || "", connectionId: selectedConnectionId || "" })
+        body: JSON.stringify({ title: place, url: docUrl, text: docText, agentId: selectedAgentId || "", connectionId: selectedLlmConnectionId || "" })
       });
       const json = await res.json();
       if (json?.ok) {
@@ -5255,7 +5255,7 @@ const EventLayerIntelPanel = memo(({ selectedAgentId, selectedConnectionId }) =>
         body: JSON.stringify({
           waypoints,
           agentId: selectedAgentId || "",
-          connectionId: selectedConnectionId || ""
+          connectionId: selectedLlmConnectionId || ""
         })
       });
       const json = await res.json();
@@ -5353,7 +5353,7 @@ const EventLayerIntelPanel = memo(({ selectedAgentId, selectedConnectionId }) =>
       dead = true;
       clearInterval(intv);
     };
-  }, [companionOn, thresholdM, cooldownSec, mapSurfaceActive, selectedAgentId, selectedConnectionId]);
+  }, [companionOn, thresholdM, cooldownSec, mapSurfaceActive, selectedAgentId, selectedLlmConnectionId]);
 
   return (
     <div className="rounded-2xl p-4 space-y-2" style={{ background: theme.bg, border: `1px solid ${theme.border}` }}>
@@ -5478,7 +5478,7 @@ const SovereignCastleCommandPanel = memo(
     currentUserId,
     rhizohFirstName,
     selectedAgentId = "",
-    selectedConnectionId = "",
+    selectedLlmConnectionId = "",
     remoteCastles = [],
     bridgeRegistryReady = false,
     onInitiateMirrorBridge = null,
@@ -5822,7 +5822,7 @@ const SovereignCastleCommandPanel = memo(
             url: "",
             text,
             agentId: selectedAgentId || "",
-            connectionId: selectedConnectionId || ""
+            connectionId: selectedLlmConnectionId || ""
           })
         });
         const j = await res.json().catch(() => ({}));
@@ -5832,7 +5832,7 @@ const SovereignCastleCommandPanel = memo(
         setArchiveStatus("pdf-brief a─ş hatas─▒");
       }
     },
-    [selectedAgentId, selectedConnectionId]
+    [selectedAgentId, selectedLlmConnectionId]
   );
 
   useEffect(() => {
@@ -6546,7 +6546,7 @@ function buildRhizohNormalizedLlmOutput(out, gatewaySnapshot, mapSurfaceActive) 
 const RhizohCommsPanel = memo(
   ({
     engineRef,
-    selectedConnectionId,
+    selectedLlmConnectionId,
     selectedAgentId,
     gatewayModel = null,
     onGatewayRetry = () => {},
@@ -6893,7 +6893,7 @@ const RhizohCommsPanel = memo(
         type: "SEND_MESSAGE",
         message: q,
         provider,
-        connectionId: selectedConnectionId || "",
+        connectionId: selectedLlmConnectionId || "",
         agentId: selectedAgentId || "",
         llmKeySource,
         focus
@@ -6950,7 +6950,7 @@ const RhizohCommsPanel = memo(
       const out = await queryRhizohLLM({
         message: q,
         provider,
-        connectionId: selectedConnectionId || "",
+        connectionId: selectedLlmConnectionId || "",
         agentId: selectedAgentId || "",
         layerProfile: profile,
         layerSpec: spec,
@@ -13179,7 +13179,7 @@ export default function AppRhizoh528() {
             )}
             <RhizohCommsPanel
               engineRef={engineRef}
-              selectedConnectionId=""
+              selectedLlmConnectionId=""
               selectedAgentId=""
               gatewayModel={gatewayUx}
               onGatewayRetry={gatewayUx.retry}
