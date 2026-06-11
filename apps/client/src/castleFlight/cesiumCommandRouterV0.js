@@ -41,6 +41,12 @@ let lastImmediateCommandAt = 0;
 
 let bridgeInstalled = false;
 
+const ROOM_POI_KEY_BY_ACTION = Object.freeze({
+  room_library: "FATIH",
+  room_garden: "BESIKTAS",
+  room_lab: "KADIKOY"
+});
+
 /**
  * @param {object} request
  * @returns {object}
@@ -149,6 +155,10 @@ function onRhizohMapCommand(ev) {
   if (action === "zoom_in" || canonical === "map_zoom_in") op = "zoom_in";
   else if (action === "zoom_out" || canonical === "map_zoom_out") op = "zoom_out";
   else if (action === "fly_to" || canonical === "map_fly_to") op = "fly_to";
+  else if (action === "open" || canonical === "map_open") op = "bootstrap_viewport";
+  else if (action === "center" || canonical === "map_center") op = "calibration_root";
+  else if (action === "enter_castle" || canonical === "castle_enter") op = "focus_castle";
+  else if (ROOM_POI_KEY_BY_ACTION[action] || ROOM_POI_KEY_BY_ACTION[canonical]) op = "focus_poi";
   else if (action === "calibration_root" || canonical === "map_calibration_root") {
     op = "calibration_root";
   }
@@ -164,7 +174,10 @@ function onRhizohMapCommand(ev) {
     lng: detail.lng,
     height: detail.height,
     durationSec: detail.durationSec,
-    reason: detail.reason
+    reason: detail.reason,
+    meta: Object.freeze({
+      poiKey: detail.poiKey || ROOM_POI_KEY_BY_ACTION[action] || ROOM_POI_KEY_BY_ACTION[canonical] || null
+    })
   });
 
   if (typeof console !== "undefined" && console.info) {

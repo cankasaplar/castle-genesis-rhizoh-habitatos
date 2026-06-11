@@ -5,6 +5,7 @@ import {
   writeRhizohWorldDrawerDomainV0
 } from "../../rhizoh/runtime/rhizohWorldDrawerDomainV0.js";
 import {
+  __flushCesiumFlyCoalesceForTestV0,
   __resetCesiumFlyCoalesceForTestV0,
   __uninstallCesiumCommandBridgeForTestV0,
   installCesiumCommandBridgeV0,
@@ -102,9 +103,10 @@ describe("cesiumCommandRouterV0", () => {
     expect(zoomByFactor).toHaveBeenCalledOnce();
   });
 
-  it("ignores non-zoom map commands in v1 bridge", () => {
+  it("maps map_open to bootstrap viewport", () => {
     const zoomByFactor = vi.fn(() => ({ ok: true, height: 300 }));
-    registerCesiumExecutorApiV0({ ready: true, zoomByFactor });
+    const flyToBootstrapViewport = vi.fn();
+    registerCesiumExecutorApiV0({ ready: true, zoomByFactor, flyToBootstrapViewport });
     installCesiumCommandBridgeV0();
 
     window.dispatchEvent(
@@ -120,6 +122,36 @@ describe("cesiumCommandRouterV0", () => {
     );
 
     expect(zoomByFactor).not.toHaveBeenCalled();
+    expect(flyToBootstrapViewport).toHaveBeenCalledOnce();
+  });
+
+  it("maps center, castle, and room commands to executor ops", () => {
+    const flyToIstanbul = vi.fn();
+    const focusCastle = vi.fn();
+    const focusPOI = vi.fn();
+    registerCesiumExecutorApiV0({ ready: true, commandReady: true, flyToIstanbul, focusCastle, focusPOI });
+    installCesiumCommandBridgeV0();
+
+    window.dispatchEvent(
+      new CustomEvent(RHIZOH_MAP_COMMAND_EVENT_V0, {
+        detail: Object.freeze({ canonical: "map_center", action: "center", layer: "map" })
+      })
+    );
+    window.dispatchEvent(
+      new CustomEvent(RHIZOH_MAP_COMMAND_EVENT_V0, {
+        detail: Object.freeze({ canonical: "castle_enter", action: "enter_castle", layer: "world" })
+      })
+    );
+    window.dispatchEvent(
+      new CustomEvent(RHIZOH_MAP_COMMAND_EVENT_V0, {
+        detail: Object.freeze({ canonical: "room_library", action: "room_library", layer: "world" })
+      })
+    );
+
+    __flushCesiumFlyCoalesceForTestV0();
+    expect(flyToIstanbul).toHaveBeenCalledOnce();
+    expect(focusCastle).toHaveBeenCalledOnce();
+    expect(focusPOI).toHaveBeenCalledWith("FATIH");
   });
 
   it("coalesces rapid calibration_root into one executor call (latest wins)", () => {
