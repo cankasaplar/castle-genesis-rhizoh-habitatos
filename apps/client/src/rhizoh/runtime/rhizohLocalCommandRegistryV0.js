@@ -214,6 +214,16 @@ export const RHIZOH_LOCAL_COMMAND_REGISTRY_V0 = Object.freeze({
     "open castle",
     "kaleye gir"
   ]),
+  castle_create: cmd(LOCAL_COMMAND_LAYER_V0.WORLD, LOCAL_COMMAND_HANDLER_V0.MAP, "create_castle", [
+    "create castle",
+    "build castle",
+    "castle create",
+    "kale oluştur",
+    "kale olustur",
+    "kale kur",
+    "kalemi kur",
+    "kendi kalemi kur"
+  ]),
   castle_exit: cmd(LOCAL_COMMAND_LAYER_V0.WORLD, LOCAL_COMMAND_HANDLER_V0.MAP, "exit_castle", [
     "exit castle",
     "leave castle",

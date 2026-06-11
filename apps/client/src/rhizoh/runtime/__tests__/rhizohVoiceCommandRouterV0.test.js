@@ -43,4 +43,10 @@ describe("rhizohVoiceCommandRouterV0", () => {
     expect(route.execution).toBe(VOICE_ROUTE_EXECUTION_V0.LOCAL);
     expect(route.canonical).toBe("map_open");
   });
+
+  it("routes kale oluştur as local castle create command (no LLM)", () => {
+    const route = routeVoiceInputV0("kale oluştur");
+    expect(route.execution).toBe(VOICE_ROUTE_EXECUTION_V0.LOCAL);
+    expect(route.canonical).toBe("castle_create");
+  });
 });

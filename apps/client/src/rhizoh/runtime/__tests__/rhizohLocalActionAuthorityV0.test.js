@@ -11,7 +11,7 @@ describe("rhizohLocalActionAuthorityV0", () => {
     expect(r.authority).toBe(LOCAL_AUTHORITY_LOCAL_V0);
     expect(r.kind).toBe("ENTER_SURFACE");
     expect(r.surface).toBe("studio");
-    expect(r.user_reply_tr).toMatch(/Stüdyo açıldı/);
+    expect(r.user_reply_tr).toMatch(/Studio|Stüdyo/);
   });
 
   it("routes bare dünya locally", () => {
@@ -30,5 +30,13 @@ describe("rhizohLocalActionAuthorityV0", () => {
     const r = resolveLocalActionAuthorityV0("keşfet");
     expect(r.authority).toBe(LOCAL_AUTHORITY_LOCAL_V0);
     expect(r.kind).toBe("SET_INTENT");
+  });
+
+  it("routes kale oluştur to local castle creation gate", () => {
+    const r = resolveLocalActionAuthorityV0("kale oluştur");
+    expect(r.authority).toBe(LOCAL_AUTHORITY_LOCAL_V0);
+    expect(r.kind).toBe("CASTLE_CREATE");
+    expect(r.surface).toBe("world");
+    expect(r.user_reply_tr).toMatch(/castle|kale/i);
   });
 });

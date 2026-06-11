@@ -59,6 +59,7 @@ function resolveCesiumBindingV0(canonical, action) {
     "follow",
     "show_locations",
     "toggle_layers",
+    "create_castle",
     "enter_castle",
     "exit_castle",
     "room_library",
