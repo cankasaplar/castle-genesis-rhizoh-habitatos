@@ -12113,6 +12113,12 @@ export default function AppRhizoh528() {
         onOpenChromePanelV0(String(localAction.panel));
       } else if (localAction.kind === "OPEN_MAP_TOOL") {
         onOpenMapToolV0(localAction.mapTool || "city_map");
+      } else if (localAction.kind === "CASTLE_CREATE") {
+        closeAllRhizohProductSurfacePanelsV0();
+        uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
+        const targetPath = resolveWorldDomainPathV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE);
+        if (location.pathname !== targetPath) navigate(targetPath);
+        setCastleInitGateOpen(true);
       } else if (localAction.kind === "ENTER_SURFACE" && localAction.surface) {
         onProductShellSelect(String(localAction.surface));
       } else {

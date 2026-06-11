@@ -4,6 +4,7 @@
  */
 
 import { resolveGrammarFromUtteranceV0 } from "./rhizohGrammarConstitutionV0.js";
+import { detectCastleIntentWithoutCoords } from "../../kernel/rhizohCommandParser.js";
 import {
   formatLocalSurfaceEnterReplyV0,
   formatPlainIntentChosenV0,
@@ -27,6 +28,23 @@ export const LOCAL_AUTHORITY_REMOTE_V0 = "remote";
  */
 function buildLocalPayloadFromGrammarV0(grammar, utterance) {
   const locale = readUiLocaleV0();
+  if (detectCastleIntentWithoutCoords(utterance)) {
+    const reply =
+      locale === "tr"
+        ? "Kale oluşturma kapısını açıyorum — konum seçebilir, GPS kullanabilir veya soyut düğümle başlayabilirsin."
+        : "Opening castle creation — choose a place, use GPS, or start with an abstract node.";
+    return Object.freeze({
+      authority: LOCAL_AUTHORITY_LOCAL_V0,
+      kind: "CASTLE_CREATE",
+      surface: "world",
+      intentBias: "produce",
+      user_reply_tr: reply,
+      pulse_line: `Local · ${reply}`,
+      grammar,
+      utterance: String(utterance || "").slice(0, 240),
+      binding: RHIZOH_LOCAL_ACTION_BINDING_V0
+    });
+  }
   if (grammar.action === "OPEN_PANEL" && grammar.panel) {
     const panel = String(grammar.panel);
     const label = resolveLocalPanelOpenLineV0(panel, locale);
