@@ -16,7 +16,13 @@ import { stampVoiceUserGestureV0 } from "./voiceUserGestureAnchorV0.js";
 /** @typedef {"idle" | "listening" | "interpreting" | "thinking" | "speaking"} RhizohConversationFieldState */
 
 /**
- * @param {{ idToken?: string, firebaseUser?: { getIdToken?: () => Promise<string> } | null, userTurnCount?: number, conversationPhase?: string }} [opts]
+ * @param {{
+ *   idToken?: string,
+ *   firebaseUser?: { getIdToken?: () => Promise<string> } | null,
+ *   userTurnCount?: number,
+ *   conversationPhase?: string,
+ *   contextProvider?: (input: { message: string, source: string }) => Record<string, unknown> | null
+ * }} [opts]
  */
 export function useRhizohConversationDockV0(opts = {}) {
   const [fieldState, setFieldState] = useState(/** @type {RhizohConversationFieldState} */ ("idle"));
@@ -24,6 +30,7 @@ export function useRhizohConversationDockV0(opts = {}) {
   const [lastError, setLastError] = useState("");
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
+  const [lastContextEnvelope, setLastContextEnvelope] = useState(null);
   const userTurnRef = useRef(Number(opts.userTurnCount) || 0);
   const [idToken, setIdToken] = useState(String(opts.idToken || ""));
 
@@ -57,11 +64,21 @@ export function useRhizohConversationDockV0(opts = {}) {
     /** @type {(text: string, o: object) => Promise<void>} */ (async (text, o) => {
       setFieldState("thinking");
       const t0 = Date.now();
+      const liveContextEnvelope =
+        typeof opts.contextProvider === "function"
+          ? opts.contextProvider({ message: text, source: "conversation_dock_voice" })
+          : null;
+      if (liveContextEnvelope) setLastContextEnvelope(liveContextEnvelope);
       const out = await handleRhizohVoiceTranscriptV0(text, {
         ...o,
         idToken,
         userTurnCount: userTurnRef.current,
-        conversationPhase: opts.conversationPhase
+        conversationPhase: opts.conversationPhase,
+        context: liveContextEnvelope
+          ? {
+              rhizohLiveContextEngineV2: liveContextEnvelope
+            }
+          : undefined
       });
       const glue = buildConversationContinuityGlueV0({
         prep: out.prep,
@@ -119,12 +136,22 @@ export function useRhizohConversationDockV0(opts = {}) {
     setFieldState("thinking");
     const t0 = Date.now();
     try {
+      const liveContextEnvelope =
+        typeof opts.contextProvider === "function"
+          ? opts.contextProvider({ message: msg, source: "conversation_dock_text" })
+          : null;
+      if (liveContextEnvelope) setLastContextEnvelope(liveContextEnvelope);
       const out = await postRhizohLlmTurnV0({
         message: msg,
         speakInstantAck: false,
         userTurnCount: userTurnRef.current,
         conversationPhase: opts.conversationPhase,
         idToken,
+        context: liveContextEnvelope
+          ? {
+              rhizohLiveContextEngineV2: liveContextEnvelope
+            }
+          : undefined,
         sourcePath: "conversation_dock_text"
       });
       if (out.ok && out.reply) {
@@ -141,7 +168,7 @@ export function useRhizohConversationDockV0(opts = {}) {
       setBusy(false);
       userTurnRef.current += 1;
     }
-  }, [draft, busy, opts.conversationPhase, idToken]);
+  }, [draft, busy, opts.conversationPhase, opts.contextProvider, idToken]);
 
   const toggleMic = useCallback(async () => {
     if (!isVoiceEngineV3EnabledV0()) return;
@@ -166,6 +193,7 @@ export function useRhizohConversationDockV0(opts = {}) {
     busy,
     lastReply,
     lastError,
+    lastContextEnvelope,
     sendText,
     toggleMic,
     voiceV3Enabled: isVoiceEngineV3EnabledV0(),

@@ -757,6 +757,7 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
 
   const llmT0 = Date.now();
   const semanticGray = resolveSemanticGrayLlmShapingV0(opts.decision);
+  const baseContext = opts.context && typeof opts.context === "object" ? { ...opts.context } : {};
   const out = await postRhizohLlmTurnV0({
     message: msg,
     traceId,
@@ -768,14 +769,18 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
     conversationPhase: opts.conversationPhase,
     idToken: opts.idToken,
     sourcePath: semanticGray ? "voice_llm_dispatch_semantic_gray" : "voice_llm_dispatch",
-    context: semanticGray
-      ? {
+    context:
+      semanticGray
+        ? {
+          ...baseContext,
           voicePipeline: Object.freeze({
             semanticGray: true,
             shaping: semanticGray
           })
         }
-      : undefined,
+        : Object.keys(baseContext).length
+          ? baseContext
+          : undefined,
     options: semanticGray
       ? { maxTokens: semanticGray.maxTokens, temperature: semanticGray.temperatureCap }
       : undefined
