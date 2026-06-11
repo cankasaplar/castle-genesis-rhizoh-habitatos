@@ -48,8 +48,8 @@ export const RhizohWorldSocialPanelV0 = memo(function RhizohWorldSocialPanelV0({
           onClick={onOpenGreenroom}
         />
         <SocialAction
-          title={tr ? "Canlı yayın" : "Live broadcast"}
-          blurb={tr ? "Yayın yüzeyine geç" : "Open broadcast surface"}
+          title={tr ? "Yayın hazırlığı · beta" : "Broadcast prep · beta"}
+          blurb={tr ? "Davet ve durum hazırlığına geç" : "Open invite and status prep"}
           onClick={onOpenBroadcast}
         />
         <button
@@ -63,11 +63,11 @@ export const RhizohWorldSocialPanelV0 = memo(function RhizohWorldSocialPanelV0({
           <p className="mt-1 text-[9px] text-white/55">
             {c2cStatus === "LIVE"
               ? tr
-                ? "Oturum LIVE — mic pulse aktif (signaling stub)"
-                : "Session LIVE — mic pulse active (signaling stub)"
+                ? "Yerel bağlantı durumu aktif — gerçek çağrı iddiası yok"
+                : "Local link state active — no real-call claim"
               : tr
-                ? "Ses / kamera bağlantısı başlat (v0 scaffold)"
-                : "Start voice / camera link (v0 scaffold)"}
+                ? "Ses / kamera köprüsü beta durumunu hazırla"
+                : "Prepare voice / camera bridge beta state"}
           </p>
         </button>
       </div>

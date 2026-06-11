@@ -1,9 +1,5 @@
-import React, { memo, useEffect, useMemo, useState, Suspense, lazy } from "react";
-import { shouldMountRhizohControlCenterV0, installRhizohControlCenterV0 } from "../rhizoh/debug/rhizohControlCenterV0.js";
+import React, { memo, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { KernelConsolePanel } from "../studio/ui/KernelConsolePanel";
-import { DirectorDeckPanel } from "../studio/ui/DirectorDeckPanel";
-import { WorldLivingMapPanel } from "../studio/ui/WorldLivingMapPanel";
 import { ProductProfilePanel } from "../studio/ui/ProductProfilePanel";
 import { RuntimeHealthPanel } from "../studio/ui/RuntimeHealthPanel";
 import {
@@ -20,23 +16,70 @@ import { RhizohObservableRealityPanelV0 } from "./RhizohObservableRealityPanelV0
 import { CastlePetStudioPanelV0 } from "./CastlePetStudioPanelV0.jsx";
 import { RhizohEventCreatePanelV12 } from "./RhizohEventCreatePanelV12.jsx";
 
-const RhizohControlCenterPanelV0 = lazy(() =>
-  import("../rhizoh/debug/RhizohControlCenterPanelV0.jsx").then((m) => ({
-    default: m.RhizohControlCenterPanelV0
-  }))
-);
-
-const RhizohCastleLayersDebugV0 = lazy(() =>
-  import("../rhizoh/runtime/RhizohCastleLayersDebugV0.jsx").then((m) => ({
-    default: m.RhizohCastleLayersDebugV0
-  }))
-);
-
 const PROFILE_OBS_TABS_V0 = Object.freeze([
   { id: "reality", label: "Reality" },
   { id: "bindings", label: "Bindings" },
   { id: "timeline", label: "Timeline" }
 ]);
+
+const USER_OUTCOME_COPY_V0 = Object.freeze({
+  hall: Object.freeze({
+    tr: Object.freeze({
+      eyebrow: "Bu ekranda ne yapabilirsin?",
+      title: "Gözlem özetini aç",
+      body: "Salon artık kernel/debug konsolu değil; kayıt ve gözlem rotalarına güvenli geçiş alanı.",
+      outcomes: Object.freeze(["Academy observe sayfasına geç", "Genesis portal kaydını incele", "Dünya ekranına dönüp haritayı kontrol et"])
+    }),
+    en: Object.freeze({
+      eyebrow: "What can you do here?",
+      title: "Open observation records",
+      body: "Hall is no longer a kernel/debug console; it is a safe handoff to records and observation routes.",
+      outcomes: Object.freeze(["Open Academy observe", "Inspect Genesis portal records", "Return to World and control the map"])
+    })
+  }),
+  greenroom: Object.freeze({
+    tr: Object.freeze({
+      eyebrow: "Beta kapsamı",
+      title: "Davetli deneyim linki oluştur",
+      body: "Başlık girip oluşturduğunda yerel deneyim kaydı ve paylaşılabilir davet linki oluşur. Yeni oda açıldığı iddia edilmez.",
+      outcomes: Object.freeze(["Deneyim kaydı oluşur", "Davet linki kopyalanabilir", "Yayın başlamaz"])
+    }),
+    en: Object.freeze({
+      eyebrow: "Beta scope",
+      title: "Create an invite-only experience link",
+      body: "When you enter a title and create, Rhizoh creates a local experience record and shareable invite link. It does not claim a new room opened.",
+      outcomes: Object.freeze(["Experience record is created", "Invite link can be copied", "Broadcast does not start"])
+    })
+  }),
+  broadcast: Object.freeze({
+    tr: Object.freeze({
+      eyebrow: "Beta kapsamı",
+      title: "Yayın hazırlığı, canlı yayın değil",
+      body: "Bu yüzey şimdilik davet ve hazırlık üretir. Canlı yayın başladı hissi vermemek için yönetmen konsolu gizlendi.",
+      outcomes: Object.freeze(["Davet linki hazırlanır", "Durum açıkça beta kalır", "Canlı yayın iddiası kurulmaz"])
+    }),
+    en: Object.freeze({
+      eyebrow: "Beta scope",
+      title: "Broadcast prep, not a live stream",
+      body: "This surface currently produces invite/prep state. The director console is hidden so it does not feel like a failed live product.",
+      outcomes: Object.freeze(["Invite link is prepared", "State remains clearly beta", "No live-stream claim is made"])
+    })
+  }),
+  studio: Object.freeze({
+    tr: Object.freeze({
+      eyebrow: "Beta kapsamı",
+      title: "Stüdyo durumu",
+      body: "Stüdyo bu sürümde üretim motoru gibi davranmaz. Kullanıcıya yalnızca durum, profil ve güvenli inceleme bağlantıları gösterilir.",
+      outcomes: Object.freeze(["Profil ve sağlık durumunu gör", "Genesis gözlemine geç", "Üretim konsolu vaadi görme"])
+    }),
+    en: Object.freeze({
+      eyebrow: "Beta scope",
+      title: "Studio status",
+      body: "Studio does not behave like a production engine in this build. Users see status, profile, and safe inspection links only.",
+      outcomes: Object.freeze(["See profile and health state", "Open Genesis observation", "No production-console promise"])
+    })
+  })
+});
 
 /**
  * @param {{
@@ -69,11 +112,6 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
   const chrome = useMemo(() => resolveProductDrawerChromeCopyV0(locale), [locale]);
   const meta = useMemo(() => resolveProductDrawerSurfaceCopyV0(surface, locale), [surface, locale]);
   const [profileObsTab, setProfileObsTab] = useState("reality");
-  const showControlCenter = shouldMountRhizohControlCenterV0();
-
-  useEffect(() => {
-    if (showControlCenter && surface === "hall" && open) installRhizohControlCenterV0();
-  }, [showControlCenter, surface, open]);
 
   if (!open || surface === "world") return null;
 
@@ -108,23 +146,12 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
       <div className="max-h-[calc(min(52vh,28rem)-3rem)] overflow-y-auto px-3 py-3 no-scrollbar">
         {surface === "hall" ? (
           <RhizohStudioCitizenShellV0 surfaceKind="hall">
-            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start">
-              {showControlCenter ? (
-                <Suspense fallback={null}>
-                  <RhizohControlCenterPanelV0 variant="drawer" />
-                </Suspense>
-              ) : null}
-              <Suspense fallback={null}>
-                <div className="min-w-0 flex-1">
-                  <RhizohCastleLayersDebugV0 variant="drawer" gatewayPhase="" />
-                </div>
-              </Suspense>
-            </div>
-            <KernelConsolePanel />
+            <UserOutcomeCard surface="hall" locale={locale} />
             <QuickLinks
               links={[
+                { to: "/academy/observe", label: locale === "tr" ? "Gözlem kayıtları" : "Observation records" },
                 { to: "/genesis/portal", label: "Genesis portal" },
-                { to: "/academy/observe", label: "Academy observe" }
+                { to: "/world/space", label: locale === "tr" ? "Dünya haritası" : "World map" }
               ]}
             />
           </RhizohStudioCitizenShellV0>
@@ -132,13 +159,13 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
 
         {surface === "greenroom" || surface === "broadcast" ? (
           <RhizohStudioCitizenShellV0 surfaceKind={surface}>
+            <UserOutcomeCard surface={surface} locale={locale} />
             <RhizohEventCreatePanelV12
               experienceSessionId={experienceSessionId}
               productSessionId={productSessionId}
               authUid={auth?.user?.uid || auth?.uid || null}
               uiLocale={locale}
             />
-            <DirectorDeckPanel />
             {surface === "broadcast" ? (
               <p className="rounded-lg border border-fuchsia-400/25 bg-fuchsia-950/20 px-3 py-2 text-[10px] text-fuchsia-100/85 normal-case">
                 {chrome.broadcastNote}
@@ -149,9 +176,15 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
 
         {surface === "studio" ? (
           <RhizohStudioCitizenShellV0 surfaceKind="studio">
-            <WorldLivingMapPanel />
-            <KernelConsolePanel />
-            <QuickLinks links={[{ to: "/genesis/portal", label: "Genesis runtime observation" }]} />
+            <UserOutcomeCard surface="studio" locale={locale} />
+            <RuntimeHealthPanel health={runtimeHealth} gatewayBaseUrl={gatewayOrigin} />
+            <QuickLinks
+              links={[
+                { to: "/academy/observe", label: locale === "tr" ? "Gözlem kayıtları" : "Observation records" },
+                { to: "/genesis/portal", label: "Genesis portal" },
+                { to: "/world/space", label: locale === "tr" ? "Haritayı aç" : "Open map" }
+              ]}
+            />
           </RhizohStudioCitizenShellV0>
         ) : null}
 
@@ -198,6 +231,32 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
     </div>
   );
 });
+
+/** @param {{ surface: string, locale?: string }} props */
+function UserOutcomeCard({ surface, locale }) {
+  const tr = (locale || readUiLocaleV0()) === "tr";
+  const copy = USER_OUTCOME_COPY_V0[surface]?.[tr ? "tr" : "en"];
+  if (!copy) return null;
+  return (
+    <section className="mb-3 rounded-xl border border-cyan-400/20 bg-cyan-950/15 px-3 py-3 normal-case">
+      <p className="text-[8px] font-black uppercase tracking-[0.2em] text-cyan-200/80">
+        {copy.eyebrow}
+      </p>
+      <p className="mt-1 text-[12px] font-semibold text-white/90">{copy.title}</p>
+      <p className="mt-1 text-[10px] leading-relaxed text-white/58">{copy.body}</p>
+      <ul className="mt-2 space-y-1 text-[9px] text-white/55">
+        {copy.outcomes.map((row) => (
+          <li key={row} className="flex gap-1.5">
+            <span className="text-cyan-300/80" aria-hidden>
+              •
+            </span>
+            <span>{row}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
 
 /** @param {{ links: { to: string, label: string }[] }} props */
 function QuickLinks({ links }) {

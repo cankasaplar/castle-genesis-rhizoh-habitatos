@@ -12,11 +12,11 @@ import {
 
 /** @type {Record<RhizohProductSurfaceIdV0, { shell: string, short: string, pathHint: string }>} */
 export const RHIZOH_PRODUCT_SURFACE_COPY_TR_V0 = Object.freeze({
-  world: Object.freeze({ shell: "Dünya", short: "Dünya", pathHint: "Ana sahne · ajanlar · konuşma" }),
-  hall: Object.freeze({ shell: "Salon", short: "Salon", pathHint: "Kayıt ve gözlem" }),
-  greenroom: Object.freeze({ shell: "Hazırlık", short: "Hazırlık", pathHint: "Yayın öncesi oda" }),
-  broadcast: Object.freeze({ shell: "Yayın", short: "Yayın", pathHint: "Canlı yayın" }),
-  studio: Object.freeze({ shell: "Stüdyo", short: "Stüdyo", pathHint: "Üretim ve oturum" }),
+  world: Object.freeze({ shell: "Dünya", short: "Dünya", pathHint: "Harita, konum ve sohbet" }),
+  hall: Object.freeze({ shell: "Salon", short: "Salon", pathHint: "Gözlem özeti ve kayıtlar" }),
+  greenroom: Object.freeze({ shell: "Hazırlık", short: "Hazırlık", pathHint: "Davet linki (beta)" }),
+  broadcast: Object.freeze({ shell: "Yayın", short: "Yayın", pathHint: "Yayın hazırlığı (beta)" }),
+  studio: Object.freeze({ shell: "Stüdyo", short: "Stüdyo", pathHint: "Üretim durumu (beta)" }),
   profile: Object.freeze({ shell: "Profil", short: "Profil", pathHint: "Hesap ve ayarlar" })
 });
 

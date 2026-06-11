@@ -30,7 +30,7 @@ export const RhizohWorldClaimAnchorChipV0 = memo(function RhizohWorldClaimAnchor
     <button
       type="button"
       onClick={toggle}
-      className={`rounded border px-2 py-1 font-mono text-[9px] uppercase tracking-wider transition ${className} ${
+      className={`rounded-full border px-2.5 py-1 text-[9px] font-semibold normal-case tracking-normal transition ${className} ${
         armed
           ? "border-purple-400/70 bg-purple-500/25 text-purple-100"
           : "border-purple-500/35 bg-black/75 text-purple-300/90 hover:border-purple-400/50"
@@ -39,11 +39,11 @@ export const RhizohWorldClaimAnchorChipV0 = memo(function RhizohWorldClaimAnchor
     >
       {armed
         ? tr
-          ? "// ÇAPA MODU AÇIK — haritaya tıkla"
-          : "// CLAIM MODE ON — click map"
+          ? "Çapa modu açık — haritaya tıkla"
+          : "Anchor mode on — click map"
         : tr
-          ? "// Lokal Çapa İlan Et"
-          : "// Claim Local Anchor"}
+          ? "Konum seç"
+          : "Choose place"}
     </button>
   );
 });

@@ -25,20 +25,20 @@ import { normalizeUiLocaleV0, readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
 
 /** @type {typeof RHIZOH_PRODUCT_SURFACE_COPY_TR_V0} */
 export const RHIZOH_PRODUCT_SURFACE_COPY_EN_V0 = Object.freeze({
-  world: Object.freeze({ shell: "World", short: "World", pathHint: "Main stage · agents · chat" }),
-  hall: Object.freeze({ shell: "Hall", short: "Hall", pathHint: "Records and observation" }),
-  greenroom: Object.freeze({ shell: "Green room", short: "Prep", pathHint: "Pre-broadcast prep" }),
-  broadcast: Object.freeze({ shell: "Broadcast", short: "Live", pathHint: "Live stream" }),
-  studio: Object.freeze({ shell: "Studio", short: "Studio", pathHint: "Production sessions" }),
+  world: Object.freeze({ shell: "World", short: "World", pathHint: "Map, location, and chat" }),
+  hall: Object.freeze({ shell: "Hall", short: "Hall", pathHint: "Observation summary and records" }),
+  greenroom: Object.freeze({ shell: "Prep", short: "Prep", pathHint: "Invite-link flow (beta)" }),
+  broadcast: Object.freeze({ shell: "Broadcast", short: "Live", pathHint: "Broadcast prep (beta)" }),
+  studio: Object.freeze({ shell: "Studio", short: "Studio", pathHint: "Production status (beta)" }),
   profile: Object.freeze({ shell: "Profile", short: "Profile", pathHint: "Account and settings" })
 });
 
 export const RHIZOH_SHELL_HINT_EN_V0 = Object.freeze({
-  world: "Main stage · Globe / City 3D / Satellite / Streets / Terrain / Anchor",
-  hall: "Hall panel (toggle)",
-  greenroom: "Prep panel (toggle)",
-  broadcast: "Broadcast panel (toggle)",
-  studio: "Studio panel (toggle)",
+  world: "World · map, location, and chat",
+  hall: "Hall · observation summary and records",
+  greenroom: "Prep · invite-link flow (beta)",
+  broadcast: "Broadcast · broadcast prep (beta)",
+  studio: "Studio · production status (beta)",
   profile: "Profile panel (toggle)"
 });
 
@@ -54,7 +54,7 @@ export const RHIZOH_CAPABILITY_HALO_NODES_EN_V0 = Object.freeze([
   Object.freeze({ id: "learn", label: "Learn", geometryKind: "cube", whisper: "Academy and observation layer.", seedIntent: "open profile and academy", layerFocus: 11 }),
   Object.freeze({ id: "broadcast", label: "Broadcast", geometryKind: "spiral", whisper: "Live stream or green room.", seedIntent: "go to broadcast" }),
   Object.freeze({ id: "build", label: "Build", geometryKind: "cube", whisper: "Castle, pin, or task — local commands.", seedIntent: "I want to place a castle here", layerFocus: 10 }),
-  Object.freeze({ id: "companion", label: "Companion", geometryKind: "spiral", whisper: "Octo character and dialogue.", seedIntent: "design a new companion with octo" }),
+  Object.freeze({ id: "companion", label: "Companion", geometryKind: "spiral", whisper: "Closed in this build; no live character is promised here.", seedIntent: "show companion status" }),
   Object.freeze({ id: "robotics", label: "Devices", geometryKind: "ring", whisper: "Camera, sensor, or robot bridge.", isRoboticsHub: true, layerFocus: 13 }),
   Object.freeze({ id: "swarm", label: "Swarm", geometryKind: "spiral", whisper: "Agent swarm coordination.", seedIntent: "show agent swarm", layerFocus: 6 }),
   Object.freeze({ id: "world", label: "World", geometryKind: "cube", whisper: "Return to main stage — globe and continuity.", seedIntent: "go to world" })
@@ -63,23 +63,23 @@ export const RHIZOH_CAPABILITY_HALO_NODES_EN_V0 = Object.freeze([
 export const RHIZOH_WORLD_CENTER_SUBTITLE_EN_V0 = "Rhizoh field · Agent swarm and core";
 
 export const RHIZOH_PRODUCT_DRAWER_COPY_EN_V0 = Object.freeze({
-  hall: Object.freeze({ title: "Hall", blurb: "Records, observation, and session history." }),
-  greenroom: Object.freeze({ title: "Green room", blurb: "Prep and audio check before going live." }),
-  broadcast: Object.freeze({ title: "Broadcast", blurb: "Live stream and audience connection." }),
-  studio: Object.freeze({ title: "Studio", blurb: "Production, agents, and creative sessions." }),
+  hall: Object.freeze({ title: "Hall", blurb: "Observation summary, records, and where to inspect next." }),
+  greenroom: Object.freeze({ title: "Prep · Beta", blurb: "Create an invite-only experience link; no new room opens yet." }),
+  broadcast: Object.freeze({ title: "Broadcast · Beta", blurb: "Prepare an invite and verify status before any live claim." }),
+  studio: Object.freeze({ title: "Studio · Beta", blurb: "Production status only; heavy consoles are hidden from the user surface." }),
   profile: Object.freeze({ title: "Profile", blurb: "Account, identity, and settings." }),
   close: "Close",
-  broadcastNote: "Live broadcast opens through the mesh gateway. The connection badge should be green."
+  broadcastNote: "This beta creates a shareable invite record. It does not claim a live stream has started."
 });
 
 export const RHIZOH_PRODUCT_DRAWER_COPY_TR_V0 = Object.freeze({
-  hall: Object.freeze({ title: "Salon", blurb: "Kayıt, gözlem ve oturum geçmişi." }),
-  greenroom: Object.freeze({ title: "Hazırlık odası", blurb: "Yayına geçmeden önce hazırlık ve ses kontrolü." }),
-  broadcast: Object.freeze({ title: "Yayın", blurb: "Canlı yayın ve izleyici bağlantısı." }),
-  studio: Object.freeze({ title: "Stüdyo", blurb: "Üretim, ajanlar ve yaratım oturumu." }),
+  hall: Object.freeze({ title: "Salon", blurb: "Gözlem özeti, kayıtlar ve sıradaki inceleme bağlantıları." }),
+  greenroom: Object.freeze({ title: "Hazırlık · Beta", blurb: "Davetli deneyim linki oluşturur; yeni oda henüz açılmaz." }),
+  broadcast: Object.freeze({ title: "Yayın · Beta", blurb: "Canlı iddiası kurmadan önce davet ve durum hazırlığı." }),
+  studio: Object.freeze({ title: "Stüdyo · Beta", blurb: "Üretim durumu; ağır konsollar kullanıcı yüzeyinden gizlendi." }),
   profile: Object.freeze({ title: "Profil", blurb: "Hesap, kimlik ve ayarlar." }),
   close: "Kapat",
-  broadcastNote: "Canlı yayın mesh gateway üzerinden açılır. Bağlantı rozeti yeşil olmalı."
+  broadcastNote: "Bu beta paylaşılabilir davet kaydı üretir. Canlı yayın başladı iddiası kurmaz."
 });
 
 export const RHIZOH_PRODUCT_DETAIL_CHROME_TR_V0 = Object.freeze({
@@ -90,12 +90,12 @@ export const RHIZOH_PRODUCT_DETAIL_CHROME_TR_V0 = Object.freeze({
   header: "AYRINTILAR",
   moreButton: "Daha fazla · ajanlar · olaylar · paylaş",
   observatoryClosed:
-    "Gözlemevi henüz kapalı — güven fazına gelince niyet omurgası görünür.",
+    "Gelişmiş gözlem bu sürümde kapalı. Salon ve Dünya açık sonuç yüzeyleri olarak kalır.",
   kernelLocked:
-    "KERNEL konsolu bu evrede kilitli. Bond ve tur sayısı arttıkça «Tam sohbet» bandında açılır — üstteki deneyim şeridinde ilerlemeyi görebilirsin.",
-  kernelLockedTabHint: "Tam sohbet bandında açılır",
-  epistemicOrbLocked: "Epistemik küre · tam sohbet bandında görünür.",
-  noAgentsYet: "Henüz görünür ajan yok.",
+    "Analiz yüzeyi bu sürümde kullanıcıya kapalı. Çalışmayan konsol göstermek yerine sonuç üreten alanlar açık tutulur.",
+  kernelLockedTabHint: "Bu sürümde kapalı",
+  epistemicOrbLocked: "Epistemik küre bu sürümde kapalı.",
+  noAgentsYet: "Bu sürümde görünür ajan yok.",
   bootStarting:
     "Oturum ve sahne başlatılıyor… Ağ geçidi kontrolü ana ekranda devam eder.",
   bootSr: "Başlatılıyor",
@@ -116,12 +116,12 @@ export const RHIZOH_PRODUCT_DETAIL_CHROME_EN_V0 = Object.freeze({
   header: "DETAILS",
   moreButton: "More · agents · events · share",
   observatoryClosed:
-    "Observatory is not open yet — intent spine appears after the trust phase.",
+    "Advanced observation is closed in this build. Hall and World remain the result-producing surfaces.",
   kernelLocked:
-    "KERNEL console is locked in this phase. It opens in the full chat band as bond and turns grow.",
-  kernelLockedTabHint: "Opens in full chat band",
-  epistemicOrbLocked: "Epistemic orb · visible in full chat band.",
-  noAgentsYet: "No visible agents yet.",
+    "Analyze is closed in this build. Instead of showing a non-actionable console, only result-producing surfaces stay visible.",
+  kernelLockedTabHint: "Closed in this build",
+  epistemicOrbLocked: "Epistemic orb is closed in this build.",
+  noAgentsYet: "No visible agents in this build.",
   bootStarting: "Starting session and stage… Gateway check continues on the main screen.",
   bootSr: "Starting",
   tabs: Object.freeze({
@@ -221,11 +221,11 @@ export function resolveChatPlaceholderV0(locale) {
 export function formatPlainSurfaceOpenV0(surfaceId, locale) {
   if (resolveUiCopyLocaleV0(locale) === "tr") return formatPlainSurfaceOpenTrV0(surfaceId);
   const map = Object.freeze({
-    world: "Main stage open — agents and core are here.",
-    studio: "Studio open — production sessions.",
-    hall: "Hall open — records and observation.",
-    greenroom: "Green room open — prep for broadcast.",
-    broadcast: "Broadcast surface open.",
+    world: "World open — map, location, and chat.",
+    studio: "Studio beta open — status only.",
+    hall: "Hall open — observation summary and records.",
+    greenroom: "Prep beta open — create an invite link.",
+    broadcast: "Broadcast beta open — create an invite and verify status.",
     profile: "Profile and settings open."
   });
   return map[String(surfaceId || "world")] || `${surfaceId} opened.`;
@@ -250,11 +250,11 @@ export function formatPlainIntentChosenV0(intentId, locale) {
 export function resolveProductStatusHeadlineV0(input = {}, locale) {
   if (resolveUiCopyLocaleV0(locale) === "tr") return resolveProductStatusHeadlineTrV0(input);
   const surface = String(input.activeSurface || "world");
-  if (surface === "world") return "Main stage · talk, type, or use the wheel";
-  if (surface === "studio") return "Studio · production";
-  if (surface === "broadcast") return "Broadcast · live";
-  if (surface === "greenroom") return "Green room · prep";
-  if (surface === "hall") return "Hall · observation";
+  if (surface === "world") return "World · open the map, choose a place, or type";
+  if (surface === "studio") return "Studio · beta status";
+  if (surface === "broadcast") return "Broadcast · beta prep";
+  if (surface === "greenroom") return "Prep · beta invite flow";
+  if (surface === "hall") return "Hall · observation summary";
   if (surface === "profile") return "Profile · account";
   return "Rhizoh";
 }
@@ -282,19 +282,19 @@ export function resolveLocalPanelOpenLineV0(panel, locale) {
   const tr = resolveUiCopyLocaleV0(locale) === "tr";
   const p = String(panel || "");
   if (tr) {
-    if (p === "world" || p === "wheel") return "Dünya açıldı — yetenek tekerleği.";
-    if (p === "hall") return "Salon paneli açıldı.";
-    if (p === "studio") return "Stüdyo paneli açıldı.";
-    if (p === "broadcast") return "Yayın paneli açıldı.";
-    if (p === "greenroom") return "Hazırlık paneli açıldı.";
+    if (p === "world" || p === "wheel") return "Dünya açıldı — harita ve sohbet.";
+    if (p === "hall") return "Salon açıldı — gözlem özeti.";
+    if (p === "studio") return "Stüdyo beta açıldı — durum özeti.";
+    if (p === "broadcast") return "Yayın beta açıldı — davet hazırlığı.";
+    if (p === "greenroom") return "Hazırlık beta açıldı — davet linki.";
     if (p === "profile") return "Profil paneli açıldı.";
     return "Bölüm açıldı.";
   }
-  if (p === "world" || p === "wheel") return "World open — capability wheel.";
-  if (p === "hall") return "Hall panel open.";
-  if (p === "studio") return "Studio panel open.";
-  if (p === "broadcast") return "Broadcast panel open.";
-  if (p === "greenroom") return "Prep panel open.";
+  if (p === "world" || p === "wheel") return "World open — map and chat.";
+  if (p === "hall") return "Hall open — observation summary.";
+  if (p === "studio") return "Studio beta open — status summary.";
+  if (p === "broadcast") return "Broadcast beta open — invite prep.";
+  if (p === "greenroom") return "Prep beta open — invite link.";
   if (p === "profile") return "Profile panel open.";
   return "Section open.";
 }

@@ -52,7 +52,7 @@ export const CompanionDormancyOverlayV0 = memo(function CompanionDormancyOverlay
       <div className="rounded-xl border border-violet-400/25 bg-[#0a0614]/88 px-3 py-2 text-center backdrop-blur-md normal-case">
         <p className="text-[10px] text-violet-100/90">{copy}</p>
         <p className="mt-1 text-[9px] text-white/45">
-          Shane hâlâ burada · state: <span className="font-mono text-violet-200/80">{stateLabel}</span>
+          Companion kapalı · state: <span className="font-mono text-violet-200/80">{stateLabel}</span>
           {" "}
           (gözlem kapalı ≠ uyku state)
         </p>

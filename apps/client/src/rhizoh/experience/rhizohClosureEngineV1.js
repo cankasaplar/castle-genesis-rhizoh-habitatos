@@ -14,7 +14,7 @@ const SURFACE_UNLOCK_TR = {
   basicCompanionChat: "Temel sohbet",
   intentRoutingFull: "Niyet yönlendirme",
   constitutionalProductionDrawer: "Üretim / karar özeti paneli",
-  kernelHeavyPanels: "KERNEL konsolu",
+  kernelHeavyPanels: "Analiz paneli",
   epistemicHeavyHud: "Epistemik HUD ve küre",
   feedbackOutcomeChip: "Geri bildirim rozeti",
   governanceOpsBadge: "Governance görünürlüğü"

@@ -29,6 +29,12 @@ const DOMAIN_TABS_V0 = Object.freeze([
   { id: RHIZOH_WORLD_DRAWER_DOMAIN_V0.MODES, labelTr: "Modlar", labelEn: "Modes" }
 ]);
 
+const WORLD_START_ACTIONS_V0 = Object.freeze([
+  { tool: "city_map", labelTr: "Şehri göster", labelEn: "Show city" },
+  { tool: "streets", labelTr: "Sokak görünümü", labelEn: "Street view" },
+  { tool: "anchor_map", labelTr: "Konumumu seç", labelEn: "Choose place" }
+]);
+
 /**
  * Full-page World domain — Space / Social / Modes. No overlay on T0 live.
  */
@@ -151,6 +157,13 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
               />
               <RhizohWorldClaimAnchorChipV0 active={spatialEngineActive} uiLocale={locale} />
               <RhizohWorldSportsNewsStripV0 active={spatialEngineActive} uiLocale={locale} />
+              <WorldStartCardV0
+                activeTool={activeMapTool}
+                active={spatialEngineActive}
+                uiLocale={locale}
+                worldData={worldData}
+                onSelect={onSelectMapTool}
+              />
             </div>
             <div className="pointer-events-auto absolute right-3 top-3 z-[3] flex flex-col items-end gap-2 sm:right-4 sm:top-4">
               <RhizohWorldMapControlsV0 active={spatialEngineActive} uiLocale={locale} />
@@ -232,3 +245,60 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
     </div>
   );
 });
+
+function WorldStartCardV0({ activeTool, active, uiLocale, worldData, onSelect }) {
+  const tr = (uiLocale || readUiLocaleV0()) === "tr";
+  const feedReady = worldData?.feed && worldData.feed !== "unavailable";
+
+  return (
+    <section
+      className="pointer-events-auto rounded-2xl border border-cyan-400/20 bg-[#030711]/90 p-3 text-white shadow-lg backdrop-blur-md normal-case"
+      data-rhizoh-world-start-card="1"
+    >
+      <p className="text-[8px] font-black uppercase tracking-[0.2em] text-cyan-200/80">
+        {tr ? "Dünya başlangıcı" : "World start"}
+      </p>
+      <p className="mt-1 text-[12px] font-semibold text-white/92">
+        {tr ? "Neredeyim?" : "Where am I?"}
+      </p>
+      <p className="mt-1 text-[10px] leading-relaxed text-white/58">
+        {tr
+          ? active
+            ? "Harita açık. Şehir, sokak veya kendi konum bağlantını seçebilirsin."
+            : "Harita hazırlanıyor. Açıldığında ilk eylemler burada kalacak."
+          : active
+            ? "The map is open. Choose city, streets, or your own anchor place."
+            : "The map is preparing. First actions stay here when it opens."}
+      </p>
+      <div className="mt-2 grid gap-1.5">
+        {WORLD_START_ACTIONS_V0.map((action) => {
+          const selected = activeTool === action.tool;
+          return (
+            <button
+              key={action.tool}
+              type="button"
+              disabled={!onSelect}
+              onClick={() => onSelect?.(action.tool)}
+              className={`rounded-lg border px-2 py-1.5 text-left text-[9px] font-semibold transition ${
+                selected
+                  ? "border-cyan-400/55 bg-cyan-500/20 text-cyan-50"
+                  : "border-white/12 bg-black/35 text-white/72 hover:border-cyan-400/35 hover:text-cyan-100"
+              }`}
+            >
+              {tr ? action.labelTr : action.labelEn}
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-2 text-[8px] text-white/42">
+        {feedReady
+          ? tr
+            ? `Burada: POI ${worldData.poiCount} · bina ${worldData.buildingCount}`
+            : `Here: POI ${worldData.poiCount} · buildings ${worldData.buildingCount}`
+          : tr
+            ? "Burada: harita ve bağlantı seçimi"
+            : "Here: map and anchor selection"}
+      </p>
+    </section>
+  );
+}
