@@ -31,6 +31,46 @@ let lastMapCommandKeyV0 = "";
 let lastMapCommandAtMsV0 = 0;
 const MAP_COMMAND_DEDUPE_MS_V0 = 650;
 
+function navigateLocalCommandRouteV0(pathname) {
+  if (typeof window === "undefined") return;
+  const path = String(pathname || "/");
+  try {
+    if (window.location?.pathname !== path) {
+      window.history?.pushState?.({}, "", path);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
+  } catch {
+    try {
+      window.location.assign(path);
+    } catch {
+      /* noop */
+    }
+  }
+}
+
+function prepareMapCommandSideEffectV0(canonical, action) {
+  if (typeof window === "undefined") return;
+  if (canonical === "map_open" || action === "open") {
+    navigateLocalCommandRouteV0("/world/space");
+    void import("./rhizohWorldDrawerDomainV0.js")
+      .then((m) => m.writeRhizohWorldDrawerDomainV0(m.RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE))
+      .catch(() => {});
+    void import("./rhizohWorldMapToolV0.js")
+      .then((m) => m.writeRhizohWorldMapToolV0("city_map"))
+      .catch(() => {});
+    return;
+  }
+  if (canonical === "map_close" || action === "close") {
+    navigateLocalCommandRouteV0("/");
+    return;
+  }
+  if (canonical === "map_toggle_layers" || action === "toggle_layers") {
+    void import("./rhizohWorldMapToolV0.js")
+      .then((m) => m.applyRhizohWorldMapToolV0(m.cycleRhizohWorldMapToolV0(), { source: "LOCAL_COMMAND_TOGGLE_LAYERS" }))
+      .catch(() => {});
+  }
+}
+
 /**
  * @param {string} eventName
  * @param {object} detail
@@ -120,6 +160,7 @@ export function mapSpatialCommandHandlerV0(canonical, row) {
   }
   lastMapCommandKeyV0 = key;
   lastMapCommandAtMsV0 = nowMs;
+  prepareMapCommandSideEffectV0(canonical, row.action);
   const payload = Object.freeze({
     canonical,
     action: row.action,
