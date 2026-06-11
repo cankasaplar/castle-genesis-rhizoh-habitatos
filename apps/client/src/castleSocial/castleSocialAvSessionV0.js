@@ -41,7 +41,8 @@ let _active = null;
  *   peerAnchor?: object | null,
  *   conversationContext?: object | null,
  *   memoryBinding?: object | null,
- *   entityLayer?: object | null
+ *   entityLayer?: object | null,
+ *   behaviorSignals?: object | null
  * }} [opts]
  */
 export function createCastleSocialAvSessionV0(opts = {}) {
@@ -60,7 +61,7 @@ export function createCastleSocialAvSessionV0(opts = {}) {
     peerAnchor: opts.peerAnchor || null,
     conversationContext: opts.conversationContext || null,
     memoryBinding: opts.memoryBinding || null,
-    entityLayer: opts.entityLayer || null
+    entityLayer: opts.entityLayer || (opts.behaviorSignals ? { signals: opts.behaviorSignals } : null)
   });
   const session = Object.freeze({
     schema: CASTLE_SOCIAL_AV_SESSION_SCHEMA_V0,

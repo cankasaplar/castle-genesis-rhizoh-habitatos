@@ -48,6 +48,9 @@ export const RhizohWorldSocialPanelV0 = memo(function RhizohWorldSocialPanelV0({
   const observerEntity = spatial?.entityLayer?.rhizohEntities?.find(
     (entity) => entity.id === spatial?.entityLayer?.defaultObserverEntityId
   );
+  const foxBehavior = spatial?.entityLayer?.behaviorLayer?.localEntities?.find(
+    (entity) => entity.entityKind === "fox"
+  )?.behavior;
 
   return (
     <div className="space-y-3 normal-case" data-rhizoh-world-social-panel="1">
@@ -100,6 +103,12 @@ export const RhizohWorldSocialPanelV0 = memo(function RhizohWorldSocialPanelV0({
                 {observerEntity?.label || "Fox"}:{" "}
                 {tr ? "observer layer · kamera katılımcısı değil" : "observer layer · not a camera participant"}
               </p>
+              {foxBehavior ? (
+                <p>
+                  {tr ? "Davranış" : "Behavior"}:{" "}
+                  <span className="font-mono">{foxBehavior.state}</span> · {foxBehavior.output.gazeDirection}
+                </p>
+              ) : null}
             </div>
           ) : null}
         </button>

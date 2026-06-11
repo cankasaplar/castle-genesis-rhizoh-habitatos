@@ -5,6 +5,8 @@
  * anchors, conversation context, and memory intent before any real-time layer.
  */
 
+import { buildDefaultCastleSessionEntityLayerV1 } from "./castleSessionEntityBehaviorV1.js";
+
 export const CASTLE_SPATIAL_SESSION_SCHEMA_V0 = "castle.spatial_session.v0";
 export const CASTLE_SESSION_ENTITY_LAYER_SCHEMA_V0 = "castle.session_entity_layer.v0";
 
@@ -75,8 +77,15 @@ function normalizeAnchorV0(anchor, fallbackLabel = "Castle") {
   });
 }
 
-function normalizeEntityLayerV0(input = {}) {
+function normalizeEntityLayerV0(input = {}, ctx = {}) {
   const raw = Array.isArray(input.rhizohEntities) ? input.rhizohEntities : DEFAULT_RHIZOH_ENTITY_LAYER_V0;
+  const behaviorLayer =
+    input.behaviorLayer ||
+    buildDefaultCastleSessionEntityLayerV1({
+      hostCastleId: ctx.hostCastleId,
+      peerCastleId: ctx.peerCastleId,
+      signals: input.signals || ctx.signals || {}
+    });
   const rhizohEntities = raw
     .map((entity) => {
       if (!entity || typeof entity !== "object") return null;
@@ -101,6 +110,7 @@ function normalizeEntityLayerV0(input = {}) {
       mediaParticipant: true
     }),
     rhizohEntities: Object.freeze(rhizohEntities),
+    behaviorLayer,
     defaultObserverEntityId: "fox_observer_v0",
     rule: "entities_interpret_never_join_media_stream",
     readOnly: true
@@ -127,7 +137,7 @@ export function deriveCastleSpatialRoomIdV0(input = {}) {
  *   peerAnchor?: { lat?: number, lon?: number, label?: string, source?: string } | null,
  *   conversationContext?: { intent?: string, threadId?: string | null, openLoops?: string[] } | null,
  *   memoryBinding?: { enabled?: boolean, mode?: string } | null,
- *   entityLayer?: { rhizohEntities?: object[] } | null
+ *   entityLayer?: { rhizohEntities?: object[], behaviorLayer?: object, signals?: object } | null
  * }} input
  */
 export function buildCastleSpatialSessionV0(input = {}) {
@@ -179,7 +189,11 @@ export function buildCastleSpatialSessionV0(input = {}) {
       enabled: input.memoryBinding?.enabled !== false,
       mode: String(input.memoryBinding?.mode || "session_open")
     }),
-    entityLayer: normalizeEntityLayerV0(input.entityLayer || {}),
+    entityLayer: normalizeEntityLayerV0(input.entityLayer || {}, {
+      hostCastleId,
+      peerCastleId,
+      signals: input.entityLayer?.signals || {}
+    }),
     transportPlan: Object.freeze({
       kind: "pending_media_transport",
       mediaReady: false,

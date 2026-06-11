@@ -182,5 +182,9 @@ describe("castleSocialContractV0", () => {
     expect(fox.visibility).toBe("observer_overlay");
     expect(fox.mediaParticipant).toBe(false);
     expect(fox.canSpeakAsPrimary).toBe(false);
+    const localFox = session.entityLayer.behaviorLayer.localEntities.find((entity) => entity.entityKind === "fox");
+    expect(localFox.localOnly).toBe(true);
+    expect(localFox.globalSingleton).toBe(false);
+    expect(localFox.behavior.silent).toBe(true);
   });
 });
