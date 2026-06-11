@@ -575,7 +575,16 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
             }
             publishExecutorRef.current?.("pvs-recovery");
             renderRecoveryUntilMs = Date.now() + 900;
-            startCesiumDefaultRenderLoopV0(viewer);
+            if (!pvsSafeModeLock) {
+              startCesiumDefaultRenderLoopV0(viewer);
+            } else {
+              try {
+                viewer.scene.requestRenderMode = true;
+                viewer.scene.requestRender();
+              } catch {
+                /* noop */
+              }
+            }
             await waitForCesiumRenderStableFramesV0(viewer, 2, 4_000);
             publishExecutorRef.current?.("pvs-recovery-stable");
             const api = ensureCastleCesiumApiV0();
@@ -626,13 +635,14 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         stopCesiumDefaultRenderLoopV0(viewer);
         console.error("[CASTLE_CESIUM] render_error", renderErrorCount, error);
 
-        if (!cesiumFatalTelemetryOnce) {
+        const safeModeRenderError = isCesiumSafeModeRenderErrorV0(error);
+        if (!safeModeRenderError && !cesiumFatalTelemetryOnce) {
           cesiumFatalTelemetryOnce = true;
           try {
             reportCastleFatal(
               "cesium_render_error",
               error instanceof Error ? error : new Error(String(error)),
-              { recovered: renderErrorCount <= 2, renderErrorCount, pvs: isCesiumSafeModeRenderErrorV0(error) }
+              { recovered: renderErrorCount <= 2, renderErrorCount, pvs: false }
             );
           } catch {
             /* noop */
@@ -652,7 +662,8 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
           return;
         }
 
-        console.error("[CASTLE_CESIUM] render loop stopped after repeated errors:", msg.slice(0, 200));
+        const finalMsg = String(error?.message || error || "");
+        console.error("[CASTLE_CESIUM] render loop stopped after repeated errors:", finalMsg.slice(0, 200));
       };
 
       removeRenderErrorListener = viewer.scene.renderError.addEventListener(onRenderError);

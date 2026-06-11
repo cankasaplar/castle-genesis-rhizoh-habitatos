@@ -19,6 +19,7 @@ import { WORLD_MAP_GEO_REQUEST_EVENT_V0 } from "../rhizoh/runtime/worldMapGeoReq
 import { CASTLE_WORLD_ANCHOR_EVENT_V0 } from "./castleWorldAnchorV0.js";
 import { createCesiumMapPinCanvasV0 } from "./cesiumMapBillboardV0.js";
 import { syncCastleEcosystemMarkersV0 } from "./castleEcosystemMarkersV0.js";
+import { publishCastleEcosystemRegistryMirrorV0 } from "./castleEcosystemRegistryV0.js";
 import {
   readActiveSpatialMemoryMapPinsV1,
   SPATIAL_MEMORY_ANCHOR_EVENT_V1
