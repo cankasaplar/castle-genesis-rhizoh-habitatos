@@ -36,9 +36,12 @@ export const CastlePetStudioPanelV0 = memo(function CastlePetStudioPanelV0() {
         className="rounded-lg border border-white/10 bg-black/35 px-3 py-3 normal-case"
         data-castle-pet-studio="idle"
       >
+        <p className="text-[9px] font-semibold uppercase tracking-wide text-white/45">
+          Companion
+        </p>
         <p className="text-[10px] text-white/55">
-          Companion henüz yok. Dünya gözlemini tamamladıktan sonra (konumlu veya konumsuz) Shane burada görünür —
-          kale zorunlu değil.
+          Eşlikçi yüzeyi bu sürümde kapalı. Burada canlı karakter vaadi göstermiyoruz; açıldığında önce
+          açık durum ve yapılabilir eylem görünecek.
         </p>
       </section>
     );
@@ -69,7 +72,7 @@ export const CastlePetStudioPanelV0 = memo(function CastlePetStudioPanelV0() {
       <header className="flex items-center justify-between gap-2">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wide text-cyan-100/90">
-            Companion studio (Shane)
+            Companion studio
           </p>
           <p className="text-[9px] text-white/50 font-mono">{pwe.id}</p>
         </div>
@@ -87,7 +90,7 @@ export const CastlePetStudioPanelV0 = memo(function CastlePetStudioPanelV0() {
         <p>
           Gözlem alanı:{" "}
           <span className="font-mono">
-            {pwe.presence?.observable ? "açık (Shane baktığın yerde)" : pwe.presence?.dormancy || "beklemede"}
+            {pwe.presence?.observable ? "açık (eşlikçi baktığın yerde)" : pwe.presence?.dormancy || "beklemede"}
           </span>
         </p>
         <p>

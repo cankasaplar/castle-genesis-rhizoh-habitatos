@@ -1,8 +1,19 @@
-import React, { memo } from "react";
+import React, { memo, useCallback, useMemo } from "react";
 import { Loader2, Mic, MicOff, Send } from "lucide-react";
 import { useRhizohConversationDockV0 } from "../rhizoh/runtime/useRhizohConversationDockV0.js";
 import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
 import { resolveChatPlaceholderV0 } from "../rhizoh/runtime/rhizohProductCopyI18nV0.js";
+import { getCastleWorldDataStateV2 } from "../castleFlight/castleWorldDataProviderV2.js";
+import { resolveWorldMapBootstrapGeoV0 } from "../rhizoh/runtime/worldMapBootstrapGeoV0.js";
+import { getWorldMapLiveFeedSnapshotV0 } from "../rhizoh/runtime/worldMapLiveFeedV0.js";
+import { readActiveSpatialMemoryMapPinsV1 } from "../rhizoh/runtime/rhizohSpatialMemoryAnchorV1.js";
+import { readCastleSocialAvSessionV0 } from "../castleSocial/castleSocialAvSessionV0.js";
+import { getRhizohWorldMapToolSnapshotV0 } from "../rhizoh/runtime/rhizohWorldMapToolV0.js";
+import { buildRhizohMapBrainActionsV1 } from "../rhizoh/runtime/rhizohMapBrainV1.js";
+import {
+  buildRhizohLiveContextEnvelopeV2,
+  formatRhizohLiveContextActionLabelV2
+} from "../rhizoh/runtime/rhizohLiveContextEngineV2.js";
 
 /**
  * Map-stage voice dock — mic + text only. No fox / Octo / cube stage.
@@ -14,7 +25,71 @@ export const RhizohWorldSpaceVoiceDockV0 = memo(function RhizohWorldSpaceVoiceDo
 }) {
   const locale = uiLocale || readUiLocaleV0();
   const tr = locale === "tr";
-  const dock = useRhizohConversationDockV0({ firebaseUser, conversationPhase: "EXPLORE_MAP" });
+  const buildContextEnvelope = useCallback(
+    ({ message }) => {
+      const anchor = resolveWorldMapBootstrapGeoV0();
+      const worldData = getCastleWorldDataStateV2();
+      const liveFeed = getWorldMapLiveFeedSnapshotV0();
+      const memoryPins = readActiveSpatialMemoryMapPinsV1();
+      const activeSession = readCastleSocialAvSessionV0();
+      const activeMapTool = getRhizohWorldMapToolSnapshotV0();
+      const mapBrain = buildRhizohMapBrainActionsV1({
+        conversationState: {
+          lastIntent: message,
+          activeThreads: memoryPins.length ? ["spatial_memory"] : [],
+          unresolvedTasks: activeSession?.spatialSession?.conversationContext?.openLoops || []
+        },
+        mapState: {
+          active: true,
+          activeMapTool,
+          hasActiveCastle: anchor.source !== "origin_seed_serencebey",
+          memoryNodeCount: memoryPins.length,
+          hasUserLocation: anchor.source !== "origin_seed_serencebey",
+          worldDataReady: worldData.feed !== "unavailable"
+        },
+        limit: 3
+      });
+
+      return buildRhizohLiveContextEnvelopeV2({
+        userMessage: message,
+        spatial: {
+          ...anchor,
+          mapTool: activeMapTool,
+          worldData
+        },
+        memory: {
+          spatial: memoryPins.map((pin) => pin.label || pin.anchorId || pin.id),
+          intents: activeSession?.spatialSession?.conversationContext?.openLoops || [],
+          narrative: activeSession ? ["castle_session_active"] : [],
+          openLoopCount: activeSession?.spatialSession?.conversationContext?.openLoops?.length || 0
+        },
+        liveWorld: liveFeed || { source: "world_feed_cache_empty" },
+        activeSession: activeSession
+          ? {
+              sessionId: activeSession.sessionId,
+              lifecycle: activeSession.lifecycle,
+              roomKey: activeSession.roomKey,
+              spatialSession: activeSession.spatialSession
+            }
+          : null,
+        suggestedActions: mapBrain.actions
+      });
+    },
+    []
+  );
+  const dock = useRhizohConversationDockV0({
+    firebaseUser,
+    conversationPhase: "EXPLORE_MAP",
+    contextProvider: buildContextEnvelope
+  });
+
+  const contextPreview = useMemo(
+    () => buildContextEnvelope({ message: dock.draft || "" }),
+    [buildContextEnvelope, dock.draft]
+  );
+  const suggestedActions = dock.lastContextEnvelope?.suggestedActions?.length
+    ? dock.lastContextEnvelope.suggestedActions
+    : contextPreview.suggestedActions;
 
   const statusLine =
     dock.fieldState === "listening"
@@ -91,6 +166,18 @@ export const RhizohWorldSpaceVoiceDockV0 = memo(function RhizohWorldSpaceVoiceDo
       </div>
 
       <p className="px-3 pb-2 text-[9px] text-cyan-200/65 normal-case">{statusLine}</p>
+      {suggestedActions?.length ? (
+        <div className="flex flex-wrap gap-1.5 px-3 pb-2">
+          {suggestedActions.slice(0, 3).map((action) => (
+            <span
+              key={action.id}
+              className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-2 py-0.5 text-[8px] text-cyan-100/75"
+            >
+              {formatRhizohLiveContextActionLabelV2(action, tr ? "tr" : "en")}
+            </span>
+          ))}
+        </div>
+      ) : null}
       {dock.lastError ? (
         <p className="px-3 pb-2 text-[9px] text-rose-300/80 normal-case">{dock.lastError}</p>
       ) : null}

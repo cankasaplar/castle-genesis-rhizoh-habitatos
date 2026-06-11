@@ -6,6 +6,7 @@ import {
   promoteCastleSocialAvSessionLiveV0,
   readCastleSocialAvSessionV0
 } from "../castleSocial/castleSocialAvSessionV0.js";
+import { resolveWorldMapBootstrapGeoV0 } from "../rhizoh/runtime/worldMapBootstrapGeoV0.js";
 
 /**
  * Social layer — castle-to-castle, sessions, presence (not map space).
@@ -18,15 +19,38 @@ export const RhizohWorldSocialPanelV0 = memo(function RhizohWorldSocialPanelV0({
 }) {
   const locale = uiLocale || readUiLocaleV0();
   const tr = locale === "tr";
-  const [c2cStatus, setC2cStatus] = useState(() => readCastleSocialAvSessionV0()?.lifecycle || null);
+  const [c2cSession, setC2cSession] = useState(() => readCastleSocialAvSessionV0());
 
   const handleStartCastleLink = useCallback(() => {
+    const anchor = resolveWorldMapBootstrapGeoV0();
+    const hostCastleId = `castle:${anchor.source}`;
     let session = readCastleSocialAvSessionV0();
-    if (!session) session = createCastleSocialAvSessionV0({ roomKey: "castle-link" });
+    if (!session) {
+      session = createCastleSocialAvSessionV0({
+        hostCastleId,
+        hostAnchor: anchor,
+        conversationContext: {
+          intent: "spatial_castle_session",
+          openLoops: ["media_transport_pending", "peer_castle_pending"]
+        },
+        memoryBinding: { enabled: true, mode: "castle_session_open" }
+      });
+    }
     const live = promoteCastleSocialAvSessionLiveV0(session);
     patchCastleSocialAvSessionV0(live, { micActive: true, cameraActive: false });
-    setC2cStatus(readCastleSocialAvSessionV0()?.lifecycle || "LIVE");
+    setC2cSession(readCastleSocialAvSessionV0());
   }, []);
+
+  const c2cStatus = c2cSession?.lifecycle || null;
+  const spatial = c2cSession?.spatialSession;
+  const roomLabel = spatial?.roomId || c2cSession?.roomKey || "—";
+  const anchorLabel = spatial?.spatialContext?.hostAnchor?.label || "—";
+  const observerEntity = spatial?.entityLayer?.rhizohEntities?.find(
+    (entity) => entity.id === spatial?.entityLayer?.defaultObserverEntityId
+  );
+  const foxBehavior = spatial?.entityLayer?.behaviorLayer?.localEntities?.find(
+    (entity) => entity.entityKind === "fox"
+  )?.behavior;
 
   return (
     <div className="space-y-3 normal-case" data-rhizoh-world-social-panel="1">
@@ -48,8 +72,8 @@ export const RhizohWorldSocialPanelV0 = memo(function RhizohWorldSocialPanelV0({
           onClick={onOpenGreenroom}
         />
         <SocialAction
-          title={tr ? "Canlı yayın" : "Live broadcast"}
-          blurb={tr ? "Yayın yüzeyine geç" : "Open broadcast surface"}
+          title={tr ? "Yayın hazırlığı · beta" : "Broadcast prep · beta"}
+          blurb={tr ? "Davet ve durum hazırlığına geç" : "Open invite and status prep"}
           onClick={onOpenBroadcast}
         />
         <button
@@ -63,12 +87,30 @@ export const RhizohWorldSocialPanelV0 = memo(function RhizohWorldSocialPanelV0({
           <p className="mt-1 text-[9px] text-white/55">
             {c2cStatus === "LIVE"
               ? tr
-                ? "Oturum LIVE — mic pulse aktif (signaling stub)"
-                : "Session LIVE — mic pulse active (signaling stub)"
+                ? `Spatial session hazır · ${anchorLabel}`
+                : `Spatial session ready · ${anchorLabel}`
               : tr
-                ? "Ses / kamera bağlantısı başlat (v0 scaffold)"
-                : "Start voice / camera link (v0 scaffold)"}
+                ? "Castle session context hazırla"
+                : "Prepare castle session context"}
           </p>
+          {c2cSession ? (
+            <div className="mt-1 space-y-0.5 text-[8px] text-white/38">
+              <p>
+                {tr ? "Oda" : "Room"}: <span className="font-mono">{roomLabel}</span> ·{" "}
+                {tr ? "media beklemede" : "media pending"}
+              </p>
+              <p>
+                {observerEntity?.label || "Fox"}:{" "}
+                {tr ? "observer layer · kamera katılımcısı değil" : "observer layer · not a camera participant"}
+              </p>
+              {foxBehavior ? (
+                <p>
+                  {tr ? "Davranış" : "Behavior"}:{" "}
+                  <span className="font-mono">{foxBehavior.state}</span> · {foxBehavior.output.gazeDirection}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </button>
       </div>
     </div>

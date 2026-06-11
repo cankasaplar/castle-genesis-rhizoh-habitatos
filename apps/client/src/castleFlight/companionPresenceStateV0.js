@@ -29,8 +29,8 @@ export const COMPANION_PRESENCE_STATE_LABELS_TR_V0 = Object.freeze({
 
 export const COMPANION_DORMANCY_UI_V0 = Object.freeze({
   active: null,
-  waiting: "Shane bekliyor — gözlem alanı henüz açık değil.",
-  dormant: "Shane şu anda gözlemlenmiyor."
+  waiting: "Companion yüzeyi kapalı — gözlem alanı henüz açık değil.",
+  dormant: "Companion şu anda gözlemlenmiyor."
 });
 
 /**

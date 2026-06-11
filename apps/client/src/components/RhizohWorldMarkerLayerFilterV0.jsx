@@ -1,25 +1,18 @@
 import React, { memo, useCallback, useEffect, useState } from "react";
 import {
+  listVisibleWorldMapMarkerLayerRowsV0,
   readWorldMapMarkerLayerStateV0,
   writeWorldMapMarkerLayerStateV0,
   WORLD_MAP_MARKER_LAYER_EVENT_V0
 } from "../rhizoh/runtime/worldMapMarkerLayerStateV0.js";
 import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
 
-const ROWS_V0 = Object.freeze([
-  { key: "systemAnchors", tr: "Sistem çapaları", en: "System anchors" },
-  { key: "ecosystemNodes", tr: "Ekosistem düğümleri", en: "Ecosystem nodes" },
-  { key: "userCastle", tr: "Kalem", en: "My castle" },
-  { key: "ghostCastles", tr: "Hayalet kaleler", en: "Ghost castles" },
-  { key: "coPresence", tr: "Canlı tanıklar", en: "Live witnesses" },
-  { key: "epistemicPoi", tr: "POI (yakın)", en: "POI (nearby)" }
-]);
-
 export const RhizohWorldMarkerLayerFilterV0 = memo(function RhizohWorldMarkerLayerFilterV0({
   uiLocale
 }) {
   const tr = (uiLocale || readUiLocaleV0()) === "tr";
   const [state, setState] = useState(readWorldMapMarkerLayerStateV0());
+  const rows = listVisibleWorldMapMarkerLayerRowsV0();
 
   useEffect(() => {
     const onChange = (e) => {
@@ -36,8 +29,8 @@ export const RhizohWorldMarkerLayerFilterV0 = memo(function RhizohWorldMarkerLay
 
   return (
     <div className="flex flex-wrap gap-2 text-[8px] text-white/70">
-      {ROWS_V0.map((row) => (
-        <label key={row.key} className="inline-flex cursor-pointer items-center gap-1">
+      {rows.map((row) => (
+        <label key={row.key} className="inline-flex cursor-pointer items-center gap-1" title={row.tier}>
           <input
             type="checkbox"
             checked={state[row.key] !== false}
@@ -47,6 +40,9 @@ export const RhizohWorldMarkerLayerFilterV0 = memo(function RhizohWorldMarkerLay
           <span>{tr ? row.tr : row.en}</span>
         </label>
       ))}
+      <span className="text-white/35">
+        {tr ? "Placeholder ve witness marker'ları gizli." : "Placeholder and witness markers are hidden."}
+      </span>
     </div>
   );
 });

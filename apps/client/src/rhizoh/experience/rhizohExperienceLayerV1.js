@@ -174,8 +174,8 @@ export function buildRhizohCapabilitySurfaceRows(surfaces = {}) {
     },
     {
       key: "kernelHeavyPanels",
-      label: "KERNEL konsolu",
-      lockedHint: "Tam sohbet bandında."
+      label: "Analiz paneli",
+      lockedHint: "Bu sürümde kapalı."
     },
     {
       key: "epistemicHeavyHud",

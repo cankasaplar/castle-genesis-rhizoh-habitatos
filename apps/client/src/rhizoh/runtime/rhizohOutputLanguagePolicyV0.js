@@ -16,10 +16,11 @@ export const OLP_MODE_V0 = Object.freeze({
   ADAPTIVE: "adaptive"
 });
 
-const STORAGE_KEY_V0 = "rhizoh.user.language.v0";
+const STORAGE_KEY_V0 = "rhizoh.output.language.preference.v1";
 
 /** @type {string | null} — owned by OLP; set only via apply/hydrate */
 let olpPreferenceLocale = null;
+let olpPreferenceExplicitV0 = false;
 
 function readPolicyModeFromEnvV0() {
   const raw = String(
@@ -33,7 +34,7 @@ function readPolicyModeFromEnvV0() {
 }
 
 function readPersistedPreferenceFromStorageV0() {
-  if (typeof localStorage === "undefined") return resolveDefaultUiLocaleV0();
+  if (typeof localStorage === "undefined") return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY_V0);
     if (raw && RHIZOH_UI_LAUNCH_LOCALES_V0.includes(String(raw).toLowerCase())) {
@@ -42,14 +43,20 @@ function readPersistedPreferenceFromStorageV0() {
   } catch {
     /* noop */
   }
-  return resolveDefaultUiLocaleV0();
+  return null;
 }
 
 /**
  * One-time boot: load persisted UI preference into OLP (not continuous UI read in hot path).
  */
 export function hydrateOlpFromPersistedPreferenceV0() {
-  return applyUiLanguagePreferenceToOlpV0(readPersistedPreferenceFromStorageV0(), "hydrate");
+  const persisted = readPersistedPreferenceFromStorageV0();
+  if (!persisted) {
+    olpPreferenceLocale = null;
+    olpPreferenceExplicitV0 = false;
+    return publishOlpSnapshotV0(resolveRhizohLanguageCatalogRowV0(resolveDefaultUiLocaleV0()), "hydrate_auto");
+  }
+  return writeRhizohOutputLanguagePreferenceV0(persisted, "hydrate");
 }
 
 /**
@@ -58,7 +65,24 @@ export function hydrateOlpFromPersistedPreferenceV0() {
  * @param {string} [source]
  */
 export function applyUiLanguagePreferenceToOlpV0(localeCode, source = "ui_write") {
+  return writeRhizohOutputLanguagePreferenceV0(localeCode, source);
+}
+
+/**
+ * Rhizoh response language preference — separate from app UI language.
+ * @param {string} localeCode
+ * @param {string} [source]
+ */
+export function writeRhizohOutputLanguagePreferenceV0(localeCode, source = "response_language_write") {
   olpPreferenceLocale = normalizeUiLocaleV0(localeCode);
+  olpPreferenceExplicitV0 = true;
+  try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(STORAGE_KEY_V0, olpPreferenceLocale);
+    }
+  } catch {
+    /* noop */
+  }
   const row = resolveRhizohLanguageCatalogRowV0(olpPreferenceLocale);
   const policy = publishOlpSnapshotV0(row, source);
   if (typeof window !== "undefined") {
@@ -69,6 +93,19 @@ export function applyUiLanguagePreferenceToOlpV0(localeCode, source = "ui_write"
     );
   }
   return policy;
+}
+
+export function clearRhizohOutputLanguagePreferenceV0() {
+  olpPreferenceLocale = null;
+  olpPreferenceExplicitV0 = false;
+  try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.removeItem(STORAGE_KEY_V0);
+    }
+  } catch {
+    /* noop */
+  }
+  return publishOlpSnapshotV0(resolveRhizohLanguageCatalogRowV0(resolveDefaultUiLocaleV0()), "response_language_auto");
 }
 
 function readOlpOwnedPreferenceLocaleV0() {
@@ -118,6 +155,9 @@ export function readOutputLanguagePolicyV0() {
 
 export function resolveOutputLanguageCodeV0(detectedInputCode = "") {
   const olp = readOutputLanguagePolicyV0();
+  if (!olpPreferenceExplicitV0) {
+    return normalizeUiLocaleV0(detectedInputCode || resolveDefaultUiLocaleV0());
+  }
   if (olp.mode === OLP_MODE_V0.MIRROR) {
     return normalizeUiLocaleV0(detectedInputCode || olp.language);
   }
@@ -170,4 +210,10 @@ export function buildOutputLanguagePolicyDirectiveV0(detectedInputCode, confiden
 /** @internal vitest */
 export function __resetOlpStateForTestV0() {
   olpPreferenceLocale = null;
+  olpPreferenceExplicitV0 = false;
+  try {
+    if (typeof localStorage !== "undefined") localStorage.removeItem(STORAGE_KEY_V0);
+  } catch {
+    /* noop */
+  }
 }

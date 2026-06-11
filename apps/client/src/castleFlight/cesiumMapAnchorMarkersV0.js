@@ -227,7 +227,7 @@ export function installWorldMapAnchorMarkersV0(viewer, Cesium) {
 
   const syncSpatialMemoryBeaconsV0 = () => {
     removeByPrefix(SPATIAL_MEMORY_ENTITY_PREFIX_V0);
-    if (!layer().systemAnchors) return;
+    if (!layer().memoryBeacons) return;
     const beaconImage = createCesiumMapPinCanvasV0({ pinType: "memory_beacon", size: 44 });
     for (const row of readActiveSpatialMemoryMapPinsV1()) {
       if (!Number.isFinite(row?.lat) || !Number.isFinite(row?.lon)) continue;
@@ -310,6 +310,7 @@ export function installWorldMapAnchorMarkersV0(viewer, Cesium) {
       }
       removeByPrefix(GHOST_ENTITY_PREFIX_V0);
       removeByPrefix(WITNESS_ENTITY_PREFIX_V0);
+      removeByPrefix(SPATIAL_MEMORY_ENTITY_PREFIX_V0);
     } catch {
       /* noop */
     }

@@ -51,8 +51,8 @@ export const RHIZOH_CAPABILITY_HALO_NODES_TR_V0 = Object.freeze([
     id: "broadcast",
     label: "Yayın",
     geometryKind: "spiral",
-    whisper: "Canlı yayın veya hazırlık odasına geçebilirsin.",
-    seedIntent: "yayına geç"
+    whisper: "Yayın hazırlığı beta — davet ve durum akışına geçebilirsin.",
+    seedIntent: "yayın hazırlığını aç"
   }),
   Object.freeze({
     id: "build",
@@ -64,10 +64,10 @@ export const RHIZOH_CAPABILITY_HALO_NODES_TR_V0 = Object.freeze([
   }),
   Object.freeze({
     id: "companion",
-    label: "Eşlik",
+    label: "Eşlikçi",
     geometryKind: "spiral",
-    whisper: "Octo ve karakter / diyalog yüzeyi.",
-    seedIntent: "octo ile yeni bir karakter tasarla"
+    whisper: "Bu sürümde kapalı; canlı karakter vaadi göstermiyoruz.",
+    seedIntent: "companion durumunu göster"
   }),
   Object.freeze({
     id: "robotics",
@@ -96,11 +96,11 @@ export const RHIZOH_CAPABILITY_HALO_NODES_TR_V0 = Object.freeze([
 
 /** Alt çubuk — kısa açıklama (title) */
 export const RHIZOH_SHELL_HINT_TR_V0 = Object.freeze({
-  world: "Ana sahne · Küre / Şehir / Bağlantı (aç-kapat · dokun = harita değiştir)",
-  hall: "Salon paneli (aç/kapat)",
-  greenroom: "Hazırlık paneli (aç/kapat)",
-  broadcast: "Yayın paneli (aç/kapat)",
-  studio: "Stüdyo paneli (aç/kapat)",
+  world: "Dünya · harita, konum ve sohbet",
+  hall: "Salon · gözlem özeti ve kayıt bağlantıları",
+  greenroom: "Hazırlık · davet linki oluşturma (beta)",
+  broadcast: "Yayın · davet ve yayın hazırlığı (beta)",
+  studio: "Stüdyo · üretim durumu ve harita özeti (beta)",
   profile: "Profil paneli (aç/kapat)"
 });
 
@@ -127,12 +127,12 @@ export function resolveProductStatusHeadlineTrV0(input = {}) {
     if (hasAnchor && anchorLabel) {
       return `Ana sahne · Kaldığın yer: ${anchorLabel.slice(0, 40)}`;
     }
-    return "Ana sahne · Konuş, yaz veya ortadaki tekerlekten seç";
+    return "Dünya · Haritayı aç, konumunu seç veya Rhizoh'a yaz";
   }
-  if (surface === "studio") return "Stüdyo · Üretim ve oturumlar";
-  if (surface === "broadcast") return "Yayın · Canlı ve paylaşım";
-  if (surface === "greenroom") return "Hazırlık odası · Yayına hazırlık";
-  if (surface === "hall") return "Salon · Gözlem ve kayıtlar";
+  if (surface === "studio") return "Stüdyo · Beta üretim yüzeyi";
+  if (surface === "broadcast") return "Yayın · Beta hazırlık ve davet";
+  if (surface === "greenroom") return "Hazırlık odası · Beta davet akışı";
+  if (surface === "hall") return "Salon · Gözlem özeti ve kayıt bağlantıları";
   if (surface === "profile") return "Profil · Hesap ve kimlik";
 
   const intentRow = RHIZOH_INTENT_PLAIN_TR_V0[intent] || RHIZOH_INTENT_PLAIN_TR_V0.explore;

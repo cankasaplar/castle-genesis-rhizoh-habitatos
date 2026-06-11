@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RhizohWorldMapToolStripV0 } from "../rhizoh/runtime/RhizohWorldMapToolStripV0.jsx";
 import { RhizohWorldSocialPanelV0 } from "./RhizohWorldSocialPanelV0.jsx";
@@ -22,6 +22,17 @@ import { RhizohWorldMarkerLayerFilterV0 } from "./RhizohWorldMarkerLayerFilterV0
 import { RhizohWorldAtmosphereChipV0 } from "./RhizohWorldAtmosphereChipV0.jsx";
 import { RhizohWorldSportsNewsStripV0 } from "./RhizohWorldSportsNewsStripV0.jsx";
 import { resolveRhizohWorldSpaceMapStripBottomCssV0 } from "../rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
+import { routeCesiumCommandV0 } from "../castleFlight/cesiumCommandRouterV0.js";
+import {
+  readCastleNexusGeoV0,
+  readUserCastleAnchorGeoV0
+} from "../rhizoh/runtime/worldMapBootstrapGeoV0.js";
+import { readActiveSpatialMemoryMapPinsV1 } from "../rhizoh/runtime/rhizohSpatialMemoryAnchorV1.js";
+import {
+  buildRhizohMapBrainActionsV1,
+  formatRhizohMapBrainActionLabelV1,
+  recordRhizohMapBrainFeedbackV1
+} from "../rhizoh/runtime/rhizohMapBrainV1.js";
 
 const DOMAIN_TABS_V0 = Object.freeze([
   { id: RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE, labelTr: "Mekân", labelEn: "Space" },
@@ -151,6 +162,13 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
               />
               <RhizohWorldClaimAnchorChipV0 active={spatialEngineActive} uiLocale={locale} />
               <RhizohWorldSportsNewsStripV0 active={spatialEngineActive} uiLocale={locale} />
+              <WorldStartCardV0
+                activeTool={activeMapTool}
+                active={spatialEngineActive}
+                uiLocale={locale}
+                worldData={worldData}
+                onSelect={onSelectMapTool}
+              />
             </div>
             <div className="pointer-events-auto absolute right-3 top-3 z-[3] flex flex-col items-end gap-2 sm:right-4 sm:top-4">
               <RhizohWorldMapControlsV0 active={spatialEngineActive} uiLocale={locale} />
@@ -232,3 +250,111 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
     </div>
   );
 });
+
+function WorldStartCardV0({ activeTool, active, uiLocale, worldData, onSelect }) {
+  const tr = (uiLocale || readUiLocaleV0()) === "tr";
+  const feedReady = worldData?.feed && worldData.feed !== "unavailable";
+  const activeCastle = readCastleNexusGeoV0() || readUserCastleAnchorGeoV0();
+  const memoryPins = readActiveSpatialMemoryMapPinsV1();
+  const mapBrain = buildRhizohMapBrainActionsV1({
+    conversationState: {
+      lastIntent: activeTool,
+      activeThreads: memoryPins.length ? ["memory_nodes"] : [],
+      unresolvedTasks: active ? [] : ["map_boot"]
+    },
+    mapState: {
+      active,
+      activeMapTool: activeTool,
+      hasActiveCastle: Boolean(activeCastle),
+      memoryNodeCount: memoryPins.length,
+      hasUserLocation: Boolean(activeCastle),
+      worldDataReady: Boolean(feedReady)
+    },
+    limit: 3
+  });
+  const mapBrainActionSignature = mapBrain.actions.map((action) => action.id).join("|");
+
+  useEffect(() => {
+    for (const action of mapBrain.actions) {
+      recordRhizohMapBrainFeedbackV1({ actionId: action.id, kind: "impression" });
+    }
+  }, [mapBrainActionSignature]);
+
+  const executeBrainAction = (action) => {
+    if (!action) return;
+    recordRhizohMapBrainFeedbackV1({ actionId: action.id, kind: "selected" });
+    if (action.command === "set_map_tool" && action.mapTool) {
+      onSelect?.(action.mapTool);
+      recordRhizohMapBrainFeedbackV1({ actionId: action.id, kind: "result", ok: true });
+      return;
+    }
+    if (action.command === "cesium_op" && action.op) {
+      const result = routeCesiumCommandV0({
+        op: action.op,
+        source: "rhizoh_map_brain_v1",
+        canonical: `map_brain:${action.id}`,
+        meta: Object.freeze({ ingress: "RhizohWorldDomainShellV0", reason: action.reason })
+      });
+      recordRhizohMapBrainFeedbackV1({
+        actionId: action.id,
+        kind: "result",
+        ok: result?.ok !== false
+      });
+    }
+  };
+
+  return (
+    <section
+      className="pointer-events-auto rounded-2xl border border-cyan-400/20 bg-[#030711]/90 p-3 text-white shadow-lg backdrop-blur-md normal-case"
+      data-rhizoh-world-start-card="1"
+    >
+      <p className="text-[8px] font-black uppercase tracking-[0.2em] text-cyan-200/80">
+        {tr ? "Dünya başlangıcı" : "World start"}
+      </p>
+      <p className="mt-1 text-[12px] font-semibold text-white/92">
+        {tr ? "Neredeyim?" : "Where am I?"}
+      </p>
+      <p className="mt-1 text-[10px] leading-relaxed text-white/58">
+        {tr
+          ? active
+            ? "Harita açık. Şehir, sokak veya kendi konum bağlantını seçebilirsin."
+            : "Harita hazırlanıyor. Açıldığında ilk eylemler burada kalacak."
+          : active
+            ? "The map is open. Choose city, streets, or your own anchor place."
+            : "The map is preparing. First actions stay here when it opens."}
+      </p>
+      <div className="mt-2 grid gap-1.5">
+        {mapBrain.actions.map((action) => {
+          const selected = action.mapTool && activeTool === action.mapTool;
+          return (
+            <button
+              key={action.id}
+              type="button"
+              disabled={!onSelect}
+              onClick={() => executeBrainAction(action)}
+              className={`rounded-lg border px-2 py-1.5 text-left text-[9px] font-semibold transition ${
+                selected
+                  ? "border-cyan-400/55 bg-cyan-500/20 text-cyan-50"
+                  : "border-white/12 bg-black/35 text-white/72 hover:border-cyan-400/35 hover:text-cyan-100"
+              }`}
+            >
+              <span>{formatRhizohMapBrainActionLabelV1(action, tr ? "tr" : "en")}</span>
+              <span className="ml-1 text-[8px] text-white/35">
+                {Math.round(action.confidence * 100)}% · {action.contextSource}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-2 text-[8px] text-white/42">
+        {feedReady
+          ? tr
+            ? `Burada: POI ${worldData.poiCount} · bina ${worldData.buildingCount}`
+            : `Here: POI ${worldData.poiCount} · buildings ${worldData.buildingCount}`
+          : tr
+            ? "Burada: harita ve bağlantı seçimi"
+            : "Here: map and anchor selection"}
+      </p>
+    </section>
+  );
+}

@@ -10,4 +10,5 @@ export * from "./castlePresenceNodeV0.js";
 export * from "./castleSessionV0.js";
 export * from "./octoPerformanceFeedV0.js";
 export * from "./spatialSessionBindingV0.js";
+export * from "./castleSpatialSessionV0.js";
 export * from "./castleEventInstanceV0.js";

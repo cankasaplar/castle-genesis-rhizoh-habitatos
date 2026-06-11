@@ -41,8 +41,8 @@ export const RHIZOH_CAPABILITY_HALO_NODES_V1 = [
   {
     id: "broadcast",
     label: "Broadcast",
-    whisper: "Canlı yayın ve GreenRoom yönlendirmesi yapabilirim; izleyici ve bellek bağlarını açarım.",
-    seedIntent: "yarin canli mac yayinla"
+    whisper: "Yayın hazırlığı beta; davet ve durum akışına yönlendirebilirim.",
+    seedIntent: "yayın hazırlığını aç"
   },
   {
     id: "build",
@@ -54,8 +54,8 @@ export const RHIZOH_CAPABILITY_HALO_NODES_V1 = [
   {
     id: "companion",
     label: "Companion",
-    whisper: "Octo ile pet / ghost / eşlikçi karakter ve diyalog yüzeyi açabilirim.",
-    seedIntent: "octo ile yeni bir companion karakter tasarla"
+    whisper: "Companion yüzeyi bu sürümde kapalı; durumunu gösterebilirim.",
+    seedIntent: "companion durumunu göster"
   },
   {
     id: "robotics",

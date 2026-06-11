@@ -60,7 +60,7 @@ export const StudioLiveRoomV0 = memo(function StudioLiveRoomV0() {
 
     const urls = defaultStudioLiveRoomModelUrlsV0();
     const pwe = readCastlePweV0();
-    const shaneUrl = resolveStudioModelUrlV0(pwe?.render?.modelRef) || urls.shane;
+    const stageAvatarUrl = resolveStudioModelUrlV0(pwe?.render?.modelRef) || urls.shane;
 
     let dead = false;
     const scene = new THREE.Scene();
@@ -184,7 +184,7 @@ export const StudioLiveRoomV0 = memo(function StudioLiveRoomV0() {
     };
 
     Promise.all([
-      loadOne(shaneUrl, "stage", "Shane"),
+      loadOne(stageAvatarUrl, "stage", "Stage avatar"),
       loadOne(urls.octo, "conversation", "Octo")
     ])
       .then(() => {
@@ -249,7 +249,7 @@ export const StudioLiveRoomV0 = memo(function StudioLiveRoomV0() {
 
       {loadState === "loading" ? (
         <p className="pointer-events-none absolute bottom-20 left-1/2 z-10 -translate-x-1/2 text-[10px] text-white/60">
-          GLB yükleniyor (Shane + Octo)…
+          GLB yükleniyor (stage avatar + Octo)…
         </p>
       ) : null}
       {loadState === "error" ? (

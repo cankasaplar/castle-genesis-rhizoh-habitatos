@@ -75,7 +75,7 @@ export function RealitySyncNodeBirthOverlay({ payload, onDone }) {
         phase === REALITY_SYNC_PHASE_V0.COMPLETE ? (
           <>
             <p className="text-base font-medium text-violet-100/95 font-sans normal-case leading-relaxed">
-              Kaleniz Serencebey Genesis ağına kilitlendi.
+              Kaleniz {placeLabel} bağlantısına kilitlendi.
             </p>
             <div className="mt-3 text-[10px] uppercase tracking-widest text-violet-300/70 font-mono">
               senin imzan

@@ -1,6 +1,6 @@
 import React, { memo, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Eye, Castle, PlusCircle } from "lucide-react";
+import { Eye, Castle } from "lucide-react";
 
 /**
  * @typedef {{
@@ -286,7 +286,7 @@ export const RhizohLivingWorldEntryShell = memo(function RhizohLivingWorldEntryS
         <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.15em] text-white/40">
           {labels.actions || "Ne yapmak istersin?"}
         </p>
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2">
           <Link
             to={a.observe.href}
             onClick={handleObserve}
@@ -305,17 +305,6 @@ export const RhizohLivingWorldEntryShell = memo(function RhizohLivingWorldEntryS
             <Castle className="h-5 w-5 text-violet-300/90" />
             <span className="text-[11px] font-semibold text-white">{a.enterCastle.label}</span>
             <span className="text-[8px] text-white/45">{a.enterCastle.hint}</span>
-          </button>
-
-          <button
-            type="button"
-            disabled={a.createCastle.disabled}
-            title={a.createCastle.hint}
-            className="flex flex-col items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-center opacity-50 cursor-not-allowed"
-          >
-            <PlusCircle className="h-5 w-5 text-white/40" />
-            <span className="text-[11px] font-semibold text-white/60">{a.createCastle.label}</span>
-            <span className="text-[8px] text-white/35">yakında</span>
           </button>
         </div>
       </section>

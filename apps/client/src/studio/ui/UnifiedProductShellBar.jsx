@@ -14,6 +14,13 @@ const PRODUCT_SHELL_IDS_V0 = Object.freeze([
   "profile"
 ]);
 
+const PRODUCT_SHELL_STATUS_V0 = Object.freeze({
+  greenroom: Object.freeze({ tr: "Beta", en: "Beta" }),
+  broadcast: Object.freeze({ tr: "Beta", en: "Beta" }),
+  studio: Object.freeze({ tr: "Beta", en: "Beta" }),
+  profile: Object.freeze({ tr: "Ayar", en: "Settings" })
+});
+
 export const PRODUCT_SHELL_IDS = new Set(PRODUCT_SHELL_IDS_V0);
 
 /**
@@ -27,7 +34,8 @@ function resolveProductShellItemsV0(locale) {
     return Object.freeze({
       id,
       label: row?.shell || id,
-      hint: hints[id] || row?.pathHint || id
+      hint: hints[id] || row?.pathHint || id,
+      status: PRODUCT_SHELL_STATUS_V0[id] || null
     });
   });
 }
@@ -77,6 +85,11 @@ export function UnifiedProductShellBar({ active, panelOpen = {}, onSelect, uiLoc
             >
               <span className="block truncate normal-case tracking-normal opacity-95 sm:hidden">{item.label.split(" ")[0]}</span>
               <span className="hidden sm:block">{item.label}</span>
+              {item.status ? (
+                <span className="mt-0.5 block truncate text-[7px] font-semibold uppercase tracking-wide text-white/38">
+                  {tr ? item.status.tr : item.status.en}
+                </span>
+              ) : null}
             </button>
           );
         })}

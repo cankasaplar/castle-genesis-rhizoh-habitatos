@@ -113,12 +113,12 @@ export const RhizohEventCreatePanelV12 = memo(function RhizohEventCreatePanelV12
     >
       <div>
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-200/90">
-          {tr ? "Deneyim oluştur" : "Create experience"}
+          {tr ? "Davetli deneyim linki" : "Invite-only experience link"}
         </p>
         <p className="text-[10px] text-white/55">
           {tr
-            ? "Paylaşılan deneyim — aynı T0 dünyası, yeni shell yok."
-            : "Shared experience container — same T0 world, no new shell."}
+            ? "Sonuç: yerel deneyim kaydı + paylaşılabilir davet linki. Yeni oda açılmaz."
+            : "Outcome: local experience record + shareable invite link. No new room opens."}
         </p>
       </div>
 
@@ -138,7 +138,7 @@ export const RhizohEventCreatePanelV12 = memo(function RhizohEventCreatePanelV12
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder={tr ? "Cuma akşamı canlı…" : "Friday night live…"}
+          placeholder={tr ? "Cuma akşamı buluşması…" : "Friday night session…"}
           className={`w-full rounded-lg border bg-black/40 px-3 py-2 text-[11px] text-white outline-none transition ${
             focusCreate ? "border-fuchsia-400/60 ring-1 ring-fuchsia-400/30" : "border-white/15"
           }`}
@@ -174,7 +174,7 @@ export const RhizohEventCreatePanelV12 = memo(function RhizohEventCreatePanelV12
           disabled={!title.trim()}
           className="rounded-lg border border-fuchsia-400/45 bg-fuchsia-500/15 px-3 py-1.5 text-[9px] font-bold uppercase tracking-wide text-fuchsia-100 disabled:opacity-40"
         >
-          {tr ? "Deneyim oluştur" : "Create event"}
+          {tr ? "Link oluştur" : "Create link"}
         </button>
         {displayLink ? (
           <button

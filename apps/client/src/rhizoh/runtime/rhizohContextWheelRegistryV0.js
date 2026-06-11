@@ -39,13 +39,6 @@ function mapNodesV0(tr) {
       seedIntent: ""
     }),
     Object.freeze({
-      id: "archive",
-      label: tr ? "Arşiv" : "Archive",
-      geometryKind: "archive",
-      whisper: tr ? "Arşiv haritası (önizleme — henüz kapalı)." : "Archive map (preview — not wired).",
-      seedIntent: ""
-    }),
-    Object.freeze({
       id: "fog",
       label: tr ? "Merkez" : "Center",
       geometryKind: "spiral",
