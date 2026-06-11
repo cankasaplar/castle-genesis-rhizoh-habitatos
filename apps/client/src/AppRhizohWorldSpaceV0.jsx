@@ -38,7 +38,10 @@ import { reconcileMapSurfaceFromGateway, setRealityMode } from "./reality/realit
 import { readUiLocaleV0 } from "./rhizoh/runtime/rhizohUiLocaleV0.js";
 import { writeRhizohWorldDrawerDomainV0 } from "./rhizoh/runtime/rhizohWorldDrawerDomainV0.js";
 import { handleWorldSpaceCapWheelNodeV0 } from "./rhizoh/runtime/rhizohWorldSpaceCapWheelV0.js";
-import { readCastleNexusGeoV0 } from "./rhizoh/runtime/worldMapBootstrapGeoV0.js";
+import {
+  readCastleNexusGeoV0,
+  resolveWorldMapBootstrapGeoV0
+} from "./rhizoh/runtime/worldMapBootstrapGeoV0.js";
 import {
   queryWorldMapGeoPermissionV0,
   requestWorldMapGeoV0,
@@ -195,6 +198,7 @@ export default function AppRhizohWorldSpaceV0() {
 
   const voiceDockBottomCssV0 = resolveRhizohWorldSpaceVoiceDockBottomCssV0();
   const mapStripBottomCssV0 = resolveRhizohWorldSpaceMapStripBottomCssV0();
+  const bootstrapPlaceLabelV0 = resolveWorldMapBootstrapGeoV0().label;
 
   return (
     <div
@@ -241,8 +245,8 @@ export default function AppRhizohWorldSpaceV0() {
           <div className="pointer-events-auto flex max-w-md flex-col items-center gap-1 rounded-xl border border-cyan-500/35 bg-black/80 px-3 py-2 text-center backdrop-blur-md">
             <p className="text-[10px] text-cyan-100/90 normal-case">
               {uiLocale === "tr"
-                ? "Harita Serencebey'de açıldı. Konumunu paylaşırsan kamerayı oraya taşırız."
-                : "Map opens at Serencebey. Share location to fly the camera to you."}
+                ? `Harita ${bootstrapPlaceLabelV0} bağlantısında açıldı. Konumunu paylaşırsan kamerayı oraya taşırız.`
+                : `Map opens at ${bootstrapPlaceLabelV0}. Share location to fly the camera to you.`}
             </p>
             <button
               type="button"
