@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   pickSpeechVoiceForLocaleV0,
-  resolveSpeechBcp47ForUiLocaleV0
+  resolveSpeechBcp47ForUiLocaleV0,
+  resolveSpeechLocaleForTextV0
 } from "../rhizohSpeechLocaleV0.js";
 
 /** @param {string} lang @param {boolean} [isDefault] */
@@ -28,5 +29,10 @@ describe("rhizohSpeechLocaleV0", () => {
     const voices = [mockVoice("tr-TR", true), mockVoice("en-GB")];
     const picked = pickSpeechVoiceForLocaleV0(voices, "en");
     expect(picked?.lang).toBe("en-GB");
+  });
+
+  it("prefers Turkish TTS locale when visible text is Turkish", () => {
+    expect(resolveSpeechLocaleForTextV0("Günaydın. Buradayım.", "en")).toBe("tr");
+    expect(resolveSpeechLocaleForTextV0("Harita açılıyor.", "en")).toBe("tr");
   });
 });

@@ -2,7 +2,7 @@
  * Chunk-first TTS — applies hot speech skeleton + micro-rhythm to Web Speech API.
  */
 
-import { readSpeechLocaleForVoiceV0 } from "./rhizohSpeechLocaleV0.js";
+import { readSpeechLocaleForVoiceV0, resolveSpeechLocaleForTextV0 } from "./rhizohSpeechLocaleV0.js";
 import {
   resolveSpeechBcp47ForUiLocaleV0,
   resolveSpeechVoiceForUiLocaleV0
@@ -102,7 +102,10 @@ export async function speakRhizohReplyChunkedV0(text, opts = {}) {
       applyRhizohSpeechHintsToUtteranceV0(u, {
         skeleton: sk,
         microRhythmFeel: feel,
-        language: opts.language || expr?.projection?.language || glue?.language || readSpeechLocaleForVoiceV0()
+        language: resolveSpeechLocaleForTextV0(
+          chunk,
+          opts.language || expr?.projection?.language || glue?.language || readSpeechLocaleForVoiceV0()
+        )
       });
       if (prosody) {
         u.rate = prosody.rate;
