@@ -1,17 +1,17 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { CastleShellRouter } from "../../shell/CastleShellRouter.jsx";
-import { LegalPreambleScreen } from "./LegalPreambleScreen.jsx";
 import { ClosedAdmissionCohortScreen } from "./ClosedAdmissionCohortScreen.jsx";
 import { ClosedAdmissionHoldScreen } from "./ClosedAdmissionHoldScreen.jsx";
 import { IngressErrorScreen } from "./IngressErrorScreen.jsx";
 import { CookieConsentBanner } from "./CookieConsentBanner.jsx";
-import { LanguagePickerScreen } from "./LanguagePickerScreen.jsx";
+import { RhizohUnifiedEntryScreen } from "./RhizohUnifiedEntryScreen.jsx";
 import {
   clearClosedAdmissionSessionForTestV0,
   deriveIngressPhaseV0,
   INGRESS_ROUTE_V0,
   isClosedAdmissionCohortStepRequiredV0,
   LEGAL_REALITY_SPEC_SHA256_V0,
+  isLegalPreambleRequiredV0,
   normalizeIngressPhaseV0
 } from "./ingress_router.js";
 import { recordCohortObservationV0 } from "./cohortObservationLogV0.js";
@@ -67,12 +67,14 @@ export function RhizohIngressFlow() {
     }
   }, [mountApp]);
 
-  const refreshAfterLanguage = useCallback(() => {
-    setPhase(normalizeIngressPhaseV0(deriveIngressPhaseV0()));
-  }, []);
-
-  if (phase === INGRESS_ROUTE_V0.LANGUAGE) {
-    return <LanguagePickerScreen onProceed={refreshAfterLanguage} />;
+  if (phase === INGRESS_ROUTE_V0.LANGUAGE || phase === INGRESS_ROUTE_V0.LEGAL_PREAMBLE) {
+    return (
+      <RhizohUnifiedEntryScreen
+        specSha256={LEGAL_REALITY_SPEC_SHA256_V0}
+        legalRequired={isLegalPreambleRequiredV0()}
+        onProceed={refreshAfterLegal}
+      />
+    );
   }
 
   if (phase === INGRESS_ROUTE_V0.ERROR) {
@@ -84,12 +86,6 @@ export function RhizohIngressFlow() {
         />
         <CookieConsentBanner />
       </>
-    );
-  }
-
-  if (phase === INGRESS_ROUTE_V0.LEGAL_PREAMBLE) {
-    return (
-      <LegalPreambleScreen specSha256={LEGAL_REALITY_SPEC_SHA256_V0} onProceed={refreshAfterLegal} />
     );
   }
 

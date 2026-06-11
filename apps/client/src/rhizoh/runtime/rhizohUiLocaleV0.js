@@ -4,13 +4,10 @@
  */
 
 import {
-  readRhizohSessionLanguagePreferenceV0,
   resolveRhizohBcp47V0,
-  resolveRhizohLanguageCatalogRowV0,
-  writeRhizohSessionLanguagePreferenceV0
+  resolveRhizohLanguageCatalogRowV0
 } from "./rhizohMultilingualBridgeV0.js";
 import { bootstrapCastleLanguageRuntimeV0 } from "./rhizohLanguageRuntimeV0.js";
-import { applyUiLanguagePreferenceToOlpV0 } from "./rhizohOutputLanguagePolicyV0.js";
 import { hasRhizohSpeechProfileConfiguredV0, writeRhizohSpeechProfileV0, RHIZOH_SPEECH_MODE_V0 } from "./rhizohSpeechProfileV0.js";
 
 export const RHIZOH_UI_LOCALE_CONTRACT_V0 = "rhizoh-ui-locale-v0";
@@ -103,8 +100,6 @@ export function readUiLocaleV0() {
       /* noop */
     }
   }
-  const session = readRhizohSessionLanguagePreferenceV0();
-  if (session && RHIZOH_UI_LAUNCH_LOCALES_V0.includes(session)) return session;
   const envDefault = resolveDefaultUiLocaleV0();
   const hasExplicitEnvDefault =
     typeof import.meta !== "undefined" &&
@@ -145,8 +140,6 @@ export function writeUiLocaleV0(code) {
   } catch {
     /* noop */
   }
-  writeRhizohSessionLanguagePreferenceV0(locale);
-  applyUiLanguagePreferenceToOlpV0(locale, "ui_write");
   if (typeof document !== "undefined") {
     document.documentElement.lang = resolveRhizohBcp47V0(locale).split("-")[0];
   }

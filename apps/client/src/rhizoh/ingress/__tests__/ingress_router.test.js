@@ -2,6 +2,12 @@ import { describe, expect, it, beforeEach } from "vitest";
 import { clearRhizohSpeechProfileForTestV0 } from "../../runtime/rhizohSpeechProfileV0.js";
 import { clearUiLocalePickedForTestV0, writeUiLocaleV0 } from "../../runtime/rhizohUiLocaleV0.js";
 import {
+  __resetOlpStateForTestV0,
+  clearRhizohOutputLanguagePreferenceV0,
+  resolveOutputLanguageCodeV0,
+  writeRhizohOutputLanguagePreferenceV0
+} from "../../runtime/rhizohOutputLanguagePolicyV0.js";
+import {
   acknowledgeLegalAccessV0,
   acknowledgeLegalPreambleV0,
   clearClosedAdmissionSessionForTestV0,
@@ -30,6 +36,8 @@ describe("ingress_router v0.1", () => {
     clearClosedAdmissionSessionForTestV0();
     clearUiLocalePickedForTestV0();
     clearRhizohSpeechProfileForTestV0();
+    clearRhizohOutputLanguagePreferenceV0();
+    __resetOlpStateForTestV0();
     clearEngine();
   });
 
@@ -118,5 +126,16 @@ describe("ingress_router v0.1", () => {
     } finally {
       import.meta.env.VITE_RHIZOH_LEGAL_PREAMBLE = orig;
     }
+  });
+
+  it("UI language does not force Rhizoh response language", () => {
+    writeUiLocaleV0("tr");
+    expect(resolveOutputLanguageCodeV0("en")).toBe("en");
+  });
+
+  it("Rhizoh response language can be locked independently from UI language", () => {
+    writeUiLocaleV0("en");
+    writeRhizohOutputLanguagePreferenceV0("tr", "test_manual");
+    expect(resolveOutputLanguageCodeV0("en")).toBe("tr");
   });
 });
