@@ -27,6 +27,7 @@ const ALLOW_SNAPSHOT_IMPORTERS = new Set([
   "apps/client/src/rhizoh/runtime/atmosphereRuntimeSnapshotV0.js",
   "apps/client/src/rhizoh/runtime/RhizohAtmosphereRenderer.jsx",
   "apps/client/src/rhizoh/runtime/RhizohAtmosphereRuntime.jsx",
+  "apps/client/src/rhizoh/runtime/RhizohLivingLoopRuntime.jsx",
   "apps/client/src/rhizoh/runtime/liveRuntimeOrchestratorV0.js"
 ]);
 
@@ -37,7 +38,8 @@ const ALLOW_GET = new Set([
 
 const ALLOW_SET = new Set([
   "apps/client/src/rhizoh/runtime/atmosphereRuntimeSnapshotV0.js",
-  "apps/client/src/rhizoh/runtime/RhizohAtmosphereRuntime.jsx"
+  "apps/client/src/rhizoh/runtime/RhizohAtmosphereRuntime.jsx",
+  "apps/client/src/rhizoh/runtime/RhizohLivingLoopRuntime.jsx"
 ]);
 
 const EXT = new Set([".js", ".jsx"]);
