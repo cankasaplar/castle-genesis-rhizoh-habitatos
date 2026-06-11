@@ -27,12 +27,12 @@ describe("rhizoh ingress flow", () => {
     expect(deriveIngressPhaseV0()).toBe("language");
   });
 
-  it("deriveIngressPhase returns legal_preamble when required and not acked", () => {
+  it("deriveIngressPhase keeps unified entry in language phase when language profile is missing", () => {
     writeUiLocaleV0("en");
     const orig = import.meta.env.VITE_RHIZOH_LEGAL_PREAMBLE;
     import.meta.env.VITE_RHIZOH_LEGAL_PREAMBLE = "1";
     try {
-      expect(deriveIngressPhaseV0()).toBe("legal_preamble");
+      expect(deriveIngressPhaseV0()).toBe("language");
     } finally {
       import.meta.env.VITE_RHIZOH_LEGAL_PREAMBLE = orig;
     }
