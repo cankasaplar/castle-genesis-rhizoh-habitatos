@@ -8,6 +8,10 @@ import {
   normalizeSessionLifecycleV0,
   isSpatialBindingAllowedV0
 } from "./castleSessionLifecycleV0.js";
+import {
+  buildCastleSpatialSessionV0,
+  deriveCastleSpatialRoomIdV0
+} from "./castleSpatialSessionV0.js";
 
 export const CASTLE_SOCIAL_AV_SESSION_SCHEMA_V0 = "castle.social_av_session.v0";
 export const CASTLE_SOCIAL_AV_PULSE_EVENT_V0 = "castle:social-av-pulse";
@@ -22,24 +26,51 @@ let _active = null;
  * @property {boolean} micActive
  * @property {boolean} cameraActive
  * @property {string} roomKey
+ * @property {ReturnType<typeof buildCastleSpatialSessionV0>} [spatialSession]
  * @property {number} createdAtMs
  * @property {number} [liveAtMs]
  */
 
 /**
- * @param {{ roomKey?: string, peerLabel?: string }} [opts]
+ * @param {{
+ *   roomKey?: string,
+ *   peerLabel?: string,
+ *   hostCastleId?: string,
+ *   peerCastleId?: string,
+ *   hostAnchor?: object | null,
+ *   peerAnchor?: object | null,
+ *   conversationContext?: object | null,
+ *   memoryBinding?: object | null
+ * }} [opts]
  */
 export function createCastleSocialAvSessionV0(opts = {}) {
+  const sessionId = `c2c_${Date.now().toString(36)}`;
+  const hostCastleId = String(opts.hostCastleId || "local_castle").trim();
+  const peerCastleId = opts.peerCastleId ? String(opts.peerCastleId).trim() : null;
+  const roomKey =
+    String(opts.roomKey || "").trim() ||
+    deriveCastleSpatialRoomIdV0({ hostCastleId, peerCastleId });
+  const spatialSession = buildCastleSpatialSessionV0({
+    sessionId,
+    roomId: roomKey,
+    hostCastleId,
+    peerCastleId,
+    hostAnchor: opts.hostAnchor || null,
+    peerAnchor: opts.peerAnchor || null,
+    conversationContext: opts.conversationContext || null,
+    memoryBinding: opts.memoryBinding || null
+  });
   const session = Object.freeze({
     schema: CASTLE_SOCIAL_AV_SESSION_SCHEMA_V0,
-    sessionId: `c2c_${Date.now().toString(36)}`,
+    sessionId,
     lifecycle: SESSION_LIFECYCLE_V0.DRAFT,
     micActive: false,
     cameraActive: false,
-    roomKey: String(opts.roomKey || "castle-link").trim() || "castle-link",
+    roomKey,
     peerLabel: String(opts.peerLabel || "").trim() || null,
     transport: "signaling_stub",
     note: "WebRTC/SFU wiring pending READY gate",
+    spatialSession,
     createdAtMs: Date.now(),
     liveAtMs: null
   });
@@ -103,6 +134,16 @@ export function publishCastleSocialAvPulseV0(session) {
         cameraActive: session.cameraActive,
         roomKey: session.roomKey,
         transport: session.transport,
+        spatialSession: session.spatialSession
+          ? Object.freeze({
+              sessionId: session.spatialSession.sessionId,
+              roomId: session.spatialSession.roomId,
+              hostCastleId: session.spatialSession.hostCastleId,
+              peerCastleId: session.spatialSession.peerCastleId,
+              memoryBinding: session.spatialSession.memoryBinding,
+              transportPlan: session.spatialSession.transportPlan
+            })
+          : null,
         atMs: Date.now()
       })
     : null;

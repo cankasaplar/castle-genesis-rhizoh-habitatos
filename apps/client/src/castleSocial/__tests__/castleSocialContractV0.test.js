@@ -18,6 +18,7 @@ import {
 } from "../octoPerformanceFeedV0.js";
 import { buildSpatialSessionBindingV0 } from "../spatialSessionBindingV0.js";
 import { buildEventInstanceV0 } from "../castleEventInstanceV0.js";
+import { buildCastleSpatialSessionV0, deriveCastleSpatialRoomIdV0 } from "../castleSpatialSessionV0.js";
 
 describe("castleSocialContractV0", () => {
   it("buildEventAxisV0 is deterministic and frozen", () => {
@@ -144,5 +145,28 @@ describe("castleSocialContractV0", () => {
     expect(session.bindingAllowed).toBe(false);
     expect(session).not.toHaveProperty("executionGraph");
     expect(session).not.toHaveProperty("router");
+  });
+
+  it("buildCastleSpatialSessionV0 binds castle identities without media execution", () => {
+    const roomId = deriveCastleSpatialRoomIdV0({
+      hostCastleId: "istanbul_castle",
+      peerCastleId: "barcelona_castle"
+    });
+    const session = buildCastleSpatialSessionV0({
+      sessionId: "sess_c2c",
+      roomId,
+      hostCastleId: "istanbul_castle",
+      peerCastleId: "barcelona_castle",
+      hostAnchor: { lat: 41.04, lon: 29.0, label: "Istanbul Castle", source: "origin" },
+      peerAnchor: { lat: 41.38, lon: 2.17, label: "Barcelona Castle", source: "peer" },
+      conversationContext: { intent: "castle_call", openLoops: ["memory_attach"] }
+    });
+
+    expect(session.ok).toBe(true);
+    expect(session.roomId).toBe("castle_room_barcelona_castle__istanbul_castle");
+    expect(session.participants).toHaveLength(2);
+    expect(session.spatialContext.sharedCameraMode).toBe("independent_until_sync");
+    expect(session.transportPlan.mediaReady).toBe(false);
+    expect(JSON.stringify(session)).not.toMatch(/getUserMedia|MediaStream|RTCPeerConnection/i);
   });
 });
