@@ -15,7 +15,7 @@ export const CONVERSATION_ANCHOR_SPECIES_ENV_V0 = "VITE_RHIZOH_CONVERSATION_ANCH
  * @returns {string}
  */
 export function resolveConversationAnchorSpeciesIdV0() {
-  const raw = String(import.meta.env?.[CONVERSATION_ANCHOR_SPECIES_ENV_V0] || "octo_v1").trim();
+  const raw = String(import.meta.env?.[CONVERSATION_ANCHOR_SPECIES_ENV_V0] || OBSERVER_SPECIES_FOX_V1.id).trim();
   const species = resolveObserverSpeciesV0(raw);
   return species?.id || OBSERVER_SPECIES_FOX_V1.id;
 }

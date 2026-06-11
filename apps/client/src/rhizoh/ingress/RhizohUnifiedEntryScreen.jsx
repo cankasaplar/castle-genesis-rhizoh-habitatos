@@ -7,10 +7,9 @@ import {
 } from "../runtime/rhizohUiLocaleV0.js";
 import {
   RHIZOH_SPEECH_MODE_V0,
-  RHIZOH_SPEECH_WHEEL_LOCALES_V0,
   writeRhizohSpeechProfileV0
 } from "../runtime/rhizohSpeechProfileV0.js";
-import { resolveRhizohLanguageCatalogRowV0 } from "../runtime/rhizohMultilingualBridgeV0.js";
+import { RHIZOH_LANGUAGE_CATALOG_V0 } from "../runtime/rhizohMultilingualBridgeV0.js";
 import {
   clearRhizohOutputLanguagePreferenceV0,
   writeRhizohOutputLanguagePreferenceV0
@@ -55,8 +54,10 @@ function pickButtonStyle(active) {
  */
 export function RhizohUnifiedEntryScreen({ onProceed, specSha256 = null, legalRequired = true }) {
   const [appLocale, setAppLocale] = useState(readUiLocaleV0());
-  const [rhizohMode, setRhizohMode] = useState(RHIZOH_SPEECH_MODE_V0.AUTO);
+  const [appSearch, setAppSearch] = useState("");
+  const [rhizohMode, setRhizohMode] = useState(RHIZOH_SPEECH_MODE_V0.MANUAL);
   const [rhizohLocale, setRhizohLocale] = useState(appLocale === "tr" ? "tr" : "en");
+  const [rhizohSearch, setRhizohSearch] = useState("");
   const [guestName, setGuestName] = useState("");
   const [terms, setTerms] = useState(false);
   const [kvkk, setKvkk] = useState(false);
@@ -69,6 +70,17 @@ export function RhizohUnifiedEntryScreen({ onProceed, specSha256 = null, legalRe
   const legalAcked = hasLegalAccessAckV0();
   const legalReady = !legalRequired || legalAcked || (terms && kvkk && aiConsent);
   const tr = appLocale === "tr";
+  const appLocaleRows = RHIZOH_UI_LAUNCH_LOCALES_V0.filter((code) => {
+    const q = appSearch.trim().toLowerCase();
+    if (!q) return true;
+    return `${code} ${resolveLaunchLocaleLabelV0(code)}`.toLowerCase().includes(q);
+  });
+  const rhizohLanguageRows = RHIZOH_LANGUAGE_CATALOG_V0.filter((row) => {
+    if (row.code === "und" || row.code === "mixed") return false;
+    const q = rhizohSearch.trim().toLowerCase();
+    if (!q) return true;
+    return `${row.code} ${row.label} ${row.bcp47} ${row.family}`.toLowerCase().includes(q);
+  });
 
   const persistLanguage = () => {
     writeUiLocaleV0(appLocale);
@@ -120,8 +132,23 @@ export function RhizohUnifiedEntryScreen({ onProceed, specSha256 = null, legalRe
           <p style={{ fontSize: 12, opacity: 0.7, margin: "0 0 12px" }}>
             {tr ? "UI dili butonları ve menüleri etkiler; Rhizoh cevap dili ayrı seçilir." : "UI language affects buttons and menus; Rhizoh response language is separate."}
           </p>
-          <div style={chipGridStyle}>
-            {RHIZOH_UI_LAUNCH_LOCALES_V0.map((code) => (
+          <input
+            value={appSearch}
+            onChange={(e) => setAppSearch(e.target.value)}
+            placeholder={tr ? "UI dili ara" : "Search app language"}
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              borderRadius: 12,
+              border: "1px solid #334155",
+              background: "rgba(15,23,42,0.75)",
+              color: "#e2e8f0",
+              padding: "10px 12px",
+              marginBottom: 10
+            }}
+          />
+          <div style={{ ...chipGridStyle, maxHeight: 150, overflowY: "auto" }}>
+            {appLocaleRows.map((code) => (
               <button
                 key={code}
                 type="button"
@@ -157,18 +184,36 @@ export function RhizohUnifiedEntryScreen({ onProceed, specSha256 = null, legalRe
             ))}
           </div>
           {rhizohMode === RHIZOH_SPEECH_MODE_V0.MANUAL ? (
-            <div style={chipGridStyle}>
-              {RHIZOH_SPEECH_WHEEL_LOCALES_V0.map((code) => (
+            <>
+              <input
+                value={rhizohSearch}
+                onChange={(e) => setRhizohSearch(e.target.value)}
+                placeholder={tr ? "Rhizoh cevap dili ara" : "Search Rhizoh response language"}
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  borderRadius: 12,
+                  border: "1px solid #334155",
+                  background: "rgba(15,23,42,0.75)",
+                  color: "#e2e8f0",
+                  padding: "10px 12px",
+                  marginBottom: 10
+                }}
+              />
+              <div style={{ ...chipGridStyle, maxHeight: 220, overflowY: "auto" }}>
+              {rhizohLanguageRows.map((row) => (
                 <button
-                  key={code}
+                  key={row.code}
                   type="button"
-                  style={pickButtonStyle(rhizohLocale === code)}
-                  onClick={() => setRhizohLocale(code)}
+                  style={pickButtonStyle(rhizohLocale === row.code)}
+                  onClick={() => setRhizohLocale(row.code)}
                 >
-                  {resolveRhizohLanguageCatalogRowV0(code).label}
+                  <span style={{ display: "block", fontWeight: 700 }}>{row.label}</span>
+                  <span style={{ display: "block", fontSize: 10, opacity: 0.65 }}>{row.code} · {row.bcp47}</span>
                 </button>
               ))}
-            </div>
+              </div>
+            </>
           ) : null}
         </section>
 

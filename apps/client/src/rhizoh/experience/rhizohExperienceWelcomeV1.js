@@ -10,9 +10,9 @@ export const RHIZOH_WELCOME_SEEN_LS_KEY_V1 = "rhizoh.experience.welcome_seen.v1"
  */
 export function resolveRhizohFirstWelcomeCopyV1(tr) {
   if (tr) {
-    return "Ben Rhizoh. Octo burada. İstersen konuşabilir, haritayı açabilir ya da Cap Wheel'den yeni bir deneyim başlatabilirsin.";
+    return "Ben Rhizoh. Fox sessiz gözlem katmanı olarak burada. İstersen konuşabilir, haritayı açabilir ya da Cap Wheel'den yeni bir deneyim başlatabilirsin.";
   }
-  return "I'm Rhizoh. Octo is here. You can talk, open the map, or start a new experience from the Cap Wheel.";
+  return "I'm Rhizoh. Fox is here as a silent observation layer. You can talk, open the map, or start a new experience from the Cap Wheel.";
 }
 
 /**
@@ -20,9 +20,9 @@ export function resolveRhizohFirstWelcomeCopyV1(tr) {
  */
 export function resolveRhizohInviteWelcomeCopyV1(tr) {
   if (tr) {
-    return "Bir ortama girdin. Ben Rhizoh. Octo burada. İstersen konuşabilir, haritayı açabilir ya da Cap Wheel'den yeni bir deneyim başlatabilirsin.";
+    return "Bir ortama girdin. Ben Rhizoh. Fox sessiz gözlem katmanı olarak burada. İstersen konuşabilir, haritayı açabilir ya da Cap Wheel'den yeni bir deneyim başlatabilirsin.";
   }
-  return "You entered an experience. I'm Rhizoh. Octo is here. You can talk, open the map, or start a new experience from the Cap Wheel.";
+  return "You entered an experience. I'm Rhizoh. Fox is here as a silent observation layer. You can talk, open the map, or start a new experience from the Cap Wheel.";
 }
 
 /**

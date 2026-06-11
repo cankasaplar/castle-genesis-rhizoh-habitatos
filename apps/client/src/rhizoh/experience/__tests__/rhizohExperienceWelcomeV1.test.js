@@ -12,10 +12,10 @@ describe("rhizohExperienceWelcomeV1", () => {
     __resetRhizohWelcomeSeenForTestV1();
   });
 
-  it("invite welcome mentions Rhizoh Octo map and Cap Wheel", () => {
+  it("invite welcome mentions Rhizoh Fox map and Cap Wheel", () => {
     const copy = resolveRhizohInviteWelcomeCopyV1(true);
     expect(copy).toContain("Rhizoh");
-    expect(copy).toContain("Octo");
+    expect(copy).toContain("Fox");
     expect(copy).toMatch(/Cap Wheel|harit/i);
   });
 

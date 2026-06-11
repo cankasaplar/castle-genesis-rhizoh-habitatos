@@ -29,7 +29,6 @@ import {
   resolveRhizohWorldSpaceVoiceDockBottomCssV0
 } from "./rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
 import { resolveRhizohProductPathV0 } from "./rhizoh/product/rhizohProductTopologyV0.js";
-import { computeMapSurfaceActive } from "./reality/realityEngineSurface.js";
 import {
   configureSpatialRealityInfraV0,
   clearSpatialRealityInfraV0
@@ -66,10 +65,7 @@ export default function AppRhizohWorldSpaceV0() {
     getRhizohWorldMapToolSnapshotV0
   );
 
-  const mapSurfaceActive = useMemo(
-    () => computeMapSurfaceActive("REAL_MAP", gateway.phase),
-    [gateway.phase, infraTick]
-  );
+  const mapSurfaceActive = true;
 
   const cesiumLayerActiveV0 = useMemo(
     () =>
@@ -91,7 +87,7 @@ export default function AppRhizohWorldSpaceV0() {
     writeRhizohWorldDrawerDomainV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE);
     configureSpatialRealityInfraV0({
       gatewayPhase: gateway.phase,
-      mapSurfaceActive: computeMapSurfaceActive("REAL_MAP", gateway.phase),
+      mapSurfaceActive: true,
       onSync: () => setInfraTick((n) => n + 1)
     });
 
@@ -103,9 +99,9 @@ export default function AppRhizohWorldSpaceV0() {
     const nexusGeo = readCastleNexusGeoV0();
     const tool = readRhizohWorldMapToolV0();
     if (!nexusGeo) {
-      void applyRhizohWorldMapToolV0("globe", {
+      void applyRhizohWorldMapToolV0("city_map", {
         setRealityMode,
-        source: "WORLD_SPACE_BOOT_ORBIT"
+        source: "WORLD_SPACE_BOOT_CITY"
       });
     } else if (tool === "globe") {
       void applyRhizohWorldMapToolV0("city_map", {
@@ -126,7 +122,7 @@ export default function AppRhizohWorldSpaceV0() {
   useEffect(() => {
     configureSpatialRealityInfraV0({
       gatewayPhase: gateway.phase,
-      mapSurfaceActive: computeMapSurfaceActive("REAL_MAP", gateway.phase),
+      mapSurfaceActive: true,
       onSync: () => setInfraTick((n) => n + 1)
     });
     reconcileMapSurfaceFromGateway();
