@@ -5495,9 +5495,9 @@ const SovereignCastleCommandPanel = memo(
   const [castleType, setCastleType] = useState("SANCTUARY");
   const [kernelNote, setKernelNote] = useState("");
   const [garrison, setGarrison] = useState([
-    { id: "A-01", name: "Prometheus", role: "Overmind", status: "Offline beta seed" },
-    { id: "A-02", name: "Atlas", role: "Guardian", status: "Offline beta seed" },
-    { id: "P-01", name: "Companion module", role: "Companion", status: "Closed in this build" }
+    { id: "A-01", name: "Prometheus", role: "Overmind", status: "Hibernating" },
+    { id: "A-02", name: "Atlas", role: "Guardian", status: "Hibernating" },
+    { id: "P-01", name: "Ghost Pet", role: "Companion", status: "Hibernating" }
   ]);
   const [mediaState, setMediaState] = useState({ playing: false, track: "CODEX_Memory_Fragment_01.wav", src: "", kind: "video" });
   const [waveHeights, setWaveHeights] = useState(() => Array.from({ length: 16 }, () => 20));
@@ -5976,12 +5976,7 @@ const SovereignCastleCommandPanel = memo(
     onCastleLifecycleChange?.("DORMANT");
     uiStore.dispatch({ type: "SET_RHIZOH_SCENE_ANCHOR", payload: null });
     setGarrison((prev) =>
-      prev
-        .filter((a) => !String(a.id).startsWith("api-"))
-        .map((a) => ({
-          ...a,
-          status: a.role === "Companion" ? "Closed in this build" : "Offline beta seed"
-        }))
+      prev.filter((a) => !String(a.id).startsWith("api-")).map((a) => ({ ...a, status: "Hibernating" }))
     );
     setActiveTab("GREETING");
     setMediaPlaylist([]);
