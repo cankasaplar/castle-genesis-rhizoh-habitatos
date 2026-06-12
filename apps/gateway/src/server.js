@@ -3083,6 +3083,22 @@ const httpServer = createServer(async (req, res) => {
       delete safePayload.llmKeySource;
       delete safePayload.keySource;
 
+      const llmMessage = String(
+        safePayload?.message || safePayload?.text || payload?.message || payload?.text || ""
+      ).trim();
+      if (!llmMessage) {
+        return sendJson(res, 400, {
+          ok: false,
+          error: "message_required",
+          reply: "Mesaj metni gerekli (message alanı boş).",
+          directive: "NONE",
+          ...buildRhizohLanguagePropagationEchoV1(langProp)
+        });
+      }
+      if (!safePayload.message) {
+        safePayload = { ...safePayload, message: llmMessage };
+      }
+
       let resolvedProvider = payload?.provider;
       let resolvedModel = payload?.model;
       let connApiKey = "";
@@ -3167,7 +3183,11 @@ const httpServer = createServer(async (req, res) => {
       ) {
         status = 429;
       } else if (code === "user_soft_blocked" || code === "prompt_abuse_detected") status = 403;
-      else if (["server_llm_key_missing", "user_llm_connection_required", "message_required", "missing_api_key"].includes(code) || msg.includes("missing_api_key_for_"))
+      else if (
+        ["server_llm_key_missing", "user_llm_connection_required", "message_required", "missing_api_key"].includes(code) ||
+        ["server_llm_key_missing", "user_llm_connection_required", "message_required", "missing_api_key"].includes(msg) ||
+        msg.includes("missing_api_key_for_")
+      )
         status = 400;
       let rhizohFailureKind = "provider_error";
       if (msg === "rate_limit_exceeded" || status === 429) rhizohFailureKind = "rate_limit";

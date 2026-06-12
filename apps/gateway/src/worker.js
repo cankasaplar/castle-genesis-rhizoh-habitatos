@@ -2,6 +2,7 @@
  * Gateway LLM worker thread — heavy /rhizoh/llm turns off the main HTTP event loop.
  */
 import { parentPort } from "node:worker_threads";
+import { sanitizeLlmWorkerTaskV0 } from "./llmWorkerTurnSanitizeV0.js";
 import { rhizohGatewayTurn } from "./rhizohGatewayTurn.js";
 
 if (!parentPort) {
@@ -11,22 +12,40 @@ if (!parentPort) {
 console.log("🔥 [GENESIS_BOOT] worker.js module loaded", { pid: process.pid });
 
 parentPort.on("message", async (task) => {
-  const id = String(task?.id || "");
-  console.log("WORKER_RECEIVED_TASK:", { id, hasTurnInput: Boolean(task?.turnInput) });
+  let rawLog = "";
+  try {
+    rawLog = JSON.stringify(task);
+  } catch {
+    rawLog = String(task);
+  }
+  console.log("WORKER_RAW_TASK_RECEIVED:", rawLog.slice(0, 4000));
+
+  const { id, turnInput, message } = sanitizeLlmWorkerTaskV0(task);
+  console.log("WORKER_SANITIZED_TASK:", {
+    id,
+    hasMessage: Boolean(message),
+    messagePreview: message ? message.slice(0, 80) : "",
+    keyMode: turnInput?.keyMode
+  });
+
   if (!id) return;
 
-  try {
-    const turnInput = task?.turnInput;
-    if (!turnInput || typeof turnInput !== "object") {
-      parentPort.postMessage({
-        id,
-        ok: false,
-        error: "missing_turn_input",
-        detail: "Worker task missing turnInput"
-      });
-      return;
-    }
+  if (!message) {
+    console.error("WORKER_FATAL: No message/text found in task payload");
+    parentPort.postMessage({
+      id,
+      ok: false,
+      status: "failed",
+      error: "message_required",
+      code: "message_required",
+      detail: "message_required",
+      reply: "Mesaj metni gerekli (message veya text alanı boş).",
+      directive: "NONE"
+    });
+    return;
+  }
 
+  try {
     const { result, traceId, turnLatencyMs, spinePhases, sampledTrace } = await rhizohGatewayTurn(turnInput);
     parentPort.postMessage({
       id,
@@ -39,13 +58,14 @@ parentPort.on("message", async (task) => {
       sampledTrace
     });
   } catch (error) {
+    const code = String(error?.code || error?.message || "llm_worker_failed");
     parentPort.postMessage({
       id,
       ok: false,
       status: "failed",
-      error: String(error?.code || error?.message || "llm_worker_failed"),
+      error: code,
+      code,
       detail: String(error?.message || error),
-      code: error?.code || "",
       reply: error?.reply || "",
       directive: error?.directive || "NONE",
       stressClass: error?.stressClass,

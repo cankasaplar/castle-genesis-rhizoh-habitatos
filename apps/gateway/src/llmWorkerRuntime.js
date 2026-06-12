@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Worker } from "node:worker_threads";
 
-const TASK_TTL_MS = Math.max(60_000, Number(process.env.CASTLE_LLM_WORKER_TASK_TTL_MS || 15 * 60_000) || 15 * 60_000);
+import { buildLlmWorkerPostMessageV0 } from "./llmWorkerTurnSanitizeV0.js";
 const TASK_POLL_MS = Math.max(100, Number(process.env.CASTLE_LLM_WORKER_POLL_MS || 400) || 400);
 
 const WORKER_DIR = dirname(fileURLToPath(import.meta.url));
@@ -80,6 +80,13 @@ function applyWorkerResultToTaskV0(id, msg) {
   }
 
   existing.updatedAt = Date.now();
+  const clientError = String(msg.error || msg.code || "");
+  const isClientError =
+    clientError === "message_required" ||
+    clientError === "missing_api_key" ||
+    clientError === "server_llm_key_missing" ||
+    clientError === "user_llm_connection_required";
+
   if (msg.ok) {
     existing.status = "completed";
     existing.httpStatus = 200;
@@ -96,7 +103,7 @@ function applyWorkerResultToTaskV0(id, msg) {
   }
 
   existing.status = "failed";
-  existing.httpStatus = 500;
+  existing.httpStatus = isClientError ? 400 : 500;
   existing.response = {
     ok: false,
     status: "failed",
@@ -149,8 +156,14 @@ function ensureWorkerV0() {
     const waiter = pending.get(id);
     if (waiter) {
       pending.delete(id);
+      const errMsg = String(msg.detail || msg.error || "llm_worker_failed");
+      const errCode = String(msg.code || msg.error || "");
       if (msg.ok) waiter.resolve(msg);
-      else waiter.reject(Object.assign(new Error(String(msg.detail || msg.error || "llm_worker_failed")), msg));
+      else {
+        const err = Object.assign(new Error(errMsg), msg);
+        if (!err.code && errCode) err.code = errCode;
+        waiter.reject(err);
+      }
     }
 
     applyWorkerResultToTaskV0(id, msg);
@@ -206,7 +219,8 @@ function dispatchLlmWorkerTaskV0(id, turnInput, meta = {}) {
   });
   latestTaskId = id;
   const w = ensureWorkerV0();
-  w.postMessage({ id, turnInput });
+  const envelope = buildLlmWorkerPostMessageV0(id, turnInput);
+  w.postMessage(envelope);
 }
 
 /**
