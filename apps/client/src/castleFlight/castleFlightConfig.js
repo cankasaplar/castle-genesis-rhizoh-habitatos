@@ -1,6 +1,6 @@
 /**
  * Castle Flight Config
- * FIX: missing gateway proxy helpers restored for client build compatibility
+ * Client-safe gateway configuration layer
  */
 
 export function getCastleFlightConfig() {
@@ -11,15 +11,15 @@ export function getCastleFlightConfig() {
 }
 
 /**
- * FIX: build-time compatibility shim
- * (client expects this even if gateway routing is disabled)
+ * Client build compatibility flag
+ * (no architecture change, sadece safety shim)
  */
 export function shouldUseSameOriginGatewayProxyV0() {
   return false;
 }
 
 /**
- * FIX: fallback base proxy resolver
+ * Same-origin gateway base resolver (fallback)
  */
 export function getRhizohSameOriginGatewayProxyBaseV0() {
   return "";
