@@ -2,7 +2,7 @@ import React, { memo } from "react";
 import CesiumRealMapLayer from "../castleFlight/CesiumRealMapLayer.jsx";
 import { RHIZOH_SPATIAL_RENDER_MODE_V0 } from "../rhizoh/runtime/spatialBootGateV0.js";
 
-const V11_FALLBACK_NODES_V0 = Object.freeze([
+const V11_CORE_MAP_NODES_V0 = Object.freeze([
   { id: "rhizoh", label: "RHIZOH", type: "core", lat: 41.045, lon: 29.006, color: "#22d3ee" },
   { id: "ghost", label: "GHOST", type: "ghost", lat: 41.047, lon: 29.008, color: "#a855f7" },
   { id: "gemini_tower", label: "GEMINI", type: "tower", lat: 37.422, lon: -122.0841, color: "#d946ef" },
@@ -14,7 +14,7 @@ const V11_FALLBACK_NODES_V0 = Object.freeze([
   { id: "sora_tower", label: "SORA", type: "tower", lat: 34.0522, lon: -118.2437, color: "#ec4899" }
 ]);
 
-function projectFallbackGeoV0(lat, lon) {
+function projectV11CoreMapGeoV0(lat, lon) {
   const x = ((Number(lon) + 180) / 360) * 100;
   const clampedLat = Math.max(-70, Math.min(70, Number(lat)));
   const y = ((70 - clampedLat) / 140) * 100;
@@ -24,12 +24,12 @@ function projectFallbackGeoV0(lat, lon) {
   };
 }
 
-function V11FallbackMapV0() {
+function V11CoreMapLayerV0() {
   return (
     <div
       className="absolute inset-0 overflow-hidden bg-[radial-gradient(circle_at_center,rgba(8,47,73,0.48),rgba(1,1,8,0.98)_68%)]"
-      data-rhizoh-v11-map-fallback="1"
-      aria-label="Rhizoh v11 safe world map"
+      data-rhizoh-v11-core-map-layer="1"
+      aria-label="Rhizoh Primary Spatial Surface V11"
     >
       <div className="absolute inset-x-[8%] top-[18%] h-px bg-cyan-300/10" />
       <div className="absolute inset-x-[8%] top-[42%] h-px bg-cyan-300/10" />
@@ -38,10 +38,10 @@ function V11FallbackMapV0() {
       <div className="absolute inset-y-[12%] left-[50%] w-px bg-cyan-300/10" />
       <div className="absolute inset-y-[12%] left-[75%] w-px bg-cyan-300/10" />
       <div className="absolute left-4 top-4 rounded-xl border border-cyan-400/25 bg-black/55 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-100/80">
-        RHIZOH V11 SAFE MAP
+        RHIZOH PRIMARY SPATIAL SURFACE V11
       </div>
-      {V11_FALLBACK_NODES_V0.map((node) => {
-        const pos = projectFallbackGeoV0(node.lat, node.lon);
+      {V11_CORE_MAP_NODES_V0.map((node) => {
+        const pos = projectV11CoreMapGeoV0(node.lat, node.lon);
         return (
           <div
             key={node.id}
@@ -92,7 +92,7 @@ function SafeWorldShellV0() {
 function renderFallbackForModeV0(renderMode) {
   if (renderMode === RHIZOH_SPATIAL_RENDER_MODE_V0.EMPTY_CANVAS) return <EmptyCanvasV0 />;
   if (renderMode === RHIZOH_SPATIAL_RENDER_MODE_V0.SAFE_WORLD_SHELL) return <SafeWorldShellV0 />;
-  return <V11FallbackMapV0 />;
+  return <V11CoreMapLayerV0 />;
 }
 
 /**
@@ -101,7 +101,7 @@ function renderFallbackForModeV0(renderMode) {
  */
 export const RhizohWorldSpaceMapHostV0 = memo(function RhizohWorldSpaceMapHostV0({
   active,
-  renderMode = RHIZOH_SPATIAL_RENDER_MODE_V0.FALLBACK_V11
+  renderMode = RHIZOH_SPATIAL_RENDER_MODE_V0.V11_CORE_MAP
 }) {
   return (
     <div

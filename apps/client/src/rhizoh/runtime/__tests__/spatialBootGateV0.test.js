@@ -14,7 +14,7 @@ describe("spatialBootGateV0", () => {
     });
 
     expect(gate.allowed).toBe(false);
-    expect(gate.renderMode).toBe(RHIZOH_SPATIAL_RENDER_MODE_V0.FALLBACK_V11);
+    expect(gate.renderMode).toBe(RHIZOH_SPATIAL_RENDER_MODE_V0.V11_CORE_MAP);
   });
 
   it("uses an empty canvas before world snapshot exists", () => {
@@ -38,7 +38,7 @@ describe("spatialBootGateV0", () => {
     });
 
     expect(gate.allowed).toBe(false);
-    expect(gate.renderMode).toBe(RHIZOH_SPATIAL_RENDER_MODE_V0.FALLBACK_V11);
+    expect(gate.renderMode).toBe(RHIZOH_SPATIAL_RENDER_MODE_V0.V11_CORE_MAP);
   });
 
   it("uses safe shell when identity exists but nodes are empty", () => {
