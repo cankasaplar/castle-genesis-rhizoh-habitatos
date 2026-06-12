@@ -44,7 +44,8 @@ Blueprint: `render.yaml` içinde bu üçü varsayılan **0** olarak set edilir.
 1. `apps/gateway/.env.production.example` → `apps/gateway/.env` (sunucuda veya gizli mağazada aynı anahtarlar).
 2. **Zorunlu (tam güç):**
    - `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` — servis hesabı JSON ile uyumlu.
-   - **Gemini LLM:** `CASTLE_LLM_PROVIDER=gemini`, `CASTLE_LLM_MODEL=gemini-2.0-flash`, `GOOGLE_API_KEY` veya `GEMINI_API_KEY`.
+   - **OpenAI LLM (varsayılan):** `CASTLE_LLM_PROVIDER=openai`, `CASTLE_LLM_MODEL=gpt-4o-mini`, `OPENAI_API_KEY`.
+   - **Gemini (ses STT):** `GEMINI_API_KEY` + `CASTLE_VOICE_TRANSCRIBE_PROVIDER=gemini_live` — `/rhizoh/llm` için zorunlu değil.
 3. **Önerilir:**
    - `CASTLE_GATEWAY_TOKEN` — istemci ile paylaşımlı.
    - `CASTLE_HTTP_CORS_ORIGIN` — varsayılan origin; gateway ayrıca `CASTLE_ALLOWED_ORIGINS` ile gelen `Origin` başlığını **echo** eder (çoklu Firebase: `…web.app` **ve** `…firebaseapp.com` listeye ekleyin).
@@ -52,19 +53,19 @@ Blueprint: `render.yaml` içinde bu üçü varsayılan **0** olarak set edilir.
    - `CASTLE_REQUIRE_AUTH=true`, geliştirici bypass’ları kapalı (`CASTLE_ALLOW_DEV_*=false`).
 4. Doğrulama: `npm run verify:production -- --target=gateway --strict`
 
-### 2c. Render — Gemini LLM (OpenAI artık kullanılmıyorsa)
+### 2c. Render — LLM sağlayıcı switch (OpenAI / Gemini / DeepSeek)
 
-Render Dashboard → **castle-genesis-gateway** → **Environment**:
+Render Dashboard → **castle-genesis-gateway** → **Environment** — yalnızca **bir** LLM provider aktif:
 
-| Key | Value |
-|-----|--------|
-| `CASTLE_LLM_PROVIDER` | `gemini` |
-| `CASTLE_LLM_MODEL` | `gemini-2.0-flash` (veya panelde geçerli model id) |
-| `GEMINI_API_KEY` veya `GOOGLE_API_KEY` | Google AI Studio / GCP anahtarı |
+| Provider | `CASTLE_LLM_PROVIDER` | Model | Key |
+|----------|----------------------|-------|-----|
+| **OpenAI** (varsayılan) | `openai` | `gpt-4o-mini` | `OPENAI_API_KEY` |
+| Gemini chat | `gemini` | `gemini-2.0-flash-lite` | `GEMINI_API_KEY` |
+| DeepSeek | `deepseek` | `deepseek-chat` | `DEEPSEEK_API_KEY` (+ bakiye) |
 
-Kaydet → servis otomatik redeploy olur. `GET /health/deps` → `"llm":true` ve `POST /rhizoh/llm` → `provider: "gemini"` beklenir.
+Kaydet → redeploy. `POST /rhizoh/llm` Response → `"provider":"openai"` (veya seçilen provider).
 
-`render.yaml` blueprint varsayılanı da `gemini` — yeni Apply ile uyumlu.
+Ses (`gemini_live`) için `GEMINI_API_KEY` ayrı tutulabilir — LLM provider’dan bağımsız.
 
 ### 2b. Gateway kod güncellemesi (Rhizoh LLM / identity) — zorunlu redeploy
 
