@@ -84,7 +84,7 @@ import {
   resolveRhizohLlmLanguageV0
 } from "./rhizohLanguagePropagationV0.js";
 import { trimRhizohLlmRequestBodyV0 } from "./rhizohLlmPayloadTrimV0.js";
-import { pollRhizohLlmWorkerTaskV0 } from "./rhizohLlmWorkerPollV0.js";
+import { pollRhizohLlmWorkerTaskV0, postRhizohLlmSyncFallbackV0 } from "./rhizohLlmWorkerPollV0.js";
 import { tryResolveMemoryConsentTurnV1 } from "./rhizohMemoryConsentTurnV1.js";
 import { tryLocalReflexReplyV0 } from "./rhizohLocalReflexLayerV0.js";
 import {
@@ -1323,7 +1323,25 @@ export async function queryRhizohLLM({
         headers: fetchOpts.headers,
         maxWaitMs: llmTimeoutMs
       });
-      if (!polled.ok) {
+      if (!polled.ok && polled.syncFallbackRecommended) {
+        const syncRetry = await postRhizohLlmSyncFallbackV0({
+          endpoint,
+          fetchOpts,
+          fetchImpl: fetch
+        });
+        if (syncRetry.ok && syncRetry.data) {
+          json = syncRetry.data;
+        } else if (!polled.ok) {
+          const e = new Error(polled.error || polled.reply || "rhizoh_llm_async_poll_failed");
+          e.rhizohFailureKind =
+            polled.data?.rhizohFailureKind ||
+            (polled.error === "rhizoh_llm_task_not_found" ? "client_config" : "provider_error");
+          e.gatewayError = polled.gatewayError || polled.data?.error;
+          e.gatewayDetail = polled.gatewayDetail || polled.data?.detail;
+          if (polled.reply || polled.data?.reply) e.reply = String(polled.reply || polled.data?.reply);
+          throw e;
+        }
+      } else if (!polled.ok) {
         const e = new Error(polled.error || polled.reply || "rhizoh_llm_async_poll_failed");
         e.rhizohFailureKind =
           polled.data?.rhizohFailureKind ||
@@ -1332,8 +1350,9 @@ export async function queryRhizohLLM({
         e.gatewayDetail = polled.gatewayDetail || polled.data?.detail;
         if (polled.reply || polled.data?.reply) e.reply = String(polled.reply || polled.data?.reply);
         throw e;
+      } else {
+        json = polled.data;
       }
-      json = polled.data;
     } else if (!res.ok) {
       let errBody = null;
       try {

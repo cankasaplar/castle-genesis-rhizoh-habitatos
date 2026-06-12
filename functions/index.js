@@ -167,10 +167,12 @@ function pickGatewayProxyForwardHeaders(req, path = "") {
   const speechLang = req.headers["x-rhizoh-speech-lang"];
   const llmLang = req.headers["x-rhizoh-llm-lang"];
   const langTrace = req.headers["x-rhizoh-language-trace-id"];
+  const llmSync = req.headers["x-rhizoh-llm-sync"];
   if (uiLang) headers["X-Rhizoh-Ui-Lang"] = String(uiLang);
   if (speechLang) headers["X-Rhizoh-Speech-Lang"] = String(speechLang);
   if (llmLang) headers["X-Rhizoh-Llm-Lang"] = String(llmLang);
   if (langTrace) headers["X-Rhizoh-Language-Trace-Id"] = String(langTrace);
+  if (llmSync) headers["X-Rhizoh-Llm-Sync"] = String(llmSync);
   return headers;
 }
 
@@ -224,10 +226,28 @@ exports.gatewayProxyV0 = onRequest(
         return;
       }
       const text = await r.text();
+      let outStatus = r.status;
+      let outText = text;
+      if (
+        req.method === "GET" &&
+        path.includes("/rhizoh/llm/task/") &&
+        r.status >= 500 &&
+        text
+      ) {
+        try {
+          const parsed = JSON.parse(text);
+          if (parsed && typeof parsed === "object" && (parsed.error || parsed.ok === false || parsed.reply)) {
+            outStatus = 200;
+            outText = JSON.stringify({ ...parsed, pollLegacyHttp500: true, terminal: true });
+          }
+        } catch {
+          /* keep upstream status */
+        }
+      }
       res
-        .status(r.status)
+        .status(outStatus)
         .set("Content-Type", r.headers.get("content-type") || "application/json")
-        .send(text);
+        .send(outText);
     } catch (e) {
       logger.warn("gateway_proxy_failed", { url, message: String(e?.message || e) });
       res.status(502).json({ ok: false, reason: "upstream_unreachable" });

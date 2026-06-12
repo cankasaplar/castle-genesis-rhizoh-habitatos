@@ -19,7 +19,7 @@ import {
 } from "./rhizohLanguagePropagationV0.js";
 import { trimRhizohLlmRequestBodyV0 } from "./rhizohLlmPayloadTrimV0.js";
 import { tryResolveMemoryConsentTurnV1 } from "./rhizohMemoryConsentTurnV1.js";
-import { pollRhizohLlmWorkerTaskV0 } from "./rhizohLlmWorkerPollV0.js";
+import { pollRhizohLlmWorkerTaskV0, postRhizohLlmSyncFallbackV0 } from "./rhizohLlmWorkerPollV0.js";
 
 export const RHIZOH_LLM_TURN_CLIENT_SCHEMA_V0 = "castle.rhizoh.llm_turn_client.v0";
 
@@ -174,7 +174,24 @@ export async function postRhizohLlmTurnV0(input = {}) {
         fetchImpl: fetchFn,
         maxWaitMs: 120_000
       });
-      if (!polled.ok) {
+      let data = polled.ok ? polled.data : null;
+      if (!polled.ok && polled.syncFallbackRecommended) {
+        const syncRetry = await postRhizohLlmSyncFallbackV0({
+          endpoint,
+          fetchOpts: {
+            method: "POST",
+            headers,
+            body: JSON.stringify(body),
+            signal:
+              typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function"
+                ? AbortSignal.timeout(55_000)
+                : undefined
+          },
+          fetchImpl: fetchFn
+        });
+        if (syncRetry.ok && syncRetry.data) data = syncRetry.data;
+      }
+      if (!data) {
         return Object.freeze({
           ok: false,
           error: polled.error || "rhizoh_llm_async_poll_failed",
@@ -185,7 +202,6 @@ export async function postRhizohLlmTurnV0(input = {}) {
           traceId: input.traceId
         });
       }
-      const data = polled.data;
       const normalized = normalizeRhizohLlmGatewayResponseV0(data);
       const reply = resolveRhizohReplyForDisplayV0(normalized);
       if (prep?.turn?.awaitSoftIntelligence) {

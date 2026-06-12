@@ -3158,7 +3158,11 @@ const httpServer = createServer(async (req, res) => {
         langEcho: buildRhizohLanguagePropagationEchoV1(langProp)
       };
 
-      if (isLlmWorkerEnabledV0() && isLlmWorkerAsyncEnabledV0()) {
+      if (
+        isLlmWorkerEnabledV0() &&
+        isLlmWorkerAsyncEnabledV0() &&
+        String(req.headers["x-rhizoh-llm-sync"] || "").trim() !== "1"
+      ) {
         const taskId = enqueueLlmWorkerTaskAsyncV0(turnInput, turnMeta);
         logRhizohHealth("llm_worker_accept", {
           route: rhizohRuntime.routes.rhizohLlm,
