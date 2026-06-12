@@ -84,6 +84,7 @@ import {
   resolveRhizohLlmLanguageV0
 } from "./rhizohLanguagePropagationV0.js";
 import { trimRhizohLlmRequestBodyV0 } from "./rhizohLlmPayloadTrimV0.js";
+import { pollRhizohLlmWorkerTaskV0 } from "./rhizohLlmWorkerPollV0.js";
 import { tryResolveMemoryConsentTurnV1 } from "./rhizohMemoryConsentTurnV1.js";
 import { tryLocalReflexReplyV0 } from "./rhizohLocalReflexLayerV0.js";
 import {
@@ -1300,7 +1301,37 @@ export async function queryRhizohLLM({
     const res = await fetch(endpoint, fetchOpts);
     logRhizohHealth("gateway_accept", { traceId: clientTraceId, status: Number(res?.status || 0) });
     if (timeoutId) window.clearTimeout(timeoutId);
-    if (!res.ok) {
+
+    let json;
+    if (res.status === 202) {
+      let accepted = null;
+      try {
+        accepted = await res.json();
+      } catch {
+        accepted = null;
+      }
+      const taskId = String(accepted?.taskId || "").trim();
+      if (!taskId) {
+        const bad = new Error("rhizoh_llm_async_missing_task_id");
+        bad.rhizohFailureKind = "provider_error";
+        throw bad;
+      }
+      const polled = await pollRhizohLlmWorkerTaskV0({
+        endpoint,
+        taskId,
+        pollPath: accepted?.pollPath,
+        headers: fetchOpts.headers,
+        maxWaitMs: llmTimeoutMs
+      });
+      if (!polled.ok) {
+        const e = new Error(polled.error || "rhizoh_llm_async_poll_failed");
+        e.rhizohFailureKind = "timeout";
+        e.gatewayError = polled.gatewayError;
+        e.gatewayDetail = polled.gatewayDetail;
+        throw e;
+      }
+      json = polled.data;
+    } else if (!res.ok) {
       let errBody = null;
       try {
         errBody = await res.json();
@@ -1319,14 +1350,14 @@ export async function queryRhizohLLM({
       }
       e.languageTraceId = e.languageTraceId || langBundle.traceId;
       throw e;
-    }
-    let json;
-    try {
-      json = await res.json();
-    } catch {
-      const bad = new Error("rhizoh_llm_bad_json");
-      bad.rhizohFailureKind = "provider_error";
-      throw bad;
+    } else {
+      try {
+        json = await res.json();
+      } catch {
+        const bad = new Error("rhizoh_llm_bad_json");
+        bad.rhizohFailureKind = "provider_error";
+        throw bad;
+      }
     }
     const turnTraceId = resolveRhizohTurnTraceIdV0(json?.traceId, clientTraceId);
     const normalized = publishRhizohLlmReplyNormalizedV0(normalizeRhizohLlmGatewayResponseV0(json));
