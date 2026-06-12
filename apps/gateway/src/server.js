@@ -304,6 +304,47 @@ function normalizeClientLlmKeySource(raw) {
   return null;
 }
 
+/**
+ * Server-side provider wins for env/auto unless user_connection — client bundle may still send provider=openai.
+ * @param {"env"|"user_connection"|"auto"} keyMode
+ * @param {{ provider?: string, model?: string, apiKey?: string } | null} conn
+ * @param {{ provider?: string, model?: string }} payload
+ */
+function resolveServerLlmProviderV0(keyMode, conn, payload) {
+  const envProvider = String(process.env.CASTLE_LLM_PROVIDER || "").trim() || undefined;
+  const envModel = String(process.env.CASTLE_LLM_MODEL || "").trim() || undefined;
+
+  if (keyMode === "user_connection") {
+    return {
+      resolvedProvider: conn?.provider || payload?.provider,
+      resolvedModel: conn?.model || payload?.model,
+      connApiKey: conn?.apiKey || ""
+    };
+  }
+
+  if (keyMode === "env") {
+    return {
+      resolvedProvider: envProvider ?? payload?.provider,
+      resolvedModel: envModel ?? payload?.model,
+      connApiKey: ""
+    };
+  }
+
+  if (conn?.provider && conn?.apiKey) {
+    return {
+      resolvedProvider: conn.provider,
+      resolvedModel: conn.model,
+      connApiKey: conn.apiKey
+    };
+  }
+
+  return {
+    resolvedProvider: envProvider ?? payload?.provider,
+    resolvedModel: envModel ?? payload?.model,
+    connApiKey: ""
+  };
+}
+
 function jsonReplacerSafeV0(_key, value) {
   if (typeof value === "bigint") return Number(value);
   return value;
@@ -3131,17 +3172,11 @@ const httpServer = createServer(async (req, res) => {
       let resolvedModel = payload?.model;
       let connApiKey = "";
 
-      if (keyMode === "user_connection") {
-        resolvedProvider = conn.provider;
-        resolvedModel = conn.model;
-        connApiKey = conn.apiKey || "";
-      } else if (keyMode === "env") {
-        connApiKey = "";
-      } else {
-        resolvedProvider = conn?.provider || payload?.provider;
-        resolvedModel = conn?.model || payload?.model;
-        connApiKey = conn?.apiKey || "";
-      }
+      ({
+        resolvedProvider,
+        resolvedModel,
+        connApiKey
+      } = resolveServerLlmProviderV0(keyMode, conn, payload));
 
       const turnInput = {
         safePayload,

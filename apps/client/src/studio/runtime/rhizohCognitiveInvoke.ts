@@ -87,7 +87,7 @@ export async function invokeRhizohCognitiveTurn(opts: RhizohCognitiveInvokeOptio
       headers,
       body: JSON.stringify({
         message,
-        provider: opts.provider ?? "openai",
+        ...(opts.provider ? { provider: opts.provider } : {}),
         llmKeySource: opts.llmKeySource ?? "auto",
         connectionId: "",
         context: {

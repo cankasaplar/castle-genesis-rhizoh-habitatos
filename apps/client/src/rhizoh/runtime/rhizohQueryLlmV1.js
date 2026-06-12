@@ -1250,11 +1250,9 @@ export async function queryRhizohLLM({
     const scopedContext = applyTurnSovereigntyPromptScopeToContextV0(baseLlmContext, turnSovereigntyLock);
     const scopedMaxTok = resolveTurnSovereigntyMaxTokensV0(maxTok, turnSovereigntyLock);
 
-    const { body: llmBody } = trimRhizohLlmRequestBodyV0(
-      {
+    const llmPayload = {
         message,
         traceId: clientTraceId,
-        provider,
         llmKeySource,
         connectionId: connectionId || "",
         ...langBundle.bodyFields,
@@ -1265,9 +1263,9 @@ export async function queryRhizohLLM({
           generationMode: modeKey,
           ...llmDepthBundle.gatewayOptions
         }
-      },
-      { voiceTurn: isVoiceTurn }
-    );
+      };
+    if (provider) llmPayload.provider = provider;
+    const { body: llmBody } = trimRhizohLlmRequestBodyV0(llmPayload, { voiceTurn: isVoiceTurn });
 
     const fetchOpts = {
       method: "POST",
