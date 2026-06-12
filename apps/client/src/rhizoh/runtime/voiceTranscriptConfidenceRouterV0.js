@@ -24,6 +24,7 @@ import {
 import { isSubstantivePlanningUtteranceV1 } from "./rhizohCanonicalIntentV1.js";
 import { evaluateAlertRecallRescueV0 } from "./rhizohVoiceOperatingModeV0.js";
 import { notePartialTranscriptForEmergencyV0 } from "./rhizohEmergencySignalLayerV0.js";
+import { probeStoryContinuationIntentV0 } from "./rhizohContinuityRecallIntentV0.js";
 
 /** Known micro-intent phrases may execute below interaction threshold (not hallucinations). */
 const REFLEX_PRECHECK_VOICE_CONF_FLOOR_V0 = 0.45;
@@ -185,25 +186,34 @@ const DIRECT_LISTEN_UNKNOWN_MIN_CHARS_V0 = 8;
  * @param {string} text
  * @param {number | undefined} recordedMs
  * @param {{ band?: string, ambientScore?: number, directedScore?: number }} classified
+ * @param {{ source?: string }} [relaxMeta]
  */
-function shouldRelaxUnknownBandForDirectListenV0(text, recordedMs, classified) {
-  if (!resolveVoiceAttentionContextV0().directedSpeechRelaxed) return false;
+function shouldRelaxUnknownBandForDirectListenV0(text, recordedMs, classified, relaxMeta = {}) {
   if (classified.band !== VOICE_DIRECTED_SPEECH_BAND.UNKNOWN) return false;
   if ((classified.ambientScore || 0) >= 2) return false;
   const ms = Number(recordedMs);
   const hasQuestion = text.includes("?");
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
   const minMs = hasQuestion
     ? DIRECT_LISTEN_QUESTION_MIN_RECORD_MS_V0
     : DIRECT_LISTEN_UNKNOWN_MIN_RECORD_MS_V0;
   if (!Number.isFinite(ms) || ms < minMs) return false;
   if (text.length < DIRECT_LISTEN_UNKNOWN_MIN_CHARS_V0) return false;
-  if ((classified.directedScore || 0) >= 1) return true;
-  if (hasQuestion) return true;
-  const wordCount = text.split(/\s+/).filter(Boolean).length;
-  // Long mic capture + multi-word statement (English/Turkish) — not phantom "Result." chips.
-  if (wordCount >= 4 && text.length >= 20 && ms >= DIRECT_LISTEN_UNKNOWN_MIN_RECORD_MS_V0) {
-    return true;
+
+  if (resolveVoiceAttentionContextV0().directedSpeechRelaxed) {
+    if ((classified.directedScore || 0) >= 1) return true;
+    if (hasQuestion) return true;
+    // Long mic capture + multi-word statement (English/Turkish) — not phantom "Result." chips.
+    if (wordCount >= 4 && text.length >= 20 && ms >= DIRECT_LISTEN_UNKNOWN_MIN_RECORD_MS_V0) {
+      return true;
+    }
+    return false;
   }
+
+  // moving_context / observer — explicit mic_v3 with substantive question or story continuation.
+  if (String(relaxMeta.source || "") !== "mic_v3") return false;
+  if (probeStoryContinuationIntentV0(text).active) return true;
+  if (hasQuestion && wordCount >= 4 && text.length >= 20) return true;
   return false;
 }
 
@@ -238,7 +248,7 @@ function rejectNonDirectedVoiceBandV0(observation, text, relaxMeta = {}) {
             maxRms: relaxMeta.maxRms,
             source: relaxMeta.source
           });
-    if (shouldRelaxUnknownBandForDirectListenV0(text, relaxMeta.recordedMs, classified)) {
+    if (shouldRelaxUnknownBandForDirectListenV0(text, relaxMeta.recordedMs, classified, relaxMeta)) {
       return null;
     }
     return Object.freeze({
@@ -427,7 +437,9 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
         EXECUTION_OBSERVATION_PASS_REASONS_V0.has(reason) &&
         observation.band === VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE) ||
       (EXECUTION_OBSERVATION_PASS_REASONS_V0.has(reason) &&
-        shouldRelaxUnknownBandForDirectListenV0(text, recordedMs, classifiedForRelax));
+        shouldRelaxUnknownBandForDirectListenV0(text, recordedMs, classifiedForRelax, {
+          source
+        }));
 
     if (observationPassThrough) {
       return finalizeRouteV0({

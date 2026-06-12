@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import {
   classifyVoiceIntentV0,
+  executeLocalVoiceCommandV0,
   normalizeVoiceCommandSpaceV0,
   routeVoiceInputV0,
   VOICE_INTENT_TYPE_V0,
@@ -48,5 +49,14 @@ describe("rhizohVoiceCommandRouterV0", () => {
     const route = routeVoiceInputV0("kale oluştur");
     expect(route.execution).toBe(VOICE_ROUTE_EXECUTION_V0.LOCAL);
     expect(route.canonical).toBe("castle_create");
+  });
+
+  it("executes CASTLE_CREATE grammar with castle init gate side effect", () => {
+    const events = [];
+    window.addEventListener("castle:open-init-gate-v0", () => events.push("gate"));
+    const route = routeVoiceInputV0("rhizoh kale kur");
+    expect(route.execution).toBe(VOICE_ROUTE_EXECUTION_V0.LOCAL);
+    executeLocalVoiceCommandV0(route);
+    expect(events).toContain("gate");
   });
 });

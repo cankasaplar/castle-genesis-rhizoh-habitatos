@@ -12087,25 +12087,6 @@ export default function AppRhizoh528() {
   const handleExecute = async (overrideRaw) => {
     const raw = (overrideRaw ?? cmd).trim();
     if (!raw) return;
-    const gwPhase = String(gatewayUx?.phase || "").toLowerCase();
-    if (["offline", "offline_dns", "connecting", "reconnecting", "initializing"].includes(gwPhase)) {
-      const connecting = gwPhase === "connecting" || gwPhase === "reconnecting" || gwPhase === "initializing";
-      setRhizohInlineError({
-        title: connecting ? "Rhizoh hattına bağlanılıyor" : "Rhizoh hattı şu an kapalı",
-        detail: connecting
-          ? "Gateway birkaç saniye içinde hazır olur; lütfen bekleyip tekrar dene."
-          : "Ağ geçidi yanıt vermiyor. Üst durum çubuğundaki yeniden dene veya birkaç saniye sonra yaz."
-      });
-      return;
-    }
-    setHasSentRhizohCommand(true);
-    setRhizohInlineError(null);
-    setRhizohMainHudReply(null);
-    const intent = raw.toUpperCase();
-    const isBroadcastIntent =
-      /\b(YAYIN|BROADCAST|GREENROOM|LIVE|CANLI)\b/.test(intent) ||
-      /\b(yayın|yayin|yayınla|canlı|canli|green\s*room)\b/i.test(raw);
-    const traceId = `TRC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 
     const localAction = resolveLocalActionAuthorityV0(raw);
     if (localAction.authority === LOCAL_AUTHORITY_LOCAL_V0) {
@@ -12151,6 +12132,27 @@ export default function AppRhizoh528() {
       setCmd("");
       return;
     }
+
+    const gwPhase = String(gatewayUx?.phase || "").toLowerCase();
+    if (["offline", "offline_dns", "connecting", "reconnecting", "initializing"].includes(gwPhase)) {
+      const connecting = gwPhase === "connecting" || gwPhase === "reconnecting" || gwPhase === "initializing";
+      setRhizohInlineError({
+        title: connecting ? "Rhizoh hattına bağlanılıyor" : "Rhizoh hattı şu an kapalı",
+        detail: connecting
+          ? "Gateway birkaç saniye içinde hazır olur; lütfen bekleyip tekrar dene."
+          : "Ağ geçidi yanıt vermiyor. Üst durum çubuğundaki yeniden dene veya birkaç saniye sonra yaz."
+      });
+      return;
+    }
+    setHasSentRhizohCommand(true);
+    setRhizohInlineError(null);
+    setRhizohMainHudReply(null);
+    const intent = raw.toUpperCase();
+    const isBroadcastIntent =
+      /\b(YAYIN|BROADCAST|GREENROOM|LIVE|CANLI)\b/.test(intent) ||
+      /\b(yayın|yayin|yayınla|canlı|canli|green\s*room)\b/i.test(raw);
+    const traceId = `TRC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+
     setGreenRoomLive(null);
     greenRoomSparklineRef.current = [];
     setSparklineVersion(0);

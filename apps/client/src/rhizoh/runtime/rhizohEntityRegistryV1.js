@@ -31,7 +31,12 @@ export function resolveEntityRuntimeV1(node) {
   if (!node) return null;
 
   if (node.type === "tower") {
-    return RHIZOH_TOWER_WORKSPACES_V1[node.id] || null;
+    return (
+      RHIZOH_TOWER_WORKSPACES_V1[node.id] || {
+        workspaceId: `${node.id}_workspace_v1`,
+        capabilities: ["media_player", "node_preview"]
+      }
+    );
   }
 
   if (node.type === "castle") {

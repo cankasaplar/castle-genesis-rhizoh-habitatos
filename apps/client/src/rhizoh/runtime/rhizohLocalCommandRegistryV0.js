@@ -222,7 +222,8 @@ export const RHIZOH_LOCAL_COMMAND_REGISTRY_V0 = Object.freeze({
     "kale olustur",
     "kale kur",
     "kalemi kur",
-    "kendi kalemi kur"
+    "kendi kalemi kur",
+    "rhizoh kale kur"
   ]),
   castle_exit: cmd(LOCAL_COMMAND_LAYER_V0.WORLD, LOCAL_COMMAND_HANDLER_V0.MAP, "exit_castle", [
     "exit castle",

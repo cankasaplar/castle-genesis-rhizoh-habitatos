@@ -55,6 +55,14 @@ import { isWorldLayerEnabled } from "./rhizoh/runtime/castleWorldLayerGateV0.js"
 import { runDomainGateForPathV0 } from "./rhizoh/runtime/rhizohDomainNervousSystemV0.js";
 import { RhizohAtmospherePresenceBridge } from "./rhizoh/runtime/RhizohAtmospherePresenceBridge.jsx";
 import { evaluateSpatialBootGateV0 } from "./rhizoh/runtime/spatialBootGateV0.js";
+import { attachRhizohMapExecutionOrchestratorV1 } from "./rhizoh/runtime/rhizohMapExecutionOrchestratorV1.js";
+import {
+  RHIZOH_OPEN_CASTLE_EVENT_V1,
+  RHIZOH_OPEN_WORKSPACE_EVENT_V1,
+  RHIZOH_SHOW_INFO_EVENT_V1
+} from "./rhizoh/runtime/symbyoMapIntentBridgeV0.js";
+import { openCastleInitGateFromLocalCommandV0 } from "./rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
+import { fakeTVLayerV0 } from "./rhizoh/runtime/fakeTVLayerV0.js";
 
 export default function AppRhizohWorldSpaceV0() {
   const navigate = useNavigate();
@@ -67,6 +75,7 @@ export default function AppRhizohWorldSpaceV0() {
   const [geoBusy, setGeoBusy] = useState(false);
   const [geoError, setGeoError] = useState("");
   const [v11NodePanel, setV11NodePanel] = useState(null);
+  const [v11Workspace, setV11Workspace] = useState(null);
 
   const worldMapToolV0 = useSyncExternalStore(
     subscribeRhizohWorldMapToolV0,
@@ -156,10 +165,40 @@ export default function AppRhizohWorldSpaceV0() {
   }, []);
 
   useEffect(() => {
+    attachRhizohMapExecutionOrchestratorV1();
+
+    const onWorkspace = (ev) => {
+      const detail = ev?.detail;
+      if (!detail?.node) return;
+      setV11Workspace(detail);
+      setV11NodePanel(null);
+    };
+    const onCastle = () => {
+      openCastleInitGateFromLocalCommandV0("v11_map_orchestrator");
+    };
+    const onInfo = (ev) => {
+      const detail = ev?.detail;
+      if (!detail?.node) return;
+      setV11NodePanel(detail.routed || { nodeView: detail.node, normalizedDecision: { decision: "LOAD_WORLD_NODE" } });
+    };
+
+    window.addEventListener(RHIZOH_OPEN_WORKSPACE_EVENT_V1, onWorkspace);
+    window.addEventListener(RHIZOH_OPEN_CASTLE_EVENT_V1, onCastle);
+    window.addEventListener(RHIZOH_SHOW_INFO_EVENT_V1, onInfo);
+    return () => {
+      window.removeEventListener(RHIZOH_OPEN_WORKSPACE_EVENT_V1, onWorkspace);
+      window.removeEventListener(RHIZOH_OPEN_CASTLE_EVENT_V1, onCastle);
+      window.removeEventListener(RHIZOH_SHOW_INFO_EVENT_V1, onInfo);
+    };
+  }, []);
+
+  useEffect(() => {
     const onV11Intent = (ev) => {
       const detail = ev?.detail;
       if (!detail?.nodeView) return;
-      setV11NodePanel(detail);
+      if (detail?.intent?.intent === "PREVIEW_NODE") {
+        setV11NodePanel(detail);
+      }
     };
     window.addEventListener(RHIZOH_V11_MAP_INTENT_EVENT_V0, onV11Intent);
     return () => window.removeEventListener(RHIZOH_V11_MAP_INTENT_EVENT_V0, onV11Intent);
@@ -318,6 +357,52 @@ export default function AppRhizohWorldSpaceV0() {
             {geoError ? (
               <p className="text-[9px] text-amber-200/85 normal-case">{geoError}</p>
             ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {v11Workspace ? (
+        <div className="pointer-events-none fixed inset-x-0 bottom-28 z-[28] flex justify-center px-4">
+          <div
+            className="pointer-events-auto w-full max-w-md rounded-2xl border bg-black/90 p-4 text-white shadow-2xl backdrop-blur-md"
+            style={{ borderColor: `${v11Workspace.node?.color || "#22d3ee"}66` }}
+            data-rhizoh-v11-workspace-panel="1"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/45">
+                  {uiLocale === "tr" ? "Workspace · Media" : "Workspace · Media"}
+                </p>
+                <h2 className="mt-1 text-sm font-black" style={{ color: v11Workspace.node?.color || "#22d3ee" }}>
+                  {v11Workspace.node?.label || v11Workspace.node?.id}
+                </h2>
+                <p className="mt-1 text-[10px] text-white/55">
+                  {v11Workspace.runtime?.workspaceId || "workspace"} ·{" "}
+                  {(v11Workspace.runtime?.capabilities || []).slice(0, 3).join(" · ") || "media_player"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setV11Workspace(null)}
+                className="rounded-lg border border-white/15 px-2 py-1 text-[10px] text-white/60 hover:text-white"
+              >
+                ×
+              </button>
+            </div>
+            <div
+              className="mt-3 rounded-xl border border-cyan-400/25 bg-gradient-to-b from-cyan-950/40 to-black/60 p-4"
+              data-rhizoh-v11-media-player="1"
+            >
+              <p className="text-[9px] font-bold uppercase tracking-wider text-cyan-300/80">
+                {fakeTVLayerV0({ action: "play", payload: v11Workspace.node?.id })?.visualHint ||
+                  "LIVE_STREAM_PREVIEW"}
+              </p>
+              <p className="mt-2 text-[11px] leading-relaxed text-white/75">
+                {uiLocale === "tr"
+                  ? "Medya yüzeyi açıldı — düğüm workspace’ine bağlandı."
+                  : "Media surface opened — linked to node workspace."}
+              </p>
+            </div>
           </div>
         </div>
       ) : null}

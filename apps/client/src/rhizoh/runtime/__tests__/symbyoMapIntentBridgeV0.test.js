@@ -46,4 +46,12 @@ describe("symbyoMapIntentBridgeV0", () => {
       ["ATTACH_VOICE_STREAM", "ENTER_CASTLE", "LOAD_WORLD_NODE", "OPEN_MEDIA_PLAYER"].sort()
     );
   });
+
+  it("routes tower node click to media workspace", () => {
+    const routed = routeSymbyoMapInteractionToOrchestratorV0({
+      interaction: "click",
+      node: { id: "claude_tower", type: "tower" }
+    });
+    expect(routed.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER);
+  });
 });

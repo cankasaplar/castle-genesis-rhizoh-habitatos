@@ -1,34 +1,72 @@
 import { resolveEntityRuntimeV1 } from "./rhizohEntityRegistryV1.js";
+import {
+  ORCHESTRATOR_ACTION_REGISTRY_V0,
+  RHIZOH_OPEN_CASTLE_EVENT_V1,
+  RHIZOH_OPEN_WORKSPACE_EVENT_V1,
+  RHIZOH_SHOW_INFO_EVENT_V1,
+  RHIZOH_V11_MAP_INTENT_EVENT_V0,
+  SYMBYO_MAP_INTENT_TYPE_V0
+} from "./symbyoMapIntentBridgeV0.js";
 
+let orchestratorAttachedV1 = false;
+
+/**
+ * Map intent → workspace / castle execution (V11 primary surface).
+ * Listens on rhizoh:v11-map-intent-v0 (window + document).
+ */
 export function attachRhizohMapExecutionOrchestratorV1() {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || orchestratorAttachedV1) return;
+  orchestratorAttachedV1 = true;
 
-  window.addEventListener("RHIZOH_V11_MAP_INTENT_V0", (e) => {
-    const decision = e.detail?.normalizedDecision;
-    const node = e.detail?.nodeView;
-
+  const onMapIntent = (e) => {
+    const detail = e?.detail;
+    const decision = detail?.normalizedDecision?.decision;
+    const node = detail?.nodeView;
     if (!decision || !node) return;
+    if (detail?.intent?.intent !== SYMBYO_MAP_INTENT_TYPE_V0.ENTER_NODE) return;
 
     const runtime = resolveEntityRuntimeV1(node);
 
-    switch (decision.action) {
-      case "OPEN_CASTLE":
-        window.dispatchEvent(new CustomEvent("RHIZOH_OPEN_CASTLE", {
-          detail: { node, runtime }
-        }));
+    switch (decision) {
+      case ORCHESTRATOR_ACTION_REGISTRY_V0.ENTER_CASTLE:
+        window.dispatchEvent(
+          new CustomEvent(RHIZOH_OPEN_CASTLE_EVENT_V1, {
+            detail: Object.freeze({ node, runtime, routed: detail })
+          })
+        );
         break;
 
-      case "OPEN_TOWER_WORKSPACE":
-        window.dispatchEvent(new CustomEvent("RHIZOH_OPEN_WORKSPACE", {
-          detail: { node, runtime }
-        }));
+      case ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER:
+        window.dispatchEvent(
+          new CustomEvent(RHIZOH_OPEN_WORKSPACE_EVENT_V1, {
+            detail: Object.freeze({ node, runtime, routed: detail, mediaPlayer: true })
+          })
+        );
         break;
 
-      case "SHOW_INFO":
-        window.dispatchEvent(new CustomEvent("RHIZOH_SHOW_INFO", {
-          detail: { node, runtime }
-        }));
+      case ORCHESTRATOR_ACTION_REGISTRY_V0.ATTACH_VOICE_STREAM:
+        window.dispatchEvent(
+          new CustomEvent(RHIZOH_OPEN_WORKSPACE_EVENT_V1, {
+            detail: Object.freeze({ node, runtime, routed: detail, voiceStream: true })
+          })
+        );
+        break;
+
+      case ORCHESTRATOR_ACTION_REGISTRY_V0.LOAD_WORLD_NODE:
+      default:
+        window.dispatchEvent(
+          new CustomEvent(RHIZOH_SHOW_INFO_EVENT_V1, {
+            detail: Object.freeze({ node, runtime, routed: detail })
+          })
+        );
         break;
     }
-  });
+  };
+
+  window.addEventListener(RHIZOH_V11_MAP_INTENT_EVENT_V0, onMapIntent);
+  document.addEventListener(RHIZOH_V11_MAP_INTENT_EVENT_V0, onMapIntent);
+}
+
+export function resetRhizohMapExecutionOrchestratorForTestV1() {
+  orchestratorAttachedV1 = false;
 }

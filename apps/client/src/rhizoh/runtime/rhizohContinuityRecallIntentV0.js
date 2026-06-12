@@ -11,6 +11,15 @@ export const RHIZOH_CONTINUITY_RECALL_SCHEMA_V0 = "castle.rhizoh.continuity_reca
 export const RHIZOH_CONTINUITY_RECALL_PROMPT_DIRECTIVE_V0 =
   "User asks to RECALL prior conversation. Ground the answer in VERIFIED_RECALL lines below; cite concrete topics (names, places, sports, preferences) from those lines; use persona.firstName when relevant; do not invent facts absent from recall context.";
 
+/** Story / narrative continuation — must reach LLM, not whisper_default_conf shadow-only. */
+const STORY_CONTINUATION_PATTERNS_V0 = [
+  /\b(tekrar\s+anlat\w*|yeniden\s+anlat\w*|bir\s+daha\s+anlat\w*)\b/i,
+  /\b(devam\s+et|devam\s+eder|hikayeye\s+devam|hikayeyi\s+devam)\b/i,
+  /\b(hikaye|hikayeyi|hikayeye)\b.*\b(devam|anlat|dinle)\b/i,
+  /\b(devam|anlat|dinle)\b.*\b(hikaye|hikayeyi|hikayeye)\b/i,
+  /\b(continue\s+the\s+story|keep\s+going|tell\s+me\s+more)\b/i
+];
+
 /** @type {{ tier: string, re: RegExp }[]} */
 const RECALL_QUERY_PATTERNS_V0 = [
   {
@@ -97,6 +106,22 @@ const RECALL_TOPIC_ALIASES_V0 = {
  */
 export function normalizeForContinuityRecallV0(raw) {
   return foldCanonicalSurfaceV1(normalizeVoiceCommandTokenV0(String(raw || "").trim()));
+}
+
+/**
+ * Narrative continuation ("devam eder misin", "tekrar anlat") — LLM path, not presence reflex.
+ * @param {string} raw
+ */
+export function probeStoryContinuationIntentV0(raw) {
+  const normalized = normalizeForContinuityRecallV0(raw);
+  if (!normalized || normalized.length < 8) {
+    return Object.freeze({ active: false, reason: "too_short" });
+  }
+  const hit = STORY_CONTINUATION_PATTERNS_V0.find((re) => re.test(normalized));
+  return Object.freeze({
+    active: Boolean(hit),
+    reason: hit ? "story_continuation" : "none"
+  });
 }
 
 /**
