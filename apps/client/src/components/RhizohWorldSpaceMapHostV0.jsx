@@ -1,5 +1,6 @@
 import React, { memo } from "react";
 import CesiumRealMapLayer from "../castleFlight/CesiumRealMapLayer.jsx";
+import { RHIZOH_SPATIAL_RENDER_MODE_V0 } from "../rhizoh/runtime/spatialBootGateV0.js";
 
 const V11_FALLBACK_NODES_V0 = Object.freeze([
   { id: "rhizoh", label: "RHIZOH", type: "core", lat: 41.045, lon: 29.006, color: "#22d3ee" },
@@ -63,19 +64,53 @@ function V11FallbackMapV0() {
   );
 }
 
+function EmptyCanvasV0() {
+  return (
+    <div
+      className="absolute inset-0 bg-[#010103]"
+      data-rhizoh-spatial-empty-canvas="1"
+      aria-label="Rhizoh spatial empty canvas"
+    />
+  );
+}
+
+function SafeWorldShellV0() {
+  return (
+    <div
+      className="absolute inset-0 overflow-hidden bg-[radial-gradient(circle_at_center,rgba(15,23,42,0.55),rgba(1,1,8,0.98)_70%)]"
+      data-rhizoh-spatial-safe-world-shell="1"
+      aria-label="Rhizoh safe world shell"
+    >
+      <div className="absolute left-1/2 top-1/2 h-[42vmin] w-[42vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-300/15 bg-cyan-300/[0.025]" />
+      <div className="absolute left-4 top-4 rounded-xl border border-white/10 bg-black/55 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-white/60">
+        SAFE WORLD SHELL
+      </div>
+    </div>
+  );
+}
+
+function renderFallbackForModeV0(renderMode) {
+  if (renderMode === RHIZOH_SPATIAL_RENDER_MODE_V0.EMPTY_CANVAS) return <EmptyCanvasV0 />;
+  if (renderMode === RHIZOH_SPATIAL_RENDER_MODE_V0.SAFE_WORLD_SHELL) return <SafeWorldShellV0 />;
+  return <V11FallbackMapV0 />;
+}
+
 /**
  * World · Space map substrate — Cesium mounts only on /world/space, never on T0 live (/).
  * @see docs/RHIZOH_WORLD_SURFACE_HIERARCHY_V0.md
  */
-export const RhizohWorldSpaceMapHostV0 = memo(function RhizohWorldSpaceMapHostV0({ active }) {
+export const RhizohWorldSpaceMapHostV0 = memo(function RhizohWorldSpaceMapHostV0({
+  active,
+  renderMode = RHIZOH_SPATIAL_RENDER_MODE_V0.FALLBACK_V11
+}) {
   return (
     <div
       className="pointer-events-none fixed inset-0 z-[11]"
       data-rhizoh-world-space-map-host="1"
       data-rhizoh-world-space-map-active={active ? "1" : "0"}
+      data-rhizoh-world-space-render-mode={renderMode}
     >
-      {!active ? <V11FallbackMapV0 /> : null}
-      <CesiumRealMapLayer active={active} />
+      {active ? <CesiumRealMapLayer active /> : renderFallbackForModeV0(renderMode)}
     </div>
   );
 });

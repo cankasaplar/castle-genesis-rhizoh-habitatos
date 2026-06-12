@@ -50,6 +50,7 @@ import { useCastleActiveCastles } from "./firebase/useCastleActiveCastles.js";
 import { isWorldLayerEnabled } from "./rhizoh/runtime/castleWorldLayerGateV0.js";
 import { runDomainGateForPathV0 } from "./rhizoh/runtime/rhizohDomainNervousSystemV0.js";
 import { RhizohAtmospherePresenceBridge } from "./rhizoh/runtime/RhizohAtmospherePresenceBridge.jsx";
+import { evaluateSpatialBootGateV0 } from "./rhizoh/runtime/spatialBootGateV0.js";
 
 export default function AppRhizohWorldSpaceV0() {
   const navigate = useNavigate();
@@ -70,17 +71,35 @@ export default function AppRhizohWorldSpaceV0() {
 
   const mapSurfaceActive = true;
   const worldLayerEnabledV0 = isWorldLayerEnabled();
+  const identityAnchorV0 = readCastleNexusGeoV0();
+  const bootstrapGeoV0 = resolveWorldMapBootstrapGeoV0();
+  const spatialSnapshotNodesV0 = useMemo(() => {
+    const rows = [];
+    if (identityAnchorV0) rows.push(identityAnchorV0);
+    if (Array.isArray(remoteCastles)) rows.push(...remoteCastles);
+    return rows;
+  }, [identityAnchorV0, remoteCastles]);
+  const spatialBootGateV0 = useMemo(
+    () =>
+      evaluateSpatialBootGateV0({
+        spatialEnabled: worldLayerEnabledV0,
+        worldStateReady: Boolean(bootstrapGeoV0),
+        identityReady: Boolean(identityAnchorV0),
+        nodes: spatialSnapshotNodesV0
+      }),
+    [worldLayerEnabledV0, bootstrapGeoV0, identityAnchorV0, spatialSnapshotNodesV0]
+  );
 
   const cesiumLayerActiveV0 = useMemo(
     () =>
-      worldLayerEnabledV0 &&
+      spatialBootGateV0.allowed &&
       resolveRhizohWorldSpaceCesiumActiveV0({
         pathname: "/world/space",
         worldDomain: RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE,
         mapTool: worldMapToolV0,
         mapSurfaceActive
       }),
-    [worldMapToolV0, mapSurfaceActive, worldLayerEnabledV0]
+    [worldMapToolV0, mapSurfaceActive, spatialBootGateV0]
   );
 
   const layerModeV0 = useMemo(
@@ -210,10 +229,12 @@ export default function AppRhizohWorldSpaceV0() {
       data-rhizoh-world-space-app="1"
       data-cesium-active={cesiumLayerActiveV0 ? "1" : "0"}
       data-world-layer-enabled={worldLayerEnabledV0 ? "1" : "0"}
+      data-spatial-render-mode={spatialBootGateV0.renderMode}
+      data-spatial-boot-reason={spatialBootGateV0.reason}
       data-map-tool={worldMapToolV0}
     >
       <RhizohAtmospherePresenceBridge />
-      <RhizohWorldSpaceMapHostV0 active={cesiumLayerActiveV0} />
+      <RhizohWorldSpaceMapHostV0 active={cesiumLayerActiveV0} renderMode={spatialBootGateV0.renderMode} />
 
       <RhizohWorldDomainShellV0
         domain={RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE}
