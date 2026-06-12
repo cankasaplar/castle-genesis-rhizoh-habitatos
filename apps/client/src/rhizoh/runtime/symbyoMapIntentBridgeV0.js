@@ -9,6 +9,7 @@
 import { createRhizohPayloadRefV0, rhizohChecksumStringV0 } from "@castle/protocol";
 
 export const SYMBYO_MAP_INTENT_BRIDGE_SCHEMA_V0 = "symbyo.map_intent_bridge.v0";
+export const SYMBYO_MAP_INTENT_SCHEMA_V0 = Object.freeze(["intent", "nodeId", "context"]);
 
 export const SYMBYO_MAP_INTERACTION_V0 = Object.freeze({
   CLICK: "click",
@@ -22,13 +23,11 @@ export const SYMBYO_MAP_INTENT_TYPE_V0 = Object.freeze({
   LOAD_CONTEXT: "LOAD_CONTEXT"
 });
 
-export const SYMBYO_MAP_ACTION_V0 = Object.freeze({
+export const ORCHESTRATOR_ACTION_REGISTRY_V0 = Object.freeze({
   OPEN_MEDIA_PLAYER: "OPEN_MEDIA_PLAYER",
-  LOAD_3D_SCENE: "LOAD_3D_SCENE",
-  ATTACH_VOICE_STREAM: "ATTACH_VOICE_STREAM",
-  OPEN_NODE_PANEL: "OPEN_NODE_PANEL",
-  LOAD_CONTEXT: "LOAD_CONTEXT",
-  NOOP: "NOOP"
+  ENTER_CASTLE: "ENTER_CASTLE",
+  LOAD_WORLD_NODE: "LOAD_WORLD_NODE",
+  ATTACH_VOICE_STREAM: "ATTACH_VOICE_STREAM"
 });
 
 const CAPABILITY_ALIAS_V0 = Object.freeze({
@@ -81,56 +80,56 @@ export function createSymbyoMapIntentV0(input = {}) {
   const interaction = String(input.interaction || SYMBYO_MAP_INTERACTION_V0.CLICK);
   const intentType = intentTypeForInteractionV0(interaction);
   return Object.freeze({
-    schema: `${SYMBYO_MAP_INTENT_BRIDGE_SCHEMA_V0}.intent`,
-    source: "symbyo_map_intent_layer",
-    decisionAuthority: "orchestrator",
-    rendererAuthority: false,
-    intentType,
-    interaction,
-    entityRef: surface.entityRef,
-    nodeType: surface.nodeType,
-    capabilityKeys: surface.capabilities,
-    capabilityRefs: surface.capabilityRefs,
-    payloadRef: createRhizohPayloadRefV0(`${surface.entityRef}:${intentType}:${interaction}`),
-    atMs: Date.now()
+    intent: intentType,
+    nodeId: surface.nodeIdHash,
+    context: `map:${surface.nodeType}:${interaction}`
   });
 }
 
 export function normalizeSymbyoMapDecisionV0(action, confidence, refs = []) {
+  const allowed = Object.values(ORCHESTRATOR_ACTION_REGISTRY_V0);
   return Object.freeze({
     schema: `${SYMBYO_MAP_INTENT_BRIDGE_SCHEMA_V0}.normalized_decision`,
-    decision: Object.values(SYMBYO_MAP_ACTION_V0).includes(action) ? action : SYMBYO_MAP_ACTION_V0.NOOP,
+    decision: allowed.includes(action) ? action : ORCHESTRATOR_ACTION_REGISTRY_V0.LOAD_WORLD_NODE,
     confidence: Math.max(0, Math.min(1, Number(confidence) || 0)),
     refs: Object.freeze(refs.filter(Boolean).map((ref) => String(ref).slice(0, 96)))
   });
 }
 
-export function resolveSymbyoMapIntentDecisionV0(intent = {}) {
-  const refs = [intent.entityRef, intent.payloadRef, ...(Array.isArray(intent.capabilityRefs) ? intent.capabilityRefs : [])];
-  const caps = new Set((intent.capabilityKeys || []).map((cap) => String(cap || "").toLowerCase()));
+export function resolveSymbyoMapIntentDecisionV0(intent = {}, surface = {}) {
+  const refs = [
+    surface.entityRef,
+    createRhizohPayloadRefV0(`${intent.nodeId}:${intent.intent}:${intent.context}`),
+    ...(Array.isArray(surface.capabilityRefs) ? surface.capabilityRefs : [])
+  ];
+  const caps = new Set((surface.capabilities || []).map((cap) => String(cap || "").toLowerCase()));
   const hasCapability = (name) => caps.has(String(name || "").toLowerCase());
 
-  if (intent.intentType === SYMBYO_MAP_INTENT_TYPE_V0.PREVIEW_NODE) {
-    return normalizeSymbyoMapDecisionV0(SYMBYO_MAP_ACTION_V0.OPEN_NODE_PANEL, 0.72, refs);
+  if (intent.intent === SYMBYO_MAP_INTENT_TYPE_V0.PREVIEW_NODE) {
+    return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.LOAD_WORLD_NODE, 0.72, refs);
   }
-  if (intent.intentType === SYMBYO_MAP_INTENT_TYPE_V0.LOAD_CONTEXT) {
-    return normalizeSymbyoMapDecisionV0(SYMBYO_MAP_ACTION_V0.LOAD_CONTEXT, 0.78, refs);
+  if (intent.intent === SYMBYO_MAP_INTENT_TYPE_V0.LOAD_CONTEXT) {
+    return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.LOAD_WORLD_NODE, 0.78, refs);
   }
-  if (intent.intentType === SYMBYO_MAP_INTENT_TYPE_V0.ENTER_NODE) {
-    if (String(intent.nodeType || "") === "broadcast" || hasCapability("media")) {
-      return normalizeSymbyoMapDecisionV0(SYMBYO_MAP_ACTION_V0.OPEN_MEDIA_PLAYER, 0.86, refs);
+  if (intent.intent === SYMBYO_MAP_INTENT_TYPE_V0.ENTER_NODE) {
+    if (String(surface.nodeType || "") === "broadcast" || hasCapability("media")) {
+      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER, 0.86, refs);
     }
-    if (String(intent.nodeType || "") === "portal") {
-      return normalizeSymbyoMapDecisionV0(SYMBYO_MAP_ACTION_V0.ATTACH_VOICE_STREAM, 0.74, refs);
+    if (String(surface.nodeType || "") === "castle") {
+      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.ENTER_CASTLE, 0.8, refs);
     }
-    return normalizeSymbyoMapDecisionV0(SYMBYO_MAP_ACTION_V0.OPEN_NODE_PANEL, 0.68, refs);
+    if (String(surface.nodeType || "") === "portal" || hasCapability("voice")) {
+      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.ATTACH_VOICE_STREAM, 0.74, refs);
+    }
+    return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.LOAD_WORLD_NODE, 0.68, refs);
   }
-  return normalizeSymbyoMapDecisionV0(SYMBYO_MAP_ACTION_V0.NOOP, 0, refs);
+  return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.LOAD_WORLD_NODE, 0.2, refs);
 }
 
 export function routeSymbyoMapInteractionToOrchestratorV0(input = {}) {
+  const surface = normalizeSymbyoMapNodeSurfaceV0(input.node || {});
   const intent = createSymbyoMapIntentV0(input);
-  const normalizedDecision = resolveSymbyoMapIntentDecisionV0(intent);
+  const normalizedDecision = resolveSymbyoMapIntentDecisionV0(intent, surface);
   return Object.freeze({
     schema: SYMBYO_MAP_INTENT_BRIDGE_SCHEMA_V0,
     intent,
