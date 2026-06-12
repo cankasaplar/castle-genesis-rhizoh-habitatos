@@ -50,7 +50,11 @@ function assertCesiumRuntimeCopied({ cesiumBuildPath, cesiumBaseUrl }) {
     closeBundle() {
       const srcRoot = path.resolve(process.cwd(), cesiumBuildPath);
       const destRoot = path.resolve(process.cwd(), "dist", cesiumBaseUrl);
-      mkdirSync(destRoot, { recursive: true });
+      try {
+        mkdirSync(destRoot, { recursive: true });
+      } catch (err) {
+        if (err?.code !== "EEXIST") throw err;
+      }
 
       // Cesium.js entrypoint (referenced by a <script> tag in index.html).
       const srcJs = path.join(srcRoot, "Cesium.js");
@@ -71,7 +75,7 @@ function assertCesiumRuntimeCopied({ cesiumBuildPath, cesiumBaseUrl }) {
         if (!existsSync(destDir)) {
           const srcDir = path.join(srcRoot, dir);
           if (existsSync(srcDir)) {
-            cpSync(srcDir, destDir, { recursive: true });
+            cpSync(srcDir, destDir, { recursive: true, force: true });
           }
         }
       }
