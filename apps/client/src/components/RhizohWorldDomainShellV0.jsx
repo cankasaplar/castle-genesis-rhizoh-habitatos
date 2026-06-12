@@ -264,6 +264,7 @@ function WorldStartCardV0({ activeTool, active, uiLocale, worldData, onSelect })
     },
     mapState: {
       active,
+      cesiumReady: active,
       activeMapTool: activeTool,
       hasActiveCastle: Boolean(activeCastle),
       memoryNodeCount: memoryPins.length,

@@ -68,12 +68,12 @@ function loadLeafletV0() {
 function createLeafletNodeIconV0(L, node) {
   return L.divIcon({
     className: "rhizoh-v11-core-node-icon",
-    html: `<div style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%);color:${node.color};font-family:monospace;pointer-events:auto">
+    html: `<div data-rhizoh-v11-leaflet-node="${node.id}" style="display:flex;width:96px;min-height:42px;flex-direction:column;align-items:center;justify-content:center;color:${node.color};font-family:monospace;pointer-events:auto;cursor:pointer">
       <div style="width:12px;height:12px;border-radius:999px;border:1px solid ${node.color};background:#020617;box-shadow:0 0 18px ${node.color}"></div>
       <div style="margin-top:4px;background:rgba(0,0,0,.62);padding:1px 5px;border-radius:4px;font-size:8px;font-weight:800;letter-spacing:.08em;white-space:nowrap">${node.label}</div>
     </div>`,
-    iconSize: [1, 1],
-    iconAnchor: [0, 0]
+    iconSize: [96, 42],
+    iconAnchor: [48, 21]
   });
 }
 
