@@ -120,7 +120,7 @@ export async function postRhizohLlmTurnV0(input = {}) {
   const { body } = trimRhizohLlmRequestBodyV0(
     {
       message,
-      provider: input.provider ?? "openai",
+      ...(input.provider ? { provider: input.provider } : {}),
       llmKeySource: input.llmKeySource ?? "auto",
       connectionId: String(input.connectionId || ""),
       ...langBundle.bodyFields,

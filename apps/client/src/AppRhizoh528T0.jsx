@@ -6746,7 +6746,7 @@ const RhizohCommsPanel = memo(
                 };
           const out = await queryRhizohLLM({
             message: q,
-            provider: it.provider || "openai",
+            ...(it.provider ? { provider: it.provider } : {}),
             connectionId: it.connectionId || "",
             agentId: it.agentId || "",
             layerProfile: profile,
@@ -10646,7 +10646,6 @@ export default function AppRhizoh528() {
         noteVoiceTurnLeakAuditV0("llm_query_started");
         const out = await queryRhizohLLM({
           message: trimmed,
-          provider: "openai",
           connectionId: "",
           agentId: "",
           layerProfile: profile,
@@ -12208,7 +12207,6 @@ export default function AppRhizoh528() {
 
       let out = await queryRhizohLLM({
         message: raw,
-        provider: "openai",
         connectionId: "",
         agentId: "",
         layerProfile: profile,
