@@ -304,9 +304,24 @@ function normalizeClientLlmKeySource(raw) {
   return null;
 }
 
+function jsonReplacerSafeV0(_key, value) {
+  if (typeof value === "bigint") return Number(value);
+  return value;
+}
+
 function sendJson(res, statusCode, payload) {
   res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
-  res.end(JSON.stringify(payload));
+  try {
+    res.end(JSON.stringify(payload, jsonReplacerSafeV0));
+  } catch (error) {
+    res.end(
+      JSON.stringify({
+        ok: false,
+        error: "response_serialize_failed",
+        detail: String(error?.message || error)
+      })
+    );
+  }
 }
 
 function logRhizohHealth(stage, detail = {}) {
@@ -2955,35 +2970,48 @@ const httpServer = createServer(async (req, res) => {
   }
 
   if (req.method === "GET" && pathname.startsWith("/rhizoh/llm/task/")) {
-    const rawTaskId = pathname.slice("/rhizoh/llm/task/".length).split("/")[0];
-    const taskId = String(rawTaskId || "").toLowerCase() === "last" ? getLatestLlmWorkerTaskIdV0() : rawTaskId;
-    const snap = taskId ? getLlmWorkerTaskSnapshotV0(taskId) : null;
-    if (!snap) {
-      sendJson(res, 404, {
-        ok: false,
-        error: "llm_task_not_found",
-        taskId: rawTaskId,
-        status: "missing",
-        LATEST_TASK_DEBUG: getLlmWorkerDebugSnapshotV0()
-      });
-      return;
-    }
-    if (snap.status === "processing") {
-      sendJson(res, 202, {
-        ok: true,
+    try {
+      const rawTaskId = decodeURIComponent(pathname.slice("/rhizoh/llm/task/".length).split("/")[0] || "");
+      const taskId = String(rawTaskId || "").toLowerCase() === "last" ? getLatestLlmWorkerTaskIdV0() : rawTaskId;
+      const snap = taskId ? getLlmWorkerTaskSnapshotV0(taskId) : null;
+      if (!snap) {
+        sendJson(res, 404, {
+          ok: false,
+          error: "llm_task_not_found",
+          taskId: rawTaskId,
+          status: "missing",
+          LATEST_TASK_DEBUG: getLlmWorkerDebugSnapshotV0()
+        });
+        return;
+      }
+      if (snap.status === "processing") {
+        sendJson(res, 202, {
+          ok: true,
+          taskId: snap.taskId,
+          status: "processing",
+          createdAt: snap.createdAt,
+          LATEST_TASK_DEBUG: getLlmWorkerDebugSnapshotV0()
+        });
+        return;
+      }
+      // Terminal states (completed/failed) always HTTP 200 — poll must not look like server fault (500).
+      sendJson(res, 200, {
+        ...(snap.body || { ok: false, error: "llm_task_empty", taskId: snap.taskId }),
         taskId: snap.taskId,
-        status: "processing",
-        createdAt: snap.createdAt,
+        status: snap.status === "completed" ? "completed" : snap.status,
+        terminal: true,
         LATEST_TASK_DEBUG: getLlmWorkerDebugSnapshotV0()
       });
-      return;
+    } catch (error) {
+      console.error("[llm-task-poll] handler failed:", error);
+      sendJson(res, 200, {
+        ok: false,
+        error: "llm_task_poll_handler_failed",
+        detail: String(error?.message || error),
+        status: "failed",
+        LATEST_TASK_DEBUG: getLlmWorkerDebugSnapshotV0()
+      });
     }
-    sendJson(res, snap.httpStatus || 200, {
-      ...(snap.body || { ok: false, error: "llm_task_empty", taskId: snap.taskId }),
-      taskId: snap.taskId,
-      status: snap.status === "completed" ? "completed" : snap.status,
-      LATEST_TASK_DEBUG: getLlmWorkerDebugSnapshotV0()
-    });
     return;
   }
 
@@ -3145,6 +3173,7 @@ const httpServer = createServer(async (req, res) => {
           status: "processing",
           traceId: String(payload?.traceId || taskId),
           pollPath: `/rhizoh/llm/task/${taskId}`,
+          gatewayPid: process.pid,
           ...turnMeta.langEcho
         });
         return;

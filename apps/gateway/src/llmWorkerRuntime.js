@@ -266,6 +266,7 @@ export function getLatestLlmWorkerTaskIdV0() {
 export function getLlmWorkerDebugSnapshotV0() {
   return {
     latestTaskId,
+    gatewayPid: process.pid,
     workerPath: resolvedWorkerScriptPath || resolveLlmWorkerScriptPathV0(),
     workerAlive: worker != null,
     taskCount: tasks.size,

@@ -179,8 +179,9 @@ export async function postRhizohLlmTurnV0(input = {}) {
           ok: false,
           error: polled.error || "rhizoh_llm_async_poll_failed",
           taskId,
-          gatewayError: polled.gatewayError,
-          gatewayDetail: polled.gatewayDetail,
+          reply: polled.reply || polled.data?.reply,
+          gatewayError: polled.gatewayError || polled.data?.error,
+          gatewayDetail: polled.gatewayDetail || polled.data?.detail,
           traceId: input.traceId
         });
       }

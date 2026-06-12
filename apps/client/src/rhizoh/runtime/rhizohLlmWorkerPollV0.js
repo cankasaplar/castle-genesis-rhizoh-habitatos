@@ -14,6 +14,15 @@ function resolveRhizohLlmTaskPollUrlV0(endpoint, pollPath, taskId) {
   return `${base}/rhizoh/llm/task/${encodeURIComponent(String(taskId || ""))}`;
 }
 
+function isTerminalPollPayloadV0(data) {
+  if (!data || typeof data !== "object") return false;
+  if (data.terminal === true) return true;
+  if (data.status === "completed" || data.status === "failed") return true;
+  if (data.ok === true && data.reply != null) return true;
+  if (data.ok === false && data.error) return true;
+  return false;
+}
+
 /**
  * @param {{
  *   endpoint: string,
@@ -47,17 +56,36 @@ export async function pollRhizohLlmWorkerTaskV0(input = {}) {
       data = null;
     }
 
-    if (res.status === 200 && data && typeof data === "object") {
-      if (data.status === "processing") {
-        await sleepMs(pollIntervalMs);
-        continue;
-      }
-      return Object.freeze({ ok: true, data, taskId, polled: true });
-    }
-
     if (res.status === 202 || data?.status === "processing") {
       await sleepMs(pollIntervalMs);
       continue;
+    }
+
+    if (res.status === 404) {
+      return Object.freeze({
+        ok: false,
+        error: "rhizoh_llm_task_not_found",
+        taskId,
+        gatewayError: data?.error,
+        gatewayDetail: data?.detail,
+        data
+      });
+    }
+
+    if (res.status === 200 && isTerminalPollPayloadV0(data)) {
+      if (data.ok === false || data.status === "failed") {
+        return Object.freeze({
+          ok: false,
+          error: String(data.error || data.detail || "rhizoh_llm_task_failed"),
+          taskId,
+          gatewayError: data.error,
+          gatewayDetail: data.detail,
+          reply: data.reply,
+          data,
+          polled: true
+        });
+      }
+      return Object.freeze({ ok: true, data, taskId, polled: true });
     }
 
     if (res.status >= 400) {
@@ -67,6 +95,7 @@ export async function pollRhizohLlmWorkerTaskV0(input = {}) {
         taskId,
         gatewayError: data?.error,
         gatewayDetail: data?.detail,
+        reply: data?.reply,
         data
       });
     }

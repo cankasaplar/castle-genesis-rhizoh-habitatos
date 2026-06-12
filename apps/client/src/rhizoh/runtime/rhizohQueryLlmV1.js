@@ -1324,10 +1324,13 @@ export async function queryRhizohLLM({
         maxWaitMs: llmTimeoutMs
       });
       if (!polled.ok) {
-        const e = new Error(polled.error || "rhizoh_llm_async_poll_failed");
-        e.rhizohFailureKind = "timeout";
-        e.gatewayError = polled.gatewayError;
-        e.gatewayDetail = polled.gatewayDetail;
+        const e = new Error(polled.error || polled.reply || "rhizoh_llm_async_poll_failed");
+        e.rhizohFailureKind =
+          polled.data?.rhizohFailureKind ||
+          (polled.error === "rhizoh_llm_task_not_found" ? "client_config" : "provider_error");
+        e.gatewayError = polled.gatewayError || polled.data?.error;
+        e.gatewayDetail = polled.gatewayDetail || polled.data?.detail;
+        if (polled.reply || polled.data?.reply) e.reply = String(polled.reply || polled.data?.reply);
         throw e;
       }
       json = polled.data;
