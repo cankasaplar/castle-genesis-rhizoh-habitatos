@@ -10,7 +10,10 @@ import { CastleAuthOverlay } from "./auth/CastleAuthOverlay.jsx";
 import { useRhizohGatewayMonitor } from "./rhizoh/useRhizohGatewayMonitor.js";
 import { UnifiedProductShellBar } from "./studio/ui/UnifiedProductShellBar.jsx";
 import { RhizohWorldDomainShellV0 } from "./components/RhizohWorldDomainShellV0.jsx";
-import { RhizohWorldSpaceMapHostV0 } from "./components/RhizohWorldSpaceMapHostV0.jsx";
+import {
+  RHIZOH_V11_MAP_INTENT_EVENT_V0,
+  RhizohWorldSpaceMapHostV0
+} from "./components/RhizohWorldSpaceMapHostV0.jsx";
 import { RhizohWorldSpaceVoiceDockV0 } from "./components/RhizohWorldSpaceVoiceDockV0.jsx";
 import {
   applyRhizohWorldMapToolV0,
@@ -63,6 +66,7 @@ export default function AppRhizohWorldSpaceV0() {
   const [geoPrompt, setGeoPrompt] = useState("unknown");
   const [geoBusy, setGeoBusy] = useState(false);
   const [geoError, setGeoError] = useState("");
+  const [v11NodePanel, setV11NodePanel] = useState(null);
 
   const worldMapToolV0 = useSyncExternalStore(
     subscribeRhizohWorldMapToolV0,
@@ -149,6 +153,16 @@ export default function AppRhizohWorldSpaceV0() {
     }
 
     return () => clearSpatialRealityInfraV0();
+  }, []);
+
+  useEffect(() => {
+    const onV11Intent = (ev) => {
+      const detail = ev?.detail;
+      if (!detail?.nodeView) return;
+      setV11NodePanel(detail);
+    };
+    window.addEventListener(RHIZOH_V11_MAP_INTENT_EVENT_V0, onV11Intent);
+    return () => window.removeEventListener(RHIZOH_V11_MAP_INTENT_EVENT_V0, onV11Intent);
   }, []);
 
   useEffect(() => {
@@ -304,6 +318,42 @@ export default function AppRhizohWorldSpaceV0() {
             {geoError ? (
               <p className="text-[9px] text-amber-200/85 normal-case">{geoError}</p>
             ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {v11NodePanel ? (
+        <div className="pointer-events-none fixed inset-x-0 top-28 z-[27] flex justify-center px-4">
+          <div
+            className="pointer-events-auto w-full max-w-sm rounded-2xl border bg-black/85 p-3 text-white shadow-2xl backdrop-blur-md"
+            style={{ borderColor: `${v11NodePanel.nodeView.color}66` }}
+            data-rhizoh-v11-node-panel="1"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/45">
+                  {uiLocale === "tr" ? "V11 düğüm" : "V11 node"}
+                </p>
+                <h2 className="mt-1 text-sm font-black" style={{ color: v11NodePanel.nodeView.color }}>
+                  {v11NodePanel.nodeView.label}
+                </h2>
+                <p className="mt-1 text-[10px] text-white/55">
+                  {v11NodePanel.nodeView.type} · {v11NodePanel.normalizedDecision?.decision || "LOAD_WORLD_NODE"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setV11NodePanel(null)}
+                className="rounded-lg border border-white/15 px-2 py-1 text-[10px] text-white/60 hover:text-white"
+              >
+                ×
+              </button>
+            </div>
+            <p className="mt-3 text-[10px] leading-relaxed text-white/65">
+              {uiLocale === "tr"
+                ? "Harita niyeti üretildi; yürütme kararı orkestratörde kalır."
+                : "Map intent emitted; execution remains with the orchestrator."}
+            </p>
           </div>
         </div>
       ) : null}

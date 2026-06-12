@@ -160,7 +160,7 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
                 uiLocale={locale}
                 onSelect={onSelectMapTool}
               />
-              <RhizohWorldClaimAnchorChipV0 active={spatialEngineActive} uiLocale={locale} />
+              <RhizohWorldClaimAnchorChipV0 active={isSpace} uiLocale={locale} />
               <RhizohWorldSportsNewsStripV0 active={spatialEngineActive} uiLocale={locale} />
               <WorldStartCardV0
                 activeTool={activeMapTool}

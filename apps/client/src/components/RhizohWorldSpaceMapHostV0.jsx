@@ -5,6 +5,15 @@ import {
   routeSymbyoMapInteractionToOrchestratorV0,
   SYMBYO_MAP_INTERACTION_V0
 } from "../rhizoh/runtime/symbyoMapIntentBridgeV0.js";
+import {
+  readWorldMapClaimModeV0,
+  writeWorldMapClaimModeV0
+} from "../rhizoh/runtime/worldMapClaimModeV0.js";
+import {
+  createLocalGhostCastleAnchorV0,
+  LOCAL_GHOST_CASTLE_EVENT_V0,
+  readLocalGhostCastleAnchorsV0
+} from "../rhizoh/runtime/localGhostCastleAnchorV0.js";
 
 export const RHIZOH_V11_MAP_INTENT_EVENT_V0 = "rhizoh:v11-map-intent-v0";
 
@@ -79,20 +88,49 @@ function createLeafletNodeIconV0(L, node) {
 
 function emitV11MapIntentV0(node, interaction) {
   const routed = routeSymbyoMapInteractionToOrchestratorV0({ node, interaction });
+  const detail = Object.freeze({
+    ...routed,
+    nodeView: Object.freeze({
+      id: node.id,
+      label: node.label,
+      type: node.type,
+      color: node.color,
+      lat: node.lat,
+      lon: node.lon
+    })
+  });
   if (typeof window !== "undefined") {
     try {
       window.__rhizoh = window.__rhizoh || {};
-      window.__rhizoh.v11MapLastIntent = routed;
+      window.__rhizoh.v11MapLastIntent = detail;
       window.dispatchEvent(
         new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, {
-          detail: routed
+          detail
+        })
+      );
+      document.dispatchEvent(
+        new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, {
+          detail
         })
       );
     } catch {
       /* noop */
     }
   }
-  return routed;
+  return detail;
+}
+
+function handleV11MapClickForClaimV0(ev) {
+  if (!readWorldMapClaimModeV0()) return false;
+  const latlng = ev?.latlng;
+  if (!Number.isFinite(latlng?.lat) || !Number.isFinite(latlng?.lng)) return false;
+  createLocalGhostCastleAnchorV0({
+    lat: latlng.lat,
+    lon: latlng.lng,
+    label: `Castle · ${latlng.lat.toFixed(3)}, ${latlng.lng.toFixed(3)}`
+  });
+  writeWorldMapClaimModeV0(false);
+  return true;
 }
 
 function leafletTileUrlForToolV0(activeMapTool) {
@@ -110,7 +148,9 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
   const mapRef = useRef(null);
   const hostRef = useRef(null);
   const tileLayerRef = useRef(null);
+  const markerLayerRef = useRef(null);
   const [leafletReady, setLeafletReady] = useState(false);
+  const [localAnchors, setLocalAnchors] = useState(() => readLocalGhostCastleAnchorsV0());
 
   useEffect(() => {
     let cancelled = false;
@@ -127,15 +167,8 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
         tileLayerRef.current = L.tileLayer(leafletTileUrlForToolV0(activeMapTool), {
           maxZoom: 18
         }).addTo(map);
-        for (const node of V11_CORE_MAP_NODES_V0) {
-          const marker = L.marker([node.lat, node.lon], {
-            icon: createLeafletNodeIconV0(L, node),
-            keyboard: false,
-            title: node.label
-          }).addTo(map);
-          marker.on("click", () => emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK));
-          marker.on("mouseover", () => emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.HOVER));
-        }
+        map.on("click", (ev) => handleV11MapClickForClaimV0(ev));
+        markerLayerRef.current = L.layerGroup().addTo(map);
         mapRef.current = map;
         setLeafletReady(true);
         setTimeout(() => {
@@ -157,8 +190,50 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
         /* noop */
       }
       mapRef.current = null;
+      markerLayerRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const onAnchor = () => setLocalAnchors(readLocalGhostCastleAnchorsV0());
+    window.addEventListener(LOCAL_GHOST_CASTLE_EVENT_V0, onAnchor);
+    return () => window.removeEventListener(LOCAL_GHOST_CASTLE_EVENT_V0, onAnchor);
+  }, []);
+
+  useEffect(() => {
+    const L = typeof window !== "undefined" ? window.L : null;
+    if (!L?.marker || !mapRef.current || !leafletReady) return;
+    try {
+      markerLayerRef.current?.clearLayers?.();
+      if (!markerLayerRef.current) markerLayerRef.current = L.layerGroup().addTo(mapRef.current);
+      const localNodes = localAnchors.map((anchor) => ({
+        id: anchor.id,
+        label: anchor.label || "CASTLE",
+        type: "castle",
+        lat: anchor.lat,
+        lon: anchor.lon,
+        color: "#22c55e"
+      }));
+      for (const node of [...V11_CORE_MAP_NODES_V0, ...localNodes]) {
+        const marker = L.marker([node.lat, node.lon], {
+          icon: createLeafletNodeIconV0(L, node),
+          keyboard: false,
+          title: node.label
+        }).addTo(markerLayerRef.current);
+        marker.on("click", (ev) => {
+          try {
+            ev?.originalEvent?.stopPropagation?.();
+          } catch {
+            /* noop */
+          }
+          emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK);
+        });
+        marker.on("mouseover", () => emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.HOVER));
+      }
+    } catch {
+      /* noop */
+    }
+  }, [leafletReady, localAnchors]);
 
   useEffect(() => {
     const L = typeof window !== "undefined" ? window.L : null;
