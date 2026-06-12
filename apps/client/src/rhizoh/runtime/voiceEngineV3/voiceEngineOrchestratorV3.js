@@ -234,7 +234,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         });
         return { ok: true };
       } catch (e) {
-        closeLiveVoiceSessionV0("capture_stop_failed");
+        closeLiveVoiceSessionV0("capture_start_failed");
         busy = false;
         setSessionState(VOICE_ENGINE_STATE_V3.ERROR);
         const code = String(e?.message || "capture_start_failed");
@@ -267,6 +267,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         fullBlob = captureResult?.blob || captureResult;
         captureChunks = Array.isArray(captureResult?.chunks) ? captureResult.chunks : [];
       } catch (e) {
+        closeLiveVoiceSessionV0("capture_stop_failed");
         busy = false;
         setSessionState(VOICE_ENGINE_STATE_V3.ERROR);
         opts.onError?.({ code: "capture_stop_failed", detail: String(e?.message || e) });

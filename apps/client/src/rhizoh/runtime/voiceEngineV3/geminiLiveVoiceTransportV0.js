@@ -96,63 +96,120 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
   const path = String(opts.path || "both");
   let stopped = false;
   let chunkCount = 0;
+  let failedReason = "";
   /** @type {Promise<unknown>[]} */
   const pendingChunks = [];
 
+  /** @type {(payload: object) => void} */
+  let settleFinalV0 = () => {};
   const finalPromise = new Promise((resolve) => {
+    let done = false;
     const timer = window.setTimeout(() => {
-      resolve({ ok: false, error: "live_final_timeout" });
+      finish({ ok: false, error: "live_final_timeout" });
     }, LIVE_FINAL_TIMEOUT_MS_V0);
 
-    ws.addEventListener("message", (ev) => {
+    const finish = (payload) => {
+      if (done) return;
+      done = true;
+      window.clearTimeout(timer);
+      resolve(payload);
+    };
+    settleFinalV0 = finish;
+
+    const onMessage = (ev) => {
       const msg = safeJsonParse(String(ev.data || ""));
       if (!msg?.type) return;
       if (msg.type === WS_MESSAGE.RHIZOH_VOICE_LIVE_FINAL) {
-        window.clearTimeout(timer);
-        resolve(msg.payload || { ok: false, error: "live_final_empty" });
+        finish(msg.payload || { ok: false, error: "live_final_empty" });
       }
       if (msg.type === WS_MESSAGE.RHIZOH_VOICE_LIVE_ERROR) {
-        window.clearTimeout(timer);
-        resolve({ ok: false, ...(msg.payload || {}), transportPath: "gateway_ws_live" });
+        failedReason = String(msg.payload?.error || "gateway_ws_live_error");
+        finish({ ok: false, ...(msg.payload || {}), transportPath: "gateway_ws_live" });
       }
-    });
+    };
+    const onError = () => {
+      failedReason = failedReason || "gateway_ws_error";
+      finish({ ok: false, error: failedReason, transportPath: "gateway_ws_live" });
+    };
+    const onClose = () => {
+      failedReason = failedReason || "gateway_ws_closed";
+      finish({ ok: false, error: failedReason, transportPath: "gateway_ws_live" });
+    };
+
+    ws.addEventListener("message", onMessage);
+    ws.addEventListener("error", onError);
+    ws.addEventListener("close", onClose);
   });
 
-  ws.send(
-    JSON.stringify(
-      createEnvelope(WS_MESSAGE.RHIZOH_VOICE_LIVE_START, {
-        schema: RHIZOH_GEMINI_LIVE_VOICE_TRANSPORT_SCHEMA_V0,
-        sessionId,
-        traceId: opts.traceId || "",
-        languageCode,
-        mimeType,
-        path
-      })
-    )
-  );
+  try {
+    ws.send(
+      JSON.stringify(
+        createEnvelope(WS_MESSAGE.RHIZOH_VOICE_LIVE_START, {
+          schema: RHIZOH_GEMINI_LIVE_VOICE_TRANSPORT_SCHEMA_V0,
+          sessionId,
+          traceId: opts.traceId || "",
+          languageCode,
+          mimeType,
+          path
+        })
+      )
+    );
+  } catch (e) {
+    failedReason = "live_start_send_failed";
+    settleFinalV0({ ok: false, error: failedReason, detail: String(e?.message || e) });
+    try {
+      ws.close();
+    } catch {
+      /* noop */
+    }
+    return { ok: false, error: failedReason, detail: String(e?.message || e) };
+  }
 
   const api = Object.freeze({
     ok: true,
     sessionId,
     sendChunk(blob) {
-      if (stopped || !blob || blob.size <= 0 || chunkCount >= LIVE_MAX_CHUNKS_V0) return;
+      if (stopped || failedReason || !blob || blob.size <= 0 || chunkCount >= LIVE_MAX_CHUNKS_V0) return;
       chunkCount += 1;
+      const index = chunkCount;
       const job = blob
         .arrayBuffer()
         .then((buf) => {
-          if (stopped || ws?.readyState !== WebSocket.OPEN) return;
-          ws.send(
-            JSON.stringify(
-              createEnvelope(WS_MESSAGE.RHIZOH_VOICE_LIVE_CHUNK, {
-                sessionId,
-                audioBase64: arrayBufferToBase64V0(buf),
-                mimeType,
-                index: chunkCount
-              })
-            )
-          );
+          if (stopped || failedReason) return;
+          if (ws?.readyState !== WebSocket.OPEN) {
+            failedReason = "gateway_ws_closed";
+            settleFinalV0({ ok: false, error: failedReason, transportPath: "gateway_ws_live" });
+            return;
+          }
+          try {
+            ws.send(
+              JSON.stringify(
+                createEnvelope(WS_MESSAGE.RHIZOH_VOICE_LIVE_CHUNK, {
+                  sessionId,
+                  audioBase64: arrayBufferToBase64V0(buf),
+                  mimeType,
+                  index
+                })
+              )
+            );
+          } catch (e) {
+            failedReason = "live_chunk_send_failed";
+            settleFinalV0({
+              ok: false,
+              error: failedReason,
+              detail: String(e?.message || e),
+              transportPath: "gateway_ws_live"
+            });
+          }
         })
         .catch((e) => {
+          failedReason = "live_chunk_encode_failed";
+          settleFinalV0({
+            ok: false,
+            error: failedReason,
+            detail: String(e?.message || e),
+            transportPath: "gateway_ws_live"
+          });
           emitVoiceEngineTelemetryV3("LIVE_WS_CHUNK_SKIP", { error: String(e?.message || e) });
         });
       pendingChunks.push(job);
@@ -160,18 +217,28 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
     async stopAndWaitFinal(stopOpts = {}) {
       stopped = true;
       await Promise.allSettled(pendingChunks);
+      if (failedReason) return { ok: false, error: failedReason, transportPath: "gateway_ws_live" };
       if (ws?.readyState !== WebSocket.OPEN) return { ok: false, error: "gateway_ws_closed" };
-      ws.send(
-        JSON.stringify(
-          createEnvelope(WS_MESSAGE.RHIZOH_VOICE_LIVE_STOP, {
-            sessionId,
-            traceId: stopOpts.traceId || opts.traceId || "",
-            languageCode: stopOpts.languageCode || languageCode,
-            mimeType: stopOpts.mimeType || mimeType,
-            path: stopOpts.path || path
-          })
-        )
-      );
+      try {
+        ws.send(
+          JSON.stringify(
+            createEnvelope(WS_MESSAGE.RHIZOH_VOICE_LIVE_STOP, {
+              sessionId,
+              traceId: stopOpts.traceId || opts.traceId || "",
+              languageCode: stopOpts.languageCode || languageCode,
+              mimeType: stopOpts.mimeType || mimeType,
+              path: stopOpts.path || path
+            })
+          )
+        );
+      } catch (e) {
+        return {
+          ok: false,
+          error: "live_stop_send_failed",
+          detail: String(e?.message || e),
+          transportPath: "gateway_ws_live"
+        };
+      }
       const result = await finalPromise;
       try {
         ws.close();

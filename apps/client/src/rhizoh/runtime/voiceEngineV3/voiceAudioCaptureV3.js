@@ -5,7 +5,8 @@
 import { attachVoiceCaptureLevelProbeV3 } from "./voiceAudioLevelV3.js";
 
 export const VOICE_AUDIO_CAPTURE_V3_SCHEMA = "castle.rhizoh.voice_audio_capture.v3";
-export const VOICE_CAPTURE_CHUNK_MS_V3 = 1500;
+/** Live WS lane emits small deterministic chunks; HTTP fallback still receives the full Blob. */
+export const VOICE_CAPTURE_CHUNK_MS_V3 = 500;
 
 /**
  * @param {{ timesliceMs?: number, mimeType?: string, deviceId?: string, onChunk?: (blob: Blob) => void, onError?: (err: Error) => void }} [opts]
