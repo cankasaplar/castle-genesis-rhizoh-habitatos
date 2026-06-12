@@ -27,9 +27,7 @@ import {
   readVoiceLanguageLockV0
 } from "../rhizohConversationLanguageV0.js";
 import { prepareRhizohLlmTurnV0 } from "../rhizohLlmTurnHotWireV0.js";
-import { classifyVoiceDirectedSpeechBandV0 } from "../voiceDirectedSpeechObservationV0.js";
 import {
-  resolveVoicePipelineDecisionV0,
   publishVoicePipelineDecisionDebugV0,
   VOICE_EXEC_MODE_V0,
   VOICE_SPEAK_MODE_V0
@@ -68,6 +66,7 @@ import { pushSttQuarantineEntryV0 } from "../rhizohSttQuarantineBufferV0.js";
 import { applySttTemporalSmoothingV0 } from "../sttTemporalSmoothingV0.js";
 import { createGeminiLiveVoiceSessionV0 } from "./geminiLiveVoiceTransportV0.js";
 import { recordVoiceImmutableEventV0 } from "./voiceImmutableEventTimelineV0.js";
+import { resolveVoiceDecisionViaMemoryCoreV0 } from "./voiceMemoryCoreVaultMediatorV0.js";
 
 export const VOICE_MIN_RECORD_MS_V3 = 1200;
 export const VOICE_MIN_AUDIO_BYTES_V3 = 25000;
@@ -726,37 +725,44 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           };
         }
 
-        const bandObs = classifyVoiceDirectedSpeechBandV0({
-          text: merged.text,
-          confidence: merged.confidence,
-          strategy: merged.strategy,
-          maxRms,
-          source: "mic_v3"
+        const intentEvent = recordVoiceImmutableEventV0({
+          type: "VOICE_INTENT_PARSED",
+          sessionId,
+          traceId: opts.traceId,
+          payloadRefSeed: `${sessionId}:intent_ref:parsed`,
+          actorSeed: sessionId
         });
-        const provenance = buildInputProvenanceEnvelopeV0({
-          text: merged.text,
-          source: RHIZOH_INPUT_SOURCE_V0.MIC_V3,
-          modality: RHIZOH_INPUT_MODALITY_V0.STT,
-          confidence: merged.confidence,
-          strategy: merged.strategy,
-          band: bandObs.band
-        });
-        const decision = resolveVoicePipelineDecisionV0({
-          text: merged.text,
+        const vaultDecision = resolveVoiceDecisionViaMemoryCoreV0({
+          event: intentEvent,
+          intentScope: "voice_intent_decision",
+          transcript: merged.text,
           confidence: merged.confidence,
           strategy: merged.strategy,
           maxRms,
           recordedMs,
-          band: bandObs.band,
-          provenance,
-          sessionId
+          sessionId,
+          traceId: opts.traceId
+        });
+        if (!vaultDecision.ok) {
+          busy = false;
+          setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
+          return { ok: false, error: vaultDecision.error || "vault_decision_denied", merged };
+        }
+        const decision = vaultDecision.packet.decision;
+        const bandObs = vaultDecision.packet.bandObs;
+        const provenance = Object.freeze({
+          schema: "rhizoh.voice_vault_provenance_ref.v0",
+          provenanceRef: vaultDecision.packet.provenanceRef,
+          originHash: vaultDecision.packet.originHash,
+          source: "memory_core_vault",
+          rawTextVisibleToOrchestrator: false
         });
         publishVoicePipelineDecisionDebugV0(decision);
         recordVoiceImmutableEventV0({
-          type: "VOICE_INTENT_PARSED",
+          type: "VOICE_ORCHESTRATOR_DECISION_READY",
           sessionId,
           traceId: opts.traceId,
-          payloadRefSeed: `${sessionId}:intent_ref:${decision.path || decision.action || "decision"}`,
+          payloadRef: vaultDecision.packet.packetRef,
           actorSeed: sessionId
         });
         emitVoiceEngineTelemetryV3("PIPELINE_DECISION", {
