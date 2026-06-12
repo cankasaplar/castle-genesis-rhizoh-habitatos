@@ -44,13 +44,27 @@ Blueprint: `render.yaml` içinde bu üçü varsayılan **0** olarak set edilir.
 1. `apps/gateway/.env.production.example` → `apps/gateway/.env` (sunucuda veya gizli mağazada aynı anahtarlar).
 2. **Zorunlu (tam güç):**
    - `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` — servis hesabı JSON ile uyumlu.
-   - Seçilen LLM için anahtar (örn. `OPENAI_API_KEY`).
+   - **Gemini LLM:** `CASTLE_LLM_PROVIDER=gemini`, `CASTLE_LLM_MODEL=gemini-2.0-flash`, `GOOGLE_API_KEY` veya `GEMINI_API_KEY`.
 3. **Önerilir:**
    - `CASTLE_GATEWAY_TOKEN` — istemci ile paylaşımlı.
    - `CASTLE_HTTP_CORS_ORIGIN` — varsayılan origin; gateway ayrıca `CASTLE_ALLOWED_ORIGINS` ile gelen `Origin` başlığını **echo** eder (çoklu Firebase: `…web.app` **ve** `…firebaseapp.com` listeye ekleyin).
    - `CASTLE_ALLOWED_ORIGINS` — WS + HTTP CORS whitelist (virgülle).
    - `CASTLE_REQUIRE_AUTH=true`, geliştirici bypass’ları kapalı (`CASTLE_ALLOW_DEV_*=false`).
 4. Doğrulama: `npm run verify:production -- --target=gateway --strict`
+
+### 2c. Render — Gemini LLM (OpenAI artık kullanılmıyorsa)
+
+Render Dashboard → **castle-genesis-gateway** → **Environment**:
+
+| Key | Value |
+|-----|--------|
+| `CASTLE_LLM_PROVIDER` | `gemini` |
+| `CASTLE_LLM_MODEL` | `gemini-2.0-flash` (veya panelde geçerli model id) |
+| `GEMINI_API_KEY` veya `GOOGLE_API_KEY` | Google AI Studio / GCP anahtarı |
+
+Kaydet → servis otomatik redeploy olur. `GET /health/deps` → `"llm":true` ve `POST /rhizoh/llm` → `provider: "gemini"` beklenir.
+
+`render.yaml` blueprint varsayılanı da `gemini` — yeni Apply ile uyumlu.
 
 ### 2b. Gateway kod güncellemesi (Rhizoh LLM / identity) — zorunlu redeploy
 
