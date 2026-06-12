@@ -101,6 +101,7 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
   const languageCode = String(opts.languageCode || "tr-TR");
   const path = String(opts.path || "both");
   let stopped = false;
+  let acceptingChunks = true;
   let chunkCount = 0;
   let failedReason = "";
   /** @type {Promise<unknown>[]} */
@@ -182,13 +183,13 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
     ok: true,
     sessionId,
     sendChunk(blob) {
-      if (stopped || failedReason || !blob || blob.size <= 0 || chunkCount >= LIVE_MAX_CHUNKS_V0) return;
+      if (!acceptingChunks || stopped || failedReason || !blob || blob.size <= 0 || chunkCount >= LIVE_MAX_CHUNKS_V0) return;
       chunkCount += 1;
       const index = chunkCount;
       const job = blob
         .arrayBuffer()
         .then((buf) => {
-          if (stopped || failedReason) return;
+          if (failedReason) return;
           if (ws?.readyState !== WebSocket.OPEN) {
             failedReason = "gateway_ws_closed";
             settleFinalV0({ ok: false, error: failedReason, transportPath: "gateway_ws_live" });
@@ -237,9 +238,10 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
       pendingChunks.push(job);
     },
     async stopAndWaitFinal(stopOpts = {}) {
-      stopped = true;
+      acceptingChunks = false;
       await Promise.allSettled(pendingChunks);
       if (failedReason) {
+        stopped = true;
         recordVoiceImmutableEventV0({
           type: "VOICE_LIVE_FALLBACK_REQUIRED",
           sessionId,
@@ -250,6 +252,7 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
         return { ok: false, error: failedReason, transportPath: "gateway_ws_live" };
       }
       if (ws?.readyState !== WebSocket.OPEN) {
+        stopped = true;
         recordVoiceImmutableEventV0({
           type: "VOICE_LIVE_FALLBACK_REQUIRED",
           sessionId,
@@ -280,6 +283,7 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
           actorSeed: sessionId
         });
       } catch (e) {
+        stopped = true;
         return {
           ok: false,
           error: "live_stop_send_failed",
@@ -287,6 +291,7 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
           transportPath: "gateway_ws_live"
         };
       }
+      stopped = true;
       const result = await finalPromise;
       recordVoiceImmutableEventV0({
         type: result?.ok ? "VOICE_LIVE_FINAL_RECEIVED" : "VOICE_LIVE_FALLBACK_REQUIRED",
@@ -303,6 +308,7 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
       return { transportPath: "gateway_ws_live", transportAttempt: 1, ...result };
     },
     close(reason = "client_close") {
+      acceptingChunks = false;
       stopped = true;
       try {
         ws?.close(1000, reason);

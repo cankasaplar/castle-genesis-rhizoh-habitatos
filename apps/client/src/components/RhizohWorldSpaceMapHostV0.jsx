@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useEffect, useRef, useState } from "react";
 import CesiumRealMapLayer from "../castleFlight/CesiumRealMapLayer.jsx";
 import { RHIZOH_SPATIAL_RENDER_MODE_V0 } from "../rhizoh/runtime/spatialBootGateV0.js";
 
@@ -24,13 +24,112 @@ function projectV11CoreMapGeoV0(lat, lon) {
   };
 }
 
+const LEAFLET_CSS_URL_V0 = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+const LEAFLET_JS_URL_V0 = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+let leafletLoadPromiseV0 = null;
+
+function loadLeafletV0() {
+  if (typeof window === "undefined") return Promise.resolve(null);
+  if (window.L?.map) return Promise.resolve(window.L);
+  if (leafletLoadPromiseV0) return leafletLoadPromiseV0;
+  leafletLoadPromiseV0 = new Promise((resolve) => {
+    try {
+      if (!document.querySelector(`link[href="${LEAFLET_CSS_URL_V0}"]`)) {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = LEAFLET_CSS_URL_V0;
+        document.head.appendChild(link);
+      }
+      const existing = document.querySelector(`script[src="${LEAFLET_JS_URL_V0}"]`);
+      if (existing) {
+        existing.addEventListener("load", () => resolve(window.L || null), { once: true });
+        existing.addEventListener("error", () => resolve(null), { once: true });
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = LEAFLET_JS_URL_V0;
+      script.async = true;
+      script.onload = () => resolve(window.L || null);
+      script.onerror = () => resolve(null);
+      document.head.appendChild(script);
+    } catch {
+      resolve(null);
+    }
+  });
+  return leafletLoadPromiseV0;
+}
+
+function createLeafletNodeIconV0(L, node) {
+  return L.divIcon({
+    className: "rhizoh-v11-core-node-icon",
+    html: `<div style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%);color:${node.color};font-family:monospace;pointer-events:auto">
+      <div style="width:12px;height:12px;border-radius:999px;border:1px solid ${node.color};background:#020617;box-shadow:0 0 18px ${node.color}"></div>
+      <div style="margin-top:4px;background:rgba(0,0,0,.62);padding:1px 5px;border-radius:4px;font-size:8px;font-weight:800;letter-spacing:.08em;white-space:nowrap">${node.label}</div>
+    </div>`,
+    iconSize: [1, 1],
+    iconAnchor: [0, 0]
+  });
+}
+
 function V11CoreMapLayerV0() {
+  const mapRef = useRef(null);
+  const hostRef = useRef(null);
+  const [leafletReady, setLeafletReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    let map = null;
+    void loadLeafletV0().then((L) => {
+      if (cancelled || !L || !hostRef.current || mapRef.current) return;
+      try {
+        map = L.map(hostRef.current, {
+          zoomControl: false,
+          attributionControl: false,
+          worldCopyJump: true,
+          preferCanvas: true
+        }).setView([20, 0], 2);
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+          maxZoom: 18
+        }).addTo(map);
+        for (const node of V11_CORE_MAP_NODES_V0) {
+          L.marker([node.lat, node.lon], {
+            icon: createLeafletNodeIconV0(L, node),
+            keyboard: false,
+            title: node.label
+          }).addTo(map);
+        }
+        mapRef.current = map;
+        setLeafletReady(true);
+        setTimeout(() => {
+          try {
+            map.invalidateSize();
+          } catch {
+            /* noop */
+          }
+        }, 80);
+      } catch {
+        setLeafletReady(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+      try {
+        mapRef.current?.remove?.();
+      } catch {
+        /* noop */
+      }
+      mapRef.current = null;
+    };
+  }, []);
+
   return (
     <div
       className="absolute inset-0 overflow-hidden bg-[radial-gradient(circle_at_center,rgba(8,47,73,0.48),rgba(1,1,8,0.98)_68%)]"
       data-rhizoh-v11-core-map-layer="1"
+      data-rhizoh-v11-leaflet-ready={leafletReady ? "1" : "0"}
       aria-label="Rhizoh Primary Spatial Surface V11"
     >
+      <div ref={hostRef} className="pointer-events-auto absolute inset-0 z-[1]" data-rhizoh-v11-leaflet-host="1" />
       <div className="absolute inset-x-[8%] top-[18%] h-px bg-cyan-300/10" />
       <div className="absolute inset-x-[8%] top-[42%] h-px bg-cyan-300/10" />
       <div className="absolute inset-x-[8%] top-[66%] h-px bg-cyan-300/10" />
@@ -40,7 +139,7 @@ function V11CoreMapLayerV0() {
       <div className="absolute left-4 top-4 rounded-xl border border-cyan-400/25 bg-black/55 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-100/80">
         RHIZOH PRIMARY SPATIAL SURFACE V11
       </div>
-      {V11_CORE_MAP_NODES_V0.map((node) => {
+      {!leafletReady ? V11_CORE_MAP_NODES_V0.map((node) => {
         const pos = projectV11CoreMapGeoV0(node.lat, node.lon);
         return (
           <div
@@ -59,7 +158,7 @@ function V11CoreMapLayerV0() {
             </div>
           </div>
         );
-      })}
+      }) : null}
     </div>
   );
 }
