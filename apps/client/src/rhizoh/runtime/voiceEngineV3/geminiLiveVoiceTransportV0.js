@@ -6,9 +6,15 @@
  * as the HTTP ASR path, so downstream orchestration stays unchanged.
  */
 
-import { WS_MESSAGE, createEnvelope, safeJsonParse } from "@castle/protocol";
+import {
+  WS_MESSAGE,
+  createEnvelope,
+  createRhizohVoiceLiveChunkPayloadV0,
+  safeJsonParse
+} from "@castle/protocol";
 import { getCastleFlightConfig } from "../../../castleFlight/castleFlightConfig.js";
 import { emitVoiceEngineTelemetryV3 } from "./voiceEngineTelemetryV3.js";
+import { recordVoiceImmutableEventV0 } from "./voiceImmutableEventTimelineV0.js";
 
 export const RHIZOH_GEMINI_LIVE_VOICE_TRANSPORT_SCHEMA_V0 =
   "castle.rhizoh.voice.gemini_live_gateway_lane.v0";
@@ -164,6 +170,13 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
     }
     return { ok: false, error: failedReason, detail: String(e?.message || e) };
   }
+  recordVoiceImmutableEventV0({
+    type: "VOICE_LIVE_SESSION_STARTED",
+    sessionId,
+    traceId: opts.traceId || "",
+    payloadRefSeed: `${sessionId}:live_session`,
+    actorSeed: sessionId
+  });
 
   const api = Object.freeze({
     ok: true,
@@ -182,16 +195,25 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
             return;
           }
           try {
+            const payload = createRhizohVoiceLiveChunkPayloadV0({
+              sessionId,
+              traceId: opts.traceId || "",
+              audioBase64: arrayBufferToBase64V0(buf),
+              mimeType,
+              chunkIndex: index
+            });
             ws.send(
               JSON.stringify(
-                createEnvelope(WS_MESSAGE.RHIZOH_VOICE_LIVE_CHUNK, {
-                  sessionId,
-                  audioBase64: arrayBufferToBase64V0(buf),
-                  mimeType,
-                  index
-                })
+                createEnvelope(WS_MESSAGE.RHIZOH_VOICE_LIVE_CHUNK, payload)
               )
             );
+            recordVoiceImmutableEventV0({
+              type: "VOICE_LIVE_CHUNK_SENT",
+              sessionId,
+              traceId: opts.traceId || "",
+              payloadRefSeed: `${sessionId}:chunk:${index}`,
+              actorSeed: sessionId
+            });
           } catch (e) {
             failedReason = "live_chunk_send_failed";
             settleFinalV0({
@@ -217,8 +239,26 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
     async stopAndWaitFinal(stopOpts = {}) {
       stopped = true;
       await Promise.allSettled(pendingChunks);
-      if (failedReason) return { ok: false, error: failedReason, transportPath: "gateway_ws_live" };
-      if (ws?.readyState !== WebSocket.OPEN) return { ok: false, error: "gateway_ws_closed" };
+      if (failedReason) {
+        recordVoiceImmutableEventV0({
+          type: "VOICE_LIVE_FALLBACK_REQUIRED",
+          sessionId,
+          traceId: stopOpts.traceId || opts.traceId || "",
+          payloadRefSeed: `${sessionId}:fallback:${failedReason}`,
+          actorSeed: sessionId
+        });
+        return { ok: false, error: failedReason, transportPath: "gateway_ws_live" };
+      }
+      if (ws?.readyState !== WebSocket.OPEN) {
+        recordVoiceImmutableEventV0({
+          type: "VOICE_LIVE_FALLBACK_REQUIRED",
+          sessionId,
+          traceId: stopOpts.traceId || opts.traceId || "",
+          payloadRefSeed: `${sessionId}:fallback:gateway_ws_closed`,
+          actorSeed: sessionId
+        });
+        return { ok: false, error: "gateway_ws_closed" };
+      }
       try {
         ws.send(
           JSON.stringify(
@@ -227,10 +267,18 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
               traceId: stopOpts.traceId || opts.traceId || "",
               languageCode: stopOpts.languageCode || languageCode,
               mimeType: stopOpts.mimeType || mimeType,
-              path: stopOpts.path || path
+              path: stopOpts.path || path,
+              lastChunkIndex: chunkCount
             })
           )
         );
+        recordVoiceImmutableEventV0({
+          type: "VOICE_LIVE_STOP_SENT",
+          sessionId,
+          traceId: stopOpts.traceId || opts.traceId || "",
+          payloadRefSeed: `${sessionId}:stop:${chunkCount}`,
+          actorSeed: sessionId
+        });
       } catch (e) {
         return {
           ok: false,
@@ -240,6 +288,13 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
         };
       }
       const result = await finalPromise;
+      recordVoiceImmutableEventV0({
+        type: result?.ok ? "VOICE_LIVE_FINAL_RECEIVED" : "VOICE_LIVE_FALLBACK_REQUIRED",
+        sessionId,
+        traceId: stopOpts.traceId || opts.traceId || "",
+        payloadRefSeed: `${sessionId}:final:${result?.ok ? "ws" : "fallback"}`,
+        actorSeed: sessionId
+      });
       try {
         ws.close();
       } catch {

@@ -502,7 +502,7 @@ function formatLastRejectionForensicsV0(row) {
   if (!row) return "none";
   const f = row.filter || {};
   return [
-    `"${row.transcript || row.preview || "—"}"`,
+    `ref:${row.transcriptRef || "—"}`,
     `conf:${row.confidence ?? "—"}`,
     `rms:${row.maxRms ?? "—"}`,
     `tier:${f.confidenceTier ?? "—"}`,

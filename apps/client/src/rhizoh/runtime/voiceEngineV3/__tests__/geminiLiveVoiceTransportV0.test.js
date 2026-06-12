@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { WS_MESSAGE } from "@castle/protocol";
+import { WS_MESSAGE, validateRhizohVoiceLiveChunkPayloadV0 } from "@castle/protocol";
 import { createGeminiLiveVoiceSessionV0 } from "../geminiLiveVoiceTransportV0.js";
+import {
+  getVoiceImmutableEventTimelineSnapshotV0,
+  resetVoiceImmutableEventTimelineForTestV0
+} from "../voiceImmutableEventTimelineV0.js";
 
 vi.mock("../../../../castleFlight/castleFlightConfig.js", () => ({
   getCastleFlightConfig: () => ({
@@ -78,6 +82,7 @@ function flushPromises() {
 describe("geminiLiveVoiceTransportV0", () => {
   beforeEach(() => {
     MockWebSocket.instances = [];
+    resetVoiceImmutableEventTimelineForTestV0();
     vi.stubGlobal("WebSocket", MockWebSocket);
   });
 
@@ -106,7 +111,11 @@ describe("geminiLiveVoiceTransportV0", () => {
     const chunk = parseSent(ws, 1);
     expect(chunk.type).toBe(WS_MESSAGE.RHIZOH_VOICE_LIVE_CHUNK);
     expect(chunk.payload.sessionId).toBe("voice_live_test");
+    expect(chunk.payload.chunkIndex).toBe(1);
+    expect(typeof chunk.payload.timestamp).toBe("number");
+    expect(chunk.payload.checksum).toMatch(/^[0-9a-f]{8}$/);
     expect(chunk.payload.audioBase64).toBe("AQID");
+    expect(validateRhizohVoiceLiveChunkPayloadV0(chunk.payload, { expectedChunkIndex: 1 }).ok).toBe(true);
 
     const finalPending = session.stopAndWaitFinal();
     await flushPromises();
@@ -124,6 +133,10 @@ describe("geminiLiveVoiceTransportV0", () => {
     expect(final.ok).toBe(true);
     expect(final.transportPath).toBe("gateway_ws_live");
     expect(final.merged.text).toBe("merhaba");
+
+    const timeline = getVoiceImmutableEventTimelineSnapshotV0();
+    expect(timeline.tail.some((row) => row.type === "VOICE_LIVE_CHUNK_SENT")).toBe(true);
+    expect(JSON.stringify(timeline.tail)).not.toContain("AQID");
   });
 
   it("returns a closed-WS result so the orchestrator can fall back to HTTP", async () => {
@@ -138,5 +151,28 @@ describe("geminiLiveVoiceTransportV0", () => {
     expect(final.ok).toBe(false);
     expect(final.error).toBe("gateway_ws_closed");
     expect(final.transportPath).toBe("gateway_ws_live");
+    expect(
+      getVoiceImmutableEventTimelineSnapshotV0().tail.some(
+        (row) => row.type === "VOICE_LIVE_FALLBACK_REQUIRED" && row.payloadRef?.startsWith("ptr_")
+      )
+    ).toBe(true);
+  });
+
+  it("rejects out-of-order chunk payloads at the protocol boundary", async () => {
+    const pending = createGeminiLiveVoiceSessionV0({ sessionId: "voice_live_sequence" });
+    const ws = MockWebSocket.instances[0];
+    ws.open();
+    const session = await pending;
+
+    session.sendChunk(new Blob([new Uint8Array([7])], { type: "audio/webm" }));
+    await flushPromises();
+
+    const chunk = parseSent(ws, 1).payload;
+    expect(validateRhizohVoiceLiveChunkPayloadV0(chunk, { expectedChunkIndex: 2 })).toMatchObject({
+      ok: false,
+      error: "chunk_out_of_order",
+      expectedChunkIndex: 2,
+      chunkIndex: 1
+    });
   });
 });

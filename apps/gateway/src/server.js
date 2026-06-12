@@ -16,7 +16,15 @@ import { WebSocket, WebSocketServer } from "ws";
 import { createServer } from "node:http";
 import { createOrchestrator } from "@castle/orchestrator";
 import { parseTextToCommand } from "@castle/command-dsl";
-import { WS_MESSAGE, COMMAND, createEnvelope, safeJsonParse } from "@castle/protocol";
+import {
+  WS_MESSAGE,
+  COMMAND,
+  createEnvelope,
+  createRhizohImmutableEventV0,
+  createRhizohPayloadRefV0,
+  safeJsonParse,
+  validateRhizohVoiceLiveChunkPayloadV0
+} from "@castle/protocol";
 import { queryOpenData } from "./openData.js";
 import { verifyClientToken } from "./auth.js";
 import { runRhizohBrain } from "./rhizohBrain.js";
@@ -3281,6 +3289,21 @@ const RHIZOH_VOICE_LIVE_MAX_CHUNKS = 96;
  */
 const rhizohVoiceLiveSessions = new WeakMap();
 
+function appendRhizohVoiceLiveEventV0(session, type, payloadRefSeed = "") {
+  if (!session) return null;
+  session.eventSeq = (Number(session.eventSeq) || 0) + 1;
+  const event = createRhizohImmutableEventV0({
+    type,
+    sessionId: session.sessionId,
+    traceId: session.traceId,
+    actorSeed: session.sessionId || session.traceId,
+    eventSeq: session.eventSeq,
+    payloadRef: createRhizohPayloadRefV0(payloadRefSeed || `${session.sessionId}:${type}:${session.eventSeq}`)
+  });
+  session.events = [...(session.events || []), event].slice(-64);
+  return event;
+}
+
 function sendRhizohVoiceLiveEnvelopeV0(socket, type, payload) {
   try {
     if (socket?.readyState === 1) socket.send(JSON.stringify(createEnvelope(type, payload)));
@@ -3311,9 +3334,14 @@ function handleRhizohVoiceLiveStartV0(socket, payload = {}) {
     languageCode: String(p.languageCode || "tr-TR").slice(0, 32),
     path: String(p.path || "both").slice(0, 24),
     chunks: [],
+    chunkIndexes: [],
     totalBytes: 0,
+    nextChunkIndex: 1,
+    eventSeq: 0,
+    events: [],
     startedAtMs: Date.now()
   });
+  appendRhizohVoiceLiveEventV0(rhizohVoiceLiveSessions.get(socket), "VOICE_LIVE_SESSION_STARTED", `${sessionId}:live_session`);
   sendRhizohVoiceLiveEnvelopeV0(socket, WS_MESSAGE.RHIZOH_VOICE_LIVE_START, {
     ok: true,
     sessionId,
@@ -3327,6 +3355,21 @@ function handleRhizohVoiceLiveChunkV0(socket, payload = {}) {
     sendRhizohVoiceLiveEnvelopeV0(socket, WS_MESSAGE.RHIZOH_VOICE_LIVE_ERROR, {
       ok: false,
       error: "live_session_missing"
+    });
+    return;
+  }
+  const sequence = validateRhizohVoiceLiveChunkPayloadV0(payload, {
+    expectedChunkIndex: session.nextChunkIndex
+  });
+  if (!sequence.ok) {
+    rhizohVoiceLiveSessions.delete(socket);
+    appendRhizohVoiceLiveEventV0(session, "VOICE_LIVE_SEQUENCE_REJECTED", `${session.sessionId}:chunk_reject`);
+    sendRhizohVoiceLiveEnvelopeV0(socket, WS_MESSAGE.RHIZOH_VOICE_LIVE_ERROR, {
+      ok: false,
+      sessionId: session.sessionId,
+      error: sequence.error,
+      expectedChunkIndex: sequence.expectedChunkIndex,
+      chunkIndex: sequence.chunkIndex
     });
     return;
   }
@@ -3352,7 +3395,10 @@ function handleRhizohVoiceLiveChunkV0(socket, payload = {}) {
     return;
   }
   session.chunks.push(decoded.buffer);
+  session.chunkIndexes.push(sequence.chunkIndex);
   session.totalBytes += decoded.buffer.length;
+  session.nextChunkIndex += 1;
+  appendRhizohVoiceLiveEventV0(session, "VOICE_LIVE_CHUNK_ACCEPTED", `${session.sessionId}:chunk:${sequence.chunkIndex}`);
 }
 
 function handleRhizohVoiceLiveStopV0(socket, payload = {}) {
@@ -3365,6 +3411,19 @@ function handleRhizohVoiceLiveStopV0(socket, payload = {}) {
     });
     return;
   }
+  const lastChunkIndex = Number(payload?.lastChunkIndex);
+  if (Number.isInteger(lastChunkIndex) && lastChunkIndex !== session.chunks.length) {
+    appendRhizohVoiceLiveEventV0(session, "VOICE_LIVE_SEQUENCE_REJECTED", `${session.sessionId}:stop_mismatch`);
+    sendRhizohVoiceLiveEnvelopeV0(socket, WS_MESSAGE.RHIZOH_VOICE_LIVE_ERROR, {
+      ok: false,
+      sessionId: session.sessionId,
+      error: "live_chunk_count_mismatch",
+      expectedChunkCount: lastChunkIndex,
+      receivedChunkCount: session.chunks.length
+    });
+    return;
+  }
+  appendRhizohVoiceLiveEventV0(session, "VOICE_LIVE_STOP_RECEIVED", `${session.sessionId}:stop:${session.chunks.length}`);
   const audio = Buffer.concat(session.chunks);
   if (!audio.length) {
     sendRhizohVoiceLiveEnvelopeV0(socket, WS_MESSAGE.RHIZOH_VOICE_LIVE_ERROR, {
@@ -3384,12 +3443,20 @@ function handleRhizohVoiceLiveStopV0(socket, payload = {}) {
     transport: "gateway_ws_live"
   })
     .then((result) => {
+      appendRhizohVoiceLiveEventV0(session, result?.ok ? "VOICE_TRANSCRIBE_FINAL" : "VOICE_TRANSCRIBE_FAILED", `${session.sessionId}:final`);
       sendRhizohVoiceLiveEnvelopeV0(socket, WS_MESSAGE.RHIZOH_VOICE_LIVE_FINAL, {
         ...result,
         sessionId: session.sessionId,
         transportPath: "gateway_ws_live",
         bytes: audio.length,
         chunkCount: session.chunks.length,
+        chunkSequence: Object.freeze({
+          ok: true,
+          firstChunkIndex: session.chunkIndexes[0] || null,
+          lastChunkIndex: session.chunkIndexes[session.chunkIndexes.length - 1] || null,
+          receivedChunkCount: session.chunks.length
+        }),
+        eventTrace: Object.freeze((session.events || []).slice(-16)),
         recordedMs: Math.max(0, Date.now() - session.startedAtMs)
       });
     })

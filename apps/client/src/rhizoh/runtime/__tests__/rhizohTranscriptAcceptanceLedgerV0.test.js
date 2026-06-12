@@ -13,7 +13,7 @@ describe("rhizohTranscriptAcceptanceLedgerV0", () => {
     __resetTranscriptAcceptanceLedgerForTestV0();
   });
 
-  it("stores full transcript + forensics on rejection", () => {
+  it("stores transcript reference + forensics on rejection", () => {
     const row = recordTranscriptRejectedV0({
       text: "Rhizoh nasılsın bugün",
       reason: "fast_noise_drop",
@@ -30,7 +30,11 @@ describe("rhizohTranscriptAcceptanceLedgerV0", () => {
       }
     });
 
-    expect(row.transcript).toBe("Rhizoh nasılsın bugün");
+    expect(row.transcript).toBeUndefined();
+    expect(row.preview).toBeUndefined();
+    expect(row.transcriptRef).toMatch(/^ptr_/);
+    expect(row.transcriptHash).toMatch(/^[0-9a-f]{8}$/);
+    expect(row.transcriptWordCount).toBe(3);
     expect(row.confidence).toBe(0.62);
     expect(row.maxRms).toBe(0.08);
     expect(row.filter.meaningful).toBe(true);
@@ -64,6 +68,7 @@ describe("rhizohTranscriptAcceptanceLedgerV0", () => {
     expect(snap.rejected).toBe(22);
     expect(snap.tail.length).toBe(20);
     expect(snap.acceptRate).toBeCloseTo(1 / 23, 2);
-    expect(snap.lastRejection?.preview).toBe("reject 21");
+    expect(snap.lastRejection?.preview).toBeUndefined();
+    expect(snap.lastRejection?.transcriptRef).toMatch(/^ptr_/);
   });
 });

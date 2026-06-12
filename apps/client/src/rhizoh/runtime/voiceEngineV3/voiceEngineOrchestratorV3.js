@@ -67,6 +67,7 @@ import { enqueueVoiceTranscriptRetryV0 } from "../rhizohVoiceTranscriptRetryQueu
 import { pushSttQuarantineEntryV0 } from "../rhizohSttQuarantineBufferV0.js";
 import { applySttTemporalSmoothingV0 } from "../sttTemporalSmoothingV0.js";
 import { createGeminiLiveVoiceSessionV0 } from "./geminiLiveVoiceTransportV0.js";
+import { recordVoiceImmutableEventV0 } from "./voiceImmutableEventTimelineV0.js";
 
 export const VOICE_MIN_RECORD_MS_V3 = 1200;
 export const VOICE_MIN_AUDIO_BYTES_V3 = 25000;
@@ -462,6 +463,13 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         }
 
         if (!res) {
+          recordVoiceImmutableEventV0({
+            type: "VOICE_HTTP_FALLBACK_STARTED",
+            sessionId,
+            traceId: opts.traceId,
+            payloadRefSeed: `${sessionId}:http_fallback_audio`,
+            actorSeed: sessionId
+          });
           res = await queryRhizohVoiceTranscribeResilientV3(fullBlob, {
             mimeType,
             languageCode: readVoiceLanguageLockBcp47V0() || languageCode,
@@ -489,6 +497,14 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
           return { ok: false, error: failCode, transportAttempt: res.transportAttempt };
         }
+
+        recordVoiceImmutableEventV0({
+          type: "VOICE_TRANSCRIBE_FINAL",
+          sessionId,
+          traceId: opts.traceId,
+          payloadRefSeed: `${sessionId}:transcript_ref:${res.transportPath || res.transportAttempt || "unknown"}`,
+          actorSeed: sessionId
+        });
 
         let merged = res.merged || resolveVoiceTranscriptV3(res.google || res.fast, res.whisper);
         let scored = rescoreVoiceTranscriptAfterMergeV0({
@@ -736,6 +752,13 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           sessionId
         });
         publishVoicePipelineDecisionDebugV0(decision);
+        recordVoiceImmutableEventV0({
+          type: "VOICE_INTENT_PARSED",
+          sessionId,
+          traceId: opts.traceId,
+          payloadRefSeed: `${sessionId}:intent_ref:${decision.path || decision.action || "decision"}`,
+          actorSeed: sessionId
+        });
         emitVoiceEngineTelemetryV3("PIPELINE_DECISION", {
           speakMode: decision.speakMode,
           execMode: decision.execMode,

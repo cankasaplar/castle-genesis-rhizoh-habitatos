@@ -1,18 +1,20 @@
 /**
- * Transcript acceptance ledger — full STT→filter decision forensics.
+ * Transcript acceptance ledger — STT→filter decision forensics.
  * Answers "what was rejected?" not just "why rejected?".
+ * Stores no raw transcript text; personal content lives in the erasable layer.
  * Observation-only; never blocks execution.
  */
 
 import { scoreSttTemplateLeakV0, evaluateSttContaminationV0 } from "./voiceSttContaminationGuardV0.js";
 import { classifyVoiceFastIntentV0 } from "./rhizohVoiceDualPathRouterV0.js";
 import { hasMeaningfulSpeechSignalV0 } from "./rhizohVoiceGrayZoneVerifyV0.js";
+import { createRhizohPayloadRefV0, rhizohChecksumStringV0 } from "@castle/protocol";
 
 export const RHIZOH_TRANSCRIPT_ACCEPTANCE_LEDGER_SCHEMA_V0 =
   "rhizoh.transcript_acceptance_ledger.v0";
 
 const RING_MAX_V0 = 20;
-const TRANSCRIPT_MAX_V0 = 512;
+const TRANSCRIPT_HASH_MAX_V0 = 512;
 
 /** @type {{ accepted: number, rejected: number, deferred: number, suspectedFalseNegatives: number, reasonCounts: Record<string, number>, ring: object[] }} */
 const ledgerStateV0 = {
@@ -52,6 +54,10 @@ function wordCountV0(text) {
   const t = String(text || "").trim();
   if (!t) return 0;
   return t.split(/\s+/).filter(Boolean).length;
+}
+
+function transcriptRefV0(text, sessionId = "") {
+  return createRhizohPayloadRefV0(`${sessionId}:${String(text || "").slice(0, TRANSCRIPT_HASH_MAX_V0)}`);
 }
 
 /**
@@ -146,7 +152,7 @@ export function assessSuspectedFalseNegativeV0(outcome, reason, forensics = {}) 
  * }} opts
  */
 function buildLedgerRowV0(opts) {
-  const transcript = String(opts.text || "").slice(0, TRANSCRIPT_MAX_V0);
+  const transcript = String(opts.text || "").slice(0, TRANSCRIPT_HASH_MAX_V0);
   const reason = String(opts.reason || opts.outcome).trim() || opts.outcome;
   const confidence = numOrUndefV0(opts.confidence);
   const forensics = buildTranscriptFilterForensicsV0(transcript, {
@@ -170,8 +176,9 @@ function buildLedgerRowV0(opts) {
     atMs: Date.now(),
     rejectionReason: opts.outcome === "rejected" ? reason : undefined,
     reason,
-    transcript,
-    preview: transcript.slice(0, 96),
+    transcriptRef: transcriptRefV0(transcript, opts.sessionId),
+    transcriptHash: rhizohChecksumStringV0(transcript),
+    transcriptWordCount: forensics.wordCount,
     confidence,
     maxRms: forensics.maxRms,
     band: opts.band ? String(opts.band) : undefined,
@@ -277,7 +284,7 @@ export function getTranscriptAcceptanceSnapshotV0() {
     tail: Object.freeze(ledgerStateV0.ring.slice(-RING_MAX_V0)),
     turnGap: ledgerStateV0.rejected + ledgerStateV0.deferred > 0 && ledgerStateV0.accepted === 0,
     filterArchitectureNote:
-      "STT→quarantine→shadow_drop→governance→acceptance→turn; log shows post-filter transcript + forensics"
+      "STT→quarantine→shadow_drop→governance→acceptance→turn; log stores transcriptRef/hash + forensics, never raw transcript"
   });
 }
 
