@@ -2,7 +2,10 @@
  * Castle Flight Config
  * Client-safe gateway configuration layer
  */
-
+export const CASTLE_FLIGHT_MANIFEST_KEYS = {
+  RHIZOH_LLM_HTTP: "RHIZOH_LLM_HTTP",
+  RHIZOH_LLM_TOKEN: "RHIZOH_LLM_TOKEN"
+};
 export function getCastleFlightConfig() {
   return {
     rhizohLlmHttp: process.env.RHIZOH_LLM_HTTP,
