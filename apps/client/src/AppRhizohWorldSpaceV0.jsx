@@ -47,6 +47,10 @@ import {
   WORLD_MAP_GEO_REQUEST_EVENT_V0
 } from "./rhizoh/runtime/worldMapGeoRequestV0.js";
 import { useCastleActiveCastles } from "./firebase/useCastleActiveCastles.js";
+import { isWorldLayerEnabled } from "./rhizoh/runtime/castleWorldLayerGateV0.js";
+import { runDomainGateForPathV0 } from "./rhizoh/runtime/rhizohDomainNervousSystemV0.js";
+import { RhizohAtmospherePresenceBridge } from "./rhizoh/runtime/RhizohAtmospherePresenceBridge.jsx";
+import { evaluateSpatialBootGateV0 } from "./rhizoh/runtime/spatialBootGateV0.js";
 
 export default function AppRhizohWorldSpaceV0() {
   const navigate = useNavigate();
@@ -66,22 +70,46 @@ export default function AppRhizohWorldSpaceV0() {
   );
 
   const mapSurfaceActive = true;
+  const worldLayerEnabledV0 = isWorldLayerEnabled();
+  const identityAnchorV0 = readCastleNexusGeoV0();
+  const bootstrapGeoV0 = resolveWorldMapBootstrapGeoV0();
+  const spatialSnapshotNodesV0 = useMemo(() => {
+    const rows = [];
+    if (identityAnchorV0) rows.push(identityAnchorV0);
+    if (Array.isArray(remoteCastles)) rows.push(...remoteCastles);
+    return rows;
+  }, [identityAnchorV0, remoteCastles]);
+  const spatialBootGateV0 = useMemo(
+    () =>
+      evaluateSpatialBootGateV0({
+        spatialEnabled: worldLayerEnabledV0,
+        worldStateReady: Boolean(bootstrapGeoV0),
+        identityReady: Boolean(identityAnchorV0),
+        nodes: spatialSnapshotNodesV0
+      }),
+    [worldLayerEnabledV0, bootstrapGeoV0, identityAnchorV0, spatialSnapshotNodesV0]
+  );
 
   const cesiumLayerActiveV0 = useMemo(
     () =>
+      spatialBootGateV0.allowed &&
       resolveRhizohWorldSpaceCesiumActiveV0({
         pathname: "/world/space",
         worldDomain: RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE,
         mapTool: worldMapToolV0,
         mapSurfaceActive
       }),
-    [worldMapToolV0, mapSurfaceActive]
+    [worldMapToolV0, mapSurfaceActive, spatialBootGateV0]
   );
 
   const layerModeV0 = useMemo(
     () => resolveRhizohLayerModeV0({ pathname: "/world/space" }),
     []
   );
+
+  useEffect(() => {
+    runDomainGateForPathV0("/world/space", { userId: castleAuth?.user?.uid || null });
+  }, [castleAuth?.user?.uid]);
 
   useEffect(() => {
     writeRhizohWorldDrawerDomainV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE);
@@ -170,8 +198,7 @@ export default function AppRhizohWorldSpaceV0() {
     setGeoPrompt(next);
   }, []);
 
-  const showGeoChip =
-    cesiumLayerActiveV0 && !readCastleNexusGeoV0() && geoPrompt !== "granted";
+  const showGeoChip = !readCastleNexusGeoV0() && geoPrompt !== "granted";
 
   const onApplyWorldMapToolV0 = useCallback((mapTool, source = "WORLD_DOMAIN_MAP_STRIP") => {
     void applyRhizohWorldMapToolV0(mapTool, {
@@ -201,9 +228,13 @@ export default function AppRhizohWorldSpaceV0() {
       className="fixed inset-0 overflow-hidden bg-[#010103] text-white"
       data-rhizoh-world-space-app="1"
       data-cesium-active={cesiumLayerActiveV0 ? "1" : "0"}
+      data-world-layer-enabled={worldLayerEnabledV0 ? "1" : "0"}
+      data-spatial-render-mode={spatialBootGateV0.renderMode}
+      data-spatial-boot-reason={spatialBootGateV0.reason}
       data-map-tool={worldMapToolV0}
     >
-      <RhizohWorldSpaceMapHostV0 active={cesiumLayerActiveV0} />
+      <RhizohAtmospherePresenceBridge />
+      <RhizohWorldSpaceMapHostV0 active={cesiumLayerActiveV0} renderMode={spatialBootGateV0.renderMode} />
 
       <RhizohWorldDomainShellV0
         domain={RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE}
@@ -271,9 +302,13 @@ export default function AppRhizohWorldSpaceV0() {
           style={{ bottom: `calc(${mapStripBottomCssV0} + 5rem)` }}
         >
           <p className="rounded-xl border border-amber-400/30 bg-black/75 px-3 py-2 text-[10px] text-amber-100/90 normal-case">
-            {uiLocale === "tr"
-              ? "Harita yükleniyor… Gateway veya Cesium hazır değilse birkaç saniye bekleyin."
-              : "Loading map… wait a few seconds if gateway or Cesium is still starting."}
+            {!worldLayerEnabledV0
+              ? uiLocale === "tr"
+                ? "3D Cesium katmanı kapalı — güvenli v11 dünya yüzeyi aktif."
+                : "3D Cesium layer is off — safe v11 world surface is active."
+              : uiLocale === "tr"
+                ? "Harita yükleniyor… Gateway veya Cesium hazır değilse birkaç saniye bekleyin."
+                : "Loading map… wait a few seconds if gateway or Cesium is still starting."}
           </p>
         </div>
       ) : null}

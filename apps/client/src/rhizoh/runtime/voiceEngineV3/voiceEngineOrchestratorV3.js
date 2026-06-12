@@ -27,9 +27,7 @@ import {
   readVoiceLanguageLockV0
 } from "../rhizohConversationLanguageV0.js";
 import { prepareRhizohLlmTurnV0 } from "../rhizohLlmTurnHotWireV0.js";
-import { classifyVoiceDirectedSpeechBandV0 } from "../voiceDirectedSpeechObservationV0.js";
 import {
-  resolveVoicePipelineDecisionV0,
   publishVoicePipelineDecisionDebugV0,
   VOICE_EXEC_MODE_V0,
   VOICE_SPEAK_MODE_V0
@@ -66,6 +64,9 @@ import {
 import { enqueueVoiceTranscriptRetryV0 } from "../rhizohVoiceTranscriptRetryQueueV0.js";
 import { pushSttQuarantineEntryV0 } from "../rhizohSttQuarantineBufferV0.js";
 import { applySttTemporalSmoothingV0 } from "../sttTemporalSmoothingV0.js";
+import { createGeminiLiveVoiceSessionV0 } from "./geminiLiveVoiceTransportV0.js";
+import { recordVoiceImmutableEventV0 } from "./voiceImmutableEventTimelineV0.js";
+import { resolveVoiceDecisionViaMemoryCoreV0 } from "./voiceMemoryCoreVaultMediatorV0.js";
 
 export const VOICE_MIN_RECORD_MS_V3 = 1200;
 export const VOICE_MIN_AUDIO_BYTES_V3 = 25000;
@@ -122,6 +123,8 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
   let sessionState = VOICE_ENGINE_STATE_V3.IDLE;
   let recordStartAtMs = 0;
   let capturePeakRmsHintV3 = 0;
+  /** @type {{ sendChunk?: (blob: Blob) => void, stopAndWaitFinal?: (opts?: object) => Promise<object>, close?: (reason?: string) => void } | null} */
+  let liveVoiceSessionV0 = null;
 
   const sessionId = opts.sessionId || `v3_${Date.now().toString(36)}`;
   beginVoiceSessionLanguageLockV0({ sessionId, locale: opts.locale });
@@ -159,6 +162,15 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
     });
   }
 
+  function closeLiveVoiceSessionV0(reason = "closed") {
+    try {
+      liveVoiceSessionV0?.close?.(reason);
+    } catch {
+      /* noop */
+    }
+    liveVoiceSessionV0 = null;
+  }
+
   return Object.freeze({
     sessionId,
     isBusy: () => busy,
@@ -190,11 +202,29 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         capture = await createVoiceAudioCaptureV3({
           deviceId: opts.micDeviceId,
           timesliceMs: VOICE_CAPTURE_CHUNK_MS_V3,
+          onChunk: (blob) => {
+            try {
+              liveVoiceSessionV0?.sendChunk?.(blob);
+            } catch {
+              /* live lane is optional; HTTP fallback remains authoritative */
+            }
+          },
           onError: (err) => {
             opts.onError?.({ code: "capture_error", detail: String(err?.message || err) });
           }
         });
         mimeType = capture.mimeType;
+        const live = await createGeminiLiveVoiceSessionV0({
+          mimeType,
+          languageCode,
+          traceId: opts.traceId,
+          sessionId,
+          path: "both"
+        });
+        liveVoiceSessionV0 = live?.ok ? live : null;
+        if (!liveVoiceSessionV0 && live?.error) {
+          emitVoiceEngineTelemetryV3("LIVE_WS_FALLBACK_HTTP", { error: live.error });
+        }
         capture.start();
         beginRecordingWarmProbeV1(sessionId);
         setSessionState(VOICE_ENGINE_STATE_V3.RECORDING);
@@ -204,6 +234,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         });
         return { ok: true };
       } catch (e) {
+        closeLiveVoiceSessionV0("capture_start_failed");
         busy = false;
         setSessionState(VOICE_ENGINE_STATE_V3.ERROR);
         const code = String(e?.message || "capture_start_failed");
@@ -236,6 +267,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         fullBlob = captureResult?.blob || captureResult;
         captureChunks = Array.isArray(captureResult?.chunks) ? captureResult.chunks : [];
       } catch (e) {
+        closeLiveVoiceSessionV0("capture_stop_failed");
         busy = false;
         setSessionState(VOICE_ENGINE_STATE_V3.ERROR);
         opts.onError?.({ code: "capture_stop_failed", detail: String(e?.message || e) });
@@ -248,6 +280,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       const bytes = fullBlob?.size || 0;
 
       if (recordedMs < VOICE_MIN_RECORD_MS_V3) {
+        closeLiveVoiceSessionV0("recording_too_short");
         busy = false;
         setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
         witnessVoiceStreamLifecycleV0({
@@ -266,6 +299,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           ? VOICE_MIN_AUDIO_BYTES_COMPANION_V3
           : VOICE_MIN_AUDIO_BYTES_V3;
       if (!fullBlob || bytes < minAudioBytes) {
+        closeLiveVoiceSessionV0("audio_too_small");
         busy = false;
         setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
         emitVoiceEngineTelemetryV3("TRANSCRIBE_WAIT", {
@@ -295,6 +329,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         publishPreSttSanitizationDebugV0(preStt);
 
         if (!preStt.pass) {
+          closeLiveVoiceSessionV0(preStt.reason || "pre_stt_blocked");
           busy = false;
           setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
           const skipReason = preStt.reason || "pre_stt_blocked";
@@ -343,6 +378,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           };
         }
       } else if (!hasVoiceCaptureSpeechEnergyV3(maxRms)) {
+        closeLiveVoiceSessionV0("audio_silent");
         busy = false;
         setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
         witnessVoiceStreamLifecycleV0({
@@ -357,6 +393,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       }
 
       if (activeGen !== generation) {
+        closeLiveVoiceSessionV0("stale_session");
         busy = false;
         setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
         return { ok: false, error: "stale_session" };
@@ -370,6 +407,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       });
       publishVoiceGatewayAcceptGuardDebugV0(transcribeGuard);
       if (!transcribeGuard.allowTranscribe) {
+        closeLiveVoiceSessionV0(transcribeGuard.reason || "gateway_blocked");
         busy = false;
         setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
         emitVoiceEngineTelemetryV3("TRANSCRIBE_SKIP", {
@@ -400,17 +438,49 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
       });
 
       try {
-        const res = await queryRhizohVoiceTranscribeResilientV3(fullBlob, {
-          mimeType,
-          languageCode: readVoiceLanguageLockBcp47V0() || languageCode,
-          traceId: opts.traceId,
-          sessionId,
-          bytes,
-          recordedMs,
-          chunks: captureChunks,
-          chunkCount: captureChunks.length,
-          warmProbe
-        });
+        let res = null;
+        if (liveVoiceSessionV0) {
+          const liveRes = await liveVoiceSessionV0.stopAndWaitFinal?.({
+            mimeType,
+            languageCode: readVoiceLanguageLockBcp47V0() || languageCode,
+            traceId: opts.traceId,
+            path: "both"
+          });
+          liveVoiceSessionV0 = null;
+          if (liveRes?.ok) {
+            res = liveRes;
+            emitVoiceEngineTelemetryV3("LIVE_WS_FINAL", {
+              chars: String(liveRes.merged?.text || "").length,
+              chunkCount: liveRes.chunkCount,
+              bytes: liveRes.bytes
+            });
+          } else {
+            emitVoiceEngineTelemetryV3("LIVE_WS_FALLBACK_HTTP", {
+              error: liveRes?.error || "live_ws_failed"
+            });
+          }
+        }
+
+        if (!res) {
+          recordVoiceImmutableEventV0({
+            type: "VOICE_HTTP_FALLBACK_STARTED",
+            sessionId,
+            traceId: opts.traceId,
+            payloadRefSeed: `${sessionId}:http_fallback_audio`,
+            actorSeed: sessionId
+          });
+          res = await queryRhizohVoiceTranscribeResilientV3(fullBlob, {
+            mimeType,
+            languageCode: readVoiceLanguageLockBcp47V0() || languageCode,
+            traceId: opts.traceId,
+            sessionId,
+            bytes,
+            recordedMs,
+            chunks: captureChunks,
+            chunkCount: captureChunks.length,
+            warmProbe
+          });
+        }
 
         if (activeGen !== generation) {
           busy = false;
@@ -426,6 +496,14 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
           return { ok: false, error: failCode, transportAttempt: res.transportAttempt };
         }
+
+        recordVoiceImmutableEventV0({
+          type: "VOICE_TRANSCRIBE_FINAL",
+          sessionId,
+          traceId: opts.traceId,
+          payloadRefSeed: `${sessionId}:transcript_ref:${res.transportPath || res.transportAttempt || "unknown"}`,
+          actorSeed: sessionId
+        });
 
         let merged = res.merged || resolveVoiceTranscriptV3(res.google || res.fast, res.whisper);
         let scored = rescoreVoiceTranscriptAfterMergeV0({
@@ -647,32 +725,46 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           };
         }
 
-        const bandObs = classifyVoiceDirectedSpeechBandV0({
-          text: merged.text,
-          confidence: merged.confidence,
-          strategy: merged.strategy,
-          maxRms,
-          source: "mic_v3"
+        const intentEvent = recordVoiceImmutableEventV0({
+          type: "VOICE_INTENT_PARSED",
+          sessionId,
+          traceId: opts.traceId,
+          payloadRefSeed: `${sessionId}:intent_ref:parsed`,
+          actorSeed: sessionId
         });
-        const provenance = buildInputProvenanceEnvelopeV0({
-          text: merged.text,
-          source: RHIZOH_INPUT_SOURCE_V0.MIC_V3,
-          modality: RHIZOH_INPUT_MODALITY_V0.STT,
-          confidence: merged.confidence,
-          strategy: merged.strategy,
-          band: bandObs.band
-        });
-        const decision = resolveVoicePipelineDecisionV0({
-          text: merged.text,
+        const vaultDecision = resolveVoiceDecisionViaMemoryCoreV0({
+          event: intentEvent,
+          intentScope: "voice_intent_decision",
+          transcript: merged.text,
           confidence: merged.confidence,
           strategy: merged.strategy,
           maxRms,
           recordedMs,
-          band: bandObs.band,
-          provenance,
-          sessionId
+          sessionId,
+          traceId: opts.traceId
+        });
+        if (!vaultDecision.ok) {
+          busy = false;
+          setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
+          return { ok: false, error: vaultDecision.error || "vault_decision_denied", merged };
+        }
+        const decision = vaultDecision.packet.decision;
+        const bandObs = vaultDecision.packet.bandObs;
+        const provenance = Object.freeze({
+          schema: "rhizoh.voice_vault_provenance_ref.v0",
+          provenanceRef: vaultDecision.packet.provenanceRef,
+          originHash: vaultDecision.packet.originHash,
+          source: "memory_core_vault",
+          rawTextVisibleToOrchestrator: false
         });
         publishVoicePipelineDecisionDebugV0(decision);
+        recordVoiceImmutableEventV0({
+          type: "VOICE_ORCHESTRATOR_DECISION_READY",
+          sessionId,
+          traceId: opts.traceId,
+          payloadRef: vaultDecision.packet.packetRef,
+          actorSeed: sessionId
+        });
         emitVoiceEngineTelemetryV3("PIPELINE_DECISION", {
           speakMode: decision.speakMode,
           execMode: decision.execMode,
@@ -866,6 +958,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
 
     abort(opts = {}) {
       generation += 1;
+      closeLiveVoiceSessionV0(String(opts.reason || "abort"));
       capture?.abort?.();
       capture = null;
       busy = false;

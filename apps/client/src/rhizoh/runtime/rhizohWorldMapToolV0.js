@@ -278,11 +278,13 @@ export function getRhizohWorldMapToolSnapshotV0() {
 export function subscribeRhizohWorldMapToolV0(onChange) {
   if (typeof window === "undefined") return () => {};
   const handler = () => onChange();
-  window.addEventListener(RHIZOH_WORLD_MAP_TOOL_CHANGE_EVENT_V0, handler);
-  window.addEventListener("storage", (e) => {
+  const storageHandler = (e) => {
     if (e.key === STORAGE_KEY_V0 || e.key === null) handler();
-  });
+  };
+  window.addEventListener(RHIZOH_WORLD_MAP_TOOL_CHANGE_EVENT_V0, handler);
+  window.addEventListener("storage", storageHandler);
   return () => {
     window.removeEventListener(RHIZOH_WORLD_MAP_TOOL_CHANGE_EVENT_V0, handler);
+    window.removeEventListener("storage", storageHandler);
   };
 }

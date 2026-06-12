@@ -47,21 +47,21 @@ describe("voiceTranscribeTransportV3", () => {
     });
 
     const header = new Blob([new Uint8Array(8_000)], { type: "audio/webm" });
-    const body = new Blob([new Uint8Array(60_000)], { type: "audio/webm" });
-    const tail = new Blob([new Uint8Array(55_000)], { type: "audio/webm" });
+    const body = new Blob([new Uint8Array(96_000)], { type: "audio/webm" });
+    const tail = new Blob([new Uint8Array(92_000)], { type: "audio/webm" });
     const chunks = [header, body, tail];
     const blob = new Blob(chunks, { type: "audio/webm" });
 
     const plan = planVoiceTranscribePreflightV3({
       bytes: blob.size,
-      recordedMs: 9_595,
+      recordedMs: 12_500,
       chunkCount: chunks.length
     });
     expect(plan.mode).toBe("split");
 
     const res = await queryRhizohVoiceTranscribeResilientV3(blob, {
       bytes: blob.size,
-      recordedMs: 9_595,
+      recordedMs: 12_500,
       chunks,
       chunkCount: chunks.length,
       mimeType: "audio/webm",

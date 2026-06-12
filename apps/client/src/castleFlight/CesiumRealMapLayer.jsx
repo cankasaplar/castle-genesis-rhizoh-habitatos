@@ -54,7 +54,8 @@ import {
 } from "../rhizoh/runtime/rhizohCesiumImageryProfileV0.js";
 import {
   readRhizohWorldMapToolV0,
-  RHIZOH_WORLD_MAP_TOOL_CHANGE_EVENT_V0
+  RHIZOH_WORLD_MAP_TOOL_CHANGE_EVENT_V0,
+  subscribeRhizohWorldMapToolV0
 } from "../rhizoh/runtime/rhizohWorldMapToolV0.js";
 import { resolveCesiumLayerMatrixV0 } from "./cesiumLayerMatrixV0.js";
 import { applyOsmBuildingsVisualStyleV0 } from "./cesiumOsmBuildingsStyleV0.js";
@@ -101,7 +102,10 @@ import {
   writeWorldMapClaimModeV0
 } from "../rhizoh/runtime/worldMapClaimModeV0.js";
 import { createLocalGhostCastleAnchorV0 } from "../rhizoh/runtime/localGhostCastleAnchorV0.js";
-import { readWorldMapMarkerLayerStateV0 } from "../rhizoh/runtime/worldMapMarkerLayerStateV0.js";
+import {
+  readWorldMapMarkerLayerStateV0,
+  subscribeWorldMapMarkerLayerStateV0
+} from "../rhizoh/runtime/worldMapMarkerLayerStateV0.js";
 import { resolveEpistemicPoiVisibilityV0 } from "../rhizoh/runtime/worldMapPoiProximityV0.js";
 import { applyCesiumHardwareProfileV0 } from "./cesiumMapHardwareProfileV0.js";
 import { installWorldMapAnchorMarkersV0 } from "./cesiumMapAnchorMarkersV0.js";
@@ -246,6 +250,7 @@ function setCesiumActivity(viewer, on, cameraAnchor) {
 
 const CesiumRealMapLayerImpl = memo(({ active }) => {
   const [light2dActive, setLight2dActive] = useState(false);
+  const [safeCanvasActive, setSafeCanvasActive] = useState(false);
   const hostRef = useRef(null);
   const viewerRef = useRef(null);
   const droneEntitiesRef = useRef(new Map());
@@ -260,6 +265,8 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
   const attemptBootRef = useRef(null);
   const publishExecutorRef = useRef(null);
   const extrasCleanupRef = useRef(null);
+  const mapToolSnapshotRef = useRef(readRhizohWorldMapToolV0());
+  const markerLayersSnapshotRef = useRef(readWorldMapMarkerLayerStateV0());
   const navStateRef = useRef({
     enabled: false,
     keys: {
@@ -284,6 +291,27 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
   });
 
   activeRef.current = active;
+
+  const readMapToolSnapshot = () => mapToolSnapshotRef.current || "globe";
+  const readMarkerLayersSnapshot = () =>
+    markerLayersSnapshotRef.current || readWorldMapMarkerLayerStateV0();
+
+  useEffect(() => {
+    const refreshMapTool = () => {
+      mapToolSnapshotRef.current = readRhizohWorldMapToolV0();
+    };
+    const refreshMarkerLayers = () => {
+      markerLayersSnapshotRef.current = readWorldMapMarkerLayerStateV0();
+    };
+    refreshMapTool();
+    refreshMarkerLayers();
+    const unsubTool = subscribeRhizohWorldMapToolV0(refreshMapTool);
+    const unsubMarkers = subscribeWorldMapMarkerLayerStateV0(refreshMarkerLayers);
+    return () => {
+      unsubTool();
+      unsubMarkers();
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -315,6 +343,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
 
     const boot = async () => {
       if (!hostRef.current || viewerRef.current || dead || cancelled) return;
+      setSafeCanvasActive(false);
       const layoutReady = await waitForCesiumHostLayoutV0(hostRef.current, {
         timeoutMs: 12_000
       });
@@ -351,6 +380,13 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       });
       viewerRef.current = viewer;
       resizeCesiumViewerToHostV0(viewer, hostRef.current);
+      const initialLayout = measureCesiumHostLayoutV0(hostRef.current);
+      if (!initialLayout.ready || !isCesiumCanvasRenderableV0(viewer, { minW: 48, minH: 48 })) {
+        console.warn("[castle:cesium] boot deferred — canvas not renderable", initialLayout);
+        destroyCesiumViewerSafeV0(viewer, hostRef.current);
+        viewerRef.current = null;
+        return;
+      }
       if (cancelled || dead) {
         destroyCesiumViewerSafeV0(viewer, hostRef.current);
         viewerRef.current = null;
@@ -423,7 +459,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         });
       };
 
-      const cameraSafeAnchor = () => resolveWorldMapInitialCameraV0(readRhizohWorldMapToolV0());
+      const cameraSafeAnchor = () => resolveWorldMapInitialCameraV0(readMapToolSnapshot());
 
       removeCameraPreRenderGuard = installCesiumCameraPreRenderGuardV0(viewer, Cesium, cameraSafeAnchor);
 
@@ -538,6 +574,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         sceneBudgetDowngraded = true;
         renderDegraded = true;
         worldMapLayersApplied = false;
+        setSafeCanvasActive(true);
         try {
           const api = ensureCastleCesiumApiV0();
           if (api) {
@@ -673,6 +710,17 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         applyCesiumSafeMode();
         publishCesiumRenderHealth();
 
+        if (safeModeRenderError) {
+          try {
+            viewer.scene.requestRenderMode = true;
+            viewer.scene.requestRender();
+          } catch {
+            /* noop */
+          }
+          console.warn("[CASTLE_CESIUM] PVS safe-mode lock active — heavy map layers bypassed");
+          return;
+        }
+
         if (renderErrorCount <= 3) {
           scheduleRenderRecovery();
           return;
@@ -725,6 +773,19 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
        */
       const runBootStage = async (stage, fn, rollback = null) => {
         if (!isBootViewerAlive()) return false;
+        if (pvsSafeModeLock || renderDegraded) {
+          if (logStages) {
+            console.info(
+              "[CASTLE_CESIUM_BOOT_STAGE]",
+              JSON.stringify({
+                event: "skip",
+                stage,
+                reason: pvsSafeModeLock ? "pvs_safe_mode_lock" : "render_degraded"
+              })
+            );
+          }
+          return false;
+        }
         const t0 = performance.now();
         const snap0 = bootSnapshot();
         if (logStages) {
@@ -769,6 +830,12 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
               console.warn("[CASTLE_CESIUM_BOOT_STAGE]", JSON.stringify({ stage, rollbackError: String(rbErr?.message || rbErr).slice(0, 120) }));
             }
           }
+          if (isCesiumSafeModeRenderErrorV0(err)) {
+            pvsSafeModeLock = true;
+            applyCesiumSafeMode();
+            publishCesiumRenderHealth();
+            return false;
+          }
           try {
             if (isBootViewerAlive()) viewer.scene.requestRender();
           } catch {
@@ -807,7 +874,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
 
       await runBootStage("imagery", async () => {
         try {
-          const bootProfile = resolveCesiumImageryProfileForMapToolV0(readRhizohWorldMapToolV0());
+          const bootProfile = resolveCesiumImageryProfileForMapToolV0(readMapToolSnapshot());
           await applyCesiumBasemapImageryV0(viewer, Cesium, bootProfile, {
             ionUsable,
             satelliteTileTemplate: cfg.satelliteTileTemplate
@@ -826,7 +893,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
 
       const mapBootstrapGeo = resolveWorldMapBootstrapGeoV0();
       await runBootStage("initial_setView", async () => {
-        const anchor = resolveWorldMapInitialCameraV0(readRhizohWorldMapToolV0());
+        const anchor = resolveWorldMapInitialCameraV0(readMapToolSnapshot());
         const height = hwProfile.lowHardware ? Math.min(anchor.height, 3200) : anchor.height;
         const pitchDeg = anchor.pitchDeg ?? -40;
         viewer.camera.setView({
@@ -857,7 +924,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
 
       const buildCesiumCameraCommandSurfaceV0 = () => ({
         flyToBootstrapViewport() {
-          const anchor = resolveCesiumMapCameraAnchorV0(readRhizohWorldMapToolV0());
+          const anchor = resolveCesiumMapCameraAnchorV0(readMapToolSnapshot());
           trackedCameraFlyTo({
             destination: Cesium.Cartesian3.fromDegrees(anchor.lon, anchor.lat, anchor.height),
             orientation: {
@@ -884,7 +951,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
           });
         },
         focusCastle() {
-          const anchor = resolveCesiumMapCameraAnchorV0(readRhizohWorldMapToolV0());
+          const anchor = resolveCesiumMapCameraAnchorV0(readMapToolSnapshot());
           trackedCameraFlyTo({
             destination: Cesium.Cartesian3.fromDegrees(anchor.lon, anchor.lat, anchor.height),
             orientation: {
@@ -908,7 +975,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
           const lo = Number(lon);
           const h = Number(height);
           if (!Number.isFinite(la) || !Number.isFinite(lo)) return;
-          const tool = meta.mapTool || readRhizohWorldMapToolV0();
+          const tool = meta.mapTool || readMapToolSnapshot();
           const anchor = resolveCesiumMapCameraAnchorV0(tool);
           trackedCameraFlyTo({
             destination: Cesium.Cartesian3.fromDegrees(lo, la, Number.isFinite(h) ? h : anchor.height),
@@ -950,7 +1017,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
           if (!geo || !Number.isFinite(factor) || !Number.isFinite(geo.height)) {
             return { ok: false, reason: "no_geo" };
           }
-          const zoomMax = resolveCesiumMapZoomMaxHeightV0(readRhizohWorldMapToolV0());
+          const zoomMax = resolveCesiumMapZoomMaxHeightV0(readMapToolSnapshot());
           const h = Math.min(
             Math.min(CESIUM_ZOOM_MAX_HEIGHT_V0, zoomMax),
             Math.max(CESIUM_ZOOM_MIN_HEIGHT_V0, geo.height * factor)
@@ -978,8 +1045,9 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         Object.assign(ensureCastleCesiumApiV0(), {
           ready: true,
           commandReady: true,
-          renderDegraded: false,
-          renderErrorCount: 0,
+          renderDegraded,
+          renderErrorCount,
+          pvsSafeModeLock,
           isFlying: false,
           vanillaRealMap: vanilla,
           importantCount: ensureCastleCesiumApiV0()?.importantCount ?? 0,
@@ -1065,12 +1133,20 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       let important = [];
 
       const applyWorldMapLayersV0 = async () => {
-        if (worldMapLayersApplied || dead || cancelled || vanilla || viewerRef.current !== viewer) {
+        if (
+          worldMapLayersApplied ||
+          dead ||
+          cancelled ||
+          vanilla ||
+          viewerRef.current !== viewer ||
+          pvsSafeModeLock ||
+          renderDegraded
+        ) {
           return false;
         }
         worldMapLayersApplied = true;
         sanitizeCesiumCameraV0(viewer, Cesium, cameraSafeAnchor());
-        const markerLayers = readWorldMapMarkerLayerStateV0();
+        const markerLayers = readMarkerLayersSnapshot();
         const passivePoiLayerEnabled = markerLayers.epistemicPoi === true;
 
         await runBootStage(
@@ -1267,7 +1343,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       const applyImageryProfile = async (profileId) => {
         if (!viewer || viewer.isDestroyed?.()) return false;
         const matrix = resolveCesiumLayerMatrixV0({
-          mapTool: readRhizohWorldMapToolV0(),
+          mapTool: readMapToolSnapshot(),
           lowHardware: hwProfile.lowHardware,
           cfg
         });
@@ -1318,7 +1394,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
 
       installCastleStudioMapBridgeV0();
 
-      const bootImageryProfile = resolveCesiumImageryProfileForMapToolV0(readRhizohWorldMapToolV0());
+      const bootImageryProfile = resolveCesiumImageryProfileForMapToolV0(readMapToolSnapshot());
       currentImageryProfile = bootImageryProfile;
       void applyImageryProfile(bootImageryProfile);
 
@@ -1326,8 +1402,9 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       Object.assign(ensureCastleCesiumApiV0(), {
         ready: true,
         commandReady: true,
-        renderDegraded: false,
-        renderErrorCount: 0,
+        renderDegraded,
+        renderErrorCount,
+        pvsSafeModeLock,
         worldRepresentation: wdSnap.representation,
         worldFeed: wdSnap.feed,
         worldDataHint: wdSnap.userHint,
@@ -1337,7 +1414,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         },
         getLayerMatrix() {
           return resolveCesiumLayerMatrixV0({
-            mapTool: readRhizohWorldMapToolV0(),
+            mapTool: readMapToolSnapshot(),
             lowHardware: hwProfile.lowHardware,
             cfg
           });
@@ -1345,7 +1422,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         setImageryProfile: applyImageryProfile,
         async refreshImageryForMapTool() {
           const matrix = resolveCesiumLayerMatrixV0({
-            mapTool: readRhizohWorldMapToolV0(),
+            mapTool: readMapToolSnapshot(),
             lowHardware: hwProfile.lowHardware,
             cfg
           });
@@ -1437,7 +1514,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         /* noop */
       }
 
-      const bootMapTool = readRhizohWorldMapToolV0();
+      const bootMapTool = readMapToolSnapshot();
       if (bootMapTool !== "globe") {
         applyCesiumImageryForMapToolV0(bootMapTool, { maxAttempts: 64 });
       }
@@ -1587,7 +1664,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
                 return;
               }
               sanitizeCesiumCameraV0(v, Cesium, cameraSafeAnchor());
-              const poiLayers = readWorldMapMarkerLayerStateV0();
+              const poiLayers = readMarkerLayersSnapshot();
               const poiVis = resolveEpistemicPoiVisibilityV0(v, Cesium);
               const showPoi = poiLayers.epistemicPoi && poiVis.visible;
               for (const row of importantEntitiesRef.current) {
@@ -1869,7 +1946,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
     const host = hostRef.current;
     if (!v || v.isDestroyed?.()) return;
     if (host) resizeCesiumViewerToHostV0(v, host);
-    const cameraAnchor = resolveCesiumMapCameraAnchorV0(readRhizohWorldMapToolV0());
+    const cameraAnchor = resolveCesiumMapCameraAnchorV0(readMapToolSnapshot());
     const flightCfg = getCastleFlightConfig();
     const noStreet = !!flightCfg.cesiumVanillaRealMap || isCastleLightRuntimeV0();
     if (active) {
@@ -1880,7 +1957,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
           /* noop */
         }
         try {
-          const profile = resolveCesiumImageryProfileForMapToolV0(readRhizohWorldMapToolV0());
+          const profile = resolveCesiumImageryProfileForMapToolV0(readMapToolSnapshot());
           await window.__CASTLE_CESIUM__?.setImageryProfile?.(profile);
         } catch {
           /* noop */
@@ -1915,6 +1992,11 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       {light2dActive && active ? (
         <div className="pointer-events-none absolute left-4 top-4 rounded border border-cyan-500/30 bg-black/60 px-3 py-1.5 font-mono text-xs tracking-widest text-cyan-400 backdrop-blur-md animate-pulse">
           RHIZOH CORE OS // LIGHT-2D ACTIVE
+        </div>
+      ) : null}
+      {safeCanvasActive && active ? (
+        <div className="pointer-events-none absolute left-4 top-14 rounded border border-amber-400/30 bg-black/70 px-3 py-1.5 font-mono text-xs tracking-widest text-amber-300 backdrop-blur-md">
+          MAP SAFE MODE // EMPTY CANVAS
         </div>
       ) : null}
     </div>

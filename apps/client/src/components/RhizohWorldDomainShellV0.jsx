@@ -172,7 +172,7 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
             </div>
             <div className="pointer-events-auto absolute right-3 top-3 z-[3] flex flex-col items-end gap-2 sm:right-4 sm:top-4">
               <RhizohWorldMapControlsV0 active={spatialEngineActive} uiLocale={locale} />
-              <RhizohWorldAtmosphereChipV0 active={spatialEngineActive} uiLocale={locale} />
+              <RhizohWorldAtmosphereChipV0 active={isSpace} uiLocale={locale} />
             </div>
             {wheelPack.nodes.length ? (
               <div className="pointer-events-auto absolute left-3 z-[3] sm:left-4" style={{ bottom: mapStripBottomCssV0 }}>

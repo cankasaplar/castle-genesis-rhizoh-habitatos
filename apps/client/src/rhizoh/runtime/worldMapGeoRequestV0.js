@@ -49,6 +49,7 @@ export function requestWorldMapGeoV0(opts = {}) {
             lon,
             source
           });
+          window.__CASTLE_CLIENT_CASTLE_STATE__ = "ACTIVE";
         } catch {
           /* noop */
         }

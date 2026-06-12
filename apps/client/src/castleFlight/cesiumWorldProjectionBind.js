@@ -6,6 +6,8 @@ import { CESIUM_SCENE_BUDGET, trimPolylineTrailBudget } from "./cesiumSceneBudge
  * window.__CASTLE_WORLD_PROJECTION__ üzerinden beslenir.
  */
 
+export const CESIUM_WORLD_PROJECTION_MAX_HEROES_V0 = 12;
+
 function finiteOr(value, fallback) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
@@ -70,6 +72,13 @@ function lerpGreatCirclePositions(lon1, lat1, a1, lon2, lat2, a2, steps) {
 
 function readGovPack() {
   return typeof window !== "undefined" ? window.__CASTLE_WORLD_PROJECTION__ : null;
+}
+
+export function selectCesiumWorldProjectionHeroesV0(heroes = []) {
+  if (!Array.isArray(heroes)) return [];
+  return heroes
+    .filter((h) => h && String(h.avatarKey || "") !== "rhizoh")
+    .slice(0, CESIUM_WORLD_PROJECTION_MAX_HEROES_V0);
 }
 
 /** FROZEN: neredeyse duran dünya; RECOVERY: sessizlik → tek pulse → yayılım. */
@@ -889,10 +898,9 @@ export function installCesiumWorldProjectionBind(viewer, fatih) {
 
     if (tick === 0 || tick === 3) {
       const alive = new Set();
-      for (const h of pack.heroes || []) {
+      for (const h of selectCesiumWorldProjectionHeroesV0(pack.heroes || [])) {
         const id = String(h.id || "");
         if (!id) continue;
-        if ((h.avatarKey || "") === "rhizoh") continue;
 
         const geo = clampLonLatAlt(h.lon, h.lat, h.alt ?? 120);
         if (!geo) continue;
