@@ -6,7 +6,7 @@
 # Deploy sonrası URL örneği: paneldeki tam host (örn. castle-genesis-rhizoh-habitatos.onrender.com) — client VITE_* ile aynı origin kilitle.
 # (isim çakışırsa Render benzersiz subdomain verir — paneldeki tam URL’yi client .env’e yaz.)
 #
-# Gizliler: OPENAI_API_KEY ve CASTLE_GATEWAY_TOKEN → Apply sırasında Render panelinde gir.
+# Gizliler: OPENAI_API_KEY / GOOGLE_API_KEY / GEMINI_API_KEY ve CASTLE_GATEWAY_TOKEN → Apply sırasında Render panelinde gir.
 # Client: VITE_GATEWAY_TOKEN = CASTLE_GATEWAY_TOKEN (aynı string).
 
 services:
@@ -60,6 +60,11 @@ services:
       - key: CASTLE_GATEWAY_TOKEN
         sync: false
       - key: OPENAI_API_KEY
+        sync: false
+      # Gemini live test: set CASTLE_LLM_PROVIDER=gemini and one of these keys in Render dashboard.
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
         sync: false
       # Live world map feed (sports + news) — set in Render dashboard (never commit).
       - key: FOOTBALL_DATA_ORG_TOKEN

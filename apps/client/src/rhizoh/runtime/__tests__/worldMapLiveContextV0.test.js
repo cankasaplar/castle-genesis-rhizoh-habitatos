@@ -1,9 +1,10 @@
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import {
   formatWorldMapLocalClockV0,
   formatWorldMapTrafficLineV0,
   formatWorldMapWeatherLineV0,
-  resolveWorldMapTimeZoneV0
+  resolveWorldMapTimeZoneV0,
+  startWorldMapLiveContextPollingV0
 } from "../worldMapLiveContextV0.js";
 
 describe("worldMapLiveContextV0", () => {
@@ -14,6 +15,8 @@ describe("worldMapLiveContextV0", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
     if (typeof window !== "undefined") {
       window.__CASTLE_NEXUS_GEO__ = undefined;
     }
@@ -62,5 +65,22 @@ describe("worldMapLiveContextV0", () => {
         "tr"
       )
     ).toBe("trafik: orta");
+  });
+
+  it("keeps local clock heartbeat alive when world execution is off", () => {
+    vi.useFakeTimers();
+    vi.stubEnv("VITE_WORLD_LAYER", "false");
+    vi.stubEnv("VITE_WORLD_EXECUTION_MODE", "off");
+    const updates = [];
+    const stop = startWorldMapLiveContextPollingV0({
+      locale: "tr",
+      onUpdate: (snap) => updates.push(snap)
+    });
+
+    expect(updates.length).toBe(1);
+    vi.advanceTimersByTime(30_000);
+    expect(updates.length).toBe(2);
+    expect(updates[1].timeLabel).toMatch(/^\d{2}:\d{2}$/);
+    stop();
   });
 });

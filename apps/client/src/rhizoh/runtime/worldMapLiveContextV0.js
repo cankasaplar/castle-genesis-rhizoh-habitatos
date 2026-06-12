@@ -173,11 +173,10 @@ export async function refreshWorldMapTrafficFeedIfStaleV0(opts = {}) {
  * @returns {() => void}
  */
 export function startWorldMapLiveContextPollingV0(opts = {}) {
-  if (isWorldExecutionOffV0()) return () => {};
-
   const locale = opts.locale || "tr";
   const intervalMs =
     typeof opts.intervalMs === "number" && opts.intervalMs > 0 ? opts.intervalMs : DEFAULT_POLL_MS;
+  const executionOff = isWorldExecutionOffV0();
 
   const emit = () => {
     try {
@@ -188,6 +187,10 @@ export function startWorldMapLiveContextPollingV0(opts = {}) {
   };
 
   const refreshAll = () => {
+    if (executionOff) {
+      emit();
+      return;
+    }
     const geo = resolveWorldMapLiveGeoV0();
     void refreshWeatherAtmosphereFeedIfStaleV0({ signal: opts.signal }).then(emit);
     void refreshWorldMapTrafficFeedIfStaleV0({
@@ -197,19 +200,21 @@ export function startWorldMapLiveContextPollingV0(opts = {}) {
     }).then(emit);
   };
 
-  const stopWeather = startWorldWeatherAtmospherePollingV0({
-    intervalMs,
-    onTick: emit,
-    signal: opts.signal
-  });
+  const stopWeather = executionOff
+    ? () => {}
+    : startWorldWeatherAtmospherePollingV0({
+        intervalMs,
+        onTick: emit,
+        signal: opts.signal
+      });
 
   refreshAll();
   const clockId = setInterval(() => emit(), TICK_MS);
-  const dataId = setInterval(refreshAll, intervalMs);
+  const dataId = executionOff ? null : setInterval(refreshAll, intervalMs);
 
   return () => {
     stopWeather();
     clearInterval(clockId);
-    clearInterval(dataId);
+    if (dataId) clearInterval(dataId);
   };
 }
