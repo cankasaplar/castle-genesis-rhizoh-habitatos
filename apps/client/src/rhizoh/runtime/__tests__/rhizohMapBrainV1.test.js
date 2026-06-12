@@ -22,6 +22,7 @@ describe("rhizohMapBrainV1", () => {
       conversationState: { lastIntent: "castle neredeydi" },
       mapState: {
         active: true,
+        cesiumReady: true,
         activeMapTool: "city_map",
         hasActiveCastle: true,
         worldDataReady: true
@@ -63,6 +64,7 @@ describe("rhizohMapBrainV1", () => {
       conversationState: { lastIntent: "castle" },
       mapState: {
         active: true,
+        cesiumReady: true,
         activeMapTool: "city_map",
         hasActiveCastle: true
       },
@@ -98,5 +100,21 @@ describe("rhizohMapBrainV1", () => {
     const memory = brain.actions.find((row) => row.id === "show_memory_nodes");
     expect(memory.contextSource).toBe("conversation");
     expect(memory.contextWeight).toBe(RHIZOH_MAP_BRAIN_CONTEXT_WEIGHTS_V1.conversation);
+  });
+
+  it("does not emit Cesium actions when V11 primary map is active but Cesium is not ready", () => {
+    const brain = buildRhizohMapBrainActionsV1({
+      conversationState: { lastIntent: "castle neredeydi" },
+      mapState: {
+        active: false,
+        cesiumReady: false,
+        activeMapTool: "city_map",
+        hasActiveCastle: true,
+        worldDataReady: true
+      }
+    });
+
+    expect(brain.actions.some((action) => action.command === "cesium_op")).toBe(false);
+    expect(brain.actions.some((action) => action.command === "set_map_tool")).toBe(true);
   });
 });

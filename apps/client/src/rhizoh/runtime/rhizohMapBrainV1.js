@@ -217,6 +217,7 @@ function applyFeedbackAndContextV1(actions, feedback) {
  *   },
  *   mapState?: {
  *     active?: boolean,
+ *     cesiumReady?: boolean,
  *     activeMapTool?: string,
  *     hasActiveCastle?: boolean,
  *     memoryNodeCount?: number,
@@ -233,6 +234,7 @@ export function buildRhizohMapBrainActionsV1(input = {}) {
   const intent = normalizeIntentV1(conversation);
   const activeTool = String(map.activeMapTool || "city_map");
   const mapActive = map.active !== false;
+  const cesiumReady = map.cesiumReady === true;
   const hasCastle = map.hasActiveCastle === true;
   const memoryNodeCount = Math.max(0, Number(map.memoryNodeCount) || 0);
   const hasLocation = map.hasUserLocation === true;
@@ -257,17 +259,19 @@ export function buildRhizohMapBrainActionsV1(input = {}) {
     });
   }
 
-  actions.push({
-    id: "return_to_core",
-    labelTr: "Rhizoh Core'a dön",
-    labelEn: "Return to Rhizoh Core",
-    command: COMMANDS_V1.CESIUM_OP,
-    op: "calibration_root",
-    confidence: intent.includes("nerede") || intent.includes("where") ? 0.88 : 0.72,
-    reason: "root_anchor_is_safe_default"
-  });
+  if (cesiumReady) {
+    actions.push({
+      id: "return_to_core",
+      labelTr: "Rhizoh Core'a dön",
+      labelEn: "Return to Rhizoh Core",
+      command: COMMANDS_V1.CESIUM_OP,
+      op: "calibration_root",
+      confidence: intent.includes("nerede") || intent.includes("where") ? 0.88 : 0.72,
+      reason: "root_anchor_is_safe_default"
+    });
+  }
 
-  if (hasCastle) {
+  if (hasCastle && cesiumReady) {
     actions.push({
       id: "focus_active_castle",
       labelTr: "Castle'a odaklan",
@@ -313,15 +317,17 @@ export function buildRhizohMapBrainActionsV1(input = {}) {
     });
   }
 
-  actions.push({
-    id: "zoom_in_context",
-    labelTr: "Yakınlaştır",
-    labelEn: "Zoom in",
-    command: COMMANDS_V1.CESIUM_OP,
-    op: "zoom_in",
-    confidence: hasCastle || memoryNodeCount > 0 ? 0.66 : 0.48,
-    reason: "map_camera_available"
-  });
+  if (cesiumReady) {
+    actions.push({
+      id: "zoom_in_context",
+      labelTr: "Yakınlaştır",
+      labelEn: "Zoom in",
+      command: COMMANDS_V1.CESIUM_OP,
+      op: "zoom_in",
+      confidence: hasCastle || memoryNodeCount > 0 ? 0.66 : 0.48,
+      reason: "map_camera_available"
+    });
+  }
 
   return Object.freeze({
     schema: RHIZOH_MAP_BRAIN_SCHEMA_V1,
