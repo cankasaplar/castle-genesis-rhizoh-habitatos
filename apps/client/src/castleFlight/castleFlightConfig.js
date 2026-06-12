@@ -1,36 +1,35 @@
 /**
- * Castle Flight Config
- * Client-safe gateway configuration layer
+ * Castle Flight Config — SINGLE SOURCE OF TRUTH
+ * IMPORTANT: Do NOT split this contract across files
  */
 
-/**
- * REQUIRED: legacy global registry compatibility
- */
-export const CASTLE_FLIGHT_MANIFEST_KEYS = {
+export const CASTLE_FLIGHT_MANIFEST_KEYS = Object.freeze({
   RHIZOH_LLM_HTTP: "RHIZOH_LLM_HTTP",
   RHIZOH_LLM_TOKEN: "RHIZOH_LLM_TOKEN"
-};
+});
 
-/**
- * Gateway config
- */
 export function getCastleFlightConfig() {
-  return {
+  return Object.freeze({
     rhizohLlmHttp: process.env.RHIZOH_LLM_HTTP,
     rhizohLlmToken: process.env.RHIZOH_LLM_TOKEN
-  };
+  });
 }
 
-/**
- * Legacy compatibility flag (always false in Leaflet mode)
- */
 export function shouldUseSameOriginGatewayProxyV0() {
   return false;
 }
 
-/**
- * Legacy resolver fallback
- */
 export function getRhizohSameOriginGatewayProxyBaseV0() {
   return "";
 }
+
+/**
+ * IMPORTANT: compatibility export set
+ * (prevents Rollup missing export graph split)
+ */
+export default {
+  CASTLE_FLIGHT_MANIFEST_KEYS,
+  getCastleFlightConfig,
+  shouldUseSameOriginGatewayProxyV0,
+  getRhizohSameOriginGatewayProxyBaseV0
+};
