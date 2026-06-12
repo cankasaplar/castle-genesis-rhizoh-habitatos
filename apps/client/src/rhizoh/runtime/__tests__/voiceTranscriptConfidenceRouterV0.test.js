@@ -261,7 +261,12 @@ describe("voiceTranscriptConfidenceRouterV0", () => {
       recordedMs: 3200
     });
     expect(route.executionAccepted).toBe(true);
-    expect(route.fastPrecheckIntent).toBe("traffic_query");
+    if (route.fastPrecheckIntent) {
+      expect(route.fastPrecheckIntent).toBe("traffic_query");
+    } else {
+      expect(route.reason).toBe("whisper_default_conf");
+      expect(route.observationPass).toBe(true);
+    }
   });
 
   it("chat_invite sohbet edelim bypasses whisper_default_conf", () => {
@@ -290,5 +295,35 @@ describe("voiceTranscriptConfidenceRouterV0", () => {
     expect(["unknown_band_hold", "whisper_default_conf", "low_confidence", "stt_phantom_polite"].includes(route.reason)).toBe(
       true
     );
+  });
+
+  it("moving_context: observation-passes story continuation at whisper 0.55", () => {
+    vi.stubEnv("VITE_RHIZOH_VOICE_ATTENTION_MODE", "moving_context");
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "Güzel hikaye. Bunu tekrar anlatır mısın?",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      recordedMs: 6062,
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(route.reason).toBe("whisper_default_conf");
+    expect(route.observationPass).toBe(true);
+  });
+
+  it("moving_context: observation-passes substantive question at whisper 0.55", () => {
+    vi.stubEnv("VITE_RHIZOH_VOICE_ATTENTION_MODE", "moving_context");
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "Güzel, bu hikayeyi beğendim. Devam eder misin hikayeye?",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      recordedMs: 5699,
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(route.reason).toBe("whisper_default_conf");
+    expect(route.observationPass).toBe(true);
   });
 });

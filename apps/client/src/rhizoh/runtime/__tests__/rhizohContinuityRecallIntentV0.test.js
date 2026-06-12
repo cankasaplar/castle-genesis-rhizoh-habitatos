@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildContinuityRecallBoostV0,
   mergeRecallBoostIntoRecollectionV0,
-  probeContinuityRecallIntentV0
+  probeContinuityRecallIntentV0,
+  probeStoryContinuationIntentV0
 } from "../rhizohContinuityRecallIntentV0.js";
 import {
   runFastPrecheckFromTextV0,
@@ -32,6 +33,17 @@ describe("probeContinuityRecallIntentV0", () => {
   it("ignores unrelated chat", () => {
     const hit = probeContinuityRecallIntentV0("Bugün hava güzel.");
     expect(hit.active).toBe(false);
+  });
+});
+
+describe("probeStoryContinuationIntentV0", () => {
+  it("detects Turkish story continuation", () => {
+    expect(probeStoryContinuationIntentV0("Güzel hikaye. Bunu tekrar anlatır mısın?").active).toBe(true);
+    expect(probeStoryContinuationIntentV0("Devam eder misin hikayeye?").active).toBe(true);
+  });
+
+  it("ignores unrelated chat", () => {
+    expect(probeStoryContinuationIntentV0("Bugün hava güzel.").active).toBe(false);
   });
 });
 
