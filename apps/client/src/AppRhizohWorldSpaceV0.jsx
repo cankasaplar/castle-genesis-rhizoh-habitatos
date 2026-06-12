@@ -63,6 +63,7 @@ import {
 } from "./rhizoh/runtime/symbyoMapIntentBridgeV0.js";
 import { openCastleInitGateFromLocalCommandV0 } from "./rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
 import { CastleInitiationGateV0 } from "./components/CastleInitiationGateV0.jsx";
+import { RhizohV11TowerWorkspaceHostV0 } from "./components/RhizohV11TowerWorkspaceHostV0.jsx";
 import {
   completeCastleInitFromMapAnchorV0,
   installCastleInitMapPickListenerV0
@@ -403,51 +404,14 @@ export default function AppRhizohWorldSpaceV0() {
       ) : null}
 
       {v11Workspace ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-28 z-[28] flex justify-center px-4">
-          <div
-            className="pointer-events-auto w-full max-w-md rounded-2xl border bg-black/90 p-4 text-white shadow-2xl backdrop-blur-md"
-            style={{ borderColor: `${v11Workspace.node?.color || "#22d3ee"}66` }}
-            data-rhizoh-v11-workspace-panel="1"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/45">
-                  {uiLocale === "tr" ? "Workspace · Media" : "Workspace · Media"}
-                </p>
-                <h2 className="mt-1 text-sm font-black" style={{ color: v11Workspace.node?.color || "#22d3ee" }}>
-                  {v11Workspace.node?.label || v11Workspace.node?.id}
-                </h2>
-                <p className="mt-1 text-[10px] text-white/55">
-                  {v11Workspace.runtime?.workspaceId || "workspace"} ·{" "}
-                  {(v11Workspace.runtime?.capabilities || []).slice(0, 3).join(" · ") || "media_player"}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setV11Workspace(null)}
-                className="rounded-lg border border-white/15 px-2 py-1 text-[10px] text-white/60 hover:text-white"
-              >
-                ×
-              </button>
-            </div>
-            <div
-              className="mt-3 rounded-xl border border-cyan-400/25 bg-gradient-to-b from-cyan-950/40 to-black/60 p-4"
-              data-rhizoh-v11-workspace-shell="1"
-            >
-              <p className="text-[9px] font-bold uppercase tracking-wider text-cyan-300/80">
-                {v11Workspace.runtime?.workspaceId || "workspace_pending"}
-              </p>
-              <p className="mt-2 text-[11px] leading-relaxed text-white/75">
-                {uiLocale === "tr"
-                  ? "Düğüm workspace kabuğu açıldı. Tam mediaplayer / tower UI arşivden bağlanacak."
-                  : "Node workspace shell opened. Full mediaplayer / tower UI will bind from archive."}
-              </p>
-            </div>
-          </div>
-        </div>
+        <RhizohV11TowerWorkspaceHostV0
+          workspaceDetail={v11Workspace}
+          onClose={() => setV11Workspace(null)}
+          uiLocale={uiLocale}
+        />
       ) : null}
 
-      {v11NodePanel ? (
+      {v11NodePanel && !v11Workspace ? (
         <div className="pointer-events-none fixed inset-x-0 top-28 z-[27] flex justify-center px-4">
           <div
             className="pointer-events-auto w-full max-w-sm rounded-2xl border bg-black/85 p-3 text-white shadow-2xl backdrop-blur-md"
