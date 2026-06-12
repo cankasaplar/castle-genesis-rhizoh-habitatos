@@ -16,7 +16,8 @@ import {
   applyRhizohWorldMapToolV0,
   getRhizohWorldMapToolSnapshotV0,
   readRhizohWorldMapToolV0,
-  subscribeRhizohWorldMapToolV0
+  subscribeRhizohWorldMapToolV0,
+  writeRhizohWorldMapToolV0
 } from "./rhizoh/runtime/rhizohWorldMapToolV0.js";
 import { applyCesiumImageryForMapToolV0 } from "./rhizoh/runtime/rhizohCesiumImageryProfileV0.js";
 import {
@@ -126,7 +127,10 @@ export default function AppRhizohWorldSpaceV0() {
 
     const nexusGeo = readCastleNexusGeoV0();
     const tool = readRhizohWorldMapToolV0();
-    if (!nexusGeo) {
+    const nextTool = !nexusGeo || tool === "globe" ? "city_map" : tool;
+    if (!spatialBootGateV0.allowed) {
+      writeRhizohWorldMapToolV0(nextTool);
+    } else if (!nexusGeo) {
       void applyRhizohWorldMapToolV0("city_map", {
         setRealityMode,
         source: "WORLD_SPACE_BOOT_CITY"
@@ -201,11 +205,15 @@ export default function AppRhizohWorldSpaceV0() {
   const showGeoChip = !readCastleNexusGeoV0() && geoPrompt !== "granted";
 
   const onApplyWorldMapToolV0 = useCallback((mapTool, source = "WORLD_DOMAIN_MAP_STRIP") => {
+    if (!spatialBootGateV0.allowed) {
+      writeRhizohWorldMapToolV0(mapTool);
+      return;
+    }
     void applyRhizohWorldMapToolV0(mapTool, {
       setRealityMode,
       source
     });
-  }, []);
+  }, [spatialBootGateV0.allowed]);
 
   const onProductShellSelect = useCallback(
     (id) => {
