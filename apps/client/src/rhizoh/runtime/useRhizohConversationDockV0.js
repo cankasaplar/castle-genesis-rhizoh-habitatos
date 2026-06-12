@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createVoiceEngineV3TurnBridgeV0, isVoiceEngineV3EnabledV0 } from "./voiceEngineV3/index.js";
 import { handleRhizohVoiceTranscriptV0 } from "./rhizohVoiceLlmDispatchV0.js";
 import { postRhizohLlmTurnV0 } from "./rhizohLlmTurnClientV0.js";
+import { tryResolveLocalConversationTurnV0 } from "./tryResolveLocalConversationTurnV0.js";
 import {
   buildConversationContinuityGlueV0,
   handoffHotSpeechToLlmReplyV0
@@ -61,9 +62,24 @@ export function useRhizohConversationDockV0(opts = {}) {
   });
 
   const handleVoiceTranscriptRef = useRef(
-    /** @type {(text: string, o: object) => Promise<void>} */ (async (text, o) => {
+    /** @type {(text: string, o: object) => Promise<void>} */ (    async (text, o) => {
       setFieldState("thinking");
       const t0 = Date.now();
+      const localTurn = tryResolveLocalConversationTurnV0(text, {
+        traceId: o?.traceId,
+        source: "conversation_dock_voice"
+      });
+      if (localTurn?.ok && localTurn.reply) {
+        setLastReply(localTurn.reply);
+        setFieldState("speaking");
+        const glue = buildConversationContinuityGlueV0({ llmWaitMs: Date.now() - t0 });
+        await handoffHotSpeechToLlmReplyV0(glue, () => {
+          void speakRhizohReplyChunkedV0(localTurn.reply, { smoothAfterAck: false, glue });
+        });
+        setFieldState("idle");
+        userTurnRef.current += 1;
+        return;
+      }
       const liveContextEnvelope =
         typeof opts.contextProvider === "function"
           ? opts.contextProvider({ message: text, source: "conversation_dock_voice" })
@@ -136,6 +152,19 @@ export function useRhizohConversationDockV0(opts = {}) {
     setFieldState("thinking");
     const t0 = Date.now();
     try {
+      const localTurn = tryResolveLocalConversationTurnV0(msg, {
+        source: "conversation_dock_text"
+      });
+      if (localTurn?.ok && localTurn.reply) {
+        setLastReply(localTurn.reply);
+        setDraft("");
+        setFieldState("speaking");
+        const glue = buildConversationContinuityGlueV0({ llmWaitMs: Date.now() - t0 });
+        await speakRhizohReplyChunkedV0(localTurn.reply, { smoothAfterAck: true, glue });
+        userTurnRef.current += 1;
+        return;
+      }
+
       const liveContextEnvelope =
         typeof opts.contextProvider === "function"
           ? opts.contextProvider({ message: msg, source: "conversation_dock_text" })
