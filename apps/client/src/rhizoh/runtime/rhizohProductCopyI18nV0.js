@@ -264,14 +264,14 @@ export function resolveWorldMapToolLabelV0(toolId, locale) {
   const id = String(toolId || "globe");
   if (tr) {
     if (id === "globe") return "Küre";
-    if (id === "city_map") return "3D şehir";
+    if (id === "city_map") return "V11";
     if (id === "satellite") return "Uydu";
     if (id === "streets") return "Sokak";
     if (id === "terrain") return "Arazi";
     return "Bağlantı";
   }
   if (id === "globe") return "Globe";
-  if (id === "city_map") return "City 3D";
+  if (id === "city_map") return "V11";
   if (id === "satellite") return "Satellite";
   if (id === "streets") return "Streets";
   if (id === "terrain") return "Terrain";

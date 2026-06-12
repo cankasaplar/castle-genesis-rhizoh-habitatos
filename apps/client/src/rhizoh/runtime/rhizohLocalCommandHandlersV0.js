@@ -176,6 +176,18 @@ export function mapSpatialCommandHandlerV0(canonical, row) {
   lastMapCommandKeyV0 = key;
   lastMapCommandAtMsV0 = nowMs;
   prepareMapCommandSideEffectV0(canonical, row.action);
+  if (canonical === "map_open" || row.action === "open") {
+    const payload = Object.freeze({
+      canonical,
+      action: row.action,
+      layer: row.layer,
+      handler: "mapSpatialCommandHandlerV0",
+      atMs: Date.now(),
+      v11PrimaryOnly: true
+    });
+    logVoiceInfoV0("MAP_COMMAND_LOCAL", payload);
+    return payload;
+  }
   const payload = Object.freeze({
     canonical,
     action: row.action,

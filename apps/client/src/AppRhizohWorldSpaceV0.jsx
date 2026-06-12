@@ -242,7 +242,11 @@ export default function AppRhizohWorldSpaceV0() {
       data-map-tool={worldMapToolV0}
     >
       <RhizohAtmospherePresenceBridge />
-      <RhizohWorldSpaceMapHostV0 active={cesiumLayerActiveV0} renderMode={spatialBootGateV0.renderMode} />
+      <RhizohWorldSpaceMapHostV0
+        active={cesiumLayerActiveV0}
+        renderMode={spatialBootGateV0.renderMode}
+        activeMapTool={worldMapToolV0}
+      />
 
       <RhizohWorldDomainShellV0
         domain={RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE}
@@ -304,7 +308,9 @@ export default function AppRhizohWorldSpaceV0() {
         </div>
       ) : null}
 
-      {!cesiumLayerActiveV0 && worldMapToolV0 !== "globe" ? (
+      {!cesiumLayerActiveV0 &&
+      worldMapToolV0 !== "globe" &&
+      spatialBootGateV0.renderMode !== "v11_core_map" ? (
         <div
           className="pointer-events-none fixed inset-x-0 z-[25] flex justify-center px-4"
           style={{ bottom: `calc(${mapStripBottomCssV0} + 5rem)` }}
