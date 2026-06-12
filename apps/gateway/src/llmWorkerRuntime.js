@@ -9,6 +9,10 @@ import { Worker } from "node:worker_threads";
 
 import { buildLlmWorkerPostMessageV0 } from "./llmWorkerTurnSanitizeV0.js";
 const TASK_POLL_MS = Math.max(100, Number(process.env.CASTLE_LLM_WORKER_POLL_MS || 400) || 400);
+const TASK_TTL_MS = Math.max(
+  60_000,
+  Number(process.env.CASTLE_LLM_WORKER_TASK_TTL_MS || 900_000) || 900_000
+);
 
 const WORKER_DIR = dirname(fileURLToPath(import.meta.url));
 const WORKER_SCRIPT_BESIDE_RUNTIME = join(WORKER_DIR, "worker.js");
