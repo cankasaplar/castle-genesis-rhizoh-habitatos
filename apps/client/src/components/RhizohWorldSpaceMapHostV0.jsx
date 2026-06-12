@@ -95,9 +95,21 @@ function emitV11MapIntentV0(node, interaction) {
   return routed;
 }
 
-function V11CoreMapLayerV0() {
+function leafletTileUrlForToolV0(activeMapTool) {
+  const tool = String(activeMapTool || "city_map");
+  if (tool === "satellite") {
+    return "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+  }
+  if (tool === "streets") {
+    return "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+  }
+  return "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+}
+
+function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
   const mapRef = useRef(null);
   const hostRef = useRef(null);
+  const tileLayerRef = useRef(null);
   const [leafletReady, setLeafletReady] = useState(false);
 
   useEffect(() => {
@@ -112,7 +124,7 @@ function V11CoreMapLayerV0() {
           worldCopyJump: true,
           preferCanvas: true
         }).setView([20, 0], 2);
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+        tileLayerRef.current = L.tileLayer(leafletTileUrlForToolV0(activeMapTool), {
           maxZoom: 18
         }).addTo(map);
         for (const node of V11_CORE_MAP_NODES_V0) {
@@ -147,6 +159,21 @@ function V11CoreMapLayerV0() {
       mapRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const L = typeof window !== "undefined" ? window.L : null;
+    if (!L?.tileLayer || !mapRef.current || !leafletReady) return;
+    try {
+      if (tileLayerRef.current) {
+        mapRef.current.removeLayer(tileLayerRef.current);
+      }
+      tileLayerRef.current = L.tileLayer(leafletTileUrlForToolV0(activeMapTool), {
+        maxZoom: 18
+      }).addTo(mapRef.current);
+    } catch {
+      /* noop */
+    }
+  }, [activeMapTool, leafletReady]);
 
   return (
     <div
@@ -224,10 +251,10 @@ function SafeWorldShellV0() {
   );
 }
 
-function renderFallbackForModeV0(renderMode) {
+function renderFallbackForModeV0(renderMode, activeMapTool) {
   if (renderMode === RHIZOH_SPATIAL_RENDER_MODE_V0.EMPTY_CANVAS) return <EmptyCanvasV0 />;
   if (renderMode === RHIZOH_SPATIAL_RENDER_MODE_V0.SAFE_WORLD_SHELL) return <SafeWorldShellV0 />;
-  return <V11CoreMapLayerV0 />;
+  return <V11CoreMapLayerV0 activeMapTool={activeMapTool} />;
 }
 
 /**
@@ -236,7 +263,8 @@ function renderFallbackForModeV0(renderMode) {
  */
 export const RhizohWorldSpaceMapHostV0 = memo(function RhizohWorldSpaceMapHostV0({
   active,
-  renderMode = RHIZOH_SPATIAL_RENDER_MODE_V0.V11_CORE_MAP
+  renderMode = RHIZOH_SPATIAL_RENDER_MODE_V0.V11_CORE_MAP,
+  activeMapTool = "city_map"
 }) {
   return (
     <div
@@ -245,7 +273,7 @@ export const RhizohWorldSpaceMapHostV0 = memo(function RhizohWorldSpaceMapHostV0
       data-rhizoh-world-space-map-active={active ? "1" : "0"}
       data-rhizoh-world-space-render-mode={renderMode}
     >
-      {active ? <CesiumRealMapLayer active /> : renderFallbackForModeV0(renderMode)}
+      {active ? <CesiumRealMapLayer active /> : renderFallbackForModeV0(renderMode, activeMapTool)}
     </div>
   );
 });

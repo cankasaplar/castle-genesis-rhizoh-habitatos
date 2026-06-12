@@ -164,7 +164,8 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
               <RhizohWorldSportsNewsStripV0 active={spatialEngineActive} uiLocale={locale} />
               <WorldStartCardV0
                 activeTool={activeMapTool}
-                active={spatialEngineActive}
+                active={isSpace}
+                cesiumReady={spatialEngineActive}
                 uiLocale={locale}
                 worldData={worldData}
                 onSelect={onSelectMapTool}
@@ -212,6 +213,7 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
                   activeTool={activeMapTool}
                   uiLocale={locale}
                   onSelect={onSelectMapTool}
+                  cesiumReady={spatialEngineActive}
                   className="w-full justify-start"
                 />
                 <RhizohWorldMarkerLayerFilterV0 uiLocale={locale} />
@@ -251,7 +253,7 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
   );
 });
 
-function WorldStartCardV0({ activeTool, active, uiLocale, worldData, onSelect }) {
+function WorldStartCardV0({ activeTool, active, cesiumReady, uiLocale, worldData, onSelect }) {
   const tr = (uiLocale || readUiLocaleV0()) === "tr";
   const feedReady = worldData?.feed && worldData.feed !== "unavailable";
   const activeCastle = readCastleNexusGeoV0() || readUserCastleAnchorGeoV0();
@@ -264,7 +266,7 @@ function WorldStartCardV0({ activeTool, active, uiLocale, worldData, onSelect })
     },
     mapState: {
       active,
-      cesiumReady: active,
+      cesiumReady: cesiumReady === true,
       activeMapTool: activeTool,
       hasActiveCastle: Boolean(activeCastle),
       memoryNodeCount: memoryPins.length,
@@ -318,10 +320,10 @@ function WorldStartCardV0({ activeTool, active, uiLocale, worldData, onSelect })
       <p className="mt-1 text-[10px] leading-relaxed text-white/58">
         {tr
           ? active
-            ? "Harita açık. Şehir, sokak veya kendi konum bağlantını seçebilirsin."
+            ? "V11 haritası açık. Sokak, uydu veya bağlantı görünümünü seçebilirsin."
             : "Harita hazırlanıyor. Açıldığında ilk eylemler burada kalacak."
           : active
-            ? "The map is open. Choose city, streets, or your own anchor place."
+            ? "V11 map is open. Choose street, satellite, or anchor view."
             : "The map is preparing. First actions stay here when it opens."}
       </p>
       <div className="mt-2 grid gap-1.5">

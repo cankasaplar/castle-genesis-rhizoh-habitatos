@@ -2,8 +2,8 @@ import React, { memo } from "react";
 import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
 
 const QUICK_LAYERS_V0 = Object.freeze([
-  { tool: "city_map", labelTr: "Şehir", labelEn: "City" },
-  { tool: "streets", labelTr: "Sokak", labelEn: "Streets" },
+  { tool: "city_map", labelTr: "V11", labelEn: "V11" },
+  { tool: "streets", labelTr: "Sokak", labelEn: "Street" },
   { tool: "satellite", labelTr: "Uydu", labelEn: "Satellite" }
 ]);
 
