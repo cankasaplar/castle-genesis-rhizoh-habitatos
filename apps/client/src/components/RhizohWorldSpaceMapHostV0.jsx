@@ -3,6 +3,7 @@ import CesiumRealMapLayer from "../castleFlight/CesiumRealMapLayer.jsx";
 import { RHIZOH_SPATIAL_RENDER_MODE_V0 } from "../rhizoh/runtime/spatialBootGateV0.js";
 import {
   routeSymbyoMapInteractionToOrchestratorV0,
+  RHIZOH_V11_MAP_INTENT_EVENT_V0,
   SYMBYO_MAP_INTERACTION_V0
 } from "../rhizoh/runtime/symbyoMapIntentBridgeV0.js";
 import {
@@ -15,7 +16,7 @@ import {
   readLocalGhostCastleAnchorsV0
 } from "../rhizoh/runtime/localGhostCastleAnchorV0.js";
 
-export const RHIZOH_V11_MAP_INTENT_EVENT_V0 = "rhizoh:v11-map-intent-v0";
+export { RHIZOH_V11_MAP_INTENT_EVENT_V0 };
 
 const V11_CORE_MAP_NODES_V0 = Object.freeze([
   { id: "rhizoh", label: "RHIZOH", type: "core", lat: 41.045, lon: 29.006, color: "#22d3ee" },

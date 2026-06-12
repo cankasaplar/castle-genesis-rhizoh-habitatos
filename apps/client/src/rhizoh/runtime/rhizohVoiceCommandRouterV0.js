@@ -4,6 +4,7 @@
  */
 
 import { resolveLocalActionAuthorityV0, emitLocalActionAuthorityV0 } from "./rhizohLocalActionAuthorityV0.js";
+import { openCastleInitGateFromLocalCommandV0 } from "./rhizohLocalCommandHandlersV0.js";
 import { commitFinalUserVisibleLanguageV0 } from "./rhizohFinalLanguageCommitV0.js";
 import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
 import {
@@ -216,6 +217,9 @@ export function executeLocalVoiceCommandV0(route, opts = {}) {
   const traceId = opts.traceId ? String(opts.traceId) : null;
 
   if (route.grammarLocal) {
+    if (route.grammarLocal.kind === "CASTLE_CREATE") {
+      openCastleInitGateFromLocalCommandV0("voice_grammar");
+    }
     emitLocalActionAuthorityV0(route.grammarLocal);
     const reply = commitFinalUserVisibleLanguageV0(
       String(route.grammarLocal.user_reply_tr || ""),

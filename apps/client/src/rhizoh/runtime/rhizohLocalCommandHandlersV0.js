@@ -48,21 +48,31 @@ function navigateLocalCommandRouteV0(pathname) {
   }
 }
 
+/** Shared castle-init side effect — registry, grammar, and LLM directive paths. */
+export function openCastleInitGateFromLocalCommandV0(source = "local_command") {
+  if (typeof window === "undefined") return;
+  navigateLocalCommandRouteV0("/world/space");
+  void import("./rhizohWorldDrawerDomainV0.js")
+    .then((m) => m.writeRhizohWorldDrawerDomainV0(m.RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE))
+    .catch(() => {});
+  void import("./rhizohWorldMapToolV0.js")
+    .then((m) => m.writeRhizohWorldMapToolV0("anchor_map"))
+    .catch(() => {});
+  try {
+    window.dispatchEvent(
+      new CustomEvent("castle:open-init-gate-v0", {
+        detail: Object.freeze({ source: String(source || "local_command") })
+      })
+    );
+  } catch {
+    /* noop */
+  }
+}
+
 function prepareMapCommandSideEffectV0(canonical, action) {
   if (typeof window === "undefined") return;
   if (canonical === "castle_create" || action === "create_castle") {
-    navigateLocalCommandRouteV0("/world/space");
-    void import("./rhizohWorldDrawerDomainV0.js")
-      .then((m) => m.writeRhizohWorldDrawerDomainV0(m.RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE))
-      .catch(() => {});
-    void import("./rhizohWorldMapToolV0.js")
-      .then((m) => m.writeRhizohWorldMapToolV0("anchor_map"))
-      .catch(() => {});
-    try {
-      window.dispatchEvent(new CustomEvent("castle:open-init-gate-v0", { detail: Object.freeze({ source: "local_command" }) }));
-    } catch {
-      /* noop */
-    }
+    openCastleInitGateFromLocalCommandV0("local_command");
     return;
   }
   if (canonical === "map_open" || action === "open") {

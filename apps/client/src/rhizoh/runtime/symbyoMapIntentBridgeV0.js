@@ -10,6 +10,10 @@ import { createRhizohPayloadRefV0, rhizohChecksumStringV0 } from "@castle/protoc
 
 export const SYMBYO_MAP_INTENT_BRIDGE_SCHEMA_V0 = "symbyo.map_intent_bridge.v0";
 export const SYMBYO_MAP_INTENT_SCHEMA_V0 = Object.freeze(["intent", "nodeId", "context"]);
+export const RHIZOH_V11_MAP_INTENT_EVENT_V0 = "rhizoh:v11-map-intent-v0";
+export const RHIZOH_OPEN_WORKSPACE_EVENT_V1 = "RHIZOH_OPEN_WORKSPACE";
+export const RHIZOH_OPEN_CASTLE_EVENT_V1 = "RHIZOH_OPEN_CASTLE";
+export const RHIZOH_SHOW_INFO_EVENT_V1 = "RHIZOH_SHOW_INFO";
 
 export const SYMBYO_MAP_INTERACTION_V0 = Object.freeze({
   CLICK: "click",
@@ -114,6 +118,9 @@ export function resolveSymbyoMapIntentDecisionV0(intent = {}, surface = {}) {
   if (intent.intent === SYMBYO_MAP_INTENT_TYPE_V0.ENTER_NODE) {
     if (String(surface.nodeType || "") === "broadcast" || hasCapability("media")) {
       return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER, 0.86, refs);
+    }
+    if (String(surface.nodeType || "") === "tower" || hasCapability("3d")) {
+      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER, 0.84, refs);
     }
     if (String(surface.nodeType || "") === "castle") {
       return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.ENTER_CASTLE, 0.8, refs);
