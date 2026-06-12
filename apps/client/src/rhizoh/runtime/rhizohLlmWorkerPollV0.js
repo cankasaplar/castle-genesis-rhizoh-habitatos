@@ -48,6 +48,10 @@ export async function pollRhizohLlmWorkerTaskV0(input = {}) {
     }
 
     if (res.status === 200 && data && typeof data === "object") {
+      if (data.status === "processing") {
+        await sleepMs(pollIntervalMs);
+        continue;
+      }
       return Object.freeze({ ok: true, data, taskId, polled: true });
     }
 

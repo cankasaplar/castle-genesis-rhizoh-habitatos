@@ -32,7 +32,10 @@ import { queryRhizohLlm } from "./rhizohLlmGateway.js";
 import { rhizohGatewayTurn } from "./rhizohGatewayTurn.js";
 import {
   enqueueLlmWorkerTaskAsyncV0,
+  getLatestLlmWorkerTaskIdV0,
+  getLlmWorkerDebugSnapshotV0,
   getLlmWorkerTaskSnapshotV0,
+  initLlmWorkerAtBootV0,
   isLlmWorkerAsyncEnabledV0,
   isLlmWorkerEnabledV0,
   runLlmWorkerTaskV0
@@ -2952,17 +2955,35 @@ const httpServer = createServer(async (req, res) => {
   }
 
   if (req.method === "GET" && pathname.startsWith("/rhizoh/llm/task/")) {
-    const taskId = pathname.slice("/rhizoh/llm/task/".length).split("/")[0];
-    const snap = getLlmWorkerTaskSnapshotV0(taskId);
+    const rawTaskId = pathname.slice("/rhizoh/llm/task/".length).split("/")[0];
+    const taskId = String(rawTaskId || "").toLowerCase() === "last" ? getLatestLlmWorkerTaskIdV0() : rawTaskId;
+    const snap = taskId ? getLlmWorkerTaskSnapshotV0(taskId) : null;
     if (!snap) {
-      sendJson(res, 404, { ok: false, error: "llm_task_not_found", taskId, status: "missing" });
+      sendJson(res, 404, {
+        ok: false,
+        error: "llm_task_not_found",
+        taskId: rawTaskId,
+        status: "missing",
+        LATEST_TASK_DEBUG: getLlmWorkerDebugSnapshotV0()
+      });
       return;
     }
     if (snap.status === "processing") {
-      sendJson(res, 202, { ok: true, taskId: snap.taskId, status: "processing", createdAt: snap.createdAt });
+      sendJson(res, 202, {
+        ok: true,
+        taskId: snap.taskId,
+        status: "processing",
+        createdAt: snap.createdAt,
+        LATEST_TASK_DEBUG: getLlmWorkerDebugSnapshotV0()
+      });
       return;
     }
-    sendJson(res, snap.httpStatus || 200, snap.body || { ok: false, error: "llm_task_empty", taskId: snap.taskId });
+    sendJson(res, snap.httpStatus || 200, {
+      ...(snap.body || { ok: false, error: "llm_task_empty", taskId: snap.taskId }),
+      taskId: snap.taskId,
+      status: snap.status === "completed" ? "completed" : snap.status,
+      LATEST_TASK_DEBUG: getLlmWorkerDebugSnapshotV0()
+    });
     return;
   }
 
@@ -4081,6 +4102,14 @@ setInterval(() => {
     startGenesisContinuityInfraSampler(buildGenesisRuntimeSurfacePayloadLive, 2000);
     logProductionObservatorySurfaceGuardsV0();
     logGatewaySubstrateAuthorityGuardsV0();
+    if (isLlmWorkerEnabledV0()) {
+      try {
+        const workerBoot = initLlmWorkerAtBootV0();
+        console.log("[GATEWAY] llm worker boot:", workerBoot);
+      } catch (workerErr) {
+        console.error("[GATEWAY] llm worker boot failed:", workerErr);
+      }
+    }
     console.log(`[GATEWAY] ws/http://localhost:${PORT}`);
     console.log(
       `[GATEWAY] genesis continuity: GET ${rhizohRuntime.routes.genesisRuntime} | POST ${rhizohRuntime.routes.genesisIngress} | SSE ${rhizohRuntime.routes.genesisStream} | replay ${rhizohRuntime.routes.genesisReplay} | diff ${rhizohRuntime.routes.genesisReplayDiff} | equiv ${rhizohRuntime.routes.genesisReplayEquivalence} | analytics ${rhizohRuntime.routes.genesisReplayAnalytics} | evolution ${rhizohRuntime.routes.genesisReplayEvolution}`

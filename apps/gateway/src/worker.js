@@ -8,8 +8,11 @@ if (!parentPort) {
   throw new Error("llm_worker_requires_parent_port");
 }
 
+console.log("🔥 [GENESIS_BOOT] worker.js module loaded", { pid: process.pid });
+
 parentPort.on("message", async (task) => {
   const id = String(task?.id || "");
+  console.log("WORKER_RECEIVED_TASK:", { id, hasTurnInput: Boolean(task?.turnInput) });
   if (!id) return;
 
   try {
@@ -28,6 +31,7 @@ parentPort.on("message", async (task) => {
     parentPort.postMessage({
       id,
       ok: true,
+      status: "completed",
       result,
       traceId,
       turnLatencyMs,
@@ -38,6 +42,7 @@ parentPort.on("message", async (task) => {
     parentPort.postMessage({
       id,
       ok: false,
+      status: "failed",
       error: String(error?.code || error?.message || "llm_worker_failed"),
       detail: String(error?.message || error),
       code: error?.code || "",
