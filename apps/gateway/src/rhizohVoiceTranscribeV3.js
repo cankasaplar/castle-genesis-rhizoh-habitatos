@@ -8,6 +8,8 @@ export const RHIZOH_VOICE_TRANSCRIBE_ROUTE_V3 = "/rhizoh/voice/transcribe/v3";
 
 const GOOGLE_STT_URL = "https://speech.googleapis.com/v1/speech:recognize";
 const OPENAI_WHISPER_URL = "https://api.openai.com/v1/audio/transcriptions";
+const GEMINI_GENERATE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+export const GEMINI_LIVE_TRANSCRIBE_MODEL_DEFAULT = "gemini-live-2.5-flash-native-audio";
 
 /**
  * @param {{ text?: string, confidence?: number } | null | undefined} google
@@ -45,7 +47,14 @@ export function resolveVoiceTranscriptV3(google, whisper) {
 export function rhizohVoiceTranscribeEnvV3() {
   const openai = !!String(process.env.OPENAI_API_KEY || "").trim();
   const google = !!googleSpeechApiKey();
-  return Object.freeze({ openai, google, any: openai || google });
+  const geminiLive = !!geminiApiKey();
+  return Object.freeze({
+    openai,
+    google,
+    geminiLive,
+    geminiLiveModel: geminiLiveTranscriptModelV3(),
+    any: openai || google || geminiLive
+  });
 }
 
 function clamp01(n) {
@@ -54,7 +63,27 @@ function clamp01(n) {
 }
 
 function googleSpeechApiKey() {
-  return String(process.env.GOOGLE_SPEECH_API_KEY || process.env.GOOGLE_API_KEY || "").trim();
+  const speechKey = String(process.env.GOOGLE_SPEECH_API_KEY || process.env.GOOGLE_CLOUD_SPEECH_API_KEY || "").trim();
+  if (speechKey) return speechKey;
+  if (String(process.env.CASTLE_ALLOW_GOOGLE_API_KEY_FOR_SPEECH || "").trim() === "1") {
+    return String(process.env.GOOGLE_API_KEY || "").trim();
+  }
+  return "";
+}
+
+function geminiApiKey() {
+  return String(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "").trim();
+}
+
+export function geminiLiveTranscriptModelV3() {
+  return String(process.env.CASTLE_GEMINI_LIVE_TRANSCRIBE_MODEL || GEMINI_LIVE_TRANSCRIBE_MODEL_DEFAULT).trim();
+}
+
+function shouldUseGeminiLiveTranscribeV3(path, env) {
+  const provider = String(process.env.CASTLE_VOICE_TRANSCRIBE_PROVIDER || "").trim().toLowerCase();
+  if (path === "gemini_live" || path === "gemini") return true;
+  if (provider === "gemini_live" || provider === "gemini") return true;
+  return env.geminiLive && !env.openai && !env.google;
 }
 
 /**
@@ -108,6 +137,84 @@ export async function transcribeGoogleSttFastV3(audioBase64, config = {}) {
     };
   } catch (e) {
     return { ok: false, error: "google_stt_network", detail: String(e?.message || e) };
+  }
+}
+
+/**
+ * Buffered gateway use of the Gemini Live transcript model.
+ * The client still streams to the Rhizoh gateway; gateway keeps the transcript
+ * model explicit and falls back to stable ASR if the model/API rejects.
+ *
+ * @param {string} audioBase64
+ * @param {{ mimeType?: string, languageCode?: string }} [config]
+ */
+export async function transcribeGeminiLiveBufferedV3(audioBase64, config = {}) {
+  const key = geminiApiKey();
+  if (!key) return { ok: false, error: "gemini_key_missing" };
+  const content = String(audioBase64 || "").trim();
+  if (!content) return { ok: false, error: "audio_empty" };
+
+  const model = geminiLiveTranscriptModelV3();
+  const mimeType = String(config.mimeType || "audio/webm");
+  const languageCode = String(config.languageCode || "tr-TR");
+
+  try {
+    const res = await fetch(`${GEMINI_GENERATE_URL}/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        generationConfig: {
+          temperature: 0,
+          maxOutputTokens: 512,
+          responseMimeType: "text/plain"
+        },
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text:
+                  `Transcribe this user speech exactly in ${languageCode}. ` +
+                  "Return only the spoken transcript. Do not summarize or answer."
+              },
+              {
+                inlineData: {
+                  mimeType,
+                  data: content
+                }
+              }
+            ]
+          }
+        ]
+      })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: "gemini_live_transcribe_http_error",
+        status: res.status,
+        model,
+        detail: String(json?.error?.message || json?.error || res.status)
+      };
+    }
+    const text = String(
+      json?.candidates?.[0]?.content?.parts
+        ?.map((part) => part?.text || "")
+        .join(" ") || ""
+    ).trim();
+    if (!text) return { ok: false, error: "gemini_live_no_transcript", model };
+    return {
+      ok: true,
+      text,
+      confidence: 0.86,
+      source: "gemini_live",
+      strategy: "gemini_live_transcript",
+      model,
+      latencyHint: "live_model_buffered"
+    };
+  } catch (e) {
+    return { ok: false, error: "gemini_live_transcribe_network", model, detail: String(e?.message || e) };
   }
 }
 
@@ -217,13 +324,40 @@ export async function runRhizohVoiceTranscribeV3(body = {}) {
   let google = null;
   /** @type {{ text: string, confidence: number, source: string } | null} */
   let whisper = null;
+  /** @type {{ text: string, confidence: number, source: string, model?: string } | null} */
+  let gemini = null;
 
   const wantFast = path === "fast" || path === "both";
   const wantAccurate = path === "accurate" || path === "whisper" || path === "both";
+  const wantGeminiLive = shouldUseGeminiLiveTranscribeV3(path, env);
+  /** @type {Record<string, unknown> | null} */
+  let geminiError = null;
   /** @type {Record<string, unknown> | null} */
   let googleError = null;
   /** @type {Record<string, unknown> | null} */
   let whisperError = null;
+
+  if (wantGeminiLive && env.geminiLive) {
+    const live = await transcribeGeminiLiveBufferedV3(decoded.base64, { mimeType, languageCode });
+    if (live.ok && live.text) {
+      gemini = { text: live.text, confidence: live.confidence, source: "gemini_live", model: live.model };
+      return {
+        ok: true,
+        schema: RHIZOH_VOICE_TRANSCRIBE_V3_SCHEMA,
+        path: "gemini_live",
+        gemini,
+        model: live.model,
+        merged: Object.freeze({
+          text: live.text,
+          confidence: live.confidence,
+          source: "gemini_live",
+          strategy: "gemini_live_transcript"
+        })
+      };
+    } else if (!live.ok) {
+      geminiError = { error: live.error, status: live.status, detail: live.detail, model: live.model };
+    }
+  }
 
   if (wantFast && env.google) {
     const fast = await transcribeGoogleSttFastV3(decoded.base64, { encoding, sampleRateHertz, languageCode });
@@ -276,6 +410,7 @@ export async function runRhizohVoiceTranscribeV3(body = {}) {
       whisper,
       googleError,
       whisperError,
+      geminiError,
       env
     };
   }
@@ -286,6 +421,7 @@ export async function runRhizohVoiceTranscribeV3(body = {}) {
         ok: false,
         error: "whisper_unavailable",
         schema: RHIZOH_VOICE_TRANSCRIBE_V3_SCHEMA,
+        geminiError,
         env
       };
     }
@@ -308,6 +444,7 @@ export async function runRhizohVoiceTranscribeV3(body = {}) {
       whisper,
       googleError,
       whisperError,
+      geminiError,
       env
     };
   }

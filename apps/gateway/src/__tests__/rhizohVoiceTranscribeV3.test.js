@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { resolveVoiceTranscriptV3, runRhizohVoiceTranscribeV3 } from "../rhizohVoiceTranscribeV3.js";
+import {
+  GEMINI_LIVE_TRANSCRIBE_MODEL_DEFAULT,
+  geminiLiveTranscriptModelV3,
+  resolveVoiceTranscriptV3,
+  runRhizohVoiceTranscribeV3
+} from "../rhizohVoiceTranscribeV3.js";
 
 test("resolveVoiceTranscriptV3 — high-confidence google wins", () => {
   const merged = resolveVoiceTranscriptV3(
@@ -54,6 +59,58 @@ test("runRhizohVoiceTranscribeV3 — fast path uses whisper when only OpenAI key
     else delete process.env.OPENAI_API_KEY;
     if (prevGoogle !== undefined) process.env.GOOGLE_API_KEY = prevGoogle;
     if (prevSpeech !== undefined) process.env.GOOGLE_SPEECH_API_KEY = prevSpeech;
+  }
+});
+
+test("runRhizohVoiceTranscribeV3 — gemini_live path uses the live transcript model", async () => {
+  const prevGemini = process.env.GEMINI_API_KEY;
+  const prevGoogle = process.env.GOOGLE_API_KEY;
+  const prevSpeech = process.env.GOOGLE_SPEECH_API_KEY;
+  const prevProvider = process.env.CASTLE_VOICE_TRANSCRIBE_PROVIDER;
+  const prevModel = process.env.CASTLE_GEMINI_LIVE_TRANSCRIBE_MODEL;
+  const prevFetch = globalThis.fetch;
+  process.env.GEMINI_API_KEY = "test-gemini-key";
+  delete process.env.GOOGLE_API_KEY;
+  delete process.env.GOOGLE_SPEECH_API_KEY;
+  process.env.CASTLE_VOICE_TRANSCRIBE_PROVIDER = "gemini_live";
+  process.env.CASTLE_GEMINI_LIVE_TRANSCRIBE_MODEL = GEMINI_LIVE_TRANSCRIBE_MODEL_DEFAULT;
+  let calledUrl = "";
+  globalThis.fetch = async (url) => {
+    calledUrl = String(url);
+    return {
+      ok: true,
+      json: async () => ({
+        candidates: [{ content: { parts: [{ text: "Merhaba Rhizoh" }] } }]
+      })
+    };
+  };
+
+  try {
+    const b64 = Buffer.from("fake-audio").toString("base64");
+    const result = await runRhizohVoiceTranscribeV3({
+      path: "gemini_live",
+      audioBase64: b64,
+      mimeType: "audio/webm",
+      languageCode: "tr-TR"
+    });
+    assert.equal(geminiLiveTranscriptModelV3(), GEMINI_LIVE_TRANSCRIBE_MODEL_DEFAULT);
+    assert.equal(result.ok, true);
+    assert.equal(result.path, "gemini_live");
+    assert.equal(result.merged.source, "gemini_live");
+    assert.equal(result.merged.strategy, "gemini_live_transcript");
+    assert.ok(calledUrl.includes(encodeURIComponent(GEMINI_LIVE_TRANSCRIBE_MODEL_DEFAULT)));
+  } finally {
+    globalThis.fetch = prevFetch;
+    if (prevGemini !== undefined) process.env.GEMINI_API_KEY = prevGemini;
+    else delete process.env.GEMINI_API_KEY;
+    if (prevGoogle !== undefined) process.env.GOOGLE_API_KEY = prevGoogle;
+    else delete process.env.GOOGLE_API_KEY;
+    if (prevSpeech !== undefined) process.env.GOOGLE_SPEECH_API_KEY = prevSpeech;
+    else delete process.env.GOOGLE_SPEECH_API_KEY;
+    if (prevProvider !== undefined) process.env.CASTLE_VOICE_TRANSCRIBE_PROVIDER = prevProvider;
+    else delete process.env.CASTLE_VOICE_TRANSCRIBE_PROVIDER;
+    if (prevModel !== undefined) process.env.CASTLE_GEMINI_LIVE_TRANSCRIBE_MODEL = prevModel;
+    else delete process.env.CASTLE_GEMINI_LIVE_TRANSCRIBE_MODEL;
   }
 });
 

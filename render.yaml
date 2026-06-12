@@ -73,6 +73,11 @@ services:
         sync: false
       # Voice Engine v3 — POST /rhizoh/voice/transcribe/v3
       # Whisper (accurate): OPENAI_API_KEY yeterli. Google STT (fast, opsiyonel): aşağıdaki anahtarlardan biri.
+      # Gemini Live transcript: CASTLE_VOICE_TRANSCRIBE_PROVIDER=gemini_live + CASTLE_GEMINI_LIVE_TRANSCRIBE_MODEL.
+      - key: CASTLE_VOICE_TRANSCRIBE_PROVIDER
+        value: "gemini_live"
+      - key: CASTLE_GEMINI_LIVE_TRANSCRIBE_MODEL
+        value: "gemini-live-2.5-flash-native-audio"
       - key: GOOGLE_SPEECH_API_KEY
         sync: false
       - key: CASTLE_RL_RHIZOH_VOICE_TRANSCRIBE_PER_MIN
