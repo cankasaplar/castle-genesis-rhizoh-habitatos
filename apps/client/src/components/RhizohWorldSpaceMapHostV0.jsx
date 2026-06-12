@@ -1,6 +1,12 @@
 import React, { memo, useEffect, useRef, useState } from "react";
 import CesiumRealMapLayer from "../castleFlight/CesiumRealMapLayer.jsx";
 import { RHIZOH_SPATIAL_RENDER_MODE_V0 } from "../rhizoh/runtime/spatialBootGateV0.js";
+import {
+  routeSymbyoMapInteractionToOrchestratorV0,
+  SYMBYO_MAP_INTERACTION_V0
+} from "../rhizoh/runtime/symbyoMapIntentBridgeV0.js";
+
+export const RHIZOH_V11_MAP_INTENT_EVENT_V0 = "rhizoh:v11-map-intent-v0";
 
 const V11_CORE_MAP_NODES_V0 = Object.freeze([
   { id: "rhizoh", label: "RHIZOH", type: "core", lat: 41.045, lon: 29.006, color: "#22d3ee" },
@@ -71,6 +77,24 @@ function createLeafletNodeIconV0(L, node) {
   });
 }
 
+function emitV11MapIntentV0(node, interaction) {
+  const routed = routeSymbyoMapInteractionToOrchestratorV0({ node, interaction });
+  if (typeof window !== "undefined") {
+    try {
+      window.__rhizoh = window.__rhizoh || {};
+      window.__rhizoh.v11MapLastIntent = routed;
+      window.dispatchEvent(
+        new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, {
+          detail: routed
+        })
+      );
+    } catch {
+      /* noop */
+    }
+  }
+  return routed;
+}
+
 function V11CoreMapLayerV0() {
   const mapRef = useRef(null);
   const hostRef = useRef(null);
@@ -92,11 +116,13 @@ function V11CoreMapLayerV0() {
           maxZoom: 18
         }).addTo(map);
         for (const node of V11_CORE_MAP_NODES_V0) {
-          L.marker([node.lat, node.lon], {
+          const marker = L.marker([node.lat, node.lon], {
             icon: createLeafletNodeIconV0(L, node),
             keyboard: false,
             title: node.label
           }).addTo(map);
+          marker.on("click", () => emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK));
+          marker.on("mouseover", () => emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.HOVER));
         }
         mapRef.current = map;
         setLeafletReady(true);
@@ -144,10 +170,20 @@ function V11CoreMapLayerV0() {
         return (
           <div
             key={node.id}
-            className="absolute -translate-x-1/2 -translate-y-1/2"
+            role="button"
+            tabIndex={0}
+            className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer"
             style={{ ...pos, color: node.color }}
             data-rhizoh-v11-node={node.id}
             data-rhizoh-v11-node-type={node.type}
+            onClick={() => emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK)}
+            onMouseEnter={() => emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.HOVER)}
+            onKeyDown={(ev) => {
+              if (ev.key === "Enter" || ev.key === " ") {
+                ev.preventDefault();
+                emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK);
+              }
+            }}
           >
             <div
               className="h-3 w-3 rounded-full border bg-black shadow-[0_0_18px_currentColor]"
