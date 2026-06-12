@@ -31,6 +31,13 @@ import { runRhizohBrain } from "./rhizohBrain.js";
 import { queryRhizohLlm } from "./rhizohLlmGateway.js";
 import { rhizohGatewayTurn } from "./rhizohGatewayTurn.js";
 import {
+  enqueueLlmWorkerTaskAsyncV0,
+  getLlmWorkerTaskSnapshotV0,
+  isLlmWorkerAsyncEnabledV0,
+  isLlmWorkerEnabledV0,
+  runLlmWorkerTaskV0
+} from "./llmWorkerRuntime.js";
+import {
   RHIZOH_VOICE_TRANSCRIBE_ROUTE_V3,
   runRhizohVoiceTranscribeV3,
   rhizohVoiceTranscribeEnvV3
@@ -2944,6 +2951,21 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === "GET" && pathname.startsWith("/rhizoh/llm/task/")) {
+    const taskId = pathname.slice("/rhizoh/llm/task/".length).split("/")[0];
+    const snap = getLlmWorkerTaskSnapshotV0(taskId);
+    if (!snap) {
+      sendJson(res, 404, { ok: false, error: "llm_task_not_found", taskId, status: "missing" });
+      return;
+    }
+    if (snap.status === "processing") {
+      sendJson(res, 202, { ok: true, taskId: snap.taskId, status: "processing", createdAt: snap.createdAt });
+      return;
+    }
+    sendJson(res, snap.httpStatus || 200, snap.body || { ok: false, error: "llm_task_empty", taskId: snap.taskId });
+    return;
+  }
+
   if (req.method === "POST" && req.url === rhizohRuntime.routes.rhizohLlm) {
     let payload = {};
     let langProp = parseRhizohLanguagePropagationV1(req, {});
@@ -3056,7 +3078,7 @@ const httpServer = createServer(async (req, res) => {
         connApiKey = conn?.apiKey || "";
       }
 
-      const { result, traceId, turnLatencyMs, spinePhases, sampledTrace } = await rhizohGatewayTurn({
+      const turnInput = {
         safePayload,
         auth,
         keyMode,
@@ -3064,7 +3086,36 @@ const httpServer = createServer(async (req, res) => {
         resolvedProvider,
         resolvedModel,
         connApiKey
-      });
+      };
+      const turnMeta = {
+        connectionId: conn?.id || null,
+        llmKeySourceUsed: keyMode,
+        langEcho: buildRhizohLanguagePropagationEchoV1(langProp)
+      };
+
+      if (isLlmWorkerEnabledV0() && isLlmWorkerAsyncEnabledV0()) {
+        const taskId = enqueueLlmWorkerTaskAsyncV0(turnInput, turnMeta);
+        logRhizohHealth("llm_worker_accept", {
+          route: rhizohRuntime.routes.rhizohLlm,
+          taskId,
+          traceId: String(payload?.traceId || taskId),
+          keyMode,
+          async: true
+        });
+        sendJson(res, 202, {
+          ok: true,
+          taskId,
+          status: "processing",
+          traceId: String(payload?.traceId || taskId),
+          pollPath: `/rhizoh/llm/task/${taskId}`,
+          ...turnMeta.langEcho
+        });
+        return;
+      }
+
+      const { result, traceId, turnLatencyMs, spinePhases, sampledTrace } = isLlmWorkerEnabledV0()
+        ? await runLlmWorkerTaskV0(turnInput, turnMeta)
+        : await rhizohGatewayTurn(turnInput);
       logRhizohHealth("llm_response", {
         route: rhizohRuntime.routes.rhizohLlm,
         traceId,

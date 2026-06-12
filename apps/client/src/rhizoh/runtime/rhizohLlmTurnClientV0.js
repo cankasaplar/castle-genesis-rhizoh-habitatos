@@ -19,6 +19,7 @@ import {
 } from "./rhizohLanguagePropagationV0.js";
 import { trimRhizohLlmRequestBodyV0 } from "./rhizohLlmPayloadTrimV0.js";
 import { tryResolveMemoryConsentTurnV1 } from "./rhizohMemoryConsentTurnV1.js";
+import { pollRhizohLlmWorkerTaskV0 } from "./rhizohLlmWorkerPollV0.js";
 
 export const RHIZOH_LLM_TURN_CLIENT_SCHEMA_V0 = "castle.rhizoh.llm_turn_client.v0";
 
@@ -149,6 +150,62 @@ export async function postRhizohLlmTurnV0(input = {}) {
           ? AbortSignal.timeout(55_000)
           : undefined
     });
+
+    if (res.status === 202) {
+      let accepted = null;
+      try {
+        accepted = await res.json();
+      } catch {
+        accepted = null;
+      }
+      const taskId = String(accepted?.taskId || "").trim();
+      if (!taskId) {
+        return Object.freeze({
+          ok: false,
+          error: "rhizoh_llm_async_missing_task_id",
+          traceId: input.traceId
+        });
+      }
+      const polled = await pollRhizohLlmWorkerTaskV0({
+        endpoint,
+        taskId,
+        pollPath: accepted?.pollPath,
+        headers,
+        fetchImpl: fetchFn,
+        maxWaitMs: 120_000
+      });
+      if (!polled.ok) {
+        return Object.freeze({
+          ok: false,
+          error: polled.error || "rhizoh_llm_async_poll_failed",
+          taskId,
+          gatewayError: polled.gatewayError,
+          gatewayDetail: polled.gatewayDetail,
+          traceId: input.traceId
+        });
+      }
+      const data = polled.data;
+      const normalized = normalizeRhizohLlmGatewayResponseV0(data);
+      const reply = resolveRhizohReplyForDisplayV0(normalized);
+      if (prep?.turn?.awaitSoftIntelligence) {
+        void prep.turn.awaitSoftIntelligence();
+      }
+      return Object.freeze({
+        ok: true,
+        schema: RHIZOH_LLM_TURN_CLIENT_SCHEMA_V0,
+        reply,
+        normalized,
+        directive: normalized.directive,
+        traceId: String(normalized.traceId || input.traceId || taskId),
+        replyParsingConfidence: normalized.replyParsingConfidence,
+        replyFormatDriftScore: normalized.replyFormatDriftScore,
+        extractPath: normalized.extractPath,
+        deliveryKind: normalized.deliveryKind,
+        raw: data,
+        prep,
+        asyncTaskId: taskId
+      });
+    }
 
     if (!res.ok) {
       let errBody = null;
