@@ -1,0 +1,67 @@
+# Manual deploy: Firebase Cloud Functions (gatewayProxyV0 + optional all).
+# Secrets: FIREBASE_SERVICE_ACCOUNT_CASTLE_GENESIS, VITE_GATEWAY_TOKEN (Render CASTLE_GATEWAY_TOKEN ile aynı)
+# Optional: VITE_LIVE_GATEWAY_BASE for CASTLE_GATEWAY_UPSTREAM
+
+name: Deploy Firebase Functions
+
+on:
+  workflow_dispatch:
+    inputs:
+      function_target:
+        description: "Which functions to deploy"
+        required: true
+        default: gatewayProxyV0
+        type: choice
+        options:
+          - gatewayProxyV0
+          - all
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install root
+        run: npm ci
+
+      - name: Install functions dependencies
+        working-directory: functions
+        run: npm ci
+
+      - name: Write functions/.env for Gen2 runtime
+        working-directory: functions
+        env:
+          GW_TOKEN: ${{ secrets.VITE_GATEWAY_TOKEN }}
+          GW_UPSTREAM: ${{ secrets.VITE_LIVE_GATEWAY_BASE }}
+        run: |
+          UP="${GW_UPSTREAM:-https://castle-genesis-rhizoh-habitatos.onrender.com}"
+          cat > .env <<EOF
+          CASTLE_GATEWAY_TOKEN=${GW_TOKEN}
+          CASTLE_GATEWAY_UPSTREAM=${UP}
+          EOF
+
+      - name: Write Firebase service account
+        run: node -e "require('fs').writeFileSync('firebase-ci.json', process.env.GOOGLE_CREDENTIALS)"
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CASTLE_GENESIS }}
+
+      - name: Deploy functions
+        run: |
+          TARGET="${{ inputs.function_target }}"
+          if [ "$TARGET" = "all" ]; then
+            npx firebase-tools deploy --only functions --project castle-genesis --non-interactive
+          else
+            npx firebase-tools deploy --only "functions:${TARGET}" --project castle-genesis --non-interactive
+          fi
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-ci.json
