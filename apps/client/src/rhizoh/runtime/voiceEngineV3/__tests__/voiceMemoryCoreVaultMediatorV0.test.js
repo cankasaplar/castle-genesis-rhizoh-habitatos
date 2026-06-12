@@ -36,7 +36,14 @@ describe("voiceMemoryCoreVaultMediatorV0", () => {
 
     expect(resolved.ok).toBe(true);
     expect(resolved.packet.packetRef).toMatch(/^ptr_/);
-    expect(resolved.packet.decision).toBeTruthy();
+    expect(resolved.packet.decision).toMatchObject({
+      schema: "rhizoh.voice_normalized_decision.v0",
+      decision: expect.stringMatching(/^VOICE_/),
+      confidence: 0.91
+    });
+    expect(resolved.packet.decision.refs.every((ref) => String(ref).startsWith("ptr_"))).toBe(true);
+    expect(resolved.packet.decision.reason).toBeUndefined();
+    expect(resolved.packet.decision.fastIntent).toBeUndefined();
     expect(resolved.packet.provenanceRef).toMatch(/^ptr_/);
     expect(JSON.stringify(resolved.packet)).not.toContain("Rhizoh beni duyuyor musun");
 
