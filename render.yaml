@@ -46,10 +46,11 @@ services:
       - key: CASTLE_ALLOW_DEV_HTTP_UID
         value: "false"
       # Opsiyonel: boot’ta freeze marker log — CASTLE_GENESIS_OBSERVATORY_LIVE_V01=1
+      # Rhizoh LLM — production uses Gemini (GOOGLE_API_KEY or GEMINI_API_KEY in Render dashboard).
       - key: CASTLE_LLM_PROVIDER
-        value: openai
+        value: gemini
       - key: CASTLE_LLM_MODEL
-        value: gpt-4o-mini
+        value: gemini-2.0-flash
       # MVP freeze: spine telemetry / WS patch yayını kapalı (boot + gürültü riski)
       - key: CASTLE_RHIZOH_WS_EMIT_PATCH
         value: "0"
