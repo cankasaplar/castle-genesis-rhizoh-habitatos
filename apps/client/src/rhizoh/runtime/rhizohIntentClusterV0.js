@@ -4,12 +4,19 @@
  * RESEARCH-ONLY behavior ecology — not UI transitions.
  */
 
-import { RHIZOH_FEDERATION_NODE_V0 } from "./rhizohDomainGraphV0.js";
+import {
+  RHIZOH_INTENT_CLUSTER_MAX_SIZE_V0,
+  selectDominantClusterNodeV0
+} from "./rhizohClusterEcologyLockV0.js";
+import {
+  dispatchRhizohKernelTraceEventV0,
+  publishRhizohKernelTraceGlobalV0
+} from "./rhizohKernelTraceMembraneV0.js";
 
 export const RHIZOH_INTENT_CLUSTER_SCHEMA_V0 = "rhizoh.intent_cluster.v0";
 export const RHIZOH_INTENT_CLUSTER_EVENT_V0 = "rhizoh:cluster-civilization-v0";
 
-const MAX_CLUSTER_INTENTS_V0 = 64;
+const MAX_CLUSTER_INTENTS_V0 = RHIZOH_INTENT_CLUSTER_MAX_SIZE_V0;
 
 /** @type {{ schema: string, intents: object[], ecology: object, updatedAtMs: number } | null} */
 let clusterSnapshotV0 = null;
@@ -42,12 +49,8 @@ function emitClusterV0() {
     }
   }
   if (typeof window !== "undefined") {
-    window.__RHIZOH_INTENT_CLUSTER__ = snap;
-    try {
-      window.dispatchEvent(new CustomEvent(RHIZOH_INTENT_CLUSTER_EVENT_V0, { detail: snap }));
-    } catch {
-      /* noop */
-    }
+    publishRhizohKernelTraceGlobalV0("__RHIZOH_INTENT_CLUSTER__", snap);
+    dispatchRhizohKernelTraceEventV0(RHIZOH_INTENT_CLUSTER_EVENT_V0, snap);
   }
 }
 
@@ -87,14 +90,7 @@ export function evolveClusterEcologyFromIntentsV0(intents) {
     if (row.perceptionSensitive) perceptionExposure += 1;
   }
 
-  let dominantNode = null;
-  let max = 0;
-  for (const [node, count] of Object.entries(nodeWeights)) {
-    if (count > max) {
-      max = count;
-      dominantNode = node;
-    }
-  }
+  let dominantNode = selectDominantClusterNodeV0(nodeWeights);
 
   return Object.freeze({
     dominantNode,
