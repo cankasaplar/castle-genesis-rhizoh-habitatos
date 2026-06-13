@@ -28,6 +28,18 @@ const SPATIAL_LAYER_OPS_V0 = new Set([
   "street_view"
 ]);
 
+/** World lifecycle intents — gate / studio only, never Cesium camera ops. */
+const WORLD_LIFECYCLE_ACTIONS_V0 = new Set([
+  "create_castle",
+  "exit_castle",
+  "freeze",
+  "resume_world",
+  "world_state",
+  "log_spatial",
+  "ghosts_show",
+  "ghosts_hide"
+]);
+
 const FLY_COALESCE_MS = 500;
 const COALESCE_OPS = new Set(["fly_to", "calibration_root"]);
 const COMMAND_DEDUPE_MS = 650;
@@ -150,6 +162,14 @@ function onRhizohMapCommand(ev) {
 
   const action = String(detail.action || detail.canonical || "").trim();
   const canonical = String(detail.canonical || action).trim();
+
+  if (
+    WORLD_LIFECYCLE_ACTIONS_V0.has(action) ||
+    WORLD_LIFECYCLE_ACTIONS_V0.has(canonical) ||
+    canonical === "castle_create"
+  ) {
+    return;
+  }
 
   let op = null;
   if (action === "zoom_in" || canonical === "map_zoom_in") op = "zoom_in";

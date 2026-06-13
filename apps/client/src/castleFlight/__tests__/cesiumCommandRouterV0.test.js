@@ -103,6 +103,18 @@ describe("cesiumCommandRouterV0", () => {
     expect(zoomByFactor).toHaveBeenCalledOnce();
   });
 
+  it("dispatchLocalCommandHandlerV0 castle_create does not reach cesium executor", () => {
+    const zoomByFactor = vi.fn(() => ({ ok: true, height: 300 }));
+    const flyToBootstrapViewport = vi.fn();
+    registerCesiumExecutorApiV0({ ready: true, zoomByFactor, flyToBootstrapViewport });
+    installCesiumCommandBridgeV0();
+
+    dispatchLocalCommandHandlerV0("castle_create", { traceId: "TRC-CASTLE" });
+
+    expect(zoomByFactor).not.toHaveBeenCalled();
+    expect(flyToBootstrapViewport).not.toHaveBeenCalled();
+  });
+
   it("maps map_open to bootstrap viewport", () => {
     const zoomByFactor = vi.fn(() => ({ ok: true, height: 300 }));
     const flyToBootstrapViewport = vi.fn();

@@ -69,12 +69,12 @@ export function useRhizohConversationDockV0(opts = {}) {
         traceId: o?.traceId,
         source: "conversation_dock_voice"
       });
-      if (localTurn?.ok && localTurn.reply) {
-        setLastReply(localTurn.reply);
+      if (localTurn?.ok && localTurn.llmBypass) {
+        setLastReply(localTurn.reply || "");
         setFieldState("speaking");
         const glue = buildConversationContinuityGlueV0({ llmWaitMs: Date.now() - t0 });
         await handoffHotSpeechToLlmReplyV0(glue, () => {
-          void speakRhizohReplyChunkedV0(localTurn.reply, { smoothAfterAck: false, glue });
+          void speakRhizohReplyChunkedV0(localTurn.reply || "", { smoothAfterAck: false, glue });
         });
         setFieldState("idle");
         userTurnRef.current += 1;
@@ -155,12 +155,12 @@ export function useRhizohConversationDockV0(opts = {}) {
       const localTurn = tryResolveLocalConversationTurnV0(msg, {
         source: "conversation_dock_text"
       });
-      if (localTurn?.ok && localTurn.reply) {
-        setLastReply(localTurn.reply);
+      if (localTurn?.ok && localTurn.llmBypass) {
+        setLastReply(localTurn.reply || "");
         setDraft("");
         setFieldState("speaking");
         const glue = buildConversationContinuityGlueV0({ llmWaitMs: Date.now() - t0 });
-        await speakRhizohReplyChunkedV0(localTurn.reply, { smoothAfterAck: true, glue });
+        await speakRhizohReplyChunkedV0(localTurn.reply || "", { smoothAfterAck: true, glue });
         userTurnRef.current += 1;
         return;
       }

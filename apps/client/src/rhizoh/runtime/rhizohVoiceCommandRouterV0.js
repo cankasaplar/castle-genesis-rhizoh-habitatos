@@ -64,6 +64,10 @@ const LOCAL_COMMAND_REPLY_V0 = Object.freeze({
   mode_ghost_enter: Object.freeze({ en: "Ghost mode on.", tr: "Hayalet modu açık." }),
   mode_ghost_exit: Object.freeze({ en: "Ghost mode off.", tr: "Hayalet modu kapalı." }),
   debug_language_runtime: Object.freeze({ en: "Language runtime logged.", tr: "Dil runtime loglandı." }),
+  castle_create: Object.freeze({
+    en: "Opening castle creation — choose a place, use GPS, or start with an abstract node.",
+    tr: "Kale oluşturma kapısını açıyorum — konum seçebilir, GPS kullanabilir veya soyut düğümle başlayabilirsin."
+  }),
   _default: Object.freeze({ en: "Done.", tr: "Tamam." })
 });
 
@@ -78,6 +82,7 @@ export function normalizeVoiceCommandTokenV0(s) {
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
     .replace(/[’']/g, "'")
+    .replace(/[?!.,;:]+$/g, "")
     .replace(/\s+/g, " ");
 }
 

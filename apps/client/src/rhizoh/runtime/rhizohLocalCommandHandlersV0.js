@@ -55,9 +55,6 @@ export function openCastleInitGateFromLocalCommandV0(source = "local_command") {
   void import("./rhizohWorldDrawerDomainV0.js")
     .then((m) => m.writeRhizohWorldDrawerDomainV0(m.RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE))
     .catch(() => {});
-  void import("./rhizohWorldMapToolV0.js")
-    .then((m) => m.writeRhizohWorldMapToolV0("anchor_map"))
-    .catch(() => {});
   try {
     window.dispatchEvent(
       new CustomEvent("castle:open-init-gate-v0", {
@@ -71,10 +68,6 @@ export function openCastleInitGateFromLocalCommandV0(source = "local_command") {
 
 function prepareMapCommandSideEffectV0(canonical, action) {
   if (typeof window === "undefined") return;
-  if (canonical === "castle_create" || action === "create_castle") {
-    openCastleInitGateFromLocalCommandV0("local_command");
-    return;
-  }
   if (canonical === "map_open" || action === "open") {
     navigateLocalCommandRouteV0("/world/space");
     void import("./rhizohWorldDrawerDomainV0.js")
@@ -212,6 +205,34 @@ export function mapSpatialCommandHandlerV0(canonical, row) {
 }
 
 /**
+ * Castle lifecycle — gate UX only; never rhizoh:map-command / Cesium spatial ops.
+ * @param {string} canonical
+ * @param {ReturnType<typeof readLocalCommandRowV0>} row
+ */
+export function castleLifecycleCommandHandlerV0(canonical, row) {
+  openCastleInitGateFromLocalCommandV0("local_command");
+  const payload = Object.freeze({
+    canonical,
+    action: row.action,
+    layer: row.layer,
+    handler: "castleLifecycleCommandHandlerV0",
+    atMs: Date.now(),
+    gateOnly: true
+  });
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(RHIZOH_VOICE_COMMAND_EVENT_V0, {
+        detail: Object.freeze({ ...payload, aggregate: true })
+      })
+    );
+    window.__rhizoh = window.__rhizoh || {};
+    window.__rhizoh.lastVoiceCommand = payload;
+  }
+  logVoiceInfoV0("CASTLE_COMMAND_LOCAL", payload);
+  return payload;
+}
+
+/**
  * @param {string} canonical
  * @param {ReturnType<typeof readLocalCommandRowV0>} row
  */
@@ -257,6 +278,7 @@ const HANDLER_DISPATCH_V0 = Object.freeze({
   mediaCommandHandlerV0,
   audioVoiceCommandHandlerV0,
   mapSpatialCommandHandlerV0,
+  castleLifecycleCommandHandlerV0,
   cameraVisionCommandHandlerV0,
   systemCastleCommandHandlerV0
 });
