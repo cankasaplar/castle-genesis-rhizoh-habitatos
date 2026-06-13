@@ -7,6 +7,10 @@ import {
   WORLD_SPACE_MEDIA_ARCHIVE_EVENT_V0
 } from "../rhizoh/runtime/worldSpaceMediaEngineV0.js";
 import {
+  MEDIA_CIVILIZATION_ACTION_V0,
+  runMediaCivilizationPipelineV0
+} from "../rhizoh/runtime/mediaCivilizationBridgeV0.js";
+import {
   listWorldSpaceMediaChannelsV0,
   resolveInitialWorldSpaceMediaChannelIdV0,
   resolveWorldSpaceMediaChannelForMapNodeV0,
@@ -53,6 +57,11 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
   const [recording, setRecording] = useState(false);
   const [captureError, setCaptureError] = useState("");
   const [archiveStatus, setArchiveStatus] = useState("");
+  const [mediaNote, setMediaNote] = useState("");
+  const [mediaTag, setMediaTag] = useState("");
+  const [bookmarkLabel, setBookmarkLabel] = useState("");
+  const [bookmarkSec, setBookmarkSec] = useState("");
+  const [civilizationStatus, setCivilizationStatus] = useState("");
   const captureRef = useRef(null);
   const previewRef = useRef(null);
   const castleBroadcast = useMemo(() => isCastleMediaSourceV0(detail?.source), [detail?.source]);
@@ -163,6 +172,39 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     const ent = archiveEntity;
     const isMarkdown = String(ent.format || "").includes("markdown");
     const isHtml = String(ent.format || "").includes("html");
+    const onMediaAnnotate = (action) => {
+      const out =
+        action === MEDIA_CIVILIZATION_ACTION_V0.NOTE
+          ? runMediaCivilizationPipelineV0({
+              action,
+              entityId: ent.id,
+              noteText: mediaNote,
+              locale: uiLocale
+            })
+          : action === MEDIA_CIVILIZATION_ACTION_V0.TAG
+            ? runMediaCivilizationPipelineV0({
+                action,
+                entityId: ent.id,
+                tag: mediaTag,
+                locale: uiLocale
+              })
+            : runMediaCivilizationPipelineV0({
+                action: MEDIA_CIVILIZATION_ACTION_V0.BOOKMARK,
+                entityId: ent.id,
+                bookmark: {
+                  label: bookmarkLabel || (tr ? "Yer imi" : "Bookmark"),
+                  positionSec: bookmarkSec ? Number(bookmarkSec) : null
+                },
+                locale: uiLocale
+              });
+      if (out?.ok === false) {
+        setCivilizationStatus(String(out.reason || "failed"));
+        return;
+      }
+      setCivilizationStatus(tr ? "Arşiv → Hafıza → Bilgi → Kronik" : "Archive → Memory → Knowledge → Chronicle");
+      if (action === MEDIA_CIVILIZATION_ACTION_V0.NOTE) setMediaNote("");
+      if (action === MEDIA_CIVILIZATION_ACTION_V0.TAG) setMediaTag("");
+    };
     return (
       <div
         className="pointer-events-auto fixed inset-0 z-[315] flex flex-col bg-[#050505]/96 backdrop-blur-3xl"
@@ -183,6 +225,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
               <X size={14} className="inline" /> {tr ? "Kapat" : "Close"}
             </button>
           </div>
+          <div className="flex min-h-0 flex-1 flex-col gap-3 p-4 sm:flex-row sm:p-6">
           <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/60 p-4">
             {ent.mediaUrl ? (
               <iframe title={ent.title} src={ent.mediaUrl} className="h-full min-h-[320px] w-full rounded-lg" />
@@ -199,6 +242,73 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
               </pre>
             )}
           </div>
+          <aside className="flex w-full shrink-0 flex-col gap-2 rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-3 sm:w-56">
+            <p className="text-[9px] font-black uppercase tracking-wider text-cyan-200/80">
+              {tr ? "Medya Medeniyeti" : "Media Civilization"}
+            </p>
+            <p className="text-[9px] text-white/45">
+              {tr ? "Not · Etiket · Yer imi — LLM özeti yok." : "Notes · Tags · Bookmarks — no auto-summary."}
+            </p>
+            {(ent.tags || []).length ? (
+              <p className="text-[9px] text-amber-200/80">#{(ent.tags || []).join(" #")}</p>
+            ) : null}
+            <textarea
+              value={mediaNote}
+              onChange={(e) => setMediaNote(e.target.value)}
+              rows={3}
+              placeholder={tr ? "Kullanıcı notu" : "User note"}
+              className="resize-none rounded border border-white/10 bg-black/40 px-2 py-1 text-[10px] text-white"
+            />
+            <button
+              type="button"
+              onClick={() => onMediaAnnotate(MEDIA_CIVILIZATION_ACTION_V0.NOTE)}
+              className="rounded border border-cyan-400/40 px-2 py-1 text-[9px] text-cyan-100"
+            >
+              {tr ? "Notu kaydet" : "Save note"}
+            </button>
+            <div className="flex gap-2">
+              <input
+                value={mediaTag}
+                onChange={(e) => setMediaTag(e.target.value)}
+                placeholder={tr ? "etiket" : "tag"}
+                className="flex-1 rounded border border-white/10 bg-black/40 px-2 py-1 text-[10px] text-white"
+              />
+              <button
+                type="button"
+                onClick={() => onMediaAnnotate(MEDIA_CIVILIZATION_ACTION_V0.TAG)}
+                className="rounded border border-amber-400/40 px-2 py-1 text-[9px] text-amber-100"
+              >
+                #
+              </button>
+            </div>
+            <input
+              value={bookmarkLabel}
+              onChange={(e) => setBookmarkLabel(e.target.value)}
+              placeholder={tr ? "Yer imi etiketi" : "Bookmark label"}
+              className="rounded border border-white/10 bg-black/40 px-2 py-1 text-[10px] text-white"
+            />
+            <input
+              value={bookmarkSec}
+              onChange={(e) => setBookmarkSec(e.target.value)}
+              placeholder={tr ? "Saniye (opsiyonel)" : "Seconds (optional)"}
+              className="rounded border border-white/10 bg-black/40 px-2 py-1 text-[10px] text-white"
+            />
+            <button
+              type="button"
+              onClick={() => onMediaAnnotate(MEDIA_CIVILIZATION_ACTION_V0.BOOKMARK)}
+              className="rounded border border-emerald-400/40 px-2 py-1 text-[9px] text-emerald-100"
+            >
+              {tr ? "Yer imi" : "Bookmark"}
+            </button>
+            {(ent.bookmarks || []).slice(0, 3).map((bm) => (
+              <p key={bm.id} className="text-[9px] text-white/50">
+                {bm.label}
+                {bm.positionSec != null ? ` · ${bm.positionSec}s` : ""}
+              </p>
+            ))}
+            {civilizationStatus ? <p className="text-[9px] text-emerald-300/85">{civilizationStatus}</p> : null}
+          </aside>
+        </div>
         </div>
       </div>
     );
@@ -280,8 +390,33 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                 {archiveRows.length ? (
                   <ul className="max-h-20 space-y-1 overflow-y-auto text-[9px] text-white/45">
                     {archiveRows.slice(0, 5).map((row) => (
-                      <li key={row.id} className="truncate">
-                        {row.title} · {(row.byteLength / 1024).toFixed(1)} KB
+                      <li key={row.id} className="flex items-center justify-between gap-1 truncate">
+                        <span className="truncate">
+                          {row.title} · {(row.byteLength / 1024).toFixed(1)} KB
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const out = runMediaCivilizationPipelineV0({
+                              action: MEDIA_CIVILIZATION_ACTION_V0.PROMOTE_RECORDING,
+                              mediaArchiveId: row.id,
+                              title: row.title,
+                              channelId: activeChannel.id,
+                              source: "media_tube",
+                              locale: uiLocale
+                            });
+                            setCivilizationStatus(
+                              out?.ok === false
+                                ? String(out.reason || "promote_failed")
+                                : tr
+                                  ? "Kale arşivine taşındı"
+                                  : "Promoted to castle archive"
+                            );
+                          }}
+                          className="shrink-0 rounded border border-amber-400/35 px-1 text-[8px] text-amber-100"
+                        >
+                          {tr ? "Arşiv" : "Vault"}
+                        </button>
                       </li>
                     ))}
                   </ul>

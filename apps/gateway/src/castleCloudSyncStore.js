@@ -9,7 +9,7 @@ import path from "node:path";
 const DATA_DIR = process.env.CASTLE_CLOUD_SYNC_DIR || path.join(process.cwd(), "data", "cloud-sync");
 const FILE_NAME = "castle_cloud_sync_v0.json";
 
-/** @type {Record<string, { entities: object[], events: object[], ghostMemory: object[], codex: object[], castleIdentity: object | null, chronicle: object[], knowledge: object[], openingBook: object[], chessCivilization: object | null, updatedAt: string }>} */
+/** @type {Record<string, { entities: object[], events: object[], ghostMemory: object[], codex: object[], castleIdentity: object | null, chronicle: object[], knowledge: object[], openingBook: object[], chessCivilization: object | null, mediaCivilization: object | null, updatedAt: string }>} */
 let cache = null;
 
 async function ensureLoaded() {
@@ -44,6 +44,7 @@ function bucketForUid(uid) {
       knowledge: [],
       openingBook: [],
       chessCivilization: null,
+      mediaCivilization: null,
       updatedAt: new Date().toISOString()
     };
   }
@@ -109,13 +110,14 @@ export async function getCloudSyncSnapshotV0(uid) {
     knowledge: Object.freeze((bucket.knowledge || []).map((e) => Object.freeze({ ...e }))),
     openingBook: Object.freeze((bucket.openingBook || []).map((e) => Object.freeze({ ...e }))),
     chessCivilization: bucket.chessCivilization ? Object.freeze({ ...bucket.chessCivilization }) : null,
+    mediaCivilization: bucket.mediaCivilization ? Object.freeze({ ...bucket.mediaCivilization }) : null,
     updatedAt: bucket.updatedAt
   });
 }
 
 /**
  * @param {string} uid
- * @param {{ entities?: object[], ghostMemory?: object[], codex?: object[], events?: object[], castleIdentity?: object, chronicle?: object[], knowledge?: object[], openingBook?: object[], chessCivilization?: object }} patch
+ * @param {{ entities?: object[], ghostMemory?: object[], codex?: object[], events?: object[], castleIdentity?: object, chronicle?: object[], knowledge?: object[], openingBook?: object[], chessCivilization?: object, mediaCivilization?: object }} patch
  */
 export async function mergeCloudSyncSnapshotV0(uid, patch = {}) {
   await ensureLoaded();
@@ -221,6 +223,30 @@ export async function mergeCloudSyncSnapshotV0(uid, patch = {}) {
       openings: mergeOpeningBookRowsV0(local.openings, remote.openings),
       rivals: mergeRivalRowsV0(local.rivals, remote.rivals),
       matches: mergeMatchRowsV0(local.matches, remote.matches),
+      syncedAt: now
+    };
+  }
+
+  if (patch.mediaCivilization && typeof patch.mediaCivilization === "object") {
+    const local = bucket.mediaCivilization || {};
+    const remote = patch.mediaCivilization;
+    const sourceMap = new Map((local.sources || []).map((s) => [s.key, s]));
+    for (const row of remote.sources || []) {
+      const prev = sourceMap.get(row.key);
+      sourceMap.set(row.key, {
+        ...prev,
+        ...row,
+        count: Math.max(Number(prev?.count) || 0, Number(row.count) || 0)
+      });
+    }
+    bucket.mediaCivilization = {
+      ...local,
+      ...remote,
+      itemsArchived: Math.max(Number(local.itemsArchived) || 0, Number(remote.itemsArchived) || 0),
+      notesWritten: Math.max(Number(local.notesWritten) || 0, Number(remote.notesWritten) || 0),
+      tagsApplied: Math.max(Number(local.tagsApplied) || 0, Number(remote.tagsApplied) || 0),
+      bookmarks: Math.max(Number(local.bookmarks) || 0, Number(remote.bookmarks) || 0),
+      sources: [...sourceMap.values()],
       syncedAt: now
     };
   }

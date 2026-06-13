@@ -124,4 +124,29 @@ describe("castleCloudSyncStore", () => {
     assert.equal(snap.chessCivilization.elo, 1220);
     assert.equal(snap.chessCivilization.rivals[0].matches, 2);
   });
+
+  it("merges media civilization counters", async () => {
+    await resetCloudSyncStoreForTestV0();
+    const uid = "media-civ-user";
+    await mergeCloudSyncSnapshotV0(uid, {
+      mediaCivilization: {
+        castleId: "castle_m",
+        itemsArchived: 3,
+        notesWritten: 2,
+        bookmarks: 1
+      }
+    });
+    await mergeCloudSyncSnapshotV0(uid, {
+      mediaCivilization: {
+        castleId: "castle_m",
+        itemsArchived: 1,
+        notesWritten: 5,
+        bookmarks: 0
+      }
+    });
+    const snap = await getCloudSyncSnapshotV0(uid);
+    assert.equal(snap.mediaCivilization.itemsArchived, 3);
+    assert.equal(snap.mediaCivilization.notesWritten, 5);
+    assert.equal(snap.mediaCivilization.bookmarks, 1);
+  });
 });

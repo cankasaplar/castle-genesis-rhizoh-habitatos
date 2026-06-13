@@ -1,12 +1,16 @@
 import React, { memo, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
   CASTLE_ARCHIVE_VAULT_EVENT_V0,
-  importCastleArchiveDocumentV0,
   listCastleArchiveEntitiesV0,
   listCastleArchiveEventsV0,
   openCastleArchiveEntityInMediaV0,
+  saveCastleArchiveEntityV0,
   tombstoneCastleArchiveEntityV0
 } from "../rhizoh/runtime/castleArchiveVaultV0.js";
+import {
+  MEDIA_CIVILIZATION_ACTION_V0,
+  runMediaCivilizationPipelineV0
+} from "../rhizoh/runtime/mediaCivilizationBridgeV0.js";
 import { syncCastleCloudVaultV0 } from "../rhizoh/runtime/castleCloudSyncV0.js";
 import { readCastleIdentityV0, CASTLE_IDENTITY_EVENT_V0 } from "../rhizoh/runtime/castleIdentityV0.js";
 import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
@@ -66,6 +70,10 @@ export const RhizohCastleLibraryPanelV0 = memo(function RhizohCastleLibraryPanel
   const [content, setContent] = useState("");
   const [format, setFormat] = useState("text/plain");
   const [syncStatus, setSyncStatus] = useState("");
+  const [annotationStatus, setAnnotationStatus] = useState("");
+  const [selectedEntityId, setSelectedEntityId] = useState("");
+  const [noteText, setNoteText] = useState("");
+  const [tagText, setTagText] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -75,14 +83,48 @@ export const RhizohCastleLibraryPanelV0 = memo(function RhizohCastleLibraryPanel
   }, [open, tr]);
 
   const onSave = useCallback(() => {
-    importCastleArchiveDocumentV0({
+    const entity = saveCastleArchiveEntityV0({
       title: title.trim() || (tr ? "Belgesiz" : "Untitled"),
       format,
       content,
       source: node?.id ? `map:${node.id}` : "library_panel",
-      openInMedia: true
+      tags: ["library"]
     });
-  }, [title, format, content, node?.id, tr]);
+    openCastleArchiveEntityInMediaV0(entity.id);
+    runMediaCivilizationPipelineV0({
+      action: MEDIA_CIVILIZATION_ACTION_V0.INDEX,
+      entityId: entity.id,
+      locale: uiLocale
+    });
+  }, [title, format, content, node?.id, tr, uiLocale]);
+
+  const onAnnotate = useCallback(
+    (action) => {
+      if (!selectedEntityId) return;
+      const out =
+        action === MEDIA_CIVILIZATION_ACTION_V0.NOTE
+          ? runMediaCivilizationPipelineV0({
+              action,
+              entityId: selectedEntityId,
+              noteText,
+              locale: uiLocale
+            })
+          : runMediaCivilizationPipelineV0({
+              action: MEDIA_CIVILIZATION_ACTION_V0.TAG,
+              entityId: selectedEntityId,
+              tag: tagText,
+              locale: uiLocale
+            });
+      if (out?.ok === false) {
+        setAnnotationStatus(String(out.reason || "failed"));
+        return;
+      }
+      setAnnotationStatus(tr ? "Hafızaya yazıldı." : "Written to memory.");
+      if (action === MEDIA_CIVILIZATION_ACTION_V0.NOTE) setNoteText("");
+      if (action === MEDIA_CIVILIZATION_ACTION_V0.TAG) setTagText("");
+    },
+    [noteText, selectedEntityId, tagText, tr, uiLocale]
+  );
 
   if (!open) return null;
 
@@ -142,15 +184,26 @@ export const RhizohCastleLibraryPanelV0 = memo(function RhizohCastleLibraryPanel
                 entities.map((ent) => (
                   <li
                     key={ent.id}
-                    className="rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-[11px] text-white/85"
+                    className={`rounded-lg border px-2 py-2 text-[11px] text-white/85 ${
+                      selectedEntityId === ent.id ? "border-cyan-400/40 bg-cyan-500/10" : "border-white/10 bg-white/5"
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedEntityId(ent.id)}
+                        className="min-w-0 text-left"
+                      >
                         <p className="truncate font-semibold text-amber-100">{ent.title}</p>
                         <p className="text-[9px] text-white/45">
-                          {ent.format} · {ent.id.slice(0, 18)}…
+                          {ent.format} · {(ent.tags || []).slice(0, 3).join(", ") || "—"}
                         </p>
-                      </div>
+                        {(ent.userNotes || []).length ? (
+                          <p className="mt-1 text-[9px] italic text-cyan-200/70">
+                            {(ent.userNotes[0]?.text || "").slice(0, 80)}
+                          </p>
+                        ) : null}
+                      </button>
                       <div className="flex shrink-0 gap-1">
                         <button
                           type="button"
@@ -172,6 +225,43 @@ export const RhizohCastleLibraryPanelV0 = memo(function RhizohCastleLibraryPanel
                 ))
               )}
             </ul>
+            {selectedEntityId ? (
+              <div className="mt-2 space-y-2 rounded-lg border border-cyan-400/20 bg-cyan-500/5 p-2">
+                <p className="text-[9px] font-semibold uppercase tracking-wider text-cyan-200/80">
+                  {tr ? "Not · Etiket" : "Note · Tag"}
+                </p>
+                <textarea
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  rows={2}
+                  placeholder={tr ? "Kullanıcı notu (LLM yok)" : "User note (no LLM)"}
+                  className="w-full resize-none rounded border border-white/10 bg-black/40 px-2 py-1 text-[10px] text-white"
+                />
+                <div className="flex gap-2">
+                  <input
+                    value={tagText}
+                    onChange={(e) => setTagText(e.target.value)}
+                    placeholder={tr ? "etiket" : "tag"}
+                    className="flex-1 rounded border border-white/10 bg-black/40 px-2 py-1 text-[10px] text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onAnnotate(MEDIA_CIVILIZATION_ACTION_V0.TAG)}
+                    className="rounded border border-amber-400/40 px-2 py-1 text-[9px] text-amber-100"
+                  >
+                    #
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onAnnotate(MEDIA_CIVILIZATION_ACTION_V0.NOTE)}
+                  className="w-full rounded border border-cyan-400/40 px-2 py-1 text-[9px] text-cyan-100"
+                >
+                  {tr ? "Notu hafızaya yaz" : "Save note to memory"}
+                </button>
+                {annotationStatus ? <p className="text-[9px] text-white/45">{annotationStatus}</p> : null}
+              </div>
+            ) : null}
           </section>
 
           <section className="flex min-h-0 flex-col gap-2 overflow-hidden rounded-xl border border-white/10 bg-black/40 p-3">

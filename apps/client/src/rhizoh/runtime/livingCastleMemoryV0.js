@@ -23,6 +23,7 @@ import { importCastleArchiveEntitiesFromCloudV0 } from "./castleArchiveVaultV0.j
 import { mergeRhizohKnowledgeFromCloudV0 } from "./rhizohKnowledgeStoreV0.js";
 import { mergeRhizohOpeningBookFromCloudV0 } from "./rhizohOpeningBookV0.js";
 import { mergeChessCivilizationFromCloudV0 } from "./chessCivilizationV0.js";
+import { mergeMediaCivilizationFromCloudV0 } from "./mediaCivilizationV0.js";
 
 let memoryBootedV0 = false;
 
@@ -69,6 +70,7 @@ export function hydrateLivingCastleMemoryFromCloudV0(snapshot = {}) {
   if (Array.isArray(snapshot.knowledge)) mergeRhizohKnowledgeFromCloudV0(snapshot.knowledge);
   if (Array.isArray(snapshot.openingBook)) mergeRhizohOpeningBookFromCloudV0(snapshot.openingBook);
   if (snapshot.chessCivilization) mergeChessCivilizationFromCloudV0(snapshot.chessCivilization);
+  if (snapshot.mediaCivilization) mergeMediaCivilizationFromCloudV0(snapshot.mediaCivilization);
   if (Array.isArray(snapshot.entities) || Array.isArray(snapshot.events)) {
     importCastleArchiveEntitiesFromCloudV0(snapshot);
   }

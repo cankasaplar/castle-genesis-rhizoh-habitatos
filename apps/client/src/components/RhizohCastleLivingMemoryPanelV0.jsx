@@ -12,6 +12,7 @@ import {
   readGhostMemoryV0
 } from "../rhizoh/runtime/ghostMemoryPersistenceV0.js";
 import { listRhizohKnowledgeV0 } from "../rhizoh/runtime/rhizohKnowledgeStoreV0.js";
+import { readMediaCivilizationV0 } from "../rhizoh/runtime/mediaCivilizationV0.js";
 
 function subscribeIdentity(cb) {
   if (typeof window === "undefined") return () => {};
@@ -59,6 +60,7 @@ export const RhizohCastleLivingMemoryPanelV0 = memo(function RhizohCastleLivingM
   const chronicle = useMemo(() => listCastleChronicleV0({ limit: 24 }), [chronicleTick, open]);
   const ghost = readGhostMemoryV0();
   const knowledgeCount = listRhizohKnowledgeV0().length;
+  const mediaCiv = readMediaCivilizationV0();
 
   if (!open) return null;
 
@@ -105,6 +107,18 @@ export const RhizohCastleLivingMemoryPanelV0 = memo(function RhizohCastleLivingM
                 <p className="text-sm font-black text-cyan-200">{value ?? 0}</p>
               </div>
             ))}
+          </div>
+        ) : null}
+
+        {mediaCiv ? (
+          <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-500/5 px-3 py-2">
+            <p className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-200/80">
+              {tr ? "Medya Medeniyeti" : "Media Civilization"}
+            </p>
+            <p className="mt-1 text-[10px] text-white/55">
+              {mediaCiv.itemsArchived} {tr ? "arşiv" : "archived"} · {mediaCiv.notesWritten}{" "}
+              {tr ? "not" : "notes"} · {mediaCiv.bookmarks} {tr ? "yer imi" : "bookmarks"}
+            </p>
           </div>
         ) : null}
 
