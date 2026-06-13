@@ -27,6 +27,9 @@ export const RHIZOH_WORLD_MAP_TOOL_IDS_V0 = Object.freeze([
   "anchor_map"
 ]);
 
+/** Leaflet-only tools on /world/space (satellite/streets = tile swap, not Cesium). */
+export const RHIZOH_WORLD_SPACE_LEAFLET_TOOLS_V0 = Object.freeze(["city_map", "satellite", "streets"]);
+
 const STORAGE_KEY_V0 = "rhizoh.world.map_tool.v0";
 
 /**
@@ -83,6 +86,18 @@ export function cycleRhizohWorldMapToolV0(from) {
   const current = normalizeRhizohWorldMapToolIdV0(from ?? readRhizohWorldMapToolV0());
   const idx = RHIZOH_WORLD_MAP_TOOL_IDS_V0.indexOf(current);
   return RHIZOH_WORLD_MAP_TOOL_IDS_V0[(idx + 1) % RHIZOH_WORLD_MAP_TOOL_IDS_V0.length];
+}
+
+/**
+ * Cycle Leaflet-only tools on /world/space (never globe/terrain/Cesium).
+ * @param {RhizohWorldMapToolIdV0 | string} [from]
+ * @returns {RhizohWorldMapToolIdV0}
+ */
+export function cycleRhizohWorldSpaceLeafletMapToolV0(from) {
+  const current = normalizeRhizohWorldMapToolIdV0(from ?? readRhizohWorldMapToolV0());
+  const idx = RHIZOH_WORLD_SPACE_LEAFLET_TOOLS_V0.indexOf(current);
+  if (idx < 0) return "city_map";
+  return RHIZOH_WORLD_SPACE_LEAFLET_TOOLS_V0[(idx + 1) % RHIZOH_WORLD_SPACE_LEAFLET_TOOLS_V0.length];
 }
 
 /**
@@ -233,16 +248,34 @@ function routeWorldMapFlyV0(toolId, target, source) {
 }
 
 /**
+ * @param {RhizohWorldMapToolIdV0 | string} toolId
+ * @returns {RhizohWorldMapToolIdV0}
+ */
+export function normalizeRhizohWorldSpaceLeafletToolV0(toolId) {
+  const id = normalizeRhizohWorldMapToolIdV0(toolId);
+  if (RHIZOH_WORLD_SPACE_LEAFLET_TOOLS_V0.includes(id)) return id;
+  return "city_map";
+}
+
+/**
  * Apply map tool inside WORLD (map is sub-layer; GLOBE = home).
  * @param {RhizohWorldMapToolIdV0 | string} toolId
  * @param {{
  *   setRealityMode?: (mode: string, opts?: object) => Promise<unknown>,
  *   flyContext?: { nexusGeo?: object, castles?: object[] },
- *   source?: string
+ *   source?: string,
+ *   leafletOnly?: boolean
  * }} [opts]
  */
 export async function applyRhizohWorldMapToolV0(toolId, opts = {}) {
-  const tool = writeRhizohWorldMapToolV0(toolId);
+  const requested = normalizeRhizohWorldMapToolIdV0(toolId);
+  const tool = opts.leafletOnly ? normalizeRhizohWorldSpaceLeafletToolV0(requested) : requested;
+  writeRhizohWorldMapToolV0(tool);
+
+  if (opts.leafletOnly) {
+    return Object.freeze({ tool, realityMode: null, fly: null, leafletOnly: true });
+  }
+
   const setMode =
     opts.setRealityMode ??
     (await import("../../reality/realityDirector.js")).setRealityMode;

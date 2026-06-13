@@ -95,7 +95,14 @@ describe("rhizohLayerContextV0", () => {
       resolveRhizohWorldSpaceCesiumActiveV0({
         mapSurfaceActive: true,
         pathname: "/world/space",
-        mapTool: "globe"
+        mapTool: "satellite"
+      })
+    ).toBe(false);
+    expect(
+      resolveRhizohWorldSpaceCesiumActiveV0({
+        mapSurfaceActive: true,
+        pathname: "/world/space",
+        mapTool: "streets"
       })
     ).toBe(false);
     expect(
@@ -104,7 +111,7 @@ describe("rhizohLayerContextV0", () => {
         pathname: "/world/space",
         mapTool: "anchor_map"
       })
-    ).toBe(true);
+    ).toBe(false);
     expect(
       resolveRhizohCesiumLayerActiveV0({
         mapSurfaceActive: true,
@@ -117,7 +124,7 @@ describe("rhizohLayerContextV0", () => {
     ).toBe(false);
   });
 
-  it("cesium layer only on world space with REAL_MAP and non-globe tool", () => {
+  it("cesium layer on world space requires explicit opt-in; other routes unchanged", () => {
     expect(
       resolveRhizohCesiumLayerActiveV0({
         mapSurfaceActive: true,
@@ -133,13 +140,13 @@ describe("rhizohLayerContextV0", () => {
         pathname: "/world/space",
         mapTool: "anchor_map"
       })
-    ).toBe(true);
+    ).toBe(false);
     expect(
       resolveRhizohCesiumLayerActiveV0({
         mapSurfaceActive: true,
         realityMode: "REAL_MAP",
         pathname: "/world/social",
-        mapTool: "city_map"
+        mapTool: "anchor_map"
       })
     ).toBe(false);
     expect(

@@ -18,9 +18,7 @@ export const RhizohWorldMapToolStripV0 = memo(function RhizohWorldMapToolStripV0
   const tr = locale === "tr";
   const visibleTools = cesiumReady
     ? RHIZOH_WORLD_MAP_TOOL_IDS_V0
-    : RHIZOH_WORLD_MAP_TOOL_IDS_V0.filter((id) =>
-        ["city_map", "streets", "satellite", "anchor_map"].includes(id)
-      );
+    : RHIZOH_WORLD_MAP_TOOL_IDS_V0.filter((id) => ["city_map", "streets", "satellite"].includes(id));
   return (
     <div
       className={`pointer-events-auto flex max-w-[min(36rem,96vw)] flex-wrap items-center justify-center gap-1 rounded-2xl border border-cyan-400/20 bg-black/60 px-1.5 py-1.5 backdrop-blur-md ${className}`}

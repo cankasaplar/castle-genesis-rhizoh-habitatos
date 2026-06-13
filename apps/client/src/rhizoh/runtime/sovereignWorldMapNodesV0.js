@@ -257,9 +257,13 @@ export function listSovereignWorldMapNodesV0() {
 export function listSovereignWorldMapNodesForViewV0(opts = {}) {
   const core = SOVEREIGN_CORE_NODES_V0.filter((n) => n.id !== "castle");
   /** @type {object[]} */
-  const rows = [...core, ...SOVEREIGN_TOWERS_V0, SOVEREIGN_RHIZOH_PORTAL_V0];
   const userCastle = opts.userCastle;
-  if (userCastle && Number.isFinite(userCastle.lat) && Number.isFinite(userCastle.lon)) {
+  const hasUserCastle =
+    userCastle && Number.isFinite(userCastle.lat) && Number.isFinite(userCastle.lon);
+  const rows = hasUserCastle
+    ? [...core, ...SOVEREIGN_TOWERS_V0]
+    : [...core, ...SOVEREIGN_TOWERS_V0, SOVEREIGN_RHIZOH_PORTAL_V0];
+  if (hasUserCastle) {
     rows.unshift(
       Object.freeze({
         id: "my_castle",

@@ -50,6 +50,7 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
   activeMapTool,
   onSelectMapTool,
   spatialEngineActive,
+  mapToolCesiumReady = false,
   onOpenGreenroom,
   onOpenBroadcast,
   onShareInvite,
@@ -165,7 +166,7 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
               <WorldStartCardV0
                 activeTool={activeMapTool}
                 active={isSpace}
-                cesiumReady={spatialEngineActive}
+                cesiumReady={mapToolCesiumReady && spatialEngineActive}
                 uiLocale={locale}
                 worldData={worldData}
                 onSelect={onSelectMapTool}
@@ -213,7 +214,7 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
                   activeTool={activeMapTool}
                   uiLocale={locale}
                   onSelect={onSelectMapTool}
-                  cesiumReady={spatialEngineActive}
+                  cesiumReady={mapToolCesiumReady && spatialEngineActive}
                   className="w-full justify-start"
                 />
                 <RhizohWorldMarkerLayerFilterV0 uiLocale={locale} />

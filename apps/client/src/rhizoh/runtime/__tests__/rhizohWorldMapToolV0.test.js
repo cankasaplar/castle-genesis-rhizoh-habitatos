@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import {
   applyRhizohWorldMapToolV0,
   cycleRhizohWorldMapToolV0,
+  cycleRhizohWorldSpaceLeafletMapToolV0,
   normalizeRhizohWorldMapToolIdV0,
   readRhizohWorldMapToolV0,
   resolveRhizohWorldMapFlyTargetV0,
@@ -32,6 +33,13 @@ describe("rhizohWorldMapToolV0", () => {
     expect(cycleRhizohWorldMapToolV0("anchor_map")).toBe("globe");
   });
 
+  it("cycles leaflet-only tools for world space", () => {
+    expect(cycleRhizohWorldSpaceLeafletMapToolV0("city_map")).toBe("satellite");
+    expect(cycleRhizohWorldSpaceLeafletMapToolV0("satellite")).toBe("streets");
+    expect(cycleRhizohWorldSpaceLeafletMapToolV0("streets")).toBe("city_map");
+    expect(cycleRhizohWorldSpaceLeafletMapToolV0("globe")).toBe("city_map");
+  });
+
   it("normalizes unknown ids to globe", () => {
     expect(normalizeRhizohWorldMapToolIdV0("nope")).toBe("globe");
   });
@@ -60,5 +68,13 @@ describe("rhizohWorldMapToolV0", () => {
       expect.objectContaining({ source: "MAP_TOOL_EXPLICIT", productSurface: "world" })
     );
     expect(r.realityMode).toBe("REAL_MAP");
+  });
+
+  it("apply leafletOnly skips reality mode and Cesium routing", async () => {
+    const setRealityMode = vi.fn(async () => ({ ok: true }));
+    const r = await applyRhizohWorldMapToolV0("globe", { setRealityMode, leafletOnly: true });
+    expect(setRealityMode).not.toHaveBeenCalled();
+    expect(r.tool).toBe("city_map");
+    expect(r.leafletOnly).toBe(true);
   });
 });

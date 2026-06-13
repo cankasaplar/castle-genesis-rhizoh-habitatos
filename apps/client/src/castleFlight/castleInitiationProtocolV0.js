@@ -114,6 +114,16 @@ export async function executeCastleInitGpsV0(deps) {
           source: "gps",
           feed: "gps"
         });
+        try {
+          window.__CASTLE_NEXUS_GEO__ = Object.freeze({
+            mode: "geo",
+            lat,
+            lon,
+            source: "castle_init_gps"
+          });
+        } catch {
+          /* noop */
+        }
         emitCastleCreateEventV0({ source: "gps", anchor, owner, castleType });
         publishCastleInitStateV0({ phase: "complete", source: "gps", pendingMapPick: false });
         resolve(Object.freeze({ ok: out.ok, source: "gps", lat, lon, reply: out.reply, directive: out.directive }));
@@ -180,6 +190,16 @@ export async function completeCastleInitFromMapAnchorV0(anchorDetail, deps) {
     owner,
     castleType
   });
+  try {
+    window.__CASTLE_NEXUS_GEO__ = Object.freeze({
+      mode: "geo",
+      lat,
+      lon,
+      source: "castle_init_map"
+    });
+  } catch {
+    /* noop */
+  }
   publishCastleInitStateV0({ phase: "complete", source: "map", pendingMapPick: false });
   return Object.freeze({ ok: out.ok, source: "map", lat, lon, reply: out.reply });
 }
