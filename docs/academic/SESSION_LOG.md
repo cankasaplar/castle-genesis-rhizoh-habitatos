@@ -114,6 +114,18 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 - **Frozen core:** dokunulmadı
 - **Not:** Bugün için bu kadar — pin→event VOD/live modeli sonraki sprint.
 
+### NEXT SPRINT — Tower API keys + workspace + library pins
+
+**Hedef (CORE-ELIGIBLE değil; habitat / ürün yüzeyi):**
+- Tüm **tower** pinleri (Gemini, Claude, ChatGPT, DeepMind, Mistral, Kyoto, Sora, …) için **gerçek provider API key** env + gateway firewall
+- Her tower → **gerçek workspace** (`RhizohV11TowerWorkspaceHostV0` / entity registry) — sim placeholder değil
+- **LIBRARY (vault)** + kişisel **arşiv kütüphane** katmanı pinleri → encrypted archive / media archive ile bağlantı
+- EVENT pin → kullanıcı canlı yayın veya yayınlanmış event VOD (sabit YouTube kanalı değil)
+
+**Bağımlılıklar:** gateway secret store, `VITE_*` / Functions env, tower workspace spec SSOT, frozen core dokunulmaz.
+
+**SPECFLOW:** RESEARCH-ONLY → implementasyon sprintinde CORE-ELIGIBLE olmayan runtime katmanları (`worldSpace*`, `sovereignWorldMap*`, tower workspace host).
+
 ### 2026-06-01 — Academic Observatory Layer (AOL) v0 SSOT
 
 **Summary:**
