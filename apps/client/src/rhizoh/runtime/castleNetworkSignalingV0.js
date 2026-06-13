@@ -2,12 +2,12 @@
  * Castle Network signaling client v0 — PEER_* + REALTIME over gateway SIGNAL relay.
  */
 
-import { CASTLE_C2C_ROOM_KEY_V0 } from "../castleSocial/castleC2cSignalingChannelV0.js";
+import { CASTLE_C2C_ROOM_KEY_V0 } from "../../castleSocial/castleC2cSignalingChannelV0.js";
 import {
   CASTLE_C2C_MESSAGE_TYPE_V0,
   ingestCastleC2cRealtimeMessageV0,
   registerCastleC2cRealtimeOutboundV0
-} from "../castleSocial/castleC2cRealtimeBusV0.js";
+} from "../../castleSocial/castleC2cRealtimeBusV0.js";
 import {
   CASTLE_PRESENCE_STATE_V0,
   removeCastlePresenceV0,
@@ -25,7 +25,7 @@ export const CASTLE_NETWORK_SIGNAL_V0 = Object.freeze({
 
 export const CASTLE_NETWORK_SIGNALING_SCHEMA_V0 = "castle.network_signaling.v0";
 
-/** @type {import("../castleSocial/castleC2cSignalingChannelV0.js").ReturnType<import("../castleSocial/castleC2cSignalingChannelV0.js").createCastleC2cSignalingChannelV0> | null} */
+/** @type {import("../../castleSocial/castleC2cSignalingChannelV0.js").ReturnType<import("../../castleSocial/castleC2cSignalingChannelV0.js").createCastleC2cSignalingChannelV0> | null} */
 let channelRefV0 = null;
 let heartbeatTimerV0 = 0;
 let disposedV0 = false;
@@ -149,7 +149,7 @@ function sendRealtimeRelayV0(msg) {
 
 /**
  * Attach network layer to an existing C2C signaling channel.
- * @param {ReturnType<import("../castleSocial/castleC2cSignalingChannelV0.js").createCastleC2cSignalingChannelV0>} channel
+ * @param {ReturnType<import("../../castleSocial/castleC2cSignalingChannelV0.js").createCastleC2cSignalingChannelV0>} channel
  * @param {string} userId
  */
 export function bootCastleNetworkSignalingV0(channel, userId) {
