@@ -114,6 +114,11 @@ export function resolveInitialWorldSpaceMediaChannelIdV0(source) {
 
 /**
  * Per-pin media channel — MY CASTLE, EVENT, and RADIO are distinct surfaces.
+ *
+ * FUTURE (RESEARCH-ONLY): pins are not interchangeable media channels. EVENT should
+ * resolve to user-created live broadcasts or published event replays (VOD), not a
+ * static YouTube id. See docs/academic/SESSION_LOG.md (2026-06-12).
+ *
  * @param {{ id?: string, type?: string } | null | undefined} node
  * @returns {string}
  */
