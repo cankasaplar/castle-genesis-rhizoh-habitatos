@@ -18,6 +18,8 @@ import {
   RHIZOH_FEDERATION_NODE_V0
 } from "../rhizohDomainGraphV0.js";
 import { __resetRhizohDomainCoreStoreForTestV0 } from "../rhizohDomainCoreStoreV0.js";
+import { __resetContextIntentSnapshotForTestV0 } from "../rhizohContextIntentSnapshotV0.js";
+import { getLatestContextIntentSnapshotV0 } from "../rhizohContextIntentSnapshotV0.js";
 
 describe("rhizohDrawerStateMachineV0", () => {
   beforeEach(() => {
@@ -26,6 +28,7 @@ describe("rhizohDrawerStateMachineV0", () => {
     __resetDrawerTransitionQueueForTestV0();
     __resetDomainGraphForTestV0();
     __resetRhizohDomainCoreStoreForTestV0();
+    __resetContextIntentSnapshotForTestV0();
   });
 
   afterEach(() => {
@@ -34,13 +37,16 @@ describe("rhizohDrawerStateMachineV0", () => {
     __resetDrawerTransitionQueueForTestV0();
     __resetDomainGraphForTestV0();
     __resetRhizohDomainCoreStoreForTestV0();
+    __resetContextIntentSnapshotForTestV0();
   });
 
-  it("handleProductShellSelectV0 triggers context shift for studio overlay", () => {
+  it("handleProductShellSelectV0 commits intent before domain overlay", () => {
     const r1 = handleProductShellSelectV0("studio", { pathname: "/world/space", inPlace: true });
     expect(r1.action).toBe(DRAWER_SHELL_ACTION_V0.CONTEXT_SHIFT);
-    expect(getDrawerStateSnapshotV0().openDrawerId).toBe("studio");
+    expect(r1.intent?.targetNode).toBe(RHIZOH_FEDERATION_NODE_V0.STUDIO);
+    expect(getLatestContextIntentSnapshotV0()?.intentId).toBe(r1.intent?.intentId);
     expect(getActiveFederationOverlayNodeV0()).toBe(RHIZOH_FEDERATION_NODE_V0.STUDIO);
+    expect(getDrawerStateSnapshotV0().openDrawerId).toBe("studio");
 
     const r2 = handleProductShellSelectV0("studio", { pathname: "/world/space", inPlace: true });
     expect(r2.action).toBe(DRAWER_SHELL_ACTION_V0.CONTEXT_SHIFT);

@@ -135,6 +135,67 @@ export function shiftRhizohDomainContextV0(ctx = {}, opts = {}) {
 }
 
 /**
+ * Domain migration from committed intent snapshot — step 3 of context contract.
+ * @param {import("./rhizohContextIntentSnapshotV0.js").ReturnType<typeof import("./rhizohContextIntentSnapshotV0.js").buildContextIntentSnapshotV0> | null | undefined} intent
+ * @param {{ userId?: string | null }} [opts]
+ */
+export function applyDomainMigrationFromIntentV0(intent, opts = {}) {
+  if (!intent) {
+    return Object.freeze({ ok: false, reason: "no_intent", skipped: true });
+  }
+
+  if (intent.clearOverlay) {
+    const cleared = clearFederationOverlayContextV0(intent.hostNode || RHIZOH_FEDERATION_NODE_V0.WORLD);
+    return Object.freeze({ ok: true, phase: "clear_overlay", cleared });
+  }
+
+  if (!intent.migrate || !intent.contextShiftPlan) {
+    return Object.freeze({ ok: true, phase: "chrome_only", skipped: true });
+  }
+
+  const plan = planDomainContextShiftFromIntentV0(intent);
+  const applied = applyDomainContextShiftV0(plan, opts);
+  return Object.freeze({ ok: applied.ok !== false, phase: "migrate", plan, applied });
+}
+
+/**
+ * Validate intent-bound plan (intent drives graph, not pathname guess).
+ * @param {object} intent
+ */
+export function planDomainContextShiftFromIntentV0(intent) {
+  if (!intent?.contextShiftPlan) {
+    return planDomainContextShiftV0({
+      surfaceId: intent?.surfaceId,
+      pathname: intent?.pathname,
+      toNode: intent?.targetNode,
+      inPlace: true
+    });
+  }
+
+  const plan = intent.contextShiftPlan;
+  if (plan.toNode !== intent.targetNode) {
+    return planDomainContextShiftV0({
+      surfaceId: intent.surfaceId,
+      pathname: intent.pathname,
+      toNode: intent.targetNode,
+      inPlace: true,
+      passPayload: Object.freeze({
+        ...plan.passPayload,
+        intentId: intent.intentId
+      })
+    });
+  }
+
+  return Object.freeze({
+    ...plan,
+    passPayload: Object.freeze({
+      ...plan.passPayload,
+      intentId: intent.intentId
+    })
+  });
+}
+
+/**
  * Clear overlay context (e.g. world shell close all).
  * @param {string} hostNode
  */

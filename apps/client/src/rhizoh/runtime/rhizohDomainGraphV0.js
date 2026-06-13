@@ -88,6 +88,17 @@ export const OVERLAY_READ_ONLY_NODES_V0 = new Set([
   RHIZOH_FEDERATION_NODE_V0.MEDIA
 ]);
 
+/** Context sensitivity weight per federation node (graph topology). */
+export const CONTEXT_SENSITIVITY_WEIGHT_V0 = Object.freeze({
+  [RHIZOH_FEDERATION_NODE_V0.T0]: 0.15,
+  [RHIZOH_FEDERATION_NODE_V0.WORLD]: 0.2,
+  [RHIZOH_FEDERATION_NODE_V0.CASTLE]: 0.45,
+  [RHIZOH_FEDERATION_NODE_V0.BROADCAST]: 0.55,
+  [RHIZOH_FEDERATION_NODE_V0.STUDIO]: 0.7,
+  [RHIZOH_FEDERATION_NODE_V0.MEDIA]: 0.85,
+  [RHIZOH_FEDERATION_NODE_V0.OBSERVER]: 0.35
+});
+
 /** @type {string | null} */
 let activeOverlayNodeV0 = null;
 
@@ -163,7 +174,8 @@ export function resolveDomainFederationEdgeV0(hostNode, targetNode, ctx = {}) {
       kind: DOMAIN_FEDERATION_EDGE_KIND_V0.OVERLAY_DRAWER,
       reason: null,
       mutateHost: false,
-      readOnlyOverlay: true
+      readOnlyOverlay: true,
+      contextWeight: CONTEXT_SENSITIVITY_WEIGHT_V0[to] ?? 0.5
     });
   }
 
