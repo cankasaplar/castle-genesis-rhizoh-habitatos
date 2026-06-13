@@ -59,4 +59,20 @@ describe("rhizohVoiceCommandRouterV0", () => {
     executeLocalVoiceCommandV0(route);
     expect(events).toContain("gate");
   });
+
+  it("castle_create registry uses lifecycle handler (not map spatial)", () => {
+    const mapEvents = [];
+    const gateEvents = [];
+    window.addEventListener("rhizoh:map-command", () => mapEvents.push("map"));
+    window.addEventListener("castle:open-init-gate-v0", () => gateEvents.push("gate"));
+    const route = routeVoiceInputV0("kale kur");
+    expect(route.canonical).toBe("castle_create");
+    executeLocalVoiceCommandV0(route);
+    expect(gateEvents).toContain("gate");
+    expect(mapEvents).toHaveLength(0);
+  });
+
+  it("strips trailing punctuation for registry match", () => {
+    expect(normalizeVoiceCommandSpaceV0("kale kur.").canonical).toBe("castle_create");
+  });
 });

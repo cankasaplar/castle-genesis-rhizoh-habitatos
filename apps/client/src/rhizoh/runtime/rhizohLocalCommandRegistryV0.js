@@ -17,6 +17,7 @@ export const LOCAL_COMMAND_HANDLER_V0 = Object.freeze({
   AUDIO: "audioVoiceCommandHandlerV0",
   MAP: "mapSpatialCommandHandlerV0",
   CAMERA: "cameraVisionCommandHandlerV0",
+  CASTLE: "castleLifecycleCommandHandlerV0",
   SYSTEM: "systemCastleCommandHandlerV0"
 });
 
@@ -214,7 +215,7 @@ export const RHIZOH_LOCAL_COMMAND_REGISTRY_V0 = Object.freeze({
     "open castle",
     "kaleye gir"
   ]),
-  castle_create: cmd(LOCAL_COMMAND_LAYER_V0.WORLD, LOCAL_COMMAND_HANDLER_V0.MAP, "create_castle", [
+  castle_create: cmd(LOCAL_COMMAND_LAYER_V0.WORLD, LOCAL_COMMAND_HANDLER_V0.CASTLE, "create_castle", [
     "create castle",
     "build castle",
     "castle create",
