@@ -118,14 +118,13 @@ export default function AppRhizohWorldSpaceV0() {
 
   const cesiumLayerActiveV0 = useMemo(
     () =>
-      spatialBootGateV0.allowed &&
       resolveRhizohWorldSpaceCesiumActiveV0({
         pathname: "/world/space",
         worldDomain: RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE,
         mapTool: worldMapToolV0,
         mapSurfaceActive
       }),
-    [worldMapToolV0, mapSurfaceActive, spatialBootGateV0]
+    [worldMapToolV0, mapSurfaceActive]
   );
 
   const layerModeV0 = useMemo(

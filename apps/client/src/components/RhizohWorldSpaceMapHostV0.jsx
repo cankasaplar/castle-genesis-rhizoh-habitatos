@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useRef, useState } from "react";
+import React, { memo, useEffect, useMemo, useRef, useState } from "react";
 import CesiumRealMapLayer from "../castleFlight/CesiumRealMapLayer.jsx";
 import { RHIZOH_SPATIAL_RENDER_MODE_V0 } from "../rhizoh/runtime/spatialBootGateV0.js";
 import {
@@ -15,13 +15,15 @@ import {
   LOCAL_GHOST_CASTLE_EVENT_V0,
   readLocalGhostCastleAnchorsV0
 } from "../rhizoh/runtime/localGhostCastleAnchorV0.js";
+import { createCastleWorldAnchorV0 } from "../castleFlight/castleWorldAnchorV0.js";
+import { readCastleNexusGeoV0 } from "../rhizoh/runtime/worldMapBootstrapGeoV0.js";
 
 export { RHIZOH_V11_MAP_INTENT_EVENT_V0 };
 
 import {
   SOVEREIGN_MAP_DEFAULT_HOME_V0,
   SOVEREIGN_TOWER_GRAPH_EDGES_V0,
-  SOVEREIGN_WORLD_MAP_NODES_V0,
+  listSovereignWorldMapNodesForViewV0,
   RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1,
   sovereignNodeIconHtmlV0,
   writeSovereignPortalCoordsV0
@@ -119,9 +121,22 @@ function emitV11MapIntentV0(node, interaction) {
 }
 
 function handleV11MapClickForClaimV0(ev) {
-  if (!readWorldMapClaimModeV0()) return false;
   const latlng = ev?.latlng;
   if (!Number.isFinite(latlng?.lat) || !Number.isFinite(latlng?.lng)) return false;
+
+  const init = typeof window !== "undefined" ? window.__CASTLE_INIT__ : null;
+  if (init?.pendingMapPick) {
+    createCastleWorldAnchorV0({
+      lat: latlng.lat,
+      lon: latlng.lng,
+      label: `Castle · ${latlng.lat.toFixed(3)}, ${latlng.lng.toFixed(3)}`,
+      source: "map_pick"
+    });
+    writeWorldMapClaimModeV0(false);
+    return true;
+  }
+
+  if (!readWorldMapClaimModeV0()) return false;
   createLocalGhostCastleAnchorV0({
     lat: latlng.lat,
     lon: latlng.lng,
@@ -149,7 +164,13 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
   const markerLayerRef = useRef(null);
   const graphLayerRef = useRef(null);
   const portalMarkerRef = useRef(null);
-  const nodeById = useRef(new Map(SOVEREIGN_WORLD_MAP_NODES_V0.map((n) => [n.id, n])));
+  const boundsFittedRef = useRef(false);
+  const [userCastleGeo, setUserCastleGeo] = useState(() => readCastleNexusGeoV0());
+  const displayNodes = useMemo(
+    () => listSovereignWorldMapNodesForViewV0({ userCastle: userCastleGeo }),
+    [userCastleGeo]
+  );
+  const nodeById = useRef(new Map(displayNodes.map((n) => [n.id, n])));
   const [leafletReady, setLeafletReady] = useState(false);
   const [localAnchors, setLocalAnchors] = useState(() => readLocalGhostCastleAnchorsV0());
 
@@ -160,14 +181,22 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
       if (cancelled || !L || !hostRef.current || mapRef.current) return;
       try {
         map = L.map(hostRef.current, {
-          zoomControl: false,
+          zoomControl: true,
           attributionControl: false,
           worldCopyJump: true,
-          preferCanvas: true
-        }).setView(
-          [SOVEREIGN_MAP_DEFAULT_HOME_V0.lat, SOVEREIGN_MAP_DEFAULT_HOME_V0.lon],
-          SOVEREIGN_MAP_DEFAULT_HOME_V0.zoom
-        );
+          preferCanvas: true,
+          scrollWheelZoom: true,
+          doubleClickZoom: true,
+          touchZoom: true,
+          minZoom: 2,
+          maxZoom: 18
+        });
+        const nexus = readCastleNexusGeoV0();
+        if (nexus) {
+          map.setView([nexus.lat, nexus.lon], 15);
+        } else {
+          map.setView([20, 0], 3);
+        }
         tileLayerRef.current = L.tileLayer(leafletTileUrlForToolV0(activeMapTool), {
           maxZoom: 18
         }).addTo(map);
@@ -202,8 +231,13 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
 
   useEffect(() => {
     const onAnchor = () => setLocalAnchors(readLocalGhostCastleAnchorsV0());
+    const onCastle = () => setUserCastleGeo(readCastleNexusGeoV0());
     window.addEventListener(LOCAL_GHOST_CASTLE_EVENT_V0, onAnchor);
-    return () => window.removeEventListener(LOCAL_GHOST_CASTLE_EVENT_V0, onAnchor);
+    window.addEventListener("castle:castle-create-v0", onCastle);
+    return () => {
+      window.removeEventListener(LOCAL_GHOST_CASTLE_EVENT_V0, onAnchor);
+      window.removeEventListener("castle:castle-create-v0", onCastle);
+    };
   }, []);
 
   useEffect(() => {
@@ -246,6 +280,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
     const L = typeof window !== "undefined" ? window.L : null;
     if (!L?.marker || !mapRef.current || !leafletReady) return;
     try {
+      nodeById.current = new Map(displayNodes.map((n) => [n.id, n]));
       markerLayerRef.current?.clearLayers?.();
       if (!markerLayerRef.current) markerLayerRef.current = L.layerGroup().addTo(mapRef.current);
       const localNodes = localAnchors.map((anchor) => ({
@@ -256,15 +291,25 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
         lon: anchor.lon,
         color: "#22c55e"
       }));
-      for (const node of [...SOVEREIGN_WORLD_MAP_NODES_V0, ...localNodes]) {
+      const hasUserCastle = displayNodes.some((n) => n.id === "my_castle");
+      const extraLocal = hasUserCastle ? [] : localNodes;
+      const allNodes = [...displayNodes, ...extraLocal];
+      for (const node of allNodes) {
         const marker = L.marker([node.lat, node.lon], {
           icon: createLeafletNodeIconV0(L, node),
           keyboard: false,
-          title: node.name || node.label
+          title: node.name || node.label,
+          zIndexOffset: node.id === "my_castle" ? 900 : node.type === "tower" ? 400 : 200
         }).addTo(markerLayerRef.current);
         marker.on("click", (ev) => {
           try {
             ev?.originalEvent?.stopPropagation?.();
+          } catch {
+            /* noop */
+          }
+          try {
+            const z = Math.max(mapRef.current?.getZoom?.() || 14, 16);
+            mapRef.current?.flyTo?.([node.lat, node.lon], z, { animate: true, duration: 1.2 });
           } catch {
             /* noop */
           }
@@ -277,7 +322,14 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
         }
       }
 
+      if (!boundsFittedRef.current && allNodes.length) {
+        const bounds = L.latLngBounds(allNodes.map((n) => [n.lat, n.lon]));
+        mapRef.current.fitBounds(bounds.pad(0.14), { maxZoom: userCastleGeo ? 16 : 5, animate: false });
+        boundsFittedRef.current = true;
+      }
+
       graphLayerRef.current?.clearLayers?.();
+      if (!graphLayerRef.current) graphLayerRef.current = L.layerGroup().addTo(mapRef.current);
       for (const edge of SOVEREIGN_TOWER_GRAPH_EDGES_V0) {
         const n1 = nodeById.current.get(edge.source);
         const n2 = nodeById.current.get(edge.target);
@@ -293,7 +345,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
     } catch {
       /* noop */
     }
-  }, [leafletReady, localAnchors]);
+  }, [leafletReady, localAnchors, displayNodes, userCastleGeo]);
 
   useEffect(() => {
     const L = typeof window !== "undefined" ? window.L : null;
@@ -325,15 +377,29 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
       <div className="absolute inset-y-[12%] left-[50%] w-px bg-cyan-300/10" />
       <div className="absolute inset-y-[12%] left-[75%] w-px bg-cyan-300/10" />
       <div className="absolute left-4 top-4 rounded-xl border border-cyan-400/25 bg-black/55 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-100/80">
-        RHIZOH SOVEREIGN MAP V11 · {SOVEREIGN_WORLD_MAP_NODES_V0.length} nodes
+        RHIZOH SOVEREIGN MAP V11 · {displayNodes.length} nodes
+        {!userCastleGeo ? (
+          <span className="mt-1 block text-[8px] font-normal normal-case tracking-normal text-cyan-200/55">
+            Kale pin yok — kale kur ile konumundan oluştur
+          </span>
+        ) : null}
       </div>
       <style>{`
-        [data-rhizoh-v11-leaflet-host="1"] .leaflet-container { background: #000 !important; cursor: crosshair !important; }
+        [data-rhizoh-v11-leaflet-host="1"] .leaflet-container { background: #000 !important; cursor: grab !important; }
+        [data-rhizoh-v11-leaflet-host="1"] .leaflet-container:active { cursor: grabbing !important; }
         [data-rhizoh-v11-leaflet-host="1"] .leaflet-tile-pane {
           filter: invert(100%) hue-rotate(180deg) brightness(0.35) contrast(1.5);
         }
+        [data-rhizoh-v11-leaflet-host="1"] .leaflet-control-zoom {
+          border: 1px solid rgba(255,255,255,0.15) !important;
+          background: rgba(0,0,0,0.75) !important;
+        }
+        [data-rhizoh-v11-leaflet-host="1"] .leaflet-control-zoom a {
+          color: #67e8f9 !important;
+          background: transparent !important;
+        }
       `}</style>
-      {!leafletReady ? SOVEREIGN_WORLD_MAP_NODES_V0.map((node) => {
+      {!leafletReady ? displayNodes.map((node) => {
         const pos = projectV11CoreMapGeoV0(node.lat, node.lon);
         return (
           <div

@@ -8,6 +8,7 @@ import { parseDSL } from "../kernel/rhizohCommandParser.js";
 import { createCastleWorldAnchorV0 } from "./castleWorldAnchorV0.js";
 import { emitProductBindingActionV0 } from "../rhizoh/runtime/rhizohProductBindingV0.js";
 import { getRhizohCalibrationRootAnchorV0 } from "../rhizoh/spatial/geographicAnchorsV0.js";
+import { writeWorldMapClaimModeV0 } from "../rhizoh/runtime/worldMapClaimModeV0.js";
 
 export const CASTLE_INIT_SCHEMA_V0 = "castle.initiation.v0";
 export const CASTLE_INIT_EVENT_V0 = "castle:castle-create-v0";
@@ -139,16 +140,17 @@ export async function executeCastleInitGpsV0(deps) {
  */
 export async function executeCastleInitMapPickV0(deps) {
   publishCastleInitStateV0({ phase: "map_pick", source: "map", pendingMapPick: true });
+  writeWorldMapClaimModeV0(true);
   try {
     if (deps.onProductShellSelect) deps.onProductShellSelect("world");
-    if (deps.setRealityMode) await deps.setRealityMode("REAL_MAP", { source: "CASTLE_INIT_MAP_PICK" });
+    // v11 Leaflet pick — do NOT setRealityMode REAL_MAP (that mounts Cesium on /world/space).
   } catch {
     /* noop */
   }
   return Object.freeze({
     ok: true,
     source: "map",
-    message: "Haritaya tıklayarak pin bırakın (tek tık = anchor)."
+    message: "Haritaya tıklayarak pin bırakın (tek tık = castle anchor)."
   });
 }
 

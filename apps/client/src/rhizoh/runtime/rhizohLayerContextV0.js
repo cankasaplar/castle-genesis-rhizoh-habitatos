@@ -160,8 +160,12 @@ export function isRhizohSpatialMapEngineActiveV0(ctx = {}) {
  */
 export function resolveRhizohWorldSpaceCesiumActiveV0(ctx = {}) {
   if (!shouldMountRhizohWorldSpaceMapEngineV0(ctx)) return false;
-  if (isRhizohProductMapExecutionEnabledV0()) return true;
-  return ctx.mapSurfaceActive !== false;
+  if (ctx.mapSurfaceActive === false) return false;
+  const tool = String(ctx.mapTool || "city_map").toLowerCase();
+  // World · Space primary surface = v11 Leaflet (city_map). Cesium is opt-in only.
+  if (tool === "city_map" || tool === "globe") return false;
+  if (tool === "anchor_map" || tool === "satellite" || tool === "streets") return true;
+  return isRhizohProductMapExecutionEnabledV0() && tool !== "city_map";
 }
 
 export function resolveRhizohCesiumLayerActiveV0(ctx = {}) {
