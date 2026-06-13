@@ -12,29 +12,41 @@ import {
 } from "../rhizohDrawerStateMachineV0.js";
 import { resetDrawerAwakeningForTestV0 } from "../rhizohDrawerAwakeningV0.js";
 import { setRhizohProductSurfacePanelExclusiveV0 } from "../rhizohProductChromePanelsV0.js";
+import {
+  __resetDomainGraphForTestV0,
+  getActiveFederationOverlayNodeV0,
+  RHIZOH_FEDERATION_NODE_V0
+} from "../rhizohDomainGraphV0.js";
+import { __resetRhizohDomainCoreStoreForTestV0 } from "../rhizohDomainCoreStoreV0.js";
 
 describe("rhizohDrawerStateMachineV0", () => {
   beforeEach(() => {
     localStorage.clear();
     resetDrawerAwakeningForTestV0();
     __resetDrawerTransitionQueueForTestV0();
+    __resetDomainGraphForTestV0();
+    __resetRhizohDomainCoreStoreForTestV0();
   });
 
   afterEach(() => {
     localStorage.clear();
     resetDrawerAwakeningForTestV0();
     __resetDrawerTransitionQueueForTestV0();
+    __resetDomainGraphForTestV0();
+    __resetRhizohDomainCoreStoreForTestV0();
   });
 
-  it("handleProductShellSelectV0 toggles drawer in-place when awakened", () => {
+  it("handleProductShellSelectV0 triggers context shift for studio overlay", () => {
     const r1 = handleProductShellSelectV0("studio", { pathname: "/world/space", inPlace: true });
-    expect(r1.action).toBe(DRAWER_SHELL_ACTION_V0.TOGGLE_DRAWER);
+    expect(r1.action).toBe(DRAWER_SHELL_ACTION_V0.CONTEXT_SHIFT);
     expect(getDrawerStateSnapshotV0().openDrawerId).toBe("studio");
+    expect(getActiveFederationOverlayNodeV0()).toBe(RHIZOH_FEDERATION_NODE_V0.STUDIO);
 
     const r2 = handleProductShellSelectV0("studio", { pathname: "/world/space", inPlace: true });
-    expect(r2.action).toBe(DRAWER_SHELL_ACTION_V0.TOGGLE_DRAWER);
+    expect(r2.action).toBe(DRAWER_SHELL_ACTION_V0.CONTEXT_SHIFT);
     expect(r2.toggled?.closed).toBe(true);
     expect(getDrawerStateSnapshotV0().openDrawerId).toBeNull();
+    expect(getActiveFederationOverlayNodeV0()).toBeNull();
   });
 
   it("computeDrawerShellTransitionV0 is deterministic for same snapshot", () => {
@@ -50,6 +62,8 @@ describe("rhizohDrawerStateMachineV0", () => {
     const runSequence = () => {
       localStorage.clear();
       resetDrawerAwakeningForTestV0();
+      __resetDomainGraphForTestV0();
+      __resetRhizohDomainCoreStoreForTestV0();
       handleProductShellSelectV0("studio", { pathname: "/world/space", inPlace: true });
       handleProductShellSelectV0("hall", { pathname: "/world/space", inPlace: true });
       handleProductShellSelectV0("world", { pathname: "/world/space", inPlace: true });
@@ -71,11 +85,12 @@ describe("rhizohDrawerStateMachineV0", () => {
     expect(getDrawerStateSnapshotV0().openDrawerId).toBe("broadcast");
   });
 
-  it("closeProductSurfaceDrawerV0 closes open drawer", () => {
-    setRhizohProductSurfacePanelExclusiveV0("hall", true);
+  it("closeProductSurfaceDrawerV0 closes open drawer and overlay", () => {
+    handleProductShellSelectV0("hall", { pathname: "/world/space", inPlace: true });
     expect(getDrawerStateSnapshotV0().openDrawerId).toBe("hall");
     closeProductSurfaceDrawerV0();
     expect(getDrawerStateSnapshotV0().openDrawerId).toBeNull();
+    expect(getActiveFederationOverlayNodeV0()).toBeNull();
   });
 
   it("world selection closes all panels", () => {

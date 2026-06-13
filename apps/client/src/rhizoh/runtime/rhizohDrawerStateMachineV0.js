@@ -22,6 +22,16 @@ import {
   applyRhizohDomainTagsToElementV0,
   resolveRhizohDomainTagsV0
 } from "./rhizohDomainTagV0.js";
+import {
+  auditCrossDomainDrawerV0,
+  DOMAIN_CONTEXT_SHIFT_MODE_V0,
+  RHIZOH_FEDERATION_NODE_V0
+} from "./rhizohDomainGraphV0.js";
+import {
+  applyDomainContextShiftV0,
+  clearFederationOverlayContextV0,
+  planDomainContextShiftV0
+} from "./rhizohDomainContextShiftV0.js";
 
 export const RHIZOH_DRAWER_STATE_MACHINE_SCHEMA_V0 = "rhizoh.drawer_state_machine.v0";
 
@@ -29,6 +39,7 @@ export const DRAWER_SHELL_ACTION_V0 = Object.freeze({
   STAY: "stay",
   NAVIGATE: "navigate",
   TOGGLE_DRAWER: "toggle_drawer",
+  CONTEXT_SHIFT: "context_shift",
   CLOSE_ALL: "close_all"
 });
 
@@ -80,7 +91,8 @@ export function computeDrawerShellTransitionV0(surfaceId, snapshot, ctx = {}) {
       surface,
       nextOpenDrawerId: null,
       navigateTo: ctx.worldPath || "/world/space",
-      tags: resolveDrawerDomainTagsV0(null, { pathname, surfaceId: "world" })
+      clearOverlay: true,
+      tags: resolveDrawerDomainTagsV0(null, { pathname, surfaceId: "world", overlayNode: null })
     });
   }
 
@@ -88,16 +100,32 @@ export function computeDrawerShellTransitionV0(surfaceId, snapshot, ctx = {}) {
   if (inPlace) {
     const currentlyOpen = snapshot.openDrawerId === surface;
     const nextOpenDrawerId = currentlyOpen ? null : surface;
+    const federationAudit = auditCrossDomainDrawerV0(RHIZOH_FEDERATION_NODE_V0.WORLD, surface);
+    const contextShiftPlan = planDomainContextShiftV0({
+      surfaceId: surface,
+      pathname,
+      inPlace: true,
+      toNode: federationAudit.targetNode
+    });
+    const useContextShift =
+      federationAudit.ok && contextShiftPlan.mode === DOMAIN_CONTEXT_SHIFT_MODE_V0.OVERLAY;
+
     return Object.freeze({
-      action: DRAWER_SHELL_ACTION_V0.TOGGLE_DRAWER,
+      action: useContextShift ? DRAWER_SHELL_ACTION_V0.CONTEXT_SHIFT : DRAWER_SHELL_ACTION_V0.TOGGLE_DRAWER,
       surface,
       nextOpenDrawerId,
+      clearOverlay: currentlyOpen,
+      contextShiftPlan: useContextShift ? contextShiftPlan : null,
       toggled: Object.freeze({
         open: !currentlyOpen,
         closed: currentlyOpen,
         surface
       }),
-      tags: resolveDrawerDomainTagsV0(nextOpenDrawerId, { pathname, surfaceId: surface })
+      tags: resolveDrawerDomainTagsV0(nextOpenDrawerId, {
+        pathname,
+        surfaceId: surface,
+        overlayNode: nextOpenDrawerId ? federationAudit.targetNode : null
+      })
     });
   }
 
@@ -116,10 +144,24 @@ export function computeDrawerShellTransitionV0(surfaceId, snapshot, ctx = {}) {
 export function applyDrawerShellTransitionV0(transition) {
   if (transition.action === DRAWER_SHELL_ACTION_V0.CLOSE_ALL) {
     closeAllRhizohProductSurfacePanelsV0();
+    if (transition.clearOverlay) clearFederationOverlayContextV0(RHIZOH_FEDERATION_NODE_V0.WORLD);
     return transition;
   }
 
-  if (transition.action === DRAWER_SHELL_ACTION_V0.TOGGLE_DRAWER) {
+  if (
+    transition.action === DRAWER_SHELL_ACTION_V0.TOGGLE_DRAWER ||
+    transition.action === DRAWER_SHELL_ACTION_V0.CONTEXT_SHIFT
+  ) {
+    if (transition.contextShiftPlan) {
+      if (transition.clearOverlay) {
+        clearFederationOverlayContextV0(RHIZOH_FEDERATION_NODE_V0.WORLD);
+      } else if (transition.nextOpenDrawerId) {
+        applyDomainContextShiftV0(transition.contextShiftPlan);
+      } else {
+        clearFederationOverlayContextV0(RHIZOH_FEDERATION_NODE_V0.WORLD);
+      }
+    }
+
     if (transition.nextOpenDrawerId) {
       /** @type {Record<string, boolean>} */
       const patch = {};
@@ -194,7 +236,8 @@ export function resolveDrawerDomainTagsV0(drawerId, ctx = {}) {
   return resolveRhizohDomainTagsV0({
     pathname: ctx.pathname,
     surfaceId: ctx.surfaceId || drawerId || "world",
-    drawerId: drawerId || null
+    drawerId: drawerId || null,
+    overlayNode: ctx.overlayNode ?? null
   });
 }
 
@@ -212,6 +255,7 @@ export function applyDrawerDomainTagsV0(el, tags) {
 export function closeProductSurfaceDrawerV0() {
   const id = resolveOpenProductSurfaceDrawerIdV0();
   if (id) setRhizohProductSurfacePanelExclusiveV0(id, false);
+  clearFederationOverlayContextV0(RHIZOH_FEDERATION_NODE_V0.WORLD);
   return id;
 }
 

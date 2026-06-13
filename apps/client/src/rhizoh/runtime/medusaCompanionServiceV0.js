@@ -11,11 +11,16 @@ import {
 
 /**
  * @param {HTMLElement} container
- * @param {{ width?: number, height?: number, mediaStream?: MediaStream | null }} [opts]
+ * @param {{ width?: number, height?: number, mediaStream?: MediaStream | null, motionProfile?: { swayScale?: number, idleAmp?: number, audioGain?: number } }} [opts]
  */
 export function mountMedusaCompanionV0(container, opts = {}) {
   const w = opts.width || MEDUSA_COMPANION_DEFAULT_SIZE_V0;
   const h = opts.height || MEDUSA_COMPANION_DEFAULT_SIZE_V0;
+  const motionProfile = Object.freeze({
+    swayScale: opts.motionProfile?.swayScale ?? 1,
+    idleAmp: opts.motionProfile?.idleAmp ?? 0.05,
+    audioGain: opts.motionProfile?.audioGain ?? 1
+  });
 
   let disposed = false;
   let raf = 0;
@@ -81,10 +86,10 @@ export function mountMedusaCompanionV0(container, opts = {}) {
       for (let i = 0; i < data.length; i += 1) sum += data[i];
       motion = sum / (data.length * 255);
     } else {
-      motion = 0.15 + Math.sin(t * 2) * 0.05;
+      motion = 0.15 + Math.sin(t * 2) * motionProfile.idleAmp;
     }
     if (root) {
-      const sway = 0.08 + motion * 0.35;
+      const sway = (0.08 + motion * 0.35 * motionProfile.audioGain) * motionProfile.swayScale;
       root.rotation.y = Math.sin(t * 1.2) * sway;
       root.rotation.z = Math.sin(t * 0.9) * sway * 0.35;
       root.position.y = Math.sin(t * 1.6) * (0.02 + motion * 0.06);

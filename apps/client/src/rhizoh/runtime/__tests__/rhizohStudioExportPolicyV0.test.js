@@ -46,6 +46,16 @@ describe("rhizohStudioExportPolicyV0", () => {
     expect(out.pack).toBeNull();
   });
 
+  it("fer1 merge requires dual consent and sealed vault", () => {
+    const noFer1Consent = requestStudioExportPackV0({ userConsent: true, fer1Consent: false });
+    expect(noFer1Consent.ok).toBe(true);
+    expect(noFer1Consent.pack?.fer1VaultMerge).toBe(false);
+
+    const fer1WithoutSeal = requestStudioExportPackV0({ userConsent: true, fer1Consent: true });
+    expect(fer1WithoutSeal.ok).toBe(false);
+    expect(fer1WithoutSeal.pack).toBeNull();
+  });
+
   it("buildStudioOutputPackManifestV0 denies without internal gate token", () => {
     expect(buildStudioOutputPackManifestV0({ locale: "en" })).toBeNull();
   });
