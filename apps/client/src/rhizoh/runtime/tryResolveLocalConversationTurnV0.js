@@ -15,6 +15,11 @@ import {
 } from "./rhizohVoiceCommandRouterV0.js";
 import { detectCastleIntentWithoutCoords } from "../../kernel/rhizohCommandParser.js";
 import { openCastleInitGateFromLocalCommandV0 } from "./rhizohLocalCommandHandlersV0.js";
+import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
+import {
+  tryExecuteSovereignVoiceWarpFromTextV0,
+  tryOpenSovereignMediaTubeFromTextV0
+} from "./sovereignWorldMapNodesV0.js";
 
 export const RHIZOH_LOCAL_CONVERSATION_TURN_SCHEMA_V0 =
   "castle.rhizoh.local_conversation_turn.v0";
@@ -27,6 +32,22 @@ export function tryResolveLocalConversationTurnV0(text, opts = {}) {
   const raw = String(text || "").trim();
   if (!raw) return null;
 
+  const localeTr = resolveOutputLanguageCodeV0() === "tr";
+  const mediaOpen = tryOpenSovereignMediaTubeFromTextV0(raw, {
+    source: opts.source || "conversation_dock",
+    tr: localeTr
+  });
+  if (mediaOpen) {
+    return Object.freeze({
+      schema: RHIZOH_LOCAL_CONVERSATION_TURN_SCHEMA_V0,
+      ok: true,
+      reply: mediaOpen.reply,
+      source: "sovereign_media_open",
+      llmBypass: true,
+      kind: mediaOpen.kind
+    });
+  }
+
   const route = routeVoiceInputV0(raw);
   if (route.execution === VOICE_ROUTE_EXECUTION_V0.LOCAL) {
     const local = executeLocalVoiceCommandV0(route, { traceId: opts.traceId });
@@ -38,6 +59,22 @@ export function tryResolveLocalConversationTurnV0(text, opts = {}) {
       llmBypass: true,
       kind: local.kind || route.canonical || route.grammarLocal?.kind,
       route
+    });
+  }
+
+  const voiceWarp = tryExecuteSovereignVoiceWarpFromTextV0(raw, {
+    source: opts.source || "conversation_dock",
+    tr: localeTr
+  });
+  if (voiceWarp) {
+    return Object.freeze({
+      schema: RHIZOH_LOCAL_CONVERSATION_TURN_SCHEMA_V0,
+      ok: true,
+      reply: voiceWarp.reply,
+      source: "sovereign_voice_warp",
+      llmBypass: true,
+      kind: voiceWarp.kind,
+      warp: voiceWarp.target
     });
   }
 

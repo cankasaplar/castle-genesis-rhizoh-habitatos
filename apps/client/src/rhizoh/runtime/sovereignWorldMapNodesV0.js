@@ -190,6 +190,21 @@ export const SOVEREIGN_RHIZOH_PORTAL_V0 = Object.freeze({
 });
 
 export const SOVEREIGN_VOICE_WARP_DICT_V0 = Object.freeze({
+  istanbul: Object.freeze({
+    lat: SOVEREIGN_MAP_DEFAULT_HOME_V0.lat,
+    lon: SOVEREIGN_MAP_DEFAULT_HOME_V0.lon,
+    name: "Castle Home Hub"
+  }),
+  kale: Object.freeze({
+    lat: SOVEREIGN_MAP_DEFAULT_HOME_V0.lat,
+    lon: SOVEREIGN_MAP_DEFAULT_HOME_V0.lon,
+    name: "Castle Home Hub"
+  }),
+  castle: Object.freeze({
+    lat: SOVEREIGN_MAP_DEFAULT_HOME_V0.lat,
+    lon: SOVEREIGN_MAP_DEFAULT_HOME_V0.lon,
+    name: "Castle Home Hub"
+  }),
   gemini: Object.freeze({ lat: 37.422, lon: -122.0841, name: "Gemini Neural Tower" }),
   claude: Object.freeze({ lat: 37.7749, lon: -122.4194, name: "Claude Sentinel Tower" }),
   chatgpt: Object.freeze({ lat: 37.7624, lon: -122.4148, name: "ChatGPT Sovereign Hub" }),
@@ -312,6 +327,118 @@ export function parseSovereignVoiceWarpCommandV0(text = "", portalCoords = null)
 }
 
 export const RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1 = "RHIZOH_OPEN_MEDIA_TUBE";
+export const RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1 = "RHIZOH_SOVEREIGN_VOICE_WARP";
+
+const MEDIA_OPEN_TEXT_RE_V0 = /\b(yayın|yayin|medya|media|player|kuantum\s*yayın|kuantum\s*yayin)\b/i;
+const MEDIA_OPEN_VERB_RE_V0 = /\b(aç|ac|open|başlat|baslat|start|göster|goster|show|oynat)\b/i;
+
+function normalizeSovereignCommandTextV0(text) {
+  return String(text || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, " ");
+}
+
+/**
+ * @returns {{ lat: number, lon: number } | null}
+ */
+export function readSovereignPortalCoordsV0() {
+  if (typeof window === "undefined") return null;
+  try {
+    const row = window.__rhizoh?.sovereignPortalCoords;
+    if (row && Number.isFinite(row.lat) && Number.isFinite(row.lon)) {
+      return Object.freeze({ lat: row.lat, lon: row.lon });
+    }
+  } catch {
+    /* noop */
+  }
+  return null;
+}
+
+/**
+ * @param {number} lat
+ * @param {number} lon
+ */
+export function writeSovereignPortalCoordsV0(lat, lon) {
+  if (typeof window === "undefined") return;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+  window.__rhizoh = window.__rhizoh || {};
+  window.__rhizoh.sovereignPortalCoords = Object.freeze({ lat, lon });
+}
+
+/**
+ * @param {{ lat: number, lon: number, name?: string }} target
+ * @param {string} [source]
+ */
+export function dispatchSovereignVoiceWarpV0(target, source = "voice_warp") {
+  if (typeof window === "undefined" || !target) return false;
+  if (!Number.isFinite(target.lat) || !Number.isFinite(target.lon)) return false;
+  window.dispatchEvent(
+    new CustomEvent(RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1, {
+      detail: Object.freeze({
+        lat: target.lat,
+        lon: target.lon,
+        name: String(target.name || "Target"),
+        zoom: 14,
+        source: String(source || "voice_warp")
+      })
+    })
+  );
+  return true;
+}
+
+/**
+ * @param {string} text
+ * @param {{ source?: string, tr?: boolean }} [opts]
+ */
+export function tryExecuteSovereignVoiceWarpFromTextV0(text, opts = {}) {
+  const raw = String(text || "").trim();
+  if (!raw) return null;
+  const portal = readSovereignPortalCoordsV0();
+  const target = parseSovereignVoiceWarpCommandV0(raw, portal);
+  if (!target) return null;
+  dispatchSovereignVoiceWarpV0(target, opts.source || "voice_command");
+  const tr = opts.tr !== false;
+  return Object.freeze({
+    ok: true,
+    kind: "VOICE_WARP",
+    target,
+    reply: tr
+      ? `${target.name} koordinatlarına sıçrıyorum.`
+      : `Warping to ${target.name}.`
+  });
+}
+
+/**
+ * @param {string} text
+ * @param {{ source?: string, tr?: boolean, title?: string }} [opts]
+ */
+export function tryOpenSovereignMediaTubeFromTextV0(text, opts = {}) {
+  const raw = String(text || "").trim();
+  if (!raw) return null;
+  const normalized = normalizeSovereignCommandTextV0(raw);
+  const hasMediaNoun = MEDIA_OPEN_TEXT_RE_V0.test(normalized) || /yayin|medya|media|player|kuantum/.test(normalized);
+  const hasVerb = MEDIA_OPEN_VERB_RE_V0.test(normalized) || /\b(ac|open|baslat|start|goster|show|oynat)\b/.test(normalized);
+  const bare = /^(yayin|medya|media|player)\s*[!.?]*$/.test(normalized);
+  if (!hasMediaNoun || (!hasVerb && !bare)) return null;
+
+  const eventNode =
+    SOVEREIGN_CORE_NODES_V0.find((n) => n.id === "event") ||
+    Object.freeze({ id: "event", type: "broadcast", color: "#a855f7" });
+  const tr = opts.tr !== false;
+  dispatchOpenMediaTubeV0({
+    node: eventNode,
+    title: opts.title || (tr ? "Kuantum Yayını" : "Quantum Broadcast"),
+    source: opts.source || "voice_command"
+  });
+  return Object.freeze({
+    ok: true,
+    kind: "MEDIA_OPEN",
+    reply: tr ? "Medya oynatıcı açılıyor." : "Opening media player."
+  });
+}
 
 /**
  * @param {{ node?: object, title?: string, source?: string }} [payload]

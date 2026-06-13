@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  dispatchSovereignVoiceWarpV0,
   parseSovereignVoiceWarpCommandV0,
+  RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1,
   SOVEREIGN_TOWER_GRAPH_EDGES_V0,
   SOVEREIGN_TOWERS_V0,
-  SOVEREIGN_WORLD_MAP_NODES_V0
+  SOVEREIGN_WORLD_MAP_NODES_V0,
+  tryExecuteSovereignVoiceWarpFromTextV0,
+  tryOpenSovereignMediaTubeFromTextV0,
+  writeSovereignPortalCoordsV0
 } from "../sovereignWorldMapNodesV0.js";
 import {
   ORCHESTRATOR_ACTION_REGISTRY_V0,
@@ -30,6 +35,27 @@ describe("sovereignWorldMapNodesV0", () => {
     expect(paris?.name).toContain("Mistral");
     const gemini = parseSovereignVoiceWarpCommandV0("gemini");
     expect(gemini?.lat).toBeCloseTo(37.422, 2);
+    const istanbul = parseSovereignVoiceWarpCommandV0("istanbul git");
+    expect(istanbul?.name).toContain("Castle");
+  });
+
+  it("executes voice warp and media open from text", () => {
+    const warpEvents = [];
+    const mediaEvents = [];
+    window.addEventListener(RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1, (ev) => warpEvents.push(ev.detail));
+    window.addEventListener("RHIZOH_OPEN_MEDIA_TUBE", (ev) => mediaEvents.push(ev.detail));
+
+    writeSovereignPortalCoordsV0(41.01, 28.99);
+    const warp = tryExecuteSovereignVoiceWarpFromTextV0("paris git", { tr: true });
+    expect(warp?.ok).toBe(true);
+    expect(warpEvents[0]?.name).toContain("Mistral");
+
+    dispatchSovereignVoiceWarpV0({ lat: 41.045, lon: 29.006, name: "Castle" }, "test");
+    expect(warpEvents[1]?.lat).toBeCloseTo(41.045, 3);
+
+    const media = tryOpenSovereignMediaTubeFromTextV0("yayın aç", { tr: true });
+    expect(media?.ok).toBe(true);
+    expect(mediaEvents[0]?.title).toContain("Kuantum");
   });
 
   it("routes event zone to media player", () => {

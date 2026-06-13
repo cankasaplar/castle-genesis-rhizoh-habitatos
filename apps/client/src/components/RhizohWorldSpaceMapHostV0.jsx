@@ -22,7 +22,9 @@ import {
   SOVEREIGN_MAP_DEFAULT_HOME_V0,
   SOVEREIGN_TOWER_GRAPH_EDGES_V0,
   SOVEREIGN_WORLD_MAP_NODES_V0,
-  sovereignNodeIconHtmlV0
+  RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1,
+  sovereignNodeIconHtmlV0,
+  writeSovereignPortalCoordsV0
 } from "../rhizoh/runtime/sovereignWorldMapNodesV0.js";
 
 function projectV11CoreMapGeoV0(lat, lon) {
@@ -146,6 +148,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
   const tileLayerRef = useRef(null);
   const markerLayerRef = useRef(null);
   const graphLayerRef = useRef(null);
+  const portalMarkerRef = useRef(null);
   const nodeById = useRef(new Map(SOVEREIGN_WORLD_MAP_NODES_V0.map((n) => [n.id, n])));
   const [leafletReady, setLeafletReady] = useState(false);
   const [localAnchors, setLocalAnchors] = useState(() => readLocalGhostCastleAnchorsV0());
@@ -204,6 +207,42 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
   }, []);
 
   useEffect(() => {
+    const onWarp = (ev) => {
+      const detail = ev?.detail;
+      const lat = Number(detail?.lat);
+      const lon = Number(detail?.lon);
+      const zoom = Number(detail?.zoom) || 14;
+      if (!mapRef.current || !Number.isFinite(lat) || !Number.isFinite(lon)) return;
+      try {
+        mapRef.current.flyTo([lat, lon], zoom, { animate: true, duration: 2.5 });
+      } catch {
+        /* noop */
+      }
+    };
+    window.addEventListener(RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1, onWarp);
+    return () => window.removeEventListener(RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1, onWarp);
+  }, []);
+
+  useEffect(() => {
+    if (!leafletReady || !portalMarkerRef.current) return undefined;
+    if (!("geolocation" in navigator)) return undefined;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          portalMarkerRef.current?.setLatLng?.([latitude, longitude]);
+        } catch {
+          /* noop */
+        }
+        writeSovereignPortalCoordsV0(latitude, longitude);
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 8000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [leafletReady]);
+
+  useEffect(() => {
     const L = typeof window !== "undefined" ? window.L : null;
     if (!L?.marker || !mapRef.current || !leafletReady) return;
     try {
@@ -232,6 +271,10 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
           emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK);
         });
         marker.on("mouseover", () => emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.HOVER));
+        if (node.id === "rhizoh_portal") {
+          portalMarkerRef.current = marker;
+          writeSovereignPortalCoordsV0(node.lat, node.lon);
+        }
       }
 
       graphLayerRef.current?.clearLayers?.();

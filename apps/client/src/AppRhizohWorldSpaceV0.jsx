@@ -66,7 +66,8 @@ import { CastleInitiationGateV0 } from "./components/CastleInitiationGateV0.jsx"
 import { RhizohV11TowerWorkspaceHostV0 } from "./components/RhizohV11TowerWorkspaceHostV0.jsx";
 import { RhizohWorldSpaceMediaTubeV0 } from "./components/RhizohWorldSpaceMediaTubeV0.jsx";
 import {
-  RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1
+  RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1,
+  RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1
 } from "./rhizoh/runtime/sovereignWorldMapNodesV0.js";
 import {
   completeCastleInitFromMapAnchorV0,
@@ -207,6 +208,19 @@ export default function AppRhizohWorldSpaceV0() {
     window.addEventListener("castle:open-init-gate-v0", onOpenCastleGate);
     window.addEventListener("castle:open-anchor-offer-v0", onOpenCastleGate);
 
+    const onSovereignWarp = (ev) => {
+      const detail = ev?.detail;
+      const lat = Number(detail?.lat);
+      const lon = Number(detail?.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+      try {
+        window.__CASTLE_CESIUM__?.flyToCustom?.(lat, lon, 1200, { source: detail?.source || "voice_warp" });
+      } catch {
+        /* noop */
+      }
+    };
+    window.addEventListener(RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1, onSovereignWarp);
+
     const onWorkspace = (ev) => {
       const detail = ev?.detail;
       if (!detail?.node) return;
@@ -259,6 +273,7 @@ export default function AppRhizohWorldSpaceV0() {
     return () => {
       window.removeEventListener("castle:open-init-gate-v0", onOpenCastleGate);
       window.removeEventListener("castle:open-anchor-offer-v0", onOpenCastleGate);
+      window.removeEventListener(RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1, onSovereignWarp);
       window.removeEventListener(RHIZOH_OPEN_WORKSPACE_EVENT_V1, onWorkspace);
       window.removeEventListener(RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1, onMediaTube);
       window.removeEventListener(RHIZOH_OPEN_CASTLE_EVENT_V1, onCastle);

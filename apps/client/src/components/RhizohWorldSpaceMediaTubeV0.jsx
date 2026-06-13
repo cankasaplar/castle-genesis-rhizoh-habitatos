@@ -1,5 +1,5 @@
-import React, { memo, useCallback, useState } from "react";
-import { Radio, Tv, X } from "lucide-react";
+import React, { memo, useCallback, useMemo, useState } from "react";
+import { Lock, Radio, Tv, X } from "lucide-react";
 
 const DEFAULT_CHANNELS_V0 = Object.freeze([
   Object.freeze({
@@ -18,6 +18,10 @@ const DEFAULT_CHANNELS_V0 = Object.freeze([
   })
 ]);
 
+function isCastleMediaSourceV0(source) {
+  return String(source || "").startsWith("castle_init");
+}
+
 /**
  * Archive EVENT_TUBE — Symbio media shell for broadcast / event / post-castle-init.
  */
@@ -28,6 +32,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
 }) {
   const tr = uiLocale === "tr";
   const [activeChannel, setActiveChannel] = useState(() => DEFAULT_CHANNELS_V0[0]);
+  const castleBroadcast = useMemo(() => isCastleMediaSourceV0(detail?.source), [detail?.source]);
 
   const title =
     String(detail?.title || "").trim() ||
@@ -53,6 +58,13 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
           <div>
             <h1 className="text-lg font-black uppercase tracking-widest text-white">{title}</h1>
             <p className="text-[9px] font-bold uppercase text-purple-400">Symbio Media Engine V4</p>
+            {castleBroadcast ? (
+              <p className="mt-1 text-[9px] font-semibold normal-case text-cyan-300/80">
+                {tr
+                  ? "Castle kurulumu tamam — bu yüzey kale yayın merkezin."
+                  : "Castle setup complete — this is your castle broadcast hub."}
+              </p>
+            ) : null}
           </div>
         </div>
         <button
@@ -84,6 +96,27 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                 {tr ? ch.titleTr : ch.titleEn}
               </button>
             ))}
+            <div className="pt-3">
+              <p className="mb-2 text-[8px] font-black uppercase tracking-[0.24em] text-white/30">
+                {tr ? "Gerçek dünya verisi" : "Real-world feed"}
+              </p>
+              <div
+                className="w-full cursor-not-allowed rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-left text-[10px] text-white/35"
+                title={
+                  tr
+                    ? "Spor / haber API entegrasyonu sonraki sprint — burada görünecek."
+                    : "Sports / news API integration is a later sprint — will appear here."
+                }
+              >
+                <span className="flex items-center gap-2 font-bold">
+                  <Lock size={11} />
+                  {tr ? "Spor · Haber · Canlı veri" : "Sports · News · Live data"}
+                </span>
+                <span className="mt-1 block text-[9px] font-normal normal-case opacity-80">
+                  {tr ? "API bağlantısı henüz yok" : "No API wired yet"}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
