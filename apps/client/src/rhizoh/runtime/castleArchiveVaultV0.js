@@ -70,6 +70,39 @@ function appendEventV0(events, type, entityId, payload = {}) {
   return events;
 }
 
+function normalizeTagsV0(tags = []) {
+  const seen = new Set();
+  const out = [];
+  for (const raw of tags) {
+    const tag = String(raw || "")
+      .trim()
+      .toLowerCase()
+      .slice(0, 48);
+    if (!tag || seen.has(tag)) continue;
+    seen.add(tag);
+    out.push(tag);
+  }
+  return out.slice(0, 24);
+}
+
+function findEntityIndexV0(entities, entityId) {
+  const id = String(entityId || "").trim();
+  return entities.findIndex((e) => e.id === id && !e.tombstonedAt);
+}
+
+function updateEntityV0(entityId, mutator) {
+  const id = String(entityId || "").trim();
+  if (!id) return { ok: false, reason: "missing_id" };
+  const { entities, events } = readVaultRawV0();
+  const idx = findEntityIndexV0(entities, id);
+  if (idx < 0) return { ok: false, reason: "not_found" };
+  const next = mutator({ ...entities[idx] });
+  if (!next) return { ok: false, reason: "mutation_failed" };
+  entities[idx] = Object.freeze(next);
+  writeVaultRawV0(entities, events);
+  return Object.freeze({ ok: true, entity: Object.freeze({ ...next }) });
+}
+
 /**
  * @returns {ReadonlyArray<object>}
  */
@@ -108,8 +141,13 @@ export function saveCastleArchiveEntityV0(input = {}) {
     format,
     content: input.content != null ? String(input.content).slice(0, 500_000) : "",
     mediaUrl: input.mediaUrl ? String(input.mediaUrl).slice(0, 2048) : null,
+    mediaArchiveRef: input.mediaArchiveRef ? String(input.mediaArchiveRef).slice(0, 96) : null,
+    channelId: input.channelId ? String(input.channelId).slice(0, 64) : null,
     source: String(input.source || "user").slice(0, 64),
     towerId: input.towerId ? String(input.towerId).slice(0, 64) : null,
+    tags: Object.freeze(normalizeTagsV0(input.tags || [])),
+    userNotes: Object.freeze([]),
+    bookmarks: Object.freeze([]),
     createdAt: nowIso(),
     tombstonedAt: null
   });
@@ -174,6 +212,112 @@ export function importCastleArchiveDocumentV0(input = {}) {
     openCastleArchiveEntityInMediaV0(entity.id);
   }
   return entity;
+}
+
+/**
+ * @param {string} entityId
+ */
+export function readCastleArchiveEntityV0(entityId) {
+  const id = String(entityId || "").trim();
+  const entity = listCastleArchiveEntitiesV0().find((e) => e.id === id);
+  return entity ? Object.freeze({ ...entity }) : null;
+}
+
+/**
+ * @param {string} entityId
+ * @param {string} text
+ */
+export function addCastleArchiveUserNoteV0(entityId, text) {
+  const noteText = String(text || "").trim().slice(0, 2000);
+  if (!noteText) return { ok: false, reason: "empty_note" };
+  const { entities, events } = readVaultRawV0();
+  const idx = findEntityIndexV0(entities, entityId);
+  if (idx < 0) return { ok: false, reason: "not_found" };
+  const prev = entities[idx];
+  const note = Object.freeze({
+    id: newId("note"),
+    text: noteText,
+    createdAt: nowIso()
+  });
+  const updated = Object.freeze({
+    ...prev,
+    userNotes: Object.freeze([note, ...(prev.userNotes || [])].slice(0, 48))
+  });
+  entities[idx] = updated;
+  const nextEvents = appendEventV0(events, "user_note_added", entityId, { noteId: note.id });
+  writeVaultRawV0(entities, nextEvents);
+  return Object.freeze({ ok: true, entity: updated, note });
+}
+
+/**
+ * @param {string} entityId
+ * @param {string} tag
+ */
+export function addCastleArchiveTagV0(entityId, tag) {
+  const normalized = normalizeTagsV0([tag]);
+  if (!normalized.length) return { ok: false, reason: "empty_tag" };
+  const { entities, events } = readVaultRawV0();
+  const idx = findEntityIndexV0(entities, entityId);
+  if (idx < 0) return { ok: false, reason: "not_found" };
+  const prev = entities[idx];
+  const tags = normalizeTagsV0([...(prev.tags || []), ...normalized]);
+  const updated = Object.freeze({ ...prev, tags: Object.freeze(tags) });
+  entities[idx] = updated;
+  const nextEvents = appendEventV0(events, "tag_added", entityId, { tag: normalized[0] });
+  writeVaultRawV0(entities, nextEvents);
+  return Object.freeze({ ok: true, entity: updated, tag: normalized[0] });
+}
+
+/**
+ * @param {string} entityId
+ * @param {{ label?: string, positionSec?: number }} bookmark
+ */
+export function addCastleArchiveBookmarkV0(entityId, bookmark = {}) {
+  const label = String(bookmark.label || "Bookmark").trim().slice(0, 120);
+  const positionSec =
+    bookmark.positionSec != null && Number.isFinite(Number(bookmark.positionSec))
+      ? Math.max(0, Number(bookmark.positionSec))
+      : null;
+  const { entities, events } = readVaultRawV0();
+  const idx = findEntityIndexV0(entities, entityId);
+  if (idx < 0) return { ok: false, reason: "not_found" };
+  const prev = entities[idx];
+  const row = Object.freeze({
+    id: newId("bm"),
+    label,
+    positionSec,
+    createdAt: nowIso()
+  });
+  const updated = Object.freeze({
+    ...prev,
+    bookmarks: Object.freeze([row, ...(prev.bookmarks || [])].slice(0, 48))
+  });
+  entities[idx] = updated;
+  const nextEvents = appendEventV0(events, "bookmark_added", entityId, {
+    bookmarkId: row.id,
+    positionSec
+  });
+  writeVaultRawV0(entities, nextEvents);
+  return Object.freeze({ ok: true, entity: updated, bookmark: row });
+}
+
+/**
+ * Promote encrypted world-space media archive entry into Castle Archive Vault.
+ * @param {{ mediaArchiveId: string, title?: string, channelId?: string, source?: string }} input
+ */
+export function promoteMediaArchiveToCastleVaultV0(input = {}) {
+  const mediaArchiveId = String(input.mediaArchiveId || "").trim();
+  if (!mediaArchiveId) return { ok: false, reason: "missing_media_ref" };
+  const entity = saveCastleArchiveEntityV0({
+    title: input.title || "Media Recording",
+    format: "application/x-rhizoh-encrypted-media",
+    content: "",
+    mediaArchiveRef: mediaArchiveId,
+    channelId: input.channelId || null,
+    source: input.source || "media_tube",
+    tags: input.tags || ["media", "recording"]
+  });
+  return Object.freeze({ ok: true, entity });
 }
 
 /**
