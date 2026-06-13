@@ -108,6 +108,7 @@ import {
   resolveDrawerDomainTagsV0,
   subscribeDrawerStateV0
 } from "./rhizoh/runtime/rhizohDrawerStateMachineV0.js";
+import { getActiveFederationOverlayNodeV0 } from "./rhizoh/runtime/rhizohDomainGraphV0.js";
 
 export default function AppRhizohWorldSpaceV0() {
   const navigate = useNavigate();
@@ -533,7 +534,8 @@ export default function AppRhizohWorldSpaceV0() {
   useEffect(() => {
     const tags = resolveDrawerDomainTagsV0(openSurfaceDrawerIdV0, {
       pathname: "/world/space",
-      surfaceId: openSurfaceDrawerIdV0 || "world"
+      surfaceId: openSurfaceDrawerIdV0 || "world",
+      overlayNode: getActiveFederationOverlayNodeV0()
     });
     applyDrawerDomainTagsV0(appRootRef.current, tags);
   }, [openSurfaceDrawerIdV0, chromePanelsV0]);

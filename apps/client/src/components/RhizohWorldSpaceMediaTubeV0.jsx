@@ -511,6 +511,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                 <MedusaCompanionOverlayV0
                   active={activeChannel.type === "local"}
                   mediaStream={localPreviewStream}
+                  overlayNode="media"
                 />
                 <div className="flex items-center gap-2 border-t border-white/10 bg-black/80 p-3">
                   <button

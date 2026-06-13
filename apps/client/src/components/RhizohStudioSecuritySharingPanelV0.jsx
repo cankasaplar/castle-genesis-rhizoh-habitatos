@@ -18,6 +18,7 @@ export const RhizohStudioSecuritySharingPanelV0 = memo(function RhizohStudioSecu
 }) {
   const tr = uiLocale === "tr";
   const [userConsent, setUserConsent] = useState(false);
+  const [fer1Consent, setFer1Consent] = useState(false);
   const [exportStatus, setExportStatus] = useState("");
 
   const domainTags = useMemo(
@@ -51,6 +52,7 @@ export const RhizohStudioSecuritySharingPanelV0 = memo(function RhizohStudioSecu
   const onRequestExportPack = useCallback(() => {
     const out = requestStudioExportPackV0({
       userConsent,
+      fer1Consent,
       gatewayOrigin,
       locale: uiLocale
     });
@@ -63,7 +65,7 @@ export const RhizohStudioSecuritySharingPanelV0 = memo(function RhizohStudioSecu
         ? `Mock paket hazır (${out.pack.assets.length} varlık, bellek içi)`
         : `Mock pack ready (${out.pack.assets.length} assets, memory-only)`
     );
-  }, [userConsent, gatewayOrigin, uiLocale, tr]);
+  }, [userConsent, fer1Consent, gatewayOrigin, uiLocale, tr]);
 
   return (
     <div className="mt-3 space-y-2 rounded-xl border border-violet-400/25 bg-violet-950/20 p-3">
@@ -147,6 +149,15 @@ export const RhizohStudioSecuritySharingPanelV0 = memo(function RhizohStudioSecu
           />
           <span>{tr ? "Dışa aktarma onayı veriyorum" : "I consent to export"}</span>
         </label>
+        <label className="mt-2 flex items-center gap-2 normal-case">
+          <input
+            type="checkbox"
+            checked={fer1Consent}
+            onChange={(e) => setFer1Consent(e.target.checked)}
+            className="rounded border-white/20"
+          />
+          <span>{tr ? "FER-1 mühürlü zarfı pakete ekle" : "Attach FER-1 sealed envelope to pack"}</span>
+        </label>
         <button
           type="button"
           disabled={!exportGate.allowed}
@@ -157,7 +168,7 @@ export const RhizohStudioSecuritySharingPanelV0 = memo(function RhizohStudioSecu
         </button>
         {exportStatus ? <p className="mt-2 text-[9px] text-emerald-300/85">{exportStatus}</p> : null}
         <p className="mt-2 text-white/40">
-          {tr ? "FER-1 vault birleşimi Sprint 38" : "FER-1 vault merge in Sprint 38"}
+          {tr ? "FER-1 birleşimi: yalnızca mühürlü vault + çift onay" : "FER-1 merge: sealed vault + dual consent only"}
         </p>
       </div>
     </div>

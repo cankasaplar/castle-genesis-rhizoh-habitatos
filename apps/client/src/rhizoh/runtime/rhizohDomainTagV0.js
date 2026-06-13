@@ -1,34 +1,53 @@
 /**
- * Domain tag layer — normalized tags for UI shells, drawers, telemetry.
- * RESEARCH-ONLY; not domain federation (Sprint 38).
+ * Domain tag layer v0.1 — host + overlay federation tags (Sprint 38).
  */
 
 import { resolveDomainIdFromPathV0 } from "./rhizohDomainGateV0.js";
 import { resolveWorldDomainFromPathV0 } from "./rhizohWorldDomainRoutesV0.js";
+import {
+  getActiveFederationOverlayNodeV0,
+  resolveFederationNodeFromProductSurfaceV0
+} from "./rhizohDomainGraphV0.js";
 
-export const RHIZOH_DOMAIN_TAG_SCHEMA_V0 = "rhizoh.domain_tag.v0";
+export const RHIZOH_DOMAIN_TAG_SCHEMA_V0 = "rhizoh.domain_tag.v1";
 
 /**
- * @param {{ pathname?: string, surfaceId?: string | null, drawerId?: string | null }} [ctx]
+ * @param {{
+ *   pathname?: string,
+ *   surfaceId?: string | null,
+ *   drawerId?: string | null,
+ *   hostDomain?: string | null,
+ *   overlayDomain?: string | null,
+ *   overlayNode?: string | null
+ * }} [ctx]
  */
 export function resolveRhizohDomainTagsV0(ctx = {}) {
   const pathname =
     ctx.pathname ||
     (typeof window !== "undefined" ? String(window.location.pathname || "/") : "/");
-  const domainId = resolveDomainIdFromPathV0(pathname);
+  const domainId = ctx.hostDomain || resolveDomainIdFromPathV0(pathname);
   const worldDomain = resolveWorldDomainFromPathV0(pathname);
   const surfaceId = ctx.surfaceId ? String(ctx.surfaceId) : null;
   const drawerId = ctx.drawerId ? String(ctx.drawerId) : null;
+  const overlayNode =
+    ctx.overlayNode ||
+    ctx.overlayDomain ||
+    (drawerId ? resolveFederationNodeFromProductSurfaceV0(drawerId) : null) ||
+    getActiveFederationOverlayNodeV0();
 
   /** @type {string[]} */
-  const tags = [domainId];
+  const tags = [`host:${domainId}`];
   if (worldDomain) tags.push(`world:${worldDomain}`);
   if (surfaceId && surfaceId !== "world") tags.push(`surface:${surfaceId}`);
+  if (overlayNode) tags.push(`overlay:${overlayNode}`);
   if (drawerId) tags.push(`drawer:${drawerId}`);
 
   return Object.freeze({
     schema: RHIZOH_DOMAIN_TAG_SCHEMA_V0,
     domainId,
+    hostDomain: domainId,
+    overlayDomain: overlayNode,
+    overlayNode,
     worldDomain,
     surfaceId,
     drawerId,
@@ -43,6 +62,12 @@ export function resolveRhizohDomainTagsV0(ctx = {}) {
 export function applyRhizohDomainTagsToElementV0(el, tagSnapshot) {
   if (!el || !tagSnapshot) return;
   el.setAttribute("data-rhizoh-domain-id", tagSnapshot.domainId);
+  el.setAttribute("data-rhizoh-host-domain", tagSnapshot.hostDomain || tagSnapshot.domainId);
+  if (tagSnapshot.overlayNode) {
+    el.setAttribute("data-rhizoh-overlay-domain", tagSnapshot.overlayNode);
+  } else {
+    el.removeAttribute("data-rhizoh-overlay-domain");
+  }
   if (tagSnapshot.worldDomain) {
     el.setAttribute("data-rhizoh-world-domain", tagSnapshot.worldDomain);
   } else {

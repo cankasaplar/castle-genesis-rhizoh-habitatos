@@ -5,6 +5,7 @@
 import { STUDIO_ASSET_MANIFEST_V1 } from "../../studio/assetRegistryV1.js";
 import { RHIZOH_DOMAIN_ID_V0 } from "./rhizohDomainCoreStoreV0.js";
 import { evaluateControlPlaneHealthV0 } from "./rhizohControlPlaneV0.js";
+import { exportFer1VaultForCloudV0, isFer1VaultSealedV0 } from "./fer1MemoryVaultV0.js";
 
 export const RHIZOH_STUDIO_EXPORT_POLICY_SCHEMA_V0 = "rhizoh.studio_export_policy.v0";
 
@@ -18,7 +19,9 @@ export const STUDIO_EXPORT_MODE_V0 = Object.freeze({
   BLOCKED_DEGRADED: "blocked_degraded",
   BLOCKED_NO_CONSENT: "blocked_no_consent",
   BLOCKED_POLICY: "blocked_policy",
-  BLOCKED_FAIL_SAFE: "blocked_fail_safe"
+  BLOCKED_FAIL_SAFE: "blocked_fail_safe",
+  BLOCKED_FER1_CONSENT: "blocked_fer1_consent",
+  BLOCKED_VAULT_UNSEALED: "blocked_vault_unsealed"
 });
 
 /**
@@ -93,8 +96,47 @@ export function describeStudioExportPolicyV0(opts = {}) {
 }
 
 /**
+ * FER-1 sealed envelope merge — ciphertext ref only, no plaintext.
+ * @param {object | null} pack
+ * @param {{ fer1Consent?: boolean }} [opts]
+ */
+export function mergeFer1VaultIntoStudioExportPackV0(pack, opts = {}) {
+  if (!pack) {
+    return Object.freeze({ ok: false, reason: "no_pack", pack: null });
+  }
+  if (STUDIO_EXPORT_FAIL_SAFE_DENY_BY_DEFAULT_V0 && opts.fer1Consent !== true) {
+    return Object.freeze({
+      ok: false,
+      reason: "fer1_consent_required",
+      mode: STUDIO_EXPORT_MODE_V0.BLOCKED_FER1_CONSENT,
+      pack: null
+    });
+  }
+  if (!isFer1VaultSealedV0()) {
+    return Object.freeze({
+      ok: false,
+      reason: "vault_not_sealed",
+      mode: STUDIO_EXPORT_MODE_V0.BLOCKED_VAULT_UNSEALED,
+      pack
+    });
+  }
+  const fer1EncryptedRef = exportFer1VaultForCloudV0();
+  if (!fer1EncryptedRef) {
+    return Object.freeze({ ok: false, reason: "no_sealed_envelope", pack });
+  }
+  return Object.freeze({
+    ok: true,
+    pack: Object.freeze({
+      ...pack,
+      fer1VaultMerge: true,
+      fer1EncryptedRef
+    })
+  });
+}
+
+/**
  * Mock export request — deny-by-default; pack only when gate passes.
- * @param {{ userConsent?: boolean, gatewayOrigin?: string, locale?: string, tensorOk?: boolean }} [opts]
+ * @param {{ userConsent?: boolean, fer1Consent?: boolean, gatewayOrigin?: string, locale?: string, tensorOk?: boolean }} [opts]
  */
 export function requestStudioExportPackV0(opts = {}) {
   const gate = evaluateStudioExportAllowedV0(opts);
@@ -114,6 +156,23 @@ export function requestStudioExportPackV0(opts = {}) {
       mode: STUDIO_EXPORT_MODE_V0.BLOCKED_FAIL_SAFE,
       reason: "fail_safe_denied",
       pack: null
+    });
+  }
+
+  if (opts.fer1Consent === true) {
+    const merged = mergeFer1VaultIntoStudioExportPackV0(pack, opts);
+    if (!merged.ok) {
+      return Object.freeze({
+        ok: false,
+        mode: merged.mode || STUDIO_EXPORT_MODE_V0.BLOCKED_FER1_CONSENT,
+        reason: merged.reason,
+        pack: null
+      });
+    }
+    return Object.freeze({
+      ok: true,
+      mode: gate.mode,
+      pack: merged.pack
     });
   }
 
