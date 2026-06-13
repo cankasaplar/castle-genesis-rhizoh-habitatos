@@ -2,7 +2,7 @@
  * World · Space — dedicated map boot (no AppRhizoh528T0 / ApexEngine / fox stage).
  * @see docs/RHIZOH_WORLD_SURFACE_HIERARCHY_V0.md
  */
-import React, { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useNavigate } from "react-router-dom";
 import "./castleFlight/registerGlobals.js";
 import { useCastleAuth } from "./firebase/useCastleAuth.js";
@@ -99,17 +99,15 @@ import {
   installCastleInitMapPickListenerV0
 } from "./castleFlight/castleInitiationProtocolV0.js";
 import {
-  bootDrawerAwakeningV0,
-  shouldOpenDrawerInPlaceV0
-} from "./rhizoh/runtime/rhizohDrawerAwakeningV0.js";
-import {
-  closeAllRhizohProductSurfacePanelsV0,
-  getRhizohChromePanelsSnapshotV0,
-  resolveOpenProductSurfaceDrawerIdV0,
-  setRhizohProductSurfacePanelExclusiveV0,
-  subscribeRhizohChromePanelsV0,
-  toggleRhizohProductSurfacePanelV0
-} from "./rhizoh/runtime/rhizohProductChromePanelsV0.js";
+  applyDrawerDomainTagsV0,
+  bootDrawerStateMachineV0,
+  closeProductSurfaceDrawerV0,
+  DRAWER_SHELL_ACTION_V0,
+  getDrawerStateSnapshotV0,
+  handleProductShellSelectV0,
+  resolveDrawerDomainTagsV0,
+  subscribeDrawerStateV0
+} from "./rhizoh/runtime/rhizohDrawerStateMachineV0.js";
 
 export default function AppRhizohWorldSpaceV0() {
   const navigate = useNavigate();
@@ -501,36 +499,48 @@ export default function AppRhizohWorldSpaceV0() {
     });
   }, []);
 
+  const appRootRef = useRef(null);
+
   const onProductShellSelect = useCallback(
     (id) => {
-      const surface = String(id || "world");
-      if (surface === "world") {
-        closeAllRhizohProductSurfacePanelsV0();
-        navigate("/world/space");
-        return;
+      const result = handleProductShellSelectV0(id, {
+        pathname: "/world/space",
+        inPlace: true,
+        worldPath: "/world/space"
+      });
+      if (result.action === DRAWER_SHELL_ACTION_V0.NAVIGATE) {
+        navigate(resolveRhizohProductPathV0(result.surface));
+      } else if (result.navigateTo) {
+        navigate(result.navigateTo);
       }
-      if (shouldOpenDrawerInPlaceV0(surface)) {
-        const openDrawerId = resolveOpenProductSurfaceDrawerIdV0();
-        toggleRhizohProductSurfacePanelV0(surface, openDrawerId || "world");
-        return;
-      }
-      navigate(resolveRhizohProductPathV0(surface));
+      applyDrawerDomainTagsV0(appRootRef.current, result.tags);
     },
     [navigate]
   );
 
-  const chromePanelsV0 = useSyncExternalStore(
-    subscribeRhizohChromePanelsV0,
-    getRhizohChromePanelsSnapshotV0,
-    getRhizohChromePanelsSnapshotV0
+  const drawerStateV0 = useSyncExternalStore(
+    subscribeDrawerStateV0,
+    getDrawerStateSnapshotV0,
+    getDrawerStateSnapshotV0
   );
-  const openSurfaceDrawerIdV0 = resolveOpenProductSurfaceDrawerIdV0();
+  const chromePanelsV0 = drawerStateV0.panels;
+  const openSurfaceDrawerIdV0 = drawerStateV0.openDrawerId;
 
   const onCloseSurfaceDrawerV0 = useCallback(() => {
-    if (openSurfaceDrawerIdV0) {
-      setRhizohProductSurfacePanelExclusiveV0(openSurfaceDrawerIdV0, false);
-    }
-  }, [openSurfaceDrawerIdV0]);
+    closeProductSurfaceDrawerV0();
+  }, []);
+
+  useEffect(() => {
+    const tags = resolveDrawerDomainTagsV0(openSurfaceDrawerIdV0, {
+      pathname: "/world/space",
+      surfaceId: openSurfaceDrawerIdV0 || "world"
+    });
+    applyDrawerDomainTagsV0(appRootRef.current, tags);
+  }, [openSurfaceDrawerIdV0, chromePanelsV0]);
+
+  useEffect(() => {
+    bootDrawerStateMachineV0();
+  }, []);
 
   const onLibrarySeedIntentV0 = useCallback(() => {
     try {
@@ -553,16 +563,13 @@ export default function AppRhizohWorldSpaceV0() {
     }
   }, [uiLocale]);
 
-  useEffect(() => {
-    bootDrawerAwakeningV0();
-  }, []);
-
   const mapStripBottomCssV0 = resolveRhizohWorldSpaceMapStripBottomCssV0();
   const voiceDockBottomCssV0 = resolveRhizohWorldSpaceVoiceDockBottomCssV0();
   const bootstrapPlaceLabelV0 = resolveWorldMapBootstrapGeoV0().label;
 
   return (
     <div
+      ref={appRootRef}
       className="fixed inset-0 overflow-hidden bg-[#010103] text-white"
       data-rhizoh-world-space-app="1"
       data-cesium-active={cesiumLayerActiveV0 ? "1" : "0"}
