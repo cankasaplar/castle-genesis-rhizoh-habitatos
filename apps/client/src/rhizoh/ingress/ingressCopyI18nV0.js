@@ -94,7 +94,13 @@ const LEGAL_COPY = Object.freeze({
       ai: "I understand AI features may use cross-border providers (OpenAI, Anthropic, Google, xAI) per the consent text."
     }),
     acceptLabel: "Accept and continue",
-    docsLabel: "Full documents"
+    docsLabel: "Full documents",
+    desktopOs: Object.freeze({
+      title: "Rhizoh Desktop OS",
+      lead: "Install Rhizoh on your desktop as a continuity shell. Your archive and library stay on your device; API keys bind to tower workspaces.",
+      downloadLabel: "Desktop install guide",
+      downloadHref: "/legal/rhizoh-desktop-os-en.html"
+    })
   }),
   tr: Object.freeze({
     kicker: "HUKUKİ GEÇİT",
@@ -117,7 +123,13 @@ const LEGAL_COPY = Object.freeze({
       ai: "Yapay zekâ özelliklerinin yurtdışı sağlayıcılar üzerinden çalışabileceğini okudum; Açık Rıza metni kapsamında onay veriyorum."
     }),
     acceptLabel: "Onayla ve devam et",
-    docsLabel: "Tam metinler"
+    docsLabel: "Tam metinler",
+    desktopOs: Object.freeze({
+      title: "Rhizoh Masaüstü OS",
+      lead: "Rhizoh'u masaüstünüze süreklilik kabuğu olarak kurun. Arşiv ve kütüphane cihazınızda kalır; API anahtarları tower workspace'lere bağlanır.",
+      downloadLabel: "Masaüstü kurulum rehberi",
+      downloadHref: "/legal/rhizoh-desktop-os-tr.html"
+    })
   })
 });
 

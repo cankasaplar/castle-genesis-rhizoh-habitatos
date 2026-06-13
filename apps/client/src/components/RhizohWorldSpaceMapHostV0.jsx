@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useRef, useState } from "react";
+import React, { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import CesiumRealMapLayer from "../castleFlight/CesiumRealMapLayer.jsx";
 import { RHIZOH_SPATIAL_RENDER_MODE_V0 } from "../rhizoh/runtime/spatialBootGateV0.js";
 import {
@@ -33,6 +33,15 @@ import {
   sovereignNodeIconHtmlV0,
   writeSovereignPortalCoordsV0
 } from "../rhizoh/runtime/sovereignWorldMapNodesV0.js";
+import {
+  listCastlePresenceV0,
+  mergeRemoteCastlesWithNetworkPresenceV0,
+  subscribeCastlePresenceV0
+} from "../rhizoh/runtime/castlePresenceRegistryV0.js";
+
+function readPresenceCountSnapshotV0() {
+  return listCastlePresenceV0().length;
+}
 
 function projectV11CoreMapGeoV0(lat, lon) {
   const x = ((Number(lon) + 180) / 360) * 100;
@@ -171,13 +180,22 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
   const portalMarkerRef = useRef(null);
   const boundsFittedRef = useRef(false);
   const [userCastleGeo, setUserCastleGeo] = useState(() => resolveUserCastleGeoForMapViewV0());
+  const presenceCountV0 = useSyncExternalStore(
+    subscribeCastlePresenceV0,
+    readPresenceCountSnapshotV0,
+    () => 0
+  );
+  const mergedRemoteCastles = useMemo(
+    () => mergeRemoteCastlesWithNetworkPresenceV0(remoteCastles, listCastlePresenceV0()),
+    [remoteCastles, presenceCountV0]
+  );
   const displayNodes = useMemo(
     () => listSovereignWorldMapNodesForViewV0({ userCastle: userCastleGeo }),
     [userCastleGeo]
   );
   const remoteNodes = useMemo(
-    () => (remoteCastlesVisible ? buildRemoteCastleMapNodesV0(remoteCastles) : []),
-    [remoteCastles, remoteCastlesVisible]
+    () => (remoteCastlesVisible ? buildRemoteCastleMapNodesV0(mergedRemoteCastles) : []),
+    [mergedRemoteCastles, remoteCastlesVisible]
   );
   const nodeById = useRef(new Map(displayNodes.map((n) => [n.id, n])));
   const [leafletReady, setLeafletReady] = useState(false);

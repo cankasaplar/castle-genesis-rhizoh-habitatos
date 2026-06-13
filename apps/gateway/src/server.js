@@ -72,6 +72,14 @@ import {
   setDefaultConnection,
   resolveConnection
 } from "./llmConnectionsStore.js";
+import { getCloudSyncSnapshotV0, mergeCloudSyncSnapshotV0 } from "./castleCloudSyncStore.js";
+import {
+  CASTLE_NETWORK_SIGNAL_V0,
+  handleCastleNetworkSignalV0,
+  listCastleNetworkPresenceV0,
+  removeCastleNetworkClientV0,
+  validateCastleNetworkSignalPayloadV0
+} from "./castleNetworkRelayV0.js";
 import { checkHttpRateLimit, getHttpClientIp } from "./castleHttpRateLimit.js";
 import {
   submitAbuseReportV0,
@@ -1618,6 +1626,48 @@ const httpServer = createServer(async (req, res) => {
       sendJson(res, 200, { ok: true, id, items: await listConnections(auth.uid) });
     } catch (error) {
       sendJson(res, 400, { ok: false, error: error?.message || "delete_connection_failed" });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && req.url?.startsWith("/rhizoh/network/presence")) {
+    const auth = await resolveHttpUser(req);
+    if (!auth.ok) return sendJson(res, 401, { ok: false, error: auth.reason });
+    try {
+      const u = new URL(req.url, "http://localhost");
+      const roomKey = String(u.searchParams.get("room") || "world_space_c2c_v0").slice(0, 64);
+      sendJson(res, 200, {
+        ok: true,
+        roomKey,
+        presence: listCastleNetworkPresenceV0(roomKey)
+      });
+    } catch (error) {
+      sendJson(res, 500, { ok: false, error: error?.message || "presence_failed" });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && req.url === "/rhizoh/sync/vault") {
+    const auth = await resolveHttpUser(req);
+    if (!auth.ok) return sendJson(res, 401, { ok: false, error: auth.reason });
+    try {
+      const snapshot = await getCloudSyncSnapshotV0(auth.uid);
+      sendJson(res, 200, { ok: true, uid: auth.uid, snapshot });
+    } catch (error) {
+      sendJson(res, 500, { ok: false, error: error?.message || "cloud_sync_pull_failed" });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/rhizoh/sync/vault") {
+    const auth = await resolveHttpUser(req);
+    if (!auth.ok) return sendJson(res, 401, { ok: false, error: auth.reason });
+    try {
+      const payload = await readHttpJson(req);
+      const snapshot = await mergeCloudSyncSnapshotV0(auth.uid, payload || {});
+      sendJson(res, 200, { ok: true, uid: auth.uid, snapshot });
+    } catch (error) {
+      sendJson(res, 400, { ok: false, error: error?.message || "cloud_sync_push_failed" });
     }
     return;
   }
@@ -3900,6 +3950,9 @@ function validateInputFrame(payload, socket) {
 function validateSignalPayload(payload) {
   if (!payload || typeof payload !== "object") return "Invalid signaling payload.";
   const signalType = payload.signalType;
+  if (Object.values(CASTLE_NETWORK_SIGNAL_V0).includes(signalType)) {
+    return null;
+  }
   if (!["OFFER", "ANSWER", "ICE"].includes(signalType)) return "Invalid signal type.";
   if (typeof payload.to !== "string" || payload.to.length < 3) return "Invalid signal destination.";
   if (signalType !== "ICE" && JSON.stringify(payload.sdp || {}).length > 16 * 1024) return "SDP too large.";
@@ -3993,6 +4046,15 @@ wss.on("connection", async (socket, req) => {
 
     if (parsed.type === WS_MESSAGE.SIGNAL) {
       const payload = parsed.payload || {};
+      if (Object.values(CASTLE_NETWORK_SIGNAL_V0).includes(payload.signalType)) {
+        const netErr = validateCastleNetworkSignalPayloadV0(socket, payload);
+        if (netErr) {
+          socket.send(JSON.stringify(createEnvelope(WS_MESSAGE.ERROR, { error: netErr })));
+          return;
+        }
+        handleCastleNetworkSignalV0(socket, payload, wss);
+        return;
+      }
       const err = validateSignalPayload(payload);
       if (err) {
         socket.send(JSON.stringify(createEnvelope(WS_MESSAGE.ERROR, { error: err })));
@@ -4139,6 +4201,7 @@ wss.on("connection", async (socket, req) => {
     rhizohVoiceLiveSessions.delete(socket);
     spiralState.activeByClient.delete(socket.clientId);
     removeCastleSocialClientFromAllRooms(socket.clientId);
+    removeCastleNetworkClientV0(socket.clientId, wss);
     broadcast(createEnvelope(WS_MESSAGE.PEERS, { peers: [...wss.clients].map((c) => c.clientId).filter(Boolean) }));
     broadcastState();
   });

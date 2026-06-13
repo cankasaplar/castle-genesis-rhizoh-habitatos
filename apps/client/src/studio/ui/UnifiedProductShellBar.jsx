@@ -4,6 +4,11 @@ import {
   resolveShellHintsV0
 } from "../../rhizoh/runtime/rhizohProductCopyI18nV0.js";
 import { readUiLocaleV0 } from "../../rhizoh/runtime/rhizohUiLocaleV0.js";
+import {
+  isDrawerModuleAwakenedV0,
+  subscribeDrawerAwakeningV0
+} from "../../rhizoh/runtime/rhizohDrawerAwakeningV0.js";
+import { useSyncExternalStore } from "react";
 
 const PRODUCT_SHELL_IDS_V0 = Object.freeze([
   "world",
@@ -50,6 +55,8 @@ export function UnifiedProductShellBar({ active, panelOpen = {}, onSelect, uiLoc
   const locale = uiLocale || readUiLocaleV0();
   const items = resolveProductShellItemsV0(locale);
   const tr = locale === "tr";
+  const awakeTick = useSyncExternalStore(subscribeDrawerAwakeningV0, () => "awake", () => "awake");
+  void awakeTick;
   return (
     <nav
       className="pointer-events-auto fixed bottom-0 left-0 right-0 z-[61] border-t border-cyan-400/20 bg-[#030711]/92 backdrop-blur-xl"
@@ -86,8 +93,18 @@ export function UnifiedProductShellBar({ active, panelOpen = {}, onSelect, uiLoc
               <span className="block truncate normal-case tracking-normal opacity-95 sm:hidden">{item.label.split(" ")[0]}</span>
               <span className="hidden sm:block">{item.label}</span>
               {item.status ? (
-                <span className="mt-0.5 block truncate text-[7px] font-semibold uppercase tracking-wide text-white/38">
-                  {tr ? item.status.tr : item.status.en}
+                <span
+                  className={`mt-0.5 block truncate text-[7px] font-semibold uppercase tracking-wide ${
+                    isDrawerModuleAwakenedV0(item.id) ? "text-emerald-300/85" : "text-white/38"
+                  }`}
+                >
+                  {isDrawerModuleAwakenedV0(item.id)
+                    ? tr
+                      ? "Uyanık"
+                      : "Awake"
+                    : tr
+                      ? item.status.tr
+                      : item.status.en}
                 </span>
               ) : null}
             </button>

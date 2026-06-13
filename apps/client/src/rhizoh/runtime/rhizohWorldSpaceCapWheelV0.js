@@ -42,6 +42,23 @@ export function handleWorldSpaceCapWheelNodeV0(node) {
     return;
   }
   if (id === "archive") {
-    console.info("[world:space] archive map — research-only (not wired in preview)");
+    try {
+      window.dispatchEvent(
+        new CustomEvent("RHIZOH_OPEN_LIBRARY", {
+          detail: Object.freeze({
+            node: Object.freeze({
+              id: "library",
+              label: "LIBRARY",
+              name: "Codex Vault",
+              type: "vault",
+              color: "#f59e0b"
+            }),
+            source: "cap_wheel"
+          })
+        })
+      );
+    } catch {
+      /* noop */
+    }
   }
 }

@@ -4,6 +4,9 @@ import { resolveWorldSpaceMediaChannelForMapNodeV0 } from "./worldSpaceMediaChan
 import {
   ORCHESTRATOR_ACTION_REGISTRY_V0,
   RHIZOH_OPEN_CASTLE_EVENT_V1,
+  RHIZOH_OPEN_CHESS_ARENA_EVENT_V1,
+  RHIZOH_OPEN_LIBRARY_EVENT_V1,
+  RHIZOH_OPEN_TOWER_PORTAL_EVENT_V1,
   RHIZOH_OPEN_WORKSPACE_EVENT_V1,
   RHIZOH_SHOW_INFO_EVENT_V1,
   RHIZOH_V11_MAP_INTENT_EVENT_V0,
@@ -33,6 +36,38 @@ export function attachRhizohMapExecutionOrchestratorV1() {
       case ORCHESTRATOR_ACTION_REGISTRY_V0.ENTER_CASTLE:
         window.dispatchEvent(
           new CustomEvent(RHIZOH_OPEN_CASTLE_EVENT_V1, {
+            detail: Object.freeze({ node, runtime, routed: detail })
+          })
+        );
+        break;
+
+      case ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_WORKSPACE:
+        window.dispatchEvent(
+          new CustomEvent(RHIZOH_OPEN_WORKSPACE_EVENT_V1, {
+            detail: Object.freeze({ node, runtime, routed: detail, workspace: true })
+          })
+        );
+        break;
+
+      case ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_LIBRARY:
+        window.dispatchEvent(
+          new CustomEvent(RHIZOH_OPEN_LIBRARY_EVENT_V1, {
+            detail: Object.freeze({ node, runtime, routed: detail })
+          })
+        );
+        break;
+
+      case ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_CHESS_ARENA:
+        window.dispatchEvent(
+          new CustomEvent(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, {
+            detail: Object.freeze({ node, runtime, routed: detail })
+          })
+        );
+        break;
+
+      case ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_TOWER_PORTAL:
+        window.dispatchEvent(
+          new CustomEvent(RHIZOH_OPEN_TOWER_PORTAL_EVENT_V1, {
             detail: Object.freeze({ node, runtime, routed: detail })
           })
         );

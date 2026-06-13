@@ -62,6 +62,30 @@ export function LegalPreambleScreen({ onProceed, specSha256 = null }) {
         {copy.docsNote ? (
           <p style={{ fontSize: 12, lineHeight: 1.5, opacity: 0.75, margin: "0 0 16px" }}>{copy.docsNote}</p>
         ) : null}
+        {copy.desktopOs ? (
+          <section
+            style={{
+              marginBottom: 20,
+              padding: 14,
+              borderRadius: 12,
+              border: "1px solid rgba(34, 211, 238, 0.35)",
+              background: "rgba(6, 182, 212, 0.08)"
+            }}
+          >
+            <p style={{ fontSize: 11, letterSpacing: "0.08em", opacity: 0.75, margin: "0 0 6px", textTransform: "uppercase" }}>
+              {copy.desktopOs.title}
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.5, opacity: 0.9, margin: "0 0 10px" }}>{copy.desktopOs.lead}</p>
+            <a
+              href={copy.desktopOs.downloadHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ ...INGRESS_SURFACE_V0.link, fontSize: 13, fontWeight: 600 }}
+            >
+              {copy.desktopOs.downloadLabel}
+            </a>
+          </section>
+        ) : null}
         <label style={checkboxStyle}>
           <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} style={{ marginTop: 4 }} />
           <span>{copy.checkboxes.terms}</span>

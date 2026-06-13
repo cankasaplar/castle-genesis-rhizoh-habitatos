@@ -20,6 +20,11 @@ import {
 import { trimRhizohLlmRequestBodyV0 } from "./rhizohLlmPayloadTrimV0.js";
 import { tryResolveMemoryConsentTurnV1 } from "./rhizohMemoryConsentTurnV1.js";
 import { pollRhizohLlmWorkerTaskV0, postRhizohLlmSyncFallbackV0 } from "./rhizohLlmWorkerPollV0.js";
+import {
+  tryResolveRhizohLocalKnowledgeV0,
+  resolveTeacherSourceFromProviderV0
+} from "./rhizohPolicyRouterV0.js";
+import { ingestTeacherExchangeV0 } from "./rhizohTeacherIngestV0.js";
 
 export const RHIZOH_LLM_TURN_CLIENT_SCHEMA_V0 = "castle.rhizoh.llm_turn_client.v0";
 
@@ -61,6 +66,21 @@ export async function postRhizohLlmTurnV0(input = {}) {
       llmBypass: true,
       spatialAnchor: consentTurn.spatialAnchor || null,
       consentStatus: consentTurn.consentStatus
+    });
+  }
+
+  const localKnowledge = tryResolveRhizohLocalKnowledgeV0(message, { traceId: input.traceId });
+  if (localKnowledge?.reply) {
+    return Object.freeze({
+      ok: true,
+      schema: RHIZOH_LLM_TURN_CLIENT_SCHEMA_V0,
+      reply: localKnowledge.reply,
+      traceId: String(input.traceId || localKnowledge.traceId || ""),
+      source: localKnowledge.source,
+      knowledgeId: localKnowledge.knowledgeId,
+      matchScore: localKnowledge.matchScore,
+      llmBypass: true,
+      askRhizoh: true
     });
   }
 
@@ -207,6 +227,18 @@ export async function postRhizohLlmTurnV0(input = {}) {
       if (prep?.turn?.awaitSoftIntelligence) {
         void prep.turn.awaitSoftIntelligence();
       }
+      const teacherSource = resolveTeacherSourceFromProviderV0(
+        input.provider || normalized?.provider || data?.provider
+      );
+      if (reply) {
+        ingestTeacherExchangeV0({
+          question: message,
+          answer: reply,
+          provider: input.provider,
+          teacher: teacherSource,
+          traceId: String(normalized.traceId || input.traceId || taskId)
+        });
+      }
       return Object.freeze({
         ok: true,
         schema: RHIZOH_LLM_TURN_CLIENT_SCHEMA_V0,
@@ -214,6 +246,8 @@ export async function postRhizohLlmTurnV0(input = {}) {
         normalized,
         directive: normalized.directive,
         traceId: String(normalized.traceId || input.traceId || taskId),
+        source: teacherSource,
+        teacherIngested: Boolean(reply),
         replyParsingConfidence: normalized.replyParsingConfidence,
         replyFormatDriftScore: normalized.replyFormatDriftScore,
         extractPath: normalized.extractPath,
@@ -252,6 +286,19 @@ export async function postRhizohLlmTurnV0(input = {}) {
       void prep.turn.awaitSoftIntelligence();
     }
 
+    const teacherSource = resolveTeacherSourceFromProviderV0(
+      input.provider || normalized?.provider || data?.provider
+    );
+    if (reply) {
+      ingestTeacherExchangeV0({
+        question: message,
+        answer: reply,
+        provider: input.provider,
+        teacher: teacherSource,
+        traceId: String(normalized.traceId || input.traceId || "")
+      });
+    }
+
     return Object.freeze({
       ok: true,
       schema: RHIZOH_LLM_TURN_CLIENT_SCHEMA_V0,
@@ -259,6 +306,8 @@ export async function postRhizohLlmTurnV0(input = {}) {
       normalized,
       directive: normalized.directive,
       traceId: String(normalized.traceId || input.traceId || ""),
+      source: teacherSource,
+      teacherIngested: Boolean(reply),
       replyParsingConfidence: normalized.replyParsingConfidence,
       replyFormatDriftScore: normalized.replyFormatDriftScore,
       extractPath: normalized.extractPath,

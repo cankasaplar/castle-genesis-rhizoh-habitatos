@@ -13,6 +13,8 @@ import {
   enhanceGeminiTowerSketchV0,
   generateGeminiTowerImageV0
 } from "../rhizoh/runtime/geminiTowerBrainV0.js";
+import { RhizohTowerLlmConnectionsStripV0 } from "./RhizohTowerLlmConnectionsStripV0.jsx";
+import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
 
 const C = GEMINI_TOWER_DESIGN_V0.identity.colors;
 
@@ -306,6 +308,9 @@ export const GeminiTowerWorkspaceV0 = memo(function GeminiTowerWorkspaceV0({ ope
             {GEMINI_TOWER_DESIGN_V0.identity.name}
           </h1>
           <p className="text-[10px] text-white/50">{GEMINI_TOWER_DESIGN_V0.identity.tagline}</p>
+          <div className="mt-1">
+            <RhizohTowerLiveStatusBadgeV0 towerId="gemini_tower" uiLocale={uiLocale} />
+          </div>
         </div>
         <div className="flex items-center gap-3">
           {status ? <span className="text-[10px] text-cyan-200/90">{status}</span> : null}
@@ -345,6 +350,9 @@ export const GeminiTowerWorkspaceV0 = memo(function GeminiTowerWorkspaceV0({ ope
               {sidebarExpanded ? <span className="truncate font-semibold">{room.name}</span> : null}
             </button>
           ))}
+          {sidebarExpanded ? (
+            <RhizohTowerLlmConnectionsStripV0 towerId="gemini_tower" uiLocale={uiLocale} />
+          ) : null}
         </nav>
 
         <main className="flex min-h-0 flex-1 flex-col p-4">

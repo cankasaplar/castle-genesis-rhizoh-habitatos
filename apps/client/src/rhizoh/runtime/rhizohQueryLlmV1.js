@@ -29,6 +29,10 @@ import { resolveSttGateConfidenceV0 } from "./sttGateConfidenceV0.js";
 import { VOICE_DIRECTED_SPEECH_BAND } from "./voiceDirectedSpeechObservationV0.js";
 import { buildRhizohContinuityHealthDetailV0, publishRhizohTrustDebugV0 } from "./rhizohTrustDebugV0.js";
 import { bindTurnIdentityV0 } from "./rhizohIdentityContinuityCoreV0.js";
+import {
+  beginRhizohTowerLlmFlightV0,
+  endRhizohTowerLlmFlightV0
+} from "./rhizohTowerLiveStatusV0.js";
 import { recordReplyFormatDriftSampleV0, getReplyFormatDriftRollingV0 } from "./replyFormatDriftTrackerV0.js";
 import {
   normalizeRhizohLlmGatewayResponseV0,
@@ -87,6 +91,8 @@ import { trimRhizohLlmRequestBodyV0 } from "./rhizohLlmPayloadTrimV0.js";
 import { pollRhizohLlmWorkerTaskV0, postRhizohLlmSyncFallbackV0 } from "./rhizohLlmWorkerPollV0.js";
 import { tryResolveMemoryConsentTurnV1 } from "./rhizohMemoryConsentTurnV1.js";
 import { tryLocalReflexReplyV0 } from "./rhizohLocalReflexLayerV0.js";
+import { tryResolveRhizohLocalKnowledgeV0, resolveTeacherSourceFromProviderV0 } from "./rhizohPolicyRouterV0.js";
+import { ingestTeacherExchangeV0 } from "./rhizohTeacherIngestV0.js";
 import {
   runFastPrecheckFromTextV0,
   publishFastPrecheckHitV0
@@ -404,6 +410,25 @@ export async function queryRhizohLLM({
       microIntent: reflexReply.microIntent,
       llmBypass: true,
       reflexLatencyMs: reflexReply.latencyMs
+    };
+  }
+
+  const rhizohLocal = tryResolveRhizohLocalKnowledgeV0(trimmed, { traceId: clientTraceId });
+  if (rhizohLocal?.reply) {
+    logRhizohHealth("rhizoh_local_knowledge_hit", {
+      traceId: clientTraceId,
+      knowledgeId: rhizohLocal.knowledgeId,
+      matchScore: rhizohLocal.matchScore
+    });
+    return {
+      reply: rhizohLocal.reply,
+      directive: rhizohLocal.directive,
+      source: rhizohLocal.source,
+      traceId: clientTraceId,
+      knowledgeId: rhizohLocal.knowledgeId,
+      matchScore: rhizohLocal.matchScore,
+      llmBypass: true,
+      askRhizoh: true
     };
   }
 
@@ -1146,6 +1171,7 @@ export async function queryRhizohLLM({
   const langBundle = buildRhizohLanguagePropagationBundleV0();
 
   try {
+    beginRhizohTowerLlmFlightV0();
     const llmBoundary = gateLlmInputForTurnV0(clientTraceId, "queryRhizohLLM");
     if (llmBoundary.block) {
       logVoiceInfoV0("TURN_SOVEREIGNTY_LLM_BLOCKED", {
@@ -1465,6 +1491,18 @@ export async function queryRhizohLLM({
           ? ""
           : "Rhizoh yan─▒t─▒ bo┼ş d├Ând├╝."
     });
+    const teacherSource = resolveTeacherSourceFromProviderV0(
+      json?.provider ?? provider ?? normalized?.provider
+    );
+    if (replyOk && trimmed) {
+      ingestTeacherExchangeV0({
+        question: trimmed,
+        answer: replyOk,
+        provider: json?.provider ?? provider,
+        teacher: teacherSource,
+        traceId: turnTraceId
+      });
+    }
     const postOk = finalizeRhizohAfterLlm(rhizohEmotions, {
       rhizohRouter,
       reply: replyOk,
@@ -1513,7 +1551,8 @@ export async function queryRhizohLLM({
     return {
       reply: replyOk,
       directive: normalized.directive,
-      source: "remote-llm",
+      source: teacherSource,
+      teacherIngested: Boolean(replyOk && trimmed),
       traceId: turnTraceId,
       llmProvider: json?.provider ?? provider ?? null,
       llmModel: json?.model ?? null,
@@ -1608,5 +1647,7 @@ export async function queryRhizohLLM({
       outcomeSession: postFb.outcomeSession,
       rhizohRecallMerge
     };
+  } finally {
+    endRhizohTowerLlmFlightV0();
   }
 }

@@ -10,10 +10,10 @@ import { readActiveSpatialMemoryMapPinsV1 } from "../rhizoh/runtime/rhizohSpatia
 import { readCastleSocialAvSessionV0 } from "../castleSocial/castleSocialAvSessionV0.js";
 import { getRhizohWorldMapToolSnapshotV0 } from "../rhizoh/runtime/rhizohWorldMapToolV0.js";
 import { buildRhizohMapBrainActionsV1 } from "../rhizoh/runtime/rhizohMapBrainV1.js";
-import {
-  buildRhizohLiveContextEnvelopeV2,
+import { buildRhizohLiveContextEnvelopeV2,
   formatRhizohLiveContextActionLabelV2
 } from "../rhizoh/runtime/rhizohLiveContextEngineV2.js";
+import { RhizohAskRhizohSourceBadgeV0 } from "./RhizohAskRhizohSourceBadgeV0.jsx";
 
 /**
  * Map-stage voice dock — mic + text only. No fox / Octo / cube stage.
@@ -116,6 +116,9 @@ export const RhizohWorldSpaceVoiceDockV0 = memo(function RhizohWorldSpaceVoiceDo
     >
       {dock.lastReply ? (
         <div className="border-b border-white/8 px-3 py-2 text-[11px] leading-snug text-white/88 normal-case">
+          <div className="mb-1 flex items-center gap-2">
+            <RhizohAskRhizohSourceBadgeV0 source={dock.lastReplySource} uiLocale={locale} compact />
+          </div>
           {dock.lastReply.slice(0, 280)}
           {dock.lastReply.length > 280 ? "…" : ""}
         </div>

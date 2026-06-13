@@ -2,7 +2,7 @@
  * World · Space — dedicated map boot (no AppRhizoh528T0 / ApexEngine / fox stage).
  * @see docs/RHIZOH_WORLD_SURFACE_HIERARCHY_V0.md
  */
-import React, { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useNavigate } from "react-router-dom";
 import "./castleFlight/registerGlobals.js";
 import { useCastleAuth } from "./firebase/useCastleAuth.js";
@@ -59,13 +59,23 @@ import { evaluateSpatialBootGateV0 } from "./rhizoh/runtime/spatialBootGateV0.js
 import { attachRhizohMapExecutionOrchestratorV1 } from "./rhizoh/runtime/rhizohMapExecutionOrchestratorV1.js";
 import {
   RHIZOH_OPEN_CASTLE_EVENT_V1,
+  RHIZOH_OPEN_CHESS_ARENA_EVENT_V1,
+  RHIZOH_OPEN_LIBRARY_EVENT_V1,
+  RHIZOH_OPEN_TOWER_PORTAL_EVENT_V1,
   RHIZOH_OPEN_WORKSPACE_EVENT_V1,
   RHIZOH_SHOW_INFO_EVENT_V1
 } from "./rhizoh/runtime/symbyoMapIntentBridgeV0.js";
 import { openCastleInitGateFromLocalCommandV0 } from "./rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
 import { CastleInitiationGateV0 } from "./components/CastleInitiationGateV0.jsx";
 import { RhizohV11TowerWorkspaceHostV0 } from "./components/RhizohV11TowerWorkspaceHostV0.jsx";
+import { RhizohCastleLibraryPanelV0 } from "./components/RhizohCastleLibraryPanelV0.jsx";
+import { RhizohChessArenaWorkspaceV0 } from "./components/RhizohChessArenaWorkspaceV0.jsx";
+import { RhizohTowerPortalDiscoveryV0 } from "./components/RhizohTowerPortalDiscoveryV0.jsx";
+import { RhizohCastleLivingMemoryPanelV0 } from "./components/RhizohCastleLivingMemoryPanelV0.jsx";
 import { RhizohWorldSpaceMediaTubeV0 } from "./components/RhizohWorldSpaceMediaTubeV0.jsx";
+import { RhizohProductSurfaceDrawerV0 } from "./components/RhizohProductSurfaceDrawerV0.jsx";
+import { getGenesisProtocolGatewayOrigin } from "./castleFlight/castleFlightConfig.js";
+import { CASTLE_ARCHIVE_OPEN_MEDIA_EVENT_V0 } from "./rhizoh/runtime/castleArchiveVaultV0.js";
 import { RhizohWorldSpaceC2cPanelV0 } from "./components/RhizohWorldSpaceC2cPanelV0.jsx";
 import {
   RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1,
@@ -78,10 +88,28 @@ import {
   writeRemoteCastlesVisibleV0
 } from "./rhizoh/runtime/remoteCastleMapVisibilityV0.js";
 import { bootCastleC2cSignalingV0, disposeCastleC2cTransportV0 } from "./castleSocial/castleC2cWebRtcTransportV0.js";
+import { bootLivingCastleMemoryV0 } from "./rhizoh/runtime/livingCastleMemoryV0.js";
+import { bootRhizohLearningCoreV0 } from "./rhizoh/runtime/rhizohLearningCoreBootV0.js";
+import {
+  disposeCastleMemoryHooksV0,
+  installCastleMemoryHooksV0
+} from "./rhizoh/runtime/castleMemoryHooksV0.js";
 import {
   completeCastleInitFromMapAnchorV0,
   installCastleInitMapPickListenerV0
 } from "./castleFlight/castleInitiationProtocolV0.js";
+import {
+  applyDrawerDomainTagsV0,
+  bootDrawerStateMachineV0,
+  closeProductSurfaceDrawerV0,
+  DRAWER_SHELL_ACTION_V0,
+  getDrawerStateSnapshotV0,
+  handleProductShellSelectV0,
+  resolveDrawerDomainTagsV0,
+  subscribeDrawerStateV0
+} from "./rhizoh/runtime/rhizohDrawerStateMachineV0.js";
+import { bootRhizohOsStabilReleaseLayerV0 } from "./rhizoh/runtime/rhizohOsStabilReleaseLayerV0.js";
+import { getActiveFederationOverlayNodeV0 } from "./rhizoh/runtime/rhizohDomainGraphV0.js";
 
 export default function AppRhizohWorldSpaceV0() {
   const navigate = useNavigate();
@@ -100,6 +128,10 @@ export default function AppRhizohWorldSpaceV0() {
   const [geoError, setGeoError] = useState("");
   const [v11NodePanel, setV11NodePanel] = useState(null);
   const [v11Workspace, setV11Workspace] = useState(null);
+  const [v11Library, setV11Library] = useState(null);
+  const [v11ChessArena, setV11ChessArena] = useState(null);
+  const [v11TowerPortal, setV11TowerPortal] = useState(null);
+  const [v11LivingMemory, setV11LivingMemory] = useState(false);
   const [v11MediaTube, setV11MediaTube] = useState(null);
   const [castleInitGateOpen, setCastleInitGateOpen] = useState(false);
   const [c2cPeer, setC2cPeer] = useState(null);
@@ -177,8 +209,17 @@ export default function AppRhizohWorldSpaceV0() {
     const uid = castleAuth?.user?.uid;
     if (!uid) return undefined;
     bootCastleC2cSignalingV0(uid);
-    return () => disposeCastleC2cTransportV0();
-  }, [castleAuth?.user?.uid]);
+    bootLivingCastleMemoryV0({
+      userId: uid,
+      founder: castleAuth?.user?.displayName || uid.slice(0, 8)
+    });
+    bootRhizohLearningCoreV0({ userId: uid });
+    installCastleMemoryHooksV0(uid);
+    return () => {
+      disposeCastleC2cTransportV0();
+      disposeCastleMemoryHooksV0();
+    };
+  }, [castleAuth?.user?.uid, castleAuth?.user?.displayName]);
 
   useEffect(() => {
     const onRemoteCastle = (ev) => {
@@ -263,12 +304,65 @@ export default function AppRhizohWorldSpaceV0() {
         setV11MediaTube(null);
       }
     };
+    const onLibrary = (ev) => {
+      const detail = ev?.detail;
+      if (!detail?.node) return;
+      setV11Library(detail);
+      setV11ChessArena(null);
+      setV11Workspace(null);
+      setV11MediaTube(null);
+      setV11NodePanel(null);
+    };
+    const onChessArena = (ev) => {
+      const detail = ev?.detail;
+      if (!detail?.node) return;
+      setV11ChessArena(detail);
+      setV11Library(null);
+      setV11Workspace(null);
+      setV11MediaTube(null);
+      setV11TowerPortal(null);
+      setV11NodePanel(null);
+    };
+    const onTowerPortal = (ev) => {
+      const detail = ev?.detail;
+      if (!detail?.node) return;
+      setV11TowerPortal(detail);
+      setV11Library(null);
+      setV11Workspace(null);
+      setV11MediaTube(null);
+      setV11ChessArena(null);
+      setV11NodePanel(null);
+    };
+    const onArchiveMedia = (ev) => {
+      const entity = ev?.detail?.entity;
+      if (!entity) return;
+      setV11MediaTube(
+        Object.freeze({
+          node: Object.freeze({
+            id: `archive:${entity.id}`,
+            label: "ARCHIVE",
+            name: entity.title,
+            type: "vault",
+            color: "#f59e0b"
+          }),
+          title: entity.title,
+          source: `archive:${entity.id}`,
+          initialChannelId: "archive_document",
+          archiveEntity: entity
+        })
+      );
+      setV11Library(null);
+      setV11NodePanel(null);
+    };
+
     const onMediaTube = (ev) => {
       const detail = ev?.detail;
       if (!detail) return;
       setV11MediaTube(detail);
       setV11Workspace(null);
       setV11NodePanel(null);
+      setV11Library(null);
+      setV11ChessArena(null);
     };
     const onCastle = () => {
       openCastleInitGateFromLocalCommandV0("v11_map_orchestrator");
@@ -280,17 +374,25 @@ export default function AppRhizohWorldSpaceV0() {
     };
 
     window.addEventListener(RHIZOH_OPEN_WORKSPACE_EVENT_V1, onWorkspace);
+    window.addEventListener(RHIZOH_OPEN_LIBRARY_EVENT_V1, onLibrary);
+    window.addEventListener(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, onChessArena);
+    window.addEventListener(RHIZOH_OPEN_TOWER_PORTAL_EVENT_V1, onTowerPortal);
     window.addEventListener(RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1, onMediaTube);
     window.addEventListener(RHIZOH_OPEN_CASTLE_EVENT_V1, onCastle);
     window.addEventListener(RHIZOH_SHOW_INFO_EVENT_V1, onInfo);
+    window.addEventListener(CASTLE_ARCHIVE_OPEN_MEDIA_EVENT_V0, onArchiveMedia);
     return () => {
       window.removeEventListener("castle:open-init-gate-v0", onOpenCastleGate);
       window.removeEventListener("castle:open-anchor-offer-v0", onOpenCastleGate);
       window.removeEventListener(RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1, onSovereignWarp);
       window.removeEventListener(RHIZOH_OPEN_WORKSPACE_EVENT_V1, onWorkspace);
+      window.removeEventListener(RHIZOH_OPEN_LIBRARY_EVENT_V1, onLibrary);
+      window.removeEventListener(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, onChessArena);
+      window.removeEventListener(RHIZOH_OPEN_TOWER_PORTAL_EVENT_V1, onTowerPortal);
       window.removeEventListener(RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1, onMediaTube);
       window.removeEventListener(RHIZOH_OPEN_CASTLE_EVENT_V1, onCastle);
       window.removeEventListener(RHIZOH_SHOW_INFO_EVENT_V1, onInfo);
+      window.removeEventListener(CASTLE_ARCHIVE_OPEN_MEDIA_EVENT_V0, onArchiveMedia);
     };
   }, []);
 
@@ -399,24 +501,79 @@ export default function AppRhizohWorldSpaceV0() {
     });
   }, []);
 
+  const appRootRef = useRef(null);
+
   const onProductShellSelect = useCallback(
     (id) => {
-      const surface = String(id || "world");
-      if (surface === "world") {
-        navigate("/world/space");
-        return;
+      const result = handleProductShellSelectV0(id, {
+        pathname: "/world/space",
+        inPlace: true,
+        worldPath: "/world/space"
+      });
+      if (result.action === DRAWER_SHELL_ACTION_V0.NAVIGATE) {
+        navigate(resolveRhizohProductPathV0(result.surface));
+      } else if (result.navigateTo) {
+        navigate(result.navigateTo);
       }
-      navigate(resolveRhizohProductPathV0(surface));
+      applyDrawerDomainTagsV0(appRootRef.current, result.tags);
     },
     [navigate]
   );
 
-  const voiceDockBottomCssV0 = resolveRhizohWorldSpaceVoiceDockBottomCssV0();
+  const drawerStateV0 = useSyncExternalStore(
+    subscribeDrawerStateV0,
+    getDrawerStateSnapshotV0,
+    getDrawerStateSnapshotV0
+  );
+  const chromePanelsV0 = drawerStateV0.panels;
+  const openSurfaceDrawerIdV0 = drawerStateV0.openDrawerId;
+
+  const onCloseSurfaceDrawerV0 = useCallback(() => {
+    closeProductSurfaceDrawerV0();
+  }, []);
+
+  useEffect(() => {
+    const tags = resolveDrawerDomainTagsV0(openSurfaceDrawerIdV0, {
+      pathname: "/world/space",
+      surfaceId: openSurfaceDrawerIdV0 || "world",
+      overlayNode: getActiveFederationOverlayNodeV0()
+    });
+    applyDrawerDomainTagsV0(appRootRef.current, tags);
+  }, [openSurfaceDrawerIdV0, chromePanelsV0]);
+
+  useEffect(() => {
+    bootDrawerStateMachineV0();
+    return bootRhizohOsStabilReleaseLayerV0();
+  }, []);
+
+  const onLibrarySeedIntentV0 = useCallback(() => {
+    try {
+      window.dispatchEvent(
+        new CustomEvent(RHIZOH_OPEN_LIBRARY_EVENT_V1, {
+          detail: Object.freeze({
+            node: Object.freeze({
+              id: "library",
+              label: "LIBRARY",
+              name: uiLocale === "tr" ? "Codex Vault" : "Codex Vault",
+              type: "vault",
+              color: "#f59e0b"
+            }),
+            source: "capability_halo"
+          })
+        })
+      );
+    } catch {
+      /* noop */
+    }
+  }, [uiLocale]);
+
   const mapStripBottomCssV0 = resolveRhizohWorldSpaceMapStripBottomCssV0();
+  const voiceDockBottomCssV0 = resolveRhizohWorldSpaceVoiceDockBottomCssV0();
   const bootstrapPlaceLabelV0 = resolveWorldMapBootstrapGeoV0().label;
 
   return (
     <div
+      ref={appRootRef}
       className="fixed inset-0 overflow-hidden bg-[#010103] text-white"
       data-rhizoh-world-space-app="1"
       data-cesium-active={cesiumLayerActiveV0 ? "1" : "0"}
@@ -447,7 +604,7 @@ export default function AppRhizohWorldSpaceV0() {
         onShareInvite={() => {}}
         onModeSelect={() => navigate("/world/modes")}
         onCapNodeIntent={handleWorldSpaceCapWheelNodeV0}
-        onSeedIntent={() => {}}
+        onSeedIntent={onLibrarySeedIntentV0}
         onFocusLayer={() => {}}
       />
 
@@ -460,7 +617,23 @@ export default function AppRhizohWorldSpaceV0() {
         </div>
       </div>
 
-      <UnifiedProductShellBar active="world" onSelect={onProductShellSelect} uiLocale={uiLocale} />
+      <UnifiedProductShellBar
+        active="world"
+        panelOpen={chromePanelsV0}
+        onSelect={onProductShellSelect}
+        uiLocale={uiLocale}
+      />
+
+      {openSurfaceDrawerIdV0 ? (
+        <RhizohProductSurfaceDrawerV0
+          surface={openSurfaceDrawerIdV0}
+          open
+          onClose={onCloseSurfaceDrawerV0}
+          auth={castleAuth}
+          gatewayOrigin={getGenesisProtocolGatewayOrigin()}
+          uiLocale={uiLocale}
+        />
+      ) : null}
 
       {castleAuth.needsAuthGate || castleAuth.needsOnboarding ? (
         <CastleAuthOverlay auth={castleAuth} />
@@ -535,7 +708,7 @@ export default function AppRhizohWorldSpaceV0() {
         />
       ) : null}
 
-      {v11Workspace && !v11MediaTube ? (
+      {v11Workspace && !v11MediaTube && !v11Library && !v11ChessArena ? (
         <RhizohV11TowerWorkspaceHostV0
           workspaceDetail={v11Workspace}
           onClose={() => setV11Workspace(null)}
@@ -543,7 +716,45 @@ export default function AppRhizohWorldSpaceV0() {
         />
       ) : null}
 
-      {v11NodePanel && !v11Workspace && !v11MediaTube ? (
+      {v11Library && !v11MediaTube ? (
+        <RhizohCastleLibraryPanelV0
+          open
+          node={v11Library.node}
+          onClose={() => setV11Library(null)}
+          onOpenLivingMemory={() => setV11LivingMemory(true)}
+          uiLocale={uiLocale}
+        />
+      ) : null}
+
+      {v11LivingMemory && !v11MediaTube ? (
+        <RhizohCastleLivingMemoryPanelV0
+          open
+          onClose={() => setV11LivingMemory(false)}
+          uiLocale={uiLocale}
+        />
+      ) : null}
+
+      {v11ChessArena && !v11MediaTube ? (
+        <RhizohChessArenaWorkspaceV0
+          open
+          node={v11ChessArena.node}
+          peerCastle={v11ChessArena.peerCastle || null}
+          onClose={() => setV11ChessArena(null)}
+          uiLocale={uiLocale}
+        />
+      ) : null}
+
+      {v11TowerPortal && !v11MediaTube && !v11ChessArena ? (
+        <RhizohTowerPortalDiscoveryV0
+          open
+          node={v11TowerPortal.node}
+          userId={castleAuth?.user?.uid || ""}
+          onClose={() => setV11TowerPortal(null)}
+          uiLocale={uiLocale}
+        />
+      ) : null}
+
+      {v11NodePanel && !v11Workspace && !v11MediaTube && !v11Library && !v11ChessArena && !v11TowerPortal ? (
         <div className="pointer-events-none fixed inset-x-0 top-28 z-[27] flex justify-center px-4">
           <div
             className="pointer-events-auto w-full max-w-sm rounded-2xl border bg-black/85 p-3 text-white shadow-2xl backdrop-blur-md"

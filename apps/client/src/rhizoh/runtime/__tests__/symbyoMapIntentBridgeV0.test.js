@@ -43,16 +43,49 @@ describe("symbyoMapIntentBridgeV0", () => {
 
   it("keeps orchestrator actions inside the frozen registry", () => {
     expect(Object.values(ORCHESTRATOR_ACTION_REGISTRY_V0).sort()).toEqual(
-      ["ATTACH_VOICE_STREAM", "ENTER_CASTLE", "LOAD_WORLD_NODE", "OPEN_MEDIA_PLAYER"].sort()
+      [
+        "ATTACH_VOICE_STREAM",
+        "ENTER_CASTLE",
+        "LOAD_WORLD_NODE",
+        "OPEN_CHESS_ARENA",
+        "OPEN_LIBRARY",
+        "OPEN_MEDIA_PLAYER",
+        "OPEN_TOWER_PORTAL",
+        "OPEN_WORKSPACE"
+      ].sort()
     );
   });
 
-  it("routes tower node click to media workspace", () => {
+  it("routes tower node click to workspace", () => {
     const routed = routeSymbyoMapInteractionToOrchestratorV0({
       interaction: "click",
       node: { id: "claude_tower", type: "tower" }
     });
-    expect(routed.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER);
+    expect(routed.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_WORKSPACE);
+  });
+
+  it("routes chess arena to chess workspace", () => {
+    const routed = routeSymbyoMapInteractionToOrchestratorV0({
+      interaction: "click",
+      node: { id: "chess_arena", type: "zone" }
+    });
+    expect(routed.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_CHESS_ARENA);
+  });
+
+  it("routes library vault to library panel", () => {
+    const routed = routeSymbyoMapInteractionToOrchestratorV0({
+      interaction: "click",
+      node: { id: "library", type: "vault" }
+    });
+    expect(routed.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_LIBRARY);
+  });
+
+  it("routes rhizoh portal to tower portal discovery", () => {
+    const routed = routeSymbyoMapInteractionToOrchestratorV0({
+      interaction: "click",
+      node: { id: "rhizoh_portal", type: "portal" }
+    });
+    expect(routed.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_TOWER_PORTAL);
   });
 
   it("routes map pins to distinct media decisions", () => {

@@ -20,6 +20,7 @@ import {
   tryExecuteSovereignVoiceWarpFromTextV0,
   tryOpenSovereignMediaTubeFromTextV0
 } from "./sovereignWorldMapNodesV0.js";
+import { tryResolveRhizohLocalKnowledgeV0 } from "./rhizohPolicyRouterV0.js";
 
 export const RHIZOH_LOCAL_CONVERSATION_TURN_SCHEMA_V0 =
   "castle.rhizoh.local_conversation_turn.v0";
@@ -92,6 +93,20 @@ export function tryResolveLocalConversationTurnV0(text, opts = {}) {
       llmBypass: true,
       kind: localAction.kind,
       localAction
+    });
+  }
+
+  const rhizohLocal = tryResolveRhizohLocalKnowledgeV0(raw, { traceId: opts.traceId });
+  if (rhizohLocal?.reply) {
+    return Object.freeze({
+      schema: RHIZOH_LOCAL_CONVERSATION_TURN_SCHEMA_V0,
+      ok: true,
+      reply: rhizohLocal.reply,
+      source: rhizohLocal.source,
+      llmBypass: true,
+      askRhizoh: true,
+      knowledgeId: rhizohLocal.knowledgeId,
+      matchScore: rhizohLocal.matchScore
     });
   }
 
