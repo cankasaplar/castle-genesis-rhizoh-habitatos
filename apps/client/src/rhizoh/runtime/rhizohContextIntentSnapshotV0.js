@@ -10,6 +10,10 @@ import {
   resolveFederationNodeFromProductSurfaceV0,
   RHIZOH_FEDERATION_NODE_V0
 } from "./rhizohDomainGraphV0.js";
+import {
+  dispatchRhizohKernelTraceEventV0,
+  publishRhizohKernelTraceGlobalV0
+} from "./rhizohKernelTraceMembraneV0.js";
 
 export const RHIZOH_CONTEXT_INTENT_SCHEMA_V0 = "rhizoh.context_intent.v0";
 export const RHIZOH_CONTEXT_INTENT_EVENT_V0 = "rhizoh:context-intent-v0";
@@ -96,16 +100,8 @@ export function buildContextIntentSnapshotV0(transition, ctx = {}) {
 export function commitContextIntentSnapshotV0(intent) {
   latestIntentSnapshotV0 = Object.freeze({ ...intent });
   if (typeof window !== "undefined") {
-    window.__RHIZOH_CONTEXT_INTENT__ = latestIntentSnapshotV0;
-    try {
-      window.dispatchEvent(
-        new CustomEvent(RHIZOH_CONTEXT_INTENT_EVENT_V0, {
-          detail: latestIntentSnapshotV0
-        })
-      );
-    } catch {
-      /* noop */
-    }
+    publishRhizohKernelTraceGlobalV0("__RHIZOH_CONTEXT_INTENT__", latestIntentSnapshotV0);
+    dispatchRhizohKernelTraceEventV0(RHIZOH_CONTEXT_INTENT_EVENT_V0, latestIntentSnapshotV0);
   }
   return latestIntentSnapshotV0;
 }

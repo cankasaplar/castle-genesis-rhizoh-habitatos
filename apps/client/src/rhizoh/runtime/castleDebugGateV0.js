@@ -2,6 +2,7 @@
  * PR-1 — Debug layer umbrella (`VITE_DEBUG`) + granular `VITE_RHIZOH_*_DEBUG` flags.
  * Prod: lab flags need umbrella + granular; go-live membrane flags use allowlist (§ Go-Live V1).
  * Dev: lab overlay flags → granular || umbrella; membrane / research node flags → granular only.
+ * Kernel trace (`VITE_RHIZOH_KERNEL_TRACE_DEBUG`) → granular; invisible in prod without it (Sprint 40).
  *
  * @see docs/SURFACE_REDUCTION_PASS_LIVE_V0.md
  * @see docs/RHIZOH_GO_LIVE_ACTIVATION_PROTOCOL_V1.md §1

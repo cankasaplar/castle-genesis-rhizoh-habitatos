@@ -20,6 +20,7 @@ import {
 import { __resetRhizohDomainCoreStoreForTestV0 } from "../rhizohDomainCoreStoreV0.js";
 import { __resetContextIntentSnapshotForTestV0 } from "../rhizohContextIntentSnapshotV0.js";
 import { getLatestContextIntentSnapshotV0 } from "../rhizohContextIntentSnapshotV0.js";
+import { __resetClusterCivilizationForTestV0 } from "../rhizohClusterCivilizationV0.js";
 
 describe("rhizohDrawerStateMachineV0", () => {
   beforeEach(() => {
@@ -29,6 +30,7 @@ describe("rhizohDrawerStateMachineV0", () => {
     __resetDomainGraphForTestV0();
     __resetRhizohDomainCoreStoreForTestV0();
     __resetContextIntentSnapshotForTestV0();
+    __resetClusterCivilizationForTestV0();
   });
 
   afterEach(() => {
@@ -38,6 +40,7 @@ describe("rhizohDrawerStateMachineV0", () => {
     __resetDomainGraphForTestV0();
     __resetRhizohDomainCoreStoreForTestV0();
     __resetContextIntentSnapshotForTestV0();
+    __resetClusterCivilizationForTestV0();
   });
 
   it("handleProductShellSelectV0 commits intent before domain overlay", () => {

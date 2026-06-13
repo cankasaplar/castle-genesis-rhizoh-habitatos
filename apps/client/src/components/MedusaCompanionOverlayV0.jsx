@@ -3,7 +3,7 @@ import { mountMedusaCompanionV0 } from "../rhizoh/runtime/medusaCompanionService
 import { MEDUSA_COMPANION_DEFAULT_SIZE_V0 } from "../rhizoh/runtime/medusaCompanionSceneV0.js";
 import { isMedusaCompanionStreamActiveV0 } from "../rhizoh/runtime/medusaCompanionStreamGateV0.js";
 import { resolveMedusaDomainMotionProfileV0 } from "../rhizoh/runtime/medusaCompanionDomainSensitivityV0.js";
-import { resolveOverlayNodeFromContextIntentV0 } from "../rhizoh/runtime/rhizohContextIntentSnapshotV0.js";
+import { resolveOverlayNodeFromClusterEcologyV0 } from "../rhizoh/runtime/rhizohClusterCivilizationV0.js";
 import { RHIZOH_FEDERATION_NODE_V0 } from "../rhizoh/runtime/rhizohDomainGraphV0.js";
 
 /**
@@ -20,7 +20,7 @@ export const MedusaCompanionOverlayV0 = memo(function MedusaCompanionOverlayV0({
   const streamLive = active && isMedusaCompanionStreamActiveV0(mediaStream);
   const federationNode =
     overlayNode ||
-    resolveOverlayNodeFromContextIntentV0(RHIZOH_FEDERATION_NODE_V0.MEDIA) ||
+    resolveOverlayNodeFromClusterEcologyV0(RHIZOH_FEDERATION_NODE_V0.MEDIA) ||
     RHIZOH_FEDERATION_NODE_V0.MEDIA;
   const motionProfile = useMemo(
     () => resolveMedusaDomainMotionProfileV0(federationNode),
