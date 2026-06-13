@@ -64,6 +64,10 @@ import {
 import { openCastleInitGateFromLocalCommandV0 } from "./rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
 import { CastleInitiationGateV0 } from "./components/CastleInitiationGateV0.jsx";
 import { RhizohV11TowerWorkspaceHostV0 } from "./components/RhizohV11TowerWorkspaceHostV0.jsx";
+import { RhizohWorldSpaceMediaTubeV0 } from "./components/RhizohWorldSpaceMediaTubeV0.jsx";
+import {
+  RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1
+} from "./rhizoh/runtime/sovereignWorldMapNodesV0.js";
 import {
   completeCastleInitFromMapAnchorV0,
   installCastleInitMapPickListenerV0
@@ -81,6 +85,7 @@ export default function AppRhizohWorldSpaceV0() {
   const [geoError, setGeoError] = useState("");
   const [v11NodePanel, setV11NodePanel] = useState(null);
   const [v11Workspace, setV11Workspace] = useState(null);
+  const [v11MediaTube, setV11MediaTube] = useState(null);
   const [castleInitGateOpen, setCastleInitGateOpen] = useState(false);
 
   const worldMapToolV0 = useSyncExternalStore(
@@ -125,6 +130,31 @@ export default function AppRhizohWorldSpaceV0() {
   const layerModeV0 = useMemo(
     () => resolveRhizohLayerModeV0({ pathname: "/world/space" }),
     []
+  );
+
+  const openPostCastleMediaTubeV0 = useCallback(
+    (source = "castle_init") => {
+      setV11MediaTube(
+        Object.freeze({
+          node: Object.freeze({
+            id: "castle",
+            label: "CASTLE",
+            name: uiLocale === "tr" ? "Kale Yayını" : "Castle Broadcast",
+            type: "broadcast",
+            color: "#06b6d4",
+            description:
+              uiLocale === "tr"
+                ? "Castle anchor tamamlandı — Symbio media tüneli açıldı."
+                : "Castle anchor complete — Symbio media tube opened."
+          }),
+          title: uiLocale === "tr" ? "Kale Yayını — Castle Hub" : "Castle Broadcast — Castle Hub",
+          source
+        })
+      );
+      setV11Workspace(null);
+      setV11NodePanel(null);
+    },
+    [uiLocale]
   );
 
   useEffect(() => {
@@ -180,7 +210,37 @@ export default function AppRhizohWorldSpaceV0() {
     const onWorkspace = (ev) => {
       const detail = ev?.detail;
       if (!detail?.node) return;
-      setV11Workspace(detail);
+      const nodeType = String(detail.node.type || "");
+      if (nodeType === "tower") {
+        setV11Workspace(detail);
+        setV11MediaTube(null);
+        setV11NodePanel(null);
+      } else if (detail.mediaPlayer) {
+        setV11MediaTube(
+          Object.freeze({
+            node: detail.node,
+            title: detail.node.name || detail.node.label,
+            source: "map_orchestrator"
+          })
+        );
+        setV11Workspace(null);
+        setV11NodePanel(null);
+      } else {
+        setV11NodePanel(
+          detail.routed || {
+            nodeView: detail.node,
+            normalizedDecision: { decision: "LOAD_WORLD_NODE" }
+          }
+        );
+        setV11Workspace(null);
+        setV11MediaTube(null);
+      }
+    };
+    const onMediaTube = (ev) => {
+      const detail = ev?.detail;
+      if (!detail) return;
+      setV11MediaTube(detail);
+      setV11Workspace(null);
       setV11NodePanel(null);
     };
     const onCastle = () => {
@@ -193,12 +253,14 @@ export default function AppRhizohWorldSpaceV0() {
     };
 
     window.addEventListener(RHIZOH_OPEN_WORKSPACE_EVENT_V1, onWorkspace);
+    window.addEventListener(RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1, onMediaTube);
     window.addEventListener(RHIZOH_OPEN_CASTLE_EVENT_V1, onCastle);
     window.addEventListener(RHIZOH_SHOW_INFO_EVENT_V1, onInfo);
     return () => {
       window.removeEventListener("castle:open-init-gate-v0", onOpenCastleGate);
       window.removeEventListener("castle:open-anchor-offer-v0", onOpenCastleGate);
       window.removeEventListener(RHIZOH_OPEN_WORKSPACE_EVENT_V1, onWorkspace);
+      window.removeEventListener(RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1, onMediaTube);
       window.removeEventListener(RHIZOH_OPEN_CASTLE_EVENT_V1, onCastle);
       window.removeEventListener(RHIZOH_SHOW_INFO_EVENT_V1, onInfo);
     };
@@ -295,9 +357,12 @@ export default function AppRhizohWorldSpaceV0() {
         owner: castleInitOwner,
         castleType: "SANCTUARY",
         applyPersonalCastleDsl: applySpatialCastleAnchorDsl
-      }).then(() => setCastleInitGateOpen(false));
+      }).then((out) => {
+        setCastleInitGateOpen(false);
+        if (out?.ok) openPostCastleMediaTubeV0("castle_init_map");
+      });
     });
-  }, [castleInitOwner, applySpatialCastleAnchorDsl]);
+  }, [castleInitOwner, applySpatialCastleAnchorDsl, openPostCastleMediaTubeV0]);
 
   const onApplyWorldMapToolV0 = useCallback((mapTool, source = "WORLD_DOMAIN_MAP_STRIP") => {
     if (!spatialBootGateV0.allowed) {
@@ -403,7 +468,15 @@ export default function AppRhizohWorldSpaceV0() {
         </div>
       ) : null}
 
-      {v11Workspace ? (
+      {v11MediaTube ? (
+        <RhizohWorldSpaceMediaTubeV0
+          detail={v11MediaTube}
+          onClose={() => setV11MediaTube(null)}
+          uiLocale={uiLocale}
+        />
+      ) : null}
+
+      {v11Workspace && !v11MediaTube ? (
         <RhizohV11TowerWorkspaceHostV0
           workspaceDetail={v11Workspace}
           onClose={() => setV11Workspace(null)}
@@ -411,7 +484,7 @@ export default function AppRhizohWorldSpaceV0() {
         />
       ) : null}
 
-      {v11NodePanel && !v11Workspace ? (
+      {v11NodePanel && !v11Workspace && !v11MediaTube ? (
         <div className="pointer-events-none fixed inset-x-0 top-28 z-[27] flex justify-center px-4">
           <div
             className="pointer-events-auto w-full max-w-sm rounded-2xl border bg-black/85 p-3 text-white shadow-2xl backdrop-blur-md"
@@ -475,7 +548,13 @@ export default function AppRhizohWorldSpaceV0() {
         setRealityMode={setRealityMode}
         readClientContinuity={readWorldSpaceClientContinuityV0}
         writeClientContinuity={writeWorldSpaceClientContinuityV0}
-        onComplete={() => setCastleInitGateOpen(false)}
+        onComplete={(out) => {
+          if (out?.source === "map") return;
+          setCastleInitGateOpen(false);
+          if (out?.ok !== false) {
+            openPostCastleMediaTubeV0(`castle_init_${out?.source || "gate"}`);
+          }
+        }}
       />
     </div>
   );

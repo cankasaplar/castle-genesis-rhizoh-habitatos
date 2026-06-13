@@ -18,17 +18,12 @@ import {
 
 export { RHIZOH_V11_MAP_INTENT_EVENT_V0 };
 
-const V11_CORE_MAP_NODES_V0 = Object.freeze([
-  { id: "rhizoh", label: "RHIZOH", type: "core", lat: 41.045, lon: 29.006, color: "#22d3ee" },
-  { id: "ghost", label: "GHOST", type: "ghost", lat: 41.047, lon: 29.008, color: "#a855f7" },
-  { id: "gemini_tower", label: "GEMINI", type: "tower", lat: 37.422, lon: -122.0841, color: "#d946ef" },
-  { id: "claude_tower", label: "CLAUDE", type: "tower", lat: 37.7749, lon: -122.4194, color: "#3b82f6" },
-  { id: "chatgpt_tower", label: "OPENAI", type: "tower", lat: 37.7624, lon: -122.4148, color: "#10b981" },
-  { id: "deepmind_tower", label: "DEEPMIND", type: "tower", lat: 51.5303, lon: -0.1245, color: "#06b6d4" },
-  { id: "mistral_tower", label: "MISTRAL", type: "tower", lat: 48.8566, lon: 2.3522, color: "#f97316" },
-  { id: "kyoto_tower", label: "KYOTO", type: "tower", lat: 35.0116, lon: 135.7681, color: "#eab308" },
-  { id: "sora_tower", label: "SORA", type: "tower", lat: 34.0522, lon: -118.2437, color: "#ec4899" }
-]);
+import {
+  SOVEREIGN_MAP_DEFAULT_HOME_V0,
+  SOVEREIGN_TOWER_GRAPH_EDGES_V0,
+  SOVEREIGN_WORLD_MAP_NODES_V0,
+  sovereignNodeIconHtmlV0
+} from "../rhizoh/runtime/sovereignWorldMapNodesV0.js";
 
 function projectV11CoreMapGeoV0(lat, lon) {
   const x = ((Number(lon) + 180) / 360) * 100;
@@ -77,13 +72,10 @@ function loadLeafletV0() {
 
 function createLeafletNodeIconV0(L, node) {
   return L.divIcon({
-    className: "rhizoh-v11-core-node-icon",
-    html: `<div data-rhizoh-v11-leaflet-node="${node.id}" style="display:flex;width:96px;min-height:42px;flex-direction:column;align-items:center;justify-content:center;color:${node.color};font-family:monospace;pointer-events:auto;cursor:pointer">
-      <div style="width:12px;height:12px;border-radius:999px;border:1px solid ${node.color};background:#020617;box-shadow:0 0 18px ${node.color}"></div>
-      <div style="margin-top:4px;background:rgba(0,0,0,.62);padding:1px 5px;border-radius:4px;font-size:8px;font-weight:800;letter-spacing:.08em;white-space:nowrap">${node.label}</div>
-    </div>`,
-    iconSize: [96, 42],
-    iconAnchor: [48, 21]
+    className: "rhizoh-sovereign-node-icon",
+    html: sovereignNodeIconHtmlV0(node),
+    iconSize: [96, 52],
+    iconAnchor: [48, 26]
   });
 }
 
@@ -94,10 +86,13 @@ function emitV11MapIntentV0(node, interaction) {
     nodeView: Object.freeze({
       id: node.id,
       label: node.label,
+      name: node.name,
       type: node.type,
       color: node.color,
       lat: node.lat,
-      lon: node.lon
+      lon: node.lon,
+      description: node.description,
+      provider: node.provider
     })
   });
   if (typeof window !== "undefined") {
@@ -150,6 +145,8 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
   const hostRef = useRef(null);
   const tileLayerRef = useRef(null);
   const markerLayerRef = useRef(null);
+  const graphLayerRef = useRef(null);
+  const nodeById = useRef(new Map(SOVEREIGN_WORLD_MAP_NODES_V0.map((n) => [n.id, n])));
   const [leafletReady, setLeafletReady] = useState(false);
   const [localAnchors, setLocalAnchors] = useState(() => readLocalGhostCastleAnchorsV0());
 
@@ -164,12 +161,16 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
           attributionControl: false,
           worldCopyJump: true,
           preferCanvas: true
-        }).setView([20, 0], 2);
+        }).setView(
+          [SOVEREIGN_MAP_DEFAULT_HOME_V0.lat, SOVEREIGN_MAP_DEFAULT_HOME_V0.lon],
+          SOVEREIGN_MAP_DEFAULT_HOME_V0.zoom
+        );
         tileLayerRef.current = L.tileLayer(leafletTileUrlForToolV0(activeMapTool), {
           maxZoom: 18
         }).addTo(map);
         map.on("click", (ev) => handleV11MapClickForClaimV0(ev));
         markerLayerRef.current = L.layerGroup().addTo(map);
+        graphLayerRef.current = L.layerGroup().addTo(map);
         mapRef.current = map;
         setLeafletReady(true);
         setTimeout(() => {
@@ -192,6 +193,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
       }
       mapRef.current = null;
       markerLayerRef.current = null;
+      graphLayerRef.current = null;
     };
   }, []);
 
@@ -215,11 +217,11 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
         lon: anchor.lon,
         color: "#22c55e"
       }));
-      for (const node of [...V11_CORE_MAP_NODES_V0, ...localNodes]) {
+      for (const node of [...SOVEREIGN_WORLD_MAP_NODES_V0, ...localNodes]) {
         const marker = L.marker([node.lat, node.lon], {
           icon: createLeafletNodeIconV0(L, node),
           keyboard: false,
-          title: node.label
+          title: node.name || node.label
         }).addTo(markerLayerRef.current);
         marker.on("click", (ev) => {
           try {
@@ -230,6 +232,20 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
           emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK);
         });
         marker.on("mouseover", () => emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.HOVER));
+      }
+
+      graphLayerRef.current?.clearLayers?.();
+      for (const edge of SOVEREIGN_TOWER_GRAPH_EDGES_V0) {
+        const n1 = nodeById.current.get(edge.source);
+        const n2 = nodeById.current.get(edge.target);
+        if (!n1 || !n2) continue;
+        L.polyline(
+          [
+            [n1.lat, n1.lon],
+            [n2.lat, n2.lon]
+          ],
+          { color: "#a855f7", weight: 1, opacity: 0.18, dashArray: "5, 10" }
+        ).addTo(graphLayerRef.current);
       }
     } catch {
       /* noop */
@@ -266,9 +282,15 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
       <div className="absolute inset-y-[12%] left-[50%] w-px bg-cyan-300/10" />
       <div className="absolute inset-y-[12%] left-[75%] w-px bg-cyan-300/10" />
       <div className="absolute left-4 top-4 rounded-xl border border-cyan-400/25 bg-black/55 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-100/80">
-        RHIZOH PRIMARY SPATIAL SURFACE V11
+        RHIZOH SOVEREIGN MAP V11 · {SOVEREIGN_WORLD_MAP_NODES_V0.length} nodes
       </div>
-      {!leafletReady ? V11_CORE_MAP_NODES_V0.map((node) => {
+      <style>{`
+        [data-rhizoh-v11-leaflet-host="1"] .leaflet-container { background: #000 !important; cursor: crosshair !important; }
+        [data-rhizoh-v11-leaflet-host="1"] .leaflet-tile-pane {
+          filter: invert(100%) hue-rotate(180deg) brightness(0.35) contrast(1.5);
+        }
+      `}</style>
+      {!leafletReady ? SOVEREIGN_WORLD_MAP_NODES_V0.map((node) => {
         const pos = projectV11CoreMapGeoV0(node.lat, node.lon);
         return (
           <div

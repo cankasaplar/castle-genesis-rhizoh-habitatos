@@ -42,8 +42,18 @@ const CAPABILITY_ALIAS_V0 = Object.freeze({
   PORTAL: ["voice", "3d"],
   VAULT: ["inventory"],
   AI: ["voice"],
+  GHOST: ["voice"],
   AGENT: ["voice"],
-  TOWER: ["voice", "3d"]
+  TOWER: ["voice", "3d", "media"],
+  hub: ["media", "voice", "3d"],
+  ghost: ["voice"],
+  zone: ["media", "3d"],
+  vault: ["inventory"],
+  agent: ["voice"],
+  broadcast: ["media"],
+  portal: ["voice", "3d"],
+  tower: ["voice", "3d", "media"],
+  castle: ["media", "voice", "3d"]
 });
 
 function normalizeCapabilityListV0(node = {}) {
@@ -116,16 +126,17 @@ export function resolveSymbyoMapIntentDecisionV0(intent = {}, surface = {}) {
     return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.LOAD_WORLD_NODE, 0.78, refs);
   }
   if (intent.intent === SYMBYO_MAP_INTENT_TYPE_V0.ENTER_NODE) {
-    if (String(surface.nodeType || "") === "broadcast" || hasCapability("media")) {
-      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER, 0.86, refs);
-    }
-    if (String(surface.nodeType || "") === "tower" || hasCapability("3d")) {
+    const nodeType = String(surface.nodeType || "");
+    if (nodeType === "tower" || hasCapability("3d")) {
       return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER, 0.84, refs);
     }
-    if (String(surface.nodeType || "") === "castle") {
+    if (nodeType === "broadcast" || nodeType === "zone" || nodeType === "hub" || hasCapability("media")) {
+      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER, 0.86, refs);
+    }
+    if (nodeType === "castle") {
       return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.ENTER_CASTLE, 0.8, refs);
     }
-    if (String(surface.nodeType || "") === "portal" || hasCapability("voice")) {
+    if (nodeType === "portal" || hasCapability("voice")) {
       return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.ATTACH_VOICE_STREAM, 0.74, refs);
     }
     return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.LOAD_WORLD_NODE, 0.68, refs);
