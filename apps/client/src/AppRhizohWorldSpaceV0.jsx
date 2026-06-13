@@ -162,7 +162,8 @@ export default function AppRhizohWorldSpaceV0() {
                 : "Castle anchor complete — Symbio media tube opened."
           }),
           title: uiLocale === "tr" ? "Kale Yayını — Castle Hub" : "Castle Broadcast — Castle Hub",
-          source
+          source,
+          initialChannelId: "castle_genesis"
         })
       );
       setV11Workspace(null);
