@@ -9,7 +9,7 @@ import path from "node:path";
 const DATA_DIR = process.env.CASTLE_CLOUD_SYNC_DIR || path.join(process.cwd(), "data", "cloud-sync");
 const FILE_NAME = "castle_cloud_sync_v0.json";
 
-/** @type {Record<string, { entities: object[], events: object[], ghostMemory: object[], codex: object[], castleIdentity: object | null, chronicle: object[], knowledge: object[], updatedAt: string }>} */
+/** @type {Record<string, { entities: object[], events: object[], ghostMemory: object[], codex: object[], castleIdentity: object | null, chronicle: object[], knowledge: object[], openingBook: object[], updatedAt: string }>} */
 let cache = null;
 
 async function ensureLoaded() {
@@ -42,6 +42,7 @@ function bucketForUid(uid) {
       castleIdentity: null,
       chronicle: [],
       knowledge: [],
+      openingBook: [],
       updatedAt: new Date().toISOString()
     };
   }
@@ -64,6 +65,7 @@ export async function getCloudSyncSnapshotV0(uid) {
     castleIdentity: bucket.castleIdentity ? Object.freeze({ ...bucket.castleIdentity }) : null,
     chronicle: Object.freeze((bucket.chronicle || []).map((e) => Object.freeze({ ...e }))),
     knowledge: Object.freeze((bucket.knowledge || []).map((e) => Object.freeze({ ...e }))),
+    openingBook: Object.freeze((bucket.openingBook || []).map((e) => Object.freeze({ ...e }))),
     updatedAt: bucket.updatedAt
   });
 }
@@ -146,6 +148,23 @@ export async function mergeCloudSyncSnapshotV0(uid, patch = {}) {
       byNorm.set(key, { ...byNorm.get(key), ...row, syncedAt: now });
     }
     bucket.knowledge = [...byNorm.values()].slice(0, 512);
+  }
+
+  if (Array.isArray(patch.openingBook)) {
+    const byKey = new Map((bucket.openingBook || []).map((e) => [e.key || e.name, e]));
+    for (const row of patch.openingBook) {
+      const key = row?.key || row?.name;
+      if (!key) continue;
+      const prev = byKey.get(key);
+      byKey.set(key, {
+        ...prev,
+        ...row,
+        playedCount: Math.max(Number(prev?.playedCount) || 0, Number(row.playedCount) || 0),
+        winCount: Math.max(Number(prev?.winCount) || 0, Number(row.winCount) || 0),
+        syncedAt: now
+      });
+    }
+    bucket.openingBook = [...byKey.values()].slice(0, 128);
   }
 
   bucket.updatedAt = now;

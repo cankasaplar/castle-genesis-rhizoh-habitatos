@@ -68,4 +68,37 @@ describe("castleCloudSyncStore", () => {
     assert.equal(snap.castleIdentity.libraryWingsOpened, 1);
     assert.equal(snap.chronicle.length, 2);
   });
+
+  it("merges opening book entries by key with max counters", async () => {
+    await resetCloudSyncStoreForTestV0();
+    const uid = "opening-book-user";
+    await mergeCloudSyncSnapshotV0(uid, {
+      openingBook: [
+        {
+          key: "b20",
+          name: "Sicilian Defense",
+          eco: "B20",
+          playedCount: 2,
+          winCount: 1
+        }
+      ]
+    });
+    await mergeCloudSyncSnapshotV0(uid, {
+      openingBook: [
+        {
+          key: "b20",
+          name: "Sicilian Defense",
+          eco: "B20",
+          playedCount: 1,
+          winCount: 0,
+          lessons: [{ title: "Move 17 critical error" }]
+        }
+      ]
+    });
+    const snap = await getCloudSyncSnapshotV0(uid);
+    assert.equal(snap.openingBook.length, 1);
+    assert.equal(snap.openingBook[0].playedCount, 2);
+    assert.equal(snap.openingBook[0].winCount, 1);
+    assert.equal(snap.openingBook[0].lessons[0].title, "Move 17 critical error");
+  });
 });

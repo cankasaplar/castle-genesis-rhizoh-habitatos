@@ -12,7 +12,8 @@ import {
   sendCastleChessMoveV0,
   sendCastleSyncPingV0
 } from "../castleSocial/castleC2cRealtimeBusV0.js";
-import { recordLocalChessOutcomeV0 } from "../rhizoh/runtime/castleMemoryHooksV0.js";
+import { recordChessMatchLearningV0 } from "../rhizoh/runtime/chessLearningBridgeV0.js";
+import { listRhizohOpeningBookV0 } from "../rhizoh/runtime/rhizohOpeningBookV0.js";
 import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
 import { PIECE_UNICODE_V0 } from "./RhizohCastleLibraryPanelV0.jsx";
 
@@ -66,6 +67,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const [status, setStatus] = useState("");
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [aiBusy, setAiBusy] = useState(false);
+  const [analysisBusy, setAnalysisBusy] = useState(false);
+  const [matchAnalysis, setMatchAnalysis] = useState(null);
   const [tick, setTick] = useState(0);
 
   const fen = game.fen();
@@ -102,6 +105,40 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     return () => window.removeEventListener(CASTLE_C2C_REALTIME_MESSAGE_EVENT_V0, onC2c);
   }, [open, c2cMatch, game, tr]);
 
+  const openingBook = useMemo(() => listRhizohOpeningBookV0().slice(0, 5), [matchAnalysis, tick]);
+
+  const runMatchLearningV0 = useCallback(
+    async (outcomeVal, matchRow) => {
+      const draw = outcomeVal === "draw" || outcomeVal === "stalemate";
+      const won = !draw && outcomeVal === "white_wins";
+      const moves = game.moveHistory?.length ? game.moveHistory : [];
+      if (!moves.length) return;
+      setAnalysisBusy(true);
+      try {
+        const analysis = await recordChessMatchLearningV0({
+          moves,
+          localColor: "w",
+          opponentCastleId: matchRow?.castleB || peerCastle?.uid || "stockfish",
+          matchId: matchRow?.matchId || `local_${Date.now().toString(36)}`,
+          outcome: outcomeVal,
+          won,
+          draw
+        });
+        setMatchAnalysis(analysis);
+        setStatus(
+          tr
+            ? `Analiz: ${analysis.opening.name} · ${analysis.lesson.title}`
+            : `Analysis: ${analysis.opening.name} · ${analysis.lesson.title}`
+        );
+      } catch {
+        setStatus(tr ? "Analiz tamamlanamadı." : "Analysis failed.");
+      } finally {
+        setAnalysisBusy(false);
+      }
+    },
+    [game, peerCastle?.uid, tr]
+  );
+
   const resetGame = useCallback(
     (nextMode = mode) => {
       const g = createChessArenaGameV0({ mode: nextMode });
@@ -109,6 +146,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       setC2cMatch(null);
       setMoveInput("");
       setSelectedSquare(null);
+      setMatchAnalysis(null);
       setStatus(tr ? "Yeni oyun." : "New game.");
     },
     [mode, tr]
@@ -146,17 +184,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
               ? "Mat — oyun bitti."
               : "Checkmate — game over."
         );
-        if (c2cMatch) {
-          const outcomeVal = result.outcome || game.outcome();
-          const draw = outcomeVal === "draw" || outcomeVal === "stalemate";
-          const won = !draw && outcomeVal === "white_wins";
-          recordLocalChessOutcomeV0({
-            opponentCastleId: c2cMatch.castleB,
-            matchId: c2cMatch.matchId,
-            won,
-            draw
-          });
-        }
+        const outcomeVal = result.outcome || game.outcome();
+        void runMatchLearningV0(outcomeVal, c2cMatch);
         return true;
       }
 
@@ -170,12 +199,15 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           if (aiResult.ok) {
             setTick((n) => n + 1);
             setStatus((s) => `${s} · Stockfish: ${aiResult.move.san}`);
+            if (aiResult.outcome) {
+              void runMatchLearningV0(aiResult.outcome, c2cMatch);
+            }
           }
         }
       }
       return true;
     },
-    [game, mode, tr, c2cMatch]
+    [game, mode, tr, c2cMatch, runMatchLearningV0]
   );
 
   const onSquareClick = useCallback(
@@ -274,7 +306,21 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
             {aiBusy ? (
               <p className="text-[10px] text-amber-200">{tr ? "Stockfish düşünüyor…" : "Stockfish thinking…"}</p>
             ) : null}
+            {analysisBusy ? (
+              <p className="text-[10px] text-cyan-200">{tr ? "Maç analiz ediliyor…" : "Analyzing match…"}</p>
+            ) : null}
             <p className="text-center text-[10px] text-white/55">{status}</p>
+            {matchAnalysis ? (
+              <div className="max-w-md rounded-lg border border-cyan-400/25 bg-cyan-500/5 px-3 py-2 text-[10px] text-white/80">
+                <p className="font-bold text-cyan-100">{matchAnalysis.lesson.title}</p>
+                <p className="mt-1 text-white/60">{matchAnalysis.lesson.body}</p>
+                {matchAnalysis.lesson.alternative ? (
+                  <p className="mt-1 text-emerald-200">
+                    {tr ? "Alternatif:" : "Alternative:"} {matchAnalysis.lesson.alternative}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             {outcome ? (
               <p className="text-[11px] font-semibold text-amber-200">
                 {tr ? "Sonuç:" : "Outcome:"} {outcome}
@@ -349,6 +395,26 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
             <p className="mt-2 text-[9px] leading-relaxed text-white/40">
               FEN: <span className="break-all text-white/55">{fen}</span>
             </p>
+
+            <div className="mt-3 border-t border-white/10 pt-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-white/55">
+                {tr ? "Rhizoh Opening Book" : "Rhizoh Opening Book"}
+              </p>
+              {openingBook.length === 0 ? (
+                <p className="mt-1 text-[9px] text-white/40">
+                  {tr ? "Maç bitince açılışlar buraya yazılır." : "Openings appear here after analyzed games."}
+                </p>
+              ) : (
+                <ul className="mt-1 space-y-1">
+                  {openingBook.map((row) => (
+                    <li key={row.id} className="text-[9px] text-white/55">
+                      {row.name} · {row.playedCount} {tr ? "maç" : "games"}
+                      {row.eco ? ` · ${row.eco}` : ""}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </aside>
         </div>
       </div>
