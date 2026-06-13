@@ -7,6 +7,8 @@ import {
   openCastleArchiveEntityInMediaV0,
   tombstoneCastleArchiveEntityV0
 } from "../rhizoh/runtime/castleArchiveVaultV0.js";
+import { syncCastleCloudVaultV0 } from "../rhizoh/runtime/castleCloudSyncV0.js";
+import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
 
 const PIECE_UNICODE_V0 = Object.freeze({
   wK: "♔",
@@ -49,6 +51,7 @@ export const RhizohCastleLibraryPanelV0 = memo(function RhizohCastleLibraryPanel
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [format, setFormat] = useState("text/plain");
+  const [syncStatus, setSyncStatus] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -85,6 +88,9 @@ export const RhizohCastleLibraryPanelV0 = memo(function RhizohCastleLibraryPanel
                 ? "EU AI Act: kayıtlar silinebilir; olay günlüğü korunur."
                 : "EU AI Act: records deletable; event log preserved."}
             </p>
+            <div className="mt-2">
+              <RhizohTowerLiveStatusBadgeV0 towerId="library" uiLocale={uiLocale} compact />
+            </div>
           </div>
           <button
             type="button"
@@ -165,6 +171,24 @@ export const RhizohCastleLibraryPanelV0 = memo(function RhizohCastleLibraryPanel
               className="min-h-0 flex-1 resize-none rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] leading-relaxed text-white"
               placeholder={tr ? "İçerik — kaydedince mediaplayer'a taşınır." : "Content — saved to media player."}
             />
+            <button
+              type="button"
+              onClick={() => {
+                void syncCastleCloudVaultV0().then((out) => {
+                  setSyncStatus(
+                    out.ok
+                      ? tr
+                        ? "Bulut senkron tamam."
+                        : "Cloud sync complete."
+                      : String(out.error || "sync_failed")
+                  );
+                });
+              }}
+              className="rounded-lg border border-sky-400/45 bg-sky-500/10 px-2 py-1.5 text-[10px] text-sky-100"
+            >
+              {tr ? "Buluta senkron" : "Sync to cloud"}
+            </button>
+            {syncStatus ? <p className="text-[9px] text-white/45">{syncStatus}</p> : null}
             <button
               type="button"
               onClick={onSave}

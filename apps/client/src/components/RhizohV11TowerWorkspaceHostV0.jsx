@@ -2,6 +2,7 @@ import React, { memo } from "react";
 import { GeminiTowerWorkspaceV0 } from "./GeminiTowerWorkspaceV0.jsx";
 import { GEMINI_TOWER_DESIGN_V0 } from "../rhizoh/runtime/geminiTowerDesignV0.js";
 import { RhizohTowerLlmConnectionsStripV0 } from "./RhizohTowerLlmConnectionsStripV0.jsx";
+import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
 
 /**
  * Routes V11 tower node clicks to the correct workspace surface.
@@ -43,6 +44,9 @@ export const RhizohV11TowerWorkspaceHostV0 = memo(function RhizohV11TowerWorkspa
             <p className="mt-1 text-[10px] text-white/55">
               {workspaceDetail.runtime?.workspaceId || `${nodeId}_workspace_v1`}
             </p>
+            <div className="mt-1">
+              <RhizohTowerLiveStatusBadgeV0 towerId={nodeId} uiLocale={uiLocale} compact />
+            </div>
           </div>
           <button
             type="button"

@@ -72,6 +72,7 @@ import {
   setDefaultConnection,
   resolveConnection
 } from "./llmConnectionsStore.js";
+import { getCloudSyncSnapshotV0, mergeCloudSyncSnapshotV0 } from "./castleCloudSyncStore.js";
 import { checkHttpRateLimit, getHttpClientIp } from "./castleHttpRateLimit.js";
 import {
   submitAbuseReportV0,
@@ -1618,6 +1619,31 @@ const httpServer = createServer(async (req, res) => {
       sendJson(res, 200, { ok: true, id, items: await listConnections(auth.uid) });
     } catch (error) {
       sendJson(res, 400, { ok: false, error: error?.message || "delete_connection_failed" });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && req.url === "/rhizoh/sync/vault") {
+    const auth = await resolveHttpUser(req);
+    if (!auth.ok) return sendJson(res, 401, { ok: false, error: auth.reason });
+    try {
+      const snapshot = await getCloudSyncSnapshotV0(auth.uid);
+      sendJson(res, 200, { ok: true, uid: auth.uid, snapshot });
+    } catch (error) {
+      sendJson(res, 500, { ok: false, error: error?.message || "cloud_sync_pull_failed" });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/rhizoh/sync/vault") {
+    const auth = await resolveHttpUser(req);
+    if (!auth.ok) return sendJson(res, 401, { ok: false, error: auth.reason });
+    try {
+      const payload = await readHttpJson(req);
+      const snapshot = await mergeCloudSyncSnapshotV0(auth.uid, payload || {});
+      sendJson(res, 200, { ok: true, uid: auth.uid, snapshot });
+    } catch (error) {
+      sendJson(res, 400, { ok: false, error: error?.message || "cloud_sync_push_failed" });
     }
     return;
   }

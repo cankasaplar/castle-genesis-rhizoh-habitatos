@@ -2,10 +2,17 @@ import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   CHESS_GAME_MODE_V0,
   createChessArenaGameV0,
-  createCastleToCastleChessMatchV0,
-  pickChessArenaAiMoveV0
+  createCastleToCastleChessMatchV0
 } from "../rhizoh/runtime/chessArenaEngineV0.js";
+import { pickChessArenaEngineMoveV0 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
 import { parseChessVoiceMoveV0 } from "../rhizoh/runtime/chessVoiceMoveParserV0.js";
+import {
+  CASTLE_C2C_MESSAGE_TYPE_V0,
+  CASTLE_C2C_REALTIME_MESSAGE_EVENT_V0,
+  sendCastleChessMoveV0,
+  sendCastleSyncPingV0
+} from "../castleSocial/castleC2cRealtimeBusV0.js";
+import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
 import { PIECE_UNICODE_V0 } from "./RhizohCastleLibraryPanelV0.jsx";
 
 const MODE_OPTIONS_V0 = [
@@ -56,10 +63,26 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const [moveInput, setMoveInput] = useState("");
   const [status, setStatus] = useState("");
   const [selectedSquare, setSelectedSquare] = useState(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [tick, setTick] = useState(0);
 
   const fen = game.fen();
-  const rows = useMemo(() => boardRowsFromFen(fen), [fen]);
+  const rows = useMemo(() => boardRowsFromFen(fen), [fen, tick]);
   const outcome = game.outcome();
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onC2c = (ev) => {
+      const detail = ev?.detail;
+      if (detail?.type !== CASTLE_C2C_MESSAGE_TYPE_V0.CHESS_MOVE || !detail?.payload?.move) return;
+      if (c2cMatch && detail.payload.matchId && detail.payload.matchId !== c2cMatch.matchId) return;
+      game.tryMove(detail.payload.move);
+      setTick((n) => n + 1);
+      setStatus(tr ? `Uzak hamle: ${detail.payload.move}` : `Remote move: ${detail.payload.move}`);
+    };
+    window.addEventListener(CASTLE_C2C_REALTIME_MESSAGE_EVENT_V0, onC2c);
+    return () => window.removeEventListener(CASTLE_C2C_REALTIME_MESSAGE_EVENT_V0, onC2c);
+  }, [open, c2cMatch, game, tr]);
 
   const resetGame = useCallback(
     (nextMode = mode) => {
@@ -79,13 +102,22 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const applyMove = useCallback(
-    (move) => {
+    async (move) => {
       const result = game.tryMove(move);
       if (!result.ok) {
         setStatus(tr ? `Geçersiz hamle: ${move}` : `Illegal move: ${move}`);
         return false;
       }
+      setTick((n) => n + 1);
       setStatus(`${result.move.san} · ${game.turn() === "w" ? (tr ? "Beyaz" : "White") : tr ? "Siyah" : "Black"}`);
+      if (c2cMatch) {
+        sendCastleChessMoveV0({
+          matchId: c2cMatch.matchId,
+          move: result.move.san,
+          fen: game.fen(),
+          peerUid: c2cMatch.castleB
+        });
+      }
       if (result.outcome) {
         setStatus(
           result.outcome === "draw" || result.outcome === "stalemate"
@@ -101,21 +133,24 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
 
       const aiModes = [CHESS_GAME_MODE_V0.AI_HUMAN, CHESS_GAME_MODE_V0.AI_AI];
       if (aiModes.includes(mode) && !game.isGameOver()) {
-        const aiMove = pickChessArenaAiMoveV0(game);
+        setAiBusy(true);
+        const aiMove = await pickChessArenaEngineMoveV0(game, { useStockfish: true });
+        setAiBusy(false);
         if (aiMove) {
           const aiResult = game.tryMove(aiMove);
           if (aiResult.ok) {
-            setStatus((s) => `${s} · AI: ${aiResult.move.san}`);
+            setTick((n) => n + 1);
+            setStatus((s) => `${s} · Stockfish: ${aiResult.move.san}`);
           }
         }
       }
       return true;
     },
-    [game, mode, tr]
+    [game, mode, tr, c2cMatch]
   );
 
   const onSquareClick = useCallback(
-    (square) => {
+    async (square) => {
       if (game.isGameOver()) return;
       if (!selectedSquare) {
         setSelectedSquare(square);
@@ -126,9 +161,9 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         return;
       }
       const uci = `${selectedSquare}${square}`;
-      const ok = applyMove(uci);
+      const ok = await applyMove(uci);
       if (!ok) {
-        const sanTry = applyMove(square);
+        const sanTry = await applyMove(square);
         if (!sanTry) setSelectedSquare(square);
       } else {
         setSelectedSquare(null);
@@ -137,13 +172,13 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     [applyMove, game, selectedSquare]
   );
 
-  const onVoiceMove = useCallback(() => {
+  const onVoiceMove = useCallback(async () => {
     const parsed = parseChessVoiceMoveV0(moveInput);
     if (!parsed.move) {
       setStatus(tr ? "Sesli hamle anlaşılamadı." : "Voice move not recognized.");
       return;
     }
-    applyMove(parsed.move);
+    await applyMove(parsed.move);
     setMoveInput("");
   }, [applyMove, moveInput, tr]);
 
@@ -155,6 +190,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     });
     setC2cMatch(match);
     setGame(match.game);
+    sendCastleSyncPingV0(node?.id || "peer_castle");
     setStatus(tr ? "Kale-kale maçı başladı." : "Castle-to-castle match started.");
   }, [mode, node?.id, tr]);
 
@@ -167,6 +203,9 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           <div>
             <p className="text-[9px] font-black uppercase tracking-[0.22em] text-emerald-300/70">Chess Arena</p>
             <h2 className="mt-1 text-sm font-black text-emerald-100">{node?.label || "CHESS"}</h2>
+            <div className="mt-1">
+              <RhizohTowerLiveStatusBadgeV0 towerId="chess_arena" uiLocale={uiLocale} compact />
+            </div>
             <p className="mt-1 text-[10px] text-white/50">
               {tr ? "Gerçek satranç kuralları · sesli hamle · kale-kale modu" : "Real chess rules · voice moves · castle-to-castle"}
             </p>
@@ -203,9 +242,14 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                 })
               )}
             </div>
+            {aiBusy ? (
+              <p className="text-[10px] text-amber-200">{tr ? "Stockfish düşünüyor…" : "Stockfish thinking…"}</p>
+            ) : null}
             <p className="text-center text-[10px] text-white/55">{status}</p>
             {outcome ? (
-              <p className="text-[11px] font-semibold text-amber-200">{tr ? "Sonuç:" : "Outcome:"} {outcome}</p>
+              <p className="text-[11px] font-semibold text-amber-200">
+                {tr ? "Sonuç:" : "Outcome:"} {outcome}
+              </p>
             ) : null}
           </div>
 
@@ -257,8 +301,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
               onChange={(e) => setMoveInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  if (parseChessVoiceMoveV0(moveInput).move) onVoiceMove();
-                  else applyMove(moveInput.trim());
+                  if (parseChessVoiceMoveV0(moveInput).move) void onVoiceMove();
+                  else void applyMove(moveInput.trim());
                   setMoveInput("");
                 }
               }}

@@ -29,6 +29,10 @@ import { resolveSttGateConfidenceV0 } from "./sttGateConfidenceV0.js";
 import { VOICE_DIRECTED_SPEECH_BAND } from "./voiceDirectedSpeechObservationV0.js";
 import { buildRhizohContinuityHealthDetailV0, publishRhizohTrustDebugV0 } from "./rhizohTrustDebugV0.js";
 import { bindTurnIdentityV0 } from "./rhizohIdentityContinuityCoreV0.js";
+import {
+  beginRhizohTowerLlmFlightV0,
+  endRhizohTowerLlmFlightV0
+} from "./rhizohTowerLiveStatusV0.js";
 import { recordReplyFormatDriftSampleV0, getReplyFormatDriftRollingV0 } from "./replyFormatDriftTrackerV0.js";
 import {
   normalizeRhizohLlmGatewayResponseV0,
@@ -1146,6 +1150,7 @@ export async function queryRhizohLLM({
   const langBundle = buildRhizohLanguagePropagationBundleV0();
 
   try {
+    beginRhizohTowerLlmFlightV0();
     const llmBoundary = gateLlmInputForTurnV0(clientTraceId, "queryRhizohLLM");
     if (llmBoundary.block) {
       logVoiceInfoV0("TURN_SOVEREIGNTY_LLM_BLOCKED", {
@@ -1608,5 +1613,7 @@ export async function queryRhizohLLM({
       outcomeSession: postFb.outcomeSession,
       rhizohRecallMerge
     };
+  } finally {
+    endRhizohTowerLlmFlightV0();
   }
 }

@@ -1,4 +1,11 @@
 import { applyConversationDepthToGenerationV0 } from "./rhizohConversationDepthGatewayV0.js";
+import {
+  buildLlmContinuationUserMessageV0,
+  isLlmCompletionTruncatedByLengthV0,
+  mergeLlmContinuationRepliesV0,
+  normalizeProviderFinishReasonV0,
+  resolveMaxLlmLengthContinuationsV0
+} from "./rhizohLlmLengthContinuationV0.js";
 
 const PROVIDER_DEFAULT_MODEL = {
   openai: "gpt-4o-mini",
@@ -884,8 +891,13 @@ async function callOpenAiLike(endpoint, key, model, systemPrompt, userMessage, e
   });
   if (!res.ok) throw new Error(`provider_http_${res.status}`);
   const json = await res.json();
-  const content = json?.choices?.[0]?.message?.content || "";
-  return String(content);
+  const choice = json?.choices?.[0] || {};
+  const content = choice?.message?.content || "";
+  const finishReason = choice?.finish_reason || json?.choices?.[0]?.finish_reason || "";
+  return Object.freeze({
+    text: String(content),
+    finishReason: normalizeProviderFinishReasonV0(finishReason)
+  });
 }
 
 /**
@@ -910,7 +922,11 @@ async function callAnthropic(key, model, systemPrompt, userMessage, gen = {}) {
   if (!res.ok) throw new Error(`provider_http_${res.status}`);
   const json = await res.json();
   const content = json?.content?.[0]?.text || "";
-  return String(content);
+  const finishReason = json?.stop_reason || "";
+  return Object.freeze({
+    text: String(content),
+    finishReason: normalizeProviderFinishReasonV0(finishReason)
+  });
 }
 
 /**
@@ -930,8 +946,13 @@ async function callGemini(key, model, systemPrompt, userMessage, gen = {}) {
   });
   if (!res.ok) throw new Error(`provider_http_${res.status}`);
   const json = await res.json();
-  const content = json?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  return String(content);
+  const candidate = json?.candidates?.[0] || {};
+  const content = candidate?.content?.parts?.[0]?.text || "";
+  const finishReason = candidate?.finishReason || "";
+  return Object.freeze({
+    text: String(content),
+    finishReason: normalizeProviderFinishReasonV0(finishReason)
+  });
 }
 
 /**
@@ -974,6 +995,108 @@ function resolveLlmSecretKey({ mode, envKey, connectionKey, allowExternalApiKey,
   const e = new Error(`missing_api_key_for_${String(provider || "unknown")}`);
   e.code = "missing_api_key";
   throw e;
+}
+
+/**
+ * @param {string} provider
+ * @param {string} key
+ * @param {string} model
+ * @param {string} systemPrompt
+ * @param {string} userMessage
+ * @param {{ maxTokens?: number, temperature?: number }} gen
+ */
+async function invokeRhizohLlmProviderV0(provider, key, model, systemPrompt, userMessage, gen = {}) {
+  if (provider === "anthropic") {
+    return callAnthropic(key, model, systemPrompt, userMessage, gen);
+  }
+  if (provider === "gemini") {
+    return callGemini(key, model, systemPrompt, userMessage, gen);
+  }
+  if (provider === "xai") {
+    return callOpenAiLike("https://api.x.ai/v1/chat/completions", key, model, systemPrompt, userMessage, {}, gen);
+  }
+  if (provider === "deepseek") {
+    return callOpenAiLike("https://api.deepseek.com/chat/completions", key, model, systemPrompt, userMessage, {}, gen);
+  }
+  if (provider === "mistral") {
+    return callOpenAiLike("https://api.mistral.ai/v1/chat/completions", key, model, systemPrompt, userMessage, {}, gen);
+  }
+  if (provider === "openrouter") {
+    return callOpenAiLike(
+      "https://openrouter.ai/api/v1/chat/completions",
+      key,
+      model,
+      systemPrompt,
+      userMessage,
+      { "HTTP-Referer": "https://castle.local", "X-Title": "Castle Rhizoh Gateway" },
+      gen
+    );
+  }
+  return callOpenAiLike("https://api.openai.com/v1/chat/completions", key, model, systemPrompt, userMessage, {}, gen);
+}
+
+/**
+ * Provider completion with optional length continuation merges.
+ * @param {{
+ *   provider: string,
+ *   key: string,
+ *   model: string,
+ *   systemPrompt: string,
+ *   userMessage: string,
+ *   gen: Record<string, unknown>,
+ *   maxContinuations?: number
+ * }} opts
+ */
+export async function completeRhizohLlmWithLengthContinuationV0(opts) {
+  const maxContinuations = resolveMaxLlmLengthContinuationsV0(opts.maxContinuations);
+  let completion = await invokeRhizohLlmProviderV0(
+    opts.provider,
+    opts.key,
+    opts.model,
+    opts.systemPrompt,
+    opts.userMessage,
+    opts.gen
+  );
+
+  let rawText = String(completion.text || "");
+  let finishReason = completion.finishReason;
+  let continuationCount = 0;
+  const continuationPaths = [];
+
+  while (isLlmCompletionTruncatedByLengthV0(finishReason) && continuationCount < maxContinuations) {
+    const partialExtract = extractRhizohLlmReplyFromProviderText(rawText);
+    const partialReply = String(partialExtract.reply || rawText).trim();
+    const continuationUser = buildLlmContinuationUserMessageV0(partialReply, opts.userMessage);
+    const continuationSystem = `${opts.systemPrompt}\n\n## Continuation turn\nOutput only the continuation JSON fragment; do not restart the answer.`;
+    const next = await invokeRhizohLlmProviderV0(
+      opts.provider,
+      opts.key,
+      opts.model,
+      continuationSystem,
+      continuationUser,
+      opts.gen
+    );
+    const nextExtract = extractRhizohLlmReplyFromProviderText(next.text);
+    const nextReply = String(nextExtract.reply || next.text || "").trim();
+    if (!nextReply) break;
+
+    const mergedReply = mergeLlmContinuationRepliesV0(partialReply, nextReply);
+    rawText = JSON.stringify({
+      reply: mergedReply,
+      directive: "NONE",
+      intents: []
+    });
+    finishReason = next.finishReason;
+    continuationCount += 1;
+    continuationPaths.push(nextExtract.extractPath || "continuation");
+  }
+
+  return Object.freeze({
+    rawText,
+    finishReason,
+    continuationCount,
+    continuationPaths: Object.freeze(continuationPaths.slice())
+  });
 }
 
 /**
@@ -1031,30 +1154,22 @@ export async function queryRhizohLlm(input, meta = {}) {
         : `${systemPromptBase}\n\n${gen.modeDirective}`
     : systemPromptBase;
   let rawText = "";
+  let lengthContinuationCount = 0;
+  let providerFinishReason = "other";
+  let lengthContinuationPaths = [];
 
-  if (provider === "anthropic") {
-    rawText = await callAnthropic(key, model, systemPrompt, messageForModel, gen);
-  } else if (provider === "gemini") {
-    rawText = await callGemini(key, model, systemPrompt, messageForModel, gen);
-  } else if (provider === "xai") {
-    rawText = await callOpenAiLike("https://api.x.ai/v1/chat/completions", key, model, systemPrompt, messageForModel, {}, gen);
-  } else if (provider === "deepseek") {
-    rawText = await callOpenAiLike("https://api.deepseek.com/chat/completions", key, model, systemPrompt, messageForModel, {}, gen);
-  } else if (provider === "mistral") {
-    rawText = await callOpenAiLike("https://api.mistral.ai/v1/chat/completions", key, model, systemPrompt, messageForModel, {}, gen);
-  } else if (provider === "openrouter") {
-    rawText = await callOpenAiLike(
-      "https://openrouter.ai/api/v1/chat/completions",
-      key,
-      model,
-      systemPrompt,
-      messageForModel,
-      { "HTTP-Referer": "https://castle.local", "X-Title": "Castle Rhizoh Gateway" },
-      gen
-    );
-  } else {
-    rawText = await callOpenAiLike("https://api.openai.com/v1/chat/completions", key, model, systemPrompt, messageForModel, {}, gen);
-  }
+  const completion = await completeRhizohLlmWithLengthContinuationV0({
+    provider,
+    key,
+    model,
+    systemPrompt,
+    userMessage: messageForModel,
+    gen
+  });
+  rawText = completion.rawText;
+  lengthContinuationCount = completion.continuationCount;
+  providerFinishReason = completion.finishReason;
+  lengthContinuationPaths = [...completion.continuationPaths];
 
   const extracted = extractRhizohLlmReplyFromProviderText(rawText);
   const parsed = extracted.parsed;
@@ -1093,6 +1208,9 @@ export async function queryRhizohLlm(input, meta = {}) {
     observedFormat: extracted.observedFormat,
     generationMode: gen.generationModeLabel,
     maxTokensApplied: gen.maxTokens,
+    providerFinishReason,
+    lengthContinuationCount,
+    lengthContinuationPaths,
     ...(depthMeta
       ? {
           conversationMode: depthMeta.conversationMode,

@@ -20,6 +20,7 @@ import {
   shouldPreserveSessionOnTransientFailureV1
 } from "./runtime/gatewaySessionKeeperV1.js";
 import { noteTranscribeGatewayConnectV1 } from "./runtime/voiceTranscribeSessionCoordinatorV1.js";
+import { setRhizohTowerGatewayReachableV0 } from "./runtime/rhizohTowerLiveStatusV0.js";
 
 const MAX_ATTEMPTS = 5;
 const HEALTH_TIMEOUT_MS = 6500;
@@ -297,6 +298,16 @@ export function useRhizohGatewayMonitor() {
     churnEscalated: false
   }));
   const pollRef = useRef(0);
+
+  useEffect(() => {
+    const reachable =
+      phase === "connected" ||
+      phase === "degraded" ||
+      phase === "degraded_llm" ||
+      phase === "degraded_storage" ||
+      phase === "uncertain";
+    setRhizohTowerGatewayReachableV0(reachable);
+  }, [phase]);
 
   const retry = useCallback((opts) => {
     const correlationId =
