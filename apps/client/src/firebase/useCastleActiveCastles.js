@@ -36,7 +36,8 @@ export function useCastleActiveCastles(firebaseUserUid) {
             lon: v.lon,
             nexusEnergy: v.nexusEnergy,
             displayName: v.displayName || "",
-            bridgePeers: Array.isArray(v.bridgePeers) ? v.bridgePeers : []
+            bridgePeers: Array.isArray(v.bridgePeers) ? v.bridgePeers : [],
+            gatewayClientId: String(v.gatewayClientId || "").trim() || null
           });
         });
         setRemoteCastles(rows);
@@ -55,13 +56,16 @@ export function useCastleActiveCastles(firebaseUserUid) {
         if (window.__CASTLE_CLIENT_CASTLE_STATE__ !== "ACTIVE") return;
         const geo = window.__CASTLE_NEXUS_GEO__;
         if (!geo || !Number.isFinite(geo.lat) || !Number.isFinite(geo.lon)) return;
+        const gatewayClientId =
+          typeof window.__CASTLE_C2C_CLIENT_ID__ === "string" ? window.__CASTLE_C2C_CLIENT_ID__ : null;
         void setDoc(
           ref,
           {
             lat: geo.lat,
             lon: geo.lon,
             nexusEnergy: Math.min(0.98, 0.55 + Math.sin(Date.now() / 9000) * 0.22),
-            updatedAt: serverTimestamp()
+            updatedAt: serverTimestamp(),
+            ...(gatewayClientId ? { gatewayClientId } : {})
           },
           { merge: true }
         );

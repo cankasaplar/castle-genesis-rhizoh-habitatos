@@ -23,6 +23,8 @@ export { RHIZOH_V11_MAP_INTENT_EVENT_V0 };
 import {
   SOVEREIGN_MAP_DEFAULT_HOME_V0,
   SOVEREIGN_TOWER_GRAPH_EDGES_V0,
+  buildRemoteCastleMapNodesV0,
+  dispatchRemoteCastleClickV0,
   listSovereignWorldMapNodesForViewV0,
   RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1,
   sovereignNodeIconHtmlV0,
@@ -157,7 +159,7 @@ function leafletTileUrlForToolV0(activeMapTool) {
   return "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
 }
 
-function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
+function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], remoteCastlesVisible = false }) {
   const mapRef = useRef(null);
   const hostRef = useRef(null);
   const tileLayerRef = useRef(null);
@@ -169,6 +171,10 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
   const displayNodes = useMemo(
     () => listSovereignWorldMapNodesForViewV0({ userCastle: userCastleGeo }),
     [userCastleGeo]
+  );
+  const remoteNodes = useMemo(
+    () => (remoteCastlesVisible ? buildRemoteCastleMapNodesV0(remoteCastles) : []),
+    [remoteCastles, remoteCastlesVisible]
   );
   const nodeById = useRef(new Map(displayNodes.map((n) => [n.id, n])));
   const [leafletReady, setLeafletReady] = useState(false);
@@ -293,13 +299,20 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
       }));
       const hasUserCastle = displayNodes.some((n) => n.id === "my_castle");
       const extraLocal = hasUserCastle ? [] : localNodes;
-      const allNodes = [...displayNodes, ...extraLocal];
+      const allNodes = [...displayNodes, ...extraLocal, ...remoteNodes];
       for (const node of allNodes) {
         const marker = L.marker([node.lat, node.lon], {
           icon: createLeafletNodeIconV0(L, node),
           keyboard: false,
           title: node.name || node.label,
-          zIndexOffset: node.id === "my_castle" ? 900 : node.type === "tower" ? 400 : 200
+          zIndexOffset:
+            node.id === "my_castle"
+              ? 900
+              : node.type === "remote_castle"
+                ? 100
+                : node.type === "tower"
+                  ? 400
+                  : 200
         }).addTo(markerLayerRef.current);
         marker.on("click", (ev) => {
           try {
@@ -312,6 +325,10 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
             mapRef.current?.flyTo?.([node.lat, node.lon], z, { animate: true, duration: 1.2 });
           } catch {
             /* noop */
+          }
+          if (node.type === "remote_castle") {
+            dispatchRemoteCastleClickV0(node);
+            return;
           }
           emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK);
         });
@@ -345,7 +362,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
     } catch {
       /* noop */
     }
-  }, [leafletReady, localAnchors, displayNodes, userCastleGeo]);
+  }, [leafletReady, localAnchors, displayNodes, remoteNodes, userCastleGeo]);
 
   useEffect(() => {
     const L = typeof window !== "undefined" ? window.L : null;
@@ -377,7 +394,12 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map" }) {
       <div className="absolute inset-y-[12%] left-[50%] w-px bg-cyan-300/10" />
       <div className="absolute inset-y-[12%] left-[75%] w-px bg-cyan-300/10" />
       <div className="absolute left-4 top-4 rounded-xl border border-cyan-400/25 bg-black/55 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-100/80">
-        RHIZOH SOVEREIGN MAP V11 · {displayNodes.length} nodes
+        RHIZOH SOVEREIGN MAP V11 · {displayNodes.length + remoteNodes.length} nodes
+        {remoteCastlesVisible && remoteNodes.length ? (
+          <span className="mt-1 block text-[8px] font-normal normal-case tracking-normal text-gray-300/70">
+            {remoteNodes.length} peer castle{remoteNodes.length === 1 ? "" : "s"} visible
+          </span>
+        ) : null}
         {!userCastleGeo ? (
           <span className="mt-1 block text-[8px] font-normal normal-case tracking-normal text-cyan-200/55">
             Kale pin yok — kale kur ile konumundan oluştur
@@ -458,10 +480,16 @@ function SafeWorldShellV0() {
   );
 }
 
-function renderFallbackForModeV0(renderMode, activeMapTool) {
+function renderFallbackForModeV0(renderMode, activeMapTool, remoteCastles, remoteCastlesVisible) {
   if (renderMode === RHIZOH_SPATIAL_RENDER_MODE_V0.EMPTY_CANVAS) return <EmptyCanvasV0 />;
   if (renderMode === RHIZOH_SPATIAL_RENDER_MODE_V0.SAFE_WORLD_SHELL) return <SafeWorldShellV0 />;
-  return <V11CoreMapLayerV0 activeMapTool={activeMapTool} />;
+  return (
+    <V11CoreMapLayerV0
+      activeMapTool={activeMapTool}
+      remoteCastles={remoteCastles}
+      remoteCastlesVisible={remoteCastlesVisible}
+    />
+  );
 }
 
 /**
@@ -471,7 +499,9 @@ function renderFallbackForModeV0(renderMode, activeMapTool) {
 export const RhizohWorldSpaceMapHostV0 = memo(function RhizohWorldSpaceMapHostV0({
   active,
   renderMode = RHIZOH_SPATIAL_RENDER_MODE_V0.V11_CORE_MAP,
-  activeMapTool = "city_map"
+  activeMapTool = "city_map",
+  remoteCastles = [],
+  remoteCastlesVisible = false
 }) {
   return (
     <div
@@ -479,8 +509,13 @@ export const RhizohWorldSpaceMapHostV0 = memo(function RhizohWorldSpaceMapHostV0
       data-rhizoh-world-space-map-host="1"
       data-rhizoh-world-space-map-active={active ? "1" : "0"}
       data-rhizoh-world-space-render-mode={renderMode}
+      data-remote-castles-visible={remoteCastlesVisible ? "1" : "0"}
     >
-      {active ? <CesiumRealMapLayer active /> : renderFallbackForModeV0(renderMode, activeMapTool)}
+      {active ? (
+        <CesiumRealMapLayer active />
+      ) : (
+        renderFallbackForModeV0(renderMode, activeMapTool, remoteCastles, remoteCastlesVisible)
+      )}
     </div>
   );
 });

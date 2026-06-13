@@ -1,5 +1,11 @@
-import React, { memo, useCallback, useMemo, useState } from "react";
-import { Lock, Radio, Tv, X } from "lucide-react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Archive, Lock, Mic, Radio, Square, Tv, Video, X } from "lucide-react";
+import {
+  createWorldSpaceMediaCaptureV0,
+  listMediaArchiveEntriesV0,
+  stopCaptureAndArchiveV0,
+  WORLD_SPACE_MEDIA_ARCHIVE_EVENT_V0
+} from "../rhizoh/runtime/worldSpaceMediaEngineV0.js";
 
 const DEFAULT_CHANNELS_V0 = Object.freeze([
   Object.freeze({
@@ -15,6 +21,12 @@ const DEFAULT_CHANNELS_V0 = Object.freeze([
     titleEn: "NASA ISS Live",
     type: "youtube",
     url: "https://www.youtube.com/embed/21X5lGlDOfg?autoplay=1&mute=1&controls=0"
+  }),
+  Object.freeze({
+    id: "local",
+    titleTr: "Yerel Kamera / Mikrofon",
+    titleEn: "Local Camera / Microphone",
+    type: "local"
   })
 ]);
 
@@ -32,15 +44,93 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
 }) {
   const tr = uiLocale === "tr";
   const [activeChannel, setActiveChannel] = useState(() => DEFAULT_CHANNELS_V0[0]);
+  const [archiveRows, setArchiveRows] = useState(() => listMediaArchiveEntriesV0());
+  const [passphrase, setPassphrase] = useState("");
+  const [recording, setRecording] = useState(false);
+  const [captureError, setCaptureError] = useState("");
+  const [archiveStatus, setArchiveStatus] = useState("");
+  const captureRef = useRef(null);
+  const previewRef = useRef(null);
   const castleBroadcast = useMemo(() => isCastleMediaSourceV0(detail?.source), [detail?.source]);
 
   const title =
     String(detail?.title || "").trim() ||
     (tr ? activeChannel.titleTr : activeChannel.titleEn);
 
-  const onSelectChannel = useCallback((channel) => {
-    setActiveChannel(channel);
+  useEffect(() => {
+    const refresh = () => setArchiveRows(listMediaArchiveEntriesV0());
+    window.addEventListener(WORLD_SPACE_MEDIA_ARCHIVE_EVENT_V0, refresh);
+    return () => window.removeEventListener(WORLD_SPACE_MEDIA_ARCHIVE_EVENT_V0, refresh);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      try {
+        captureRef.current?.abort?.();
+      } catch {
+        /* noop */
+      }
+      captureRef.current = null;
+    };
+  }, []);
+
+  const onSelectChannel = useCallback(async (channel) => {
+    if (captureRef.current) {
+      try {
+        captureRef.current.abort();
+      } catch {
+        /* noop */
+      }
+      captureRef.current = null;
+    }
+    setCaptureError("");
+    setActiveChannel(channel);
+    if (channel.type !== "local") return;
+    try {
+      const cap = await createWorldSpaceMediaCaptureV0({ audio: true, video: true });
+      captureRef.current = cap;
+      if (previewRef.current) {
+        previewRef.current.srcObject = cap.stream;
+      }
+    } catch (e) {
+      setCaptureError(String(e?.message || e || "capture_failed"));
+    }
+  }, []);
+
+  const onToggleRecord = useCallback(async () => {
+    if (!captureRef.current) return;
+    if (!recording) {
+      captureRef.current.start();
+      setRecording(true);
+      setArchiveStatus(tr ? "Kayıt başladı…" : "Recording…");
+      return;
+    }
+    if (!passphrase.trim()) {
+      setArchiveStatus(tr ? "Arşiv için parola gir." : "Enter passphrase for archive.");
+      return;
+    }
+    setRecording(false);
+    setArchiveStatus(tr ? "Şifreleniyor…" : "Encrypting…");
+    try {
+      const out = await stopCaptureAndArchiveV0(captureRef.current, {
+        passphrase: passphrase.trim(),
+        title: tr ? "World Space Kaydı" : "World Space Recording",
+        source: detail?.source || "world_space_media_tube"
+      });
+      captureRef.current = null;
+      if (out.ok) {
+        setArchiveStatus(tr ? "Arşive eklendi (AES-GCM)." : "Added to archive (AES-GCM).");
+        setArchiveRows(listMediaArchiveEntriesV0());
+        const cap = await createWorldSpaceMediaCaptureV0({ audio: true, video: true });
+        captureRef.current = cap;
+        if (previewRef.current) cap.stream && (previewRef.current.srcObject = cap.stream);
+      } else {
+        setArchiveStatus(tr ? "Boş kayıt." : "Empty recording.");
+      }
+    } catch (e) {
+      setArchiveStatus(String(e?.message || e || "archive_failed"));
+    }
+  }, [recording, passphrase, tr, detail?.source]);
 
   if (!detail) return null;
 
@@ -86,7 +176,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
               <button
                 key={ch.id}
                 type="button"
-                onClick={() => onSelectChannel(ch)}
+                onClick={() => void onSelectChannel(ch)}
                 className={`w-full rounded-xl border px-3 py-2 text-left text-[10px] font-bold transition-all ${
                   activeChannel.id === ch.id
                     ? "border-purple-500/50 bg-purple-500/20 text-purple-300"
@@ -96,6 +186,29 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                 {tr ? ch.titleTr : ch.titleEn}
               </button>
             ))}
+            <div className="pt-3">
+              <p className="mb-2 flex items-center gap-2 text-[8px] font-black uppercase tracking-[0.24em] text-white/30">
+                <Archive size={11} /> {tr ? "Şifreli arşiv" : "Encrypted archive"}
+              </p>
+              <input
+                type="password"
+                value={passphrase}
+                onChange={(ev) => setPassphrase(ev.target.value)}
+                placeholder={tr ? "Arşiv parolası" : "Archive passphrase"}
+                className="mb-2 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] text-white/80"
+              />
+              {archiveRows.length ? (
+                <ul className="max-h-24 space-y-1 overflow-y-auto text-[9px] text-white/45">
+                  {archiveRows.slice(0, 5).map((row) => (
+                    <li key={row.id} className="truncate">
+                      {row.title} · {(row.byteLength / 1024).toFixed(1)} KB
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-[9px] text-white/30">{tr ? "Henüz kayıt yok" : "No recordings yet"}</p>
+              )}
+            </div>
             <div className="pt-3">
               <p className="mb-2 text-[8px] font-black uppercase tracking-[0.24em] text-white/30">
                 {tr ? "Gerçek dünya verisi" : "Real-world feed"}
@@ -129,6 +242,36 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
+          ) : activeChannel.type === "local" ? (
+            <div className="flex h-full flex-col">
+              <video
+                ref={previewRef}
+                autoPlay
+                muted
+                playsInline
+                className="min-h-0 flex-1 bg-black object-cover"
+              />
+              <div className="flex items-center gap-2 border-t border-white/10 bg-black/80 p-3">
+                <button
+                  type="button"
+                  onClick={() => void onToggleRecord()}
+                  className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-[10px] font-bold uppercase ${
+                    recording
+                      ? "border-red-500/50 bg-red-500/20 text-red-200"
+                      : "border-cyan-500/40 bg-cyan-500/15 text-cyan-200"
+                  }`}
+                >
+                  {recording ? <Square size={12} /> : <Mic size={12} />}
+                  {recording ? (tr ? "Durdur & arşivle" : "Stop & archive") : tr ? "Kayda al" : "Record"}
+                </button>
+                <Video size={14} className="text-white/35" />
+                {captureError ? (
+                  <span className="text-[9px] text-amber-300/85 normal-case">{captureError}</span>
+                ) : archiveStatus ? (
+                  <span className="text-[9px] text-emerald-300/85 normal-case">{archiveStatus}</span>
+                ) : null}
+              </div>
+            </div>
           ) : (
             <div className="flex h-full flex-col items-center justify-center text-white/35">
               <Tv size={48} />

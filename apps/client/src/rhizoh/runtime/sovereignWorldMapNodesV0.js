@@ -232,7 +232,9 @@ const SVG_BY_TYPE_V0 = Object.freeze({
     '<path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><circle cx="12" cy="12" r="2"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/>',
   portal:
     '<circle cx="12" cy="12" r="10" stroke-dasharray="2 4"/><path d="M12 8a4 4 0 1 0 4 4"/><circle cx="12" cy="12" r="2"/>',
-  castle: '<circle cx="12" cy="12" r="10"/>'
+  castle: '<circle cx="12" cy="12" r="10"/>',
+  remote_castle:
+    '<path d="M3 21h18"/><path d="M5 21V9l7-4 7 4v12"/><path d="M9 21v-6h6v6"/><circle cx="12" cy="11" r="1.5" fill="currentColor" stroke="none"/>'
 });
 
 /**
@@ -355,6 +357,59 @@ export function parseSovereignVoiceWarpCommandV0(text = "", portalCoords = null)
 
 export const RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1 = "RHIZOH_OPEN_MEDIA_TUBE";
 export const RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1 = "RHIZOH_SOVEREIGN_VOICE_WARP";
+export const RHIZOH_REMOTE_CASTLE_CLICK_EVENT_V1 = "RHIZOH_REMOTE_CASTLE_CLICK";
+
+/**
+ * Grey peer castle pins from Firestore `active_castles`.
+ * @param {ReadonlyArray<{ id: string, lat?: number, lon?: number, displayName?: string, nexusEnergy?: number }>} remoteCastles
+ */
+export function buildRemoteCastleMapNodesV0(remoteCastles = []) {
+  /** @type {object[]} */
+  const rows = [];
+  for (const row of remoteCastles || []) {
+    const uid = String(row?.id || "").trim();
+    const lat = Number(row?.lat);
+    const lon = Number(row?.lon);
+    if (!uid || !Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const label = String(row.displayName || "").trim();
+    rows.push(
+      Object.freeze({
+        id: `remote_castle_${uid}`,
+        uid,
+        name: label || `Peer Castle · ${uid.slice(0, 6)}`,
+        label: "PEER",
+        type: "remote_castle",
+        lat,
+        lon,
+        color: "#9ca3af",
+        owner: "Peer",
+        description: "Opt-in peer castle — C2C bridge available on click.",
+        nexusEnergy: Number(row.nexusEnergy) || null,
+        gatewayClientId: String(row.gatewayClientId || "").trim() || null
+      })
+    );
+  }
+  return Object.freeze(rows);
+}
+
+/**
+ * @param {object} node
+ */
+export function dispatchRemoteCastleClickV0(node) {
+  if (typeof window === "undefined" || !node?.uid) return false;
+  window.dispatchEvent(
+    new CustomEvent(RHIZOH_REMOTE_CASTLE_CLICK_EVENT_V1, {
+      detail: Object.freeze({
+        uid: String(node.uid),
+        lat: Number(node.lat),
+        lon: Number(node.lon),
+        displayName: String(node.name || node.label || ""),
+        gatewayClientId: node.gatewayClientId ? String(node.gatewayClientId) : null
+      })
+    })
+  );
+  return true;
+}
 
 const MEDIA_OPEN_TEXT_RE_V0 = /\b(yayın|yayin|medya|media|player|kuantum\s*yayın|kuantum\s*yayin)\b/i;
 const MEDIA_OPEN_VERB_RE_V0 = /\b(aç|ac|open|başlat|baslat|start|göster|goster|show|oynat)\b/i;
