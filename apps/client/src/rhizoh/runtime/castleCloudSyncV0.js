@@ -16,6 +16,10 @@ import {
   hydrateLivingCastleMemoryFromCloudV0
 } from "./livingCastleMemoryV0.js";
 import {
+  exportFer1VaultForCloudV0,
+  isFer1VaultSealedV0
+} from "./fer1MemoryVaultV0.js";
+import {
   publishTowerLiveStatusV0,
   setRhizohTowerSyncActiveV0
 } from "./rhizohTowerLiveStatusV0.js";
@@ -76,6 +80,8 @@ export async function pushCastleCloudSyncV0(opts = {}) {
     const ghostMemory = listGhostMemoryForCloudSyncV0();
     const codex = Array.isArray(opts.codex) ? opts.codex : readCodexLocalV0();
     const livingPatch = buildLivingCastleMemoryCloudPatchV0();
+    const sealed = isFer1VaultSealedV0();
+    const fer1EncryptedVault = exportFer1VaultForCloudV0();
 
     const res = await fetch(`${getRhizohApiBase()}/rhizoh/sync/vault`, {
       method: "POST",
@@ -83,14 +89,15 @@ export async function pushCastleCloudSyncV0(opts = {}) {
       body: JSON.stringify({
         entities,
         events,
-        ghostMemory,
+        ghostMemory: sealed ? [] : ghostMemory,
         codex,
         castleIdentity: livingPatch.castleIdentity || readCastleIdentityV0(),
-        chronicle: livingPatch.chronicle || listCastleChronicleV0(),
-        knowledge: listRhizohKnowledgeV0(),
-        openingBook: listRhizohOpeningBookV0(),
-        chessCivilization: readChessCivilizationV0(),
-        mediaCivilization: readMediaCivilizationV0()
+        chronicle: sealed ? [] : livingPatch.chronicle || listCastleChronicleV0(),
+        knowledge: sealed ? [] : listRhizohKnowledgeV0(),
+        openingBook: sealed ? [] : listRhizohOpeningBookV0(),
+        chessCivilization: sealed ? null : readChessCivilizationV0(),
+        mediaCivilization: sealed ? null : readMediaCivilizationV0(),
+        fer1EncryptedVault
       })
     });
     const json = await res.json();
