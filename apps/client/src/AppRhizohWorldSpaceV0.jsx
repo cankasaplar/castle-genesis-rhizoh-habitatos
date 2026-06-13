@@ -71,6 +71,7 @@ import { RhizohV11TowerWorkspaceHostV0 } from "./components/RhizohV11TowerWorksp
 import { RhizohCastleLibraryPanelV0 } from "./components/RhizohCastleLibraryPanelV0.jsx";
 import { RhizohChessArenaWorkspaceV0 } from "./components/RhizohChessArenaWorkspaceV0.jsx";
 import { RhizohTowerPortalDiscoveryV0 } from "./components/RhizohTowerPortalDiscoveryV0.jsx";
+import { RhizohCastleLivingMemoryPanelV0 } from "./components/RhizohCastleLivingMemoryPanelV0.jsx";
 import { RhizohWorldSpaceMediaTubeV0 } from "./components/RhizohWorldSpaceMediaTubeV0.jsx";
 import { CASTLE_ARCHIVE_OPEN_MEDIA_EVENT_V0 } from "./rhizoh/runtime/castleArchiveVaultV0.js";
 import { RhizohWorldSpaceC2cPanelV0 } from "./components/RhizohWorldSpaceC2cPanelV0.jsx";
@@ -85,6 +86,11 @@ import {
   writeRemoteCastlesVisibleV0
 } from "./rhizoh/runtime/remoteCastleMapVisibilityV0.js";
 import { bootCastleC2cSignalingV0, disposeCastleC2cTransportV0 } from "./castleSocial/castleC2cWebRtcTransportV0.js";
+import { bootLivingCastleMemoryV0 } from "./rhizoh/runtime/livingCastleMemoryV0.js";
+import {
+  disposeCastleMemoryHooksV0,
+  installCastleMemoryHooksV0
+} from "./rhizoh/runtime/castleMemoryHooksV0.js";
 import {
   completeCastleInitFromMapAnchorV0,
   installCastleInitMapPickListenerV0
@@ -110,6 +116,7 @@ export default function AppRhizohWorldSpaceV0() {
   const [v11Library, setV11Library] = useState(null);
   const [v11ChessArena, setV11ChessArena] = useState(null);
   const [v11TowerPortal, setV11TowerPortal] = useState(null);
+  const [v11LivingMemory, setV11LivingMemory] = useState(false);
   const [v11MediaTube, setV11MediaTube] = useState(null);
   const [castleInitGateOpen, setCastleInitGateOpen] = useState(false);
   const [c2cPeer, setC2cPeer] = useState(null);
@@ -187,8 +194,16 @@ export default function AppRhizohWorldSpaceV0() {
     const uid = castleAuth?.user?.uid;
     if (!uid) return undefined;
     bootCastleC2cSignalingV0(uid);
-    return () => disposeCastleC2cTransportV0();
-  }, [castleAuth?.user?.uid]);
+    bootLivingCastleMemoryV0({
+      userId: uid,
+      founder: castleAuth?.user?.displayName || uid.slice(0, 8)
+    });
+    installCastleMemoryHooksV0(uid);
+    return () => {
+      disposeCastleC2cTransportV0();
+      disposeCastleMemoryHooksV0();
+    };
+  }, [castleAuth?.user?.uid, castleAuth?.user?.displayName]);
 
   useEffect(() => {
     const onRemoteCastle = (ev) => {
@@ -639,6 +654,15 @@ export default function AppRhizohWorldSpaceV0() {
           open
           node={v11Library.node}
           onClose={() => setV11Library(null)}
+          onOpenLivingMemory={() => setV11LivingMemory(true)}
+          uiLocale={uiLocale}
+        />
+      ) : null}
+
+      {v11LivingMemory && !v11MediaTube ? (
+        <RhizohCastleLivingMemoryPanelV0
+          open
+          onClose={() => setV11LivingMemory(false)}
           uiLocale={uiLocale}
         />
       ) : null}

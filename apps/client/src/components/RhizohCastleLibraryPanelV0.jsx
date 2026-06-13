@@ -8,6 +8,7 @@ import {
   tombstoneCastleArchiveEntityV0
 } from "../rhizoh/runtime/castleArchiveVaultV0.js";
 import { syncCastleCloudVaultV0 } from "../rhizoh/runtime/castleCloudSyncV0.js";
+import { readCastleIdentityV0, CASTLE_IDENTITY_EVENT_V0 } from "../rhizoh/runtime/castleIdentityV0.js";
 import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
 
 const PIECE_UNICODE_V0 = Object.freeze({
@@ -35,6 +36,16 @@ function readVaultSnapshot() {
   return listCastleArchiveEntitiesV0().length;
 }
 
+function subscribeIdentity(cb) {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(CASTLE_IDENTITY_EVENT_V0, cb);
+  return () => window.removeEventListener(CASTLE_IDENTITY_EVENT_V0, cb);
+}
+
+function readIdentitySnapshot() {
+  return readCastleIdentityV0()?.updatedAt || "";
+}
+
 /**
  * Castle Library + Archive panel — EU AI Act tombstone deletes, immutable events.
  */
@@ -42,10 +53,13 @@ export const RhizohCastleLibraryPanelV0 = memo(function RhizohCastleLibraryPanel
   open,
   onClose,
   uiLocale = "en",
-  node = null
+  node = null,
+  onOpenLivingMemory
 }) {
   const tr = uiLocale === "tr";
   const vaultTick = useSyncExternalStore(subscribeVault, readVaultSnapshot, () => 0);
+  useSyncExternalStore(subscribeIdentity, readIdentitySnapshot, () => "");
+  const identity = readCastleIdentityV0();
   const entities = useMemo(() => listCastleArchiveEntitiesV0(), [vaultTick]);
   const events = useMemo(() => listCastleArchiveEventsV0().slice(-12).reverse(), [vaultTick]);
   const [title, setTitle] = useState("");
@@ -88,8 +102,23 @@ export const RhizohCastleLibraryPanelV0 = memo(function RhizohCastleLibraryPanel
                 ? "EU AI Act: kayıtlar silinebilir; olay günlüğü korunur."
                 : "EU AI Act: records deletable; event log preserved."}
             </p>
-            <div className="mt-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <RhizohTowerLiveStatusBadgeV0 towerId="library" uiLocale={uiLocale} compact />
+              {identity ? (
+                <span className="text-[9px] text-cyan-200/70">
+                  {identity.visitors} {tr ? "ziyaretçi" : "visitors"} · {identity.matchesPlayed}{" "}
+                  {tr ? "maç" : "matches"}
+                </span>
+              ) : null}
+              {onOpenLivingMemory ? (
+                <button
+                  type="button"
+                  onClick={onOpenLivingMemory}
+                  className="rounded border border-cyan-400/35 px-2 py-0.5 text-[9px] font-bold uppercase text-cyan-200 hover:bg-cyan-500/10"
+                >
+                  {tr ? "Hafıza" : "Memory"}
+                </button>
+              ) : null}
             </div>
           </div>
           <button

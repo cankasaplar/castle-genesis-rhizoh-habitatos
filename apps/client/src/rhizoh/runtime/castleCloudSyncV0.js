@@ -1,9 +1,13 @@
 /**
- * Castle cloud sync v0 — push/pull Archive, Library, Ghost Memory, Codex to gateway.
+ * Castle cloud sync v0 — push/pull Archive, Library, Ghost Memory, Codex, Identity, Chronicle.
  */
 
 import { getOrCreateCastleDevUid, getRhizohApiBase } from "../useRhizohGatewayMonitor.js";
 import { listCastleArchiveEntitiesV0, listCastleArchiveEventsV0 } from "./castleArchiveVaultV0.js";
+import { readCastleIdentityV0 } from "./castleIdentityV0.js";
+import { listCastleChronicleV0 } from "./castleChronicleV0.js";
+import { listGhostMemoryForCloudSyncV0 } from "./ghostMemoryPersistenceV0.js";
+import { buildLivingCastleMemoryCloudPatchV0, hydrateLivingCastleMemoryFromCloudV0 } from "./livingCastleMemoryV0.js";
 import {
   publishTowerLiveStatusV0,
   setRhizohTowerSyncActiveV0
@@ -19,6 +23,11 @@ function authHeaders() {
   };
 }
 
+function hydrateFromSnapshotV0(snapshot) {
+  if (!snapshot) return;
+  hydrateLivingCastleMemoryFromCloudV0(snapshot);
+}
+
 /**
  * @returns {Promise<{ ok: boolean, snapshot?: object, error?: string }>}
  */
@@ -29,6 +38,7 @@ export async function pullCastleCloudSyncV0() {
     const res = await fetch(`${getRhizohApiBase()}/rhizoh/sync/vault`, { headers: authHeaders() });
     const json = await res.json();
     if (!json?.ok) return { ok: false, error: json?.error || "pull_failed" };
+    hydrateFromSnapshotV0(json.snapshot);
     try {
       window.dispatchEvent(
         new CustomEvent(CASTLE_CLOUD_SYNC_EVENT_V0, {
@@ -48,7 +58,7 @@ export async function pullCastleCloudSyncV0() {
 }
 
 /**
- * Push local archive + ghost memory snapshot to gateway.
+ * Push local archive + living castle memory snapshot to gateway.
  */
 export async function pushCastleCloudSyncV0(opts = {}) {
   setRhizohTowerSyncActiveV0(true);
@@ -56,16 +66,25 @@ export async function pushCastleCloudSyncV0(opts = {}) {
   try {
     const entities = listCastleArchiveEntitiesV0();
     const events = listCastleArchiveEventsV0();
-    const ghostMemory = readGhostMemoryLocalV0();
+    const ghostMemory = listGhostMemoryForCloudSyncV0();
     const codex = Array.isArray(opts.codex) ? opts.codex : readCodexLocalV0();
+    const livingPatch = buildLivingCastleMemoryCloudPatchV0();
 
     const res = await fetch(`${getRhizohApiBase()}/rhizoh/sync/vault`, {
       method: "POST",
       headers: authHeaders(),
-      body: JSON.stringify({ entities, events, ghostMemory, codex })
+      body: JSON.stringify({
+        entities,
+        events,
+        ghostMemory,
+        codex,
+        castleIdentity: livingPatch.castleIdentity || readCastleIdentityV0(),
+        chronicle: livingPatch.chronicle || listCastleChronicleV0()
+      })
     });
     const json = await res.json();
     if (!json?.ok) return { ok: false, error: json?.error || "push_failed" };
+    hydrateFromSnapshotV0(json.snapshot);
     try {
       window.dispatchEvent(
         new CustomEvent(CASTLE_CLOUD_SYNC_EVENT_V0, {
@@ -81,18 +100,6 @@ export async function pushCastleCloudSyncV0(opts = {}) {
   } finally {
     setRhizohTowerSyncActiveV0(false);
     publishTowerLiveStatusV0();
-  }
-}
-
-function readGhostMemoryLocalV0() {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem("rhizoh_ghost_memory_v0");
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
   }
 }
 

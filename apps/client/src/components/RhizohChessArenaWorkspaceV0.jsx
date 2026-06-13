@@ -12,6 +12,7 @@ import {
   sendCastleChessMoveV0,
   sendCastleSyncPingV0
 } from "../castleSocial/castleC2cRealtimeBusV0.js";
+import { recordLocalChessOutcomeV0 } from "../rhizoh/runtime/castleMemoryHooksV0.js";
 import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
 import { PIECE_UNICODE_V0 } from "./RhizohCastleLibraryPanelV0.jsx";
 
@@ -145,6 +146,17 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
               ? "Mat — oyun bitti."
               : "Checkmate — game over."
         );
+        if (c2cMatch) {
+          const outcomeVal = result.outcome || game.outcome();
+          const draw = outcomeVal === "draw" || outcomeVal === "stalemate";
+          const won = !draw && outcomeVal === "white_wins";
+          recordLocalChessOutcomeV0({
+            opponentCastleId: c2cMatch.castleB,
+            matchId: c2cMatch.matchId,
+            won,
+            draw
+          });
+        }
         return true;
       }
 

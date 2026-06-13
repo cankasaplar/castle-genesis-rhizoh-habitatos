@@ -9,7 +9,7 @@ import path from "node:path";
 const DATA_DIR = process.env.CASTLE_CLOUD_SYNC_DIR || path.join(process.cwd(), "data", "cloud-sync");
 const FILE_NAME = "castle_cloud_sync_v0.json";
 
-/** @type {Record<string, { entities: object[], events: object[], ghostMemory: object[], codex: object[], updatedAt: string }>} */
+/** @type {Record<string, { entities: object[], events: object[], ghostMemory: object[], codex: object[], castleIdentity: object | null, chronicle: object[], updatedAt: string }>} */
 let cache = null;
 
 async function ensureLoaded() {
@@ -39,6 +39,8 @@ function bucketForUid(uid) {
       events: [],
       ghostMemory: [],
       codex: [],
+      castleIdentity: null,
+      chronicle: [],
       updatedAt: new Date().toISOString()
     };
   }
@@ -58,13 +60,15 @@ export async function getCloudSyncSnapshotV0(uid) {
     events: Object.freeze((bucket.events || []).map((e) => Object.freeze({ ...e }))),
     ghostMemory: Object.freeze((bucket.ghostMemory || []).map((e) => Object.freeze({ ...e }))),
     codex: Object.freeze((bucket.codex || []).map((e) => Object.freeze({ ...e }))),
+    castleIdentity: bucket.castleIdentity ? Object.freeze({ ...bucket.castleIdentity }) : null,
+    chronicle: Object.freeze((bucket.chronicle || []).map((e) => Object.freeze({ ...e }))),
     updatedAt: bucket.updatedAt
   });
 }
 
 /**
  * @param {string} uid
- * @param {{ entities?: object[], ghostMemory?: object[], codex?: object[], events?: object[] }} patch
+ * @param {{ entities?: object[], ghostMemory?: object[], codex?: object[], events?: object[], castleIdentity?: object, chronicle?: object[] }} patch
  */
 export async function mergeCloudSyncSnapshotV0(uid, patch = {}) {
   await ensureLoaded();
@@ -102,6 +106,34 @@ export async function mergeCloudSyncSnapshotV0(uid, patch = {}) {
     const existing = new Set((bucket.events || []).map((e) => e.id));
     const appended = (patch.events || []).filter((e) => e?.id && !existing.has(e.id));
     bucket.events = [...(bucket.events || []), ...appended].slice(-1024);
+  }
+
+  if (patch.castleIdentity && typeof patch.castleIdentity === "object") {
+    const local = bucket.castleIdentity || {};
+    const remote = patch.castleIdentity;
+    bucket.castleIdentity = {
+      ...local,
+      ...remote,
+      visitors: Math.max(Number(local.visitors) || 0, Number(remote.visitors) || 0),
+      matchesPlayed: Math.max(Number(local.matchesPlayed) || 0, Number(remote.matchesPlayed) || 0),
+      libraryWingsOpened: Math.max(
+        Number(local.libraryWingsOpened) || 0,
+        Number(remote.libraryWingsOpened) || 0
+      ),
+      firstContacts: Math.max(Number(local.firstContacts) || 0, Number(remote.firstContacts) || 0),
+      syncedAt: now
+    };
+  }
+
+  if (Array.isArray(patch.chronicle)) {
+    const byId = new Map((bucket.chronicle || []).map((e) => [e.id, e]));
+    for (const row of patch.chronicle) {
+      if (!row?.id) continue;
+      byId.set(row.id, { ...byId.get(row.id), ...row, syncedAt: now });
+    }
+    bucket.chronicle = [...byId.values()]
+      .sort((a, b) => String(a.ts).localeCompare(String(b.ts)))
+      .slice(-512);
   }
 
   bucket.updatedAt = now;

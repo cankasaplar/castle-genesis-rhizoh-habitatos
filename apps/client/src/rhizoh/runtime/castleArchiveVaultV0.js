@@ -175,3 +175,28 @@ export function importCastleArchiveDocumentV0(input = {}) {
   }
   return entity;
 }
+
+/**
+ * Hydrate local vault from cloud sync snapshot (merge by id).
+ * @param {{ entities?: object[], events?: object[] }} snapshot
+ */
+export function importCastleArchiveEntitiesFromCloudV0(snapshot = {}) {
+  const { entities: localEntities, events: localEvents } = readVaultRawV0();
+  const entById = new Map(localEntities.map((e) => [e.id, e]));
+  for (const ent of snapshot.entities || []) {
+    if (!ent?.id) continue;
+    entById.set(ent.id, { ...entById.get(ent.id), ...ent });
+  }
+  const evtIds = new Set(localEvents.map((e) => e.id));
+  const mergedEvents = [...localEvents];
+  for (const evt of snapshot.events || []) {
+    if (!evt?.id || evtIds.has(evt.id)) continue;
+    mergedEvents.push(evt);
+    evtIds.add(evt.id);
+  }
+  writeVaultRawV0([...entById.values()], mergedEvents);
+  return Object.freeze({
+    entityCount: entById.size,
+    eventCount: mergedEvents.length
+  });
+}
