@@ -31,6 +31,7 @@ import {
   applyDomainMigrationFromIntentV0,
   planDomainContextShiftV0
 } from "./rhizohDomainContextShiftV0.js";
+import { advanceClusterCivilizationFromIntentV0 } from "./rhizohClusterCivilizationV0.js";
 import {
   buildContextIntentSnapshotV0,
   commitContextIntentSnapshotV0
@@ -180,6 +181,7 @@ export function applyDrawerShellTransitionV0(transition, ctx = {}) {
 
   const intent = commitContextIntentSnapshotV0(buildContextIntentSnapshotV0(transition, ctx));
   applyDomainMigrationFromIntentV0(intent);
+  advanceClusterCivilizationFromIntentV0(intent);
 
   return Object.freeze({ ...transition, intent });
 }

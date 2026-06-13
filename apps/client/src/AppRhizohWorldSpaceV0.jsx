@@ -108,6 +108,7 @@ import {
   resolveDrawerDomainTagsV0,
   subscribeDrawerStateV0
 } from "./rhizoh/runtime/rhizohDrawerStateMachineV0.js";
+import { bootClusterCivilizationV0 } from "./rhizoh/runtime/rhizohClusterCivilizationV0.js";
 import { getActiveFederationOverlayNodeV0 } from "./rhizoh/runtime/rhizohDomainGraphV0.js";
 
 export default function AppRhizohWorldSpaceV0() {
@@ -542,6 +543,7 @@ export default function AppRhizohWorldSpaceV0() {
 
   useEffect(() => {
     bootDrawerStateMachineV0();
+    return bootClusterCivilizationV0();
   }, []);
 
   const onLibrarySeedIntentV0 = useCallback(() => {
