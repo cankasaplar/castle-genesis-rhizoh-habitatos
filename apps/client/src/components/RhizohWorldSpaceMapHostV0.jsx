@@ -16,7 +16,10 @@ import {
   readLocalGhostCastleAnchorsV0
 } from "../rhizoh/runtime/localGhostCastleAnchorV0.js";
 import { createCastleWorldAnchorV0 } from "../castleFlight/castleWorldAnchorV0.js";
-import { readCastleNexusGeoV0 } from "../rhizoh/runtime/worldMapBootstrapGeoV0.js";
+import {
+  readCastleNexusGeoV0,
+  resolveUserCastleGeoForMapViewV0
+} from "../rhizoh/runtime/worldMapBootstrapGeoV0.js";
 
 export { RHIZOH_V11_MAP_INTENT_EVENT_V0 };
 
@@ -167,7 +170,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
   const graphLayerRef = useRef(null);
   const portalMarkerRef = useRef(null);
   const boundsFittedRef = useRef(false);
-  const [userCastleGeo, setUserCastleGeo] = useState(() => readCastleNexusGeoV0());
+  const [userCastleGeo, setUserCastleGeo] = useState(() => resolveUserCastleGeoForMapViewV0());
   const displayNodes = useMemo(
     () => listSovereignWorldMapNodesForViewV0({ userCastle: userCastleGeo }),
     [userCastleGeo]
@@ -237,7 +240,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
 
   useEffect(() => {
     const onAnchor = () => setLocalAnchors(readLocalGhostCastleAnchorsV0());
-    const onCastle = () => setUserCastleGeo(readCastleNexusGeoV0());
+    const onCastle = () => setUserCastleGeo(resolveUserCastleGeoForMapViewV0());
     window.addEventListener(LOCAL_GHOST_CASTLE_EVENT_V0, onAnchor);
     window.addEventListener("castle:castle-create-v0", onCastle);
     return () => {
@@ -265,6 +268,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
 
   useEffect(() => {
     if (!leafletReady || !portalMarkerRef.current) return undefined;
+    if (userCastleGeo) return undefined;
     if (!("geolocation" in navigator)) return undefined;
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
@@ -280,7 +284,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 8000 }
     );
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [leafletReady]);
+  }, [leafletReady, userCastleGeo]);
 
   useEffect(() => {
     const L = typeof window !== "undefined" ? window.L : null;

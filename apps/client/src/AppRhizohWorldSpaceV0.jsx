@@ -18,11 +18,11 @@ import { RhizohWorldSpaceVoiceDockV0 } from "./components/RhizohWorldSpaceVoiceD
 import {
   applyRhizohWorldMapToolV0,
   getRhizohWorldMapToolSnapshotV0,
+  normalizeRhizohWorldSpaceLeafletToolV0,
   readRhizohWorldMapToolV0,
   subscribeRhizohWorldMapToolV0,
   writeRhizohWorldMapToolV0
 } from "./rhizoh/runtime/rhizohWorldMapToolV0.js";
-import { applyCesiumImageryForMapToolV0 } from "./rhizoh/runtime/rhizohCesiumImageryProfileV0.js";
 import {
   resolveRhizohLayerModeV0,
   resolveRhizohWorldSpaceCesiumActiveV0
@@ -43,6 +43,7 @@ import { writeRhizohWorldDrawerDomainV0 } from "./rhizoh/runtime/rhizohWorldDraw
 import { handleWorldSpaceCapWheelNodeV0 } from "./rhizoh/runtime/rhizohWorldSpaceCapWheelV0.js";
 import {
   readCastleNexusGeoV0,
+  resolveUserCastleGeoForMapViewV0,
   resolveWorldMapBootstrapGeoV0
 } from "./rhizoh/runtime/worldMapBootstrapGeoV0.js";
 import {
@@ -111,7 +112,7 @@ export default function AppRhizohWorldSpaceV0() {
 
   const mapSurfaceActive = true;
   const worldLayerEnabledV0 = isWorldLayerEnabled();
-  const identityAnchorV0 = readCastleNexusGeoV0();
+  const identityAnchorV0 = resolveUserCastleGeoForMapViewV0();
   const bootstrapGeoV0 = resolveWorldMapBootstrapGeoV0();
   const spatialSnapshotNodesV0 = useMemo(() => {
     const rows = [];
@@ -202,33 +203,12 @@ export default function AppRhizohWorldSpaceV0() {
       onSync: () => setInfraTick((n) => n + 1)
     });
 
-    void setRealityMode("REAL_MAP", {
-      source: "WORLD_SPACE_BOOT",
-      productSurface: "world"
-    });
-
-    const nexusGeo = readCastleNexusGeoV0();
-    const tool = readRhizohWorldMapToolV0();
-    const nextTool = !nexusGeo || tool === "globe" ? "city_map" : tool;
-    if (!spatialBootGateV0.allowed) {
-      writeRhizohWorldMapToolV0(nextTool);
-    } else if (!nexusGeo) {
-      void applyRhizohWorldMapToolV0("city_map", {
-        setRealityMode,
-        source: "WORLD_SPACE_BOOT_CITY"
-      });
-    } else if (tool === "globe") {
-      void applyRhizohWorldMapToolV0("city_map", {
-        setRealityMode,
-        source: "WORLD_SPACE_BOOT_LOCAL"
-      });
-    } else {
-      applyCesiumImageryForMapToolV0(tool);
-      void applyRhizohWorldMapToolV0(tool, {
-        setRealityMode,
-        source: "WORLD_SPACE_BOOT"
-      });
-    }
+    const nexusGeo = resolveUserCastleGeoForMapViewV0();
+    const savedTool = readRhizohWorldMapToolV0();
+    const nextTool = normalizeRhizohWorldSpaceLeafletToolV0(
+      !nexusGeo || savedTool === "globe" ? "city_map" : savedTool
+    );
+    writeRhizohWorldMapToolV0(nextTool);
 
     return () => clearSpatialRealityInfraV0();
   }, []);
@@ -412,15 +392,11 @@ export default function AppRhizohWorldSpaceV0() {
   }, [castleInitOwner, applySpatialCastleAnchorDsl, openPostCastleMediaTubeV0]);
 
   const onApplyWorldMapToolV0 = useCallback((mapTool, source = "WORLD_DOMAIN_MAP_STRIP") => {
-    if (!spatialBootGateV0.allowed) {
-      writeRhizohWorldMapToolV0(mapTool);
-      return;
-    }
     void applyRhizohWorldMapToolV0(mapTool, {
-      setRealityMode,
+      leafletOnly: true,
       source
     });
-  }, [spatialBootGateV0.allowed]);
+  }, []);
 
   const onProductShellSelect = useCallback(
     (id) => {
@@ -463,7 +439,8 @@ export default function AppRhizohWorldSpaceV0() {
         uiLocale={uiLocale}
         activeMapTool={worldMapToolV0}
         onSelectMapTool={(toolId) => onApplyWorldMapToolV0(toolId, "WORLD_DOMAIN_MAP_STRIP")}
-        spatialEngineActive={cesiumLayerActiveV0}
+        spatialEngineActive
+        mapToolCesiumReady={false}
         onOpenGreenroom={() => navigate("/greenroom/main")}
         onOpenBroadcast={() => navigate("/broadcast/main")}
         onShareInvite={() => {}}

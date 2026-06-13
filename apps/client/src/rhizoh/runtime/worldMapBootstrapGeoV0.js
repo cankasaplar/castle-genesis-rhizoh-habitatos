@@ -43,6 +43,23 @@ export function readUserCastleAnchorGeoV0() {
 }
 
 /**
+ * User castle pin for /world/space — nexus geo first, then persisted world anchors.
+ * @returns {{ lat: number, lon: number, label?: string, source: string } | null}
+ */
+export function resolveUserCastleGeoForMapViewV0() {
+  const nexus = readCastleNexusGeoV0();
+  if (nexus) return nexus;
+  const castle = readUserCastleAnchorGeoV0();
+  if (!castle) return null;
+  return Object.freeze({
+    lat: castle.lat,
+    lon: castle.lon,
+    label: castle.label || "My Castle",
+    source: castle.source
+  });
+}
+
+/**
  * Primary map bootstrap geo — user/device first, then Serencebey seed.
  * @returns {{ lat: number, lon: number, label: string, source: string }}
  */

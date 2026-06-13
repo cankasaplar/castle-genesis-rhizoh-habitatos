@@ -1,8 +1,9 @@
 import React, { memo, useCallback } from "react";
 import { Crosshair, Minus, Plus } from "lucide-react";
 import { dispatchLocalCommandHandlerV0 } from "../rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
-import { routeCesiumCommandV0 } from "../castleFlight/cesiumCommandRouterV0.js";
 import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
+import { readCastleNexusGeoV0 } from "../rhizoh/runtime/worldMapBootstrapGeoV0.js";
+import { dispatchSovereignVoiceWarpV0 } from "../rhizoh/runtime/sovereignWorldMapNodesV0.js";
 
 /**
  * Minimal map navigation — zoom + recenter (World · Space only).
@@ -23,11 +24,15 @@ export const RhizohWorldMapControlsV0 = memo(function RhizohWorldMapControlsV0({
   }, []);
 
   const recenter = useCallback(() => {
-    routeCesiumCommandV0({
-      op: "calibration_root",
-      source: "world_map_controls",
-      meta: Object.freeze({ ingress: "RhizohWorldMapControlsV0" })
-    });
+    const nexus = readCastleNexusGeoV0();
+    if (nexus) {
+      dispatchSovereignVoiceWarpV0(
+        { lat: nexus.lat, lon: nexus.lon, name: nexus.label || "My Castle", zoom: 16 },
+        "world_map_controls"
+      );
+      return;
+    }
+    dispatchLocalCommandHandlerV0("map_recenter", { traceId: `world-map-ui-${Date.now()}` });
   }, []);
 
   if (!active) return null;

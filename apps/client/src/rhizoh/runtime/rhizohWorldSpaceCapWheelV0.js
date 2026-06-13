@@ -2,12 +2,10 @@
  * World · Space capability wheel — direct map actions (no voice seed flood).
  */
 
-import { routeCesiumCommandV0 } from "../../castleFlight/cesiumCommandRouterV0.js";
-import { setRealityMode } from "../../reality/realityDirector.js";
 import { dispatchLocalCommandHandlerV0 } from "./rhizohLocalCommandHandlersV0.js";
 import {
   applyRhizohWorldMapToolV0,
-  cycleRhizohWorldMapToolV0,
+  cycleRhizohWorldSpaceLeafletMapToolV0,
   readRhizohWorldMapToolV0
 } from "./rhizohWorldMapToolV0.js";
 
@@ -29,22 +27,18 @@ export function handleWorldSpaceCapWheelNodeV0(node) {
   if (id === "view_3d") {
     const tool = readRhizohWorldMapToolV0();
     const next = tool === "city_map" ? "streets" : "city_map";
-    void applyRhizohWorldMapToolV0(next, { setRealityMode, source: "WORLD_SPACE_CAP_WHEEL" });
+    void applyRhizohWorldMapToolV0(next, { leafletOnly: true, source: "WORLD_SPACE_CAP_WHEEL" });
     return;
   }
   if (id === "layers") {
-    void applyRhizohWorldMapToolV0(cycleRhizohWorldMapToolV0(), {
-      setRealityMode,
+    void applyRhizohWorldMapToolV0(cycleRhizohWorldSpaceLeafletMapToolV0(), {
+      leafletOnly: true,
       source: "WORLD_SPACE_CAP_WHEEL"
     });
     return;
   }
   if (id === "fog") {
-    routeCesiumCommandV0({
-      op: "bootstrap_viewport",
-      source: "world_space_cap_wheel",
-      meta: Object.freeze({ ingress: "RhizohWorldSpaceCapWheelV0", node: id })
-    });
+    dispatchLocalCommandHandlerV0("map_zoom_out", { traceId: `world-wheel-${Date.now()}` });
     return;
   }
   if (id === "archive") {
