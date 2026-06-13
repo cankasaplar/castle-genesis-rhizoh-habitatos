@@ -9,6 +9,7 @@ import {
 import {
   listWorldSpaceMediaChannelsV0,
   resolveInitialWorldSpaceMediaChannelIdV0,
+  resolveWorldSpaceMediaChannelForMapNodeV0,
   resolveWorldSpaceMediaChannelV0
 } from "../rhizoh/runtime/worldSpaceMediaChannelsV0.js";
 import { WorldSpaceMediaDataTickerV0 } from "./WorldSpaceMediaDataTickerV0.jsx";
@@ -36,8 +37,11 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
   const tr = uiLocale === "tr";
   const channels = useMemo(() => listWorldSpaceMediaChannelsV0(), []);
   const initialChannelId = useMemo(
-    () => detail?.initialChannelId || resolveInitialWorldSpaceMediaChannelIdV0(detail?.source),
-    [detail?.initialChannelId, detail?.source]
+    () =>
+      detail?.initialChannelId ||
+      resolveWorldSpaceMediaChannelForMapNodeV0(detail?.node) ||
+      resolveInitialWorldSpaceMediaChannelIdV0(detail?.source),
+    [detail?.initialChannelId, detail?.node, detail?.source]
   );
   const [activeChannel, setActiveChannel] = useState(() =>
     resolveWorldSpaceMediaChannelV0(initialChannelId)

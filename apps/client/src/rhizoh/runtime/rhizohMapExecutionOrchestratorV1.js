@@ -1,4 +1,6 @@
 import { resolveEntityRuntimeV1 } from "./rhizohEntityRegistryV1.js";
+import { RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1 } from "./sovereignWorldMapNodesV0.js";
+import { resolveWorldSpaceMediaChannelForMapNodeV0 } from "./worldSpaceMediaChannelsV0.js";
 import {
   ORCHESTRATOR_ACTION_REGISTRY_V0,
   RHIZOH_OPEN_CASTLE_EVENT_V1,
@@ -36,13 +38,22 @@ export function attachRhizohMapExecutionOrchestratorV1() {
         );
         break;
 
-      case ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER:
+      case ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER: {
+        const source = `map:node:${String(node.id || "unknown")}`;
         window.dispatchEvent(
-          new CustomEvent(RHIZOH_OPEN_WORKSPACE_EVENT_V1, {
-            detail: Object.freeze({ node, runtime, routed: detail, mediaPlayer: true })
+          new CustomEvent(RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1, {
+            detail: Object.freeze({
+              node,
+              runtime,
+              routed: detail,
+              title: node.name || node.label,
+              source,
+              initialChannelId: resolveWorldSpaceMediaChannelForMapNodeV0(node)
+            })
           })
         );
         break;
+      }
 
       case ORCHESTRATOR_ACTION_REGISTRY_V0.ATTACH_VOICE_STREAM:
         window.dispatchEvent(

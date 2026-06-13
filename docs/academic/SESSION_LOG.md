@@ -95,6 +95,37 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 
 ## Günlük
 
+### 2026-06-12 — World · Space map pins + cohort allowlist (gün kapanışı)
+
+**Summary:**
+- `/world/space` Sovereign v11 harita: Leaflet varsayılan; Cesium opt-in (`VITE_RHIZOH_WORLD_SPACE_CESIUM=1`).
+- MY CASTLE / EVENT / RADIO pin tıklaması geçici olarak farklı YouTube kanallarına yönlendiriliyor (`castle_genesis` / `nasa` / `lofi`) — **kalıcı model değil**.
+- **Ertelenen (FUTURE):** Her pinin kendine özgü yetenekleri var; kullanıcı EVENT oluşturduğunda bu ileride **kendi canlı yayını** veya **daha önce yayınlanmış event VOD** olmalı — sabit media player kanalı değil.
+- Kohort allowlist: `iremkaraman@gmail.com` eklendi (`functions/cohort-email-allowlist.v0.json`).
+
+**Linked Artifacts:**
+- `apps/client/src/rhizoh/runtime/worldSpaceMediaChannelsV0.js`
+- `apps/client/src/rhizoh/runtime/sovereignWorldMapNodesV0.js`
+- `functions/cohort-email-allowlist.v0.json`
+- PR #30 (branch `cursor/sovereign-v11-map-integrate-3d11`)
+
+- **Habitat:** Collaboration / ops
+- **SPECFLOW:** RESEARCH-ONLY (pin semantics); cohort = ops
+- **Frozen core:** dokunulmadı
+- **Not:** Bugün için bu kadar — pin→event VOD/live modeli sonraki sprint.
+
+### NEXT SPRINT — Tower API keys + workspace + library pins
+
+**Hedef (CORE-ELIGIBLE değil; habitat / ürün yüzeyi):**
+- Tüm **tower** pinleri (Gemini, Claude, ChatGPT, DeepMind, Mistral, Kyoto, Sora, …) için **gerçek provider API key** env + gateway firewall
+- Her tower → **gerçek workspace** (`RhizohV11TowerWorkspaceHostV0` / entity registry) — sim placeholder değil
+- **LIBRARY (vault)** + kişisel **arşiv kütüphane** katmanı pinleri → encrypted archive / media archive ile bağlantı
+- EVENT pin → kullanıcı canlı yayın veya yayınlanmış event VOD (sabit YouTube kanalı değil)
+
+**Bağımlılıklar:** gateway secret store, `VITE_*` / Functions env, tower workspace spec SSOT, frozen core dokunulmaz.
+
+**SPECFLOW:** RESEARCH-ONLY → implementasyon sprintinde CORE-ELIGIBLE olmayan runtime katmanları (`worldSpace*`, `sovereignWorldMap*`, tower workspace host).
+
 ### 2026-06-01 — Academic Observatory Layer (AOL) v0 SSOT
 
 **Summary:**

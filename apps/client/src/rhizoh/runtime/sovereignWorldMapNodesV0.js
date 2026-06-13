@@ -3,7 +3,7 @@
  * Map renderer reads this; orchestrator maps types → workspace / media / info.
  */
 
-import { resolveInitialWorldSpaceMediaChannelIdV0 } from "./worldSpaceMediaChannelsV0.js";
+import { resolveInitialWorldSpaceMediaChannelIdV0, resolveWorldSpaceMediaChannelForMapNodeV0 } from "./worldSpaceMediaChannelsV0.js";
 
 export const SOVEREIGN_MAP_DEFAULT_HOME_V0 = Object.freeze({
   lat: 41.045,
@@ -547,7 +547,9 @@ export function dispatchOpenMediaTubeV0(payload = {}) {
         title: String(payload.title || node.name || node.label || "Kuantum Yayını"),
         source,
         initialChannelId:
-          payload.initialChannelId || resolveInitialWorldSpaceMediaChannelIdV0(source)
+          payload.initialChannelId ||
+          resolveWorldSpaceMediaChannelForMapNodeV0(node) ||
+          resolveInitialWorldSpaceMediaChannelIdV0(source)
       })
     })
   );

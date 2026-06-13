@@ -102,6 +102,34 @@ export function resolveWorldSpaceMediaChannelV0(channelId) {
 export function resolveInitialWorldSpaceMediaChannelIdV0(source) {
   const s = String(source || "");
   if (s.startsWith("castle_init")) return "castle_genesis";
-  if (s.includes("event") || s.includes("radio")) return "nasa";
+  if (s.includes("my_castle") || s.includes("map:node:castle")) return "castle_genesis";
+  if (s.includes("radio") || s.includes("map:node:radio")) return "lofi";
+  if (s.includes("event") || s.includes("map:node:event")) return "nasa";
+  if (s.startsWith("map:node:")) {
+    const nodeId = s.slice("map:node:".length);
+    return resolveWorldSpaceMediaChannelForMapNodeV0({ id: nodeId });
+  }
+  return "nasa";
+}
+
+/**
+ * Per-pin media channel — MY CASTLE, EVENT, and RADIO are distinct surfaces.
+ *
+ * FUTURE (RESEARCH-ONLY): pins are not interchangeable media channels. EVENT should
+ * resolve to user-created live broadcasts or published event replays (VOD), not a
+ * static YouTube id. See docs/academic/SESSION_LOG.md (2026-06-12).
+ *
+ * @param {{ id?: string, type?: string } | null | undefined} node
+ * @returns {string}
+ */
+export function resolveWorldSpaceMediaChannelForMapNodeV0(node) {
+  const id = String(node?.id || "").trim().toLowerCase();
+  if (id === "my_castle" || id === "castle") return "castle_genesis";
+  if (id === "event") return "nasa";
+  if (id === "radio") return "lofi";
+  const type = String(node?.type || "").trim().toLowerCase();
+  if (type === "broadcast" && id !== "event") return "lofi";
+  if (type === "zone") return "nasa";
+  if (type === "hub") return "castle_genesis";
   return "nasa";
 }
