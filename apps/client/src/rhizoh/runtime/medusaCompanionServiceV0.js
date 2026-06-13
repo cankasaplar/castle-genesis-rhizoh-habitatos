@@ -1,5 +1,6 @@
 /**
  * Medusa companion service — UI-agnostic mount/motion lifecycle.
+ * Sprint 37.5: disposed guard + no RAF after unmount.
  */
 
 import * as THREE from "three";
@@ -15,6 +16,9 @@ import {
 export function mountMedusaCompanionV0(container, opts = {}) {
   const w = opts.width || MEDUSA_COMPANION_DEFAULT_SIZE_V0;
   const h = opts.height || MEDUSA_COMPANION_DEFAULT_SIZE_V0;
+
+  let disposed = false;
+  let raf = 0;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 20);
@@ -34,10 +38,10 @@ export function mountMedusaCompanionV0(container, opts = {}) {
   /** @type {THREE.Object3D | null} */
   let root = null;
   loadMedusaCompanionModelV0(scene, (nextRoot) => {
+    if (disposed) return;
     root = nextRoot;
   });
 
-  let raf = 0;
   let t = 0;
   let motion = 0;
   let audioCtx = null;
@@ -45,6 +49,7 @@ export function mountMedusaCompanionV0(container, opts = {}) {
   let data = null;
 
   const bindMotionStream = (mediaStream) => {
+    if (disposed) return;
     if (audioCtx) {
       void audioCtx.close();
       audioCtx = null;
@@ -68,6 +73,7 @@ export function mountMedusaCompanionV0(container, opts = {}) {
   bindMotionStream(opts.mediaStream || null);
 
   const tick = () => {
+    if (disposed) return;
     t += 0.016;
     if (analyser && data) {
       analyser.getByteFrequencyData(data);
@@ -89,14 +95,26 @@ export function mountMedusaCompanionV0(container, opts = {}) {
   tick();
 
   return Object.freeze({
+    isDisposed() {
+      return disposed;
+    },
     setMotionStream(stream) {
+      if (disposed) return;
       bindMotionStream(stream);
     },
     dispose() {
+      if (disposed) return;
+      disposed = true;
       cancelAnimationFrame(raf);
+      raf = 0;
       if (audioCtx) void audioCtx.close();
+      audioCtx = null;
+      analyser = null;
+      data = null;
+      root = null;
       renderer.dispose();
-      container.innerHTML = "";
+      scene.clear();
+      container.replaceChildren();
     }
   });
 }

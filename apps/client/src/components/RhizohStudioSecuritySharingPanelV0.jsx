@@ -1,9 +1,10 @@
 import React, { memo, useCallback, useMemo, useState } from "react";
 import { STUDIO_ASSET_MANIFEST_V1 } from "../studio/assetRegistryV1.js";
 import {
-  buildStudioOutputPackManifestV0,
+  describeStudioExportPolicyV0,
   evaluateStudioExportAllowedV0,
   requestStudioExportPackV0,
+  STUDIO_EXPORT_FAIL_SAFE_DENY_BY_DEFAULT_V0,
   STUDIO_EXPORT_MODE_V0
 } from "../rhizoh/runtime/rhizohStudioExportPolicyV0.js";
 import { resolveRhizohDomainTagsV0 } from "../rhizoh/runtime/rhizohDomainTagV0.js";
@@ -29,9 +30,9 @@ export const RhizohStudioSecuritySharingPanelV0 = memo(function RhizohStudioSecu
     [userConsent]
   );
 
-  const packPreview = useMemo(
-    () => buildStudioOutputPackManifestV0({ gatewayOrigin, locale: uiLocale }),
-    [gatewayOrigin, uiLocale]
+  const exportSummary = useMemo(
+    () => describeStudioExportPolicyV0({ userConsent }),
+    [userConsent]
   );
 
   const exportModeLabel = useMemo(() => {
@@ -124,8 +125,18 @@ export const RhizohStudioSecuritySharingPanelV0 = memo(function RhizohStudioSecu
           {tr ? "Stüdyo çıktı paketi (mock)" : "Studio output pack (mock)"}
         </p>
         <p className="mt-1">
-          {tr ? "Kalıcılık:" : "Persistence:"} {packPreview.persistence} · gateway:{" "}
+          {tr ? "Kalıcılık:" : "Persistence:"} {exportSummary.persistence} · gateway:{" "}
           {gatewayOrigin ? gatewayOrigin.slice(0, 32) : tr ? "yerel" : "local"}
+        </p>
+        <p className="mt-1 text-[8px] text-white/35">
+          {tr ? "Fail-safe:" : "Fail-safe:"}{" "}
+          {STUDIO_EXPORT_FAIL_SAFE_DENY_BY_DEFAULT_V0
+            ? tr
+              ? "varsayılan red"
+              : "deny-by-default"
+            : tr
+              ? "kapalı"
+              : "off"}
         </p>
         <label className="mt-2 flex items-center gap-2 normal-case">
           <input

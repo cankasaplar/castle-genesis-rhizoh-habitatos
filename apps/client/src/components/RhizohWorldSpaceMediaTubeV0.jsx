@@ -509,7 +509,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                   className="min-h-0 flex-1 bg-black object-cover"
                 />
                 <MedusaCompanionOverlayV0
-                  active={Boolean(localPreviewStream)}
+                  active={activeChannel.type === "local"}
                   mediaStream={localPreviewStream}
                 />
                 <div className="flex items-center gap-2 border-t border-white/10 bg-black/80 p-3">
