@@ -65,10 +65,18 @@ import { openCastleInitGateFromLocalCommandV0 } from "./rhizoh/runtime/rhizohLoc
 import { CastleInitiationGateV0 } from "./components/CastleInitiationGateV0.jsx";
 import { RhizohV11TowerWorkspaceHostV0 } from "./components/RhizohV11TowerWorkspaceHostV0.jsx";
 import { RhizohWorldSpaceMediaTubeV0 } from "./components/RhizohWorldSpaceMediaTubeV0.jsx";
+import { RhizohWorldSpaceC2cPanelV0 } from "./components/RhizohWorldSpaceC2cPanelV0.jsx";
 import {
   RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1,
+  RHIZOH_REMOTE_CASTLE_CLICK_EVENT_V1,
   RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1
 } from "./rhizoh/runtime/sovereignWorldMapNodesV0.js";
+import {
+  readRemoteCastlesVisibleV0,
+  subscribeRemoteCastlesVisibleV0,
+  writeRemoteCastlesVisibleV0
+} from "./rhizoh/runtime/remoteCastleMapVisibilityV0.js";
+import { bootCastleC2cSignalingV0, disposeCastleC2cTransportV0 } from "./castleSocial/castleC2cWebRtcTransportV0.js";
 import {
   completeCastleInitFromMapAnchorV0,
   installCastleInitMapPickListenerV0
@@ -77,7 +85,12 @@ import {
 export default function AppRhizohWorldSpaceV0() {
   const navigate = useNavigate();
   const castleAuth = useCastleAuth();
-  const { remoteCastles } = useCastleActiveCastles(castleAuth?.user?.uid);
+  const { remoteCastles, recordBridgePeer } = useCastleActiveCastles(castleAuth?.user?.uid);
+  const remoteCastlesVisibleV0 = useSyncExternalStore(
+    subscribeRemoteCastlesVisibleV0,
+    readRemoteCastlesVisibleV0,
+    () => false
+  );
   const gateway = useRhizohGatewayMonitor();
   const uiLocale = readUiLocaleV0();
   const [infraTick, setInfraTick] = useState(0);
@@ -88,6 +101,7 @@ export default function AppRhizohWorldSpaceV0() {
   const [v11Workspace, setV11Workspace] = useState(null);
   const [v11MediaTube, setV11MediaTube] = useState(null);
   const [castleInitGateOpen, setCastleInitGateOpen] = useState(false);
+  const [c2cPeer, setC2cPeer] = useState(null);
 
   const worldMapToolV0 = useSyncExternalStore(
     subscribeRhizohWorldMapToolV0,
@@ -156,6 +170,24 @@ export default function AppRhizohWorldSpaceV0() {
     },
     [uiLocale]
   );
+
+  useEffect(() => {
+    const uid = castleAuth?.user?.uid;
+    if (!uid) return undefined;
+    bootCastleC2cSignalingV0(uid);
+    return () => disposeCastleC2cTransportV0();
+  }, [castleAuth?.user?.uid]);
+
+  useEffect(() => {
+    const onRemoteCastle = (ev) => {
+      const detail = ev?.detail;
+      if (!detail?.uid) return;
+      setC2cPeer(Object.freeze({ ...detail }));
+      setV11NodePanel(null);
+    };
+    window.addEventListener(RHIZOH_REMOTE_CASTLE_CLICK_EVENT_V1, onRemoteCastle);
+    return () => window.removeEventListener(RHIZOH_REMOTE_CASTLE_CLICK_EVENT_V1, onRemoteCastle);
+  }, []);
 
   useEffect(() => {
     runDomainGateForPathV0("/world/space", { userId: castleAuth?.user?.uid || null });
@@ -420,6 +452,8 @@ export default function AppRhizohWorldSpaceV0() {
         active={cesiumLayerActiveV0}
         renderMode={spatialBootGateV0.renderMode}
         activeMapTool={worldMapToolV0}
+        remoteCastles={remoteCastles}
+        remoteCastlesVisible={remoteCastlesVisibleV0}
       />
 
       <RhizohWorldDomainShellV0
@@ -480,6 +514,38 @@ export default function AppRhizohWorldSpaceV0() {
             ) : null}
           </div>
         </div>
+      ) : null}
+
+      {remoteCastles.length && !castleAuth.needsAuthGate ? (
+        <div className="pointer-events-none fixed left-4 top-28 z-[26]">
+          <button
+            type="button"
+            onClick={() => writeRemoteCastlesVisibleV0(!remoteCastlesVisibleV0)}
+            className={`pointer-events-auto rounded-xl border px-3 py-2 text-[10px] font-semibold uppercase tracking-wider backdrop-blur-md ${
+              remoteCastlesVisibleV0
+                ? "border-gray-400/50 bg-gray-500/20 text-gray-100"
+                : "border-white/15 bg-black/70 text-white/55 hover:text-white"
+            }`}
+          >
+            {uiLocale === "tr"
+              ? remoteCastlesVisibleV0
+                ? `${remoteCastles.length} peer kale gizle`
+                : `${remoteCastles.length} peer kale göster`
+              : remoteCastlesVisibleV0
+                ? `Hide ${remoteCastles.length} peer castles`
+                : `Show ${remoteCastles.length} peer castles`}
+          </button>
+        </div>
+      ) : null}
+
+      {c2cPeer && !v11MediaTube ? (
+        <RhizohWorldSpaceC2cPanelV0
+          peer={c2cPeer}
+          userId={castleAuth?.user?.uid || ""}
+          uiLocale={uiLocale}
+          recordBridgePeer={recordBridgePeer}
+          onClose={() => setC2cPeer(null)}
+        />
       ) : null}
 
       {v11MediaTube ? (

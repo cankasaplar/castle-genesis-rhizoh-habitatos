@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildRemoteCastleMapNodesV0,
   dispatchSovereignVoiceWarpV0,
   listSovereignWorldMapNodesForViewV0,
   parseSovereignVoiceWarpCommandV0,
@@ -25,6 +26,17 @@ describe("sovereignWorldMapNodesV0", () => {
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "event")).toBe(true);
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "gemini_tower")).toBe(true);
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "rhizoh_portal")).toBe(true);
+  });
+
+  it("builds grey remote castle nodes", () => {
+    const nodes = buildRemoteCastleMapNodesV0([
+      { id: "uid_a", lat: 41.01, lon: 28.99, displayName: "Peer A" },
+      { id: "uid_b", lat: NaN, lon: 29 }
+    ]);
+    expect(nodes).toHaveLength(1);
+    expect(nodes[0].type).toBe("remote_castle");
+    expect(nodes[0].color).toBe("#9ca3af");
+    expect(nodes[0].uid).toBe("uid_a");
   });
 
   it("hides demo castle hub until user anchors", () => {

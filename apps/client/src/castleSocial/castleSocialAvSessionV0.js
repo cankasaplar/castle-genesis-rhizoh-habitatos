@@ -169,6 +169,21 @@ export function endCastleSocialAvSessionV0() {
   _active = null;
 }
 
+/**
+ * @param {{ transport?: string, mediaReady?: boolean }} patch
+ */
+export function patchCastleSocialAvTransportV0(patch = {}) {
+  if (!_active) return null;
+  const next = Object.freeze({
+    ..._active,
+    transport: patch.transport != null ? String(patch.transport) : _active.transport,
+    mediaReady: patch.mediaReady === true
+  });
+  _active = next;
+  publishCastleSocialAvPulseV0(next);
+  return next;
+}
+
 export function resetCastleSocialAvSessionForTestsV0() {
   _active = null;
   if (typeof window !== "undefined") {
