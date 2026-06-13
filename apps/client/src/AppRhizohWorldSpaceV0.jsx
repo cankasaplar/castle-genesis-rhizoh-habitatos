@@ -73,6 +73,8 @@ import { RhizohChessArenaWorkspaceV0 } from "./components/RhizohChessArenaWorksp
 import { RhizohTowerPortalDiscoveryV0 } from "./components/RhizohTowerPortalDiscoveryV0.jsx";
 import { RhizohCastleLivingMemoryPanelV0 } from "./components/RhizohCastleLivingMemoryPanelV0.jsx";
 import { RhizohWorldSpaceMediaTubeV0 } from "./components/RhizohWorldSpaceMediaTubeV0.jsx";
+import { RhizohProductSurfaceDrawerV0 } from "./components/RhizohProductSurfaceDrawerV0.jsx";
+import { getGenesisProtocolGatewayOrigin } from "./castleFlight/castleFlightConfig.js";
 import { CASTLE_ARCHIVE_OPEN_MEDIA_EVENT_V0 } from "./rhizoh/runtime/castleArchiveVaultV0.js";
 import { RhizohWorldSpaceC2cPanelV0 } from "./components/RhizohWorldSpaceC2cPanelV0.jsx";
 import {
@@ -96,6 +98,18 @@ import {
   completeCastleInitFromMapAnchorV0,
   installCastleInitMapPickListenerV0
 } from "./castleFlight/castleInitiationProtocolV0.js";
+import {
+  bootDrawerAwakeningV0,
+  shouldOpenDrawerInPlaceV0
+} from "./rhizoh/runtime/rhizohDrawerAwakeningV0.js";
+import {
+  closeAllRhizohProductSurfacePanelsV0,
+  getRhizohChromePanelsSnapshotV0,
+  resolveOpenProductSurfaceDrawerIdV0,
+  setRhizohProductSurfacePanelExclusiveV0,
+  subscribeRhizohChromePanelsV0,
+  toggleRhizohProductSurfacePanelV0
+} from "./rhizoh/runtime/rhizohProductChromePanelsV0.js";
 
 export default function AppRhizohWorldSpaceV0() {
   const navigate = useNavigate();
@@ -491,13 +505,32 @@ export default function AppRhizohWorldSpaceV0() {
     (id) => {
       const surface = String(id || "world");
       if (surface === "world") {
+        closeAllRhizohProductSurfacePanelsV0();
         navigate("/world/space");
+        return;
+      }
+      if (shouldOpenDrawerInPlaceV0(surface)) {
+        const openDrawerId = resolveOpenProductSurfaceDrawerIdV0();
+        toggleRhizohProductSurfacePanelV0(surface, openDrawerId || "world");
         return;
       }
       navigate(resolveRhizohProductPathV0(surface));
     },
     [navigate]
   );
+
+  const chromePanelsV0 = useSyncExternalStore(
+    subscribeRhizohChromePanelsV0,
+    getRhizohChromePanelsSnapshotV0,
+    getRhizohChromePanelsSnapshotV0
+  );
+  const openSurfaceDrawerIdV0 = resolveOpenProductSurfaceDrawerIdV0();
+
+  const onCloseSurfaceDrawerV0 = useCallback(() => {
+    if (openSurfaceDrawerIdV0) {
+      setRhizohProductSurfacePanelExclusiveV0(openSurfaceDrawerIdV0, false);
+    }
+  }, [openSurfaceDrawerIdV0]);
 
   const onLibrarySeedIntentV0 = useCallback(() => {
     try {
@@ -520,7 +553,12 @@ export default function AppRhizohWorldSpaceV0() {
     }
   }, [uiLocale]);
 
+  useEffect(() => {
+    bootDrawerAwakeningV0();
+  }, []);
+
   const mapStripBottomCssV0 = resolveRhizohWorldSpaceMapStripBottomCssV0();
+  const voiceDockBottomCssV0 = resolveRhizohWorldSpaceVoiceDockBottomCssV0();
   const bootstrapPlaceLabelV0 = resolveWorldMapBootstrapGeoV0().label;
 
   return (
@@ -568,7 +606,23 @@ export default function AppRhizohWorldSpaceV0() {
         </div>
       </div>
 
-      <UnifiedProductShellBar active="world" onSelect={onProductShellSelect} uiLocale={uiLocale} />
+      <UnifiedProductShellBar
+        active="world"
+        panelOpen={chromePanelsV0}
+        onSelect={onProductShellSelect}
+        uiLocale={uiLocale}
+      />
+
+      {openSurfaceDrawerIdV0 ? (
+        <RhizohProductSurfaceDrawerV0
+          surface={openSurfaceDrawerIdV0}
+          open
+          onClose={onCloseSurfaceDrawerV0}
+          auth={castleAuth}
+          gatewayOrigin={getGenesisProtocolGatewayOrigin()}
+          uiLocale={uiLocale}
+        />
+      ) : null}
 
       {castleAuth.needsAuthGate || castleAuth.needsOnboarding ? (
         <CastleAuthOverlay auth={castleAuth} />

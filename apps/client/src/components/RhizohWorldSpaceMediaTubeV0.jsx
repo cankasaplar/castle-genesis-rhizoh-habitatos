@@ -17,6 +17,7 @@ import {
   resolveWorldSpaceMediaChannelV0
 } from "../rhizoh/runtime/worldSpaceMediaChannelsV0.js";
 import { WorldSpaceMediaDataTickerV0 } from "./WorldSpaceMediaDataTickerV0.jsx";
+import { MedusaCompanionOverlayV0 } from "./MedusaCompanionOverlayV0.jsx";
 
 function isCastleMediaSourceV0(source) {
   return String(source || "").startsWith("castle_init");
@@ -62,6 +63,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
   const [bookmarkLabel, setBookmarkLabel] = useState("");
   const [bookmarkSec, setBookmarkSec] = useState("");
   const [civilizationStatus, setCivilizationStatus] = useState("");
+  const [localPreviewStream, setLocalPreviewStream] = useState(null);
   const captureRef = useRef(null);
   const previewRef = useRef(null);
   const castleBroadcast = useMemo(() => isCastleMediaSourceV0(detail?.source), [detail?.source]);
@@ -116,14 +118,19 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     setNasaFallback(false);
     setYoutubeMuted(true);
     setActiveChannel(channel);
-    if (channel.type !== "local") return;
+    if (channel.type !== "local") {
+      setLocalPreviewStream(null);
+      return;
+    }
     try {
       const cap = await createWorldSpaceMediaCaptureV0({ audio: true, video: true });
       captureRef.current = cap;
+      setLocalPreviewStream(cap.stream || null);
       if (previewRef.current) {
         previewRef.current.srcObject = cap.stream;
       }
     } catch (e) {
+      setLocalPreviewStream(null);
       setCaptureError(String(e?.message || e || "capture_failed"));
     }
   }, []);
@@ -149,11 +156,13 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
         source: detail?.source || "world_space_media_tube"
       });
       captureRef.current = null;
+      setLocalPreviewStream(null);
       if (out.ok) {
         setArchiveStatus(tr ? "Arşive eklendi (AES-GCM)." : "Added to archive (AES-GCM).");
         setArchiveRows(listMediaArchiveEntriesV0());
         const cap = await createWorldSpaceMediaCaptureV0({ audio: true, video: true });
         captureRef.current = cap;
+        setLocalPreviewStream(cap.stream || null);
         if (previewRef.current && cap.stream) previewRef.current.srcObject = cap.stream;
       } else {
         setArchiveStatus(tr ? "Boş kayıt." : "Empty recording.");
@@ -491,13 +500,17 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                 </div>
               </div>
             ) : activeChannel.type === "local" ? (
-              <div className="flex min-h-0 flex-1 flex-col">
+              <div className="relative flex min-h-0 flex-1 flex-col">
                 <video
                   ref={previewRef}
                   autoPlay
                   muted
                   playsInline
                   className="min-h-0 flex-1 bg-black object-cover"
+                />
+                <MedusaCompanionOverlayV0
+                  active={Boolean(localPreviewStream)}
+                  mediaStream={localPreviewStream}
                 />
                 <div className="flex items-center gap-2 border-t border-white/10 bg-black/80 p-3">
                   <button

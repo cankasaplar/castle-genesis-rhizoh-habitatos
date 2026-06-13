@@ -15,6 +15,8 @@ import { STUDIO_ORGANISM_SURFACE_ROLE_V0 } from "../rhizoh/runtime/rhizohStudioO
 import { RhizohObservableRealityPanelV0 } from "./RhizohObservableRealityPanelV0.jsx";
 import { CastlePetStudioPanelV0 } from "./CastlePetStudioPanelV0.jsx";
 import { RhizohEventCreatePanelV12 } from "./RhizohEventCreatePanelV12.jsx";
+import { RhizohStudioSecuritySharingPanelV0 } from "./RhizohStudioSecuritySharingPanelV0.jsx";
+import { isDrawerModuleAwakenedV0 } from "../rhizoh/runtime/rhizohDrawerAwakeningV0.js";
 
 const PROFILE_OBS_TABS_V0 = Object.freeze([
   { id: "reality", label: "Reality" },
@@ -177,6 +179,12 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
         {surface === "studio" ? (
           <RhizohStudioCitizenShellV0 surfaceKind="studio">
             <UserOutcomeCard surface="studio" locale={locale} />
+            {isDrawerModuleAwakenedV0("studio") ? (
+              <p className="mb-2 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-2 py-1 text-[9px] font-semibold uppercase tracking-wider text-emerald-100">
+                {locale === "tr" ? "Drawer uyanık · Sprint 37" : "Drawer awake · Sprint 37"}
+              </p>
+            ) : null}
+            <RhizohStudioSecuritySharingPanelV0 uiLocale={locale} gatewayOrigin={gatewayOrigin} />
             <RuntimeHealthPanel health={runtimeHealth} gatewayBaseUrl={gatewayOrigin} />
             <QuickLinks
               links={[
