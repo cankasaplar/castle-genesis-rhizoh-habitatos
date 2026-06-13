@@ -68,4 +68,60 @@ describe("castleCloudSyncStore", () => {
     assert.equal(snap.castleIdentity.libraryWingsOpened, 1);
     assert.equal(snap.chronicle.length, 2);
   });
+
+  it("merges opening book entries by key with max counters", async () => {
+    await resetCloudSyncStoreForTestV0();
+    const uid = "opening-book-user";
+    await mergeCloudSyncSnapshotV0(uid, {
+      openingBook: [
+        {
+          key: "b20",
+          name: "Sicilian Defense",
+          eco: "B20",
+          games: 2,
+          wins: 1,
+          losses: 1
+        }
+      ]
+    });
+    await mergeCloudSyncSnapshotV0(uid, {
+      openingBook: [
+        {
+          key: "b20",
+          name: "Sicilian Defense",
+          eco: "B20",
+          games: 1,
+          wins: 0,
+          losses: 1
+        }
+      ]
+    });
+    const snap = await getCloudSyncSnapshotV0(uid);
+    assert.equal(snap.openingBook.length, 1);
+    assert.equal(snap.openingBook[0].games, 2);
+    assert.equal(snap.openingBook[0].wins, 1);
+    assert.equal(snap.openingBook[0].losses, 1);
+  });
+
+  it("merges chess civilization profile", async () => {
+    await resetCloudSyncStoreForTestV0();
+    const uid = "chess-civ-user";
+    await mergeCloudSyncSnapshotV0(uid, {
+      chessCivilization: {
+        castleId: "castle_a",
+        elo: 1212,
+        rivals: [{ castleId: "castle_b", matches: 2, wins: 1, losses: 1 }]
+      }
+    });
+    await mergeCloudSyncSnapshotV0(uid, {
+      chessCivilization: {
+        castleId: "castle_a",
+        elo: 1220,
+        rivals: [{ castleId: "castle_b", matches: 1, wins: 0, losses: 1 }]
+      }
+    });
+    const snap = await getCloudSyncSnapshotV0(uid);
+    assert.equal(snap.chessCivilization.elo, 1220);
+    assert.equal(snap.chessCivilization.rivals[0].matches, 2);
+  });
 });
