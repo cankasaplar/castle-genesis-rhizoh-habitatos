@@ -34,9 +34,14 @@ export function resolveRhizohLlmMaxTokensV0(opts = {}) {
   let cap = modeMax;
   if (depthCeil > 0) cap = Math.max(cap, Math.min(depthCeil, 2000));
 
-  if (opts.voiceTurn !== true) return cap;
-
   const chars = Math.max(0, Number(opts.userMessageChars) || 0);
+  if (opts.voiceTurn !== true) {
+    if (chars >= 720) return Math.max(cap, RHIZOH_GENERATION_MODE_MAX_TOKENS_V0.DEEP_REASONING);
+    if (chars >= 420) return Math.max(cap, RHIZOH_GENERATION_MODE_MAX_TOKENS_V0.NARRATIVE);
+    if (chars >= 180) return Math.max(cap, RHIZOH_GENERATION_MODE_MAX_TOKENS_V0.REFLECTIVE);
+    return cap;
+  }
+
   if (chars >= 520) {
     return Math.max(cap, RHIZOH_GENERATION_MODE_MAX_TOKENS_V0.NARRATIVE);
   }

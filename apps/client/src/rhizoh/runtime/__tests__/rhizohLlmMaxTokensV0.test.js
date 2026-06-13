@@ -22,13 +22,13 @@ describe("rhizohLlmMaxTokensV0", () => {
     ).toBeGreaterThanOrEqual(640);
   });
 
-  it("does not scale text-only STANDARD", () => {
+  it("scales text turns for long user messages", () => {
     expect(
       resolveRhizohLlmMaxTokensV0({
         generationMode: "STANDARD",
         voiceTurn: false,
         userMessageChars: 900
       })
-    ).toBe(320);
+    ).toBeGreaterThanOrEqual(900);
   });
 });

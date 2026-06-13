@@ -1,7 +1,9 @@
 /**
  * TTS sanitize — strip list markers / chunk artifacts before speech synthesis.
- * Read-side only; does not alter chat UI text.
+ * Shares artifact strip with chat display path.
  */
+
+import { stripRhizohReplyArtifactsV0 } from "./rhizohReplyArtifactCleanupV0.js";
 
 export const RHIZOH_SPEECH_TTS_SANITIZE_SCHEMA_V0 = "castle.rhizoh.speech_tts_sanitize.v0";
 
@@ -10,14 +12,8 @@ export const RHIZOH_SPEECH_TTS_SANITIZE_SCHEMA_V0 = "castle.rhizoh.speech_tts_sa
  * @returns {string}
  */
 export function sanitizeSpeechTextForTtsV0(text) {
-  let t = String(text || "");
-  if (!t.trim()) return "";
-
-  t = t.replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1");
-  t = t.replace(/_{1,2}([^_]+)_{1,2}/g, "$1");
-  t = t.replace(/^\s*[-*•]\s+/gm, "");
-  t = t.replace(/(?:^|\s)[nN]?[0-9]+[.)]\s*/g, " ");
-  t = t.replace(/\b[nN][0-9]+\b/g, "");
+  let t = stripRhizohReplyArtifactsV0(text);
+  if (!t) return "";
   t = t.replace(/[\r\n]+/g, " ");
   t = t.replace(/\s+/g, " ").trim();
   return t;

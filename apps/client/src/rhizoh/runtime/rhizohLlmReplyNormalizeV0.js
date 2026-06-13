@@ -10,6 +10,7 @@ import {
   triggerMemoryRecallMicroRtlV0
 } from "./expressiveRealityMicroTransitionV0.js";
 import { coerceRhizohUiReplyTextV0 } from "./rhizohLlmUiContractV0.js";
+import { sanitizeRhizohReplyForDisplayV0 } from "./rhizohReplyDisplaySanitizeV0.js";
 import {
   commitFinalUserVisibleLanguageV0,
   LANGUAGE_COMMIT_LOCK_KEY_V0
@@ -105,7 +106,8 @@ export function resolveRhizohReplyForDisplayV0(normalized, opts = {}) {
   const reply = coerceRhizohUiReplyTextV0(normalized.reply, { fallback: emptyFallback });
   if (!reply) return emptyFallback;
   const traceId = String(opts.traceId || normalized.traceId || "").trim() || undefined;
-  const commit = commitFinalUserVisibleLanguageV0(reply, {
+  const displayReply = sanitizeRhizohReplyForDisplayV0(reply, { repairTruncation: true });
+  const commit = commitFinalUserVisibleLanguageV0(displayReply, {
     source: "llm",
     traceId,
     idempotencyKey: traceId,

@@ -1,6 +1,7 @@
 import React, { memo } from "react";
 import { GeminiTowerWorkspaceV0 } from "./GeminiTowerWorkspaceV0.jsx";
 import { GEMINI_TOWER_DESIGN_V0 } from "../rhizoh/runtime/geminiTowerDesignV0.js";
+import { RhizohTowerLlmConnectionsStripV0 } from "./RhizohTowerLlmConnectionsStripV0.jsx";
 
 /**
  * Routes V11 tower node clicks to the correct workspace surface.
@@ -56,6 +57,7 @@ export const RhizohV11TowerWorkspaceHostV0 = memo(function RhizohV11TowerWorkspa
             ? "Bu tower için özel workspace henüz bağlanmadı. Gemini tower referans tasarımı kullanılabilir."
             : "Dedicated workspace for this tower is not wired yet. Use Gemini tower as the reference design."}
         </p>
+        <RhizohTowerLlmConnectionsStripV0 towerId={nodeId} uiLocale={uiLocale} />
       </div>
     </div>
   );

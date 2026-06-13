@@ -154,7 +154,55 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     }
   }, [recording, passphrase, tr, detail?.source]);
 
+  const archiveEntity = detail?.archiveEntity || null;
+  const archiveDocumentMode = Boolean(archiveEntity);
+
   if (!detail) return null;
+
+  if (archiveDocumentMode) {
+    const ent = archiveEntity;
+    const isMarkdown = String(ent.format || "").includes("markdown");
+    const isHtml = String(ent.format || "").includes("html");
+    return (
+      <div
+        className="pointer-events-auto fixed inset-0 z-[315] flex flex-col bg-[#050505]/96 backdrop-blur-3xl"
+        data-rhizoh-world-space-media-tube="1"
+        data-media-source={detail.source || "archive"}
+      >
+        <div className="flex min-h-0 flex-1 flex-col p-4 sm:p-6">
+          <div className="mb-4 flex items-center justify-between border-b border-amber-500/30 pb-4">
+            <div>
+              <h1 className="text-lg font-black uppercase tracking-widest text-amber-100">{ent.title}</h1>
+              <p className="text-[9px] font-bold uppercase text-amber-400/80">{ent.format}</p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-white/15 px-3 py-2 text-[10px] text-white/70 hover:text-white"
+            >
+              <X size={14} className="inline" /> {tr ? "Kapat" : "Close"}
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/60 p-4">
+            {ent.mediaUrl ? (
+              <iframe title={ent.title} src={ent.mediaUrl} className="h-full min-h-[320px] w-full rounded-lg" />
+            ) : isHtml ? (
+              <div
+                className="prose prose-invert max-w-none text-sm"
+                dangerouslySetInnerHTML={{ __html: String(ent.content || "") }}
+              />
+            ) : (
+              <pre
+                className={`whitespace-pre-wrap text-sm leading-relaxed text-white/85 ${isMarkdown ? "font-sans" : "font-mono"}`}
+              >
+                {String(ent.content || "")}
+              </pre>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
