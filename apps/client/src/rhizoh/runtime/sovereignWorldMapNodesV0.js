@@ -4,6 +4,16 @@
  */
 
 import { resolveInitialWorldSpaceMediaChannelIdV0, resolveWorldSpaceMediaChannelForMapNodeV0 } from "./worldSpaceMediaChannelsV0.js";
+import { presenceColorForStateV0 } from "./castlePresenceRegistryV0.js";
+
+function presenceLabelForStateV0(state) {
+  const s = String(state || "ONLINE").toUpperCase();
+  if (s === "BROADCASTING") return "LIVE";
+  if (s === "THINKING") return "THINK";
+  if (s === "SYNCING") return "SYNC";
+  if (s === "OFFLINE") return "OFF";
+  return "ON";
+}
 
 export const SOVEREIGN_MAP_DEFAULT_HOME_V0 = Object.freeze({
   lat: 41.045,
@@ -366,8 +376,8 @@ export const RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1 = "RHIZOH_SOVEREIGN_VOICE_WARP
 export const RHIZOH_REMOTE_CASTLE_CLICK_EVENT_V1 = "RHIZOH_REMOTE_CASTLE_CLICK";
 
 /**
- * Grey peer castle pins from Firestore `active_castles`.
- * @param {ReadonlyArray<{ id: string, lat?: number, lon?: number, displayName?: string, nexusEnergy?: number }>} remoteCastles
+ * Grey peer castle pins from Firestore `active_castles` + gateway network presence.
+ * @param {ReadonlyArray<{ id: string, lat?: number, lon?: number, displayName?: string, nexusEnergy?: number, presenceState?: string, presenceViewers?: number, presenceRegion?: string }>} remoteCastles
  */
 export function buildRemoteCastleMapNodesV0(remoteCastles = []) {
   /** @type {object[]} */
@@ -378,20 +388,30 @@ export function buildRemoteCastleMapNodesV0(remoteCastles = []) {
     const lon = Number(row?.lon);
     if (!uid || !Number.isFinite(lat) || !Number.isFinite(lon)) continue;
     const label = String(row.displayName || "").trim();
+    const presenceState = String(row.presenceState || "ONLINE").toUpperCase();
+    const color = presenceColorForStateV0(presenceState);
+    const viewers = Math.max(0, Number(row.presenceViewers) || 0);
+    const region = String(row.presenceRegion || "GLOBAL").slice(0, 16);
     rows.push(
       Object.freeze({
         id: `remote_castle_${uid}`,
         uid,
         name: label || `Peer Castle · ${uid.slice(0, 6)}`,
-        label: "PEER",
+        label: presenceLabelForStateV0(presenceState),
         type: "remote_castle",
         lat,
         lon,
-        color: "#9ca3af",
+        color,
         owner: "Peer",
-        description: "Opt-in peer castle — C2C bridge available on click.",
+        description:
+          presenceState === "BROADCASTING"
+            ? `Castle broadcasting · ${viewers} viewer${viewers === 1 ? "" : "s"} · ${region}`
+            : `Castle ${presenceState.toLowerCase()} · ${region} — C2C bridge on click.`,
         nexusEnergy: Number(row.nexusEnergy) || null,
-        gatewayClientId: String(row.gatewayClientId || "").trim() || null
+        gatewayClientId: String(row.gatewayClientId || "").trim() || null,
+        presenceState,
+        presenceViewers: viewers,
+        presenceRegion: region
       })
     );
   }

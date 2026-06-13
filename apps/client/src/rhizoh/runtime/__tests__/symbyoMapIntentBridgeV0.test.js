@@ -50,6 +50,7 @@ describe("symbyoMapIntentBridgeV0", () => {
         "OPEN_CHESS_ARENA",
         "OPEN_LIBRARY",
         "OPEN_MEDIA_PLAYER",
+        "OPEN_TOWER_PORTAL",
         "OPEN_WORKSPACE"
       ].sort()
     );
@@ -77,6 +78,14 @@ describe("symbyoMapIntentBridgeV0", () => {
       node: { id: "library", type: "vault" }
     });
     expect(routed.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_LIBRARY);
+  });
+
+  it("routes rhizoh portal to tower portal discovery", () => {
+    const routed = routeSymbyoMapInteractionToOrchestratorV0({
+      interaction: "click",
+      node: { id: "rhizoh_portal", type: "portal" }
+    });
+    expect(routed.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_TOWER_PORTAL);
   });
 
   it("routes map pins to distinct media decisions", () => {

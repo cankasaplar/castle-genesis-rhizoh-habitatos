@@ -29,11 +29,14 @@ export const SYMBYO_MAP_INTENT_TYPE_V0 = Object.freeze({
   LOAD_CONTEXT: "LOAD_CONTEXT"
 });
 
+export const RHIZOH_OPEN_TOWER_PORTAL_EVENT_V1 = "RHIZOH_OPEN_TOWER_PORTAL";
+
 export const ORCHESTRATOR_ACTION_REGISTRY_V0 = Object.freeze({
   OPEN_MEDIA_PLAYER: "OPEN_MEDIA_PLAYER",
   OPEN_WORKSPACE: "OPEN_WORKSPACE",
   OPEN_LIBRARY: "OPEN_LIBRARY",
   OPEN_CHESS_ARENA: "OPEN_CHESS_ARENA",
+  OPEN_TOWER_PORTAL: "OPEN_TOWER_PORTAL",
   ENTER_CASTLE: "ENTER_CASTLE",
   LOAD_WORLD_NODE: "LOAD_WORLD_NODE",
   ATTACH_VOICE_STREAM: "ATTACH_VOICE_STREAM"
@@ -139,6 +142,9 @@ export function resolveSymbyoMapIntentDecisionV0(intent = {}, surface = {}, node
     if (nodeId === "chess_arena") {
       return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_CHESS_ARENA, 0.92, refs);
     }
+    if (nodeId === "rhizoh_portal" || nodeType === "portal") {
+      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_TOWER_PORTAL, 0.9, refs);
+    }
     if (nodeId === "library" || nodeType === "vault") {
       return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_LIBRARY, 0.9, refs);
     }
@@ -157,7 +163,6 @@ export function resolveSymbyoMapIntentDecisionV0(intent = {}, surface = {}, node
     if (nodeType === "portal" || hasCapability("voice")) {
       return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.ATTACH_VOICE_STREAM, 0.74, refs);
     }
-    return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.LOAD_WORLD_NODE, 0.68, refs);
   }
   return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.LOAD_WORLD_NODE, 0.2, refs);
 }

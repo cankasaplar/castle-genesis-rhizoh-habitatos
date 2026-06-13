@@ -54,7 +54,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   open,
   onClose,
   uiLocale = "en",
-  node = null
+  node = null,
+  peerCastle = null
 }) {
   const tr = uiLocale === "tr";
   const [mode, setMode] = useState(CHESS_GAME_MODE_V0.BLITZ);
@@ -69,6 +70,22 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const fen = game.fen();
   const rows = useMemo(() => boardRowsFromFen(fen), [fen, tick]);
   const outcome = game.outcome();
+
+  useEffect(() => {
+    if (!open || !peerCastle?.uid) return;
+    const match = createCastleToCastleChessMatchV0({
+      mode: CHESS_GAME_MODE_V0.HUMAN_HUMAN,
+      castleA: "local_castle",
+      castleB: String(peerCastle.uid)
+    });
+    setC2cMatch(match);
+    setMode(CHESS_GAME_MODE_V0.HUMAN_HUMAN);
+    setStatus(
+      tr
+        ? `Meydan okuma: ${peerCastle.displayName || peerCastle.uid.slice(0, 8)}`
+        : `Challenge: ${peerCastle.displayName || peerCastle.uid.slice(0, 8)}`
+    );
+  }, [open, peerCastle, tr]);
 
   useEffect(() => {
     if (!open) return undefined;

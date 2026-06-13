@@ -28,14 +28,24 @@ describe("sovereignWorldMapNodesV0", () => {
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "rhizoh_portal")).toBe(true);
   });
 
-  it("builds grey remote castle nodes", () => {
+  it("builds remote castle nodes with presence state colors", () => {
     const nodes = buildRemoteCastleMapNodesV0([
-      { id: "uid_a", lat: 41.01, lon: 28.99, displayName: "Peer A" },
+      {
+        id: "uid_a",
+        lat: 41.01,
+        lon: 28.99,
+        displayName: "Peer A",
+        presenceState: "BROADCASTING",
+        presenceViewers: 4,
+        presenceRegion: "TR"
+      },
       { id: "uid_b", lat: NaN, lon: 29 }
     ]);
     expect(nodes).toHaveLength(1);
     expect(nodes[0].type).toBe("remote_castle");
-    expect(nodes[0].color).toBe("#9ca3af");
+    expect(nodes[0].color).toBe("#a855f7");
+    expect(nodes[0].label).toBe("LIVE");
+    expect(nodes[0].presenceViewers).toBe(4);
     expect(nodes[0].uid).toBe("uid_a");
   });
 

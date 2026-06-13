@@ -12,6 +12,11 @@ import {
   readCastleSocialAvSessionV0
 } from "./castleSocialAvSessionV0.js";
 import { createCastleC2cSignalingChannelV0, CASTLE_C2C_ROOM_KEY_V0 } from "./castleC2cSignalingChannelV0.js";
+import {
+  bootCastleNetworkSignalingV0,
+  disposeCastleNetworkSignalingV0,
+  ingestCastleNetworkSignalV0
+} from "../rhizoh/runtime/castleNetworkSignalingV0.js";
 
 export const CASTLE_C2C_WEBRTC_SCHEMA_V0 = "castle.c2c_webrtc.v0";
 export const CASTLE_C2C_STATE_EVENT_V0 = "castle:c2c-state-v0";
@@ -28,6 +33,9 @@ let localStream = null;
 let activePeerUid = "";
 /** @type {string} */
 let activePeerClientId = "";
+/** @type {string} */
+let signalingUserIdV0 = "";
+let networkLayerBootedV0 = false;
 
 function publishC2cState(extra = {}) {
   if (typeof window === "undefined") return;
@@ -61,7 +69,15 @@ function ensureSignaling(userId) {
     onSignal: (payload) => void handleIncomingSignalV0(payload),
     onRoster: () => publishC2cState({ rosterUpdated: true }),
     onStatus: (s) => {
-      if (s.state === "client_id") publishC2cState({ signaling: "ready" });
+      if (s.state === "client_id") {
+        publishC2cState({ signaling: "ready" });
+        const uid = String(userId || "").trim();
+        if (uid && !networkLayerBootedV0) {
+          signalingUserIdV0 = uid;
+          bootCastleNetworkSignalingV0(signaling, uid);
+          networkLayerBootedV0 = true;
+        }
+      }
     }
   });
   signaling.connect();
@@ -72,6 +88,7 @@ function ensureSignaling(userId) {
  * @param {Record<string, unknown>} payload
  */
 async function handleIncomingSignalV0(payload) {
+  if (ingestCastleNetworkSignalV0(payload)) return;
   const signalType = String(payload?.signalType || "");
   const from = String(payload?.from || "");
   if (!signalType || !from) return;
@@ -279,6 +296,10 @@ export function bootCastleC2cSignalingV0(userId) {
 
 export function disposeCastleC2cTransportV0() {
   teardownPeerV0();
+  if (networkLayerBootedV0) {
+    disposeCastleNetworkSignalingV0(signalingUserIdV0);
+    networkLayerBootedV0 = false;
+  }
   signaling?.dispose();
   signaling = null;
   endCastleSocialAvSessionV0();

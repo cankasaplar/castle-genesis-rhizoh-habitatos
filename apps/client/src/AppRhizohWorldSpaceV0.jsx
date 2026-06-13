@@ -61,6 +61,7 @@ import {
   RHIZOH_OPEN_CASTLE_EVENT_V1,
   RHIZOH_OPEN_CHESS_ARENA_EVENT_V1,
   RHIZOH_OPEN_LIBRARY_EVENT_V1,
+  RHIZOH_OPEN_TOWER_PORTAL_EVENT_V1,
   RHIZOH_OPEN_WORKSPACE_EVENT_V1,
   RHIZOH_SHOW_INFO_EVENT_V1
 } from "./rhizoh/runtime/symbyoMapIntentBridgeV0.js";
@@ -69,6 +70,7 @@ import { CastleInitiationGateV0 } from "./components/CastleInitiationGateV0.jsx"
 import { RhizohV11TowerWorkspaceHostV0 } from "./components/RhizohV11TowerWorkspaceHostV0.jsx";
 import { RhizohCastleLibraryPanelV0 } from "./components/RhizohCastleLibraryPanelV0.jsx";
 import { RhizohChessArenaWorkspaceV0 } from "./components/RhizohChessArenaWorkspaceV0.jsx";
+import { RhizohTowerPortalDiscoveryV0 } from "./components/RhizohTowerPortalDiscoveryV0.jsx";
 import { RhizohWorldSpaceMediaTubeV0 } from "./components/RhizohWorldSpaceMediaTubeV0.jsx";
 import { CASTLE_ARCHIVE_OPEN_MEDIA_EVENT_V0 } from "./rhizoh/runtime/castleArchiveVaultV0.js";
 import { RhizohWorldSpaceC2cPanelV0 } from "./components/RhizohWorldSpaceC2cPanelV0.jsx";
@@ -107,6 +109,7 @@ export default function AppRhizohWorldSpaceV0() {
   const [v11Workspace, setV11Workspace] = useState(null);
   const [v11Library, setV11Library] = useState(null);
   const [v11ChessArena, setV11ChessArena] = useState(null);
+  const [v11TowerPortal, setV11TowerPortal] = useState(null);
   const [v11MediaTube, setV11MediaTube] = useState(null);
   const [castleInitGateOpen, setCastleInitGateOpen] = useState(false);
   const [c2cPeer, setC2cPeer] = useState(null);
@@ -286,6 +289,17 @@ export default function AppRhizohWorldSpaceV0() {
       setV11Library(null);
       setV11Workspace(null);
       setV11MediaTube(null);
+      setV11TowerPortal(null);
+      setV11NodePanel(null);
+    };
+    const onTowerPortal = (ev) => {
+      const detail = ev?.detail;
+      if (!detail?.node) return;
+      setV11TowerPortal(detail);
+      setV11Library(null);
+      setV11Workspace(null);
+      setV11MediaTube(null);
+      setV11ChessArena(null);
       setV11NodePanel(null);
     };
     const onArchiveMedia = (ev) => {
@@ -331,6 +345,7 @@ export default function AppRhizohWorldSpaceV0() {
     window.addEventListener(RHIZOH_OPEN_WORKSPACE_EVENT_V1, onWorkspace);
     window.addEventListener(RHIZOH_OPEN_LIBRARY_EVENT_V1, onLibrary);
     window.addEventListener(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, onChessArena);
+    window.addEventListener(RHIZOH_OPEN_TOWER_PORTAL_EVENT_V1, onTowerPortal);
     window.addEventListener(RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1, onMediaTube);
     window.addEventListener(RHIZOH_OPEN_CASTLE_EVENT_V1, onCastle);
     window.addEventListener(RHIZOH_SHOW_INFO_EVENT_V1, onInfo);
@@ -342,6 +357,7 @@ export default function AppRhizohWorldSpaceV0() {
       window.removeEventListener(RHIZOH_OPEN_WORKSPACE_EVENT_V1, onWorkspace);
       window.removeEventListener(RHIZOH_OPEN_LIBRARY_EVENT_V1, onLibrary);
       window.removeEventListener(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, onChessArena);
+      window.removeEventListener(RHIZOH_OPEN_TOWER_PORTAL_EVENT_V1, onTowerPortal);
       window.removeEventListener(RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1, onMediaTube);
       window.removeEventListener(RHIZOH_OPEN_CASTLE_EVENT_V1, onCastle);
       window.removeEventListener(RHIZOH_SHOW_INFO_EVENT_V1, onInfo);
@@ -631,12 +647,23 @@ export default function AppRhizohWorldSpaceV0() {
         <RhizohChessArenaWorkspaceV0
           open
           node={v11ChessArena.node}
+          peerCastle={v11ChessArena.peerCastle || null}
           onClose={() => setV11ChessArena(null)}
           uiLocale={uiLocale}
         />
       ) : null}
 
-      {v11NodePanel && !v11Workspace && !v11MediaTube && !v11Library && !v11ChessArena ? (
+      {v11TowerPortal && !v11MediaTube && !v11ChessArena ? (
+        <RhizohTowerPortalDiscoveryV0
+          open
+          node={v11TowerPortal.node}
+          userId={castleAuth?.user?.uid || ""}
+          onClose={() => setV11TowerPortal(null)}
+          uiLocale={uiLocale}
+        />
+      ) : null}
+
+      {v11NodePanel && !v11Workspace && !v11MediaTube && !v11Library && !v11ChessArena && !v11TowerPortal ? (
         <div className="pointer-events-none fixed inset-x-0 top-28 z-[27] flex justify-center px-4">
           <div
             className="pointer-events-auto w-full max-w-sm rounded-2xl border bg-black/85 p-3 text-white shadow-2xl backdrop-blur-md"
