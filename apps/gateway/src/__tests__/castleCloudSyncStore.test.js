@@ -149,4 +149,25 @@ describe("castleCloudSyncStore", () => {
     assert.equal(snap.mediaCivilization.notesWritten, 5);
     assert.equal(snap.mediaCivilization.bookmarks, 1);
   });
+
+  it("stores and merges fer1 encrypted vault envelope", async () => {
+    await resetCloudSyncStoreForTestV0();
+    const uid = "fer1-vault-user";
+    const envelope = {
+      schema: "rhizoh.fer1_memory_vault.v0",
+      sealedAt: "2026-06-13T12:00:00.000Z",
+      bucketCount: 6,
+      populatedBuckets: 2,
+      crypto: {
+        schema: "rhizoh.fer1_vault_crypto.v0",
+        ciphertextB64: "abc",
+        saltB64: "s",
+        ivB64: "i"
+      }
+    };
+    await mergeCloudSyncSnapshotV0(uid, { fer1EncryptedVault: envelope });
+    const snap = await getCloudSyncSnapshotV0(uid);
+    assert.equal(snap.fer1EncryptedVault.sealedAt, envelope.sealedAt);
+    assert.equal(snap.fer1EncryptedVault.crypto.ciphertextB64, "abc");
+  });
 });

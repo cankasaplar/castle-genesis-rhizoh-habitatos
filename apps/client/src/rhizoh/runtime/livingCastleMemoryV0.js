@@ -24,6 +24,10 @@ import { mergeRhizohKnowledgeFromCloudV0 } from "./rhizohKnowledgeStoreV0.js";
 import { mergeRhizohOpeningBookFromCloudV0 } from "./rhizohOpeningBookV0.js";
 import { mergeChessCivilizationFromCloudV0 } from "./chessCivilizationV0.js";
 import { mergeMediaCivilizationFromCloudV0 } from "./mediaCivilizationV0.js";
+import {
+  importFer1VaultFromCloudV0,
+  isFer1VaultSealedV0
+} from "./fer1MemoryVaultV0.js";
 
 let memoryBootedV0 = false;
 
@@ -64,13 +68,18 @@ function onCloudSyncHydrateV0(ev) {
  * @param {object} snapshot — gateway cloud sync snapshot
  */
 export function hydrateLivingCastleMemoryFromCloudV0(snapshot = {}) {
+  if (snapshot.fer1EncryptedVault) {
+    importFer1VaultFromCloudV0(snapshot.fer1EncryptedVault);
+  }
+  const sealed = isFer1VaultSealedV0();
+
   if (snapshot.castleIdentity) mergeCastleIdentityFromCloudV0(snapshot.castleIdentity);
-  if (Array.isArray(snapshot.ghostMemory)) mergeGhostMemoryFromCloudV0(snapshot.ghostMemory);
-  if (Array.isArray(snapshot.chronicle)) mergeCastleChronicleFromCloudV0(snapshot.chronicle);
-  if (Array.isArray(snapshot.knowledge)) mergeRhizohKnowledgeFromCloudV0(snapshot.knowledge);
-  if (Array.isArray(snapshot.openingBook)) mergeRhizohOpeningBookFromCloudV0(snapshot.openingBook);
-  if (snapshot.chessCivilization) mergeChessCivilizationFromCloudV0(snapshot.chessCivilization);
-  if (snapshot.mediaCivilization) mergeMediaCivilizationFromCloudV0(snapshot.mediaCivilization);
+  if (!sealed && Array.isArray(snapshot.ghostMemory)) mergeGhostMemoryFromCloudV0(snapshot.ghostMemory);
+  if (!sealed && Array.isArray(snapshot.chronicle)) mergeCastleChronicleFromCloudV0(snapshot.chronicle);
+  if (!sealed && Array.isArray(snapshot.knowledge)) mergeRhizohKnowledgeFromCloudV0(snapshot.knowledge);
+  if (!sealed && Array.isArray(snapshot.openingBook)) mergeRhizohOpeningBookFromCloudV0(snapshot.openingBook);
+  if (!sealed && snapshot.chessCivilization) mergeChessCivilizationFromCloudV0(snapshot.chessCivilization);
+  if (!sealed && snapshot.mediaCivilization) mergeMediaCivilizationFromCloudV0(snapshot.mediaCivilization);
   if (Array.isArray(snapshot.entities) || Array.isArray(snapshot.events)) {
     importCastleArchiveEntitiesFromCloudV0(snapshot);
   }

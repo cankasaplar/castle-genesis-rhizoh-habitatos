@@ -9,7 +9,7 @@ import path from "node:path";
 const DATA_DIR = process.env.CASTLE_CLOUD_SYNC_DIR || path.join(process.cwd(), "data", "cloud-sync");
 const FILE_NAME = "castle_cloud_sync_v0.json";
 
-/** @type {Record<string, { entities: object[], events: object[], ghostMemory: object[], codex: object[], castleIdentity: object | null, chronicle: object[], knowledge: object[], openingBook: object[], chessCivilization: object | null, mediaCivilization: object | null, updatedAt: string }>} */
+/** @type {Record<string, { entities: object[], events: object[], ghostMemory: object[], codex: object[], castleIdentity: object | null, chronicle: object[], knowledge: object[], openingBook: object[], chessCivilization: object | null, mediaCivilization: object | null, fer1EncryptedVault: object | null, updatedAt: string }>} */
 let cache = null;
 
 async function ensureLoaded() {
@@ -45,6 +45,7 @@ function bucketForUid(uid) {
       openingBook: [],
       chessCivilization: null,
       mediaCivilization: null,
+      fer1EncryptedVault: null,
       updatedAt: new Date().toISOString()
     };
   }
@@ -111,13 +112,14 @@ export async function getCloudSyncSnapshotV0(uid) {
     openingBook: Object.freeze((bucket.openingBook || []).map((e) => Object.freeze({ ...e }))),
     chessCivilization: bucket.chessCivilization ? Object.freeze({ ...bucket.chessCivilization }) : null,
     mediaCivilization: bucket.mediaCivilization ? Object.freeze({ ...bucket.mediaCivilization }) : null,
+    fer1EncryptedVault: bucket.fer1EncryptedVault ? Object.freeze({ ...bucket.fer1EncryptedVault }) : null,
     updatedAt: bucket.updatedAt
   });
 }
 
 /**
  * @param {string} uid
- * @param {{ entities?: object[], ghostMemory?: object[], codex?: object[], events?: object[], castleIdentity?: object, chronicle?: object[], knowledge?: object[], openingBook?: object[], chessCivilization?: object, mediaCivilization?: object }} patch
+ * @param {{ entities?: object[], ghostMemory?: object[], codex?: object[], events?: object[], castleIdentity?: object, chronicle?: object[], knowledge?: object[], openingBook?: object[], chessCivilization?: object, mediaCivilization?: object, fer1EncryptedVault?: object | null }} patch
  */
 export async function mergeCloudSyncSnapshotV0(uid, patch = {}) {
   await ensureLoaded();
@@ -249,6 +251,21 @@ export async function mergeCloudSyncSnapshotV0(uid, patch = {}) {
       sources: [...sourceMap.values()],
       syncedAt: now
     };
+  }
+
+  if (patch.fer1EncryptedVault === null) {
+    bucket.fer1EncryptedVault = null;
+  } else if (patch.fer1EncryptedVault && typeof patch.fer1EncryptedVault === "object") {
+    const local = bucket.fer1EncryptedVault || {};
+    const remote = patch.fer1EncryptedVault;
+    const localAt = String(local.sealedAt || "");
+    const remoteAt = String(remote.sealedAt || "");
+    if (!localAt || remoteAt >= localAt) {
+      bucket.fer1EncryptedVault = {
+        ...remote,
+        syncedAt: now
+      };
+    }
   }
 
   bucket.updatedAt = now;
