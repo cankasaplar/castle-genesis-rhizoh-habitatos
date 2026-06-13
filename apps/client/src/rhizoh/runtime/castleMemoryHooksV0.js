@@ -5,7 +5,7 @@
 import { CASTLE_NETWORK_PRESENCE_EVENT_V0 } from "./castlePresenceRegistryV0.js";
 import { CASTLE_CLOUD_SYNC_EVENT_V0 } from "./castleCloudSyncV0.js";
 import { RHIZOH_OPEN_LIBRARY_EVENT_V1 } from "./symbyoMapIntentBridgeV0.js";
-import { CASTLE_C2C_REALTIME_MESSAGE_EVENT_V0, CASTLE_C2C_MESSAGE_TYPE_V0 } from "../castleSocial/castleC2cRealtimeBusV0.js";
+import { CASTLE_C2C_REALTIME_MESSAGE_EVENT_V0, CASTLE_C2C_MESSAGE_TYPE_V0 } from "../../castleSocial/castleC2cRealtimeBusV0.js";
 import {
   incrementCastleIdentityStatV0,
   readCastleIdentityV0
