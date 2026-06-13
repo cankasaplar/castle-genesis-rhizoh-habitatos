@@ -150,6 +150,23 @@ function resolveFirebaseConfigObject(env) {
   };
 }
 
+/** Copy Stockfish single-thread assets — npm package main field points at missing file. */
+function copyStockfishAssetsPlugin() {
+  const files = ["stockfish-nnue-16-single.js", "stockfish-nnue-16-single.wasm"];
+  return {
+    name: "castle-copy-stockfish-assets",
+    closeBundle() {
+      const pkgRoot = path.resolve(process.cwd(), "../../node_modules/stockfish/src");
+      const distRoot = path.resolve(process.cwd(), "dist");
+      for (const name of files) {
+        const src = path.join(pkgRoot, name);
+        const dest = path.join(distRoot, name);
+        if (existsSync(src)) copyFileSync(src, dest);
+      }
+    }
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const gatewayUpstream = String(
@@ -161,6 +178,10 @@ export default defineConfig(({ mode }) => {
   const castleAppId = env.VITE_CASTLE_APP_ID || "castle-vnext-core";
   const cesiumBuildRootPath = "../../node_modules/cesium/Build";
   const cesiumBuildPath = "../../node_modules/cesium/Build/Cesium";
+  const stockfishSinglePath = path.resolve(
+    process.cwd(),
+    "../../node_modules/stockfish/src/stockfish-nnue-16-single.js"
+  );
   const stabilizationGraphLockPath = path.resolve(process.cwd(), "..", "..", "scripts", "stabilization-graph.sha256.lock");
   let stabilizationGraphSha256Lock = "";
   try {
@@ -215,9 +236,20 @@ export default defineConfig(({ mode }) => {
         cesiumBaseUrl: "cesium/"
       }),
       assertCesiumRuntimeCopied({ cesiumBuildPath, cesiumBaseUrl: "cesium/" }),
+      copyStockfishAssetsPlugin(),
       emitFirebaseSpaFallback(),
       legacyStudioHtmlRedirectsPlugin()
     ],
+    resolve: {
+      alias: {
+        stockfish: stockfishSinglePath
+      }
+    },
+    build: {
+      commonjsOptions: {
+        transformMixedEsModules: true
+      }
+    },
     define: {
       __firebase_config: JSON.stringify(JSON.stringify(firebaseObj)),
       __app_id: JSON.stringify(castleAppId),
