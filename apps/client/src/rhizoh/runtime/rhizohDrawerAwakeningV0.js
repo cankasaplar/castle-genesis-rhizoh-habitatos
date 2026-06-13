@@ -36,12 +36,28 @@ function readRawV0() {
   }
 }
 
+/** Referentially stable snapshot for useSyncExternalStore consumers. */
+/** @type {ReadonlyArray<string> | null} */
+let cachedAwakenedModulesV0 = null;
+/** @type {string} */
+let cachedAwakenedModulesKeyV0 = "";
+
+function awakenedModulesCacheKeyV0(modules) {
+  return DRAWER_AWAKENING_MODULE_IDS_V0.map((id) => (modules[id] ? "1" : "0")).join("");
+}
+
+function invalidateAwakenedModulesCacheV0() {
+  cachedAwakenedModulesV0 = null;
+  cachedAwakenedModulesKeyV0 = "";
+}
+
 function writeRawV0(modules) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(
-    RHIZOH_DRAWER_AWAKENING_LS_KEY_V0,
-    JSON.stringify({ schema: RHIZOH_DRAWER_AWAKENING_SCHEMA_V0, modules })
-  );
+  const prevRaw = window.localStorage.getItem(RHIZOH_DRAWER_AWAKENING_LS_KEY_V0);
+  const nextPayload = JSON.stringify({ schema: RHIZOH_DRAWER_AWAKENING_SCHEMA_V0, modules });
+  if (prevRaw === nextPayload) return;
+  window.localStorage.setItem(RHIZOH_DRAWER_AWAKENING_LS_KEY_V0, nextPayload);
+  invalidateAwakenedModulesCacheV0();
   try {
     window.dispatchEvent(
       new CustomEvent(RHIZOH_DRAWER_AWAKENING_EVENT_V0, {
@@ -76,7 +92,15 @@ export function isDrawerModuleAwakenedV0(moduleId) {
  */
 export function listAwakenedDrawerModulesV0() {
   const modules = readRawV0();
-  return Object.freeze(DRAWER_AWAKENING_MODULE_IDS_V0.filter((id) => modules[id] === true));
+  const key = awakenedModulesCacheKeyV0(modules);
+  if (key === cachedAwakenedModulesKeyV0 && cachedAwakenedModulesV0) {
+    return cachedAwakenedModulesV0;
+  }
+  cachedAwakenedModulesKeyV0 = key;
+  cachedAwakenedModulesV0 = Object.freeze(
+    DRAWER_AWAKENING_MODULE_IDS_V0.filter((id) => modules[id] === true)
+  );
+  return cachedAwakenedModulesV0;
 }
 
 /**
@@ -109,6 +133,7 @@ export function subscribeDrawerAwakeningV0(onChange) {
 }
 
 export function resetDrawerAwakeningForTestV0() {
+  invalidateAwakenedModulesCacheV0();
   if (typeof window !== "undefined") {
     window.localStorage.removeItem(RHIZOH_DRAWER_AWAKENING_LS_KEY_V0);
   }

@@ -539,7 +539,7 @@ export default function AppRhizohWorldSpaceV0() {
       overlayNode: getActiveFederationOverlayNodeV0()
     });
     applyDrawerDomainTagsV0(appRootRef.current, tags);
-  }, [openSurfaceDrawerIdV0, chromePanelsV0]);
+  }, [openSurfaceDrawerIdV0]);
 
   useEffect(() => {
     bootDrawerStateMachineV0();

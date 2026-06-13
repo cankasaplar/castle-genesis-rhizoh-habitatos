@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   __resetDrawerTransitionQueueForTestV0,
+  __resetDrawerStateSnapshotCacheForTestV0,
   closeProductSurfaceDrawerV0,
   computeDrawerShellTransitionV0,
   DRAWER_SHELL_ACTION_V0,
@@ -27,6 +28,7 @@ describe("rhizohDrawerStateMachineV0", () => {
     localStorage.clear();
     resetDrawerAwakeningForTestV0();
     __resetDrawerTransitionQueueForTestV0();
+    __resetDrawerStateSnapshotCacheForTestV0();
     __resetDomainGraphForTestV0();
     __resetRhizohDomainCoreStoreForTestV0();
     __resetContextIntentSnapshotForTestV0();
@@ -37,10 +39,18 @@ describe("rhizohDrawerStateMachineV0", () => {
     localStorage.clear();
     resetDrawerAwakeningForTestV0();
     __resetDrawerTransitionQueueForTestV0();
+    __resetDrawerStateSnapshotCacheForTestV0();
     __resetDomainGraphForTestV0();
     __resetRhizohDomainCoreStoreForTestV0();
     __resetContextIntentSnapshotForTestV0();
     __resetClusterCivilizationForTestV0();
+  });
+
+  it("getDrawerStateSnapshotV0 is referentially stable when inputs unchanged", () => {
+    const a = getDrawerStateSnapshotV0();
+    const b = getDrawerStateSnapshotV0();
+    expect(a).toBe(b);
+    expect(a.awakenedModules).toBe(b.awakenedModules);
   });
 
   it("handleProductShellSelectV0 commits intent before domain overlay", () => {
