@@ -1,5 +1,5 @@
 /**
- * Rhizoh Opening Book v0 — learned openings from analyzed matches (LLM-free).
+ * Rhizoh Opening Book v0 — Layer 4 (Learn): LLM-free opening statistics.
  */
 
 export const RHIZOH_OPENING_BOOK_SCHEMA_V0 = "rhizoh.opening_book.v0";
@@ -12,13 +12,25 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function normalizeEntryV0(row) {
+  const games = Number(row.games ?? row.playedCount) || 0;
+  const wins = Number(row.wins ?? row.winCount) || 0;
+  const losses = Number(row.losses);
+  return {
+    ...row,
+    games,
+    wins,
+    losses: Number.isFinite(losses) ? losses : Math.max(0, games - wins)
+  };
+}
+
 function readRawV0() {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(RHIZOH_OPENING_BOOK_LS_KEY_V0);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed?.entries) ? parsed.entries : [];
+    return Array.isArray(parsed?.entries) ? parsed.entries.map(normalizeEntryV0) : [];
   } catch {
     return [];
   }
@@ -47,40 +59,53 @@ function writeRawV0(entries) {
 export function listRhizohOpeningBookV0() {
   return Object.freeze(
     readRawV0()
-      .sort((a, b) => (b.playedCount || 0) - (a.playedCount || 0))
-      .map((e) => Object.freeze({ ...e }))
+      .sort((a, b) => (b.games || 0) - (a.games || 0))
+      .map((e) => Object.freeze(normalizeEntryV0(e)))
   );
 }
 
 /**
- * @param {{ name: string, eco?: string, moves?: string[], won?: boolean, lesson?: object, opponentCastleId?: string }} input
+ * Learn from match observation (Layer 4 — Learn).
+ * @param {object} observation — observeChessMatchV0 output
+ */
+export function learnOpeningFromObservationV0(observation = {}) {
+  const name = String(observation.openingName || "Unknown Opening").slice(0, 120);
+  if (!name) return null;
+  const won = observation.winner === "local";
+  const lost = observation.winner === "opponent";
+  return recordOpeningFromMatchV0({
+    name,
+    eco: observation.eco,
+    won,
+    lost,
+    opponentCastleId: observation.opponentCastleId
+  });
+}
+
+/**
+ * @param {{ name: string, eco?: string, moves?: string[], won?: boolean, lost?: boolean, opponentCastleId?: string }} input
  */
 export function recordOpeningFromMatchV0(input = {}) {
   const name = String(input.name || "Unknown Opening").slice(0, 120);
   if (!name) return null;
   const entries = readRawV0();
   const key = String(input.eco || name).toLowerCase();
-  const idx = entries.findIndex((e) => String(e.key || e.name).toLowerCase() === key);
-  const prev = idx >= 0 ? entries[idx] : null;
-  const lessons = [...(prev?.lessons || [])];
-  if (input.lesson) {
-    lessons.unshift(
-      Object.freeze({
-        ...input.lesson,
-        recordedAt: nowIso()
-      })
-    );
-  }
+  const idx = entries.findIndex((e) => String(e.key || e.eco || e.name).toLowerCase() === key);
+  const prev = idx >= 0 ? normalizeEntryV0(entries[idx]) : null;
+  const games = (Number(prev?.games) || 0) + 1;
+  const wins = (Number(prev?.wins) || 0) + (input.won === true ? 1 : 0);
+  const losses = (Number(prev?.losses) || 0) + (input.lost === true ? 1 : 0);
+
   const row = Object.freeze({
     schema: `${RHIZOH_OPENING_BOOK_SCHEMA_V0}.entry`,
     id: prev?.id || `ob_${Date.now().toString(36)}`,
     key,
-    name,
     eco: input.eco || prev?.eco || null,
+    name,
     moves: Object.freeze((input.moves || prev?.moves || []).slice(0, 12)),
-    playedCount: (Number(prev?.playedCount) || 0) + 1,
-    winCount: (Number(prev?.winCount) || 0) + (input.won === true ? 1 : 0),
-    lessons: Object.freeze(lessons.slice(0, 24)),
+    games,
+    wins,
+    losses,
     lastOpponent: input.opponentCastleId || prev?.lastOpponent || null,
     updatedAt: nowIso()
   });
@@ -96,7 +121,7 @@ export function recordOpeningFromMatchV0(input = {}) {
 export function lookupOpeningLessonV0(name) {
   const needle = String(name || "").toLowerCase();
   const row = readRawV0().find((e) => String(e.name || "").toLowerCase() === needle);
-  return row ? Object.freeze({ ...row }) : null;
+  return row ? Object.freeze(normalizeEntryV0(row)) : null;
 }
 
 export function resetRhizohOpeningBookForTestV0() {
@@ -109,16 +134,18 @@ export function resetRhizohOpeningBookForTestV0() {
  * @param {ReadonlyArray<object>} remoteEntries
  */
 export function mergeRhizohOpeningBookFromCloudV0(remoteEntries = []) {
-  const byKey = new Map(readRawV0().map((e) => [e.key || e.name, e]));
+  const byKey = new Map(readRawV0().map((e) => [e.key || e.eco || e.name, normalizeEntryV0(e)]));
   for (const row of remoteEntries || []) {
-    const key = row?.key || row?.name;
+    const key = row?.key || row?.eco || row?.name;
     if (!key) continue;
     const prev = byKey.get(key);
+    const normalized = normalizeEntryV0(row);
     byKey.set(key, {
       ...prev,
-      ...row,
-      playedCount: Math.max(Number(prev?.playedCount) || 0, Number(row.playedCount) || 0),
-      winCount: Math.max(Number(prev?.winCount) || 0, Number(row.winCount) || 0)
+      ...normalized,
+      games: Math.max(Number(prev?.games) || 0, Number(normalized.games) || 0),
+      wins: Math.max(Number(prev?.wins) || 0, Number(normalized.wins) || 0),
+      losses: Math.max(Number(prev?.losses) || 0, Number(normalized.losses) || 0)
     });
   }
   writeRawV0([...byKey.values()]);

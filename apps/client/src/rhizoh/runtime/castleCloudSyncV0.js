@@ -9,6 +9,7 @@ import { listCastleChronicleV0 } from "./castleChronicleV0.js";
 import { listGhostMemoryForCloudSyncV0 } from "./ghostMemoryPersistenceV0.js";
 import { listRhizohKnowledgeV0 } from "./rhizohKnowledgeStoreV0.js";
 import { listRhizohOpeningBookV0 } from "./rhizohOpeningBookV0.js";
+import { readChessCivilizationV0 } from "./chessCivilizationV0.js";
 import {
   publishTowerLiveStatusV0,
   setRhizohTowerSyncActiveV0
@@ -82,7 +83,8 @@ export async function pushCastleCloudSyncV0(opts = {}) {
         castleIdentity: livingPatch.castleIdentity || readCastleIdentityV0(),
         chronicle: livingPatch.chronicle || listCastleChronicleV0(),
         knowledge: listRhizohKnowledgeV0(),
-        openingBook: listRhizohOpeningBookV0()
+        openingBook: listRhizohOpeningBookV0(),
+        chessCivilization: readChessCivilizationV0()
       })
     });
     const json = await res.json();

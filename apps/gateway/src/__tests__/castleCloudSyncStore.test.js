@@ -78,8 +78,9 @@ describe("castleCloudSyncStore", () => {
           key: "b20",
           name: "Sicilian Defense",
           eco: "B20",
-          playedCount: 2,
-          winCount: 1
+          games: 2,
+          wins: 1,
+          losses: 1
         }
       ]
     });
@@ -89,16 +90,38 @@ describe("castleCloudSyncStore", () => {
           key: "b20",
           name: "Sicilian Defense",
           eco: "B20",
-          playedCount: 1,
-          winCount: 0,
-          lessons: [{ title: "Move 17 critical error" }]
+          games: 1,
+          wins: 0,
+          losses: 1
         }
       ]
     });
     const snap = await getCloudSyncSnapshotV0(uid);
     assert.equal(snap.openingBook.length, 1);
-    assert.equal(snap.openingBook[0].playedCount, 2);
-    assert.equal(snap.openingBook[0].winCount, 1);
-    assert.equal(snap.openingBook[0].lessons[0].title, "Move 17 critical error");
+    assert.equal(snap.openingBook[0].games, 2);
+    assert.equal(snap.openingBook[0].wins, 1);
+    assert.equal(snap.openingBook[0].losses, 1);
+  });
+
+  it("merges chess civilization profile", async () => {
+    await resetCloudSyncStoreForTestV0();
+    const uid = "chess-civ-user";
+    await mergeCloudSyncSnapshotV0(uid, {
+      chessCivilization: {
+        castleId: "castle_a",
+        elo: 1212,
+        rivals: [{ castleId: "castle_b", matches: 2, wins: 1, losses: 1 }]
+      }
+    });
+    await mergeCloudSyncSnapshotV0(uid, {
+      chessCivilization: {
+        castleId: "castle_a",
+        elo: 1220,
+        rivals: [{ castleId: "castle_b", matches: 1, wins: 0, losses: 1 }]
+      }
+    });
+    const snap = await getCloudSyncSnapshotV0(uid);
+    assert.equal(snap.chessCivilization.elo, 1220);
+    assert.equal(snap.chessCivilization.rivals[0].matches, 2);
   });
 });
