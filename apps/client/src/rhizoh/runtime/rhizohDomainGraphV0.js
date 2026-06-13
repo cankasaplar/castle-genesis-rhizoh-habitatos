@@ -4,6 +4,7 @@
  */
 
 import { RHIZOH_DOMAIN_ID_V0 } from "./rhizohDomainCoreStoreV0.js";
+import { publishRhizohKernelTraceGlobalV0 } from "./rhizohKernelTraceMembraneV0.js";
 
 export const RHIZOH_DOMAIN_GRAPH_SCHEMA_V0 = "rhizoh.domain_graph.v0";
 
@@ -227,7 +228,7 @@ export function auditCrossDomainDrawerV0(hostNode, surfaceId) {
 export function setActiveFederationOverlayNodeV0(overlayNode) {
   activeOverlayNodeV0 = overlayNode ? String(overlayNode) : null;
   if (typeof window !== "undefined") {
-    window.__RHIZOH_DOMAIN_GRAPH__ = getDomainGraphSnapshotV0();
+    publishRhizohKernelTraceGlobalV0("__RHIZOH_DOMAIN_GRAPH__", getDomainGraphSnapshotV0());
   }
 }
 

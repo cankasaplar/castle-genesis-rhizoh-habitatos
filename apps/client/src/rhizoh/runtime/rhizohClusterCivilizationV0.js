@@ -19,22 +19,26 @@ import {
   RHIZOH_INTENT_DRIFT_SCHEMA_V0
 } from "./rhizohIntentDriftGuardV0.js";
 
+import {
+  RHIZOH_CLUSTER_DRIFT_POLL_MS_V0
+} from "./rhizohClusterEcologyLockV0.js";
+import {
+  dispatchRhizohKernelTraceEventV0,
+  publishRhizohKernelTraceGlobalV0
+} from "./rhizohKernelTraceMembraneV0.js";
+
 export const RHIZOH_CLUSTER_CIVILIZATION_SCHEMA_V0 = "rhizoh.cluster_civilization.v0";
 export const RHIZOH_CLUSTER_CIVILIZATION_EVENT_V0 = "rhizoh:cluster-civilization-profile-v0";
 
-const CLUSTER_DRIFT_POLL_MS_V0 = 30_000;
+const CLUSTER_DRIFT_POLL_MS_V0 = RHIZOH_CLUSTER_DRIFT_POLL_MS_V0;
 
 /** @type {ReturnType<typeof setInterval> | null} */
 let driftPollHandleV0 = null;
 
 function emitCivilizationProfileV0(profile) {
   if (typeof window === "undefined") return;
-  window.__RHIZOH_CLUSTER_CIVILIZATION__ = profile;
-  try {
-    window.dispatchEvent(new CustomEvent(RHIZOH_CLUSTER_CIVILIZATION_EVENT_V0, { detail: profile }));
-  } catch {
-    /* noop */
-  }
+  publishRhizohKernelTraceGlobalV0("__RHIZOH_CLUSTER_CIVILIZATION__", profile);
+  dispatchRhizohKernelTraceEventV0(RHIZOH_CLUSTER_CIVILIZATION_EVENT_V0, profile);
 }
 
 /**

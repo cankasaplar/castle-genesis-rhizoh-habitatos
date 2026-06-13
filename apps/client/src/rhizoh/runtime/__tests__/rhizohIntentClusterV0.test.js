@@ -103,4 +103,12 @@ describe("rhizohIntentClusterV0", () => {
     expect(ecology.dominantNode).toBe(RHIZOH_FEDERATION_NODE_V0.MEDIA);
     expect(ecology.intentCount).toBe(3);
   });
+
+  it("uses lexicographic tiebreak for equal node weights", () => {
+    const ecology = evolveClusterEcologyFromIntentsV0([
+      { overlayNode: RHIZOH_FEDERATION_NODE_V0.STUDIO, exportSensitive: false, perceptionSensitive: false },
+      { overlayNode: RHIZOH_FEDERATION_NODE_V0.BROADCAST, exportSensitive: false, perceptionSensitive: false }
+    ]);
+    expect(ecology.dominantNode).toBe(RHIZOH_FEDERATION_NODE_V0.BROADCAST);
+  });
 });
