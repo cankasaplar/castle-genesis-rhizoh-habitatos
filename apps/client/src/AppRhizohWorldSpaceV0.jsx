@@ -246,7 +246,8 @@ export default function AppRhizohWorldSpaceV0() {
           Object.freeze({
             node: detail.node,
             title: detail.node.name || detail.node.label,
-            source: "map_orchestrator"
+            source: `map:node:${detail.node?.id || "unknown"}`,
+            initialChannelId: detail.initialChannelId
           })
         );
         setV11Workspace(null);

@@ -4,6 +4,7 @@ import {
   CASTLE_GENESIS_LIVE_PAGE_V0,
   listWorldSpaceMediaChannelsV0,
   resolveInitialWorldSpaceMediaChannelIdV0,
+  resolveWorldSpaceMediaChannelForMapNodeV0,
   resolveWorldSpaceMediaChannelV0
 } from "../worldSpaceMediaChannelsV0.js";
 
@@ -19,7 +20,17 @@ describe("worldSpaceMediaChannelsV0", () => {
 
   it("resolves initial channel by source", () => {
     expect(resolveInitialWorldSpaceMediaChannelIdV0("castle_init_map")).toBe("castle_genesis");
-    expect(resolveInitialWorldSpaceMediaChannelIdV0("map_orchestrator")).toBe("nasa");
+    expect(resolveInitialWorldSpaceMediaChannelIdV0("map:node:event")).toBe("nasa");
+    expect(resolveInitialWorldSpaceMediaChannelIdV0("map:node:radio")).toBe("lofi");
+    expect(resolveInitialWorldSpaceMediaChannelIdV0("map:node:my_castle")).toBe("castle_genesis");
+  });
+
+  it("maps sovereign pins to distinct media channels", () => {
+    expect(resolveWorldSpaceMediaChannelForMapNodeV0({ id: "my_castle", type: "castle" })).toBe(
+      "castle_genesis"
+    );
+    expect(resolveWorldSpaceMediaChannelForMapNodeV0({ id: "event", type: "zone" })).toBe("nasa");
+    expect(resolveWorldSpaceMediaChannelForMapNodeV0({ id: "radio", type: "broadcast" })).toBe("lofi");
   });
 
   it("castle genesis links to live page", () => {

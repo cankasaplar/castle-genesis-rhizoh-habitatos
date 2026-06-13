@@ -23,7 +23,7 @@ describe("symbyoMapIntentBridgeV0", () => {
     expect(routed.intent.intent).toBe(SYMBYO_MAP_INTENT_TYPE_V0.ENTER_NODE);
     expect(routed.intent.nodeId).toMatch(/^[0-9a-f]{8}$/);
     expect(routed.intent.context).toBe("map:castle:click");
-    expect(routed.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER);
+    expect(routed.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.ENTER_CASTLE);
     expect(routed.normalizedDecision.refs.every((ref) => ref.startsWith("ptr_"))).toBe(true);
     expect(routed.sideEffects).toEqual([]);
     expect(JSON.stringify(routed)).not.toContain("Human label");
@@ -53,5 +53,25 @@ describe("symbyoMapIntentBridgeV0", () => {
       node: { id: "claude_tower", type: "tower" }
     });
     expect(routed.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER);
+  });
+
+  it("routes map pins to distinct media decisions", () => {
+    const myCastle = routeSymbyoMapInteractionToOrchestratorV0({
+      interaction: "click",
+      node: { id: "my_castle", type: "castle" }
+    });
+    expect(myCastle.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER);
+
+    const event = routeSymbyoMapInteractionToOrchestratorV0({
+      interaction: "click",
+      node: { id: "event", type: "zone" }
+    });
+    expect(event.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER);
+
+    const radio = routeSymbyoMapInteractionToOrchestratorV0({
+      interaction: "click",
+      node: { id: "radio", type: "broadcast" }
+    });
+    expect(radio.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER);
   });
 });

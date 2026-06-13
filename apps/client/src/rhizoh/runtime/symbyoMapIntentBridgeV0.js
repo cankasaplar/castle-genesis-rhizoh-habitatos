@@ -110,7 +110,7 @@ export function normalizeSymbyoMapDecisionV0(action, confidence, refs = []) {
   });
 }
 
-export function resolveSymbyoMapIntentDecisionV0(intent = {}, surface = {}) {
+export function resolveSymbyoMapIntentDecisionV0(intent = {}, surface = {}, node = {}) {
   const refs = [
     surface.entityRef,
     createRhizohPayloadRefV0(`${intent.nodeId}:${intent.intent}:${intent.context}`),
@@ -118,6 +118,8 @@ export function resolveSymbyoMapIntentDecisionV0(intent = {}, surface = {}) {
   ];
   const caps = new Set((surface.capabilities || []).map((cap) => String(cap || "").toLowerCase()));
   const hasCapability = (name) => caps.has(String(name || "").toLowerCase());
+  const nodeId = String(node.id || "").trim().toLowerCase();
+  const nodeType = String(surface.nodeType || node.type || "").toLowerCase();
 
   if (intent.intent === SYMBYO_MAP_INTENT_TYPE_V0.PREVIEW_NODE) {
     return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.LOAD_WORLD_NODE, 0.72, refs);
@@ -126,15 +128,20 @@ export function resolveSymbyoMapIntentDecisionV0(intent = {}, surface = {}) {
     return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.LOAD_WORLD_NODE, 0.78, refs);
   }
   if (intent.intent === SYMBYO_MAP_INTENT_TYPE_V0.ENTER_NODE) {
-    const nodeType = String(surface.nodeType || "");
-    if (nodeType === "tower" || hasCapability("3d")) {
-      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER, 0.84, refs);
-    }
-    if (nodeType === "broadcast" || nodeType === "zone" || nodeType === "hub" || hasCapability("media")) {
-      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER, 0.86, refs);
+    if (nodeId === "my_castle") {
+      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER, 0.9, refs);
     }
     if (nodeType === "castle") {
       return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.ENTER_CASTLE, 0.8, refs);
+    }
+    if (nodeType === "tower" || hasCapability("3d")) {
+      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER, 0.84, refs);
+    }
+    if (nodeType === "broadcast" || nodeType === "zone" || nodeType === "hub") {
+      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER, 0.86, refs);
+    }
+    if (hasCapability("media")) {
+      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER, 0.82, refs);
     }
     if (nodeType === "portal" || hasCapability("voice")) {
       return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.ATTACH_VOICE_STREAM, 0.74, refs);
@@ -147,7 +154,7 @@ export function resolveSymbyoMapIntentDecisionV0(intent = {}, surface = {}) {
 export function routeSymbyoMapInteractionToOrchestratorV0(input = {}) {
   const surface = normalizeSymbyoMapNodeSurfaceV0(input.node || {});
   const intent = createSymbyoMapIntentV0(input);
-  const normalizedDecision = resolveSymbyoMapIntentDecisionV0(intent, surface);
+  const normalizedDecision = resolveSymbyoMapIntentDecisionV0(intent, surface, input.node || {});
   return Object.freeze({
     schema: SYMBYO_MAP_INTENT_BRIDGE_SCHEMA_V0,
     intent,
