@@ -87,6 +87,7 @@ import {
 } from "./rhizoh/runtime/remoteCastleMapVisibilityV0.js";
 import { bootCastleC2cSignalingV0, disposeCastleC2cTransportV0 } from "./castleSocial/castleC2cWebRtcTransportV0.js";
 import { bootLivingCastleMemoryV0 } from "./rhizoh/runtime/livingCastleMemoryV0.js";
+import { bootRhizohLearningCoreV0 } from "./rhizoh/runtime/rhizohLearningCoreBootV0.js";
 import {
   disposeCastleMemoryHooksV0,
   installCastleMemoryHooksV0
@@ -198,6 +199,7 @@ export default function AppRhizohWorldSpaceV0() {
       userId: uid,
       founder: castleAuth?.user?.displayName || uid.slice(0, 8)
     });
+    bootRhizohLearningCoreV0({ userId: uid });
     installCastleMemoryHooksV0(uid);
     return () => {
       disposeCastleC2cTransportV0();

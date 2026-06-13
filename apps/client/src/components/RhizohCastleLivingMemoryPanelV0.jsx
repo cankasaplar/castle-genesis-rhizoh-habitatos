@@ -11,6 +11,7 @@ import {
   GHOST_MEMORY_EVENT_V0,
   readGhostMemoryV0
 } from "../rhizoh/runtime/ghostMemoryPersistenceV0.js";
+import { listRhizohKnowledgeV0 } from "../rhizoh/runtime/rhizohKnowledgeStoreV0.js";
 
 function subscribeIdentity(cb) {
   if (typeof window === "undefined") return () => {};
@@ -57,6 +58,7 @@ export const RhizohCastleLivingMemoryPanelV0 = memo(function RhizohCastleLivingM
   const identity = readCastleIdentityV0();
   const chronicle = useMemo(() => listCastleChronicleV0({ limit: 24 }), [chronicleTick, open]);
   const ghost = readGhostMemoryV0();
+  const knowledgeCount = listRhizohKnowledgeV0().length;
 
   if (!open) return null;
 
@@ -137,7 +139,8 @@ export const RhizohCastleLivingMemoryPanelV0 = memo(function RhizohCastleLivingM
             </p>
             <p className="mt-1 text-[10px] text-white/55">
               {ghost.memories?.length || 0} {tr ? "anı" : "memories"} ·{" "}
-              {ghost.relationships?.length || 0} {tr ? "ilişki" : "relationships"}
+              {ghost.relationships?.length || 0} {tr ? "ilişki" : "relationships"} · {knowledgeCount}{" "}
+              {tr ? "bilgi" : "knowledge"}
             </p>
           </div>
         ) : null}

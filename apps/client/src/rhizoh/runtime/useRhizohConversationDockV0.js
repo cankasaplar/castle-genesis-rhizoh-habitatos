@@ -28,6 +28,7 @@ import { stampVoiceUserGestureV0 } from "./voiceUserGestureAnchorV0.js";
 export function useRhizohConversationDockV0(opts = {}) {
   const [fieldState, setFieldState] = useState(/** @type {RhizohConversationFieldState} */ ("idle"));
   const [lastReply, setLastReply] = useState("");
+  const [lastReplySource, setLastReplySource] = useState("");
   const [lastError, setLastError] = useState("");
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -71,6 +72,7 @@ export function useRhizohConversationDockV0(opts = {}) {
       });
       if (localTurn?.ok && localTurn.llmBypass) {
         setLastReply(localTurn.reply || "");
+        setLastReplySource(String(localTurn.source || "local"));
         setFieldState("speaking");
         const glue = buildConversationContinuityGlueV0({ llmWaitMs: Date.now() - t0 });
         await handoffHotSpeechToLlmReplyV0(glue, () => {
@@ -102,6 +104,7 @@ export function useRhizohConversationDockV0(opts = {}) {
       });
       if (out.ok && out.reply) {
         setLastReply(out.reply);
+        setLastReplySource(String(out.source || "teacher"));
         setFieldState("speaking");
         await handoffHotSpeechToLlmReplyV0(glue, () => {
           void speakRhizohReplyChunkedV0(out.reply, { smoothAfterAck: false, glue });
@@ -157,6 +160,7 @@ export function useRhizohConversationDockV0(opts = {}) {
       });
       if (localTurn?.ok && localTurn.llmBypass) {
         setLastReply(localTurn.reply || "");
+        setLastReplySource(String(localTurn.source || "local"));
         setDraft("");
         setFieldState("speaking");
         const glue = buildConversationContinuityGlueV0({ llmWaitMs: Date.now() - t0 });
@@ -185,6 +189,7 @@ export function useRhizohConversationDockV0(opts = {}) {
       });
       if (out.ok && out.reply) {
         setLastReply(out.reply);
+        setLastReplySource(String(out.source || "teacher"));
         setDraft("");
         setFieldState("speaking");
         const glue = buildConversationContinuityGlueV0({ prep: out.prep, llmWaitMs: Date.now() - t0 });
@@ -221,6 +226,7 @@ export function useRhizohConversationDockV0(opts = {}) {
     setDraft,
     busy,
     lastReply,
+    lastReplySource,
     lastError,
     lastContextEnvelope,
     sendText,

@@ -9,7 +9,7 @@ import path from "node:path";
 const DATA_DIR = process.env.CASTLE_CLOUD_SYNC_DIR || path.join(process.cwd(), "data", "cloud-sync");
 const FILE_NAME = "castle_cloud_sync_v0.json";
 
-/** @type {Record<string, { entities: object[], events: object[], ghostMemory: object[], codex: object[], castleIdentity: object | null, chronicle: object[], updatedAt: string }>} */
+/** @type {Record<string, { entities: object[], events: object[], ghostMemory: object[], codex: object[], castleIdentity: object | null, chronicle: object[], knowledge: object[], updatedAt: string }>} */
 let cache = null;
 
 async function ensureLoaded() {
@@ -41,6 +41,7 @@ function bucketForUid(uid) {
       codex: [],
       castleIdentity: null,
       chronicle: [],
+      knowledge: [],
       updatedAt: new Date().toISOString()
     };
   }
@@ -62,13 +63,14 @@ export async function getCloudSyncSnapshotV0(uid) {
     codex: Object.freeze((bucket.codex || []).map((e) => Object.freeze({ ...e }))),
     castleIdentity: bucket.castleIdentity ? Object.freeze({ ...bucket.castleIdentity }) : null,
     chronicle: Object.freeze((bucket.chronicle || []).map((e) => Object.freeze({ ...e }))),
+    knowledge: Object.freeze((bucket.knowledge || []).map((e) => Object.freeze({ ...e }))),
     updatedAt: bucket.updatedAt
   });
 }
 
 /**
  * @param {string} uid
- * @param {{ entities?: object[], ghostMemory?: object[], codex?: object[], events?: object[], castleIdentity?: object, chronicle?: object[] }} patch
+ * @param {{ entities?: object[], ghostMemory?: object[], codex?: object[], events?: object[], castleIdentity?: object, chronicle?: object[], knowledge?: object[] }} patch
  */
 export async function mergeCloudSyncSnapshotV0(uid, patch = {}) {
   await ensureLoaded();
@@ -134,6 +136,16 @@ export async function mergeCloudSyncSnapshotV0(uid, patch = {}) {
     bucket.chronicle = [...byId.values()]
       .sort((a, b) => String(a.ts).localeCompare(String(b.ts)))
       .slice(-512);
+  }
+
+  if (Array.isArray(patch.knowledge)) {
+    const byNorm = new Map((bucket.knowledge || []).map((e) => [e.questionNorm || e.id, e]));
+    for (const row of patch.knowledge) {
+      const key = row?.questionNorm || row?.id;
+      if (!key) continue;
+      byNorm.set(key, { ...byNorm.get(key), ...row, syncedAt: now });
+    }
+    bucket.knowledge = [...byNorm.values()].slice(0, 512);
   }
 
   bucket.updatedAt = now;

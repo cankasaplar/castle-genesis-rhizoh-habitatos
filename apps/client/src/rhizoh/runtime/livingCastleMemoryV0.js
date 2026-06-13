@@ -63,6 +63,7 @@ export function hydrateLivingCastleMemoryFromCloudV0(snapshot = {}) {
   if (snapshot.castleIdentity) mergeCastleIdentityFromCloudV0(snapshot.castleIdentity);
   if (Array.isArray(snapshot.ghostMemory)) mergeGhostMemoryFromCloudV0(snapshot.ghostMemory);
   if (Array.isArray(snapshot.chronicle)) mergeCastleChronicleFromCloudV0(snapshot.chronicle);
+  if (Array.isArray(snapshot.knowledge)) mergeRhizohKnowledgeFromCloudV0(snapshot.knowledge);
   if (Array.isArray(snapshot.entities) || Array.isArray(snapshot.events)) {
     importCastleArchiveEntitiesFromCloudV0(snapshot);
   }
