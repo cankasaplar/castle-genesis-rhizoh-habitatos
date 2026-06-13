@@ -247,6 +247,33 @@ export function listSovereignWorldMapNodesV0() {
 }
 
 /**
+ * Map-visible nodes — no demo castle hub until user anchors; optional user castle pin.
+ * @param {{ userCastle?: { lat: number, lon: number, label?: string } | null }} [opts]
+ */
+export function listSovereignWorldMapNodesForViewV0(opts = {}) {
+  const core = SOVEREIGN_CORE_NODES_V0.filter((n) => n.id !== "castle");
+  /** @type {object[]} */
+  const rows = [...core, ...SOVEREIGN_TOWERS_V0, SOVEREIGN_RHIZOH_PORTAL_V0];
+  const userCastle = opts.userCastle;
+  if (userCastle && Number.isFinite(userCastle.lat) && Number.isFinite(userCastle.lon)) {
+    rows.unshift(
+      Object.freeze({
+        id: "my_castle",
+        name: String(userCastle.label || "My Castle"),
+        label: "MY CASTLE",
+        type: "castle",
+        lat: Number(userCastle.lat),
+        lon: Number(userCastle.lon),
+        color: "#22c55e",
+        owner: "You",
+        description: "Senin castle anchor noktan — kale kur ritüeli ile oluşturuldu."
+      })
+    );
+  }
+  return Object.freeze(rows);
+}
+
+/**
  * Tower graph edges for Leaflet polylines (archive SovereignGraph).
  * @returns {ReadonlyArray<{ source: string, target: string }>}
  */

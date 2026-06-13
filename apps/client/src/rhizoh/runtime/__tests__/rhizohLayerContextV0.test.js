@@ -83,19 +83,26 @@ describe("rhizohLayerContextV0", () => {
     expect(shouldMountRhizohWorldSpaceMapEngineV0({ pathname: "/world/space" })).toBe(true);
   });
 
-  it("world space cesium gate ignores T0 drawer blockers", () => {
+  it("world space cesium gate — v11 leaflet default, 3D opt-in only", () => {
     expect(
       resolveRhizohWorldSpaceCesiumActiveV0({
         mapSurfaceActive: true,
         pathname: "/world/space",
         mapTool: "city_map"
       })
-    ).toBe(true);
+    ).toBe(false);
     expect(
       resolveRhizohWorldSpaceCesiumActiveV0({
         mapSurfaceActive: true,
         pathname: "/world/space",
         mapTool: "globe"
+      })
+    ).toBe(false);
+    expect(
+      resolveRhizohWorldSpaceCesiumActiveV0({
+        mapSurfaceActive: true,
+        pathname: "/world/space",
+        mapTool: "anchor_map"
       })
     ).toBe(true);
     expect(
@@ -107,7 +114,7 @@ describe("rhizohLayerContextV0", () => {
         openProductDrawerId: "profile",
         detailDrawerOpen: true
       })
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("cesium layer only on world space with REAL_MAP and non-globe tool", () => {
@@ -118,13 +125,13 @@ describe("rhizohLayerContextV0", () => {
         pathname: "/world/space",
         mapTool: "city_map"
       })
-    ).toBe(true);
+    ).toBe(false);
     expect(
       resolveRhizohCesiumLayerActiveV0({
         mapSurfaceActive: true,
         realityMode: "REAL_MAP",
         pathname: "/world/space",
-        mapTool: "globe"
+        mapTool: "anchor_map"
       })
     ).toBe(true);
     expect(

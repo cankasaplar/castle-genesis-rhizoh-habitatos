@@ -97,7 +97,7 @@ export const CastleInitiationGateV0 = memo(function CastleInitiationGateV0({
             onClick={() => run("map", () => executeCastleInitMapPickV0(deps))}
           >
             <span className="text-[10px] font-bold text-amber-100">📍 Harita üzerinde seç</span>
-            <span className="block text-[9px] text-white/50 mt-0.5">REAL_MAP açılır · tek tık = pin</span>
+            <span className="block text-[9px] text-white/50 mt-0.5">v11 harita · tek tık = castle anchor</span>
           </button>
 
           <button

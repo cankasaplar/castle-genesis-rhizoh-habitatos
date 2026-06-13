@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   dispatchSovereignVoiceWarpV0,
+  listSovereignWorldMapNodesForViewV0,
   parseSovereignVoiceWarpCommandV0,
   RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1,
   SOVEREIGN_TOWER_GRAPH_EDGES_V0,
@@ -24,6 +25,16 @@ describe("sovereignWorldMapNodesV0", () => {
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "event")).toBe(true);
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "gemini_tower")).toBe(true);
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "rhizoh_portal")).toBe(true);
+  });
+
+  it("hides demo castle hub until user anchors", () => {
+    const withoutUser = listSovereignWorldMapNodesForViewV0();
+    expect(withoutUser.some((n) => n.id === "castle")).toBe(false);
+    expect(withoutUser.some((n) => n.id === "my_castle")).toBe(false);
+    const withUser = listSovereignWorldMapNodesForViewV0({
+      userCastle: { lat: 41.01, lon: 28.99, label: "Test Castle" }
+    });
+    expect(withUser.some((n) => n.id === "my_castle")).toBe(true);
   });
 
   it("builds tower graph edges", () => {
