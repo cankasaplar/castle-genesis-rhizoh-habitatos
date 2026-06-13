@@ -53,13 +53,50 @@ let drawerTransitionQueueV0 = Promise.resolve();
 /** @type {number} */
 let drawerTransitionSeqV0 = 0;
 
-export function getDrawerStateSnapshotV0() {
-  return Object.freeze({
+/** Referentially stable snapshot — required for useSyncExternalStore (#185 guard). */
+/** @type {ReturnType<typeof buildDrawerStateSnapshotV0> | null} */
+let cachedDrawerStateSnapshotV0 = null;
+/** @type {string} */
+let cachedDrawerStateKeyV0 = "";
+
+/**
+ * @param {Record<string, boolean>} panels
+ * @param {string | null} openDrawerId
+ * @param {ReadonlyArray<string>} awakenedModules
+ */
+function drawerStateCacheKeyV0(panels, openDrawerId, awakenedModules) {
+  const panelBits = RHIZOH_PRODUCT_SURFACE_PANEL_IDS_V0.map((id) => (panels[id] ? "1" : "0")).join(
+    ""
+  );
+  return `${openDrawerId || ""}|${panelBits}|${awakenedModules.join(",")}`;
+}
+
+function buildDrawerStateSnapshotV0() {
+  const panels = getRhizohChromePanelsSnapshotV0();
+  const openDrawerId = resolveOpenProductSurfaceDrawerIdV0();
+  const awakenedModules = listAwakenedDrawerModulesV0();
+  const key = drawerStateCacheKeyV0(panels, openDrawerId, awakenedModules);
+  if (key === cachedDrawerStateKeyV0 && cachedDrawerStateSnapshotV0) {
+    return cachedDrawerStateSnapshotV0;
+  }
+  cachedDrawerStateKeyV0 = key;
+  cachedDrawerStateSnapshotV0 = Object.freeze({
     schema: RHIZOH_DRAWER_STATE_MACHINE_SCHEMA_V0,
-    panels: getRhizohChromePanelsSnapshotV0(),
-    openDrawerId: resolveOpenProductSurfaceDrawerIdV0(),
-    awakenedModules: listAwakenedDrawerModulesV0()
+    panels,
+    openDrawerId,
+    awakenedModules
   });
+  return cachedDrawerStateSnapshotV0;
+}
+
+export function getDrawerStateSnapshotV0() {
+  return buildDrawerStateSnapshotV0();
+}
+
+/** @internal test reset */
+export function __resetDrawerStateSnapshotCacheForTestV0() {
+  cachedDrawerStateSnapshotV0 = null;
+  cachedDrawerStateKeyV0 = "";
 }
 
 /** @param {() => void} onChange */
