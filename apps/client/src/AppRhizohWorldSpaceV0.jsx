@@ -2,7 +2,7 @@
  * World · Space — dedicated map boot (no AppRhizoh528T0 / ApexEngine / fox stage).
  * @see docs/RHIZOH_WORLD_SURFACE_HIERARCHY_V0.md
  */
-import React, { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useNavigate } from "react-router-dom";
 import "./castleFlight/registerGlobals.js";
 import { useCastleAuth } from "./firebase/useCastleAuth.js";
@@ -73,6 +73,8 @@ import { RhizohChessArenaWorkspaceV0 } from "./components/RhizohChessArenaWorksp
 import { RhizohTowerPortalDiscoveryV0 } from "./components/RhizohTowerPortalDiscoveryV0.jsx";
 import { RhizohCastleLivingMemoryPanelV0 } from "./components/RhizohCastleLivingMemoryPanelV0.jsx";
 import { RhizohWorldSpaceMediaTubeV0 } from "./components/RhizohWorldSpaceMediaTubeV0.jsx";
+import { RhizohProductSurfaceDrawerV0 } from "./components/RhizohProductSurfaceDrawerV0.jsx";
+import { getGenesisProtocolGatewayOrigin } from "./castleFlight/castleFlightConfig.js";
 import { CASTLE_ARCHIVE_OPEN_MEDIA_EVENT_V0 } from "./rhizoh/runtime/castleArchiveVaultV0.js";
 import { RhizohWorldSpaceC2cPanelV0 } from "./components/RhizohWorldSpaceC2cPanelV0.jsx";
 import {
@@ -96,6 +98,16 @@ import {
   completeCastleInitFromMapAnchorV0,
   installCastleInitMapPickListenerV0
 } from "./castleFlight/castleInitiationProtocolV0.js";
+import {
+  applyDrawerDomainTagsV0,
+  bootDrawerStateMachineV0,
+  closeProductSurfaceDrawerV0,
+  DRAWER_SHELL_ACTION_V0,
+  getDrawerStateSnapshotV0,
+  handleProductShellSelectV0,
+  resolveDrawerDomainTagsV0,
+  subscribeDrawerStateV0
+} from "./rhizoh/runtime/rhizohDrawerStateMachineV0.js";
 
 export default function AppRhizohWorldSpaceV0() {
   const navigate = useNavigate();
@@ -487,17 +499,48 @@ export default function AppRhizohWorldSpaceV0() {
     });
   }, []);
 
+  const appRootRef = useRef(null);
+
   const onProductShellSelect = useCallback(
     (id) => {
-      const surface = String(id || "world");
-      if (surface === "world") {
-        navigate("/world/space");
-        return;
+      const result = handleProductShellSelectV0(id, {
+        pathname: "/world/space",
+        inPlace: true,
+        worldPath: "/world/space"
+      });
+      if (result.action === DRAWER_SHELL_ACTION_V0.NAVIGATE) {
+        navigate(resolveRhizohProductPathV0(result.surface));
+      } else if (result.navigateTo) {
+        navigate(result.navigateTo);
       }
-      navigate(resolveRhizohProductPathV0(surface));
+      applyDrawerDomainTagsV0(appRootRef.current, result.tags);
     },
     [navigate]
   );
+
+  const drawerStateV0 = useSyncExternalStore(
+    subscribeDrawerStateV0,
+    getDrawerStateSnapshotV0,
+    getDrawerStateSnapshotV0
+  );
+  const chromePanelsV0 = drawerStateV0.panels;
+  const openSurfaceDrawerIdV0 = drawerStateV0.openDrawerId;
+
+  const onCloseSurfaceDrawerV0 = useCallback(() => {
+    closeProductSurfaceDrawerV0();
+  }, []);
+
+  useEffect(() => {
+    const tags = resolveDrawerDomainTagsV0(openSurfaceDrawerIdV0, {
+      pathname: "/world/space",
+      surfaceId: openSurfaceDrawerIdV0 || "world"
+    });
+    applyDrawerDomainTagsV0(appRootRef.current, tags);
+  }, [openSurfaceDrawerIdV0, chromePanelsV0]);
+
+  useEffect(() => {
+    bootDrawerStateMachineV0();
+  }, []);
 
   const onLibrarySeedIntentV0 = useCallback(() => {
     try {
@@ -521,10 +564,12 @@ export default function AppRhizohWorldSpaceV0() {
   }, [uiLocale]);
 
   const mapStripBottomCssV0 = resolveRhizohWorldSpaceMapStripBottomCssV0();
+  const voiceDockBottomCssV0 = resolveRhizohWorldSpaceVoiceDockBottomCssV0();
   const bootstrapPlaceLabelV0 = resolveWorldMapBootstrapGeoV0().label;
 
   return (
     <div
+      ref={appRootRef}
       className="fixed inset-0 overflow-hidden bg-[#010103] text-white"
       data-rhizoh-world-space-app="1"
       data-cesium-active={cesiumLayerActiveV0 ? "1" : "0"}
@@ -568,7 +613,23 @@ export default function AppRhizohWorldSpaceV0() {
         </div>
       </div>
 
-      <UnifiedProductShellBar active="world" onSelect={onProductShellSelect} uiLocale={uiLocale} />
+      <UnifiedProductShellBar
+        active="world"
+        panelOpen={chromePanelsV0}
+        onSelect={onProductShellSelect}
+        uiLocale={uiLocale}
+      />
+
+      {openSurfaceDrawerIdV0 ? (
+        <RhizohProductSurfaceDrawerV0
+          surface={openSurfaceDrawerIdV0}
+          open
+          onClose={onCloseSurfaceDrawerV0}
+          auth={castleAuth}
+          gatewayOrigin={getGenesisProtocolGatewayOrigin()}
+          uiLocale={uiLocale}
+        />
+      ) : null}
 
       {castleAuth.needsAuthGate || castleAuth.needsOnboarding ? (
         <CastleAuthOverlay auth={castleAuth} />
