@@ -39,11 +39,16 @@ export const RhizohTowerVoiceChatV0 = memo(function RhizohTowerVoiceChatV0({
           imageDataUrl: visionRef.current,
           idToken
         });
+        const errCode = String(turn?.gatewayError || turn?.error || "");
         const reply = turn?.ok
           ? String(turn.reply || "").trim()
-          : tr
-            ? "Kule yanıt veremedi — gateway bağlantısını kontrol et."
-            : "Tower could not reply — check gateway connection.";
+          : errCode.includes("missing_api_key") || errCode.includes("server_llm_key_missing")
+            ? tr
+              ? "Bu kule için API anahtarı henüz gateway'de tanımlı değil — ileride eklenecek."
+              : "API key for this tower is not configured on the gateway yet."
+            : tr
+              ? "Kule yanıt veremedi — gateway bağlantısını kontrol et."
+              : "Tower could not reply — check gateway connection.";
         setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
         void speakRhizohReplyChunkedV0(reply, {
           smoothAfterAck: false,
