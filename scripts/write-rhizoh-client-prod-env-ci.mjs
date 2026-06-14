@@ -37,3 +37,8 @@ if (written === 0) {
 mkdirSync(dirname(envPath), { recursive: true });
 writeFileSync(envPath, `${lines.join("\n")}\n`, "utf8");
 console.log(`[rhizoh-prod-env] Wrote apps/client/.env.production (${written} keys, spatial-main profile)`);
+if (!String(process.env.VITE_CESIUM_ION_TOKEN || "").trim()) {
+  console.warn(
+    "[rhizoh-prod-env] WARN: VITE_CESIUM_ION_TOKEN missing — prod World map stays cesium:pending until GitHub secret is set and redeployed (see docs/ops/CESIUM_ION_CLOUDFLARE_FOUNDER_RUNBOOK_V1.0.md)"
+  );
+}

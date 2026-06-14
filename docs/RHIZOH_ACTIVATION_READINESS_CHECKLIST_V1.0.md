@@ -21,6 +21,8 @@ Report: `docs/exports/ops/activation_readiness_v1.0.json`
 
 **Manual evidence runbook:** [`docs/ops/ACTIVATION_MANUAL_EVIDENCE_RUNBOOK_V1.0.md`](ops/ACTIVATION_MANUAL_EVIDENCE_RUNBOOK_V1.0.md) · `npm run activation:collect-evidence`
 
+**Cesium Ion + Cloudflare (founder, no terminal):** [`docs/ops/CESIUM_ION_CLOUDFLARE_FOUNDER_RUNBOOK_V1.0.md`](ops/CESIUM_ION_CLOUDFLARE_FOUNDER_RUNBOOK_V1.0.md)
+
 ---
 
 ## 0. Operasyonel karar (insan gate — teknik değil)
