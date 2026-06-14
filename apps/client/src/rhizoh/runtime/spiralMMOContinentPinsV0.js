@@ -1,7 +1,8 @@
 /**
- * SpiralMMO continent anchors — one monochrome neon spiral pin per continent (v0 visual only).
- * Capabilities / gameplay wiring deferred.
+ * SpiralMMO continent anchors — kanagawa mini-cube map pins (v0 visual only).
  */
+
+import { spiralMMOKanagawaPinCubeHtmlV0 } from "./spiralMMOKanagawaPinCubeV0.js";
 
 export const RHIZOH_SPIRAL_MMO_CONTINENT_PIN_SCHEMA_V0 = "rhizoh.spiral_mmo_continent_pin.v0";
 
@@ -49,33 +50,23 @@ export const RHIZOH_SPIRAL_MMO_CONTINENT_PINS_V0 = Object.freeze(
       continent,
       lat: coords.lat,
       lon: coords.lon,
-      color: "#ffffff",
+      color: "#ffcc00",
       owner: "SpiralMMO",
-      description:
-        "Monochrome spiral continent node — capabilities and gameplay hooks ship in a later pass.",
+      description: "",
       capabilities: Object.freeze([])
     });
   })
 );
 
-let spiralPinStylesInstalled = false;
-
 export const RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0 = Object.freeze({
-  sizePx: 38,
-  center: 19,
-  ringRadius: 17,
-  ringStroke: 1.5,
-  spiralStroke: 1.35,
+  sizePx: 26,
   spiralTurns: 3.25,
   spiralOuterRadius: 16.85,
   spiralInnerRadius: 0.55
 });
 
 /**
- * Logarithmic whirlpool path — starts on the outer ring and winds to center.
- * @param {number} cx
- * @param {number} cy
- * @param {{ turns?: number, outerR?: number, innerR?: number, stepDeg?: number, startAngleDeg?: number }} [opts]
+ * Logarithmic whirlpool path — shared math helper (tests + cube field research).
  */
 export function buildSpiralMMOWhirlpoolPathV0(cx, cy, opts = {}) {
   const turns = opts.turns ?? RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0.spiralTurns;
@@ -94,28 +85,6 @@ export function buildSpiralMMOWhirlpoolPathV0(cx, cy, opts = {}) {
     parts.push(`${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`);
   }
   return parts.join("");
-}
-
-export function ensureSpiralMMOPinStylesV0() {
-  if (spiralPinStylesInstalled || typeof document === "undefined") return;
-  if (document.getElementById("rhizoh-spiral-mmo-pin-style-v2")) {
-    spiralPinStylesInstalled = true;
-    return;
-  }
-  const style = document.createElement("style");
-  style.id = "rhizoh-spiral-mmo-pin-style-v2";
-  style.textContent = `
-@keyframes rhizohSpiralMMOInV0 {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(-360deg); }
-}
-@keyframes rhizohSpiralMMOPulseV0 {
-  0%, 100% { filter: drop-shadow(0 0 5px rgba(255,255,255,0.85)) drop-shadow(0 0 12px rgba(255,255,255,0.28)); }
-  50% { filter: drop-shadow(0 0 8px rgba(255,255,255,1)) drop-shadow(0 0 18px rgba(255,255,255,0.42)); }
-}
-`;
-  document.head.appendChild(style);
-  spiralPinStylesInstalled = true;
 }
 
 /**
@@ -139,32 +108,9 @@ export function resolveSpiralMMOContinentDisplayNameV0(continentOrNodeId, locale
 }
 
 /**
- * Black / white inward-spiral neon pin (Leaflet divIcon HTML).
+ * Kanagawa-style mini 3D cube pin (no label text).
  * @param {object} node
  */
 export function spiralMMOPinIconHtmlV0(node) {
-  ensureSpiralMMOPinStylesV0();
-  const id = String(node?.id || "spiralmmo");
-  const short = String(node?.shortLabel || node?.continent || "MMO").slice(0, 3).toUpperCase();
-  const filterId = `spiral-glow-${id.replace(/[^a-z0-9_-]/gi, "")}`;
-  const { sizePx, center, ringRadius, ringStroke, spiralStroke } = RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0;
-  const whirlpool = buildSpiralMMOWhirlpoolPathV0(center, center);
-  return `<div data-rhizoh-spiral-mmo-pin="${id}" data-rhizoh-spiral-mmo-rev="whirlpool-v2" data-rhizoh-sovereign-node="${id}" style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto">
-    <div style="width:${sizePx}px;height:${sizePx}px;border-radius:50%;background:transparent;display:flex;align-items:center;justify-content:center;animation:rhizohSpiralMMOPulseV0 2.4s ease-in-out infinite;overflow:visible">
-      <svg width="${sizePx}" height="${sizePx}" viewBox="0 0 ${sizePx} ${sizePx}" aria-hidden="true">
-        <defs>
-          <filter id="${filterId}" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="0.45" result="b"/>
-            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-        </defs>
-        <circle cx="${center}" cy="${center}" r="${ringRadius}" fill="#000" stroke="#fff" stroke-width="${ringStroke}"/>
-        <g fill="none" stroke="#fff" stroke-width="${spiralStroke}" stroke-linecap="round" stroke-linejoin="round" filter="url(#${filterId})" style="transform-origin:${center}px ${center}px;animation:rhizohSpiralMMOInV0 4s linear infinite">
-          <path d="${whirlpool}"/>
-          <circle cx="${center}" cy="${center}" r="1" fill="#fff" stroke="none"/>
-        </g>
-      </svg>
-    </div>
-    <div style="color:#fff;font-size:7px;font-weight:900;margin-top:3px;letter-spacing:0.12em;text-shadow:0 0 5px #000,0 0 8px rgba(255,255,255,0.5);font-family:monospace">SPIRAL·${short}</div>
-  </div>`;
+  return spiralMMOKanagawaPinCubeHtmlV0(node);
 }

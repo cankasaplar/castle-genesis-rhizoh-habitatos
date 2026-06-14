@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatRhizohNeonCountdownMsV0,
   isRhizohNeonCountdownCompleteV0,
+  resetRhizohNeonCountdownDeadlineV0,
   resolveRhizohNeonCountdownRemainingMsV0,
   RHIZOH_NEON_COUNTDOWN_DURATION_MS_V0
 } from "../rhizohNeonCountdownV0.js";
@@ -23,5 +24,11 @@ describe("rhizohNeonCountdownV0", () => {
     expect(resolveRhizohNeonCountdownRemainingMsV0(deadline, 999_500)).toBe(500);
     expect(isRhizohNeonCountdownCompleteV0(0)).toBe(true);
     expect(isRhizohNeonCountdownCompleteV0(1)).toBe(false);
+  });
+
+  it("resets deadline after expiry", () => {
+    const past = Date.now() - 1000;
+    const next = resetRhizohNeonCountdownDeadlineV0(past);
+    expect(next).toBeGreaterThan(past);
   });
 });
