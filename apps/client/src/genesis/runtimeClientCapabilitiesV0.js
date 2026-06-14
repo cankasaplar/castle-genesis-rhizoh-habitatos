@@ -1,4 +1,4 @@
-import { getCastleFlightConfig } from "../castleFlight/castleFlightConfig.js";
+import { getCastleFlightConfig, getGenesisProtocolGatewayOrigin } from "../castleFlight/castleFlightConfig.js";
 import { isWorldLayerEnabled } from "../rhizoh/runtime/castleWorldLayerGateV0.js";
 import { syncStudioRenderCapabilityProbe } from "../rhizoh/runtime/studioCapabilityProbeV0.js";
 import { requestWebGpuAdapterQuietlyV0 } from "../rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
@@ -15,7 +15,9 @@ export function getRuntimeClientCapabilitiesSnapshotV0() {
   const probe = syncStudioRenderCapabilityProbe();
   const world = isWorldLayerEnabled();
   const ion = String(cfg.cesiumIonToken || "").trim().length > 0;
-  const http = String(getRhizohApiBase() || "").trim().length > 0;
+  const http =
+    String(cfg.rhizohLlmHttp || "").trim().length > 0 ||
+    String(getGenesisProtocolGatewayOrigin() || "").trim().length > 0;
   const ws = String(cfg.gatewayWsUrl || "").trim().length > 0;
   return {
     schema: RUNTIME_CLIENT_CAPABILITIES_SCHEMA,

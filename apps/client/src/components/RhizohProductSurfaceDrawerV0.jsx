@@ -1,5 +1,5 @@
 import React, { memo, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ProductProfilePanel } from "../studio/ui/ProductProfilePanel";
 import { RuntimeHealthPanel } from "../studio/ui/RuntimeHealthPanel";
 import {
@@ -17,6 +17,7 @@ import { CastlePetStudioPanelV0 } from "./CastlePetStudioPanelV0.jsx";
 import { RhizohEventCreatePanelV12 } from "./RhizohEventCreatePanelV12.jsx";
 import { RhizohStudioSecuritySharingPanelV0 } from "./RhizohStudioSecuritySharingPanelV0.jsx";
 import { isDrawerModuleAwakenedV0 } from "../rhizoh/runtime/rhizohDrawerAwakeningV0.js";
+import { writeRhizohWorldSystemModeV0 } from "../rhizoh/runtime/rhizohWorldSystemModeV0.js";
 
 const PROFILE_OBS_TABS_V0 = Object.freeze([
   { id: "reality", label: "Reality" },
@@ -30,13 +31,13 @@ const USER_OUTCOME_COPY_V0 = Object.freeze({
       eyebrow: "Bu ekranda ne yapabilirsin?",
       title: "Gözlem özetini aç",
       body: "Salon artık kernel/debug konsolu değil; kayıt ve gözlem rotalarına güvenli geçiş alanı.",
-      outcomes: Object.freeze(["Academy observe sayfasına geç", "Genesis portal kaydını incele", "Dünya ekranına dönüp haritayı kontrol et"])
+      outcomes: Object.freeze(["Academy gözlem katmanına geç", "Araştırma gözlemevi", "Genesis portal kayıtları"])
     }),
     en: Object.freeze({
       eyebrow: "What can you do here?",
       title: "Open observation records",
       body: "Hall is no longer a kernel/debug console; it is a safe handoff to records and observation routes.",
-      outcomes: Object.freeze(["Open Academy observe", "Inspect Genesis portal records", "Return to World and control the map"])
+      outcomes: Object.freeze(["Open Academy observe layer", "Research observatory", "Genesis portal records"])
     })
   }),
   greenroom: Object.freeze({
@@ -72,13 +73,13 @@ const USER_OUTCOME_COPY_V0 = Object.freeze({
       eyebrow: "Beta kapsamı",
       title: "Stüdyo durumu",
       body: "Stüdyo bu sürümde üretim motoru gibi davranmaz. Kullanıcıya yalnızca durum, profil ve güvenli inceleme bağlantıları gösterilir.",
-      outcomes: Object.freeze(["Profil ve sağlık durumunu gör", "Genesis gözlemine geç", "Üretim konsolu vaadi görme"])
+      outcomes: Object.freeze(["Robotics cihaz köprüsü", "Stüdyo üretim durumu", "Gözlem kayıtları"])
     }),
     en: Object.freeze({
       eyebrow: "Beta scope",
       title: "Studio status",
       body: "Studio does not behave like a production engine in this build. Users see status, profile, and safe inspection links only.",
-      outcomes: Object.freeze(["See profile and health state", "Open Genesis observation", "No production-console promise"])
+      outcomes: Object.freeze(["Robotics device bridge", "Studio production status", "Observation records"])
     })
   })
 });
@@ -149,9 +150,12 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
         {surface === "hall" ? (
           <RhizohStudioCitizenShellV0 surfaceKind="hall">
             <UserOutcomeCard surface="hall" locale={locale} />
+            <LayerTransitionNav activeLayer="academy" locale={locale} />
             <QuickLinks
               links={[
-                { to: "/academy/observe", label: locale === "tr" ? "Gözlem kayıtları" : "Observation records" },
+                { to: "/academy/observe", label: locale === "tr" ? "Gözlem katmanı" : "Observe layer" },
+                { to: "/academy/research", label: locale === "tr" ? "Araştırma" : "Research" },
+                { to: "/genesis/academy", label: locale === "tr" ? "Academy hub" : "Academy hub" },
                 { to: "/genesis/portal", label: "Genesis portal" },
                 { to: "/world/space", label: locale === "tr" ? "Dünya haritası" : "World map" }
               ]}
@@ -184,15 +188,18 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
                 {locale === "tr" ? "Drawer uyanık · Sprint 37" : "Drawer awake · Sprint 37"}
               </p>
             ) : null}
+            <LayerTransitionNav activeLayer="robotics" locale={locale} />
             <RhizohStudioSecuritySharingPanelV0 uiLocale={locale} gatewayOrigin={gatewayOrigin} />
             <RuntimeHealthPanel health={runtimeHealth} gatewayBaseUrl={gatewayOrigin} />
             <QuickLinks
               links={[
-                { to: "/academy/observe", label: locale === "tr" ? "Gözlem kayıtları" : "Observation records" },
+                { to: "/studio", label: locale === "tr" ? "Stüdyo konsolu" : "Studio console" },
+                { to: "/academy/observe", label: locale === "tr" ? "Gözlem katmanı" : "Observe layer" },
                 { to: "/genesis/portal", label: "Genesis portal" },
                 { to: "/world/space", label: locale === "tr" ? "Haritayı aç" : "Open map" }
               ]}
             />
+            <RoboticsModeLink locale={locale} />
           </RhizohStudioCitizenShellV0>
         ) : null}
 
@@ -263,6 +270,74 @@ function UserOutcomeCard({ surface, locale }) {
         ))}
       </ul>
     </section>
+  );
+}
+
+/** @param {{ activeLayer: 'academy' | 'robotics', locale?: string }} props */
+function LayerTransitionNav({ activeLayer, locale }) {
+  const tr = (locale || readUiLocaleV0()) === "tr";
+  const tabs = [
+    { id: "academy", to: "/academy/observe", label: tr ? "Academy" : "Academy" },
+    { id: "robotics", to: "/world/modes", label: tr ? "Robotics" : "Robotics", mode: "robotics" }
+  ];
+  return (
+    <nav
+      className="mb-3 flex gap-1 rounded-lg border border-white/10 bg-black/30 p-1"
+      aria-label={tr ? "Katman geçişi" : "Layer transition"}
+    >
+      {tabs.map((tab) => (
+        <LayerTabLink key={tab.id} tab={tab} active={activeLayer === tab.id} />
+      ))}
+    </nav>
+  );
+}
+
+/** @param {{ tab: { id: string, to: string, label: string, mode?: string }, active: boolean }} props */
+function LayerTabLink({ tab, active }) {
+  const navigate = useNavigate();
+  const className = `flex-1 rounded-md px-2 py-1.5 text-center text-[9px] font-semibold uppercase tracking-wide transition ${
+    active
+      ? "bg-cyan-500/20 text-cyan-100 border border-cyan-400/35"
+      : "text-white/50 hover:text-white/80 border border-transparent"
+  }`;
+  if (tab.mode) {
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={() => {
+          writeRhizohWorldSystemModeV0(tab.mode);
+          navigate(tab.to);
+        }}
+      >
+        {tab.label}
+      </button>
+    );
+  }
+  return (
+    <Link to={tab.to} className={className}>
+      {tab.label}
+    </Link>
+  );
+}
+
+/** @param {{ locale?: string }} props */
+function RoboticsModeLink({ locale }) {
+  const tr = (locale || readUiLocaleV0()) === "tr";
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        writeRhizohWorldSystemModeV0("robotics");
+        navigate("/world/modes");
+      }}
+      className="mt-2 w-full rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-left text-[10px] text-amber-100/90 normal-case hover:border-amber-400/50"
+    >
+      {tr
+        ? "Robotics katmanı — cihaz, kamera ve sensör köprüsü"
+        : "Robotics layer — device, camera, and sensor bridge"}
+    </button>
   );
 }
 

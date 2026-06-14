@@ -49,11 +49,14 @@ describe("sovereignWorldMapNodesV0", () => {
     expect(nodes[0].uid).toBe("uid_a");
   });
 
-  it("hides wandering portal when user castle is anchored", () => {
+  it("pins portal near user castle when castle is anchored", () => {
     const withUser = listSovereignWorldMapNodesForViewV0({
       userCastle: { lat: 41.01, lon: 28.99, label: "My Castle" }
     });
-    expect(withUser.some((n) => n.id === "rhizoh_portal")).toBe(false);
+    const portal = withUser.find((n) => n.id === "rhizoh_portal");
+    expect(portal).toBeTruthy();
+    expect(portal.lat).toBeCloseTo(41.0112, 4);
+    expect(portal.lon).toBeCloseTo(28.9918, 4);
     expect(withUser.some((n) => n.id === "my_castle")).toBe(true);
     const withoutUser = listSovereignWorldMapNodesForViewV0();
     expect(withoutUser.some((n) => n.id === "rhizoh_portal")).toBe(true);

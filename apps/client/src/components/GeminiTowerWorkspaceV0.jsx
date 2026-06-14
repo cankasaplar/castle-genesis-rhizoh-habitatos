@@ -298,7 +298,14 @@ export const GeminiTowerWorkspaceV0 = memo(function GeminiTowerWorkspaceV0({ ope
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [status, setStatus] = useState("");
   const [museMessages, setMuseMessages] = useState(() => [
-    { id: "welcome", sender: "Gemini Muse", text: "Imagine. Create. Manifest. — Type a prompt and hit Generate." }
+    {
+      id: "welcome",
+      sender: "Gemini Muse",
+      text:
+        uiLocale === "tr"
+          ? "Hayal et. Üret. Somutlaştır. — Alttaki kutuya yaz ve Üret'e bas."
+          : "Imagine. Create. Manifest. — Type a prompt and hit Generate."
+    }
   ]);
 
   const addMuseMessage = useCallback((sender, text) => {

@@ -59,7 +59,7 @@ export const MedusaCompanionOverlayV0 = memo(function MedusaCompanionOverlayV0({
   return (
     <div
       ref={hostRef}
-      className={`pointer-events-none absolute bottom-6 left-1/2 z-20 -translate-x-1/2 overflow-hidden rounded-2xl border border-sky-400/20 bg-sky-950/6 shadow-[0_0_22px_rgba(56,189,248,0.16)] ${className}`}
+      className={`pointer-events-none absolute bottom-4 left-4 z-20 overflow-hidden rounded-2xl border border-sky-400/18 bg-sky-950/5 shadow-[0_0_26px_rgba(56,189,248,0.2)] ${className}`}
       style={{ width: MEDUSA_COMPANION_DEFAULT_SIZE_V0, height: MEDUSA_COMPANION_DEFAULT_SIZE_V0 }}
       data-rhizoh-medusa-companion="1"
       data-rhizoh-medusa-live="1"

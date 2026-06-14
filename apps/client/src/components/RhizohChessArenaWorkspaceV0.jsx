@@ -67,6 +67,42 @@ const MODE_LABELS_EN_V0 = Object.freeze({
   [CHESS_GAME_MODE_V0.AI_AI]: "Stockfish vs Stockfish"
 });
 
+const DEFAULT_CLOCK_MS_V0 = 10 * 60 * 1000;
+
+function formatChessClockV0(ms) {
+  const safe = Math.max(0, Number(ms) || 0);
+  const totalSec = Math.floor(safe / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function ChessPlayerBarV0({ name, clockMs, active, align = "left", tr }) {
+  return (
+    <div
+      className={`flex w-full max-w-[min(100%,30rem)] items-center gap-2 ${
+        align === "right" ? "justify-end text-right" : "justify-start text-left"
+      }`}
+    >
+      <div
+        className={`rounded-lg border px-2 py-1 ${
+          active ? "border-cyan-300/55 bg-cyan-500/15" : "border-white/10 bg-black/35"
+        }`}
+      >
+        <p className="text-[10px] font-semibold text-white/85">{name}</p>
+        <p className={`font-mono text-sm font-bold ${active ? "text-cyan-100" : "text-white/70"}`}>
+          {formatChessClockV0(clockMs)}
+        </p>
+        {active ? (
+          <p className="text-[8px] uppercase tracking-wider text-cyan-200/70">
+            {tr ? "Hamlede" : "On clock"}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 /**
  * Chess Arena workspace — real rules, modes, voice moves, castle-to-castle scaffold.
  */
@@ -90,10 +126,51 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const [analysisBusy, setAnalysisBusy] = useState(false);
   const [matchResult, setMatchResult] = useState(null);
   const [tick, setTick] = useState(0);
+  const [whiteClockMs, setWhiteClockMs] = useState(DEFAULT_CLOCK_MS_V0);
+  const [blackClockMs, setBlackClockMs] = useState(DEFAULT_CLOCK_MS_V0);
 
   const fen = game.fen();
   const rows = useMemo(() => boardRowsFromFen(fen), [fen, tick]);
   const outcome = game.outcome();
+  const activeColor = game.turn();
+
+  const opponentsV0 = useMemo(() => {
+    if (c2cMatch || peerCastle?.uid) {
+      const peerName =
+        peerCastle?.displayName ||
+        c2cMatch?.castleB ||
+        (tr ? "Rakip kale" : "Peer castle");
+      return Object.freeze({
+        white: tr ? "Sen · Beyaz" : "You · White",
+        black: String(peerName)
+      });
+    }
+    if (mode === CHESS_GAME_MODE_V0.AI_AI) {
+      return Object.freeze({ white: "Stockfish A", black: "Stockfish B" });
+    }
+    if (mode === CHESS_GAME_MODE_V0.AI_HUMAN) {
+      return Object.freeze({
+        white: tr ? "Sen · Beyaz" : "You · White",
+        black: "Stockfish"
+      });
+    }
+    return Object.freeze({
+      white: tr ? "Beyaz" : "White",
+      black: tr ? "Siyah" : "Black"
+    });
+  }, [c2cMatch, mode, peerCastle, tr]);
+
+  useEffect(() => {
+    if (!open || outcome) return undefined;
+    const id = window.setInterval(() => {
+      if (activeColor === "w") {
+        setWhiteClockMs((ms) => Math.max(0, ms - 1000));
+      } else {
+        setBlackClockMs((ms) => Math.max(0, ms - 1000));
+      }
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [open, outcome, activeColor]);
 
   useEffect(() => {
     if (!open || !peerCastle?.uid) return;
@@ -169,6 +246,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       setMoveInput("");
       setSelectedSquare(null);
       setMatchResult(null);
+      setWhiteClockMs(DEFAULT_CLOCK_MS_V0);
+      setBlackClockMs(DEFAULT_CLOCK_MS_V0);
       setStatus(tr ? "Yeni oyun." : "New game.");
     },
     [mode, tr]
@@ -308,13 +387,23 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           </button>
         </header>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden p-3 lg:grid-cols-[1fr_280px]">
-          <div className="flex min-h-0 flex-col items-center justify-center gap-2">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden p-3 lg:grid-cols-[minmax(0,1fr)_260px]">
+          <div className="flex min-h-0 flex-1 flex-col items-center gap-2 overflow-y-auto py-1">
+            <ChessPlayerBarV0
+              name={opponentsV0.black}
+              clockMs={blackClockMs}
+              active={activeColor === "b" && !outcome}
+              align="right"
+              tr={tr}
+            />
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-stretch gap-1">
-                <div className="flex flex-col justify-around py-1 text-[9px] font-semibold text-white/50">
+                <div className="flex flex-col justify-around py-0.5 text-[8px] font-semibold text-white/50 sm:text-[9px]">
                   {[8, 7, 6, 5, 4, 3, 2, 1].map((rank) => (
-                    <span key={rank} className="flex h-11 items-center sm:h-14">
+                    <span
+                      key={rank}
+                      className="flex aspect-square w-[min(10vw,2.65rem)] items-center justify-center sm:w-11 md:w-12"
+                    >
                       {rank}
                     </span>
                   ))}
@@ -332,7 +421,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                           key={`${ri}-${ci}`}
                           type="button"
                           onClick={() => onSquareClick(sq)}
-                          className={`flex h-11 w-11 items-center justify-center text-2xl sm:h-14 sm:w-14 ${
+                          className={`flex aspect-square w-[min(10vw,2.65rem)] items-center justify-center text-xl sm:w-11 sm:text-2xl md:w-12 ${
                             selected ? "ring-2 ring-cyan-300 ring-inset z-10" : ""
                           } ${dark ? "bg-[#6d8f4f]" : "bg-[#eeeed2]"}`}
                         >
@@ -351,12 +440,19 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                   )}
                 </div>
               </div>
-              <div className="grid w-full max-w-[min(100%,30rem)] grid-cols-8 gap-0 pl-5 text-center text-[9px] font-semibold text-white/45">
+              <div className="grid w-full max-w-[min(100%,30rem)] grid-cols-8 gap-0 pl-5 text-center text-[8px] font-semibold text-white/45 sm:text-[9px]">
                 {"abcdefgh".split("").map((f) => (
                   <span key={f}>{f}</span>
                 ))}
               </div>
             </div>
+            <ChessPlayerBarV0
+              name={opponentsV0.white}
+              clockMs={whiteClockMs}
+              active={activeColor === "w" && !outcome}
+              align="left"
+              tr={tr}
+            />
             {aiBusy ? (
               <p className="text-[10px] text-amber-200">{tr ? "Stockfish düşünüyor…" : "Stockfish thinking…"}</p>
             ) : null}
@@ -389,7 +485,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
             ) : null}
           </div>
 
-          <aside className="flex min-h-0 flex-col gap-2 overflow-y-auto rounded-xl border border-white/10 bg-black/40 p-3">
+          <aside className="flex min-h-0 max-h-[42vh] flex-col gap-2 overflow-y-auto rounded-xl border border-white/10 bg-black/40 p-3 lg:max-h-none">
             <label className="text-[10px] font-semibold uppercase tracking-wider text-white/55">
               {tr ? "Oyun modu" : "Game mode"}
             </label>

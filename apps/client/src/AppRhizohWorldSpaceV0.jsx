@@ -33,7 +33,7 @@ import {
   resolveRhizohWorldSpaceMapStripBottomCssV0,
   resolveRhizohWorldSpaceVoiceDockBottomCssV0
 } from "./rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
-import { resolveRhizohProductPathV0 } from "./rhizoh/product/rhizohProductTopologyV0.js";
+import { navigateRhizohProductSurfaceV0 } from "./rhizoh/product/rhizohProductTopologyV0.js";
 import {
   configureSpatialRealityInfraV0,
   clearSpatialRealityInfraV0
@@ -524,17 +524,30 @@ export default function AppRhizohWorldSpaceV0() {
 
   const onProductShellSelect = useCallback(
     (id) => {
-      const result = handleProductShellSelectV0(id, {
-        pathname: "/world/space",
-        inPlace: true,
-        worldPath: "/world/space"
-      });
-      if (result.action === DRAWER_SHELL_ACTION_V0.NAVIGATE) {
-        navigate(resolveRhizohProductPathV0(result.surface));
-      } else if (result.navigateTo) {
-        navigate(result.navigateTo);
+      const surface = String(id || "world");
+      if (surface === "world") {
+        handleProductShellSelectV0("world", { pathname: "/world/space", worldPath: "/world/space" });
+        applyDrawerDomainTagsV0(
+          appRootRef.current,
+          resolveDrawerDomainTagsV0(null, { pathname: "/world/space", surfaceId: "world" })
+        );
+        return;
       }
-      applyDrawerDomainTagsV0(appRootRef.current, result.tags);
+      const transition = handleProductShellSelectV0(surface, {
+        pathname: "/world/space",
+        inPlace: true
+      });
+      applyDrawerDomainTagsV0(
+        appRootRef.current,
+        resolveDrawerDomainTagsV0(transition.nextOpenDrawerId, {
+          pathname: "/world/space",
+          surfaceId: surface,
+          overlayNode: transition.nextOpenDrawerId ? surface : null
+        })
+      );
+      if (transition.action === DRAWER_SHELL_ACTION_V0.NAVIGATE) {
+        navigateRhizohProductSurfaceV0(surface, navigate, "/world/space");
+      }
     },
     [navigate]
   );
@@ -637,7 +650,7 @@ export default function AppRhizohWorldSpaceV0() {
       </div>
 
       <UnifiedProductShellBar
-        active="world"
+        active={openSurfaceDrawerIdV0 || "world"}
         panelOpen={chromePanelsV0}
         onSelect={onProductShellSelect}
         uiLocale={uiLocale}

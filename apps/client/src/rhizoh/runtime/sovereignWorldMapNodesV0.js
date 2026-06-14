@@ -264,15 +264,32 @@ export function listSovereignWorldMapNodesV0() {
  * Map-visible nodes — no demo castle hub until user anchors; optional user castle pin.
  * @param {{ userCastle?: { lat: number, lon: number, label?: string } | null }} [opts]
  */
+/**
+ * Portal stays on the map after castle anchor — pinned near the user's castle.
+ * @param {{ lat: number, lon: number, label?: string } | null | undefined} userCastle
+ */
+export function resolveSovereignPortalNodeForViewV0(userCastle) {
+  const hasUserCastle =
+    userCastle && Number.isFinite(userCastle.lat) && Number.isFinite(userCastle.lon);
+  if (!hasUserCastle) return SOVEREIGN_RHIZOH_PORTAL_V0;
+  return Object.freeze({
+    ...SOVEREIGN_RHIZOH_PORTAL_V0,
+    lat: Number(userCastle.lat) + 0.0012,
+    lon: Number(userCastle.lon) + 0.0018,
+    name: "Rhizoh Castle Portal",
+    description:
+      "Kale yakınında sabit portal — keşfet, bağlan, çevir, düşün, yansıt."
+  });
+}
+
 export function listSovereignWorldMapNodesForViewV0(opts = {}) {
   const core = SOVEREIGN_CORE_NODES_V0.filter((n) => n.id !== "castle");
   /** @type {object[]} */
   const userCastle = opts.userCastle;
   const hasUserCastle =
     userCastle && Number.isFinite(userCastle.lat) && Number.isFinite(userCastle.lon);
-  const rows = hasUserCastle
-    ? [...core, ...SOVEREIGN_TOWERS_V0]
-    : [...core, ...SOVEREIGN_TOWERS_V0, SOVEREIGN_RHIZOH_PORTAL_V0];
+  const portalNode = resolveSovereignPortalNodeForViewV0(userCastle);
+  const rows = [...core, ...SOVEREIGN_TOWERS_V0, portalNode];
   if (hasUserCastle) {
     rows.unshift(
       Object.freeze({
