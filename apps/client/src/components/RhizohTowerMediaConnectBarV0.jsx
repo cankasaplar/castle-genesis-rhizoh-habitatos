@@ -12,7 +12,8 @@ export const RhizohTowerMediaConnectBarV0 = memo(function RhizohTowerMediaConnec
   uiLocale = "en",
   onFrameCapture,
   onStreamChange,
-  showVisionCapture = true
+  showVisionCapture = true,
+  previewSize = "compact"
 }) {
   const tr = uiLocale === "tr";
   const videoRef = useRef(null);
@@ -65,6 +66,11 @@ export const RhizohTowerMediaConnectBarV0 = memo(function RhizohTowerMediaConnec
     onFrameCapture?.(frame);
   }, [onFrameCapture, tr]);
 
+  const previewClass =
+    previewSize === "large"
+      ? "mt-2 aspect-video max-h-[min(38vh,340px)] w-full rounded-xl border border-white/15 bg-black object-cover"
+      : "mt-2 max-h-28 w-full rounded-lg border border-white/10 bg-black object-cover";
+
   return (
     <div className="rounded-xl border border-cyan-400/25 bg-cyan-950/20 p-2">
       <div className="flex flex-wrap items-center gap-2">
@@ -113,9 +119,7 @@ export const RhizohTowerMediaConnectBarV0 = memo(function RhizohTowerMediaConnec
       {error ? <p className="mt-1 text-[9px] text-amber-200/90">{error}</p> : null}
       <video
         ref={videoRef}
-        className={`mt-2 max-h-28 w-full rounded-lg border border-white/10 bg-black object-cover ${
-          active ? "block" : "hidden"
-        }`}
+        className={`${previewClass} ${active ? "block" : "hidden"}`}
         playsInline
         muted
         aria-hidden={!active}

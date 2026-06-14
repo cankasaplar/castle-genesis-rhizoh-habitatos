@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { ASSETS } from "../../studio/assetRegistryV1.js";
 
-export const MEDUSA_COMPANION_DEFAULT_SIZE_V0 = 156;
+export const MEDUSA_COMPANION_DEFAULT_SIZE_V0 = 200;
 /** Face camera (+Z) when GLTF default profile faces +X. */
 export const MEDUSA_COMPANION_FACE_Y_V0 = -Math.PI / 2;
 
@@ -22,9 +22,10 @@ export function makeMedusaFallbackMeshV0() {
   const bust = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 0.7, 12), mat);
   bust.position.y = 0.35;
   g.add(bust);
-  for (let i = 0; i < 6; i += 1) {
-    const snake = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.025, 6, 10), mat);
-    snake.position.set(Math.cos(i) * 0.25, 0.75 + i * 0.02, Math.sin(i) * 0.25);
+  for (let i = 0; i < 10; i += 1) {
+    const snake = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.028, 6, 12), mat);
+    const angle = (i / 10) * Math.PI * 2;
+    snake.position.set(Math.cos(angle) * 0.28, 0.72 + (i % 3) * 0.04, Math.sin(angle) * 0.28);
     snake.rotation.x = Math.PI / 2;
     snake.userData.medusaSnake = true;
     snake.userData.snakePhase = i * 0.9;

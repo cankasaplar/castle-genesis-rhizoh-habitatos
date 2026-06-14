@@ -67,6 +67,11 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
   const captureRef = useRef(null);
   const previewRef = useRef(null);
   const castleBroadcast = useMemo(() => isCastleMediaSourceV0(detail?.source), [detail?.source]);
+  const isQuantumRadioEntry = useMemo(() => {
+    const nid = String(detail?.node?.id || "").trim().toLowerCase();
+    const src = String(detail?.source || "").trim().toLowerCase();
+    return nid === "radio" || src.includes("radio") || src.includes("map:node:radio");
+  }, [detail?.node?.id, detail?.source]);
 
   const title =
     String(detail?.title || "").trim() || channelLabelV0(activeChannel, tr);
@@ -346,6 +351,13 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                   {tr
                     ? "Castle kurulumu tamam — Castle Genesis kanalı varsayılan."
                     : "Castle setup complete — Castle Genesis channel is default."}
+                </p>
+              ) : null}
+              {isQuantumRadioEntry ? (
+                <p className="mt-1 max-w-md text-[10px] font-normal normal-case leading-relaxed text-violet-200/85">
+                  {tr
+                    ? "Kuantum Radyo — dünya akışı + ambient frekans penceresi. Haritadan açıldığında varsayılan Global Kuantum Akışı (Lofi) çalar; sol menüden NASA TV, Castle Genesis veya yerel kamera/mikrofon kanallarına geçebilirsin."
+                    : "Quantum Radio — world stream + ambient frequency window. Opens on Global Quantum Stream (Lofi) from the map; switch channels for NASA TV, Castle Genesis, or local camera/mic."}
                 </p>
               ) : null}
             </div>

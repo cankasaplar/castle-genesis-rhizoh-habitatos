@@ -17,6 +17,7 @@ import {
   MEDIA_CIVILIZATION_ACTION_V0,
   runMediaCivilizationPipelineV0
 } from "../rhizoh/runtime/mediaCivilizationBridgeV0.js";
+import { speakRhizohReplyChunkedV0 } from "../rhizoh/runtime/rhizohSpeechChunkTtsV0.js";
 import { RhizohTowerLlmConnectionsStripV0 } from "./RhizohTowerLlmConnectionsStripV0.jsx";
 import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
 import { RhizohTowerMediaConnectBarV0 } from "./RhizohTowerMediaConnectBarV0.jsx";
@@ -24,9 +25,15 @@ import { RhizohTowerVoiceChatV0 } from "./RhizohTowerVoiceChatV0.jsx";
 
 const C = GEMINI_TOWER_DESIGN_V0.identity.colors;
 
-function MuseMessage({ sender, text }) {
+const MEDIA_ROOM_IDS_V0 = new Set(["vision_lens", "tower_voice", "imagine_atelier", "motion_deck"]);
+
+function MuseMessage({ sender, text, large = false }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-[11px] leading-relaxed text-white/85">
+    <div
+      className={`rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 leading-relaxed text-white/85 ${
+        large ? "text-[13px]" : "text-[11px]"
+      }`}
+    >
       <span className="font-bold text-fuchsia-300">{sender}: </span>
       {text}
     </div>
@@ -238,7 +245,8 @@ const ImagineAtelierRoomV0 = memo(function ImagineAtelierRoomV0({
   );
 });
 
-const LobbyRoomV0 = memo(function LobbyRoomV0() {
+const LobbyRoomV0 = memo(function LobbyRoomV0({ uiLocale = "en" }) {
+  const tr = uiLocale === "tr";
   const [gallery, setGallery] = useState(() => readGeminiTowerGalleryV0());
 
   useEffect(() => {
@@ -249,17 +257,27 @@ const LobbyRoomV0 = memo(function LobbyRoomV0() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <p className="text-[11px] text-white/70">
-        Holographic welcome — masonry grid of your manifested works.
+      <p className="text-[12px] leading-relaxed text-white/75">
+        {tr
+          ? "Prism Gallery — Imagine Atelier'de ürettiğin ve kaydettiğin eserler burada. Yerel tarayıcı galerisi; Save to Gallery ile eklenir."
+          : "Prism Gallery — works you generate and save in Imagine Atelier. Local browser gallery; use Save to Gallery."}
       </p>
       <div
         id="lobby-gallery-grid"
-        className="mt-3 grid min-h-0 flex-1 grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3 md:grid-cols-4"
+        className="mt-3 grid min-h-0 flex-1 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 md:grid-cols-4"
       >
         {gallery.length === 0 ? (
-          <p className="col-span-full text-center text-[11px] text-white/45">
-            No artifacts yet. Visit Imagine Atelier to create!
-          </p>
+          <div className="col-span-full flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 bg-black/25 py-10 text-center">
+            <span className="text-3xl">💎</span>
+            <p className="text-[12px] text-white/55">
+              {tr ? "Henüz eser yok." : "No artifacts yet."}
+            </p>
+            <p className="max-w-sm text-[11px] text-white/40">
+              {tr
+                ? "Imagine Atelier'de prompt yaz → Generate → Save to Gallery."
+                : "Imagine Atelier: prompt → Generate → Save to Gallery."}
+            </p>
+          </div>
         ) : (
           gallery.map((art) => (
             <div
@@ -268,7 +286,7 @@ const LobbyRoomV0 = memo(function LobbyRoomV0() {
             >
               <img src={art.image} alt="" className="block w-full" />
               {art.prompt ? (
-                <p className="truncate px-1 py-0.5 text-[9px] text-white/50">{art.prompt}</p>
+                <p className="truncate px-2 py-1 text-[10px] text-white/60">{art.prompt}</p>
               ) : null}
             </div>
           ))
@@ -280,66 +298,78 @@ const LobbyRoomV0 = memo(function LobbyRoomV0() {
 
 const VisionLensRoomV0 = memo(function VisionLensRoomV0({
   uiLocale,
-  museMessages,
-  onMuseMessage,
+  visionFrame,
+  onAnalyzeResult,
   onStatus
 }) {
   const tr = uiLocale === "tr";
-  const [visionFrame, setVisionFrame] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [analysis, setAnalysis] = useState("");
 
   const onAnalyze = useCallback(async () => {
     if (!visionFrame) {
-      onMuseMessage(
-        "Vision Lens",
-        tr ? "Önce kamerayı aç veya kare yakala." : "Open the camera and capture a frame first."
+      onAnalyzeResult(
+        tr ? "Önce üstteki kamerayı aç ve Kare yakala'ya bas." : "Open the camera above and capture a frame first.",
+        { speak: false }
       );
       return;
     }
     setBusy(true);
     onStatus(tr ? "👁️ Analiz…" : "👁️ Analyzing…");
     const result = await analyzeGeminiTowerCanvasV0(visionFrame);
-    onMuseMessage("Vision Lens", result);
+    setAnalysis(result);
+    onAnalyzeResult(result, { speak: true });
     onStatus("");
     setBusy(false);
-  }, [onMuseMessage, onStatus, tr, visionFrame]);
+  }, [onAnalyzeResult, onStatus, tr, visionFrame]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <RhizohTowerMediaConnectBarV0 uiLocale={uiLocale} onFrameCapture={setVisionFrame} />
-      {visionFrame ? (
-        <img
-          src={visionFrame}
-          alt=""
-          className="max-h-40 w-full rounded-lg border border-white/10 object-contain"
-        />
-      ) : null}
-      <button
-        type="button"
-        disabled={busy || !visionFrame}
-        onClick={() => void onAnalyze()}
-        className="self-start rounded-lg border border-violet-400/40 bg-violet-500/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-violet-100 disabled:opacity-40"
-      >
-        {busy ? (tr ? "Analiz ediliyor…" : "Analyzing…") : tr ? "Gemini Vision analizi" : "Run Gemini Vision"}
-      </button>
-      <div className="flex max-h-40 flex-col gap-2 overflow-y-auto">
-        {museMessages
-          .filter((m) => m.sender === "Vision Lens")
-          .slice(-4)
-          .map((m) => (
-            <MuseMessage key={m.id} sender={m.sender} text={m.text} />
-          ))}
+    <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        {visionFrame ? (
+          <img
+            src={visionFrame}
+            alt=""
+            className="aspect-video max-h-[min(36vh,320px)] w-full rounded-xl border border-white/15 object-contain bg-black/50"
+          />
+        ) : (
+          <div className="flex aspect-video max-h-[min(36vh,320px)] w-full items-center justify-center rounded-xl border border-dashed border-white/20 bg-black/40 text-[11px] text-white/45">
+            {tr ? "Kamera karesi bekleniyor — üstten bağlan ve yakala." : "Waiting for camera frame — connect and capture above."}
+          </div>
+        )}
+        <button
+          type="button"
+          disabled={busy || !visionFrame}
+          onClick={() => void onAnalyze()}
+          className="self-start rounded-lg border border-violet-400/40 bg-violet-500/25 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-violet-50 disabled:opacity-40"
+        >
+          {busy ? (tr ? "Analiz ediliyor…" : "Analyzing…") : tr ? "Gemini Vision analizi" : "Run Gemini Vision"}
+        </button>
+      </div>
+      <div className="flex min-h-[180px] flex-1 flex-col rounded-xl border border-fuchsia-400/25 bg-slate-900/70 p-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-300">
+          {tr ? "Vision analizi" : "Vision analysis"}
+        </p>
+        <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
+          {analysis ? (
+            <p className="text-[13px] leading-relaxed text-white/90">{analysis}</p>
+          ) : (
+            <p className="text-[12px] leading-relaxed text-white/45">
+              {tr
+                ? "Analiz sonucu burada büyük puntoda görünür ve sesli okunur."
+                : "Analysis appears here in large type and is read aloud."}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
 });
 
-const TowerConnectRoomV0 = memo(function TowerConnectRoomV0({ uiLocale, towerId = "gemini_tower" }) {
+const TowerVoiceRoomV0 = memo(function TowerVoiceRoomV0({ uiLocale, towerId = "gemini_tower", visionFrame }) {
   const tr = uiLocale === "tr";
-  const [visionFrame, setVisionFrame] = useState(null);
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <RhizohTowerMediaConnectBarV0 uiLocale={uiLocale} onFrameCapture={setVisionFrame} />
       <RhizohTowerVoiceChatV0
         towerId={towerId}
         uiLocale={uiLocale}
@@ -348,25 +378,42 @@ const TowerConnectRoomV0 = memo(function TowerConnectRoomV0({ uiLocale, towerId 
       />
       <p className="text-[9px] text-white/40">
         {tr
-          ? "Ses STT + gateway Gemini — kamera karesi vision bağlamına eklenir."
-          : "Voice STT + gateway Gemini — camera frame attaches as vision context."}
+          ? "Ses STT + gateway Gemini — üstteki kamera karesi vision bağlamına eklenir."
+          : "Voice STT + gateway Gemini — camera frame from the bar above attaches as vision context."}
       </p>
     </div>
   );
 });
 
-function PlaceholderRoomV0({ room }) {
+const ComingSoonRoomV0 = memo(function ComingSoonRoomV0({ room, uiLocale, onOpenVoice }) {
+  const tr = uiLocale === "tr";
+  const isMotion = room.id === "motion_deck";
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-white/15 bg-black/30 p-6 text-center">
-      <span className="text-4xl">{room.icon}</span>
-      <h3 className="mt-3 text-sm font-bold text-white">{room.name}</h3>
-      <p className="mt-2 max-w-md text-[11px] leading-relaxed text-white/60">{room.description}</p>
-      <p className="mt-4 text-[10px] uppercase tracking-wider text-cyan-300/80">
-        Room shell ready · use Connect + Voice tab for live features
+      <span className="text-5xl">{room.icon}</span>
+      <h3 className="mt-3 text-base font-bold text-white">{room.name}</h3>
+      <p className="mt-2 max-w-lg text-[12px] leading-relaxed text-white/65">{room.description}</p>
+      <p className="mt-4 max-w-md text-[11px] leading-relaxed text-amber-200/85">
+        {isMotion
+          ? tr
+            ? "Video/GIF üretim katmanı henüz bağlı değil. Şimdilik Voice Link ile kamera + ses üzerinden komut verebilirsin."
+            : "Video/GIF generation layer is not wired yet. Use Voice Link for camera + voice commands for now."
+          : tr
+            ? "3D keşif alanı bir sonraki sprintte. Şimdilik Imagine Atelier ve Vision Lens aktif."
+            : "3D exploration space is scheduled for a later sprint. Imagine Atelier and Vision Lens are live now."}
       </p>
+      {onOpenVoice ? (
+        <button
+          type="button"
+          onClick={onOpenVoice}
+          className="mt-4 rounded-lg border border-cyan-400/40 bg-cyan-500/15 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-cyan-100"
+        >
+          {tr ? "Voice Link'e geç" : "Open Voice Link"}
+        </button>
+      ) : null}
     </div>
   );
-}
+});
 
 /**
  * Full-screen Gemini Visual Master Tower workspace (V11).
@@ -376,6 +423,7 @@ export const GeminiTowerWorkspaceV0 = memo(function GeminiTowerWorkspaceV0({ ope
   const [roomId, setRoomId] = useState(resolveDefaultGeminiTowerRoomIdV0);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [status, setStatus] = useState("");
+  const [visionFrame, setVisionFrame] = useState(null);
   const [museMessages, setMuseMessages] = useState(() => [
     {
       id: "welcome",
@@ -391,9 +439,21 @@ export const GeminiTowerWorkspaceV0 = memo(function GeminiTowerWorkspaceV0({ ope
     setMuseMessages((prev) => [...prev.slice(-24), { id: `${Date.now()}_${prev.length}`, sender, text }]);
   }, []);
 
+  const onVisionAnalyzeResult = useCallback(
+    (text, { speak = false } = {}) => {
+      addMuseMessage("Vision Lens", text);
+      if (speak && text) {
+        void speakRhizohReplyChunkedV0(text, { language: uiLocale });
+      }
+    },
+    [addMuseMessage, uiLocale]
+  );
+
   if (!open) return null;
 
   const activeRoom = GEMINI_TOWER_DESIGN_V0.rooms.find((r) => r.id === roomId) || GEMINI_TOWER_DESIGN_V0.rooms[1];
+  const showMediaBar = MEDIA_ROOM_IDS_V0.has(roomId);
+  const largePreview = roomId === "vision_lens" || roomId === "tower_voice";
 
   return (
     <div
@@ -462,36 +522,47 @@ export const GeminiTowerWorkspaceV0 = memo(function GeminiTowerWorkspaceV0({ ope
         </nav>
 
         <main className="flex min-h-0 flex-1 flex-col p-4">
-          <RhizohTowerMediaConnectBarV0
-            uiLocale={uiLocale}
-            onFrameCapture={(frame) => {
-              if (frame && roomId === "imagine_atelier") {
-                addMuseMessage(
-                  "Vision Lens",
-                  tr ? "Kamera karesi alındı — Vision Lens odasında analiz edebilirsin." : "Camera frame captured — analyze in Vision Lens room."
-                );
-              }
-            }}
-          />
+          {showMediaBar ? (
+            <RhizohTowerMediaConnectBarV0
+              uiLocale={uiLocale}
+              previewSize={largePreview ? "large" : "compact"}
+              onFrameCapture={(frame) => {
+                if (!frame) return;
+                setVisionFrame(frame);
+                if (roomId === "imagine_atelier") {
+                  addMuseMessage(
+                    "Vision Lens",
+                    tr
+                      ? "Kamera karesi alındı — Vision Lens sekmesine geçip analiz edebilirsin."
+                      : "Camera frame captured — switch to Vision Lens to analyze."
+                  );
+                }
+              }}
+            />
+          ) : null}
           <p className="mb-2 mt-2 text-[10px] uppercase tracking-[0.18em] text-white/40">
             {activeRoom.icon} {activeRoom.name}
           </p>
           {roomId === "imagine_atelier" ? (
             <ImagineAtelierRoomV0 museMessages={museMessages} onMuseMessage={addMuseMessage} onStatus={setStatus} />
           ) : roomId === "lobby" ? (
-            <LobbyRoomV0 />
+            <LobbyRoomV0 uiLocale={uiLocale} />
           ) : roomId === "vision_lens" ? (
             <VisionLensRoomV0
               uiLocale={uiLocale}
-              museMessages={museMessages}
-              onMuseMessage={addMuseMessage}
+              visionFrame={visionFrame}
+              onAnalyzeResult={onVisionAnalyzeResult}
               onStatus={setStatus}
             />
-          ) : roomId === "tower_voice" || roomId === "motion_deck" || roomId === "dimension_sandbox" ? (
-            <TowerConnectRoomV0 uiLocale={uiLocale} towerId="gemini_tower" />
-          ) : (
-            <PlaceholderRoomV0 room={activeRoom} />
-          )}
+          ) : roomId === "tower_voice" ? (
+            <TowerVoiceRoomV0 uiLocale={uiLocale} towerId="gemini_tower" visionFrame={visionFrame} />
+          ) : roomId === "motion_deck" || roomId === "dimension_sandbox" ? (
+            <ComingSoonRoomV0
+              room={activeRoom}
+              uiLocale={uiLocale}
+              onOpenVoice={() => setRoomId("tower_voice")}
+            />
+          ) : null}
         </main>
       </div>
     </div>
