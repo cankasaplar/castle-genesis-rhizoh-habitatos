@@ -7,7 +7,7 @@ import { resolveOverlayNodeFromClusterEcologyV0 } from "../rhizoh/runtime/rhizoh
 import { RHIZOH_FEDERATION_NODE_V0 } from "../rhizoh/runtime/rhizohDomainGraphV0.js";
 
 /**
- * Centered Medusa companion — domain-sensitive motion; live camera only.
+ * Bottom-right Medusa companion — domain-sensitive motion; live camera only.
  */
 export const MedusaCompanionOverlayV0 = memo(function MedusaCompanionOverlayV0({
   active = false,
@@ -59,7 +59,7 @@ export const MedusaCompanionOverlayV0 = memo(function MedusaCompanionOverlayV0({
   return (
     <div
       ref={hostRef}
-      className={`pointer-events-none absolute bottom-3 left-1 z-20 overflow-visible rounded-2xl border border-sky-400/22 bg-sky-950/8 shadow-[0_0_32px_rgba(56,189,248,0.28)] ${className}`}
+      className={`pointer-events-none absolute bottom-3 right-3 z-20 overflow-visible rounded-2xl border border-sky-400/22 bg-sky-950/8 shadow-[0_0_32px_rgba(56,189,248,0.28)] ${className}`}
       style={{ width: MEDUSA_COMPANION_DEFAULT_SIZE_V0, height: MEDUSA_COMPANION_DEFAULT_SIZE_V0 }}
       data-rhizoh-medusa-companion="1"
       data-rhizoh-medusa-live="1"
