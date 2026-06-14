@@ -9,7 +9,7 @@ export const MEDUSA_DOMAIN_SENSITIVITY_SCHEMA_V0 = "rhizoh.medusa_domain_sensiti
 /** @type {Record<string, { swayScale: number, idleAmp: number, audioGain: number }>} */
 export const MEDUSA_DOMAIN_MOTION_PROFILE_V0 = Object.freeze({
   [RHIZOH_FEDERATION_NODE_V0.WORLD]: Object.freeze({ swayScale: 0.35, idleAmp: 0.05, audioGain: 1 }),
-  [RHIZOH_FEDERATION_NODE_V0.MEDIA]: Object.freeze({ swayScale: 0.55, idleAmp: 0.06, audioGain: 1.25 }),
+  [RHIZOH_FEDERATION_NODE_V0.MEDIA]: Object.freeze({ swayScale: 0.72, idleAmp: 0.08, audioGain: 1.35 }),
   [RHIZOH_FEDERATION_NODE_V0.STUDIO]: Object.freeze({ swayScale: 0.4, idleAmp: 0.04, audioGain: 0.9 }),
   [RHIZOH_FEDERATION_NODE_V0.BROADCAST]: Object.freeze({ swayScale: 0.5, idleAmp: 0.05, audioGain: 1.1 }),
   [RHIZOH_FEDERATION_NODE_V0.CASTLE]: Object.freeze({ swayScale: 0.3, idleAmp: 0.045, audioGain: 0.85 }),
