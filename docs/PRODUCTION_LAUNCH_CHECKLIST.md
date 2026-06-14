@@ -102,6 +102,29 @@ Repository → **Settings → Secrets and variables → Actions** içinde en az:
 
 Workflow dosyası: `.github/workflows/deploy-hosting.yml`
 
+### 3b. Firebase Functions deploy (IAM — hosting yetmez)
+
+Workflow: `.github/workflows/deploy-functions.yml` → **Run workflow** → `gatewayProxyV0`
+
+Hosting deploy aynı `FIREBASE_SERVICE_ACCOUNT_CASTLE_GENESIS` secret ile çalışabilir; **Functions** ek IAM ister. Hata:
+
+`Missing permissions ... iam.serviceAccounts.ActAs on castle-genesis@appspot.gserviceaccount.com`
+
+**Düzeltme (proje Owner, bir kez):**
+
+1. GitHub secret `FIREBASE_SERVICE_ACCOUNT_CASTLE_GENESIS` JSON içindeki **`client_email`** değerini kopyala (ör. `firebase-adminsdk-xxx@castle-genesis.iam.gserviceaccount.com`).
+2. [GCP IAM — castle-genesis](https://console.cloud.google.com/iam-admin/iam?project=castle-genesis) → **Grant access** (veya ilgili SA → Permissions).
+3. **Principal:** yukarıdaki `client_email`.
+4. **Roller (en az):**
+   - **Service Account User** (`roles/iam.serviceAccountUser`) — hedef: `castle-genesis@appspot.gserviceaccount.com` (App Engine default SA)
+   - **Cloud Functions Developer** (`roles/cloudfunctions.developer`) — proje düzeyi
+   - (yoksa) **Service Usage Consumer** (`roles/serviceusage.serviceUsageConsumer`)
+5. Kaydet → 1–2 dk bekle → Actions’ta **Deploy Firebase Functions** workflow’unu yeniden çalıştır.
+
+`npm warn deprecated uuid/glob` satırları firebase-tools bağımlılığından gelir; deploy’u engellemez.
+
+**Lokal alternatif:** `firebase login` + `npx firebase-tools deploy --only functions:gatewayProxyV0 --project castle-genesis` (kişisel hesabında Owner/Editor yetkisi varsa).
+
 ## 4. Deploy Hosting
 
 ```bash

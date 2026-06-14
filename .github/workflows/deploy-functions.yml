@@ -1,6 +1,11 @@
 # Manual deploy: Firebase Cloud Functions (gatewayProxyV0 + optional all).
 # Secrets: FIREBASE_SERVICE_ACCOUNT_CASTLE_GENESIS, VITE_GATEWAY_TOKEN (Render CASTLE_GATEWAY_TOKEN ile aynı)
 # Optional: VITE_LIVE_GATEWAY_BASE for CASTLE_GATEWAY_UPSTREAM
+#
+# IAM (Functions deploy fails with iam.serviceAccounts.ActAs on @appspot.gserviceaccount.com):
+#   GitHub secret JSON içindeki client_email → GCP IAM → Service Account User on
+#   castle-genesis@appspot.gserviceaccount.com (+ Cloud Functions Developer at project level).
+#   See docs/PRODUCTION_LAUNCH_CHECKLIST.md §3b
 
 name: Deploy Firebase Functions
 
