@@ -78,6 +78,8 @@ import { RhizohProductSurfaceDrawerV0 } from "./components/RhizohProductSurfaceD
 import { getGenesisProtocolGatewayOrigin } from "./castleFlight/castleFlightConfig.js";
 import { CASTLE_ARCHIVE_OPEN_MEDIA_EVENT_V0 } from "./rhizoh/runtime/castleArchiveVaultV0.js";
 import { RhizohWorldSpaceC2cPanelV0 } from "./components/RhizohWorldSpaceC2cPanelV0.jsx";
+import { RhizohNeonCountdownPanelV0 } from "./components/RhizohNeonCountdownPanelV0.jsx";
+import { resolveSpiralMMOContinentDisplayNameV0 } from "./rhizoh/runtime/spiralMMOContinentPinsV0.js";
 import {
   RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1,
   RHIZOH_REMOTE_CASTLE_CLICK_EVENT_V1,
@@ -809,38 +811,54 @@ export default function AppRhizohWorldSpaceV0() {
               : { insetInline: 0, top: "7rem", display: "flex", justifyContent: "center", paddingInline: "1rem" }
           }
         >
-          <div
-            className="pointer-events-auto w-full max-w-xs rounded-2xl border bg-black/85 p-3 text-white shadow-2xl backdrop-blur-md"
-            style={{ borderColor: `${v11NodePanel.nodeView.color}55` }}
-            data-rhizoh-v11-node-panel="1"
-            onMouseLeave={() => setV11NodePanel(null)}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/45">
-                  {uiLocale === "tr" ? "V11 düğüm" : "V11 node"}
-                </p>
-                <h2 className="mt-1 text-sm font-black" style={{ color: v11NodePanel.nodeView.color }}>
-                  {v11NodePanel.nodeView.label}
-                </h2>
-                <p className="mt-1 text-[10px] text-white/55">
-                  {v11NodePanel.nodeView.type} · {v11NodePanel.normalizedDecision?.decision || "LOAD_WORLD_NODE"}
-                </p>
+          {v11NodePanel.nodeView?.type === "spiralmmo" ? (
+            <RhizohNeonCountdownPanelV0
+              uiLocale={uiLocale}
+              title={resolveSpiralMMOContinentDisplayNameV0(
+                v11NodePanel.nodeView.continent || v11NodePanel.nodeView.id,
+                uiLocale === "tr" ? "tr" : "en"
+              )}
+              subtitle={
+                uiLocale === "tr"
+                  ? "Kıta spiral düğümü · gözlem katmanı"
+                  : "Continent spiral node · observation layer"
+              }
+              onClose={() => setV11NodePanel(null)}
+            />
+          ) : (
+            <div
+              className="pointer-events-auto w-full max-w-xs rounded-2xl border bg-black/85 p-3 text-white shadow-2xl backdrop-blur-md"
+              style={{ borderColor: `${v11NodePanel.nodeView.color}55` }}
+              data-rhizoh-v11-node-panel="1"
+              onMouseLeave={() => setV11NodePanel(null)}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/45">
+                    {uiLocale === "tr" ? "V11 düğüm" : "V11 node"}
+                  </p>
+                  <h2 className="mt-1 text-sm font-black" style={{ color: v11NodePanel.nodeView.color }}>
+                    {v11NodePanel.nodeView.label}
+                  </h2>
+                  <p className="mt-1 text-[10px] text-white/55">
+                    {v11NodePanel.nodeView.type} · {v11NodePanel.normalizedDecision?.decision || "LOAD_WORLD_NODE"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setV11NodePanel(null)}
+                  className="rounded-lg border border-white/15 px-2 py-1 text-[10px] text-white/60 hover:text-white"
+                >
+                  ×
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setV11NodePanel(null)}
-                className="rounded-lg border border-white/15 px-2 py-1 text-[10px] text-white/60 hover:text-white"
-              >
-                ×
-              </button>
+              <p className="mt-3 text-[10px] leading-relaxed text-white/65">
+                {uiLocale === "tr"
+                  ? "Harita niyeti üretildi; yürütme kararı orkestratörde kalır."
+                  : "Map intent emitted; execution remains with the orchestrator."}
+              </p>
             </div>
-            <p className="mt-3 text-[10px] leading-relaxed text-white/65">
-              {uiLocale === "tr"
-                ? "Harita niyeti üretildi; yürütme kararı orkestratörde kalır."
-                : "Map intent emitted; execution remains with the orchestrator."}
-            </p>
-          </div>
+          )}
         </div>
       ) : null}
 

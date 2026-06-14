@@ -126,6 +126,19 @@ export function listSpiralMMOContinentMapPinsV0() {
 }
 
 /**
+ * @param {string} continentOrNodeId
+ * @param {"tr"|"en"} [locale]
+ * @returns {string}
+ */
+export function resolveSpiralMMOContinentDisplayNameV0(continentOrNodeId, locale = "en") {
+  const raw = String(continentOrNodeId || "").trim();
+  const continent = raw.startsWith("spiralmmo_") ? raw.slice("spiralmmo_".length) : raw;
+  const meta = CONTINENT_META_V0[continent];
+  if (!meta) return raw || "SpiralMMO";
+  return locale === "tr" ? meta.nameTr : meta.nameEn;
+}
+
+/**
  * Black / white inward-spiral neon pin (Leaflet divIcon HTML).
  * @param {object} node
  */
