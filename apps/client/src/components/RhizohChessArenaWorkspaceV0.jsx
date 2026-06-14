@@ -726,7 +726,6 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                 </ul>
               </div>
             ) : null}
-          </div>
         </div>
       </div>
     </div>
