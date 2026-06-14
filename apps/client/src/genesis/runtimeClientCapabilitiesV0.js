@@ -1,7 +1,7 @@
 import { getCastleFlightConfig } from "../castleFlight/castleFlightConfig.js";
 import { isWorldLayerEnabled } from "../rhizoh/runtime/castleWorldLayerGateV0.js";
 import { syncStudioRenderCapabilityProbe } from "../rhizoh/runtime/studioCapabilityProbeV0.js";
-import { getRhizohApiBase } from "../rhizoh/useRhizohGatewayMonitor.js";
+import { requestWebGpuAdapterQuietlyV0 } from "../rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
 
 export const RUNTIME_CLIENT_CAPABILITIES_SCHEMA = "castle.runtime.client_capabilities.v0";
 
@@ -39,7 +39,7 @@ export function getRuntimeClientCapabilitiesSnapshotV0() {
 export async function probeWebGpuAdapterResolvableV0() {
   if (typeof navigator === "undefined" || !navigator.gpu) return false;
   try {
-    const adapter = await navigator.gpu.requestAdapter({ powerPreference: "low-power" });
+    const adapter = await requestWebGpuAdapterQuietlyV0({ powerPreference: "low-power" });
     return !!adapter;
   } catch {
     return false;

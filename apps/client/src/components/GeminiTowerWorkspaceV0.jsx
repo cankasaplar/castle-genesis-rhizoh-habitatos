@@ -13,6 +13,10 @@ import {
   enhanceGeminiTowerSketchV0,
   generateGeminiTowerImageV0
 } from "../rhizoh/runtime/geminiTowerBrainV0.js";
+import {
+  MEDIA_CIVILIZATION_ACTION_V0,
+  runMediaCivilizationPipelineV0
+} from "../rhizoh/runtime/mediaCivilizationBridgeV0.js";
 import { RhizohTowerLlmConnectionsStripV0 } from "./RhizohTowerLlmConnectionsStripV0.jsx";
 import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
 
@@ -96,7 +100,9 @@ const ImagineAtelierRoomV0 = memo(function ImagineAtelierRoomV0({
       redraw();
       onMuseMessage(
         "Gemini Muse",
-        `"${text}" fikrini görselleştirdim. (local manifest — Imagen API bağlanınca gerçek üretim.)`
+        result.brief
+          ? `"${text}" — Gemini brief: ${result.brief}`
+          : `"${text}" fikrini görselleştirdim.${result.status === "manifested_gemini_brief" ? " (Render Gemini)" : " (local manifest)"}`
       );
       onStatus("✅ Manifested!");
       setBusy("");
@@ -132,8 +138,22 @@ const ImagineAtelierRoomV0 = memo(function ImagineAtelierRoomV0({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const image = canvas.toDataURL("image/png", 0.85);
+    const title = prompt.trim().slice(0, 120) || "Imagine Atelier work";
     saveGeminiTowerGalleryWorkV0({ image, prompt });
-    onMuseMessage("Prism Gallery", "Masterpiece saved to Prism Gallery.");
+    runMediaCivilizationPipelineV0({
+      action: MEDIA_CIVILIZATION_ACTION_V0.ARCHIVE,
+      title,
+      format: "image/png",
+      content: prompt.trim() || title,
+      mediaUrl: image,
+      source: "gemini_tower",
+      channelId: "imagine_atelier",
+      tag: "prism_gallery"
+    });
+    onMuseMessage(
+      "Prism Gallery",
+      "Masterpiece saved to Prism Gallery and Castle Archive (Codex Vault / Library)."
+    );
   }, [prompt, onMuseMessage]);
 
   return (

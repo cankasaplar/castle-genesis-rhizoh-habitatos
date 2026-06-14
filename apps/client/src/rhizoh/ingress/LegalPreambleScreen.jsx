@@ -62,6 +62,28 @@ export function LegalPreambleScreen({ onProceed, specSha256 = null }) {
         {copy.docsNote ? (
           <p style={{ fontSize: 12, lineHeight: 1.5, opacity: 0.75, margin: "0 0 16px" }}>{copy.docsNote}</p>
         ) : null}
+        {copy.observability ? (
+          <section
+            style={{
+              marginBottom: 20,
+              padding: 14,
+              borderRadius: 12,
+              border: "1px solid rgba(148, 163, 184, 0.25)",
+              background: "rgba(15, 23, 42, 0.45)"
+            }}
+          >
+            <p style={{ fontSize: 11, letterSpacing: "0.08em", opacity: 0.75, margin: "0 0 8px", textTransform: "uppercase" }}>
+              {copy.observability.title}
+            </p>
+            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, lineHeight: 1.55, opacity: 0.88 }}>
+              {copy.observability.bullets.map((line) => (
+                <li key={line} style={{ marginBottom: 6 }}>
+                  {line}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         {copy.desktopOs ? (
           <section
             style={{

@@ -3,6 +3,8 @@
  * Chrome "No available adapters" belongs HERE, never voice STT/TTS.
  */
 
+import { requestWebGpuAdapterQuietlyV0 } from "./rhizohProductionLogNamespacesV0.js";
+
 export const RHIZOH_COMPUTE_ADAPTER_SCHEMA_V0 = "rhizoh.compute_adapter_registry.v0";
 
 /** @type {object | null} */
@@ -19,7 +21,7 @@ export async function probeComputeAdapterV0() {
   if (typeof navigator !== "undefined" && navigator.gpu) {
     webgpuApiPresent = true;
     try {
-      const adapter = await navigator.gpu.requestAdapter();
+      const adapter = await requestWebGpuAdapterQuietlyV0();
       adapterAvailable = adapter !== null;
       if (!adapterAvailable) {
         note = "Chrome 'No available adapters' = WebGPU compute — not voice pipeline.";

@@ -100,6 +100,15 @@ const LEGAL_COPY = Object.freeze({
       lead: "Install Rhizoh on your desktop as a continuity shell. Your archive and library stay on your device; API keys bind to tower workspaces.",
       downloadLabel: "Desktop install guide",
       downloadHref: "/legal/rhizoh-desktop-os-en.html"
+    }),
+    observability: Object.freeze({
+      title: "Log analysis & highlights",
+      bullets: Object.freeze([
+        "Boot: Rhizoh shell, crash telemetry, and DevTools isolation load first.",
+        "Cookies: necessary cookies always run; Firebase Analytics stays off until you opt in via the cookie banner.",
+        "Voice: engine v3 uses the gateway lane; Chrome STT is not the primary path.",
+        "WebGPU note: browser “No available adapters” is a GPU probe signal — not a microphone or voice failure."
+      ])
     })
   }),
   tr: Object.freeze({
@@ -126,9 +135,18 @@ const LEGAL_COPY = Object.freeze({
     docsLabel: "Tam metinler",
     desktopOs: Object.freeze({
       title: "Rhizoh Masaüstü OS",
-      lead: "Rhizoh'u masaüstünüze süreklilik kabuğu olarak kurun. Arşiv ve kütüphane cihazınızda kalır; API anahtarları tower workspace'lere bağlanır.",
+      lead: "Rhizoh'u masaüstünüze süreklilik kabuğu olarak kurun. Arşiv ve kütüphane cihazınızda kalır; üretimde LLM anahtarları Render gateway'de kalır.",
       downloadLabel: "Masaüstü kurulum rehberi",
       downloadHref: "/legal/rhizoh-desktop-os-tr.html"
+    }),
+    observability: Object.freeze({
+      title: "Log analizi ve öne çıkanlar",
+      bullets: Object.freeze([
+        "Boot: Rhizoh shell, hata izleme ve DevTools izolasyonu önce yüklenir.",
+        "Çerezler: zorunlu çerezler her zaman çalışır; Firebase Analytics yalnızca çerez banner'ında onay verirseniz açılır.",
+        "Ses: engine v3 gateway hattını kullanır; Chrome STT birincil yol değildir.",
+        "WebGPU notu: tarayıcıdaki “No available adapters” GPU probu sinyalidir — mikrofon veya ses hatası değildir."
+      ])
     })
   })
 });
