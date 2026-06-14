@@ -21,6 +21,13 @@ let seqV0 = 0;
 let readyV0 = false;
 let initFailedV0 = false;
 
+export function getChessStockfishEngineStatusV0() {
+  if (initFailedV0) return "heuristic_fallback";
+  if (workerV0 && readyV0) return "stockfish_wasm";
+  if (workerV0) return "stockfish_initializing";
+  return "not_started";
+}
+
 function nextId() {
   seqV0 += 1;
   return seqV0;
@@ -135,8 +142,8 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
   const worker = await ensureStockfishWorkerV0();
   if (!worker) return null;
 
-  const skill = Math.max(1, Math.min(20, Number(opts.skill) || 12));
-  const movetime = Math.max(80, Math.min(8000, Number(opts.movetimeMs) || 450));
+  const skill = Math.max(1, Math.min(20, Number(opts.skill) || 19));
+  const movetime = Math.max(80, Math.min(8000, Number(opts.movetimeMs) || 900));
 
   return new Promise((resolve) => {
     const id = nextId();
@@ -275,12 +282,12 @@ export async function pickChessArenaEngineMoveV0(game, opts = {}) {
     return pickChessArenaAiMoveV0(game);
   }
   try {
-    const sf = await getStockfishArenaMoveV0(game.fen(), { movetimeMs: 320 });
-    if (sf) return sf;
+    const sf = await getStockfishArenaMoveV0(game.fen(), { movetimeMs: 900, skill: 19 });
+    if (sf) return Object.freeze({ move: sf, engine: "stockfish_wasm" });
   } catch {
     /* fall through to heuristic */
   }
-  return pickChessArenaAiMoveV0(game);
+  return Object.freeze({ move: pickChessArenaAiMoveV0(game), engine: "heuristic_fallback" });
 }
 
 export function disposeChessStockfishEngineV0() {

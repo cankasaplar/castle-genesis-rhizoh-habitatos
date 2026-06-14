@@ -57,6 +57,7 @@ export async function postRhizohTowerLlmTurnV0(input = {}) {
     const turn = await postRhizohLlmTurnV0({
       message,
       provider: providerRow.provider,
+      model: providerRow.model,
       llmKeySource: "env",
       voiceTurn: input.voiceTurn === true,
       idToken: input.idToken,

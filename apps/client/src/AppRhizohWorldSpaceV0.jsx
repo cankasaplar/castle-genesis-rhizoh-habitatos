@@ -3,7 +3,7 @@
  * @see docs/RHIZOH_WORLD_SURFACE_HIERARCHY_V0.md
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "./castleFlight/registerGlobals.js";
 import { useCastleAuth } from "./firebase/useCastleAuth.js";
 import { CastleAuthOverlay } from "./auth/CastleAuthOverlay.jsx";
@@ -28,7 +28,8 @@ import {
   resolveRhizohLayerModeV0,
   resolveRhizohWorldSpaceCesiumActiveV0
 } from "./rhizoh/runtime/rhizohLayerContextV0.js";
-import { RHIZOH_WORLD_DRAWER_DOMAIN_V0 } from "./rhizoh/runtime/rhizohWorldDrawerDomainV0.js";
+import { RHIZOH_WORLD_DRAWER_DOMAIN_V0, writeRhizohWorldDrawerDomainV0 } from "./rhizoh/runtime/rhizohWorldDrawerDomainV0.js";
+import { resolveWorldDomainFromPathV0 } from "./rhizoh/runtime/rhizohWorldDomainRoutesV0.js";
 import {
   resolveRhizohWorldSpaceMapStripBottomCssV0,
   resolveRhizohWorldSpaceVoiceDockBottomCssV0
@@ -40,7 +41,6 @@ import {
 } from "./rhizoh/spatial/spatialRealityInfraV0.js";
 import { reconcileMapSurfaceFromGateway, setRealityMode } from "./reality/realityDirector.js";
 import { readUiLocaleV0 } from "./rhizoh/runtime/rhizohUiLocaleV0.js";
-import { writeRhizohWorldDrawerDomainV0 } from "./rhizoh/runtime/rhizohWorldDrawerDomainV0.js";
 import { handleWorldSpaceCapWheelNodeV0 } from "./rhizoh/runtime/rhizohWorldSpaceCapWheelV0.js";
 import {
   readCastleNexusGeoV0,
@@ -118,6 +118,7 @@ import { getActiveFederationOverlayNodeV0 } from "./rhizoh/runtime/rhizohDomainG
 
 export default function AppRhizohWorldSpaceV0() {
   const navigate = useNavigate();
+  const location = useLocation();
   const castleAuth = useCastleAuth();
   const { remoteCastles, recordBridgePeer } = useCastleActiveCastles(castleAuth?.user?.uid);
   const remoteCastlesVisibleV0 = useSyncExternalStore(
@@ -180,9 +181,18 @@ export default function AppRhizohWorldSpaceV0() {
   );
 
   const layerModeV0 = useMemo(
-    () => resolveRhizohLayerModeV0({ pathname: "/world/space" }),
-    []
+    () => resolveRhizohLayerModeV0({ pathname: location.pathname || "/world/space" }),
+    [location.pathname]
   );
+
+  const worldDrawerDomainV0 = useMemo(() => {
+    const fromPath = resolveWorldDomainFromPathV0(location.pathname);
+    return fromPath || RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE;
+  }, [location.pathname]);
+
+  useEffect(() => {
+    writeRhizohWorldDrawerDomainV0(worldDrawerDomainV0);
+  }, [worldDrawerDomainV0]);
 
   const openPostCastleMediaTubeV0 = useCallback(
     (source = "castle_init") => {
@@ -624,7 +634,7 @@ export default function AppRhizohWorldSpaceV0() {
       />
 
       <RhizohWorldDomainShellV0
-        domain={RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE}
+        domain={worldDrawerDomainV0}
         layerMode={layerModeV0}
         uiLocale={uiLocale}
         activeMapTool={worldMapToolV0}

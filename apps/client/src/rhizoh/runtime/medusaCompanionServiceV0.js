@@ -7,7 +7,8 @@ import * as THREE from "three";
 import {
   loadMedusaCompanionModelV0,
   MEDUSA_COMPANION_DEFAULT_SIZE_V0,
-  MEDUSA_COMPANION_FACE_Y_V0
+  MEDUSA_COMPANION_FACE_Y_V0,
+  attachMedusaHairStrandsV0
 } from "./medusaCompanionSceneV0.js";
 
 /**
@@ -46,13 +47,24 @@ export function mountMedusaCompanionV0(container, opts = {}) {
   let root = null;
   /** @type {THREE.Object3D[]} */
   let snakeMeshes = [];
+  const collectSnakes = (nextRoot) => {
+    if (!nextRoot) return;
+    attachMedusaHairStrandsV0(nextRoot);
+    snakeMeshes = [];
+    nextRoot.traverse((obj) => {
+      if (obj.userData?.medusaSnake) snakeMeshes.push(obj);
+    });
+    if (!snakeMeshes.length) {
+      nextRoot.traverse((obj) => {
+        if (obj.isMesh && obj !== nextRoot) snakeMeshes.push(obj);
+      });
+    }
+  };
+
   loadMedusaCompanionModelV0(scene, (nextRoot) => {
     if (disposed) return;
     root = nextRoot;
-    snakeMeshes = [];
-    root.traverse((obj) => {
-      if (obj.userData?.medusaSnake) snakeMeshes.push(obj);
-    });
+    collectSnakes(root);
   });
 
   let t = 0;
@@ -73,6 +85,7 @@ export function mountMedusaCompanionV0(container, opts = {}) {
     if (mediaStream?.getAudioTracks?.().length) {
       try {
         audioCtx = new AudioContext();
+        void audioCtx.resume().catch(() => {});
         const src = audioCtx.createMediaStreamSource(mediaStream);
         analyser = audioCtx.createAnalyser();
         analyser.fftSize = 256;
@@ -109,7 +122,7 @@ export function mountMedusaCompanionV0(container, opts = {}) {
         headYawTarget = Math.max(-0.62, Math.min(0.62, headYawTarget));
       }
     } else {
-      motion = 0.18 + Math.sin(t * 2) * motionProfile.idleAmp;
+      motion = 0.28 + Math.sin(t * 2.1) * motionProfile.idleAmp;
     }
     headYawTarget *= 0.972;
     if (root) {

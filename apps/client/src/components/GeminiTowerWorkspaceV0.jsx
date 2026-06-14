@@ -324,29 +324,29 @@ const VisionLensRoomV0 = memo(function VisionLensRoomV0({
   }, [onAnalyzeResult, onStatus, tr, visionFrame]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row">
-      <div className="flex min-h-0 flex-1 flex-col gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
         {visionFrame ? (
           <img
             src={visionFrame}
             alt=""
-            className="aspect-video max-h-[min(36vh,320px)] w-full rounded-xl border border-white/15 object-contain bg-black/50"
+            className="aspect-square h-28 w-28 shrink-0 rounded-xl border border-white/15 object-cover bg-black/50"
           />
         ) : (
-          <div className="flex aspect-video max-h-[min(36vh,320px)] w-full items-center justify-center rounded-xl border border-dashed border-white/20 bg-black/40 text-[11px] text-white/45">
-            {tr ? "Kamera karesi bekleniyor — üstten bağlan ve yakala." : "Waiting for camera frame — connect and capture above."}
+          <div className="flex aspect-square h-28 w-28 shrink-0 items-center justify-center rounded-xl border border-dashed border-white/20 bg-black/40 p-2 text-center text-[10px] leading-snug text-white/45">
+            {tr ? "Üstten kare yakala" : "Capture frame above"}
           </div>
         )}
         <button
           type="button"
           disabled={busy || !visionFrame}
           onClick={() => void onAnalyze()}
-          className="self-start rounded-lg border border-violet-400/40 bg-violet-500/25 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-violet-50 disabled:opacity-40"
+          className="h-fit shrink-0 rounded-lg border border-violet-400/40 bg-violet-500/25 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-violet-50 disabled:opacity-40"
         >
           {busy ? (tr ? "Analiz ediliyor…" : "Analyzing…") : tr ? "Gemini Vision analizi" : "Run Gemini Vision"}
         </button>
       </div>
-      <div className="flex min-h-[180px] flex-1 flex-col rounded-xl border border-fuchsia-400/25 bg-slate-900/70 p-4">
+      <div className="flex min-h-[200px] flex-1 flex-col rounded-xl border border-fuchsia-400/25 bg-slate-900/70 p-4">
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-300">
           {tr ? "Vision analizi" : "Vision analysis"}
         </p>
@@ -453,7 +453,8 @@ export const GeminiTowerWorkspaceV0 = memo(function GeminiTowerWorkspaceV0({ ope
 
   const activeRoom = GEMINI_TOWER_DESIGN_V0.rooms.find((r) => r.id === roomId) || GEMINI_TOWER_DESIGN_V0.rooms[1];
   const showMediaBar = MEDIA_ROOM_IDS_V0.has(roomId);
-  const largePreview = roomId === "vision_lens" || roomId === "tower_voice";
+  const mediaPreviewSize =
+    roomId === "vision_lens" ? "square" : roomId === "tower_voice" ? "large" : "compact";
 
   return (
     <div
@@ -525,7 +526,8 @@ export const GeminiTowerWorkspaceV0 = memo(function GeminiTowerWorkspaceV0({ ope
           {showMediaBar ? (
             <RhizohTowerMediaConnectBarV0
               uiLocale={uiLocale}
-              previewSize={largePreview ? "large" : "compact"}
+              previewSize={mediaPreviewSize}
+              showMedusa={roomId === "tower_voice" || roomId === "vision_lens"}
               onFrameCapture={(frame) => {
                 if (!frame) return;
                 setVisionFrame(frame);
