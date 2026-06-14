@@ -4,6 +4,7 @@ import {
   openTowerMediaStreamV0,
   stopTowerMediaStreamV0
 } from "../rhizoh/runtime/rhizohTowerMediaCaptureV0.js";
+import { MedusaCompanionOverlayV0 } from "./MedusaCompanionOverlayV0.jsx";
 
 /**
  * Camera + mic connect strip for tower workspaces (vision + voice).
@@ -13,7 +14,8 @@ export const RhizohTowerMediaConnectBarV0 = memo(function RhizohTowerMediaConnec
   onFrameCapture,
   onStreamChange,
   showVisionCapture = true,
-  previewSize = "compact"
+  previewSize = "compact",
+  showMedusa = true
 }) {
   const tr = uiLocale === "tr";
   const videoRef = useRef(null);
@@ -21,10 +23,12 @@ export const RhizohTowerMediaConnectBarV0 = memo(function RhizohTowerMediaConnec
   const [active, setActive] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [mediaStream, setMediaStream] = useState(null);
 
   const stopStream = useCallback(() => {
     stopTowerMediaStreamV0(streamRef.current);
     streamRef.current = null;
+    setMediaStream(null);
     if (videoRef.current) videoRef.current.srcObject = null;
     setActive(false);
     onStreamChange?.(null);
@@ -42,6 +46,7 @@ export const RhizohTowerMediaConnectBarV0 = memo(function RhizohTowerMediaConnec
     try {
       const stream = await openTowerMediaStreamV0({ audio: true, video: true });
       streamRef.current = stream;
+      setMediaStream(stream);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play?.().catch(() => {});
@@ -67,9 +72,14 @@ export const RhizohTowerMediaConnectBarV0 = memo(function RhizohTowerMediaConnec
   }, [onFrameCapture, tr]);
 
   const previewClass =
-    previewSize === "large"
-      ? "mt-2 aspect-video max-h-[min(38vh,340px)] w-full rounded-xl border border-white/15 bg-black object-cover"
-      : "mt-2 max-h-28 w-full rounded-lg border border-white/10 bg-black object-cover";
+    previewSize === "square"
+      ? "mt-2 aspect-square max-h-36 w-36 rounded-xl border border-white/15 bg-black object-cover"
+      : previewSize === "large"
+        ? "mt-2 aspect-video max-h-[min(38vh,340px)] w-full rounded-xl border border-white/15 bg-black object-cover"
+        : "mt-2 max-h-28 w-full rounded-lg border border-white/10 bg-black object-cover";
+
+  const previewWrapClass =
+    previewSize === "square" ? "relative mt-2 inline-block" : "relative mt-2 w-full";
 
   return (
     <div className="rounded-xl border border-cyan-400/25 bg-cyan-950/20 p-2">
@@ -117,13 +127,23 @@ export const RhizohTowerMediaConnectBarV0 = memo(function RhizohTowerMediaConnec
         </span>
       </div>
       {error ? <p className="mt-1 text-[9px] text-amber-200/90">{error}</p> : null}
-      <video
-        ref={videoRef}
-        className={`${previewClass} ${active ? "block" : "hidden"}`}
-        playsInline
-        muted
-        aria-hidden={!active}
-      />
+      <div className={previewWrapClass}>
+        <video
+          ref={videoRef}
+          className={`${previewClass} ${active ? "block" : "hidden"}`}
+          playsInline
+          muted
+          aria-hidden={!active}
+        />
+        {showMedusa && active ? (
+          <MedusaCompanionOverlayV0
+            active
+            mediaStream={mediaStream}
+            overlayNode="media"
+            className="!bottom-1 !right-1"
+          />
+        ) : null}
+      </div>
     </div>
   );
 });

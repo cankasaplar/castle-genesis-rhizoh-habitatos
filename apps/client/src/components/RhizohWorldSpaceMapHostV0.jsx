@@ -35,6 +35,10 @@ import {
   writeSovereignPortalCoordsV0
 } from "../rhizoh/runtime/sovereignWorldMapNodesV0.js";
 import {
+  getLiveMatchMapPinsV0,
+  RHIZOH_LIVE_MATCH_PINS_EVENT_V0
+} from "../rhizoh/runtime/worldMapLiveMatchPinsV0.js";
+import {
   listCastlePresenceV0,
   mergeRemoteCastlesWithNetworkPresenceV0,
   subscribeCastlePresenceV0
@@ -217,8 +221,8 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
     [remoteCastles, presenceCountV0]
   );
   const displayNodes = useMemo(
-    () => listSovereignWorldMapNodesForViewV0({ userCastle: userCastleGeo }),
-    [userCastleGeo]
+    () => [...listSovereignWorldMapNodesForViewV0({ userCastle: userCastleGeo }), ...liveMatchPins],
+    [userCastleGeo, liveMatchPins]
   );
   const remoteNodes = useMemo(
     () => (remoteCastlesVisible ? buildRemoteCastleMapNodesV0(mergedRemoteCastles) : []),
@@ -227,6 +231,13 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
   const nodeById = useRef(new Map(displayNodes.map((n) => [n.id, n])));
   const [leafletReady, setLeafletReady] = useState(false);
   const [localAnchors, setLocalAnchors] = useState(() => readLocalGhostCastleAnchorsV0());
+  const [liveMatchPins, setLiveMatchPins] = useState(() => getLiveMatchMapPinsV0());
+
+  useEffect(() => {
+    const onPins = (ev) => setLiveMatchPins(ev?.detail?.pins || getLiveMatchMapPinsV0());
+    window.addEventListener(RHIZOH_LIVE_MATCH_PINS_EVENT_V0, onPins);
+    return () => window.removeEventListener(RHIZOH_LIVE_MATCH_PINS_EVENT_V0, onPins);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

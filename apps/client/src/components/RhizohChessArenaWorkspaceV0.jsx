@@ -4,7 +4,7 @@ import {
   createChessArenaGameV0,
   createCastleToCastleChessMatchV0
 } from "../rhizoh/runtime/chessArenaEngineV0.js";
-import { pickChessArenaEngineMoveV0 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
+import { getChessStockfishEngineStatusV0, getStockfishArenaMoveV0, pickChessArenaEngineMoveV0 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
 import { parseChessVoiceMoveV0 } from "../rhizoh/runtime/chessVoiceMoveParserV0.js";
 import {
   CASTLE_C2C_MESSAGE_TYPE_V0,
@@ -136,6 +136,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const [whiteClockMs, setWhiteClockMs] = useState(DEFAULT_CLOCK_MS_V0);
   const [blackClockMs, setBlackClockMs] = useState(DEFAULT_CLOCK_MS_V0);
   const [boardTheme, setBoardTheme] = useState(() => readChessArenaThemeV0());
+  const [engineStatus, setEngineStatus] = useState(() => getChessStockfishEngineStatusV0());
 
   const boardColors = useMemo(
     () => resolveChessBoardColorsV0(boardTheme.boardThemeId),
@@ -173,6 +174,14 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       black: tr ? "Siyah" : "Black"
     });
   }, [c2cMatch, mode, peerCastle, tr]);
+
+  useEffect(() => {
+    if (!open) return;
+    void getStockfishArenaMoveV0("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", {
+      movetimeMs: 80,
+      skill: 5
+    }).finally(() => setEngineStatus(getChessStockfishEngineStatusV0()));
+  }, [open]);
 
   useEffect(() => {
     if (!open || outcome) return undefined;
@@ -308,18 +317,26 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       const aiModes = [CHESS_GAME_MODE_V0.AI_HUMAN, CHESS_GAME_MODE_V0.AI_AI];
       if (aiModes.includes(mode) && !game.isGameOver()) {
         setAiBusy(true);
-        let aiMove = null;
+        let aiPick = null;
         try {
-          aiMove = await pickChessArenaEngineMoveV0(game, { useStockfish: true });
+          aiPick = await pickChessArenaEngineMoveV0(game, { useStockfish: true });
         } catch {
-          aiMove = null;
+          aiPick = null;
         }
         setAiBusy(false);
+        setEngineStatus(getChessStockfishEngineStatusV0());
+        const aiMove = typeof aiPick === "string" ? aiPick : aiPick?.move;
         if (aiMove) {
           const aiResult = game.tryMove(aiMove);
           if (aiResult.ok) {
             setTick((n) => n + 1);
-            setStatus((s) => `${s} · Stockfish: ${aiResult.move.san}`);
+            const engineLabel =
+              aiPick?.engine === "stockfish_wasm"
+                ? "Stockfish"
+                : tr
+                  ? "Yedek motor"
+                  : "Fallback engine";
+            setStatus((s) => `${s} · ${engineLabel}: ${aiResult.move.san}`);
             if (aiResult.outcome) {
               void runMatchLearningV0(aiResult.outcome, c2cMatch);
             }
@@ -410,7 +427,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
               align="right"
               tr={tr}
             />
-            <div className="flex w-[min(100%,min(92vw,50vh))] flex-col items-center gap-1">
+            <div className="my-2 flex w-[min(100%,min(88vw,46vh))] shrink-0 flex-col items-center gap-1">
               <div className="flex w-full items-stretch gap-1">
                 <div className="grid shrink-0 grid-rows-8 text-[8px] font-semibold text-white/50 sm:text-[9px]">
                   {[8, 7, 6, 5, 4, 3, 2, 1].map((rank) => (
@@ -467,6 +484,19 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
               align="left"
               tr={tr}
             />
+            <p className="text-[9px] text-white/40">
+              {engineStatus === "stockfish_wasm"
+                ? tr
+                  ? "Motor: Stockfish 16 NNUE (WASM)"
+                  : "Engine: Stockfish 16 NNUE (WASM)"
+                : engineStatus === "heuristic_fallback"
+                  ? tr
+                    ? "Motor: Stockfish yüklenemedi — basit yedek AI"
+                    : "Engine: Stockfish unavailable — simple fallback AI"
+                  : tr
+                    ? "Motor: başlatılıyor…"
+                    : "Engine: starting…"}
+            </p>
             {aiBusy ? (
               <p className="text-[10px] text-amber-200">{tr ? "Stockfish düşünüyor…" : "Stockfish thinking…"}</p>
             ) : null}
