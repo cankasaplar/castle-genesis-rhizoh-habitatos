@@ -103,7 +103,7 @@ export const RhizohLlmTowerWorkspaceV0 = memo(function RhizohLlmTowerWorkspaceV0
               <RhizohTowerMediaConnectBarV0
                 uiLocale={uiLocale}
                 previewSize="square"
-                showMedusa
+                showMedusa={false}
                 onFrameCapture={setVisionFrame}
               />
               {visionFrame && providerRow.provider === "gemini" ? (

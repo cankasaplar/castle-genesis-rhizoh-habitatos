@@ -111,8 +111,8 @@ const ImagineAtelierRoomV0 = memo(function ImagineAtelierRoomV0({
       onMuseMessage(
         "Gemini Muse",
         result.brief
-          ? `"${text}" — Gemini brief: ${result.brief}`
-          : `"${text}" fikrini görselleştirdim.${result.status === "manifested_gemini_brief" ? " (Render Gemini)" : " (local manifest)"}`
+          ? `"${text}" — Gemini metin brief: ${result.brief} (görsel: yerel manifest; Imagen API sonraki sprint.)`
+          : `"${text}" — yerel renk manifesti oluşturuldu. Gerçek Imagen üretimi gateway Imagen endpoint ile gelecek.`
       );
       onStatus("✅ Manifested!");
       setBusy("");
@@ -479,8 +479,7 @@ export const GeminiTowerWorkspaceV0 = memo(function GeminiTowerWorkspaceV0({ ope
 
   const activeRoom = GEMINI_TOWER_DESIGN_V0.rooms.find((r) => r.id === roomId) || GEMINI_TOWER_DESIGN_V0.rooms[1];
   const showMediaBar = MEDIA_ROOM_IDS_V0.has(roomId);
-  const mediaPreviewSize =
-    roomId === "vision_lens" ? "square" : roomId === "tower_voice" ? "large" : "compact";
+  const mediaPreviewSize = "square";
 
   return (
     <div
@@ -553,7 +552,7 @@ export const GeminiTowerWorkspaceV0 = memo(function GeminiTowerWorkspaceV0({ ope
             <RhizohTowerMediaConnectBarV0
               uiLocale={uiLocale}
               previewSize={mediaPreviewSize}
-              showMedusa={roomId === "tower_voice" || roomId === "vision_lens"}
+              showMedusa={false}
               onFrameCapture={(frame) => {
                 if (!frame) return;
                 setVisionFrame(frame);
