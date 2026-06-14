@@ -13,6 +13,18 @@ import {
 } from "./rhizohConversationContinuityGlueV0.js";
 import { speakRhizohReplyChunkedV0 } from "./rhizohSpeechChunkTtsV0.js";
 import { stampVoiceUserGestureV0 } from "./voiceUserGestureAnchorV0.js";
+import {
+  commitFinalUserVisibleLanguageV0,
+  LANGUAGE_COMMIT_LOCK_KEY_V0
+} from "./rhizohFinalLanguageCommitV0.js";
+
+function commitConversationDockReplyV0(text, source) {
+  return commitFinalUserVisibleLanguageV0(String(text || "").trim(), {
+    source: String(source || "conversation_dock"),
+    hardRewrite: true,
+    lockKey: LANGUAGE_COMMIT_LOCK_KEY_V0
+  }).text;
+}
 
 /** @typedef {"idle" | "listening" | "interpreting" | "thinking" | "speaking"} RhizohConversationFieldState */
 
@@ -71,12 +83,13 @@ export function useRhizohConversationDockV0(opts = {}) {
         source: "conversation_dock_voice"
       });
       if (localTurn?.ok && localTurn.llmBypass) {
-        setLastReply(localTurn.reply || "");
+        const reply = commitConversationDockReplyV0(localTurn.reply, localTurn.source || "local");
+        setLastReply(reply);
         setLastReplySource(String(localTurn.source || "local"));
         setFieldState("speaking");
         const glue = buildConversationContinuityGlueV0({ llmWaitMs: Date.now() - t0 });
         await handoffHotSpeechToLlmReplyV0(glue, () => {
-          void speakRhizohReplyChunkedV0(localTurn.reply || "", { smoothAfterAck: false, glue });
+          void speakRhizohReplyChunkedV0(reply, { smoothAfterAck: false, glue });
         });
         setFieldState("idle");
         userTurnRef.current += 1;
@@ -103,11 +116,12 @@ export function useRhizohConversationDockV0(opts = {}) {
         llmWaitMs: Date.now() - t0
       });
       if (out.ok && out.reply) {
-        setLastReply(out.reply);
+        const reply = commitConversationDockReplyV0(out.reply, out.source || "teacher");
+        setLastReply(reply);
         setLastReplySource(String(out.source || "teacher"));
         setFieldState("speaking");
         await handoffHotSpeechToLlmReplyV0(glue, () => {
-          void speakRhizohReplyChunkedV0(out.reply, { smoothAfterAck: false, glue });
+          void speakRhizohReplyChunkedV0(reply, { smoothAfterAck: false, glue });
         });
       } else if (!out.ok) {
         setLastError(String(out.error || "dispatch_failed"));
@@ -159,12 +173,13 @@ export function useRhizohConversationDockV0(opts = {}) {
         source: "conversation_dock_text"
       });
       if (localTurn?.ok && localTurn.llmBypass) {
-        setLastReply(localTurn.reply || "");
+        const reply = commitConversationDockReplyV0(localTurn.reply, localTurn.source || "local");
+        setLastReply(reply);
         setLastReplySource(String(localTurn.source || "local"));
         setDraft("");
         setFieldState("speaking");
         const glue = buildConversationContinuityGlueV0({ llmWaitMs: Date.now() - t0 });
-        await speakRhizohReplyChunkedV0(localTurn.reply || "", { smoothAfterAck: true, glue });
+        await speakRhizohReplyChunkedV0(reply, { smoothAfterAck: true, glue });
         userTurnRef.current += 1;
         return;
       }
@@ -188,12 +203,13 @@ export function useRhizohConversationDockV0(opts = {}) {
         sourcePath: "conversation_dock_text"
       });
       if (out.ok && out.reply) {
-        setLastReply(out.reply);
+        const reply = commitConversationDockReplyV0(out.reply, out.source || "teacher");
+        setLastReply(reply);
         setLastReplySource(String(out.source || "teacher"));
         setDraft("");
         setFieldState("speaking");
         const glue = buildConversationContinuityGlueV0({ prep: out.prep, llmWaitMs: Date.now() - t0 });
-        await speakRhizohReplyChunkedV0(out.reply, { smoothAfterAck: true, glue });
+        await speakRhizohReplyChunkedV0(reply, { smoothAfterAck: true, glue });
       } else {
         setLastError(String(out.error || "llm_failed"));
       }

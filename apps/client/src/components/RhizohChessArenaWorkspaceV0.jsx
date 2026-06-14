@@ -215,7 +215,12 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       const aiModes = [CHESS_GAME_MODE_V0.AI_HUMAN, CHESS_GAME_MODE_V0.AI_AI];
       if (aiModes.includes(mode) && !game.isGameOver()) {
         setAiBusy(true);
-        const aiMove = await pickChessArenaEngineMoveV0(game, { useStockfish: true });
+        let aiMove = null;
+        try {
+          aiMove = await pickChessArenaEngineMoveV0(game, { useStockfish: true });
+        } catch {
+          aiMove = null;
+        }
         setAiBusy(false);
         if (aiMove) {
           const aiResult = game.tryMove(aiMove);
@@ -306,38 +311,47 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden p-3 lg:grid-cols-[1fr_280px]">
           <div className="flex min-h-0 flex-col items-center justify-center gap-2">
             <div className="flex flex-col items-center gap-1">
-              <div className="inline-grid grid-cols-8 overflow-hidden rounded-lg border-2 border-emerald-600/50 shadow-lg shadow-black/40">
-                {rows.map((row, ri) =>
-                  row.map((cell, ci) => {
-                    const dark = (ri + ci) % 2 === 1;
-                    const rank = 8 - ri;
-                    const sq = cell?.square || `${String.fromCharCode(97 + ci)}${rank}`;
-                    const selected = selectedSquare === sq;
-                    const isWhitePiece = cell?.color === "w";
-                    return (
-                      <button
-                        key={`${ri}-${ci}`}
-                        type="button"
-                        onClick={() => onSquareClick(sq)}
-                        className={`flex h-11 w-11 items-center justify-center text-2xl sm:h-14 sm:w-14 ${
-                          selected ? "ring-2 ring-cyan-300 ring-inset z-10" : ""
-                        } ${dark ? "bg-[#769656]" : "bg-[#eeeed2]"}`}
-                      >
-                        <span
-                          className={
-                            isWhitePiece
-                              ? "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
-                              : "text-zinc-900 drop-shadow-[0_1px_1px_rgba(255,255,255,0.35)]"
-                          }
+              <div className="flex items-stretch gap-1">
+                <div className="flex flex-col justify-around py-1 text-[9px] font-semibold text-white/50">
+                  {[8, 7, 6, 5, 4, 3, 2, 1].map((rank) => (
+                    <span key={rank} className="flex h-11 items-center sm:h-14">
+                      {rank}
+                    </span>
+                  ))}
+                </div>
+                <div className="inline-grid grid-cols-8 overflow-hidden rounded-lg border-2 border-emerald-600/50 shadow-lg shadow-black/40">
+                  {rows.map((row, ri) =>
+                    row.map((cell, ci) => {
+                      const dark = (ri + ci) % 2 === 1;
+                      const rank = 8 - ri;
+                      const sq = cell?.square || `${String.fromCharCode(97 + ci)}${rank}`;
+                      const selected = selectedSquare === sq;
+                      const isWhitePiece = cell?.color === "w";
+                      return (
+                        <button
+                          key={`${ri}-${ci}`}
+                          type="button"
+                          onClick={() => onSquareClick(sq)}
+                          className={`flex h-11 w-11 items-center justify-center text-2xl sm:h-14 sm:w-14 ${
+                            selected ? "ring-2 ring-cyan-300 ring-inset z-10" : ""
+                          } ${dark ? "bg-[#6d8f4f]" : "bg-[#eeeed2]"}`}
                         >
-                          {cell?.glyph || ""}
-                        </span>
-                      </button>
-                    );
-                  })
-                )}
+                          <span
+                            className={
+                              isWhitePiece
+                                ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
+                                : "text-neutral-950 drop-shadow-[0_0_2px_rgba(255,255,255,0.75)]"
+                            }
+                          >
+                            {cell?.glyph || ""}
+                          </span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
               </div>
-              <div className="grid w-full max-w-[min(100%,28rem)] grid-cols-8 gap-0 px-0.5 text-center text-[9px] font-semibold text-white/45">
+              <div className="grid w-full max-w-[min(100%,30rem)] grid-cols-8 gap-0 pl-5 text-center text-[9px] font-semibold text-white/45">
                 {"abcdefgh".split("").map((f) => (
                   <span key={f}>{f}</span>
                 ))}

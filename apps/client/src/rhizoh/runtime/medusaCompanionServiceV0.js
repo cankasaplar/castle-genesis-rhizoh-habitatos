@@ -6,7 +6,8 @@
 import * as THREE from "three";
 import {
   loadMedusaCompanionModelV0,
-  MEDUSA_COMPANION_DEFAULT_SIZE_V0
+  MEDUSA_COMPANION_DEFAULT_SIZE_V0,
+  MEDUSA_COMPANION_FACE_Y_V0
 } from "./medusaCompanionSceneV0.js";
 
 /**
@@ -27,7 +28,8 @@ export function mountMedusaCompanionV0(container, opts = {}) {
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 20);
-  camera.position.set(0, 0.55, 2.2);
+  camera.position.set(0, 0.52, 2.05);
+  camera.lookAt(0, 0.42, 0);
 
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
   renderer.setSize(w, h);
@@ -42,9 +44,15 @@ export function mountMedusaCompanionV0(container, opts = {}) {
 
   /** @type {THREE.Object3D | null} */
   let root = null;
+  /** @type {THREE.Object3D[]} */
+  let snakeMeshes = [];
   loadMedusaCompanionModelV0(scene, (nextRoot) => {
     if (disposed) return;
     root = nextRoot;
+    snakeMeshes = [];
+    root.traverse((obj) => {
+      if (obj.userData?.medusaSnake) snakeMeshes.push(obj);
+    });
   });
 
   let t = 0;
@@ -91,11 +99,20 @@ export function mountMedusaCompanionV0(container, opts = {}) {
     if (root) {
       const sway = (0.14 + motion * 0.5 * motionProfile.audioGain) * motionProfile.swayScale;
       const breathe = Math.sin(t * 1.1) * 0.04 * motionProfile.swayScale;
-      root.rotation.y = Math.sin(t * 1.2) * sway + Math.sin(t * 0.35) * 0.06;
-      root.rotation.z = Math.sin(t * 0.9) * sway * 0.35;
-      root.rotation.x = Math.sin(t * 0.7) * sway * 0.12;
+      root.rotation.y =
+        MEDUSA_COMPANION_FACE_Y_V0 + Math.sin(t * 1.2) * sway * 0.35 + Math.sin(t * 0.35) * 0.04;
+      root.rotation.z = Math.sin(t * 0.9) * sway * 0.22;
+      root.rotation.x = Math.sin(t * 0.7) * sway * 0.08;
       root.position.y = Math.sin(t * 1.6) * (0.03 + motion * 0.08) + breathe;
-      root.position.x = Math.sin(t * 0.85) * sway * 0.04;
+      root.position.x = Math.sin(t * 0.85) * sway * 0.03;
+      for (let i = 0; i < snakeMeshes.length; i += 1) {
+        const snake = snakeMeshes[i];
+        const phase = Number(snake.userData?.snakePhase) || i * 0.7;
+        const wiggle = (0.22 + motion * 0.45) * motionProfile.swayScale;
+        snake.rotation.z = Math.sin(t * 2.4 + phase) * wiggle;
+        snake.rotation.x = Math.sin(t * 1.8 + phase * 1.3) * wiggle * 0.65;
+        snake.rotation.y = Math.cos(t * 2.1 + phase * 0.8) * wiggle * 0.4;
+      }
     }
     renderer.render(scene, camera);
     raf = requestAnimationFrame(tick);
@@ -120,6 +137,7 @@ export function mountMedusaCompanionV0(container, opts = {}) {
       analyser = null;
       data = null;
       root = null;
+      snakeMeshes = [];
       renderer.dispose();
       scene.clear();
       container.replaceChildren();

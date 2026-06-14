@@ -11,6 +11,7 @@ import { createRhizohPayloadRefV0, rhizohChecksumStringV0 } from "@castle/protoc
 export const SYMBYO_MAP_INTENT_BRIDGE_SCHEMA_V0 = "symbyo.map_intent_bridge.v0";
 export const SYMBYO_MAP_INTENT_SCHEMA_V0 = Object.freeze(["intent", "nodeId", "context"]);
 export const RHIZOH_V11_MAP_INTENT_EVENT_V0 = "rhizoh:v11-map-intent-v0";
+export const RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0 = "rhizoh:v11-map-clear-preview-v0";
 export const RHIZOH_OPEN_WORKSPACE_EVENT_V1 = "RHIZOH_OPEN_WORKSPACE";
 export const RHIZOH_OPEN_LIBRARY_EVENT_V1 = "RHIZOH_OPEN_LIBRARY";
 export const RHIZOH_OPEN_CHESS_ARENA_EVENT_V1 = "RHIZOH_OPEN_CHESS_ARENA";

@@ -21,6 +21,18 @@ import {
   tryOpenSovereignMediaTubeFromTextV0
 } from "./sovereignWorldMapNodesV0.js";
 import { tryResolveRhizohLocalKnowledgeV0 } from "./rhizohPolicyRouterV0.js";
+import {
+  commitFinalUserVisibleLanguageV0,
+  LANGUAGE_COMMIT_LOCK_KEY_V0
+} from "./rhizohFinalLanguageCommitV0.js";
+
+function commitLocalConversationReplyV0(text, source) {
+  return commitFinalUserVisibleLanguageV0(String(text || "").trim(), {
+    source: String(source || "rhizoh_local"),
+    hardRewrite: true,
+    lockKey: LANGUAGE_COMMIT_LOCK_KEY_V0
+  }).text;
+}
 
 export const RHIZOH_LOCAL_CONVERSATION_TURN_SCHEMA_V0 =
   "castle.rhizoh.local_conversation_turn.v0";
@@ -42,7 +54,7 @@ export function tryResolveLocalConversationTurnV0(text, opts = {}) {
     return Object.freeze({
       schema: RHIZOH_LOCAL_CONVERSATION_TURN_SCHEMA_V0,
       ok: true,
-      reply: mediaOpen.reply,
+      reply: commitLocalConversationReplyV0(mediaOpen.reply, "sovereign_media_open"),
       source: "sovereign_media_open",
       llmBypass: true,
       kind: mediaOpen.kind
@@ -55,7 +67,7 @@ export function tryResolveLocalConversationTurnV0(text, opts = {}) {
     return Object.freeze({
       schema: RHIZOH_LOCAL_CONVERSATION_TURN_SCHEMA_V0,
       ok: true,
-      reply: String(local.reply || "").trim(),
+      reply: commitLocalConversationReplyV0(local.reply, "local_command"),
       source: "local_command",
       llmBypass: true,
       kind: local.kind || route.canonical || route.grammarLocal?.kind,
@@ -71,7 +83,7 @@ export function tryResolveLocalConversationTurnV0(text, opts = {}) {
     return Object.freeze({
       schema: RHIZOH_LOCAL_CONVERSATION_TURN_SCHEMA_V0,
       ok: true,
-      reply: voiceWarp.reply,
+      reply: commitLocalConversationReplyV0(voiceWarp.reply, "sovereign_voice_warp"),
       source: "sovereign_voice_warp",
       llmBypass: true,
       kind: voiceWarp.kind,
@@ -88,7 +100,7 @@ export function tryResolveLocalConversationTurnV0(text, opts = {}) {
     return Object.freeze({
       schema: RHIZOH_LOCAL_CONVERSATION_TURN_SCHEMA_V0,
       ok: true,
-      reply: String(localAction.user_reply_tr || "").trim(),
+      reply: commitLocalConversationReplyV0(localAction.user_reply_tr, "local_action"),
       source: "local_action",
       llmBypass: true,
       kind: localAction.kind,
@@ -101,7 +113,7 @@ export function tryResolveLocalConversationTurnV0(text, opts = {}) {
     return Object.freeze({
       schema: RHIZOH_LOCAL_CONVERSATION_TURN_SCHEMA_V0,
       ok: true,
-      reply: rhizohLocal.reply,
+      reply: commitLocalConversationReplyV0(rhizohLocal.reply, rhizohLocal.source),
       source: rhizohLocal.source,
       llmBypass: true,
       askRhizoh: true,

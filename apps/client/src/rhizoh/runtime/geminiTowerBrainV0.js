@@ -4,6 +4,8 @@
  */
 
 import { postRhizohLlmTurnV0 } from "./rhizohLlmTurnClientV0.js";
+import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
+import { resolveRhizohLlmLanguageV0 } from "./rhizohLanguagePropagationV0.js";
 
 function hashPromptV0(prompt) {
   let h = 2166136261;
@@ -62,9 +64,13 @@ function paintManifestCanvasV0(ctx, width, height, prompt, brief = "") {
 async function fetchGeminiVisualBriefV0(prompt) {
   const text = String(prompt || "").trim();
   if (!text) return null;
+  const tr = resolveOutputLanguageCodeV0() === "tr";
+  const llmLang = resolveRhizohLlmLanguageV0();
   try {
     const turn = await postRhizohLlmTurnV0({
-      message: `Imagine Atelier visual brief for: "${text}". Reply in 2-3 vivid sentences: palette, mood, composition. Plain text only.`,
+      message: tr
+        ? `Imagine Atelier görsel özeti: "${text}". Yanıtı 2-3 canlı Türkçe cümleyle ver: palet, ruh hali, kompozisyon. Yalnızca düz metin.`
+        : `Imagine Atelier visual brief for: "${text}". Reply in 2-3 vivid sentences: palette, mood, composition. Plain text only.`,
       provider: "gemini",
       llmKeySource: "env",
       context: Object.freeze({
@@ -72,7 +78,7 @@ async function fetchGeminiVisualBriefV0(prompt) {
         surface: "imagine_atelier",
         task: "visual_brief"
       }),
-      options: { maxTokens: 180 }
+      options: { maxTokens: 180, language: llmLang.bcp47 }
     });
     const reply = String(turn?.reply || "").trim();
     if (turn?.ok && reply) return reply;
@@ -152,14 +158,17 @@ export async function analyzeGeminiTowerCanvasV0(imageDataUrl) {
   if (!String(imageDataUrl || "").startsWith("data:image")) {
     return "Upload or draw on the canvas first — Vision Lens will describe palette and composition.";
   }
+  const tr = resolveOutputLanguageCodeV0() === "tr";
+  const llmLang = resolveRhizohLlmLanguageV0();
   try {
     const turn = await postRhizohLlmTurnV0({
-      message:
-        "Describe this Imagine Atelier canvas in one short paragraph: palette, mood, composition. The user drew or generated on a 16:9 canvas.",
+      message: tr
+        ? "Bu Imagine Atelier tuvalini tek kısa Türkçe paragrafta anlat: palet, ruh hali, kompozisyon. Kullanıcı 16:9 tuvalde çizdi veya üretti."
+        : "Describe this Imagine Atelier canvas in one short paragraph: palette, mood, composition. The user drew or generated on a 16:9 canvas.",
       provider: "gemini",
       llmKeySource: "env",
       context: Object.freeze({ towerId: "gemini_tower", surface: "vision_lens" }),
-      options: { maxTokens: 160 }
+      options: { maxTokens: 160, language: llmLang.bcp47 }
     });
     if (turn?.ok && turn.reply) return String(turn.reply).trim();
   } catch {
