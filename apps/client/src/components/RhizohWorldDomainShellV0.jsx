@@ -33,7 +33,6 @@ import {
   formatRhizohMapBrainActionLabelV1,
   recordRhizohMapBrainFeedbackV1
 } from "../rhizoh/runtime/rhizohMapBrainV1.js";
-import { RhizohNeonCountdownStripV0 } from "./RhizohNeonCountdownStripV0.jsx";
 
 const DOMAIN_TABS_V0 = Object.freeze([
   { id: RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE, labelTr: "Mekân", labelEn: "Space" },
@@ -129,10 +128,6 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
               })}
             </div>
           </div>
-
-          {isSpace ? (
-            <RhizohNeonCountdownStripV0 uiLocale={locale} className="mt-0.5" />
-          ) : null}
 
           {!isSpace && wheelPack.nodes.length ? (
             <div

@@ -78,8 +78,7 @@ import { RhizohProductSurfaceDrawerV0 } from "./components/RhizohProductSurfaceD
 import { getGenesisProtocolGatewayOrigin } from "./castleFlight/castleFlightConfig.js";
 import { CASTLE_ARCHIVE_OPEN_MEDIA_EVENT_V0 } from "./rhizoh/runtime/castleArchiveVaultV0.js";
 import { RhizohWorldSpaceC2cPanelV0 } from "./components/RhizohWorldSpaceC2cPanelV0.jsx";
-import { RhizohNeonCountdownPanelV0 } from "./components/RhizohNeonCountdownPanelV0.jsx";
-import { resolveSpiralMMOContinentDisplayNameV0 } from "./rhizoh/runtime/spiralMMOContinentPinsV0.js";
+import { RhizohSpiralMMOPortalWorkspaceV0 } from "./components/RhizohSpiralMMOPortalWorkspaceV0.jsx";
 import {
   RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1,
   RHIZOH_REMOTE_CASTLE_CLICK_EVENT_V1,
@@ -812,17 +811,9 @@ export default function AppRhizohWorldSpaceV0() {
           }
         >
           {v11NodePanel.nodeView?.type === "spiralmmo" ? (
-            <RhizohNeonCountdownPanelV0
+            <RhizohSpiralMMOPortalWorkspaceV0
               uiLocale={uiLocale}
-              title={resolveSpiralMMOContinentDisplayNameV0(
-                v11NodePanel.nodeView.continent || v11NodePanel.nodeView.id,
-                uiLocale === "tr" ? "tr" : "en"
-              )}
-              subtitle={
-                uiLocale === "tr"
-                  ? "Kıta spiral düğümü · gözlem katmanı"
-                  : "Continent spiral node · observation layer"
-              }
+              continentId={v11NodePanel.nodeView.continent || v11NodePanel.nodeView.id}
               onClose={() => setV11NodePanel(null)}
             />
           ) : (
