@@ -1,6 +1,9 @@
-# Manual deploy: Firebase Cloud Functions (gatewayProxyV0 + optional all).
+# Manual deploy: Firebase Cloud Functions.
 # Secrets: FIREBASE_SERVICE_ACCOUNT_CASTLE_GENESIS, VITE_GATEWAY_TOKEN (Render CASTLE_GATEWAY_TOKEN ile aynı)
 # Optional: VITE_LIVE_GATEWAY_BASE for CASTLE_GATEWAY_UPSTREAM
+#
+# NOT: "all" — Firebase'de repoda olmayan eski fonksiyonlar (livekit, elevenVoice, …) varsa
+# non-interactive deploy ABORT eder. Kohort allowlist için cohortGateV0 yeterli.
 
 name: Deploy Firebase Functions
 
@@ -10,10 +13,12 @@ on:
       function_target:
         description: "Which functions to deploy"
         required: true
-        default: gatewayProxyV0
+        default: cohortGateV0
         type: choice
         options:
+          - cohortGateV0
           - gatewayProxyV0
+          - cohort_bundle
           - all
 
 jobs:
@@ -60,6 +65,8 @@ jobs:
           TARGET="${{ inputs.function_target }}"
           if [ "$TARGET" = "all" ]; then
             npx firebase-tools deploy --only functions --project castle-genesis --non-interactive
+          elif [ "$TARGET" = "cohort_bundle" ]; then
+            npx firebase-tools deploy --only "functions:cohortGateV0,functions:cohortSessionFeedbackMailV0,functions:cohortFeedbackSubmitV0" --project castle-genesis --non-interactive
           else
             npx firebase-tools deploy --only "functions:${TARGET}" --project castle-genesis --non-interactive
           fi
