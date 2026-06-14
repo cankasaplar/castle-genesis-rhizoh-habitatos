@@ -123,7 +123,7 @@ export const SOVEREIGN_TOWERS_V0 = Object.freeze([
     lon: -122.0841,
     color: "#d946ef",
     capabilities: ["MULTIMODAL_VOICE", "IMAGE_SYNTHESIS"],
-    description: "Çok modlu yaratıcı kule — Imagine Atelier, Vision Lens, sesli Voice Link. Gateway Gemini API gerekir."
+    description: "Çok modlu yaratıcı kule — Imagine Atelier, Vision Lens, sesli Voice Link."
   }),
   Object.freeze({
     id: "claude_tower",
@@ -135,7 +135,7 @@ export const SOVEREIGN_TOWERS_V0 = Object.freeze([
     lon: -122.4194,
     color: "#3b82f6",
     capabilities: ["CONSTITUTIONAL_ALIGNMENT"],
-    description: "Analiz ve uzun bağlam kulesi — Claude API, kamera+ses workspace."
+    description: "Analiz ve uzun bağlam kulesi — kamera ve ses workspace."
   }),
   Object.freeze({
     id: "chatgpt_tower",
@@ -147,7 +147,7 @@ export const SOVEREIGN_TOWERS_V0 = Object.freeze([
     lon: -122.4148,
     color: "#10b981",
     capabilities: ["CREATIVE_SWARM", "TOOL_AUTOMATION"],
-    description: "Araç ve yaratıcı swarm — OpenAI API, sesli komut workspace."
+    description: "Araç ve yaratıcı swarm — sesli komut workspace."
   }),
   Object.freeze({
     id: "deepmind_tower",
@@ -159,7 +159,7 @@ export const SOVEREIGN_TOWERS_V0 = Object.freeze([
     lon: -0.1245,
     color: "#06b6d4",
     capabilities: ["LOGICAL_REASONING"],
-    description: "Araştırma sentezi — DeepMind/Gemini gateway, mantıksal akıl."
+    description: "Araştırma sentezi — mantıksal akıl ve sentez odası."
   }),
   Object.freeze({
     id: "mistral_tower",
@@ -171,7 +171,7 @@ export const SOVEREIGN_TOWERS_V0 = Object.freeze([
     lon: 2.3522,
     color: "#f97316",
     capabilities: ["LOCAL_LIGHTWEIGHT_EXECUTION"],
-    description: "Hafif Avrupa LLM uç noktası — Mistral API, düşük gecikme sohbet."
+    description: "Hafif Avrupa LLM uç noktası — düşük gecikme sohbet."
   }),
   Object.freeze({
     id: "kyoto_tower",
@@ -183,7 +183,7 @@ export const SOVEREIGN_TOWERS_V0 = Object.freeze([
     lon: 135.7681,
     color: "#eab308",
     capabilities: ["HARDWARE_ROBOTICS_INTERFACE"],
-    description: "Robotik laboratuvar — donanım arayüzü, sesli komut (OpenAI surface)."
+    description: "Robotik laboratuvar — donanım arayüzü, sesli komut."
   }),
   Object.freeze({
     id: "sora_tower",
@@ -195,7 +195,7 @@ export const SOVEREIGN_TOWERS_V0 = Object.freeze([
     lon: -118.2437,
     color: "#ec4899",
     capabilities: ["TEMPORAL_VIDEO_SYNTHESIS"],
-    description: "Video/sinematik üretim yuvası — Sora API bağlantısı planlı."
+    description: "Video/sinematik üretim yuvası — görsel hikâye planı."
   })
 ]);
 

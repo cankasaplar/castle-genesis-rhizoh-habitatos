@@ -15,8 +15,11 @@ export function stripRhizohReplyArtifactsV0(text) {
 
   t = t.replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1");
   t = t.replace(/_{1,2}([^_]+)_{1,2}/g, "$1");
+  t = t.replace(/^\s*reply\s+n[0-9]+\s*[:\.\-]?\s*/gim, "");
+  t = t.replace(/^\s*[nN][0-9]+\s*[:\.\)\-]?\s*/gm, "");
   t = t.replace(/^\s*[-*•]\s+/gm, "");
   t = t.replace(/(?:^|\s)[nN]?[0-9]+[.)]\s*/g, " ");
+  t = t.replace(/\breply\s+n[0-9]+\b/gi, "");
   t = t.replace(/\b[nN][0-9]+\b/g, "");
   t = t.replace(/\breply\s*[:\-]?\s*/gi, "");
   t = t.replace(/\s{2,}/g, " ");

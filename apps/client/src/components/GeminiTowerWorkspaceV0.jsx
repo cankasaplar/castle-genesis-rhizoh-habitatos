@@ -111,8 +111,8 @@ const ImagineAtelierRoomV0 = memo(function ImagineAtelierRoomV0({
       onMuseMessage(
         "Gemini Muse",
         result.brief
-          ? `"${text}" — Gemini metin brief: ${result.brief} (görsel: yerel manifest; Imagen API sonraki sprint.)`
-          : `"${text}" — yerel renk manifesti oluşturuldu. Gerçek Imagen üretimi gateway Imagen endpoint ile gelecek.`
+          ? `"${text}" — Gemini metin brief: ${result.brief} (görsel: yerel manifest; tam üretim sonraki sprint.)`
+          : `"${text}" — yerel renk manifesti oluşturuldu. Tam görsel üretim gateway ile gelecek.`
       );
       onStatus("✅ Manifested!");
       setBusy("");

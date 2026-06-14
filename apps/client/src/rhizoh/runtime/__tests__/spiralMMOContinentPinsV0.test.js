@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildSpiralMMOWhirlpoolPathV0,
   listSpiralMMOContinentMapPinsV0,
+  resolveSpiralMMOContinentDisplayNameV0,
   RHIZOH_SPIRAL_MMO_CONTINENT_PINS_V0,
   RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0,
   SPIRAL_MMO_CONTINENT_IDS_V0,
@@ -39,6 +40,11 @@ describe("spiralMMOContinentPinsV0", () => {
     expect(html).toContain('viewBox="0 0 38 38"');
     expect(html).toContain('data-rhizoh-spiral-mmo-rev="whirlpool-v2"');
     expect(html).toContain("SPIRAL·");
+  });
+
+  it("resolves continent display names for spiral pins", () => {
+    expect(resolveSpiralMMOContinentDisplayNameV0("europe", "tr")).toBe("Avrupa");
+    expect(resolveSpiralMMOContinentDisplayNameV0("spiralmmo_asia", "en")).toBe("Asia");
   });
 
   it("builds an inward whirlpool path from outer ring to center", () => {

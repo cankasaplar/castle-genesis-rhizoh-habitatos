@@ -28,5 +28,7 @@ describe("rhizohReplyDisplaySanitizeV0", () => {
 
   it("shared artifact strip used by display path", () => {
     expect(stripRhizohReplyArtifactsV0("reply: merhaba N1")).toMatch(/merhaba/);
+    expect(stripRhizohReplyArtifactsV0("reply n1 Merhaba dünya.")).toBe("Merhaba dünya.");
+    expect(stripRhizohReplyArtifactsV0("N1: İlk paragraf.\nN2: İkinci paragraf.")).toMatch(/İlk paragraf/);
   });
 });

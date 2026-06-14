@@ -66,7 +66,7 @@ const DESIGNS_V0 = Object.freeze({
     }),
     rooms: Object.freeze([
       Object.freeze({ id: "research", name: "Research Lab", icon: "🔬", description: "Hypothesis and synthesis passes." }),
-      Object.freeze({ id: "voice", name: "Voice Link", icon: "🎙️", description: "Voice queries with Gemini backend." })
+      Object.freeze({ id: "voice", name: "Voice Link", icon: "🎙️", description: "Voice queries with research context." })
     ])
   }),
   mistral_tower: Object.freeze({

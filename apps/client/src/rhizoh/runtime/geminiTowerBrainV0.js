@@ -8,6 +8,7 @@ import { postRhizohTowerLlmTurnV0 } from "./rhizohTowerLlmSessionV0.js";
 import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
 import { resolveRhizohLlmLanguageV0 } from "./rhizohLanguagePropagationV0.js";
 import { parseTowerImageDataUrlV0 } from "./rhizohTowerMediaCaptureV0.js";
+import { sanitizeRhizohReplyForDisplayV0 } from "./rhizohReplyDisplaySanitizeV0.js";
 
 function hashPromptV0(prompt) {
   let h = 2166136261;
@@ -206,16 +207,16 @@ Short structured paragraph.`;
           !/perde|curtain|pencere|window/i.test(reply));
       if (looksHallucinated) {
         return tr
-          ? "Vision bağlantısı görüntüyü alamadı (metin-only yanıt). Gateway GEMINI_API_KEY ve kare boyutunu kontrol et; tekrar dene."
-          : "Vision did not receive the image (text-only reply). Check gateway GEMINI_API_KEY and retry capture.";
+          ? "Vision görüntüyü alamadı (yalnızca metin yanıtı). Kareyi yeniden yakala ve tekrar dene."
+          : "Vision did not receive the image (text-only reply). Recapture the frame and try again.";
       }
-      return reply;
+      return sanitizeRhizohReplyForDisplayV0(reply);
     }
     const err = String(turn?.gatewayError || turn?.error || "");
     if (err.includes("missing_api_key") || err.includes("server_llm_key_missing")) {
       return tr
-        ? "GEMINI_API_KEY gateway'de tanımlı değil — Vision analizi için anahtar gerekli."
-        : "GEMINI_API_KEY not set on gateway — vision analysis requires the key.";
+        ? "Vision servisi şu an kullanılamıyor — gateway bağlantısı hazır değil."
+        : "Vision service is unavailable — gateway connection is not ready.";
     }
   } catch {
     /* fallback */

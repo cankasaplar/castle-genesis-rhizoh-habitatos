@@ -1,6 +1,7 @@
 import React, { memo, useCallback, useRef, useState } from "react";
 import { Mic, Send } from "lucide-react";
 import { postRhizohTowerLlmTurnV0 } from "../rhizoh/runtime/rhizohTowerLlmSessionV0.js";
+import { sanitizeRhizohReplyForDisplayV0 } from "../rhizoh/runtime/rhizohReplyDisplaySanitizeV0.js";
 import { speakRhizohReplyChunkedV0 } from "../rhizoh/runtime/rhizohSpeechChunkTtsV0.js";
 import { resolveOutputLanguageCodeV0 } from "../rhizoh/runtime/rhizohOutputLanguagePolicyV0.js";
 import { createVoiceEngineV3TurnBridgeV0 } from "../rhizoh/runtime/voiceEngineV3/index.js";
@@ -40,15 +41,16 @@ export const RhizohTowerVoiceChatV0 = memo(function RhizohTowerVoiceChatV0({
           idToken
         });
         const errCode = String(turn?.gatewayError || turn?.error || "");
-        const reply = turn?.ok
+        const rawReply = turn?.ok
           ? String(turn.reply || "").trim()
           : errCode.includes("missing_api_key") || errCode.includes("server_llm_key_missing")
             ? tr
-              ? "Bu kule için API anahtarı henüz gateway'de tanımlı değil — ileride eklenecek."
-              : "API key for this tower is not configured on the gateway yet."
+              ? "Bu kule için bağlantı henüz hazır değil — kısa süre içinde açılacak."
+              : "This tower connection is not ready yet."
             : tr
               ? "Kule yanıt veremedi — gateway bağlantısını kontrol et."
               : "Tower could not reply — check gateway connection.";
+        const reply = sanitizeRhizohReplyForDisplayV0(rawReply);
         setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
         void speakRhizohReplyChunkedV0(reply, {
           smoothAfterAck: false,

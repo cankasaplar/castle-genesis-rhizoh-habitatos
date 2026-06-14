@@ -131,7 +131,8 @@ function emitV11MapIntentV0(node, interaction, map = null) {
       lat: node.lat,
       lon: node.lon,
       description: node.description,
-      provider: node.provider
+      provider: node.provider,
+      continent: node.continent
     })
   });
   if (typeof window !== "undefined") {
