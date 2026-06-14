@@ -62,7 +62,8 @@ const CAPABILITY_ALIAS_V0 = Object.freeze({
   broadcast: ["media"],
   portal: ["voice", "3d"],
   tower: ["voice", "3d", "media"],
-  castle: ["media", "voice", "3d"]
+  castle: ["media", "voice", "3d"],
+  spiralmmo: []
 });
 
 function normalizeCapabilityListV0(node = {}) {
@@ -154,6 +155,9 @@ export function resolveSymbyoMapIntentDecisionV0(intent = {}, surface = {}, node
     }
     if (nodeType === "tower") {
       return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_WORKSPACE, 0.88, refs);
+    }
+    if (nodeType === "spiralmmo") {
+      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.LOAD_WORLD_NODE, 0.84, refs);
     }
     if (nodeType === "broadcast" || nodeType === "zone" || nodeType === "hub") {
       return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER, 0.86, refs);

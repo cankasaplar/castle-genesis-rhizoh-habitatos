@@ -31,6 +31,15 @@ describe("sovereignWorldMapNodesV0", () => {
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "rhizoh_portal")).toBe(true);
   });
 
+  it("includes one SpiralMMO pin per continent on the world map view", () => {
+    const view = listSovereignWorldMapNodesForViewV0();
+    const spiralPins = view.filter((n) => n.type === "spiralmmo");
+    expect(spiralPins).toHaveLength(7);
+    expect(spiralPins.map((n) => n.continent).sort()).toEqual(
+      ["africa", "antarctica", "asia", "europe", "north_america", "oceania", "south_america"].sort()
+    );
+  });
+
   it("builds remote castle nodes with presence state colors", () => {
     const nodes = buildRemoteCastleMapNodesV0([
       {
