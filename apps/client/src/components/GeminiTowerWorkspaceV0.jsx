@@ -1,4 +1,5 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
+import { useCastleAuth } from "../firebase/useCastleAuth.js";
 import {
   GEMINI_TOWER_DESIGN_V0,
   resolveDefaultGeminiTowerRoomIdV0
@@ -299,6 +300,7 @@ const LobbyRoomV0 = memo(function LobbyRoomV0({ uiLocale = "en" }) {
 const VisionLensRoomV0 = memo(function VisionLensRoomV0({
   uiLocale,
   visionFrame,
+  idToken = "",
   onAnalyzeResult,
   onStatus
 }) {
@@ -316,12 +318,12 @@ const VisionLensRoomV0 = memo(function VisionLensRoomV0({
     }
     setBusy(true);
     onStatus(tr ? "👁️ Analiz…" : "👁️ Analyzing…");
-    const result = await analyzeGeminiTowerCanvasV0(visionFrame);
+    const result = await analyzeGeminiTowerCanvasV0(visionFrame, { idToken });
     setAnalysis(result);
     onAnalyzeResult(result, { speak: true });
     onStatus("");
     setBusy(false);
-  }, [onAnalyzeResult, onStatus, tr, visionFrame]);
+  }, [idToken, onAnalyzeResult, onStatus, tr, visionFrame]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
@@ -366,7 +368,12 @@ const VisionLensRoomV0 = memo(function VisionLensRoomV0({
   );
 });
 
-const TowerVoiceRoomV0 = memo(function TowerVoiceRoomV0({ uiLocale, towerId = "gemini_tower", visionFrame }) {
+const TowerVoiceRoomV0 = memo(function TowerVoiceRoomV0({
+  uiLocale,
+  towerId = "gemini_tower",
+  visionFrame,
+  idToken = ""
+}) {
   const tr = uiLocale === "tr";
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
@@ -375,6 +382,7 @@ const TowerVoiceRoomV0 = memo(function TowerVoiceRoomV0({ uiLocale, towerId = "g
         uiLocale={uiLocale}
         surface="gemini_tower_voice"
         visionFrame={visionFrame}
+        idToken={idToken}
       />
       <p className="text-[9px] text-white/40">
         {tr
@@ -420,6 +428,24 @@ const ComingSoonRoomV0 = memo(function ComingSoonRoomV0({ room, uiLocale, onOpen
  */
 export const GeminiTowerWorkspaceV0 = memo(function GeminiTowerWorkspaceV0({ open, onClose, uiLocale = "en" }) {
   const tr = uiLocale === "tr";
+  const castleAuth = useCastleAuth();
+  const [idToken, setIdToken] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const user = castleAuth?.user;
+    if (!user?.getIdToken) {
+      setIdToken("");
+      return undefined;
+    }
+    void user.getIdToken().then((token) => {
+      if (!cancelled) setIdToken(String(token || ""));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [castleAuth?.user]);
+
   const [roomId, setRoomId] = useState(resolveDefaultGeminiTowerRoomIdV0);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [status, setStatus] = useState("");
@@ -553,11 +579,17 @@ export const GeminiTowerWorkspaceV0 = memo(function GeminiTowerWorkspaceV0({ ope
             <VisionLensRoomV0
               uiLocale={uiLocale}
               visionFrame={visionFrame}
+              idToken={idToken}
               onAnalyzeResult={onVisionAnalyzeResult}
               onStatus={setStatus}
             />
           ) : roomId === "tower_voice" ? (
-            <TowerVoiceRoomV0 uiLocale={uiLocale} towerId="gemini_tower" visionFrame={visionFrame} />
+            <TowerVoiceRoomV0
+              uiLocale={uiLocale}
+              towerId="gemini_tower"
+              visionFrame={visionFrame}
+              idToken={idToken}
+            />
           ) : roomId === "motion_deck" || roomId === "dimension_sandbox" ? (
             <ComingSoonRoomV0
               room={activeRoom}

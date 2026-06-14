@@ -18,6 +18,9 @@ import {
   attachStudioLiveRoomVoiceHookV1,
   STUDIO_VOICE_EVENT_V1
 } from "./studioLiveRoomVoiceHookV1.js";
+import {
+  animateMedusaCompanionRootV0
+} from "../rhizoh/runtime/medusaCompanionMotionV0.js";
 import { StudioLiveRoomDrawerV1 } from "./StudioLiveRoomDrawerV1.jsx";
 
 /**
@@ -124,9 +127,24 @@ export const StudioLiveRoomV1 = memo(function StudioLiveRoomV1() {
               : STUDIO_VISUAL_PRESENCE_V1.OBSERVING;
           applyStudioPresenceVisualToRootV1(ctx.entities.octo, octoPresence, clock.t);
 
-          for (const k of ["fox", "medusa", "robot"]) {
+          for (const k of ["fox", "robot"]) {
             const amb = ctx.entities[k];
             if (amb) amb.rotation.y = clock.t * 0.06;
+          }
+
+          const medusa = ctx.entities.medusa;
+          if (medusa) {
+            const studioMotion =
+              presence.studio === STUDIO_VISUAL_PRESENCE_V1.SPEAKING
+                ? 0.55
+                : presence.studio === STUDIO_VISUAL_PRESENCE_V1.LISTENING
+                  ? 0.42
+                  : 0.3;
+            animateMedusaCompanionRootV0(medusa, clock.t, {
+              motion: studioMotion + Math.sin(clock.t * 1.4) * 0.08,
+              swayScale: 1.15,
+              snakeMeshes: medusa.userData.medusaSnakes
+            });
           }
 
           const octo = ctx.entities.octo;
