@@ -277,8 +277,25 @@ export function trimRhizohLlmContextV0(ctx, opts = {}) {
     rhizohConversationDepth: pruneDeepV0(src.rhizohConversationDepth, 2),
     rhizohFoxAttentionPromptBlock: trimStrV0(src.rhizohFoxAttentionPromptBlock, 600),
     rhizohFoxAttentionField: pruneDeepV0(src.rhizohFoxAttentionField, 2),
-    rhizohGhostAttentionBindingsV1: pruneDeepV0(src.rhizohGhostAttentionBindingsV1, 2)
+    rhizohGhostAttentionBindingsV1: pruneDeepV0(src.rhizohGhostAttentionBindingsV1, 2),
+    towerId: trimStrV0(src.towerId, 64),
+    surface: trimStrV0(src.surface, 64),
+    towerLabel: trimStrV0(src.towerLabel, 96),
+    towerVision:
+      src.towerVision && typeof src.towerVision === "object"
+        ? {
+            mimeType: trimStrV0(src.towerVision.mimeType, 32),
+            base64:
+              typeof src.towerVision.base64 === "string"
+                ? src.towerVision.base64.slice(0, 600_000)
+                : undefined
+          }
+        : undefined
   };
+  if (!next.towerId) delete next.towerId;
+  if (!next.surface) delete next.surface;
+  if (!next.towerLabel) delete next.towerLabel;
+  if (!next.towerVision?.base64) delete next.towerVision;
   if (!next.cohortId) delete next.cohortId;
   return next;
 }

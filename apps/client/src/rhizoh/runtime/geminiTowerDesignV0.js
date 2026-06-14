@@ -40,6 +40,13 @@ export const GEMINI_TOWER_DESIGN_V0 = Object.freeze({
       default: false
     }),
     Object.freeze({
+      id: "tower_voice",
+      name: "Voice Link",
+      icon: "🎙️",
+      description: "Live voice + camera context to Gemini on the gateway.",
+      default: false
+    }),
+    Object.freeze({
       id: "motion_deck",
       name: "Motion Deck",
       icon: "🎬",

@@ -6,6 +6,7 @@
 import { postRhizohLlmTurnV0 } from "./rhizohLlmTurnClientV0.js";
 import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
 import { resolveRhizohLlmLanguageV0 } from "./rhizohLanguagePropagationV0.js";
+import { parseTowerImageDataUrlV0 } from "./rhizohTowerMediaCaptureV0.js";
 
 function hashPromptV0(prompt) {
   let h = 2166136261;
@@ -160,15 +161,27 @@ export async function analyzeGeminiTowerCanvasV0(imageDataUrl) {
   }
   const tr = resolveOutputLanguageCodeV0() === "tr";
   const llmLang = resolveRhizohLlmLanguageV0();
+  const parsed = parseTowerImageDataUrlV0(imageDataUrl);
   try {
     const turn = await postRhizohLlmTurnV0({
       message: tr
-        ? "Bu Imagine Atelier tuvalini tek kısa Türkçe paragrafta anlat: palet, ruh hali, kompozisyon. Kullanıcı 16:9 tuvalde çizdi veya üretti."
-        : "Describe this Imagine Atelier canvas in one short paragraph: palette, mood, composition. The user drew or generated on a 16:9 canvas.",
+        ? "Bu görüntüyü tek kısa Türkçe paragrafta anlat: palet, ruh hali, kompozisyon ve dikkat çeken nesneler."
+        : "Describe this image in one short paragraph: palette, mood, composition, and salient objects.",
       provider: "gemini",
       llmKeySource: "env",
-      context: Object.freeze({ towerId: "gemini_tower", surface: "vision_lens" }),
-      options: { maxTokens: 160, language: llmLang.bcp47 }
+      context: Object.freeze({
+        towerId: "gemini_tower",
+        surface: "vision_lens",
+        ...(parsed
+          ? {
+              towerVision: Object.freeze({
+                mimeType: parsed.mimeType,
+                base64: parsed.base64
+              })
+            }
+          : {})
+      }),
+      options: { maxTokens: 220, language: llmLang.bcp47 }
     });
     if (turn?.ok && turn.reply) return String(turn.reply).trim();
   } catch {

@@ -932,22 +932,46 @@ async function callAnthropic(key, model, systemPrompt, userMessage, gen = {}) {
 /**
  * @param {{ maxTokens?: number, temperature?: number }} [gen]
  */
-async function callGemini(key, model, systemPrompt, userMessage, gen = {}) {
+async function callGemini(key, model, systemPrompt, userMessage, gen = {}, visionImage = null) {
   const temperature = gen.temperature != null ? gen.temperature : 0.35;
   const maxOutputTokens = gen.maxTokens != null ? gen.maxTokens : DEFAULT_MAX_COMPLETION_TOKENS;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+  /** @type {Array<Record<string, unknown>>} */
+  const parts = [];
+  if (visionImage?.base64) {
+    const data = String(visionImage.base64).replace(/^data:image\/[a-z0-9+.-]+;base64,/i, "");
+    parts.push({
+      inlineData: {
+        mimeType: String(visionImage.mimeType || "image/jpeg"),
+        data
+      }
+    });
+  }
+  parts.push({
+    text: visionImage
+      ? `${systemPrompt}\n\nUser: ${userMessage}`
+      : `${systemPrompt}\n\nUser: ${userMessage}`
+  });
+  const generationConfig = visionImage
+    ? { temperature, maxOutputTokens }
+    : { temperature, maxOutputTokens, responseMimeType: "application/json" };
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      generationConfig: { temperature, maxOutputTokens, responseMimeType: "application/json" },
-      contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\nUser: ${userMessage}` }] }]
+      generationConfig,
+      contents: [{ role: "user", parts }]
     })
   });
   if (!res.ok) throw new Error(`provider_http_${res.status}`);
   const json = await res.json();
   const candidate = json?.candidates?.[0] || {};
-  const content = candidate?.content?.parts?.[0]?.text || "";
+  const contentParts = candidate?.content?.parts || [];
+  const content =
+    contentParts
+      .map((p) => String(p?.text || "").trim())
+      .filter(Boolean)
+      .join("\n") || "";
   const finishReason = candidate?.finishReason || "";
   return Object.freeze({
     text: String(content),
@@ -1006,11 +1030,12 @@ function resolveLlmSecretKey({ mode, envKey, connectionKey, allowExternalApiKey,
  * @param {{ maxTokens?: number, temperature?: number }} gen
  */
 async function invokeRhizohLlmProviderV0(provider, key, model, systemPrompt, userMessage, gen = {}) {
+  const visionImage = gen.visionImage || null;
   if (provider === "anthropic") {
     return callAnthropic(key, model, systemPrompt, userMessage, gen);
   }
   if (provider === "gemini") {
-    return callGemini(key, model, systemPrompt, userMessage, gen);
+    return callGemini(key, model, systemPrompt, userMessage, gen, visionImage);
   }
   if (provider === "xai") {
     return callOpenAiLike("https://api.x.ai/v1/chat/completions", key, model, systemPrompt, userMessage, {}, gen);
@@ -1132,6 +1157,18 @@ export async function queryRhizohLlm(input, meta = {}) {
 
   const baseGen = resolveRhizohGenerationOptions(payload);
   const gen = applyConversationDepthToGenerationV0(payload, baseGen);
+  const towerVision = context?.towerVision;
+  if (
+    provider === "gemini" &&
+    towerVision &&
+    typeof towerVision === "object" &&
+    String(towerVision.base64 || "").length > 32
+  ) {
+    gen.visionImage = {
+      mimeType: String(towerVision.mimeType || "image/jpeg").slice(0, 48),
+      base64: String(towerVision.base64).slice(0, 900_000)
+    };
+  }
   const depthMeta = gen.conversationDepth;
   if (process.env.CASTLE_RHIZOH_LAYER_VISIBILITY_LOG === "1") {
     const academyKeys = ["eventIntent", "queuedEvent", "agents", "source"];
