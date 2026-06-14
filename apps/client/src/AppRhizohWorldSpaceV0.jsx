@@ -12,6 +12,7 @@ import { UnifiedProductShellBar } from "./studio/ui/UnifiedProductShellBar.jsx";
 import { RhizohWorldDomainShellV0 } from "./components/RhizohWorldDomainShellV0.jsx";
 import {
   RHIZOH_V11_MAP_INTENT_EVENT_V0,
+  RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0,
   RhizohWorldSpaceMapHostV0
 } from "./components/RhizohWorldSpaceMapHostV0.jsx";
 import { RhizohWorldSpaceVoiceDockV0 } from "./components/RhizohWorldSpaceVoiceDockV0.jsx";
@@ -408,8 +409,13 @@ export default function AppRhizohWorldSpaceV0() {
         setV11NodePanel(detail);
       }
     };
+    const onClearPreview = () => setV11NodePanel(null);
     window.addEventListener(RHIZOH_V11_MAP_INTENT_EVENT_V0, onV11Intent);
-    return () => window.removeEventListener(RHIZOH_V11_MAP_INTENT_EVENT_V0, onV11Intent);
+    window.addEventListener(RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0, onClearPreview);
+    return () => {
+      window.removeEventListener(RHIZOH_V11_MAP_INTENT_EVENT_V0, onV11Intent);
+      window.removeEventListener(RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0, onClearPreview);
+    };
   }, []);
 
   useEffect(() => {
@@ -768,11 +774,23 @@ export default function AppRhizohWorldSpaceV0() {
       ) : null}
 
       {v11NodePanel && !v11Workspace && !v11MediaTube && !v11Library && !v11ChessArena && !v11TowerPortal ? (
-        <div className="pointer-events-none fixed inset-x-0 top-28 z-[27] flex justify-center px-4">
+        <div
+          className="pointer-events-none fixed z-[27]"
+          style={
+            v11NodePanel.screenAnchor
+              ? {
+                  left: v11NodePanel.screenAnchor.left,
+                  top: v11NodePanel.screenAnchor.top,
+                  transform: "translate(-50%, calc(-100% - 3.5rem))"
+                }
+              : { insetInline: 0, top: "7rem", display: "flex", justifyContent: "center", paddingInline: "1rem" }
+          }
+        >
           <div
-            className="pointer-events-auto w-full max-w-sm rounded-2xl border bg-black/85 p-3 text-white shadow-2xl backdrop-blur-md"
-            style={{ borderColor: `${v11NodePanel.nodeView.color}66` }}
+            className="pointer-events-auto w-full max-w-xs rounded-2xl border bg-black/85 p-3 text-white shadow-2xl backdrop-blur-md"
+            style={{ borderColor: `${v11NodePanel.nodeView.color}55` }}
             data-rhizoh-v11-node-panel="1"
+            onMouseLeave={() => setV11NodePanel(null)}
           >
             <div className="flex items-start justify-between gap-3">
               <div>

@@ -1,10 +1,14 @@
 /**
  * Stockfish engine bridge v0 — strong AI for Chess Arena; falls back to heuristic AI.
+ * Worker loads from /chess-engine/ (public) so .wasm MIME is correct on Firebase Hosting.
  */
 
 import { pickChessArenaAiMoveV0 } from "./chessArenaEngineV0.js";
 
 export const CHESS_STOCKFISH_ENGINE_SCHEMA_V0 = "castle.chess_stockfish_engine.v0";
+
+const STOCKFISH_WORKER_URL_V0 =
+  "/chess-engine/stockfish-nnue-16-single.js#/chess-engine/stockfish-nnue-16-single.wasm,worker";
 
 /** @type {Worker | null} */
 let workerV0 = null;
@@ -22,6 +26,59 @@ function nextId() {
   return seqV0;
 }
 
+function attachWorkerHandlersV0(worker) {
+  worker.onmessage = (ev) => {
+    const line = String(ev?.data || "");
+    if (line === "uciok") readyV0 = true;
+
+    const depthMatch = line.match(/\bdepth (\d+)\b/);
+    const cpMatch = line.match(/\bscore cp (-?\d+)\b/);
+    const mateMatch = line.match(/\bscore mate (-?\d+)\b/);
+    const pvMatch = line.match(/\bpv (.+)$/);
+    if (depthMatch || cpMatch || mateMatch || pvMatch) {
+      lastAnalysisInfoV0 = {
+        cp: cpMatch ? Number(cpMatch[1]) : lastAnalysisInfoV0.cp,
+        mate: mateMatch ? Number(mateMatch[1]) : lastAnalysisInfoV0.mate,
+        depth: depthMatch ? Number(depthMatch[1]) : lastAnalysisInfoV0.depth,
+        pv: pvMatch ? pvMatch[1].trim() : lastAnalysisInfoV0.pv,
+        bestMove: lastAnalysisInfoV0.bestMove
+      };
+    }
+
+    const m = line.match(/^bestmove\s+(\S+)/);
+    if (m) {
+      const move = m[1] && m[1] !== "(none)" ? m[1] : null;
+      lastAnalysisInfoV0 = { ...lastAnalysisInfoV0, bestMove: move };
+      if (activeAnalysisV0) {
+        clearTimeout(activeAnalysisV0.timer);
+        const { resolve } = activeAnalysisV0;
+        activeAnalysisV0 = null;
+        resolve(Object.freeze({ ...lastAnalysisInfoV0 }));
+        return;
+      }
+      const id = [...pendingV0.keys()].pop();
+      const row = id != null ? pendingV0.get(id) : null;
+      if (row) {
+        pendingV0.delete(id);
+        row.resolve(move);
+      }
+    }
+  };
+  worker.onerror = () => {
+    initFailedV0 = true;
+    try {
+      worker?.terminate?.();
+    } catch {
+      /* noop */
+    }
+    workerV0 = null;
+    readyV0 = false;
+  };
+  worker.onmessageerror = () => {
+    initFailedV0 = true;
+  };
+}
+
 async function ensureStockfishWorkerV0() {
   if (initFailedV0) return null;
   if (workerV0 && readyV0) return workerV0;
@@ -30,53 +87,15 @@ async function ensureStockfishWorkerV0() {
     return null;
   }
   try {
-    const mod = await import("stockfish");
-    const factory = mod.default || mod;
-    workerV0 = factory();
-    workerV0.onmessage = (ev) => {
-      const line = String(ev?.data || "");
-      if (line === "uciok") readyV0 = true;
-
-      const depthMatch = line.match(/\bdepth (\d+)\b/);
-      const cpMatch = line.match(/\bscore cp (-?\d+)\b/);
-      const mateMatch = line.match(/\bscore mate (-?\d+)\b/);
-      const pvMatch = line.match(/\bpv (.+)$/);
-      if (depthMatch || cpMatch || mateMatch || pvMatch) {
-        lastAnalysisInfoV0 = {
-          cp: cpMatch ? Number(cpMatch[1]) : lastAnalysisInfoV0.cp,
-          mate: mateMatch ? Number(mateMatch[1]) : lastAnalysisInfoV0.mate,
-          depth: depthMatch ? Number(depthMatch[1]) : lastAnalysisInfoV0.depth,
-          pv: pvMatch ? pvMatch[1].trim() : lastAnalysisInfoV0.pv,
-          bestMove: lastAnalysisInfoV0.bestMove
-        };
-      }
-
-      const m = line.match(/^bestmove\s+(\S+)/);
-      if (m) {
-        const move = m[1] && m[1] !== "(none)" ? m[1] : null;
-        lastAnalysisInfoV0 = { ...lastAnalysisInfoV0, bestMove: move };
-        if (activeAnalysisV0) {
-          clearTimeout(activeAnalysisV0.timer);
-          const { resolve } = activeAnalysisV0;
-          activeAnalysisV0 = null;
-          resolve(Object.freeze({ ...lastAnalysisInfoV0 }));
-          return;
-        }
-        const id = [...pendingV0.keys()].pop();
-        const row = id != null ? pendingV0.get(id) : null;
-        if (row) {
-          pendingV0.delete(id);
-          row.resolve(move);
-        }
-      }
-    };
+    workerV0 = new Worker(STOCKFISH_WORKER_URL_V0);
+    attachWorkerHandlersV0(workerV0);
     workerV0.postMessage("uci");
     await new Promise((resolve, reject) => {
       const id = nextId();
       const timer = setTimeout(() => {
         pendingV0.delete(id);
         reject(new Error("stockfish_uci_timeout"));
-      }, 4000);
+      }, 5000);
       pendingV0.set(id, {
         resolve: () => {
           clearTimeout(timer);
@@ -96,6 +115,11 @@ async function ensureStockfishWorkerV0() {
     return workerV0;
   } catch {
     initFailedV0 = true;
+    try {
+      workerV0?.terminate?.();
+    } catch {
+      /* noop */
+    }
     workerV0 = null;
     return null;
   }
@@ -132,9 +156,15 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
       }
     });
 
-    worker.postMessage(`setoption name Skill Level value ${skill}`);
-    worker.postMessage(`position fen ${position}`);
-    worker.postMessage(`go movetime ${movetime}`);
+    try {
+      worker.postMessage(`setoption name Skill Level value ${skill}`);
+      worker.postMessage(`position fen ${position}`);
+      worker.postMessage(`go movetime ${movetime}`);
+    } catch {
+      clearTimeout(timer);
+      pendingV0.delete(id);
+      resolve(null);
+    }
   });
 }
 
@@ -186,8 +216,14 @@ export async function analyzeChessPositionV0(fen, opts = {}) {
       timer
     };
 
-    worker.postMessage(`position fen ${position}`);
-    worker.postMessage(`go depth ${depth} movetime ${movetime}`);
+    try {
+      worker.postMessage(`position fen ${position}`);
+      worker.postMessage(`go depth ${depth} movetime ${movetime}`);
+    } catch {
+      clearTimeout(timer);
+      activeAnalysisV0 = null;
+      resolve(null);
+    }
   });
 }
 
@@ -238,8 +274,12 @@ export async function pickChessArenaEngineMoveV0(game, opts = {}) {
   if (opts.useStockfish === false) {
     return pickChessArenaAiMoveV0(game);
   }
-  const sf = await getStockfishArenaMoveV0(game.fen(), { movetimeMs: 320 });
-  if (sf) return sf;
+  try {
+    const sf = await getStockfishArenaMoveV0(game.fen(), { movetimeMs: 320 });
+    if (sf) return sf;
+  } catch {
+    /* fall through to heuristic */
+  }
   return pickChessArenaAiMoveV0(game);
 }
 
@@ -251,6 +291,7 @@ export function disposeChessStockfishEngineV0() {
   }
   workerV0 = null;
   readyV0 = false;
+  initFailedV0 = false;
   activeAnalysisV0 = null;
   pendingV0.clear();
 }

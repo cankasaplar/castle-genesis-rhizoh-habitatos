@@ -4,6 +4,7 @@ import { RHIZOH_SPATIAL_RENDER_MODE_V0 } from "../rhizoh/runtime/spatialBootGate
 import {
   routeSymbyoMapInteractionToOrchestratorV0,
   RHIZOH_V11_MAP_INTENT_EVENT_V0,
+  RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0,
   SYMBYO_MAP_INTERACTION_V0
 } from "../rhizoh/runtime/symbyoMapIntentBridgeV0.js";
 import {
@@ -21,7 +22,7 @@ import {
   resolveUserCastleGeoForMapViewV0
 } from "../rhizoh/runtime/worldMapBootstrapGeoV0.js";
 
-export { RHIZOH_V11_MAP_INTENT_EVENT_V0 };
+export { RHIZOH_V11_MAP_INTENT_EVENT_V0, RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0 };
 
 import {
   SOVEREIGN_MAP_DEFAULT_HOME_V0,
@@ -97,10 +98,26 @@ function createLeafletNodeIconV0(L, node) {
   });
 }
 
-function emitV11MapIntentV0(node, interaction) {
+function emitV11MapIntentV0(node, interaction, map = null) {
   const routed = routeSymbyoMapInteractionToOrchestratorV0({ node, interaction });
+  let screenAnchor = null;
+  if (map && Number.isFinite(node?.lat) && Number.isFinite(node?.lon)) {
+    try {
+      const pt = map.latLngToContainerPoint([node.lat, node.lon]);
+      const rect = map.getContainer()?.getBoundingClientRect?.();
+      if (rect) {
+        screenAnchor = Object.freeze({
+          left: rect.left + pt.x,
+          top: rect.top + pt.y
+        });
+      }
+    } catch {
+      /* noop */
+    }
+  }
   const detail = Object.freeze({
     ...routed,
+    screenAnchor,
     nodeView: Object.freeze({
       id: node.id,
       label: node.label,
@@ -132,6 +149,16 @@ function emitV11MapIntentV0(node, interaction) {
     }
   }
   return detail;
+}
+
+function emitV11MapClearPreviewV0() {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new CustomEvent(RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0));
+    document.dispatchEvent(new CustomEvent(RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0));
+  } catch {
+    /* noop */
+  }
 }
 
 function handleV11MapClickForClaimV0(ev) {
@@ -228,6 +255,10 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
           maxZoom: 18
         }).addTo(map);
         map.on("click", (ev) => handleV11MapClickForClaimV0(ev));
+        const onMapDismissPreview = () => emitV11MapClearPreviewV0();
+        map.on("movestart", onMapDismissPreview);
+        map.on("zoomstart", onMapDismissPreview);
+        map.on("dragstart", onMapDismissPreview);
         markerLayerRef.current = L.layerGroup().addTo(map);
         graphLayerRef.current = L.layerGroup().addTo(map);
         mapRef.current = map;
@@ -352,9 +383,12 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
             dispatchRemoteCastleClickV0(node);
             return;
           }
-          emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK);
+          emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK, mapRef.current);
         });
-        marker.on("mouseover", () => emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.HOVER));
+        marker.on("mouseover", () =>
+          emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.HOVER, mapRef.current)
+        );
+        marker.on("mouseout", () => emitV11MapClearPreviewV0());
         if (node.id === "rhizoh_portal") {
           portalMarkerRef.current = marker;
           writeSovereignPortalCoordsV0(node.lat, node.lon);
