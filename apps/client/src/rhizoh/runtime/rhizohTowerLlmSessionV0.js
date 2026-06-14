@@ -23,7 +23,8 @@ import {
  *   imageDataUrl?: string | null,
  *   voiceTurn?: boolean,
  *   idToken?: string,
- *   maxTokens?: number
+ *   maxTokens?: number,
+ *   skipHotWire?: boolean
  * }} input
  */
 export async function postRhizohTowerLlmTurnV0(input = {}) {
@@ -66,6 +67,7 @@ export async function postRhizohTowerLlmTurnV0(input = {}) {
         maxTokens: input.maxTokens ?? (parsedImage ? 220 : 512),
         language: llmLang.bcp47
       },
+      skipHotWire: input.skipHotWire === true,
       sourcePath: `tower_${towerId}`
     });
     return turn;

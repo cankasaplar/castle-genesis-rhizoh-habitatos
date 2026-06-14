@@ -4,6 +4,7 @@
  */
 
 import { postRhizohLlmTurnV0 } from "./rhizohLlmTurnClientV0.js";
+import { postRhizohTowerLlmTurnV0 } from "./rhizohTowerLlmSessionV0.js";
 import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
 import { resolveRhizohLlmLanguageV0 } from "./rhizohLanguagePropagationV0.js";
 import { parseTowerImageDataUrlV0 } from "./rhizohTowerMediaCaptureV0.js";
@@ -154,40 +155,59 @@ export async function enhanceGeminiTowerSketchV0(sketchDataUrl, hint = "") {
 
 /**
  * @param {string} imageDataUrl
+ * @param {{ idToken?: string }} [opts]
  */
-export async function analyzeGeminiTowerCanvasV0(imageDataUrl) {
+export async function analyzeGeminiTowerCanvasV0(imageDataUrl, opts = {}) {
   if (!String(imageDataUrl || "").startsWith("data:image")) {
     return "Upload or draw on the canvas first — Vision Lens will describe palette and composition.";
   }
   const tr = resolveOutputLanguageCodeV0() === "tr";
-  const llmLang = resolveRhizohLlmLanguageV0();
   const parsed = parseTowerImageDataUrlV0(imageDataUrl);
+  if (!parsed?.base64) {
+    return tr
+      ? "Görüntü karesi okunamadı — tekrar Kare yakala."
+      : "Could not read image frame — capture again.";
+  }
+
+  const message = tr
+    ? "Bu fotoğrafta GERÇEKTEN gördüğün kişi, yüz, nesne ve arka planı yaz. Uydurma; çiçek, tablo, dekor veya sanat eseri ekleme. Kısa Türkçe paragraf."
+    : "Describe ONLY what is literally visible in this photo: people, face, objects, background. Do not invent flowers, art, or decor. One short paragraph.";
+
   try {
-    const turn = await postRhizohLlmTurnV0({
-      message: tr
-        ? "Bu görüntüyü tek kısa Türkçe paragrafta anlat: palet, ruh hali, kompozisyon ve dikkat çeken nesneler."
-        : "Describe this image in one short paragraph: palette, mood, composition, and salient objects.",
-      provider: "gemini",
-      llmKeySource: "env",
-      context: Object.freeze({
-        towerId: "gemini_tower",
-        surface: "vision_lens",
-        ...(parsed
-          ? {
-              towerVision: Object.freeze({
-                mimeType: parsed.mimeType,
-                base64: parsed.base64
-              })
-            }
-          : {})
-      }),
-      options: { maxTokens: 220, language: llmLang.bcp47 }
+    const turn = await postRhizohTowerLlmTurnV0({
+      towerId: "gemini_tower",
+      message,
+      surface: "vision_lens",
+      imageDataUrl,
+      idToken: opts.idToken,
+      maxTokens: 240,
+      skipHotWire: true
     });
-    if (turn?.ok && turn.reply) return String(turn.reply).trim();
+    if (turn?.ok && turn.reply) {
+      const reply = String(turn.reply).trim();
+      const looksHallucinated =
+        /çiçek|aranjman|pastel ton|huzur veren atmosfer|flower arrangement|serene atmosphere/i.test(
+          reply
+        ) && !/yüz|insan|kişi|perde|pencere|face|person|curtain|window/i.test(reply);
+      if (looksHallucinated) {
+        return tr
+          ? "Vision bağlantısı görüntüyü alamadı (metin-only yanıt). Gateway GEMINI_API_KEY ve kare boyutunu kontrol et; tekrar dene."
+          : "Vision did not receive the image (text-only reply). Check gateway GEMINI_API_KEY and retry capture.";
+      }
+      return reply;
+    }
+    const err = String(turn?.gatewayError || turn?.error || "");
+    if (err.includes("missing_api_key") || err.includes("server_llm_key_missing")) {
+      return tr
+        ? "GEMINI_API_KEY gateway'de tanımlı değil — Vision analizi için anahtar gerekli."
+        : "GEMINI_API_KEY not set on gateway — vision analysis requires the key.";
+    }
   } catch {
     /* fallback */
   }
   const seed = hashPromptV0(imageDataUrl.slice(-128));
   const palette = [0, 2, 4].map((o) => `#${((seed >> (o * 4)) & 0xffffff).toString(16).padStart(6, "0").slice(0, 6)}`);
-  return `Vision Lens (local): dominant hues ${palette.join(", ")} · composition reads as ${seed % 2 === 0 ? "wide cinematic" : "center-weighted"}.`;
+  return tr
+    ? `Vision Lens (yerel): baskın tonlar ${palette.join(", ")} — gateway yanıt vermedi.`
+    : `Vision Lens (local): dominant hues ${palette.join(", ")} — gateway did not reply.`;
 }

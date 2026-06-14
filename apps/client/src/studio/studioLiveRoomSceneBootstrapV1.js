@@ -4,6 +4,11 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { installWebglContextLostReporter } from "../boot/castleCrashTelemetry.js";
 import { ASSETS, STUDIO_ASSET_MANIFEST_V1 } from "./assetRegistryV1.js";
 import { applyStudioPresenceVisualToRootV1 } from "./studioLiveRoomPresenceVisualV1.js";
+import {
+  animateMedusaCompanionRootV0,
+  collectMedusaSnakeMeshesV0,
+  tagMedusaGltfSnakeMeshesV0
+} from "../rhizoh/runtime/medusaCompanionMotionV0.js";
 
 const PLACEMENT_V1 = Object.freeze({
   rhizoh: { x: -0.8, z: -4, height: 2.4, layer: "stage" },
@@ -137,6 +142,11 @@ export async function bootstrapStudioLiveRoomSceneV1(container, opts = {}) {
     root.userData.studioLayer = place.layer;
     root.userData.studioRole = entry.role;
     root.userData.interactionDisabled = place.layer === "ambient";
+
+    if (entry.key === "medusa") {
+      tagMedusaGltfSnakeMeshesV0(root);
+      root.userData.medusaSnakes = collectMedusaSnakeMeshesV0(root);
+    }
 
     if (place.layer === "ambient") {
       root.traverse((o) => {
