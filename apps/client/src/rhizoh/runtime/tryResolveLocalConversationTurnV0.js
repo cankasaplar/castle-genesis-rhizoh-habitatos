@@ -18,6 +18,7 @@ import { openCastleInitGateFromLocalCommandV0 } from "./rhizohLocalCommandHandle
 import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
 import {
   tryExecuteSovereignVoiceWarpFromTextV0,
+  tryOpenSovereignMapNodeFromTextV0,
   tryOpenSovereignMediaTubeFromTextV0
 } from "./sovereignWorldMapNodesV0.js";
 import { tryResolveRhizohLocalKnowledgeV0 } from "./rhizohPolicyRouterV0.js";
@@ -72,6 +73,22 @@ export function tryResolveLocalConversationTurnV0(text, opts = {}) {
       llmBypass: true,
       kind: local.kind || route.canonical || route.grammarLocal?.kind,
       route
+    });
+  }
+
+  const mapNodeOpen = tryOpenSovereignMapNodeFromTextV0(raw, {
+    source: opts.source || "conversation_dock",
+    tr: localeTr
+  });
+  if (mapNodeOpen) {
+    return Object.freeze({
+      schema: RHIZOH_LOCAL_CONVERSATION_TURN_SCHEMA_V0,
+      ok: true,
+      reply: commitLocalConversationReplyV0(mapNodeOpen.reply, "sovereign_map_node_open"),
+      source: "sovereign_map_node_open",
+      llmBypass: true,
+      kind: mapNodeOpen.kind,
+      nodeId: mapNodeOpen.nodeId
     });
   }
 

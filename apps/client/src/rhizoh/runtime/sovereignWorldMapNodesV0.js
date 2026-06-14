@@ -5,6 +5,11 @@
 
 import { resolveInitialWorldSpaceMediaChannelIdV0, resolveWorldSpaceMediaChannelForMapNodeV0 } from "./worldSpaceMediaChannelsV0.js";
 import { presenceColorForStateV0 } from "./castlePresenceRegistryV0.js";
+import {
+  RHIZOH_V11_MAP_INTENT_EVENT_V0,
+  routeSymbyoMapInteractionToOrchestratorV0,
+  SYMBYO_MAP_INTERACTION_V0
+} from "./symbyoMapIntentBridgeV0.js";
 
 function presenceLabelForStateV0(state) {
   const s = String(state || "ONLINE").toUpperCase();
@@ -518,6 +523,257 @@ export function dispatchSovereignVoiceWarpV0(target, source = "voice_warp") {
  * @param {string} text
  * @param {{ source?: string, tr?: boolean }} [opts]
  */
+/** Turkish spoken labels for map pins (TTS + chat; avoid English tower names in TR UI). */
+export const SOVEREIGN_MAP_NODE_VOICE_LABEL_TR_V0 = Object.freeze({
+  chess_arena: "Satranç Arenası",
+  library: "Codex Kasası",
+  event: "Etkinlik Alanı",
+  ghost: "Rhizoh Yapay Zekâ",
+  radio: "Kuantum Radyo",
+  ai_prime: "Otonom AI Prime",
+  castle: "Kale Merkezi",
+  my_castle: "Kalem",
+  rhizoh_portal: "Rhizoh Portal",
+  gemini_tower: "Gemini Kulesi",
+  claude_tower: "Claude Kulesi",
+  chatgpt_tower: "ChatGPT Kulesi",
+  deepmind_tower: "DeepMind Kulesi",
+  mistral_tower: "Mistral Kulesi",
+  kyoto_tower: "Kyoto Robotik Demiri",
+  sora_tower: "Sora Görsel Kulesi"
+});
+
+const SOVEREIGN_MAP_VOICE_NAV_ALIASES_V0 = Object.freeze([
+  Object.freeze({
+    nodeId: "chess_arena",
+    aliases: ["chess arena", "chess", "satranc arenasi", "satranç arenası", "satranç", "satranc"]
+  }),
+  Object.freeze({
+    nodeId: "library",
+    aliases: ["library", "kutuphane", "kütüphane", "codex", "vault", "arsiv", "arşiv"]
+  }),
+  Object.freeze({
+    nodeId: "rhizoh_portal",
+    aliases: ["rhizoh portal", "portal", "portala", "rhizoh portali"]
+  }),
+  Object.freeze({
+    nodeId: "event",
+    aliases: ["event zone", "event", "etkinlik", "yayin alani", "yayın alanı"]
+  }),
+  Object.freeze({
+    nodeId: "ghost",
+    aliases: ["ghost", "rhizoh ai", "hayalet", "yapay zeka"]
+  }),
+  Object.freeze({
+    nodeId: "radio",
+    aliases: ["radio", "radyo", "kuantum radyo"]
+  }),
+  Object.freeze({
+    nodeId: "ai_prime",
+    aliases: ["ai prime", "auto ai", "otonom"]
+  }),
+  Object.freeze({
+    nodeId: "gemini_tower",
+    aliases: ["gemini tower", "gemini kulesi", "gemini"]
+  }),
+  Object.freeze({
+    nodeId: "claude_tower",
+    aliases: ["claude tower", "claude kulesi", "claude"]
+  }),
+  Object.freeze({
+    nodeId: "chatgpt_tower",
+    aliases: ["chatgpt tower", "chatgpt", "openai tower", "openai"]
+  }),
+  Object.freeze({
+    nodeId: "deepmind_tower",
+    aliases: ["deepmind", "deep mind", "londra kulesi"]
+  }),
+  Object.freeze({
+    nodeId: "mistral_tower",
+    aliases: ["mistral", "paris kulesi", "paris"]
+  }),
+  Object.freeze({
+    nodeId: "kyoto_tower",
+    aliases: ["kyoto", "robotik", "robotics anchor", "tokyo kulesi"]
+  }),
+  Object.freeze({
+    nodeId: "sora_tower",
+    aliases: ["sora", "hollywood", "los angeles kulesi"]
+  })
+]);
+
+const MAP_VOICE_NAV_VERB_RE_V0 =
+  /\b(git|isinla|ışınla|ucur|uçur|gec|geç|hedefle|ac|aç|open|goster|göster|show|basla|başla|start)\b/;
+
+/**
+ * @param {object} node
+ * @param {boolean} [tr]
+ */
+export function resolveSovereignMapNodeVoiceLabelV0(node, tr = true) {
+  const id = String(node?.id || "");
+  if (tr && SOVEREIGN_MAP_NODE_VOICE_LABEL_TR_V0[id]) {
+    return SOVEREIGN_MAP_NODE_VOICE_LABEL_TR_V0[id];
+  }
+  return String(node?.name || node?.label || id || "hedef");
+}
+
+/**
+ * @param {string} text
+ */
+export function parseSovereignMapNodeVoiceCommandV0(text = "") {
+  const normalized = normalizeSovereignCommandTextV0(text);
+  if (!MAP_VOICE_NAV_VERB_RE_V0.test(normalized)) return null;
+  let query = normalized;
+  for (const kw of [
+    "git",
+    "isinla",
+    "ışınla",
+    "ucur",
+    "uçur",
+    "gec",
+    "geç",
+    "hedefle",
+    "ac",
+    "aç",
+    "open",
+    "goster",
+    "göster",
+    "show",
+    "basla",
+    "başla",
+    "start"
+  ]) {
+    query = query.replace(new RegExp(`\\b${kw}\\b`, "g"), " ");
+  }
+  query = query
+    .replace(/\b(ya|ye|yi|a|e|i|na|ne|ni|nın|nin|nun|nün)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!query) return null;
+  const ranked = SOVEREIGN_MAP_VOICE_NAV_ALIASES_V0.map((row) => {
+    let score = 0;
+    for (const alias of row.aliases) {
+      if (query === alias || normalized.includes(alias)) score = Math.max(score, alias.length);
+    }
+    return Object.freeze({ nodeId: row.nodeId, score });
+  })
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score);
+  return ranked[0]?.nodeId || null;
+}
+
+/**
+ * @param {string} nodeId
+ * @param {{ userCastle?: { lat: number, lon: number, label?: string } | null }} [opts]
+ */
+export function findSovereignMapNodeByIdForViewV0(nodeId, opts = {}) {
+  const id = String(nodeId || "").trim();
+  if (!id) return null;
+  const viewNodes = listSovereignWorldMapNodesForViewV0(opts);
+  const fromView = viewNodes.find((n) => n.id === id);
+  if (fromView) return fromView;
+  if (id === "rhizoh_portal") return resolveSovereignPortalNodeForViewV0(opts.userCastle);
+  return (
+    SOVEREIGN_CORE_NODES_V0.find((n) => n.id === id) ||
+    SOVEREIGN_TOWERS_V0.find((n) => n.id === id) ||
+    null
+  );
+}
+
+/**
+ * Fly map + emit orchestrator intent (same path as pin click).
+ * @param {object} node
+ * @param {string} [source]
+ */
+export function dispatchSovereignMapNodeEnterV0(node, source = "voice_nav") {
+  if (typeof window === "undefined" || !node) return false;
+  if (!Number.isFinite(node.lat) || !Number.isFinite(node.lon)) return false;
+  dispatchSovereignVoiceWarpV0(
+    { lat: node.lat, lon: node.lon, name: String(node.name || node.label || node.id) },
+    source
+  );
+  const routed = routeSymbyoMapInteractionToOrchestratorV0({
+    node,
+    interaction: SYMBYO_MAP_INTERACTION_V0.CLICK
+  });
+  const detail = Object.freeze({
+    ...routed,
+    source: String(source || "voice_nav"),
+    nodeView: Object.freeze({
+      id: node.id,
+      label: node.label,
+      name: node.name,
+      type: node.type,
+      color: node.color,
+      lat: node.lat,
+      lon: node.lon,
+      description: node.description,
+      provider: node.provider
+    })
+  });
+  window.dispatchEvent(new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, { detail }));
+  document.dispatchEvent(new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, { detail }));
+  return true;
+}
+
+/**
+ * @param {string} text
+ * @param {{ source?: string, tr?: boolean, userCastle?: object | null }} [opts]
+ */
+export function tryOpenSovereignMapNodeFromTextV0(text, opts = {}) {
+  const raw = String(text || "").trim();
+  if (!raw) return null;
+  const nodeId = parseSovereignMapNodeVoiceCommandV0(raw);
+  if (!nodeId) return null;
+  const node = findSovereignMapNodeByIdForViewV0(nodeId, opts);
+  if (!node) return null;
+  dispatchSovereignMapNodeEnterV0(node, opts.source || "voice_map_nav");
+  const tr = opts.tr !== false;
+  const label = resolveSovereignMapNodeVoiceLabelV0(node, tr);
+  return Object.freeze({
+    ok: true,
+    kind: "MAP_NODE_OPEN",
+    nodeId,
+    node,
+    reply: tr ? `${label} açılıyor.` : `Opening ${label}.`
+  });
+}
+
+function resolveSovereignVoiceWarpLabelV0(target, tr) {
+  if (!target) return tr ? "hedef" : "target";
+  const WARP_KEY_TO_NODE_ID_V0 = Object.freeze({
+    gemini: "gemini_tower",
+    claude: "claude_tower",
+    chatgpt: "chatgpt_tower",
+    openai: "chatgpt_tower",
+    deepmind: "deepmind_tower",
+    londra: "deepmind_tower",
+    mistral: "mistral_tower",
+    paris: "mistral_tower",
+    kyoto: "kyoto_tower",
+    tokyo: "kyoto_tower",
+    sora: "sora_tower",
+    "los angeles": "sora_tower",
+    istanbul: "castle",
+    kale: "castle",
+    castle: "castle"
+  });
+  const byName = Object.entries(SOVEREIGN_VOICE_WARP_DICT_V0).find(
+    ([, coords]) =>
+      Number(coords.lat) === Number(target.lat) && Number(coords.lon) === Number(target.lon)
+  );
+  if (byName && tr) {
+    const nodeId = WARP_KEY_TO_NODE_ID_V0[byName[0]];
+    if (nodeId && SOVEREIGN_MAP_NODE_VOICE_LABEL_TR_V0[nodeId]) {
+      return SOVEREIGN_MAP_NODE_VOICE_LABEL_TR_V0[nodeId];
+    }
+  }
+  if (tr && /portal/i.test(String(target.name || ""))) {
+    return SOVEREIGN_MAP_NODE_VOICE_LABEL_TR_V0.rhizoh_portal;
+  }
+  return String(target.name || "hedef");
+}
+
 export function tryExecuteSovereignVoiceWarpFromTextV0(text, opts = {}) {
   const raw = String(text || "").trim();
   if (!raw) return null;
@@ -526,13 +782,12 @@ export function tryExecuteSovereignVoiceWarpFromTextV0(text, opts = {}) {
   if (!target) return null;
   dispatchSovereignVoiceWarpV0(target, opts.source || "voice_command");
   const tr = opts.tr !== false;
+  const label = resolveSovereignVoiceWarpLabelV0(target, tr);
   return Object.freeze({
     ok: true,
     kind: "VOICE_WARP",
     target,
-    reply: tr
-      ? `${target.name} koordinatlarına sıçrıyorum.`
-      : `Warping to ${target.name}.`
+    reply: tr ? `${label} noktasına geçiyorum.` : `Heading to ${label}.`
   });
 }
 

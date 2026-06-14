@@ -9,11 +9,14 @@ import {
   SOVEREIGN_TOWERS_V0,
   SOVEREIGN_WORLD_MAP_NODES_V0,
   tryExecuteSovereignVoiceWarpFromTextV0,
+  tryOpenSovereignMapNodeFromTextV0,
   tryOpenSovereignMediaTubeFromTextV0,
+  parseSovereignMapNodeVoiceCommandV0,
   writeSovereignPortalCoordsV0
 } from "../sovereignWorldMapNodesV0.js";
 import {
   ORCHESTRATOR_ACTION_REGISTRY_V0,
+  RHIZOH_V11_MAP_INTENT_EVENT_V0,
   routeSymbyoMapInteractionToOrchestratorV0,
   SYMBYO_MAP_INTERACTION_V0
 } from "../symbyoMapIntentBridgeV0.js";
@@ -83,6 +86,28 @@ describe("sovereignWorldMapNodesV0", () => {
     expect(gemini?.lat).toBeCloseTo(37.422, 2);
     const istanbul = parseSovereignVoiceWarpCommandV0("istanbul git");
     expect(istanbul?.name).toContain("Castle");
+  });
+
+  it("parses chess arena voice navigation", () => {
+    expect(parseSovereignMapNodeVoiceCommandV0("chess arena'ya geç")).toBe("chess_arena");
+    expect(parseSovereignMapNodeVoiceCommandV0("satranç arenasına git")).toBe("chess_arena");
+  });
+
+  it("opens chess arena from voice with Turkish reply", () => {
+    const intents = [];
+    window.addEventListener(RHIZOH_V11_MAP_INTENT_EVENT_V0, (ev) => intents.push(ev.detail));
+    const opened = tryOpenSovereignMapNodeFromTextV0("chess arena'ya geç", { tr: true });
+    expect(opened?.ok).toBe(true);
+    expect(opened?.nodeId).toBe("chess_arena");
+    expect(opened?.reply).toMatch(/Satranç Arenası açılıyor/);
+    expect(intents[0]?.normalizedDecision?.decision).toBe(
+      ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_CHESS_ARENA
+    );
+  });
+
+  it("voice warp uses Turkish tower labels", () => {
+    const warp = tryExecuteSovereignVoiceWarpFromTextV0("paris git", { tr: true });
+    expect(warp?.reply).toMatch(/Mistral Kulesi noktasına geçiyorum/);
   });
 
   it("executes voice warp and media open from text", () => {
