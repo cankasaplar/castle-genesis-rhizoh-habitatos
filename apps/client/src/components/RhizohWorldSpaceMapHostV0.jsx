@@ -22,6 +22,12 @@ import {
   resolveUserCastleGeoForMapViewV0
 } from "../rhizoh/runtime/worldMapBootstrapGeoV0.js";
 
+import {
+  dispatchSpiralMMOAwakeningV0,
+  resolveSpiralMMOTriggerIndexFromPinIdV0
+} from "../rhizoh/runtime/spiralMMOAwakeningCycleV0.js";
+import { RhizohSpiralMMOMapAwakeningOverlayV0 } from "./RhizohSpiralMMOMapAwakeningOverlayV0.jsx";
+
 export { RHIZOH_V11_MAP_INTENT_EVENT_V0, RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0 };
 
 import {
@@ -410,6 +416,9 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
             dispatchRemoteCastleClickV0(node);
             return;
           }
+          if (node.type === "spiralmmo") {
+            dispatchSpiralMMOAwakeningV0(resolveSpiralMMOTriggerIndexFromPinIdV0(node.id));
+          }
           emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK, mapRef.current);
         });
         marker.on("mouseover", () =>
@@ -486,6 +495,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
           background: transparent !important;
         }
       `}</style>
+      <RhizohSpiralMMOMapAwakeningOverlayV0 />
       {!leafletReady ? displayNodes.map((node) => {
         const pos = projectV11CoreMapGeoV0(node.lat, node.lon);
         return (
@@ -497,11 +507,19 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
             style={{ ...pos, color: node.color }}
             data-rhizoh-v11-node={node.id}
             data-rhizoh-v11-node-type={node.type}
-            onClick={() => emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK)}
+            onClick={() => {
+              if (node.type === "spiralmmo") {
+                dispatchSpiralMMOAwakeningV0(resolveSpiralMMOTriggerIndexFromPinIdV0(node.id));
+              }
+              emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK);
+            }}
             onMouseEnter={() => emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.HOVER)}
             onKeyDown={(ev) => {
               if (ev.key === "Enter" || ev.key === " ") {
                 ev.preventDefault();
+                if (node.type === "spiralmmo") {
+                  dispatchSpiralMMOAwakeningV0(resolveSpiralMMOTriggerIndexFromPinIdV0(node.id));
+                }
                 emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK);
               }
             }}
