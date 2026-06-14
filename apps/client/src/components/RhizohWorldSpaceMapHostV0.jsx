@@ -94,11 +94,12 @@ function loadLeafletV0() {
 }
 
 function createLeafletNodeIconV0(L, node) {
+  const isSpiral = node?.type === "spiralmmo";
   return L.divIcon({
     className: "rhizoh-sovereign-node-icon",
     html: sovereignNodeIconHtmlV0(node),
-    iconSize: [96, 52],
-    iconAnchor: [48, 26]
+    iconSize: isSpiral ? [32, 32] : [96, 52],
+    iconAnchor: isSpiral ? [16, 16] : [48, 26]
   });
 }
 

@@ -8,6 +8,7 @@ import {
   SPIRAL_MMO_CONTINENT_IDS_V0,
   spiralMMOPinIconHtmlV0
 } from "../spiralMMOContinentPinsV0.js";
+import { deriveSpiralMMOContinentCubeMotionV0 } from "../spiralMMOContinentCubeMotionV0.js";
 
 describe("spiralMMOContinentPinsV0", () => {
   it("defines one pin per continent", () => {
@@ -29,17 +30,16 @@ describe("spiralMMOContinentPinsV0", () => {
     );
   });
 
-  it("renders monochrome inward-spiral neon pin html", () => {
+  it("renders kanagawa mini-cube pin html per continent", () => {
     const pin = RHIZOH_SPIRAL_MMO_CONTINENT_PINS_V0[0];
     const html = spiralMMOPinIconHtmlV0(pin);
-    expect(html).toContain('data-rhizoh-spiral-mmo-pin="');
-    expect(html).toContain("rhizohSpiralMMOInV0");
-    expect(html).toContain("rhizohSpiralMMOPulseV0");
-    expect(html).toContain('stroke="#fff"');
-    expect(html).toContain('fill="#000"');
-    expect(html).toContain('viewBox="0 0 38 38"');
-    expect(html).toContain('data-rhizoh-spiral-mmo-rev="whirlpool-v2"');
-    expect(html).toContain("SPIRAL·");
+    expect(html).toContain('data-rhizoh-spiral-mmo-rev="kanagawa-cube-v0"');
+    expect(html).toContain("preserve-3d");
+    expect(html).toContain("0644");
+    expect(html).not.toContain("SPIRAL·");
+    const motion = deriveSpiralMMOContinentCubeMotionV0(pin);
+    expect(html).toContain(`rhizohKanagawaCube${pin.continent.replace(/[^a-z0-9]/gi, "")}V0`);
+    expect(html).toContain(`${motion.periodSec}s`);
   });
 
   it("resolves continent display names for spiral pins", () => {
@@ -48,17 +48,13 @@ describe("spiralMMOContinentPinsV0", () => {
   });
 
   it("builds an inward whirlpool path from outer ring to center", () => {
-    const { center, spiralOuterRadius } = RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0;
-    const path = buildSpiralMMOWhirlpoolPathV0(center, center);
+    const { spiralOuterRadius } = RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0;
+    const path = buildSpiralMMOWhirlpoolPathV0(19, 19);
     expect(path.startsWith("M")).toBe(true);
     expect(path.split("L").length).toBeGreaterThan(30);
     const nums = path.match(/-?\d+\.?\d*/g)?.map(Number) ?? [];
     const xs = nums.filter((_, i) => i % 2 === 0);
-    const ys = nums.filter((_, i) => i % 2 === 1);
-    const startDist = Math.hypot(xs[0] - center, ys[0] - center);
-    const endDist = Math.hypot(xs[xs.length - 1] - center, ys[ys.length - 1] - center);
-    expect(startDist).toBeCloseTo(spiralOuterRadius, 1);
-    expect(startDist).toBeGreaterThan(endDist);
-    expect(endDist).toBeLessThan(1.5);
+    const maxR = Math.max(...xs.map((x, i) => Math.hypot(x - 19, nums[i * 2 + 1] - 19)));
+    expect(maxR).toBeCloseTo(spiralOuterRadius, 0);
   });
 });

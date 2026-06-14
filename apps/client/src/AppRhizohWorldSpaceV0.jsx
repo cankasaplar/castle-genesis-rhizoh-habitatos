@@ -813,7 +813,6 @@ export default function AppRhizohWorldSpaceV0() {
           {v11NodePanel.nodeView?.type === "spiralmmo" ? (
             <RhizohSpiralMMOPortalWorkspaceV0
               uiLocale={uiLocale}
-              continentId={v11NodePanel.nodeView.continent || v11NodePanel.nodeView.id}
               onClose={() => setV11NodePanel(null)}
             />
           ) : (
