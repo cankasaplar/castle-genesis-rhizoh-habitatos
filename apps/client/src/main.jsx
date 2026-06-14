@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { initFirebaseAnalyticsWhenReady } from "./firebase/castleFirebase.js";
 import { getCookieConsentV0 } from "./rhizoh/ingress/ingress_router.js";
+import { installChromeWebGpuNoiseSuppressV0 } from "./rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
 import { installCastleBootLogFlow, installGlobalCrashTelemetry, hideLegacyIndexHudV0 } from "./boot/castleCrashTelemetry.js";
 import { CastleRootErrorBoundary } from "./boot/CastleRootErrorBoundary.jsx";
 import { initRuntimeFrameOnce } from "./rhizoh/runtime/runtimeFrameCorrelationV0.js";
@@ -14,6 +15,8 @@ hideLegacyIndexHudV0();
 bootLog.ok("boot.crash_telemetry", "global error + rejection hooks installed");
 initRuntimeFrameOnce();
 bootLog.ok("boot.runtime_frame", "runtimeFrameId bound (castle.last_frame.v1)");
+installChromeWebGpuNoiseSuppressV0();
+bootLog.ok("boot.webgpu_noise", "Chrome WebGPU adapter probe noise filter armed");
 if (import.meta.env.DEV) {
   void import("./rhizoh/runtime/runtimeSnapshotV1.js")
     .then((m) => {

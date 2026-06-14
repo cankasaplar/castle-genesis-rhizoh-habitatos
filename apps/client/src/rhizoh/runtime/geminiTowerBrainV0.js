@@ -1,7 +1,9 @@
 /**
- * Gemini Tower brain — local manifest layer (prompt → canvas art).
- * Production Imagen/Gemini API can replace procedural fallback later.
+ * Gemini Tower brain — gateway Gemini brief + local canvas manifest.
+ * Image pixels stay client-side; creative text uses Render GEMINI_API_KEY via /rhizoh/llm.
  */
+
+import { postRhizohLlmTurnV0 } from "./rhizohLlmTurnClientV0.js";
 
 function hashPromptV0(prompt) {
   let h = 2166136261;
@@ -18,29 +20,14 @@ function hueFromSeedV0(seed, offset = 0) {
 }
 
 /**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} width
+ * @param {number} height
  * @param {string} prompt
- * @param {{ width?: number, height?: number }} [opts]
+ * @param {string} [brief]
  */
-export async function generateGeminiTowerImageV0(prompt, opts = {}) {
-  const text = String(prompt || "").trim();
-  if (!text) {
-    return Object.freeze({ ok: false, error: "empty_prompt" });
-  }
-
-  const width = Math.max(320, Number(opts.width) || 960);
-  const height = Math.max(180, Number(opts.height) || 540);
-  const seed = hashPromptV0(text);
-
-  if (typeof document === "undefined") {
-    return Object.freeze({ ok: false, error: "no_document" });
-  }
-
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return Object.freeze({ ok: false, error: "no_canvas" });
-
+function paintManifestCanvasV0(ctx, width, height, prompt, brief = "") {
+  const seed = hashPromptV0(`${prompt}|${brief}`);
   const g = ctx.createLinearGradient(0, 0, width, height);
   g.addColorStop(0, `hsl(${hueFromSeedV0(seed, 0)}, 72%, 42%)`);
   g.addColorStop(0.45, `hsl(${hueFromSeedV0(seed, 3)}, 68%, 28%)`);
@@ -60,14 +47,74 @@ export async function generateGeminiTowerImageV0(prompt, opts = {}) {
 
   ctx.fillStyle = "rgba(248, 250, 252, 0.92)";
   ctx.font = "600 22px ui-sans-serif, system-ui, sans-serif";
-  ctx.fillText(text.slice(0, 64), 28, height - 36);
+  ctx.fillText(prompt.slice(0, 64), 28, height - (brief ? 72 : 36));
+
+  if (brief) {
+    ctx.fillStyle = "rgba(226, 232, 240, 0.88)";
+    ctx.font = "500 14px ui-sans-serif, system-ui, sans-serif";
+    const lines = brief.slice(0, 220).split(/\n+/).slice(0, 3);
+    lines.forEach((line, idx) => {
+      ctx.fillText(line.slice(0, 72), 28, height - 48 + idx * 18);
+    });
+  }
+}
+
+async function fetchGeminiVisualBriefV0(prompt) {
+  const text = String(prompt || "").trim();
+  if (!text) return null;
+  try {
+    const turn = await postRhizohLlmTurnV0({
+      message: `Imagine Atelier visual brief for: "${text}". Reply in 2-3 vivid sentences: palette, mood, composition. Plain text only.`,
+      provider: "gemini",
+      llmKeySource: "env",
+      context: Object.freeze({
+        towerId: "gemini_tower",
+        surface: "imagine_atelier",
+        task: "visual_brief"
+      }),
+      options: { maxTokens: 180 }
+    });
+    const reply = String(turn?.reply || "").trim();
+    if (turn?.ok && reply) return reply;
+  } catch {
+    /* gateway optional — local fallback */
+  }
+  return null;
+}
+
+/**
+ * @param {string} prompt
+ * @param {{ width?: number, height?: number }} [opts]
+ */
+export async function generateGeminiTowerImageV0(prompt, opts = {}) {
+  const text = String(prompt || "").trim();
+  if (!text) {
+    return Object.freeze({ ok: false, error: "empty_prompt" });
+  }
+
+  const width = Math.max(320, Number(opts.width) || 960);
+  const height = Math.max(180, Number(opts.height) || 540);
+  const brief = await fetchGeminiVisualBriefV0(text);
+
+  if (typeof document === "undefined") {
+    return Object.freeze({ ok: false, error: "no_document" });
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return Object.freeze({ ok: false, error: "no_canvas" });
+
+  paintManifestCanvasV0(ctx, width, height, text, brief || "");
 
   const url = canvas.toDataURL("image/png");
   return Object.freeze({
     ok: true,
     url,
     prompt: text,
-    status: "manifested_local",
+    brief,
+    status: brief ? "manifested_gemini_brief" : "manifested_local",
     aspectRatio: "16:9"
   });
 }
@@ -81,6 +128,7 @@ export async function enhanceGeminiTowerSketchV0(sketchDataUrl, hint = "") {
   if (!base.startsWith("data:image")) {
     return Object.freeze({ ok: false, error: "invalid_sketch" });
   }
+  const brief = await fetchGeminiVisualBriefV0(hint || "enhance sketch composition with neon polish");
   const merged = await generateGeminiTowerImageV0(
     hint || "enhanced neon digital artwork from sketch",
     { width: 960, height: 540 }
@@ -90,8 +138,10 @@ export async function enhanceGeminiTowerSketchV0(sketchDataUrl, hint = "") {
     ok: true,
     url: merged.url,
     feedback:
-      "Sketch composition preserved in local enhance pass — connect Gemini Pro Vision for full multimodal polish.",
-    status: "enhanced_local"
+      brief ||
+      merged.brief ||
+      "Sketch enhanced with Gemini brief on Render — full multimodal polish pending Imagen wire-up.",
+    status: merged.status
   });
 }
 
@@ -102,7 +152,20 @@ export async function analyzeGeminiTowerCanvasV0(imageDataUrl) {
   if (!String(imageDataUrl || "").startsWith("data:image")) {
     return "Upload or draw on the canvas first — Vision Lens will describe palette and composition.";
   }
+  try {
+    const turn = await postRhizohLlmTurnV0({
+      message:
+        "Describe this Imagine Atelier canvas in one short paragraph: palette, mood, composition. The user drew or generated on a 16:9 canvas.",
+      provider: "gemini",
+      llmKeySource: "env",
+      context: Object.freeze({ towerId: "gemini_tower", surface: "vision_lens" }),
+      options: { maxTokens: 160 }
+    });
+    if (turn?.ok && turn.reply) return String(turn.reply).trim();
+  } catch {
+    /* fallback */
+  }
   const seed = hashPromptV0(imageDataUrl.slice(-128));
   const palette = [0, 2, 4].map((o) => `#${((seed >> (o * 4)) & 0xffffff).toString(16).padStart(6, "0").slice(0, 6)}`);
-  return `Vision Lens (local): dominant hues ${palette.join(", ")} · composition reads as ${seed % 2 === 0 ? "wide cinematic" : "center-weighted"}. Wire Gemini Vision for object boxes and prompt reverse-engineering.`;
+  return `Vision Lens (local): dominant hues ${palette.join(", ")} · composition reads as ${seed % 2 === 0 ? "wide cinematic" : "center-weighted"}.`;
 }

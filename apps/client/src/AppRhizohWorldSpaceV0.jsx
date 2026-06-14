@@ -112,6 +112,7 @@ import {
   hydrateWorldSpaceCastleAnchorV0,
   persistWorldSpaceCastleAnchorV0
 } from "./rhizoh/runtime/castleWorldSpaceContinuityV0.js";
+import { bootRhizohOsStabilReleaseLayerV0 } from "./rhizoh/runtime/rhizohOsStabilReleaseLayerV0.js";
 import { getActiveFederationOverlayNodeV0 } from "./rhizoh/runtime/rhizohDomainGraphV0.js";
 
 export default function AppRhizohWorldSpaceV0() {
