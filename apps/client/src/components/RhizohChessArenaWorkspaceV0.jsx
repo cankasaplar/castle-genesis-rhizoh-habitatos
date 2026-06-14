@@ -1,10 +1,15 @@
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { Settings } from "lucide-react";
 import {
   CHESS_GAME_MODE_V0,
   createChessArenaGameV0,
   createCastleToCastleChessMatchV0
 } from "../rhizoh/runtime/chessArenaEngineV0.js";
 import { getChessStockfishEngineStatusV0, getStockfishArenaMoveV0, pickChessArenaEngineMoveV0 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
+import {
+  archiveChessArenaMatchV0,
+  listChessArenaArchiveV0
+} from "../rhizoh/runtime/chessArenaMatchArchiveV0.js";
 import { parseChessVoiceMoveV0 } from "../rhizoh/runtime/chessVoiceMoveParserV0.js";
 import {
   CASTLE_C2C_MESSAGE_TYPE_V0,
@@ -137,6 +142,9 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const [blackClockMs, setBlackClockMs] = useState(DEFAULT_CLOCK_MS_V0);
   const [boardTheme, setBoardTheme] = useState(() => readChessArenaThemeV0());
   const [engineStatus, setEngineStatus] = useState(() => getChessStockfishEngineStatusV0());
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [archiveTick, setArchiveTick] = useState(0);
+  const [gameEpoch, setGameEpoch] = useState(0);
 
   const boardColors = useMemo(
     () => resolveChessBoardColorsV0(boardTheme.boardThemeId),
@@ -225,8 +233,25 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     return () => window.removeEventListener(CASTLE_C2C_REALTIME_MESSAGE_EVENT_V0, onC2c);
   }, [open, c2cMatch, game, tr]);
 
-  const openingBook = useMemo(() => listRhizohOpeningBookV0().slice(0, 5), [matchResult, tick]);
   const civilization = useMemo(() => readChessCivilizationV0(), [matchResult, tick]);
+  const matchArchiveV0 = useMemo(() => listChessArenaArchiveV0(5), [archiveTick, matchResult]);
+
+  const persistFinishedMatchV0 = useCallback(
+    (outcomeVal, engineLabel = engineStatus) => {
+      archiveChessArenaMatchV0({
+        matchId: c2cMatch?.matchId || `chess_${Date.now().toString(36)}`,
+        mode,
+        outcome: String(outcomeVal || "unknown"),
+        moves: game.moveHistory?.slice() || [],
+        fen: game.fen(),
+        white: opponentsV0.white,
+        black: opponentsV0.black,
+        engine: engineLabel
+      });
+      setArchiveTick((n) => n + 1);
+    },
+    [c2cMatch?.matchId, engineStatus, game, mode, opponentsV0]
+  );
 
   const runMatchLearningV0 = useCallback(
     async (outcomeVal, matchRow) => {
@@ -272,6 +297,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       setWhiteClockMs(DEFAULT_CLOCK_MS_V0);
       setBlackClockMs(DEFAULT_CLOCK_MS_V0);
       setStatus(tr ? "Yeni oyun." : "New game.");
+      setGameEpoch((n) => n + 1);
     },
     [mode, tr]
   );
@@ -311,6 +337,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         );
         const outcomeVal = result.outcome || game.outcome();
         void runMatchLearningV0(outcomeVal, c2cMatch);
+        persistFinishedMatchV0(outcomeVal, engineStatus);
         return true;
       }
 
@@ -339,14 +366,72 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
             setStatus((s) => `${s} · ${engineLabel}: ${aiResult.move.san}`);
             if (aiResult.outcome) {
               void runMatchLearningV0(aiResult.outcome, c2cMatch);
+              persistFinishedMatchV0(aiResult.outcome, aiPick?.engine || engineStatus);
             }
           }
         }
       }
       return true;
     },
-    [game, mode, tr, c2cMatch, runMatchLearningV0]
+    [game, mode, tr, c2cMatch, runMatchLearningV0, persistFinishedMatchV0, engineStatus]
   );
+
+  useEffect(() => {
+    if (!open || mode !== CHESS_GAME_MODE_V0.AI_AI) return undefined;
+    let alive = true;
+
+    void (async () => {
+      while (alive && !game.isGameOver()) {
+        setAiBusy(true);
+        let pick = null;
+        try {
+          pick = await pickChessArenaEngineMoveV0(game, { useStockfish: true });
+        } catch {
+          pick = null;
+        }
+        setAiBusy(false);
+        setEngineStatus(getChessStockfishEngineStatusV0());
+        if (!alive || game.isGameOver()) break;
+        const aiMove = pick?.move;
+        if (!aiMove) break;
+        const aiResult = game.tryMove(aiMove);
+        if (!aiResult.ok) break;
+        setTick((n) => n + 1);
+        const engineLabel =
+          pick?.engine === "stockfish_wasm"
+            ? "Stockfish"
+            : tr
+              ? "Yedek motor"
+              : "Fallback";
+        setStatus(`${engineLabel}: ${aiResult.move.san}`);
+        if (aiResult.outcome) {
+          setStatus(
+            tr ? `AI vs AI bitti — ${aiResult.outcome}` : `AI vs AI finished — ${aiResult.outcome}`
+          );
+          void runMatchLearningV0(aiResult.outcome, c2cMatch);
+          persistFinishedMatchV0(aiResult.outcome, pick?.engine || engineStatus);
+          break;
+        }
+        await new Promise((resolve) => {
+          window.setTimeout(resolve, 750);
+        });
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [
+    open,
+    mode,
+    gameEpoch,
+    game,
+    tr,
+    c2cMatch,
+    runMatchLearningV0,
+    persistFinishedMatchV0,
+    engineStatus
+  ]);
 
   const onSquareClick = useCallback(
     async (square) => {
@@ -409,17 +494,116 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
               {tr ? "Gerçek satranç kuralları · sesli hamle · kale-kale modu" : "Real chess rules · voice moves · castle-to-castle"}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-white/15 px-2 py-1 text-[10px] text-white/60 hover:text-white"
-          >
-            ×
-          </button>
+          <div className="flex items-start gap-2">
+            <button
+              type="button"
+              onClick={() => setSettingsOpen((v) => !v)}
+              className={`rounded-lg border p-2 ${
+                settingsOpen
+                  ? "border-emerald-400/50 bg-emerald-500/15 text-emerald-100"
+                  : "border-white/15 text-white/60 hover:text-white"
+              }`}
+              aria-label={tr ? "Ayarlar" : "Settings"}
+              title={tr ? "Ayarlar" : "Settings"}
+            >
+              <Settings className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-white/15 px-2 py-1 text-[10px] text-white/60 hover:text-white"
+            >
+              ×
+            </button>
+          </div>
         </header>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-y-auto p-3 lg:grid-cols-[minmax(0,1fr)_260px] lg:overflow-hidden">
-          <div className="flex min-h-0 flex-col items-center gap-2 py-1">
+        {settingsOpen ? (
+          <div className="mx-3 mb-2 rounded-xl border border-white/10 bg-black/85 p-3 shadow-xl sm:mx-4">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-emerald-200/80">
+              {tr ? "Arena ayarları" : "Arena settings"}
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <label className="text-[9px] text-white/50">{tr ? "Tahta teması" : "Board theme"}</label>
+              <select
+                value={boardTheme.boardThemeId}
+                onChange={(e) => {
+                  const next = saveChessArenaThemeV0({ boardThemeId: e.target.value });
+                  setBoardTheme(next);
+                }}
+                className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+              >
+                {Object.entries(CHESS_BOARD_THEME_V0).map(([id, theme]) => (
+                  <option key={id} value={id}>
+                    {theme.label}
+                  </option>
+                ))}
+              </select>
+              <label className="text-[9px] text-white/50">{tr ? "Taş stili" : "Piece style"}</label>
+              <select
+                value={boardTheme.pieceStyleId}
+                onChange={(e) => {
+                  const next = saveChessArenaThemeV0({ pieceStyleId: e.target.value });
+                  setBoardTheme(next);
+                }}
+                className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+              >
+                <option value={CHESS_PIECE_STYLE_V0.unicode}>{tr ? "Unicode" : "Unicode"}</option>
+                <option value={CHESS_PIECE_STYLE_V0.bold}>{tr ? "Kalın" : "Bold"}</option>
+              </select>
+              <label className="text-[9px] text-white/50">{tr ? "Oyun modu" : "Game mode"}</label>
+              <select
+                value={mode}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setMode(next);
+                  resetGame(next);
+                }}
+                className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+              >
+                {MODE_OPTIONS_V0.map((m) => (
+                  <option key={m} value={m}>
+                    {tr ? MODE_LABELS_TR_V0[m] || m : MODE_LABELS_EN_V0[m] || m}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => resetGame(mode)}
+                className="rounded-lg border border-white/20 px-2 py-1 text-[10px] text-white/80"
+              >
+                {tr ? "Yeni oyun" : "New game"}
+              </button>
+              <button
+                type="button"
+                onClick={startC2c}
+                className="rounded-lg border border-cyan-400/40 bg-cyan-500/10 px-2 py-1 text-[10px] text-cyan-100"
+              >
+                {tr ? "Kale ↔ Kale" : "Castle ↔ Castle"}
+              </button>
+            </div>
+            <label className="mt-2 block text-[9px] text-white/50">
+              {tr ? "Hamle / sesli komut" : "Move / voice"}
+            </label>
+            <input
+              value={moveInput}
+              onChange={(e) => setMoveInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  if (parseChessVoiceMoveV0(moveInput).move) void onVoiceMove();
+                  else void applyMove(moveInput.trim());
+                  setMoveInput("");
+                }
+              }}
+              placeholder={tr ? "e4, Nf3…" : "e4, Nf3…"}
+              className="mt-1 w-full rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+            />
+          </div>
+        ) : null}
+
+        <div className="flex min-h-0 flex-1 flex-col items-center gap-2 overflow-y-auto p-3">
             <ChessPlayerBarV0
               name={opponentsV0.black}
               clockMs={blackClockMs}
@@ -527,128 +711,22 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                 {tr ? "Sonuç:" : "Outcome:"} {outcome}
               </p>
             ) : null}
-          </div>
-
-          <aside className="flex min-h-0 flex-col gap-2 overflow-y-auto rounded-xl border border-white/10 bg-black/40 p-3 lg:max-h-none">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-white/55">
-              {tr ? "Tahta teması" : "Board theme"}
-            </label>
-            <select
-              value={boardTheme.boardThemeId}
-              onChange={(e) => {
-                const next = saveChessArenaThemeV0({ boardThemeId: e.target.value });
-                setBoardTheme(next);
-              }}
-              className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
-            >
-              {Object.entries(CHESS_BOARD_THEME_V0).map(([id, theme]) => (
-                <option key={id} value={id}>
-                  {theme.label}
-                </option>
-              ))}
-            </select>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-white/55">
-              {tr ? "Taş stili" : "Piece style"}
-            </label>
-            <select
-              value={boardTheme.pieceStyleId}
-              onChange={(e) => {
-                const next = saveChessArenaThemeV0({ pieceStyleId: e.target.value });
-                setBoardTheme(next);
-              }}
-              className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
-            >
-              <option value={CHESS_PIECE_STYLE_V0.unicode}>{tr ? "Unicode" : "Unicode"}</option>
-              <option value={CHESS_PIECE_STYLE_V0.bold}>{tr ? "Kalın" : "Bold"}</option>
-            </select>
-
-            <label className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-white/55">
-              {tr ? "Oyun modu" : "Game mode"}
-            </label>
-            <select
-              value={mode}
-              onChange={(e) => {
-                const next = e.target.value;
-                setMode(next);
-                resetGame(next);
-              }}
-              className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
-            >
-              {MODE_OPTIONS_V0.map((m) => (
-                <option key={m} value={m}>
-                  {tr ? MODE_LABELS_TR_V0[m] || m : MODE_LABELS_EN_V0[m] || m}
-                </option>
-              ))}
-            </select>
-
-            <button
-              type="button"
-              onClick={() => resetGame(mode)}
-              className="rounded-lg border border-white/20 px-2 py-1.5 text-[10px] text-white/80"
-            >
-              {tr ? "Yeni oyun" : "New game"}
-            </button>
-            <button
-              type="button"
-              onClick={startC2c}
-              className="rounded-lg border border-cyan-400/40 bg-cyan-500/10 px-2 py-1.5 text-[10px] text-cyan-100"
-            >
-              {tr ? "Kale ↔ Kale maçı" : "Castle ↔ Castle match"}
-            </button>
-            {c2cMatch ? (
-              <p className="text-[9px] text-white/45">
-                {c2cMatch.castleA} vs {c2cMatch.castleB}
-              </p>
-            ) : null}
-
-            <label className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-white/55">
-              {tr ? "Hamle / sesli komut" : "Move / voice command"}
-            </label>
-            <input
-              value={moveInput}
-              onChange={(e) => setMoveInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  if (parseChessVoiceMoveV0(moveInput).move) void onVoiceMove();
-                  else void applyMove(moveInput.trim());
-                  setMoveInput("");
-                }
-              }}
-              placeholder={tr ? "e4, Nf3, at f3…" : "e4, Nf3, knight f3…"}
-              className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
-            />
-            <button
-              type="button"
-              onClick={onVoiceMove}
-              className="rounded-lg border border-emerald-400/45 bg-emerald-500/15 px-2 py-1.5 text-[10px] font-semibold text-emerald-100"
-            >
-              {tr ? "Sesli hamle uygula" : "Apply voice move"}
-            </button>
-
-            <p className="mt-2 text-[9px] leading-relaxed text-white/40">
-              FEN: <span className="break-all text-white/55">{fen}</span>
-            </p>
-
-            <div className="mt-3 border-t border-white/10 pt-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-white/55">
-                {tr ? "Rhizoh Opening Book" : "Rhizoh Opening Book"}
-              </p>
-              {openingBook.length === 0 ? (
-                <p className="mt-1 text-[9px] text-white/40">
-                  {tr ? "Maç bitince açılışlar buraya yazılır." : "Openings appear here after analyzed games."}
+            {matchArchiveV0.length ? (
+              <div className="mt-2 w-full max-w-md rounded-lg border border-white/10 bg-black/35 p-2">
+                <p className="text-[9px] font-semibold uppercase tracking-wider text-white/45">
+                  {tr ? "Arşiv (son maçlar)" : "Archive (recent)"}
                 </p>
-              ) : (
                 <ul className="mt-1 space-y-1">
-                  {openingBook.map((row) => (
+                  {matchArchiveV0.map((row) => (
                     <li key={row.id} className="text-[9px] text-white/55">
-                      {row.name} · {row.games} {tr ? "maç" : "games"} · {row.wins}W / {row.losses}L
-                      {row.eco ? ` · ${row.eco}` : ""}
+                      {row.white} vs {row.black} · {row.outcome} · {row.moves?.length || 0}{" "}
+                      {tr ? "hamle" : "moves"}
                     </li>
                   ))}
                 </ul>
-              )}
-            </div>
-          </aside>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>

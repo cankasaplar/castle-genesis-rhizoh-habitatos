@@ -73,10 +73,10 @@ export const RhizohTowerMediaConnectBarV0 = memo(function RhizohTowerMediaConnec
 
   const previewClass =
     previewSize === "square"
-      ? "mt-2 aspect-square max-h-36 w-36 rounded-xl border border-white/15 bg-black object-cover"
+      ? "mt-2 aspect-square h-28 w-28 rounded-xl border border-white/15 bg-black object-cover"
       : previewSize === "large"
         ? "mt-2 aspect-video max-h-[min(38vh,340px)] w-full rounded-xl border border-white/15 bg-black object-cover"
-        : "mt-2 max-h-28 w-full rounded-lg border border-white/10 bg-black object-cover";
+        : "mt-2 aspect-square h-24 w-24 rounded-lg border border-white/10 bg-black object-cover";
 
   const previewWrapClass =
     previewSize === "square" ? "relative mt-2 inline-block" : "relative mt-2 w-full";

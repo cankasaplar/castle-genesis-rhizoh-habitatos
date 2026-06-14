@@ -36,6 +36,14 @@ function nextId() {
 function attachWorkerHandlersV0(worker) {
   worker.onmessage = (ev) => {
     const line = String(ev?.data || "");
+    if (line === "uciok") {
+      try {
+        worker.postMessage("isready");
+      } catch {
+        /* noop */
+      }
+    }
+    if (line === "readyok") readyV0 = true;
     if (line === "uciok") readyV0 = true;
 
     const depthMatch = line.match(/\bdepth (\d+)\b/);
@@ -102,7 +110,7 @@ async function ensureStockfishWorkerV0() {
       const timer = setTimeout(() => {
         pendingV0.delete(id);
         reject(new Error("stockfish_uci_timeout"));
-      }, 5000);
+      }, 12000);
       pendingV0.set(id, {
         resolve: () => {
           clearTimeout(timer);

@@ -170,8 +170,18 @@ export async function analyzeGeminiTowerCanvasV0(imageDataUrl, opts = {}) {
   }
 
   const message = tr
-    ? "Bu fotoğrafta GERÇEKTEN gördüğün kişi, yüz, nesne ve arka planı yaz. Uydurma; çiçek, tablo, dekor veya sanat eseri ekleme. Kısa Türkçe paragraf."
-    : "Describe ONLY what is literally visible in this photo: people, face, objects, background. Do not invent flowers, art, or decor. One short paragraph.";
+    ? `Bu fotoğrafı Gemini Vision ile incele. Yalnızca görünen gerçekleri yaz; uydurma.
+Yüz: ifade, sakal/bıyık, gözlük, tahmini yaş aralığı.
+Kıyafet: renk, tür (tişört, gömlek…).
+Arka plan: pencere, perde, duvar, mobilya — bina mimarisi uydurma.
+Işık: doğal/yapay, gölge.
+Kısa Türkçe madde madde veya paragraf.`
+    : `Analyze this photo with Gemini Vision. Visible facts only — no invention.
+Face: expression, facial hair, glasses, approximate age range.
+Clothing: colors and garment type.
+Background: window, curtain, wall, furniture — do not invent architecture.
+Lighting: natural/artificial.
+Short structured paragraph.`;
 
   try {
     const turn = await postRhizohTowerLlmTurnV0({
@@ -180,15 +190,20 @@ export async function analyzeGeminiTowerCanvasV0(imageDataUrl, opts = {}) {
       surface: "vision_lens",
       imageDataUrl,
       idToken: opts.idToken,
-      maxTokens: 240,
+      maxTokens: 400,
       skipHotWire: true
     });
     if (turn?.ok && turn.reply) {
       const reply = String(turn.reply).trim();
       const looksHallucinated =
-        /çiçek|aranjman|pastel ton|huzur veren atmosfer|flower arrangement|serene atmosphere/i.test(
+        (/çiçek|aranjman|pastel ton|huzur veren atmosfer|flower arrangement|serene atmosphere|bina mimarisi|architecture of the structure/i.test(
           reply
-        ) && !/yüz|insan|kişi|perde|pencere|face|person|curtain|window/i.test(reply);
+        ) &&
+          !/yüz|insan|kişi|perde|pencere|face|person|curtain|window|tişört|gömlek|clothing|beard|gözlük/i.test(
+            reply
+          )) ||
+        (/building in the background|yapının mimarisi/i.test(reply) &&
+          !/perde|curtain|pencere|window/i.test(reply));
       if (looksHallucinated) {
         return tr
           ? "Vision bağlantısı görüntüyü alamadı (metin-only yanıt). Gateway GEMINI_API_KEY ve kare boyutunu kontrol et; tekrar dene."

@@ -157,7 +157,8 @@ function copyStockfishAssetsPlugin() {
     name: "castle-copy-stockfish-assets",
     closeBundle() {
       const pkgRoot = path.resolve(process.cwd(), "../../node_modules/stockfish/src");
-      const distRoot = path.resolve(process.cwd(), "dist");
+      const distRoot = path.resolve(process.cwd(), "dist/chess-engine");
+      mkdirSync(distRoot, { recursive: true });
       for (const name of files) {
         const src = path.join(pkgRoot, name);
         const dest = path.join(distRoot, name);
