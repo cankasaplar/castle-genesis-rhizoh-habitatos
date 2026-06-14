@@ -10,6 +10,10 @@ import {
   routeSymbyoMapInteractionToOrchestratorV0,
   SYMBYO_MAP_INTERACTION_V0
 } from "./symbyoMapIntentBridgeV0.js";
+import {
+  listSpiralMMOContinentMapPinsV0,
+  spiralMMOPinIconHtmlV0
+} from "./spiralMMOContinentPinsV0.js";
 
 function presenceLabelForStateV0(state) {
   const s = String(state || "ONLINE").toUpperCase();
@@ -294,7 +298,7 @@ export function listSovereignWorldMapNodesForViewV0(opts = {}) {
   const hasUserCastle =
     userCastle && Number.isFinite(userCastle.lat) && Number.isFinite(userCastle.lon);
   const portalNode = resolveSovereignPortalNodeForViewV0(userCastle);
-  const rows = [...core, ...SOVEREIGN_TOWERS_V0, portalNode];
+  const rows = [...core, ...SOVEREIGN_TOWERS_V0, ...listSpiralMMOContinentMapPinsV0(), portalNode];
   if (hasUserCastle) {
     rows.unshift(
       Object.freeze({
@@ -341,11 +345,12 @@ export function buildSovereignTowerGraphEdgesV0() {
  * @param {object} node
  */
 export function sovereignNodeIconHtmlV0(node) {
+  const type = String(node.type || "castle");
+  if (type === "spiralmmo") return spiralMMOPinIconHtmlV0(node);
   const color = String(node.color || "#ffffff");
   const label = String(node.label || node.name || node.id || "NODE")
     .slice(0, 12)
     .toUpperCase();
-  const type = String(node.type || "castle");
   const svg = SVG_BY_TYPE_V0[type] || SVG_BY_TYPE_V0.castle;
   const spin = type === "portal" ? "animation:spin 8s linear infinite;" : "";
   return `<div data-rhizoh-sovereign-node="${node.id}" style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto">

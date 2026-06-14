@@ -375,9 +375,11 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
               ? 900
               : node.type === "remote_castle"
                 ? 100
-                : node.type === "tower"
-                  ? 400
-                  : 200
+                : node.type === "spiralmmo"
+                  ? 320
+                  : node.type === "tower"
+                    ? 400
+                    : 200
         }).addTo(markerLayerRef.current);
         marker.on("click", (ev) => {
           try {
