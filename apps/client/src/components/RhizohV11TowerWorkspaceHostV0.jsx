@@ -1,7 +1,6 @@
 import React, { memo } from "react";
 import { GeminiTowerWorkspaceV0 } from "./GeminiTowerWorkspaceV0.jsx";
-import { GEMINI_TOWER_DESIGN_V0 } from "../rhizoh/runtime/geminiTowerDesignV0.js";
-import { RhizohTowerLlmConnectionsStripV0 } from "./RhizohTowerLlmConnectionsStripV0.jsx";
+import { RhizohLlmTowerWorkspaceV0 } from "./RhizohLlmTowerWorkspaceV0.jsx";
 import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
 
 /**
@@ -14,11 +13,18 @@ export const RhizohV11TowerWorkspaceHostV0 = memo(function RhizohV11TowerWorkspa
 }) {
   if (!workspaceDetail?.node) return null;
 
-  const nodeId = String(workspaceDetail.node.id || "");
+  const node = workspaceDetail.node;
+  const nodeId = String(node.id || "");
   const tr = uiLocale === "tr";
 
   if (nodeId === "gemini_tower") {
     return <GeminiTowerWorkspaceV0 open onClose={onClose} uiLocale={uiLocale} />;
+  }
+
+  if (node.type === "tower" || nodeId.endsWith("_tower")) {
+    return (
+      <RhizohLlmTowerWorkspaceV0 node={node} onClose={onClose} uiLocale={uiLocale} />
+    );
   }
 
   return (
@@ -58,10 +64,9 @@ export const RhizohV11TowerWorkspaceHostV0 = memo(function RhizohV11TowerWorkspa
         </div>
         <p className="mt-3 text-[11px] leading-relaxed text-white/65">
           {tr
-            ? "Bu tower için özel workspace henüz bağlanmadı. Gemini tower referans tasarımı kullanılabilir."
-            : "Dedicated workspace for this tower is not wired yet. Use Gemini tower as the reference design."}
+            ? "Bu düğüm için özel workspace henüz yok."
+            : "No dedicated workspace for this node yet."}
         </p>
-        <RhizohTowerLlmConnectionsStripV0 towerId={nodeId} uiLocale={uiLocale} />
       </div>
     </div>
   );
