@@ -80,20 +80,7 @@ export const RhizohTowerLlmConnectionsStripV0 = memo(function RhizohTowerLlmConn
     }
   };
 
-  if (!allowUserKeys) {
-    return (
-      <div className="mt-3 rounded-xl border border-cyan-400/20 bg-cyan-500/5 p-3">
-        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-200/70">
-          {tr ? "Tower LLM" : "Tower LLM"}
-        </p>
-        <p className="mt-1 text-[10px] leading-relaxed text-white/55">
-          {tr
-            ? "Üretimde LLM anahtarları yalnızca Render gateway üzerinde tutulur; tarayıcıya veya arayüze yazılmaz. Sohbet ve üretim istekleri şifreli gateway üzerinden gider."
-            : "In production, LLM keys live only on the Render gateway — never in the browser or UI. Chat and generation requests route through the encrypted gateway."}
-        </p>
-      </div>
-    );
-  }
+  if (!allowUserKeys) return null;
 
   return (
     <div className="mt-3 rounded-xl border border-cyan-400/25 bg-cyan-500/5 p-3">

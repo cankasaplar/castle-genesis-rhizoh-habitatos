@@ -33,7 +33,7 @@ import {
   resolveRhizohWorldSpaceMapStripBottomCssV0,
   resolveRhizohWorldSpaceVoiceDockBottomCssV0
 } from "./rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
-import { resolveRhizohProductPathV0 } from "./rhizoh/product/rhizohProductTopologyV0.js";
+import { navigateRhizohProductSurfaceV0 } from "./rhizoh/product/rhizohProductTopologyV0.js";
 import {
   configureSpatialRealityInfraV0,
   clearSpatialRealityInfraV0
@@ -103,7 +103,9 @@ import {
   applyDrawerDomainTagsV0,
   bootDrawerStateMachineV0,
   closeProductSurfaceDrawerV0,
+  DRAWER_SHELL_ACTION_V0,
   getDrawerStateSnapshotV0,
+  handleProductShellSelectV0,
   resolveDrawerDomainTagsV0,
   subscribeDrawerStateV0
 } from "./rhizoh/runtime/rhizohDrawerStateMachineV0.js";
@@ -522,16 +524,30 @@ export default function AppRhizohWorldSpaceV0() {
 
   const onProductShellSelect = useCallback(
     (id) => {
-      if (id === "world") {
-        closeProductSurfaceDrawerV0();
+      const surface = String(id || "world");
+      if (surface === "world") {
+        handleProductShellSelectV0("world", { pathname: "/world/space", worldPath: "/world/space" });
         applyDrawerDomainTagsV0(
           appRootRef.current,
           resolveDrawerDomainTagsV0(null, { pathname: "/world/space", surfaceId: "world" })
         );
         return;
       }
-      closeProductSurfaceDrawerV0();
-      navigate(resolveRhizohProductPathV0(id));
+      const transition = handleProductShellSelectV0(surface, {
+        pathname: "/world/space",
+        inPlace: true
+      });
+      applyDrawerDomainTagsV0(
+        appRootRef.current,
+        resolveDrawerDomainTagsV0(transition.nextOpenDrawerId, {
+          pathname: "/world/space",
+          surfaceId: surface,
+          overlayNode: transition.nextOpenDrawerId ? surface : null
+        })
+      );
+      if (transition.action === DRAWER_SHELL_ACTION_V0.NAVIGATE) {
+        navigateRhizohProductSurfaceV0(surface, navigate, "/world/space");
+      }
     },
     [navigate]
   );
@@ -634,7 +650,7 @@ export default function AppRhizohWorldSpaceV0() {
       </div>
 
       <UnifiedProductShellBar
-        active="world"
+        active={openSurfaceDrawerIdV0 || "world"}
         panelOpen={chromePanelsV0}
         onSelect={onProductShellSelect}
         uiLocale={uiLocale}
