@@ -103,9 +103,7 @@ import {
   applyDrawerDomainTagsV0,
   bootDrawerStateMachineV0,
   closeProductSurfaceDrawerV0,
-  DRAWER_SHELL_ACTION_V0,
   getDrawerStateSnapshotV0,
-  handleProductShellSelectV0,
   resolveDrawerDomainTagsV0,
   subscribeDrawerStateV0
 } from "./rhizoh/runtime/rhizohDrawerStateMachineV0.js";
@@ -524,17 +522,16 @@ export default function AppRhizohWorldSpaceV0() {
 
   const onProductShellSelect = useCallback(
     (id) => {
-      const result = handleProductShellSelectV0(id, {
-        pathname: "/world/space",
-        inPlace: true,
-        worldPath: "/world/space"
-      });
-      if (result.action === DRAWER_SHELL_ACTION_V0.NAVIGATE) {
-        navigate(resolveRhizohProductPathV0(result.surface));
-      } else if (result.navigateTo) {
-        navigate(result.navigateTo);
+      if (id === "world") {
+        closeProductSurfaceDrawerV0();
+        applyDrawerDomainTagsV0(
+          appRootRef.current,
+          resolveDrawerDomainTagsV0(null, { pathname: "/world/space", surfaceId: "world" })
+        );
+        return;
       }
-      applyDrawerDomainTagsV0(appRootRef.current, result.tags);
+      closeProductSurfaceDrawerV0();
+      navigate(resolveRhizohProductPathV0(id));
     },
     [navigate]
   );

@@ -19,7 +19,7 @@ export function mountMedusaCompanionV0(container, opts = {}) {
   const h = opts.height || MEDUSA_COMPANION_DEFAULT_SIZE_V0;
   const motionProfile = Object.freeze({
     swayScale: opts.motionProfile?.swayScale ?? 1,
-    idleAmp: opts.motionProfile?.idleAmp ?? 0.05,
+    idleAmp: opts.motionProfile?.idleAmp ?? 0.09,
     audioGain: opts.motionProfile?.audioGain ?? 1
   });
 
@@ -97,18 +97,18 @@ export function mountMedusaCompanionV0(container, opts = {}) {
       motion = 0.15 + Math.sin(t * 2) * motionProfile.idleAmp;
     }
     if (root) {
-      const sway = (0.14 + motion * 0.5 * motionProfile.audioGain) * motionProfile.swayScale;
-      const breathe = Math.sin(t * 1.1) * 0.04 * motionProfile.swayScale;
+      const sway = (0.22 + motion * 0.72 * motionProfile.audioGain) * motionProfile.swayScale;
+      const breathe = Math.sin(t * 1.1) * 0.06 * motionProfile.swayScale;
       root.rotation.y =
-        MEDUSA_COMPANION_FACE_Y_V0 + Math.sin(t * 1.2) * sway * 0.35 + Math.sin(t * 0.35) * 0.04;
-      root.rotation.z = Math.sin(t * 0.9) * sway * 0.22;
-      root.rotation.x = Math.sin(t * 0.7) * sway * 0.08;
-      root.position.y = Math.sin(t * 1.6) * (0.03 + motion * 0.08) + breathe;
-      root.position.x = Math.sin(t * 0.85) * sway * 0.03;
+        MEDUSA_COMPANION_FACE_Y_V0 + Math.sin(t * 1.2) * sway * 0.42 + Math.sin(t * 0.35) * 0.05;
+      root.rotation.z = Math.sin(t * 0.9) * sway * 0.28;
+      root.rotation.x = Math.sin(t * 0.7) * sway * 0.1;
+      root.position.y = Math.sin(t * 1.6) * (0.05 + motion * 0.12) + breathe;
+      root.position.x = Math.sin(t * 0.85) * sway * 0.05;
       for (let i = 0; i < snakeMeshes.length; i += 1) {
         const snake = snakeMeshes[i];
         const phase = Number(snake.userData?.snakePhase) || i * 0.7;
-        const wiggle = (0.22 + motion * 0.45) * motionProfile.swayScale;
+        const wiggle = (0.34 + motion * 0.62) * motionProfile.swayScale;
         snake.rotation.z = Math.sin(t * 2.4 + phase) * wiggle;
         snake.rotation.x = Math.sin(t * 1.8 + phase * 1.3) * wiggle * 0.65;
         snake.rotation.y = Math.cos(t * 2.1 + phase * 0.8) * wiggle * 0.4;

@@ -2,6 +2,9 @@
  * Rhizoh Knowledge Store v0 — distilled facts from teachers (LLM = Teacher, not Brain).
  */
 
+import { detectRhizohMultilingualLocaleV0 } from "./rhizohMultilingualBridgeV0.js";
+import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
+
 export const RHIZOH_KNOWLEDGE_STORE_SCHEMA_V0 = "rhizoh.knowledge_store.v0";
 export const RHIZOH_KNOWLEDGE_LS_KEY_V0 = "rhizoh_knowledge_store_v0";
 export const RHIZOH_KNOWLEDGE_EVENT_V0 = "rhizoh:knowledge-store-v0";
@@ -25,6 +28,15 @@ function nowIso() {
 
 function newId() {
   return `know_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function answerMatchesUiLocaleV0(answer) {
+  const expected = resolveOutputLanguageCodeV0();
+  const sample = String(answer || "").trim();
+  if (!sample || expected !== "tr") return true;
+  if (/[ğıüşöçİĞÜŞÖÇ]/.test(sample)) return true;
+  const detected = detectRhizohMultilingualLocaleV0(sample.slice(0, 400), "").code;
+  return detected === "tr" || detected === "und" || detected === "mixed";
 }
 
 export function normalizeRhizohQuestionV0(text = "") {
@@ -98,6 +110,7 @@ export function lookupRhizohKnowledgeV0(question, opts = {}) {
   let best = null;
   let bestScore = 0;
   for (const row of readRawV0()) {
+    if (!answerMatchesUiLocaleV0(row.answer)) continue;
     const score = scoreQuestionMatchV0(queryNorm, row.questionNorm || normalizeRhizohQuestionV0(row.question));
     if (score > bestScore) {
       bestScore = score;

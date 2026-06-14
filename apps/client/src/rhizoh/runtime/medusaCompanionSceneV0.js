@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { ASSETS } from "../../studio/assetRegistryV1.js";
 
-export const MEDUSA_COMPANION_DEFAULT_SIZE_V0 = 136;
+export const MEDUSA_COMPANION_DEFAULT_SIZE_V0 = 156;
 /** Face camera (+Z) when GLTF default profile faces +X. */
 export const MEDUSA_COMPANION_FACE_Y_V0 = -Math.PI / 2;
 
@@ -53,7 +53,7 @@ export function loadMedusaCompanionModelV0(scene, onRoot) {
       const box = new THREE.Box3().setFromObject(root);
       const size = new THREE.Vector3();
       box.getSize(size);
-      const scale = 0.92 / (size.y || 1);
+      const scale = 0.96 / (size.y || 1);
       root.scale.setScalar(scale);
       const center = new THREE.Vector3();
       box.getCenter(center);
