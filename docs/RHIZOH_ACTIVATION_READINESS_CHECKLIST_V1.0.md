@@ -19,6 +19,8 @@ npm run activation:readiness-check
 
 Report: `docs/exports/ops/activation_readiness_v1.0.json`
 
+**Manual evidence runbook:** [`docs/ops/ACTIVATION_MANUAL_EVIDENCE_RUNBOOK_V1.0.md`](ops/ACTIVATION_MANUAL_EVIDENCE_RUNBOOK_V1.0.md) · `npm run activation:collect-evidence`
+
 ---
 
 ## 0. Operasyonel karar (insan gate — teknik değil)

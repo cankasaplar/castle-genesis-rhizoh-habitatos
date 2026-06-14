@@ -1,0 +1,14 @@
+# A4 — Firestore rules scan (auto-collected)
+generatedAt: 2026-06-14T03:36:05.334Z
+
+open_write_if_true: PASS
+active_castles_rule: match /active_castles/{castleDocId} {
+
+## Notes
+- castle/* and artifacts/* allow write when request.auth != null (not public open write)
+- rhizoh_events items: create-only, append-only (no update/delete)
+- default deny on unmatched paths
+
+## Human still required
+- Firebase Console rules deployed == repo firestore.rules
+- Anonymous client write probe on heartbeat path (should deny)

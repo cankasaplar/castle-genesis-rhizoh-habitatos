@@ -1,6 +1,6 @@
 # Go-Live Cohort Simulation Summary
 
-- **Generated:** 2026-05-19T13:55:52.628Z
+- **Generated:** 2026-06-14T03:35:06.293Z
 - **Nodes:** 50 · **Seed:** 42
 - **Decision:** `proceed`
 
