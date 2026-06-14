@@ -30,7 +30,8 @@ function boardRowsFromFen(fen) {
   const chess = createChessArenaGameV0({ fen });
   const board = chess.chess.board();
   const rows = [];
-  for (let r = 7; r >= 0; r -= 1) {
+  // Rank 8 at top, rank 1 at bottom — white plays from bottom (standard UI).
+  for (let r = 0; r < 8; r += 1) {
     const row = [];
     for (let c = 0; c < 8; c += 1) {
       const cell = board[r][c];
@@ -39,7 +40,7 @@ function boardRowsFromFen(fen) {
           ? Object.freeze({
               color: cell.color,
               type: cell.type,
-              square: String.fromCharCode(97 + c) + String(r + 1),
+              square: String.fromCharCode(97 + c) + String(8 - r),
               glyph: PIECE_UNICODE_V0[`${cell.color}${cell.type.toUpperCase()}`] || "?"
             })
           : null
@@ -49,6 +50,22 @@ function boardRowsFromFen(fen) {
   }
   return Object.freeze(rows);
 }
+
+const MODE_LABELS_TR_V0 = Object.freeze({
+  [CHESS_GAME_MODE_V0.BLITZ]: "Blitz (insan vs insan)",
+  [CHESS_GAME_MODE_V0.DAILY]: "Günlük",
+  [CHESS_GAME_MODE_V0.AI_HUMAN]: "Stockfish vs insan",
+  [CHESS_GAME_MODE_V0.HUMAN_HUMAN]: "İnsan vs insan",
+  [CHESS_GAME_MODE_V0.AI_AI]: "Stockfish vs Stockfish"
+});
+
+const MODE_LABELS_EN_V0 = Object.freeze({
+  [CHESS_GAME_MODE_V0.BLITZ]: "Blitz (human vs human)",
+  [CHESS_GAME_MODE_V0.DAILY]: "Daily",
+  [CHESS_GAME_MODE_V0.AI_HUMAN]: "Stockfish vs human",
+  [CHESS_GAME_MODE_V0.HUMAN_HUMAN]: "Human vs human",
+  [CHESS_GAME_MODE_V0.AI_AI]: "Stockfish vs Stockfish"
+});
 
 /**
  * Chess Arena workspace — real rules, modes, voice moves, castle-to-castle scaffold.
@@ -61,8 +78,10 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   peerCastle = null
 }) {
   const tr = uiLocale === "tr";
-  const [mode, setMode] = useState(CHESS_GAME_MODE_V0.BLITZ);
-  const [game, setGame] = useState(() => createChessArenaGameV0({ mode: CHESS_GAME_MODE_V0.BLITZ }));
+  const [mode, setMode] = useState(CHESS_GAME_MODE_V0.AI_HUMAN);
+  const [game, setGame] = useState(() =>
+    createChessArenaGameV0({ mode: CHESS_GAME_MODE_V0.AI_HUMAN })
+  );
   const [c2cMatch, setC2cMatch] = useState(null);
   const [moveInput, setMoveInput] = useState("");
   const [status, setStatus] = useState("");
@@ -157,8 +176,9 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
 
   useEffect(() => {
     if (!open) return;
-    resetGame(mode);
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (peerCastle?.uid) return;
+    resetGame(CHESS_GAME_MODE_V0.AI_HUMAN);
+  }, [open, peerCastle?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const applyMove = useCallback(
     async (move) => {
@@ -285,26 +305,43 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
 
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden p-3 lg:grid-cols-[1fr_280px]">
           <div className="flex min-h-0 flex-col items-center justify-center gap-2">
-            <div className="inline-grid grid-cols-8 overflow-hidden rounded-lg border border-emerald-500/30">
-              {rows.map((row, ri) =>
-                row.map((cell, ci) => {
-                  const dark = (ri + ci) % 2 === 1;
-                  const sq = cell?.square || String.fromCharCode(97 + ci) + String(8 - ri);
-                  const selected = selectedSquare === sq;
-                  return (
-                    <button
-                      key={`${ri}-${ci}`}
-                      type="button"
-                      onClick={() => onSquareClick(sq)}
-                      className={`flex h-10 w-10 items-center justify-center text-xl sm:h-12 sm:w-12 ${
-                        selected ? "ring-2 ring-cyan-300 ring-inset" : ""
-                      } ${dark ? "bg-emerald-950/80" : "bg-emerald-800/35"}`}
-                    >
-                      {cell?.glyph || ""}
-                    </button>
-                  );
-                })
-              )}
+            <div className="flex flex-col items-center gap-1">
+              <div className="inline-grid grid-cols-8 overflow-hidden rounded-lg border-2 border-emerald-600/50 shadow-lg shadow-black/40">
+                {rows.map((row, ri) =>
+                  row.map((cell, ci) => {
+                    const dark = (ri + ci) % 2 === 1;
+                    const rank = 8 - ri;
+                    const sq = cell?.square || `${String.fromCharCode(97 + ci)}${rank}`;
+                    const selected = selectedSquare === sq;
+                    const isWhitePiece = cell?.color === "w";
+                    return (
+                      <button
+                        key={`${ri}-${ci}`}
+                        type="button"
+                        onClick={() => onSquareClick(sq)}
+                        className={`flex h-11 w-11 items-center justify-center text-2xl sm:h-14 sm:w-14 ${
+                          selected ? "ring-2 ring-cyan-300 ring-inset z-10" : ""
+                        } ${dark ? "bg-[#769656]" : "bg-[#eeeed2]"}`}
+                      >
+                        <span
+                          className={
+                            isWhitePiece
+                              ? "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
+                              : "text-zinc-900 drop-shadow-[0_1px_1px_rgba(255,255,255,0.35)]"
+                          }
+                        >
+                          {cell?.glyph || ""}
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+              <div className="grid w-full max-w-[min(100%,28rem)] grid-cols-8 gap-0 px-0.5 text-center text-[9px] font-semibold text-white/45">
+                {"abcdefgh".split("").map((f) => (
+                  <span key={f}>{f}</span>
+                ))}
+              </div>
             </div>
             {aiBusy ? (
               <p className="text-[10px] text-amber-200">{tr ? "Stockfish düşünüyor…" : "Stockfish thinking…"}</p>
@@ -353,7 +390,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
             >
               {MODE_OPTIONS_V0.map((m) => (
                 <option key={m} value={m}>
-                  {m}
+                  {tr ? MODE_LABELS_TR_V0[m] || m : MODE_LABELS_EN_V0[m] || m}
                 </option>
               ))}
             </select>

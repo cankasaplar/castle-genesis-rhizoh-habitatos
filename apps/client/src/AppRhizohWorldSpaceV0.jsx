@@ -108,7 +108,10 @@ import {
   resolveDrawerDomainTagsV0,
   subscribeDrawerStateV0
 } from "./rhizoh/runtime/rhizohDrawerStateMachineV0.js";
-import { bootRhizohOsStabilReleaseLayerV0 } from "./rhizoh/runtime/rhizohOsStabilReleaseLayerV0.js";
+import {
+  hydrateWorldSpaceCastleAnchorV0,
+  persistWorldSpaceCastleAnchorV0
+} from "./rhizoh/runtime/castleWorldSpaceContinuityV0.js";
 import { getActiveFederationOverlayNodeV0 } from "./rhizoh/runtime/rhizohDomainGraphV0.js";
 
 export default function AppRhizohWorldSpaceV0() {
@@ -462,24 +465,33 @@ export default function AppRhizohWorldSpaceV0() {
   const showGeoChip = !readCastleNexusGeoV0() && geoPrompt !== "granted";
   const castleInitOwner = castleAuth?.user?.uid || "GUEST";
 
-  const applySpatialCastleAnchorDsl = useCallback(async (parsed) => {
-    if (!parsed?.verb) return { ok: false, reply: "Geçersiz DSL." };
-    if (parsed.verb !== "SPAWN_CASTLE") {
-      return { ok: false, reply: "Spatial shell: yalnızca castle anchor." };
-    }
-    const lat = Number(parsed.args.lat);
-    const lon = Number(parsed.args.lon);
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-      return { ok: false, reply: "lat/lon gerekli." };
-    }
-    try {
-      window.__CASTLE_NEXUS_GEO__ = { mode: "geo", lat, lon };
-      window.__CASTLE_CLIENT_CASTLE_STATE__ = "ACTIVE";
-    } catch {
-      /* noop */
-    }
-    return { ok: true, reply: "Castle anchor bağlandı." };
+  useEffect(() => {
+    hydrateWorldSpaceCastleAnchorV0({
+      readClientContinuity: readWorldSpaceClientContinuityV0
+    });
   }, []);
+
+  const applySpatialCastleAnchorDsl = useCallback(
+    async (parsed) => {
+      if (!parsed?.verb) return { ok: false, reply: "Geçersiz DSL." };
+      if (parsed.verb !== "SPAWN_CASTLE") {
+        return { ok: false, reply: "Spatial shell: yalnızca castle anchor." };
+      }
+      const lat = Number(parsed.args.lat);
+      const lon = Number(parsed.args.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        return { ok: false, reply: "lat/lon gerekli." };
+      }
+      persistWorldSpaceCastleAnchorV0(lat, lon, {
+        owner: castleInitOwner,
+        source: "world_space_dsl",
+        readClientContinuity: readWorldSpaceClientContinuityV0,
+        writeClientContinuity: writeWorldSpaceClientContinuityV0
+      });
+      return { ok: true, reply: "Castle anchor bağlandı." };
+    },
+    [castleInitOwner]
+  );
 
   useEffect(() => {
     return installCastleInitMapPickListenerV0((anchorDetail) => {

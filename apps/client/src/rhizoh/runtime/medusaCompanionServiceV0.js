@@ -89,10 +89,13 @@ export function mountMedusaCompanionV0(container, opts = {}) {
       motion = 0.15 + Math.sin(t * 2) * motionProfile.idleAmp;
     }
     if (root) {
-      const sway = (0.08 + motion * 0.35 * motionProfile.audioGain) * motionProfile.swayScale;
-      root.rotation.y = Math.sin(t * 1.2) * sway;
+      const sway = (0.14 + motion * 0.5 * motionProfile.audioGain) * motionProfile.swayScale;
+      const breathe = Math.sin(t * 1.1) * 0.04 * motionProfile.swayScale;
+      root.rotation.y = Math.sin(t * 1.2) * sway + Math.sin(t * 0.35) * 0.06;
       root.rotation.z = Math.sin(t * 0.9) * sway * 0.35;
-      root.position.y = Math.sin(t * 1.6) * (0.02 + motion * 0.06);
+      root.rotation.x = Math.sin(t * 0.7) * sway * 0.12;
+      root.position.y = Math.sin(t * 1.6) * (0.03 + motion * 0.08) + breathe;
+      root.position.x = Math.sin(t * 0.85) * sway * 0.04;
     }
     renderer.render(scene, camera);
     raf = requestAnimationFrame(tick);

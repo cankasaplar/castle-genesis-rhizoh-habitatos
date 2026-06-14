@@ -1,17 +1,27 @@
 import React, { memo, useCallback, useEffect, useState } from "react";
 import { getOrCreateCastleDevUid, getRhizohApiBase } from "../rhizoh/useRhizohGatewayMonitor.js";
 
+const TOWER_DEFAULT_PROVIDER_V0 = Object.freeze({
+  gemini_tower: { provider: "gemini", model: "gemini-2.0-flash" },
+  chatgpt_tower: { provider: "openai", model: "gpt-4o-mini" },
+  tower: { provider: "openai", model: "gpt-4o-mini" }
+});
+
 /**
- * Compact LLM API key strip for tower workspaces — gateway-backed.
+ * Compact LLM connection strip for tower workspaces.
+ * Production: platform keys on Render only — no client key entry (security).
+ * Dev: optional BYOK for local gateway testing.
  */
 export const RhizohTowerLlmConnectionsStripV0 = memo(function RhizohTowerLlmConnectionsStripV0({
   towerId = "tower",
-  uiLocale = "en"
+  uiLocale = "en",
+  allowUserKeys = import.meta.env.DEV
 }) {
   const tr = uiLocale === "tr";
+  const defaults = TOWER_DEFAULT_PROVIDER_V0[towerId] || TOWER_DEFAULT_PROVIDER_V0.tower;
   const [items, setItems] = useState([]);
-  const [provider, setProvider] = useState("openai");
-  const [model, setModel] = useState("gpt-4o-mini");
+  const [provider, setProvider] = useState(defaults.provider);
+  const [model, setModel] = useState(defaults.model);
   const [apiKey, setApiKey] = useState("");
   const [status, setStatus] = useState("");
 
@@ -21,28 +31,36 @@ export const RhizohTowerLlmConnectionsStripV0 = memo(function RhizohTowerLlmConn
   };
 
   const load = useCallback(async () => {
+    if (!allowUserKeys) return;
     try {
       const res = await fetch(`${getRhizohApiBase()}/llm/connections`, { headers });
       const json = await res.json();
-      if (json?.ok) setItems(Array.isArray(json.items) ? json.items : []);
+      if (json?.ok) {
+        const rows = Array.isArray(json.items) ? json.items : [];
+        const scoped = rows.filter((row) => {
+          const label = String(row?.label || "");
+          return !label || label.startsWith(`${towerId}_`);
+        });
+        setItems(scoped.length ? scoped : rows.slice(0, 4));
+      }
     } catch {
       /* noop */
     }
-  }, []);
+  }, [allowUserKeys, towerId]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
   const onSave = async () => {
-    if (!apiKey.trim()) return;
+    if (!allowUserKeys || !apiKey.trim()) return;
     setStatus(tr ? "Kaydediliyor…" : "Saving…");
     try {
       const res = await fetch(`${getRhizohApiBase()}/llm/connections`, {
         method: "POST",
         headers,
         body: JSON.stringify({
-          provider,
+          provider: provider === "google" ? "gemini" : provider,
           model,
           apiKey: apiKey.trim(),
           label: `${towerId}_workspace`,
@@ -62,21 +80,37 @@ export const RhizohTowerLlmConnectionsStripV0 = memo(function RhizohTowerLlmConn
     }
   };
 
+  if (!allowUserKeys) {
+    return (
+      <div className="mt-3 rounded-xl border border-cyan-400/20 bg-cyan-500/5 p-3">
+        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-200/70">
+          {tr ? "Tower LLM" : "Tower LLM"}
+        </p>
+        <p className="mt-1 text-[10px] leading-relaxed text-white/55">
+          {tr
+            ? "Üretimde LLM anahtarları yalnızca Render gateway üzerinde tutulur; tarayıcıya veya arayüze yazılmaz. Sohbet ve üretim istekleri şifreli gateway üzerinden gider."
+            : "In production, LLM keys live only on the Render gateway — never in the browser or UI. Chat and generation requests route through the encrypted gateway."}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-3 rounded-xl border border-cyan-400/25 bg-cyan-500/5 p-3">
       <p className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-200/70">
-        {tr ? "Tower API anahtarı" : "Tower API key"}
+        {tr ? "Tower API anahtarı (dev)" : "Tower API key (dev)"}
       </p>
       <p className="mt-1 text-[10px] text-white/50">
         {tr
-          ? "Çıktılarınız şifreli bağlantı üzerinden gateway'e gider; arşive gönderebilirsiniz."
-          : "Outputs route via encrypted gateway connection; send to your archive."}
+          ? "Yalnızca yerel geliştirme — üretimde anahtarlar Render'da kalır."
+          : "Local development only — production keys stay on Render."}
       </p>
       {items.length ? (
         <ul className="mt-2 space-y-1 text-[10px] text-white/65">
           {items.slice(0, 4).map((row) => (
             <li key={row.id}>
               {row.provider} · {row.model}
+              {row.keyMask ? ` · ${row.keyMask}` : ""}
               {row.isDefault ? (tr ? " · varsayılan" : " · default") : ""}
             </li>
           ))}
@@ -90,7 +124,7 @@ export const RhizohTowerLlmConnectionsStripV0 = memo(function RhizohTowerLlmConn
         >
           <option value="openai">OpenAI</option>
           <option value="anthropic">Anthropic</option>
-          <option value="google">Google</option>
+          <option value="gemini">Gemini</option>
           <option value="mistral">Mistral</option>
         </select>
         <input
