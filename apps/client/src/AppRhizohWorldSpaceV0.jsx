@@ -844,21 +844,15 @@ export default function AppRhizohWorldSpaceV0() {
         </div>
       ) : null}
 
-      {!cesiumLayerActiveV0 &&
-      worldMapToolV0 !== "globe" &&
-      spatialBootGateV0.renderMode !== "v11_core_map" ? (
+      {!cesiumLayerActiveV0 && worldMapToolV0 === "globe" ? (
         <div
           className="pointer-events-none fixed inset-x-0 z-[25] flex justify-center px-4"
           style={{ bottom: `calc(${mapStripBottomCssV0} + 5rem)` }}
         >
           <p className="rounded-xl border border-amber-400/30 bg-black/75 px-3 py-2 text-[10px] text-amber-100/90 normal-case">
-            {!worldLayerEnabledV0
-              ? uiLocale === "tr"
-                ? "3D Cesium katmanı kapalı — güvenli v11 dünya yüzeyi aktif."
-                : "3D Cesium layer is off — safe v11 world surface is active."
-              : uiLocale === "tr"
-                ? "Harita yükleniyor… Gateway veya Cesium hazır değilse birkaç saniye bekleyin."
-                : "Loading map… wait a few seconds if gateway or Cesium is still starting."}
+            {uiLocale === "tr"
+              ? "3D küre yükleniyor… Cesium hazır değilse birkaç saniye bekleyin."
+              : "Loading 3D globe… wait a few seconds if Cesium is still starting."}
           </p>
         </div>
       ) : null}
