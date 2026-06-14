@@ -155,7 +155,7 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
       <main className="relative z-[1] min-h-0 flex-1 overflow-hidden pointer-events-none">
         {isSpace ? (
           <>
-            <div className="absolute left-3 top-3 z-[3] flex w-[min(280px,58vw)] flex-col gap-1.5 sm:left-4 sm:top-4">
+            <div className="absolute left-3 top-2 z-[3] flex max-h-[min(52vh,28rem)] w-[min(280px,58vw)] flex-col gap-1.5 overflow-y-auto sm:left-4 sm:top-3">
               <RhizohWorldLayerQuickChipV0
                 activeTool={activeMapTool}
                 uiLocale={locale}

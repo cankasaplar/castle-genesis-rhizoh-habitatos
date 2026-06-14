@@ -191,6 +191,17 @@ function handleV11MapClickForClaimV0(ev) {
   return true;
 }
 
+function leafletTilePaneFilterCssV0(activeMapTool) {
+  const tool = String(activeMapTool || "city_map");
+  if (tool === "satellite") {
+    return "filter: brightness(0.94) contrast(1.06) saturate(1.08);";
+  }
+  if (tool === "streets") {
+    return "filter: invert(100%) hue-rotate(180deg) brightness(0.42) contrast(1.35);";
+  }
+  return "filter: invert(100%) hue-rotate(180deg) brightness(0.35) contrast(1.5);";
+}
+
 function leafletTileUrlForToolV0(activeMapTool) {
   const tool = String(activeMapTool || "city_map");
   if (tool === "satellite") {
@@ -457,32 +468,14 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
       aria-label="Rhizoh Primary Spatial Surface V11"
     >
       <div ref={hostRef} className="pointer-events-auto absolute inset-0 z-[1]" data-rhizoh-v11-leaflet-host="1" />
-      <div className="absolute inset-x-[8%] top-[18%] h-px bg-cyan-300/10" />
-      <div className="absolute inset-x-[8%] top-[42%] h-px bg-cyan-300/10" />
-      <div className="absolute inset-x-[8%] top-[66%] h-px bg-cyan-300/10" />
-      <div className="absolute inset-y-[12%] left-[25%] w-px bg-cyan-300/10" />
-      <div className="absolute inset-y-[12%] left-[50%] w-px bg-cyan-300/10" />
-      <div className="absolute inset-y-[12%] left-[75%] w-px bg-cyan-300/10" />
-      <div className="absolute left-4 top-4 rounded-xl border border-cyan-400/25 bg-black/55 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-100/80">
-        RHIZOH SOVEREIGN MAP V11 · {displayNodes.length + remoteNodes.length} nodes
-        {remoteCastlesVisible && remoteNodes.length ? (
-          <span className="mt-1 block text-[8px] font-normal normal-case tracking-normal text-gray-300/70">
-            {remoteNodes.length} peer castle{remoteNodes.length === 1 ? "" : "s"} visible
-          </span>
-        ) : null}
-        {!userCastleGeo ? (
-          <span className="mt-1 block text-[8px] font-normal normal-case tracking-normal text-cyan-200/55">
-            Kale pin yok — kale kur ile konumundan oluştur
-          </span>
-        ) : null}
-      </div>
       <style>{`
         [data-rhizoh-v11-leaflet-host="1"] .leaflet-container { background: #000 !important; cursor: grab !important; }
         [data-rhizoh-v11-leaflet-host="1"] .leaflet-container:active { cursor: grabbing !important; }
         [data-rhizoh-v11-leaflet-host="1"] .leaflet-tile-pane {
-          filter: invert(100%) hue-rotate(180deg) brightness(0.35) contrast(1.5);
+          ${leafletTilePaneFilterCssV0(activeMapTool)}
         }
         [data-rhizoh-v11-leaflet-host="1"] .leaflet-control-zoom {
+          margin-top: 4.75rem !important;
           border: 1px solid rgba(255,255,255,0.15) !important;
           background: rgba(0,0,0,0.75) !important;
         }
