@@ -62,6 +62,7 @@
     "ops:full-system-audit-v0": "node scripts/full-system-audit-v0.mjs",
     "ops:world-expansion-v0": "node scripts/world-expansion-v0.mjs",
     "activation:readiness-check": "node scripts/activation-readiness-check.mjs",
+    "activation:collect-evidence": "node scripts/collect-activation-manual-evidence.mjs",
     "ops:o1-violation-harness": "node scripts/o1-violation-harness.mjs",
     "ops:synthetic-crisis-phase1": "node scripts/synthetic-crisis-phase1-containment.mjs",
     "ops:synthetic-crisis-phase2": "node scripts/synthetic-crisis-phase2-observability.mjs",

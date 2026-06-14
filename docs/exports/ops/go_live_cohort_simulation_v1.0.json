@@ -1,7 +1,7 @@
 {
   "schema": "castle.rhizoh.go_live_cohort_simulation.v0",
   "version": "1.0",
-  "generatedAt": "2026-05-19T13:55:52.628Z",
+  "generatedAt": "2026-06-14T03:35:06.293Z",
   "legalFreezeRef": "LEGAL_FREEZE_SPEC_V1.0",
   "nodeCount": 50,
   "seed": 42,

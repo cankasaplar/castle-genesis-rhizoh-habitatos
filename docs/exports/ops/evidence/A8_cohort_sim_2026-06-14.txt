@@ -1,0 +1,6 @@
+# A8 — Cohort sim (auto-collected)
+generatedAt: 2026-06-14T03:36:05.334Z
+jsonPath: docs/exports/ops/go_live_cohort_simulation_v1.0.json
+decision: proceed
+
+Re-run: npm run legal:go-live-cohort-sim

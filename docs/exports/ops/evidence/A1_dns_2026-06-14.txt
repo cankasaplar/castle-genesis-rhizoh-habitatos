@@ -1,0 +1,20 @@
+# A1 — DNS (auto-collected)
+generatedAt: 2026-06-14T03:36:05.171Z
+
+## dig NS rhizoh.com
+ns28.domaincontrol.com.
+ns27.domaincontrol.com.
+
+## dig A rhizoh.com
+199.36.158.100
+
+## dig A www.rhizoh.com
+castle-genesis.web.app.
+199.36.158.100
+
+## Pass criteria
+- Cloudflare proxied: response headers include cf-ray + server: cloudflare
+- Registrar transfer lock: dashboard screenshot required (not auto)
+
+## Current auto verdict
+ACTION_REQUIRED — no cf-ray; NS may still be registrar-direct (e.g. GoDaddy → Firebase IP)

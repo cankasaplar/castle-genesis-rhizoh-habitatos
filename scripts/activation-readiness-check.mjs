@@ -103,13 +103,15 @@ checks.push(
   )
 );
 
-// R7 — legal preamble SSOT
+// R7 — legal preamble SSOT (router delegates to ingressCopyI18nV0)
 const routerPath = join(root, "apps/client/src/rhizoh/ingress/ingress_router.js");
-const routerText = readFileSync(routerPath, "utf8");
+const copyPath = join(root, "apps/client/src/rhizoh/ingress/ingressCopyI18nV0.js");
+const routerText = existsSync(routerPath) ? readFileSync(routerPath, "utf8") : "";
+const copyText = existsSync(copyPath) ? readFileSync(copyPath, "utf8") : "";
 const r7 =
   routerText.includes("getLegalPreambleCopyV0") &&
-  routerText.includes("consentLabel") &&
-  routerText.includes("acceptLabel");
+  copyText.includes("acceptLabel") &&
+  copyText.includes("checkboxes");
 checks.push(item("R7", "Legal preamble copy SSOT", r7));
 
 // R9 — single activation switch SSOT
