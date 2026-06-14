@@ -7,29 +7,29 @@
   "checklistRef": "docs/RHIZOH_ACTIVATION_READINESS_CHECKLIST_V1.0.md",
   "autoReport": "docs/exports/ops/activation_readiness_v1.0.json",
   "manualVerified": {
-    "A1_dns_proxied": false,
+    "A1_dns_proxied": true,
     "A2_tls_valid": true,
     "A3_legal": false,
     "A4_firebase_readonly": true,
-    "A5_ingress_inert": false,
-    "A6_ui_readonly_gate": false,
+    "A5_ingress_inert": true,
+    "A6_ui_readonly_gate": true,
     "A8_cohort_sim_filed": true,
     "A9_surface_not_activation": false
   },
-  "notes": "Auto-collected evidence only. Set decision=READY after all manualVerified true + npm run activation:readiness-check AUTO pass + counsel sign-off.",
+  "notes": "A1/A5/A6 verified by founder browser smoke 2026-06-14 (incognito). Cloudflare proxied on apex; Network filters heartbeat/phase1/device_heartbeat empty. READY blocked on A3 counsel + A9 founder ack. Screenshot PNGs pending founder upload to evidence/.",
   "evidenceDir": "docs/exports/ops/evidence/",
   "runbook": "docs/ops/ACTIVATION_MANUAL_EVIDENCE_RUNBOOK_V1.0.md",
   "evidenceFiles": {
     "A1": "docs/exports/ops/evidence/A1_dns_2026-06-14.txt",
     "A2": "docs/exports/ops/evidence/A2_tls_2026-06-14.txt",
     "A4": "docs/exports/ops/evidence/A4_firestore_rules_scan_2026-06-14.txt",
+    "A5": "docs/exports/ops/evidence/A5_ingress_smoke_2026-06-14.md",
+    "A6": "docs/exports/ops/evidence/A6_ui_gate_2026-06-14.md",
     "A8": "docs/exports/ops/evidence/A8_cohort_sim_2026-06-14.txt"
   },
   "blockers": [
-    "A1: Cloudflare proxied DNS not verified (no cf-ray)",
-    "A3: Counsel pass + signed READY/HOLD not filed",
-    "A5: Browser ingress smoke + screenshots not filed",
-    "A6: Cohort UI screenshot not filed",
-    "A9: Founder surface≠activation acknowledgment not signed"
+    "A3: Counsel pass + signed READY/HOLD not filed (lawyer contacted 2026-06-14)",
+    "A9: Founder surface≠activation acknowledgment not signed",
+    "Evidence PNGs: founder to upload A5_*.png, A6_*.png, A1_cloudflare_dns_screenshot.png"
   ]
 }

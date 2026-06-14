@@ -20,3 +20,11 @@ npm run activation:collect-evidence
 **Karar log:** `docs/exports/ops/activation_decision_YYYY-MM-DD.json`
 
 Screenshots: PNG aynı klasöre; repoda PII/secret olmasın.
+
+### Screenshot yükleme (terminal yok)
+
+1. GitHub → repo → klasör: `docs/exports/ops/evidence/`
+2. **Add file** → **Upload files**
+3. PNG’leri sürükle → **Commit changes**
+
+Önerilen isimler: `A5_legal_preamble.png`, `A5_network_heartbeat_empty.png`, `A6_cohort_screen.png`, `A1_cloudflare_dns_screenshot.png`
