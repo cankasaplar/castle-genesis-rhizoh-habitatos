@@ -12,11 +12,11 @@
     "A3_legal": false,
     "A4_firebase_readonly": true,
     "A5_ingress_inert": true,
-    "A6_ui_readonly_gate": false,
+    "A6_ui_readonly_gate": true,
     "A8_cohort_sim_filed": true,
     "A9_surface_not_activation": true
   },
-  "notes": "Auto-collected evidence only. Set decision=READY after all manualVerified true + npm run activation:readiness-check AUTO pass + counsel sign-off.",
+  "notes": "Founder manual smoke 2026-06-14: A5/A6/A9 verified via browser + console. HOLD until A3 counsel + A1 Cloudflare + A4 console screenshot.",
   "evidenceDir": "docs/exports/ops/evidence/",
   "runbook": "docs/ops/ACTIVATION_MANUAL_EVIDENCE_RUNBOOK_V1.0.md",
   "evidenceFiles": {
@@ -24,13 +24,13 @@
     "A2": "docs/exports/ops/evidence/A2_tls_2026-06-14.txt",
     "A4": "docs/exports/ops/evidence/A4_firestore_rules_scan_2026-06-14.txt",
     "A5": "docs/exports/ops/evidence/A5_ingress_smoke_2026-06-14.md",
+    "A6": "docs/exports/ops/evidence/A6_ui_gate_2026-06-14.md",
     "A8": "docs/exports/ops/evidence/A8_cohort_sim_2026-06-14.txt",
     "A9": "docs/exports/ops/evidence/A9_surface_ack_2026-06-14.md"
   },
   "blockers": [
     "A1: Cloudflare proxied DNS not verified (no cf-ray)",
     "A3: Counsel pass + signed READY/HOLD not filed",
-    "A6: Cohort UI screenshot not filed (clear site data to re-trigger cohort gate)",
     "A4: Firebase Console rules screenshot not filed (auto scan PASS only)"
   ]
 }
