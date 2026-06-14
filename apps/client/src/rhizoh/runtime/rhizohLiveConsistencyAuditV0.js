@@ -12,7 +12,11 @@ import {
 } from "./rhizohExplanationLayerV0.js";
 import { getControlPlaneSnapshotV0 } from "./rhizohControlPlaneV0.js";
 import { TRACE_CLASS_V0 } from "./rhizohTraceSamplingV0.js";
-import { resolveRhizohCesiumLayerActiveV0 } from "./rhizohLayerContextV0.js";
+import {
+  resolveRhizohCesiumLayerActiveV0,
+  resolveRhizohWorldSpaceCesiumActiveV0
+} from "./rhizohLayerContextV0.js";
+import { readRhizohWorldMapToolV0 } from "./rhizohWorldMapToolV0.js";
 
 export const RHIZOH_LIVE_CONSISTENCY_AUDIT_SCHEMA_V0 = "rhizoh.live_consistency_audit.v0";
 export const RHIZOH_LIVE_CONSISTENCY_AUDIT_EVENT_V0 = "rhizoh:live-consistency-audit-v0";
@@ -182,22 +186,31 @@ export function auditSpatialDriftV0() {
   const cesiumReady = cesium?.ready === true || cesium?.commandReady === true;
   const cameraGeo = typeof cesium?.getCameraGeo === "function" ? cesium.getCameraGeo() : null;
 
-  const issues = [];
-  if (liveCount > 0 && !cesiumReady) {
-    issues.push("live_nodes_before_cesium_ready");
-  }
-  if (nodes.length > 0 && !cesium) {
-    issues.push("spatial_nodes_without_cesium_handle");
-  }
-  if (liveCount > 0 && cesiumReady && !cameraGeo) {
-    const pathname = typeof window !== "undefined" ? String(window.location.pathname || "") : "";
-    const mapLayerExpected = resolveRhizohCesiumLayerActiveV0({
+  const pathname = typeof window !== "undefined" ? String(window.location.pathname || "") : "";
+  const mapTool =
+    typeof window !== "undefined" ? readRhizohWorldMapToolV0() : "city_map";
+  const mapLayerExpected =
+    resolveRhizohWorldSpaceCesiumActiveV0({
+      pathname,
+      mapSurfaceActive: true,
+      mapTool
+    }) ||
+    resolveRhizohCesiumLayerActiveV0({
       pathname,
       realityMode: "REAL_MAP",
       mapSurfaceActive: true,
-      mapTool: "city"
+      mapTool
     });
-    if (mapLayerExpected) issues.push("live_projection_without_camera_geo");
+
+  const issues = [];
+  if (liveCount > 0 && !cesiumReady && mapLayerExpected) {
+    issues.push("live_nodes_before_cesium_ready");
+  }
+  if (nodes.length > 0 && !cesium && mapLayerExpected) {
+    issues.push("spatial_nodes_without_cesium_handle");
+  }
+  if (liveCount > 0 && cesiumReady && !cameraGeo && mapLayerExpected) {
+    issues.push("live_projection_without_camera_geo");
   }
 
   const pass = issues.length === 0;

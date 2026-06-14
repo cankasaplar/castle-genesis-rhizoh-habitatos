@@ -54,7 +54,9 @@ export const RHIZOH_SPATIAL_MAIN_WORLD_DEFAULTS_V0 = Object.freeze({
   VITE_RHIZOH_ENTITY_PROJECTION_MAP: "1",
   VITE_CESIUM_WORLD_PROJECTION_BIND: "1",
   VITE_CESIUM_OSM_BUILDINGS: "0",
-  VITE_CESIUM_WORLD_TERRAIN: "0"
+  VITE_CESIUM_WORLD_TERRAIN: "0",
+  /** Leaflet default on /world/space; terrain/anchor_map mount Cesium when Ion token is baked. */
+  VITE_RHIZOH_WORLD_SPACE_CESIUM: "1"
 });
 
 /** Canonical Render gateway — override via GitHub secret when host changes. */
