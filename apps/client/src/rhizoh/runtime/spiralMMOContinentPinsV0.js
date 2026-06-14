@@ -60,22 +60,34 @@ export const RHIZOH_SPIRAL_MMO_CONTINENT_PINS_V0 = Object.freeze(
 
 let spiralPinStylesInstalled = false;
 
+export const RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0 = Object.freeze({
+  sizePx: 38,
+  center: 19,
+  ringRadius: 17,
+  ringStroke: 1.5,
+  spiralStroke: 1.35,
+  spiralTurns: 3.25,
+  spiralOuterRadius: 16.85,
+  spiralInnerRadius: 0.55
+});
+
 /**
- * Archimedean whirlpool path — winds from outer ring toward center (v0 map glyph).
+ * Logarithmic whirlpool path — starts on the outer ring and winds to center.
  * @param {number} cx
  * @param {number} cy
- * @param {{ turns?: number, outerR?: number, innerR?: number, stepDeg?: number }} [opts]
+ * @param {{ turns?: number, outerR?: number, innerR?: number, stepDeg?: number, startAngleDeg?: number }} [opts]
  */
 export function buildSpiralMMOWhirlpoolPathV0(cx, cy, opts = {}) {
-  const turns = opts.turns ?? 3.15;
-  const outerR = opts.outerR ?? 12;
-  const innerR = opts.innerR ?? 0.85;
-  const stepDeg = opts.stepDeg ?? 6;
-  const totalSteps = Math.max(16, Math.ceil((turns * 360) / stepDeg));
+  const turns = opts.turns ?? RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0.spiralTurns;
+  const outerR = opts.outerR ?? RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0.spiralOuterRadius;
+  const innerR = opts.innerR ?? RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0.spiralInnerRadius;
+  const startAngleDeg = opts.startAngleDeg ?? 0;
+  const stepDeg = opts.stepDeg ?? 5.5;
+  const totalSteps = Math.max(20, Math.ceil((turns * 360) / stepDeg));
   const parts = [];
   for (let i = 0; i <= totalSteps; i += 1) {
     const t = i / totalSteps;
-    const angle = ((270 - t * turns * 360) * Math.PI) / 180;
+    const angle = ((startAngleDeg - t * turns * 360) * Math.PI) / 180;
     const radius = outerR * (innerR / outerR) ** t;
     const x = cx + radius * Math.cos(angle);
     const y = cy + radius * Math.sin(angle);
@@ -86,20 +98,20 @@ export function buildSpiralMMOWhirlpoolPathV0(cx, cy, opts = {}) {
 
 export function ensureSpiralMMOPinStylesV0() {
   if (spiralPinStylesInstalled || typeof document === "undefined") return;
-  if (document.getElementById("rhizoh-spiral-mmo-pin-style-v1")) {
+  if (document.getElementById("rhizoh-spiral-mmo-pin-style-v2")) {
     spiralPinStylesInstalled = true;
     return;
   }
   const style = document.createElement("style");
-  style.id = "rhizoh-spiral-mmo-pin-style-v1";
+  style.id = "rhizoh-spiral-mmo-pin-style-v2";
   style.textContent = `
 @keyframes rhizohSpiralMMOInV0 {
-  0% { transform: rotate(0deg) scale(1.04); opacity: 0.72; }
-  100% { transform: rotate(-720deg) scale(0.78); opacity: 1; }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
 }
 @keyframes rhizohSpiralMMOPulseV0 {
-  0%, 100% { box-shadow: 0 0 7px rgba(255,255,255,0.9), 0 0 16px rgba(255,255,255,0.28), inset 0 0 8px rgba(255,255,255,0.06); }
-  50% { box-shadow: 0 0 11px rgba(255,255,255,1), 0 0 22px rgba(255,255,255,0.42), inset 0 0 12px rgba(255,255,255,0.1); }
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(255,255,255,0.85)) drop-shadow(0 0 12px rgba(255,255,255,0.28)); }
+  50% { filter: drop-shadow(0 0 8px rgba(255,255,255,1)) drop-shadow(0 0 18px rgba(255,255,255,0.42)); }
 }
 `;
   document.head.appendChild(style);
@@ -122,19 +134,21 @@ export function spiralMMOPinIconHtmlV0(node) {
   const id = String(node?.id || "spiralmmo");
   const short = String(node?.shortLabel || node?.continent || "MMO").slice(0, 3).toUpperCase();
   const filterId = `spiral-glow-${id.replace(/[^a-z0-9_-]/gi, "")}`;
-  const whirlpool = buildSpiralMMOWhirlpoolPathV0(15, 15);
-  return `<div data-rhizoh-spiral-mmo-pin="${id}" data-rhizoh-spiral-mmo-rev="whirlpool-v1" data-rhizoh-sovereign-node="${id}" style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto">
-    <div style="width:38px;height:38px;border-radius:50%;background:#000;border:1.5px solid #fff;display:flex;align-items:center;justify-content:center;animation:rhizohSpiralMMOPulseV0 2.4s ease-in-out infinite;overflow:hidden">
-      <svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true" style="animation:rhizohSpiralMMOInV0 3.2s linear infinite">
+  const { sizePx, center, ringRadius, ringStroke, spiralStroke } = RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0;
+  const whirlpool = buildSpiralMMOWhirlpoolPathV0(center, center);
+  return `<div data-rhizoh-spiral-mmo-pin="${id}" data-rhizoh-spiral-mmo-rev="whirlpool-v2" data-rhizoh-sovereign-node="${id}" style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto">
+    <div style="width:${sizePx}px;height:${sizePx}px;border-radius:50%;background:transparent;display:flex;align-items:center;justify-content:center;animation:rhizohSpiralMMOPulseV0 2.4s ease-in-out infinite;overflow:visible">
+      <svg width="${sizePx}" height="${sizePx}" viewBox="0 0 ${sizePx} ${sizePx}" aria-hidden="true">
         <defs>
           <filter id="${filterId}" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="0.55" result="b"/>
+            <feGaussianBlur stdDeviation="0.45" result="b"/>
             <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
         </defs>
-        <g fill="none" stroke="#fff" stroke-width="1.35" stroke-linecap="round" filter="url(#${filterId})">
+        <circle cx="${center}" cy="${center}" r="${ringRadius}" fill="#000" stroke="#fff" stroke-width="${ringStroke}"/>
+        <g fill="none" stroke="#fff" stroke-width="${spiralStroke}" stroke-linecap="round" stroke-linejoin="round" filter="url(#${filterId})" style="transform-origin:${center}px ${center}px;animation:rhizohSpiralMMOInV0 4s linear infinite">
           <path d="${whirlpool}"/>
-          <circle cx="15" cy="15" r="1.1" fill="#fff" stroke="none"/>
+          <circle cx="${center}" cy="${center}" r="1" fill="#fff" stroke="none"/>
         </g>
       </svg>
     </div>
