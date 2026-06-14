@@ -28,11 +28,21 @@ export function readRhizohNeonCountdownDeadlineMsV0(nowMs = Date.now()) {
   } catch {
     /* ignore */
   }
+  return resetRhizohNeonCountdownDeadlineV0(nowMs);
+}
+
+/**
+ * @param {number} [nowMs]
+ * @returns {number}
+ */
+export function resetRhizohNeonCountdownDeadlineV0(nowMs = Date.now()) {
   const deadline = nowMs + RHIZOH_NEON_COUNTDOWN_DURATION_MS_V0;
-  try {
-    window.sessionStorage.setItem(RHIZOH_NEON_COUNTDOWN_SESSION_KEY_V0, String(deadline));
-  } catch {
-    /* ignore */
+  if (typeof window !== "undefined") {
+    try {
+      window.sessionStorage.setItem(RHIZOH_NEON_COUNTDOWN_SESSION_KEY_V0, String(deadline));
+    } catch {
+      /* ignore */
+    }
   }
   return deadline;
 }
