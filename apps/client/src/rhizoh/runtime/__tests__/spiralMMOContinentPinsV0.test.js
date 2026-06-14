@@ -36,6 +36,7 @@ describe("spiralMMOContinentPinsV0", () => {
     expect(html).toContain('stroke="#fff"');
     expect(html).toContain("background:#000");
     expect(html).toContain("width:38px");
+    expect(html).toContain('data-rhizoh-spiral-mmo-rev="whirlpool-v1"');
     expect(html).toContain("SPIRAL·");
   });
 

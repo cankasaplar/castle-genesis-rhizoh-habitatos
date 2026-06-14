@@ -67,16 +67,16 @@ let spiralPinStylesInstalled = false;
  * @param {{ turns?: number, outerR?: number, innerR?: number, stepDeg?: number }} [opts]
  */
 export function buildSpiralMMOWhirlpoolPathV0(cx, cy, opts = {}) {
-  const turns = opts.turns ?? 2.85;
-  const outerR = opts.outerR ?? 11.5;
-  const innerR = opts.innerR ?? 1.1;
-  const stepDeg = opts.stepDeg ?? 7;
-  const totalSteps = Math.max(12, Math.ceil((turns * 360) / stepDeg));
+  const turns = opts.turns ?? 3.15;
+  const outerR = opts.outerR ?? 12;
+  const innerR = opts.innerR ?? 0.85;
+  const stepDeg = opts.stepDeg ?? 6;
+  const totalSteps = Math.max(16, Math.ceil((turns * 360) / stepDeg));
   const parts = [];
   for (let i = 0; i <= totalSteps; i += 1) {
     const t = i / totalSteps;
     const angle = ((270 - t * turns * 360) * Math.PI) / 180;
-    const radius = outerR - (outerR - innerR) * t;
+    const radius = outerR * (innerR / outerR) ** t;
     const x = cx + radius * Math.cos(angle);
     const y = cy + radius * Math.sin(angle);
     parts.push(`${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`);
@@ -86,12 +86,12 @@ export function buildSpiralMMOWhirlpoolPathV0(cx, cy, opts = {}) {
 
 export function ensureSpiralMMOPinStylesV0() {
   if (spiralPinStylesInstalled || typeof document === "undefined") return;
-  if (document.getElementById("rhizoh-spiral-mmo-pin-style-v0")) {
+  if (document.getElementById("rhizoh-spiral-mmo-pin-style-v1")) {
     spiralPinStylesInstalled = true;
     return;
   }
   const style = document.createElement("style");
-  style.id = "rhizoh-spiral-mmo-pin-style-v0";
+  style.id = "rhizoh-spiral-mmo-pin-style-v1";
   style.textContent = `
 @keyframes rhizohSpiralMMOInV0 {
   0% { transform: rotate(0deg) scale(1.04); opacity: 0.72; }
@@ -123,7 +123,7 @@ export function spiralMMOPinIconHtmlV0(node) {
   const short = String(node?.shortLabel || node?.continent || "MMO").slice(0, 3).toUpperCase();
   const filterId = `spiral-glow-${id.replace(/[^a-z0-9_-]/gi, "")}`;
   const whirlpool = buildSpiralMMOWhirlpoolPathV0(15, 15);
-  return `<div data-rhizoh-spiral-mmo-pin="${id}" data-rhizoh-sovereign-node="${id}" style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto">
+  return `<div data-rhizoh-spiral-mmo-pin="${id}" data-rhizoh-spiral-mmo-rev="whirlpool-v1" data-rhizoh-sovereign-node="${id}" style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto">
     <div style="width:38px;height:38px;border-radius:50%;background:#000;border:1.5px solid #fff;display:flex;align-items:center;justify-content:center;animation:rhizohSpiralMMOPulseV0 2.4s ease-in-out infinite;overflow:hidden">
       <svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true" style="animation:rhizohSpiralMMOInV0 3.2s linear infinite">
         <defs>
