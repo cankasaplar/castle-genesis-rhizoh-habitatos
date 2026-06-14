@@ -8,6 +8,7 @@ import { postRhizohTowerLlmTurnV0 } from "./rhizohTowerLlmSessionV0.js";
 import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
 import { resolveRhizohLlmLanguageV0 } from "./rhizohLanguagePropagationV0.js";
 import { parseTowerImageDataUrlV0 } from "./rhizohTowerMediaCaptureV0.js";
+import { sanitizeRhizohReplyForDisplayV0 } from "./rhizohReplyDisplaySanitizeV0.js";
 
 function hashPromptV0(prompt) {
   let h = 2166136261;
@@ -209,7 +210,7 @@ Short structured paragraph.`;
           ? "Vision görüntüyü alamadı (yalnızca metin yanıtı). Kareyi yeniden yakala ve tekrar dene."
           : "Vision did not receive the image (text-only reply). Recapture the frame and try again.";
       }
-      return reply;
+      return sanitizeRhizohReplyForDisplayV0(reply);
     }
     const err = String(turn?.gatewayError || turn?.error || "");
     if (err.includes("missing_api_key") || err.includes("server_llm_key_missing")) {

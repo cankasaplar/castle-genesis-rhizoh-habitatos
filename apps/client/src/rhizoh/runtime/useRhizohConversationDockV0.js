@@ -18,9 +18,11 @@ import {
   commitFinalUserVisibleLanguageV0,
   LANGUAGE_COMMIT_LOCK_KEY_V0
 } from "./rhizohFinalLanguageCommitV0.js";
+import { sanitizeRhizohReplyForDisplayV0 } from "./rhizohReplyDisplaySanitizeV0.js";
 
 function commitConversationDockReplyV0(text, source) {
-  return commitFinalUserVisibleLanguageV0(String(text || "").trim(), {
+  const cleaned = sanitizeRhizohReplyForDisplayV0(text);
+  return commitFinalUserVisibleLanguageV0(cleaned, {
     source: String(source || "conversation_dock"),
     hardRewrite: true,
     lockKey: LANGUAGE_COMMIT_LOCK_KEY_V0

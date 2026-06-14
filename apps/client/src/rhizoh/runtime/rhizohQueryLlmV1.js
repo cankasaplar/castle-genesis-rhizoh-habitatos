@@ -280,7 +280,7 @@ export function logRhizohHealth(stage, detail = {}) {
   }
 }
 
-/** Uzak /rhizoh/llm hatt─▒ hatalar─▒n─▒ A/B/C s─▒n─▒flar─▒na ay─▒r─▒r (UI ve telemetri). */
+/** Uzak /rhizoh/llm hattı hatalarını A/B/C sınıflarına ayırır (UI ve telemetri). */
 function classifyRhizohLlmClientFailure(err, httpStatusFromBody) {
   const msg = String(err?.message || err || "");
   if (err?.rhizohFailureKind && typeof err.rhizohFailureKind === "string") {
@@ -1489,7 +1489,7 @@ export async function queryRhizohLLM({
       emptyFallback:
         normalized.deliveryKind === "semantic_silence"
           ? ""
-          : "Rhizoh yan─▒t─▒ bo┼ş d├Ând├╝."
+          : "Rhizoh yanıtı boş döndü."
     });
     const teacherSource = resolveTeacherSourceFromProviderV0(
       json?.provider ?? provider ?? normalized?.provider
@@ -1594,16 +1594,16 @@ export async function queryRhizohLLM({
     const httpBit = fail.httpStatus != null ? ` HTTP ${fail.httpStatus}` : "";
     const replyByKind =
       fail.kind === "timeout"
-        ? `Rhizoh: Uzak model zaman a┼ş─▒m─▒. K─▒sa bir mesajla tekrar deneyin.`
+        ? `Rhizoh: Uzak model zaman aşımı. Kısa bir mesajla tekrar deneyin.`
         : fail.kind === "network_error"
-          ? `Rhizoh: A─ş hatas─▒ ÔÇö ba─şlant─▒y─▒ kontrol edin.`
+          ? `Rhizoh: Ağ hatası — bağlantıyı kontrol edin.`
           : fail.kind === "rate_limit"
-            ? `Rhizoh: ─░stek s─▒n─▒r─▒ a┼ş─▒ld─▒; bir s├╝re sonra tekrar deneyin.`
+            ? `Rhizoh: İstek sınırı aşıldı; bir süre sonra tekrar deneyin.`
             : fail.kind === "client_config"
-              ? `Rhizoh: Sunucu veya API anahtar─▒ yap─▒land─▒rmas─▒ eksik (client_config).`
+              ? `Rhizoh: Sunucu yapılandırması eksik; bağlantı kurulamadı.`
               : fail.kind === "provider_error"
-                ? `Rhizoh: Uzak model yan─▒t vermedi${httpBit}. Yerel protokolle devam ediyorum.`
-                : `Rhizoh: Uzak LLM hatt─▒ yan─▒t vermedi (${fail.kind}). Yerel protokolle devam ediyorum -> ${message}`;
+                ? `Rhizoh: Uzak model yanıt vermedi${httpBit}. Yerel protokolle devam ediyorum.`
+                : `Rhizoh: Uzak LLM hattı yanıt vermedi (${fail.kind}). Yerel protokolle devam ediyorum → ${message}`;
     const replyFb = replyByKind;
     const postFb = finalizeRhizohAfterLlm(rhizohEmotions, {
       rhizohRouter,
