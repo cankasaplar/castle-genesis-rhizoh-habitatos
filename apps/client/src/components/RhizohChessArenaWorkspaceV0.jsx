@@ -15,6 +15,13 @@ import {
 import { runChessIntelligencePipelineV0 } from "../rhizoh/runtime/chessLearningBridgeV0.js";
 import { listRhizohOpeningBookV0 } from "../rhizoh/runtime/rhizohOpeningBookV0.js";
 import { readChessCivilizationV0 } from "../rhizoh/runtime/chessCivilizationV0.js";
+import {
+  CHESS_BOARD_THEME_V0,
+  CHESS_PIECE_STYLE_V0,
+  readChessArenaThemeV0,
+  resolveChessBoardColorsV0,
+  saveChessArenaThemeV0
+} from "../rhizoh/runtime/chessArenaThemeV0.js";
 import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
 import { PIECE_UNICODE_V0 } from "./RhizohCastleLibraryPanelV0.jsx";
 
@@ -128,6 +135,13 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const [tick, setTick] = useState(0);
   const [whiteClockMs, setWhiteClockMs] = useState(DEFAULT_CLOCK_MS_V0);
   const [blackClockMs, setBlackClockMs] = useState(DEFAULT_CLOCK_MS_V0);
+  const [boardTheme, setBoardTheme] = useState(() => readChessArenaThemeV0());
+
+  const boardColors = useMemo(
+    () => resolveChessBoardColorsV0(boardTheme.boardThemeId),
+    [boardTheme.boardThemeId]
+  );
+  const pieceBold = boardTheme.pieceStyleId === CHESS_PIECE_STYLE_V0.bold;
 
   const fen = game.fen();
   const rows = useMemo(() => boardRowsFromFen(fen), [fen, tick]);
@@ -365,8 +379,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[330] flex items-center justify-center bg-black/80 p-3 backdrop-blur-sm">
-      <div className="flex h-[min(92vh,760px)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-emerald-400/35 bg-[#050a08] shadow-2xl">
+    <div className="fixed inset-0 z-[330] flex items-center justify-center bg-black/80 p-2 backdrop-blur-sm sm:p-3">
+      <div className="flex max-h-[96vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-emerald-400/35 bg-[#050a08] shadow-2xl">
         <header className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 px-4 py-3">
           <div>
             <p className="text-[9px] font-black uppercase tracking-[0.22em] text-emerald-300/70">Chess Arena</p>
@@ -387,8 +401,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           </button>
         </header>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden p-3 lg:grid-cols-[minmax(0,1fr)_260px]">
-          <div className="flex min-h-0 flex-1 flex-col items-center gap-2 overflow-y-auto py-1">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-y-auto p-3 lg:grid-cols-[minmax(0,1fr)_260px] lg:overflow-hidden">
+          <div className="flex min-h-0 flex-col items-center gap-2 py-1">
             <ChessPlayerBarV0
               name={opponentsV0.black}
               clockMs={blackClockMs}
@@ -396,51 +410,51 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
               align="right"
               tr={tr}
             />
-            <div className="flex flex-col items-center gap-1">
-              <div className="flex items-stretch gap-1">
-                <div className="flex flex-col justify-around py-0.5 text-[8px] font-semibold text-white/50 sm:text-[9px]">
+            <div className="flex w-[min(100%,min(92vw,50vh))] flex-col items-center gap-1">
+              <div className="flex w-full items-stretch gap-1">
+                <div className="grid shrink-0 grid-rows-8 text-[8px] font-semibold text-white/50 sm:text-[9px]">
                   {[8, 7, 6, 5, 4, 3, 2, 1].map((rank) => (
-                    <span
-                      key={rank}
-                      className="flex aspect-square w-[min(10vw,2.65rem)] items-center justify-center sm:w-11 md:w-12"
-                    >
+                    <span key={rank} className="flex items-center justify-center pr-0.5">
                       {rank}
                     </span>
                   ))}
                 </div>
-                <div className="inline-grid grid-cols-8 overflow-hidden rounded-lg border-2 border-emerald-600/50 shadow-lg shadow-black/40">
-                  {rows.map((row, ri) =>
-                    row.map((cell, ci) => {
-                      const dark = (ri + ci) % 2 === 1;
-                      const rank = 8 - ri;
-                      const sq = cell?.square || `${String.fromCharCode(97 + ci)}${rank}`;
-                      const selected = selectedSquare === sq;
-                      const isWhitePiece = cell?.color === "w";
-                      return (
-                        <button
-                          key={`${ri}-${ci}`}
-                          type="button"
-                          onClick={() => onSquareClick(sq)}
-                          className={`flex aspect-square w-[min(10vw,2.65rem)] items-center justify-center text-xl sm:w-11 sm:text-2xl md:w-12 ${
-                            selected ? "ring-2 ring-cyan-300 ring-inset z-10" : ""
-                          } ${dark ? "bg-[#6d8f4f]" : "bg-[#eeeed2]"}`}
-                        >
-                          <span
-                            className={
-                              isWhitePiece
-                                ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
-                                : "text-neutral-950 drop-shadow-[0_0_2px_rgba(255,255,255,0.75)]"
-                            }
+                <div className="aspect-square min-w-0 flex-1">
+                  <div className="grid h-full w-full grid-cols-8 grid-rows-8 overflow-visible rounded-lg border-2 border-emerald-600/50 shadow-lg shadow-black/40">
+                    {rows.map((row, ri) =>
+                      row.map((cell, ci) => {
+                        const dark = (ri + ci) % 2 === 1;
+                        const rank = 8 - ri;
+                        const sq = cell?.square || `${String.fromCharCode(97 + ci)}${rank}`;
+                        const selected = selectedSquare === sq;
+                        const isWhitePiece = cell?.color === "w";
+                        return (
+                          <button
+                            key={`${ri}-${ci}`}
+                            type="button"
+                            onClick={() => onSquareClick(sq)}
+                            style={{ background: dark ? boardColors.dark : boardColors.light }}
+                            className={`flex items-center justify-center text-[clamp(1rem,4.2vmin,1.75rem)] sm:text-2xl ${
+                              selected ? "ring-2 ring-cyan-300 ring-inset z-10" : ""
+                            } ${pieceBold ? "font-black" : ""}`}
                           >
-                            {cell?.glyph || ""}
-                          </span>
-                        </button>
-                      );
-                    })
-                  )}
+                            <span
+                              className={
+                                isWhitePiece
+                                  ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
+                                  : "text-neutral-950 drop-shadow-[0_0_2px_rgba(255,255,255,0.75)]"
+                              }
+                            >
+                              {cell?.glyph || ""}
+                            </span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="grid w-full max-w-[min(100%,30rem)] grid-cols-8 gap-0 pl-5 text-center text-[8px] font-semibold text-white/45 sm:text-[9px]">
+              <div className="grid w-full grid-cols-8 gap-0 pl-4 text-center text-[8px] font-semibold text-white/45 sm:pl-5 sm:text-[9px]">
                 {"abcdefgh".split("").map((f) => (
                   <span key={f}>{f}</span>
                 ))}
@@ -485,8 +499,40 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
             ) : null}
           </div>
 
-          <aside className="flex min-h-0 max-h-[42vh] flex-col gap-2 overflow-y-auto rounded-xl border border-white/10 bg-black/40 p-3 lg:max-h-none">
+          <aside className="flex min-h-0 flex-col gap-2 overflow-y-auto rounded-xl border border-white/10 bg-black/40 p-3 lg:max-h-none">
             <label className="text-[10px] font-semibold uppercase tracking-wider text-white/55">
+              {tr ? "Tahta teması" : "Board theme"}
+            </label>
+            <select
+              value={boardTheme.boardThemeId}
+              onChange={(e) => {
+                const next = saveChessArenaThemeV0({ boardThemeId: e.target.value });
+                setBoardTheme(next);
+              }}
+              className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+            >
+              {Object.entries(CHESS_BOARD_THEME_V0).map(([id, theme]) => (
+                <option key={id} value={id}>
+                  {theme.label}
+                </option>
+              ))}
+            </select>
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-white/55">
+              {tr ? "Taş stili" : "Piece style"}
+            </label>
+            <select
+              value={boardTheme.pieceStyleId}
+              onChange={(e) => {
+                const next = saveChessArenaThemeV0({ pieceStyleId: e.target.value });
+                setBoardTheme(next);
+              }}
+              className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+            >
+              <option value={CHESS_PIECE_STYLE_V0.unicode}>{tr ? "Unicode" : "Unicode"}</option>
+              <option value={CHESS_PIECE_STYLE_V0.bold}>{tr ? "Kalın" : "Bold"}</option>
+            </select>
+
+            <label className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-white/55">
               {tr ? "Oyun modu" : "Game mode"}
             </label>
             <select

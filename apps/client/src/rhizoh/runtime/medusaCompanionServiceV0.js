@@ -57,6 +57,7 @@ export function mountMedusaCompanionV0(container, opts = {}) {
 
   let t = 0;
   let motion = 0;
+  let headYawTarget = 0;
   let audioCtx = null;
   let analyser = null;
   let data = null;
@@ -91,27 +92,43 @@ export function mountMedusaCompanionV0(container, opts = {}) {
     if (analyser && data) {
       analyser.getByteFrequencyData(data);
       let sum = 0;
-      for (let i = 0; i < data.length; i += 1) sum += data[i];
+      let low = 0;
+      let mid = 0;
+      let high = 0;
+      const third = Math.max(1, Math.floor(data.length / 3));
+      for (let i = 0; i < data.length; i += 1) {
+        sum += data[i];
+        if (i < third) low += data[i];
+        else if (i < third * 2) mid += data[i];
+        else high += data[i];
+      }
       motion = sum / (data.length * 255);
+      const centroid = (low * 0.25 + mid * 0.55 + high * 0.95) / (low + mid + high + 1);
+      if (motion > 0.12) {
+        headYawTarget += (centroid - 0.48) * motion * 0.14;
+        headYawTarget = Math.max(-0.62, Math.min(0.62, headYawTarget));
+      }
     } else {
-      motion = 0.15 + Math.sin(t * 2) * motionProfile.idleAmp;
+      motion = 0.18 + Math.sin(t * 2) * motionProfile.idleAmp;
     }
+    headYawTarget *= 0.972;
     if (root) {
-      const sway = (0.22 + motion * 0.72 * motionProfile.audioGain) * motionProfile.swayScale;
-      const breathe = Math.sin(t * 1.1) * 0.06 * motionProfile.swayScale;
-      root.rotation.y =
-        MEDUSA_COMPANION_FACE_Y_V0 + Math.sin(t * 1.2) * sway * 0.42 + Math.sin(t * 0.35) * 0.05;
-      root.rotation.z = Math.sin(t * 0.9) * sway * 0.28;
-      root.rotation.x = Math.sin(t * 0.7) * sway * 0.1;
-      root.position.y = Math.sin(t * 1.6) * (0.05 + motion * 0.12) + breathe;
-      root.position.x = Math.sin(t * 0.85) * sway * 0.05;
+      const sway = (0.28 + motion * 0.85 * motionProfile.audioGain) * motionProfile.swayScale;
+      const breathe = Math.sin(t * 1.1) * 0.07 * motionProfile.swayScale;
+      const idleYaw = Math.sin(t * 1.2) * sway * 0.38 + Math.sin(t * 0.35) * 0.06;
+      root.rotation.y = MEDUSA_COMPANION_FACE_Y_V0 + headYawTarget + idleYaw;
+      root.rotation.z = Math.sin(t * 0.9) * sway * 0.32;
+      root.rotation.x = Math.sin(t * 0.7) * sway * 0.14 - headYawTarget * 0.08;
+      root.position.y = Math.sin(t * 1.6) * (0.06 + motion * 0.14) + breathe;
+      root.position.x = Math.sin(t * 0.85) * sway * 0.07 + headYawTarget * 0.04;
       for (let i = 0; i < snakeMeshes.length; i += 1) {
         const snake = snakeMeshes[i];
         const phase = Number(snake.userData?.snakePhase) || i * 0.7;
-        const wiggle = (0.34 + motion * 0.62) * motionProfile.swayScale;
-        snake.rotation.z = Math.sin(t * 2.4 + phase) * wiggle;
-        snake.rotation.x = Math.sin(t * 1.8 + phase * 1.3) * wiggle * 0.65;
-        snake.rotation.y = Math.cos(t * 2.1 + phase * 0.8) * wiggle * 0.4;
+        const wiggle = (0.48 + motion * 0.95) * motionProfile.swayScale;
+        const hairLift = motion * 0.18;
+        snake.rotation.z = Math.sin(t * 2.8 + phase) * wiggle + hairLift;
+        snake.rotation.x = Math.sin(t * 2.1 + phase * 1.3) * wiggle * 0.78;
+        snake.rotation.y = Math.cos(t * 2.4 + phase * 0.8) * wiggle * 0.55 + headYawTarget * 0.35;
       }
     }
     renderer.render(scene, camera);
