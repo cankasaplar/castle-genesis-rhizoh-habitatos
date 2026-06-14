@@ -44,8 +44,8 @@ export const RhizohTowerVoiceChatV0 = memo(function RhizohTowerVoiceChatV0({
           ? String(turn.reply || "").trim()
           : errCode.includes("missing_api_key") || errCode.includes("server_llm_key_missing")
             ? tr
-              ? "Bu kule için API anahtarı henüz gateway'de tanımlı değil — ileride eklenecek."
-              : "API key for this tower is not configured on the gateway yet."
+              ? "Bu kule için bağlantı henüz hazır değil — kısa süre içinde açılacak."
+              : "This tower connection is not ready yet."
             : tr
               ? "Kule yanıt veremedi — gateway bağlantısını kontrol et."
               : "Tower could not reply — check gateway connection.";

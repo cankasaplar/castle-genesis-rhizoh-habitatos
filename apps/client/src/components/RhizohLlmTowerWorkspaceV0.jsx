@@ -120,8 +120,8 @@ export const RhizohLlmTowerWorkspaceV0 = memo(function RhizohLlmTowerWorkspaceV0
               />
               <p className="text-[9px] text-white/35">
                 {tr
-                  ? `Gateway env anahtarı: ${providerRow.provider.toUpperCase()}_API_KEY — model ${providerRow.model}`
-                  : `Gateway env key: ${providerRow.provider.toUpperCase()}_API_KEY — model ${providerRow.model}`}
+                  ? `Kule modeli: ${providerRow.model}`
+                  : `Tower model: ${providerRow.model}`}
               </p>
             </>
           ) : (

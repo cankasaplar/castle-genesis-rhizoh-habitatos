@@ -1128,7 +1128,7 @@ export async function queryRhizohLLM({
     depthMaxTokensCeiling: conversationDepth.maxTokensCeiling
   });
   if (!endpoint) {
-    const replyStub = `Rhizoh: ${layerProfile.mission}. Talep al─▒nd─▒ -> ${message}. LLM i├ğin a─ş ge├ğidi (VITE_GATEWAY_HTTP veya VITE_RHIZOH_LLM_HTTP) tan─▒mlay─▒n; anahtar sunucuda OPENAI_API_KEY.`;
+    const replyStub = `Rhizoh: ${layerProfile.mission}. Talep alındı → ${message}. Ağ geçidi henüz tanımlı değil; bağlantı kurulunca yanıt devam edecek.`;
     const post = finalizeRhizohAfterLlm(rhizohEmotions, {
       rhizohRouter,
       reply: replyStub,
