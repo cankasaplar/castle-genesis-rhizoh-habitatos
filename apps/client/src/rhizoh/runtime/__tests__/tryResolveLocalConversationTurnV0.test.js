@@ -1,8 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeEach } from "vitest";
 import { tryResolveLocalConversationTurnV0 } from "../tryResolveLocalConversationTurnV0.js";
 import { RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1 } from "../sovereignWorldMapNodesV0.js";
+import { ORCHESTRATOR_ACTION_REGISTRY_V0, RHIZOH_V11_MAP_INTENT_EVENT_V0 } from "../symbyoMapIntentBridgeV0.js";
+import { applyUiLanguagePreferenceToOlpV0 } from "../rhizohOutputLanguagePolicyV0.js";
 
 describe("tryResolveLocalConversationTurnV0", () => {
+  beforeEach(() => {
+    applyUiLanguagePreferenceToOlpV0("tr", "test");
+  });
   it("routes kale kur without LLM", () => {
     const events = [];
     window.addEventListener("castle:open-init-gate-v0", () => events.push("gate"));
@@ -15,14 +20,29 @@ describe("tryResolveLocalConversationTurnV0", () => {
     expect(events).toContain("gate");
   });
 
-  it("routes paris git voice warp without LLM", () => {
-    const warps = [];
-    window.addEventListener(RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1, (ev) => warps.push(ev.detail));
+  it("routes paris git to mistral map open without LLM", () => {
+    const intents = [];
+    window.addEventListener(RHIZOH_V11_MAP_INTENT_EVENT_V0, (ev) => intents.push(ev.detail));
     const out = tryResolveLocalConversationTurnV0("paris git", { source: "test" });
     expect(out?.ok).toBe(true);
     expect(out?.llmBypass).toBe(true);
-    expect(out?.kind).toBe("VOICE_WARP");
-    expect(warps[0]?.name).toContain("Mistral");
+    expect(out?.kind).toBe("MAP_NODE_OPEN");
+    expect(out?.reply).toMatch(/Mistral Kulesi açılıyor/);
+    expect(intents[0]?.normalizedDecision?.decision).toBe(
+      ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_WORKSPACE
+    );
+  });
+
+  it("routes chess arena voice without LLM", () => {
+    const intents = [];
+    window.addEventListener(RHIZOH_V11_MAP_INTENT_EVENT_V0, (ev) => intents.push(ev.detail));
+    const out = tryResolveLocalConversationTurnV0("chess arena'ya geç", { source: "test" });
+    expect(out?.ok).toBe(true);
+    expect(out?.kind).toBe("MAP_NODE_OPEN");
+    expect(out?.reply).toMatch(/Satranç Arenası açılıyor/);
+    expect(intents[0]?.normalizedDecision?.decision).toBe(
+      ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_CHESS_ARENA
+    );
   });
 
   it("routes yayın aç to media tube without LLM", () => {

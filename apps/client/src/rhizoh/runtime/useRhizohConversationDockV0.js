@@ -12,6 +12,7 @@ import {
   handoffHotSpeechToLlmReplyV0
 } from "./rhizohConversationContinuityGlueV0.js";
 import { speakRhizohReplyChunkedV0 } from "./rhizohSpeechChunkTtsV0.js";
+import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
 import { stampVoiceUserGestureV0 } from "./voiceUserGestureAnchorV0.js";
 import {
   commitFinalUserVisibleLanguageV0,
@@ -89,7 +90,11 @@ export function useRhizohConversationDockV0(opts = {}) {
         setFieldState("speaking");
         const glue = buildConversationContinuityGlueV0({ llmWaitMs: Date.now() - t0 });
         await handoffHotSpeechToLlmReplyV0(glue, () => {
-          void speakRhizohReplyChunkedV0(reply, { smoothAfterAck: false, glue });
+          void speakRhizohReplyChunkedV0(reply, {
+            smoothAfterAck: false,
+            glue,
+            language: resolveOutputLanguageCodeV0()
+          });
         });
         setFieldState("idle");
         userTurnRef.current += 1;
@@ -121,7 +126,11 @@ export function useRhizohConversationDockV0(opts = {}) {
         setLastReplySource(String(out.source || "teacher"));
         setFieldState("speaking");
         await handoffHotSpeechToLlmReplyV0(glue, () => {
-          void speakRhizohReplyChunkedV0(reply, { smoothAfterAck: false, glue });
+          void speakRhizohReplyChunkedV0(reply, {
+            smoothAfterAck: false,
+            glue,
+            language: resolveOutputLanguageCodeV0()
+          });
         });
       } else if (!out.ok) {
         setLastError(String(out.error || "dispatch_failed"));
@@ -179,7 +188,11 @@ export function useRhizohConversationDockV0(opts = {}) {
         setDraft("");
         setFieldState("speaking");
         const glue = buildConversationContinuityGlueV0({ llmWaitMs: Date.now() - t0 });
-        await speakRhizohReplyChunkedV0(reply, { smoothAfterAck: true, glue });
+        await speakRhizohReplyChunkedV0(reply, {
+          smoothAfterAck: true,
+          glue,
+          language: resolveOutputLanguageCodeV0()
+        });
         userTurnRef.current += 1;
         return;
       }
@@ -209,7 +222,11 @@ export function useRhizohConversationDockV0(opts = {}) {
         setDraft("");
         setFieldState("speaking");
         const glue = buildConversationContinuityGlueV0({ prep: out.prep, llmWaitMs: Date.now() - t0 });
-        await speakRhizohReplyChunkedV0(reply, { smoothAfterAck: true, glue });
+        await speakRhizohReplyChunkedV0(reply, {
+          smoothAfterAck: true,
+          glue,
+          language: resolveOutputLanguageCodeV0()
+        });
       } else {
         setLastError(String(out.error || "llm_failed"));
       }

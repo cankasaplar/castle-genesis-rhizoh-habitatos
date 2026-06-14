@@ -20,11 +20,26 @@ export function readSpeechLocaleForVoiceV0() {
 export function resolveSpeechLocaleForTextV0(text, fallbackLocale = readSpeechLocaleForVoiceV0()) {
   const raw = String(text || "");
   const folded = raw.toLowerCase();
+  const fallback = String(fallbackLocale || "en").toLowerCase();
   if (/[çğıöşü]/i.test(raw)) return "tr";
-  if (/\b(merhaba|günaydın|gunaydin|buradayım|buradayim|harita|kale|oluştur|olustur|açıyorum|aciyorum|devam|tamam|dinliyorum|konum|dünya|dunya)\b/i.test(folded)) {
+  if (
+    /\b(merhaba|günaydın|gunaydin|buradayım|buradayim|harita|kale|oluştur|olustur|açıyorum|aciyorum|açılıyor|aciliyor|devam|tamam|dinliyorum|konum|dünya|dunya|geçiyorum|geciyorum|satranç|satranc|arenası|arenasi|portal|kulesi|noktasına|noktasina)\b/i.test(
+      folded
+    )
+  ) {
     return "tr";
   }
-  return String(fallbackLocale || "en").toLowerCase();
+  if (fallback === "tr") {
+    const latinWords = folded.match(/\b[a-z']+\b/g) || [];
+    if (!latinWords.length) return "tr";
+    const englishOnly = latinWords.filter((w) =>
+      /^(opening|chess|arena|warping|heading|the|to|tower|neural|mistral|gemini|claude|done|playing)$/i.test(
+        w
+      )
+    );
+    if (englishOnly.length < latinWords.length * 0.45) return "tr";
+  }
+  return fallback;
 }
 
 /**
