@@ -1,4 +1,5 @@
-import React, { memo } from "react";
+import React, { memo, useEffect, useState } from "react";
+import { useCastleAuth } from "../firebase/useCastleAuth.js";
 import { GeminiTowerWorkspaceV0 } from "./GeminiTowerWorkspaceV0.jsx";
 import { RhizohLlmTowerWorkspaceV0 } from "./RhizohLlmTowerWorkspaceV0.jsx";
 import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
@@ -11,6 +12,24 @@ export const RhizohV11TowerWorkspaceHostV0 = memo(function RhizohV11TowerWorkspa
   onClose,
   uiLocale = "en"
 }) {
+  const castleAuth = useCastleAuth();
+  const [idToken, setIdToken] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const user = castleAuth?.user;
+    if (!user?.getIdToken) {
+      setIdToken("");
+      return undefined;
+    }
+    void user.getIdToken().then((token) => {
+      if (!cancelled) setIdToken(String(token || ""));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [castleAuth?.user]);
+
   if (!workspaceDetail?.node) return null;
 
   const node = workspaceDetail.node;
@@ -23,7 +42,12 @@ export const RhizohV11TowerWorkspaceHostV0 = memo(function RhizohV11TowerWorkspa
 
   if (node.type === "tower" || nodeId.endsWith("_tower")) {
     return (
-      <RhizohLlmTowerWorkspaceV0 node={node} onClose={onClose} uiLocale={uiLocale} />
+      <RhizohLlmTowerWorkspaceV0
+        node={node}
+        onClose={onClose}
+        uiLocale={uiLocale}
+        idToken={idToken}
+      />
     );
   }
 
@@ -36,7 +60,7 @@ export const RhizohV11TowerWorkspaceHostV0 = memo(function RhizohV11TowerWorkspa
         className="w-full max-w-md rounded-2xl border p-4 shadow-2xl backdrop-blur-md"
         style={{
           borderColor: `${workspaceDetail.node.color || "#22d3ee"}66`,
-          background: GEMINI_TOWER_DESIGN_V0.identity.colors.background
+          background: "#0c1222"
         }}
       >
         <div className="flex items-start justify-between gap-3">

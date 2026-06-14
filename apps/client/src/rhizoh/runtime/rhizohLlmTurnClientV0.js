@@ -141,6 +141,7 @@ export async function postRhizohLlmTurnV0(input = {}) {
     {
       message,
       ...(input.provider ? { provider: input.provider } : {}),
+      ...(input.model ? { model: input.model } : {}),
       llmKeySource: input.llmKeySource ?? "auto",
       connectionId: String(input.connectionId || ""),
       ...langBundle.bodyFields,

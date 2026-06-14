@@ -8569,10 +8569,11 @@ export default function AppRhizoh528() {
         }
         closeAllRhizohProductSurfacePanelsV0();
         uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
-        const targetPath = resolveWorldDomainPathV0(readRhizohWorldDrawerDomainV0());
+        writeRhizohWorldDrawerDomainV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE);
+        const targetPath = resolveWorldDomainPathV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE);
         bootstrapRhizohDomainGateV0(RHIZOH_DOMAIN_ID_V0.WORLD, {
           pathname: targetPath,
-          worldDomain: readRhizohWorldDrawerDomainV0(),
+          worldDomain: RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE,
           fromDomain: RHIZOH_DOMAIN_ID_V0.T0
         });
         navigate(targetPath);

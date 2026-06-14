@@ -17,6 +17,12 @@ function WorldSpaceBootFallback() {
   return <div className="min-h-screen bg-[#010103]" data-rhizoh-world-space-boot="1" />;
 }
 
+const worldSpaceRouteV0 = (
+  <Suspense fallback={<WorldSpaceBootFallback />}>
+    <AppRhizohWorldSpaceV0 />
+  </Suspense>
+);
+
 /**
  * Product rule: single continuous world — `/` always mounts AppRhizoh528 → AppRhizoh528T0.
  * @see docs/RHIZOH_T0_EXPERIENCE_SHELL_V1.md
@@ -33,16 +39,9 @@ export function CastleShellRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/world" element={<Navigate to="/world/space" replace />} />
-        <Route
-          path="/world/space"
-          element={
-            <Suspense fallback={<WorldSpaceBootFallback />}>
-              <AppRhizohWorldSpaceV0 />
-            </Suspense>
-          }
-        />
-        <Route path="/world/social" element={<AppRhizoh528 />} />
-        <Route path="/world/modes" element={<AppRhizoh528 />} />
+        <Route path="/world/space" element={worldSpaceRouteV0} />
+        <Route path="/world/social" element={worldSpaceRouteV0} />
+        <Route path="/world/modes" element={worldSpaceRouteV0} />
         <Route path="/" element={<AppRhizoh528 />} />
         <Route path="/genesis" element={<Navigate to="/genesis/hub" replace />} />
         <Route path="/genesis/observe" element={<Navigate to="/academy/observe" replace />} />
