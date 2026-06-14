@@ -3,6 +3,7 @@ import {
   buildSpiralMMOWhirlpoolPathV0,
   listSpiralMMOContinentMapPinsV0,
   RHIZOH_SPIRAL_MMO_CONTINENT_PINS_V0,
+  RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0,
   SPIRAL_MMO_CONTINENT_IDS_V0,
   spiralMMOPinIconHtmlV0
 } from "../spiralMMOContinentPinsV0.js";
@@ -34,22 +35,24 @@ describe("spiralMMOContinentPinsV0", () => {
     expect(html).toContain("rhizohSpiralMMOInV0");
     expect(html).toContain("rhizohSpiralMMOPulseV0");
     expect(html).toContain('stroke="#fff"');
-    expect(html).toContain("background:#000");
-    expect(html).toContain("width:38px");
-    expect(html).toContain('data-rhizoh-spiral-mmo-rev="whirlpool-v1"');
+    expect(html).toContain('fill="#000"');
+    expect(html).toContain('viewBox="0 0 38 38"');
+    expect(html).toContain('data-rhizoh-spiral-mmo-rev="whirlpool-v2"');
     expect(html).toContain("SPIRAL·");
   });
 
   it("builds an inward whirlpool path from outer ring to center", () => {
-    const path = buildSpiralMMOWhirlpoolPathV0(15, 15);
+    const { center, spiralOuterRadius } = RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0;
+    const path = buildSpiralMMOWhirlpoolPathV0(center, center);
     expect(path.startsWith("M")).toBe(true);
-    expect(path.split("L").length).toBeGreaterThan(20);
+    expect(path.split("L").length).toBeGreaterThan(30);
     const nums = path.match(/-?\d+\.?\d*/g)?.map(Number) ?? [];
     const xs = nums.filter((_, i) => i % 2 === 0);
     const ys = nums.filter((_, i) => i % 2 === 1);
-    const startDist = Math.hypot(xs[0] - 15, ys[0] - 15);
-    const endDist = Math.hypot(xs[xs.length - 1] - 15, ys[ys.length - 1] - 15);
+    const startDist = Math.hypot(xs[0] - center, ys[0] - center);
+    const endDist = Math.hypot(xs[xs.length - 1] - center, ys[ys.length - 1] - center);
+    expect(startDist).toBeCloseTo(spiralOuterRadius, 1);
     expect(startDist).toBeGreaterThan(endDist);
-    expect(endDist).toBeLessThan(2);
+    expect(endDist).toBeLessThan(1.5);
   });
 });
