@@ -23,9 +23,10 @@ import {
   stepOctoMediaBirdFloatV0
 } from "./octoMediaHarmonyV0.js";
 import {
+  buildOctoMediaTulleTargetBehaviorV0,
+  cloneOctoMediaTulleBehaviorV0,
   deriveOctoMediaTulleDriveV0,
-  lerpOctoMediaTulleBehaviorV0,
-  resolveOctoMediaTulleBehaviorV0
+  lerpOctoMediaTulleBehaviorV0
 } from "./octoMediaTulleBehaviorsV0.js";
 import { drawOctoMediaTulleOverlayV0 } from "./octoMediaTulleDrawV0.js";
 
@@ -112,7 +113,7 @@ export function mountOctoMediaCompanionV0(container, opts = {}) {
     arcMidY: 0.48
   };
 
-  const tulleBehavior = { ...resolveOctoMediaTulleBehaviorV0("IDLE") };
+  const tulleBehavior = cloneOctoMediaTulleBehaviorV0("IDLE");
   let globalPhase = 0;
   let lastEmotion = "neutral";
   let colorHue = tulleBehavior.colorH;
@@ -199,8 +200,7 @@ export function mountOctoMediaCompanionV0(container, opts = {}) {
       vx: floatState.vx,
       vy: floatState.vy
     });
-    const targetBehavior = resolveOctoMediaTulleBehaviorV0(tulleDrive.mode);
-    targetBehavior.colorH += tulleDrive.hueBias;
+    const targetBehavior = buildOctoMediaTulleTargetBehaviorV0(tulleDrive.mode, tulleDrive.hueBias);
     lerpOctoMediaTulleBehaviorV0(tulleBehavior, targetBehavior, dt, drive.colorLerpSpeed);
     colorHue += (tulleBehavior.colorH - colorHue) * Math.min(1, dt * drive.colorLerpSpeed);
     tulleBehavior.colorH = colorHue;

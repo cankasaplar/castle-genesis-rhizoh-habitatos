@@ -9,9 +9,10 @@ import {
   stepOctoMediaFloatV0
 } from "./octoMediaCompanionMotionV0.js";
 import {
+  buildOctoMediaTulleTargetBehaviorV0,
+  cloneOctoMediaTulleBehaviorV0,
   deriveOctoMediaTulleDriveV0,
-  lerpOctoMediaTulleBehaviorV0,
-  resolveOctoMediaTulleBehaviorV0
+  lerpOctoMediaTulleBehaviorV0
 } from "./octoMediaTulleBehaviorsV0.js";
 
 const TAU = Math.PI * 2;
@@ -37,7 +38,7 @@ export function mountOctoMediaTulleStageV0(container, opts = {}) {
   let globalPhase = 0;
   let lastTs = 0;
 
-  const currentBehavior = { ...resolveOctoMediaTulleBehaviorV0("IDLE") };
+  const currentBehavior = cloneOctoMediaTulleBehaviorV0("IDLE");
   let behaviorName = "IDLE";
 
   const tentacles = Array.from({ length: NUM_TENTACLES }, (_, i) => ({
@@ -315,8 +316,7 @@ export function mountOctoMediaTulleStageV0(container, opts = {}) {
       vy: floatState.vy
     });
     behaviorName = tulleDrive.mode;
-    const target = resolveOctoMediaTulleBehaviorV0(tulleDrive.mode);
-    target.colorH += tulleDrive.hueBias;
+    const target = buildOctoMediaTulleTargetBehaviorV0(tulleDrive.mode, tulleDrive.hueBias);
     lerpOctoMediaTulleBehaviorV0(currentBehavior, target, dt, tulleDrive.colorLerpSpeed);
 
     const cx = floatState.x * w;

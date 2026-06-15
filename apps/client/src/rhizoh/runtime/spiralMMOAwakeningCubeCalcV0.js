@@ -28,6 +28,7 @@ export function spiralMMOAwakeningSeedV0(...parts) {
  *   destContinent: string,
  *   routeLengthPct: number,
  *   batchIndex: number,
+ *   depthLayer?: number,
  *   isOrder: boolean,
  *   cycleSeed: number
  * }} input
@@ -41,17 +42,18 @@ export function deriveSpiralMMOAwakeningCubeSpecV0(input) {
   const r1 = spiralMMOAwakeningSeedV0(seedBase, "speed");
   const r2 = spiralMMOAwakeningSeedV0(seedBase, "size");
   const r3 = spiralMMOAwakeningSeedV0(seedBase, "axis");
+  const depthLayer = Math.max(0, Math.min(2, Number(input.depthLayer) || 0));
 
   const routeLen = Math.max(8, Number(input.routeLengthPct) || 20);
-  const speedFactor = input.isOrder ? 0.88 : 1.12;
-  const durationMs = Math.round((2400 + routeLen * 28 + r1 * 1400) * speedFactor);
+  const speedFactor = (input.isOrder ? 0.88 : 1.02) * (1.06 - depthLayer * 0.08);
+  const durationMs = Math.round((2400 + routeLen * 32 + r1 * 900) * speedFactor);
 
-  const spinDirection = input.isOrder ? motion.direction : r0 > 0.5 ? 1 : -1;
+  const spinDirection = input.isOrder ? motion.direction : depthLayer % 2 === 0 ? 1 : -1;
   const axisTypes = /** @type {SpiralMMOCubeAxisV0[]} */ (["rotateY", "rotateX", "rotateZ", "rotate3d"]);
   const axisType = axisTypes[Math.floor(r3 * axisTypes.length) % axisTypes.length];
 
-  const sizePx = Math.round(14 + r2 * 8 + (input.isOrder ? 2 : 0));
-  const depth = 0.35 + r2 * 0.55;
+  const sizePx = Math.round(12 + depthLayer * 2.5 + r2 * 6 + (input.isOrder ? 2 : 0));
+  const depth = 0.22 + depthLayer * 0.3 + r2 * 0.18;
   const glowBlur = Math.round(6 + depth * 14);
   const glowSpread = Math.round(2 + depth * 6);
   const shadowX = Math.round(2 + depth * 5);

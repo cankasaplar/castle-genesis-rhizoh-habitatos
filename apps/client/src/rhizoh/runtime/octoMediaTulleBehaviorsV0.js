@@ -18,6 +18,28 @@ export function resolveOctoMediaTulleBehaviorV0(name) {
 }
 
 /**
+ * Mutable copy — frozen presets must never be written in animation loops.
+ * @param {keyof typeof OCTO_MEDIA_TULLE_BEHAVIORS_V0 | Record<string, number>} [nameOrPreset]
+ */
+export function cloneOctoMediaTulleBehaviorV0(nameOrPreset = "IDLE") {
+  const base =
+    typeof nameOrPreset === "string"
+      ? resolveOctoMediaTulleBehaviorV0(nameOrPreset)
+      : nameOrPreset || resolveOctoMediaTulleBehaviorV0("IDLE");
+  return { ...base };
+}
+
+/**
+ * @param {keyof typeof OCTO_MEDIA_TULLE_BEHAVIORS_V0} mode
+ * @param {number} [hueBias]
+ */
+export function buildOctoMediaTulleTargetBehaviorV0(mode, hueBias = 0) {
+  const cloned = cloneOctoMediaTulleBehaviorV0(mode);
+  if (hueBias) cloned.colorH += hueBias;
+  return cloned;
+}
+
+/**
  * Audio + float velocity → behavior mode, hue lerp speed, wave flow direction.
  * Faster movement → faster color adaptation.
  * @param {{ audioMotion?: number, centroid?: number, vx?: number, vy?: number }} input

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeEach } from "vitest";
 import {
   buildSpiralMMOAwakeningLaunchPlanV0,
   spiralMMOBezierPointV0,
@@ -8,8 +8,12 @@ import {
   resolveSpiralMMOTriggerIndexFromPinIdV0
 } from "../spiralMMOAwakeningCycleV0.js";
 import { buildSpiralMMOAwakeningBirdPlanV0 } from "../spiralMMOAwakeningBirdV0.js";
+import { resetSpiralMMOContinuityForTestV0 } from "../spiralMMOContinuityV0.js";
 
 describe("spiralMMOAwakeningCycleV0", () => {
+  beforeEach(() => {
+    resetSpiralMMOContinuityForTestV0();
+  });
   it("maps geo to clamped percent", () => {
     const p = spiralMMOGeoToPercentV0(50, 15);
     expect(p.x).toBeGreaterThan(4);
@@ -31,11 +35,11 @@ describe("spiralMMOAwakeningCycleV0", () => {
   });
 
   it("launch plan spans order colors, routes, birds and 6:44 deadline", () => {
-    const plan = buildSpiralMMOAwakeningLaunchPlanV0(2, 1_700_000_000_000);
+    const plan = buildSpiralMMOAwakeningLaunchPlanV0(2, 1_700_000_000_000, { commit: false });
     expect(plan.triggerPinIndex).toBe(2);
     expect(plan.durationMs).toBe((6 * 60 + 44) * 1000);
     expect(plan.deadlineMs).toBe(plan.durationMs + 1_700_000_000_000);
-    expect(plan.routeLines.length).toBeGreaterThan(0);
+    expect(plan.routeLines.length).toBe(0);
     expect(plan.launches.length).toBeGreaterThan(10);
     expect(plan.launches[0].cubeSpec).toBeTruthy();
     expect(plan.launches.every((l) => l.routeId.includes("|"))).toBe(true);
