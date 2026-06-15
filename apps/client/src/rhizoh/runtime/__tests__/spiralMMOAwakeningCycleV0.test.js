@@ -39,7 +39,7 @@ describe("spiralMMOAwakeningCycleV0", () => {
     expect(plan.triggerPinIndex).toBe(2);
     expect(plan.durationMs).toBe((6 * 60 + 44) * 1000);
     expect(plan.deadlineMs).toBe(plan.durationMs + 1_700_000_000_000);
-    expect(plan.routeLines.length).toBeGreaterThan(0);
+    expect(plan.routeLines.length).toBe(0);
     expect(plan.launches.length).toBeGreaterThan(10);
     expect(plan.launches[0].cubeSpec).toBeTruthy();
     expect(plan.launches.every((l) => l.routeId.includes("|"))).toBe(true);

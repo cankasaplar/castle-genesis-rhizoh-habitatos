@@ -169,7 +169,7 @@ export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Dat
     deadlineMs: resetRhizohNeonCountdownDeadlineV0(nowMs),
     durationMs: RHIZOH_NEON_COUNTDOWN_DURATION_MS_V0,
     cycleSeed,
-    routeLines: Object.freeze(buildSpiralMMOAwakeningRouteLinesV0(pins)),
+    routeLines: Object.freeze([]),
     launches: Object.freeze(launches)
   });
 

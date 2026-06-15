@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
   formatRhizohNeonCountdownMsV0,
   isRhizohNeonCountdownCompleteV0,
@@ -85,7 +85,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
       }
     }
     setCubeKeyframesCss([...new Set(kfBlocks)].join("\n"));
-    setScene({ cubes, birds, bottles, routeLines: plan.routeLines || [], w, h });
+    setScene({ cubes, birds, bottles, w, h });
   }, []);
 
   useEffect(() => {
@@ -140,31 +140,6 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
     return () => window.clearTimeout(restartTimer);
   }, [complete, collapsing, spawnLaunches]);
 
-  const routeSvg = useMemo(() => {
-    if (!scene?.routeLines?.length || !scene.w) return null;
-    const lines = scene.routeLines.map((route) => {
-      const a = pctToPx(route.aPct, scene.w, scene.h);
-      const b = pctToPx(route.bPct, scene.w, scene.h);
-      return (
-        <line
-          key={route.id}
-          x1={a.x}
-          y1={a.y}
-          x2={b.x}
-          y2={b.y}
-          stroke="rgba(0,255,102,0.14)"
-          strokeWidth="1"
-          strokeDasharray="4 8"
-        />
-      );
-    });
-    return (
-      <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
-        {lines}
-      </svg>
-    );
-  }, [scene]);
-
   return (
     <div
       ref={hostRef}
@@ -178,10 +153,6 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
 
       {scene ? (
         <>
-          <div className="absolute inset-0 z-[2]" data-rhizoh-spiral-route-layer="1">
-            {routeSvg}
-          </div>
-
           <div className="absolute inset-0 z-[5]" data-rhizoh-spiral-bottle-layer="1">
             {scene.bottles.map((bottle) => (
               <SpiralMMOBottleV0 key={bottle.id} bottle={bottle} hostRef={hostRef} />
