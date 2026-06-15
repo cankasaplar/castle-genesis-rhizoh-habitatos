@@ -40,13 +40,15 @@ export function mountOctoMediaCompanionV0(container, opts = {}) {
   renderer.setSize(w, h);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setClearColor(0x000000, 0);
+  renderer.domElement.style.pointerEvents = "none";
+  renderer.domElement.style.background = "transparent";
   container.appendChild(renderer.domElement);
 
-  scene.add(new THREE.AmbientLight(0x88bbcc, 0.72));
-  const key = new THREE.DirectionalLight(0x00e5ff, 1.05);
+  scene.add(new THREE.AmbientLight(0x88bbcc, 0.42));
+  const key = new THREE.DirectionalLight(0x00e5ff, 0.62);
   key.position.set(1.2, 2.5, 2);
   scene.add(key);
-  const rim = new THREE.PointLight(0x33eeff, 0.65, 8);
+  const rim = new THREE.PointLight(0x33eeff, 0.32, 8);
   rim.position.set(-0.8, 0.6, 1.2);
   scene.add(rim);
 
@@ -65,7 +67,7 @@ export function mountOctoMediaCompanionV0(container, opts = {}) {
       if (disposed) return;
       root = gltf.scene;
       prepareOctoConversationMaterialsV1(root);
-      fitOctoConversationModelV1(root, { targetSize: 0.72 });
+      fitOctoConversationModelV1(root, { targetSize: 0.46 });
       tentacles = collectOctoTentacleNodesV1(root);
       body = root;
       scene.add(root);
@@ -181,7 +183,7 @@ export function mountOctoMediaCompanionV0(container, opts = {}) {
 
       bodyCarry = animateOctoBodyV1(body, t, drive, dt, bodyCarry);
       tentacleCarry = animateOctoTentaclesV1(tentacles, t, drive, tentacleCarry);
-      rim.intensity = 0.45 + drive.colorPulse * 0.85;
+      rim.intensity = 0.22 + drive.colorPulse * 0.35;
       const accentHex = drive.accent ?? 0x33eeff;
       rim.color.setHex(accentHex);
     }
