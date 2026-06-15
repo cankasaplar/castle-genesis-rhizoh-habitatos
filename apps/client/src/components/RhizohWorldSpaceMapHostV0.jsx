@@ -406,11 +406,13 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
           } catch {
             /* noop */
           }
-          try {
-            const z = Math.max(mapRef.current?.getZoom?.() || 14, 16);
-            mapRef.current?.flyTo?.([node.lat, node.lon], z, { animate: true, duration: 1.2 });
-          } catch {
-            /* noop */
+          if (node.type !== "spiralmmo") {
+            try {
+              const z = Math.max(mapRef.current?.getZoom?.() || 14, 16);
+              mapRef.current?.flyTo?.([node.lat, node.lon], z, { animate: true, duration: 1.2 });
+            } catch {
+              /* noop */
+            }
           }
           if (node.type === "remote_castle") {
             dispatchRemoteCastleClickV0(node);
