@@ -71,7 +71,11 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
 
   const spawnLaunches = useCallback((plan) => {
     planRef.current = plan;
-    setDeadlineMs(plan.deadlineMs);
+    if (plan?.sessionReset) {
+      setDeadlineMs(plan.deadlineMs);
+    } else {
+      setDeadlineMs(readRhizohNeonCountdownDeadlineMsV0());
+    }
     setCollapsing(false);
     const host = hostRef.current;
     if (!host || !plan?.launches?.length) return;
@@ -93,8 +97,30 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
         kfBlocks.push(built.spinKeyframes);
       }
     }
-    setCubeKeyframesCss([...new Set(kfBlocks)].join("\n"));
-    setScene({ cubes, birds, bottles, w, h });
+    setCubeKeyframesCss((prev) => {
+      const merged = [...new Set([...(plan.sessionReset ? [] : prev.split("\n").filter(Boolean)), ...kfBlocks])];
+      return merged.join("\n");
+    });
+    setScene((prev) => ({
+      cubes,
+      stackedCubes: plan.sessionReset ? [] : prev?.stackedCubes ?? [],
+      birds,
+      bottles,
+      w,
+      h
+    }));
+  }, []);
+
+  const onCubeLandedV0 = useCallback((landedCube) => {
+    setScene((prev) => {
+      if (!prev) return prev;
+      const stacked = [...(prev.stackedCubes ?? []), { ...landedCube, landed: true }];
+      return {
+        ...prev,
+        stackedCubes: stacked,
+        cubes: prev.cubes.filter((c) => c.key !== landedCube.key)
+      };
+    });
   }, []);
 
   useEffect(() => {
@@ -133,6 +159,11 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
           ...cube,
           collapsePct,
           collapsing: true
+        })),
+        stackedCubes: (prev.stackedCubes ?? []).map((cube) => ({
+          ...cube,
+          collapsePct,
+          collapsing: true
         }))
       };
     });
@@ -160,6 +191,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
       data-rhizoh-spiral-mmo-awakening-overlay="1"
       data-rhizoh-spiral-mmo-phase={complete ? "collapse" : collapsing ? "collapsing" : scene ? "active" : "idle"}
       data-rhizoh-spiral-behavior-continent={planRef.current?.behavior?.continent || ""}
+      data-rhizoh-spiral-build-rev={planRef.current?.buildRev || ""}
       aria-hidden
     >
       {cubeKeyframesCss ? <style>{cubeKeyframesCss}</style> : null}
@@ -173,12 +205,37 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
           </div>
 
           <div
+            className="absolute inset-0 z-[8]"
+            data-rhizoh-spiral-stacked-cube-layer="1"
+            style={{ perspective: "900px", transformStyle: "preserve-3d" }}
+          >
+            {(scene.stackedCubes ?? []).map((cube) =>
+              cube.collapsing ? (
+                <SpiralMMOFlightCubeV0
+                  key={`stacked-collapse-${cube.key}`}
+                  cube={cube}
+                  collapsing
+                  hostRef={hostRef}
+                />
+              ) : (
+                <SpiralMMOStackedCubeV0 key={`stacked-${cube.key}`} cube={cube} />
+              )
+            )}
+          </div>
+
+          <div
             className="absolute inset-0 z-[10]"
             data-rhizoh-spiral-cube-layer="1"
             style={{ perspective: "900px", transformStyle: "preserve-3d" }}
           >
             {scene.cubes.map((cube) => (
-              <SpiralMMOFlightCubeV0 key={cube.key} cube={cube} collapsing={cube.collapsing} hostRef={hostRef} />
+              <SpiralMMOFlightCubeV0
+                key={cube.key}
+                cube={cube}
+                collapsing={cube.collapsing}
+                hostRef={hostRef}
+                onLanded={onCubeLandedV0}
+              />
             ))}
           </div>
 
@@ -212,7 +269,33 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
   );
 });
 
-const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collapsing, hostRef }) {
+const SpiralMMOStackedCubeV0 = memo(function SpiralMMOStackedCubeV0({ cube }) {
+  const acc = cube.accumulationOffset || { x: 0, y: 0 };
+  const depthScale = cube.depthScale ?? 0.9 + (cube.cubeSpec?.depth ?? 0.5) * 0.2;
+  const destX = (cube.p2?.x ?? 0) + acc.x;
+  const destY = (cube.p2?.y ?? 0) + acc.y;
+  const cubeHtml = cube.cubeSpec ? spiralMMOAwakeningCubeHtmlV0(cube.cubeSpec).html : "";
+
+  return (
+    <div
+      className="absolute"
+      style={{
+        left: `${destX}px`,
+        top: `${destY}px`,
+        width: 0,
+        height: 0,
+        zIndex: cube.depthZIndex ?? 10,
+        transform: spiralCubeStackTransformV0({ acc: { x: 0, y: 0, z: acc.z, rotateX: acc.rotateX, rotateY: acc.rotateY, stackScale: acc.stackScale }, depthScale, travelScale: 1 }),
+        transformStyle: "preserve-3d",
+        pointerEvents: "none"
+      }}
+      data-rhizoh-spiral-cube-stacked="1"
+      dangerouslySetInnerHTML={{ __html: cubeHtml }}
+    />
+  );
+});
+
+const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collapsing, hostRef, onLanded }) {
   const elRef = useRef(null);
   const holdAnimRef = useRef(null);
   const cubeHtml = cube.cubeSpec ? spiralMMOAwakeningCubeHtmlV0(cube.cubeSpec).html : "";
@@ -283,31 +366,7 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
 
     if (cube.holdAtDest) {
       anim.onfinish = () => {
-        const destX = cube.p2.x + acc.x;
-        const destY = cube.p2.y + acc.y;
-        holdAnimRef.current = el.animate(
-          [
-            {
-              left: `${destX}px`,
-              top: `${destY}px`,
-              transform: spiralCubeStackTransformV0({ acc, depthScale, travelScale: 1 }),
-              opacity: 0.92
-            },
-            {
-              left: `${destX}px`,
-              top: `${destY}px`,
-              transform: spiralCubeStackTransformV0({ acc, depthScale, travelScale: 1.06 }),
-              opacity: 1
-            },
-            {
-              left: `${destX}px`,
-              top: `${destY}px`,
-              transform: spiralCubeStackTransformV0({ acc, depthScale, travelScale: 1 }),
-              opacity: 0.94
-            }
-          ],
-          { duration: 1800, iterations: Infinity, easing: "ease-in-out" }
-        );
+        onLanded?.(cube);
       };
     }
 
@@ -316,7 +375,7 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
       holdAnimRef.current?.cancel?.();
       holdAnimRef.current = null;
     };
-  }, [cube, collapsing, hostRef]);
+  }, [cube, collapsing, hostRef, onLanded]);
 
   return (
     <div

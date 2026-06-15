@@ -3,7 +3,6 @@ import {
   formatRhizohNeonCountdownMsV0,
   isRhizohNeonCountdownCompleteV0,
   readRhizohNeonCountdownDeadlineMsV0,
-  resetRhizohNeonCountdownDeadlineV0,
   resolveRhizohNeonCountdownRemainingMsV0
 } from "../rhizoh/runtime/rhizohNeonCountdownV0.js";
 
@@ -27,9 +26,7 @@ export const RhizohSpiralMMOPortalWorkspaceV0 = memo(function RhizohSpiralMMOPor
   const complete = isRhizohNeonCountdownCompleteV0(remainingMs);
 
   useEffect(() => {
-    if (!complete) return;
-    const next = resetRhizohNeonCountdownDeadlineV0();
-    setDeadlineMs(next);
+    void complete;
   }, [complete]);
 
   const display = complete

@@ -4,8 +4,7 @@
 
 import {
   RHIZOH_NEON_COUNTDOWN_DURATION_MS_V0,
-  readRhizohNeonCountdownDeadlineMsV0,
-  resetRhizohNeonCountdownDeadlineV0
+  resolveRhizohNeonCountdownDeadlineForAwakeningV0
 } from "./rhizohNeonCountdownV0.js";
 import { listSpiralMMOContinentMapPinsV0 } from "./spiralMMOContinentPinsV0.js";
 import { deriveSpiralMMOContinentCubeMotionV0 } from "./spiralMMOContinentCubeMotionV0.js";
@@ -40,7 +39,7 @@ export {
   SPIRAL_MMO_COLOR_HEX_V0
 } from "./spiralMMOAwakeningPaletteV0.js";
 
-export const RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0 = "rhizoh:spiral-mmo-awakening-v0";
+export const RHIZOH_SPIRAL_MMO_BUILD_REV_V0 = "spiral-mmo-session-stack-v0.7";
 export const RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0 = "rhizoh:spiral-mmo-immersion-end-v0";
 
 /**
@@ -156,12 +155,12 @@ export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Dat
     addLaunch
   });
 
-  const deadlineMs = opts.resetSession
-    ? resetRhizohNeonCountdownDeadlineV0(nowMs)
-    : readRhizohNeonCountdownDeadlineMsV0(nowMs);
+  const deadlineMs = resolveRhizohNeonCountdownDeadlineForAwakeningV0(nowMs, Boolean(opts.resetSession));
 
   const plan = Object.freeze({
     schema: "rhizoh.spiral_mmo_awakening_plan.v0",
+    buildRev: RHIZOH_SPIRAL_MMO_BUILD_REV_V0,
+    sessionReset: Boolean(opts.resetSession),
     triggerPinIndex: effectiveIndex,
     requestedPinIndex: requestedIndex,
     triggerPinId: triggerPin?.id || "",
@@ -194,6 +193,12 @@ export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Dat
 export function dispatchSpiralMMOAwakeningV0(triggerPinIndex, nowMs = Date.now()) {
   const plan = buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs, { mode: "click", commit: true });
   if (typeof window !== "undefined") {
+    try {
+      window.__rhizoh = window.__rhizoh || {};
+      window.__rhizoh.spiralMMOBuildRev = RHIZOH_SPIRAL_MMO_BUILD_REV_V0;
+    } catch {
+      /* noop */
+    }
     window.dispatchEvent(
       new CustomEvent(RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0, { detail: plan })
     );
