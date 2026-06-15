@@ -30,16 +30,15 @@ describe("spiralMMOContinentPinsV0", () => {
     );
   });
 
-  it("renders kanagawa mini-cube pin html per continent", () => {
+  it("renders closed spiral pin html per continent", () => {
     const pin = RHIZOH_SPIRAL_MMO_CONTINENT_PINS_V0[0];
     const html = spiralMMOPinIconHtmlV0(pin);
-    expect(html).toContain('data-rhizoh-spiral-mmo-rev="kanagawa-cube-v0"');
-    expect(html).toContain("preserve-3d");
-    expect(html).toContain("0644");
-    expect(html).not.toContain("SPIRAL·");
+    expect(html).toContain('data-rhizoh-spiral-mmo-rev="closed-spiral-v0"');
+    expect(html).toContain("animateTransform");
+    expect(html).not.toContain("0644");
+    expect(html).not.toContain("preserve-3d");
     const motion = deriveSpiralMMOContinentCubeMotionV0(pin);
-    expect(html).toContain(`rhizohKanagawaCube${pin.continent.replace(/[^a-z0-9]/gi, "")}V0`);
-    expect(html).toContain(`${motion.periodSec}s`);
+    expect(html).toContain(motion.accent);
   });
 
   it("resolves continent display names for spiral pins", () => {

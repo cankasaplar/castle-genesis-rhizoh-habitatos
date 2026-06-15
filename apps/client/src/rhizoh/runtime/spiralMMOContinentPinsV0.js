@@ -2,7 +2,7 @@
  * SpiralMMO continent anchors — kanagawa mini-cube map pins (v0 visual only).
  */
 
-import { spiralMMOKanagawaPinCubeHtmlV0 } from "./spiralMMOKanagawaPinCubeV0.js";
+import { spiralMMOClosedSpiralPinHtmlV0 } from "./spiralMMOClosedSpiralPinV0.js";
 
 export const RHIZOH_SPIRAL_MMO_CONTINENT_PIN_SCHEMA_V0 = "rhizoh.spiral_mmo_continent_pin.v0";
 
@@ -108,9 +108,9 @@ export function resolveSpiralMMOContinentDisplayNameV0(continentOrNodeId, locale
 }
 
 /**
- * Kanagawa-style mini 3D cube pin (no label text).
+ * Closed spiral portal pin (dormant — cubes launch on awakening).
  * @param {object} node
  */
 export function spiralMMOPinIconHtmlV0(node) {
-  return spiralMMOKanagawaPinCubeHtmlV0(node);
+  return spiralMMOClosedSpiralPinHtmlV0(node);
 }

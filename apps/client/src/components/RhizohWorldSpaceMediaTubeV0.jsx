@@ -17,7 +17,7 @@ import {
   resolveWorldSpaceMediaChannelV0
 } from "../rhizoh/runtime/worldSpaceMediaChannelsV0.js";
 import { WorldSpaceMediaDataTickerV0 } from "./WorldSpaceMediaDataTickerV0.jsx";
-import { MedusaCompanionOverlayV0 } from "./MedusaCompanionOverlayV0.jsx";
+import { RhizohMediaOctoCompanionOverlayV0 } from "./RhizohMediaOctoCompanionOverlayV0.jsx";
 
 function isCastleMediaSourceV0(source) {
   return String(source || "").startsWith("castle_init");
@@ -449,6 +449,10 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
           </div>
 
           <div className="relative flex min-h-[240px] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
+            <RhizohMediaOctoCompanionOverlayV0
+              active
+              mediaStream={activeChannel.type === "local" ? localPreviewStream : null}
+            />
             {activeChannel.type === "youtube" ? (
               <>
                 <iframe
@@ -519,11 +523,6 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                   muted
                   playsInline
                   className="min-h-0 flex-1 bg-black object-cover"
-                />
-                <MedusaCompanionOverlayV0
-                  active={activeChannel.type === "local"}
-                  mediaStream={localPreviewStream}
-                  overlayNode="media"
                 />
                 <div className="flex items-center gap-2 border-t border-white/10 bg-black/80 p-3">
                   <button
