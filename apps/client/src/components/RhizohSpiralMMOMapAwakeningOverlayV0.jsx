@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useRef, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   formatRhizohNeonCountdownMsV0,
   isRhizohNeonCountdownCompleteV0,
@@ -9,27 +9,50 @@ import {
   RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0,
   buildSpiralMMOAwakeningLaunchPlanV0,
   spiralMMOBezierPointV0,
-  spiralMMOEmptyCubeHtmlV0,
   spiralMMOGeoToPercentV0
 } from "../rhizoh/runtime/spiralMMOAwakeningCycleV0.js";
 import { listSpiralMMOContinentMapPinsV0 } from "../rhizoh/runtime/spiralMMOContinentPinsV0.js";
+import { spiralMMOAwakeningCubeHtmlV0 } from "../rhizoh/runtime/spiralMMOAwakeningCubeCalcV0.js";
+import {
+  buildSpiralMMOAwakeningBirdPlanV0,
+  spiralMMOAwakeningBirdHtmlV0
+} from "../rhizoh/runtime/spiralMMOAwakeningBirdV0.js";
+import {
+  buildSpiralMMOAwakeningBottlePlanV0,
+  spiralMMOAwakeningBottleHtmlV0
+} from "../rhizoh/runtime/spiralMMOAwakeningBottleV0.js";
 
 function pctToPx(pct, width, height) {
   return { x: (pct.x / 100) * width, y: (pct.y / 100) * height };
 }
 
+function resolveLaunchGeometry(launch, w, h) {
+  const p0 = pctToPx(launch.srcPct, w, h);
+  const p2 = pctToPx(launch.destPct, w, h);
+  const mid = { x: (p0.x + p2.x) / 2, y: (p0.y + p2.y) / 2 };
+  const dx = p2.x - p0.x;
+  const dy = p2.y - p0.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len;
+  const ny = dx / len;
+  const cp = { x: mid.x + nx * launch.gap, y: mid.y + ny * launch.gap };
+  return { ...launch, p0, p2, cp, key: launch.id };
+}
+
 /**
- * Map overlay — empty cubes on bezier paths + bottom 06:44 timer.
+ * Map overlay — route mesh, calculated cubes, birds, bottles, 06:44 timer.
  */
 export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMMOMapAwakeningOverlayV0({
   uiLocale = "en"
 }) {
   void uiLocale;
   const hostRef = useRef(null);
+  const cubeTargetsRef = useRef([]);
   const [deadlineMs, setDeadlineMs] = useState(() => readRhizohNeonCountdownDeadlineMsV0());
   const [tick, setTick] = useState(() => Date.now());
-  const [activeCubes, setActiveCubes] = useState([]);
+  const [scene, setScene] = useState(null);
   const [collapsing, setCollapsing] = useState(false);
+  const [cubeKeyframesCss, setCubeKeyframesCss] = useState("");
   const planRef = useRef(null);
   const collapseHandledRef = useRef(false);
 
@@ -48,19 +71,21 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
     const w = rect.width || window.innerWidth;
     const h = rect.height || window.innerHeight;
 
-    const cubes = plan.launches.map((launch) => {
-      const p0 = pctToPx(launch.srcPct, w, h);
-      const p2 = pctToPx(launch.destPct, w, h);
-      const mid = { x: (p0.x + p2.x) / 2, y: (p0.y + p2.y) / 2 };
-      const dx = p2.x - p0.x;
-      const dy = p2.y - p0.y;
-      const len = Math.hypot(dx, dy) || 1;
-      const nx = -dy / len;
-      const ny = dx / len;
-      const cp = { x: mid.x + nx * launch.gap, y: mid.y + ny * launch.gap };
-      return { ...launch, p0, p2, cp, key: launch.id };
-    });
-    setActiveCubes(cubes);
+    const cubes = plan.launches.map((launch) => resolveLaunchGeometry(launch, w, h));
+    cubeTargetsRef.current = cubes.map((c) => ({ x: c.p2.x, y: c.p2.y, key: c.key }));
+
+    const birds = buildSpiralMMOAwakeningBirdPlanV0(cubes, plan.cycleSeed);
+    const bottles = buildSpiralMMOAwakeningBottlePlanV0(cubes, w, h);
+
+    const kfBlocks = [];
+    for (const cube of cubes) {
+      if (cube.cubeSpec) {
+        const built = spiralMMOAwakeningCubeHtmlV0(cube.cubeSpec);
+        kfBlocks.push(built.spinKeyframes);
+      }
+    }
+    setCubeKeyframesCss([...new Set(kfBlocks)].join("\n"));
+    setScene({ cubes, birds, bottles, routeLines: plan.routeLines || [], w, h });
   }, []);
 
   useEffect(() => {
@@ -82,41 +107,99 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
     if (collapsing || collapseHandledRef.current) return;
     collapseHandledRef.current = true;
     setCollapsing(true);
-    const pins = listSpiralMMOContinentMapPinsV0();
-    const host = hostRef.current;
-    const rect = host?.getBoundingClientRect?.() || { width: window.innerWidth, height: window.innerHeight };
-    const w = rect.width || window.innerWidth;
-    const h = rect.height || window.innerHeight;
 
-    setActiveCubes((prev) =>
-      prev.map((cube, idx) => {
-        const pin = pins[idx % pins.length];
-        const pct = spiralMMOGeoToPercentV0(pin.lat, pin.lon);
-        return { ...cube, collapsePct: pct, collapsing: true };
-      })
-    );
+    const pins = listSpiralMMOContinentMapPinsV0();
+    setScene((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        birds: prev.birds.map((b, idx) => ({
+          ...b,
+          diveTarget: cubeTargetsRef.current[(idx * 3) % Math.max(1, cubeTargetsRef.current.length)]
+        })),
+        cubes: prev.cubes.map((cube, idx) => {
+          const pin = pins[idx % pins.length];
+          return { ...cube, collapsePct: spiralMMOGeoToPercentV0(pin.lat, pin.lon), collapsing: true };
+        })
+      };
+    });
 
     const restartTimer = window.setTimeout(() => {
       const triggerIdx = planRef.current?.triggerPinIndex ?? 0;
       setCollapsing(false);
-      setActiveCubes([]);
+      setScene(null);
       spawnLaunches(buildSpiralMMOAwakeningLaunchPlanV0(triggerIdx));
-    }, 2600);
+    }, 2800);
 
     return () => window.clearTimeout(restartTimer);
   }, [complete, collapsing, spawnLaunches]);
+
+  const routeSvg = useMemo(() => {
+    if (!scene?.routeLines?.length || !scene.w) return null;
+    const lines = scene.routeLines.map((route) => {
+      const a = pctToPx(route.aPct, scene.w, scene.h);
+      const b = pctToPx(route.bPct, scene.w, scene.h);
+      return (
+        <line
+          key={route.id}
+          x1={a.x}
+          y1={a.y}
+          x2={b.x}
+          y2={b.y}
+          stroke="rgba(0,255,102,0.14)"
+          strokeWidth="1"
+          strokeDasharray="4 8"
+        />
+      );
+    });
+    return (
+      <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
+        {lines}
+      </svg>
+    );
+  }, [scene]);
 
   return (
     <div
       ref={hostRef}
       className="pointer-events-none absolute inset-0 z-[12] overflow-hidden"
       data-rhizoh-spiral-mmo-awakening-overlay="1"
-      data-rhizoh-spiral-mmo-phase={complete ? "collapse" : collapsing ? "collapsing" : "active"}
+      data-rhizoh-spiral-mmo-phase={complete ? "collapse" : collapsing ? "collapsing" : scene ? "active" : "idle"}
       aria-hidden
     >
-      {activeCubes.map((cube) => (
-        <SpiralMMOFlightCubeV0 key={cube.key} cube={cube} collapsing={cube.collapsing} hostRef={hostRef} />
-      ))}
+      {cubeKeyframesCss ? <style>{cubeKeyframesCss}</style> : null}
+
+      {scene ? (
+        <>
+          <div className="absolute inset-0 z-[2]" data-rhizoh-spiral-route-layer="1">
+            {routeSvg}
+          </div>
+
+          <div className="absolute inset-0 z-[5]" data-rhizoh-spiral-bottle-layer="1">
+            {scene.bottles.map((bottle) => (
+              <SpiralMMOBottleV0 key={bottle.id} bottle={bottle} hostRef={hostRef} />
+            ))}
+          </div>
+
+          <div className="absolute inset-0 z-[10]" data-rhizoh-spiral-cube-layer="1">
+            {scene.cubes.map((cube) => (
+              <SpiralMMOFlightCubeV0 key={cube.key} cube={cube} collapsing={cube.collapsing} hostRef={hostRef} />
+            ))}
+          </div>
+
+          <div className="absolute inset-0 z-[25]" data-rhizoh-spiral-bird-layer="1">
+            {scene.birds.map((bird) => (
+              <SpiralMMOBirdV0
+                key={bird.id}
+                bird={bird}
+                hostRef={hostRef}
+                cubeTargets={cubeTargetsRef.current}
+                collapsing={collapsing}
+              />
+            ))}
+          </div>
+        </>
+      ) : null}
 
       <div
         className="pointer-events-none absolute bottom-5 left-1/2 z-[50] -translate-x-1/2 font-mono text-2xl font-bold tracking-[0.35em] tabular-nums transition-colors duration-500"
@@ -136,6 +219,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
 
 const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collapsing, hostRef }) {
   const elRef = useRef(null);
+  const cubeHtml = cube.cubeSpec ? spiralMMOAwakeningCubeHtmlV0(cube.cubeSpec).html : "";
 
   useEffect(() => {
     const el = elRef.current;
@@ -155,7 +239,7 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
             left: `${target.x}px`,
             top: `${target.y}px`,
             transform: "translate(-50%,-50%) scale(0) rotate(720deg)",
-            opacity: 0.2
+            opacity: 0.15
           }
         ],
         { duration: 1100, easing: "ease-in", fill: "forwards" }
@@ -163,26 +247,28 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
       return () => anim.cancel();
     }
 
-    const steps = 28;
+    const steps = 30;
     const keyframes = [];
     for (let i = 0; i <= steps; i += 1) {
       const t = i / steps;
       let pos = spiralMMOBezierPointV0(t, cube.p0, cube.cp, cube.p2);
       if (cube.isOrder) {
-        const wave = Math.sin(t * Math.PI * 4) * 8;
+        const wave = Math.sin(t * Math.PI * 4 + (cube.batchIndex || 0)) * 10;
         const dx = cube.p2.x - cube.p0.x;
         const dy = cube.p2.y - cube.p0.y;
         const len = Math.hypot(dx, dy) || 1;
-        pos = {
-          x: pos.x + (-dy / len) * wave,
-          y: pos.y + (dx / len) * wave
-        };
+        pos = { x: pos.x + (-dy / len) * wave, y: pos.y + (dx / len) * wave };
+      } else {
+        const jitter = (Math.sin(t * 17 + cube.delayMs) * 0.5) * 12;
+        pos = { x: pos.x + jitter, y: pos.y + jitter * 0.6 };
       }
+      const depth = cube.cubeSpec?.depth ?? 0.5;
       keyframes.push({
         left: `${pos.x}px`,
         top: `${pos.y}px`,
-        transform: `translate(-50%,-50%) scale(${i === 0 ? 0 : 1})`,
-        opacity: 0.92
+        transform: `translate(-50%,-50%) scale(${i === 0 ? 0 : 0.85 + depth * 0.3})`,
+        opacity: 0.55 + depth * 0.4,
+        filter: `drop-shadow(${cube.cubeSpec?.shadowX ?? 2}px ${cube.cubeSpec?.shadowY ?? 3}px ${cube.cubeSpec?.shadowBlur ?? 6}px rgba(0,0,0,0.5))`
       });
     }
 
@@ -200,7 +286,123 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
       ref={elRef}
       className="absolute"
       style={{ left: `${cube.p0?.x || 0}px`, top: `${cube.p0?.y || 0}px`, width: 0, height: 0 }}
-      dangerouslySetInnerHTML={{ __html: spiralMMOEmptyCubeHtmlV0(cube.colorClass) }}
+      dangerouslySetInnerHTML={{ __html: cubeHtml }}
+    />
+  );
+});
+
+const SpiralMMOBirdV0 = memo(function SpiralMMOBirdV0({ bird, hostRef, cubeTargets, collapsing }) {
+  const elRef = useRef(null);
+  const rafRef = useRef(0);
+
+  useEffect(() => {
+    const el = elRef.current;
+    const host = hostRef.current;
+    if (!el || !host) return undefined;
+
+    let currentX = bird.startX;
+    let currentY = bird.startY;
+    let activeAnim = null;
+
+    const flyTo = (targetX, targetY, duration) => {
+      activeAnim?.cancel?.();
+      activeAnim = el.animate(
+        [
+          { transform: `translate(${currentX}px, ${currentY}px) scale(${bird.depthScale})` },
+          { transform: `translate(${targetX}px, ${targetY}px) scale(${bird.depthScale})` }
+        ],
+        { duration, fill: "forwards", easing: "ease-in-out" }
+      );
+      activeAnim.onfinish = () => {
+        currentX = targetX;
+        currentY = targetY;
+        const landing = 1000 + Math.random() * 2000;
+        window.setTimeout(() => {
+          if (collapsing && bird.diveTarget) return;
+          let tx = Math.random() * (host.clientWidth || window.innerWidth);
+          let ty = Math.random() * (host.clientHeight || window.innerHeight);
+          if (cubeTargets.length > 0 && Math.random() > 0.55) {
+            const target = cubeTargets[Math.floor(Math.random() * cubeTargets.length)];
+            tx = target.x;
+            ty = target.y;
+          }
+          flyTo(tx, ty, 2000 + Math.random() * 4000);
+        }, landing);
+      };
+    };
+
+    const startDelay = window.setTimeout(() => {
+      flyTo(
+        Math.random() * (host.clientWidth || window.innerWidth),
+        Math.random() * (host.clientHeight || window.innerHeight),
+        2200 + Math.random() * 2000
+      );
+    }, 120 + Math.random() * 800);
+
+    return () => {
+      window.clearTimeout(startDelay);
+      activeAnim?.cancel?.();
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, [bird, hostRef, cubeTargets, collapsing]);
+
+  useEffect(() => {
+    if (!collapsing || !bird.diveTarget || !elRef.current) return undefined;
+    const el = elRef.current;
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(el).transform);
+    const anim = el.animate(
+      [
+        { transform: `translate(${matrix.m41}px, ${matrix.m42}px) scale(${bird.depthScale})`, opacity: bird.depthOpacity },
+        {
+          transform: `translate(${bird.diveTarget.x}px, ${bird.diveTarget.y}px) scale(0)`,
+          opacity: 0
+        }
+      ],
+      { duration: 800, easing: "ease-in", fill: "forwards" }
+    );
+    return () => anim.cancel();
+  }, [collapsing, bird]);
+
+  return (
+    <div
+      ref={elRef}
+      className="absolute left-0 top-0"
+      style={{ width: 0, height: 0 }}
+      dangerouslySetInnerHTML={{ __html: spiralMMOAwakeningBirdHtmlV0(bird) }}
+    />
+  );
+});
+
+const SpiralMMOBottleV0 = memo(function SpiralMMOBottleV0({ bottle, hostRef }) {
+  const elRef = useRef(null);
+
+  useEffect(() => {
+    const el = elRef.current;
+    if (!el) return undefined;
+    const anim = el.animate(
+      [
+        {
+          left: `${bottle.startX}px`,
+          top: `${bottle.startY}px`,
+          transform: "translate(-50%,-50%) scale(0.5) rotate(-10deg)"
+        },
+        {
+          left: `${bottle.targetX}px`,
+          top: `${bottle.targetY}px`,
+          transform: "translate(-50%,-50%) scale(1) rotate(10deg)"
+        }
+      ],
+      { duration: 5000, delay: bottle.delayMs, fill: "forwards", easing: "ease-out" }
+    );
+    return () => anim.cancel();
+  }, [bottle]);
+
+  return (
+    <div
+      ref={elRef}
+      className="absolute"
+      style={{ left: `${bottle.startX}px`, top: `${bottle.startY}px`, width: 0, height: 0 }}
+      dangerouslySetInnerHTML={{ __html: spiralMMOAwakeningBottleHtmlV0(bottle.colorClass) }}
     />
   );
 });

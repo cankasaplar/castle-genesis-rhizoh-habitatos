@@ -17,7 +17,7 @@ import {
   resolveWorldSpaceMediaChannelV0
 } from "../rhizoh/runtime/worldSpaceMediaChannelsV0.js";
 import { WorldSpaceMediaDataTickerV0 } from "./WorldSpaceMediaDataTickerV0.jsx";
-import { RhizohMediaOctoCompanionOverlayV0 } from "./RhizohMediaOctoCompanionOverlayV0.jsx";
+import { RhizohMediaStageWithOctoV0 } from "./RhizohMediaOctoCompanionOverlayV0.jsx";
 
 function isCastleMediaSourceV0(source) {
   return String(source || "").startsWith("castle_init");
@@ -449,21 +449,22 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
           </div>
 
           <div className="relative flex min-h-[240px] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
-            <RhizohMediaOctoCompanionOverlayV0
-              active
-              mediaStream={activeChannel.type === "local" ? localPreviewStream : null}
-            />
             {activeChannel.type === "youtube" ? (
               <>
-                <iframe
-                  key={`${activeChannel.id}-${nasaFallback ? "fb" : "main"}-${youtubeMuted ? "m" : "u"}`}
-                  className="min-h-0 flex-1 w-full"
-                  src={youtubeSrc}
-                  title={title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-                <div className="flex flex-wrap items-center gap-2 border-t border-white/10 bg-black/85 px-3 py-2">
+                <RhizohMediaStageWithOctoV0
+                  className="flex min-h-0 flex-1 flex-col"
+                  mediaStream={activeChannel.type === "local" ? localPreviewStream : null}
+                >
+                  <iframe
+                    key={`${activeChannel.id}-${nasaFallback ? "fb" : "main"}-${youtubeMuted ? "m" : "u"}`}
+                    className="min-h-0 h-full w-full flex-1"
+                    src={youtubeSrc}
+                    title={title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                </RhizohMediaStageWithOctoV0>
+                <div className="relative z-20 flex flex-wrap items-center gap-2 border-t border-white/10 bg-black/85 px-3 py-2">
                   <button
                     type="button"
                     onClick={() => setYoutubeMuted(false)}
@@ -489,42 +490,48 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                 </div>
               </>
             ) : activeChannel.type === "castle_genesis_live" ? (
-              <div className="relative flex min-h-0 flex-1 flex-col">
-                <img
-                  src={activeChannel.holdingSlide}
-                  alt="Castle Genesis"
-                  className="min-h-0 flex-1 w-full object-cover opacity-90"
-                />
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/45 p-4 text-center">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-red-300">
-                    Castle Genesis
-                  </p>
-                  <p className="max-w-md text-[10px] leading-relaxed text-white/75 normal-case">
-                    {tr
-                      ? "Canlı yayın embed için kanal ID gerekir (VITE_CASTLE_GENESIS_YOUTUBE_CHANNEL_ID). Şimdilik YouTube'da aç veya Studio/OBS ile yayınla."
-                      : "Live embed needs channel ID (VITE_CASTLE_GENESIS_YOUTUBE_CHANNEL_ID). Open on YouTube or stream via Studio/OBS."}
-                  </p>
-                  <a
-                    href={activeChannel.livePageUrl || activeChannel.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-500/15 px-4 py-2 text-[10px] font-bold uppercase text-red-100 hover:bg-red-500/25"
-                  >
-                    <ExternalLink size={14} />
-                    {tr ? "YouTube'da izle" : "Watch on YouTube"}
-                  </a>
+              <RhizohMediaStageWithOctoV0 className="flex min-h-0 flex-1 flex-col">
+                <div className="relative flex min-h-0 flex-1 flex-col">
+                  <img
+                    src={activeChannel.holdingSlide}
+                    alt="Castle Genesis"
+                    className="min-h-0 h-full w-full flex-1 object-cover opacity-90"
+                  />
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/45 p-4 text-center">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-red-300">
+                      Castle Genesis
+                    </p>
+                    <p className="max-w-md text-[10px] leading-relaxed text-white/75 normal-case">
+                      {tr
+                        ? "Canlı yayın embed için kanal ID gerekir (VITE_CASTLE_GENESIS_YOUTUBE_CHANNEL_ID). Şimdilik YouTube'da aç veya Studio/OBS ile yayınla."
+                        : "Live embed needs channel ID (VITE_CASTLE_GENESIS_YOUTUBE_CHANNEL_ID). Open on YouTube or stream via Studio/OBS."}
+                    </p>
+                  </div>
+                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 p-4 pt-28">
+                    <a
+                      href={activeChannel.livePageUrl || activeChannel.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="pointer-events-auto inline-flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-500/15 px-4 py-2 text-[10px] font-bold uppercase text-red-100 hover:bg-red-500/25"
+                    >
+                      <ExternalLink size={14} />
+                      {tr ? "YouTube'da izle" : "Watch on YouTube"}
+                    </a>
+                  </div>
                 </div>
-              </div>
+              </RhizohMediaStageWithOctoV0>
             ) : activeChannel.type === "local" ? (
               <div className="relative flex min-h-0 flex-1 flex-col">
-                <video
-                  ref={previewRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className="min-h-0 flex-1 bg-black object-cover"
-                />
-                <div className="flex items-center gap-2 border-t border-white/10 bg-black/80 p-3">
+                <RhizohMediaStageWithOctoV0 className="flex min-h-0 flex-1 flex-col" mediaStream={localPreviewStream}>
+                  <video
+                    ref={previewRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="min-h-0 h-full w-full flex-1 bg-black object-cover"
+                  />
+                </RhizohMediaStageWithOctoV0>
+                <div className="relative z-20 flex items-center gap-2 border-t border-white/10 bg-black/80 p-3">
                   <button
                     type="button"
                     onClick={() => void onToggleRecord()}

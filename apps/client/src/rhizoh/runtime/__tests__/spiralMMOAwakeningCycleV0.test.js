@@ -7,6 +7,7 @@ import {
   SPIRAL_MMO_ORDER_COLORS_V0,
   resolveSpiralMMOTriggerIndexFromPinIdV0
 } from "../spiralMMOAwakeningCycleV0.js";
+import { buildSpiralMMOAwakeningBirdPlanV0 } from "../spiralMMOAwakeningBirdV0.js";
 
 describe("spiralMMOAwakeningCycleV0", () => {
   it("maps geo to clamped percent", () => {
@@ -29,14 +30,24 @@ describe("spiralMMOAwakeningCycleV0", () => {
     expect(html).not.toContain("0644");
   });
 
-  it("launch plan spans order colors and 6:44 deadline", () => {
+  it("launch plan spans order colors, routes, birds and 6:44 deadline", () => {
     const plan = buildSpiralMMOAwakeningLaunchPlanV0(2, 1_700_000_000_000);
     expect(plan.triggerPinIndex).toBe(2);
     expect(plan.durationMs).toBe((6 * 60 + 44) * 1000);
     expect(plan.deadlineMs).toBe(plan.durationMs + 1_700_000_000_000);
-    expect(plan.launches.length).toBeGreaterThan(20);
+    expect(plan.routeLines.length).toBeGreaterThan(0);
+    expect(plan.launches.length).toBeGreaterThan(10);
+    expect(plan.launches[0].cubeSpec).toBeTruthy();
+    expect(plan.launches.every((l) => l.routeId.includes("|"))).toBe(true);
     const colors = new Set(plan.launches.map((l) => l.colorClass));
     for (const c of SPIRAL_MMO_ORDER_COLORS_V0) expect(colors.has(c)).toBe(true);
+    const mockCubes = plan.launches.map((l) => ({
+      id: l.id,
+      p0: { x: 10, y: 10 },
+      delayMs: l.delayMs
+    }));
+    const birds = buildSpiralMMOAwakeningBirdPlanV0(mockCubes, plan.cycleSeed);
+    expect(birds.length).toBeGreaterThan(0);
   });
 
   it("resolves trigger index from pin id", () => {
