@@ -1,5 +1,5 @@
 /**
- * Octo media companion — gerçek GLB + tül overlay + harmony tentacles (v0).
+ * Octo media companion — gerçek GLB + harmony tentacles (v0).
  */
 
 import * as THREE from "three";
@@ -22,13 +22,7 @@ import {
   resolveOctoMediaElegantScaleV0,
   stepOctoMediaBirdFloatV0
 } from "./octoMediaHarmonyV0.js";
-import {
-  buildOctoMediaTulleTargetBehaviorV0,
-  cloneOctoMediaTulleBehaviorV0,
-  deriveOctoMediaTulleDriveV0,
-  lerpOctoMediaTulleBehaviorV0
-} from "./octoMediaTulleBehaviorsV0.js";
-import { drawOctoMediaTulleOverlayV0 } from "./octoMediaTulleDrawV0.js";
+import { deriveOctoMediaTulleDriveV0 } from "./octoMediaTulleBehaviorsV0.js";
 
 /**
  * @param {HTMLElement} container
@@ -42,11 +36,7 @@ export function mountOctoMediaCompanionV0(container, opts = {}) {
 
   const glHost = document.createElement("div");
   glHost.style.cssText = "position:absolute;inset:0;pointer-events:none";
-  const tulleCanvas = document.createElement("canvas");
-  tulleCanvas.style.cssText = "position:absolute;inset:0;width:100%;height:100%;pointer-events:none";
   container.appendChild(glHost);
-  container.appendChild(tulleCanvas);
-  const tulleCtx = tulleCanvas.getContext("2d");
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(36, w / h, 0.08, 40);
@@ -97,7 +87,7 @@ export function mountOctoMediaCompanionV0(container, opts = {}) {
     },
     undefined,
     () => {
-      /* glass + tulle still render */
+      /* GLB optional — glass stage still mounts */
     }
   );
 
@@ -113,10 +103,8 @@ export function mountOctoMediaCompanionV0(container, opts = {}) {
     arcMidY: 0.48
   };
 
-  const tulleBehavior = cloneOctoMediaTulleBehaviorV0("IDLE");
-  let globalPhase = 0;
+  let colorHue = 190;
   let lastEmotion = "neutral";
-  let colorHue = tulleBehavior.colorH;
   const clock = new THREE.Clock();
   let bodyCarry = null;
   let tentacleCarry = null;
@@ -155,13 +143,9 @@ export function mountOctoMediaCompanionV0(container, opts = {}) {
     if (disposed) return;
     w = Math.max(120, container.clientWidth || w);
     h = Math.max(120, container.clientHeight || h);
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     renderer.setSize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    tulleCanvas.width = Math.floor(w * dpr);
-    tulleCanvas.height = Math.floor(h * dpr);
-    tulleCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
   };
 
   const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => resize()) : null;
@@ -194,25 +178,19 @@ export function mountOctoMediaCompanionV0(container, opts = {}) {
       vy: floatState.vy
     });
 
-    const tulleDrive = deriveOctoMediaTulleDriveV0({
+    const motionDrive = deriveOctoMediaTulleDriveV0({
       audioMotion,
       centroid: bands.centroid,
       vx: floatState.vx,
       vy: floatState.vy
     });
-    const targetBehavior = buildOctoMediaTulleTargetBehaviorV0(tulleDrive.mode, tulleDrive.hueBias);
-    lerpOctoMediaTulleBehaviorV0(tulleBehavior, targetBehavior, dt, drive.colorLerpSpeed);
-    colorHue += (tulleBehavior.colorH - colorHue) * Math.min(1, dt * drive.colorLerpSpeed);
-    tulleBehavior.colorH = colorHue;
-    globalPhase += dt * tulleBehavior.freq;
+    const targetHue = 190 + motionDrive.hueBias;
+    colorHue += (targetHue - colorHue) * Math.min(1, dt * drive.colorLerpSpeed);
 
     const spanX = Math.max(1.1, (w / h) * 1.02) * 2;
     const spanY = 1.02 * 2;
     const sceneX = (floatState.x - 0.5) * spanX;
     const sceneY = (0.5 - floatState.y) * spanY;
-    const screenCx = floatState.x * w;
-    const screenCy = floatState.y * h;
-    const nestR = Math.min(w, h) * 0.19;
 
     if (root) {
       const scale = resolveOctoMediaElegantScaleV0(drive.elegantScale, t, drive.breatheHz);
@@ -244,21 +222,8 @@ export function mountOctoMediaCompanionV0(container, opts = {}) {
     if (mixer) mixer.update(dt);
     renderer.render(scene, camera);
 
-    if (tulleCtx) {
-      tulleCtx.clearRect(0, 0, w, h);
-      drawOctoMediaTulleOverlayV0(tulleCtx, {
-        cx: screenCx,
-        cy: screenCy,
-        nestR,
-        behavior: tulleBehavior,
-        globalPhase,
-        waveFlow: tulleDrive.waveFlow,
-        opacity: 0.62
-      });
-    }
-
-    container.dataset.rhizohOctoRenderer = "glb+tulle-v0";
-    container.dataset.rhizohOctoTulleMode = tulleDrive.mode;
+    container.dataset.rhizohOctoRenderer = "glb-v0";
+    container.dataset.rhizohOctoMotionMode = motionDrive.mode;
 
     raf = requestAnimationFrame(tick);
   };

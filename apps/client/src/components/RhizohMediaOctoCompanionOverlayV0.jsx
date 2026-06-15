@@ -4,10 +4,8 @@ import { isMedusaCompanionStreamActiveV0 } from "../rhizoh/runtime/medusaCompani
 
 const OCTO_GLASS_STYLE_V0 = {
   background:
-    "linear-gradient(145deg, rgba(255,255,255,0.025) 0%, rgba(0,229,255,0.02) 45%, rgba(255,255,255,0.012) 100%)",
-  backdropFilter: "blur(2px) saturate(1.04)",
-  WebkitBackdropFilter: "blur(2px) saturate(1.04)",
-  boxShadow: "inset 0 0 0 1px rgba(0,229,255,0.08)"
+    "linear-gradient(145deg, rgba(255,255,255,0.018) 0%, rgba(0,229,255,0.012) 45%, rgba(255,255,255,0.008) 100%)",
+  boxShadow: "inset 0 0 0 1px rgba(0,229,255,0.06)"
 };
 
 export const RhizohMediaStageWithOctoV0 = memo(function RhizohMediaStageWithOctoV0({
@@ -25,7 +23,7 @@ export const RhizohMediaStageWithOctoV0 = memo(function RhizohMediaStageWithOcto
 });
 
 /**
- * Gerçek Octo GLB + tül + harmony — cam arkasında, kontroller serbest.
+ * Gerçek Octo GLB + harmony — hafif cam çerçeve, video net kalır.
  */
 export const RhizohMediaOctoCompanionOverlayV0 = memo(function RhizohMediaOctoCompanionOverlayV0({
   active = true,
@@ -63,7 +61,7 @@ export const RhizohMediaOctoCompanionOverlayV0 = memo(function RhizohMediaOctoCo
     <div
       className={`pointer-events-none absolute inset-0 z-[6] overflow-hidden ${className}`}
       data-rhizoh-octo-media-companion="1"
-      data-rhizoh-octo-renderer="glb+tulle"
+      data-rhizoh-octo-renderer="glb"
       data-rhizoh-octo-audio-live={streamLive ? "1" : "0"}
       aria-hidden
     >
