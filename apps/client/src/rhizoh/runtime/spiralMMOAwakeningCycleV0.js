@@ -39,6 +39,7 @@ export {
   SPIRAL_MMO_COLOR_HEX_V0
 } from "./spiralMMOAwakeningPaletteV0.js";
 
+export const RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0 = "rhizoh:spiral-mmo-awakening-v0";
 export const RHIZOH_SPIRAL_MMO_BUILD_REV_V0 = "spiral-mmo-session-stack-v0.7";
 export const RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0 = "rhizoh:spiral-mmo-immersion-end-v0";
 
