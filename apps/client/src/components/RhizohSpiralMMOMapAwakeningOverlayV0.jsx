@@ -109,26 +109,32 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
     setCollapsing(true);
 
     const pins = listSpiralMMOContinentMapPinsV0();
+    const handoffTo = planRef.current?.collapseHandoff?.toIndex ?? 0;
+    const nextPin = pins[handoffTo] || pins[0];
     setScene((prev) => {
       if (!prev) return prev;
+      const collapsePct = spiralMMOGeoToPercentV0(nextPin.lat, nextPin.lon);
       return {
         ...prev,
         birds: prev.birds.map((b, idx) => ({
           ...b,
           diveTarget: cubeTargetsRef.current[(idx * 3) % Math.max(1, cubeTargetsRef.current.length)]
         })),
-        cubes: prev.cubes.map((cube, idx) => {
-          const pin = pins[idx % pins.length];
-          return { ...cube, collapsePct: spiralMMOGeoToPercentV0(pin.lat, pin.lon), collapsing: true };
-        })
+        cubes: prev.cubes.map((cube) => ({
+          ...cube,
+          collapsePct,
+          collapsing: true
+        }))
       };
     });
 
     const restartTimer = window.setTimeout(() => {
-      const triggerIdx = planRef.current?.triggerPinIndex ?? 0;
+      const fromIdx = planRef.current?.triggerPinIndex ?? 0;
       setCollapsing(false);
       setScene(null);
-      spawnLaunches(buildSpiralMMOAwakeningLaunchPlanV0(triggerIdx));
+      spawnLaunches(
+        buildSpiralMMOAwakeningLaunchPlanV0(fromIdx, Date.now(), { mode: "collapse", commit: true })
+      );
     }, 2800);
 
     return () => window.clearTimeout(restartTimer);
@@ -165,6 +171,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
       className="pointer-events-none absolute inset-0 z-[12] overflow-hidden"
       data-rhizoh-spiral-mmo-awakening-overlay="1"
       data-rhizoh-spiral-mmo-phase={complete ? "collapse" : collapsing ? "collapsing" : scene ? "active" : "idle"}
+      data-rhizoh-spiral-behavior-continent={planRef.current?.behavior?.continent || ""}
       aria-hidden
     >
       {cubeKeyframesCss ? <style>{cubeKeyframesCss}</style> : null}
@@ -259,7 +266,8 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
       const eased = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
       let pos = spiralMMOBezierPointV0(eased, cube.p0, cube.cp, cube.p2);
       if (cube.isOrder) {
-        const wave = Math.sin(eased * Math.PI * 2 + (cube.sequenceIndex || 0) * 0.35) * 4;
+        const waveAmp = cube.waveAmplitude ?? 4;
+        const wave = Math.sin(eased * Math.PI * 2 + (cube.sequenceIndex || 0) * 0.35) * waveAmp;
         const dx = cube.p2.x - cube.p0.x;
         const dy = cube.p2.y - cube.p0.y;
         const len = Math.hypot(dx, dy) || 1;

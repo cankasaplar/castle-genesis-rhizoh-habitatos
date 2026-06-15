@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeEach } from "vitest";
 import {
   buildSpiralMMOOrderedRouteWalkV0,
   buildSpiralMMOSequencedCubeLaunchesV0,
@@ -9,8 +9,13 @@ import {
 import { listSpiralMMOContinentMapPinsV0 } from "../spiralMMOContinentPinsV0.js";
 import { listSpiralMMOContinentRouteEdgesV0 } from "../spiralMMOContinentRouteGraphV0.js";
 import { buildSpiralMMOAwakeningLaunchPlanV0 } from "../spiralMMOAwakeningCycleV0.js";
+import { resetSpiralMMOContinuityForTestV0 } from "../spiralMMOContinuityV0.js";
+import { resolveSpiralMMOBehaviorProfileV0 } from "../spiralMMOSpiralBehaviorV0.js";
 
 describe("spiralMMOAwakeningCubeFlowV0", () => {
+  beforeEach(() => {
+    resetSpiralMMOContinuityForTestV0();
+  });
   it("orders route walk with forward then reverse per edge", () => {
     const pins = listSpiralMMOContinentMapPinsV0();
     const walk = buildSpiralMMOOrderedRouteWalkV0(2, pins);
@@ -57,10 +62,44 @@ describe("spiralMMOAwakeningCubeFlowV0", () => {
   });
 
   it("launch plan uses sequenced flow (no random scatter delays)", () => {
-    const plan = buildSpiralMMOAwakeningLaunchPlanV0(0, 1_700_000_000_000);
+    const plan = buildSpiralMMOAwakeningLaunchPlanV0(0, 1_700_000_000_000, { commit: false });
     expect(plan.launches.length).toBeGreaterThan(60);
     expect(plan.launches[0].sequenceIndex).toBe(0);
     expect(plan.launches[1].sequenceIndex).toBe(1);
     expect(new Set(plan.launches.map((l) => l.depthLayer)).size).toBe(3);
+    expect(plan.behavior.continent).toBeTruthy();
+  });
+
+  it("reverse-first behavior swaps dual direction order on an edge", () => {
+    const pins = listSpiralMMOContinentMapPinsV0();
+    const forwardFirst = buildSpiralMMOOrderedRouteWalkV0(2, pins, { dualLead: "forward" });
+    const reverseFirst = buildSpiralMMOOrderedRouteWalkV0(2, pins, { dualLead: "reverse" });
+    expect(forwardFirst[0]?.direction).toBe("forward");
+    expect(reverseFirst[0]?.direction).toBe("reverse");
+  });
+
+  it("behavior profile alters stagger and color wave in launches", () => {
+    const pins = listSpiralMMOContinentMapPinsV0();
+    const asia = resolveSpiralMMOBehaviorProfileV0("asia", 0);
+    const europe = resolveSpiralMMOBehaviorProfileV0("europe", 0);
+    /** @type {Record<string, unknown>[]} */
+    const asiaLaunches = [];
+    const europeLaunches = [];
+    buildSpiralMMOSequencedCubeLaunchesV0({
+      triggerPinIndex: 0,
+      pins,
+      cycleSeed: 1,
+      behavior: asia,
+      addLaunch: (l) => asiaLaunches.push(l)
+    });
+    buildSpiralMMOSequencedCubeLaunchesV0({
+      triggerPinIndex: 0,
+      pins,
+      cycleSeed: 1,
+      behavior: europe,
+      addLaunch: (l) => europeLaunches.push(l)
+    });
+    expect(asiaLaunches[1].delayMs).not.toBe(europeLaunches[1].delayMs);
+    expect(asiaLaunches[0].colorClass).not.toBe(europeLaunches[0].colorClass);
   });
 });

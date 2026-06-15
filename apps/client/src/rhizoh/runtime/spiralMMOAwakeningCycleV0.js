@@ -17,6 +17,13 @@ import {
 } from "./spiralMMOAwakeningCubeCalcV0.js";
 import { buildSpiralMMOSequencedCubeLaunchesV0 } from "./spiralMMOAwakeningCubeFlowV0.js";
 import {
+  commitSpiralMMOAwakeningContinuityV0,
+  readSpiralMMOContinuityV0,
+  resolveSpiralMMOCollapseHandoffV0,
+  resolveSpiralMMOEffectiveTriggerV0
+} from "./spiralMMOContinuityV0.js";
+import { resolveSpiralMMOBehaviorProfileV0 } from "./spiralMMOSpiralBehaviorV0.js";
+import {
   SPIRAL_MMO_CHAOS_COLORS_V0,
   SPIRAL_MMO_COLOR_HEX_V0,
   SPIRAL_MMO_ORDER_COLORS_V0,
@@ -98,11 +105,41 @@ export function buildSpiralMMOAwakeningRouteLinesV0(pins) {
 /**
  * @param {number} triggerPinIndex
  * @param {number} [nowMs]
+ * @param {{ mode?: 'click'|'collapse'|'test', commit?: boolean }} [opts]
  */
-export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Date.now()) {
+export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Date.now(), opts = {}) {
   const pins = listSpiralMMOContinentMapPinsV0();
-  const safeIndex = Math.max(0, Math.min(pins.length - 1, Number(triggerPinIndex) || 0));
-  const cycleSeed = nowMs ^ (safeIndex * 9973);
+  const pinCount = pins.length;
+  const requestedIndex = Math.max(0, Math.min(pinCount - 1, Number(triggerPinIndex) || 0));
+  const continuityBefore = readSpiralMMOContinuityV0();
+
+  let effectiveIndex = requestedIndex;
+  let triggerResolution = Object.freeze({
+    triggerIndex: requestedIndex,
+    requestedIndex,
+    advanced: false,
+    reason: "direct"
+  });
+
+  if (opts.mode === "collapse") {
+    const handoff = resolveSpiralMMOCollapseHandoffV0(requestedIndex, pinCount);
+    effectiveIndex = handoff.toIndex;
+    triggerResolution = Object.freeze({
+      triggerIndex: handoff.toIndex,
+      requestedIndex,
+      advanced: handoff.dualTransition,
+      reason: "collapse_dual_handoff"
+    });
+  } else {
+    triggerResolution = resolveSpiralMMOEffectiveTriggerV0(requestedIndex, pinCount);
+    effectiveIndex = triggerResolution.triggerIndex;
+  }
+
+  const previousPin = continuityBefore.lastTriggerIndex >= 0 ? pins[continuityBefore.lastTriggerIndex] : null;
+  const triggerPin = pins[effectiveIndex];
+  const behavior = resolveSpiralMMOBehaviorProfileV0(triggerPin?.continent || "europe", continuityBefore.epoch);
+  const cycleSeed = nowMs ^ (effectiveIndex * 9973) ^ (continuityBefore.epoch * 7919);
+  const handoff = resolveSpiralMMOCollapseHandoffV0(effectiveIndex, pinCount);
   const launches = [];
 
   const addLaunch = (launch) => {
@@ -110,22 +147,39 @@ export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Dat
   };
 
   buildSpiralMMOSequencedCubeLaunchesV0({
-    triggerPinIndex: safeIndex,
+    triggerPinIndex: effectiveIndex,
     pins,
     cycleSeed,
+    behavior,
+    handoffFromContinent: previousPin?.continent || null,
     addLaunch
   });
 
-  return Object.freeze({
+  const plan = Object.freeze({
     schema: "rhizoh.spiral_mmo_awakening_plan.v0",
-    triggerPinIndex: safeIndex,
-    triggerPinId: pins[safeIndex]?.id || "",
+    triggerPinIndex: effectiveIndex,
+    requestedPinIndex: requestedIndex,
+    triggerPinId: triggerPin?.id || "",
+    previousTriggerPinIndex: continuityBefore.lastTriggerIndex,
+    previousTriggerPinId: previousPin?.id || "",
+    collapseHandoff: handoff,
+    triggerResolution,
+    continuityEpoch: continuityBefore.epoch,
+    behavior,
     deadlineMs: resetRhizohNeonCountdownDeadlineV0(nowMs),
     durationMs: RHIZOH_NEON_COUNTDOWN_DURATION_MS_V0,
     cycleSeed,
     routeLines: Object.freeze(buildSpiralMMOAwakeningRouteLinesV0(pins)),
     launches: Object.freeze(launches)
   });
+
+  if (opts.commit !== false) {
+    commitSpiralMMOAwakeningContinuityV0(effectiveIndex, {
+      handoffFromIndex: continuityBefore.lastTriggerIndex
+    });
+  }
+
+  return plan;
 }
 
 /**
@@ -133,7 +187,7 @@ export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Dat
  * @param {number} [nowMs]
  */
 export function dispatchSpiralMMOAwakeningV0(triggerPinIndex, nowMs = Date.now()) {
-  const plan = buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs);
+  const plan = buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs, { mode: "click", commit: true });
   if (typeof window !== "undefined") {
     window.dispatchEvent(
       new CustomEvent(RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0, { detail: plan })

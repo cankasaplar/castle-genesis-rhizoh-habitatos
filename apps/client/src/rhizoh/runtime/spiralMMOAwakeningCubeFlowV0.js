@@ -67,11 +67,12 @@ function routeLengthPctV0(aPct, bPct) {
 }
 
 /**
- * All undirected edges in walk order from trigger; each edge yields forward then reverse.
+ * All undirected edges in walk order from trigger; each edge yields dual pass per behavior.
  * @param {number} triggerPinIndex
  * @param {ReadonlyArray<{ continent: string }>} pins
+ * @param {{ routeRotate?: number, dualLead?: 'forward'|'reverse' }} [behavior]
  */
-export function buildSpiralMMOOrderedRouteWalkV0(triggerPinIndex, pins) {
+export function buildSpiralMMOOrderedRouteWalkV0(triggerPinIndex, pins, behavior = {}) {
   const safe = Math.max(0, Math.min(pins.length - 1, Number(triggerPinIndex) || 0));
   const pairs = resolveSpiralMMOAwakeningRoutePairsV0(safe, pins);
   /** @type {Map<string, { low: number, high: number, forward: [number, number] | null, reverse: [number, number] | null }>} */
@@ -97,12 +98,27 @@ export function buildSpiralMMOOrderedRouteWalkV0(triggerPinIndex, pins) {
     return a.high - b.high;
   });
 
+  const rotate = Math.max(0, Number(behavior.routeRotate) || 0) % Math.max(1, edges.length);
+  const rotated = [...edges.slice(rotate), ...edges.slice(0, rotate)];
+  const dualLead = behavior.dualLead === "reverse" ? "reverse" : "forward";
+
   /** @type {ReadonlyArray<{ pair: [number, number], direction: 'forward' | 'reverse', edgeKey: string }>} */
   const walk = [];
-  for (const edge of edges) {
+  for (const edge of rotated) {
     const edgeKey = `${edge.low}|${edge.high}`;
-    if (edge.forward) walk.push({ pair: edge.forward, direction: "forward", edgeKey });
-    if (edge.reverse) walk.push({ pair: edge.reverse, direction: "reverse", edgeKey });
+    const steps =
+      dualLead === "reverse"
+        ? [
+            edge.reverse ? { pair: edge.reverse, direction: "reverse" } : null,
+            edge.forward ? { pair: edge.forward, direction: "forward" } : null
+          ]
+        : [
+            edge.forward ? { pair: edge.forward, direction: "forward" } : null,
+            edge.reverse ? { pair: edge.reverse, direction: "reverse" } : null
+          ];
+    for (const step of steps) {
+      if (step) walk.push({ pair: step.pair, direction: step.direction, edgeKey });
+    }
   }
   return Object.freeze(walk);
 }
@@ -112,6 +128,8 @@ export function buildSpiralMMOOrderedRouteWalkV0(triggerPinIndex, pins) {
  *   triggerPinIndex: number,
  *   pins?: ReadonlyArray<{ id?: string, continent: string, lat: number, lon: number }>,
  *   cycleSeed: number,
+ *   behavior?: ReturnType<typeof import('./spiralMMOSpiralBehaviorV0.js').resolveSpiralMMOBehaviorProfileV0>,
+ *   handoffFromContinent?: string | null,
  *   addLaunch: (launch: Record<string, unknown>) => void
  * }} input
  */
@@ -119,7 +137,16 @@ export function buildSpiralMMOSequencedCubeLaunchesV0(input) {
   const pins = input.pins || listSpiralMMOContinentMapPinsV0();
   const safeIndex = Math.max(0, Math.min(pins.length - 1, Number(input.triggerPinIndex) || 0));
   const cycleSeed = Number(input.cycleSeed) || 0;
-  const routeWalk = buildSpiralMMOOrderedRouteWalkV0(safeIndex, pins);
+  const behavior = input.behavior || {};
+  const depthLayers = behavior.depthLayerOrder?.length
+    ? behavior.depthLayerOrder
+    : SPIRAL_MMO_CUBE_DEPTH_LAYERS_V0;
+  const staggerMs = SPIRAL_MMO_CUBE_STAGGER_MS_V0 * (behavior.staggerScale ?? 1);
+  const colorWaveOffset = behavior.colorWaveOffset ?? 0;
+  const gapPolarity = behavior.gapPolarity ?? 1;
+  const waveAmplitude = behavior.waveAmplitude ?? 4;
+  const transitionEase = behavior.transitionEase || "cubic-bezier(0.42, 0, 0.22, 1)";
+  const routeWalk = buildSpiralMMOOrderedRouteWalkV0(safeIndex, pins, behavior);
   /** @type {Map<string, number>} */
   const destAccum = new Map();
   let sequenceIndex = 0;
@@ -134,17 +161,22 @@ export function buildSpiralMMOSequencedCubeLaunchesV0(input) {
     const destPct = spiralMMOGeoToPercentLocalV0(dest.lat, dest.lon);
     const routeLengthPct = routeLengthPctV0(srcPct, destPct);
 
-    for (const depthLayer of SPIRAL_MMO_CUBE_DEPTH_LAYERS_V0) {
+    for (const depthLayer of depthLayers) {
       const layerSpec = resolveSpiralMMOCubeDepthLayerSpecV0(depthLayer);
-      const colorClass = SPIRAL_MMO_CUBE_WAVE_COLORS_V0[sequenceIndex % SPIRAL_MMO_CUBE_WAVE_COLORS_V0.length];
+      const colorClass =
+        SPIRAL_MMO_CUBE_WAVE_COLORS_V0[(sequenceIndex + colorWaveOffset) % SPIRAL_MMO_CUBE_WAVE_COLORS_V0.length];
       const isOrder = SPIRAL_MMO_ORDER_COLORS_V0.includes(colorClass);
       const accKey = dest.continent;
       const accumulationIndex = destAccum.get(accKey) || 0;
       destAccum.set(accKey, accumulationIndex + 1);
 
       const gapBase = 72 + routeLengthPct * 0.35;
-      const gap = gapBase * layerSpec.gapScale * (route.direction === "forward" ? 1 : -1);
-      const delayMs = sequenceIndex * SPIRAL_MMO_CUBE_STAGGER_MS_V0;
+      const gap =
+        gapBase *
+        layerSpec.gapScale *
+        gapPolarity *
+        (route.direction === "forward" ? 1 : -1);
+      const delayMs = sequenceIndex * staggerMs;
       const cubeSpec = deriveSpiralMMOAwakeningCubeSpecV0({
         colorClass,
         srcContinent: src.continent,
@@ -182,7 +214,9 @@ export function buildSpiralMMOSequencedCubeLaunchesV0(input) {
           depthZIndex: layerSpec.zIndex,
           depthScale: layerSpec.scaleBias,
           holdAtDest: true,
-          transitionEase: "cubic-bezier(0.42, 0, 0.22, 1)",
+          waveAmplitude,
+          transitionEase,
+          handoffFromContinent: sequenceIndex === 0 ? input.handoffFromContinent || null : null,
           cubeSpec: Object.freeze({
             ...cubeSpec,
             durationMs,
@@ -199,7 +233,8 @@ export function buildSpiralMMOSequencedCubeLaunchesV0(input) {
   return Object.freeze({
     sequenceCount: sequenceIndex,
     routeStepCount: routeWalk.length,
-    depthLayerCount: SPIRAL_MMO_CUBE_DEPTH_LAYERS_V0.length
+    depthLayerCount: depthLayers.length,
+    behaviorContinent: behavior.continent || pins[safeIndex]?.continent || ""
   });
 }
 
