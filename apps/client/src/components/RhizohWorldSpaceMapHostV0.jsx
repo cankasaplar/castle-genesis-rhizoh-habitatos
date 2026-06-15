@@ -435,7 +435,17 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
 
       if (!boundsFittedRef.current && allNodes.length) {
         const bounds = L.latLngBounds(allNodes.map((n) => [n.lat, n.lon]));
-        mapRef.current.fitBounds(bounds.pad(0.14), { maxZoom: userCastleGeo ? 16 : 5, animate: false });
+        mapRef.current.fitBounds(bounds, {
+          paddingTopLeft: [28, 104],
+          paddingBottomRight: [28, 36],
+          maxZoom: userCastleGeo ? 16 : 5,
+          animate: false
+        });
+        try {
+          mapRef.current.panBy([0, 52], { animate: false });
+        } catch {
+          /* noop */
+        }
         boundsFittedRef.current = true;
       }
 

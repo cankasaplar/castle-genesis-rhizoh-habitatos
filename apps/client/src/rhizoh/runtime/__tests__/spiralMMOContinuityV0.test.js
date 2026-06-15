@@ -43,7 +43,8 @@ describe("spiralMMOContinuityV0", () => {
     buildSpiralMMOAwakeningLaunchPlanV0(1, 1_700_000_000_000, { mode: "click", commit: true });
     const collapsePlan = buildSpiralMMOAwakeningLaunchPlanV0(1, 1_700_000_001_000, {
       mode: "collapse",
-      commit: true
+      commit: true,
+      resetSession: true
     });
     expect(collapsePlan.triggerPinIndex).toBe(2);
     expect(collapsePlan.triggerResolution.reason).toBe("collapse_dual_handoff");
