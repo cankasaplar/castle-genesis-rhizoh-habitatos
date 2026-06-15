@@ -9,14 +9,13 @@ import {
 import { listSpiralMMOContinentMapPinsV0 } from "./spiralMMOContinentPinsV0.js";
 import { deriveSpiralMMOContinentCubeMotionV0 } from "./spiralMMOContinentCubeMotionV0.js";
 import {
-  resolveSpiralMMOAwakeningRoutePairsV0,
-  resolveSpiralMMOOrderRoutePairsV0,
   listSpiralMMOContinentRouteEdgesV0
 } from "./spiralMMOContinentRouteGraphV0.js";
 import {
   deriveSpiralMMOAwakeningCubeSpecV0,
   spiralMMOAwakeningSeedV0
 } from "./spiralMMOAwakeningCubeCalcV0.js";
+import { buildSpiralMMOSequencedCubeLaunchesV0 } from "./spiralMMOAwakeningCubeFlowV0.js";
 import {
   SPIRAL_MMO_CHAOS_COLORS_V0,
   SPIRAL_MMO_COLOR_HEX_V0,
@@ -96,10 +95,6 @@ export function buildSpiralMMOAwakeningRouteLinesV0(pins) {
   }).filter(Boolean);
 }
 
-function routeLengthPctV0(aPct, bPct) {
-  return Math.hypot(bPct.x - aPct.x, bPct.y - aPct.y);
-}
-
 /**
  * @param {number} triggerPinIndex
  * @param {number} [nowMs]
@@ -108,73 +103,17 @@ export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Dat
   const pins = listSpiralMMOContinentMapPinsV0();
   const safeIndex = Math.max(0, Math.min(pins.length - 1, Number(triggerPinIndex) || 0));
   const cycleSeed = nowMs ^ (safeIndex * 9973);
-  const routePairs = resolveSpiralMMOAwakeningRoutePairsV0(safeIndex, pins);
-  const orderPairs = resolveSpiralMMOOrderRoutePairsV0(safeIndex, pins);
   const launches = [];
 
-  const addLaunch = (colorClass, srcIdx, destIdx, gap, isOrder, batchIndex) => {
-    const src = pins[srcIdx];
-    const dest = pins[destIdx];
-    if (!src || !dest) return;
-    const srcPct = spiralMMOGeoToPercentV0(src.lat, src.lon);
-    const destPct = spiralMMOGeoToPercentV0(dest.lat, dest.lon);
-    const routeLengthPct = routeLengthPctV0(srcPct, destPct);
-    const delayMs = Math.floor(spiralMMOAwakeningSeedV0(cycleSeed, colorClass, srcIdx, destIdx, batchIndex, "delay") * 2200);
-    const cubeSpec = deriveSpiralMMOAwakeningCubeSpecV0({
-      colorClass,
-      srcContinent: src.continent,
-      destContinent: dest.continent,
-      routeLengthPct,
-      batchIndex,
-      isOrder,
-      cycleSeed
-    });
-
-    launches.push(
-      Object.freeze({
-        id: `${colorClass}-${srcIdx}-${destIdx}-${batchIndex}-${launches.length}`,
-        colorClass,
-        srcIdx,
-        destIdx,
-        srcContinent: src.continent,
-        destContinent: dest.continent,
-        srcPct,
-        destPct,
-        gap,
-        isOrder,
-        delayMs,
-        durationMs: cubeSpec.durationMs,
-        batchIndex,
-        cubeSpec,
-        routeId: `${src.continent}|${dest.continent}`
-      })
-    );
+  const addLaunch = (launch) => {
+    launches.push(Object.freeze(launch));
   };
 
-  SPIRAL_MMO_ORDER_COLORS_V0.forEach((color) => {
-    orderPairs.forEach(([srcIdx, destIdx], batchIndex) => {
-      addLaunch(color, srcIdx, destIdx, 100, true, batchIndex);
-      if (batchIndex < 2) addLaunch(color, destIdx, srcIdx, -100, true, batchIndex + 10);
-    });
-  });
-
-  SPIRAL_MMO_CHAOS_COLORS_V0.forEach((color) => {
-    for (let i = 0; i < 2; i += 1) {
-      const pair = routePairs[Math.floor(spiralMMOAwakeningSeedV0(cycleSeed, color, i) * routePairs.length) % routePairs.length];
-      if (!pair) continue;
-      const gap = (spiralMMOAwakeningSeedV0(cycleSeed, color, i, "gap") * 120 + 40) * (spiralMMOAwakeningSeedV0(cycleSeed, color, i, "sign") > 0.5 ? 1 : -1);
-      addLaunch(color, pair[0], pair[1], gap, false, i);
-    }
-  });
-
-  SPIRAL_MMO_SPECIAL_COLORS_V0.forEach((color) => {
-    const count = color === "mirror" ? 4 : 2;
-    for (let i = 0; i < count; i += 1) {
-      const pair = routePairs[(safeIndex + i) % routePairs.length];
-      if (!pair) continue;
-      const gap = (spiralMMOAwakeningSeedV0(cycleSeed, color, i) - 0.5) * 160;
-      addLaunch(color, pair[0], pair[1], gap, spiralMMOAwakeningSeedV0(cycleSeed, color, i) > 0.5, i);
-    }
+  buildSpiralMMOSequencedCubeLaunchesV0({
+    triggerPinIndex: safeIndex,
+    pins,
+    cycleSeed,
+    addLaunch
   });
 
   return Object.freeze({

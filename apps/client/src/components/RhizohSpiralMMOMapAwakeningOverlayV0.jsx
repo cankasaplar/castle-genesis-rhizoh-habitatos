@@ -219,6 +219,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
 
 const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collapsing, hostRef }) {
   const elRef = useRef(null);
+  const holdAnimRef = useRef(null);
   const cubeHtml = cube.cubeSpec ? spiralMMOAwakeningCubeHtmlV0(cube.cubeSpec).html : "";
 
   useEffect(() => {
@@ -231,6 +232,8 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
     const h = rect.height || window.innerHeight;
 
     if (collapsing && cube.collapsePct) {
+      holdAnimRef.current?.cancel?.();
+      holdAnimRef.current = null;
       const target = pctToPx(cube.collapsePct, w, h);
       const anim = el.animate(
         [
@@ -247,27 +250,30 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
       return () => anim.cancel();
     }
 
-    const steps = 30;
+    const acc = cube.accumulationOffset || { x: 0, y: 0 };
+    const depthScale = cube.depthScale ?? 0.9 + (cube.cubeSpec?.depth ?? 0.5) * 0.2;
+    const steps = 48;
     const keyframes = [];
     for (let i = 0; i <= steps; i += 1) {
       const t = i / steps;
-      let pos = spiralMMOBezierPointV0(t, cube.p0, cube.cp, cube.p2);
+      const eased = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+      let pos = spiralMMOBezierPointV0(eased, cube.p0, cube.cp, cube.p2);
       if (cube.isOrder) {
-        const wave = Math.sin(t * Math.PI * 4 + (cube.batchIndex || 0)) * 10;
+        const wave = Math.sin(eased * Math.PI * 2 + (cube.sequenceIndex || 0) * 0.35) * 4;
         const dx = cube.p2.x - cube.p0.x;
         const dy = cube.p2.y - cube.p0.y;
         const len = Math.hypot(dx, dy) || 1;
         pos = { x: pos.x + (-dy / len) * wave, y: pos.y + (dx / len) * wave };
-      } else {
-        const jitter = (Math.sin(t * 17 + cube.delayMs) * 0.5) * 12;
-        pos = { x: pos.x + jitter, y: pos.y + jitter * 0.6 };
       }
-      const depth = cube.cubeSpec?.depth ?? 0.5;
+      const destX = cube.p2.x + acc.x;
+      const destY = cube.p2.y + acc.y;
+      const travelScale = i === 0 ? 0.15 : depthScale * (0.72 + eased * 0.28);
+      const atDest = i === steps;
       keyframes.push({
-        left: `${pos.x}px`,
-        top: `${pos.y}px`,
-        transform: `translate(-50%,-50%) scale(${i === 0 ? 0 : 0.85 + depth * 0.3})`,
-        opacity: 0.55 + depth * 0.4,
+        left: `${atDest ? destX : pos.x}px`,
+        top: `${atDest ? destY : pos.y}px`,
+        transform: `translate(-50%,-50%) scale(${travelScale})`,
+        opacity: 0.45 + eased * 0.5,
         filter: `drop-shadow(${cube.cubeSpec?.shadowX ?? 2}px ${cube.cubeSpec?.shadowY ?? 3}px ${cube.cubeSpec?.shadowBlur ?? 6}px rgba(0,0,0,0.5))`
       });
     }
@@ -276,16 +282,60 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
       duration: cube.durationMs,
       delay: cube.delayMs,
       fill: "forwards",
-      easing: "linear"
+      easing: cube.transitionEase || "cubic-bezier(0.42, 0, 0.22, 1)"
     });
-    return () => anim.cancel();
+
+    if (cube.holdAtDest) {
+      anim.onfinish = () => {
+        const destX = cube.p2.x + acc.x;
+        const destY = cube.p2.y + acc.y;
+        holdAnimRef.current = el.animate(
+          [
+            {
+              left: `${destX}px`,
+              top: `${destY}px`,
+              transform: `translate(-50%,-50%) scale(${depthScale})`,
+              opacity: 0.92
+            },
+            {
+              left: `${destX}px`,
+              top: `${destY}px`,
+              transform: `translate(-50%,-50%) scale(${depthScale * 1.06})`,
+              opacity: 1
+            },
+            {
+              left: `${destX}px`,
+              top: `${destY}px`,
+              transform: `translate(-50%,-50%) scale(${depthScale})`,
+              opacity: 0.94
+            }
+          ],
+          { duration: 1800, iterations: Infinity, easing: "ease-in-out" }
+        );
+      };
+    }
+
+    return () => {
+      anim.cancel();
+      holdAnimRef.current?.cancel?.();
+      holdAnimRef.current = null;
+    };
   }, [cube, collapsing, hostRef]);
 
   return (
     <div
       ref={elRef}
       className="absolute"
-      style={{ left: `${cube.p0?.x || 0}px`, top: `${cube.p0?.y || 0}px`, width: 0, height: 0 }}
+      style={{
+        left: `${cube.p0?.x || 0}px`,
+        top: `${cube.p0?.y || 0}px`,
+        width: 0,
+        height: 0,
+        zIndex: cube.depthZIndex ?? 10
+      }}
+      data-rhizoh-spiral-cube-seq={cube.sequenceIndex ?? 0}
+      data-rhizoh-spiral-cube-depth={cube.depthLayer ?? 0}
+      data-rhizoh-spiral-cube-direction={cube.direction || "forward"}
       dangerouslySetInnerHTML={{ __html: cubeHtml }}
     />
   );
