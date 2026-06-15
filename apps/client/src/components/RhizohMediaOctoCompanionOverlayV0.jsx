@@ -1,17 +1,17 @@
 import React, { memo, useEffect, useRef } from "react";
-import { mountOctoMediaCompanionV0 } from "../rhizoh/runtime/octoMediaCompanionServiceV0.js";
+import { mountOctoMediaTulleStageV0 } from "../rhizoh/runtime/octoMediaTulleStageV0.js";
 import { isMedusaCompanionStreamActiveV0 } from "../rhizoh/runtime/medusaCompanionStreamGateV0.js";
 
 const OCTO_GLASS_STYLE_V0 = {
   background:
-    "linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(0,229,255,0.03) 42%, rgba(255,255,255,0.02) 100%)",
-  backdropFilter: "blur(3px) saturate(1.08)",
-  WebkitBackdropFilter: "blur(3px) saturate(1.08)",
-  boxShadow: "inset 0 0 0 1px rgba(0,229,255,0.12), inset 0 1px 0 rgba(255,255,255,0.06)"
+    "linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(0,229,255,0.025) 42%, rgba(255,255,255,0.015) 100%)",
+  backdropFilter: "blur(2px) saturate(1.05)",
+  WebkitBackdropFilter: "blur(2px) saturate(1.05)",
+  boxShadow: "inset 0 0 0 1px rgba(0,229,255,0.1), inset 0 1px 0 rgba(255,255,255,0.05)"
 };
 
 /**
- * Media viewport shell — video/iframe altında, Octo + cam üstünde, kontroller dışarıda.
+ * Media viewport shell — video altında, tül Octo + cam, kontroller dışarıda.
  */
 export const RhizohMediaStageWithOctoV0 = memo(function RhizohMediaStageWithOctoV0({
   children,
@@ -28,7 +28,7 @@ export const RhizohMediaStageWithOctoV0 = memo(function RhizohMediaStageWithOcto
 });
 
 /**
- * Octo cam arkasında — düşük opaklık; pointer-events tamamen kapalı.
+ * Tül Octo — procedural canvas, küp yok; ses + hız → renk/dalga.
  */
 export const RhizohMediaOctoCompanionOverlayV0 = memo(function RhizohMediaOctoCompanionOverlayV0({
   active = true,
@@ -49,7 +49,7 @@ export const RhizohMediaOctoCompanionOverlayV0 = memo(function RhizohMediaOctoCo
     }
 
     const host = hostRef.current;
-    const service = mountOctoMediaCompanionV0(host, { mediaStream });
+    const service = mountOctoMediaTulleStageV0(host, { mediaStream });
     serviceRef.current = service;
 
     return () => {
@@ -70,13 +70,14 @@ export const RhizohMediaOctoCompanionOverlayV0 = memo(function RhizohMediaOctoCo
     <div
       className={`pointer-events-none absolute inset-0 z-[6] overflow-hidden ${className}`}
       data-rhizoh-octo-media-companion="1"
+      data-rhizoh-octo-renderer="tulle-v0"
       data-rhizoh-octo-audio-live={streamLive ? "1" : "0"}
       aria-hidden
     >
       <div
         ref={hostRef}
-        className="pointer-events-none absolute inset-0 opacity-[0.48]"
-        style={{ mixBlendMode: "plus-lighter" }}
+        className="pointer-events-none absolute inset-0 opacity-[0.72]"
+        data-rhizoh-octo-tulle-host="1"
       />
       <div className="pointer-events-none absolute inset-0 z-[2]" style={OCTO_GLASS_STYLE_V0} />
     </div>
