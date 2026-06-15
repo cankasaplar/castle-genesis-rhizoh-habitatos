@@ -67,7 +67,7 @@ export function mountOctoMediaCompanionV0(container, opts = {}) {
       if (disposed) return;
       root = gltf.scene;
       prepareOctoConversationMaterialsV1(root);
-      fitOctoConversationModelV1(root, { targetSize: 0.46 });
+      fitOctoConversationModelV1(root, { targetSize: 0.52 });
       tentacles = collectOctoTentacleNodesV1(root);
       body = root;
       scene.add(root);

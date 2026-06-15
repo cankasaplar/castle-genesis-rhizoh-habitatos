@@ -75,8 +75,8 @@ export const RhizohMediaOctoCompanionOverlayV0 = memo(function RhizohMediaOctoCo
     >
       <div
         ref={hostRef}
-        className="pointer-events-none absolute inset-0 opacity-[0.36]"
-        style={{ mixBlendMode: "screen" }}
+        className="pointer-events-none absolute inset-0 opacity-[0.48]"
+        style={{ mixBlendMode: "plus-lighter" }}
       />
       <div className="pointer-events-none absolute inset-0 z-[2]" style={OCTO_GLASS_STYLE_V0} />
     </div>
