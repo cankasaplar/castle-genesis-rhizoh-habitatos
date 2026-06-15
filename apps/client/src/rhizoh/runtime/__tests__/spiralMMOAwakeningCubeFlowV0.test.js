@@ -10,11 +10,13 @@ import { listSpiralMMOContinentMapPinsV0 } from "../spiralMMOContinentPinsV0.js"
 import { listSpiralMMOContinentRouteEdgesV0 } from "../spiralMMOContinentRouteGraphV0.js";
 import { buildSpiralMMOAwakeningLaunchPlanV0 } from "../spiralMMOAwakeningCycleV0.js";
 import { resetSpiralMMOContinuityForTestV0 } from "../spiralMMOContinuityV0.js";
+import { resetSpiralMMOSessionCubeAccumV0 } from "../spiralMMOSessionAccumulationV0.js";
 import { resolveSpiralMMOBehaviorProfileV0 } from "../spiralMMOSpiralBehaviorV0.js";
 
 describe("spiralMMOAwakeningCubeFlowV0", () => {
   beforeEach(() => {
     resetSpiralMMOContinuityForTestV0();
+    resetSpiralMMOSessionCubeAccumV0();
   });
   it("orders route walk with forward then reverse per edge", () => {
     const pins = listSpiralMMOContinentMapPinsV0();
@@ -55,10 +57,11 @@ describe("spiralMMOAwakeningCubeFlowV0", () => {
     expect(launches.every((l) => l.accumulationOffset)).toBe(true);
   });
 
-  it("accumulation offsets spiral outward by ring", () => {
-    const inner = resolveSpiralMMOAccumulationOffsetV0(1);
-    const outer = resolveSpiralMMOAccumulationOffsetV0(9);
-    expect(Math.hypot(outer.x, outer.y)).toBeGreaterThan(Math.hypot(inner.x, inner.y));
+  it("accumulation offsets stack in 3d rings by depth", () => {
+    const inner = resolveSpiralMMOAccumulationOffsetV0(1, 1, 0);
+    const outer = resolveSpiralMMOAccumulationOffsetV0(8, 1, 2);
+    expect(outer.z).toBeGreaterThan(inner.z);
+    expect(outer.stackScale).toBeGreaterThan(inner.stackScale);
   });
 
   it("launch plan uses sequenced flow (no random scatter delays)", () => {

@@ -39,6 +39,15 @@ function resolveLaunchGeometry(launch, w, h) {
   return { ...launch, p0, p2, cp, key: launch.id };
 }
 
+function spiralCubeStackTransformV0({ acc, depthScale, travelScale = 1 }) {
+  const a = acc || {};
+  const scale = travelScale * (a.stackScale ?? 1) * depthScale;
+  const rx = a.rotateX ?? -14;
+  const ry = a.rotateY ?? 0;
+  const z = a.z ?? 0;
+  return `translate(-50%,-50%) translate3d(${a.x || 0}px, ${a.y || 0}px, ${z}px) scale(${scale}) rotateX(${rx}deg) rotateY(${ry}deg)`;
+}
+
 /**
  * Map overlay — route mesh, calculated cubes, birds, bottles, 06:44 timer.
  */
@@ -133,7 +142,11 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
       setCollapsing(false);
       setScene(null);
       spawnLaunches(
-        buildSpiralMMOAwakeningLaunchPlanV0(fromIdx, Date.now(), { mode: "collapse", commit: true })
+        buildSpiralMMOAwakeningLaunchPlanV0(fromIdx, Date.now(), {
+          mode: "collapse",
+          commit: true,
+          resetSession: true
+        })
       );
     }, 2800);
 
@@ -159,7 +172,11 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
             ))}
           </div>
 
-          <div className="absolute inset-0 z-[10]" data-rhizoh-spiral-cube-layer="1">
+          <div
+            className="absolute inset-0 z-[10]"
+            data-rhizoh-spiral-cube-layer="1"
+            style={{ perspective: "900px", transformStyle: "preserve-3d" }}
+          >
             {scene.cubes.map((cube) => (
               <SpiralMMOFlightCubeV0 key={cube.key} cube={cube} collapsing={cube.collapsing} hostRef={hostRef} />
             ))}
@@ -251,7 +268,7 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
       keyframes.push({
         left: `${atDest ? destX : pos.x}px`,
         top: `${atDest ? destY : pos.y}px`,
-        transform: `translate(-50%,-50%) scale(${travelScale})`,
+        transform: spiralCubeStackTransformV0({ acc, depthScale, travelScale }),
         opacity: 0.45 + eased * 0.5,
         filter: `drop-shadow(${cube.cubeSpec?.shadowX ?? 2}px ${cube.cubeSpec?.shadowY ?? 3}px ${cube.cubeSpec?.shadowBlur ?? 6}px rgba(0,0,0,0.5))`
       });
@@ -273,19 +290,19 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
             {
               left: `${destX}px`,
               top: `${destY}px`,
-              transform: `translate(-50%,-50%) scale(${depthScale})`,
+              transform: spiralCubeStackTransformV0({ acc, depthScale, travelScale: 1 }),
               opacity: 0.92
             },
             {
               left: `${destX}px`,
               top: `${destY}px`,
-              transform: `translate(-50%,-50%) scale(${depthScale * 1.06})`,
+              transform: spiralCubeStackTransformV0({ acc, depthScale, travelScale: 1.06 }),
               opacity: 1
             },
             {
               left: `${destX}px`,
               top: `${destY}px`,
-              transform: `translate(-50%,-50%) scale(${depthScale})`,
+              transform: spiralCubeStackTransformV0({ acc, depthScale, travelScale: 1 }),
               opacity: 0.94
             }
           ],
@@ -310,7 +327,9 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
         top: `${cube.p0?.y || 0}px`,
         width: 0,
         height: 0,
-        zIndex: cube.depthZIndex ?? 10
+        zIndex: cube.depthZIndex ?? 10,
+        transformStyle: "preserve-3d",
+        perspective: "420px"
       }}
       data-rhizoh-spiral-cube-seq={cube.sequenceIndex ?? 0}
       data-rhizoh-spiral-cube-depth={cube.depthLayer ?? 0}

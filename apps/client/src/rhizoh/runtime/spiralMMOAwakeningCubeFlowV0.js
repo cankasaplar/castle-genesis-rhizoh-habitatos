@@ -13,15 +13,8 @@ import {
   SPIRAL_MMO_SPECIAL_COLORS_V0
 } from "./spiralMMOAwakeningPaletteV0.js";
 
-function spiralMMOGeoToPercentLocalV0(lat, lon) {
-  const x = ((Number(lon) + 180) / 360) * 100;
-  const clampedLat = Math.max(-70, Math.min(70, Number(lat)));
-  const y = ((70 - clampedLat) / 140) * 100;
-  return {
-    x: Math.max(4, Math.min(96, x)),
-    y: Math.max(8, Math.min(88, y))
-  };
-}
+import { spiralMMOMapGeoToPercentV0 } from "./spiralMMOMapGeoProjectV0.js";
+import { takeSpiralMMOSessionAccumIndexV0 } from "./spiralMMOSessionAccumulationV0.js";
 
 export const SPIRAL_MMO_CUBE_DEPTH_LAYERS_V0 = Object.freeze([0, 1, 2]);
 export const SPIRAL_MMO_CUBE_STAGGER_MS_V0 = 140;
@@ -36,15 +29,26 @@ const GOLDEN_ANGLE_RAD_V0 = Math.PI * (3 - Math.sqrt(5));
 /**
  * @param {number} accumulationIndex
  * @param {number} [scale]
+ * @param {number} [depthLayer]
  */
-export function resolveSpiralMMOAccumulationOffsetV0(accumulationIndex, scale = 1) {
+export function resolveSpiralMMOAccumulationOffsetV0(accumulationIndex, scale = 1, depthLayer = 0) {
   const idx = Math.max(0, Number(accumulationIndex) || 0);
-  const ring = Math.floor(idx / 8);
-  const radius = (5 + ring * 4.5) * scale;
+  const layer = Math.max(0, Math.min(2, Number(depthLayer) || 0));
+  const ring = Math.floor(idx / 6);
+  const tier = idx % 6;
+  const radius = (10 + ring * 7) * scale;
   const angle = idx * GOLDEN_ANGLE_RAD_V0;
+  const z = layer * 16 + tier * 4;
+  const stackScale = 1 + ring * 0.1 + layer * 0.08;
+  const rotateY = (idx * 51 + layer * 73) % 360;
+  const rotateX = -14 - layer * 9;
   return Object.freeze({
     x: Math.cos(angle) * radius,
-    y: Math.sin(angle) * radius
+    y: Math.sin(angle) * radius,
+    z,
+    stackScale,
+    rotateY,
+    rotateX
   });
 }
 
@@ -147,8 +151,6 @@ export function buildSpiralMMOSequencedCubeLaunchesV0(input) {
   const waveAmplitude = behavior.waveAmplitude ?? 4;
   const transitionEase = behavior.transitionEase || "cubic-bezier(0.42, 0, 0.22, 1)";
   const routeWalk = buildSpiralMMOOrderedRouteWalkV0(safeIndex, pins, behavior);
-  /** @type {Map<string, number>} */
-  const destAccum = new Map();
   let sequenceIndex = 0;
 
   for (const route of routeWalk) {
@@ -157,8 +159,8 @@ export function buildSpiralMMOSequencedCubeLaunchesV0(input) {
     const dest = pins[destIdx];
     if (!src || !dest) continue;
 
-    const srcPct = spiralMMOGeoToPercentLocalV0(src.lat, src.lon);
-    const destPct = spiralMMOGeoToPercentLocalV0(dest.lat, dest.lon);
+    const srcPct = spiralMMOMapGeoToPercentV0(src.lat, src.lon);
+    const destPct = spiralMMOMapGeoToPercentV0(dest.lat, dest.lon);
     const routeLengthPct = routeLengthPctV0(srcPct, destPct);
 
     for (const depthLayer of depthLayers) {
@@ -167,8 +169,7 @@ export function buildSpiralMMOSequencedCubeLaunchesV0(input) {
         SPIRAL_MMO_CUBE_WAVE_COLORS_V0[(sequenceIndex + colorWaveOffset) % SPIRAL_MMO_CUBE_WAVE_COLORS_V0.length];
       const isOrder = SPIRAL_MMO_ORDER_COLORS_V0.includes(colorClass);
       const accKey = dest.continent;
-      const accumulationIndex = destAccum.get(accKey) || 0;
-      destAccum.set(accKey, accumulationIndex + 1);
+      const accumulationIndex = takeSpiralMMOSessionAccumIndexV0(accKey);
 
       const gapBase = 72 + routeLengthPct * 0.35;
       const gap =
@@ -210,7 +211,11 @@ export function buildSpiralMMOSequencedCubeLaunchesV0(input) {
           edgeKey: route.edgeKey,
           routeLengthPct,
           accumulationIndex,
-          accumulationOffset: resolveSpiralMMOAccumulationOffsetV0(accumulationIndex, 0.85 + layerSpec.depth * 0.35),
+          accumulationOffset: resolveSpiralMMOAccumulationOffsetV0(
+            accumulationIndex,
+            0.9 + layerSpec.depth * 0.4,
+            depthLayer
+          ),
           depthZIndex: layerSpec.zIndex,
           depthScale: layerSpec.scaleBias,
           holdAtDest: true,

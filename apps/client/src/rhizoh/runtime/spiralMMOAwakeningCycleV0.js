@@ -4,6 +4,7 @@
 
 import {
   RHIZOH_NEON_COUNTDOWN_DURATION_MS_V0,
+  readRhizohNeonCountdownDeadlineMsV0,
   resetRhizohNeonCountdownDeadlineV0
 } from "./rhizohNeonCountdownV0.js";
 import { listSpiralMMOContinentMapPinsV0 } from "./spiralMMOContinentPinsV0.js";
@@ -23,6 +24,8 @@ import {
   resolveSpiralMMOEffectiveTriggerV0
 } from "./spiralMMOContinuityV0.js";
 import { resolveSpiralMMOBehaviorProfileV0 } from "./spiralMMOSpiralBehaviorV0.js";
+import { spiralMMOMapGeoToPercentV0 } from "./spiralMMOMapGeoProjectV0.js";
+import { resetSpiralMMOSessionCubeAccumV0 } from "./spiralMMOSessionAccumulationV0.js";
 import {
   SPIRAL_MMO_CHAOS_COLORS_V0,
   SPIRAL_MMO_COLOR_HEX_V0,
@@ -45,13 +48,7 @@ export const RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0 = "rhizoh:spiral-mmo-immer
  * @param {number} lon
  */
 export function spiralMMOGeoToPercentV0(lat, lon) {
-  const x = ((Number(lon) + 180) / 360) * 100;
-  const clampedLat = Math.max(-70, Math.min(70, Number(lat)));
-  const y = ((70 - clampedLat) / 140) * 100;
-  return {
-    x: Math.max(4, Math.min(96, x)),
-    y: Math.max(8, Math.min(88, y))
-  };
+  return spiralMMOMapGeoToPercentV0(lat, lon);
 }
 
 /**
@@ -105,7 +102,7 @@ export function buildSpiralMMOAwakeningRouteLinesV0(pins) {
 /**
  * @param {number} triggerPinIndex
  * @param {number} [nowMs]
- * @param {{ mode?: 'click'|'collapse'|'test', commit?: boolean }} [opts]
+ * @param {{ mode?: 'click'|'collapse'|'test', commit?: boolean, resetSession?: boolean }} [opts]
  */
 export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Date.now(), opts = {}) {
   const pins = listSpiralMMOContinentMapPinsV0();
@@ -146,6 +143,10 @@ export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Dat
     launches.push(Object.freeze(launch));
   };
 
+  if (opts.resetSession) {
+    resetSpiralMMOSessionCubeAccumV0();
+  }
+
   buildSpiralMMOSequencedCubeLaunchesV0({
     triggerPinIndex: effectiveIndex,
     pins,
@@ -154,6 +155,10 @@ export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Dat
     handoffFromContinent: previousPin?.continent || null,
     addLaunch
   });
+
+  const deadlineMs = opts.resetSession
+    ? resetRhizohNeonCountdownDeadlineV0(nowMs)
+    : readRhizohNeonCountdownDeadlineMsV0(nowMs);
 
   const plan = Object.freeze({
     schema: "rhizoh.spiral_mmo_awakening_plan.v0",
@@ -166,7 +171,7 @@ export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Dat
     triggerResolution,
     continuityEpoch: continuityBefore.epoch,
     behavior,
-    deadlineMs: resetRhizohNeonCountdownDeadlineV0(nowMs),
+    deadlineMs,
     durationMs: RHIZOH_NEON_COUNTDOWN_DURATION_MS_V0,
     cycleSeed,
     routeLines: Object.freeze([]),

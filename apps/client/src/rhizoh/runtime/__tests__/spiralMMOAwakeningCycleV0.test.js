@@ -9,15 +9,25 @@ import {
 } from "../spiralMMOAwakeningCycleV0.js";
 import { buildSpiralMMOAwakeningBirdPlanV0 } from "../spiralMMOAwakeningBirdV0.js";
 import { resetSpiralMMOContinuityForTestV0 } from "../spiralMMOContinuityV0.js";
+import { resetSpiralMMOSessionCubeAccumV0 } from "../spiralMMOSessionAccumulationV0.js";
+import { resetRhizohNeonCountdownDeadlineV0 } from "../rhizohNeonCountdownV0.js";
 
 describe("spiralMMOAwakeningCycleV0", () => {
   beforeEach(() => {
     resetSpiralMMOContinuityForTestV0();
+    resetSpiralMMOSessionCubeAccumV0();
+    if (typeof window !== "undefined") {
+      try {
+        window.sessionStorage.removeItem("rhizoh_neon_countdown_deadline_v0");
+      } catch {
+        /* noop */
+      }
+    }
   });
   it("maps geo to clamped percent", () => {
     const p = spiralMMOGeoToPercentV0(50, 15);
     expect(p.x).toBeGreaterThan(4);
-    expect(p.y).toBeGreaterThan(8);
+    expect(p.y).toBeGreaterThan(12);
   });
 
   it("builds bezier midpoint", () => {
@@ -57,5 +67,26 @@ describe("spiralMMOAwakeningCycleV0", () => {
   it("resolves trigger index from pin id", () => {
     expect(resolveSpiralMMOTriggerIndexFromPinIdV0("spiralmmo_europe")).toBeGreaterThanOrEqual(0);
     expect(resolveSpiralMMOTriggerIndexFromPinIdV0("unknown")).toBe(0);
+  });
+
+  it("preserves 6:44 session countdown across spiral entries", () => {
+    const t0 = 1_700_000_000_000;
+    resetRhizohNeonCountdownDeadlineV0(t0);
+    const first = buildSpiralMMOAwakeningLaunchPlanV0(1, t0 + 5_000, { commit: false });
+    const second = buildSpiralMMOAwakeningLaunchPlanV0(3, t0 + 90_000, { commit: false });
+    expect(first.deadlineMs).toBe(t0 + 404_000);
+    expect(second.deadlineMs).toBe(first.deadlineMs);
+  });
+
+  it("resets countdown only when session resets at collapse", () => {
+    const t0 = 1_700_000_000_000;
+    resetRhizohNeonCountdownDeadlineV0(t0);
+    buildSpiralMMOAwakeningLaunchPlanV0(1, t0, { commit: false });
+    const collapse = buildSpiralMMOAwakeningLaunchPlanV0(1, t0 + 404_500, {
+      mode: "collapse",
+      commit: false,
+      resetSession: true
+    });
+    expect(collapse.deadlineMs).toBe(t0 + 404_500 + 404_000);
   });
 });
