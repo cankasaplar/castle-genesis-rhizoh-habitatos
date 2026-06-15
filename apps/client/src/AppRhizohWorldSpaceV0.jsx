@@ -116,6 +116,10 @@ import {
 } from "./rhizoh/runtime/castleWorldSpaceContinuityV0.js";
 import { bootRhizohOsStabilReleaseLayerV0 } from "./rhizoh/runtime/rhizohOsStabilReleaseLayerV0.js";
 import { getActiveFederationOverlayNodeV0 } from "./rhizoh/runtime/rhizohDomainGraphV0.js";
+import {
+  RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0,
+  RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0
+} from "./rhizoh/runtime/spiralMMOAwakeningCycleV0.js";
 
 export default function AppRhizohWorldSpaceV0() {
   const navigate = useNavigate();
@@ -142,6 +146,7 @@ export default function AppRhizohWorldSpaceV0() {
   const [v11MediaTube, setV11MediaTube] = useState(null);
   const [castleInitGateOpen, setCastleInitGateOpen] = useState(false);
   const [c2cPeer, setC2cPeer] = useState(null);
+  const [spiralImmersionActive, setSpiralImmersionActive] = useState(false);
 
   const worldMapToolV0 = useSyncExternalStore(
     subscribeRhizohWorldMapToolV0,
@@ -386,6 +391,7 @@ export default function AppRhizohWorldSpaceV0() {
     const onInfo = (ev) => {
       const detail = ev?.detail;
       if (!detail?.node) return;
+      if (detail.node.type === "spiralmmo") return;
       setV11NodePanel(detail.routed || { nodeView: detail.node, normalizedDecision: { decision: "LOAD_WORLD_NODE" } });
     };
 
@@ -416,6 +422,7 @@ export default function AppRhizohWorldSpaceV0() {
     const onV11Intent = (ev) => {
       const detail = ev?.detail;
       if (!detail?.nodeView) return;
+      if (detail.nodeView.type === "spiralmmo") return;
       if (detail?.intent?.intent === "PREVIEW_NODE") {
         setV11NodePanel(detail);
       }
@@ -426,6 +433,26 @@ export default function AppRhizohWorldSpaceV0() {
     return () => {
       window.removeEventListener(RHIZOH_V11_MAP_INTENT_EVENT_V0, onV11Intent);
       window.removeEventListener(RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0, onClearPreview);
+    };
+  }, []);
+
+  useEffect(() => {
+    const enterImmersion = () => {
+      setSpiralImmersionActive(true);
+      setV11NodePanel(null);
+      closeProductSurfaceDrawerV0();
+    };
+    const exitImmersion = () => setSpiralImmersionActive(false);
+    const onKeyDown = (ev) => {
+      if (ev.key === "Escape") exitImmersion();
+    };
+    window.addEventListener(RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0, enterImmersion);
+    window.addEventListener(RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0, exitImmersion);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener(RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0, enterImmersion);
+      window.removeEventListener(RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0, exitImmersion);
+      window.removeEventListener("keydown", onKeyDown);
     };
   }, []);
 
@@ -619,12 +646,30 @@ export default function AppRhizohWorldSpaceV0() {
       ref={appRootRef}
       className="fixed inset-0 overflow-hidden bg-[#010103] text-white"
       data-rhizoh-world-space-app="1"
+      data-rhizoh-spiral-immersion={spiralImmersionActive ? "1" : "0"}
       data-cesium-active={cesiumLayerActiveV0 ? "1" : "0"}
       data-world-layer-enabled={worldLayerEnabledV0 ? "1" : "0"}
       data-spatial-render-mode={spatialBootGateV0.renderMode}
       data-spatial-boot-reason={spatialBootGateV0.reason}
       data-map-tool={worldMapToolV0}
     >
+      <style>{`
+        [data-rhizoh-spiral-immersion="1"] [data-rhizoh-world-domain-shell],
+        [data-rhizoh-spiral-immersion="1"] [data-rhizoh-world-space-voice-dock],
+        [data-rhizoh-spiral-immersion="1"] nav[aria-label*="Rhizoh"],
+        [data-rhizoh-spiral-immersion="1"] [data-rhizoh-product-drawer],
+        [data-rhizoh-spiral-immersion="1"] [data-rhizoh-v11-node-panel],
+        [data-rhizoh-spiral-immersion="1"] [data-rhizoh-spiral-mmo-portal],
+        [data-rhizoh-spiral-immersion="1"] .leaflet-control-zoom {
+          display: none !important;
+        }
+        [data-rhizoh-spiral-immersion="1"] [data-rhizoh-world-space-map-host] {
+          z-index: 30 !important;
+        }
+        [data-rhizoh-spiral-immersion="1"] [data-rhizoh-spiral-mmo-awakening-overlay] {
+          z-index: 31 !important;
+        }
+      `}</style>
       <RhizohAtmospherePresenceBridge />
       <RhizohWorldSpaceMapHostV0
         active={cesiumLayerActiveV0}
@@ -682,7 +727,7 @@ export default function AppRhizohWorldSpaceV0() {
         <CastleAuthOverlay auth={castleAuth} />
       ) : null}
 
-      {showGeoChip ? (
+      {showGeoChip && !spiralImmersionActive ? (
         <div className="pointer-events-none fixed inset-x-0 top-16 z-[26] flex justify-center px-4">
           <div className="pointer-events-auto flex max-w-md flex-col items-center gap-1 rounded-xl border border-cyan-500/35 bg-black/80 px-3 py-2 text-center backdrop-blur-md">
             <p className="text-[10px] text-cyan-100/90 normal-case">
@@ -711,7 +756,7 @@ export default function AppRhizohWorldSpaceV0() {
         </div>
       ) : null}
 
-      {remoteCastles.length && !castleAuth.needsAuthGate ? (
+      {remoteCastles.length && !castleAuth.needsAuthGate && !spiralImmersionActive ? (
         <div className="pointer-events-none fixed left-4 top-28 z-[26]">
           <button
             type="button"
@@ -852,7 +897,7 @@ export default function AppRhizohWorldSpaceV0() {
         </div>
       ) : null}
 
-      {!cesiumLayerActiveV0 && worldMapToolV0 === "globe" ? (
+      {!cesiumLayerActiveV0 && worldMapToolV0 === "globe" && !spiralImmersionActive ? (
         <div
           className="pointer-events-none fixed inset-x-0 z-[25] flex justify-center px-4"
           style={{ bottom: `calc(${mapStripBottomCssV0} + 5rem)` }}

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildOctoMediaTulleTargetBehaviorV0,
+  cloneOctoMediaTulleBehaviorV0,
   deriveOctoMediaTulleDriveV0,
   lerpOctoMediaTulleBehaviorV0,
   resolveOctoMediaTulleBehaviorV0
@@ -25,9 +27,24 @@ describe("octoMediaTulleBehaviorsV0", () => {
   });
 
   it("lerps behavior toward target", () => {
-    const cur = { ...resolveOctoMediaTulleBehaviorV0("IDLE") };
+    const cur = cloneOctoMediaTulleBehaviorV0("IDLE");
     const tgt = resolveOctoMediaTulleBehaviorV0("DANCE");
     lerpOctoMediaTulleBehaviorV0(cur, tgt, 0.1, 3);
     expect(cur.freq).toBeGreaterThan(resolveOctoMediaTulleBehaviorV0("IDLE").freq);
+  });
+
+  it("clones frozen presets for mutation", () => {
+    const frozen = resolveOctoMediaTulleBehaviorV0("SWIM");
+    const cloned = cloneOctoMediaTulleBehaviorV0("SWIM");
+    cloned.colorH += 12;
+    expect(cloned.colorH).toBe(frozen.colorH + 12);
+    expect(frozen.colorH).toBe(210);
+  });
+
+  it("builds mutable target with hue bias without touching frozen preset", () => {
+    const frozen = resolveOctoMediaTulleBehaviorV0("DANCE");
+    const target = buildOctoMediaTulleTargetBehaviorV0("DANCE", 18);
+    expect(target.colorH).toBe(frozen.colorH + 18);
+    expect(frozen.colorH).toBe(290);
   });
 });
