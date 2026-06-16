@@ -51,6 +51,8 @@ export async function runRhizohChessLearningLoopV0(opts = {}) {
     regret,
     moves: fenRows.length ? fenRows : moves,
     matchId: opts.matchId || null,
+    outcome: opts.outcome || null,
+    localColor,
     engineStatus: getChessStockfishEngineStatusV0()
   });
 
