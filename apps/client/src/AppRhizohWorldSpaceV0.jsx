@@ -124,6 +124,8 @@ import {
 import { startCanonicalTickClientV0 } from "./core/canonicalTickClientV0.js";
 import { startYoutubeLabOctoBridgeV1 } from "./rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
 import { startRhizohLegalPendingWaitLoopV0 } from "./rhizoh/runtime/rhizohLegalPendingWaitLoopV0.js";
+import { runSpiralImmersionEnterStagedV0 } from "./rhizoh/runtime/worldMapMeaningfulTransitionV0.js";
+import { RhizohMapTransitionApproachStripV0 } from "./components/RhizohMapTransitionApproachStripV0.jsx";
 import { loadRhizohExperienceSessionContextV0 } from "./rhizoh/experience/rhizohExperienceSessionContextV0.js";
 import { loadRhizohProductSession } from "./rhizoh/product/rhizohProductSessionPersistenceV1.js";
 
@@ -453,13 +455,11 @@ export default function AppRhizohWorldSpaceV0() {
   useEffect(() => {
     const enterImmersion = () => {
       preSpiralMapToolRef.current = readRhizohWorldMapToolV0();
-      void applyRhizohWorldMapToolV0("satellite", {
-        leafletOnly: true,
-        source: "SPIRAL_MMO_IMMERSION"
+      runSpiralImmersionEnterStagedV0(() => {
+        setSpiralImmersionActive(true);
+        setV11NodePanel(null);
+        closeProductSurfaceDrawerV0();
       });
-      setSpiralImmersionActive(true);
-      setV11NodePanel(null);
-      closeProductSurfaceDrawerV0();
     };
     const exitImmersion = () => {
       setSpiralImmersionActive(false);
@@ -701,6 +701,13 @@ export default function AppRhizohWorldSpaceV0() {
         [data-rhizoh-spiral-immersion="1"] [data-rhizoh-spiral-mmo-awakening-overlay] {
           z-index: 31 !important;
         }
+        [data-rhizoh-world-space-map-host] {
+          transition: opacity 0.85s ease-in-out, filter 0.85s ease-in-out;
+        }
+        [data-rhizoh-spiral-immersion="1"] [data-rhizoh-world-space-map-host] {
+          opacity: 1;
+          filter: none;
+        }
       `}</style>
       <RhizohAtmospherePresenceBridge />
       <RhizohWorldSpaceMapHostV0
@@ -774,6 +781,14 @@ export default function AppRhizohWorldSpaceV0() {
 
       {castleAuth.needsAuthGate || castleAuth.needsOnboarding ? (
         <CastleAuthOverlay auth={castleAuth} />
+      ) : null}
+
+      {!spiralImmersionActive ? (
+        <div className="pointer-events-none fixed inset-x-0 top-28 z-[27] flex justify-center px-4">
+          <div className="pointer-events-auto w-full max-w-md">
+            <RhizohMapTransitionApproachStripV0 uiLocale={uiLocale} />
+          </div>
+        </div>
       ) : null}
 
       {showGeoChip && !spiralImmersionActive ? (

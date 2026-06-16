@@ -7,6 +7,7 @@ import {
 import { resolveWorldSpaceMediaChannelV0 } from "../rhizoh/runtime/worldSpaceMediaChannelsV0.js";
 import { createWorldSpaceMediaCaptureV0 } from "../rhizoh/runtime/worldSpaceMediaEngineV0.js";
 import { RhizohMediaStageWithOctoV0 } from "./RhizohMediaOctoCompanionOverlayV0.jsx";
+import { ActorGlbNestPreviewV0 } from "./ActorGlbNestPreviewV0.jsx";
 
 const FACING_OPTIONS_V1 = Object.freeze([
   OCTO_CAMERA_FACING_V1.OTHER,
@@ -25,32 +26,8 @@ function lensChannelV0(lens) {
 }
 
 function ActorNestPlaceholderV0({ actor, facing, tr, compact = false }) {
-  const isOcto = actor === "octo";
-  const label = isOcto
-    ? tr
-      ? "Octo · karşı yuva"
-      : "Octo · counterpart nest"
-    : tr
-      ? "Fox · karşı yuva"
-      : "Fox · counterpart nest";
   return (
-    <div
-      className={`flex flex-col items-center justify-center rounded-xl border bg-gradient-to-br ${
-        isOcto
-          ? "border-cyan-400/35 from-cyan-950/50 to-black/70"
-          : "border-amber-400/35 from-amber-950/50 to-black/70"
-      } ${compact ? "min-h-[7rem] p-2" : "min-h-[10rem] p-4"}`}
-      data-rhizoh-octo-lab-facing={facing}
-      data-rhizoh-octo-lab-actor={actor}
-    >
-      <p className="text-3xl">{isOcto ? "🐙" : "🦊"}</p>
-      <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-wider text-white/80">
-        {label}
-      </p>
-      <p className="mt-1 text-center text-[9px] normal-case text-white/45">
-        {tr ? "Varsayılan: karşıyı göster" : "Default: facing other"}
-      </p>
-    </div>
+    <ActorGlbNestPreviewV0 actor={actor} facing={facing} tr={tr} compact={compact} />
   );
 }
 
@@ -70,16 +47,34 @@ function LensPreviewPaneV0({
   const secondaryActor = actors[1] || "fox";
 
   if (lens.kind === "youtube_lab" && youtubeSrc) {
+    const companionActor = primaryActor === "fox" ? "fox" : "octo";
     return (
-      <RhizohMediaStageWithOctoV0 className="flex min-h-0 flex-1 flex-col" mediaStream={localStream}>
-        <iframe
-          className="min-h-0 h-full w-full flex-1"
-          src={youtubeSrc}
-          title={youtubeTitle || lens.label}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-        />
-      </RhizohMediaStageWithOctoV0>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        {companionActor === "octo" ? (
+          <RhizohMediaStageWithOctoV0 className="flex min-h-0 flex-1 flex-col" mediaStream={localStream}>
+            <iframe
+              className="min-h-0 h-full w-full flex-1"
+              src={youtubeSrc}
+              title={youtubeTitle || lens.label}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </RhizohMediaStageWithOctoV0>
+        ) : (
+          <>
+            <iframe
+              className="min-h-0 h-full w-full flex-1"
+              src={youtubeSrc}
+              title={youtubeTitle || lens.label}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+            <div className="pointer-events-none absolute bottom-3 right-3 z-10 w-36 opacity-95">
+              <ActorGlbNestPreviewV0 actor="fox" tr={tr} compact facing={facing} />
+            </div>
+          </>
+        )}
+      </div>
     );
   }
 

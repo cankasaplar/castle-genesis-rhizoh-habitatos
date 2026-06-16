@@ -246,7 +246,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
           source: "spiral_countdown_collapse",
           uiLocale
         });
-      }, 2800);
+      }, 4200);
     })();
   }, [complete, collapsing, spawnLaunches]);
 
@@ -500,7 +500,7 @@ const SpiralMMOBirdV0 = memo(function SpiralMMOBirdV0({ bird, hostRef, cubeTarge
       activeAnim.onfinish = () => {
         currentX = targetX;
         currentY = targetY;
-        const landing = 1000 + Math.random() * 2000;
+        const landing = 1800 + Math.random() * 3200;
         window.setTimeout(() => {
           if (collapsing && bird.diveTarget) return;
           let tx = Math.random() * (host.clientWidth || window.innerWidth);
@@ -510,7 +510,7 @@ const SpiralMMOBirdV0 = memo(function SpiralMMOBirdV0({ bird, hostRef, cubeTarge
             tx = target.x;
             ty = target.y;
           }
-          flyTo(tx, ty, 2000 + Math.random() * 4000);
+          flyTo(tx, ty, 3600 + Math.random() * 3600);
         }, landing);
       };
     };
@@ -519,9 +519,9 @@ const SpiralMMOBirdV0 = memo(function SpiralMMOBirdV0({ bird, hostRef, cubeTarge
       flyTo(
         Math.random() * (host.clientWidth || window.innerWidth),
         Math.random() * (host.clientHeight || window.innerHeight),
-        2200 + Math.random() * 2000
+        3600 + Math.random() * 2800
       );
-    }, 120 + Math.random() * 800);
+    }, 400 + Math.random() * 1400);
 
     return () => {
       window.clearTimeout(startDelay);
@@ -542,7 +542,7 @@ const SpiralMMOBirdV0 = memo(function SpiralMMOBirdV0({ bird, hostRef, cubeTarge
           opacity: 0
         }
       ],
-      { duration: 800, easing: "ease-in", fill: "forwards" }
+      { duration: 1200, easing: "ease-in", fill: "forwards" }
     );
     return () => anim.cancel();
   }, [collapsing, bird]);
