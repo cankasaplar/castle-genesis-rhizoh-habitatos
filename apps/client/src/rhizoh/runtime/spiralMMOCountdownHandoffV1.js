@@ -8,7 +8,7 @@ import { RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0 } from "./spiralMMOAwakeningCy
 import { dispatchWorldSpaceMapFlyV0 } from "./worldSpaceMapCommandFacadeV0.js";
 import { resolveMapViewportHomeV0 } from "./worldMapViewportBootstrapV0.js";
 import { logCastleLifecycleV0 } from "./rhizohProductionLogNamespacesV0.js";
-import { isRhizohCatchUpReplayActiveV0 } from "./rhizohCatchUpGuardV0.js";
+import { isReplayModeActiveV0 } from "./temporalBridgeV0.js";
 
 export const SPIRAL_MMO_COUNTDOWN_HANDOFF_SCHEMA_V1 = "castle.spiral_mmo_countdown_handoff.v1";
 export const RHIZOH_SPIRAL_MMO_COUNTDOWN_HANDOFF_EVENT_V1 = "rhizoh:spiral-mmo-countdown-handoff-v1";
@@ -31,7 +31,7 @@ export async function handoffSpiralCountdownToWaitingRoomV1(opts = {}) {
   if (typeof window === "undefined") return false;
 
   const source = opts.source || "spiral_countdown_handoff";
-  if (isRhizohCatchUpReplayActiveV0()) {
+  if (isReplayModeActiveV0()) {
     logCastleLifecycleV0("spiral_handoff_skipped", { reason: "catch_up_replay", source });
     return false;
   }

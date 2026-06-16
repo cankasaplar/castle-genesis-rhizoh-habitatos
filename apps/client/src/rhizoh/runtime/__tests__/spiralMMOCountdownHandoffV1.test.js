@@ -5,9 +5,11 @@ import { applyRhizohWorldMapToolV0 } from "../rhizohWorldMapToolV0.js";
 import { handleProductShellSelectV0 } from "../rhizohDrawerStateMachineV0.js";
 import { openOctoYuvaEightCameraLabV1 } from "../octoYuvaMediaLabBridgeV1.js";
 import {
-  setRhizohCatchUpReplayActiveV0,
-  __resetRhizohCatchUpGuardForTestV0
-} from "../rhizohCatchUpGuardV0.js";
+  enterReplayModeV0,
+  exitReplayModeV0,
+  __resetTemporalBridgeForTestV0
+} from "../temporalBridgeV0.js";
+import { __resetRhizohCatchUpGuardForTestV0 } from "../rhizohCatchUpGuardV0.js";
 
 vi.mock("../rhizohWorldMapToolV0.js", () => ({
   applyRhizohWorldMapToolV0: vi.fn(() => Promise.resolve())
@@ -28,6 +30,7 @@ vi.mock("../octoYuvaMediaLabBridgeV1.js", async (importOriginal) => {
 describe("spiralMMOCountdownHandoffV1", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    __resetTemporalBridgeForTestV0();
     __resetRhizohCatchUpGuardForTestV0();
     vi.mocked(applyRhizohWorldMapToolV0).mockClear();
     vi.mocked(handleProductShellSelectV0).mockClear();
@@ -69,13 +72,13 @@ describe("spiralMMOCountdownHandoffV1", () => {
   });
 
   it("skips handoff during catch-up replay", async () => {
-    setRhizohCatchUpReplayActiveV0(true);
+    enterReplayModeV0("test_catch_up");
     const immersion = [];
     window.addEventListener(RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0, () => immersion.push(1));
     const out = await handoffSpiralCountdownToWaitingRoomV1({ source: "test_catch_up" });
     expect(out).toBe(false);
     expect(immersion).toHaveLength(0);
     expect(applyRhizohWorldMapToolV0).not.toHaveBeenCalled();
-    setRhizohCatchUpReplayActiveV0(false);
+    exitReplayModeV0("test_catch_up");
   });
 });

@@ -8,6 +8,11 @@
 
 import { logVoiceInfoV0, logVoiceWarnV0 } from "./rhizohProductionLogNamespacesV0.js";
 import { isVoiceEngineV3EnabledV0 } from "./voiceEngineV3/isVoiceEngineV3EnabledV0.js";
+import {
+  enqueueMutedReplayVoiceV0,
+  shouldMuteVoiceOutputV0,
+  VOICE_TEMPORAL_MODE_V0
+} from "./temporalBridgeV0.js";
 
 export const RHIZOH_VOICE_OUTPUT_ADAPTER_SCHEMA_V0 = "rhizoh.voice_output_adapter_chain.v0";
 
@@ -98,6 +103,21 @@ export function getTextOutputBufferSnapshotV0() {
 export function emitVoiceOutputWithFallbackV0(text, speakTtsFn, meta = {}) {
   const line = String(text || "").trim();
   if (!line) return Object.freeze({ ok: false, channel: null });
+
+  if (shouldMuteVoiceOutputV0()) {
+    enqueueMutedReplayVoiceV0({ text: line, meta });
+    logVoiceInfoV0("VOICE_OUTPUT_MUTED_REPLAY", {
+      preview: line.slice(0, 80),
+      source: meta.source || null,
+      mode: VOICE_TEMPORAL_MODE_V0.MUTED_REPLAY
+    });
+    return Object.freeze({
+      ok: true,
+      channel: VOICE_TEMPORAL_MODE_V0.MUTED_REPLAY,
+      suppressed: true,
+      llmBypass: meta.llmBypass
+    });
+  }
 
   let ttsOk = false;
   try {

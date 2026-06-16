@@ -22,7 +22,7 @@ import { publishOfflineVoidStateV0 } from "./offlineVoidGateV0.js";
 import { readCodexStateV0 } from "./ReplayEngineV0.js";
 import { canPersistUserTopologyN12V0 } from "../pwa/rhizohPwaPermissionsN12V0.js";
 import { logCastleLifecycleV0 } from "../rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
-import { setRhizohCatchUpReplayActiveV0 } from "../rhizoh/runtime/rhizohCatchUpGuardV0.js";
+import { enterReplayModeV0, exitReplayModeV0 } from "../rhizoh/runtime/temporalBridgeV0.js";
 
 export const RHIZOH_CANONICAL_TICK_SCHEMA_V0 = "castle.rhizoh.canonical_tick_client.v0";
 export const RHIZOH_CANONICAL_TICK_EVENT_V0 = "rhizoh:canonical-tick-v0";
@@ -85,7 +85,7 @@ export async function runCanonicalCatchUpV0(authority) {
     return Object.freeze({ ok: false, reason: catchUpRunningV0 ? "catch_up_in_progress" : "n12_denied" });
   }
   catchUpRunningV0 = true;
-  setRhizohCatchUpReplayActiveV0(true);
+  enterReplayModeV0("canonical_catch_up");
   try {
     publishCanonicalTickV0(authority);
     const eventsOut = await listSimulationEventsV0(0);
@@ -125,7 +125,7 @@ export async function runCanonicalCatchUpV0(authority) {
     });
     return Object.freeze({ ok: true, authority, reconcileOut, recon });
   } finally {
-    setRhizohCatchUpReplayActiveV0(false);
+    exitReplayModeV0("canonical_catch_up");
     catchUpRunningV0 = false;
   }
 }

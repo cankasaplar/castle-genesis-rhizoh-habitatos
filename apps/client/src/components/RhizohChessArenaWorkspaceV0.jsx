@@ -6,7 +6,7 @@ import {
   createCastleToCastleChessMatchV0,
   formatChessOutcomeLabelV0
 } from "../rhizoh/runtime/chessArenaEngineV0.js";
-import { getChessStockfishEngineStatusV0, getChessStockfishEngineDetailV0, getStockfishArenaMoveV0, pickChessArenaEngineMoveV0, resetChessStockfishEngineV0 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
+import { getChessStockfishEngineStatusV0, getChessStockfishEngineDetailV0, getStockfishArenaMoveV0, pickChessArenaEngineMoveV0, resetChessStockfishEngineV0, CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
 import { pickRhizohChessMoveV0 } from "../rhizoh/runtime/rhizohChessPlayerV0.js";
 import { CHESS_STOCKFISH_PRESET_V0 } from "../rhizoh/runtime/chessStockfishPresetsV0.js";
 import {
@@ -283,9 +283,17 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
 
   useEffect(() => {
     if (!open) return;
+    const onEngineStatus = (ev) => {
+      const detail = ev?.detail;
+      if (!detail?.status) return;
+      setEngineStatus(detail.status);
+      setEngineDetail(detail);
+    };
+    window.addEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, onEngineStatus);
     void getStockfishArenaMoveV0("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", {
       ...CHESS_STOCKFISH_PRESET_V0.WARMUP
     }).finally(refreshEngineStatusV0);
+    return () => window.removeEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, onEngineStatus);
   }, [open, refreshEngineStatusV0]);
 
   useEffect(() => {
