@@ -4,11 +4,8 @@ import {
   OCTO_CAMERA_FACING_V1,
   OCTO_YUVA_EIGHT_CAMERA_LENSES_V1
 } from "../rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
-import {
-  createWorldSpaceMediaCaptureV0,
-  listWorldSpaceMediaChannelsV0,
-  resolveWorldSpaceMediaChannelV0
-} from "../rhizoh/runtime/worldSpaceMediaChannelsV0.js";
+import { resolveWorldSpaceMediaChannelV0 } from "../rhizoh/runtime/worldSpaceMediaChannelsV0.js";
+import { createWorldSpaceMediaCaptureV0 } from "../rhizoh/runtime/worldSpaceMediaEngineV0.js";
 import { RhizohMediaStageWithOctoV0 } from "./RhizohMediaOctoCompanionOverlayV0.jsx";
 
 const FACING_OPTIONS_V1 = Object.freeze([
