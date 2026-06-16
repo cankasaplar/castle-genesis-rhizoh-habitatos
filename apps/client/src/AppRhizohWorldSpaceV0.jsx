@@ -712,6 +712,14 @@ export default function AppRhizohWorldSpaceV0() {
         [data-rhizoh-world-space-map-host] {
           transition: opacity 0.85s ease-in-out, filter 0.85s ease-in-out;
         }
+        .rhizoh-map-camera-pulse-v0 {
+          animation: rhizoh-map-camera-pulse-keyframes 0.52s ease-out;
+        }
+        @keyframes rhizoh-map-camera-pulse-keyframes {
+          0% { box-shadow: inset 0 0 0 0 rgba(34, 211, 238, 0); filter: brightness(1); }
+          35% { box-shadow: inset 0 0 0 3px rgba(34, 211, 238, 0.55); filter: brightness(1.08); }
+          100% { box-shadow: inset 0 0 0 0 rgba(34, 211, 238, 0); filter: brightness(1); }
+        }
         [data-rhizoh-spiral-immersion="1"] [data-rhizoh-world-space-map-host] {
           opacity: 1;
           filter: none;

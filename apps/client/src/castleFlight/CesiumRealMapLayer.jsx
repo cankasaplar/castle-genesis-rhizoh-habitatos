@@ -1979,7 +1979,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
   }, [active]);
 
   return (
-    <div className="absolute inset-0 z-[2] h-full w-full min-h-0">
+    <div className="absolute inset-0 z-[2] h-full w-full min-h-0" data-cesium-real-map-layer="1">
       <div
         ref={hostRef}
         data-castle-cesium-host="1"

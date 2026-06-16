@@ -7,6 +7,7 @@ import { RHIZOH_MAP_COMMAND_EVENT_V0 } from "./rhizohLocalCommandHandlersV0.js";
 import { routeCesiumCommandV0 } from "../../castleFlight/cesiumCommandRouterV0.js";
 import { logCastleLifecycleV0 } from "./rhizohProductionLogNamespacesV0.js";
 import { resolveMapViewportHomeV0 } from "./worldMapViewportBootstrapV0.js";
+import { installWorldMapVisualFeedbackV0 } from "./worldMapVisualFeedbackV0.js";
 
 export const RHIZOH_MAP_CAMERA_FEEDBACK_EVENT_V0 = "rhizoh:map-camera-feedback-v0";
 
@@ -90,6 +91,7 @@ let installedV0 = false;
 export function installWorldSpaceMapCommandFacadeV0() {
   if (typeof window === "undefined" || installedV0) return;
   installedV0 = true;
+  installWorldMapVisualFeedbackV0();
 
   window.addEventListener(RHIZOH_MAP_COMMAND_EVENT_V0, (ev) => {
     const action = String(ev?.detail?.action || "");
