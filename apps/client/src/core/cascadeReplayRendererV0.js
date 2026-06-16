@@ -10,6 +10,8 @@ export const RHIZOH_CATCH_UP_CASCADE_SCHEMA_V0 = "castle.rhizoh.catch_up_cascade
 export const RHIZOH_CATCH_UP_CASCADE_EVENT_V0 = "rhizoh:catch-up-cascade-v0";
 export const RHIZOH_CATCH_UP_CASCADE_PHASE_EVENT_V0 = "rhizoh:catch-up-cascade-phase-v0";
 
+const FAST_CATCH_UP_UI_THRESHOLD_V0 = 48;
+
 /**
  * @param {{ fromLayer: number, toLayer: number, canonicalSeed: number, stepMs?: number }} opts
  */
@@ -17,7 +19,9 @@ export function buildCatchUpCascadePlanV0(opts = {}) {
   const fromLayer = Math.max(0, Number(opts.fromLayer) || 0);
   const toLayer = Math.max(fromLayer, Number(opts.toLayer) || fromLayer);
   const canonicalSeed = Number(opts.canonicalSeed) || 0;
-  const stepMs = Math.max(120, Number(opts.stepMs) || 380);
+  const gap = toLayer - fromLayer;
+  const fastUi = gap > FAST_CATCH_UP_UI_THRESHOLD_V0;
+  const stepMs = fastUi ? 0 : Math.max(120, Number(opts.stepMs) || 380);
 
   const steps = [];
   for (let layer = fromLayer + 1; layer <= toLayer; layer++) {
@@ -37,6 +41,7 @@ export function buildCatchUpCascadePlanV0(opts = {}) {
     toLayer,
     canonicalSeed,
     stepMs,
+    fastUi,
     totalSteps: steps.length,
     steps: Object.freeze(steps)
   });
@@ -70,15 +75,23 @@ export async function runCatchUpCascadePlanV0(plan, onPhase) {
       layer: step.layer,
       seed: step.seed,
       progress: step.progress,
-      durationMs: step.durationMs
+      durationMs: step.durationMs,
+      fastUi: Boolean(plan.fastUi)
     });
 
-    publishCascadePhaseV0(phase);
+    const publishUi =
+      !plan.fastUi ||
+      i === 0 ||
+      i === steps.length - 1 ||
+      i % Math.max(1, Math.ceil(steps.length / 24)) === 0;
+    if (publishUi) {
+      publishCascadePhaseV0(phase);
+    }
     if (typeof onPhase === "function") {
       await onPhase(phase);
     }
 
-    await sleepMsV0(step.durationMs);
+    await sleepMsV0(plan.fastUi ? 0 : step.durationMs);
   }
 
   publishCascadeSnapshotV0(

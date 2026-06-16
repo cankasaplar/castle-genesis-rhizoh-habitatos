@@ -37,4 +37,11 @@ describe("cascadeReplayRendererV0", () => {
     expect(plan.steps[2].layer).toBe(4);
     expect(plan.steps[0].seed).toBe(deriveDeterministicLayerSeedV0(99821, 2));
   });
+
+  it("enables fastUi when layer gap exceeds threshold", () => {
+    const plan = buildCatchUpCascadePlanV0({ fromLayer: 0, toLayer: 120, canonicalSeed: 42 });
+    expect(plan.fastUi).toBe(true);
+    expect(plan.stepMs).toBe(0);
+    expect(plan.totalSteps).toBe(120);
+  });
 });

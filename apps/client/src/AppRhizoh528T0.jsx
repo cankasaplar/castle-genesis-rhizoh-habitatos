@@ -595,6 +595,7 @@ import {
 } from "./rhizoh/experience/index.js";
 import { RhizohT0ShellChromeV1 } from "./components/RhizohT0ShellChromeV1.jsx";
 import { startYoutubeLabOctoBridgeV1 } from "./rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
+import { startRhizohLegalPendingWaitLoopV0 } from "./rhizoh/runtime/rhizohLegalPendingWaitLoopV0.js";
 import { writeProductSurfaceV0 } from "./rhizoh/spatial/rhizohProductShellBridgeV0.js";
 import {
   navigateRhizohProductSurfaceV0,
@@ -11787,7 +11788,11 @@ export default function AppRhizoh528() {
 
   useEffect(() => {
     const stopYoutubeLab = startYoutubeLabOctoBridgeV1();
-    return () => stopYoutubeLab?.();
+    const stopLegalPendingLoop = startRhizohLegalPendingWaitLoopV0();
+    return () => {
+      stopYoutubeLab?.();
+      stopLegalPendingLoop?.();
+    };
   }, []);
 
   useEffect(() => {
@@ -12999,6 +13004,7 @@ export default function AppRhizoh528() {
           auth={castleAuth}
           gatewayOrigin={getGenesisProtocolGatewayOrigin()}
           runtimeHealth={runtimeHealth}
+          gatewayPhase={gatewayUx.phase}
           uiLocale={uiLocaleV0}
           experienceSessionId={experienceSessionCtxV0.experienceSessionId}
           productSessionId={experienceSessionCtxV0.productSessionId}

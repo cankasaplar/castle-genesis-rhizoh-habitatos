@@ -38,6 +38,7 @@ export const ORCHESTRATOR_ACTION_REGISTRY_V0 = Object.freeze({
   OPEN_LIBRARY: "OPEN_LIBRARY",
   OPEN_CHESS_ARENA: "OPEN_CHESS_ARENA",
   OPEN_TOWER_PORTAL: "OPEN_TOWER_PORTAL",
+  OPEN_SPIRAL_MMO: "OPEN_SPIRAL_MMO",
   ENTER_CASTLE: "ENTER_CASTLE",
   LOAD_WORLD_NODE: "LOAD_WORLD_NODE",
   ATTACH_VOICE_STREAM: "ATTACH_VOICE_STREAM"
@@ -156,8 +157,8 @@ export function resolveSymbyoMapIntentDecisionV0(intent = {}, surface = {}, node
     if (nodeType === "tower") {
       return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_WORKSPACE, 0.88, refs);
     }
-    if (nodeType === "spiralmmo") {
-      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.LOAD_WORLD_NODE, 0.84, refs);
+    if (nodeType === "spiralmmo" || nodeId.includes("spiralmmo")) {
+      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_SPIRAL_MMO, 0.9, refs);
     }
     if (nodeType === "broadcast" || nodeType === "zone" || nodeType === "hub") {
       return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER, 0.86, refs);

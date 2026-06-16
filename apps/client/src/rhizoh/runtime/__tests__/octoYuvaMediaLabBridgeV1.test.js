@@ -23,6 +23,8 @@ describe("octoYuvaMediaLabBridgeV1", () => {
     expect(OCTO_YUVA_EIGHT_CAMERA_LENSES_V1.some((l) => l.kind === "cesium_ion")).toBe(true);
     expect(OCTO_YUVA_EIGHT_CAMERA_LENSES_V1.some((l) => l.kind === "youtube_lab")).toBe(true);
     expect(OCTO_YUVA_EIGHT_CAMERA_LENSES_V1.some((l) => l.kind === "leaflet_satellite")).toBe(true);
+    expect(OCTO_YUVA_EIGHT_CAMERA_LENSES_V1.some((l) => l.kind === "octo_fox_dual")).toBe(true);
+    expect(OCTO_YUVA_EIGHT_CAMERA_LENSES_V1.every((l) => l.facing === "other")).toBe(true);
   });
 
   it("publishes yuva activation once and opens media tube", () => {

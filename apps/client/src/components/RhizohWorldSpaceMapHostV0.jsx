@@ -21,6 +21,7 @@ import {
 } from "../rhizoh/runtime/worldMapBootstrapGeoV0.js";
 
 import { dispatchV11MapEventPinV0 } from "../rhizoh/runtime/mapEventPinDispatchV0.js";
+import { RHIZOH_MAP_COMMAND_EVENT_V0 } from "../rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
 import { RhizohCatchUpCascadeOverlayV0 } from "./RhizohCatchUpCascadeOverlayV0.jsx";
 import { RhizohSpiralMMOMapAwakeningOverlayV0 } from "./RhizohSpiralMMOMapAwakeningOverlayV0.jsx";
 import { RhizohN12PersistenceGateV0 } from "./RhizohN12PersistenceGateV0.jsx";
@@ -146,12 +147,12 @@ function handleV11MapClickForClaimV0(ev) {
 function leafletTilePaneFilterCssV0(activeMapTool) {
   const tool = String(activeMapTool || "city_map");
   if (tool === "satellite") {
-    return "filter: brightness(0.94) contrast(1.06) saturate(1.08);";
+    return "filter: brightness(1.04) contrast(1.1) saturate(1.14);";
   }
   if (tool === "streets") {
-    return "filter: invert(100%) hue-rotate(180deg) brightness(0.42) contrast(1.35);";
+    return "filter: invert(94%) hue-rotate(180deg) brightness(0.92) contrast(1.08);";
   }
-  return "filter: invert(100%) hue-rotate(180deg) brightness(0.35) contrast(1.5);";
+  return "filter: brightness(0.92) contrast(1.08) saturate(1.02);";
 }
 
 function leafletTileUrlForToolV0(activeMapTool) {
@@ -162,7 +163,7 @@ function leafletTileUrlForToolV0(activeMapTool) {
   if (tool === "streets") {
     return "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
   }
-  return "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+  return "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 }
 
 function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], remoteCastlesVisible = false }) {
@@ -272,6 +273,23 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
       window.removeEventListener("castle:castle-create-v0", onCastle);
     };
   }, []);
+
+  useEffect(() => {
+    if (!leafletReady) return undefined;
+    const onMapCommand = (ev) => {
+      const action = String(ev?.detail?.action || "");
+      const map = mapRef.current;
+      if (!map) return;
+      try {
+        if (action === "zoom_in") map.zoomIn();
+        else if (action === "zoom_out") map.zoomOut();
+      } catch {
+        /* noop */
+      }
+    };
+    window.addEventListener(RHIZOH_MAP_COMMAND_EVENT_V0, onMapCommand);
+    return () => window.removeEventListener(RHIZOH_MAP_COMMAND_EVENT_V0, onMapCommand);
+  }, [leafletReady]);
 
   useEffect(() => {
     const onWarp = (ev) => {
@@ -426,14 +444,14 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
 
   return (
     <div
-      className="absolute inset-0 overflow-hidden bg-[radial-gradient(circle_at_center,rgba(8,47,73,0.48),rgba(1,1,8,0.98)_68%)]"
+      className="absolute inset-0 overflow-hidden bg-[radial-gradient(circle_at_center,rgba(14,116,144,0.18),rgba(8,14,28,0.52)_72%)]"
       data-rhizoh-v11-core-map-layer="1"
       data-rhizoh-v11-leaflet-ready={leafletReady ? "1" : "0"}
       aria-label="Rhizoh Primary Spatial Surface V11"
     >
       <div ref={hostRef} className="pointer-events-auto absolute inset-0 z-[1]" data-rhizoh-v11-leaflet-host="1" />
       <style>{`
-        [data-rhizoh-v11-leaflet-host="1"] .leaflet-container { background: #000 !important; cursor: grab !important; }
+        [data-rhizoh-v11-leaflet-host="1"] .leaflet-container { background: #0b1220 !important; cursor: grab !important; }
         [data-rhizoh-v11-leaflet-host="1"] .leaflet-container:active { cursor: grabbing !important; }
         [data-rhizoh-v11-leaflet-host="1"] .leaflet-tile-pane {
           ${leafletTilePaneFilterCssV0(activeMapTool)}

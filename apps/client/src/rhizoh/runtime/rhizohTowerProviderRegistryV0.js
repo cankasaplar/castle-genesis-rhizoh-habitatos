@@ -8,7 +8,7 @@ export const RHIZOH_TOWER_PROVIDER_REGISTRY_V0 = Object.freeze({
     model: "gemini-2.0-flash",
     labelEn: "Gemini Tower",
     labelTr: "Gemini Kulesi",
-    capabilities: Object.freeze(["vision", "voice", "image_gen"])
+    capabilities: Object.freeze(["vision", "voice", "image_gen", "tower_voice"])
   }),
   claude_tower: Object.freeze({
     provider: "anthropic",
