@@ -27,6 +27,10 @@ import {
   runMapPinApproachThenV0,
   scheduleMapPinHoverDwellV0
 } from "../rhizoh/runtime/worldMapMeaningfulTransitionV0.js";
+import {
+  resolveMapViewportFitNodesV0,
+  resolveMapViewportHomeV0
+} from "../rhizoh/runtime/worldMapViewportBootstrapV0.js";
 import { RHIZOH_MAP_COMMAND_EVENT_V0 } from "../rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
 import { RhizohCatchUpCascadeOverlayV0 } from "./RhizohCatchUpCascadeOverlayV0.jsx";
 import { RhizohSpiralMMOMapAwakeningOverlayV0 } from "./RhizohSpiralMMOMapAwakeningOverlayV0.jsx";
@@ -412,17 +416,17 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
       }
 
       if (!boundsFittedRef.current && allNodes.length) {
-        const bounds = L.latLngBounds(allNodes.map((n) => [n.lat, n.lon]));
+        const fitNodes = resolveMapViewportFitNodesV0(allNodes);
+        const bounds = L.latLngBounds(fitNodes.map((n) => [n.lat, n.lon]));
+        const home = resolveMapViewportHomeV0(userCastleGeo);
         mapRef.current.fitBounds(bounds, {
-          paddingTopLeft: [28, 104],
-          paddingBottomRight: [28, 36],
-          maxZoom: userCastleGeo ? 16 : 5,
+          paddingTopLeft: [28, 88],
+          paddingBottomRight: [28, 32],
+          maxZoom: userCastleGeo ? 15 : 14,
           animate: false
         });
-        try {
-          mapRef.current.panBy([0, 52], { animate: false });
-        } catch {
-          /* noop */
+        if (!userCastleGeo && fitNodes.length <= 2) {
+          mapRef.current.setView([home.lat, home.lon], home.zoom, { animate: false });
         }
         boundsFittedRef.current = true;
       }

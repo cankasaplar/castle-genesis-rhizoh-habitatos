@@ -116,6 +116,10 @@ import {
   persistWorldSpaceCastleAnchorV0
 } from "./rhizoh/runtime/castleWorldSpaceContinuityV0.js";
 import { bootRhizohOsStabilReleaseLayerV0 } from "./rhizoh/runtime/rhizohOsStabilReleaseLayerV0.js";
+import {
+  dispatchWorldSpaceMapFlyV0,
+  installWorldSpaceMapCommandFacadeV0
+} from "./rhizoh/runtime/worldSpaceMapCommandFacadeV0.js";
 import { getActiveFederationOverlayNodeV0 } from "./rhizoh/runtime/rhizohDomainGraphV0.js";
 import {
   RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0,
@@ -296,16 +300,20 @@ export default function AppRhizohWorldSpaceV0() {
     window.addEventListener("castle:open-init-gate-v0", onOpenCastleGate);
     window.addEventListener("castle:open-anchor-offer-v0", onOpenCastleGate);
 
+    installWorldSpaceMapCommandFacadeV0();
+
     const onSovereignWarp = (ev) => {
       const detail = ev?.detail;
       const lat = Number(detail?.lat);
       const lon = Number(detail?.lon);
+      const zoom = Number(detail?.zoom) || 14;
       if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-      try {
-        window.__CASTLE_CESIUM__?.flyToCustom?.(lat, lon, 1200, { source: detail?.source || "voice_warp" });
-      } catch {
-        /* noop */
-      }
+      dispatchWorldSpaceMapFlyV0({
+        lat,
+        lon,
+        zoom,
+        source: detail?.source || "voice_warp"
+      });
     };
     window.addEventListener(RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1, onSovereignWarp);
 
