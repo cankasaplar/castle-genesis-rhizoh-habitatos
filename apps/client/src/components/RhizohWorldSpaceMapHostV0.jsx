@@ -186,6 +186,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
   const portalMarkerRef = useRef(null);
   const boundsFittedRef = useRef(false);
   const [userCastleGeo, setUserCastleGeo] = useState(() => resolveUserCastleGeoForMapViewV0());
+  const [localAnchors, setLocalAnchors] = useState(() => readLocalGhostCastleAnchorsV0());
   const presenceCountV0 = useSyncExternalStore(
     subscribeCastlePresenceV0,
     readPresenceCountSnapshotV0,
