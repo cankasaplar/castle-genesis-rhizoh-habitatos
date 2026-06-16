@@ -92,6 +92,7 @@ export function deriveOctoMotionDriveV1(input = {}) {
   const textLen = text.length;
   const words = textLen ? text.split(/\s+/).filter(Boolean).length : 0;
   const busy = Boolean(input.busy);
+  const engagementProxy = Math.min(1, Math.max(0, Number(input.engagementProxy) || 0));
 
   let activation = 0.32;
   if (busy) activation = 0.58;
@@ -99,6 +100,7 @@ export function deriveOctoMotionDriveV1(input = {}) {
   if (emotion === "speaking") activation = Math.min(1, activation + 0.28);
   if (emotion === "thinking") activation = Math.min(1, activation + 0.18);
   if (emotion === "listening") activation = Math.max(0.38, activation * 0.85);
+  if (engagementProxy > 0) activation = Math.min(1, activation + engagementProxy * 0.24);
 
   const draftOnly = Boolean(String(input.draftText || "").trim()) && !String(input.replyText || "").trim();
 

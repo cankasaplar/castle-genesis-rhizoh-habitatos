@@ -4,6 +4,10 @@ import {
   onCodexBusV0
 } from "../core/CodexBusV0.js";
 import { CODEX_EVENT_TYPE_V0 } from "../core/codexReducerV0.js";
+import {
+  RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0,
+  RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0
+} from "../rhizoh/runtime/spiralMMOAwakeningCycleV0.js";
 
 const STREAM_TYPES_V0 = new Set([
   CODEX_EVENT_TYPE_V0.GHOST_DISPATCH,
@@ -51,6 +55,18 @@ export const RhizohCodexEventStreamV0 = memo(function RhizohCodexEventStreamV0()
   const [entries, setEntries] = useState(() => [
     { id: "ready", className: "collapse", text: "SYSTEM_READY: awaiting events…" }
   ]);
+  const [spiralImmersion, setSpiralImmersion] = useState(false);
+
+  useEffect(() => {
+    const onEnter = () => setSpiralImmersion(true);
+    const onExit = () => setSpiralImmersion(false);
+    window.addEventListener(RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0, onEnter);
+    window.addEventListener(RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0, onExit);
+    return () => {
+      window.removeEventListener(RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0, onEnter);
+      window.removeEventListener(RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0, onExit);
+    };
+  }, []);
 
   useEffect(() => {
     const push = (type, payload, meta) => {
@@ -86,6 +102,8 @@ export const RhizohCodexEventStreamV0 = memo(function RhizohCodexEventStreamV0()
       window.removeEventListener(RHIZOH_CODEX_BUS_EVENT_V0, onDom);
     };
   }, []);
+
+  if (spiralImmersion) return null;
 
   return (
     <aside

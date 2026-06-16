@@ -594,6 +594,7 @@ import {
   inferRhizohUserGoalHint
 } from "./rhizoh/experience/index.js";
 import { RhizohT0ShellChromeV1 } from "./components/RhizohT0ShellChromeV1.jsx";
+import { startYoutubeLabOctoBridgeV1 } from "./rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
 import { writeProductSurfaceV0 } from "./rhizoh/spatial/rhizohProductShellBridgeV0.js";
 import {
   navigateRhizohProductSurfaceV0,
@@ -7407,6 +7408,7 @@ export default function AppRhizoh528() {
   const [micListening, setMicListening] = useState(false);
   const [voiceMicDeviceLabel, setVoiceMicDeviceLabel] = useState("");
   const [productCameraOn, setProductCameraOn] = useState(false);
+  const [productCameraStream, setProductCameraStream] = useState(null);
   const productCameraStreamRef = useRef(null);
   const commandInputRef = useRef(null);
   const gatewayUx = useRhizohGatewayMonitor();
@@ -11753,6 +11755,7 @@ export default function AppRhizoh528() {
     if (productCameraOn) {
       productCameraStreamRef.current?.getTracks().forEach((t) => t.stop());
       productCameraStreamRef.current = null;
+      setProductCameraStream(null);
       setProductCameraOn(false);
       pushT0ContinuityPulseV0("Kamera kapalı", "camera_off");
       return;
@@ -11760,9 +11763,10 @@ export default function AppRhizoh528() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user" },
-        audio: false
+        audio: true
       });
       productCameraStreamRef.current = stream;
+      setProductCameraStream(stream);
       setProductCameraOn(true);
       pushT0ContinuityPulseV0("Kamera açık", "camera_on");
     } catch {
@@ -11777,7 +11781,13 @@ export default function AppRhizoh528() {
     return () => {
       productCameraStreamRef.current?.getTracks().forEach((t) => t.stop());
       productCameraStreamRef.current = null;
+      setProductCameraStream(null);
     };
+  }, []);
+
+  useEffect(() => {
+    const stopYoutubeLab = startYoutubeLabOctoBridgeV1();
+    return () => stopYoutubeLab?.();
   }, []);
 
   useEffect(() => {
@@ -13091,6 +13101,7 @@ export default function AppRhizoh528() {
           onMicClick={handleMicButtonClick}
           cameraActive={productCameraOn}
           onCameraClick={handleCameraButtonClick}
+          productCameraStream={productCameraStream}
         />
           </div>
         </div>

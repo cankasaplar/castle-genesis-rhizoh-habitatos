@@ -23,6 +23,7 @@ import {
   stepOctoMediaBirdFloatV0
 } from "./octoMediaHarmonyV0.js";
 import { deriveOctoMediaTulleDriveV0 } from "./octoMediaTulleBehaviorsV0.js";
+import { readOctoLabPerformanceIntensityV1 } from "./octoYuvaMediaLabBridgeV1.js";
 
 /**
  * @param {HTMLElement} container
@@ -160,7 +161,8 @@ export function mountOctoMediaCompanionV0(container, opts = {}) {
     if (analyser && freqData) analyser.getByteFrequencyData(freqData);
     const bands = sampleOctoMediaAudioBandsV0(freqData);
     const idleMotion = 0.14 + Math.sin(t * 1.4) * 0.04;
-    const audioMotion = freqData ? bands.motion : idleMotion;
+    const labMotion = readOctoLabPerformanceIntensityV1();
+    const audioMotion = freqData ? bands.motion : idleMotion + labMotion * 0.35;
 
     Object.assign(
       floatState,

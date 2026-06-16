@@ -23,6 +23,7 @@ import {
   resolveSpiralMMOEffectiveTriggerV0
 } from "./spiralMMOContinuityV0.js";
 import { PersistentCodexBusV0 } from "../../core/PersistentBusV0.js";
+import { applyRhizohWorldMapToolV0 } from "./rhizohWorldMapToolV0.js";
 import { resolveSpiralMMOBehaviorProfileV0 } from "./spiralMMOSpiralBehaviorV0.js";
 import { spiralMMOMapGeoToPercentV0 } from "./spiralMMOMapGeoProjectV0.js";
 import { resetSpiralMMOSessionCubeAccumV0 } from "./spiralMMOSessionAccumulationV0.js";
@@ -193,6 +194,11 @@ export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Dat
  * @param {number} [nowMs]
  */
 export function dispatchSpiralMMOAwakeningV0(triggerPinIndex, nowMs = Date.now()) {
+  void applyRhizohWorldMapToolV0("satellite", {
+    leafletOnly: true,
+    source: "SPIRAL_MMO_AWAKEN"
+  });
+
   const plan = buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs, { mode: "click", commit: true });
   const pins = listSpiralMMOContinentMapPinsV0();
   const triggerPin = pins[plan.triggerPinIndex];
