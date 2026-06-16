@@ -50,6 +50,10 @@ import {
   saveChessArenaSessionV0
 } from "../rhizoh/runtime/chessArenaSessionV0.js";
 import { logChessMovePlayedV0, logChessRegretSealedV0 } from "../rhizoh/runtime/chessArenaTelemetryV0.js";
+import {
+  attachRhizohUgeEngineHookV0,
+  detachRhizohUgeEngineHookV0
+} from "../rhizoh/runtime/rhizohUgeEngineHookV0.js";
 import { speakChessMoveV0 } from "../rhizoh/runtime/chessMoveVoiceV0.js";
 import { sealChessEndgameAnalysisV0 } from "../rhizoh/runtime/chessEndgameSealV0.js";
 import {
@@ -297,6 +301,14 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   }, [open, refreshEngineStatusV0]);
 
   useEffect(() => {
+    if (!open) return undefined;
+    attachRhizohUgeEngineHookV0({ matchId: c2cMatch?.matchId || `arena_${Date.now().toString(36)}` });
+    return () => {
+      detachRhizohUgeEngineHookV0();
+    };
+  }, [open, c2cMatch?.matchId]);
+
+  useEffect(() => {
     if (!open || !initialMode) return;
     setMode(initialMode);
     setGame(createChessArenaGameV0({ mode: initialMode }));
@@ -510,6 +522,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const applyMove = useCallback(
     async (move) => {
       const moverColor = game.turn();
+      const fenBefore = game.fen();
       const result = game.tryMove(move);
       if (!result.ok) {
         setStatus(tr ? `Geçersiz hamle: ${move}` : `Illegal move: ${move}`);
@@ -526,9 +539,11 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       logChessMovePlayedV0({
         san: result.move.san,
         color: moverColor,
+        fenBefore,
         fen: game.fen(),
         engine: "human",
-        policyMode
+        policyMode,
+        matchId: c2cMatch?.matchId || null
       });
       if (arenaSession.voiceMoves && mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH) {
         speakChessMoveV0({ san: result.move.san, color: moverColor, locale: uiLocale });
@@ -582,6 +597,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         setEngineStatus(getChessStockfishEngineStatusV0());
         const aiMove = typeof aiPick === "string" ? aiPick : aiPick?.move;
         if (aiMove) {
+          const fenBeforeAi = game.fen();
           const aiResult = game.tryMove(aiMove);
           if (aiResult.ok) {
             setTick((n) => n + 1);
@@ -597,9 +613,11 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
             logChessMovePlayedV0({
               san: aiResult.move.san,
               color: game.turn() === "w" ? "b" : "w",
+              fenBefore: fenBeforeAi,
               fen: game.fen(),
               engine: aiPick?.engine || engineLabel,
-              policyMode: aiPick?.policyMode || policyMode
+              policyMode: aiPick?.policyMode || policyMode,
+              matchId: c2cMatch?.matchId || null
             });
             if (arenaSession.voiceMoves) {
               speakChessMoveV0({
@@ -669,6 +687,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         if (!alive || game.isGameOver()) break;
         const aiMove = pick?.move;
         if (!aiMove) break;
+        const fenBeforeAi = game.fen();
         const aiResult = game.tryMove(aiMove);
         if (!aiResult.ok) break;
         setTick((n) => n + 1);
@@ -681,6 +700,15 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                 ? "Yedek motor"
                 : "Fallback";
         setStatus(`${engineLabel}: ${aiResult.move.san}`);
+        logChessMovePlayedV0({
+          san: aiResult.move.san,
+          color: game.turn() === "w" ? "b" : "w",
+          fenBefore: fenBeforeAi,
+          fen: game.fen(),
+          engine: pick?.engine || engineLabel,
+          policyMode: pick?.policyMode || policyMode,
+          matchId: c2cMatch?.matchId || null
+        });
         if (aiResult.outcome) {
           const label = formatChessOutcomeLabelV0(aiResult.outcome, tr);
           setStatus(

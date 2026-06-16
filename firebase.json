@@ -88,6 +88,36 @@
         ]
       },
       {
+        "source": "/chess-engine/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          },
+          {
+            "key": "Cross-Origin-Resource-Policy",
+            "value": "same-origin"
+          }
+        ]
+      },
+      {
+        "source": "/chess-engine/*.wasm",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/wasm"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          },
+          {
+            "key": "Cross-Origin-Resource-Policy",
+            "value": "same-origin"
+          }
+        ]
+      },
+      {
         "source": "/chess-engine/*.js",
         "headers": [
           {
@@ -96,16 +126,11 @@
           },
           {
             "key": "Cache-Control",
-            "value": "public,max-age=31536000,immutable"
-          }
-        ]
-      },
-      {
-        "source": "/chess-engine/**",
-        "headers": [
+            "value": "no-store"
+          },
           {
-            "key": "Cache-Control",
-            "value": "public,max-age=31536000,immutable"
+            "key": "Cross-Origin-Resource-Policy",
+            "value": "same-origin"
           }
         ]
       },

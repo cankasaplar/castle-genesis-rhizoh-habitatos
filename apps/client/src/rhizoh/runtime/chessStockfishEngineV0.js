@@ -4,6 +4,10 @@
  */
 
 import { pickChessArenaAiMoveV0 } from "./chessArenaEngineV0.js";
+import {
+  CHESS_ENGINE_BRIDGE_KIND_V0,
+  emitChessEngineBridgeV0
+} from "./chessEngineBridgeV0.js";
 import { CHESS_STOCKFISH_PRESET_V0 } from "./chessStockfishPresetsV0.js";
 
 export const CHESS_STOCKFISH_ENGINE_SCHEMA_V0 = "castle.chess_stockfish_engine.v0";
@@ -35,6 +39,8 @@ let readyV0 = false;
 let initFailedV0 = false;
 let initErrorV0 = null;
 let assetsVerifiedV0 = false;
+/** @type {string | null} */
+let currentPositionFenV0 = null;
 
 export function getChessStockfishEngineStatusV0() {
   if (initFailedV0) return "heuristic_fallback";
@@ -71,7 +77,28 @@ function publishEngineStatusV0(reason = "status_change") {
     window.__rhizoh.chessStockfishEngine = detail;
     window.dispatchEvent(new CustomEvent(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, { detail }));
   }
+  emitChessEngineBridgeV0(CHESS_ENGINE_BRIDGE_KIND_V0.ENGINE_STATUS, {
+    status: detail.status,
+    initError: detail.initError,
+    assetsVerified: detail.assetsVerified,
+    reason: detail.reason
+  });
   return detail;
+}
+
+function emitBestmoveBridgeV0(move, fenOverride = null) {
+  const fen = fenOverride || currentPositionFenV0;
+  if (!fen || !move) return;
+  emitChessEngineBridgeV0(CHESS_ENGINE_BRIDGE_KIND_V0.BESTMOVE, {
+    fen,
+    stockfishEval: Object.freeze({
+      bestMove: move,
+      cp: lastAnalysisInfoV0.cp,
+      mate: lastAnalysisInfoV0.mate,
+      depth: lastAnalysisInfoV0.depth,
+      pv: lastAnalysisInfoV0.pv
+    })
+  });
 }
 
 function nextId() {
@@ -119,6 +146,7 @@ function attachWorkerHandlersV0(worker) {
     if (m) {
       const move = m[1] && m[1] !== "(none)" ? m[1] : null;
       lastAnalysisInfoV0 = { ...lastAnalysisInfoV0, bestMove: move };
+      if (move) emitBestmoveBridgeV0(move);
       if (activeAnalysisV0) {
         clearTimeout(activeAnalysisV0.timer);
         const { resolve } = activeAnalysisV0;
@@ -316,6 +344,7 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
       if (contempt != null) {
         worker.postMessage(`setoption name Contempt value ${Math.max(-100, Math.min(100, contempt))}`);
       }
+      currentPositionFenV0 = position;
       worker.postMessage(`position fen ${position}`);
       worker.postMessage(`go depth ${depth} movetime ${movetimeMs}`);
     } catch {
@@ -375,6 +404,7 @@ export async function analyzeChessPositionV0(fen, opts = {}) {
     };
 
     try {
+      currentPositionFenV0 = position;
       worker.postMessage(`position fen ${position}`);
       worker.postMessage(`go depth ${depth} movetime ${movetime}`);
     } catch {

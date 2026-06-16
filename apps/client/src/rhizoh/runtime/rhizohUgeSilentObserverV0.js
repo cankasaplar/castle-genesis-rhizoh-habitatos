@@ -134,7 +134,7 @@ export async function runRhizohUgeSilentObserverV0(opts = {}) {
 
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
-    window.__rhizoh.ugeSilentObserver = Object.freeze({
+    window.__rhizoh.ugeBatch = Object.freeze({
       last: () => result,
       list: () => Object.freeze([result])
     });

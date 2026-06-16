@@ -2,6 +2,10 @@
  * Chess Arena console telemetry — moves, engine, learning seals (observable in DevTools).
  */
 
+import {
+  CHESS_ENGINE_BRIDGE_KIND_V0,
+  emitChessEngineBridgeV0
+} from "./chessEngineBridgeV0.js";
 import { logCastleLifecycleV0 } from "./rhizohProductionLogNamespacesV0.js";
 import { formatChessMoveSanV0 } from "./chessMoveSanV0.js";
 
@@ -26,13 +30,27 @@ export function logChessArenaTelemetryV0(kind, detail = {}) {
  * @param {{ san: string, color?: string, engine?: string, fen?: string, policyMode?: string }} row
  */
 export function logChessMovePlayedV0(row) {
-  return logChessArenaTelemetryV0("move_played", {
-    san: formatChessMoveSanV0(row.san),
+  const san = formatChessMoveSanV0(row.san);
+  const payload = logChessArenaTelemetryV0("move_played", {
+    san,
     color: row.color || null,
     engine: row.engine || null,
     fen: row.fen || null,
+    fenBefore: row.fenBefore || null,
     policyMode: row.policyMode || null
   });
+  emitChessEngineBridgeV0(CHESS_ENGINE_BRIDGE_KIND_V0.PLAYED_MOVE, {
+    san,
+    rhizohMove: san,
+    color: row.color || null,
+    engine: row.engine || null,
+    fen: row.fen || null,
+    fenBefore: row.fenBefore || null,
+    matchId: row.matchId || null,
+    moveNumber: row.moveNumber || null,
+    policyMode: row.policyMode || null
+  });
+  return payload;
 }
 
 /**
