@@ -11,6 +11,8 @@ import {
   isRhizohSocialLayerActiveV0,
   isRhizohSpatialMapEngineActiveV0,
   isRhizohSystemModeLayerActiveV0,
+  isRhizohWorldSpaceCesiumOptInEnabledV0,
+  isRhizohWorldSpaceMapToolCesiumReadyV0,
   resolveRhizohCesiumLayerActiveV0,
   resolveRhizohLayerModeV0,
   resolveRhizohWorldSpaceCesiumActiveV0,
@@ -84,6 +86,8 @@ describe("rhizohLayerContextV0", () => {
   });
 
   it("world space cesium gate — v11 leaflet default, 3D opt-in only", () => {
+    expect(isRhizohWorldSpaceCesiumOptInEnabledV0()).toBe(false);
+    expect(isRhizohWorldSpaceMapToolCesiumReadyV0()).toBe(false);
     expect(
       resolveRhizohWorldSpaceCesiumActiveV0({
         mapSurfaceActive: true,

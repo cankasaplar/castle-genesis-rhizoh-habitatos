@@ -10,6 +10,8 @@ import {
 } from "./rhizohWorldSystemModeV0.js";
 import { resolveWorldDomainFromPathV0 } from "./rhizohWorldDomainRoutesV0.js";
 import { isRhizohProductMapExecutionEnabledV0 } from "../../reality/realityEngineSurface.js";
+import { getCastleFlightConfig } from "../../castleFlight/castleFlightConfig.js";
+import { isCesiumIonTokenUsableV0 } from "../../castleFlight/cesiumIonGateV0.js";
 
 export const RHIZOH_LAYER_MODE_V0 = Object.freeze({
   T0_LIVE: "t0_live",
@@ -135,19 +137,32 @@ export function isRhizohSpatialMapEngineActiveV0(ctx = {}) {
 }
 
 /**
- * Whether the full-screen Cesium stack should render (not merely REAL_MAP intent).
- * Blocks map behind product drawers (profile, hall, …) and non-space world tabs.
- * @param {{
- *   mapSurfaceActive?: boolean,
- *   realityMode?: string,
- *   pathname?: string,
- *   worldDomain?: string | null,
- *   mapTool?: string,
- *   openProductDrawerId?: string | null,
- *   detailDrawerOpen?: boolean
- * }} [ctx]
+ * Build-time opt-in for Cesium on /world/space (Leaflet remains default map tool).
  * @returns {boolean}
  */
+export function isRhizohWorldSpaceCesiumOptInEnabledV0() {
+  try {
+    const env = typeof import.meta !== "undefined" && import.meta.env ? import.meta.env : {};
+    return String(env.VITE_RHIZOH_WORLD_SPACE_CESIUM || "").trim() === "1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Map tool strip may expose terrain / anchor_map when opt-in + Ion token are present.
+ * @returns {boolean}
+ */
+export function isRhizohWorldSpaceMapToolCesiumReadyV0() {
+  if (!isRhizohWorldSpaceCesiumOptInEnabledV0()) return false;
+  try {
+    const cfg = getCastleFlightConfig();
+    return isCesiumIonTokenUsableV0(cfg.cesiumIonToken);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Dedicated World · Space shell — minimal gate (no T0 drawer/detail blocking).
  * @param {{
@@ -161,12 +176,7 @@ export function isRhizohSpatialMapEngineActiveV0(ctx = {}) {
 export function resolveRhizohWorldSpaceCesiumActiveV0(ctx = {}) {
   if (!shouldMountRhizohWorldSpaceMapEngineV0(ctx)) return false;
   if (ctx.mapSurfaceActive === false) return false;
-  try {
-    const env = typeof import.meta !== "undefined" && import.meta.env ? import.meta.env : {};
-    if (String(env.VITE_RHIZOH_WORLD_SPACE_CESIUM || "").trim() !== "1") return false;
-  } catch {
-    return false;
-  }
+  if (!isRhizohWorldSpaceCesiumOptInEnabledV0()) return false;
   const tool = String(ctx.mapTool || "city_map").toLowerCase();
   if (tool === "city_map" || tool === "globe" || tool === "satellite" || tool === "streets") return false;
   if (tool === "anchor_map" || tool === "terrain") return true;

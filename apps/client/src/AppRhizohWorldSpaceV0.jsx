@@ -25,6 +25,7 @@ import {
   writeRhizohWorldMapToolV0
 } from "./rhizoh/runtime/rhizohWorldMapToolV0.js";
 import {
+  isRhizohWorldSpaceMapToolCesiumReadyV0,
   resolveRhizohLayerModeV0,
   resolveRhizohWorldSpaceCesiumActiveV0
 } from "./rhizoh/runtime/rhizohLayerContextV0.js";
@@ -174,6 +175,8 @@ export default function AppRhizohWorldSpaceV0() {
       }),
     [worldLayerEnabledV0, bootstrapGeoV0, identityAnchorV0, spatialSnapshotNodesV0]
   );
+
+  const mapToolCesiumReadyV0 = useMemo(() => isRhizohWorldSpaceMapToolCesiumReadyV0(), []);
 
   const cesiumLayerActiveV0 = useMemo(
     () =>
@@ -551,12 +554,15 @@ export default function AppRhizohWorldSpaceV0() {
     });
   }, [castleInitOwner, applySpatialCastleAnchorDsl, openPostCastleMediaTubeV0]);
 
-  const onApplyWorldMapToolV0 = useCallback((mapTool, source = "WORLD_DOMAIN_MAP_STRIP") => {
-    void applyRhizohWorldMapToolV0(mapTool, {
-      leafletOnly: true,
-      source
-    });
-  }, []);
+  const onApplyWorldMapToolV0 = useCallback(
+    (mapTool, source = "WORLD_DOMAIN_MAP_STRIP") => {
+      void applyRhizohWorldMapToolV0(mapTool, {
+        leafletOnly: !mapToolCesiumReadyV0,
+        source
+      });
+    },
+    [mapToolCesiumReadyV0]
+  );
 
   const appRootRef = useRef(null);
 
@@ -686,7 +692,7 @@ export default function AppRhizohWorldSpaceV0() {
         activeMapTool={worldMapToolV0}
         onSelectMapTool={(toolId) => onApplyWorldMapToolV0(toolId, "WORLD_DOMAIN_MAP_STRIP")}
         spatialEngineActive
-        mapToolCesiumReady={false}
+        mapToolCesiumReady={mapToolCesiumReadyV0}
         onOpenGreenroom={() => navigate("/greenroom/main")}
         onOpenBroadcast={() => navigate("/broadcast/main")}
         onShareInvite={() => {}}
