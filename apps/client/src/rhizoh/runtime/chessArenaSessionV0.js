@@ -59,7 +59,8 @@ export const CHESS_OPPONENT_PRESET_V0 = Object.freeze({
 const DEFAULT_SESSION_V0 = Object.freeze({
   timeControlId: CHESS_TIME_CONTROL_V0.BLITZ_3_2.id,
   opponentPresetId: CHESS_OPPONENT_PRESET_V0.TEACHER_BACKUP.id,
-  aiMoveDelayMs: 450
+  aiMoveDelayMs: 450,
+  voiceMoves: true
 });
 
 /**
@@ -92,7 +93,8 @@ export function readChessArenaSessionV0() {
     return Object.freeze({
       timeControlId: resolveChessTimeControlV0(parsed?.timeControlId).id,
       opponentPresetId: resolveChessOpponentPresetV0(parsed?.opponentPresetId).id,
-      aiMoveDelayMs: Math.max(200, Math.min(2000, Number(parsed?.aiMoveDelayMs) || 450))
+      aiMoveDelayMs: Math.max(200, Math.min(2000, Number(parsed?.aiMoveDelayMs) || 450)),
+      voiceMoves: parsed?.voiceMoves !== false
     });
   } catch {
     return { ...DEFAULT_SESSION_V0 };
@@ -100,7 +102,7 @@ export function readChessArenaSessionV0() {
 }
 
 /**
- * @param {Partial<{ timeControlId: string, opponentPresetId: string, aiMoveDelayMs: number }>} patch
+ * @param {Partial<{ timeControlId: string, opponentPresetId: string, aiMoveDelayMs: number, voiceMoves: boolean }>} patch
  */
 export function saveChessArenaSessionV0(patch = {}) {
   const prev = readChessArenaSessionV0();
@@ -115,7 +117,8 @@ export function saveChessArenaSessionV0(patch = {}) {
     aiMoveDelayMs:
       patch.aiMoveDelayMs != null
         ? Math.max(200, Math.min(2000, Number(patch.aiMoveDelayMs) || prev.aiMoveDelayMs))
-        : prev.aiMoveDelayMs
+        : prev.aiMoveDelayMs,
+    voiceMoves: patch.voiceMoves != null ? patch.voiceMoves !== false : prev.voiceMoves
   });
   if (typeof window !== "undefined") {
     try {

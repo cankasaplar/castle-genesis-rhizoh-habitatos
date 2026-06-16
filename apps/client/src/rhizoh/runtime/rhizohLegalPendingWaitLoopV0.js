@@ -5,6 +5,7 @@
 import { CHESS_GAME_MODE_V0 } from "./chessArenaEngineV0.js";
 import { RHIZOH_OPEN_CHESS_ARENA_EVENT_V1 } from "./symbyoMapIntentBridgeV0.js";
 import { hasLegalAccessAckV0, resolveIngressRouteV0 } from "../ingress/ingress_router.js";
+import { CHESS_LEARNING_SESSION_PRESET_V0 } from "./chessLearningSessionV0.js";
 
 export const RHIZOH_LEGAL_PENDING_WAIT_LOOP_SCHEMA_V0 = "castle.rhizoh.legal_pending_wait_loop.v0";
 export const RHIZOH_LEGAL_PENDING_WAIT_TICK_EVENT_V0 = "rhizoh:legal-pending-wait-tick-v0";
@@ -42,6 +43,7 @@ export function maybeDispatchLegalPendingChessArenaV0(opts = {}) {
   if (!opts.force && chessDispatched) return false;
 
   chessDispatched = true;
+  const preset = CHESS_LEARNING_SESSION_PRESET_V0.BULLET_RESEARCH;
   try {
     window.dispatchEvent(
       new CustomEvent(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, {
@@ -49,6 +51,7 @@ export function maybeDispatchLegalPendingChessArenaV0(opts = {}) {
           source: "legal_pending_wait_loop",
           initialMode: CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH,
           autoPlay: true,
+          learningPresetId: preset.id,
           node: Object.freeze({
             id: "chess_arena",
             type: "zone",

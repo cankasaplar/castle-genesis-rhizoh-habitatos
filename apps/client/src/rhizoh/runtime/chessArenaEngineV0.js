@@ -13,7 +13,8 @@ export const CHESS_GAME_MODE_V0 = Object.freeze({
   AI_HUMAN: "ai_human",
   HUMAN_HUMAN: "human_human",
   AI_AI: "ai_ai",
-  RHIZOH_STOCKFISH: "rhizoh_stockfish"
+  RHIZOH_STOCKFISH: "rhizoh_stockfish",
+  TEAM_PET_VS_RHIZOH: "team_pet_vs_rhizoh"
 });
 
 export const CHESS_PLAYER_SIDE_V0 = Object.freeze({
@@ -40,6 +41,9 @@ function modeMeta(mode) {
   }
   if (m === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH) {
     return Object.freeze({ label: "Rhizoh vs Stockfish", timeControlMs: 900_000 });
+  }
+  if (m === CHESS_GAME_MODE_V0.TEAM_PET_VS_RHIZOH) {
+    return Object.freeze({ label: "Fox+Octo vs Rhizoh AI", timeControlMs: 180_000 });
   }
   return Object.freeze({ label: "Standard", timeControlMs: 600_000 });
 }

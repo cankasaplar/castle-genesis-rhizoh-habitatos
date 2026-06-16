@@ -19,7 +19,7 @@ import {
 import { WorldSpaceMediaDataTickerV0 } from "./WorldSpaceMediaDataTickerV0.jsx";
 import { RhizohMediaStageWithOctoV0 } from "./RhizohMediaOctoCompanionOverlayV0.jsx";
 import { RhizohOctoEightCameraLabV0 } from "./RhizohOctoEightCameraLabV0.jsx";
-import { OCTO_YUVA_EIGHT_CAMERA_LENSES_V1 } from "../rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
+import { OCTO_YUVA_EIGHT_CAMERA_LENSES_V1, dismissOctoLabToWorldMapV1 } from "../rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
 
 function isCastleMediaSourceV0(source) {
   return String(source || "").startsWith("castle_init");
@@ -119,6 +119,23 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
       captureRef.current = null;
     };
   }, []);
+
+  const onDismissOctoLab = useCallback(() => {
+    dismissOctoLabToWorldMapV1({ source: "media_tube_close" });
+    onClose?.();
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!octoLabMode) return undefined;
+    const onKey = (ev) => {
+      if (ev.key === "Escape") {
+        ev.preventDefault();
+        onDismissOctoLab();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [octoLabMode, onDismissOctoLab]);
 
   const onSelectChannel = useCallback(async (channel) => {
     if (captureRef.current) {
@@ -340,21 +357,50 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
 
   return (
     <div
-      className="pointer-events-auto fixed inset-0 z-[315] flex flex-col bg-[#050505]/96 backdrop-blur-3xl"
+      className={
+        octoLabMode
+          ? "pointer-events-none fixed inset-0 z-[315] flex flex-col justify-end bg-black/35 backdrop-blur-[2px]"
+          : "pointer-events-auto fixed inset-0 z-[315] flex flex-col bg-[#050505]/96 backdrop-blur-3xl"
+      }
       data-rhizoh-world-space-media-tube="1"
       data-media-source={detail.source || "unknown"}
       data-active-channel={activeChannel.id}
+      data-octo-lab-mode={octoLabMode ? "1" : "0"}
     >
-      <div className="flex min-h-0 flex-1 flex-col p-4 sm:p-6">
-        <div className="mb-4 flex items-center justify-between border-b border-purple-500/30 pb-4">
+      {octoLabMode ? (
+        <button
+          type="button"
+          aria-label={tr ? "Haritaya dön" : "Back to map"}
+          className="pointer-events-auto absolute inset-0"
+          onClick={onDismissOctoLab}
+        />
+      ) : null}
+      <div
+        className={
+          octoLabMode
+            ? "pointer-events-auto relative flex max-h-[78vh] min-h-0 flex-1 flex-col overflow-hidden rounded-t-2xl border border-white/10 bg-[#050505]/94 shadow-2xl backdrop-blur-xl"
+            : "flex min-h-0 flex-1 flex-col p-4 sm:p-6"
+        }
+      >
+        <div
+          className={`flex items-center justify-between border-b border-purple-500/30 pb-3 ${
+            octoLabMode ? "px-4 pt-3" : "mb-4 pb-4"
+          }`}
+        >
           <div className="flex items-center gap-3">
             <div className="rounded-xl border border-purple-500/50 bg-purple-500/20 p-2">
               <Tv size={22} className="animate-pulse text-purple-400" />
             </div>
             <div>
-              <h1 className="text-lg font-black uppercase tracking-widest text-white">{title}</h1>
+              <h1 className={`font-black uppercase tracking-widest text-white ${octoLabMode ? "text-sm" : "text-lg"}`}>
+                {octoLabMode ? (tr ? "Octo Lab · Bekleme" : "Octo Lab · Waiting") : title}
+              </h1>
               <p className="text-[9px] font-bold uppercase text-purple-400">
-                Symbio Media Engine V4 · {channelLabelV0(activeChannel, tr)}
+                {octoLabMode
+                  ? tr
+                    ? "Harita arkada — Esc veya dışarı tıkla"
+                    : "Map behind — Esc or tap outside"
+                  : `Symbio Media Engine V4 · ${channelLabelV0(activeChannel, tr)}`}
               </p>
               {castleBroadcast ? (
                 <p className="mt-1 text-[9px] font-semibold normal-case text-cyan-300/80">
@@ -374,14 +420,18 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={octoLabMode ? onDismissOctoLab : onClose}
             className="rounded-xl border border-white/15 px-3 py-2 text-[10px] text-white/70 hover:text-white"
           >
             <X size={14} className="inline" /> {tr ? "Kapat" : "Close"}
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden sm:flex-row">
+        <div
+          className={`flex min-h-0 flex-1 flex-col gap-4 overflow-hidden sm:flex-row ${
+            octoLabMode ? "px-4 pb-4" : ""
+          }`}
+        >
           {octoLabMode ? (
             <div className="flex min-h-0 min-w-0 flex-1 flex-col">
               <RhizohOctoEightCameraLabV0 lenses={octoLenses} uiLocale={uiLocale} />
@@ -580,11 +630,13 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
         </div>
 
         {detail.node?.description ? (
-          <p className="mt-3 text-center text-[10px] text-white/45">{detail.node.description}</p>
+          <p className={`text-center text-[10px] text-white/45 ${octoLabMode ? "px-4 pb-2" : "mt-3"}`}>
+            {detail.node.description}
+          </p>
         ) : null}
       </div>
 
-      <WorldSpaceMediaDataTickerV0 active uiLocale={uiLocale} />
+      {!octoLabMode ? <WorldSpaceMediaDataTickerV0 active uiLocale={uiLocale} /> : null}
     </div>
   );
 });
