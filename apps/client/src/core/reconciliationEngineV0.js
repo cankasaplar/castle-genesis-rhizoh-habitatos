@@ -4,10 +4,12 @@
  */
 
 import { listSimulationEventsV0 } from "../storage/EventStoreV0.js";
+import { withRhizohSimulationDbV0, idbSimGetV0, idbSimPutV0, SIM_STORE_EVENTS_V0 } from "./rhizohSimulationDbV0.js";
 import { foldSimulationWorldEventsV0 } from "./replayWorldReducerV0.js";
 import { foldCodexEventsV0 } from "./codexReducerV0.js";
 import { foldSpawnEventsIntoPatternsV0 } from "./semanticEventFoldV0.js";
 import { publishSimulationWorldV0, publishCodexStateV0 } from "./ReplayEngineV0.js";
+import { publishOfflineVoidStateV0 } from "./offlineVoidGateV0.js";
 import { logCastleLifecycleV0 } from "../rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
 
 export const RHIZOH_RECONCILIATION_SCHEMA_V0 = "castle.rhizoh.reconciliation.v0";
@@ -41,18 +43,25 @@ export async function reconcileWithCanonicalAuthorityV0(canonical, pendingEvents
       ? pendingEvents
       : (await listSimulationEventsV0(0)).events?.filter((e) => e.syncStatus === "PENDING_SYNC") || [];
 
-  const reconciled = pending.map((local) =>
-    Object.freeze({
-      localId: local.id,
-      type: local.type,
-      verdict: "PENDING_CANONICAL_REPLAY",
-      localLayer: local.localLayer,
-      localSeed: local.localSeed
-    })
-  );
+  const reconciled = [];
+  for (const local of pending) {
+    const verdict = classifyEventReconciliationV0(local, null);
+    await markSimulationEventSyncStatusV0(local.id, verdict === "ECHO" ? "ECHO" : "CONFIRMED");
+    reconciled.push(
+      Object.freeze({
+        localId: local.id,
+        type: local.type,
+        verdict,
+        localLayer: local.localLayer,
+        localSeed: local.localSeed
+      })
+    );
+  }
 
   const allEvents = (await listSimulationEventsV0(0)).events || [];
-  const confirmedEvents = allEvents.filter((e) => e.syncStatus !== "PENDING_SYNC");
+  const confirmedEvents = allEvents.filter(
+    (e) => e.syncStatus !== "PENDING_SYNC" && e.syncStatus !== "ECHO"
+  );
   const codexState = foldCodexEventsV0(confirmedEvents);
   const world = foldSimulationWorldEventsV0(confirmedEvents);
   const patterns = foldSpawnEventsIntoPatternsV0(confirmedEvents);
@@ -85,6 +94,8 @@ export async function reconcileWithCanonicalAuthorityV0(canonical, pendingEvents
     })
   );
 
+  publishOfflineVoidStateV0(false);
+
   logCastleLifecycleV0("reconciliation_catch_up", {
     layer,
     seed,
@@ -101,4 +112,21 @@ export async function reconcileWithCanonicalAuthorityV0(canonical, pendingEvents
   }
 
   return Object.freeze({ ok: true, snapshot });
+}
+
+/**
+ * @param {string} eventId
+ * @param {"CONFIRMED"|"PENDING_SYNC"|"ECHO"|"REWRITE"} syncStatus
+ */
+export async function markSimulationEventSyncStatusV0(eventId, syncStatus) {
+  const id = String(eventId || "").trim();
+  if (!id) return Object.freeze({ ok: false, reason: "missing_id" });
+
+  return withRhizohSimulationDbV0(async (db) => {
+    const existing = await idbSimGetV0(db, SIM_STORE_EVENTS_V0, id);
+    if (!existing) return Object.freeze({ ok: false, reason: "not_found" });
+    const updated = Object.freeze({ ...existing, syncStatus: String(syncStatus || "CONFIRMED") });
+    await idbSimPutV0(db, SIM_STORE_EVENTS_V0, updated);
+    return Object.freeze({ ok: true, event: updated });
+  });
 }

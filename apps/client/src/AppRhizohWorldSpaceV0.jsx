@@ -120,6 +120,7 @@ import {
   RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0,
   RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0
 } from "./rhizoh/runtime/spiralMMOAwakeningCycleV0.js";
+import { startCanonicalTickClientV0 } from "./core/canonicalTickClientV0.js";
 
 export default function AppRhizohWorldSpaceV0() {
   const navigate = useNavigate();
@@ -277,6 +278,7 @@ export default function AppRhizohWorldSpaceV0() {
 
   useEffect(() => {
     attachRhizohMapExecutionOrchestratorV1();
+    startCanonicalTickClientV0();
 
     const onOpenCastleGate = () => setCastleInitGateOpen(true);
     window.addEventListener("castle:open-init-gate-v0", onOpenCastleGate);
@@ -678,6 +680,21 @@ export default function AppRhizohWorldSpaceV0() {
         remoteCastles={remoteCastles}
         remoteCastlesVisible={remoteCastlesVisibleV0}
       />
+
+      {spiralImmersionActive ? (
+        <button
+          type="button"
+          className="pointer-events-auto fixed right-4 z-[320] rounded-lg border border-white/25 bg-black/80 px-4 py-2.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-white touch-manipulation backdrop-blur-sm"
+          style={{ bottom: `calc(${voiceDockBottomCssV0} + 4.5rem)` }}
+          data-rhizoh-spiral-immersion-exit="1"
+          onClick={() => {
+            setSpiralImmersionActive(false);
+            window.dispatchEvent(new CustomEvent(RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0));
+          }}
+        >
+          {uiLocale === "tr" ? "Spiralden Çık" : "Exit Spiral"}
+        </button>
+      ) : null}
 
       <RhizohWorldDomainShellV0
         domain={worldDrawerDomainV0}
