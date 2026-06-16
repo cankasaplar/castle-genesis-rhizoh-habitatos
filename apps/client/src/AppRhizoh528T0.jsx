@@ -289,7 +289,8 @@ import {
   readSpeechLocaleForVoiceV0,
   resolveSpeechLocaleForTextV0,
   resolveSpeechBcp47ForUiLocaleV0,
-  resolveSpeechVoiceForUiLocaleV0
+  resolveSpeechVoiceForUiLocaleV0,
+  resolveSpeechProsodyForLocaleV0
 } from "./rhizoh/runtime/rhizohSpeechLocaleV0.js";
 import {
   classifyRhizohInputClassV0,
@@ -341,7 +342,10 @@ import {
 import { normalizeRhizohSttBrandPhoneticsV0 } from "./rhizoh/runtime/rhizohSttBrandNormalizeV0.js";
 import { resolveWeatherReplyAsyncV1 } from "./rhizoh/runtime/rhizohCanonicalReflexSnapshotV1.js";
 import { awaitWorldFeedsForSpeechV0 } from "./rhizoh/runtime/rhizohSpeechLiveFeedGlueV0.js";
-import { noteRecentRhizohTtsEchoV0 } from "./rhizoh/runtime/voiceTtsEchoGuardV0.js";
+import {
+  matchesRecentRhizohTtsEchoV0,
+  noteRecentRhizohTtsEchoV0
+} from "./rhizoh/runtime/voiceTtsEchoGuardV0.js";
 import { resolveOutputLanguageCodeV0 } from "./rhizoh/runtime/rhizohOutputLanguagePolicyV0.js";
 import { tryInstantPresenceFastPathV0 } from "./rhizoh/runtime/rhizohInstantPresenceLayerV0.js";
 import { sanitizeSpeechTextForTtsV0 } from "./rhizoh/runtime/rhizohSpeechTtsSanitizeV0.js";
@@ -665,6 +669,9 @@ const RHIZOH_GENERATION_MODE_UI = [
 const VOICE_LLM_TIMEOUT_MS = 22_000;
 const VOICE_TURN_BUSY_WATCHDOG_MS = 38_000;
 const VOICE_AFTER_TURN_RESTART_MS = 180;
+const VOICE_TTS_DEDUP_MS = 3200;
+let voiceLastSpokenNormV0 = "";
+let voiceLastSpokenAtMsV0 = 0;
 
 function normalizeRhizohGenerationModeId(mode) {
   return String(mode || "STANDARD").trim().toUpperCase().replace(/-/g, "_");
@@ -9753,6 +9760,15 @@ export default function AppRhizoh528() {
       const sessionId = ++voiceTtsSessionIdRef.current;
       const spoken = sanitizeSpeechTextForTtsV0(String(text)).slice(0, 1800);
       const voiceLocale = resolveSpeechLocaleForTextV0(spoken, readSpeechLocaleForVoiceV0());
+      const spokenNorm = spoken.toLowerCase().replace(/\s+/g, " ").trim();
+      const nowMs = Date.now();
+      if (spokenNorm && spokenNorm === voiceLastSpokenNormV0 && nowMs - voiceLastSpokenAtMsV0 < VOICE_TTS_DEDUP_MS) {
+        logVoiceInfoV0("TTS_DEDUP_SKIP", { preview: spoken.slice(0, 64) });
+        if (voiceTurn) finishVoiceTurnIfNeeded();
+        return;
+      }
+      voiceLastSpokenNormV0 = spokenNorm;
+      voiceLastSpokenAtMsV0 = nowMs;
       noteRecentRhizohTtsEchoV0(spoken);
       recordRhizohReplySurfaceV0({
         channel: "tts",
@@ -9762,9 +9778,10 @@ export default function AppRhizoh528() {
       });
       const utterance = new SpeechSynthesisUtterance(spoken);
       utterance.lang = resolveSpeechBcp47ForUiLocaleV0(voiceLocale);
-      utterance.rate = 1;
-      utterance.pitch = 1.05;
-      utterance.volume = 0.92;
+      const prosody = resolveSpeechProsodyForLocaleV0(voiceLocale);
+      utterance.rate = prosody.rate;
+      utterance.pitch = prosody.pitch;
+      utterance.volume = prosody.volume;
       const localeVoice = resolveSpeechVoiceForUiLocaleV0(voiceLocale);
       if (localeVoice) utterance.voice = localeVoice;
       utterance.onstart = () => {
@@ -9972,9 +9989,21 @@ export default function AppRhizoh528() {
           hits: brandRepair.hits?.length || 0
         });
       }
+      const voiceSource = String(source || "mic");
+      if (voiceSource !== "text") {
+        const ttsEcho = matchesRecentRhizohTtsEchoV0(trimmed);
+        if (ttsEcho.echo) {
+          logVoiceWarnV0("STT_TTS_ECHO_DROP", {
+            source: voiceSource,
+            preview: trimmed.slice(0, 96),
+            matched: ttsEcho.matched || ""
+          });
+          if (manageVoiceTurn) finishVoiceTurnIfNeeded();
+          return;
+        }
+      }
       lastUserActivityMsRef.current = Date.now();
 
-      const voiceSource = String(source || "mic");
       if (voiceSource === "mic_v3" && authority && authority.maySpeak === false) {
         logVoiceInfoV0("VOICE_AUTHORITY_SILENT", {
           reason: authority.reason,

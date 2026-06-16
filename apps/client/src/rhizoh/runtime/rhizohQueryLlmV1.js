@@ -148,6 +148,11 @@ import {
 } from "./rhizohPersonaAddressingV0.js";
 import { writeRhizohContinuityPersonaV0 } from "./rhizohContinuityDiskMetaV0.js";
 import { buildSportsLiveContextBoostV0, probeSportsLiveQueryV0 } from "./rhizohSportsLiveContextV0.js";
+import {
+  buildSpatialLiveContextBoostV0,
+  probeSpatialBriefingQueryV0
+} from "./rhizohSpatialLiveContextV0.js";
+import { isDataPlaneActiveV0 } from "../ingress/phase1ActivationGateV0.js";
 import { refreshWorldMapLiveFeedIfStaleV0 } from "./worldMapLiveFeedV0.js";
 import {
   buildRhizohDialogueThreadSnapshotV1,
@@ -1014,6 +1019,9 @@ export async function queryRhizohLLM({
   const sportsLiveContext = probeSportsLiveQueryV0(trimmed).active
     ? await buildSportsLiveContextBoostV0(trimmed, { forceRefresh: false })
     : null;
+  const spatialLiveContext = probeSpatialBriefingQueryV0(trimmed).active
+    ? buildSpatialLiveContextBoostV0(trimmed, { locale: resolveRhizohLlmLanguageV0().short })
+    : null;
   const contForLlm = {
     ...cont,
     persona: personaForLlm,
@@ -1041,6 +1049,7 @@ export async function queryRhizohLLM({
     rhizohWeightedRecollection,
     rhizohContinuityRecallBoost: continuityRecallBoost || undefined,
     rhizohSportsLiveContext: sportsLiveContext || undefined,
+    rhizohSpatialLiveContext: spatialLiveContext || undefined,
     rhizohPersonaAddressing: rhizohPersonaAddressingDirective
       ? Object.freeze({
           needsAddressingPrompt: true,
@@ -1254,6 +1263,9 @@ export async function queryRhizohLLM({
       life_continuity: buildLifeContinuityContextHintsV0(),
       rhizohMemoryContract: `${[
         "continuity state is authoritative session memory (identity, castleState, ghostPet, recentReality, codex, relationship). Do not invent facts beyond it; reference continuity when relevant.",
+        !isDataPlaneActiveV0()
+          ? "DATA_PLANE_INACTIVE: do not assert specific nearby places, live ingest events, or verified world facts unless listed in VERIFIED_NEARBY_POI or other VERIFIED_* blocks below."
+          : "",
         rhizohMultilingualPack.memoryContractAddon,
         "",
         rhizohMultilingualPack.directive,

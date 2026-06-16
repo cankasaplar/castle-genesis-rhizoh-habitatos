@@ -7,7 +7,9 @@ import { MF0_INTENT_V0 } from "./rhizohMeaningFrameV0.js";
 import { FAST_ROUTE_V0 } from "./rhizohFastConversationRouterV0.js";
 import {
   isRhizohLivingConversationSurfaceV1,
-  resolveFastReflexBridgeCopyV1
+  isLivingSurfaceSpokenBridgeEnabledV1,
+  resolveFastReflexBridgeCopyV1,
+  resolveLivingSurfaceSpokenAckCopyV1
 } from "../experience/rhizohLivingConversationSurfaceV1.js";
 
 export const RHIZOH_COMPANION_LAYER_SCHEMA_V0 = "castle.rhizoh.companion_layer.v0";
@@ -187,7 +189,9 @@ export function resolveCompanionFlowAckV0(language) {
   const lang = String(language || "en").toLowerCase();
   const tr = lang.startsWith("tr");
   if (isRhizohLivingConversationSurfaceV1()) {
-    return resolveFastReflexBridgeCopyV1(tr, "greet");
+    return isLivingSurfaceSpokenBridgeEnabledV1()
+      ? resolveFastReflexBridgeCopyV1(tr, "greet")
+      : resolveLivingSurfaceSpokenAckCopyV1(tr);
   }
   const table = {
     tr: "Buradayız — akış devam edebilir.",

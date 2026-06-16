@@ -135,6 +135,14 @@ function readWorldDataCacheV2(key) {
 }
 
 /**
+ * Sync POI rows from hot cache (map layer / LLM grounding — no network).
+ * @returns {unknown[]}
+ */
+export function peekCastleWorldPoiRowsV2() {
+  return readWorldDataCacheV2(CACHE_KEY_POI_V2) || [];
+}
+
+/**
  * @returns {boolean}
  */
 export function isOverpassFetchBlockedV0() {
