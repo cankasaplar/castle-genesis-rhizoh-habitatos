@@ -10,6 +10,7 @@ import {
 import { buildMatchMovesWithFenV0 } from "./chessMatchReplayV0.js";
 import { normalizeChessMovesToSanV0 } from "./chessMoveSanV0.js";
 import { computeChessLiveMetricsV0 } from "./chessLiveMetricsV0.js";
+import { observeChessRegretGeometryV0 } from "./rhizohGeometryChessRegretObserverV0.js";
 
 export const CHESS_LEARNING_LOOP_SCHEMA_V0 = "rhizoh.chess_learning_loop.v0";
 export const CHESS_LEARNING_LOOP_EVENT_V0 = "rhizoh:chess-learning-loop-v0";
@@ -45,6 +46,12 @@ export async function runRhizohChessLearningLoopV0(opts = {}) {
     localColor
   });
 
+  const geometryObservation = observeChessRegretGeometryV0({
+    regret,
+    moves: fenRows.length ? fenRows : moves,
+    matchId: opts.matchId || null
+  });
+
   const result = Object.freeze({
     schema: CHESS_LEARNING_LOOP_SCHEMA_V0,
     matchId: opts.matchId || null,
@@ -62,6 +69,7 @@ export async function runRhizohChessLearningLoopV0(opts = {}) {
       riskPenaltyWeight: weightsAfter.riskPenaltyWeight - weightsBefore.riskPenaltyWeight
     }),
     liveMetrics,
+    geometryObservation,
     learnedAt: new Date().toISOString()
   });
 
