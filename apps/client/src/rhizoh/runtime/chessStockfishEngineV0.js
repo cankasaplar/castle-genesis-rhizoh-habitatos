@@ -7,9 +7,19 @@ import { pickChessArenaAiMoveV0 } from "./chessArenaEngineV0.js";
 import { CHESS_STOCKFISH_PRESET_V0 } from "./chessStockfishPresetsV0.js";
 
 export const CHESS_STOCKFISH_ENGINE_SCHEMA_V0 = "castle.chess_stockfish_engine.v0";
+export const CHESS_STOCKFISH_LOG_TAG_V0 = "[CASTLE_stockfish_engine]";
 
-const STOCKFISH_WORKER_URL_V0 =
-  "/chess-engine/stockfish-nnue-16-single.js#/chess-engine/stockfish-nnue-16-single.wasm,worker";
+export const CHESS_STOCKFISH_ASSET_PATHS_V0 = Object.freeze({
+  workerJs: "/chess-engine/stockfish-nnue-16-single.js",
+  wasm: "/chess-engine/stockfish-nnue-16-single.wasm"
+});
+
+function resolveStockfishWorkerUrlV0() {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const js = CHESS_STOCKFISH_ASSET_PATHS_V0.workerJs;
+  const wasm = CHESS_STOCKFISH_ASSET_PATHS_V0.wasm;
+  return `${origin}${js}#${wasm},worker`;
+}
 
 /** @type {Worker | null} */
 let workerV0 = null;
@@ -19,8 +29,11 @@ const pendingV0 = new Map();
 let activeAnalysisV0 = null;
 let lastAnalysisInfoV0 = { cp: null, mate: null, depth: 0, pv: "", bestMove: null };
 let seqV0 = 0;
+let uciOkV0 = false;
 let readyV0 = false;
 let initFailedV0 = false;
+let initErrorV0 = null;
+let assetsVerifiedV0 = false;
 
 export function getChessStockfishEngineStatusV0() {
   if (initFailedV0) return "heuristic_fallback";
@@ -29,15 +42,38 @@ export function getChessStockfishEngineStatusV0() {
   return "not_started";
 }
 
+export function getChessStockfishEngineDetailV0() {
+  return Object.freeze({
+    status: getChessStockfishEngineStatusV0(),
+    initError: initErrorV0,
+    assetsVerified: assetsVerifiedV0,
+    workerUrl: resolveStockfishWorkerUrlV0(),
+    wasmPath: CHESS_STOCKFISH_ASSET_PATHS_V0.wasm
+  });
+}
+
+function logStockfishV0(level, message, detail = null) {
+  const payload = detail == null ? message : { message, ...detail };
+  if (typeof console !== "undefined" && console[level]) {
+    console[level](CHESS_STOCKFISH_LOG_TAG_V0, payload);
+  }
+}
+
 function nextId() {
   seqV0 += 1;
   return seqV0;
+}
+
+function resetReadyFlagsV0() {
+  uciOkV0 = false;
+  readyV0 = false;
 }
 
 function attachWorkerHandlersV0(worker) {
   worker.onmessage = (ev) => {
     const line = String(ev?.data || "");
     if (line === "uciok") {
+      uciOkV0 = true;
       try {
         worker.postMessage("isready");
       } catch {
@@ -45,7 +81,6 @@ function attachWorkerHandlersV0(worker) {
       }
     }
     if (line === "readyok") readyV0 = true;
-    if (line === "uciok") readyV0 = true;
 
     const depthMatch = line.match(/\bdepth (\d+)\b/);
     const cpMatch = line.match(/\bscore cp (-?\d+)\b/);
@@ -80,59 +115,66 @@ function attachWorkerHandlersV0(worker) {
       }
     }
   };
-  worker.onerror = () => {
+  worker.onerror = (err) => {
     initFailedV0 = true;
+    initErrorV0 = String(err?.message || "worker_error");
+    logStockfishV0("error", "worker onerror", { error: initErrorV0 });
     try {
       worker?.terminate?.();
     } catch {
       /* noop */
     }
     workerV0 = null;
-    readyV0 = false;
+    resetReadyFlagsV0();
   };
   worker.onmessageerror = () => {
     initFailedV0 = true;
+    initErrorV0 = "worker_message_error";
+    logStockfishV0("error", "worker onmessageerror");
   };
 }
 
 let initPromiseV0 = null;
 
-async function ensureStockfishWorkerV0() {
-  if (initFailedV0) return null;
-  if (workerV0 && readyV0) return workerV0;
-  if (typeof Worker === "undefined") {
-    initFailedV0 = true;
-    return null;
-  }
-  if (initPromiseV0) return initPromiseV0;
-
-  initPromiseV0 = (async () => {
-    try {
-      workerV0 = new Worker(STOCKFISH_WORKER_URL_V0);
-      attachWorkerHandlersV0(workerV0);
-      workerV0.postMessage("uci");
-      await waitReadyV0(14000);
-      workerV0.postMessage("isready");
-      await waitReadyV0(8000);
-      workerV0.postMessage("setoption name UCI_AnalyseMode value false");
-      workerV0.postMessage("setoption name Hash value 64");
-      return workerV0;
-    } catch {
-      initFailedV0 = true;
-      try {
-        workerV0?.terminate?.();
-      } catch {
-        /* noop */
-      }
-      workerV0 = null;
-      readyV0 = false;
-      return null;
-    } finally {
-      initPromiseV0 = null;
+async function verifyStockfishAssetsV0() {
+  if (typeof fetch === "undefined") return false;
+  try {
+    const [jsHead, wasmHead] = await Promise.all([
+      fetch(CHESS_STOCKFISH_ASSET_PATHS_V0.workerJs, { method: "HEAD", cache: "no-store" }),
+      fetch(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm, { method: "HEAD", cache: "no-store" })
+    ]);
+    if (!jsHead.ok || !wasmHead.ok) {
+      initErrorV0 = `asset_preflight_${jsHead.status}_${wasmHead.status}`;
+      logStockfishV0("error", "asset preflight failed", {
+        jsStatus: jsHead.status,
+        wasmStatus: wasmHead.status
+      });
+      return false;
     }
-  })();
+    assetsVerifiedV0 = true;
+    return true;
+  } catch (err) {
+    initErrorV0 = String(err?.message || "asset_preflight_error");
+    logStockfishV0("error", "asset preflight exception", { error: initErrorV0 });
+    return false;
+  }
+}
 
-  return initPromiseV0;
+function waitUciOkV0(timeoutMs) {
+  return new Promise((resolve, reject) => {
+    if (uciOkV0) {
+      resolve(true);
+      return;
+    }
+    const timer = setTimeout(() => reject(new Error("stockfish_uci_timeout")), timeoutMs);
+    const check = setInterval(() => {
+      if (uciOkV0) {
+        clearInterval(check);
+        clearTimeout(timer);
+        resolve(true);
+      }
+    }, 30);
+  });
 }
 
 function waitReadyV0(timeoutMs) {
@@ -150,6 +192,57 @@ function waitReadyV0(timeoutMs) {
       }
     }, 30);
   });
+}
+
+async function ensureStockfishWorkerV0() {
+  if (initFailedV0) return null;
+  if (workerV0 && readyV0) return workerV0;
+  if (typeof Worker === "undefined") {
+    initFailedV0 = true;
+    initErrorV0 = "worker_unavailable";
+    return null;
+  }
+  if (initPromiseV0) return initPromiseV0;
+
+  initPromiseV0 = (async () => {
+    try {
+      const assetsOk = await verifyStockfishAssetsV0();
+      if (!assetsOk) {
+        initFailedV0 = true;
+        return null;
+      }
+
+      resetReadyFlagsV0();
+      const workerUrl = resolveStockfishWorkerUrlV0();
+      logStockfishV0("info", "spawning worker", { workerUrl });
+      workerV0 = new Worker(workerUrl, { type: "classic" });
+      attachWorkerHandlersV0(workerV0);
+      workerV0.postMessage("uci");
+      await waitUciOkV0(20000);
+      workerV0.postMessage("isready");
+      await waitReadyV0(12000);
+      workerV0.postMessage("setoption name UCI_AnalyseMode value false");
+      workerV0.postMessage("setoption name Hash value 64");
+      logStockfishV0("info", "ready", { status: "stockfish_wasm" });
+      return workerV0;
+    } catch (err) {
+      initFailedV0 = true;
+      initErrorV0 = String(err?.message || "stockfish_init_failed");
+      logStockfishV0("error", "init failed", { error: initErrorV0 });
+      try {
+        workerV0?.terminate?.();
+      } catch {
+        /* noop */
+      }
+      workerV0 = null;
+      resetReadyFlagsV0();
+      return null;
+    } finally {
+      initPromiseV0 = null;
+    }
+  })();
+
+  return initPromiseV0;
 }
 
 function resolveStockfishOptsV0(opts = {}) {
@@ -330,6 +423,13 @@ export async function pickChessArenaEngineMoveV0(game, opts = {}) {
   return Object.freeze({ move: pickChessArenaAiMoveV0(game), engine: "heuristic_fallback" });
 }
 
+export function resetChessStockfishEngineV0() {
+  disposeChessStockfishEngineV0();
+  initFailedV0 = false;
+  initErrorV0 = null;
+  assetsVerifiedV0 = false;
+}
+
 export function disposeChessStockfishEngineV0() {
   try {
     workerV0?.terminate?.();
@@ -337,8 +437,9 @@ export function disposeChessStockfishEngineV0() {
     /* noop */
   }
   workerV0 = null;
-  readyV0 = false;
+  resetReadyFlagsV0();
   initFailedV0 = false;
+  initErrorV0 = null;
   activeAnalysisV0 = null;
   pendingV0.clear();
 }

@@ -88,6 +88,19 @@
         ]
       },
       {
+        "source": "/chess-engine/*.js",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/javascript"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "public,max-age=31536000,immutable"
+          }
+        ]
+      },
+      {
         "source": "/chess-engine/**",
         "headers": [
           {
@@ -118,7 +131,11 @@
           },
           {
             "key": "Cross-Origin-Opener-Policy",
-            "value": "same-origin-allow-popups"
+            "value": "same-origin"
+          },
+          {
+            "key": "Cross-Origin-Embedder-Policy",
+            "value": "credentialless"
           }
         ]
       }

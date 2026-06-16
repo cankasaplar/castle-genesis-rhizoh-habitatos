@@ -64,7 +64,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (shouldBypassCache(url)) return;
 
-  if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/cesium/")) {
+  if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/cesium/") || url.pathname.startsWith("/chess-engine/")) {
     event.respondWith(
       caches.match(event.request).then((cached) => {
         const network = fetch(event.request)

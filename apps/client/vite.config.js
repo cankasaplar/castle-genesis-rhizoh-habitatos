@@ -163,7 +163,10 @@ function copyStockfishAssetsPlugin() {
       for (const name of files) {
         const src = path.join(pkgRoot, name);
         const dest = path.join(destRoot, name);
-        if (existsSync(src)) copyFileSync(src, dest);
+        if (!existsSync(src)) {
+          throw new Error(`[stockfish-guard] missing source asset: ${src}`);
+        }
+        copyFileSync(src, dest);
       }
     }
   };
@@ -175,6 +178,14 @@ function copyStockfishAssetsPlugin() {
     },
     closeBundle() {
       copyAll();
+      const wasmPath = path.join(distRoot, "stockfish-nnue-16-single.wasm");
+      const jsPath = path.join(distRoot, "stockfish-nnue-16-single.js");
+      if (!existsSync(wasmPath) || !existsSync(jsPath)) {
+        throw new Error(
+          `[stockfish-guard] dist/chess-engine assets missing — wasm=${existsSync(wasmPath)} js=${existsSync(jsPath)}`
+        );
+      }
+      console.log("[stockfish-guard] OK — Stockfish NNUE single-thread assets in dist/chess-engine/");
     }
   };
 }
