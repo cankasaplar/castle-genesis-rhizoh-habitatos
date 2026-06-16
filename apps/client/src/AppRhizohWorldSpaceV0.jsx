@@ -124,6 +124,8 @@ import {
 import { startCanonicalTickClientV0 } from "./core/canonicalTickClientV0.js";
 import { startYoutubeLabOctoBridgeV1 } from "./rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
 import { startRhizohLegalPendingWaitLoopV0 } from "./rhizoh/runtime/rhizohLegalPendingWaitLoopV0.js";
+import { startCityMapLegalCountdownMediaGateV0 } from "./rhizoh/runtime/cityMapLegalCountdownMediaGateV0.js";
+import { RhizohCityMapLegalCountdownStripV0 } from "./components/RhizohCityMapLegalCountdownStripV0.jsx";
 import { loadRhizohExperienceSessionContextV0 } from "./rhizoh/experience/rhizohExperienceSessionContextV0.js";
 import { loadRhizohProductSession } from "./rhizoh/product/rhizohProductSessionPersistenceV1.js";
 
@@ -289,6 +291,7 @@ export default function AppRhizohWorldSpaceV0() {
     startCanonicalTickClientV0();
     const stopYoutubeLab = startYoutubeLabOctoBridgeV1();
     const stopLegalPendingLoop = startRhizohLegalPendingWaitLoopV0();
+    const stopCityMapLegalGate = startCityMapLegalCountdownMediaGateV0({ uiLocale });
 
     const onOpenCastleGate = () => setCastleInitGateOpen(true);
     window.addEventListener("castle:open-init-gate-v0", onOpenCastleGate);
@@ -418,6 +421,7 @@ export default function AppRhizohWorldSpaceV0() {
     return () => {
       stopYoutubeLab?.();
       stopLegalPendingLoop?.();
+      stopCityMapLegalGate?.();
       window.removeEventListener("castle:open-init-gate-v0", onOpenCastleGate);
       window.removeEventListener("castle:open-anchor-offer-v0", onOpenCastleGate);
       window.removeEventListener(RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1, onSovereignWarp);
@@ -774,6 +778,14 @@ export default function AppRhizohWorldSpaceV0() {
 
       {castleAuth.needsAuthGate || castleAuth.needsOnboarding ? (
         <CastleAuthOverlay auth={castleAuth} />
+      ) : null}
+
+      {!spiralImmersionActive ? (
+        <div className="pointer-events-none fixed inset-x-0 top-16 z-[27] flex justify-center px-4">
+          <div className="pointer-events-auto w-full max-w-xl">
+            <RhizohCityMapLegalCountdownStripV0 uiLocale={uiLocale} />
+          </div>
+        </div>
       ) : null}
 
       {showGeoChip && !spiralImmersionActive ? (

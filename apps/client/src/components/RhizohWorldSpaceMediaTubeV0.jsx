@@ -20,6 +20,11 @@ import { WorldSpaceMediaDataTickerV0 } from "./WorldSpaceMediaDataTickerV0.jsx";
 import { RhizohMediaStageWithOctoV0 } from "./RhizohMediaOctoCompanionOverlayV0.jsx";
 import { RhizohOctoEightCameraLabV0 } from "./RhizohOctoEightCameraLabV0.jsx";
 import { OCTO_YUVA_EIGHT_CAMERA_LENSES_V1 } from "../rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
+import {
+  labelCastleMediaEventStateV0,
+  labelCastleMediaFrequencyBandV0
+} from "../rhizoh/runtime/castleArchiveMediaMetaV0.js";
+import { RHIZOH_YOUTUBE_COMMUNITY_LAB_EVENT_V0 } from "../rhizoh/runtime/youtubeCommunityDataAdapterV0.js";
 
 function isCastleMediaSourceV0(source) {
   return String(source || "").startsWith("castle_init");
@@ -65,6 +70,9 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
   const [bookmarkLabel, setBookmarkLabel] = useState("");
   const [bookmarkSec, setBookmarkSec] = useState("");
   const [civilizationStatus, setCivilizationStatus] = useState("");
+  const [communityLab, setCommunityLab] = useState(() =>
+    typeof window !== "undefined" ? window.__rhizoh?.youtubeCommunityLab || null : null
+  );
   const [localPreviewStream, setLocalPreviewStream] = useState(null);
   const captureRef = useRef(null);
   const previewRef = useRef(null);
@@ -82,6 +90,14 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     const src = String(detail?.source || "").trim().toLowerCase();
     return nid === "radio" || src.includes("radio") || src.includes("map:node:radio");
   }, [detail?.node?.id, detail?.source]);
+  const legalGateMode = Boolean(detail?.legalGate);
+  const legalCountdownMs = Number(detail?.countdownRemainingMs) || 0;
+
+  useEffect(() => {
+    const onLab = (ev) => setCommunityLab(ev?.detail || null);
+    window.addEventListener(RHIZOH_YOUTUBE_COMMUNITY_LAB_EVENT_V0, onLab);
+    return () => window.removeEventListener(RHIZOH_YOUTUBE_COMMUNITY_LAB_EVENT_V0, onLab);
+  }, []);
 
   const title =
     String(detail?.title || "").trim() || channelLabelV0(activeChannel, tr);
@@ -240,6 +256,13 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
             <div>
               <h1 className="text-lg font-black uppercase tracking-widest text-amber-100">{ent.title}</h1>
               <p className="text-[9px] font-bold uppercase text-amber-400/80">{ent.format}</p>
+              {ent.frequencyBand || ent.eventState || ent.contentKind ? (
+                <p className="mt-1 text-[9px] font-semibold normal-case text-violet-200/85">
+                  {labelCastleMediaFrequencyBandV0(ent.frequencyBand, tr)} ·{" "}
+                  {labelCastleMediaEventStateV0(ent.eventState, tr)}
+                  {ent.contentKind ? ` · ${String(ent.contentKind).replace(/_/g, " ")}` : ""}
+                </p>
+              ) : null}
             </div>
             <button
               type="button"
@@ -361,6 +384,22 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                   {tr
                     ? "Castle kurulumu tamam — Castle Genesis kanalı varsayılan."
                     : "Castle setup complete — Castle Genesis channel is default."}
+                </p>
+              ) : null}
+              {legalGateMode ? (
+                <p className="mt-1 text-[9px] font-semibold normal-case text-amber-200/90">
+                  {tr
+                    ? `Yasal onay bekleniyor — geri sayım ${Math.max(0, Math.floor(legalCountdownMs / 1000))}s`
+                    : `Legal hold — countdown ${Math.max(0, Math.floor(legalCountdownMs / 1000))}s`}
+                </p>
+              ) : null}
+              {communityLab?.ok ? (
+                <p className="mt-1 text-[9px] font-normal normal-case text-emerald-200/80">
+                  {tr ? "YouTube lab" : "YouTube lab"}: {(communityLab.communities || []).length}{" "}
+                  {tr ? "topluluk" : "communities"} · {(communityLab.votes || []).length}{" "}
+                  {tr ? "oy" : "votes"} · {(communityLab.manifestos || []).length}{" "}
+                  {tr ? "manifesto" : "manifesto"} · {(communityLab.protests || []).length}{" "}
+                  {tr ? "protesto" : "protest"}
                 </p>
               ) : null}
               {isQuantumRadioEntry ? (

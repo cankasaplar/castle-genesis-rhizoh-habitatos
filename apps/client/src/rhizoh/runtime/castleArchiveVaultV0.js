@@ -3,6 +3,10 @@
  * Entity records are tombstone-deletable; audit events are append-only (never deleted).
  */
 
+import {
+  normalizeCastleArchiveMediaMetaV0
+} from "./castleArchiveMediaMetaV0.js";
+
 export const CASTLE_ARCHIVE_VAULT_SCHEMA_V0 = "castle.archive_vault.v0";
 export const CASTLE_ARCHIVE_VAULT_LS_KEY_V0 = "rhizoh_castle_archive_vault_v0";
 export const CASTLE_ARCHIVE_VAULT_EVENT_V0 = "rhizoh:castle-archive-vault-v0";
@@ -128,12 +132,18 @@ export function listCastleArchiveEventsV0() {
  *   content?: string,
  *   mediaUrl?: string,
  *   source?: string,
- *   towerId?: string
+ *   towerId?: string,
+ *   frequencyBand?: string,
+ *   eventState?: string,
+ *   contentKind?: string,
+ *   youtubeChannelId?: string,
+ *   communityId?: string
  * }} input
  */
 export function saveCastleArchiveEntityV0(input = {}) {
   const title = String(input.title || "Untitled").trim().slice(0, 200);
   const format = String(input.format || "text/plain").trim().slice(0, 64);
+  const mediaMeta = normalizeCastleArchiveMediaMetaV0(input);
   const { entities, events } = readVaultRawV0();
   const entity = Object.freeze({
     id: newId("ent"),
@@ -148,6 +158,11 @@ export function saveCastleArchiveEntityV0(input = {}) {
     tags: Object.freeze(normalizeTagsV0(input.tags || [])),
     userNotes: Object.freeze([]),
     bookmarks: Object.freeze([]),
+    frequencyBand: mediaMeta.frequencyBand,
+    eventState: mediaMeta.eventState,
+    contentKind: mediaMeta.contentKind,
+    youtubeChannelId: mediaMeta.youtubeChannelId,
+    communityId: mediaMeta.communityId,
     createdAt: nowIso(),
     tombstonedAt: null
   });

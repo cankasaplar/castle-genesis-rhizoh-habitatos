@@ -13,7 +13,13 @@ import {
 } from "../rhizoh/runtime/mediaCivilizationBridgeV0.js";
 import { syncCastleCloudVaultV0 } from "../rhizoh/runtime/castleCloudSyncV0.js";
 import { readCastleIdentityV0, CASTLE_IDENTITY_EVENT_V0 } from "../rhizoh/runtime/castleIdentityV0.js";
-import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
+import {
+  CASTLE_MEDIA_CONTENT_KIND_V0,
+  CASTLE_MEDIA_EVENT_STATE_V0,
+  CASTLE_MEDIA_FREQUENCY_BAND_V0,
+  labelCastleMediaEventStateV0,
+  labelCastleMediaFrequencyBandV0
+} from "../rhizoh/runtime/castleArchiveMediaMetaV0.js";
 
 const PIECE_UNICODE_V0 = Object.freeze({
   wK: "♔",
@@ -74,12 +80,22 @@ export const RhizohCastleLibraryPanelV0 = memo(function RhizohCastleLibraryPanel
   const [selectedEntityId, setSelectedEntityId] = useState("");
   const [noteText, setNoteText] = useState("");
   const [tagText, setTagText] = useState("");
+  const [frequencyBand, setFrequencyBand] = useState(CASTLE_MEDIA_FREQUENCY_BAND_V0.AMBIENT);
+  const [eventState, setEventState] = useState(CASTLE_MEDIA_EVENT_STATE_V0.HOLD);
+  const [contentKind, setContentKind] = useState(CASTLE_MEDIA_CONTENT_KIND_V0.BROADCAST);
+  const [youtubeChannelId, setYoutubeChannelId] = useState("");
+  const [communityId, setCommunityId] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setTitle(tr ? "Yeni belge" : "New document");
     setContent("");
     setFormat("text/plain");
+    setFrequencyBand(CASTLE_MEDIA_FREQUENCY_BAND_V0.AMBIENT);
+    setEventState(CASTLE_MEDIA_EVENT_STATE_V0.HOLD);
+    setContentKind(CASTLE_MEDIA_CONTENT_KIND_V0.BROADCAST);
+    setYoutubeChannelId("");
+    setCommunityId("");
   }, [open, tr]);
 
   const onSave = useCallback(() => {
@@ -88,7 +104,12 @@ export const RhizohCastleLibraryPanelV0 = memo(function RhizohCastleLibraryPanel
       format,
       content,
       source: node?.id ? `map:${node.id}` : "library_panel",
-      tags: ["library"]
+      tags: ["library"],
+      frequencyBand,
+      eventState,
+      contentKind,
+      youtubeChannelId: youtubeChannelId.trim() || undefined,
+      communityId: communityId.trim() || undefined
     });
     openCastleArchiveEntityInMediaV0(entity.id);
     runMediaCivilizationPipelineV0({
@@ -96,7 +117,7 @@ export const RhizohCastleLibraryPanelV0 = memo(function RhizohCastleLibraryPanel
       entityId: entity.id,
       locale: uiLocale
     });
-  }, [title, format, content, node?.id, tr, uiLocale]);
+  }, [title, format, content, node?.id, tr, uiLocale, frequencyBand, eventState, contentKind, youtubeChannelId, communityId]);
 
   const onAnnotate = useCallback(
     (action) => {
@@ -198,6 +219,12 @@ export const RhizohCastleLibraryPanelV0 = memo(function RhizohCastleLibraryPanel
                         <p className="text-[9px] text-white/45">
                           {ent.format} · {(ent.tags || []).slice(0, 3).join(", ") || "—"}
                         </p>
+                        {ent.frequencyBand || ent.eventState ? (
+                          <p className="text-[9px] text-violet-200/75">
+                            {labelCastleMediaFrequencyBandV0(ent.frequencyBand, tr)} ·{" "}
+                            {labelCastleMediaEventStateV0(ent.eventState, tr)}
+                          </p>
+                        ) : null}
                         {(ent.userNotes || []).length ? (
                           <p className="mt-1 text-[9px] italic text-cyan-200/70">
                             {(ent.userNotes[0]?.text || "").slice(0, 80)}
@@ -284,6 +311,67 @@ export const RhizohCastleLibraryPanelV0 = memo(function RhizohCastleLibraryPanel
               <option value="application/json">application/json</option>
               <option value="text/html">text/html</option>
             </select>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex flex-col gap-1 text-[9px] text-white/55">
+                {tr ? "Frekans bandı" : "Frequency band"}
+                <select
+                  value={frequencyBand}
+                  onChange={(e) => setFrequencyBand(e.target.value)}
+                  className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+                >
+                  {Object.values(CASTLE_MEDIA_FREQUENCY_BAND_V0).map((band) => (
+                    <option key={band} value={band}>
+                      {labelCastleMediaFrequencyBandV0(band, tr)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-[9px] text-white/55">
+                {tr ? "Olay durumu" : "Event state"}
+                <select
+                  value={eventState}
+                  onChange={(e) => setEventState(e.target.value)}
+                  className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+                >
+                  {Object.values(CASTLE_MEDIA_EVENT_STATE_V0).map((state) => (
+                    <option key={state} value={state}>
+                      {labelCastleMediaEventStateV0(state, tr)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex flex-col gap-1 text-[9px] text-white/55">
+                {tr ? "İçerik türü" : "Content kind"}
+                <select
+                  value={contentKind}
+                  onChange={(e) => setContentKind(e.target.value)}
+                  className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+                >
+                  {Object.values(CASTLE_MEDIA_CONTENT_KIND_V0).map((kind) => (
+                    <option key={kind} value={kind}>
+                      {kind.replace(/_/g, " ")}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-[9px] text-white/55">
+                YouTube {tr ? "kanal ID" : "channel ID"}
+                <input
+                  value={youtubeChannelId}
+                  onChange={(e) => setYoutubeChannelId(e.target.value)}
+                  placeholder="UC…"
+                  className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+                />
+              </label>
+            </div>
+            <input
+              value={communityId}
+              onChange={(e) => setCommunityId(e.target.value)}
+              placeholder={tr ? "Topluluk / oylama ID (opsiyonel)" : "Community / vote ID (optional)"}
+              className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+            />
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
