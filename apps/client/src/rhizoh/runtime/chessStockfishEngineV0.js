@@ -15,11 +15,25 @@ export const CHESS_STOCKFISH_ASSET_PATHS_V0 = Object.freeze({
   wasm: "/chess-engine/stockfish-nnue-16-single.wasm"
 });
 
-function resolveStockfishWorkerUrlV0() {
+function resolveStockfishWorkerUrlV0(strategy = "absolute_wasm") {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const js = CHESS_STOCKFISH_ASSET_PATHS_V0.workerJs;
   const wasm = CHESS_STOCKFISH_ASSET_PATHS_V0.wasm;
-  return `${origin}${js}#${wasm},worker`;
+  const wasmTarget = strategy === "absolute_wasm" ? `${origin}${wasm}` : wasm;
+  return `${origin}${js}#${wasmTarget},worker`;
+}
+
+function buildStockfishWorkerUrlCandidatesV0() {
+  return [
+    resolveStockfishWorkerUrlV0("absolute_wasm"),
+    resolveStockfishWorkerUrlV0("relative_wasm")
+  ];
+}
+
+function isWasmMagicValidV0(buffer) {
+  if (!buffer || buffer.byteLength < 4) return false;
+  const bytes = new Uint8Array(buffer, 0, 4);
+  return bytes[0] === 0x00 && bytes[1] === 0x61 && bytes[2] === 0x73 && bytes[3] === 0x6d;
 }
 
 /** @type {Worker | null} */
@@ -35,6 +49,7 @@ let readyV0 = false;
 let initFailedV0 = false;
 let initErrorV0 = null;
 let assetsVerifiedV0 = false;
+let lastWorkerStrategyV0 = null;
 
 export function getChessStockfishEngineStatusV0() {
   if (initFailedV0) return "heuristic_fallback";
@@ -48,7 +63,8 @@ export function getChessStockfishEngineDetailV0() {
     status: getChessStockfishEngineStatusV0(),
     initError: initErrorV0,
     assetsVerified: assetsVerifiedV0,
-    workerUrl: resolveStockfishWorkerUrlV0(),
+    workerUrl: resolveStockfishWorkerUrlV0("absolute_wasm"),
+    workerStrategy: lastWorkerStrategyV0,
     wasmPath: CHESS_STOCKFISH_ASSET_PATHS_V0.wasm
   });
 }
@@ -136,8 +152,17 @@ function attachWorkerHandlersV0(worker) {
   };
   worker.onerror = (err) => {
     initFailedV0 = true;
-    initErrorV0 = String(err?.message || "worker_error");
-    logStockfishV0("error", "worker onerror", { error: initErrorV0 });
+    const detail = {
+      error: String(err?.message || "worker_error"),
+      filename: err?.filename || null,
+      lineno: err?.lineno || null,
+      colno: err?.colno || null,
+      strategy: lastWorkerStrategyV0
+    };
+    initErrorV0 = detail.filename
+      ? `worker_error@${detail.filename}:${detail.lineno}`
+      : detail.error;
+    logStockfishV0("error", "worker onerror", detail);
     try {
       worker?.terminate?.();
     } catch {
@@ -160,15 +185,34 @@ let initPromiseV0 = null;
 async function verifyStockfishAssetsV0() {
   if (typeof fetch === "undefined") return false;
   try {
-    const [jsHead, wasmHead] = await Promise.all([
-      fetch(CHESS_STOCKFISH_ASSET_PATHS_V0.workerJs, { method: "HEAD", cache: "no-store" }),
-      fetch(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm, { method: "HEAD", cache: "no-store" })
+    const [jsRes, wasmRes] = await Promise.all([
+      fetch(CHESS_STOCKFISH_ASSET_PATHS_V0.workerJs, { method: "GET", cache: "no-store" }),
+      fetch(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm, { method: "GET", cache: "no-store" })
     ]);
-    if (!jsHead.ok || !wasmHead.ok) {
-      initErrorV0 = `asset_preflight_${jsHead.status}_${wasmHead.status}`;
+    if (!jsRes.ok || !wasmRes.ok) {
+      initErrorV0 = `asset_preflight_${jsRes.status}_${wasmRes.status}`;
       logStockfishV0("error", "asset preflight failed", {
-        jsStatus: jsHead.status,
-        wasmStatus: wasmHead.status
+        jsStatus: jsRes.status,
+        wasmStatus: wasmRes.status,
+        jsType: jsRes.headers.get("content-type"),
+        wasmType: wasmRes.headers.get("content-type")
+      });
+      return false;
+    }
+    const wasmBuf = await wasmRes.arrayBuffer();
+    if (!isWasmMagicValidV0(wasmBuf)) {
+      initErrorV0 = "wasm_magic_invalid_likely_cached_html";
+      logStockfishV0("error", "wasm magic invalid — likely SPA shell or SW cache poison", {
+        wasmBytes: wasmBuf.byteLength,
+        wasmType: wasmRes.headers.get("content-type")
+      });
+      return false;
+    }
+    const jsText = await jsRes.text();
+    if (!jsText.includes("Stockfish") || jsText.trimStart().startsWith("<")) {
+      initErrorV0 = "js_asset_invalid_likely_cached_html";
+      logStockfishV0("error", "stockfish js invalid — likely SPA shell or SW cache poison", {
+        jsBytes: jsText.length
       });
       return false;
     }
@@ -179,6 +223,47 @@ async function verifyStockfishAssetsV0() {
     logStockfishV0("error", "asset preflight exception", { error: initErrorV0 });
     return false;
   }
+}
+
+async function spawnStockfishWorkerV0() {
+  const candidates = buildStockfishWorkerUrlCandidatesV0();
+  let lastErr = null;
+
+  for (const workerUrl of candidates) {
+    lastWorkerStrategyV0 = workerUrl;
+    logStockfishV0("info", "spawning worker", { workerUrl });
+    resetReadyFlagsV0();
+    const worker = new Worker(workerUrl, { type: "classic" });
+    workerV0 = worker;
+    attachWorkerHandlersV0(worker);
+
+    try {
+      worker.postMessage("uci");
+      await waitUciOkV0(20000);
+      worker.postMessage("isready");
+      await waitReadyV0(12000);
+      worker.postMessage("setoption name UCI_AnalyseMode value false");
+      worker.postMessage("setoption name Hash value 64");
+      logStockfishV0("info", "ready", { status: "stockfish_wasm", workerUrl });
+      publishEngineStatusV0("init_ready");
+      return worker;
+    } catch (err) {
+      lastErr = err;
+      logStockfishV0("warn", "worker strategy failed", {
+        workerUrl,
+        error: String(err?.message || err)
+      });
+      try {
+        worker.terminate();
+      } catch {
+        /* noop */
+      }
+      workerV0 = null;
+      resetReadyFlagsV0();
+    }
+  }
+
+  throw lastErr || new Error("stockfish_worker_spawn_failed");
 }
 
 function waitUciOkV0(timeoutMs) {
@@ -230,23 +315,12 @@ async function ensureStockfishWorkerV0() {
       const assetsOk = await verifyStockfishAssetsV0();
       if (!assetsOk) {
         initFailedV0 = true;
+        publishEngineStatusV0("asset_preflight_failed");
         return null;
       }
 
-      resetReadyFlagsV0();
-      const workerUrl = resolveStockfishWorkerUrlV0();
-      logStockfishV0("info", "spawning worker", { workerUrl });
-      workerV0 = new Worker(workerUrl, { type: "classic" });
-      attachWorkerHandlersV0(workerV0);
-      workerV0.postMessage("uci");
-      await waitUciOkV0(20000);
-      workerV0.postMessage("isready");
-      await waitReadyV0(12000);
-      workerV0.postMessage("setoption name UCI_AnalyseMode value false");
-      workerV0.postMessage("setoption name Hash value 64");
-      logStockfishV0("info", "ready", { status: "stockfish_wasm" });
-      publishEngineStatusV0("init_ready");
-      return workerV0;
+      const worker = await spawnStockfishWorkerV0();
+      return worker;
     } catch (err) {
       initFailedV0 = true;
       initErrorV0 = String(err?.message || "stockfish_init_failed");
@@ -462,8 +536,7 @@ export function disposeChessStockfishEngineV0() {
   }
   workerV0 = null;
   resetReadyFlagsV0();
-  initFailedV0 = false;
-  initErrorV0 = null;
+  initPromiseV0 = null;
   activeAnalysisV0 = null;
   pendingV0.clear();
 }
