@@ -48,9 +48,9 @@ function resolveLaunchGeometry(launch, w, h) {
   return { ...launch, p0, p2, cp, key: launch.id };
 }
 
-function spiralCubeStackTransformV0({ acc, depthScale, travelScale = 1 }) {
+function spiralCubeStackTransformV0({ acc, renderScale = 1, travelScale = 1 }) {
   const a = acc || {};
-  const scale = travelScale * (a.stackScale ?? 1) * depthScale;
+  const scale = travelScale * (a.stackScale ?? 1) * renderScale;
   const rx = a.rotateX ?? -14;
   const ry = a.rotateY ?? 0;
   const z = a.z ?? 0;
@@ -348,7 +348,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
 
 const SpiralMMOStackedCubeV0 = memo(function SpiralMMOStackedCubeV0({ cube }) {
   const acc = cube.accumulationOffset || { x: 0, y: 0 };
-  const depthScale = cube.depthScale ?? 1.05 + (cube.cubeSpec?.depth ?? 0.5) * 0.35;
+  const renderScale = cube.renderScale ?? cube.cubeSpec?.renderScaleFactor ?? 1;
   const destX = (cube.p2?.x ?? 0) + acc.x;
   const destY = (cube.p2?.y ?? 0) + acc.y;
   const cubeHtml = cube.cubeSpec ? spiralMMOAwakeningCubeHtmlV0(cube.cubeSpec).html : "";
@@ -362,7 +362,7 @@ const SpiralMMOStackedCubeV0 = memo(function SpiralMMOStackedCubeV0({ cube }) {
         width: 0,
         height: 0,
         zIndex: cube.depthZIndex ?? 10,
-        transform: spiralCubeStackTransformV0({ acc: { x: 0, y: 0, z: acc.z, rotateX: acc.rotateX, rotateY: acc.rotateY, stackScale: acc.stackScale }, depthScale, travelScale: 1 }),
+        transform: spiralCubeStackTransformV0({ acc: { x: 0, y: 0, z: acc.z, rotateX: acc.rotateX, rotateY: acc.rotateY, stackScale: acc.stackScale }, renderScale, travelScale: 1 }),
         transformStyle: "preserve-3d",
         pointerEvents: "none"
       }}
@@ -406,7 +406,7 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
     }
 
     const acc = cube.accumulationOffset || { x: 0, y: 0 };
-    const depthScale = cube.depthScale ?? 1.05 + (cube.cubeSpec?.depth ?? 0.5) * 0.35;
+    const renderScale = cube.renderScale ?? cube.cubeSpec?.renderScaleFactor ?? 1;
     const steps = 48;
     const keyframes = [];
     for (let i = 0; i <= steps; i += 1) {
@@ -423,12 +423,12 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
       }
       const destX = cube.p2.x + acc.x;
       const destY = cube.p2.y + acc.y;
-      const travelScale = i === 0 ? 0.38 : depthScale * (0.82 + eased * 0.32);
+      const travelScale = i === 0 ? 0.38 : renderScale * (0.82 + eased * 0.32);
       const atDest = i === steps;
       keyframes.push({
         left: `${atDest ? destX : pos.x}px`,
         top: `${atDest ? destY : pos.y}px`,
-        transform: spiralCubeStackTransformV0({ acc, depthScale, travelScale }),
+        transform: spiralCubeStackTransformV0({ acc, renderScale, travelScale }),
         opacity: 0.45 + eased * 0.5,
         filter: `drop-shadow(${cube.cubeSpec?.shadowX ?? 2}px ${cube.cubeSpec?.shadowY ?? 3}px ${cube.cubeSpec?.shadowBlur ?? 6}px rgba(0,0,0,0.5))`
       });

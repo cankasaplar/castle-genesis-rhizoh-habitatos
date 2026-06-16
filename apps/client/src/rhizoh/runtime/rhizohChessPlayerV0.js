@@ -7,6 +7,7 @@ import { readChessCivilizationV0 } from "./chessCivilizationV0.js";
 import { getStockfishArenaMoveV0 } from "./chessStockfishEngineV0.js";
 import { stockfishSkillFromEloV0 } from "./chessStockfishPresetsV0.js";
 import { pickChessArenaAiMoveV0, estimateChessMaterialBalanceV0 } from "./chessArenaEngineV0.js";
+import { readChessPolicyModeV0, resolveRhizohChessEngineParamsV0 } from "./chessPolicyModeV0.js";
 
 export const RHIZOH_CHESS_PLAYER_SCHEMA_V0 = "rhizoh.chess_player.v0";
 
@@ -29,8 +30,9 @@ function pickBookMoveV0(game) {
 
 /**
  * @param {ReturnType<import('./chessArenaEngineV0.js').createChessArenaGameV0>} game
+ * @param {{ policyMode?: string }} [opts]
  */
-export async function pickRhizohChessMoveV0(game) {
+export async function pickRhizohChessMoveV0(game, opts = {}) {
   const bookMove = pickBookMoveV0(game);
   if (bookMove) {
     return Object.freeze({ move: bookMove, engine: "rhizoh_opening_book" });
@@ -39,25 +41,36 @@ export async function pickRhizohChessMoveV0(game) {
   const profile = readChessCivilizationV0();
   const baseSkill = stockfishSkillFromEloV0(profile?.elo || 1200);
   const materialLead = estimateChessMaterialBalanceV0(game, "w");
-  const winning =
-    materialLead >= 3 || (materialLead >= 1 && game.chess.isCheck());
-  const skill = winning ? Math.max(baseSkill, 16) : baseSkill;
-  const movetimeMs = winning
-    ? Math.min(4200, 1200 + skill * 120)
-    : Math.min(2800, 900 + baseSkill * 80);
-  const contempt = winning ? 28 : materialLead > 0 ? 12 : 0;
+  const policyMode = opts.policyMode || readChessPolicyModeV0();
+  const engineParams = resolveRhizohChessEngineParamsV0({
+    baseSkill,
+    materialLead,
+    isCheck: game.chess.isCheck(),
+    policyMode
+  });
 
   try {
     const sf = await getStockfishArenaMoveV0(game.fen(), {
-      skill,
-      movetimeMs,
-      depth: 12 + Math.floor(skill / 2),
-      contempt
+      skill: engineParams.skill,
+      movetimeMs: engineParams.movetimeMs,
+      depth: engineParams.depth,
+      contempt: engineParams.contempt
     });
-    if (sf) return Object.freeze({ move: sf, engine: "rhizoh_learned_stockfish" });
+    if (sf) {
+      return Object.freeze({
+        move: sf,
+        engine: "rhizoh_learned_stockfish",
+        policyMode: engineParams.policyMode,
+        engineParams
+      });
+    }
   } catch {
     /* noop */
   }
 
-  return Object.freeze({ move: pickChessArenaAiMoveV0(game), engine: "rhizoh_heuristic_fallback" });
+  return Object.freeze({
+    move: pickChessArenaAiMoveV0(game),
+    engine: "rhizoh_heuristic_fallback",
+    policyMode
+  });
 }

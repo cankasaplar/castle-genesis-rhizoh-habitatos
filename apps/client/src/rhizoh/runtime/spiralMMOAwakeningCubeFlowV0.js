@@ -217,7 +217,7 @@ export function buildSpiralMMOSequencedCubeLaunchesV0(input) {
             depthLayer
           ),
           depthZIndex: layerSpec.zIndex,
-          depthScale: layerSpec.scaleBias,
+          renderScale: cubeSpec.renderScaleFactor,
           holdAtDest: true,
           waveAmplitude,
           transitionEase,

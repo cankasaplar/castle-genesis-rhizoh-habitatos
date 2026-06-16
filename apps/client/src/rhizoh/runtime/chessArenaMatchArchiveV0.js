@@ -16,6 +16,9 @@ const MAX_ENTRIES_V0 = 48;
  *   white: string,
  *   black: string,
  *   engine?: string,
+ *   policyMode?: string,
+ *   regret?: object,
+ *   evalTrace?: object[],
  *   endedAt?: number
  * }} row
  */
@@ -30,6 +33,9 @@ export function archiveChessArenaMatchV0(row) {
     white: String(row.white || "White"),
     black: String(row.black || "Black"),
     engine: String(row.engine || "unknown"),
+    policyMode: row.policyMode ? String(row.policyMode) : null,
+    regret: row.regret ? Object.freeze({ ...row.regret }) : null,
+    evalTrace: Array.isArray(row.evalTrace) ? Object.freeze(row.evalTrace.slice()) : null,
     endedAt: Number(row.endedAt) || Date.now()
   });
   try {
@@ -48,6 +54,44 @@ export function archiveChessArenaMatchV0(row) {
       /* noop */
     }
     return entry;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Patch an existing archive row (e.g. post-match regret analysis).
+ * @param {string} id
+ * @param {object} patch
+ */
+export function enrichChessArenaArchiveEntryV0(id, patch = {}) {
+  if (typeof window === "undefined" || !id) return null;
+  try {
+    const raw = window.localStorage.getItem(LS_KEY_V0);
+    const prev = raw ? JSON.parse(raw) : { schema: CHESS_ARENA_ARCHIVE_SCHEMA_V0, entries: [] };
+    const entries = Array.isArray(prev.entries) ? [...prev.entries] : [];
+    const idx = entries.findIndex((e) => e.id === id);
+    if (idx < 0) return null;
+    const merged = Object.freeze({
+      ...entries[idx],
+      ...patch,
+      regret: patch.regret ? Object.freeze({ ...patch.regret }) : entries[idx].regret,
+      evalTrace: Array.isArray(patch.evalTrace)
+        ? Object.freeze(patch.evalTrace.slice())
+        : entries[idx].evalTrace
+    });
+    entries[idx] = merged;
+    const next = Object.freeze({
+      schema: CHESS_ARENA_ARCHIVE_SCHEMA_V0,
+      entries: Object.freeze(entries.slice(0, MAX_ENTRIES_V0))
+    });
+    window.localStorage.setItem(LS_KEY_V0, JSON.stringify(next));
+    try {
+      window.dispatchEvent(new CustomEvent("rhizoh:chess-arena-archive-v0", { detail: merged }));
+    } catch {
+      /* noop */
+    }
+    return merged;
   } catch {
     return null;
   }

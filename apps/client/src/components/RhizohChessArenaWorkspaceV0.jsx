@@ -11,6 +11,7 @@ import { pickRhizohChessMoveV0 } from "../rhizoh/runtime/rhizohChessPlayerV0.js"
 import { CHESS_STOCKFISH_PRESET_V0 } from "../rhizoh/runtime/chessStockfishPresetsV0.js";
 import {
   archiveChessArenaMatchV0,
+  enrichChessArenaArchiveEntryV0,
   listChessArenaArchiveV0
 } from "../rhizoh/runtime/chessArenaMatchArchiveV0.js";
 import { parseChessVoiceMoveV0 } from "../rhizoh/runtime/chessVoiceMoveParserV0.js";
@@ -22,6 +23,13 @@ import {
 } from "../castleSocial/castleC2cRealtimeBusV0.js";
 import { runChessIntelligencePipelineV0 } from "../rhizoh/runtime/chessLearningBridgeV0.js";
 import { listRhizohOpeningBookV0 } from "../rhizoh/runtime/rhizohOpeningBookV0.js";
+import {
+  CHESS_POLICY_MODE_V0,
+  getChessPolicyProfileV0,
+  readChessPolicyModeV0,
+  saveChessPolicyModeV0
+} from "../rhizoh/runtime/chessPolicyModeV0.js";
+import { analyzeRhizohRegretV0 } from "../rhizoh/runtime/chessRegretAnalysisV0.js";
 import { readChessCivilizationV0 } from "../rhizoh/runtime/chessCivilizationV0.js";
 import {
   CHESS_BOARD_THEME_V0,
@@ -156,6 +164,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const [expandedArchiveId, setExpandedArchiveId] = useState(null);
   const [lastFinishedMatchV0, setLastFinishedMatchV0] = useState(null);
   const [gameEpoch, setGameEpoch] = useState(0);
+  const [policyMode, setPolicyMode] = useState(() => readChessPolicyModeV0());
+  const [lastRegretV0, setLastRegretV0] = useState(null);
 
   const boardColors = useMemo(
     () => resolveChessBoardColorsV0(boardTheme.boardThemeId),
@@ -259,7 +269,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const matchArchiveV0 = useMemo(() => listChessArenaArchiveV0(5), [archiveTick, matchResult]);
 
   const persistFinishedMatchV0 = useCallback(
-    (outcomeVal, engineLabel = engineStatus) => {
+    (outcomeVal, engineLabel = engineStatus, extra = {}) => {
       const entry = archiveChessArenaMatchV0({
         matchId: c2cMatch?.matchId || `chess_${Date.now().toString(36)}`,
         mode,
@@ -268,7 +278,10 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         fen: game.fen(),
         white: opponentsV0.white,
         black: opponentsV0.black,
-        engine: engineLabel
+        engine: engineLabel,
+        policyMode: extra.policyMode || policyMode,
+        regret: extra.regret || null,
+        evalTrace: extra.evalTrace || null
       });
       if (entry) {
         setLastFinishedMatchV0(entry);
@@ -276,7 +289,33 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       }
       setArchiveTick((n) => n + 1);
     },
-    [c2cMatch?.matchId, engineStatus, game, mode, opponentsV0]
+    [c2cMatch?.matchId, engineStatus, game, mode, opponentsV0, policyMode]
+  );
+
+  const runRegretAnalysisV0 = useCallback(
+    async (archiveId, moves, localColor = "w") => {
+      if (!archiveId || !moves?.length) return null;
+      try {
+        const regret = await analyzeRhizohRegretV0({ moves, localColor });
+        enrichChessArenaArchiveEntryV0(archiveId, {
+          regret,
+          evalTrace: regret.evalTrace
+        });
+        setLastRegretV0(regret);
+        setArchiveTick((n) => n + 1);
+        if (regret.lossAvoidanceBias && regret.topRegret) {
+          setStatus((s) =>
+            tr
+              ? `${s} · Pişmanlık: ${regret.topRegret.san} (${regret.topRegret.swingCp}cp)`
+              : `${s} · Regret: ${regret.topRegret.san} (${regret.topRegret.swingCp}cp)`
+          );
+        }
+        return regret;
+      } catch {
+        return null;
+      }
+    },
+    [tr]
   );
 
   const runMatchLearningV0 = useCallback(
@@ -323,6 +362,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       setMatchResult(null);
       setLastFinishedMatchV0(null);
       setExpandedArchiveId(null);
+      setLastRegretV0(null);
       setWhiteClockMs(DEFAULT_CLOCK_MS_V0);
       setBlackClockMs(DEFAULT_CLOCK_MS_V0);
       setStatus(tr ? "Yeni oyun." : "New game.");
@@ -365,8 +405,11 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
               : "Checkmate — game over."
         );
         const outcomeVal = result.outcome || game.outcome();
+        const archiveEntry = persistFinishedMatchV0(outcomeVal, engineStatus);
+        if (mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH && archiveEntry?.id) {
+          void runRegretAnalysisV0(archiveEntry.id, game.moveHistory, "w");
+        }
         void runMatchLearningV0(outcomeVal, c2cMatch);
-        persistFinishedMatchV0(outcomeVal, engineStatus);
         return true;
       }
 
@@ -380,7 +423,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         let aiPick = null;
         try {
           if (rhizohBlack || rhizohWhite) {
-            aiPick = await pickRhizohChessMoveV0(game);
+            aiPick = await pickRhizohChessMoveV0(game, { policyMode });
           } else {
             aiPick = await pickChessArenaEngineMoveV0(game, { useStockfish: true, preset: "ARENA" });
           }
@@ -404,15 +447,22 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                     : "Fallback engine";
             setStatus((s) => `${s} · ${engineLabel}: ${aiResult.move.san}`);
             if (aiResult.outcome) {
+              const archiveEntry = persistFinishedMatchV0(
+                aiResult.outcome,
+                aiPick?.engine || engineStatus,
+                { policyMode: aiPick?.policyMode || policyMode }
+              );
+              if (mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH && archiveEntry?.id) {
+                void runRegretAnalysisV0(archiveEntry.id, game.moveHistory, "w");
+              }
               void runMatchLearningV0(aiResult.outcome, c2cMatch);
-              persistFinishedMatchV0(aiResult.outcome, aiPick?.engine || engineStatus);
             }
           }
         }
       }
       return true;
     },
-    [game, mode, tr, c2cMatch, runMatchLearningV0, persistFinishedMatchV0, engineStatus]
+    [game, mode, tr, c2cMatch, runMatchLearningV0, persistFinishedMatchV0, engineStatus, policyMode, runRegretAnalysisV0]
   );
 
   useEffect(() => {
@@ -429,7 +479,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           if (mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH) {
             pick =
               game.turn() === "w"
-                ? await pickRhizohChessMoveV0(game)
+                ? await pickRhizohChessMoveV0(game, { policyMode })
                 : await pickChessArenaEngineMoveV0(game, {
                     useStockfish: true,
                     preset: "TEACHER_BACKUP"
@@ -471,7 +521,12 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           void runMatchLearningV0(aiResult.outcome, c2cMatch, {
             opponentCastleId: mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH ? "teacher_stockfish" : "stockfish"
           });
-          persistFinishedMatchV0(aiResult.outcome, pick?.engine || engineStatus);
+          const archiveEntry = persistFinishedMatchV0(aiResult.outcome, pick?.engine || engineStatus, {
+            policyMode: pick?.policyMode || policyMode
+          });
+          if (mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH && archiveEntry?.id) {
+            void runRegretAnalysisV0(archiveEntry.id, game.moveHistory, "w");
+          }
           break;
         }
         await new Promise((resolve) => {
@@ -492,7 +547,9 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     c2cMatch,
     runMatchLearningV0,
     persistFinishedMatchV0,
-    engineStatus
+    engineStatus,
+    policyMode,
+    runRegretAnalysisV0
   ]);
 
   const onSquareClick = useCallback(
@@ -629,6 +686,34 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                   </option>
                 ))}
               </select>
+              <label className="text-[9px] text-white/50">
+                {tr ? "Rhizoh politikası" : "Rhizoh policy"}
+              </label>
+              <select
+                value={policyMode}
+                onChange={(e) => {
+                  const next = saveChessPolicyModeV0(e.target.value);
+                  setPolicyMode(next);
+                }}
+                className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+              >
+                <option value={CHESS_POLICY_MODE_V0.AGGRESSIVE}>
+                  {tr ? "Agresif — kazanmayı önceler" : "Aggressive — win-prioritized"}
+                </option>
+                <option value={CHESS_POLICY_MODE_V0.BALANCED}>
+                  {tr ? "Dengeli" : "Balanced"}
+                </option>
+                <option value={CHESS_POLICY_MODE_V0.SAFE}>
+                  {tr ? "Güvenli — kayıptan kaçınır" : "Safe — loss-avoidance"}
+                </option>
+              </select>
+              {mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH ? (
+                <p className="col-span-2 text-[8px] text-amber-200/70">
+                  {tr
+                    ? `Aktif politika: ${getChessPolicyProfileV0(policyMode).labelTr} · maç sonrası pişmanlık analizi arşive yazılır`
+                    : `Active policy: ${getChessPolicyProfileV0(policyMode).labelEn} · regret analysis saved to archive after match`}
+                </p>
+              ) : null}
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
               <button
@@ -780,7 +865,28 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                   {lastFinishedMatchV0.white} vs {lastFinishedMatchV0.black} ·{" "}
                   {lastFinishedMatchV0.moves?.length || 0} {tr ? "hamle" : "moves"} ·{" "}
                   {lastFinishedMatchV0.engine}
+                  {lastFinishedMatchV0.policyMode
+                    ? ` · ${tr ? "Politika" : "Policy"}: ${lastFinishedMatchV0.policyMode}`
+                    : ""}
                 </p>
+                {lastRegretV0?.topRegret ? (
+                  <div className="mt-2 rounded border border-rose-400/30 bg-rose-950/25 px-2 py-1.5">
+                    <p className="text-[8px] font-semibold uppercase tracking-wider text-rose-200/90">
+                      {tr ? "Pişmanlık analizi" : "Regret analysis"}
+                    </p>
+                    <p className="mt-0.5 text-[9px] text-rose-100/85">
+                      {lastRegretV0.topRegret.san} · {lastRegretV0.topRegret.swingCp}cp ·{" "}
+                      {tr ? "önerilen" : "best"}: {lastRegretV0.topRegret.bestMove}
+                    </p>
+                    {lastRegretV0.lossAvoidanceBias ? (
+                      <p className="mt-0.5 text-[8px] text-rose-200/65">
+                        {tr
+                          ? "Kayıptan kaçınma eğilimi tespit edildi — Agresif modu dene."
+                          : "Loss-avoidance bias detected — try Aggressive policy."}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
                 {lastFinishedMatchV0.moves?.length ? (
                   <p className="mt-1.5 break-all font-mono text-[8px] leading-relaxed text-white/45">
                     {(lastFinishedMatchV0.moves || []).join(" ")}
@@ -822,9 +928,26 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                         </span>
                       </button>
                       {expandedArchiveId === row.id && row.moves?.length ? (
-                        <p className="mt-1 break-all rounded bg-black/40 px-2 py-1 font-mono text-[8px] text-white/50">
-                          {row.moves.join(" ")}
-                        </p>
+                        <div className="mt-1 space-y-1 rounded bg-black/40 px-2 py-1">
+                          <p className="break-all font-mono text-[8px] text-white/50">
+                            {row.moves.join(" ")}
+                          </p>
+                          {row.regret?.topRegret ? (
+                            <p className="text-[8px] text-rose-200/80">
+                              {tr ? "Pişmanlık" : "Regret"}: {row.regret.topRegret.san} (
+                              {row.regret.topRegret.swingCp}cp)
+                            </p>
+                          ) : null}
+                          {row.evalTrace?.length ? (
+                            <ul className="text-[7px] text-white/40">
+                              {row.evalTrace.slice(0, 6).map((t) => (
+                                <li key={`${row.id}-t-${t.moveNumber}`}>
+                                  {t.moveNumber}. {t.san} · cp {t.beforeCp} → swing {t.swingCp}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </div>
                       ) : null}
                     </li>
                   ))}

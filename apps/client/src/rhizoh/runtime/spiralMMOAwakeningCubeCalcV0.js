@@ -4,6 +4,11 @@
 
 import { SPIRAL_MMO_COLOR_HEX_V0 } from "./spiralMMOAwakeningPaletteV0.js";
 import { deriveSpiralMMOContinentCubeMotionV0 } from "./spiralMMOContinentCubeMotionV0.js";
+import {
+  resolveSpiralCubeRenderScaleV0,
+  resolveSpiralCubeSizePxV0,
+  SPIRAL_CUBE_UNIT_SCHEMA_V0
+} from "./spiralMMOCubeUnitV0.js";
 
 /** @typedef {'rotateY'|'rotateX'|'rotateZ'|'rotate3d'} SpiralMMOCubeAxisV0 */
 
@@ -52,8 +57,13 @@ export function deriveSpiralMMOAwakeningCubeSpecV0(input) {
   const axisTypes = /** @type {SpiralMMOCubeAxisV0[]} */ (["rotateY", "rotateX", "rotateZ", "rotate3d"]);
   const axisType = axisTypes[Math.floor(r3 * axisTypes.length) % axisTypes.length];
 
-  const sizePx = Math.round(24 + depthLayer * 5 + r2 * 12 + (input.isOrder ? 4 : 0));
+  const sizePx = resolveSpiralCubeSizePxV0({
+    depthLayer,
+    sizeNoise: r2,
+    isOrder: input.isOrder
+  });
   const depth = 0.22 + depthLayer * 0.3 + r2 * 0.18;
+  const renderScaleFactor = resolveSpiralCubeRenderScaleV0({ depth });
   const glowBlur = Math.round(6 + depth * 14);
   const glowSpread = Math.round(2 + depth * 6);
   const shadowX = Math.round(2 + depth * 5);
@@ -63,9 +73,11 @@ export function deriveSpiralMMOAwakeningCubeSpecV0(input) {
 
   return Object.freeze({
     schema: "rhizoh.spiral_mmo_awakening_cube_spec.v0",
+    unitSchema: SPIRAL_CUBE_UNIT_SCHEMA_V0,
     colorClass,
     hex,
     sizePx,
+    renderScaleFactor,
     durationMs,
     spinDirection,
     axisType,
