@@ -1,4 +1,5 @@
 import React, { memo, useEffect, useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import {
   RHIZOH_CODEX_BUS_EVENT_V0,
   onCodexBusV0
@@ -8,6 +9,7 @@ import {
   RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0,
   RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0
 } from "../rhizoh/runtime/spiralMMOAwakeningCycleV0.js";
+import { resolveRhizohWorldSpaceMapOverlayBottomCssV0 } from "../rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
 
 const STREAM_TYPES_V0 = new Set([
   CODEX_EVENT_TYPE_V0.GHOST_DISPATCH,
@@ -56,6 +58,8 @@ export const RhizohCodexEventStreamV0 = memo(function RhizohCodexEventStreamV0()
     { id: "ready", className: "collapse", text: "SYSTEM_READY: awaiting events…" }
   ]);
   const [spiralImmersion, setSpiralImmersion] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
+  const overlayBottomCssV0 = resolveRhizohWorldSpaceMapOverlayBottomCssV0();
 
   useEffect(() => {
     const onEnter = () => setSpiralImmersion(true);
@@ -107,35 +111,52 @@ export const RhizohCodexEventStreamV0 = memo(function RhizohCodexEventStreamV0()
 
   return (
     <aside
-      className="pointer-events-auto absolute bottom-3 left-3 z-[90] flex w-72 flex-col rounded-lg border border-white/10 bg-[rgba(20,20,19,0.92)] p-3 shadow-xl"
+      className="pointer-events-auto absolute left-3 z-[90] flex w-[min(16rem,44vw)] flex-col rounded-lg border border-white/10 bg-[rgba(20,20,19,0.92)] p-2 shadow-xl sm:w-64"
+      style={{ bottom: overlayBottomCssV0 }}
       data-rhizoh-codex-event-stream="1"
       aria-label="Rhizoh event stream"
     >
-      <div className="mb-2 font-mono text-[9px] font-bold tracking-wider text-[#788c5d]">
-        EVENT STREAM (INDEXEDDB)
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <div className="font-mono text-[9px] font-bold tracking-wider text-[#788c5d]">
+          EVENT STREAM
+        </div>
+        <button
+          type="button"
+          onClick={() => setCollapsed((v) => !v)}
+          className="rounded border border-white/10 p-0.5 text-white/50 hover:text-white"
+          aria-expanded={!collapsed}
+        >
+          {collapsed ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        </button>
       </div>
-      <div className="max-h-40 overflow-y-auto font-mono text-[9px] leading-relaxed text-[#e8e6dc]">
-        {entries.map((entry) => (
-          <div
-            key={entry.id}
-            className="mb-1 border-l-2 pl-1.5"
-            style={{
-              borderColor:
-                entry.className === "spawn"
-                  ? "#6a9bcc"
-                  : entry.className === "death"
-                    ? "#d97757"
-                    : entry.className === "collapse"
-                      ? "#788c5d"
-                      : "#b0aea5",
-              color: entry.className === "death" ? "#b0aea5" : entry.className === "collapse" ? "#788c5d" : undefined,
-              fontWeight: entry.className === "collapse" ? 600 : undefined
-            }}
-          >
-            {entry.text}
-          </div>
-        ))}
-      </div>
+      {!collapsed ? (
+        <div className="max-h-32 overflow-y-auto font-mono text-[9px] leading-relaxed text-[#e8e6dc]">
+          {entries.map((entry) => (
+            <div
+              key={entry.id}
+              className="mb-1 border-l-2 pl-1.5"
+              style={{
+                borderColor:
+                  entry.className === "spawn"
+                    ? "#6a9bcc"
+                    : entry.className === "death"
+                      ? "#d97757"
+                      : entry.className === "collapse"
+                        ? "#788c5d"
+                        : "#b0aea5",
+                color: entry.className === "death" ? "#b0aea5" : entry.className === "collapse" ? "#788c5d" : undefined,
+                fontWeight: entry.className === "collapse" ? 600 : undefined
+              }}
+            >
+              {entry.text}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="font-mono text-[8px] text-white/40">
+          {entries[entries.length - 1]?.text?.slice(0, 72) || "…"}
+        </p>
+      )}
     </aside>
   );
 });

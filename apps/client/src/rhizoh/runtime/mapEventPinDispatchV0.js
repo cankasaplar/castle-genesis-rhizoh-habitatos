@@ -11,10 +11,6 @@ import {
   dispatchSovereignVoiceWarpV0
 } from "./sovereignWorldMapNodesV0.js";
 import {
-  dispatchSpiralMMOAwakeningV0,
-  resolveSpiralMMOTriggerIndexFromPinIdV0
-} from "./spiralMMOAwakeningCycleV0.js";
-import {
   emitV11MapIntentV0,
   SYMBYO_MAP_INTERACTION_V0
 } from "./symbyoMapIntentBridgeV0.js";
@@ -42,7 +38,6 @@ export function dispatchV11MapEventPinV0(node, interaction = "click", map = null
   }
 
   if (type === "spiralmmo") {
-    dispatchSpiralMMOAwakeningV0(resolveSpiralMMOTriggerIndexFromPinIdV0(pinId));
     const generated = generatePinEventsV1(pinId, normalized);
     emitCodexBusV0("MAP_EVENT_PIN", {
       pinId,

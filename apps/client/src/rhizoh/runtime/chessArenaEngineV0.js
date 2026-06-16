@@ -114,6 +114,52 @@ export function createChessArenaGameV0(opts = {}) {
 }
 
 /**
+ * Rough material balance from Rhizoh's color (positive = Rhizoh ahead).
+ * @param {ReturnType<typeof createChessArenaGameV0>} game
+ * @param {'w'|'b'} rhizohColor
+ */
+export function estimateChessMaterialBalanceV0(game, rhizohColor = "w") {
+  const board = game.chess.board();
+  const values = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+  let white = 0;
+  let black = 0;
+  for (const row of board) {
+    for (const cell of row) {
+      if (!cell) continue;
+      const v = values[cell.type] || 0;
+      if (cell.color === "w") white += v;
+      else black += v;
+    }
+  }
+  const balance = white - black;
+  return rhizohColor === "w" ? balance : -balance;
+}
+
+/**
+ * @param {string|null} outcome
+ * @param {boolean} [tr]
+ */
+export function formatChessOutcomeLabelV0(outcome, tr = false) {
+  const id = String(outcome || "").toLowerCase();
+  const map = tr
+    ? {
+        white_wins: "Beyaz kazandı (Rhizoh AI)",
+        black_wins: "Siyah kazandı (Stockfish)",
+        draw: "Berabere",
+        stalemate: "Pat — berabere",
+        unknown: "Bilinmiyor"
+      }
+    : {
+        white_wins: "White wins (Rhizoh AI)",
+        black_wins: "Black wins (Stockfish)",
+        draw: "Draw",
+        stalemate: "Stalemate — draw",
+        unknown: "Unknown"
+      };
+  return map[id] || id || map.unknown;
+}
+
+/**
  * Simple material-aware AI move (not Stockfish — local deterministic pick).
  * @param {ReturnType<typeof createChessArenaGameV0>} game
  */

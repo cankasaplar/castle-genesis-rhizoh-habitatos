@@ -1,0 +1,38 @@
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
+import {
+  cancelMapPinHoverDwellV0,
+  isMapTransitionBusyV0,
+  MAP_PIN_HOVER_DWELL_MS_V0,
+  resetWorldMapTransitionForTestsV0,
+  scheduleMapPinHoverDwellV0
+} from "../worldMapMeaningfulTransitionV0.js";
+
+describe("worldMapMeaningfulTransitionV0", () => {
+  beforeEach(() => {
+    resetWorldMapTransitionForTestsV0();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("debounces hover dwell before firing callback", () => {
+    const hovered = [];
+    scheduleMapPinHoverDwellV0({ id: "tower_1", type: "tower" }, (n) => hovered.push(n.id));
+    expect(hovered).toHaveLength(0);
+    vi.advanceTimersByTime(MAP_PIN_HOVER_DWELL_MS_V0 - 1);
+    expect(hovered).toHaveLength(0);
+    vi.advanceTimersByTime(1);
+    expect(hovered).toEqual(["tower_1"]);
+  });
+
+  it("cancels pending hover on mouseout", () => {
+    const cleared = [];
+    scheduleMapPinHoverDwellV0({ id: "library" }, () => {}, () => cleared.push("clear"));
+    cancelMapPinHoverDwellV0(() => cleared.push("clear"));
+    vi.advanceTimersByTime(MAP_PIN_HOVER_DWELL_MS_V0 + 100);
+    expect(cleared.length).toBeGreaterThan(0);
+    expect(isMapTransitionBusyV0()).toBe(false);
+  });
+});

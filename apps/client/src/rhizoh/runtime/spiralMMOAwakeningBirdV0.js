@@ -23,8 +23,8 @@ export function buildSpiralMMOAwakeningBirdSpecV0(input) {
   const gray = Math.floor(r0 * 256);
   const depthScale = 0.3 + r1 * 1.2;
   const depthOpacity = 0.4 + r2 * 0.6;
-  const wingDur = 0.2 + r3 * 0.3;
-  const hoverDur = 1.5 + r1 * 1.2;
+  const wingDur = 0.35 + r3 * 0.55;
+  const hoverDur = 2.4 + r1 * 2.0;
 
   return Object.freeze({
     schema: "rhizoh.spiral_mmo_awakening_bird.v0",

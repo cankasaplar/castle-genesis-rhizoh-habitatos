@@ -174,6 +174,7 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
   if (!worker) return null;
 
   const { skill, movetimeMs, depth } = resolveStockfishOptsV0(opts);
+  const contempt = Number.isFinite(Number(opts.contempt)) ? Number(opts.contempt) : null;
 
   return new Promise((resolve) => {
     const id = nextId();
@@ -196,6 +197,9 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
     try {
       worker.postMessage("setoption name UCI_LimitStrength value true");
       worker.postMessage(`setoption name Skill Level value ${skill}`);
+      if (contempt != null) {
+        worker.postMessage(`setoption name Contempt value ${Math.max(-100, Math.min(100, contempt))}`);
+      }
       worker.postMessage(`position fen ${position}`);
       worker.postMessage(`go depth ${depth} movetime ${movetimeMs}`);
     } catch {

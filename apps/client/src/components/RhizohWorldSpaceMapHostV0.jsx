@@ -21,6 +21,12 @@ import {
 } from "../rhizoh/runtime/worldMapBootstrapGeoV0.js";
 
 import { dispatchV11MapEventPinV0 } from "../rhizoh/runtime/mapEventPinDispatchV0.js";
+import {
+  cancelMapPinHoverDwellV0,
+  isMapTransitionBusyV0,
+  runMapPinApproachThenV0,
+  scheduleMapPinHoverDwellV0
+} from "../rhizoh/runtime/worldMapMeaningfulTransitionV0.js";
 import { RHIZOH_MAP_COMMAND_EVENT_V0 } from "../rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
 import { RhizohCatchUpCascadeOverlayV0 } from "./RhizohCatchUpCascadeOverlayV0.jsx";
 import { RhizohSpiralMMOMapAwakeningOverlayV0 } from "./RhizohSpiralMMOMapAwakeningOverlayV0.jsx";
@@ -238,6 +244,12 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
         markerLayerRef.current = L.layerGroup().addTo(map);
         graphLayerRef.current = L.layerGroup().addTo(map);
         mapRef.current = map;
+        try {
+          window.__rhizoh = window.__rhizoh || {};
+          window.__rhizoh.v11LeafletMap = map;
+        } catch {
+          /* noop */
+        }
         setLeafletReady(true);
         setTimeout(() => {
           try {
@@ -368,24 +380,31 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
           } catch {
             /* noop */
           }
-          if (node.type !== "spiralmmo") {
-            try {
-              const z = Math.max(mapRef.current?.getZoom?.() || 14, 16);
-              mapRef.current?.flyTo?.([node.lat, node.lon], z, { animate: true, duration: 1.2 });
-            } catch {
-              /* noop */
-            }
-          }
+          if (isMapTransitionBusyV0()) return;
+          const map = mapRef.current;
           if (node.type === "remote_castle") {
-            dispatchV11MapEventPinV0(node, "click", mapRef.current);
+            dispatchV11MapEventPinV0(node, "click", map);
             return;
           }
-          dispatchV11MapEventPinV0(node, "click", mapRef.current);
+          if (node.type === "spiralmmo") {
+            dispatchV11MapEventPinV0(node, "click", map);
+            return;
+          }
+          runMapPinApproachThenV0(map, node, {}, () =>
+            dispatchV11MapEventPinV0(node, "click", map)
+          );
         });
-        marker.on("mouseover", () =>
-          dispatchV11MapEventPinV0(node, "hover", mapRef.current)
-        );
-        marker.on("mouseout", () => emitV11MapClearPreviewV0());
+        marker.on("mouseover", () => {
+          if (node.type === "spiralmmo") return;
+          scheduleMapPinHoverDwellV0(
+            node,
+            (n) => dispatchV11MapEventPinV0(n, "hover", mapRef.current),
+            () => emitV11MapClearPreviewV0()
+          );
+        });
+        marker.on("mouseout", () => {
+          cancelMapPinHoverDwellV0(() => emitV11MapClearPreviewV0());
+        });
         if (node.id === "rhizoh_portal") {
           portalMarkerRef.current = marker;
           writeSovereignPortalCoordsV0(node.lat, node.lon);
@@ -444,7 +463,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
 
   return (
     <div
-      className="absolute inset-0 overflow-hidden bg-[radial-gradient(circle_at_center,rgba(14,116,144,0.18),rgba(8,14,28,0.52)_72%)]"
+      className="absolute inset-0 overflow-hidden bg-[radial-gradient(circle_at_center,rgba(14,116,144,0.18),rgba(8,14,28,0.52)_72%)] transition-opacity duration-700 ease-in-out"
       data-rhizoh-v11-core-map-layer="1"
       data-rhizoh-v11-leaflet-ready={leafletReady ? "1" : "0"}
       aria-label="Rhizoh Primary Spatial Surface V11"

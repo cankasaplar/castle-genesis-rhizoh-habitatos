@@ -17,7 +17,7 @@ import { spiralMMOMapGeoToPercentV0 } from "./spiralMMOMapGeoProjectV0.js";
 import { takeSpiralMMOSessionAccumIndexV0 } from "./spiralMMOSessionAccumulationV0.js";
 
 export const SPIRAL_MMO_CUBE_DEPTH_LAYERS_V0 = Object.freeze([0, 1, 2]);
-export const SPIRAL_MMO_CUBE_STAGGER_MS_V0 = 140;
+export const SPIRAL_MMO_CUBE_STAGGER_MS_V0 = 280;
 export const SPIRAL_MMO_CUBE_WAVE_COLORS_V0 = Object.freeze([
   ...SPIRAL_MMO_ORDER_COLORS_V0,
   ...SPIRAL_MMO_CHAOS_COLORS_V0,
@@ -217,7 +217,7 @@ export function buildSpiralMMOSequencedCubeLaunchesV0(input) {
             depthLayer
           ),
           depthZIndex: layerSpec.zIndex,
-          depthScale: layerSpec.scaleBias,
+          renderScale: cubeSpec.renderScaleFactor,
           holdAtDest: true,
           waveAmplitude,
           transitionEase,

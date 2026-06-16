@@ -15,7 +15,8 @@ describe("spiralMMOAwakeningCubeCalcV0", () => {
       isOrder: true,
       cycleSeed: 42
     });
-    expect(spec.sizePx).toBeGreaterThan(12);
+    expect(spec.sizePx).toBeGreaterThan(24);
+    expect(spec.renderScaleFactor).toBeGreaterThan(1);
     expect(spec.durationMs).toBeGreaterThan(2000);
     expect(spec.glowBlur).toBeGreaterThan(5);
     expect(spec.shadowBlur).toBeGreaterThan(3);

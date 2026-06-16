@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   CHESS_GAME_MODE_V0,
   createChessArenaGameV0,
+  estimateChessMaterialBalanceV0,
+  formatChessOutcomeLabelV0,
   pickChessArenaAiMoveV0
 } from "../chessArenaEngineV0.js";
 import { parseChessVoiceMoveV0 } from "../chessVoiceMoveParserV0.js";
@@ -28,6 +30,16 @@ describe("chessArenaEngineV0", () => {
     const ai = pickChessArenaAiMoveV0(game);
     expect(ai).toBeTruthy();
     expect(game.tryMove(ai).ok).toBe(true);
+  });
+
+  it("estimates material balance for Rhizoh as white", () => {
+    const game = createChessArenaGameV0();
+    expect(estimateChessMaterialBalanceV0(game, "w")).toBe(0);
+  });
+
+  it("formats outcome labels", () => {
+    expect(formatChessOutcomeLabelV0("draw", true)).toContain("Berabere");
+    expect(formatChessOutcomeLabelV0("white_wins", false)).toContain("Rhizoh");
   });
 });
 
