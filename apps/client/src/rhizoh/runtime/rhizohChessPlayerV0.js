@@ -6,7 +6,7 @@ import { listRhizohOpeningBookV0 } from "./rhizohOpeningBookV0.js";
 import { readChessCivilizationV0 } from "./chessCivilizationV0.js";
 import { getStockfishArenaMoveV0 } from "./chessStockfishEngineV0.js";
 import { stockfishSkillFromEloV0 } from "./chessStockfishPresetsV0.js";
-import { pickChessArenaAiMoveV0 } from "./chessArenaEngineV0.js";
+import { pickChessArenaAiMoveV0, estimateChessMaterialBalanceV0 } from "./chessArenaEngineV0.js";
 
 export const RHIZOH_CHESS_PLAYER_SCHEMA_V0 = "rhizoh.chess_player.v0";
 
@@ -37,11 +37,23 @@ export async function pickRhizohChessMoveV0(game) {
   }
 
   const profile = readChessCivilizationV0();
-  const skill = stockfishSkillFromEloV0(profile?.elo || 1200);
-  const movetimeMs = Math.min(2800, 900 + skill * 80);
+  const baseSkill = stockfishSkillFromEloV0(profile?.elo || 1200);
+  const materialLead = estimateChessMaterialBalanceV0(game, "w");
+  const winning =
+    materialLead >= 3 || (materialLead >= 1 && game.chess.isCheck());
+  const skill = winning ? Math.max(baseSkill, 16) : baseSkill;
+  const movetimeMs = winning
+    ? Math.min(4200, 1200 + skill * 120)
+    : Math.min(2800, 900 + baseSkill * 80);
+  const contempt = winning ? 28 : materialLead > 0 ? 12 : 0;
 
   try {
-    const sf = await getStockfishArenaMoveV0(game.fen(), { skill, movetimeMs, depth: 12 + Math.floor(skill / 2) });
+    const sf = await getStockfishArenaMoveV0(game.fen(), {
+      skill,
+      movetimeMs,
+      depth: 12 + Math.floor(skill / 2),
+      contempt
+    });
     if (sf) return Object.freeze({ move: sf, engine: "rhizoh_learned_stockfish" });
   } catch {
     /* noop */

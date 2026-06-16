@@ -3,7 +3,8 @@ import { Settings } from "lucide-react";
 import {
   CHESS_GAME_MODE_V0,
   createChessArenaGameV0,
-  createCastleToCastleChessMatchV0
+  createCastleToCastleChessMatchV0,
+  formatChessOutcomeLabelV0
 } from "../rhizoh/runtime/chessArenaEngineV0.js";
 import { getChessStockfishEngineStatusV0, getStockfishArenaMoveV0, pickChessArenaEngineMoveV0 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
 import { pickRhizohChessMoveV0 } from "../rhizoh/runtime/rhizohChessPlayerV0.js";
@@ -152,6 +153,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const [engineStatus, setEngineStatus] = useState(() => getChessStockfishEngineStatusV0());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [archiveTick, setArchiveTick] = useState(0);
+  const [expandedArchiveId, setExpandedArchiveId] = useState(null);
+  const [lastFinishedMatchV0, setLastFinishedMatchV0] = useState(null);
   const [gameEpoch, setGameEpoch] = useState(0);
 
   const boardColors = useMemo(
@@ -257,7 +260,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
 
   const persistFinishedMatchV0 = useCallback(
     (outcomeVal, engineLabel = engineStatus) => {
-      archiveChessArenaMatchV0({
+      const entry = archiveChessArenaMatchV0({
         matchId: c2cMatch?.matchId || `chess_${Date.now().toString(36)}`,
         mode,
         outcome: String(outcomeVal || "unknown"),
@@ -267,6 +270,10 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         black: opponentsV0.black,
         engine: engineLabel
       });
+      if (entry) {
+        setLastFinishedMatchV0(entry);
+        setExpandedArchiveId(entry.id);
+      }
       setArchiveTick((n) => n + 1);
     },
     [c2cMatch?.matchId, engineStatus, game, mode, opponentsV0]
@@ -314,6 +321,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       setMoveInput("");
       setSelectedSquare(null);
       setMatchResult(null);
+      setLastFinishedMatchV0(null);
+      setExpandedArchiveId(null);
       setWhiteClockMs(DEFAULT_CLOCK_MS_V0);
       setBlackClockMs(DEFAULT_CLOCK_MS_V0);
       setStatus(tr ? "Yeni oyun." : "New game.");
@@ -421,7 +430,10 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
             pick =
               game.turn() === "w"
                 ? await pickRhizohChessMoveV0(game)
-                : await pickChessArenaEngineMoveV0(game, { useStockfish: true, preset: "STRONG" });
+                : await pickChessArenaEngineMoveV0(game, {
+                    useStockfish: true,
+                    preset: "TEACHER_BACKUP"
+                  });
           } else {
             pick = await pickChessArenaEngineMoveV0(game, { useStockfish: true, preset: "ARENA" });
           }
@@ -446,14 +458,15 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                 : "Fallback";
         setStatus(`${engineLabel}: ${aiResult.move.san}`);
         if (aiResult.outcome) {
+          const label = formatChessOutcomeLabelV0(aiResult.outcome, tr);
           setStatus(
             mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH
               ? tr
-                ? `Rhizoh vs Stockfish bitti — ${aiResult.outcome}`
-                : `Rhizoh vs Stockfish finished — ${aiResult.outcome}`
+                ? `Maç bitti — ${label}`
+                : `Match finished — ${label}`
               : tr
-                ? `AI vs AI bitti — ${aiResult.outcome}`
-                : `AI vs AI finished — ${aiResult.outcome}`
+                ? `AI vs AI bitti — ${label}`
+                : `AI vs AI finished — ${label}`
           );
           void runMatchLearningV0(aiResult.outcome, c2cMatch, {
             opponentCastleId: mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH ? "teacher_stockfish" : "stockfish"
@@ -755,9 +768,34 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                 {tr ? "Kale ELO:" : "Castle ELO:"} {civilization.elo}
               </p>
             ) : null}
+            {lastFinishedMatchV0 ? (
+              <div className="w-full max-w-md rounded-xl border border-amber-400/40 bg-amber-950/30 px-3 py-2.5">
+                <p className="text-[9px] font-black uppercase tracking-wider text-amber-200/90">
+                  {tr ? "Son maç" : "Last match"}
+                </p>
+                <p className="mt-1 text-[11px] font-semibold text-amber-50">
+                  {formatChessOutcomeLabelV0(lastFinishedMatchV0.outcome, tr)}
+                </p>
+                <p className="mt-1 text-[9px] text-white/55">
+                  {lastFinishedMatchV0.white} vs {lastFinishedMatchV0.black} ·{" "}
+                  {lastFinishedMatchV0.moves?.length || 0} {tr ? "hamle" : "moves"} ·{" "}
+                  {lastFinishedMatchV0.engine}
+                </p>
+                {lastFinishedMatchV0.moves?.length ? (
+                  <p className="mt-1.5 break-all font-mono text-[8px] leading-relaxed text-white/45">
+                    {(lastFinishedMatchV0.moves || []).join(" ")}
+                  </p>
+                ) : null}
+                <p className="mt-1 text-[8px] text-white/35">
+                  {tr
+                    ? "Tam kayıt aşağıdaki Arşiv listesinde — localStorage"
+                    : "Full row saved below in Archive — localStorage"}
+                </p>
+              </div>
+            ) : null}
             {outcome ? (
               <p className="text-[11px] font-semibold text-amber-200">
-                {tr ? "Sonuç:" : "Outcome:"} {outcome}
+                {tr ? "Sonuç:" : "Outcome:"} {formatChessOutcomeLabelV0(outcome, tr)}
               </p>
             ) : null}
             {matchArchiveV0.length ? (
@@ -768,8 +806,26 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                 <ul className="mt-1 space-y-1">
                   {matchArchiveV0.map((row) => (
                     <li key={row.id} className="text-[9px] text-white/55">
-                      {row.white} vs {row.black} · {row.outcome} · {row.moves?.length || 0}{" "}
-                      {tr ? "hamle" : "moves"}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedArchiveId((id) => (id === row.id ? null : row.id))
+                        }
+                        className="w-full rounded border border-white/10 bg-black/30 px-2 py-1 text-left hover:border-cyan-400/30"
+                      >
+                        <span className="font-semibold text-white/75">
+                          {formatChessOutcomeLabelV0(row.outcome, tr)}
+                        </span>
+                        <span className="text-white/45">
+                          {" "}
+                          · {row.moves?.length || 0} {tr ? "hamle" : "moves"}
+                        </span>
+                      </button>
+                      {expandedArchiveId === row.id && row.moves?.length ? (
+                        <p className="mt-1 break-all rounded bg-black/40 px-2 py-1 font-mono text-[8px] text-white/50">
+                          {row.moves.join(" ")}
+                        </p>
+                      ) : null}
                     </li>
                   ))}
                 </ul>

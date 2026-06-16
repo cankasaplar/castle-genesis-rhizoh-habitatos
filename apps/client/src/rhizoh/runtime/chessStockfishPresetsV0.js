@@ -3,6 +3,7 @@
  */
 export const CHESS_STOCKFISH_PRESET_V0 = Object.freeze({
   WARMUP: Object.freeze({ skill: 5, movetimeMs: 120, depth: 8 }),
+  TEACHER_BACKUP: Object.freeze({ skill: 8, movetimeMs: 1400, depth: 10, elo: 1258 }),
   ARENA: Object.freeze({ skill: 18, movetimeMs: 2200, depth: 14 }),
   STRONG: Object.freeze({ skill: 20, movetimeMs: 3500, depth: 16 }),
   MAX: Object.freeze({ skill: 20, movetimeMs: 5000, depth: 18 })

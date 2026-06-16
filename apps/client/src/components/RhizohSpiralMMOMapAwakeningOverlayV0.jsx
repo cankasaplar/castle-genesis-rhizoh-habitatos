@@ -348,7 +348,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
 
 const SpiralMMOStackedCubeV0 = memo(function SpiralMMOStackedCubeV0({ cube }) {
   const acc = cube.accumulationOffset || { x: 0, y: 0 };
-  const depthScale = cube.depthScale ?? 0.9 + (cube.cubeSpec?.depth ?? 0.5) * 0.2;
+  const depthScale = cube.depthScale ?? 1.05 + (cube.cubeSpec?.depth ?? 0.5) * 0.35;
   const destX = (cube.p2?.x ?? 0) + acc.x;
   const destY = (cube.p2?.y ?? 0) + acc.y;
   const cubeHtml = cube.cubeSpec ? spiralMMOAwakeningCubeHtmlV0(cube.cubeSpec).html : "";
@@ -406,7 +406,7 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
     }
 
     const acc = cube.accumulationOffset || { x: 0, y: 0 };
-    const depthScale = cube.depthScale ?? 0.9 + (cube.cubeSpec?.depth ?? 0.5) * 0.2;
+    const depthScale = cube.depthScale ?? 1.05 + (cube.cubeSpec?.depth ?? 0.5) * 0.35;
     const steps = 48;
     const keyframes = [];
     for (let i = 0; i <= steps; i += 1) {
@@ -423,7 +423,7 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
       }
       const destX = cube.p2.x + acc.x;
       const destY = cube.p2.y + acc.y;
-      const travelScale = i === 0 ? 0.15 : depthScale * (0.72 + eased * 0.28);
+      const travelScale = i === 0 ? 0.38 : depthScale * (0.82 + eased * 0.32);
       const atDest = i === steps;
       keyframes.push({
         left: `${atDest ? destX : pos.x}px`,

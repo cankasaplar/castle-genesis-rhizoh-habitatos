@@ -52,7 +52,7 @@ export function deriveSpiralMMOAwakeningCubeSpecV0(input) {
   const axisTypes = /** @type {SpiralMMOCubeAxisV0[]} */ (["rotateY", "rotateX", "rotateZ", "rotate3d"]);
   const axisType = axisTypes[Math.floor(r3 * axisTypes.length) % axisTypes.length];
 
-  const sizePx = Math.round(12 + depthLayer * 2.5 + r2 * 6 + (input.isOrder ? 2 : 0));
+  const sizePx = Math.round(24 + depthLayer * 5 + r2 * 12 + (input.isOrder ? 4 : 0));
   const depth = 0.22 + depthLayer * 0.3 + r2 * 0.18;
   const glowBlur = Math.round(6 + depth * 14);
   const glowSpread = Math.round(2 + depth * 6);
