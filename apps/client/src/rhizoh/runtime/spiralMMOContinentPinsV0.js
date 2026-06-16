@@ -52,7 +52,8 @@ export const RHIZOH_SPIRAL_MMO_CONTINENT_PINS_V0 = Object.freeze(
       lon: coords.lon,
       color: "#ffcc00",
       owner: "SpiralMMO",
-      description: "",
+      description: `Satellite · ${meta.nameEn} · tap for SpiralMMO awakening`,
+      descriptionTr: `Uydu · ${meta.nameTr} · SpiralMMO uyanışı için dokun`,
       capabilities: Object.freeze([])
     });
   })

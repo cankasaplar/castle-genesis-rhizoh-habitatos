@@ -1,4 +1,5 @@
 import React, { memo, useEffect, useState } from "react";
+import { X } from "lucide-react";
 import {
   RHIZOH_CATCH_UP_CASCADE_EVENT_V0,
   RHIZOH_CATCH_UP_CASCADE_PHASE_EVENT_V0
@@ -12,21 +13,24 @@ const PHASE_LABELS_V1 = Object.freeze({
 });
 
 /**
- * Catch-up cascade overlay — Layer N→M fast-forward (mobile + desktop).
+ * Catch-up cascade — compact corner chip (map stays usable; no fullscreen blackout).
  */
 export const RhizohCatchUpCascadeOverlayV0 = memo(function RhizohCatchUpCascadeOverlayV0() {
   const [active, setActive] = useState(false);
   const [phase, setPhase] = useState(null);
   const [plan, setPlan] = useState(null);
-
   const [phaseV1, setPhaseV1] = useState(null);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     const onCascade = (ev) => {
       const snap = ev?.detail;
       setActive(snap?.active === true);
       if (snap?.plan) setPlan(snap.plan);
-      if (!snap?.active) setPhase(null);
+      if (!snap?.active) {
+        setPhase(null);
+        setDismissed(false);
+      }
     };
     const onPhase = (ev) => setPhase(ev?.detail || null);
     const onPhaseV1 = (ev) => setPhaseV1(ev?.detail || null);
@@ -41,32 +45,49 @@ export const RhizohCatchUpCascadeOverlayV0 = memo(function RhizohCatchUpCascadeO
     };
   }, []);
 
-  if (!active && !phase && !phaseV1) return null;
+  if (dismissed || (!active && !phase && !phaseV1)) return null;
 
   const fromLayer = plan?.fromLayer ?? 0;
   const toLayer = plan?.toLayer ?? phase?.layer ?? fromLayer;
   const progress = phase?.progress ?? 0;
+  const fastUi = Boolean(plan?.fastUi || phase?.fastUi);
 
   return (
     <div
-      className="pointer-events-none absolute inset-0 z-[160] flex flex-col items-center justify-center overflow-hidden bg-black/75"
+      className="pointer-events-none absolute bottom-24 left-3 z-[160] max-w-[12rem] sm:max-w-[14rem]"
       data-rhizoh-catch-up-cascade="1"
       aria-live="polite"
     >
-      <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.35em] text-[#6a9bcc]">
-        {phaseV1 ? PHASE_LABELS_V1[phaseV1.phase] || phaseV1.label : "Catch-up Cascade"}
-      </div>
-      <div className="font-mono text-2xl font-bold tabular-nums text-[#faf9f5]">
-        L{fromLayer} → L{phase?.layer ?? toLayer}
-      </div>
-      <div className="mt-6 h-1.5 w-56 overflow-hidden rounded-full bg-white/10">
-        <div
-          className="h-full bg-[#d97757] transition-all duration-300"
-          style={{ width: `${Math.round(progress * 100)}%` }}
-        />
-      </div>
-      <div className="mt-3 font-mono text-[9px] text-[#788c5d]">
-        {phase ? `phase ${phase.index + 1}/${phase.total}` : "aligning canonical timeline…"}
+      <div className="pointer-events-auto rounded-xl border border-cyan-400/30 bg-black/80 px-3 py-2 shadow-lg backdrop-blur-md">
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <p className="font-mono text-[8px] uppercase tracking-[0.28em] text-cyan-200/80">
+            {phaseV1 ? PHASE_LABELS_V1[phaseV1.phase] || phaseV1.label : "Catch-up"}
+          </p>
+          <button
+            type="button"
+            onClick={() => setDismissed(true)}
+            className="rounded border border-white/10 p-0.5 text-white/45 hover:text-white"
+            aria-label="Dismiss cascade chip"
+          >
+            <X size={10} />
+          </button>
+        </div>
+        <p className="font-mono text-sm font-bold tabular-nums text-white/90">
+          L{fromLayer} → L{phase?.layer ?? toLayer}
+        </p>
+        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full bg-cyan-400/80 transition-all duration-300"
+            style={{ width: `${Math.round(progress * 100)}%` }}
+          />
+        </div>
+        <p className="mt-1.5 font-mono text-[8px] text-white/45">
+          {fastUi
+            ? "fast sync · map usable"
+            : phase
+              ? `phase ${phase.index + 1}/${phase.total}`
+              : "aligning timeline…"}
+        </p>
       </div>
     </div>
   );

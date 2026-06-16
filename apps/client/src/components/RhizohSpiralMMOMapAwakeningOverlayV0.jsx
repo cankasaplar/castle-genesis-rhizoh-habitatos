@@ -29,6 +29,7 @@ import {
 } from "../core/offlineVoidGateV0.js";
 import { listPendingSyncEventsV0 } from "../storage/EventStoreV0.js";
 import { canPersistUserTopologyN12V0 } from "../pwa/rhizohPwaPermissionsN12V0.js";
+import { handoffSpiralCountdownToWaitingRoomV1 } from "../rhizoh/runtime/spiralMMOCountdownHandoffV1.js";
 
 function pctToPx(pct, width, height) {
   return { x: (pct.x / 100) * width, y: (pct.y / 100) * height };
@@ -62,7 +63,6 @@ function spiralCubeStackTransformV0({ acc, depthScale, travelScale = 1 }) {
 export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMMOMapAwakeningOverlayV0({
   uiLocale = "en"
 }) {
-  void uiLocale;
   const hostRef = useRef(null);
   const cubeTargetsRef = useRef([]);
   const [deadlineMs, setDeadlineMs] = useState(() => readRhizohNeonCountdownDeadlineMsV0());
@@ -236,17 +236,16 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
       });
 
       window.setTimeout(() => {
-        const fromIdx = planRef.current?.triggerPinIndex ?? 0;
         setCollapsing(false);
         publishOfflineVoidStateV0(false);
         setScene(null);
-        spawnLaunches(
-          buildSpiralMMOAwakeningLaunchPlanV0(fromIdx, Date.now(), {
-            mode: "collapse",
-            commit: true,
-            resetSession: true
-          })
-        );
+        planRef.current = null;
+        cubeTargetsRef.current = [];
+        setCubeKeyframesCss("");
+        handoffSpiralCountdownToWaitingRoomV1({
+          source: "spiral_countdown_collapse",
+          uiLocale
+        });
       }, 2800);
     })();
   }, [complete, collapsing, spawnLaunches]);
