@@ -184,3 +184,63 @@ export function routeSymbyoMapInteractionToOrchestratorV0(input = {}) {
     note: "Map produced intent only; orchestrator owns execution."
   });
 }
+
+/**
+ * Emit canonical v11 map intent (window + document) with optional Leaflet screen anchor.
+ * @param {object} node
+ * @param {string} interaction
+ * @param {object | null} [map]
+ */
+export function emitV11MapIntentV0(node, interaction, map = null) {
+  const routed = routeSymbyoMapInteractionToOrchestratorV0({ node, interaction });
+  let screenAnchor = null;
+  if (map && Number.isFinite(node?.lat) && Number.isFinite(node?.lon)) {
+    try {
+      const pt = map.latLngToContainerPoint([node.lat, node.lon]);
+      const rect = map.getContainer()?.getBoundingClientRect?.();
+      if (rect) {
+        screenAnchor = Object.freeze({
+          left: rect.left + pt.x,
+          top: rect.top + pt.y
+        });
+      }
+    } catch {
+      /* noop */
+    }
+  }
+  const detail = Object.freeze({
+    ...routed,
+    screenAnchor,
+    nodeView: Object.freeze({
+      id: node.id,
+      label: node.label,
+      name: node.name,
+      type: node.type,
+      color: node.color,
+      lat: node.lat,
+      lon: node.lon,
+      description: node.description,
+      provider: node.provider,
+      continent: node.continent
+    })
+  });
+  if (typeof window !== "undefined") {
+    try {
+      window.__rhizoh = window.__rhizoh || {};
+      window.__rhizoh.v11MapLastIntent = detail;
+      window.dispatchEvent(
+        new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, {
+          detail
+        })
+      );
+      document.dispatchEvent(
+        new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, {
+          detail
+        })
+      );
+    } catch {
+      /* noop */
+    }
+  }
+  return detail;
+}

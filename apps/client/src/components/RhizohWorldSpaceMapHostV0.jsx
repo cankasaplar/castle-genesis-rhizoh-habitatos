@@ -2,10 +2,8 @@ import React, { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import CesiumRealMapLayer from "../castleFlight/CesiumRealMapLayer.jsx";
 import { RHIZOH_SPATIAL_RENDER_MODE_V0 } from "../rhizoh/runtime/spatialBootGateV0.js";
 import {
-  routeSymbyoMapInteractionToOrchestratorV0,
   RHIZOH_V11_MAP_INTENT_EVENT_V0,
-  RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0,
-  SYMBYO_MAP_INTERACTION_V0
+  RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0
 } from "../rhizoh/runtime/symbyoMapIntentBridgeV0.js";
 import {
   readWorldMapClaimModeV0,
@@ -107,60 +105,6 @@ function createLeafletNodeIconV0(L, node) {
     iconSize: isSpiral ? [32, 32] : [96, 52],
     iconAnchor: isSpiral ? [16, 16] : [48, 26]
   });
-}
-
-function emitV11MapIntentV0(node, interaction, map = null) {
-  const routed = routeSymbyoMapInteractionToOrchestratorV0({ node, interaction });
-  let screenAnchor = null;
-  if (map && Number.isFinite(node?.lat) && Number.isFinite(node?.lon)) {
-    try {
-      const pt = map.latLngToContainerPoint([node.lat, node.lon]);
-      const rect = map.getContainer()?.getBoundingClientRect?.();
-      if (rect) {
-        screenAnchor = Object.freeze({
-          left: rect.left + pt.x,
-          top: rect.top + pt.y
-        });
-      }
-    } catch {
-      /* noop */
-    }
-  }
-  const detail = Object.freeze({
-    ...routed,
-    screenAnchor,
-    nodeView: Object.freeze({
-      id: node.id,
-      label: node.label,
-      name: node.name,
-      type: node.type,
-      color: node.color,
-      lat: node.lat,
-      lon: node.lon,
-      description: node.description,
-      provider: node.provider,
-      continent: node.continent
-    })
-  });
-  if (typeof window !== "undefined") {
-    try {
-      window.__rhizoh = window.__rhizoh || {};
-      window.__rhizoh.v11MapLastIntent = detail;
-      window.dispatchEvent(
-        new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, {
-          detail
-        })
-      );
-      document.dispatchEvent(
-        new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, {
-          detail
-        })
-      );
-    } catch {
-      /* noop */
-    }
-  }
-  return detail;
 }
 
 function emitV11MapClearPreviewV0() {

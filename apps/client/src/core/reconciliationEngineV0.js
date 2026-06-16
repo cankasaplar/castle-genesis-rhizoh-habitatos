@@ -4,7 +4,7 @@
  */
 
 import { listSimulationEventsV0 } from "../storage/EventStoreV0.js";
-import { withRhizohSimulationDbV0, idbSimGetV0, idbSimPutV0, SIM_STORE_EVENTS_V0 } from "./rhizohSimulationDbV0.js";
+import { withRhizohSimulationDbV0, idbSimGetV0, idbSimPutV0, SIM_STORE_EVENTS_V0 } from "../storage/rhizohSimulationDbV0.js";
 import { foldSimulationWorldEventsV0 } from "./replayWorldReducerV0.js";
 import { foldCodexEventsV0 } from "./codexReducerV0.js";
 import { foldSpawnEventsIntoPatternsV0 } from "./semanticEventFoldV0.js";
