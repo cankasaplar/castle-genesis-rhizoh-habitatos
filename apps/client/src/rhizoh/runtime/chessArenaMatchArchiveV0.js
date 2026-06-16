@@ -1,7 +1,8 @@
+import { normalizeChessMovesToSanV0 } from "./chessMoveSanV0.js";
+
 /**
  * Local chess match archive — completed games (PGN + metadata).
  */
-
 export const CHESS_ARENA_ARCHIVE_SCHEMA_V0 = "rhizoh.chess_arena_archive.v0";
 const LS_KEY_V0 = "rhizoh.chess_arena_archive.v0";
 const MAX_ENTRIES_V0 = 48;
@@ -30,7 +31,7 @@ export function archiveChessArenaMatchV0(row) {
     id: String(row.matchId || `chess_${Date.now()}`),
     mode: String(row.mode || "unknown"),
     outcome: String(row.outcome || "unknown"),
-    moves: Array.isArray(row.moves) ? row.moves.slice() : [],
+    moves: normalizeChessMovesToSanV0(row.moves || []),
     fen: String(row.fen || ""),
     white: String(row.white || "White"),
     black: String(row.black || "Black"),
@@ -38,6 +39,8 @@ export function archiveChessArenaMatchV0(row) {
     policyMode: row.policyMode ? String(row.policyMode) : null,
     regret: row.regret ? Object.freeze({ ...row.regret }) : null,
     evalTrace: Array.isArray(row.evalTrace) ? Object.freeze(row.evalTrace.slice()) : null,
+    mindId: row.mindId ? String(row.mindId) : null,
+    learning: row.learning ? Object.freeze({ ...row.learning }) : null,
     endedAt: Number(row.endedAt) || Date.now()
   });
   try {
