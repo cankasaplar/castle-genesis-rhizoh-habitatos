@@ -1,12 +1,12 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
-  formatRhizohNeonCountdownMsV0,
   isRhizohNeonCountdownCompleteV0,
   readRhizohNeonCountdownDeadlineMsV0,
   resolveRhizohNeonCountdownRemainingMsV0
 } from "../rhizoh/runtime/rhizohNeonCountdownV0.js";
 import {
   RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0,
+  RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0,
   buildSpiralMMOAwakeningLaunchPlanV0,
   spiralMMOBezierPointV0,
   spiralMMOGeoToPercentV0
@@ -72,10 +72,10 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
   const [cubeKeyframesCss, setCubeKeyframesCss] = useState("");
   const planRef = useRef(null);
   const collapseHandledRef = useRef(false);
+  const userDismissedRef = useRef(false);
 
   const remainingMs = resolveRhizohNeonCountdownRemainingMsV0(deadlineMs, tick);
   const complete = isRhizohNeonCountdownCompleteV0(remainingMs);
-  const display = complete ? "00:00" : formatRhizohNeonCountdownMsV0(remainingMs);
 
   const spawnLaunches = useCallback((plan) => {
     planRef.current = plan;
@@ -155,9 +155,25 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
   }, []);
 
   useEffect(() => {
-    const onAwaken = (ev) => spawnLaunches(ev?.detail);
+    const onAwaken = (ev) => {
+      userDismissedRef.current = false;
+      spawnLaunches(ev?.detail);
+    };
+    const onImmersionEnd = () => {
+      userDismissedRef.current = true;
+      planRef.current = null;
+      collapseHandledRef.current = false;
+      setCollapsing(false);
+      setScene(null);
+      setCubeKeyframesCss("");
+      publishOfflineVoidStateV0(false);
+    };
     window.addEventListener(RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0, onAwaken);
-    return () => window.removeEventListener(RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0, onAwaken);
+    window.addEventListener(RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0, onImmersionEnd);
+    return () => {
+      window.removeEventListener(RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0, onAwaken);
+      window.removeEventListener(RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0, onImmersionEnd);
+    };
   }, [spawnLaunches]);
 
   useEffect(() => {
@@ -237,6 +253,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
 
   useEffect(() => {
     const onWorldRebuilt = (ev) => {
+      if (userDismissedRef.current) return;
       const world = ev?.detail?.world;
       if (!world?.shouldResume && !(world?.activeGhosts?.length > 0)) return;
       if (scene || planRef.current) return;
@@ -260,6 +277,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
       className="pointer-events-none absolute inset-0 z-[12] overflow-hidden"
       data-rhizoh-spiral-mmo-awakening-overlay="1"
       data-rhizoh-spiral-mmo-phase={complete ? "collapse" : collapsing ? "collapsing" : scene ? "active" : "idle"}
+      data-rhizoh-spiral-countdown-ms={String(remainingMs)}
       data-rhizoh-spiral-behavior-continent={planRef.current?.behavior?.continent || ""}
       data-rhizoh-spiral-build-rev={planRef.current?.buildRev || ""}
       aria-hidden
@@ -268,14 +286,17 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
 
       {scene ? (
         <>
-          <div className="absolute inset-0 z-[5]" data-rhizoh-spiral-bottle-layer="1">
+          <div
+            className="pointer-events-none absolute inset-0 z-[5]"
+            data-rhizoh-spiral-bottle-layer="1"
+          >
             {scene.bottles.map((bottle) => (
               <SpiralMMOBottleV0 key={bottle.id} bottle={bottle} hostRef={hostRef} />
             ))}
           </div>
 
           <div
-            className="absolute inset-0 z-[8]"
+            className="pointer-events-none absolute inset-0 z-[8]"
             data-rhizoh-spiral-stacked-cube-layer="1"
             style={{ perspective: "900px", transformStyle: "preserve-3d" }}
           >
@@ -294,7 +315,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
           </div>
 
           <div
-            className="absolute inset-0 z-[10]"
+            className="pointer-events-none absolute inset-0 z-[10]"
             data-rhizoh-spiral-cube-layer="1"
             style={{ perspective: "900px", transformStyle: "preserve-3d" }}
           >
@@ -309,7 +330,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
             ))}
           </div>
 
-          <div className="absolute inset-0 z-[25]" data-rhizoh-spiral-bird-layer="1">
+          <div className="pointer-events-none absolute inset-0 z-[25]" data-rhizoh-spiral-bird-layer="1">
             {scene.birds.map((bird) => (
               <SpiralMMOBirdV0
                 key={bird.id}
@@ -322,19 +343,6 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
           </div>
         </>
       ) : null}
-
-      <div
-        className="pointer-events-none absolute bottom-5 left-1/2 z-[50] -translate-x-1/2 font-mono text-2xl font-bold tracking-[0.35em] tabular-nums transition-colors duration-500"
-        style={{
-          color: complete ? "#ff3300" : "#ffffff",
-          textShadow: complete
-            ? "0 0 15px #ff3300, 0 0 30px #ff3300"
-            : "0 0 15px currentColor, 0 0 30px currentColor"
-        }}
-        data-rhizoh-spiral-mmo-bottom-timer="1"
-      >
-        {display}
-      </div>
     </div>
   );
 });
@@ -450,7 +458,7 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
   return (
     <div
       ref={elRef}
-      className="absolute"
+      className="pointer-events-none absolute"
       style={{
         left: `${cube.p0?.x || 0}px`,
         top: `${cube.p0?.y || 0}px`,
@@ -543,7 +551,7 @@ const SpiralMMOBirdV0 = memo(function SpiralMMOBirdV0({ bird, hostRef, cubeTarge
   return (
     <div
       ref={elRef}
-      className="absolute left-0 top-0"
+      className="pointer-events-none absolute left-0 top-0"
       style={{ width: 0, height: 0 }}
       dangerouslySetInnerHTML={{ __html: spiralMMOAwakeningBirdHtmlV0(bird) }}
     />
@@ -577,7 +585,7 @@ const SpiralMMOBottleV0 = memo(function SpiralMMOBottleV0({ bottle, hostRef }) {
   return (
     <div
       ref={elRef}
-      className="absolute"
+      className="pointer-events-none absolute"
       style={{ left: `${bottle.startX}px`, top: `${bottle.startY}px`, width: 0, height: 0 }}
       dangerouslySetInnerHTML={{ __html: spiralMMOAwakeningBottleHtmlV0(bottle.colorClass) }}
     />

@@ -59,9 +59,6 @@ export const RhizohCatchUpCascadeOverlayV0 = memo(function RhizohCatchUpCascadeO
       <div className="font-mono text-2xl font-bold tabular-nums text-[#faf9f5]">
         L{fromLayer} → L{phase?.layer ?? toLayer}
       </div>
-      <div className="mt-2 font-mono text-xs text-[#b0aea5]">
-        seed {phase?.seed ?? plan?.canonicalSeed ?? "—"}
-      </div>
       <div className="mt-6 h-1.5 w-56 overflow-hidden rounded-full bg-white/10">
         <div
           className="h-full bg-[#d97757] transition-all duration-300"
