@@ -26,7 +26,8 @@ import {
 } from "./rhizoh/runtime/rhizohWorldMapToolV0.js";
 import {
   resolveRhizohLayerModeV0,
-  resolveRhizohWorldSpaceCesiumActiveV0
+  resolveRhizohWorldSpaceCesiumActiveV0,
+  isRhizohWorldSpaceCesiumEnvEnabledV0
 } from "./rhizoh/runtime/rhizohLayerContextV0.js";
 import { RHIZOH_WORLD_DRAWER_DOMAIN_V0, writeRhizohWorldDrawerDomainV0 } from "./rhizoh/runtime/rhizohWorldDrawerDomainV0.js";
 import { resolveWorldDomainFromPathV0 } from "./rhizoh/runtime/rhizohWorldDomainRoutesV0.js";
@@ -121,6 +122,7 @@ import {
   RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0
 } from "./rhizoh/runtime/spiralMMOAwakeningCycleV0.js";
 import { startCanonicalTickClientV0 } from "./core/canonicalTickClientV0.js";
+import { startYoutubeLabOctoBridgeV1 } from "./rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
 
 export default function AppRhizohWorldSpaceV0() {
   const navigate = useNavigate();
@@ -280,6 +282,7 @@ export default function AppRhizohWorldSpaceV0() {
   useEffect(() => {
     attachRhizohMapExecutionOrchestratorV1();
     startCanonicalTickClientV0();
+    const stopYoutubeLab = startYoutubeLabOctoBridgeV1();
 
     const onOpenCastleGate = () => setCastleInitGateOpen(true);
     window.addEventListener("castle:open-init-gate-v0", onOpenCastleGate);
@@ -407,6 +410,7 @@ export default function AppRhizohWorldSpaceV0() {
     window.addEventListener(RHIZOH_SHOW_INFO_EVENT_V1, onInfo);
     window.addEventListener(CASTLE_ARCHIVE_OPEN_MEDIA_EVENT_V0, onArchiveMedia);
     return () => {
+      stopYoutubeLab?.();
       window.removeEventListener("castle:open-init-gate-v0", onOpenCastleGate);
       window.removeEventListener("castle:open-anchor-offer-v0", onOpenCastleGate);
       window.removeEventListener(RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1, onSovereignWarp);
@@ -720,7 +724,7 @@ export default function AppRhizohWorldSpaceV0() {
         activeMapTool={worldMapToolV0}
         onSelectMapTool={(toolId) => onApplyWorldMapToolV0(toolId, "WORLD_DOMAIN_MAP_STRIP")}
         spatialEngineActive
-        mapToolCesiumReady={false}
+        mapToolCesiumReady={isRhizohWorldSpaceCesiumEnvEnabledV0()}
         onOpenGreenroom={() => navigate("/greenroom/main")}
         onOpenBroadcast={() => navigate("/broadcast/main")}
         onShareInvite={() => {}}

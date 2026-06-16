@@ -74,6 +74,7 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
   voiceInputReady = false,
   cameraActive = false,
   onCameraClick,
+  productCameraStream = null,
   uiLocale,
   habitatFocusMode = "navigation",
   octoHeightPx = 108,
@@ -322,6 +323,7 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
               draftText={cmd}
               busy={busy}
               submitPulse={octoSubmitPulse}
+              mediaStream={productCameraStream}
               height={stageHeightPx}
               heightMax={stageHeightMaxPx}
               fracturePhaseMs={fractureAtmosphere?.octo?.phaseMs ?? 0}
@@ -538,6 +540,7 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
             draftText={cmd}
             busy={busy}
             submitPulse={octoSubmitPulse}
+            mediaStream={productCameraStream}
             height={stageHeightPx}
             heightMax={stageHeightMaxPx}
             fracturePhaseMs={fractureAtmosphere?.octo?.phaseMs ?? 0}

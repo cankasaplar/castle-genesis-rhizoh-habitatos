@@ -63,6 +63,11 @@ import {
   isCompanionBehaviorOnlyV0
 } from "./companionBehaviorOnlyV0.js";
 import { isFoxAnchorSpeciesV0 } from "./conversationAnchorSpeciesV0.js";
+import {
+  maybePublishOctoYuvaActivationV1,
+  readOctoLabPerformanceIntensityV1
+} from "../rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
+import { sampleOctoMediaAudioBandsV0 } from "../rhizoh/runtime/octoMediaCompanionMotionV0.js";
 
 if (typeof window !== "undefined") {
   preloadConversationAnchorGlbV0().catch(() => {});
@@ -84,8 +89,9 @@ function createOctoPlaceholderV1() {
   return g;
 }
 
-function buildDrive(fieldState, replyText, draftText, busy, speciesId) {
-  const base = { fieldState, draftText, busy };
+function buildDrive(fieldState, replyText, draftText, busy, speciesId, engagementProxy = 0, audioMotion = 0) {
+  const mergedEngagement = Math.min(1, Math.max(engagementProxy, audioMotion * 0.85));
+  const base = { fieldState, draftText, busy, engagementProxy: mergedEngagement };
   if (isCompanionBehaviorOnlyV0(speciesId) && isFoxAnchorSpeciesV0(speciesId)) {
     return deriveFoxCompanionBehaviorDriveV1(base);
   }
@@ -103,6 +109,7 @@ function buildDrive(fieldState, replyText, draftText, busy, speciesId) {
  *   heightMax?: number,
  *   labMode?: boolean,
  *   submitPulse?: number,
+ *   mediaStream?: MediaStream | null,
  *   onLoadStateChange?: (state: string) => void,
  *   className?: string
  * }} props
@@ -116,6 +123,7 @@ export const OctoConversationStageV1 = memo(function OctoConversationStageV1({
   height = OCTO_ROOM_DEFAULT_HEIGHT_PX_V1,
   heightMax = 140,
   labMode = false,
+  mediaStream = null,
   onLoadStateChange,
   /** Read-only post-render phase offset (ms) — fracture sync only, no camera authority. */
   fracturePhaseMs = 0,
@@ -132,6 +140,11 @@ export const OctoConversationStageV1 = memo(function OctoConversationStageV1({
   const draftRef = useRef(draftText);
   const busyRef = useRef(busy);
   const submitPulseRef = useRef(submitPulse);
+  const mediaStreamRef = useRef(mediaStream);
+  const audioMotionRef = useRef(0);
+  const analyserRef = useRef(null);
+  const freqDataRef = useRef(null);
+  const audioCtxRef = useRef(null);
   const foxMotionOverrideRef = useRef(foxMotionOverride);
   const runtimeRef = useRef(null);
   const anchorSpeciesRef = useRef(anchorSpeciesId);
@@ -143,6 +156,39 @@ export const OctoConversationStageV1 = memo(function OctoConversationStageV1({
   draftRef.current = draftText;
   busyRef.current = busy;
   submitPulseRef.current = submitPulse;
+  mediaStreamRef.current = mediaStream;
+
+  useEffect(() => {
+    const stream = mediaStream;
+    if (audioCtxRef.current) {
+      void audioCtxRef.current.close().catch(() => {});
+      audioCtxRef.current = null;
+      analyserRef.current = null;
+      freqDataRef.current = null;
+    }
+    if (!stream?.getAudioTracks?.().length) return undefined;
+    try {
+      const ctx = new AudioContext();
+      void ctx.resume().catch(() => {});
+      const src = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      src.connect(analyser);
+      audioCtxRef.current = ctx;
+      analyserRef.current = analyser;
+      freqDataRef.current = new Uint8Array(analyser.frequencyBinCount);
+    } catch {
+      /* noop */
+    }
+    return () => {
+      if (audioCtxRef.current) {
+        void audioCtxRef.current.close().catch(() => {});
+        audioCtxRef.current = null;
+      }
+      analyserRef.current = null;
+      freqDataRef.current = null;
+    };
+  }, [mediaStream]);
   foxMotionOverrideRef.current = foxMotionOverride;
   onLoadRef.current = onLoadStateChange;
   anchorSpeciesRef.current = anchorSpeciesId;
@@ -381,13 +427,23 @@ export const OctoConversationStageV1 = memo(function OctoConversationStageV1({
       raf = requestAnimationFrame(tick);
       const delta = clock.getDelta();
       const t = clock.elapsedTime + fracturePhaseRef.current / 1000;
+      if (analyserRef.current && freqDataRef.current) {
+        analyserRef.current.getByteFrequencyData(freqDataRef.current);
+        audioMotionRef.current = sampleOctoMediaAudioBandsV0(freqDataRef.current).motion;
+      } else {
+        audioMotionRef.current *= 0.92;
+      }
       const drive = buildDrive(
         fieldRef.current,
         replyRef.current,
         draftRef.current,
         busyRef.current,
-        speciesAtMount
+        speciesAtMount,
+        readOctoLabPerformanceIntensityV1(),
+        audioMotionRef.current
       );
+
+      maybePublishOctoYuvaActivationV1(drive, { source: "octo_conversation_stage" });
 
       if (drive.emotion !== lastEmotion) {
         lastEmotion = drive.emotion;

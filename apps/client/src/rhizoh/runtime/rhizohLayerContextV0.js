@@ -158,6 +158,15 @@ export function isRhizohSpatialMapEngineActiveV0(ctx = {}) {
  * }} [ctx]
  * @returns {boolean}
  */
+export function isRhizohWorldSpaceCesiumEnvEnabledV0() {
+  try {
+    const env = typeof import.meta !== "undefined" && import.meta.env ? import.meta.env : {};
+    return String(env.VITE_RHIZOH_WORLD_SPACE_CESIUM || "").trim() === "1";
+  } catch {
+    return false;
+  }
+}
+
 export function resolveRhizohWorldSpaceCesiumActiveV0(ctx = {}) {
   if (!shouldMountRhizohWorldSpaceMapEngineV0(ctx)) return false;
   if (ctx.mapSurfaceActive === false) return false;
