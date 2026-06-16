@@ -22,6 +22,7 @@ import {
   resolveSpiralMMOCollapseHandoffV0,
   resolveSpiralMMOEffectiveTriggerV0
 } from "./spiralMMOContinuityV0.js";
+import { PersistentCodexBusV0 } from "../../core/PersistentBusV0.js";
 import { resolveSpiralMMOBehaviorProfileV0 } from "./spiralMMOSpiralBehaviorV0.js";
 import { spiralMMOMapGeoToPercentV0 } from "./spiralMMOMapGeoProjectV0.js";
 import { resetSpiralMMOSessionCubeAccumV0 } from "./spiralMMOSessionAccumulationV0.js";
@@ -193,6 +194,22 @@ export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Dat
  */
 export function dispatchSpiralMMOAwakeningV0(triggerPinIndex, nowMs = Date.now()) {
   const plan = buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs, { mode: "click", commit: true });
+  const pins = listSpiralMMOContinentMapPinsV0();
+  const triggerPin = pins[plan.triggerPinIndex];
+  const previousPin =
+    plan.previousTriggerPinIndex >= 0 ? pins[plan.previousTriggerPinIndex] : null;
+
+  void PersistentCodexBusV0.AWAKEN({
+    pin: triggerPin?.continent || "",
+    continent: triggerPin?.continent || "",
+    triggerPinIndex: plan.triggerPinIndex,
+    triggerPinId: plan.triggerPinId,
+    previousPin: previousPin?.continent || "",
+    previousContinent: previousPin?.continent || "",
+    continuityEpoch: plan.continuityEpoch,
+    cycleSeed: plan.cycleSeed
+  });
+
   if (typeof window !== "undefined") {
     try {
       window.__rhizoh = window.__rhizoh || {};

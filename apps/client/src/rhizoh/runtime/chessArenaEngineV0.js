@@ -12,7 +12,8 @@ export const CHESS_GAME_MODE_V0 = Object.freeze({
   DAILY: "daily",
   AI_HUMAN: "ai_human",
   HUMAN_HUMAN: "human_human",
-  AI_AI: "ai_ai"
+  AI_AI: "ai_ai",
+  RHIZOH_STOCKFISH: "rhizoh_stockfish"
 });
 
 export const CHESS_PLAYER_SIDE_V0 = Object.freeze({
@@ -36,6 +37,9 @@ function modeMeta(mode) {
   }
   if (m === CHESS_GAME_MODE_V0.AI_AI) {
     return Object.freeze({ label: "AI vs AI", timeControlMs: 120_000 });
+  }
+  if (m === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH) {
+    return Object.freeze({ label: "Rhizoh vs Stockfish", timeControlMs: 900_000 });
   }
   return Object.freeze({ label: "Standard", timeControlMs: 600_000 });
 }
@@ -86,7 +90,15 @@ export function createChessArenaGameV0(opts = {}) {
       const raw = String(move || "").trim();
       if (!raw) return Object.freeze({ ok: false, reason: "empty_move" });
       try {
-        const result = chess.move(raw);
+        let result = null;
+        if (/^[a-h][1-8][a-h][1-8][qrbn]?$/i.test(raw)) {
+          const from = raw.slice(0, 2);
+          const to = raw.slice(2, 4);
+          const promotion = raw.length > 4 ? raw[4].toLowerCase() : undefined;
+          result = chess.move({ from, to, promotion });
+        } else {
+          result = chess.move(raw);
+        }
         if (!result) return Object.freeze({ ok: false, reason: "illegal_move" });
         this.moveHistory.push(result);
         return Object.freeze({ ok: true, move: result, fen: chess.fen(), outcome: this.outcome() });

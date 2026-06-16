@@ -21,6 +21,14 @@ import {
   buildSpiralMMOAwakeningBottlePlanV0,
   spiralMMOAwakeningBottleHtmlV0
 } from "../rhizoh/runtime/spiralMMOAwakeningBottleV0.js";
+import { PersistentCodexBusV0 } from "../core/PersistentBusV0.js";
+import { readCodexStateV0, RHIZOH_SIMULATION_WORLD_REBUILT_EVENT_V0 } from "../core/ReplayEngineV0.js";
+import {
+  publishOfflineVoidStateV0,
+  shouldEnterVoidAtCountdownZeroV0
+} from "../core/offlineVoidGateV0.js";
+import { listPendingSyncEventsV0 } from "../storage/EventStoreV0.js";
+import { canPersistUserTopologyN12V0 } from "../pwa/rhizohPwaPermissionsN12V0.js";
 
 function pctToPx(pct, width, height) {
   return { x: (pct.x / 100) * width, y: (pct.y / 100) * height };
@@ -109,9 +117,32 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
       w,
       h
     }));
+
+    if (canPersistUserTopologyN12V0()) {
+      for (const launch of plan.launches || []) {
+        void PersistentCodexBusV0.GHOST_SPAWN({
+          id: launch.id,
+          ghostId: launch.id,
+          type: launch.isOrder ? "order" : "chaos",
+          kind: launch.isOrder ? "order" : "chaos",
+          origin: launch.srcContinent || "",
+          destination: launch.destContinent || "",
+          src: launch.srcContinent || "",
+          dst: launch.destContinent || "",
+          cycleLayer: readCodexStateV0().cycleLayer || 0
+        });
+      }
+    }
   }, []);
 
   const onCubeLandedV0 = useCallback((landedCube) => {
+    if (canPersistUserTopologyN12V0() && landedCube?.key) {
+      void PersistentCodexBusV0.GHOST_DEATH({
+        id: landedCube.key,
+        ghostId: landedCube.key,
+        loc: landedCube.destContinent || ""
+      });
+    }
     setScene((prev) => {
       if (!prev) return prev;
       const stacked = [...(prev.stackedCubes ?? []), { ...landedCube, landed: true }];
@@ -137,52 +168,91 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
   useEffect(() => {
     if (!complete) {
       collapseHandledRef.current = false;
+      publishOfflineVoidStateV0(false);
       return;
     }
     if (collapsing || collapseHandledRef.current) return;
-    collapseHandledRef.current = true;
-    setCollapsing(true);
 
-    const pins = listSpiralMMOContinentMapPinsV0();
-    const handoffTo = planRef.current?.collapseHandoff?.toIndex ?? 0;
-    const nextPin = pins[handoffTo] || pins[0];
-    setScene((prev) => {
-      if (!prev) return prev;
-      const collapsePct = spiralMMOGeoToPercentV0(nextPin.lat, nextPin.lon);
-      return {
-        ...prev,
-        birds: prev.birds.map((b, idx) => ({
-          ...b,
-          diveTarget: cubeTargetsRef.current[(idx * 3) % Math.max(1, cubeTargetsRef.current.length)]
-        })),
-        cubes: prev.cubes.map((cube) => ({
-          ...cube,
-          collapsePct,
-          collapsing: true
-        })),
-        stackedCubes: (prev.stackedCubes ?? []).map((cube) => ({
-          ...cube,
-          collapsePct,
-          collapsing: true
-        }))
-      };
-    });
+    void (async () => {
+      const pendingOut = await listPendingSyncEventsV0(0);
+      const pendingCount = pendingOut.ok ? pendingOut.events.length : 0;
+      if (shouldEnterVoidAtCountdownZeroV0({ pendingSyncCount: pendingCount })) {
+        collapseHandledRef.current = true;
+        publishOfflineVoidStateV0(true);
+        return;
+      }
 
-    const restartTimer = window.setTimeout(() => {
-      const fromIdx = planRef.current?.triggerPinIndex ?? 0;
-      setCollapsing(false);
-      setScene(null);
+      collapseHandledRef.current = true;
+      setCollapsing(true);
+
+      const codex = readCodexStateV0();
+      const nextSeed = Math.floor((Date.now() ^ (planRef.current?.cycleSeed || 0)) % 999999);
+      if (canPersistUserTopologyN12V0()) {
+        void PersistentCodexBusV0.DIMENSIONAL_COLLAPSE({
+          layer: (codex.cycleLayer || 0) + 1,
+          seed: nextSeed
+        });
+      }
+
+      const pins = listSpiralMMOContinentMapPinsV0();
+      const handoffTo = planRef.current?.collapseHandoff?.toIndex ?? 0;
+      const nextPin = pins[handoffTo] || pins[0];
+      setScene((prev) => {
+        if (!prev) return prev;
+        const collapsePct = spiralMMOGeoToPercentV0(nextPin.lat, nextPin.lon);
+        return {
+          ...prev,
+          birds: prev.birds.map((b, idx) => ({
+            ...b,
+            diveTarget: cubeTargetsRef.current[(idx * 3) % Math.max(1, cubeTargetsRef.current.length)]
+          })),
+          cubes: prev.cubes.map((cube) => ({
+            ...cube,
+            collapsePct,
+            collapsing: true
+          })),
+          stackedCubes: (prev.stackedCubes ?? []).map((cube) => ({
+            ...cube,
+            collapsePct,
+            collapsing: true
+          }))
+        };
+      });
+
+      window.setTimeout(() => {
+        const fromIdx = planRef.current?.triggerPinIndex ?? 0;
+        setCollapsing(false);
+        publishOfflineVoidStateV0(false);
+        setScene(null);
+        spawnLaunches(
+          buildSpiralMMOAwakeningLaunchPlanV0(fromIdx, Date.now(), {
+            mode: "collapse",
+            commit: true,
+            resetSession: true
+          })
+        );
+      }, 2800);
+    })();
+  }, [complete, collapsing, spawnLaunches]);
+
+  useEffect(() => {
+    const onWorldRebuilt = (ev) => {
+      const world = ev?.detail?.world;
+      if (!world?.shouldResume && !(world?.activeGhosts?.length > 0)) return;
+      if (scene || planRef.current) return;
+      const pins = listSpiralMMOContinentMapPinsV0();
+      const idx = Math.max(0, Math.min(pins.length - 1, (world.cycleLayer || 0) % Math.max(1, pins.length)));
       spawnLaunches(
-        buildSpiralMMOAwakeningLaunchPlanV0(fromIdx, Date.now(), {
-          mode: "collapse",
-          commit: true,
-          resetSession: true
+        buildSpiralMMOAwakeningLaunchPlanV0(idx, Date.now(), {
+          mode: "click",
+          commit: false,
+          resetSession: false
         })
       );
-    }, 2800);
-
-    return () => window.clearTimeout(restartTimer);
-  }, [complete, collapsing, spawnLaunches]);
+    };
+    window.addEventListener(RHIZOH_SIMULATION_WORLD_REBUILT_EVENT_V0, onWorldRebuilt);
+    return () => window.removeEventListener(RHIZOH_SIMULATION_WORLD_REBUILT_EVENT_V0, onWorldRebuilt);
+  }, [scene, spawnLaunches]);
 
   return (
     <div

@@ -22,11 +22,12 @@ import {
   resolveUserCastleGeoForMapViewV0
 } from "../rhizoh/runtime/worldMapBootstrapGeoV0.js";
 
-import {
-  dispatchSpiralMMOAwakeningV0,
-  resolveSpiralMMOTriggerIndexFromPinIdV0
-} from "../rhizoh/runtime/spiralMMOAwakeningCycleV0.js";
+import { dispatchV11MapEventPinV0 } from "../rhizoh/runtime/mapEventPinDispatchV0.js";
+import { RhizohCatchUpCascadeOverlayV0 } from "./RhizohCatchUpCascadeOverlayV0.jsx";
 import { RhizohSpiralMMOMapAwakeningOverlayV0 } from "./RhizohSpiralMMOMapAwakeningOverlayV0.jsx";
+import { RhizohN12PersistenceGateV0 } from "./RhizohN12PersistenceGateV0.jsx";
+import { RhizohCodexEventStreamV0 } from "./RhizohCodexEventStreamV0.jsx";
+import { RhizohOfflineVoidOverlayV0 } from "./RhizohOfflineVoidOverlayV0.jsx";
 
 export { RHIZOH_V11_MAP_INTENT_EVENT_V0, RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0 };
 
@@ -34,7 +35,6 @@ import {
   SOVEREIGN_MAP_DEFAULT_HOME_V0,
   SOVEREIGN_TOWER_GRAPH_EDGES_V0,
   buildRemoteCastleMapNodesV0,
-  dispatchRemoteCastleClickV0,
   listSovereignWorldMapNodesForViewV0,
   RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1,
   sovereignNodeIconHtmlV0,
@@ -415,16 +415,13 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
             }
           }
           if (node.type === "remote_castle") {
-            dispatchRemoteCastleClickV0(node);
+            dispatchV11MapEventPinV0(node, "click", mapRef.current);
             return;
           }
-          if (node.type === "spiralmmo") {
-            dispatchSpiralMMOAwakeningV0(resolveSpiralMMOTriggerIndexFromPinIdV0(node.id));
-          }
-          emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK, mapRef.current);
+          dispatchV11MapEventPinV0(node, "click", mapRef.current);
         });
         marker.on("mouseover", () =>
-          emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.HOVER, mapRef.current)
+          dispatchV11MapEventPinV0(node, "hover", mapRef.current)
         );
         marker.on("mouseout", () => emitV11MapClearPreviewV0());
         if (node.id === "rhizoh_portal") {
@@ -508,6 +505,10 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
         }
       `}</style>
       <RhizohSpiralMMOMapAwakeningOverlayV0 />
+      <RhizohCatchUpCascadeOverlayV0 />
+      <RhizohN12PersistenceGateV0 />
+      <RhizohCodexEventStreamV0 />
+      <RhizohOfflineVoidOverlayV0 />
       {!leafletReady ? displayNodes.map((node) => {
         const pos = projectV11CoreMapGeoV0(node.lat, node.lon);
         return (
@@ -520,19 +521,13 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
             data-rhizoh-v11-node={node.id}
             data-rhizoh-v11-node-type={node.type}
             onClick={() => {
-              if (node.type === "spiralmmo") {
-                dispatchSpiralMMOAwakeningV0(resolveSpiralMMOTriggerIndexFromPinIdV0(node.id));
-              }
-              emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK);
+              dispatchV11MapEventPinV0(node, "tap");
             }}
-            onMouseEnter={() => emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.HOVER)}
+            onMouseEnter={() => dispatchV11MapEventPinV0(node, "hover")}
             onKeyDown={(ev) => {
               if (ev.key === "Enter" || ev.key === " ") {
                 ev.preventDefault();
-                if (node.type === "spiralmmo") {
-                  dispatchSpiralMMOAwakeningV0(resolveSpiralMMOTriggerIndexFromPinIdV0(node.id));
-                }
-                emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK);
+                dispatchV11MapEventPinV0(node, "click");
               }
             }}
           >
