@@ -25,10 +25,6 @@ export function RhizohIngressFlow() {
   const [errorKind, setErrorKind] = useState("unknown");
 
   useEffect(() => {
-    startProdWorldObservabilityBridgeV0();
-  }, []);
-
-  useEffect(() => {
     const onOffline = () => {
       setErrorKind("offline");
       setPhase(INGRESS_ROUTE_V0.ERROR);
@@ -50,6 +46,7 @@ export function RhizohIngressFlow() {
   }, [phase, errorKind]);
 
   const mountApp = useCallback(() => {
+    startProdWorldObservabilityBridgeV0();
     recordCohortObservationV0({ tag: "ingress_shell_app_mount", meta: {} });
     setPhase(INGRESS_ROUTE_V0.APP);
   }, []);

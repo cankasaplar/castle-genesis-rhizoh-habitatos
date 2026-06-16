@@ -37,6 +37,24 @@ const chipGridStyle = {
   gap: 8
 };
 
+const stickyFooterStyle = {
+  position: "fixed",
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: 10050,
+  padding: "12px 16px calc(12px + env(safe-area-inset-bottom, 0px))",
+  background: "linear-gradient(180deg, rgba(5,8,16,0) 0%, rgba(5,8,16,0.92) 28%, rgba(5,8,16,0.98) 100%)",
+  borderTop: "1px solid rgba(148,163,184,0.18)",
+  boxSizing: "border-box"
+};
+
+const stickyInnerStyle = {
+  maxWidth: 760,
+  margin: "0 auto",
+  width: "100%"
+};
+
 function pickButtonStyle(active) {
   return {
     ...INGRESS_SURFACE_V0.primaryBtn(active),
@@ -104,6 +122,10 @@ export function RhizohUnifiedEntryScreen({ onProceed, specSha256 = null, legalRe
   };
 
   const proceed = () => {
+    if (legalRequired && !legalReady) {
+      setLegalCollapsed(false);
+      return;
+    }
     persistLanguage();
     if (legalRequired && !legalAcked) {
       acknowledgeLegalAccessV0({
@@ -117,7 +139,10 @@ export function RhizohUnifiedEntryScreen({ onProceed, specSha256 = null, legalRe
 
   return (
     <>
-      <div style={{ ...INGRESS_SURFACE_V0.page, maxWidth: 760 }}>
+      <div
+        data-rhizoh-ingress-surface="unified-entry"
+        style={{ ...INGRESS_SURFACE_V0.page, maxWidth: 760, paddingBottom: "calc(120px + env(safe-area-inset-bottom, 0px))" }}
+      >
         <p style={INGRESS_SURFACE_V0.kicker}>{tr ? "RHIZOH GİRİŞ" : "RHIZOH ENTRY"}</p>
         <h1 style={INGRESS_SURFACE_V0.title}>{tr ? "Tek yüzeyden başla" : "Start from one surface"}</h1>
         <p style={INGRESS_SURFACE_V0.lead}>
@@ -220,10 +245,13 @@ export function RhizohUnifiedEntryScreen({ onProceed, specSha256 = null, legalRe
         <section style={{ ...sectionStyle, opacity: legalCollapsed ? 0.72 : 1 }} data-rhizoh-entry-section="legal">
           <button
             type="button"
-            onClick={() => setLegalCollapsed((v) => !v)}
+            onClick={() => {
+              if (legalAcked) setLegalCollapsed((v) => !v);
+              else setLegalCollapsed(false);
+            }}
             style={{ ...INGRESS_SURFACE_V0.primaryBtn(false), width: "100%", justifyContent: "space-between" }}
           >
-            {legalAcked || legalCollapsed ? (tr ? "Hukuki geçit kilitlendi" : "Legal gate locked") : legalCopy.title}
+            {legalAcked ? (tr ? "Hukuki geçit kilitlendi" : "Legal gate locked") : legalCopy.title}
           </button>
           {!legalCollapsed ? (
             <div style={{ marginTop: 14 }}>
@@ -271,17 +299,27 @@ export function RhizohUnifiedEntryScreen({ onProceed, specSha256 = null, legalRe
             }}
           />
         </section>
-
-        <button
-          type="button"
-          disabled={!legalReady}
-          onClick={proceed}
-          style={{ ...INGRESS_SURFACE_V0.primaryBtn(legalReady), width: "100%" }}
-        >
-          {tr ? "Rhizoh'a gir" : "Enter Rhizoh"}
-        </button>
       </div>
-      <CookieConsentBanner />
+
+      <div style={stickyFooterStyle} data-rhizoh-entry-cta="sticky">
+        <div style={stickyInnerStyle}>
+          {!legalReady && legalRequired && !legalAcked ? (
+            <p style={{ margin: "0 0 8px", fontSize: 11, lineHeight: 1.45, color: "#fbbf24" }}>
+              {tr
+                ? "Devam etmek için yukarıdaki hukuki kutuların üçünü de işaretle."
+                : "Check all three legal boxes above to continue."}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            onClick={proceed}
+            style={{ ...INGRESS_SURFACE_V0.primaryBtn(legalReady), width: "100%", padding: "14px 20px", fontSize: 15 }}
+          >
+            {tr ? "Rhizoh'a gir" : "Enter Rhizoh"}
+          </button>
+        </div>
+      </div>
+      <CookieConsentBanner ingressSurface />
     </>
   );
 }
