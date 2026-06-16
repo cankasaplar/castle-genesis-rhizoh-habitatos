@@ -8,6 +8,14 @@ import { getStockfishArenaMoveV0 } from "./chessStockfishEngineV0.js";
 import { stockfishSkillFromEloV0 } from "./chessStockfishPresetsV0.js";
 import { pickChessArenaAiMoveV0, estimateChessMaterialBalanceV0 } from "./chessArenaEngineV0.js";
 import { readChessPolicyModeV0, resolveRhizohChessEngineParamsV0 } from "./chessPolicyModeV0.js";
+import {
+  readChessLearningWeightsV0,
+  resolveLearningWeightDeltasV0
+} from "./chessLearningWeightsV0.js";
+import {
+  readChessHistoricalMindIdV0,
+  resolveChessMindBlendV0
+} from "./chessHistoricalMindV0.js";
 
 export const RHIZOH_CHESS_PLAYER_SCHEMA_V0 = "rhizoh.chess_player.v0";
 
@@ -42,11 +50,18 @@ export async function pickRhizohChessMoveV0(game, opts = {}) {
   const baseSkill = stockfishSkillFromEloV0(profile?.elo || 1200);
   const materialLead = estimateChessMaterialBalanceV0(game, "w");
   const policyMode = opts.policyMode || readChessPolicyModeV0();
+  const learningWeights = readChessLearningWeightsV0();
+  const mindBlend = resolveChessMindBlendV0({
+    mindId: opts.mindId || readChessHistoricalMindIdV0(),
+    learningWeights
+  });
   const engineParams = resolveRhizohChessEngineParamsV0({
     baseSkill,
     materialLead,
     isCheck: game.chess.isCheck(),
-    policyMode
+    policyMode,
+    learningDeltas: resolveLearningWeightDeltasV0(learningWeights),
+    mindBlend
   });
 
   try {
@@ -61,6 +76,7 @@ export async function pickRhizohChessMoveV0(game, opts = {}) {
         move: sf,
         engine: "rhizoh_learned_stockfish",
         policyMode: engineParams.policyMode,
+        mindId: engineParams.mindId,
         engineParams
       });
     }

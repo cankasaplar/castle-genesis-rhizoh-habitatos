@@ -7,8 +7,16 @@ import { analyzePlayedMoveV0 } from "./chessStockfishEngineV0.js";
 
 export const CHESS_REGRET_ANALYSIS_SCHEMA_V0 = "rhizoh.chess_regret_analysis.v0";
 
+export const CHESS_REGRET_FLAG_V0 = Object.freeze({
+  FORCED_WIN_DETECTED: "FORCED_WIN_DETECTED",
+  BUT_NOT_TAKEN: "BUT_NOT_TAKEN",
+  LOSS_AVOIDANCE_BIAS: "LOSS_AVOIDANCE_BIAS"
+});
+
 const WINNING_CP_V0 = 120;
+const FORCED_WIN_CP_V0 = 200;
 const REGRET_SWING_CP_V0 = -45;
+const FORCED_WIN_SWING_CP_V0 = -35;
 const SAMPLE_DEPTH_V0 = 9;
 const SAMPLE_MOVETIME_MS_V0 = 320;
 
@@ -46,6 +54,10 @@ export async function analyzeRhizohRegretV0(opts = {}) {
   const evalTrace = [];
   /** @type {object[]} */
   const regrets = [];
+  /** @type {object[]} */
+  const mistakeMap = [];
+  /** @type {object[]} */
+  const forcedWinAnomalies = [];
 
   for (const row of sampleRows) {
     const analysis = await analyzePlayedMoveV0(row.before, row.san, {
@@ -57,17 +69,53 @@ export async function analyzeRhizohRegretV0(opts = {}) {
     const beforeCp = sideCpV0(analysis.before?.cp ?? 0, localColor);
     const swingCp = analysis.swingCp;
     const bestSan = analysis.alternative || analysis.bestMove || "";
+    const mateWin = analysis.before?.mate != null && analysis.before.mate > 0;
+    const forcedWinLine = mateWin || beforeCp >= FORCED_WIN_CP_V0;
+    const playedDiffersFromBest =
+      bestSan &&
+      row.san &&
+      String(bestSan).toLowerCase() !== String(row.san).toLowerCase();
+    const notTaken =
+      forcedWinLine && playedDiffersFromBest && swingCp != null && swingCp <= FORCED_WIN_SWING_CP_V0;
+
+    const flags = [];
+    if (forcedWinLine) flags.push(CHESS_REGRET_FLAG_V0.FORCED_WIN_DETECTED);
+    if (notTaken) flags.push(CHESS_REGRET_FLAG_V0.BUT_NOT_TAKEN);
+
     const traceRow = Object.freeze({
       moveNumber: rows.indexOf(row) + 1,
       san: row.san,
       beforeCp: Math.round(beforeCp),
       swingCp: swingCp != null ? Math.round(swingCp) : null,
       bestMove: bestSan,
-      depth: analysis.before?.depth ?? null
+      depth: analysis.before?.depth ?? null,
+      flags: Object.freeze(flags),
+      forcedWinLine,
+      notTaken
     });
     evalTrace.push(traceRow);
 
-    if (beforeCp >= WINNING_CP_V0 && swingCp != null && swingCp <= REGRET_SWING_CP_V0) {
+    if (swingCp != null && swingCp <= REGRET_SWING_CP_V0) {
+      mistakeMap.push(
+        Object.freeze({
+          moveNumber: traceRow.moveNumber,
+          san: row.san,
+          swingCp: traceRow.swingCp,
+          bestMove: bestSan,
+          kind: beforeCp >= FORCED_WIN_CP_V0 ? "blunder" : "inaccuracy"
+        })
+      );
+    }
+
+    if (notTaken) {
+      const anomaly = Object.freeze({
+        ...traceRow,
+        kind: "forced_win_ignored",
+        summary: "Forced win line exists but was not taken."
+      });
+      forcedWinAnomalies.push(anomaly);
+      regrets.push(anomaly);
+    } else if (beforeCp >= WINNING_CP_V0 && swingCp != null && swingCp <= REGRET_SWING_CP_V0) {
       regrets.push(
         Object.freeze({
           ...traceRow,
@@ -83,13 +131,29 @@ export async function analyzeRhizohRegretV0(opts = {}) {
 
   regrets.sort((a, b) => Math.abs(b.swingCp || 0) - Math.abs(a.swingCp || 0));
 
+  const forcedWinIgnored = forcedWinAnomalies.length > 0;
+  const lossAvoidanceBias = regrets.length >= 2 || forcedWinIgnored;
+  const anomalyFlags = Object.freeze(
+    [
+      forcedWinIgnored ? CHESS_REGRET_FLAG_V0.BUT_NOT_TAKEN : null,
+      forcedWinAnomalies.some((a) => a.forcedWinLine)
+        ? CHESS_REGRET_FLAG_V0.FORCED_WIN_DETECTED
+        : null,
+      lossAvoidanceBias ? CHESS_REGRET_FLAG_V0.LOSS_AVOIDANCE_BIAS : null
+    ].filter(Boolean)
+  );
+
   return Object.freeze({
     schema: CHESS_REGRET_ANALYSIS_SCHEMA_V0,
     localColor,
     moveCount: rows.length,
     sampledMoves: evalTrace.length,
     regretCount: regrets.length,
-    lossAvoidanceBias: regrets.length >= 2,
+    lossAvoidanceBias,
+    forcedWinIgnored,
+    forcedWinAnomalies: Object.freeze(forcedWinAnomalies),
+    anomalyFlags,
+    mistakeMap: Object.freeze(mistakeMap),
     evalTrace: Object.freeze(evalTrace),
     regrets: Object.freeze(regrets),
     topRegret: regrets[0] || null,

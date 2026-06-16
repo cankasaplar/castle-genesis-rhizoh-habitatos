@@ -103,12 +103,14 @@ export function getChessPolicyProfileV0(mode) {
 }
 
 /**
- * Resolve Stockfish params for Rhizoh given material + policy.
+ * Resolve Stockfish params for Rhizoh given material + policy + learning weights.
  * @param {{
  *   baseSkill: number,
  *   materialLead: number,
  *   isCheck?: boolean,
- *   policyMode?: string
+ *   policyMode?: string,
+ *   learningDeltas?: ReturnType<import('./chessLearningWeightsV0.js').resolveLearningWeightDeltasV0>,
+ *   mindBlend?: ReturnType<import('./chessHistoricalMindV0.js').resolveChessMindBlendV0>
  * }} ctx
  */
 export function resolveRhizohChessEngineParamsV0(ctx) {
@@ -117,23 +119,34 @@ export function resolveRhizohChessEngineParamsV0(ctx) {
   const materialLead = Number(ctx.materialLead) || 0;
   const winning = materialLead >= 3 || (materialLead >= 1 && ctx.isCheck === true);
   const ahead = materialLead > 0 && !winning;
+  const learn = ctx.learningDeltas || null;
+  const mind = ctx.mindBlend || null;
 
   let skill = baseSkill;
   if (winning) skill = Math.max(policy.minSkillWinning, baseSkill + policy.skillBoostWinning);
   else if (ahead) skill = Math.min(20, baseSkill + policy.skillBoostAhead);
+  if (learn?.skillDelta) skill = Math.min(20, skill + learn.skillDelta);
+  if (mind?.aggressionBias) skill = Math.min(20, skill + Math.round(mind.aggressionBias * 2));
 
   let contempt = policy.contemptEven;
   if (winning) contempt = policy.contemptWinning;
   else if (ahead) contempt = policy.contemptAhead;
+  if (learn?.contemptDelta) contempt += learn.contemptDelta;
+  if (mind?.contemptOffset) contempt += mind.contemptOffset;
+  if (winning && learn?.winForcingActive) {
+    contempt = Math.round(contempt * (mind?.winForcingMult ?? 1.1));
+  }
+  if (ahead && mind?.riskPenaltyMult != null && mind.riskPenaltyMult < 0.65) {
+    contempt = Math.max(-20, contempt - 4);
+  }
+  contempt = Math.max(-100, Math.min(100, contempt));
 
   const baseMovetime = winning
     ? Math.min(4200, 1200 + skill * 120)
     : Math.min(2800, 900 + baseSkill * 80);
-  const movetimeMult = winning
-    ? policy.movetimeWinningMult
-    : ahead
-      ? policy.movetimeAheadMult
-      : 1;
+  const movetimeMult =
+    (winning ? policy.movetimeWinningMult : ahead ? policy.movetimeAheadMult : 1) *
+    (learn?.movetimeMult ?? 1);
   const movetimeMs = Math.round(baseMovetime * movetimeMult);
   const depth = 12 + Math.floor(skill / 2) + (winning ? policy.depthWinningBonus : 0);
 
@@ -144,6 +157,8 @@ export function resolveRhizohChessEngineParamsV0(ctx) {
     contempt,
     winning,
     ahead,
-    policyMode: normalizeChessPolicyModeV0(ctx.policyMode)
+    policyMode: normalizeChessPolicyModeV0(ctx.policyMode),
+    learningApplied: Boolean(learn),
+    mindId: mind?.mindId || null
   });
 }

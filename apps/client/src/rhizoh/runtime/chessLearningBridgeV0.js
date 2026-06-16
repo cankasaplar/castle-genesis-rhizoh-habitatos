@@ -7,6 +7,7 @@ import { appendGhostMemoryV0 } from "./ghostMemoryPersistenceV0.js";
 import { upsertRhizohKnowledgeV0, RHIZOH_TEACHER_SOURCE_V0 } from "./rhizohKnowledgeStoreV0.js";
 import { learnOpeningFromObservationV0 } from "./rhizohOpeningBookV0.js";
 import { observeChessMatchV0 } from "./chessMatchObserverV0.js";
+import { runRhizohChessLearningLoopV0 } from "./chessLearningLoopV0.js";
 import { teachChessLessonV0 } from "./rhizohChessTeacherV0.js";
 import { recordChessCivilizationMatchV0 } from "./chessCivilizationV0.js";
 import { incrementCastleIdentityStatV0, readCastleIdentityV0 } from "./castleIdentityV0.js";
@@ -29,11 +30,29 @@ export const CHESS_MATCH_ANALYZED_EVENT_V0 = "rhizoh:chess-match-analyzed-v0";
  *   won?: boolean,
  *   draw?: boolean,
  *   locale?: string,
- *   castleId?: string
+ *   castleId?: string,
+ *   policyMode?: string,
+ *   mindId?: string,
+ *   runLearningLoop?: boolean
  * }} opts
  */
 export async function runChessIntelligencePipelineV0(opts = {}) {
   const observation = await observeChessMatchV0(opts);
+  let learningLoop = null;
+  if (opts.runLearningLoop !== false && (opts.moves?.length || 0) > 0) {
+    try {
+      learningLoop = await runRhizohChessLearningLoopV0({
+        moves: opts.moves,
+        outcome: opts.outcome,
+        localColor: opts.localColor,
+        matchId: opts.matchId || opts.gameId,
+        policyMode: opts.policyMode,
+        mindId: opts.mindId
+      });
+    } catch {
+      learningLoop = null;
+    }
+  }
   const openingEntry = learnOpeningFromObservationV0(observation);
   const lesson = teachChessLessonV0(observation, { locale: opts.locale });
   const civilization = recordChessCivilizationMatchV0(observation, {
@@ -96,10 +115,15 @@ export async function runChessIntelligencePipelineV0(opts = {}) {
   const result = Object.freeze({
     schema: CHESS_INTELLIGENCE_PIPELINE_SCHEMA_V0,
     observation,
+    learningLoop,
     openingEntry,
     lesson,
     civilization,
-    layers: Object.freeze(["play", "observe", "analyze", "learn", "teach", "civilization"])
+    layers: Object.freeze(
+      learningLoop
+        ? ["play", "observe", "analyze", "learn", "teach", "civilization", "weight_update"]
+        : ["play", "observe", "analyze", "learn", "teach", "civilization"]
+    )
   });
 
   if (typeof window !== "undefined") {

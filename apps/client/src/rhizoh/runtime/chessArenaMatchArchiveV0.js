@@ -19,6 +19,8 @@ const MAX_ENTRIES_V0 = 48;
  *   policyMode?: string,
  *   regret?: object,
  *   evalTrace?: object[],
+ *   mindId?: string,
+ *   learning?: object,
  *   endedAt?: number
  * }} row
  */
