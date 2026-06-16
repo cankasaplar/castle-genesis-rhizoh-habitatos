@@ -63,11 +63,19 @@ const DEFAULT_SESSION_V0 = Object.freeze({
   voiceMoves: true
 });
 
+/**
+ * @param {string} [raw]
+ */
 export function resolveChessTimeControlV0(raw) {
   const id = String(raw || DEFAULT_SESSION_V0.timeControlId);
-  return Object.values(CHESS_TIME_CONTROL_V0).find((t) => t.id === id) || CHESS_TIME_CONTROL_V0.BLITZ_3_2;
+  return (
+    Object.values(CHESS_TIME_CONTROL_V0).find((t) => t.id === id) || CHESS_TIME_CONTROL_V0.BLITZ_3_2
+  );
 }
 
+/**
+ * @param {string} [raw]
+ */
 export function resolveChessOpponentPresetV0(raw) {
   const id = String(raw || DEFAULT_SESSION_V0.opponentPresetId);
   return (
@@ -93,6 +101,9 @@ export function readChessArenaSessionV0() {
   }
 }
 
+/**
+ * @param {Partial<{ timeControlId: string, opponentPresetId: string, aiMoveDelayMs: number, voiceMoves: boolean }>} patch
+ */
 export function saveChessArenaSessionV0(patch = {}) {
   const prev = readChessArenaSessionV0();
   const next = Object.freeze({

@@ -203,11 +203,23 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const [gameEpoch, setGameEpoch] = useState(0);
   const [policyMode, setPolicyMode] = useState(() => readChessPolicyModeV0());
   const [mindId, setMindId] = useState(() => readChessHistoricalMindIdV0());
+  const [arenaSession, setArenaSession] = useState(() => readChessArenaSessionV0());
   const [lastRegretV0, setLastRegretV0] = useState(null);
   const [lastLearningV0, setLastLearningV0] = useState(null);
   const [arenaSession, setArenaSession] = useState(() => readChessArenaSessionV0());
   const [learningSessionV0, setLearningSessionV0] = useState(() => readChessLearningSessionV0());
   const learningPresetsV0 = useMemo(() => listChessLearningSessionPresetsV0(), []);
+
+  const timeControlV0 = useMemo(
+    () => resolveChessTimeControlV0(arenaSession.timeControlId),
+    [arenaSession.timeControlId]
+  );
+  const opponentPresetV0 = useMemo(
+    () => resolveChessOpponentPresetV0(arenaSession.opponentPresetId),
+    [arenaSession.opponentPresetId]
+  );
+  const timeControlsV0 = useMemo(() => listChessTimeControlsV0(), []);
+  const opponentPresetsV0 = useMemo(() => listChessOpponentPresetsV0(), []);
 
   const timeControlV0 = useMemo(
     () => resolveChessTimeControlV0(arenaSession.timeControlId),
@@ -352,7 +364,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         policyMode: extra.policyMode || policyMode,
         regret: extra.regret || null,
         evalTrace: extra.evalTrace || null,
-        mindId: extra.mindId || mindId
+        mindId: extra.mindId || mindId,
+        learning: extra.learning || null
       });
       if (entry) {
         setLastFinishedMatchV0(entry);
@@ -493,8 +506,11 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         return false;
       }
       if (timeControlV0.incrementMs > 0) {
-        if (moverColor === "w") setWhiteClockMs((ms) => ms + timeControlV0.incrementMs);
-        else setBlackClockMs((ms) => ms + timeControlV0.incrementMs);
+        if (moverColor === "w") {
+          setWhiteClockMs((ms) => ms + timeControlV0.incrementMs);
+        } else {
+          setBlackClockMs((ms) => ms + timeControlV0.incrementMs);
+        }
       }
       setTick((n) => n + 1);
       logChessMovePlayedV0({
@@ -677,7 +693,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           break;
         }
         await new Promise((resolve) => {
-          window.setTimeout(resolve, 750);
+          window.setTimeout(resolve, arenaSession.aiMoveDelayMs || 450);
         });
       }
     })();
@@ -697,7 +713,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     engineStatus,
     policyMode,
     mindId,
-    opponentPresetV0.preset
+    opponentPresetV0.preset,
+    arenaSession.aiMoveDelayMs
   ]);
 
   const onSquareClick = useCallback(
@@ -959,6 +976,43 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                     : `Active policy: ${getChessPolicyProfileV0(policyMode).labelEn} · post-match learning loop saved to archive`}
                 </p>
               ) : null}
+              <label className="text-[9px] text-white/50">
+                {tr ? "Zaman kontrolü" : "Time control"}
+              </label>
+              <select
+                value={arenaSession.timeControlId}
+                onChange={(e) => {
+                  const next = saveChessArenaSessionV0({ timeControlId: e.target.value });
+                  setArenaSession(next);
+                  const clocks = initialClocksFromSessionV0(next);
+                  setWhiteClockMs(clocks.white);
+                  setBlackClockMs(clocks.black);
+                }}
+                className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+              >
+                {timeControlsV0.map((tc) => (
+                  <option key={tc.id} value={tc.id}>
+                    {tr ? tc.labelTr : tc.labelEn}
+                  </option>
+                ))}
+              </select>
+              <label className="text-[9px] text-white/50">
+                {tr ? "Stockfish gücü" : "Stockfish strength"}
+              </label>
+              <select
+                value={arenaSession.opponentPresetId}
+                onChange={(e) => {
+                  const next = saveChessArenaSessionV0({ opponentPresetId: e.target.value });
+                  setArenaSession(next);
+                }}
+                className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+              >
+                {opponentPresetsV0.map((op) => (
+                  <option key={op.id} value={op.id}>
+                    {tr ? op.labelTr : op.labelEn}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
               <button
@@ -1082,6 +1136,11 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
               </p>
             ) : null}
             <p className="text-center text-[10px] text-white/55">{status}</p>
+            {movePgnV0 ? (
+              <p className="max-w-md break-words text-center font-mono text-[9px] leading-relaxed text-white/45">
+                {movePgnV0}
+              </p>
+            ) : null}
             {matchResult?.lesson ? (
               <div className="max-w-md rounded-lg border border-cyan-400/25 bg-cyan-500/5 px-3 py-2 text-[10px] text-white/80">
                 <p className="font-bold text-cyan-100">{matchResult.lesson.title}</p>
@@ -1148,7 +1207,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                 ) : null}
                 {lastFinishedMatchV0.moves?.length ? (
                   <p className="mt-1.5 break-all font-mono text-[8px] leading-relaxed text-white/45">
-                    {(lastFinishedMatchV0.moves || []).join(" ")}
+                    {formatChessMoveListPgnV0(lastFinishedMatchV0.moves)}
                   </p>
                 ) : null}
                 <p className="mt-1 text-[8px] text-white/35">
@@ -1189,7 +1248,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                       {expandedArchiveId === row.id && row.moves?.length ? (
                         <div className="mt-1 space-y-1 rounded bg-black/40 px-2 py-1">
                           <p className="break-all font-mono text-[8px] text-white/50">
-                            {row.moves.join(" ")}
+                            {formatChessMoveListPgnV0(row.moves)}
                           </p>
                           {row.regret?.topRegret ? (
                             <p className="text-[8px] text-rose-200/80">
