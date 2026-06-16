@@ -30,8 +30,66 @@ function ensureFatalBanner() {
     display: "none",
     boxShadow: "0 8px 32px rgba(0,0,0,0.5)"
   });
+  const dismiss = document.createElement("button");
+  dismiss.type = "button";
+  dismiss.textContent = "×";
+  dismiss.setAttribute("aria-label", "Dismiss fatal banner");
+  Object.assign(dismiss.style, {
+    position: "absolute",
+    top: "6px",
+    right: "8px",
+    border: "none",
+    background: "transparent",
+    color: "#fecaca",
+    fontSize: "18px",
+    lineHeight: 1,
+    cursor: "pointer",
+    padding: "4px 8px"
+  });
+  dismiss.addEventListener("click", () => {
+    el.style.display = "none";
+    try {
+      document.body.style.paddingBottom = "";
+      document.body.style.paddingTop = "";
+    } catch {
+      /* noop */
+    }
+  });
+  el.appendChild(dismiss);
   document.body.appendChild(el);
   return el;
+}
+
+function isIngressSurfaceActiveV0() {
+  try {
+    return Boolean(document.querySelector("[data-rhizoh-ingress-surface]"));
+  } catch {
+    return false;
+  }
+}
+
+function layoutFatalBannerV0(el) {
+  const ingress = isIngressSurfaceActiveV0();
+  if (ingress) {
+    el.style.top = "8px";
+    el.style.bottom = "auto";
+    el.style.maxHeight = "28vh";
+    try {
+      document.body.style.paddingTop = "min(30vh, 180px)";
+      document.body.style.paddingBottom = "120px";
+    } catch {
+      /* noop */
+    }
+    return;
+  }
+  el.style.top = "auto";
+  el.style.bottom = "8px";
+  try {
+    document.body.style.paddingTop = "";
+    document.body.style.paddingBottom = "min(44vh, 220px)";
+  } catch {
+    /* noop */
+  }
 }
 
 export function reportCastleFatal(kind, errOrMsg, extra = {}) {
@@ -60,8 +118,20 @@ export function reportCastleFatal(kind, errOrMsg, extra = {}) {
 
   try {
     const b = ensureFatalBanner();
+    layoutFatalBannerV0(b);
     b.style.display = "block";
-    b.textContent = `${line}\n\nDevTools: konsolda "Varsayılan seviyeler" açık olsun, "Preserve log" işaretli olsun.\nTek satır kopyala: window.__CASTLE_LAST_FATAL__`;
+    const text = `${line}\n\nDevTools: konsolda "Varsayılan seviyeler" açık olsun, "Preserve log" işaretli olsun.\nTek satır kopyala: window.__CASTLE_LAST_FATAL__`;
+    const textNode = b.querySelector("[data-castle-fatal-text]");
+    if (textNode) {
+      textNode.textContent = text;
+    } else {
+      const body = document.createElement("div");
+      body.setAttribute("data-castle-fatal-text", "1");
+      body.style.paddingRight = "28px";
+      body.textContent = text;
+      b.querySelectorAll("[data-castle-fatal-text]").forEach((n) => n.remove());
+      b.appendChild(body);
+    }
   } catch {
     /* noop */
   }

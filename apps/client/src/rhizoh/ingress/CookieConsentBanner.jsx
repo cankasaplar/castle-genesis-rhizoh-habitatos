@@ -9,8 +9,9 @@ import { readUiLocaleV0 } from "../runtime/rhizohUiLocaleV0.js";
 
 /**
  * Minimal cookie layer — analytics default OFF.
+ * @param {{ ingressSurface?: boolean }} [props]
  */
-export function CookieConsentBanner() {
+export function CookieConsentBanner({ ingressSurface = false }) {
   const initial = getCookieConsentV0();
   const [visible, setVisible] = useState(!initial.decided);
   const docs = getLegalDocumentPathsV0();
@@ -24,7 +25,7 @@ export function CookieConsentBanner() {
       aria-label="Cookie preference"
       style={{
         position: "fixed",
-        bottom: 0,
+        bottom: ingressSurface ? "calc(88px + env(safe-area-inset-bottom, 0px))" : 0,
         left: 0,
         right: 0,
         padding: "12px 16px",
@@ -34,7 +35,7 @@ export function CookieConsentBanner() {
         fontFamily: "Inter, system-ui, sans-serif",
         fontSize: 13,
         lineHeight: 1.5,
-        zIndex: 9999
+        zIndex: 10040
       }}
     >
       <p style={{ margin: "0 0 10px", maxWidth: 720, marginLeft: "auto", marginRight: "auto" }}>

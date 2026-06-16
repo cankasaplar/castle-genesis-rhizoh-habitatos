@@ -4,6 +4,7 @@ export const INGRESS_SURFACE_V0 = Object.freeze({
     minHeight: "100vh",
     boxSizing: "border-box",
     padding: "32px 24px",
+    paddingBottom: "calc(32px + env(safe-area-inset-bottom, 0px))",
     background: "linear-gradient(180deg, #050810 0%, #0a1220 100%)",
     color: "#d8e8f4",
     fontFamily: "Inter, system-ui, sans-serif",
