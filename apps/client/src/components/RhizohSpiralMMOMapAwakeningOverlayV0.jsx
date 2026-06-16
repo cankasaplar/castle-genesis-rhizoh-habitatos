@@ -1,5 +1,6 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
+  formatRhizohNeonCountdownMsV0,
   isRhizohNeonCountdownCompleteV0,
   readRhizohNeonCountdownDeadlineMsV0,
   resolveRhizohNeonCountdownRemainingMsV0
@@ -61,8 +62,10 @@ function spiralCubeStackTransformV0({ acc, renderScale = 1, travelScale = 1 }) {
  * Map overlay — route mesh, calculated cubes, birds, bottles, 06:44 timer.
  */
 export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMMOMapAwakeningOverlayV0({
-  uiLocale = "en"
+  uiLocale = "en",
+  calmVisual = false
 }) {
+  const tr = uiLocale === "tr";
   const hostRef = useRef(null);
   const cubeTargetsRef = useRef([]);
   const [deadlineMs, setDeadlineMs] = useState(() => readRhizohNeonCountdownDeadlineMsV0());
@@ -285,14 +288,16 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
 
       {scene ? (
         <>
-          <div
-            className="pointer-events-none absolute inset-0 z-[5]"
-            data-rhizoh-spiral-bottle-layer="1"
-          >
-            {scene.bottles.map((bottle) => (
-              <SpiralMMOBottleV0 key={bottle.id} bottle={bottle} hostRef={hostRef} />
-            ))}
-          </div>
+          {!calmVisual ? (
+            <div
+              className="pointer-events-none absolute inset-0 z-[5]"
+              data-rhizoh-spiral-bottle-layer="1"
+            >
+              {scene.bottles.map((bottle) => (
+                <SpiralMMOBottleV0 key={bottle.id} bottle={bottle} hostRef={hostRef} />
+              ))}
+            </div>
+          ) : null}
 
           <div
             className="pointer-events-none absolute inset-0 z-[8]"
@@ -341,6 +346,20 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
             ))}
           </div>
         </>
+      ) : null}
+
+      {calmVisual && scene && !complete ? (
+        <div
+          className="pointer-events-none absolute inset-x-0 top-[12%] z-[30] flex justify-center"
+          data-rhizoh-spiral-calm-timer="1"
+        >
+          <div
+            className="rounded-2xl border border-cyan-400/25 bg-black/40 px-4 py-2 font-mono text-2xl font-bold tracking-[0.2em] text-cyan-100/90 tabular-nums shadow-lg backdrop-blur-sm"
+            style={{ textShadow: "0 0 18px rgba(34,211,238,0.35)" }}
+          >
+            {formatRhizohNeonCountdownMsV0(remainingMs)}
+          </div>
+        </div>
       ) : null}
     </div>
   );

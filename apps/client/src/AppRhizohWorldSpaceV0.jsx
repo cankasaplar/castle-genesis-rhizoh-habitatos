@@ -128,6 +128,7 @@ import {
 import { startCanonicalTickClientV0 } from "./core/canonicalTickClientV0.js";
 import { startYoutubeLabOctoBridgeV1, RHIZOH_OCTO_LAB_DISMISS_EVENT_V1 } from "./rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
 import { startRhizohLegalPendingWaitLoopV0 } from "./rhizoh/runtime/rhizohLegalPendingWaitLoopV0.js";
+import { resolveWorldEntryMapToolV0, isWorldDomainCalmModeV0 } from "./rhizoh/runtime/worldDomainCalmModeV0.js";
 import { runSpiralImmersionEnterStagedV0 } from "./rhizoh/runtime/worldMapMeaningfulTransitionV0.js";
 import { RhizohMapTransitionApproachStripV0 } from "./components/RhizohMapTransitionApproachStripV0.jsx";
 import { loadRhizohExperienceSessionContextV0 } from "./rhizoh/experience/rhizohExperienceSessionContextV0.js";
@@ -283,7 +284,7 @@ export default function AppRhizohWorldSpaceV0() {
     const nexusGeo = resolveUserCastleGeoForMapViewV0();
     const savedTool = readRhizohWorldMapToolV0();
     const nextTool = normalizeRhizohWorldSpaceLeafletToolV0(
-      !nexusGeo || savedTool === "globe" ? "city_map" : savedTool
+      resolveWorldEntryMapToolV0(savedTool, Boolean(nexusGeo))
     );
     writeRhizohWorldMapToolV0(nextTool);
 
@@ -692,6 +693,7 @@ export default function AppRhizohWorldSpaceV0() {
       data-rhizoh-spiral-immersion={spiralImmersionActive ? "1" : "0"}
       data-cesium-active={cesiumLayerActiveV0 ? "1" : "0"}
       data-world-layer-enabled={worldLayerEnabledV0 ? "1" : "0"}
+      data-world-domain-calm={isWorldDomainCalmModeV0() ? "1" : "0"}
       data-spatial-render-mode={spatialBootGateV0.renderMode}
       data-spatial-boot-reason={spatialBootGateV0.reason}
       data-map-tool={worldMapToolV0}
@@ -735,6 +737,7 @@ export default function AppRhizohWorldSpaceV0() {
         activeMapTool={worldMapToolV0}
         remoteCastles={remoteCastles}
         remoteCastlesVisible={remoteCastlesVisibleV0}
+        uiLocale={uiLocale}
       />
 
       {spiralImmersionActive ? (

@@ -27,6 +27,7 @@ import {
   readUserCastleAnchorGeoV0
 } from "../rhizoh/runtime/worldMapBootstrapGeoV0.js";
 import { readActiveSpatialMemoryMapPinsV1 } from "../rhizoh/runtime/rhizohSpatialMemoryAnchorV1.js";
+import { shouldSuppressWorldDomainChromeV0 } from "../rhizoh/runtime/worldDomainCalmModeV0.js";
 import {
   buildRhizohMapBrainActionsV1,
   formatRhizohMapBrainActionLabelV1,
@@ -61,6 +62,7 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
   const navigate = useNavigate();
   const locale = uiLocale || readUiLocaleV0();
   const tr = locale === "tr";
+  const domainCalmV0 = shouldSuppressWorldDomainChromeV0();
   const worldData = getCastleWorldDataStateV2();
   const isSpace = domain === RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE;
   const [wheelOpen, setWheelOpen] = useState(false);
@@ -165,12 +167,12 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
                 worldData={worldData}
                 onSelect={onSelectMapTool}
               />
-              <RhizohWorldSportsNewsStripV0 active={spatialEngineActive} uiLocale={locale} />
+              <RhizohWorldSportsNewsStripV0 active={spatialEngineActive && !domainCalmV0} uiLocale={locale} />
             </div>
             <div className="pointer-events-auto absolute right-3 top-3 z-[3] flex max-w-[min(220px,44vw)] flex-col items-end gap-2 sm:right-4 sm:top-4">
               <RhizohWorldMapControlsV0 active={spatialEngineActive} uiLocale={locale} />
               <RhizohWorldAtmosphereChipV0 active={isSpace} uiLocale={locale} />
-              {wheelPack.nodes.length ? (
+              {wheelPack.nodes.length && !domainCalmV0 ? (
                 <div className="flex w-full flex-col items-end" data-rhizoh-context-wheel-floating="1">
                   <button
                     type="button"

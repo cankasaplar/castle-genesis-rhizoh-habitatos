@@ -53,6 +53,14 @@ import { logChessMovePlayedV0, logChessRegretSealedV0 } from "../rhizoh/runtime/
 import { speakChessMoveV0 } from "../rhizoh/runtime/chessMoveVoiceV0.js";
 import { sealChessEndgameAnalysisV0 } from "../rhizoh/runtime/chessEndgameSealV0.js";
 import {
+  readChessLearningSessionV0,
+  saveChessLearningSessionV0,
+  sealChessLearningSessionV0,
+  listChessLearningSessionPresetsV0,
+  resolveChessLearningSessionPresetV0
+} from "../rhizoh/runtime/chessLearningSessionV0.js";
+import { CHESS_VARIANT_ID_V0, resolveChessVariantV0 } from "../rhizoh/runtime/chessVariantRegistryV0.js";
+import {
   CHESS_BOARD_THEME_V0,
   CHESS_PIECE_STYLE_V0,
   readChessArenaThemeV0,
@@ -68,7 +76,8 @@ const MODE_OPTIONS_V0 = [
   CHESS_GAME_MODE_V0.AI_HUMAN,
   CHESS_GAME_MODE_V0.HUMAN_HUMAN,
   CHESS_GAME_MODE_V0.AI_AI,
-  CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH
+  CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH,
+  CHESS_GAME_MODE_V0.TEAM_PET_VS_RHIZOH
 ];
 
 function boardRowsFromFen(fen) {
@@ -102,7 +111,8 @@ const MODE_LABELS_TR_V0 = Object.freeze({
   [CHESS_GAME_MODE_V0.AI_HUMAN]: "Stockfish vs insan",
   [CHESS_GAME_MODE_V0.HUMAN_HUMAN]: "İnsan vs insan",
   [CHESS_GAME_MODE_V0.AI_AI]: "Stockfish vs Stockfish",
-  [CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH]: "Rhizoh AI vs Stockfish"
+  [CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH]: "Rhizoh AI vs Stockfish",
+  [CHESS_GAME_MODE_V0.TEAM_PET_VS_RHIZOH]: "Fox+Octo · Rhizoh AI"
 });
 
 const MODE_LABELS_EN_V0 = Object.freeze({
@@ -111,7 +121,8 @@ const MODE_LABELS_EN_V0 = Object.freeze({
   [CHESS_GAME_MODE_V0.AI_HUMAN]: "Stockfish vs human",
   [CHESS_GAME_MODE_V0.HUMAN_HUMAN]: "Human vs human",
   [CHESS_GAME_MODE_V0.AI_AI]: "Stockfish vs Stockfish",
-  [CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH]: "Rhizoh AI vs Stockfish"
+  [CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH]: "Rhizoh AI vs Stockfish",
+  [CHESS_GAME_MODE_V0.TEAM_PET_VS_RHIZOH]: "Fox+Octo · Rhizoh AI"
 });
 
 const DEFAULT_CLOCK_MS_V0 = 3 * 60 * 1000;
@@ -195,6 +206,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const [lastRegretV0, setLastRegretV0] = useState(null);
   const [lastLearningV0, setLastLearningV0] = useState(null);
   const [arenaSession, setArenaSession] = useState(() => readChessArenaSessionV0());
+  const [learningSessionV0, setLearningSessionV0] = useState(() => readChessLearningSessionV0());
+  const learningPresetsV0 = useMemo(() => listChessLearningSessionPresetsV0(), []);
 
   const timeControlV0 = useMemo(
     () => resolveChessTimeControlV0(arenaSession.timeControlId),
@@ -234,6 +247,13 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     }
     if (mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH) {
       return Object.freeze({ white: "Rhizoh AI", black: "Stockfish" });
+    }
+    if (mode === CHESS_GAME_MODE_V0.TEAM_PET_VS_RHIZOH) {
+      const variant = resolveChessVariantV0(CHESS_VARIANT_ID_V0.TEAM_PET_VS_RHIZOH);
+      return Object.freeze({
+        white: tr ? "Fox + Octo" : "Fox + Octo",
+        black: tr ? "Rhizoh AI" : "Rhizoh AI"
+      });
     }
     if (mode === CHESS_GAME_MODE_V0.AI_HUMAN) {
       return Object.freeze({
@@ -363,7 +383,9 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           locale: uiLocale,
           policyMode,
           mindId,
-          runLearningLoop: mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH
+          runLearningLoop:
+            mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH ||
+            mode === CHESS_GAME_MODE_V0.TEAM_PET_VS_RHIZOH
         });
         setMatchResult(result);
         if (result.learningLoop) {
@@ -391,6 +413,16 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
               evalTrace: result.learningLoop.regret?.evalTrace,
               phase: result.observation?.phase || "endgame"
             });
+            if (learningSessionV0.recordMedia) {
+              sealChessLearningSessionV0({
+                matchId: extra.archiveId || matchRow?.matchId,
+                outcome: outcomeVal,
+                moves,
+                presetId: learningSessionV0.presetId,
+                variantId: learningSessionV0.variantId,
+                learningStyle: learningSessionV0.learningStyle
+              });
+            }
           }
           if (result.learningLoop.regret?.forcedWinIgnored) {
             setStatus(
@@ -413,7 +445,16 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         setAnalysisBusy(false);
       }
     },
-    [game, mode, peerCastle?.uid, tr, uiLocale, policyMode, mindId]
+    [
+      game,
+      mode,
+      peerCastle?.uid,
+      tr,
+      uiLocale,
+      policyMode,
+      mindId,
+      learningSessionV0
+    ]
   );
 
   const resetGame = useCallback(
@@ -813,6 +854,30 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                 <option value={CHESS_POLICY_MODE_V0.SAFE}>
                   {tr ? "Güvenli — kayıptan kaçınır" : "Safe — loss-avoidance"}
                 </option>
+              </select>
+              <label className="text-[9px] text-white/50">
+                {tr ? "Öğrenme seansı" : "Learning session"}
+              </label>
+              <select
+                value={learningSessionV0.presetId}
+                onChange={(e) => {
+                  const next = saveChessLearningSessionV0({ presetId: e.target.value });
+                  setLearningSessionV0(next);
+                  const preset = resolveChessLearningSessionPresetV0(next.presetId);
+                  const session = saveChessArenaSessionV0({
+                    timeControlId: preset.timeControlId,
+                    opponentPresetId: preset.opponentPresetId,
+                    voiceMoves: preset.voiceMoves
+                  });
+                  setArenaSession(session);
+                }}
+                className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+              >
+                {learningPresetsV0.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {tr ? p.labelTr : p.labelEn}
+                  </option>
+                ))}
               </select>
               <label className="text-[9px] text-white/50">{tr ? "Zaman kontrolü" : "Time control"}</label>
               <select

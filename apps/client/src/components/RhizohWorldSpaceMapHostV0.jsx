@@ -31,6 +31,8 @@ import {
   resolveMapViewportFitNodesV0,
   resolveMapViewportHomeV0
 } from "../rhizoh/runtime/worldMapViewportBootstrapV0.js";
+import { SOVEREIGN_REGIONAL_BRIDGE_EDGES_V0 } from "../rhizoh/runtime/worldMapBridgeGraphV0.js";
+import { isSpiralCountdownCalmVisualV0 } from "../rhizoh/runtime/worldDomainCalmModeV0.js";
 import { RHIZOH_MAP_COMMAND_EVENT_V0 } from "../rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
 import { RhizohCatchUpCascadeOverlayV0 } from "./RhizohCatchUpCascadeOverlayV0.jsx";
 import { RhizohSpiralMMOMapAwakeningOverlayV0 } from "./RhizohSpiralMMOMapAwakeningOverlayV0.jsx";
@@ -42,7 +44,6 @@ export { RHIZOH_V11_MAP_INTENT_EVENT_V0, RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0 }
 
 import {
   SOVEREIGN_MAP_DEFAULT_HOME_V0,
-  SOVEREIGN_TOWER_GRAPH_EDGES_V0,
   buildRemoteCastleMapNodesV0,
   listSovereignWorldMapNodesForViewV0,
   RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1,
@@ -176,7 +177,7 @@ function leafletTileUrlForToolV0(activeMapTool) {
   return "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 }
 
-function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], remoteCastlesVisible = false }) {
+function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], remoteCastlesVisible = false, uiLocale = "en" }) {
   const mapRef = useRef(null);
   const hostRef = useRef(null);
   const tileLayerRef = useRef(null);
@@ -212,7 +213,14 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
   );
   const nodeById = useRef(new Map(displayNodes.map((n) => [n.id, n])));
   const [leafletReady, setLeafletReady] = useState(false);
-  const [localAnchors, setLocalAnchors] = useState(() => readLocalGhostCastleAnchorsV0());
+  const [spiralCalmVisual, setSpiralCalmVisual] = useState(() => isSpiralCountdownCalmVisualV0());
+
+  useEffect(() => {
+    const tick = () => setSpiralCalmVisual(isSpiralCountdownCalmVisualV0());
+    tick();
+    const id = window.setInterval(tick, 500);
+    return () => window.clearInterval(id);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -433,7 +441,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
 
       graphLayerRef.current?.clearLayers?.();
       if (!graphLayerRef.current) graphLayerRef.current = L.layerGroup().addTo(mapRef.current);
-      for (const edge of SOVEREIGN_TOWER_GRAPH_EDGES_V0) {
+      for (const edge of SOVEREIGN_REGIONAL_BRIDGE_EDGES_V0) {
         const n1 = nodeById.current.get(edge.source);
         const n2 = nodeById.current.get(edge.target);
         if (!n1 || !n2) continue;
@@ -442,7 +450,12 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
             [n1.lat, n1.lon],
             [n2.lat, n2.lon]
           ],
-          { color: "#a855f7", weight: 1, opacity: 0.18, dashArray: "5, 10" }
+          {
+            color: edge.color || "#06b6d4",
+            weight: edge.kind === "hub_spoke" ? 2.2 : 1.6,
+            opacity: edge.kind === "hub_spoke" ? 0.55 : 0.38,
+            dashArray: edge.kind === "regional_ring" ? "4, 8" : undefined
+          }
         ).addTo(graphLayerRef.current);
       }
     } catch {
@@ -489,10 +502,10 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
           background: transparent !important;
         }
       `}</style>
-      <RhizohSpiralMMOMapAwakeningOverlayV0 />
-      <RhizohCatchUpCascadeOverlayV0 />
-      <RhizohN12PersistenceGateV0 />
-      <RhizohCodexEventStreamV0 />
+      <RhizohSpiralMMOMapAwakeningOverlayV0 calmVisual={spiralCalmVisual} uiLocale={uiLocale} />
+      {!spiralCalmVisual ? <RhizohCatchUpCascadeOverlayV0 /> : null}
+      {!spiralCalmVisual ? <RhizohN12PersistenceGateV0 /> : null}
+      {!spiralCalmVisual ? <RhizohCodexEventStreamV0 /> : null}
       <RhizohOfflineVoidOverlayV0 />
       {!leafletReady ? displayNodes.map((node) => {
         const pos = projectV11CoreMapGeoV0(node.lat, node.lon);
@@ -555,7 +568,7 @@ function SafeWorldShellV0() {
   );
 }
 
-function renderFallbackForModeV0(renderMode, activeMapTool, remoteCastles, remoteCastlesVisible) {
+function renderFallbackForModeV0(renderMode, activeMapTool, remoteCastles, remoteCastlesVisible, uiLocale) {
   if (renderMode === RHIZOH_SPATIAL_RENDER_MODE_V0.EMPTY_CANVAS) return <EmptyCanvasV0 />;
   if (renderMode === RHIZOH_SPATIAL_RENDER_MODE_V0.SAFE_WORLD_SHELL) return <SafeWorldShellV0 />;
   return (
@@ -563,6 +576,7 @@ function renderFallbackForModeV0(renderMode, activeMapTool, remoteCastles, remot
       activeMapTool={activeMapTool}
       remoteCastles={remoteCastles}
       remoteCastlesVisible={remoteCastlesVisible}
+      uiLocale={uiLocale}
     />
   );
 }
@@ -576,7 +590,8 @@ export const RhizohWorldSpaceMapHostV0 = memo(function RhizohWorldSpaceMapHostV0
   renderMode = RHIZOH_SPATIAL_RENDER_MODE_V0.V11_CORE_MAP,
   activeMapTool = "city_map",
   remoteCastles = [],
-  remoteCastlesVisible = false
+  remoteCastlesVisible = false,
+  uiLocale = "en"
 }) {
   return (
     <div
@@ -589,7 +604,7 @@ export const RhizohWorldSpaceMapHostV0 = memo(function RhizohWorldSpaceMapHostV0
       {active ? (
         <CesiumRealMapLayer active />
       ) : (
-        renderFallbackForModeV0(renderMode, activeMapTool, remoteCastles, remoteCastlesVisible)
+        renderFallbackForModeV0(renderMode, activeMapTool, remoteCastles, remoteCastlesVisible, uiLocale)
       )}
     </div>
   );
