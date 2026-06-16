@@ -6,7 +6,18 @@
 import { resolveGenesisGatewayHttpBaseV0 } from "../castleFlight/castleFlightConfig.js";
 import { deriveCanonicalAuthorityFromTickV0 } from "./simulationDeviceParityV0.js";
 import { reconcileWithCanonicalAuthorityV0 } from "./reconciliationEngineV0.js";
-import { maybeRunCatchUpCascadeV0 } from "./cascadeReplayRendererV0.js";
+import {
+  buildCatchUpCascadePlanV0,
+  runCatchUpCascadePlanV0,
+  RHIZOH_CATCH_UP_CASCADE_EVENT_V0,
+  RHIZOH_CATCH_UP_CASCADE_PHASE_EVENT_V0
+} from "./cascadeReplayRendererV0.js";
+import {
+  buildCatchUpPhasesV1,
+  reconcileCatchUpV1,
+  RHIZOH_CASCADE_PHASE_V1
+} from "./cascadeReconciliationKernelV1.js";
+import { listSimulationEventsV0 } from "../storage/EventStoreV0.js";
 import { publishOfflineVoidStateV0 } from "./offlineVoidGateV0.js";
 import { readCodexStateV0 } from "./ReplayEngineV0.js";
 import { canPersistUserTopologyN12V0 } from "../pwa/rhizohPwaPermissionsN12V0.js";
@@ -75,16 +86,42 @@ export async function runCanonicalCatchUpV0(authority) {
   catchUpRunningV0 = true;
   try {
     publishCanonicalTickV0(authority);
-    const cascade = await maybeRunCatchUpCascadeV0(authority);
+    const eventsOut = await listSimulationEventsV0(0);
+    const events = (eventsOut.events || []).filter((e) => e.syncStatus !== "PENDING_SYNC");
+    const localLayer = readCodexStateV0().cycleLayer || 0;
+    const reconcileOut = reconcileCatchUpV1(
+      events,
+      localLayer,
+      authority.canonicalLayer,
+      authority.seed,
+      0
+    );
+    const phases = buildCatchUpPhasesV1(reconcileOut);
+
+    for (const phase of phases) {
+      publishCascadePhaseV1(phase);
+      if (phase.phase === RHIZOH_CASCADE_PHASE_V1.LAYER_REPLAY && reconcileOut.missingTicks > 0) {
+        const plan = buildCatchUpCascadePlanV0({
+          fromLayer: reconcileOut.fromTick,
+          toLayer: reconcileOut.toTick,
+          canonicalSeed: authority.seed,
+          stepMs: 280
+        });
+        await runCatchUpCascadePlanV0(plan);
+      } else {
+        await sleepMsV0(phase.phase === RHIZOH_CASCADE_PHASE_V1.VOID_FILL ? 400 : 320);
+      }
+    }
+
     const recon = await reconcileWithCanonicalAuthorityV0(authority);
     publishOfflineVoidStateV0(false);
     logCastleLifecycleV0("canonical_catch_up", {
       layer: authority.canonicalLayer,
       seed: authority.seed,
-      cascadeSteps: cascade.steps ?? 0,
+      cascadeSteps: reconcileOut.missingTicks,
       divergence: recon.snapshot?.divergenceScore
     });
-    return Object.freeze({ ok: true, authority, cascade, recon });
+    return Object.freeze({ ok: true, authority, reconcileOut, recon });
   } finally {
     catchUpRunningV0 = false;
   }
@@ -146,3 +183,21 @@ export function __resetCanonicalTickClientForTestV0() {
   lastTickV0 = null;
   catchUpRunningV0 = false;
 }
+
+function publishCascadePhaseV1(phase) {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("rhizoh:cascade-phase-v1", { detail: Object.freeze(phase) })
+    );
+  }
+}
+
+function sleepMsV0(ms) {
+  return new Promise((resolve) => {
+    if (typeof window !== "undefined") window.setTimeout(resolve, ms);
+    else resolve(undefined);
+  });
+}
+
+// re-export for overlay
+export { RHIZOH_CATCH_UP_CASCADE_EVENT_V0, RHIZOH_CATCH_UP_CASCADE_PHASE_EVENT_V0 };

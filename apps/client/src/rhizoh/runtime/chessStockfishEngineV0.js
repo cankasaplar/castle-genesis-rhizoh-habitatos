@@ -4,6 +4,7 @@
  */
 
 import { pickChessArenaAiMoveV0 } from "./chessArenaEngineV0.js";
+import { CHESS_STOCKFISH_PRESET_V0 } from "./chessStockfishPresetsV0.js";
 
 export const CHESS_STOCKFISH_ENGINE_SCHEMA_V0 = "castle.chess_stockfish_engine.v0";
 
@@ -94,6 +95,8 @@ function attachWorkerHandlersV0(worker) {
   };
 }
 
+let initPromiseV0 = null;
+
 async function ensureStockfishWorkerV0() {
   if (initFailedV0) return null;
   if (workerV0 && readyV0) return workerV0;
@@ -101,43 +104,63 @@ async function ensureStockfishWorkerV0() {
     initFailedV0 = true;
     return null;
   }
-  try {
-    workerV0 = new Worker(STOCKFISH_WORKER_URL_V0);
-    attachWorkerHandlersV0(workerV0);
-    workerV0.postMessage("uci");
-    await new Promise((resolve, reject) => {
-      const id = nextId();
-      const timer = setTimeout(() => {
-        pendingV0.delete(id);
-        reject(new Error("stockfish_uci_timeout"));
-      }, 12000);
-      pendingV0.set(id, {
-        resolve: () => {
-          clearTimeout(timer);
-          resolve(true);
-        },
-        reject
-      });
-      const check = setInterval(() => {
-        if (readyV0) {
-          clearInterval(check);
-          clearTimeout(timer);
-          pendingV0.delete(id);
-          resolve(true);
-        }
-      }, 40);
-    });
-    return workerV0;
-  } catch {
-    initFailedV0 = true;
+  if (initPromiseV0) return initPromiseV0;
+
+  initPromiseV0 = (async () => {
     try {
-      workerV0?.terminate?.();
+      workerV0 = new Worker(STOCKFISH_WORKER_URL_V0);
+      attachWorkerHandlersV0(workerV0);
+      workerV0.postMessage("uci");
+      await waitReadyV0(14000);
+      workerV0.postMessage("isready");
+      await waitReadyV0(8000);
+      workerV0.postMessage("setoption name UCI_AnalyseMode value false");
+      workerV0.postMessage("setoption name Hash value 64");
+      return workerV0;
     } catch {
-      /* noop */
+      initFailedV0 = true;
+      try {
+        workerV0?.terminate?.();
+      } catch {
+        /* noop */
+      }
+      workerV0 = null;
+      readyV0 = false;
+      return null;
+    } finally {
+      initPromiseV0 = null;
     }
-    workerV0 = null;
-    return null;
-  }
+  })();
+
+  return initPromiseV0;
+}
+
+function waitReadyV0(timeoutMs) {
+  return new Promise((resolve, reject) => {
+    if (readyV0) {
+      resolve(true);
+      return;
+    }
+    const timer = setTimeout(() => reject(new Error("stockfish_ready_timeout")), timeoutMs);
+    const check = setInterval(() => {
+      if (readyV0) {
+        clearInterval(check);
+        clearTimeout(timer);
+        resolve(true);
+      }
+    }, 30);
+  });
+}
+
+function resolveStockfishOptsV0(opts = {}) {
+  const preset = opts.preset && CHESS_STOCKFISH_PRESET_V0[opts.preset]
+    ? CHESS_STOCKFISH_PRESET_V0[opts.preset]
+    : CHESS_STOCKFISH_PRESET_V0.ARENA;
+  return {
+    skill: Math.max(1, Math.min(20, Number(opts.skill) || preset.skill)),
+    movetimeMs: Math.max(80, Math.min(12000, Number(opts.movetimeMs) || preset.movetimeMs)),
+    depth: Math.max(6, Math.min(22, Number(opts.depth) || preset.depth))
+  };
 }
 
 /**
@@ -150,15 +173,14 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
   const worker = await ensureStockfishWorkerV0();
   if (!worker) return null;
 
-  const skill = Math.max(1, Math.min(20, Number(opts.skill) || 19));
-  const movetime = Math.max(80, Math.min(8000, Number(opts.movetimeMs) || 900));
+  const { skill, movetimeMs, depth } = resolveStockfishOptsV0(opts);
 
   return new Promise((resolve) => {
     const id = nextId();
     const timer = setTimeout(() => {
       pendingV0.delete(id);
       resolve(null);
-    }, movetime + 1200);
+    }, movetimeMs + 2000);
 
     pendingV0.set(id, {
       resolve: (move) => {
@@ -172,9 +194,10 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
     });
 
     try {
+      worker.postMessage("setoption name UCI_LimitStrength value true");
       worker.postMessage(`setoption name Skill Level value ${skill}`);
       worker.postMessage(`position fen ${position}`);
-      worker.postMessage(`go movetime ${movetime}`);
+      worker.postMessage(`go depth ${depth} movetime ${movetimeMs}`);
     } catch {
       clearTimeout(timer);
       pendingV0.delete(id);
@@ -283,14 +306,19 @@ export async function analyzePlayedMoveV0(fenBefore, playedMove, opts = {}) {
 
 /**
  * @param {ReturnType<import('./chessArenaEngineV0.js').createChessArenaGameV0>} game
- * @param {{ useStockfish?: boolean }} [opts]
+ * @param {{ useStockfish?: boolean, preset?: string, skill?: number, movetimeMs?: number }} [opts]
  */
 export async function pickChessArenaEngineMoveV0(game, opts = {}) {
   if (opts.useStockfish === false) {
-    return pickChessArenaAiMoveV0(game);
+    const move = pickChessArenaAiMoveV0(game);
+    return Object.freeze({ move, engine: "heuristic_fallback" });
   }
   try {
-    const sf = await getStockfishArenaMoveV0(game.fen(), { movetimeMs: 900, skill: 19 });
+    const sf = await getStockfishArenaMoveV0(game.fen(), {
+      preset: opts.preset || "ARENA",
+      skill: opts.skill,
+      movetimeMs: opts.movetimeMs
+    });
     if (sf) return Object.freeze({ move: sf, engine: "stockfish_wasm" });
   } catch {
     /* fall through to heuristic */

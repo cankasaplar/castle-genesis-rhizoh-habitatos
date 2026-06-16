@@ -3,6 +3,13 @@ import {
   RHIZOH_CATCH_UP_CASCADE_EVENT_V0,
   RHIZOH_CATCH_UP_CASCADE_PHASE_EVENT_V0
 } from "../core/cascadeReplayRendererV0.js";
+import { RHIZOH_CASCADE_PHASE_V1 } from "../core/cascadeReconciliationKernelV1.js";
+
+const PHASE_LABELS_V1 = Object.freeze({
+  [RHIZOH_CASCADE_PHASE_V1.VOID_FILL]: "VOID → FILL",
+  [RHIZOH_CASCADE_PHASE_V1.LAYER_REPLAY]: "REPLAY",
+  [RHIZOH_CASCADE_PHASE_V1.STATE_ALIGN]: "ALIGN"
+});
 
 /**
  * Catch-up cascade overlay — Layer N→M fast-forward (mobile + desktop).
@@ -12,6 +19,8 @@ export const RhizohCatchUpCascadeOverlayV0 = memo(function RhizohCatchUpCascadeO
   const [phase, setPhase] = useState(null);
   const [plan, setPlan] = useState(null);
 
+  const [phaseV1, setPhaseV1] = useState(null);
+
   useEffect(() => {
     const onCascade = (ev) => {
       const snap = ev?.detail;
@@ -20,16 +29,19 @@ export const RhizohCatchUpCascadeOverlayV0 = memo(function RhizohCatchUpCascadeO
       if (!snap?.active) setPhase(null);
     };
     const onPhase = (ev) => setPhase(ev?.detail || null);
+    const onPhaseV1 = (ev) => setPhaseV1(ev?.detail || null);
 
     window.addEventListener(RHIZOH_CATCH_UP_CASCADE_EVENT_V0, onCascade);
     window.addEventListener(RHIZOH_CATCH_UP_CASCADE_PHASE_EVENT_V0, onPhase);
+    window.addEventListener("rhizoh:cascade-phase-v1", onPhaseV1);
     return () => {
       window.removeEventListener(RHIZOH_CATCH_UP_CASCADE_EVENT_V0, onCascade);
       window.removeEventListener(RHIZOH_CATCH_UP_CASCADE_PHASE_EVENT_V0, onPhase);
+      window.removeEventListener("rhizoh:cascade-phase-v1", onPhaseV1);
     };
   }, []);
 
-  if (!active && !phase) return null;
+  if (!active && !phase && !phaseV1) return null;
 
   const fromLayer = plan?.fromLayer ?? 0;
   const toLayer = plan?.toLayer ?? phase?.layer ?? fromLayer;
@@ -42,7 +54,7 @@ export const RhizohCatchUpCascadeOverlayV0 = memo(function RhizohCatchUpCascadeO
       aria-live="polite"
     >
       <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.35em] text-[#6a9bcc]">
-        Catch-up Cascade
+        {phaseV1 ? PHASE_LABELS_V1[phaseV1.phase] || phaseV1.label : "Catch-up Cascade"}
       </div>
       <div className="font-mono text-2xl font-bold tabular-nums text-[#faf9f5]">
         L{fromLayer} → L{phase?.layer ?? toLayer}

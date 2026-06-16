@@ -4,6 +4,7 @@
  */
 
 import { emitCodexBusV0 } from "../../core/CodexBusV0.js";
+import { generatePinEventsV1 } from "../../core/spiralPinFieldV1.js";
 import { normalizeMapInteractionV0 } from "../../core/simulationDeviceParityV0.js";
 import {
   dispatchRemoteCastleClickV0,
@@ -42,11 +43,14 @@ export function dispatchV11MapEventPinV0(node, interaction = "click", map = null
 
   if (type === "spiralmmo") {
     dispatchSpiralMMOAwakeningV0(resolveSpiralMMOTriggerIndexFromPinIdV0(pinId));
+    const generated = generatePinEventsV1(pinId, normalized);
     emitCodexBusV0("MAP_EVENT_PIN", {
       pinId,
       pinType: type,
       continent: node.continent || "",
-      interaction: normalized
+      interaction: normalized,
+      generatorSeed: generated.pin?.seed,
+      emits: generated.pin?.emits
     });
     emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.CLICK, map);
     publishMapEventPinV0(node, normalized, "spiral_awaken");
