@@ -8,6 +8,7 @@ import { pickSpeechVoiceForLocaleV0 } from "./rhizohSpeechLocaleV0.js";
 import { readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
 import { logCastleLifecycleV0 } from "./rhizohProductionLogNamespacesV0.js";
 import { RHIZOH_MAP_CAMERA_FEEDBACK_EVENT_V0 } from "./worldSpaceMapCommandFacadeV0.js";
+import { isRhizohCatchUpReplayActiveV0 } from "./rhizohCatchUpGuardV0.js";
 
 export const RHIZOH_MAP_GHOST_TRAIL_HINT_EVENT_V0 = "rhizoh:map-ghost-trail-hint-v0";
 export const RHIZOH_MAP_VISUAL_PULSE_CLASS_V0 = "rhizoh-map-camera-pulse-v0";
@@ -85,7 +86,7 @@ export function emitMapGhostTrailHintV0(detail = {}) {
 
   logCastleLifecycleV0("map_ghost_trail_hint", payload);
 
-  if (Number.isFinite(lat) && Number.isFinite(lon)) {
+  if (Number.isFinite(lat) && Number.isFinite(lon) && !isRhizohCatchUpReplayActiveV0()) {
     void PersistentCodexBusV0.GHOST_SPAWN({
       id: `map_trail_${payload.atMs}`,
       origin: "map_camera",
@@ -110,6 +111,7 @@ export function emitMapGhostTrailHintV0(detail = {}) {
  * @param {{ action?: string, canonical?: string, locale?: string }} detail
  */
 export function speakMapCommandAckV0(detail = {}) {
+  if (isRhizohCatchUpReplayActiveV0()) return false;
   if (typeof window === "undefined" || !window.speechSynthesis) return false;
   const locale = detail.locale || readUiLocaleV0();
   const phrase = resolveMapAckPhraseV0(detail.action, detail.canonical, locale);
@@ -139,6 +141,9 @@ export function speakMapCommandAckV0(detail = {}) {
  * @param {object} detail
  */
 export function applyMapCameraVisualFeedbackV0(detail = {}) {
+  if (isRhizohCatchUpReplayActiveV0()) {
+    return Object.freeze({ pulsed: false, ghostTrail: false, voiceAck: false, muted: true });
+  }
   const action = String(detail.action || "");
   const canonical = String(detail.canonical || "");
   pulseMapViewportV0(action || canonical || "map");
