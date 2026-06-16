@@ -1,10 +1,12 @@
 {
+  "id": "/",
   "name": "Rhizoh",
   "short_name": "Rhizoh",
   "description": "Castle Client — Rhizoh world mesh and voice companion",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "background_color": "#02030b",
   "theme_color": "#02030b",

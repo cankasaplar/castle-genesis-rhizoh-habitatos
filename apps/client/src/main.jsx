@@ -43,8 +43,18 @@ if (getCookieConsentV0().analytics) {
 }
 
 import { mountCastleApplicationV0 } from "./boot/mountCastleApplicationV0.jsx";
+import { registerRhizohServiceWorkerV0 } from "./pwa/registerRhizohServiceWorkerV0.js";
+import { initRhizohPwaSyncManagerV0 } from "./pwa/rhizohPwaSyncManagerV0.js";
 
 const appEl = document.getElementById("app");
+if (!import.meta.env.DEV) {
+  initRhizohPwaSyncManagerV0();
+  void registerRhizohServiceWorkerV0().then((out) => {
+    bootLog.ok("boot.pwa_shell", out.ok ? "service worker registered" : `skipped: ${out.reason || "unknown"}`);
+  });
+} else {
+  bootLog.ok("boot.pwa_shell", "dev: service worker skipped");
+}
 void mountCastleApplicationV0({ appEl, RootErrorBoundary: CastleRootErrorBoundary, bootLog }).then((mount) => {
   if (mount.quarantine) {
     bootLog.ok("boot.react_mount", "quarantine shell rendered (ontological gate)");
