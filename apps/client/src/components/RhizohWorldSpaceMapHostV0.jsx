@@ -27,6 +27,9 @@ import {
   resolveSpiralMMOTriggerIndexFromPinIdV0
 } from "../rhizoh/runtime/spiralMMOAwakeningCycleV0.js";
 import { RhizohSpiralMMOMapAwakeningOverlayV0 } from "./RhizohSpiralMMOMapAwakeningOverlayV0.jsx";
+import { RhizohN12PersistenceGateV0 } from "./RhizohN12PersistenceGateV0.jsx";
+import { RhizohCodexEventStreamV0 } from "./RhizohCodexEventStreamV0.jsx";
+import { RhizohOfflineVoidOverlayV0 } from "./RhizohOfflineVoidOverlayV0.jsx";
 
 export { RHIZOH_V11_MAP_INTENT_EVENT_V0, RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0 };
 
@@ -508,6 +511,9 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
         }
       `}</style>
       <RhizohSpiralMMOMapAwakeningOverlayV0 />
+      <RhizohN12PersistenceGateV0 />
+      <RhizohCodexEventStreamV0 />
+      <RhizohOfflineVoidOverlayV0 />
       {!leafletReady ? displayNodes.map((node) => {
         const pos = projectV11CoreMapGeoV0(node.lat, node.lon);
         return (

@@ -2,7 +2,7 @@
  * Boot hook — rebuild codex state from event log when topology N12 grant is active.
  */
 
-import { rebuildCodexStateV0 } from "./ReplayEngineV0.js";
+import { rebuildSimulationFromEventsV0 } from "./ReplayEngineV0.js";
 import { canPersistUserTopologyN12V0 } from "../pwa/rhizohPwaPermissionsN12V0.js";
 import { logCastleLifecycleV0 } from "../rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
 
@@ -11,11 +11,16 @@ export const RHIZOH_SIMULATION_PERSISTENCE_SCHEMA_V0 = "castle.rhizoh.simulation
 let initDoneV0 = false;
 
 /**
+ * @param {{ force?: boolean }} [opts]
  * @returns {Promise<object>}
  */
-export async function initRhizohSimulationPersistenceV0() {
-  if (initDoneV0) {
-    return Object.freeze({ ok: true, skipped: true, reason: "already_init" });
+export async function initRhizohSimulationPersistenceV0(opts = {}) {
+  const force = opts.force === true;
+  if (initDoneV0 && !force) {
+    const mode = typeof window !== "undefined" ? window.__rhizoh?.simulationPersistence?.mode : null;
+    if (mode === "event_sourced" || !canPersistUserTopologyN12V0()) {
+      return Object.freeze({ ok: true, skipped: true, reason: "already_init" });
+    }
   }
   initDoneV0 = true;
 
@@ -31,21 +36,24 @@ export async function initRhizohSimulationPersistenceV0() {
     return Object.freeze({ ok: true, mode: "memory_only" });
   }
 
-  const rebuilt = await rebuildCodexStateV0();
+  const rebuilt = await rebuildSimulationFromEventsV0();
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
     window.__rhizoh.simulationPersistence = Object.freeze({
       schema: RHIZOH_SIMULATION_PERSISTENCE_SCHEMA_V0,
       mode: "event_sourced",
-      replayed: rebuilt.replayed,
-      snapshotOffset: rebuilt.snapshotOffset
+      replayed: rebuilt.world?.replayed ?? rebuilt.codex?.replayed ?? 0,
+      snapshotOffset: rebuilt.codex?.snapshotOffset ?? 0,
+      shouldResume: rebuilt.world?.shouldResume === true,
+      activeGhosts: rebuilt.world?.world?.activeGhosts?.length ?? 0
     });
   }
 
   logCastleLifecycleV0("sim_persistence_init", {
     mode: "event_sourced",
-    replayed: rebuilt.replayed,
-    snapshotOffset: rebuilt.snapshotOffset
+    replayed: rebuilt.world?.replayed ?? 0,
+    snapshotOffset: rebuilt.codex?.snapshotOffset ?? 0,
+    shouldResume: rebuilt.world?.shouldResume === true
   });
 
   return Object.freeze({ ok: true, mode: "event_sourced", rebuilt });

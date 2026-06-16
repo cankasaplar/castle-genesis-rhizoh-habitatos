@@ -4,7 +4,7 @@
  */
 
 export const RHIZOH_SIMULATION_IDB_NAME_V0 = "castle.rhizoh.simulation.v0";
-export const RHIZOH_SIMULATION_IDB_VERSION_V0 = 1;
+export const RHIZOH_SIMULATION_IDB_VERSION_V0 = 2;
 export const RHIZOH_SIMULATION_IDB_SCHEMA_V0 = "castle.rhizoh.simulation_idb.v0";
 
 export const SIM_STORE_EVENTS_V0 = "events";
@@ -29,12 +29,20 @@ export function openRhizohSimulationDbV0() {
     req.onsuccess = () => resolve(req.result);
     req.onupgradeneeded = (ev) => {
       const db = /** @type {IDBOpenDBRequest} */ (ev.target).result;
+      const oldVersion = ev.oldVersion;
 
       if (!db.objectStoreNames.contains(SIM_STORE_EVENTS_V0)) {
         const events = db.createObjectStore(SIM_STORE_EVENTS_V0, { keyPath: "id" });
         events.createIndex("seq", "seq", { unique: true });
         events.createIndex("ts", "ts", { unique: false });
         events.createIndex("cycle", "cycle", { unique: false });
+        events.createIndex("syncStatus", "syncStatus", { unique: false });
+      } else if (oldVersion < 2) {
+        const tx = /** @type {IDBVersionChangeEvent} */ (ev.target).transaction;
+        const events = tx.objectStore(SIM_STORE_EVENTS_V0);
+        if (!events.indexNames.contains("syncStatus")) {
+          events.createIndex("syncStatus", "syncStatus", { unique: false });
+        }
       }
 
       if (!db.objectStoreNames.contains(SIM_STORE_GHOSTS_V0)) {

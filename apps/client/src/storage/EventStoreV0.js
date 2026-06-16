@@ -16,7 +16,7 @@ export const RHIZOH_EVENT_STORE_SCHEMA_V0 = "castle.rhizoh.event_store.v0";
 /**
  * @param {string} type
  * @param {object} [payload]
- * @param {{ cycle?: number, ts?: number }} [opts]
+ * @param {{ cycle?: number, ts?: number, syncStatus?: string, localLayer?: number, localSeed?: number }} [opts]
  */
 export async function pushSimulationEventV0(type, payload = {}, opts = {}) {
   if (!canPersistUserTopologyN12V0()) {
@@ -24,6 +24,12 @@ export async function pushSimulationEventV0(type, payload = {}, opts = {}) {
   }
   const eventType = String(type || "").trim();
   if (!eventType) return Object.freeze({ ok: false, reason: "empty_type" });
+
+  const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+  const syncStatus =
+    opts.syncStatus === "PENDING_SYNC" || (offline && opts.syncStatus !== "CONFIRMED")
+      ? "PENDING_SYNC"
+      : "CONFIRMED";
 
   return withRhizohSimulationDbV0(async (db) => {
     const seq = await nextSimulationEventSeqV0(db);
@@ -36,7 +42,10 @@ export async function pushSimulationEventV0(type, payload = {}, opts = {}) {
       type: eventType,
       payload: payload && typeof payload === "object" ? Object.freeze({ ...payload }) : null,
       ts,
-      cycle
+      cycle,
+      syncStatus,
+      localLayer: Number(opts.localLayer) || cycle,
+      localSeed: Number.isFinite(Number(opts.localSeed)) ? Number(opts.localSeed) : null
     });
     await idbSimPutV0(db, SIM_STORE_EVENTS_V0, record);
     return Object.freeze({ ok: true, event: record });
@@ -64,4 +73,14 @@ export async function countSimulationEventsV0() {
   if (!canPersistUserTopologyN12V0()) return 0;
   const out = await listSimulationEventsV0(0);
   return out.ok ? out.events.length : 0;
+}
+
+/**
+ * @param {number} [afterSeq]
+ */
+export async function listPendingSyncEventsV0(afterSeq = 0) {
+  const out = await listSimulationEventsV0(afterSeq);
+  if (!out.ok) return out;
+  const events = out.events.filter((e) => e.syncStatus === "PENDING_SYNC");
+  return Object.freeze({ ok: true, events: Object.freeze(events) });
 }
