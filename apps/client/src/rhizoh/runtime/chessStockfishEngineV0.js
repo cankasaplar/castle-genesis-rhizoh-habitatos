@@ -8,6 +8,7 @@ import { CHESS_STOCKFISH_PRESET_V0 } from "./chessStockfishPresetsV0.js";
 
 export const CHESS_STOCKFISH_ENGINE_SCHEMA_V0 = "castle.chess_stockfish_engine.v0";
 export const CHESS_STOCKFISH_LOG_TAG_V0 = "[CASTLE_stockfish_engine]";
+export const CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0 = "rhizoh:chess-stockfish-engine-status-v0";
 
 export const CHESS_STOCKFISH_ASSET_PATHS_V0 = Object.freeze({
   workerJs: "/chess-engine/stockfish-nnue-16-single.js",
@@ -59,6 +60,20 @@ function logStockfishV0(level, message, detail = null) {
   }
 }
 
+function publishEngineStatusV0(reason = "status_change") {
+  const detail = Object.freeze({
+    ...getChessStockfishEngineDetailV0(),
+    reason,
+    atMs: Date.now()
+  });
+  if (typeof window !== "undefined") {
+    window.__rhizoh = window.__rhizoh || {};
+    window.__rhizoh.chessStockfishEngine = detail;
+    window.dispatchEvent(new CustomEvent(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, { detail }));
+  }
+  return detail;
+}
+
 function nextId() {
   seqV0 += 1;
   return seqV0;
@@ -74,13 +89,17 @@ function attachWorkerHandlersV0(worker) {
     const line = String(ev?.data || "");
     if (line === "uciok") {
       uciOkV0 = true;
+      publishEngineStatusV0("uciok");
       try {
         worker.postMessage("isready");
       } catch {
         /* noop */
       }
     }
-    if (line === "readyok") readyV0 = true;
+    if (line === "readyok") {
+      readyV0 = true;
+      publishEngineStatusV0("readyok");
+    }
 
     const depthMatch = line.match(/\bdepth (\d+)\b/);
     const cpMatch = line.match(/\bscore cp (-?\d+)\b/);
@@ -126,11 +145,13 @@ function attachWorkerHandlersV0(worker) {
     }
     workerV0 = null;
     resetReadyFlagsV0();
+    publishEngineStatusV0("worker_error");
   };
   worker.onmessageerror = () => {
     initFailedV0 = true;
     initErrorV0 = "worker_message_error";
     logStockfishV0("error", "worker onmessageerror");
+    publishEngineStatusV0("worker_message_error");
   };
 }
 
@@ -224,11 +245,13 @@ async function ensureStockfishWorkerV0() {
       workerV0.postMessage("setoption name UCI_AnalyseMode value false");
       workerV0.postMessage("setoption name Hash value 64");
       logStockfishV0("info", "ready", { status: "stockfish_wasm" });
+      publishEngineStatusV0("init_ready");
       return workerV0;
     } catch (err) {
       initFailedV0 = true;
       initErrorV0 = String(err?.message || "stockfish_init_failed");
       logStockfishV0("error", "init failed", { error: initErrorV0 });
+      publishEngineStatusV0("init_failed");
       try {
         workerV0?.terminate?.();
       } catch {
@@ -428,6 +451,7 @@ export function resetChessStockfishEngineV0() {
   initFailedV0 = false;
   initErrorV0 = null;
   assetsVerifiedV0 = false;
+  publishEngineStatusV0("reset");
 }
 
 export function disposeChessStockfishEngineV0() {
