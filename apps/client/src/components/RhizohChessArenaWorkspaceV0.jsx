@@ -206,20 +206,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const [arenaSession, setArenaSession] = useState(() => readChessArenaSessionV0());
   const [lastRegretV0, setLastRegretV0] = useState(null);
   const [lastLearningV0, setLastLearningV0] = useState(null);
-  const [arenaSession, setArenaSession] = useState(() => readChessArenaSessionV0());
   const [learningSessionV0, setLearningSessionV0] = useState(() => readChessLearningSessionV0());
   const learningPresetsV0 = useMemo(() => listChessLearningSessionPresetsV0(), []);
-
-  const timeControlV0 = useMemo(
-    () => resolveChessTimeControlV0(arenaSession.timeControlId),
-    [arenaSession.timeControlId]
-  );
-  const opponentPresetV0 = useMemo(
-    () => resolveChessOpponentPresetV0(arenaSession.opponentPresetId),
-    [arenaSession.opponentPresetId]
-  );
-  const timeControlsV0 = useMemo(() => listChessTimeControlsV0(), []);
-  const opponentPresetsV0 = useMemo(() => listChessOpponentPresetsV0(), []);
 
   const timeControlV0 = useMemo(
     () => resolveChessTimeControlV0(arenaSession.timeControlId),
