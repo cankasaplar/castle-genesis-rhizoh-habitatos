@@ -175,11 +175,11 @@ export function pickChessArenaAiMoveV0(game) {
   let best = moves[0];
   let bestScore = -Infinity;
   for (const m of moves) {
-    let score = Math.random() * 0.01;
+    let score = 0;
     if (m.captured) score += (pieceValue[m.captured] || 0) * 10;
     if (m.san.includes("+")) score += 2;
     if (m.san.includes("#")) score += 100;
-    if (score > bestScore) {
+    if (score > bestScore || (score === bestScore && m.san < best.san)) {
       bestScore = score;
       best = m;
     }
