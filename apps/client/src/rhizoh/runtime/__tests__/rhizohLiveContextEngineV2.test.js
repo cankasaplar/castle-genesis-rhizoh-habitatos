@@ -45,4 +45,13 @@ describe("rhizohLiveContextEngineV2", () => {
     expect(env.liveInjection).toBeNull();
     expect(env.priority.llmFallback).toBe(0.1);
   });
+
+  it("spatial_briefing warns when POI count is zero", () => {
+    const env = buildRhizohLiveContextEnvelopeV2({
+      userMessage: "Bana etrafı anlat",
+      spatial: { label: "Beşiktaş", source: "user_geo", worldData: { poiCount: 0 } }
+    });
+    expect(env.intent).toBe("spatial_briefing");
+    expect(env.liveInjection.line).toMatch(/doğrulanmadı|uydurma/i);
+  });
 });

@@ -58,6 +58,24 @@ export function isRhizohLivingConversationSurfaceV1() {
   }
 }
 
+/** Spoken pre-LLM bridge copy (long "preparing reply"). Default off — HUD only. */
+export function isLivingSurfaceSpokenBridgeEnabledV1() {
+  try {
+    const v = String(import.meta.env?.VITE_RHIZOH_LIVING_SPOKEN_BRIDGE ?? "0").trim();
+    return v === "1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Short spoken ack when living surface is on (not the long bridge sentence).
+ * @param {boolean} tr
+ */
+export function resolveLivingSurfaceSpokenAckCopyV1(tr) {
+  return tr ? "Tamam." : "Okay.";
+}
+
 /**
  * @param {boolean} tr
  * @param {string} text

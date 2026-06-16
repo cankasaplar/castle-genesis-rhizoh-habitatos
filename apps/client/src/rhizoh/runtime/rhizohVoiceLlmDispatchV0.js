@@ -56,6 +56,7 @@ import { VOICE_PIPELINE_PATH_V0 } from "./rhizohVoiceDualPathRouterV0.js";
 import {
   isLivingSurfaceFastPrecheckEligibleV1,
   isRhizohLivingConversationSurfaceV1,
+  isLivingSurfaceSpokenBridgeEnabledV1,
   resolveFastReflexBridgeCopyV1
 } from "../experience/rhizohLivingConversationSurfaceV1.js";
 import {
@@ -740,8 +741,9 @@ export async function handleRhizohVoiceTranscriptV0(text, opts = {}) {
 
   const shallowPrecheck = probeFastPrecheckMatchV0(msg);
   const skipTransitionAck =
-    Boolean(shallowPrecheck) &&
-    (!livingSurface || isLivingSurfaceFastPrecheckEligibleV1(shallowPrecheck.intent));
+    (Boolean(shallowPrecheck) &&
+      (!livingSurface || isLivingSurfaceFastPrecheckEligibleV1(shallowPrecheck.intent))) ||
+    (livingSurface && !isLivingSurfaceSpokenBridgeEnabledV1());
 
   if (opts.speakTransitionAck !== false && !skipTransitionAck) {
     const locale = resolveOutputLanguageCodeV0();

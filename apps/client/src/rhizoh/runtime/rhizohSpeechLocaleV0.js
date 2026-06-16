@@ -11,6 +11,43 @@ export function readSpeechLocaleForVoiceV0() {
 }
 
 /**
+ * @param {SpeechSynthesisVoice} voice
+ * @param {string} langPrefix
+ * @param {string} bcp47
+ */
+function scoreSpeechVoiceForLocaleV0(voice, langPrefix, bcp47) {
+  const norm = String(voice?.lang || "").toLowerCase();
+  const name = String(voice?.name || "").toLowerCase();
+  let score = 0;
+  if (norm === bcp47.toLowerCase()) score += 100;
+  else if (norm.startsWith(`${langPrefix}-`)) score += 70;
+  else if (norm.startsWith(langPrefix)) score += 50;
+
+  if (langPrefix === "tr") {
+    if (name.includes("google") && name.includes("turkish")) score += 24;
+    if (name.includes("yelda")) score += 18;
+    if (name.includes("meltem")) score += 12;
+    if (name.includes("compact")) score -= 8;
+    if (name.includes("enhanced") && !name.includes("google")) score -= 6;
+  }
+
+  if (voice?.default === true) score += 4;
+  return score;
+}
+
+/**
+ * @param {string} [localeCode]
+ * @returns {{ rate: number, pitch: number, volume: number }}
+ */
+export function resolveSpeechProsodyForLocaleV0(localeCode) {
+  const loc = String(localeCode || readSpeechLocaleForVoiceV0() || "en").toLowerCase();
+  if (loc.startsWith("tr")) {
+    return Object.freeze({ rate: 1.03, pitch: 1.06, volume: 0.94 });
+  }
+  return Object.freeze({ rate: 1.02, pitch: 1.04, volume: 0.92 });
+}
+
+/**
  * Prefer the actual visible text language for TTS when it is obvious.
  * This prevents Turkish text from being spoken with an English voice after an
  * earlier English/auto session lock.
@@ -63,24 +100,21 @@ export function pickSpeechVoiceForLocaleV0(voices, localeCode) {
   if (!list.length) return null;
   const bcp47 = resolveSpeechBcp47ForUiLocaleV0(localeCode);
   const langPrefix = bcp47.split("-")[0].toLowerCase();
-  const norm = (v) => String(v?.lang || "").toLowerCase();
 
-  const exact = list.find((v) => norm(v) === bcp47.toLowerCase());
-  if (exact) return exact;
+  const candidates = list
+    .map((v) => ({ v, score: scoreSpeechVoiceForLocaleV0(v, langPrefix, bcp47) }))
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score);
 
-  const region = list.find((v) => norm(v).startsWith(`${langPrefix}-`));
-  if (region) return region;
-
-  const prefix = list.find((v) => norm(v).startsWith(langPrefix));
-  if (prefix) return prefix;
+  if (candidates.length) return candidates[0].v;
 
   if (langPrefix === "en") {
-    const anyEn = list.find((v) => norm(v).startsWith("en"));
+    const anyEn = list.find((v) => String(v?.lang || "").toLowerCase().startsWith("en"));
     if (anyEn) return anyEn;
   }
 
   const sysDefault = list.find((v) => v.default === true);
-  if (sysDefault && (langPrefix === "tr" || !norm(sysDefault).startsWith("tr"))) {
+  if (sysDefault && (langPrefix === "tr" || !String(sysDefault.lang || "").toLowerCase().startsWith("tr"))) {
     return sysDefault;
   }
 

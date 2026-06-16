@@ -2,7 +2,11 @@
  * Chunk-first TTS — applies hot speech skeleton + micro-rhythm to Web Speech API.
  */
 
-import { readSpeechLocaleForVoiceV0, resolveSpeechLocaleForTextV0 } from "./rhizohSpeechLocaleV0.js";
+import {
+  readSpeechLocaleForVoiceV0,
+  resolveSpeechLocaleForTextV0,
+  resolveSpeechProsodyForLocaleV0
+} from "./rhizohSpeechLocaleV0.js";
 import {
   resolveSpeechBcp47ForUiLocaleV0,
   resolveSpeechVoiceForUiLocaleV0
@@ -34,15 +38,16 @@ export function applyRhizohSpeechHintsToUtteranceV0(utterance, hints = {}) {
   utterance.lang = resolveSpeechBcp47ForUiLocaleV0(locale);
 
   const pacing = String(sk?.pacing || feel?.breakStyle === "hot_skeleton" ? "calm" : "").toLowerCase();
+  const prosody = resolveSpeechProsodyForLocaleV0(locale);
   if (pacing === "measured" || pacing === "hold") {
-    utterance.rate = 0.96;
-    utterance.pitch = 0.98;
+    utterance.rate = Math.max(0.98, prosody.rate - 0.02);
+    utterance.pitch = Math.max(1.0, prosody.pitch - 0.02);
   } else if (pacing === "energetic") {
-    utterance.rate = 1.06;
-    utterance.pitch = 1.04;
+    utterance.rate = prosody.rate + 0.04;
+    utterance.pitch = prosody.pitch + 0.02;
   } else {
-    utterance.rate = 1.02;
-    utterance.pitch = 1.01;
+    utterance.rate = prosody.rate;
+    utterance.pitch = prosody.pitch;
   }
 
   const preempt = Number(feel?.preemptiveStart01);
@@ -50,7 +55,7 @@ export function applyRhizohSpeechHintsToUtteranceV0(utterance, hints = {}) {
 
   const voice = resolveSpeechVoiceForUiLocaleV0(locale);
   if (voice) utterance.voice = voice;
-  utterance.volume = 0.92;
+  utterance.volume = prosody.volume;
 }
 
 /**
@@ -113,6 +118,7 @@ export async function speakRhizohReplyChunkedV0(text, opts = {}) {
         u.volume = prosody.volume;
       }
       u.onend = () => {
+        noteRecentRhizohTtsEchoV0(chunk);
         if (i < chunks.length) window.setTimeout(next, gapMs);
       };
       try {

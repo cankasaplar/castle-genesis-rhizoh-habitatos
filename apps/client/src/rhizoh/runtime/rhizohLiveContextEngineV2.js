@@ -104,9 +104,18 @@ function buildLiveInjectionV2(intent, liveWorld, spatial) {
     });
   }
   if (intent === "spatial_briefing") {
+    const poiCount = Number(spatial.worldData?.poiCount) || 0;
+    const label = String(spatial.label || "Konumun");
+    if (poiCount <= 0) {
+      return Object.freeze({
+        kind: "spatial",
+        line: `Yakın yer verisi doğrulanmadı — yalnızca konum etiketi: ${label}. Park, heykel veya sokak adı uydurma.`,
+        source: spatial.source
+      });
+    }
     return Object.freeze({
       kind: "spatial",
-      line: `${spatial.label} context is active.`,
+      line: `${label} — doğrulanmış yakın yer verisi mevcut (${poiCount} POI). Yalnızca VERIFIED_NEARBY_POI satırlarından bahset.`,
       source: spatial.source
     });
   }

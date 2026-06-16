@@ -337,6 +337,24 @@ function buildContinuityMemoryBlock(continuity) {
     }
   }
 
+  const spc =
+    c.rhizohSpatialLiveContext && typeof c.rhizohSpatialLiveContext === "object"
+      ? c.rhizohSpatialLiveContext
+      : null;
+  if (spc?.active) {
+    lines.push(
+      `VERIFIED_NEARBY_POI (${String(spc.poiFeed || "map").slice(0, 24)}): ${String(spc.promptDirective || "").slice(0, 480)}`
+    );
+    if (spc.locationLabel) {
+      lines.push(`Location label only: ${String(spc.locationLabel).slice(0, 80)}`);
+    }
+    if (Array.isArray(spc.lines) && spc.lines.length) {
+      spc.lines.slice(0, 8).forEach((line) => lines.push(`- ${String(line).slice(0, 200)}`));
+    } else {
+      lines.push(`- ${String(spc.emptyLabel || "No verified nearby POI rows.").slice(0, 240)}`);
+    }
+  }
+
   const anchor = c.rhizohStabilityAnchor && typeof c.rhizohStabilityAnchor === "object" ? c.rhizohStabilityAnchor : null;
   const constraints = anchor && Array.isArray(anchor.philosophyConstraints) ? anchor.philosophyConstraints : [];
   if (constraints.length) {

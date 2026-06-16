@@ -18,13 +18,13 @@ describe("rhizohInstantAckSelectV0", () => {
     expect(ack.semanticIntent).toBe("acknowledge");
     expect(ack.renderLocale).toBe("en");
     expect(["steady", "adaptive"]).toContain(ack.tone);
-    expect(ack.text).toMatch(/hear you|continuing|preparing|open this/i);
+    expect(ack.text).toMatch(/okay|got it|tamam/i);
   });
 
   it("follows OLP when preference changes (cross-session simulate)", () => {
     applyUiLanguagePreferenceToOlpV0("tr", "ui_write");
     const ack = selectInstantAckV0({ intent: "acknowledge" });
     expect(ack.renderLocale).toBe("tr");
-    expect(ack.text).toMatch(/duyuyorum|devam|hazırlıyorum|açalım/i);
+    expect(ack.text).toBe("Tamam.");
   });
 });
