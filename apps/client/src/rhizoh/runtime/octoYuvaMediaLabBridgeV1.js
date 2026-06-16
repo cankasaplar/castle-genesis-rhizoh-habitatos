@@ -15,15 +15,99 @@ export const RHIZOH_OCTO_YUVA_ACTIVATED_EVENT_V1 = "rhizoh:octo-yuva-activated-v
 export const RHIZOH_OCTO_PERFORMANCE_FEED_EVENT_V1 = "rhizoh:octo-performance-feed-v1";
 
 /** Eight observation lenses — Leaflet + Cesium Ion + YouTube lab + studio + cube. */
+/** Default nest birth facing — pet ghosts observe counterpart first. */
+export const OCTO_CAMERA_FACING_V1 = Object.freeze({
+  OTHER: "other",
+  SELF: "self",
+  BOTH: "both"
+});
+
+export const OCTO_CAMERA_ACTOR_V1 = Object.freeze({
+  OCTO: "octo",
+  FOX: "fox"
+});
+
 export const OCTO_YUVA_EIGHT_CAMERA_LENSES_V1 = Object.freeze([
-  Object.freeze({ id: "lens_castle_genesis", kind: "youtube_lab", channelId: "castle_genesis", label: "Castle Genesis Live" }),
-  Object.freeze({ id: "lens_nasa", kind: "youtube_lab", channelId: "nasa", label: "NASA ISS Earth" }),
-  Object.freeze({ id: "lens_lofi", kind: "youtube_lab", channelId: "lofi", label: "Quantum Lofi" }),
-  Object.freeze({ id: "lens_local", kind: "local_capture", channelId: "local", label: "Local Camera" }),
-  Object.freeze({ id: "lens_cesium_ion", kind: "cesium_ion", mapTool: "terrain", label: "Cesium Ion 3D" }),
-  Object.freeze({ id: "lens_leaflet_satellite", kind: "leaflet_satellite", mapTool: "satellite", label: "Leaflet Satellite" }),
-  Object.freeze({ id: "lens_studio_stage", kind: "studio_camera", mode: STUDIO_CAMERA_MODE_V1.STAGE_FOCUS, label: "Studio Stage" }),
-  Object.freeze({ id: "lens_octo_cube", kind: "octo_cube", mode: "cognitive", label: "Octo Cube Camera" })
+  Object.freeze({
+    id: "lens_castle_genesis",
+    kind: "youtube_lab",
+    channelId: "castle_genesis",
+    label: "Castle Genesis Live",
+    dimension: "broadcast_youtube",
+    actor: OCTO_CAMERA_ACTOR_V1.OCTO,
+    actors: Object.freeze([OCTO_CAMERA_ACTOR_V1.OCTO]),
+    facing: OCTO_CAMERA_FACING_V1.OTHER
+  }),
+  Object.freeze({
+    id: "lens_nasa",
+    kind: "youtube_lab",
+    channelId: "nasa",
+    label: "NASA ISS Earth",
+    dimension: "orbital_observation",
+    actor: OCTO_CAMERA_ACTOR_V1.FOX,
+    actors: Object.freeze([OCTO_CAMERA_ACTOR_V1.FOX]),
+    facing: OCTO_CAMERA_FACING_V1.OTHER
+  }),
+  Object.freeze({
+    id: "lens_lofi",
+    kind: "youtube_lab",
+    channelId: "lofi",
+    label: "Quantum Lofi",
+    dimension: "ambient_frequency",
+    actor: OCTO_CAMERA_ACTOR_V1.OCTO,
+    actors: Object.freeze([OCTO_CAMERA_ACTOR_V1.OCTO, OCTO_CAMERA_ACTOR_V1.FOX]),
+    facing: OCTO_CAMERA_FACING_V1.OTHER
+  }),
+  Object.freeze({
+    id: "lens_local",
+    kind: "local_capture",
+    channelId: "local",
+    label: "Nest Self · Local",
+    dimension: "nest_self",
+    actor: OCTO_CAMERA_ACTOR_V1.OCTO,
+    actors: Object.freeze([OCTO_CAMERA_ACTOR_V1.OCTO, OCTO_CAMERA_ACTOR_V1.FOX]),
+    facing: OCTO_CAMERA_FACING_V1.OTHER
+  }),
+  Object.freeze({
+    id: "lens_cesium_ion",
+    kind: "cesium_ion",
+    mapTool: "terrain",
+    label: "Cesium Ion 3D",
+    dimension: "terrain_3d",
+    actor: OCTO_CAMERA_ACTOR_V1.FOX,
+    actors: Object.freeze([OCTO_CAMERA_ACTOR_V1.FOX]),
+    facing: OCTO_CAMERA_FACING_V1.OTHER
+  }),
+  Object.freeze({
+    id: "lens_leaflet_satellite",
+    kind: "leaflet_satellite",
+    mapTool: "satellite",
+    label: "Leaflet Satellite",
+    dimension: "map_satellite_2d",
+    actor: OCTO_CAMERA_ACTOR_V1.OCTO,
+    actors: Object.freeze([OCTO_CAMERA_ACTOR_V1.OCTO]),
+    facing: OCTO_CAMERA_FACING_V1.OTHER
+  }),
+  Object.freeze({
+    id: "lens_studio_stage",
+    kind: "studio_camera",
+    mode: STUDIO_CAMERA_MODE_V1.STAGE_FOCUS,
+    label: "Studio Stage",
+    dimension: "studio_stage",
+    actor: OCTO_CAMERA_ACTOR_V1.FOX,
+    actors: Object.freeze([OCTO_CAMERA_ACTOR_V1.FOX, OCTO_CAMERA_ACTOR_V1.OCTO]),
+    facing: OCTO_CAMERA_FACING_V1.OTHER
+  }),
+  Object.freeze({
+    id: "lens_octo_fox_nest",
+    kind: "octo_fox_dual",
+    mode: "cognitive",
+    label: "Pet Ghost Nest · Octo + Fox",
+    dimension: "pet_ghost_nest",
+    actor: OCTO_CAMERA_ACTOR_V1.OCTO,
+    actors: Object.freeze([OCTO_CAMERA_ACTOR_V1.OCTO, OCTO_CAMERA_ACTOR_V1.FOX]),
+    facing: OCTO_CAMERA_FACING_V1.OTHER
+  })
 ]);
 
 const ACTIVATION_THRESHOLD_V1 = 0.55;

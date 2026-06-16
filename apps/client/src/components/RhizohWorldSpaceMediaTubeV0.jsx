@@ -18,6 +18,8 @@ import {
 } from "../rhizoh/runtime/worldSpaceMediaChannelsV0.js";
 import { WorldSpaceMediaDataTickerV0 } from "./WorldSpaceMediaDataTickerV0.jsx";
 import { RhizohMediaStageWithOctoV0 } from "./RhizohMediaOctoCompanionOverlayV0.jsx";
+import { RhizohOctoEightCameraLabV0 } from "./RhizohOctoEightCameraLabV0.jsx";
+import { OCTO_YUVA_EIGHT_CAMERA_LENSES_V1 } from "../rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
 
 function isCastleMediaSourceV0(source) {
   return String(source || "").startsWith("castle_init");
@@ -67,6 +69,14 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
   const captureRef = useRef(null);
   const previewRef = useRef(null);
   const castleBroadcast = useMemo(() => isCastleMediaSourceV0(detail?.source), [detail?.source]);
+  const octoLabMode = useMemo(
+    () => Boolean(detail?.octoLabMode || detail?.source === "octo_yuva_lab"),
+    [detail?.octoLabMode, detail?.source]
+  );
+  const octoLenses = useMemo(
+    () => (Array.isArray(detail?.lenses) && detail.lenses.length ? detail.lenses : OCTO_YUVA_EIGHT_CAMERA_LENSES_V1),
+    [detail?.lenses]
+  );
   const isQuantumRadioEntry = useMemo(() => {
     const nid = String(detail?.node?.id || "").trim().toLowerCase();
     const src = String(detail?.source || "").trim().toLowerCase();
@@ -372,6 +382,12 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden sm:flex-row">
+          {octoLabMode ? (
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              <RhizohOctoEightCameraLabV0 lenses={octoLenses} uiLocale={uiLocale} />
+            </div>
+          ) : (
+            <>
           <div className="flex w-full flex-col rounded-2xl border border-white/10 bg-white/5 p-3 sm:w-60">
             <p className="mb-3 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-white/45">
               <Radio size={12} /> {tr ? "Kanallar" : "Channels"}
@@ -559,6 +575,8 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
               </div>
             )}
           </div>
+            </>
+          )}
         </div>
 
         {detail.node?.description ? (

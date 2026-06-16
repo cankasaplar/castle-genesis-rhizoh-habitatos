@@ -128,12 +128,15 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   onClose,
   uiLocale = "en",
   node = null,
-  peerCastle = null
+  peerCastle = null,
+  initialMode = null,
+  autoPlay = false
 }) {
   const tr = uiLocale === "tr";
-  const [mode, setMode] = useState(CHESS_GAME_MODE_V0.AI_HUMAN);
+  const resolvedInitialMode = initialMode || CHESS_GAME_MODE_V0.AI_HUMAN;
+  const [mode, setMode] = useState(resolvedInitialMode);
   const [game, setGame] = useState(() =>
-    createChessArenaGameV0({ mode: CHESS_GAME_MODE_V0.AI_HUMAN })
+    createChessArenaGameV0({ mode: resolvedInitialMode })
   );
   const [c2cMatch, setC2cMatch] = useState(null);
   const [moveInput, setMoveInput] = useState("");
@@ -197,6 +200,15 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       ...CHESS_STOCKFISH_PRESET_V0.WARMUP
     }).finally(() => setEngineStatus(getChessStockfishEngineStatusV0()));
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !initialMode) return;
+    setMode(initialMode);
+    setGame(createChessArenaGameV0({ mode: initialMode }));
+    setGameEpoch((e) => e + 1);
+    setMatchResult(null);
+    setStatus("");
+  }, [open, initialMode]);
 
   useEffect(() => {
     if (!open || outcome) return undefined;

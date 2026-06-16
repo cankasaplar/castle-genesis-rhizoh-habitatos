@@ -1,5 +1,9 @@
 import { resolveEntityRuntimeV1 } from "./rhizohEntityRegistryV1.js";
 import { RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1 } from "./sovereignWorldMapNodesV0.js";
+import {
+  dispatchSpiralMMOAwakeningV0,
+  resolveSpiralMMOTriggerIndexFromPinIdV0
+} from "./spiralMMOAwakeningCycleV0.js";
 import { resolveWorldSpaceMediaChannelForMapNodeV0 } from "./worldSpaceMediaChannelsV0.js";
 import {
   ORCHESTRATOR_ACTION_REGISTRY_V0,
@@ -96,6 +100,10 @@ export function attachRhizohMapExecutionOrchestratorV1() {
             detail: Object.freeze({ node, runtime, routed: detail, voiceStream: true })
           })
         );
+        break;
+
+      case ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_SPIRAL_MMO:
+        dispatchSpiralMMOAwakeningV0(resolveSpiralMMOTriggerIndexFromPinIdV0(String(node.id || "")));
         break;
 
       case ORCHESTRATOR_ACTION_REGISTRY_V0.LOAD_WORLD_NODE:

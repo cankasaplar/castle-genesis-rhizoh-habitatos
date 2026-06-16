@@ -123,6 +123,9 @@ import {
 } from "./rhizoh/runtime/spiralMMOAwakeningCycleV0.js";
 import { startCanonicalTickClientV0 } from "./core/canonicalTickClientV0.js";
 import { startYoutubeLabOctoBridgeV1 } from "./rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
+import { startRhizohLegalPendingWaitLoopV0 } from "./rhizoh/runtime/rhizohLegalPendingWaitLoopV0.js";
+import { loadRhizohExperienceSessionContextV0 } from "./rhizoh/experience/rhizohExperienceSessionContextV0.js";
+import { loadRhizohProductSession } from "./rhizoh/product/rhizohProductSessionPersistenceV1.js";
 
 export default function AppRhizohWorldSpaceV0() {
   const navigate = useNavigate();
@@ -151,6 +154,8 @@ export default function AppRhizohWorldSpaceV0() {
   const [c2cPeer, setC2cPeer] = useState(null);
   const [spiralImmersionActive, setSpiralImmersionActive] = useState(false);
   const preSpiralMapToolRef = useRef(null);
+  const experienceSessionCtxV0 = useMemo(() => loadRhizohExperienceSessionContextV0(), []);
+  const productSessionV0 = useMemo(() => loadRhizohProductSession(), []);
 
   const worldMapToolV0 = useSyncExternalStore(
     subscribeRhizohWorldMapToolV0,
@@ -283,6 +288,7 @@ export default function AppRhizohWorldSpaceV0() {
     attachRhizohMapExecutionOrchestratorV1();
     startCanonicalTickClientV0();
     const stopYoutubeLab = startYoutubeLabOctoBridgeV1();
+    const stopLegalPendingLoop = startRhizohLegalPendingWaitLoopV0();
 
     const onOpenCastleGate = () => setCastleInitGateOpen(true);
     window.addEventListener("castle:open-init-gate-v0", onOpenCastleGate);
@@ -411,6 +417,7 @@ export default function AppRhizohWorldSpaceV0() {
     window.addEventListener(CASTLE_ARCHIVE_OPEN_MEDIA_EVENT_V0, onArchiveMedia);
     return () => {
       stopYoutubeLab?.();
+      stopLegalPendingLoop?.();
       window.removeEventListener("castle:open-init-gate-v0", onOpenCastleGate);
       window.removeEventListener("castle:open-anchor-offer-v0", onOpenCastleGate);
       window.removeEventListener(RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1, onSovereignWarp);
@@ -757,7 +764,11 @@ export default function AppRhizohWorldSpaceV0() {
           onClose={onCloseSurfaceDrawerV0}
           auth={castleAuth}
           gatewayOrigin={getGenesisProtocolGatewayOrigin()}
+          gatewayPhase={gateway.phase}
+          runtimeHealth={gateway}
           uiLocale={uiLocale}
+          experienceSessionId={experienceSessionCtxV0?.experienceSessionId || null}
+          productSessionId={productSessionV0?.sessionId || null}
         />
       ) : null}
 
@@ -865,6 +876,8 @@ export default function AppRhizohWorldSpaceV0() {
           open
           node={v11ChessArena.node}
           peerCastle={v11ChessArena.peerCastle || null}
+          initialMode={v11ChessArena.initialMode || null}
+          autoPlay={Boolean(v11ChessArena.autoPlay)}
           onClose={() => setV11ChessArena(null)}
           uiLocale={uiLocale}
         />

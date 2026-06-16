@@ -2,7 +2,7 @@ import React, { memo, useCallback, useRef, useState } from "react";
 import { Mic, Send } from "lucide-react";
 import { postRhizohTowerLlmTurnV0 } from "../rhizoh/runtime/rhizohTowerLlmSessionV0.js";
 import { sanitizeRhizohReplyForDisplayV0 } from "../rhizoh/runtime/rhizohReplyDisplaySanitizeV0.js";
-import { speakRhizohReplyChunkedV0 } from "../rhizoh/runtime/rhizohSpeechChunkTtsV0.js";
+import { speakTowerReplyV0 } from "../rhizoh/runtime/towerVoiceAdapterV0.js";
 import { resolveOutputLanguageCodeV0 } from "../rhizoh/runtime/rhizohOutputLanguagePolicyV0.js";
 import { createVoiceEngineV3TurnBridgeV0 } from "../rhizoh/runtime/voiceEngineV3/index.js";
 import { isVoiceEngineV3EnabledV0 } from "../rhizoh/runtime/voiceEngineV3/isVoiceEngineV3EnabledV0.js";
@@ -52,8 +52,7 @@ export const RhizohTowerVoiceChatV0 = memo(function RhizohTowerVoiceChatV0({
               : "Tower could not reply — check gateway connection.";
         const reply = sanitizeRhizohReplyForDisplayV0(rawReply);
         setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
-        void speakRhizohReplyChunkedV0(reply, {
-          smoothAfterAck: false,
+        void speakTowerReplyV0(towerId, reply, {
           language: resolveOutputLanguageCodeV0()
         });
       } finally {

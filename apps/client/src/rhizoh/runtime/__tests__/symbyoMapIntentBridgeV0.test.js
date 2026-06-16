@@ -50,6 +50,7 @@ describe("symbyoMapIntentBridgeV0", () => {
         "OPEN_CHESS_ARENA",
         "OPEN_LIBRARY",
         "OPEN_MEDIA_PLAYER",
+        "OPEN_SPIRAL_MMO",
         "OPEN_TOWER_PORTAL",
         "OPEN_WORKSPACE"
       ].sort()
@@ -86,6 +87,14 @@ describe("symbyoMapIntentBridgeV0", () => {
       node: { id: "rhizoh_portal", type: "portal" }
     });
     expect(routed.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_TOWER_PORTAL);
+  });
+
+  it("routes spiralmmo node to dedicated spiral awakening action", () => {
+    const routed = routeSymbyoMapInteractionToOrchestratorV0({
+      interaction: "click",
+      node: { id: "spiralmmo_europe", type: "spiralmmo" }
+    });
+    expect(routed.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_SPIRAL_MMO);
   });
 
   it("routes map pins to distinct media decisions", () => {

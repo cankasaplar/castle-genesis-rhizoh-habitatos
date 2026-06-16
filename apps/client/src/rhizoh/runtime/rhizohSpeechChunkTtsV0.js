@@ -56,6 +56,8 @@ export function applyRhizohSpeechHintsToUtteranceV0(utterance, hints = {}) {
   const voice = resolveSpeechVoiceForUiLocaleV0(locale);
   if (voice) utterance.voice = voice;
   utterance.volume = prosody.volume;
+  if (typeof hints.rateOverride === "number") utterance.rate = hints.rateOverride;
+  if (typeof hints.pitchOverride === "number") utterance.pitch = hints.pitchOverride;
 }
 
 /**
@@ -110,7 +112,9 @@ export async function speakRhizohReplyChunkedV0(text, opts = {}) {
         language: resolveSpeechLocaleForTextV0(
           chunk,
           opts.language || expr?.projection?.language || glue?.language || readSpeechLocaleForVoiceV0()
-        )
+        ),
+        rateOverride: opts.voiceRateOverride,
+        pitchOverride: opts.voicePitchOverride
       });
       if (prosody) {
         u.rate = prosody.rate;

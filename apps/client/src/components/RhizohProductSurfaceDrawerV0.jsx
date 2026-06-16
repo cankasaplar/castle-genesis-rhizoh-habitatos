@@ -18,6 +18,8 @@ import { RhizohEventCreatePanelV12 } from "./RhizohEventCreatePanelV12.jsx";
 import { RhizohStudioSecuritySharingPanelV0 } from "./RhizohStudioSecuritySharingPanelV0.jsx";
 import { isDrawerModuleAwakenedV0 } from "../rhizoh/runtime/rhizohDrawerAwakeningV0.js";
 import { writeRhizohWorldSystemModeV0 } from "../rhizoh/runtime/rhizohWorldSystemModeV0.js";
+import { RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0 } from "../rhizoh/runtime/rhizohT0FirstMatchIdentityV0.js";
+import { RhizohGreenroomWaitingPanelV0 } from "./RhizohGreenroomWaitingPanelV0.jsx";
 
 const PROFILE_OBS_TABS_V0 = Object.freeze([
   { id: "reality", label: "Reality" },
@@ -94,7 +96,8 @@ const USER_OUTCOME_COPY_V0 = Object.freeze({
  *   runtimeHealth?: object | null,
  *   uiLocale?: string,
  *   experienceSessionId?: string | null,
- *   productSessionId?: string | null
+ *   productSessionId?: string | null,
+ *   gatewayPhase?: string
  * }} props
  */
 export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDrawerV0({
@@ -106,7 +109,8 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
   runtimeHealth = null,
   uiLocale,
   experienceSessionId = null,
-  productSessionId = null
+  productSessionId = null,
+  gatewayPhase = "unknown"
 }) {
   const locale = uiLocale || readUiLocaleV0();
   const drawerProjection = useSurfaceCitizenProjectionV0(SSL_SURFACE_ID_V0.UI_DRAWER);
@@ -120,7 +124,10 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
 
   return (
     <div
-      className="pointer-events-auto fixed inset-x-0 bottom-[3.25rem] z-[58] mx-auto max-h-[min(52vh,28rem)] w-full max-w-2xl overflow-hidden rounded-t-2xl border border-cyan-400/25 bg-[#030711]/95 shadow-[0_-8px_40px_rgba(0,0,0,0.55)] backdrop-blur-xl"
+      className="pointer-events-auto fixed inset-x-0 z-[58] mx-auto max-h-[min(52vh,28rem)] w-full max-w-2xl overflow-hidden rounded-t-2xl border border-cyan-400/25 bg-[#030711]/95 shadow-[0_-8px_40px_rgba(0,0,0,0.55)] backdrop-blur-xl"
+      style={{
+        bottom: `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + env(safe-area-inset-bottom, 0px))`
+      }}
       role="dialog"
       aria-label={`${meta.title} surface`}
       data-rhizoh-product-drawer={surface}
@@ -166,6 +173,13 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
         {surface === "greenroom" || surface === "broadcast" ? (
           <RhizohStudioCitizenShellV0 surfaceKind={surface}>
             <UserOutcomeCard surface={surface} locale={locale} />
+            <RhizohGreenroomWaitingPanelV0
+              uiLocale={locale}
+              gatewayPhase={gatewayPhase}
+              gatewayHeadline={runtimeHealth?.headline || runtimeHealth?.liveMessage || ""}
+              experienceSessionId={experienceSessionId}
+              surface={surface}
+            />
             <RhizohEventCreatePanelV12
               experienceSessionId={experienceSessionId}
               productSessionId={productSessionId}
