@@ -55,14 +55,24 @@ export function shouldHideT0ContinuityChromeOnWorldSpaceV0(ctx = {}) {
   return isRhizohWorldSpaceMapStageV0(ctx);
 }
 
+/** Map tool strip + marker filter panel height estimate (rem above bottom nav). */
+export const RHIZOH_WORLD_SPACE_MAP_STRIP_ESTIMATE_REM_V0 = 4.25;
+/** Expanded strip with marker filters + data footer. */
+export const RHIZOH_WORLD_SPACE_MAP_STRIP_EXPANDED_REM_V0 = 7.25;
+
 /** Map tool strip — directly above bottom nav. */
 export function resolveRhizohWorldSpaceMapStripBottomCssV0() {
   return `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + 0.35rem + env(safe-area-inset-bottom, 0px))`;
 }
 
-/** Voice dock — above map strip + bottom nav on World · Space. */
+/** Voice dock — clears compact map strip + gap. */
 export function resolveRhizohWorldSpaceVoiceDockBottomCssV0() {
-  return `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + 5.25rem + env(safe-area-inset-bottom, 0px))`;
+  return `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + ${RHIZOH_WORLD_SPACE_MAP_STRIP_ESTIMATE_REM_V0}rem + 0.75rem + env(safe-area-inset-bottom, 0px))`;
+}
+
+/** Left/right map overlays (event stream) — above expanded strip. */
+export function resolveRhizohWorldSpaceMapOverlayBottomCssV0() {
+  return `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + ${RHIZOH_WORLD_SPACE_MAP_STRIP_EXPANDED_REM_V0}rem + 0.5rem + env(safe-area-inset-bottom, 0px))`;
 }
 
 /**

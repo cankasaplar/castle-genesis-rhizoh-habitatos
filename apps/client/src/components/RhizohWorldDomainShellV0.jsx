@@ -16,7 +16,6 @@ import {
 import { getCastleWorldDataStateV2 } from "../castleFlight/castleWorldDataProviderV2.js";
 import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
 import { RhizohWorldMapControlsV0 } from "./RhizohWorldMapControlsV0.jsx";
-import { RhizohWorldLayerQuickChipV0 } from "./RhizohWorldLayerQuickChipV0.jsx";
 import { RhizohWorldClaimAnchorChipV0 } from "./RhizohWorldClaimAnchorChipV0.jsx";
 import { RhizohWorldMarkerLayerFilterV0 } from "./RhizohWorldMarkerLayerFilterV0.jsx";
 import { RhizohWorldAtmosphereChipV0 } from "./RhizohWorldAtmosphereChipV0.jsx";
@@ -65,6 +64,7 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
   const worldData = getCastleWorldDataStateV2();
   const isSpace = domain === RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE;
   const [wheelOpen, setWheelOpen] = useState(false);
+  const [mapLayersOpen, setMapLayersOpen] = useState(false);
   const mapStripBottomCssV0 = resolveRhizohWorldSpaceMapStripBottomCssV0();
 
   const wheelPack = useMemo(
@@ -155,14 +155,8 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
       <main className="relative z-[1] min-h-0 flex-1 overflow-hidden pointer-events-none">
         {isSpace ? (
           <>
-            <div className="absolute left-3 top-2 z-[3] flex max-h-[min(52vh,28rem)] w-[min(280px,58vw)] flex-col gap-1.5 overflow-y-auto sm:left-4 sm:top-3">
-              <RhizohWorldLayerQuickChipV0
-                activeTool={activeMapTool}
-                uiLocale={locale}
-                onSelect={onSelectMapTool}
-              />
+            <div className="absolute left-3 top-2 z-[3] flex max-h-[min(40vh,22rem)] w-[min(260px,52vw)] flex-col gap-1.5 overflow-y-auto sm:left-4 sm:top-3">
               <RhizohWorldClaimAnchorChipV0 active={isSpace} uiLocale={locale} />
-              <RhizohWorldSportsNewsStripV0 active={spatialEngineActive} uiLocale={locale} />
               <WorldStartCardV0
                 activeTool={activeMapTool}
                 active={isSpace}
@@ -171,62 +165,78 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
                 worldData={worldData}
                 onSelect={onSelectMapTool}
               />
+              <RhizohWorldSportsNewsStripV0 active={spatialEngineActive} uiLocale={locale} />
             </div>
-            <div className="pointer-events-auto absolute right-3 top-3 z-[3] flex flex-col items-end gap-2 sm:right-4 sm:top-4">
+            <div className="pointer-events-auto absolute right-3 top-3 z-[3] flex max-w-[min(220px,44vw)] flex-col items-end gap-2 sm:right-4 sm:top-4">
               <RhizohWorldMapControlsV0 active={spatialEngineActive} uiLocale={locale} />
               <RhizohWorldAtmosphereChipV0 active={isSpace} uiLocale={locale} />
+              {wheelPack.nodes.length ? (
+                <div className="flex w-full flex-col items-end" data-rhizoh-context-wheel-floating="1">
+                  <button
+                    type="button"
+                    onClick={() => setWheelOpen((v) => !v)}
+                    className="rounded-xl border border-white/15 bg-[#030711]/90 px-2.5 py-1.5 text-[9px] uppercase tracking-wide text-white/70 hover:border-cyan-400/35 hover:text-cyan-100"
+                    aria-expanded={wheelOpen}
+                  >
+                    {tr ? (wheelOpen ? "Araçları kapat" : "Araçlar") : wheelOpen ? "Hide tools" : "Tools"}
+                  </button>
+                  {wheelOpen ? (
+                    <div className="mt-2 w-full">
+                      <RhizohCapabilityHaloV1
+                        anchor="corner"
+                        suppressWhisper
+                        className="pointer-events-auto w-full scale-[0.55] origin-top-right"
+                        uiLocale={locale}
+                        nodes={wheelPack.nodes}
+                        headline={wheelPack.headline}
+                        intro={wheelPack.intro}
+                        hideLibrary={wheelPack.hideLibrary}
+                        onCapNodeIntent={onCapNodeIntent}
+                        onSeedIntent={onSeedIntent}
+                        onFocusLayer={onFocusLayer}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
-            {wheelPack.nodes.length ? (
-              <div className="pointer-events-auto absolute left-3 z-[3] sm:left-4" style={{ bottom: mapStripBottomCssV0 }}>
-                <button
-                  type="button"
-                  onClick={() => setWheelOpen((v) => !v)}
-                  className="mb-2 rounded-xl border border-white/15 bg-[#030711]/90 px-2.5 py-1.5 text-[9px] uppercase tracking-wide text-white/70 hover:border-cyan-400/35 hover:text-cyan-100"
-                  aria-expanded={wheelOpen}
-                >
-                  {tr ? (wheelOpen ? "Araçları kapat" : "Araçlar") : wheelOpen ? "Hide tools" : "Tools"}
-                </button>
-                {wheelOpen ? (
-                  <div className="w-[min(220px,52vw)]" data-rhizoh-context-wheel-floating="1">
-                    <RhizohCapabilityHaloV1
-                      anchor="corner"
-                      suppressWhisper
-                      className="pointer-events-auto w-full scale-[0.55] origin-bottom-left"
-                      uiLocale={locale}
-                      nodes={wheelPack.nodes}
-                      headline={wheelPack.headline}
-                      intro={wheelPack.intro}
-                      hideLibrary={wheelPack.hideLibrary}
-                      onCapNodeIntent={onCapNodeIntent}
-                      onSeedIntent={onSeedIntent}
-                      onFocusLayer={onFocusLayer}
-                    />
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
             <div
               className="pointer-events-auto absolute inset-x-0 z-[2] flex justify-center px-3"
               style={{ bottom: mapStripBottomCssV0 }}
             >
-              <div className="w-full max-w-3xl space-y-2 rounded-2xl border border-cyan-400/20 bg-[#030711]/90 p-3 backdrop-blur-xl">
+              <div className="w-full max-w-3xl rounded-2xl border border-cyan-400/20 bg-[#030711]/90 px-2.5 py-2 backdrop-blur-xl">
                 <RhizohWorldMapToolStripV0
                   activeTool={activeMapTool}
                   uiLocale={locale}
                   onSelect={onSelectMapTool}
                   cesiumReady={mapToolCesiumReady && spatialEngineActive}
-                  className="w-full justify-start"
+                  className="w-full justify-center border-0 bg-transparent p-0"
                 />
-                <RhizohWorldMarkerLayerFilterV0 uiLocale={locale} />
-                {worldData.feed !== "unavailable" ? (
-                  <p className="text-[8px] font-mono text-white/40">
-                    {tr ? "Veri" : "Data"}: {worldData.feed} · POI {worldData.poiCount} · bina{" "}
-                    {worldData.buildingCount}
-                    <span className="text-white/30">
-                      {" "}
-                      · {tr ? "canlı: hava + trafik" : "live: weather + traffic"}
-                    </span>
-                  </p>
+                <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-white/8 pt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setMapLayersOpen((v) => !v)}
+                    className="text-[8px] font-semibold uppercase tracking-wider text-white/50 hover:text-cyan-200"
+                    aria-expanded={mapLayersOpen}
+                  >
+                    {tr
+                      ? mapLayersOpen
+                        ? "Katmanları gizle"
+                        : "Katmanlar · filtre"
+                      : mapLayersOpen
+                        ? "Hide layers"
+                        : "Layers · filter"}
+                  </button>
+                  {worldData.feed !== "unavailable" ? (
+                    <p className="truncate text-[8px] font-mono text-white/35">
+                      {worldData.feed} · POI {worldData.poiCount}
+                    </p>
+                  ) : null}
+                </div>
+                {mapLayersOpen ? (
+                  <div className="mt-1.5 space-y-1 border-t border-white/8 pt-1.5">
+                    <RhizohWorldMarkerLayerFilterV0 uiLocale={locale} />
+                  </div>
                 ) : null}
               </div>
             </div>
@@ -256,6 +266,7 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
 
 function WorldStartCardV0({ activeTool, active, cesiumReady, uiLocale, worldData, onSelect }) {
   const tr = (uiLocale || readUiLocaleV0()) === "tr";
+  const [expanded, setExpanded] = useState(false);
   const feedReady = worldData?.feed && worldData.feed !== "unavailable";
   const activeCastle = readCastleNexusGeoV0() || readUserCastleAnchorGeoV0();
   const memoryPins = readActiveSpatialMemoryMapPinsV1();
@@ -309,56 +320,68 @@ function WorldStartCardV0({ activeTool, active, cesiumReady, uiLocale, worldData
 
   return (
     <section
-      className="pointer-events-auto rounded-2xl border border-cyan-400/20 bg-[#030711]/90 p-3 text-white shadow-lg backdrop-blur-md normal-case"
+      className="pointer-events-auto rounded-2xl border border-cyan-400/20 bg-[#030711]/90 p-2.5 text-white shadow-lg backdrop-blur-md normal-case"
       data-rhizoh-world-start-card="1"
     >
-      <p className="text-[8px] font-black uppercase tracking-[0.2em] text-cyan-200/80">
-        {tr ? "Dünya başlangıcı" : "World start"}
-      </p>
-      <p className="mt-1 text-[12px] font-semibold text-white/92">
-        {tr ? "Neredeyim?" : "Where am I?"}
-      </p>
-      <p className="mt-1 text-[10px] leading-relaxed text-white/58">
-        {tr
-          ? active
-            ? "V11 haritası açık. Sokak, uydu veya bağlantı görünümünü seçebilirsin."
-            : "Harita hazırlanıyor. Açıldığında ilk eylemler burada kalacak."
-          : active
-            ? "V11 map is open. Choose street, satellite, or anchor view."
-            : "The map is preparing. First actions stay here when it opens."}
-      </p>
-      <div className="mt-2 grid gap-1.5">
-        {mapBrain.actions.map((action) => {
-          const selected = action.mapTool && activeTool === action.mapTool;
-          return (
-            <button
-              key={action.id}
-              type="button"
-              disabled={!onSelect}
-              onClick={() => executeBrainAction(action)}
-              className={`rounded-lg border px-2 py-1.5 text-left text-[9px] font-semibold transition ${
-                selected
-                  ? "border-cyan-400/55 bg-cyan-500/20 text-cyan-50"
-                  : "border-white/12 bg-black/35 text-white/72 hover:border-cyan-400/35 hover:text-cyan-100"
-              }`}
-            >
-              <span>{formatRhizohMapBrainActionLabelV1(action, tr ? "tr" : "en")}</span>
-              <span className="ml-1 text-[8px] text-white/35">
-                {Math.round(action.confidence * 100)}% · {action.contextSource}
-              </span>
-            </button>
-          );
-        })}
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-cyan-200/80">
+          {tr ? "Dünya başlangıcı" : "World start"}
+        </p>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="shrink-0 text-[8px] uppercase tracking-wide text-white/45 hover:text-cyan-200"
+        >
+          {expanded ? (tr ? "Daralt" : "Collapse") : tr ? "Aç" : "Open"}
+        </button>
       </div>
-      <p className="mt-2 text-[8px] text-white/42">
-        {feedReady
-          ? tr
-            ? `Burada: POI ${worldData.poiCount} · bina ${worldData.buildingCount}`
-            : `Here: POI ${worldData.poiCount} · buildings ${worldData.buildingCount}`
-          : tr
-            ? "Burada: harita ve bağlantı seçimi"
-            : "Here: map and anchor selection"}
-      </p>
+      <p className="mt-1 text-[11px] font-semibold text-white/92">{tr ? "Neredeyim?" : "Where am I?"}</p>
+      {!expanded ? (
+        <p className="mt-1 text-[9px] leading-relaxed text-white/50">
+          {tr ? "V11 haritası — katmanlar altta." : "V11 map — layers at bottom."}
+        </p>
+      ) : (
+        <>
+          <p className="mt-1 text-[10px] leading-relaxed text-white/58">
+            {tr
+              ? active
+                ? "V11 haritası açık. Sokak, uydu veya bağlantı görünümünü alttaki şeritten seç."
+                : "Harita hazırlanıyor."
+              : active
+                ? "V11 map is open. Pick street, satellite, or anchor from the bottom strip."
+                : "The map is preparing."}
+          </p>
+          <div className="mt-2 grid gap-1.5">
+            {mapBrain.actions.map((action) => {
+              const selected = action.mapTool && activeTool === action.mapTool;
+              return (
+                <button
+                  key={action.id}
+                  type="button"
+                  disabled={!onSelect}
+                  onClick={() => executeBrainAction(action)}
+                  className={`rounded-lg border px-2 py-1.5 text-left text-[9px] font-semibold transition ${
+                    selected
+                      ? "border-cyan-400/55 bg-cyan-500/20 text-cyan-50"
+                      : "border-white/12 bg-black/35 text-white/72 hover:border-cyan-400/35 hover:text-cyan-100"
+                  }`}
+                >
+                  <span>{formatRhizohMapBrainActionLabelV1(action, tr ? "tr" : "en")}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[8px] text-white/42">
+            {feedReady
+              ? tr
+                ? `POI ${worldData.poiCount} · bina ${worldData.buildingCount}`
+                : `POI ${worldData.poiCount} · buildings ${worldData.buildingCount}`
+              : tr
+                ? "Harita ve bağlantı seçimi"
+                : "Map and anchor selection"}
+          </p>
+        </>
+      )}
     </section>
   );
 }
