@@ -3,7 +3,7 @@
  * N12 policy: never cache API, gateway, LLM, or user/ghost payloads.
  * Hashed /assets/ and /cesium/ are cached on demand after first load.
  */
-const SHELL_VERSION = "rhizoh-shell-v1";
+const SHELL_VERSION = "rhizoh-shell-v2";
 const CACHE_NAME = `rhizoh-app-shell-${SHELL_VERSION}`;
 
 const PRECACHE_URLS = ["/", "/index.html", "/manifest.webmanifest", "/favicon.svg"];
@@ -64,7 +64,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (shouldBypassCache(url)) return;
 
-  if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/cesium/")) {
+  if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/cesium/") || url.pathname.startsWith("/chess-engine/")) {
     event.respondWith(
       caches.match(event.request).then((cached) => {
         const network = fetch(event.request)
