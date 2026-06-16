@@ -13,9 +13,13 @@ vi.mock("../rhizohDrawerStateMachineV0.js", () => ({
   handleProductShellSelectV0: vi.fn()
 }));
 
-vi.mock("../octoYuvaMediaLabBridgeV1.js", () => ({
-  openOctoYuvaEightCameraLabV1: vi.fn()
-}));
+vi.mock("../octoYuvaMediaLabBridgeV1.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    openOctoYuvaEightCameraLabV1: vi.fn()
+  };
+});
 
 describe("spiralMMOCountdownHandoffV1", () => {
   beforeEach(() => {
@@ -33,7 +37,7 @@ describe("spiralMMOCountdownHandoffV1", () => {
     vi.useRealTimers();
   });
 
-  it("stages immersion end, city map restore, greenroom + octo lab", async () => {
+  it("stages immersion end, city map restore, greenroom — Octo lab is opt-in", async () => {
     const immersion = [];
     window.addEventListener(RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0, () => immersion.push(1));
 
@@ -52,8 +56,8 @@ describe("spiralMMOCountdownHandoffV1", () => {
       expect.objectContaining({ inPlace: true })
     );
 
-    await vi.advanceTimersByTimeAsync(350);
-    expect(openOctoYuvaEightCameraLabV1).toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(50);
+    expect(openOctoYuvaEightCameraLabV1).not.toHaveBeenCalled();
     await expect(promise).resolves.toBe(true);
   });
 });

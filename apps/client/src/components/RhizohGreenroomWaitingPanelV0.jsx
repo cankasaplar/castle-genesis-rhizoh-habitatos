@@ -1,6 +1,7 @@
 import React, { memo, useCallback, useMemo } from "react";
-import { Clock, Radio, Swords, Wifi, WifiOff } from "lucide-react";
+import { Clock, Radio, Swords, Video, Wifi, WifiOff } from "lucide-react";
 import { RHIZOH_OPEN_CHESS_ARENA_EVENT_V1 } from "../rhizoh/runtime/symbyoMapIntentBridgeV0.js";
+import { openOctoYuvaEightCameraLabV1 } from "../rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
 import { CHESS_GAME_MODE_V0 } from "../rhizoh/runtime/chessArenaEngineV0.js";
 import {
   isRhizohLegalPendingHoldV0,
@@ -50,6 +51,13 @@ export const RhizohGreenroomWaitingPanelV0 = memo(function RhizohGreenroomWaitin
         })
       );
     }
+  }, [tr]);
+
+  const onOpenOctoLab = useCallback(() => {
+    openOctoYuvaEightCameraLabV1({
+      source: "greenroom_waiting_panel",
+      title: tr ? "Octo Lab · Bekleme odası" : "Octo Lab · Waiting room"
+    });
   }, [tr]);
 
   const statusRows = [
@@ -137,6 +145,14 @@ export const RhizohGreenroomWaitingPanelV0 = memo(function RhizohGreenroomWaitin
         ))}
       </ul>
 
+      <button
+        type="button"
+        onClick={onOpenOctoLab}
+        className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl border border-purple-400/35 bg-purple-500/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-purple-100 hover:bg-purple-500/20"
+      >
+        <Video size={14} />
+        {tr ? "Octo Lab (8 kamera)" : "Octo Lab (8 cameras)"}
+      </button>
       <button
         type="button"
         onClick={onPlayChess}

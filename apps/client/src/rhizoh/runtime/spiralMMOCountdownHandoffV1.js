@@ -4,7 +4,6 @@
 
 import { applyRhizohWorldMapToolV0 } from "./rhizohWorldMapToolV0.js";
 import { handleProductShellSelectV0 } from "./rhizohDrawerStateMachineV0.js";
-import { openOctoYuvaEightCameraLabV1 } from "./octoYuvaMediaLabBridgeV1.js";
 import { RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0 } from "./spiralMMOAwakeningCycleV0.js";
 import { dispatchWorldSpaceMapFlyV0 } from "./worldSpaceMapCommandFacadeV0.js";
 import { resolveMapViewportHomeV0 } from "./worldMapViewportBootstrapV0.js";
@@ -20,8 +19,8 @@ function delayMs(ms) {
 }
 
 /**
- * End immersion, return to V11 city map, open greenroom drawer + Octo eight-camera lab.
- * Staged to avoid UI lock (immersion CSS + drawer + lab competing).
+ * End immersion, return to V11 city map, open greenroom drawer (Octo lab is opt-in).
+ * Staged to avoid UI lock (immersion CSS + drawer competing).
  * @param {{ source?: string, uiLocale?: string }} [opts]
  */
 export async function handoffSpiralCountdownToWaitingRoomV1(opts = {}) {
@@ -50,12 +49,6 @@ export async function handoffSpiralCountdownToWaitingRoomV1(opts = {}) {
     handleProductShellSelectV0("greenroom", {
       source: opts.source || "spiral_countdown_handoff",
       inPlace: true
-    });
-
-    await delayMs(350);
-    openOctoYuvaEightCameraLabV1({
-      source: opts.source || "spiral_countdown_handoff",
-      title: opts.uiLocale === "tr" ? "Octo Lab · Bekleme odası" : "Octo Lab · Waiting room"
     });
 
     window.dispatchEvent(
