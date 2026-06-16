@@ -8,6 +8,7 @@ import {
   readChessLearningWeightsV0
 } from "./chessLearningWeightsV0.js";
 import { buildMatchMovesWithFenV0 } from "./chessMatchReplayV0.js";
+import { normalizeChessMovesToSanV0 } from "./chessMoveSanV0.js";
 import { computeChessLiveMetricsV0 } from "./chessLiveMetricsV0.js";
 
 export const CHESS_LEARNING_LOOP_SCHEMA_V0 = "rhizoh.chess_learning_loop.v0";
@@ -27,9 +28,10 @@ export async function runRhizohChessLearningLoopV0(opts = {}) {
   const moves = opts.moves || [];
   const localColor = opts.localColor === "b" ? "b" : "w";
   const fenRows = buildMatchMovesWithFenV0(moves);
+  const sanMoves = normalizeChessMovesToSanV0(fenRows.length ? fenRows : moves);
 
   const regret = await analyzeRhizohRegretV0({
-    moves: fenRows.length ? fenRows : moves,
+    moves: sanMoves,
     localColor,
     maxSamples: 16
   });
@@ -49,7 +51,7 @@ export async function runRhizohChessLearningLoopV0(opts = {}) {
     policyMode: opts.policyMode || null,
     mindId: opts.mindId || null,
     outcome: opts.outcome || null,
-    pgnMoves: fenRows.map((r) => r.san),
+    pgnMoves: sanMoves,
     regret,
     mistakeMap: regret.mistakeMap,
     weightsBefore: Object.freeze({ ...weightsBefore }),
