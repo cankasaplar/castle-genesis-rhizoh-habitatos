@@ -10,7 +10,13 @@ import {
 import { buildMatchMovesWithFenV0 } from "./chessMatchReplayV0.js";
 import { normalizeChessMovesToSanV0 } from "./chessMoveSanV0.js";
 import { computeChessLiveMetricsV0 } from "./chessLiveMetricsV0.js";
+import { getChessStockfishEngineStatusV0 } from "./chessStockfishEngineV0.js";
 import { observeChessRegretGeometryV0 } from "./rhizohGeometryChessRegretObserverV0.js";
+import { observePolicyEvolutionColliderV0 } from "./policyEvolutionColliderV0.js";
+import {
+  isLearningActivationEnabledV0,
+  isMemoryFormationEnabledV0
+} from "./rhizohObservationPhaseV0.js";
 
 export const CHESS_LEARNING_LOOP_SCHEMA_V0 = "rhizoh.chess_learning_loop.v0";
 export const CHESS_LEARNING_LOOP_EVENT_V0 = "rhizoh:chess-learning-loop-v0";
@@ -38,7 +44,9 @@ export async function runRhizohChessLearningLoopV0(opts = {}) {
   });
 
   const weightsBefore = readChessLearningWeightsV0();
-  const weightsAfter = applyChessLearningCorrectionV0(regret);
+  const weightsAfter = isLearningActivationEnabledV0()
+    ? applyChessLearningCorrectionV0(regret)
+    : weightsBefore;
   const liveMetrics = computeChessLiveMetricsV0({
     outcome: opts.outcome,
     regret,
@@ -51,6 +59,23 @@ export async function runRhizohChessLearningLoopV0(opts = {}) {
     moves: fenRows.length ? fenRows : moves,
     matchId: opts.matchId || null
   });
+
+  const policyEvolution = isMemoryFormationEnabledV0()
+    ? observePolicyEvolutionColliderV0({
+        regret,
+        moves: fenRows.length ? fenRows : moves,
+        matchId: opts.matchId || null,
+        outcome: opts.outcome || null,
+        localColor,
+        engineStatus: getChessStockfishEngineStatusV0()
+      })
+    : Object.freeze({
+        schema: "rhizoh.policy_evolution_collider.v0.1",
+        skipped: true,
+        reason: "phase_1_silent_observer",
+        tickCount: 0,
+        ticks: Object.freeze([])
+      });
 
   const result = Object.freeze({
     schema: CHESS_LEARNING_LOOP_SCHEMA_V0,
@@ -70,6 +95,9 @@ export async function runRhizohChessLearningLoopV0(opts = {}) {
     }),
     liveMetrics,
     geometryObservation,
+    policyEvolution,
+    learningGated: !isLearningActivationEnabledV0(),
+    memoryFormationGated: !isMemoryFormationEnabledV0(),
     learnedAt: new Date().toISOString()
   });
 

@@ -8,6 +8,7 @@ import { RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0 } from "./spiralMMOAwakeningCy
 import { dispatchWorldSpaceMapFlyV0 } from "./worldSpaceMapCommandFacadeV0.js";
 import { resolveMapViewportHomeV0 } from "./worldMapViewportBootstrapV0.js";
 import { logCastleLifecycleV0 } from "./rhizohProductionLogNamespacesV0.js";
+import { isReplayModeActiveV0 } from "./temporalBridgeV0.js";
 
 export const SPIRAL_MMO_COUNTDOWN_HANDOFF_SCHEMA_V1 = "castle.spiral_mmo_countdown_handoff.v1";
 export const RHIZOH_SPIRAL_MMO_COUNTDOWN_HANDOFF_EVENT_V1 = "rhizoh:spiral-mmo-countdown-handoff-v1";
@@ -18,6 +19,9 @@ function delayMs(ms) {
   });
 }
 
+const HANDOFF_DEDUPE_MS_V1 = 8000;
+let lastHandoffAtMsV1 = 0;
+
 /**
  * End immersion, return to V11 city map, open greenroom drawer (Octo lab is opt-in).
  * Staged to avoid UI lock (immersion CSS + drawer competing).
@@ -25,6 +29,18 @@ function delayMs(ms) {
  */
 export async function handoffSpiralCountdownToWaitingRoomV1(opts = {}) {
   if (typeof window === "undefined") return false;
+
+  const source = opts.source || "spiral_countdown_handoff";
+  if (isReplayModeActiveV0()) {
+    logCastleLifecycleV0("spiral_handoff_skipped", { reason: "catch_up_replay", source });
+    return false;
+  }
+  const now = Date.now();
+  if (now - lastHandoffAtMsV1 < HANDOFF_DEDUPE_MS_V1) {
+    logCastleLifecycleV0("spiral_handoff_skipped", { reason: "deduped", source });
+    return false;
+  }
+  lastHandoffAtMsV1 = now;
 
   try {
     window.dispatchEvent(new CustomEvent(RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0));

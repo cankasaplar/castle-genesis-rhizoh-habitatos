@@ -8,6 +8,8 @@ import { upsertRhizohKnowledgeV0, RHIZOH_TEACHER_SOURCE_V0 } from "./rhizohKnowl
 import { learnOpeningFromObservationV0 } from "./rhizohOpeningBookV0.js";
 import { observeChessMatchV0 } from "./chessMatchObserverV0.js";
 import { runRhizohChessLearningLoopV0 } from "./chessLearningLoopV0.js";
+import { runRhizohUgeSilentObserverV0 } from "./rhizohUgeSilentObserverV0.js";
+import { readRhizohObservationPhaseV0 } from "./rhizohObservationPhaseV0.js";
 import { teachChessLessonV0 } from "./rhizohChessTeacherV0.js";
 import { recordChessCivilizationMatchV0 } from "./chessCivilizationV0.js";
 import { incrementCastleIdentityStatV0, readCastleIdentityV0 } from "./castleIdentityV0.js";
@@ -39,6 +41,7 @@ export const CHESS_MATCH_ANALYZED_EVENT_V0 = "rhizoh:chess-match-analyzed-v0";
 export async function runChessIntelligencePipelineV0(opts = {}) {
   const observation = await observeChessMatchV0(opts);
   let learningLoop = null;
+  let ugeObservation = null;
   if (opts.runLearningLoop !== false && (opts.moves?.length || 0) > 0) {
     try {
       learningLoop = await runRhizohChessLearningLoopV0({
@@ -51,6 +54,17 @@ export async function runChessIntelligencePipelineV0(opts = {}) {
       });
     } catch {
       learningLoop = null;
+    }
+    try {
+      ugeObservation = await runRhizohUgeSilentObserverV0({
+        moves: opts.moves,
+        outcome: opts.outcome,
+        localColor: opts.localColor,
+        matchId: opts.matchId || opts.gameId,
+        regret: learningLoop?.regret || null
+      });
+    } catch {
+      ugeObservation = null;
     }
   }
   const openingEntry = learnOpeningFromObservationV0(observation);
@@ -116,13 +130,17 @@ export async function runChessIntelligencePipelineV0(opts = {}) {
     schema: CHESS_INTELLIGENCE_PIPELINE_SCHEMA_V0,
     observation,
     learningLoop,
+    ugeObservation,
+    observationPhase: readRhizohObservationPhaseV0(),
     openingEntry,
     lesson,
     civilization,
     layers: Object.freeze(
       learningLoop
-        ? ["play", "observe", "analyze", "learn", "teach", "civilization", "weight_update"]
-        : ["play", "observe", "analyze", "learn", "teach", "civilization"]
+        ? ugeObservation
+          ? ["play", "observe", "uge_silent_observer", "analyze", "teach", "civilization"]
+          : ["play", "observe", "analyze", "teach", "civilization"]
+        : ["play", "observe", "teach", "civilization"]
     )
   });
 

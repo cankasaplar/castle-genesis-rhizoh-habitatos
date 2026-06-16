@@ -31,6 +31,7 @@ import {
 import { listPendingSyncEventsV0 } from "../storage/EventStoreV0.js";
 import { canPersistUserTopologyN12V0 } from "../pwa/rhizohPwaPermissionsN12V0.js";
 import { handoffSpiralCountdownToWaitingRoomV1 } from "../rhizoh/runtime/spiralMMOCountdownHandoffV1.js";
+import { isReplayModeActiveV0 } from "../rhizoh/runtime/temporalBridgeV0.js";
 
 function pctToPx(pct, width, height) {
   return { x: (pct.x / 100) * width, y: (pct.y / 100) * height };
@@ -191,6 +192,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
       return;
     }
     if (collapsing || collapseHandledRef.current) return;
+    if (isReplayModeActiveV0()) return;
 
     void (async () => {
       const pendingOut = await listPendingSyncEventsV0(0);
@@ -255,6 +257,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
 
   useEffect(() => {
     const onWorldRebuilt = (ev) => {
+      if (isReplayModeActiveV0()) return;
       if (userDismissedRef.current) return;
       const world = ev?.detail?.world;
       if (!world?.shouldResume && !(world?.activeGhosts?.length > 0)) return;

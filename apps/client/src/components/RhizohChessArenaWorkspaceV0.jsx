@@ -6,7 +6,7 @@ import {
   createCastleToCastleChessMatchV0,
   formatChessOutcomeLabelV0
 } from "../rhizoh/runtime/chessArenaEngineV0.js";
-import { getChessStockfishEngineStatusV0, getStockfishArenaMoveV0, pickChessArenaEngineMoveV0 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
+import { getChessStockfishEngineStatusV0, getChessStockfishEngineDetailV0, getStockfishArenaMoveV0, pickChessArenaEngineMoveV0, resetChessStockfishEngineV0, CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
 import { pickRhizohChessMoveV0 } from "../rhizoh/runtime/rhizohChessPlayerV0.js";
 import { CHESS_STOCKFISH_PRESET_V0 } from "../rhizoh/runtime/chessStockfishPresetsV0.js";
 import {
@@ -196,6 +196,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const [blackClockMs, setBlackClockMs] = useState(() => initialClocksFromSessionV0().black);
   const [boardTheme, setBoardTheme] = useState(() => readChessArenaThemeV0());
   const [engineStatus, setEngineStatus] = useState(() => getChessStockfishEngineStatusV0());
+  const [engineDetail, setEngineDetail] = useState(() => getChessStockfishEngineDetailV0());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [archiveTick, setArchiveTick] = useState(0);
   const [expandedArchiveId, setExpandedArchiveId] = useState(null);
@@ -267,12 +268,33 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     });
   }, [c2cMatch, mode, peerCastle, tr]);
 
-  useEffect(() => {
-    if (!open) return;
+  const refreshEngineStatusV0 = useCallback(() => {
+    setEngineStatus(getChessStockfishEngineStatusV0());
+    setEngineDetail(getChessStockfishEngineDetailV0());
+  }, []);
+
+  const retryStockfishEngineV0 = useCallback(() => {
+    resetChessStockfishEngineV0();
+    refreshEngineStatusV0();
     void getStockfishArenaMoveV0("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", {
       ...CHESS_STOCKFISH_PRESET_V0.WARMUP
-    }).finally(() => setEngineStatus(getChessStockfishEngineStatusV0()));
-  }, [open]);
+    }).finally(refreshEngineStatusV0);
+  }, [refreshEngineStatusV0]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onEngineStatus = (ev) => {
+      const detail = ev?.detail;
+      if (!detail?.status) return;
+      setEngineStatus(detail.status);
+      setEngineDetail(detail);
+    };
+    window.addEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, onEngineStatus);
+    void getStockfishArenaMoveV0("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", {
+      ...CHESS_STOCKFISH_PRESET_V0.WARMUP
+    }).finally(refreshEngineStatusV0);
+    return () => window.removeEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, onEngineStatus);
+  }, [open, refreshEngineStatusV0]);
 
   useEffect(() => {
     if (!open || !initialMode) return;
@@ -1109,12 +1131,31 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                   : "Engine: Stockfish 16 NNUE (WASM)"
                 : engineStatus === "heuristic_fallback"
                   ? tr
-                    ? "Motor: Stockfish yüklenemedi — basit yedek AI"
-                    : "Engine: Stockfish unavailable — simple fallback AI"
+                    ? "Motor: Stockfish yüklenemedi — öğretmen kapalı, yedek AI aktif"
+                    : "Engine: Stockfish unavailable — teacher offline, fallback active"
                   : tr
                     ? "Motor: başlatılıyor…"
                     : "Engine: starting…"}
             </p>
+            {engineStatus === "heuristic_fallback" ? (
+              <div className="rounded-lg border border-amber-500/40 bg-amber-950/30 px-2 py-2 text-[10px] text-amber-100">
+                <p>
+                  {tr
+                    ? "Stockfish WASM yüklenmeden öğrenme ve güçlü AI maçları geçersizdir. Önce öğretmeni ayağa kaldır."
+                    : "Learning and strong AI matches are invalid until Stockfish WASM loads. Restore the teacher first."}
+                </p>
+                {engineDetail?.initError ? (
+                  <p className="mt-1 font-mono text-[9px] text-amber-200/80">{engineDetail.initError}</p>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={retryStockfishEngineV0}
+                  className="mt-2 rounded border border-amber-400/50 px-2 py-1 text-[10px] font-semibold text-amber-50 hover:bg-amber-500/20"
+                >
+                  {tr ? "Stockfish'i yeniden dene" : "Retry Stockfish"}
+                </button>
+              </div>
+            ) : null}
             {aiBusy ? (
               <p className="text-[10px] text-amber-200">{tr ? "Stockfish düşünüyor…" : "Stockfish thinking…"}</p>
             ) : null}
