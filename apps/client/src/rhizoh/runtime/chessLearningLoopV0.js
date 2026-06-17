@@ -11,6 +11,7 @@ import { buildMatchMovesWithFenV0 } from "./chessMatchReplayV0.js";
 import { normalizeChessMovesToSanV0 } from "./chessMoveSanV0.js";
 import { computeChessLiveMetricsV0 } from "./chessLiveMetricsV0.js";
 import { getChessStockfishEngineStatusV0 } from "./chessStockfishEngineV0.js";
+import { observeChessRegretGeometryV0 } from "./rhizohGeometryChessRegretObserverV0.js";
 import { observePolicyEvolutionColliderV0 } from "./policyEvolutionColliderV0.js";
 import {
   isLearningActivationEnabledV0,
@@ -53,6 +54,12 @@ export async function runRhizohChessLearningLoopV0(opts = {}) {
     localColor
   });
 
+  const geometryObservation = observeChessRegretGeometryV0({
+    regret,
+    moves: fenRows.length ? fenRows : moves,
+    matchId: opts.matchId || null
+  });
+
   const policyEvolution = isMemoryFormationEnabledV0()
     ? observePolicyEvolutionColliderV0({
         regret,
@@ -87,6 +94,7 @@ export async function runRhizohChessLearningLoopV0(opts = {}) {
       riskPenaltyWeight: weightsAfter.riskPenaltyWeight - weightsBefore.riskPenaltyWeight
     }),
     liveMetrics,
+    geometryObservation,
     policyEvolution,
     learningGated: !isLearningActivationEnabledV0(),
     memoryFormationGated: !isMemoryFormationEnabledV0(),

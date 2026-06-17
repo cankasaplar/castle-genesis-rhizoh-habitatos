@@ -6,6 +6,7 @@ import {
   resetDriftCubeRingV0,
   summarizeDriftCubeV0
 } from "../rhizohGeometryDriftCubeV0.js";
+import { observeChessRegretGeometryV0 } from "../rhizohGeometryChessRegretObserverV0.js";
 import {
   classifyTopologyCodexEventV0,
   TOPOLOGY_EVENT_TYPES_V0
@@ -98,6 +99,25 @@ describe("rhizohGeometryDriftCubeV0", () => {
     });
     expect(point.z).toBe(1);
     expect(point.context.playedPattern).toBe("enclosure");
+  });
+});
+
+describe("rhizohGeometryChessRegretObserverV0", () => {
+  beforeEach(() => {
+    resetDriftCubeRingV0();
+  });
+
+  it("observes regret trace into drift cube without throwing", () => {
+    const moves = ["e4", "e5", "Nf3", "Nc6"];
+    const regret = {
+      evalTrace: [
+        Object.freeze({ moveNumber: 1, san: "e4", bestMove: "d4" }),
+        Object.freeze({ moveNumber: 3, san: "Nf3", bestMove: "Nc3" })
+      ]
+    };
+    const report = observeChessRegretGeometryV0({ regret, moves, matchId: "test_match" });
+    expect(report.observationCount).toBe(2);
+    expect(report.summary.count).toBe(2);
   });
 });
 
