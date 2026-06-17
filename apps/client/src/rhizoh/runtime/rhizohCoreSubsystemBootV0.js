@@ -10,7 +10,7 @@ import { startRhizohLegalPendingWaitLoopV0 } from "./rhizohLegalPendingWaitLoopV
 import { publishRhizohWorldNamespaceGateV0 } from "./rhizohWorldNamespaceGateV0.js";
 import { startChessGameClusterV0 } from "./chessGameClusterV0.js";
 import { prewarmChessStockfishEngineV0 } from "./chessStockfishEngineV0.js";
-import { publishRhizohChessManagerV0 } from "./rhizohChessManagerV0.js";
+import { publishRhizohChessManagerV0, ensureRhizohChessManagerListenersV0 } from "./rhizohChessManagerV0.js";
 import { publishChessGameRouterV0 } from "./chessGameRouterV0.js";
 
 export const RHIZOH_CORE_SUBSYSTEM_BOOT_SCHEMA_V0 = "castle.rhizoh.core_subsystem_boot.v0";
@@ -58,6 +58,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
   const pathname = String(opts.pathname || window.location.pathname || "/").trim() || "/";
   if (!coreBootedV0) {
     coreBootedV0 = true;
+    ensureRhizohChessManagerListenersV0();
     runDomainGateForPathV0(pathname, { coreOnly: true });
     stopLegalWaitLoopV0 = startRhizohLegalPendingWaitLoopV0({ bootDelayMs: 2_500 });
   }
