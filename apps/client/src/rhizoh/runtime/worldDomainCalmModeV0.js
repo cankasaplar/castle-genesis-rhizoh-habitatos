@@ -3,6 +3,7 @@
  */
 
 import { isRhizohLegalPendingHoldV0 } from "./rhizohLegalPendingWaitLoopV0.js";
+import { isRhizohWorldDomainUiActiveV0 } from "./rhizohWorldNamespaceGateV0.js";
 import {
   isRhizohNeonCountdownCompleteV0,
   readRhizohNeonCountdownDeadlineMsV0,
@@ -12,9 +13,10 @@ import {
 export const WORLD_DOMAIN_CALM_SCHEMA_V0 = "rhizoh.world_domain_calm.v0";
 
 /**
- * Legal approval pending — simplify domain chrome, prioritize map + learning hold.
+ * Legal approval pending on world domain routes only — does not gate core subsystems.
  */
 export function isWorldLegalCalmModeV0() {
+  if (!isRhizohWorldDomainUiActiveV0()) return false;
   return isRhizohLegalPendingHoldV0();
 }
 

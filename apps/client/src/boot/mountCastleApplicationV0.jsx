@@ -1,6 +1,5 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { CastleShellRouter } from "../shell/CastleShellRouter.jsx";
 import { bootstrapRhizohOntologicalGateV0 } from "../rhizoh/runtime/continuity/bootstrapOntologicalGateV0.js";
 import { QuarantineOntologicalGateShell } from "./QuarantineOntologicalGateShell.jsx";
 import { resolveIngressRouteV0 } from "../rhizoh/ingress/ingress_router.js";
@@ -61,25 +60,11 @@ export async function mountCastleApplicationV0(ctx) {
 
   const ingress = resolveIngressRouteV0();
   publishIngressRouteV0(ingress.route, { source: "boot.mount" });
-  const needsIngressFlow =
-    ingress.required ||
-    ingress.route === "legal_preamble" ||
-    ingress.route === "closed_admission_hold" ||
-    ingress.closedAdmission?.enabled;
-
-  if (needsIngressFlow) {
-    bootLog?.ok?.("boot.rhizoh_ingress", `route=${ingress.route}`);
-    reactRoot.render(
-      <RootErrorBoundary>
-        <RhizohIngressFlow />
-      </RootErrorBoundary>
-    );
-    return { mounted: true, quarantine: false, gate, ingress: ingress.route };
-  }
+  bootLog?.ok?.("boot.rhizoh_ingress", `route=${ingress.route} overlay=1`);
 
   reactRoot.render(
     <RootErrorBoundary>
-      <CastleShellRouter />
+      <RhizohIngressFlow />
     </RootErrorBoundary>
   );
 
