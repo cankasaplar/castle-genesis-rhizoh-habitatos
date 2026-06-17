@@ -7,6 +7,7 @@ import { openOctoYuvaEightCameraLabV1 } from "../octoYuvaMediaLabBridgeV1.js";
 import {
   enterReplayModeV0,
   exitReplayModeV0,
+  markCatchUpActivityV0,
   __resetTemporalBridgeForTestV0
 } from "../temporalBridgeV0.js";
 import { __resetRhizohCatchUpGuardForTestV0 } from "../rhizohCatchUpGuardV0.js";
@@ -80,5 +81,12 @@ describe("spiralMMOCountdownHandoffV1", () => {
     expect(immersion).toHaveLength(0);
     expect(applyRhizohWorldMapToolV0).not.toHaveBeenCalled();
     exitReplayModeV0("test_catch_up");
+  });
+
+  it("skips handoff during catch-up settling window", async () => {
+    markCatchUpActivityV0();
+    const out = await handoffSpiralCountdownToWaitingRoomV1({ source: "test_settling" });
+    expect(out).toBe(false);
+    expect(applyRhizohWorldMapToolV0).not.toHaveBeenCalled();
   });
 });

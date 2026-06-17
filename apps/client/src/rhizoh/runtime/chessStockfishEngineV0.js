@@ -4,6 +4,10 @@
  */
 
 import { pickChessArenaAiMoveV0 } from "./chessArenaEngineV0.js";
+import {
+  CHESS_ENGINE_BRIDGE_KIND_V0,
+  emitChessEngineBridgeV0
+} from "./chessEngineBridgeV0.js";
 import { CHESS_STOCKFISH_PRESET_V0 } from "./chessStockfishPresetsV0.js";
 
 export const CHESS_STOCKFISH_ENGINE_SCHEMA_V0 = "castle.chess_stockfish_engine.v0";
@@ -15,12 +19,22 @@ export const CHESS_STOCKFISH_ASSET_PATHS_V0 = Object.freeze({
   wasm: "/chess-engine/stockfish-nnue-16-single.wasm"
 });
 
-function resolveStockfishWorkerUrlV0() {
+function resolveStockfishWorkerUrlV0(wasmInHash = null) {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const js = CHESS_STOCKFISH_ASSET_PATHS_V0.workerJs;
-  const wasm = CHESS_STOCKFISH_ASSET_PATHS_V0.wasm;
-  return `${origin}${js}#${wasm},worker`;
+  const wasmPath = wasmInHash || CHESS_STOCKFISH_ASSET_PATHS_V0.wasm;
+  const wasm =
+    wasmPath.startsWith("http://") || wasmPath.startsWith("https://")
+      ? wasmPath
+      : `${origin}${wasmPath}`;
+  return `${origin}${js}#${encodeURIComponent(wasm)},worker`;
 }
+
+/** @type {string | null} */
+let lastSpawnStrategyV0 = null;
+
+/** @type {((err: Error) => void) | null} */
+let workerErrorRejectV0 = null;
 
 /** @type {Worker | null} */
 let workerV0 = null;
@@ -35,6 +49,8 @@ let readyV0 = false;
 let initFailedV0 = false;
 let initErrorV0 = null;
 let assetsVerifiedV0 = false;
+/** @type {string | null} */
+let currentPositionFenV0 = null;
 
 export function getChessStockfishEngineStatusV0() {
   if (initFailedV0) return "heuristic_fallback";
@@ -71,7 +87,28 @@ function publishEngineStatusV0(reason = "status_change") {
     window.__rhizoh.chessStockfishEngine = detail;
     window.dispatchEvent(new CustomEvent(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, { detail }));
   }
+  emitChessEngineBridgeV0(CHESS_ENGINE_BRIDGE_KIND_V0.ENGINE_STATUS, {
+    status: detail.status,
+    initError: detail.initError,
+    assetsVerified: detail.assetsVerified,
+    reason: detail.reason
+  });
   return detail;
+}
+
+function emitBestmoveBridgeV0(move, fenOverride = null) {
+  const fen = fenOverride || currentPositionFenV0;
+  if (!fen || !move) return;
+  emitChessEngineBridgeV0(CHESS_ENGINE_BRIDGE_KIND_V0.BESTMOVE, {
+    fen,
+    stockfishEval: Object.freeze({
+      bestMove: move,
+      cp: lastAnalysisInfoV0.cp,
+      mate: lastAnalysisInfoV0.mate,
+      depth: lastAnalysisInfoV0.depth,
+      pv: lastAnalysisInfoV0.pv
+    })
+  });
 }
 
 function nextId() {
@@ -119,6 +156,7 @@ function attachWorkerHandlersV0(worker) {
     if (m) {
       const move = m[1] && m[1] !== "(none)" ? m[1] : null;
       lastAnalysisInfoV0 = { ...lastAnalysisInfoV0, bestMove: move };
+      if (move) emitBestmoveBridgeV0(move);
       if (activeAnalysisV0) {
         clearTimeout(activeAnalysisV0.timer);
         const { resolve } = activeAnalysisV0;
@@ -135,9 +173,15 @@ function attachWorkerHandlersV0(worker) {
     }
   };
   worker.onerror = (err) => {
-    initFailedV0 = true;
-    initErrorV0 = String(err?.message || "worker_error");
-    logStockfishV0("error", "worker onerror", { error: initErrorV0 });
+    const detail = {
+      error: String(err?.message || "worker_error"),
+      filename: err?.filename || null,
+      lineno: err?.lineno || null,
+      colno: err?.colno || null,
+      strategy: lastSpawnStrategyV0
+    };
+    initErrorV0 = detail.error;
+    logStockfishV0("error", "worker onerror", detail);
     try {
       worker?.terminate?.();
     } catch {
@@ -146,6 +190,10 @@ function attachWorkerHandlersV0(worker) {
     workerV0 = null;
     resetReadyFlagsV0();
     publishEngineStatusV0("worker_error");
+    if (workerErrorRejectV0) {
+      workerErrorRejectV0(new Error(detail.error));
+      workerErrorRejectV0 = null;
+    }
   };
   worker.onmessageerror = () => {
     initFailedV0 = true;
@@ -157,21 +205,69 @@ function attachWorkerHandlersV0(worker) {
 
 let initPromiseV0 = null;
 
+function isWasmMagicValidV0(bytes) {
+  return (
+    bytes &&
+    bytes.length >= 4 &&
+    bytes[0] === 0 &&
+    bytes[1] === 97 &&
+    bytes[2] === 115 &&
+    bytes[3] === 109
+  );
+}
+
+function isLikelyHtmlPayloadV0(bytes) {
+  if (!bytes || bytes.length < 8) return false;
+  const head = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5]).toLowerCase();
+  return head.includes("<!doc") || head.includes("<html");
+}
+
 async function verifyStockfishAssetsV0() {
   if (typeof fetch === "undefined") return false;
   try {
-    const [jsHead, wasmHead] = await Promise.all([
-      fetch(CHESS_STOCKFISH_ASSET_PATHS_V0.workerJs, { method: "HEAD", cache: "no-store" }),
-      fetch(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm, { method: "HEAD", cache: "no-store" })
+    const [jsRes, wasmRes] = await Promise.all([
+      fetch(CHESS_STOCKFISH_ASSET_PATHS_V0.workerJs, { method: "GET", cache: "no-store" }),
+      fetch(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm, { method: "GET", cache: "no-store" })
     ]);
-    if (!jsHead.ok || !wasmHead.ok) {
-      initErrorV0 = `asset_preflight_${jsHead.status}_${wasmHead.status}`;
+    if (!jsRes.ok || !wasmRes.ok) {
+      initErrorV0 = `asset_preflight_${jsRes.status}_${wasmRes.status}`;
       logStockfishV0("error", "asset preflight failed", {
-        jsStatus: jsHead.status,
-        wasmStatus: wasmHead.status
+        jsStatus: jsRes.status,
+        wasmStatus: wasmRes.status
       });
       return false;
     }
+
+    const jsType = (jsRes.headers.get("content-type") || "").toLowerCase();
+    const wasmType = (wasmRes.headers.get("content-type") || "").toLowerCase();
+    if (wasmType.includes("text/html")) {
+      initErrorV0 = "wasm_content_type_html_likely_spa_fallback";
+      logStockfishV0("error", "wasm preflight content-type is html", { wasmType });
+      return false;
+    }
+
+    const wasmBytes = new Uint8Array(await wasmRes.arrayBuffer());
+    if (!isWasmMagicValidV0(wasmBytes)) {
+      initErrorV0 = isLikelyHtmlPayloadV0(wasmBytes)
+        ? "wasm_magic_invalid_likely_cached_html"
+        : "wasm_magic_invalid";
+      logStockfishV0("error", "wasm magic preflight failed", {
+        initError: initErrorV0,
+        wasmType,
+        jsType,
+        head: [...wasmBytes.slice(0, 8)]
+      });
+      return false;
+    }
+
+    const jsHead = new Uint8Array((await jsRes.arrayBuffer()).slice(0, 32));
+    const jsText = String.fromCharCode(...jsHead);
+    if (jsText.trimStart().startsWith("<") || jsType.includes("text/html")) {
+      initErrorV0 = "worker_js_likely_html_shell";
+      logStockfishV0("error", "worker js preflight looks like html", { jsType });
+      return false;
+    }
+
     assetsVerifiedV0 = true;
     return true;
   } catch (err) {
@@ -179,6 +275,63 @@ async function verifyStockfishAssetsV0() {
     logStockfishV0("error", "asset preflight exception", { error: initErrorV0 });
     return false;
   }
+}
+
+async function spawnStockfishWorkerV0() {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const absoluteWasm = `${origin}${CHESS_STOCKFISH_ASSET_PATHS_V0.wasm}`;
+  const strategies = [
+    {
+      name: "absolute_hash",
+      build: async () => resolveStockfishWorkerUrlV0(absoluteWasm)
+    },
+    {
+      name: "relative_hash",
+      build: async () => resolveStockfishWorkerUrlV0(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm)
+    },
+    {
+      name: "blob_worker",
+      build: async () => {
+        const res = await fetch(CHESS_STOCKFISH_ASSET_PATHS_V0.workerJs, { cache: "no-store" });
+        if (!res.ok) throw new Error(`blob_worker_fetch_${res.status}`);
+        const source = await res.text();
+        const blobUrl = URL.createObjectURL(new Blob([source], { type: "application/javascript" }));
+        return `${blobUrl}#${encodeURIComponent(absoluteWasm)},worker`;
+      }
+    }
+  ];
+
+  let lastErr = null;
+  for (const strategy of strategies) {
+    try {
+      lastSpawnStrategyV0 = strategy.name;
+      const workerUrl = await strategy.build();
+      logStockfishV0("info", "spawning worker", { workerUrl, strategy: strategy.name });
+      return new Worker(workerUrl, { type: "classic" });
+    } catch (err) {
+      lastErr = err;
+      logStockfishV0("warn", "worker spawn strategy failed", {
+        strategy: strategy.name,
+        error: String(err?.message || err)
+      });
+    }
+  }
+  throw lastErr || new Error("stockfish_worker_spawn_exhausted");
+}
+
+function waitForWorkerOrUciV0(timeoutMs) {
+  return new Promise((resolve, reject) => {
+    workerErrorRejectV0 = reject;
+    waitUciOkV0(timeoutMs)
+      .then((ok) => {
+        workerErrorRejectV0 = null;
+        resolve(ok);
+      })
+      .catch((err) => {
+        workerErrorRejectV0 = null;
+        reject(err);
+      });
+  });
 }
 
 function waitUciOkV0(timeoutMs) {
@@ -234,12 +387,10 @@ async function ensureStockfishWorkerV0() {
       }
 
       resetReadyFlagsV0();
-      const workerUrl = resolveStockfishWorkerUrlV0();
-      logStockfishV0("info", "spawning worker", { workerUrl });
-      workerV0 = new Worker(workerUrl, { type: "classic" });
+      workerV0 = await spawnStockfishWorkerV0();
       attachWorkerHandlersV0(workerV0);
       workerV0.postMessage("uci");
-      await waitUciOkV0(20000);
+      await waitForWorkerOrUciV0(20000);
       workerV0.postMessage("isready");
       await waitReadyV0(12000);
       workerV0.postMessage("setoption name UCI_AnalyseMode value false");
@@ -316,6 +467,7 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
       if (contempt != null) {
         worker.postMessage(`setoption name Contempt value ${Math.max(-100, Math.min(100, contempt))}`);
       }
+      currentPositionFenV0 = position;
       worker.postMessage(`position fen ${position}`);
       worker.postMessage(`go depth ${depth} movetime ${movetimeMs}`);
     } catch {
@@ -375,6 +527,7 @@ export async function analyzeChessPositionV0(fen, opts = {}) {
     };
 
     try {
+      currentPositionFenV0 = position;
       worker.postMessage(`position fen ${position}`);
       worker.postMessage(`go depth ${depth} movetime ${movetime}`);
     } catch {
@@ -462,8 +615,6 @@ export function disposeChessStockfishEngineV0() {
   }
   workerV0 = null;
   resetReadyFlagsV0();
-  initFailedV0 = false;
-  initErrorV0 = null;
   activeAnalysisV0 = null;
   pendingV0.clear();
 }
