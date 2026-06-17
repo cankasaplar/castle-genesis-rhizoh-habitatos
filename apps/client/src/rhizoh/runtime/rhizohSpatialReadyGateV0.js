@@ -70,16 +70,19 @@ export function enqueuePreReadySpatialEventV0(domain, event) {
 
 /**
  * @param {(domain: string, event: object) => unknown} emitImmediate
+ * @param {{ force?: boolean }} [opts]
  * @returns {number}
  */
-export function drainPreReadySpatialQueueV0(emitImmediate) {
-  if (!isSpatialReadyGateOpenV0() || typeof emitImmediate !== "function") return 0;
+export function drainPreReadySpatialQueueV0(emitImmediate, opts = {}) {
+  const force = opts.force === true;
+  if (!force && !isSpatialReadyGateOpenV0()) return 0;
+  if (typeof emitImmediate !== "function") return 0;
   const pending = preReadyBuffer.splice(0);
   if (pending.length === 0) return 0;
   for (const item of pending) {
     emitImmediate(item.domain, {
       ...item.event,
-      trigger: item.event?.trigger || "spatial_ready_drain"
+      trigger: item.event?.trigger || (force ? "spatial_force_flush" : "spatial_ready_drain")
     });
   }
   lastDrainAtMs = Date.now();

@@ -24,5 +24,6 @@ describe("ontologicalRepairProtocolV1", () => {
     expect(report.diagnosis.temporalSpam).toBe(true);
     expect(report.genesisAuthority.lockActive).toBe(true);
     expect(report.nodeEvolution.fissionApplied).toBeGreaterThan(0);
+    expect(report.semanticMass).toBeDefined();
   });
 });
