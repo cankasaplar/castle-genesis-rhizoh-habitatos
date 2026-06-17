@@ -16,15 +16,15 @@ describe("chessStockfishEngineV0", () => {
     expect(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm).toBe("/chess-engine/stockfish-nnue-16-single.wasm");
   });
 
-  it("uses auto spawn policy with blob fallback until CORP preflight passes", () => {
+  it("uses wasm_binary_inline blob-only spawn policy", () => {
     disposeChessStockfishEngineV0();
-    expect(CHESS_STOCKFISH_SPAWN_POLICY_V0).toBe("auto");
-    expect(resolveChessStockfishEffectiveSpawnPolicyV0()).toBe("blob_degraded");
+    expect(CHESS_STOCKFISH_SPAWN_POLICY_V0).toBe("wasm_binary_inline");
+    expect(resolveChessStockfishEffectiveSpawnPolicyV0()).toBe("wasm_binary_inline");
     const detail = getChessStockfishEngineDetailV0();
-    expect(detail.spawnPolicy).toBe("auto");
-    expect(detail.spawnPolicyEffective).toBe("blob_degraded");
-    expect(detail.computeDegraded).toBe(true);
-    expect(detail.spawnStrategies).toEqual(["wasm_binary_inline", "blob_coep"]);
+    expect(detail.spawnPolicy).toBe("wasm_binary_inline");
+    expect(detail.workerStrategy).toBe("blob");
+    expect(detail.hashWorkersDisabled).toBe(true);
+    expect(detail.spawnStrategies).toEqual(["wasm_binary_inline"]);
   });
 
   it("starts in not_started and can reset after dispose", () => {
