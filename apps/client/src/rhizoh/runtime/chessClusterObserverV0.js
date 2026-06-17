@@ -7,6 +7,7 @@
 import { detectChessOpeningV0 } from "./chessOpeningDetectV0.js";
 import { estimateChessMaterialBalanceV0 } from "./chessArenaEngineV0.js";
 import { writeChessClusterMemoryNodeV0 } from "./chessClusterMemoryGraphV0.js";
+import { enqueueChessClusterLearningTraceV0 } from "./chessClusterLearningTraceV0.js";
 
 export const CHESS_CLUSTER_OBSERVER_SCHEMA_V0 = "castle.rhizoh.chess_cluster_observer.v0";
 export const CHESS_CLUSTER_OBSERVATION_EVENT_V0 = "rhizoh:chess-cluster-observation-v0";
@@ -101,6 +102,8 @@ export function observeChessClusterMoveV0(slot, moveRow, policy) {
       /* noop */
     }
   }
+
+  enqueueChessClusterLearningTraceV0(slot, moveRow, moveRow.fenBefore);
 
   return observation;
 }

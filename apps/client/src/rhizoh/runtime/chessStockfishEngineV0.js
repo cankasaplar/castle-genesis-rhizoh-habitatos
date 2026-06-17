@@ -13,14 +13,16 @@ import { CHESS_STOCKFISH_PRESET_V0 } from "./chessStockfishPresetsV0.js";
 export const CHESS_STOCKFISH_ENGINE_SCHEMA_V0 = "castle.chess_stockfish_engine.v0";
 export const CHESS_STOCKFISH_LOG_TAG_V0 = "[CASTLE_stockfish_engine]";
 export const CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0 = "rhizoh:chess-stockfish-engine-status-v0";
+export const CHESS_STOCKFISH_CLUSTER_MULTI_PV_V0 = 8;
 
 export const CHESS_STOCKFISH_ASSET_PATHS_V0 = Object.freeze({
   workerJs: "/chess-engine/stockfish-nnue-16-single.js",
   wasm: "/chess-engine/stockfish-nnue-16-single.wasm"
 });
 
-/** Compute-layer spawn policy. Deployment CORP headers gate wasm_direct under `auto`. */
-export const CHESS_STOCKFISH_SPAWN_POLICY_V0 = "auto";
+/** COEP-safe: blob inline WASM only — hash URL workers permanently disabled. */
+export const CHESS_STOCKFISH_SPAWN_POLICY_V0 = "wasm_binary_inline";
+export const CHESS_STOCKFISH_WORKER_STRATEGY_V0 = "blob";
 
 /** @type {boolean | null} */
 let workerJsCorpOkV0 = null;
@@ -32,16 +34,9 @@ function isCorpHeaderOkV0(value) {
   return corp.includes("same-origin") || corp.includes("same-site");
 }
 
-/**
- * Effective compute path — separate from deployment (COEP/CORP on /chess-engine/*).
- * @returns {"wasm_direct" | "blob_degraded"}
- */
+/** @returns {"wasm_binary_inline"} */
 export function resolveChessStockfishEffectiveSpawnPolicyV0() {
-  const configured = CHESS_STOCKFISH_SPAWN_POLICY_V0;
-  if (configured === "blob_only") return "blob_degraded";
-  if (configured === "wasm_direct") return "wasm_direct";
-  if (workerJsCorpOkV0 === true && wasmCorpOkV0 === true) return "wasm_direct";
-  return "blob_degraded";
+  return "wasm_binary_inline";
 }
 
 function resolveStockfishWorkerUrlV0(wasmInHash = null) {
@@ -105,12 +100,15 @@ export function getChessStockfishEngineDetailV0() {
     spawnStrategies: listStockfishSpawnStrategiesV0().map((s) => s.name),
     spawnPolicy: CHESS_STOCKFISH_SPAWN_POLICY_V0,
     spawnPolicyEffective: resolveChessStockfishEffectiveSpawnPolicyV0(),
+    workerStrategy: CHESS_STOCKFISH_WORKER_STRATEGY_V0,
+    hashWorkersDisabled: true,
     deploymentLayer: Object.freeze({
       workerJsCorpOk: workerJsCorpOkV0,
       wasmCorpOk: wasmCorpOkV0,
-      siteCoep: "credentialless"
+      siteCoep: "credentialless",
+      workerJsSpawnDisabled: true
     }),
-    computeDegraded: resolveChessStockfishEffectiveSpawnPolicyV0() === "blob_degraded"
+    computeDegraded: getChessStockfishEngineStatusV0() === "heuristic_fallback"
   });
 }
 
@@ -187,7 +185,20 @@ function attachWorkerHandlersV0(worker) {
     const cpMatch = line.match(/\bscore cp (-?\d+)\b/);
     const mateMatch = line.match(/\bscore mate (-?\d+)\b/);
     const pvMatch = line.match(/\bpv (.+)$/);
-    if (depthMatch || cpMatch || mateMatch || pvMatch) {
+    const multipvMatch = line.match(/\bmultipv (\d+)\b/);
+
+    if (multipvMatch && activeMultiPvAnalysisV0) {
+      const idx = Number(multipvMatch[1]);
+      const pv = pvMatch ? pvMatch[1].trim() : "";
+      multiPvSnapshotV0.set(idx, {
+        multipv: idx,
+        cp: cpMatch ? Number(cpMatch[1]) : null,
+        mate: mateMatch ? Number(mateMatch[1]) : null,
+        depth: depthMatch ? Number(depthMatch[1]) : 0,
+        pv,
+        bestMove: pv ? pv.split(/\s+/)[0] : null
+      });
+    } else if (depthMatch || cpMatch || mateMatch || pvMatch) {
       lastAnalysisInfoV0 = {
         cp: cpMatch ? Number(cpMatch[1]) : lastAnalysisInfoV0.cp,
         mate: mateMatch ? Number(mateMatch[1]) : lastAnalysisInfoV0.mate,
@@ -202,6 +213,21 @@ function attachWorkerHandlersV0(worker) {
       const move = m[1] && m[1] !== "(none)" ? m[1] : null;
       lastAnalysisInfoV0 = { ...lastAnalysisInfoV0, bestMove: move };
       if (move) emitBestmoveBridgeV0(move);
+      if (activeMultiPvAnalysisV0) {
+        clearTimeout(activeMultiPvAnalysisV0.timer);
+        const { resolve } = activeMultiPvAnalysisV0;
+        activeMultiPvAnalysisV0 = null;
+        const lines = [...multiPvSnapshotV0.values()].sort((a, b) => a.multipv - b.multipv);
+        resolve(
+          lines.length
+            ? Object.freeze({
+                fen: currentPositionFenV0,
+                lines: Object.freeze(lines.map((row) => Object.freeze({ ...row })))
+              })
+            : null
+        );
+        return;
+      }
       if (activeAnalysisV0) {
         clearTimeout(activeAnalysisV0.timer);
         const { resolve } = activeAnalysisV0;
@@ -249,6 +275,27 @@ function attachWorkerHandlersV0(worker) {
 }
 
 let initPromiseV0 = null;
+/** @type {Promise<unknown>} */
+let engineOpChainV0 = Promise.resolve();
+/** @type {{ resolve: Function, timer: ReturnType<typeof setTimeout>, multiPv: number } | null} */
+let activeMultiPvAnalysisV0 = null;
+/** @type {Map<number, { multipv: number, cp: number | null, mate: number | null, depth: number, pv: string, bestMove: string | null }>} */
+const multiPvSnapshotV0 = new Map();
+
+/**
+ * Serialize all UCI traffic through the single shared worker.
+ * @template T
+ * @param {() => Promise<T>} fn
+ * @returns {Promise<T>}
+ */
+export function withChessStockfishEngineLockV0(fn) {
+  const op = engineOpChainV0.then(() => fn());
+  engineOpChainV0 = op.then(
+    () => undefined,
+    () => undefined
+  );
+  return op;
+}
 
 function isWasmMagicValidV0(bytes) {
   return (
@@ -315,9 +362,8 @@ async function verifyStockfishAssetsV0() {
     workerJsCorpOkV0 = isCorpHeaderOkV0(jsCorp);
     wasmCorpOkV0 = isCorpHeaderOkV0(wasmCorp);
     if (!workerJsCorpOkV0) {
-      logStockfishV0("warn", "worker js missing CORP header — wasm_direct disabled under auto policy", {
-        jsCorp: jsCorp || null,
-        spawnPolicyEffective: resolveChessStockfishEffectiveSpawnPolicyV0()
+      logStockfishV0("info", "worker js CORP absent — hash spawn disabled; using blob inline only", {
+        jsCorp: jsCorp || null
       });
     }
     if (wasmType.includes("text/html")) {
@@ -387,24 +433,7 @@ ${patched}`;
   return `${jsBlobUrl}#inline_wasm,worker`;
 }
 
-function buildWasmDirectStrategiesV0() {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const absoluteWasm = `${origin}${CHESS_STOCKFISH_ASSET_PATHS_V0.wasm}`;
-  return [
-    {
-      name: "absolute_hash",
-      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
-      build: async () => resolveStockfishWorkerUrlV0(absoluteWasm)
-    },
-    {
-      name: "relative_hash",
-      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
-      build: async () => resolveStockfishWorkerUrlV0(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm)
-    }
-  ];
-}
-
-function buildBlobStrategiesV0() {
+function listStockfishSpawnStrategiesV0() {
   return [
     {
       name: "wasm_binary_inline",
@@ -413,32 +442,8 @@ function buildBlobStrategiesV0() {
         const assets = await ensureCachedStockfishAssetsV0();
         return buildWasmBinaryInlineWorkerUrlV0(assets);
       }
-    },
-    {
-      name: "blob_coep",
-      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
-      build: async () => {
-        const assets = await ensureCachedStockfishAssetsV0();
-        const jsBlobUrl = URL.createObjectURL(
-          new Blob([assets.jsSource], { type: "application/javascript" })
-        );
-        const wasmBlobUrl = URL.createObjectURL(
-          new Blob([assets.wasmBytes], { type: "application/wasm" })
-        );
-        trackSpawnBlobUrlV0(jsBlobUrl);
-        trackSpawnBlobUrlV0(wasmBlobUrl);
-        return `${jsBlobUrl}#${encodeURIComponent(wasmBlobUrl)},worker`;
-      }
     }
   ];
-}
-
-function listStockfishSpawnStrategiesV0() {
-  const blob = buildBlobStrategiesV0();
-  if (resolveChessStockfishEffectiveSpawnPolicyV0() === "wasm_direct") {
-    return [...buildWasmDirectStrategiesV0(), ...blob];
-  }
-  return blob;
 }
 
 async function initStockfishWorkerWithStrategyV0(strategy) {
@@ -601,6 +606,7 @@ function resolveStockfishOptsV0(opts = {}) {
  * @param {{ skill?: number, movetimeMs?: number }} [opts]
  */
 export async function getStockfishArenaMoveV0(fen, opts = {}) {
+  return withChessStockfishEngineLockV0(async () => {
   const position = String(fen || "").trim();
   if (!position) return null;
   const worker = await ensureStockfishWorkerV0();
@@ -642,6 +648,7 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
       resolve(null);
     }
   });
+  });
 }
 
 /**
@@ -650,6 +657,7 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
  * @param {{ depth?: number, movetimeMs?: number }} [opts]
  */
 export async function analyzeChessPositionV0(fen, opts = {}) {
+  return withChessStockfishEngineLockV0(async () => {
   const position = String(fen || "").trim();
   if (!position) return null;
   const worker = await ensureStockfishWorkerV0();
@@ -658,6 +666,11 @@ export async function analyzeChessPositionV0(fen, opts = {}) {
   const depth = Math.max(6, Math.min(18, Number(opts.depth) || 10));
   const movetime = Math.max(120, Math.min(4000, Number(opts.movetimeMs) || 600));
 
+  if (activeMultiPvAnalysisV0) {
+    clearTimeout(activeMultiPvAnalysisV0.timer);
+    activeMultiPvAnalysisV0 = null;
+    multiPvSnapshotV0.clear();
+  }
   if (activeAnalysisV0) {
     try {
       worker.postMessage("stop");
@@ -701,6 +714,74 @@ export async function analyzeChessPositionV0(fen, opts = {}) {
       activeAnalysisV0 = null;
       resolve(null);
     }
+  });
+  });
+}
+
+/**
+ * Multi-PV analysis — one engine, N strategic lines (cluster learning observatory).
+ * @param {string} fen
+ * @param {{ multiPv?: number, depth?: number, movetimeMs?: number }} [opts]
+ */
+export async function analyzeChessPositionMultiPvV0(fen, opts = {}) {
+  return withChessStockfishEngineLockV0(async () => {
+    const position = String(fen || "").trim();
+    if (!position) return null;
+    const worker = await ensureStockfishWorkerV0();
+    if (!worker) return null;
+
+    const multiPv = Math.max(
+      1,
+      Math.min(CHESS_STOCKFISH_CLUSTER_MULTI_PV_V0, Number(opts.multiPv) || CHESS_STOCKFISH_CLUSTER_MULTI_PV_V0)
+    );
+    const depth = Math.max(6, Math.min(16, Number(opts.depth) || 10));
+    const movetime = Math.max(200, Math.min(3000, Number(opts.movetimeMs) || 500));
+
+    if (activeAnalysisV0) {
+      clearTimeout(activeAnalysisV0.timer);
+      activeAnalysisV0 = null;
+    }
+    if (activeMultiPvAnalysisV0) {
+      clearTimeout(activeMultiPvAnalysisV0.timer);
+      activeMultiPvAnalysisV0 = null;
+    }
+    multiPvSnapshotV0.clear();
+
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        activeMultiPvAnalysisV0 = null;
+        try {
+          worker.postMessage("stop");
+        } catch {
+          /* noop */
+        }
+        const lines = [...multiPvSnapshotV0.values()].sort((a, b) => a.multipv - b.multipv);
+        multiPvSnapshotV0.clear();
+        resolve(
+          lines.length
+            ? Object.freeze({
+                fen: position,
+                multiPv,
+                lines: Object.freeze(lines.map((row) => Object.freeze({ ...row })))
+              })
+            : null
+        );
+      }, movetime + 600);
+
+      activeMultiPvAnalysisV0 = { resolve, timer, multiPv };
+
+      try {
+        currentPositionFenV0 = position;
+        worker.postMessage(`setoption name MultiPV value ${multiPv}`);
+        worker.postMessage(`position fen ${position}`);
+        worker.postMessage(`go depth ${depth} movetime ${movetime}`);
+      } catch {
+        clearTimeout(timer);
+        activeMultiPvAnalysisV0 = null;
+        multiPvSnapshotV0.clear();
+        resolve(null);
+      }
+    });
   });
 }
 

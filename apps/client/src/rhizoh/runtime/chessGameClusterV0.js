@@ -1,7 +1,7 @@
 /**
- * Chess Game Cluster v0 — 8 parallel AI vs AI matches, round-robin Stockfish scheduler.
- * Simulation + learning layers are spatial-independent and survive engine sandbox failures.
- * Compute (Stockfish worker) is optional — heuristic sim keeps ticks/event bus alive offline.
+ * Chess Game Cluster v0 — Rhizoh Multi-Arena Learning Loop.
+ * 8 boards (parallel games) → 1 shared Stockfish worker → MultiPV learning trace.
+ * Simulation + learning survive engine sandbox failures (heuristic fallback).
  * RESEARCH-ONLY
  */
 
@@ -9,12 +9,10 @@ import {
   CHESS_GAME_MODE_V0,
   createChessArenaGameV0
 } from "./chessArenaEngineV0.js";
-import { pickChessArenaEngineMoveV0, getChessStockfishEngineStatusV0 } from "./chessStockfishEngineV0.js";
-import {
-  CHESS_CLUSTER_SLOT_AGENTS_V0,
-  resolveChessClusterAgentPolicyV0,
-  resolveChessClusterStockfishOptsV0
-} from "./chessClusterAgentPolicyV0.js";
+import { pickChessClusterMoveV0 } from "./chessClusterMovePickerV0.js";
+import { resolveChessClusterSlotModeV0 } from "./chessClusterSlotModesV0.js";
+import { getChessClusterEngineSchedulerSnapshotV0 } from "./chessClusterEngineSchedulerV0.js";
+import { resolveChessClusterAgentPolicyV0 } from "./chessClusterAgentPolicyV0.js";
 import {
   CHESS_ENGINE_BRIDGE_KIND_V0,
   emitChessEngineBridgeV0
@@ -40,15 +38,18 @@ let roundRobinIndexV0 = 0;
 let busyV0 = false;
 
 function createSlotV0(slotId) {
-  const pair = CHESS_CLUSTER_SLOT_AGENTS_V0[slotId] || CHESS_CLUSTER_SLOT_AGENTS_V0[0];
+  const mode = resolveChessClusterSlotModeV0(slotId);
   const matchId = `cluster_${slotId}_${Date.now().toString(36)}`;
   const game = createChessArenaGameV0({ mode: CHESS_GAME_MODE_V0.AI_AI });
   return {
     slotId,
     matchId,
+    modeId: mode.modeId,
+    modeLabel: mode.label,
+    learningTag: mode.learningTag,
     game,
-    whiteAgent: pair[0],
-    blackAgent: pair[1],
+    whiteAgent: mode.whiteAgent,
+    blackAgent: mode.blackAgent,
     moveHistory: [],
     evalStream: [],
     attentionWeight: 1,
@@ -69,9 +70,11 @@ function publishClusterRegistryV0(extra = {}) {
   window.__rhizoh = window.__rhizoh || {};
   window.__rhizoh.chessGameCluster = Object.freeze({
     schema: CHESS_GAME_CLUSTER_SCHEMA_V0,
+    architecture: "single_engine_multi_pv",
     running: runningV0,
     tickCount: tickCountV0,
     slotCount: CHESS_CLUSTER_SLOT_COUNT_V0,
+    engineScheduler: getChessClusterEngineSchedulerSnapshotV0(),
     slots: slotsV0.map((s) => summarizeChessClusterSlotV0(s)),
     ...extra,
     atMs: Date.now()
@@ -86,6 +89,8 @@ export function summarizeChessClusterSlotV0(slot) {
   return Object.freeze({
     slotId: slot.slotId,
     matchId: slot.matchId,
+    modeId: slot.modeId,
+    modeLabel: slot.modeLabel,
     fen: slot.game.fen(),
     turn: slot.game.turn(),
     status: slot.status,
@@ -129,11 +134,7 @@ async function advanceChessClusterSlotV0(slot) {
   const turn = slot.game.turn();
   const agentId = turn === "w" ? slot.whiteAgent : slot.blackAgent;
   const policy = resolveChessClusterAgentPolicyV0(agentId);
-  const stockfishReady = getChessStockfishEngineStatusV0() === "stockfish_wasm";
-  const engine = await pickChessArenaEngineMoveV0(slot.game, {
-    useStockfish: stockfishReady,
-    ...resolveChessClusterStockfishOptsV0(agentId)
-  });
+  const engine = await pickChessClusterMoveV0(slot, slot.game);
 
   const moveUci = engine?.move;
   if (!moveUci) return null;

@@ -79,6 +79,7 @@ import {
   saveChessArenaThemeV0
 } from "../rhizoh/runtime/chessArenaThemeV0.js";
 import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
+import { RhizohChessArenaLobbyV0 } from "./RhizohChessArenaLobbyV0.jsx";
 import { PIECE_UNICODE_V0 } from "./RhizohCastleLibraryPanelV0.jsx";
 
 const MODE_OPTIONS_V0 = [
@@ -220,6 +221,9 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const [lastLearningV0, setLastLearningV0] = useState(null);
   const [learningSessionV0, setLearningSessionV0] = useState(() => readChessLearningSessionV0());
   const learningPresetsV0 = useMemo(() => listChessLearningSessionPresetsV0(), []);
+  const [arenaPhase, setArenaPhase] = useState(() =>
+    autoPlay || initialMode ? "playing" : "lobby"
+  );
 
   const timeControlV0 = useMemo(
     () => resolveChessTimeControlV0(arenaSession.timeControlId),
@@ -322,6 +326,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     setGameEpoch((e) => e + 1);
     setMatchResult(null);
     setStatus("");
+    setArenaPhase("playing");
   }, [open, initialMode]);
 
   useEffect(() => {
@@ -503,6 +508,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     (nextMode = mode) => {
       const g = createChessArenaGameV0({ mode: nextMode });
       setGame(g);
+      setMode(nextMode);
       setC2cMatch(null);
       setMoveInput("");
       setSelectedSquare(null);
@@ -520,11 +526,25 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     [mode, tr]
   );
 
+  const startMatchFromLobbyV0 = useCallback(
+    (nextMode) => {
+      resetGame(nextMode);
+      setArenaPhase("playing");
+      setStatus(tr ? "Maç hazır — iyi şanslar." : "Match ready — good luck.");
+    },
+    [resetGame, tr]
+  );
+
   useEffect(() => {
     if (!open) return;
-    if (peerCastle?.uid) return;
-    resetGame(CHESS_GAME_MODE_V0.AI_HUMAN);
-  }, [open, peerCastle?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (peerCastle?.uid) {
+      setArenaPhase("playing");
+      return;
+    }
+    if (!autoPlay && !initialMode) {
+      setArenaPhase("lobby");
+    }
+  }, [open, peerCastle?.uid, autoPlay, initialMode]);
 
   const applyMove = useCallback(
     async (move) => {
@@ -824,6 +844,15 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
             </p>
           </div>
           <div className="flex items-start gap-2">
+            {arenaPhase !== "lobby" ? (
+              <button
+                type="button"
+                onClick={() => setArenaPhase("lobby")}
+                className="rounded-lg border border-white/15 px-2 py-1 text-[10px] text-white/70 hover:text-white"
+              >
+                {tr ? "← Lobi" : "← Lobby"}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => setSettingsOpen((v) => !v)}
@@ -1094,6 +1123,58 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           </div>
         ) : null}
 
+        {arenaPhase === "lobby" ? (
+          <RhizohChessArenaLobbyV0
+            tr={tr}
+            engineStatus={engineStatus}
+            engineDetail={engineDetail}
+            onStartMatch={startMatchFromLobbyV0}
+            onOpenArchive={() => setArenaPhase("archive")}
+            onRetryEngine={retryStockfishEngineV0}
+          />
+        ) : null}
+
+        {arenaPhase === "archive" ? (
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white">
+                {tr ? "Maç arşivi" : "Match archive"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setArenaPhase("lobby")}
+                className="text-[11px] text-cyan-300 hover:text-cyan-200"
+              >
+                {tr ? "← Lobiye dön" : "← Back to lobby"}
+              </button>
+            </div>
+            {matchArchiveV0.length ? (
+              <ul className="space-y-2">
+                {listChessArenaArchiveV0(20).map((row) => (
+                  <li
+                    key={row.id}
+                    className="rounded-lg border border-white/10 bg-black/35 px-3 py-2 text-[11px] text-white/70"
+                  >
+                    <span className="font-semibold text-white">
+                      {formatChessOutcomeLabelV0(row.outcome, tr)}
+                    </span>
+                    <span className="text-white/45">
+                      {" "}
+                      · {row.white} vs {row.black} · {row.moves?.length || 0}{" "}
+                      {tr ? "hamle" : "moves"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[11px] text-white/45">
+                {tr ? "Arşiv boş — lobiden yeni oyun başlat." : "Archive empty — start a game from lobby."}
+              </p>
+            )}
+          </div>
+        ) : null}
+
+        {arenaPhase === "playing" ? (
         <div className="flex min-h-0 flex-1 flex-col items-center gap-2 overflow-y-auto p-3">
             <ChessPlayerBarV0
               name={opponentsV0.black}
@@ -1341,6 +1422,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
               </div>
             ) : null}
         </div>
+        ) : null}
       </div>
     </div>
   );
