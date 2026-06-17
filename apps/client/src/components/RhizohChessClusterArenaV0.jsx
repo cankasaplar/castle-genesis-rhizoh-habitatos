@@ -165,7 +165,7 @@ const LiveCameraBoardV0 = memo(function LiveCameraBoardV0({
   );
 });
 
-function LearningStripV0({ monitor, router, tr, timeControlLabel }) {
+function LearningStripV0({ monitor, activeSlotCount, tr, timeControlLabel }) {
   const recentMoves = monitor?.recentMoves || [];
   const lastMove = recentMoves[recentMoves.length - 1];
   const m = monitor?.measurement;
@@ -185,7 +185,8 @@ function LearningStripV0({ monitor, router, tr, timeControlLabel }) {
           {m?.alignmentRate != null ? ` · align ${Math.round(m.alignmentRate * 100)}%` : ""}
         </span>
         <span>
-          router: {router?.activeGames ?? 0}/{router?.gameCount ?? 8} · {timeControlLabel || "—"}
+          {tr ? "aktif slot" : "active slots"}: {activeSlotCount}/{CHESS_CLUSTER_SLOT_COUNT_V0} ·{" "}
+          {timeControlLabel || "—"}
         </span>
         <span>mem {monitor?.memoryNodeCount ?? 0}</span>
         <span>tick {monitor?.clusterTick ?? 0}</span>
@@ -215,13 +216,12 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
   const tr = uiLocale === "tr";
   const { boardColors, pieceBold, timeControl } = useChessArenaDisplaySettingsV0();
   const [slots, setSlots] = useState(() => listChessClusterSlotsV0());
+  const activeSlotCount = slots.filter((s) => s?.status === "active").length;
   const [highlightSlot, setHighlightSlot] = useState(null);
   const [tickCount, setTickCount] = useState(0);
   const [teacherStatus, setTeacherStatus] = useState(() => getChessStockfishEngineStatusV0());
   const [routerSnap, setRouterSnap] = useState(() => window.__rhizoh?.chessGameRouter || null);
   const [monitor, setMonitor] = useState(() => getChessLearningMonitorSnapshotV0("ui_mount"));
-
-  useEffect(() => {
     if (!open) return undefined;
     startChessLearningMeasurementV0();
     const refresh = () => {
@@ -312,15 +312,17 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
               tick {tickCount} · {isChessGameClusterRunningV0() ? (tr ? "sim aktif" : "sim on") : "sim off"}
             </span>
             <span>
-              {tr ? "router" : "router"}: {routerSnap?.activeGames ?? 0}/{CHESS_CLUSTER_SLOT_COUNT_V0}{" "}
-              {tr ? "oyun" : "games"}
+              {tr ? "aktif slot" : "active slots"}: {activeSlotCount}/{CHESS_CLUSTER_SLOT_COUNT_V0}
+            </span>
+            <span>
+              {tr ? "motor kuyruğu" : "engine queue"}: {routerSnap?.queuedOps ?? 0}
             </span>
             <span>{tr ? "öğretmen" : "teacher"}: {teacherLabel}</span>
             <span>{timeControl.labelTr || padded[0]?.clock?.timeControlId || "—"}</span>
           </div>
           <LearningStripV0
             monitor={monitor}
-            router={routerSnap}
+            activeSlotCount={activeSlotCount}
             tr={tr}
             timeControlLabel={tr ? timeControl.labelTr : timeControl.labelEn}
           />
