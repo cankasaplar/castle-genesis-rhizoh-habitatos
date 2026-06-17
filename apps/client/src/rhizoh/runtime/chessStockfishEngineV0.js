@@ -112,6 +112,14 @@ function postStockfishBridgeMessageV0(message) {
   deliverChessStockfishUciCommandV0(stockfishMainEngineV0, message);
 }
 
+function stopStockfishSearchV0() {
+  try {
+    postStockfishBridgeMessageV0("stop");
+  } catch {
+    /* noop */
+  }
+}
+
 function disposeStockfishBridgeV0() {
   try {
     stockfishMainEngineV0?.terminate?.();
@@ -240,6 +248,15 @@ function resetReadyFlagsV0() {
   readyV0 = false;
 }
 
+function dispatchStockfishLineV0(raw) {
+  const text = String(raw ?? "");
+  const parts = text.includes("\n") ? text.split(/\r?\n/) : [text];
+  for (const part of parts) {
+    const line = part.trim();
+    if (line) handleStockfishLineV0(line);
+  }
+}
+
 function handleStockfishLineV0(line) {
   line = String(line ?? "").trim();
   if (line.startsWith("sf_worker_error:")) {
@@ -341,13 +358,15 @@ function attachStockfishEngineHandlersV0(engine) {
     throw new Error("stockfish_addMessageListener_missing");
   }
   engine.addMessageListener((line) => {
-    handleStockfishLineV0(typeof line === "string" ? line : String(line ?? ""));
+    dispatchStockfishLineV0(typeof line === "string" ? line : String(line ?? ""));
   });
 }
 
 let initPromiseV0 = null;
 /** @type {Promise<unknown>} */
 let engineOpChainV0 = Promise.resolve();
+/** Nested acquires must not deadlock (cluster scheduler + getStockfishArenaMoveV0). */
+let engineLockDepthV0 = 0;
 /** @type {{ resolve: Function, timer: ReturnType<typeof setTimeout>, multiPv: number } | null} */
 let activeMultiPvAnalysisV0 = null;
 /** @type {Map<number, { multipv: number, cp: number | null, mate: number | null, depth: number, pv: string, bestMove: string | null }>} */
@@ -360,7 +379,17 @@ const multiPvSnapshotV0 = new Map();
  * @returns {Promise<T>}
  */
 export function withChessStockfishEngineLockV0(fn) {
-  const op = engineOpChainV0.then(() => fn());
+  if (engineLockDepthV0 > 0) {
+    return Promise.resolve().then(fn);
+  }
+  const op = engineOpChainV0.then(async () => {
+    engineLockDepthV0 += 1;
+    try {
+      return await fn();
+    } finally {
+      engineLockDepthV0 = Math.max(0, engineLockDepthV0 - 1);
+    }
+  });
   engineOpChainV0 = op.then(
     () => undefined,
     () => undefined
@@ -716,10 +745,24 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
   const { skill, movetimeMs, depth } = resolveStockfishOptsV0(opts);
   const contempt = Number.isFinite(Number(opts.contempt)) ? Number(opts.contempt) : null;
 
+  if (activeAnalysisV0) {
+    clearTimeout(activeAnalysisV0.timer);
+    activeAnalysisV0 = null;
+    stopStockfishSearchV0();
+  }
+  if (activeMultiPvAnalysisV0) {
+    clearTimeout(activeMultiPvAnalysisV0.timer);
+    activeMultiPvAnalysisV0 = null;
+    multiPvSnapshotV0.clear();
+    stopStockfishSearchV0();
+  }
+
   return new Promise((resolve) => {
     const id = nextId();
     const timer = setTimeout(() => {
       pendingV0.delete(id);
+      stopStockfishSearchV0();
+      logStockfishV0("warn", "arena move timeout", { movetimeMs, depth, fen: position.slice(0, 40) });
       resolve(null);
     }, movetimeMs + 2000);
 
@@ -744,7 +787,7 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
       }
       currentPositionFenV0 = position;
       postStockfishBridgeMessageV0(`position fen ${position}`);
-      postStockfishBridgeMessageV0(`go depth ${depth} movetime ${movetimeMs}`);
+      postStockfishBridgeMessageV0(`go movetime ${movetimeMs}`);
     } catch {
       clearTimeout(timer);
       pendingV0.delete(id);
@@ -955,7 +998,9 @@ export async function pickChessArenaEngineMoveV0(game, opts = {}) {
     const sf = await getStockfishArenaMoveV0(game.fen(), {
       preset: opts.preset || "ARENA",
       skill: opts.skill,
-      movetimeMs: opts.movetimeMs
+      movetimeMs: opts.movetimeMs,
+      depth: opts.depth,
+      contempt: opts.contempt
     });
     if (sf) return Object.freeze({ move: sf, engine: "stockfish_wasm" });
   } catch {
