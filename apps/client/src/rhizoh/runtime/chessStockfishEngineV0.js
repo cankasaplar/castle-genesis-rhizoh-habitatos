@@ -4,6 +4,7 @@
  */
 
 import { pickChessArenaAiMoveV0 } from "./chessArenaEngineV0.js";
+import { pickChessAgentHeuristicMoveV0 } from "./chessAgentHeuristicV0.js";
 import {
   CHESS_ENGINE_BRIDGE_KIND_V0,
   emitChessEngineBridgeV0
@@ -926,14 +927,29 @@ export async function analyzePlayedMoveV0(fenBefore, playedMove, opts = {}) {
   });
 }
 
+function arenaHeuristicFallbackV0(game, opts = {}) {
+  const preset =
+    opts.preset && CHESS_STOCKFISH_PRESET_V0[opts.preset]
+      ? CHESS_STOCKFISH_PRESET_V0[opts.preset]
+      : CHESS_STOCKFISH_PRESET_V0.ARENA;
+  const policy = Object.freeze({
+    contempt: preset.skill >= 18 ? 20 : preset.skill >= 14 ? 8 : -4,
+    explorationRate: 0.09,
+    riskProfile: preset.skill >= 18 ? "aggressive" : preset.skill >= 14 ? "balanced" : "defensive"
+  });
+  const move =
+    pickChessAgentHeuristicMoveV0(game, policy, { agentId: opts.preset || "ARENA" }) ||
+    pickChessArenaAiMoveV0(game);
+  return Object.freeze({ move, engine: "heuristic_fallback" });
+}
+
 /**
  * @param {ReturnType<import('./chessArenaEngineV0.js').createChessArenaGameV0>} game
  * @param {{ useStockfish?: boolean, preset?: string, skill?: number, movetimeMs?: number }} [opts]
  */
 export async function pickChessArenaEngineMoveV0(game, opts = {}) {
   if (opts.useStockfish === false) {
-    const move = pickChessArenaAiMoveV0(game);
-    return Object.freeze({ move, engine: "heuristic_fallback" });
+    return arenaHeuristicFallbackV0(game, opts);
   }
   try {
     const sf = await getStockfishArenaMoveV0(game.fen(), {
@@ -945,7 +961,7 @@ export async function pickChessArenaEngineMoveV0(game, opts = {}) {
   } catch {
     /* fall through to heuristic */
   }
-  return Object.freeze({ move: pickChessArenaAiMoveV0(game), engine: "heuristic_fallback" });
+  return arenaHeuristicFallbackV0(game, opts);
 }
 
 /**

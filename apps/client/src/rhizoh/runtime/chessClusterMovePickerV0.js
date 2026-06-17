@@ -4,6 +4,7 @@
  */
 
 import { pickChessArenaAiMoveV0 } from "./chessArenaEngineV0.js";
+import { pickChessAgentHeuristicMoveV0 } from "./chessAgentHeuristicV0.js";
 import {
   resolveChessClusterAgentPolicyV0,
   resolveChessClusterStockfishOptsV0,
@@ -13,6 +14,15 @@ import { resolveChessClusterSlotModeV0 } from "./chessClusterSlotModesV0.js";
 import { scheduleClusterEngineMoveV0 } from "./chessClusterEngineSchedulerV0.js";
 import { getChessStockfishEngineStatusV0 } from "./chessStockfishEngineV0.js";
 import { pickRhizohChessMoveV0 } from "./rhizohChessPlayerV0.js";
+
+function pickClusterHeuristicMoveV0(game, slot, agentId, policy) {
+  const uci = pickChessAgentHeuristicMoveV0(game, policy, {
+    slotId: slot?.slotId,
+    agentId
+  });
+  if (uci) return uci;
+  return pickChessArenaAiMoveV0(game);
+}
 
 /**
  * @param {object} slot
@@ -31,7 +41,7 @@ export async function pickChessClusterMoveV0(slot, game) {
       if (turn === "w") {
         const rhizohPick = await pickRhizohChessMoveV0(game);
         return Object.freeze({
-          move: rhizohPick?.move || pickChessArenaAiMoveV0(game),
+          move: rhizohPick?.move || pickClusterHeuristicMoveV0(game, slot, agentId, policy),
           engine: rhizohPick?.engine || "rhizoh_ai"
         });
       }
@@ -53,12 +63,16 @@ export async function pickChessClusterMoveV0(slot, game) {
       });
     case "heuristic":
       return Object.freeze({
-        move: pickChessArenaAiMoveV0(game),
-        engine: "heuristic_defensive"
+        move: pickClusterHeuristicMoveV0(game, slot, agentId, policy),
+        engine: stockfishReady ? "heuristic_pending_sf" : `heuristic_${policy.riskProfile || "defensive"}`
       });
     case "heuristic_human":
       return Object.freeze({
-        move: pickChessArenaAiMoveV0(game),
+        move: pickClusterHeuristicMoveV0(game, slot, agentId, {
+          ...policy,
+          riskProfile: "human_like",
+          explorationRate: 0.14
+        }),
         engine: "heuristic_human_mirror"
       });
     case "heuristic_explore": {
@@ -69,7 +83,7 @@ export async function pickChessClusterMoveV0(slot, game) {
         return Object.freeze({ move: uci, engine: "heuristic_rl_explore" });
       }
       return Object.freeze({
-        move: pickChessArenaAiMoveV0(game),
+        move: pickClusterHeuristicMoveV0(game, slot, agentId, policy),
         engine: "heuristic_rl_trace"
       });
     }
@@ -85,7 +99,7 @@ export async function pickChessClusterMoveV0(slot, game) {
         return scheduleClusterEngineMoveV0(game, { useStockfish: true, ...stockfishOpts });
       }
       return Object.freeze({
-        move: pickChessArenaAiMoveV0(game),
+        move: pickClusterHeuristicMoveV0(game, slot, agentId, policy),
         engine: "heuristic_fallback"
       });
     }

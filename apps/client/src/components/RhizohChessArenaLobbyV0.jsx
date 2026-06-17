@@ -9,11 +9,18 @@ import {
 import { formatChessOutcomeLabelV0 } from "../rhizoh/runtime/chessArenaEngineV0.js";
 import { RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0 } from "../rhizoh/runtime/chessGameClusterV0.js";
 import {
+  listChessOpponentPresetsV0,
   listChessTimeControlsV0,
   readChessArenaSessionV0,
+  resolveChessOpponentPresetV0,
   resolveChessTimeControlV0,
   saveChessArenaSessionV0
 } from "../rhizoh/runtime/chessArenaSessionV0.js";
+import {
+  CHESS_POLICY_MODE_V0,
+  readChessPolicyModeV0,
+  saveChessPolicyModeV0
+} from "../rhizoh/runtime/chessPolicyModeV0.js";
 
 function EngineStatusChipV0({ engineStatus, engineDetail, tr }) {
   const label =
@@ -66,7 +73,16 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
   const learning = getChessArenaLearningFeedV0();
   const season = CHESS_ARENA_CURRENT_SEASON_V0;
   const timeControls = listChessTimeControlsV0();
+  const opponentPresets = listChessOpponentPresetsV0();
   const [timeControlId, setTimeControlId] = useState(() => readChessArenaSessionV0().timeControlId);
+  const [opponentPresetId, setOpponentPresetId] = useState(
+    () => readChessArenaSessionV0().opponentPresetId
+  );
+  const [policyMode, setPolicyMode] = useState(() => readChessPolicyModeV0());
+  const [selectedMatchId, setSelectedMatchId] = useState(CHESS_ARENA_QUICK_MATCH_V0[0]?.id || null);
+
+  const selectedQuick = CHESS_ARENA_QUICK_MATCH_V0.find((m) => m.id === selectedMatchId) || null;
+  const activeOpponent = resolveChessOpponentPresetV0(opponentPresetId);
 
   useEffect(() => {
     const onStorage = () => setTimeControlId(readChessArenaSessionV0().timeControlId);
@@ -79,6 +95,41 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
   const onTimeControlChange = (id) => {
     saveChessArenaSessionV0({ timeControlId: id });
     setTimeControlId(id);
+  };
+
+  const onOpponentChange = (id) => {
+    saveChessArenaSessionV0({ opponentPresetId: id });
+    setOpponentPresetId(id);
+  };
+
+  const selectQuickMatch = (row) => {
+    setSelectedMatchId(row.id);
+    if (row.defaultOpponentPresetId) {
+      onOpponentChange(row.defaultOpponentPresetId);
+    }
+  };
+
+  const launchSelectedMatch = () => {
+    if (!selectedQuick) return;
+    saveChessPolicyModeV0(policyMode);
+    onStartMatch({
+      mode: selectedQuick.mode,
+      opponentPresetId,
+      policyMode
+    });
+  };
+
+  const launchFixture = (fx) => {
+    if (fx.mode === "cluster") {
+      openCluster();
+      return;
+    }
+    if (fx.defaultOpponentPresetId) onOpponentChange(fx.defaultOpponentPresetId);
+    onStartMatch({
+      mode: fx.mode,
+      opponentPresetId: fx.defaultOpponentPresetId || opponentPresetId,
+      policyMode
+    });
   };
 
   const openCluster = () => {
@@ -126,18 +177,73 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
             </p>
           </div>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div>
+              <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-white/45">
+                {tr ? "Rakip gücü" : "Opponent strength"}
+              </p>
+              <select
+                value={opponentPresetId}
+                onChange={(e) => onOpponentChange(e.target.value)}
+                className="w-full rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+              >
+                {opponentPresets.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {tr ? p.labelTr : p.labelEn}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-white/45">
+                {tr ? "Rhizoh politikası" : "Rhizoh policy"}
+              </p>
+              <select
+                value={policyMode}
+                onChange={(e) => setPolicyMode(e.target.value)}
+                className="w-full rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+              >
+                <option value={CHESS_POLICY_MODE_V0.AGGRESSIVE}>
+                  {tr ? "Agresif" : "Aggressive"}
+                </option>
+                <option value={CHESS_POLICY_MODE_V0.BALANCED}>{tr ? "Dengeli" : "Balanced"}</option>
+                <option value={CHESS_POLICY_MODE_V0.SAFE}>{tr ? "Güvenli" : "Safe"}</option>
+              </select>
+            </div>
+          </div>
+          <p className="mt-2 text-[9px] text-white/40">
+            {tr ? "Seçili rakip" : "Selected opponent"}: {tr ? activeOpponent.labelTr : activeOpponent.labelEn}
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {CHESS_ARENA_QUICK_MATCH_V0.map((row) => (
               <button
                 key={row.id}
                 type="button"
-                onClick={() => onStartMatch(row.mode)}
-                className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-left transition hover:border-emerald-400/45 hover:bg-emerald-500/10"
+                onClick={() => selectQuickMatch(row)}
+                className={`rounded-lg border px-3 py-2.5 text-left transition ${
+                  selectedMatchId === row.id
+                    ? "border-emerald-400/65 bg-emerald-500/15"
+                    : "border-white/10 bg-black/40 hover:border-emerald-400/45 hover:bg-emerald-500/10"
+                }`}
               >
                 <p className="text-[12px] font-semibold text-white">{tr ? row.labelTr : row.labelEn}</p>
                 <p className="mt-0.5 text-[10px] text-white/45">{tr ? row.descTr : row.descEn}</p>
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            onClick={launchSelectedMatch}
+            disabled={!selectedQuick}
+            className="mt-3 w-full rounded-lg border border-emerald-400/55 bg-emerald-500/20 px-3 py-2.5 text-[12px] font-bold text-emerald-50 hover:bg-emerald-500/30 disabled:opacity-40"
+          >
+            {selectedQuick
+              ? tr
+                ? `Maçı başlat · ${selectedQuick.labelTr}`
+                : `Start match · ${selectedQuick.labelEn}`
+              : tr
+                ? "Maç seç"
+                : "Select a match"}
+          </button>
           <button
             type="button"
             onClick={openCluster}
@@ -217,12 +323,10 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
                     {tr ? fx.whiteTr : fx.whiteEn} vs {tr ? fx.blackTr : fx.blackEn}
                   </td>
                   <td className="py-1.5">
-                    {fx.status === "next" ? (
+                    {fx.status === "playable" || fx.status === "next" ? (
                       <button
                         type="button"
-                        onClick={() =>
-                          fx.mode === "cluster" ? openCluster() : onStartMatch(fx.mode)
-                        }
+                        onClick={() => launchFixture(fx)}
                         className="rounded border border-emerald-400/40 px-1.5 py-0.5 text-[9px] text-emerald-200"
                       >
                         {tr ? "Oyna" : "Play"}
