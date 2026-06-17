@@ -28,6 +28,7 @@ describe("chessStockfishEngineV0", () => {
     expect(detail.workerStrategy).toBe("blob");
     expect(detail.hashWorkersDisabled).toBe(true);
     expect(detail.spawnStrategies).toEqual([
+      "main_thread_wasm_binary",
       "xfer_wasm_bytes_deferred_import",
       "xfer_wasm_compiled_module",
       "blob_js_wasm_blob",
@@ -58,6 +59,27 @@ describe("chessStockfishEngineV0", () => {
     );
     expect(patched).not.toBe(jsSource);
     expect(patched).toContain("__SF_WASM_MODULE__");
+  });
+
+  it("stockfish worker source supports manual-init patch", () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const stockfishPath = join(here, "../../../../public/chess-engine/stockfish-nnue-16-single.js");
+    const jsSource = readFileSync(stockfishPath, "utf8");
+    const autoGate =
+      '"undefined"!=typeof self&&"worker"===self.location.hash.split(",")[1]';
+    const autoTail =
+      '):"object"==typeof document&&document.currentScript?document.currentScript._exports=i():i())';
+    expect(jsSource).toContain(autoGate);
+    expect(jsSource).toContain(autoTail);
+    const patched = jsSource
+      .split(autoGate)
+      .join('false&&"undefined"!=typeof self&&"worker"===self.location.hash.split(",")[1]')
+      .split(autoTail)
+      .join(
+        '):"object"==typeof document&&document.currentScript?document.currentScript._exports=i():(typeof self!=="undefined"?self.__SF_STOCKFISH_FACTORY__=i:0))'
+      );
+    expect(patched).toContain("__SF_STOCKFISH_FACTORY__");
+    expect(patched).toContain('false&&"undefined"!=typeof self');
   });
 
   it("stockfish worker source supports wasm bytes deferred patch", () => {

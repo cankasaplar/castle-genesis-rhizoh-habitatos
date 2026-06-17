@@ -59,6 +59,8 @@ let workerErrorRejectV0 = null;
 
 /** @type {Worker | null} */
 let workerV0 = null;
+/** @type {{ postMessage: Function, terminate?: Function, addMessageListener?: Function } | null} */
+let stockfishMainEngineV0 = null;
 /** @type {Map<number, { resolve: Function, reject: Function }>} */
 const pendingV0 = new Map();
 /** @type {{ resolve: Function, reject: Function, timer: ReturnType<typeof setTimeout> } | null} */
@@ -92,11 +94,41 @@ let compileWatchdogStartedAtV0 = 0;
 
 export function getChessStockfishEngineStatusV0() {
   if (initFailedV0) return "heuristic_fallback";
-  if (workerV0 && readyV0) return "stockfish_wasm";
-  if (workerV0 && uciOkV0) return "stockfish_initializing";
-  if (workerV0) return "stockfish_compiling";
+  const bridgeActive = Boolean(workerV0 || stockfishMainEngineV0);
+  if (bridgeActive && readyV0) return "stockfish_wasm";
+  if (bridgeActive && uciOkV0) return "stockfish_initializing";
+  if (bridgeActive) return "stockfish_compiling";
   if (initPromiseV0) return "stockfish_compiling";
   return "not_started";
+}
+
+function getActiveStockfishBridgeV0() {
+  return workerV0 || stockfishMainEngineV0;
+}
+
+function postStockfishBridgeMessageV0(message) {
+  const bridge = getActiveStockfishBridgeV0();
+  if (!bridge) return;
+  if (workerV0) {
+    workerV0.postMessage(message);
+    return;
+  }
+  stockfishMainEngineV0?.postMessage?.(message);
+}
+
+function disposeStockfishBridgeV0() {
+  try {
+    workerV0?.terminate?.();
+  } catch {
+    /* noop */
+  }
+  try {
+    stockfishMainEngineV0?.terminate?.();
+  } catch {
+    /* noop */
+  }
+  workerV0 = null;
+  stockfishMainEngineV0 = null;
 }
 
 export function getChessStockfishEngineDetailV0() {
@@ -215,95 +247,109 @@ function resetReadyFlagsV0() {
   readyV0 = false;
 }
 
+function handleStockfishLineV0(line) {
+  if (line.startsWith("sf_worker_error:")) {
+    initErrorV0 = line.slice("sf_worker_error:".length);
+    logStockfishV0("error", "worker bootstrap error", { error: initErrorV0, strategy: lastSpawnStrategyV0 });
+    return;
+  }
+  if (line.startsWith("sf_worker_stage:")) {
+    logStockfishV0("info", "worker bootstrap stage", { stage: line.slice("sf_worker_stage:".length) });
+    return;
+  }
+  if (!uciOkV0 && line && line !== "uciok" && line !== "readyok") {
+    logStockfishV0("info", "worker message during init", { line: line.slice(0, 120) });
+  }
+  if (line === "uciok") {
+    uciOkV0 = true;
+    logStockfishV0("info", "uciok", { strategy: lastSpawnStrategyV0 });
+    publishEngineStatusV0("uciok");
+    try {
+      postStockfishBridgeMessageV0("isready");
+    } catch {
+      /* noop */
+    }
+  }
+  if (line === "readyok") {
+    readyV0 = true;
+    logStockfishV0("info", "readyok", { strategy: lastSpawnStrategyV0 });
+    publishEngineStatusV0("readyok");
+  }
+
+  const depthMatch = line.match(/\bdepth (\d+)\b/);
+  const cpMatch = line.match(/\bscore cp (-?\d+)\b/);
+  const mateMatch = line.match(/\bscore mate (-?\d+)\b/);
+  const pvMatch = line.match(/\bpv (.+)$/);
+  const multipvMatch = line.match(/\bmultipv (\d+)\b/);
+
+  if (multipvMatch && activeMultiPvAnalysisV0) {
+    const idx = Number(multipvMatch[1]);
+    const pv = pvMatch ? pvMatch[1].trim() : "";
+    multiPvSnapshotV0.set(idx, {
+      multipv: idx,
+      cp: cpMatch ? Number(cpMatch[1]) : null,
+      mate: mateMatch ? Number(mateMatch[1]) : null,
+      depth: depthMatch ? Number(depthMatch[1]) : 0,
+      pv,
+      bestMove: pv ? pv.split(/\s+/)[0] : null
+    });
+  } else if (depthMatch || cpMatch || mateMatch || pvMatch) {
+    lastAnalysisInfoV0 = {
+      cp: cpMatch ? Number(cpMatch[1]) : lastAnalysisInfoV0.cp,
+      mate: mateMatch ? Number(mateMatch[1]) : lastAnalysisInfoV0.mate,
+      depth: depthMatch ? Number(depthMatch[1]) : lastAnalysisInfoV0.depth,
+      pv: pvMatch ? pvMatch[1].trim() : lastAnalysisInfoV0.pv,
+      bestMove: lastAnalysisInfoV0.bestMove
+    };
+  }
+
+  const m = line.match(/^bestmove\s+(\S+)/);
+  if (m) {
+    const move = m[1] && m[1] !== "(none)" ? m[1] : null;
+    lastAnalysisInfoV0 = { ...lastAnalysisInfoV0, bestMove: move };
+    if (move) emitBestmoveBridgeV0(move);
+    if (activeMultiPvAnalysisV0) {
+      clearTimeout(activeMultiPvAnalysisV0.timer);
+      const { resolve } = activeMultiPvAnalysisV0;
+      activeMultiPvAnalysisV0 = null;
+      const lines = [...multiPvSnapshotV0.values()].sort((a, b) => a.multipv - b.multipv);
+      resolve(
+        lines.length
+          ? Object.freeze({
+              fen: currentPositionFenV0,
+              lines: Object.freeze(lines.map((row) => Object.freeze({ ...row })))
+            })
+          : null
+      );
+      return;
+    }
+    if (activeAnalysisV0) {
+      clearTimeout(activeAnalysisV0.timer);
+      const { resolve } = activeAnalysisV0;
+      activeAnalysisV0 = null;
+      resolve(Object.freeze({ ...lastAnalysisInfoV0 }));
+      return;
+    }
+    const id = [...pendingV0.keys()].pop();
+    const row = id != null ? pendingV0.get(id) : null;
+    if (row) {
+      pendingV0.delete(id);
+      row.resolve(move);
+    }
+  }
+}
+
+function attachMainThreadHandlersV0(engine) {
+  engine.addMessageListener((line) => {
+    handleStockfishLineV0(typeof line === "string" ? line : String(line ?? ""));
+  });
+}
+
 function attachWorkerHandlersV0(worker) {
   worker.onmessage = (ev) => {
     const raw = ev?.data;
     const line = typeof raw === "string" ? raw : raw != null ? String(raw) : "";
-    if (line.startsWith("sf_worker_error:")) {
-      initErrorV0 = line.slice("sf_worker_error:".length);
-      logStockfishV0("error", "worker bootstrap error", { error: initErrorV0, strategy: lastSpawnStrategyV0 });
-      return;
-    }
-    if (!uciOkV0 && line && line !== "uciok" && line !== "readyok") {
-      logStockfishV0("info", "worker message during init", { line: line.slice(0, 120) });
-    }
-    if (line === "uciok") {
-      uciOkV0 = true;
-      logStockfishV0("info", "uciok", { strategy: lastSpawnStrategyV0 });
-      publishEngineStatusV0("uciok");
-      try {
-        worker.postMessage("isready");
-      } catch {
-        /* noop */
-      }
-    }
-    if (line === "readyok") {
-      readyV0 = true;
-      logStockfishV0("info", "readyok", { strategy: lastSpawnStrategyV0 });
-      publishEngineStatusV0("readyok");
-    }
-
-    const depthMatch = line.match(/\bdepth (\d+)\b/);
-    const cpMatch = line.match(/\bscore cp (-?\d+)\b/);
-    const mateMatch = line.match(/\bscore mate (-?\d+)\b/);
-    const pvMatch = line.match(/\bpv (.+)$/);
-    const multipvMatch = line.match(/\bmultipv (\d+)\b/);
-
-    if (multipvMatch && activeMultiPvAnalysisV0) {
-      const idx = Number(multipvMatch[1]);
-      const pv = pvMatch ? pvMatch[1].trim() : "";
-      multiPvSnapshotV0.set(idx, {
-        multipv: idx,
-        cp: cpMatch ? Number(cpMatch[1]) : null,
-        mate: mateMatch ? Number(mateMatch[1]) : null,
-        depth: depthMatch ? Number(depthMatch[1]) : 0,
-        pv,
-        bestMove: pv ? pv.split(/\s+/)[0] : null
-      });
-    } else if (depthMatch || cpMatch || mateMatch || pvMatch) {
-      lastAnalysisInfoV0 = {
-        cp: cpMatch ? Number(cpMatch[1]) : lastAnalysisInfoV0.cp,
-        mate: mateMatch ? Number(mateMatch[1]) : lastAnalysisInfoV0.mate,
-        depth: depthMatch ? Number(depthMatch[1]) : lastAnalysisInfoV0.depth,
-        pv: pvMatch ? pvMatch[1].trim() : lastAnalysisInfoV0.pv,
-        bestMove: lastAnalysisInfoV0.bestMove
-      };
-    }
-
-    const m = line.match(/^bestmove\s+(\S+)/);
-    if (m) {
-      const move = m[1] && m[1] !== "(none)" ? m[1] : null;
-      lastAnalysisInfoV0 = { ...lastAnalysisInfoV0, bestMove: move };
-      if (move) emitBestmoveBridgeV0(move);
-      if (activeMultiPvAnalysisV0) {
-        clearTimeout(activeMultiPvAnalysisV0.timer);
-        const { resolve } = activeMultiPvAnalysisV0;
-        activeMultiPvAnalysisV0 = null;
-        const lines = [...multiPvSnapshotV0.values()].sort((a, b) => a.multipv - b.multipv);
-        resolve(
-          lines.length
-            ? Object.freeze({
-                fen: currentPositionFenV0,
-                lines: Object.freeze(lines.map((row) => Object.freeze({ ...row })))
-              })
-            : null
-        );
-        return;
-      }
-      if (activeAnalysisV0) {
-        clearTimeout(activeAnalysisV0.timer);
-        const { resolve } = activeAnalysisV0;
-        activeAnalysisV0 = null;
-        resolve(Object.freeze({ ...lastAnalysisInfoV0 }));
-        return;
-      }
-      const id = [...pendingV0.keys()].pop();
-      const row = id != null ? pendingV0.get(id) : null;
-      if (row) {
-        pendingV0.delete(id);
-        row.resolve(move);
-      }
-    }
+    handleStockfishLineV0(line);
   };
   worker.onerror = (err) => {
     const detail = {
@@ -321,6 +367,7 @@ function attachWorkerHandlersV0(worker) {
       /* noop */
     }
     workerV0 = null;
+    stockfishMainEngineV0 = null;
     resetReadyFlagsV0();
     publishEngineStatusV0("worker_error");
     if (workerErrorRejectV0) {
@@ -469,6 +516,29 @@ async function verifyStockfishAssetsV0() {
 const STOCKFISH_WORKER_WEB_INIT_RE_V0 =
   /e=\{locateFile:function\(e\)\{return-1<e\.indexOf\("\.wasm"\)\?r:self\.location\.origin\+self\.location\.pathname\+"#"\+r\+",worker"\}\},i\(\)\(e\)\.then/;
 
+const STOCKFISH_AUTO_WORKER_GATE_V0 =
+  '"undefined"!=typeof self&&"worker"===self.location.hash.split(",")[1]';
+const STOCKFISH_AUTO_WORKER_GATE_DISABLED_V0 =
+  'false&&"undefined"!=typeof self&&"worker"===self.location.hash.split(",")[1]';
+const STOCKFISH_AUTO_BOOT_TAIL_V0 =
+  '):"object"==typeof document&&document.currentScript?document.currentScript._exports=i():i())';
+const STOCKFISH_AUTO_BOOT_TAIL_MANUAL_V0 =
+  '):"object"==typeof document&&document.currentScript?document.currentScript._exports=i():(typeof self!=="undefined"?self.__SF_STOCKFISH_FACTORY__=i:0))';
+
+function patchStockfishSourceForManualInitV0(jsSource) {
+  if (!jsSource.includes(STOCKFISH_AUTO_WORKER_GATE_V0)) {
+    throw new Error("stockfish_auto_worker_gate_missing");
+  }
+  if (!jsSource.includes(STOCKFISH_AUTO_BOOT_TAIL_V0)) {
+    throw new Error("stockfish_auto_boot_tail_missing");
+  }
+  return jsSource
+    .split(STOCKFISH_AUTO_WORKER_GATE_V0)
+    .join(STOCKFISH_AUTO_WORKER_GATE_DISABLED_V0)
+    .split(STOCKFISH_AUTO_BOOT_TAIL_V0)
+    .join(STOCKFISH_AUTO_BOOT_TAIL_MANUAL_V0);
+}
+
 const STOCKFISH_XFER_BOOTSTRAP_PREFIX_V0 = `"use strict";
 self.__SF_WASM_MODULE__=null;
 var __sfModuleWaiters=[];
@@ -546,26 +616,42 @@ async function compileWasmModuleOnMainThreadV0(wasmBytes) {
 }
 
 function buildXferWasmBytesDeferredWorkerUrlV0(assets) {
-  if (!STOCKFISH_WORKER_WEB_INIT_RE_V0.test(assets.jsSource)) {
-    throw new Error("stockfish_worker_patch_missing");
-  }
-  const patched = assets.jsSource.replace(
-    STOCKFISH_WORKER_WEB_INIT_RE_V0,
-    STOCKFISH_WASM_BINARY_WORKER_INIT_PATCH_V0
-  );
+  const patched = patchStockfishSourceForManualInitV0(assets.jsSource);
   const stockfishBlobUrl = URL.createObjectURL(
     new Blob([patched], { type: "application/javascript" })
   );
   trackSpawnBlobUrlV0(stockfishBlobUrl);
   const bootstrap = `"use strict";
-var __sfStockfishLoaded=false;
+var __sfBootstrapped=false;
+var __sfPendingUci=[];
+function __sfDrainPendingUci(){
+  if(!self.__sfEngine)return;
+  while(__sfPendingUci.length)self.__sfEngine.postMessage(__sfPendingUci.shift());
+}
 self.addEventListener("message",function(ev){
   var d=ev.data;
-  if(!d||d.cmd!=="sf_arm_wasm_bytes"||!d.wasmBytes||__sfStockfishLoaded)return;
+  if(typeof d==="string"){
+    if(self.__sfEngine)self.__sfEngine.postMessage(d);
+    else __sfPendingUci.push(d);
+    return;
+  }
+  if(!d||d.cmd!=="sf_arm_wasm_bytes"||!d.wasmBytes||__sfBootstrapped)return;
+  __sfBootstrapped=true;
   self.__SF_WASM_BYTES__=d.wasmBytes;
   try{
+    postMessage("sf_worker_stage:import_scripts_start");
     importScripts(${JSON.stringify(stockfishBlobUrl)});
-    __sfStockfishLoaded=true;
+    postMessage("sf_worker_stage:import_scripts_done");
+    var create=self.__SF_STOCKFISH_FACTORY__;
+    if(typeof create!=="function"){postMessage("sf_worker_error:stockfish_factory_missing");return;}
+    create({wasmBinary:self.__SF_WASM_BYTES__}).then(function(engine){
+      self.__sfEngine=engine;
+      engine.addMessageListener(function(line){postMessage(line);});
+      postMessage("sf_worker_stage:engine_ready");
+      __sfDrainPendingUci();
+    }).catch(function(err){
+      postMessage("sf_worker_error:"+String(err&&err.message||err));
+    });
   }catch(err){
     postMessage("sf_worker_error:"+String(err&&err.message||err));
   }
@@ -573,7 +659,50 @@ self.addEventListener("message",function(ev){
 `;
   const jsBlobUrl = URL.createObjectURL(new Blob([bootstrap], { type: "application/javascript" }));
   trackSpawnBlobUrlV0(jsBlobUrl);
-  return `${jsBlobUrl}#xfer_bytes,worker`;
+  return `${jsBlobUrl}#xfer_bytes`;
+}
+
+function loadStockfishFactoryFromPatchedSourceV0(patchedSource) {
+  if (typeof document === "undefined") {
+    return Promise.reject(new Error("main_thread_requires_document"));
+  }
+  return new Promise((resolve, reject) => {
+    const globalRef = typeof globalThis !== "undefined" ? globalThis : window;
+    globalRef.__SF_STOCKFISH_FACTORY__ = undefined;
+    const blob = new Blob([patchedSource], { type: "application/javascript" });
+    const url = URL.createObjectURL(blob);
+    trackSpawnBlobUrlV0(url);
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = url;
+    script.onload = () => {
+      const factory = globalRef.__SF_STOCKFISH_FACTORY__;
+      script.remove();
+      if (typeof factory !== "function") {
+        reject(new Error("stockfish_factory_missing"));
+        return;
+      }
+      resolve(factory);
+    };
+    script.onerror = () => reject(new Error("stockfish_script_load_failed"));
+    document.head.appendChild(script);
+  });
+}
+
+async function initMainThreadStockfishEngineV0(assets) {
+  const patched = patchStockfishSourceForManualInitV0(assets.jsSource);
+  const factory = await loadStockfishFactoryFromPatchedSourceV0(patched);
+  const wasmBinary = assets.wasmBytes.slice();
+  const engine = await factory({ wasmBinary });
+  stockfishMainEngineV0 = engine;
+  attachMainThreadHandlersV0(engine);
+  postStockfishBridgeMessageV0("uci");
+  await waitForWorkerOrUciV0(STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0);
+  postStockfishBridgeMessageV0("isready");
+  await waitReadyV0(STOCKFISH_READY_TIMEOUT_MS_V0);
+  postStockfishBridgeMessageV0("setoption name UCI_AnalyseMode value false");
+  postStockfishBridgeMessageV0("setoption name Hash value 64");
+  return engine;
 }
 
 function buildXferWasmCompiledWorkerUrlV0(assets) {
@@ -609,6 +738,15 @@ ${patched}`;
 
 function listStockfishSpawnStrategiesV0() {
   return [
+    {
+      name: "main_thread_wasm_binary",
+      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
+      mainThread: true,
+      build: async () => {
+        await ensureCachedStockfishAssetsV0();
+        return "main_thread";
+      }
+    },
     {
       name: "xfer_wasm_bytes_deferred_import",
       uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
@@ -658,6 +796,18 @@ function listStockfishSpawnStrategiesV0() {
 async function initStockfishWorkerWithStrategyV0(strategy) {
   lastSpawnStrategyV0 = strategy.name;
   const uciTimeoutMs = Number(strategy.uciTimeoutMs) || STOCKFISH_UCI_TIMEOUT_MS_V0;
+
+  if (strategy.mainThread) {
+    const assets = await ensureCachedStockfishAssetsV0();
+    logStockfishV0("info", "starting main-thread stockfish", {
+      strategy: strategy.name,
+      uciTimeoutMs,
+      wasmBytes: assets.wasmBytes.length
+    });
+    await initMainThreadStockfishEngineV0(assets);
+    return stockfishMainEngineV0;
+  }
+
   const workerUrl = await strategy.build();
   logStockfishV0("info", "spawning worker", {
     workerUrl,
@@ -666,6 +816,7 @@ async function initStockfishWorkerWithStrategyV0(strategy) {
     mainThreadCompileMs: lastMainThreadCompileMsV0
   });
   const worker = new Worker(workerUrl, { type: "classic" });
+  workerV0 = worker;
   attachWorkerHandlersV0(worker);
   if (strategy.xferBytes) {
     if (!cachedAssetPayloadV0?.wasmBytes) throw new Error("sf_wasm_bytes_cache_missing");
@@ -736,7 +887,9 @@ function waitReadyV0(timeoutMs) {
 
 async function ensureStockfishWorkerV0() {
   if (initFailedV0) return null;
-  if (workerV0 && readyV0) return workerV0;
+  if ((workerV0 || stockfishMainEngineV0) && readyV0) {
+    return workerV0 || stockfishMainEngineV0;
+  }
   if (typeof Worker === "undefined") {
     initFailedV0 = true;
     initErrorV0 = "worker_unavailable";
@@ -767,7 +920,15 @@ async function ensureStockfishWorkerV0() {
       let lastErr = null;
       for (const strategy of listStockfishSpawnStrategiesV0()) {
         try {
-          workerV0 = await initStockfishWorkerWithStrategyV0(strategy);
+          disposeStockfishBridgeV0();
+          resetReadyFlagsV0();
+          await initStockfishWorkerWithStrategyV0(strategy);
+          if (strategy.mainThread) {
+            workerV0 = null;
+          } else {
+            workerV0 = /** @type {Worker} */ (getActiveStockfishBridgeV0());
+            stockfishMainEngineV0 = null;
+          }
           logStockfishV0("info", "ready", {
             status: "stockfish_wasm",
             strategy: strategy.name,
@@ -775,19 +936,14 @@ async function ensureStockfishWorkerV0() {
           });
           clearCompileWatchdogV0();
           publishEngineStatusV0("init_ready");
-          return workerV0;
+          return getActiveStockfishBridgeV0();
         } catch (err) {
           lastErr = err;
           logStockfishV0("warn", "worker strategy init failed", {
             strategy: strategy.name,
             error: String(err?.message || err)
           });
-          try {
-            workerV0?.terminate?.();
-          } catch {
-            /* noop */
-          }
-          workerV0 = null;
+          disposeStockfishBridgeV0();
           workerErrorRejectV0 = null;
           resetReadyFlagsV0();
           revokeSpawnBlobUrlsV0();
@@ -800,12 +956,7 @@ async function ensureStockfishWorkerV0() {
       logStockfishV0("error", "init failed", { error: initErrorV0 });
       clearCompileWatchdogV0();
       publishEngineStatusV0("init_failed");
-      try {
-        workerV0?.terminate?.();
-      } catch {
-        /* noop */
-      }
-      workerV0 = null;
+      disposeStockfishBridgeV0();
       resetReadyFlagsV0();
       return null;
     } finally {
@@ -843,8 +994,7 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
   return withChessStockfishEngineLockV0(async () => {
   const position = String(fen || "").trim();
   if (!position) return null;
-  const worker = workerV0;
-  if (!worker) return null;
+  if (!getActiveStockfishBridgeV0()) return null;
 
   const { skill, movetimeMs, depth } = resolveStockfishOptsV0(opts);
   const contempt = Number.isFinite(Number(opts.contempt)) ? Number(opts.contempt) : null;
@@ -868,14 +1018,16 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
     });
 
     try {
-      worker.postMessage("setoption name UCI_LimitStrength value true");
-      worker.postMessage(`setoption name Skill Level value ${skill}`);
+      postStockfishBridgeMessageV0("setoption name UCI_LimitStrength value true");
+      postStockfishBridgeMessageV0(`setoption name Skill Level value ${skill}`);
       if (contempt != null) {
-        worker.postMessage(`setoption name Contempt value ${Math.max(-100, Math.min(100, contempt))}`);
+        postStockfishBridgeMessageV0(
+          `setoption name Contempt value ${Math.max(-100, Math.min(100, contempt))}`
+        );
       }
       currentPositionFenV0 = position;
-      worker.postMessage(`position fen ${position}`);
-      worker.postMessage(`go depth ${depth} movetime ${movetimeMs}`);
+      postStockfishBridgeMessageV0(`position fen ${position}`);
+      postStockfishBridgeMessageV0(`go depth ${depth} movetime ${movetimeMs}`);
     } catch {
       clearTimeout(timer);
       pendingV0.delete(id);
@@ -907,7 +1059,7 @@ export async function analyzeChessPositionV0(fen, opts = {}) {
   }
   if (activeAnalysisV0) {
     try {
-      worker.postMessage("stop");
+      postStockfishBridgeMessageV0("stop");
     } catch {
       /* noop */
     }
@@ -941,8 +1093,8 @@ export async function analyzeChessPositionV0(fen, opts = {}) {
 
     try {
       currentPositionFenV0 = position;
-      worker.postMessage(`position fen ${position}`);
-      worker.postMessage(`go depth ${depth} movetime ${movetime}`);
+      postStockfishBridgeMessageV0(`position fen ${position}`);
+      postStockfishBridgeMessageV0(`go depth ${depth} movetime ${movetime}`);
     } catch {
       clearTimeout(timer);
       activeAnalysisV0 = null;
@@ -985,7 +1137,7 @@ export async function analyzeChessPositionMultiPvV0(fen, opts = {}) {
       const timer = setTimeout(() => {
         activeMultiPvAnalysisV0 = null;
         try {
-          worker.postMessage("stop");
+          postStockfishBridgeMessageV0("stop");
         } catch {
           /* noop */
         }
@@ -1006,9 +1158,9 @@ export async function analyzeChessPositionMultiPvV0(fen, opts = {}) {
 
       try {
         currentPositionFenV0 = position;
-        worker.postMessage(`setoption name MultiPV value ${multiPv}`);
-        worker.postMessage(`position fen ${position}`);
-        worker.postMessage(`go depth ${depth} movetime ${movetime}`);
+        postStockfishBridgeMessageV0(`setoption name MultiPV value ${multiPv}`);
+        postStockfishBridgeMessageV0(`position fen ${position}`);
+        postStockfishBridgeMessageV0(`go depth ${depth} movetime ${movetime}`);
       } catch {
         clearTimeout(timer);
         activeMultiPvAnalysisV0 = null;
@@ -1119,12 +1271,7 @@ export function resetChessStockfishEngineV0() {
 }
 
 export function disposeChessStockfishEngineV0() {
-  try {
-    workerV0?.terminate?.();
-  } catch {
-    /* noop */
-  }
-  workerV0 = null;
+  disposeStockfishBridgeV0();
   resetReadyFlagsV0();
   activeAnalysisV0 = null;
   pendingV0.clear();

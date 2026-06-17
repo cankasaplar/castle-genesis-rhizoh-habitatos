@@ -13,7 +13,7 @@ describe("rhizohChessManagerV0", () => {
     const snap = getRhizohChessManagerSnapshotV0("test");
     expect(snap.architecture).toBe(RHIZOH_CHESS_MANAGER_ARCHITECTURE_V0);
     expect(snap.brain.engineInstances).toBe(1);
-    expect(snap.brain.spawnStrategies[0]).toBe("xfer_wasm_bytes_deferred_import");
+    expect(snap.brain.spawnStrategies[0]).toBe("main_thread_wasm_binary");
     expect(snap.arena.slotCount).toBe(8);
   });
 
