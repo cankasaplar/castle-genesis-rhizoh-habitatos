@@ -6,7 +6,14 @@ import {
   createCastleToCastleChessMatchV0,
   formatChessOutcomeLabelV0
 } from "../rhizoh/runtime/chessArenaEngineV0.js";
-import { getChessStockfishEngineStatusV0, getChessStockfishEngineDetailV0, getStockfishArenaMoveV0, pickChessArenaEngineMoveV0, resetChessStockfishEngineV0, CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
+import {
+  getChessTeacherStatusV0,
+  getChessTeacherDetailV0,
+  pickChessArenaMoveViaTeacherV0,
+  resetChessTeacherV0,
+  CHESS_TEACHER_STATUS_EVENT_V0
+} from "../rhizoh/runtime/chessTeacherInterfaceV0.js";
+import { getStockfishArenaMoveV0 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
 import { pickRhizohChessMoveV0 } from "../rhizoh/runtime/rhizohChessPlayerV0.js";
 import { CHESS_STOCKFISH_PRESET_V0 } from "../rhizoh/runtime/chessStockfishPresetsV0.js";
 import {
@@ -199,8 +206,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const [whiteClockMs, setWhiteClockMs] = useState(() => initialClocksFromSessionV0().white);
   const [blackClockMs, setBlackClockMs] = useState(() => initialClocksFromSessionV0().black);
   const [boardTheme, setBoardTheme] = useState(() => readChessArenaThemeV0());
-  const [engineStatus, setEngineStatus] = useState(() => getChessStockfishEngineStatusV0());
-  const [engineDetail, setEngineDetail] = useState(() => getChessStockfishEngineDetailV0());
+  const [engineStatus, setEngineStatus] = useState(() => getChessTeacherStatusV0());
+  const [engineDetail, setEngineDetail] = useState(() => getChessTeacherDetailV0().engine);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [archiveTick, setArchiveTick] = useState(0);
   const [expandedArchiveId, setExpandedArchiveId] = useState(null);
@@ -273,12 +280,12 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   }, [c2cMatch, mode, peerCastle, tr]);
 
   const refreshEngineStatusV0 = useCallback(() => {
-    setEngineStatus(getChessStockfishEngineStatusV0());
-    setEngineDetail(getChessStockfishEngineDetailV0());
+    setEngineStatus(getChessTeacherStatusV0());
+    setEngineDetail(getChessTeacherDetailV0().engine);
   }, []);
 
   const retryStockfishEngineV0 = useCallback(() => {
-    resetChessStockfishEngineV0();
+    resetChessTeacherV0();
     refreshEngineStatusV0();
     void getStockfishArenaMoveV0("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", {
       ...CHESS_STOCKFISH_PRESET_V0.WARMUP
@@ -293,11 +300,11 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       setEngineStatus(detail.status);
       setEngineDetail(detail);
     };
-    window.addEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, onEngineStatus);
+    window.addEventListener(CHESS_TEACHER_STATUS_EVENT_V0, onEngineStatus);
     void getStockfishArenaMoveV0("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", {
       ...CHESS_STOCKFISH_PRESET_V0.WARMUP
     }).finally(refreshEngineStatusV0);
-    return () => window.removeEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, onEngineStatus);
+    return () => window.removeEventListener(CHESS_TEACHER_STATUS_EVENT_V0, onEngineStatus);
   }, [open, refreshEngineStatusV0]);
 
   useEffect(() => {
@@ -585,7 +592,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           if (rhizohBlack || rhizohWhite) {
             aiPick = await pickRhizohChessMoveV0(game, { policyMode, mindId });
           } else {
-            aiPick = await pickChessArenaEngineMoveV0(game, {
+            aiPick = await pickChessArenaMoveViaTeacherV0(game, {
               useStockfish: true,
               preset: opponentPresetV0.preset
             });
@@ -594,7 +601,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           aiPick = null;
         }
         setAiBusy(false);
-        setEngineStatus(getChessStockfishEngineStatusV0());
+        setEngineStatus(getChessTeacherStatusV0());
         const aiMove = typeof aiPick === "string" ? aiPick : aiPick?.move;
         if (aiMove) {
           const fenBeforeAi = game.fen();
@@ -672,18 +679,18 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
             pick =
               game.turn() === "w"
                 ? await pickRhizohChessMoveV0(game, { policyMode, mindId })
-                : await pickChessArenaEngineMoveV0(game, {
+                : await pickChessArenaMoveViaTeacherV0(game, {
                     useStockfish: true,
                     preset: opponentPresetV0.preset
                   });
           } else {
-            pick = await pickChessArenaEngineMoveV0(game, { useStockfish: true, preset: "ARENA" });
+            pick = await pickChessArenaMoveViaTeacherV0(game, { useStockfish: true, preset: "ARENA" });
           }
         } catch {
           pick = null;
         }
         setAiBusy(false);
-        setEngineStatus(getChessStockfishEngineStatusV0());
+        setEngineStatus(getChessTeacherStatusV0());
         if (!alive || game.isGameOver()) break;
         const aiMove = pick?.move;
         if (!aiMove) break;

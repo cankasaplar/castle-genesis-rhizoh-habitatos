@@ -58,6 +58,10 @@ function causalLabelForTraceV0(entry) {
   if (k === TRUTH_TRACE_KIND_V0.TENSOR_REPLAY) {
     return `replay:${entry.intent}`;
   }
+  if (k === TRUTH_TRACE_KIND_V0.CODEX_GHOST) {
+    const id = entry.ghostId || "?";
+    return `${entry.phase || "spawn"}:${id}`;
+  }
   return k;
 }
 
@@ -73,6 +77,8 @@ function linkTraceChainV0(traces) {
 
   let lastDomainId = null;
   let lastTensorId = null;
+  /** @type {Map<string, string>} ghostId → spawn trace node id */
+  const ghostSpawnNodeById = new Map();
 
   for (const t of traces) {
     const node = nodeFromTraceV0(t);
@@ -117,6 +123,46 @@ function linkTraceChainV0(traces) {
           note: "tensor_to_spatial"
         })
       );
+    }
+
+    if (t.kind === TRUTH_TRACE_KIND_V0.CODEX_GHOST) {
+      const ghostId = String(t.ghostId || "").trim();
+      const phase = String(t.phase || "spawn");
+      if (phase === "spawn" && ghostId) {
+        ghostSpawnNodeById.set(ghostId, node.id);
+        if (lastTensorId) {
+          edges.push(
+            Object.freeze({
+              from: lastTensorId,
+              to: node.id,
+              relation: CAUSAL_EDGE_RELATION_V0.ENABLES,
+              note: "tensor_to_codex_ghost_spawn"
+            })
+          );
+        } else if (lastDomainId) {
+          edges.push(
+            Object.freeze({
+              from: lastDomainId,
+              to: node.id,
+              relation: CAUSAL_EDGE_RELATION_V0.ENABLES,
+              note: "domain_to_codex_ghost_spawn"
+            })
+          );
+        }
+      }
+      if (phase === "death" && ghostId) {
+        const spawnId = ghostSpawnNodeById.get(ghostId);
+        if (spawnId) {
+          edges.push(
+            Object.freeze({
+              from: spawnId,
+              to: node.id,
+              relation: CAUSAL_EDGE_RELATION_V0.CAUSES,
+              note: "ghost_lifecycle_spawn_to_death"
+            })
+          );
+        }
+      }
     }
   }
 
@@ -243,9 +289,10 @@ function buildCausalSelfNarrativeV0(nodes, edges) {
   const tensors = nodes.filter((n) => n.kind === TRUTH_TRACE_KIND_V0.TENSOR_DECISION);
   const spatial = nodes.filter((n) => n.kind === TRUTH_TRACE_KIND_V0.SPATIAL_NODE);
   const trails = nodes.filter((n) => n.kind === "temporal_trail");
+  const ghosts = nodes.filter((n) => n.kind === TRUTH_TRACE_KIND_V0.CODEX_GHOST);
   return [
     `Causal graph: ${nodes.length} nodes, ${edges.length} edges.`,
-    `Domain transitions: ${domains.length}, tensor decisions: ${tensors.length}, spatial projections: ${spatial.length}, temporal trails: ${trails.length}.`,
+    `Domain transitions: ${domains.length}, tensor decisions: ${tensors.length}, spatial projections: ${spatial.length}, temporal trails: ${trails.length}, codex ghosts: ${ghosts.length}.`,
     "System explains itself through trace — not through LLM inference."
   ].join(" ");
 }

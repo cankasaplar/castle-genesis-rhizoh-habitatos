@@ -18,7 +18,8 @@ export const TRUTH_TRACE_KIND_V0 = Object.freeze({
   TENSOR_REPLAY: "tensor_replay",
   FALLBACK: "fallback",
   SPATIAL_NODE: "spatial_node",
-  CONTROL_PLANE: "control_plane"
+  CONTROL_PLANE: "control_plane",
+  CODEX_GHOST: "codex_ghost"
 });
 
 /** @type {object[]} */
@@ -185,6 +186,17 @@ export function traceSpatialNodeV0(tier, nodeId, detail = {}) {
     tier: t,
     nodeId: String(nodeId || ""),
     projectionOnly: t === "live",
+    ...detail
+  });
+}
+
+/**
+ * Codex ghost lifecycle — spawn/death from PersistentCodexBus (observation only).
+ */
+export function traceCodexGhostV0(phase, detail = {}) {
+  return traceTruthEventV0(TRUTH_TRACE_KIND_V0.CODEX_GHOST, {
+    phase: String(phase || "spawn"),
+    influencesExecution: false,
     ...detail
   });
 }

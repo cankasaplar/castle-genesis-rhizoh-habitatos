@@ -6,7 +6,7 @@
 
 import { analyzeRhizohRegretV0 } from "./chessRegretAnalysisV0.js";
 import { buildMatchMovesWithFenV0 } from "./chessMatchReplayV0.js";
-import { getChessStockfishEngineStatusV0 } from "./chessStockfishEngineV0.js";
+import { getChessTeacherStatusV0 } from "./chessTeacherInterfaceV0.js";
 import { encodeChessTopologyEventV0 } from "./rhizohGeometryChessEncoderV0.js";
 import { calculateTopologyDriftV0 } from "./rhizohGeometryTopologyV0.js";
 import {
@@ -33,7 +33,7 @@ export const RHIZOH_UGE_SILENT_OBSERVER_LOG_TAG_V0 = "[CASTLE_uge_silent_observe
  * }} opts
  */
 export async function runRhizohUgeSilentObserverV0(opts = {}) {
-  const engineStatus = opts.engineStatus || getChessStockfishEngineStatusV0();
+  const engineStatus = opts.engineStatus || getChessTeacherStatusV0();
 
   if (engineStatus === "heuristic_fallback") {
     return Object.freeze({
