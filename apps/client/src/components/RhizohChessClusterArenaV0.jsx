@@ -248,13 +248,17 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
       ? tr
         ? "Stockfish WASM ✓"
         : "Stockfish WASM ✓"
-      : teacherStatus === "stockfish_compiling"
+      : teacherStatus === "stockfish_compiling" || teacherStatus === "stockfish_initializing"
         ? tr
-          ? "WASM derleniyor (heuristic ile devam)"
-          : "WASM compiling (continues on heuristic)"
-        : tr
-          ? "heuristic"
-          : "heuristic";
+          ? `WASM derleniyor (${Math.round((window.__rhizoh?.chessStockfishEngine?.compileElapsedMs || 0) / 1000)}s)`
+          : `WASM compiling (${Math.round((window.__rhizoh?.chessStockfishEngine?.compileElapsedMs || 0) / 1000)}s)`
+        : teacherStatus === "heuristic_fallback"
+          ? tr
+            ? "heuristic (yeniden dene)"
+            : "heuristic (retry)"
+          : tr
+            ? "heuristic"
+            : "heuristic";
 
   return (
     <div className="fixed inset-0 z-[340] flex items-center justify-center bg-black/90 p-1 backdrop-blur-sm sm:p-3">
