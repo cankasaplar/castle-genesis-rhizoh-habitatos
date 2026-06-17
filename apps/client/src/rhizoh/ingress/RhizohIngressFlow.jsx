@@ -17,9 +17,19 @@ import {
 import { recordCohortObservationV0 } from "./cohortObservationLogV0.js";
 import { startProdWorldObservabilityBridgeV0 } from "../runtime/rhizohProdWorldObservabilityBridgeV0.js";
 import { publishIngressRouteV0 } from "../runtime/spatialSinkRoutePolicyV0.js";
+import { RhizohCoreSubsystemHostV0 } from "../../components/RhizohCoreSubsystemHostV0.jsx";
+
+const INGRESS_OVERLAY_STYLE_V0 = Object.freeze({
+  position: "fixed",
+  inset: 0,
+  zIndex: 280,
+  overflow: "auto",
+  background: "linear-gradient(180deg, #050810 0%, #0a1220 100%)"
+});
 
 /**
- * rhizoh.com: legal → (optional) beta accept → app. Errors surface explicitly.
+ * rhizoh.com: legal → (optional) beta accept → app.
+ * Core shell always mounted; ingress is an overlay (not a global kill switch).
  */
 export function RhizohIngressFlow() {
   const [phase, setPhase] = useState(() => normalizeIngressPhaseV0(deriveIngressPhaseV0()));
@@ -69,54 +79,55 @@ export function RhizohIngressFlow() {
     }
   }, [mountApp]);
 
-  if (phase === INGRESS_ROUTE_V0.LANGUAGE || phase === INGRESS_ROUTE_V0.LEGAL_PREAMBLE) {
-    return (
-      <RhizohUnifiedEntryScreen
-        specSha256={LEGAL_REALITY_SPEC_SHA256_V0}
-        legalRequired={isLegalPreambleRequiredV0()}
-        onProceed={refreshAfterLegal}
-      />
-    );
-  }
+  const showIngressOverlay = phase !== INGRESS_ROUTE_V0.APP;
 
-  if (phase === INGRESS_ROUTE_V0.ERROR) {
-    return (
-      <>
+  const ingressOverlay = (() => {
+    if (phase === INGRESS_ROUTE_V0.LANGUAGE || phase === INGRESS_ROUTE_V0.LEGAL_PREAMBLE) {
+      return (
+        <RhizohUnifiedEntryScreen
+          specSha256={LEGAL_REALITY_SPEC_SHA256_V0}
+          legalRequired={isLegalPreambleRequiredV0()}
+          onProceed={refreshAfterLegal}
+        />
+      );
+    }
+    if (phase === INGRESS_ROUTE_V0.ERROR) {
+      return (
         <IngressErrorScreen
           kind={errorKind}
           onRetry={() => setPhase(normalizeIngressPhaseV0(null))}
         />
-        <CookieConsentBanner />
-      </>
-    );
-  }
-
-  if (phase === INGRESS_ROUTE_V0.COHORT) {
-    return (
-      <>
-        <ClosedAdmissionCohortScreen onProceed={mountApp} />
-        <CookieConsentBanner />
-      </>
-    );
-  }
-
-  if (phase === INGRESS_ROUTE_V0.HOLD) {
-    return (
-      <>
+      );
+    }
+    if (phase === INGRESS_ROUTE_V0.COHORT) {
+      return <ClosedAdmissionCohortScreen onProceed={mountApp} />;
+    }
+    if (phase === INGRESS_ROUTE_V0.HOLD) {
+      return (
         <ClosedAdmissionHoldScreen
           onRetry={() => {
             clearClosedAdmissionSessionForTestV0();
             setPhase(INGRESS_ROUTE_V0.COHORT);
           }}
         />
-        <CookieConsentBanner />
-      </>
-    );
-  }
+      );
+    }
+    return null;
+  })();
 
   return (
     <>
+      <RhizohCoreSubsystemHostV0 />
       <CastleShellRouter />
+      {showIngressOverlay && ingressOverlay ? (
+        <div
+          className="rhizoh-ingress-overlay"
+          data-rhizoh-ingress-phase={phase}
+          style={INGRESS_OVERLAY_STYLE_V0}
+        >
+          {ingressOverlay}
+        </div>
+      ) : null}
       <CookieConsentBanner />
     </>
   );

@@ -43,6 +43,7 @@ import { ensureGenesisContinuityClientWireV0 } from "./genesisContinuityClientWi
 import { ensureOntologicalRepairProtocolV1 } from "./ontologicalRepairProtocolV1.js";
 import { startSpatialExecutionTickV0 } from "./spatialExecutionTickV0.js";
 import { attachSpatialWorldAdapterV0 } from "./spatialWorldAdapterV0.js";
+import { isRhizohSpatialExecutionAllowedV0 } from "./rhizohWorldNamespaceGateV0.js";
 
 export const RHIZOH_NERVOUS_SYSTEM_EVENT_V0 = "rhizoh:nervous-system-v0";
 
@@ -57,6 +58,7 @@ function ensureSpatialReadyGateWireV0() {
 
 function ensureSpatialExecutionTickV0() {
   if (typeof window === "undefined" || spatialExecutionTickStarted) return;
+  if (!isRhizohSpatialExecutionAllowedV0()) return;
   spatialExecutionTickStarted = true;
   attachSpatialWorldAdapterV0();
   startSpatialExecutionTickV0();
@@ -65,7 +67,7 @@ function ensureSpatialExecutionTickV0() {
 /**
  * Bootstrap domain gate from pathname — call on every route sync.
  * @param {string} pathname
- * @param {{ fromDomain?: string, passPayload?: unknown, userId?: string | null }} [ctx]
+ * @param {{ fromDomain?: string, passPayload?: unknown, userId?: string | null, coreOnly?: boolean }} [ctx]
  */
 export function runDomainGateForPathV0(pathname, ctx = {}) {
   const p = String(pathname || "/").trim();
@@ -93,7 +95,9 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
 
   if (typeof window !== "undefined") {
     ensureSpatialReadyGateWireV0();
-    ensureSpatialExecutionTickV0();
+    if (!ctx.coreOnly) {
+      ensureSpatialExecutionTickV0();
+    }
     window.__RHIZOH_NERVOUS_SYSTEM__ = Object.freeze({
       schema: "rhizoh.nervous_system.v1",
       pathname: p,
