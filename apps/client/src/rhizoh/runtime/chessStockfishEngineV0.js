@@ -481,7 +481,7 @@ self.addEventListener("message",function(ev){
 `;
 
 const STOCKFISH_XFER_WORKER_INIT_PATCH_V0 =
-  'e={instantiateWasm:function(im,rcv){var m=self.__SF_WASM_MODULE__;if(!m)throw new Error("sf_wasm_module_missing");WebAssembly.instantiate(m,im).then(function(r){rcv(r.instance,r.module)});return{}},locateFile:function(e){return-1<e.indexOf(".wasm")?r:self.location.origin+self.location.pathname+"#"+r+",worker"}},(self.__SF_WAIT_MODULE__?self.__SF_WAIT_MODULE__():Promise.resolve()).then(function(){return i()(e)}).then';
+  'e={instantiateWasm:function(im,rcv){var m=self.__SF_WASM_MODULE__;if(!m)throw new Error("sf_wasm_module_missing");WebAssembly.instantiate(m,im).then(function(r){rcv(r.instance,r.module)}).catch(function(err){throw err;})},locateFile:function(e){return-1<e.indexOf(".wasm")?r:self.location.origin+self.location.pathname+"#"+r+",worker"}},(self.__SF_WAIT_MODULE__?self.__SF_WAIT_MODULE__():Promise.resolve()).then(function(){return i()(e)}).then';
 
 function bytesToBase64V0(bytes) {
   const chunkSize = 0x8000;
@@ -620,6 +620,7 @@ async function initStockfishWorkerWithStrategyV0(strategy) {
   if (strategy.xferModule) {
     if (!cachedWasmModuleV0) throw new Error("sf_wasm_module_cache_missing");
     worker.postMessage({ cmd: "sf_arm_wasm", wasmModule: cachedWasmModuleV0 });
+    await new Promise((resolve) => setTimeout(resolve, 0));
   }
   worker.postMessage("uci");
   await waitForWorkerOrUciV0(uciTimeoutMs);

@@ -28,16 +28,28 @@ export function getRhizohChessManagerSnapshotV0(reason = "poll") {
   const learning = getChessLearningMonitorSnapshotV0(reason);
   const memory = getChessClusterMemoryGraphSnapshotV0();
 
-  const healthy =
-    engine.status === "stockfish_wasm" &&
-    scheduler.engineInstances === 1 &&
-    Boolean(cluster?.running);
+  const engineReady = engine.status === "stockfish_wasm";
+  const clusterRunning = Boolean(cluster?.running);
+  const singleEngine = scheduler.engineInstances === 1;
+  const healthy = engineReady && singleEngine && clusterRunning;
 
   return Object.freeze({
     schema: RHIZOH_CHESS_MANAGER_SCHEMA_V0,
     architecture: RHIZOH_CHESS_MANAGER_ARCHITECTURE_V0,
     reason,
     healthy,
+    health: Object.freeze({
+      engineReady,
+      clusterRunning,
+      singleEngine,
+      blockedBy: !engineReady
+        ? "engine_not_ready"
+        : !clusterRunning
+          ? "cluster_not_running"
+          : !singleEngine
+            ? "multiple_engines"
+            : null
+    }),
     brain: Object.freeze({
       engineInstances: scheduler.engineInstances,
       multiPvCapacity: scheduler.multiPvCapacity,

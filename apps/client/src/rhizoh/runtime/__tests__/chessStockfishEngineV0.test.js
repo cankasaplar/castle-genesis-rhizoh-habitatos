@@ -53,7 +53,7 @@ describe("chessStockfishEngineV0", () => {
     expect(patchRe.test(jsSource)).toBe(true);
     const patched = jsSource.replace(
       patchRe,
-      'e={instantiateWasm:function(im,rcv){var m=self.__SF_WASM_MODULE__;if(!m)throw new Error("sf_wasm_module_missing");WebAssembly.instantiate(m,im).then(function(r){rcv(r.instance,r.module)});return{}},locateFile:function(e){return-1<e.indexOf(".wasm")?r:self.location.origin+self.location.pathname+"#"+r+",worker"}},(self.__SF_WAIT_MODULE__?self.__SF_WAIT_MODULE__():Promise.resolve()).then(function(){return i()(e)}).then'
+      'e={instantiateWasm:function(im,rcv){var m=self.__SF_WASM_MODULE__;if(!m)throw new Error("sf_wasm_module_missing");WebAssembly.instantiate(m,im).then(function(r){rcv(r.instance,r.module)}).catch(function(err){throw err;})},locateFile:function(e){return-1<e.indexOf(".wasm")?r:self.location.origin+self.location.pathname+"#"+r+",worker"}},(self.__SF_WAIT_MODULE__?self.__SF_WAIT_MODULE__():Promise.resolve()).then(function(){return i()(e)}).then'
     );
     expect(patched).not.toBe(jsSource);
     expect(patched).toContain("__SF_WASM_MODULE__");
