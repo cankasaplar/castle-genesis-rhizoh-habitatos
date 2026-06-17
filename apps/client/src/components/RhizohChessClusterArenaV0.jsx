@@ -222,6 +222,8 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
   const [teacherStatus, setTeacherStatus] = useState(() => getChessStockfishEngineStatusV0());
   const [routerSnap, setRouterSnap] = useState(() => window.__rhizoh?.chessGameRouter || null);
   const [monitor, setMonitor] = useState(() => getChessLearningMonitorSnapshotV0("ui_mount"));
+
+  useEffect(() => {
     if (!open) return undefined;
     startChessLearningMeasurementV0();
     const refresh = () => {
