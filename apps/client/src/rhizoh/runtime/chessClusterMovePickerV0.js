@@ -64,16 +64,19 @@ export async function pickChessClusterMoveV0(slot, game) {
       }
       return scheduleClusterEngineMoveV0(game, {
         useStockfish: stockfishReady,
+        queueLabel: `cluster_slot_${slot.slotId}`,
         ...resolveChessClusterStockfishOptsV0(CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH)
       });
     case "stockfish":
       return scheduleClusterEngineMoveV0(game, {
         useStockfish: stockfishReady,
+        queueLabel: `cluster_slot_${slot.slotId}`,
         ...stockfishOpts
       });
     case "stockfish_aggressive":
       return scheduleClusterEngineMoveV0(game, {
         useStockfish: stockfishReady,
+        queueLabel: `cluster_slot_${slot.slotId}`,
         ...stockfishOpts,
         contempt: Math.max(stockfishOpts.contempt ?? 0, 24),
         movetimeMs: Math.min(stockfishOpts.movetimeMs + 40, 400)
@@ -113,7 +116,11 @@ export async function pickChessClusterMoveV0(slot, game) {
         return Object.freeze({ move: uci, engine: "random_perturbation" });
       }
       if (stockfishReady) {
-        return scheduleClusterEngineMoveV0(game, { useStockfish: true, ...stockfishOpts });
+        return scheduleClusterEngineMoveV0(game, {
+          useStockfish: true,
+          queueLabel: `cluster_slot_${slot.slotId}`,
+          ...stockfishOpts
+        });
       }
       return Object.freeze({
         move: pickClusterHeuristicMoveV0(game, slot, agentId, policy),
@@ -123,6 +130,7 @@ export async function pickChessClusterMoveV0(slot, game) {
     default:
       return scheduleClusterEngineMoveV0(game, {
         useStockfish: stockfishReady,
+        queueLabel: `cluster_slot_${slot.slotId}`,
         ...stockfishOpts
       });
   }
