@@ -13,7 +13,8 @@ import {
   getChessStockfishEngineStatusV0,
   invokeStockfishFactoryV0,
   resetChessStockfishEngineV0,
-  resolveChessStockfishEffectiveSpawnPolicyV0
+  resolveChessStockfishEffectiveSpawnPolicyV0,
+  withChessStockfishEngineLockV0
 } from "../chessStockfishEngineV0.js";
 
 describe("chessStockfishEngineV0", () => {
@@ -49,6 +50,16 @@ describe("chessStockfishEngineV0", () => {
     };
     expect(deliverChessStockfishUciCommandV0(bridge, "uci")).toBe("onCustomMessage");
     expect(received).toEqual(["uci"]);
+  });
+
+  it("withChessStockfishEngineLockV0 allows nested acquire without deadlock", async () => {
+    const out = await Promise.race([
+      withChessStockfishEngineLockV0(() =>
+        withChessStockfishEngineLockV0(async () => "nested_ok")
+      ),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("deadlock")), 400))
+    ]);
+    expect(out).toBe("nested_ok");
   });
 
   it("invokeStockfishFactoryV0 requires outer()(opts) call shape", async () => {

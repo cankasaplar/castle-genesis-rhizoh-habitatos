@@ -7,7 +7,6 @@
 import {
   getChessStockfishEngineStatusV0,
   pickChessArenaEngineMoveV0,
-  withChessStockfishEngineLockV0,
   CHESS_STOCKFISH_CLUSTER_MULTI_PV_V0
 } from "./chessStockfishEngineV0.js";
 
@@ -36,9 +35,7 @@ export async function scheduleClusterEngineMoveV0(game, opts = {}) {
     }
   };
 
-  if (useStockfish) {
-    return withChessStockfishEngineLockV0(run);
-  }
+  // pickChessArenaEngineMoveV0 → getStockfishArenaMoveV0 already serializes via engine lock.
   return run();
 }
 

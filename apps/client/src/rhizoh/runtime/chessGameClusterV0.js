@@ -267,28 +267,31 @@ async function runClusterTickV0() {
 
   let attempts = 0;
   let moved = false;
-  while (attempts < CHESS_CLUSTER_SLOT_COUNT_V0 && !moved) {
-    const idx = roundRobinIndexV0 % CHESS_CLUSTER_SLOT_COUNT_V0;
-    roundRobinIndexV0 = (roundRobinIndexV0 + 1) % CHESS_CLUSTER_SLOT_COUNT_V0;
-    attempts += 1;
-    const slot = slotsV0[idx];
-    if (slot?.status === "active" && !slot.game.isGameOver()) {
-      const move = await advanceChessClusterSlotV0(slot);
-      moved = Boolean(move);
+  try {
+    while (attempts < CHESS_CLUSTER_SLOT_COUNT_V0 && !moved) {
+      const idx = roundRobinIndexV0 % CHESS_CLUSTER_SLOT_COUNT_V0;
+      roundRobinIndexV0 = (roundRobinIndexV0 + 1) % CHESS_CLUSTER_SLOT_COUNT_V0;
+      attempts += 1;
+      const slot = slotsV0[idx];
+      if (slot?.status === "active" && !slot.game.isGameOver()) {
+        const move = await advanceChessClusterSlotV0(slot);
+        moved = Boolean(move);
+      }
     }
+
+    const snap = Object.freeze({
+      schema: CHESS_GAME_CLUSTER_SCHEMA_V0,
+      tickCount: tickCountV0,
+      moved,
+      slots: listChessClusterSlotsV0(),
+      atMs: Date.now()
+    });
+
+    publishClusterRegistryV0({ lastTick: snap });
+    dispatchClusterEventV0(CHESS_CLUSTER_TICK_EVENT_V0, snap);
+  } finally {
+    busyV0 = false;
   }
-
-  const snap = Object.freeze({
-    schema: CHESS_GAME_CLUSTER_SCHEMA_V0,
-    tickCount: tickCountV0,
-    moved,
-    slots: listChessClusterSlotsV0(),
-    atMs: Date.now()
-  });
-
-  publishClusterRegistryV0({ lastTick: snap });
-  dispatchClusterEventV0(CHESS_CLUSTER_TICK_EVENT_V0, snap);
-  busyV0 = false;
 }
 
 /**
