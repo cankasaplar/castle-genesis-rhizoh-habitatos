@@ -8,6 +8,7 @@ import { CHESS_STOCKFISH_PRESET_V0 } from "./chessStockfishPresetsV0.js";
 export const CHESS_CLUSTER_AGENT_SCHEMA_V0 = "castle.rhizoh.chess_cluster_agent.v0";
 
 export const CHESS_CLUSTER_AGENT_ID_V0 = Object.freeze({
+  RHIZOH_AI: "rhizoh_ai",
   RHIZOH_STOCKFISH: "rhizoh_stockfish_agent",
   OCTOAI: "octoai_agent",
   FOX: "fox_agent",
@@ -15,6 +16,16 @@ export const CHESS_CLUSTER_AGENT_ID_V0 = Object.freeze({
 });
 
 const AGENT_TABLE_V0 = Object.freeze({
+  [CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_AI]: Object.freeze({
+    label: "Rhizoh AI",
+    preset: "TEACHER_BACKUP",
+    skill: 12,
+    movetimeMs: 200,
+    depth: 10,
+    contempt: 6,
+    explorationRate: 0.12,
+    riskProfile: "learning"
+  }),
   [CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH]: Object.freeze({
     label: "Rhizoh Stockfish",
     preset: "ARENA",
