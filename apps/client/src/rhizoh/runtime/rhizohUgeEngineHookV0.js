@@ -193,20 +193,26 @@ async function processPlayedMoveObservationV0(detail) {
   let stockfishEval = teacher?.stockfishEval || detail?.stockfishEval || null;
 
   if (!teacherMove) {
-    const analysis = await analyzeChessPositionViaTeacherV0(fenBefore, { movetimeMs: 240, depth: 8 });
-    teacherMove = analysis?.bestMove || null;
-    stockfishEval = analysis;
-    if (teacherMove) {
-      teacherByFenV0.set(fenBefore, {
-        fen: fenBefore,
-        stockfishEval: Object.freeze({
-          bestMove: teacherMove,
-          cp: analysis?.cp ?? null,
-          mate: analysis?.mate ?? null,
-          depth: analysis?.depth ?? 0,
-          pv: analysis?.pv ?? ""
-        })
-      });
+    const clusterBusy =
+      detail?.cluster &&
+      typeof window !== "undefined" &&
+      Boolean(window.__rhizoh?.chessGameCluster?.running);
+    if (!clusterBusy) {
+      const analysis = await analyzeChessPositionViaTeacherV0(fenBefore, { movetimeMs: 240, depth: 8 });
+      teacherMove = analysis?.bestMove || null;
+      stockfishEval = analysis;
+      if (teacherMove) {
+        teacherByFenV0.set(fenBefore, {
+          fen: fenBefore,
+          stockfishEval: Object.freeze({
+            bestMove: teacherMove,
+            cp: analysis?.cp ?? null,
+            mate: analysis?.mate ?? null,
+            depth: analysis?.depth ?? 0,
+            pv: analysis?.pv ?? ""
+          })
+        });
+      }
     }
   }
 

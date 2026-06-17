@@ -120,6 +120,43 @@ function stopStockfishSearchV0() {
   }
 }
 
+/** @type {(() => void) | null} */
+let searchDrainWaiterV0 = null;
+
+/**
+ * Stop any in-flight search and wait briefly for Stockfish to emit bestmove/readyok
+ * before the next position/go — avoids stacked searches on single-thread WASM.
+ * @param {number} [maxWaitMs]
+ */
+async function prepareStockfishForNewSearchV0(maxWaitMs = 420) {
+  if (activeAnalysisV0) {
+    clearTimeout(activeAnalysisV0.timer);
+    activeAnalysisV0 = null;
+  }
+  if (activeMultiPvAnalysisV0) {
+    clearTimeout(activeMultiPvAnalysisV0.timer);
+    activeMultiPvAnalysisV0 = null;
+    multiPvSnapshotV0.clear();
+  }
+  pendingV0.clear();
+  stopStockfishSearchV0();
+  await new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      if (searchDrainWaiterV0) searchDrainWaiterV0 = null;
+      resolve(false);
+    }, Math.max(80, maxWaitMs));
+    searchDrainWaiterV0 = () => {
+      clearTimeout(timer);
+      searchDrainWaiterV0 = null;
+      resolve(true);
+    };
+  });
+}
+
+function notifyStockfishSearchDrainedV0() {
+  searchDrainWaiterV0?.();
+}
+
 function disposeStockfishBridgeV0() {
   try {
     stockfishMainEngineV0?.terminate?.();
@@ -285,6 +322,7 @@ function handleStockfishLineV0(line) {
     readyV0 = true;
     logStockfishV0("info", "readyok", { strategy: lastSpawnStrategyV0 });
     publishEngineStatusV0("readyok");
+    notifyStockfishSearchDrainedV0();
   }
 
   const depthMatch = line.match(/\bdepth (\d+)\b/);
@@ -316,6 +354,7 @@ function handleStockfishLineV0(line) {
 
   const m = line.match(/^bestmove\s+(\S+)/);
   if (m) {
+    notifyStockfishSearchDrainedV0();
     const move = m[1] && m[1] !== "(none)" ? m[1] : null;
     lastAnalysisInfoV0 = { ...lastAnalysisInfoV0, bestMove: move };
     if (move) emitBestmoveBridgeV0(move);
@@ -724,6 +763,12 @@ function resolveStockfishOptsV0(opts = {}) {
   };
 }
 
+function resolveArenaMoveTimeoutMsV0(movetimeMs) {
+  const mt = Math.max(80, Number(movetimeMs) || 600);
+  // Single-thread WASM under cluster load needs extra wall-clock headroom.
+  return Math.min(16000, Math.round(mt * 1.35 + 2800));
+}
+
 /**
  * @param {string} fen
  * @param {{ skill?: number, movetimeMs?: number }} [opts]
@@ -744,27 +789,18 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
 
   const { skill, movetimeMs, depth } = resolveStockfishOptsV0(opts);
   const contempt = Number.isFinite(Number(opts.contempt)) ? Number(opts.contempt) : null;
+  const timeoutMs = resolveArenaMoveTimeoutMsV0(movetimeMs);
 
-  if (activeAnalysisV0) {
-    clearTimeout(activeAnalysisV0.timer);
-    activeAnalysisV0 = null;
-    stopStockfishSearchV0();
-  }
-  if (activeMultiPvAnalysisV0) {
-    clearTimeout(activeMultiPvAnalysisV0.timer);
-    activeMultiPvAnalysisV0 = null;
-    multiPvSnapshotV0.clear();
-    stopStockfishSearchV0();
-  }
+  await prepareStockfishForNewSearchV0(Math.min(500, Math.round(timeoutMs * 0.12)));
 
   return new Promise((resolve) => {
     const id = nextId();
     const timer = setTimeout(() => {
       pendingV0.delete(id);
       stopStockfishSearchV0();
-      logStockfishV0("warn", "arena move timeout", { movetimeMs, depth, fen: position.slice(0, 40) });
+      logStockfishV0("warn", "arena move timeout", { movetimeMs, depth, timeoutMs, fen: position.slice(0, 40) });
       resolve(null);
-    }, movetimeMs + 2000);
+    }, timeoutMs);
 
     pendingV0.set(id, {
       resolve: (move) => {
@@ -812,20 +848,7 @@ export async function analyzeChessPositionV0(fen, opts = {}) {
   const depth = Math.max(6, Math.min(18, Number(opts.depth) || 10));
   const movetime = Math.max(120, Math.min(4000, Number(opts.movetimeMs) || 600));
 
-  if (activeMultiPvAnalysisV0) {
-    clearTimeout(activeMultiPvAnalysisV0.timer);
-    activeMultiPvAnalysisV0 = null;
-    multiPvSnapshotV0.clear();
-  }
-  if (activeAnalysisV0) {
-    try {
-      postStockfishBridgeMessageV0("stop");
-    } catch {
-      /* noop */
-    }
-    clearTimeout(activeAnalysisV0.timer);
-    activeAnalysisV0 = null;
-  }
+  await prepareStockfishForNewSearchV0(380);
 
   lastAnalysisInfoV0 = { cp: null, mate: null, depth: 0, pv: "", bestMove: null };
 
@@ -883,15 +906,7 @@ export async function analyzeChessPositionMultiPvV0(fen, opts = {}) {
     const depth = Math.max(6, Math.min(16, Number(opts.depth) || 10));
     const movetime = Math.max(200, Math.min(3000, Number(opts.movetimeMs) || 500));
 
-    if (activeAnalysisV0) {
-      clearTimeout(activeAnalysisV0.timer);
-      activeAnalysisV0 = null;
-    }
-    if (activeMultiPvAnalysisV0) {
-      clearTimeout(activeMultiPvAnalysisV0.timer);
-      activeMultiPvAnalysisV0 = null;
-    }
-    multiPvSnapshotV0.clear();
+    await prepareStockfishForNewSearchV0(380);
 
     return new Promise((resolve) => {
       const timer = setTimeout(() => {
