@@ -1,4 +1,4 @@
-import { resolveGenesisGatewayHttpBaseV0, resolveGenesisSseStreamBaseV0 } from "../../castleFlight/castleFlightConfig.js";
+import { resolveGenesisGatewayHttpBaseV0, resolveGenesisSseStreamBaseV0, resolveGenesisDirectGatewayOriginV0 } from "../../castleFlight/castleFlightConfig.js";
 import {
   formatGenesisContinuityEventLine,
   GENESIS_CONTINUITY_EVENT_SCHEMA
@@ -28,6 +28,19 @@ let ensureStopFnV0 = null;
 let wireActiveV0 = false;
 
 const POLL_INTERVAL_MS_V0 = 6500;
+
+function listGenesisPollOriginsV0(preferred = "") {
+  const primary = String(preferred || resolveGenesisGatewayHttpBaseV0() || "")
+    .trim()
+    .replace(/\/+$/, "");
+  const direct = String(resolveGenesisDirectGatewayOriginV0() || "")
+    .trim()
+    .replace(/\/+$/, "");
+  const out = [];
+  if (primary) out.push(primary);
+  if (direct && direct !== primary) out.push(direct);
+  return out;
+}
 
 function publishGenesisStreamRegistryV0(detail = {}) {
   if (typeof window === "undefined") return;
@@ -77,61 +90,77 @@ function ingestGenesisEvent(j) {
 }
 
 /**
- * @param {string} origin
+ * @param {string} [origin]
  */
 async function pollGenesisRuntimeOnceV0(origin) {
-  const pollOrigin = String(origin || resolveGenesisGatewayHttpBaseV0() || "")
-    .trim()
-    .replace(/\/+$/, "");
-  if (!pollOrigin) return;
+  const origins = listGenesisPollOriginsV0(origin);
+  if (!origins.length) return;
 
-  try {
-    const res = await fetch(`${pollOrigin}/rhizoh/genesis/runtime`, {
-      method: "GET",
-      cache: "no-store"
-    });
-    const j = await res.json().catch(() => null);
+  let lastPollError = "fetch_failed";
 
-    if (!res.ok || !j?.ok) {
+  for (let index = 0; index < origins.length; index += 1) {
+    const pollOrigin = origins[index];
+    const hasFallback = index < origins.length - 1;
+
+    try {
+      const res = await fetch(`${pollOrigin}/rhizoh/genesis/runtime`, {
+        method: "GET",
+        cache: "no-store"
+      });
+      const j = await res.json().catch(() => null);
+
+      if (!res.ok || !j?.ok) {
+        lastPollError = j?.error || j?.reason || `http_${res.status}`;
+        if (hasFallback) continue;
+        publishGenesisStreamRegistryV0({
+          status: res.status === 503 ? "upstream_503" : "poll_error",
+          streamUrl: `${pollOrigin}/rhizoh/genesis/stream`,
+          pollOrigin,
+          pollViaDirect: pollOrigin !== origins[0],
+          lastPollHttpStatus: res.status,
+          lastPollAtMs: Date.now(),
+          pollOk: false,
+          pollError: lastPollError
+        });
+        return;
+      }
+
       publishGenesisStreamRegistryV0({
-        status: res.status === 503 ? "upstream_503" : "poll_error",
+        status: "poll_ok",
         streamUrl: `${pollOrigin}/rhizoh/genesis/stream`,
+        pollOrigin,
+        pollViaDirect: pollOrigin !== origins[0],
         lastPollHttpStatus: res.status,
         lastPollAtMs: Date.now(),
-        pollOk: false,
-        pollError: j?.error || j?.reason || `http_${res.status}`
+        pollOk: true,
+        lastAcceptedSeq: j.genesisStream?.lastAcceptedSeq ?? null
       });
+
+      const seq = j.genesisStream?.lastAcceptedSeq;
+      const tick = j.canonicalTick?.value;
+      if (typeof seq === "number" && seq !== lastSeq) {
+        ingestGenesisEvent({
+          schema: GENESIS_CONTINUITY_EVENT_SCHEMA,
+          type: "TickAdvanced",
+          id: `poll:tick:${tick ?? seq}`,
+          seq,
+          payload: { value: tick, via: "runtime_poll" }
+        });
+      }
       return;
-    }
-
-    publishGenesisStreamRegistryV0({
-      status: "poll_ok",
-      streamUrl: `${pollOrigin}/rhizoh/genesis/stream`,
-      lastPollHttpStatus: res.status,
-      lastPollAtMs: Date.now(),
-      pollOk: true,
-      lastAcceptedSeq: j.genesisStream?.lastAcceptedSeq ?? null
-    });
-
-    const seq = j.genesisStream?.lastAcceptedSeq;
-    const tick = j.canonicalTick?.value;
-    if (typeof seq === "number" && seq !== lastSeq) {
-      ingestGenesisEvent({
-        schema: GENESIS_CONTINUITY_EVENT_SCHEMA,
-        type: "TickAdvanced",
-        id: `poll:tick:${tick ?? seq}`,
-        seq,
-        payload: { value: tick, via: "runtime_poll" }
+    } catch (err) {
+      lastPollError = String(err?.message || err || "fetch_failed");
+      if (hasFallback) continue;
+      publishGenesisStreamRegistryV0({
+        status: "poll_unreachable",
+        streamUrl: `${pollOrigin}/rhizoh/genesis/stream`,
+        pollOrigin,
+        pollViaDirect: pollOrigin !== origins[0],
+        lastPollAtMs: Date.now(),
+        pollOk: false,
+        pollError: lastPollError
       });
     }
-  } catch (err) {
-    publishGenesisStreamRegistryV0({
-      status: "poll_unreachable",
-      streamUrl: `${pollOrigin}/rhizoh/genesis/stream`,
-      lastPollAtMs: Date.now(),
-      pollOk: false,
-      pollError: String(err?.message || err || "fetch_failed")
-    });
   }
 }
 
