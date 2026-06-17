@@ -311,10 +311,46 @@ async function verifyStockfishAssetsV0() {
   }
 }
 
+const STOCKFISH_WORKER_WEB_INIT_RE_V0 =
+  /e=\{locateFile:function\(e\)\{return-1<e\.indexOf\("\.wasm"\)\?r:self\.location\.origin\+self\.location\.pathname\+"#"\+r\+",worker"\}\},i\(\)\(e\)\.then/;
+
+function bytesToBase64V0(bytes) {
+  const chunkSize = 0x8000;
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+function buildWasmBinaryInlineWorkerUrlV0(assets) {
+  if (!STOCKFISH_WORKER_WEB_INIT_RE_V0.test(assets.jsSource)) {
+    throw new Error("stockfish_worker_patch_missing");
+  }
+  const patched = assets.jsSource.replace(
+    STOCKFISH_WORKER_WEB_INIT_RE_V0,
+    'e={wasmBinary:self.__SF_WASM_BINARY__,locateFile:function(e){return-1<e.indexOf(".wasm")?r:self.location.origin+self.location.pathname+"#"+r+",worker"}},i()(e).then'
+  );
+  const wasmB64 = bytesToBase64V0(assets.wasmBytes);
+  const bootstrap = `"use strict";
+self.__SF_WASM_BINARY__=Uint8Array.from(atob(${JSON.stringify(wasmB64)}),function(c){return c.charCodeAt(0);});
+${patched}`;
+  const jsBlobUrl = URL.createObjectURL(new Blob([bootstrap], { type: "application/javascript" }));
+  trackSpawnBlobUrlV0(jsBlobUrl);
+  return `${jsBlobUrl}#inline_wasm,worker`;
+}
+
 function listStockfishSpawnStrategiesV0() {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const absoluteWasm = `${origin}${CHESS_STOCKFISH_ASSET_PATHS_V0.wasm}`;
   return [
+    {
+      name: "wasm_binary_inline",
+      build: async () => {
+        const assets = await ensureCachedStockfishAssetsV0();
+        return buildWasmBinaryInlineWorkerUrlV0(assets);
+      }
+    },
     {
       name: "blob_coep",
       build: async () => {

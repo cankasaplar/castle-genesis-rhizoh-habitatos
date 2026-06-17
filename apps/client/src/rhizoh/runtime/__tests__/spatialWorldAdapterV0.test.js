@@ -7,6 +7,7 @@ import {
   isSpatialWorldAdapterAttachedV0,
   resolveSpatialNodeGeoV0,
   retryDeferredSpatialCommitsV0,
+  shouldRouteSpatialNodeToCesiumV0,
   spatialNodeKeyV0,
   validateSpatialSinkV0,
   SPATIAL_SINK_MISSING_CODE_V0,
@@ -93,12 +94,19 @@ describe("spatialWorldAdapterV0", () => {
     const out = commitSpatialNodeToWorldV0(row);
     expect(out.deferred).toBe(true);
     expect(out.worldCommitted).toBe(false);
+    expect(out.reason).toBe("v11_map_no_cesium_sink");
 
     const sink = validateSpatialSinkV0();
     expect(sink.worldCommittedCount).toBe(0);
     expect(sink.deferredCount).toBe(1);
     expect(sink.committedCount).toBe(0);
     expect(sink.backlog).toBe(1);
+  });
+
+  it("skips cesium routing when v11 map is active without cesium layer", () => {
+    publishIngressRouteV0("app");
+    window.history.replaceState({}, "", "/world/space");
+    expect(shouldRouteSpatialNodeToCesiumV0()).toBe(false);
   });
 
   it("retries deferred commits when cesium commit surface registers", () => {

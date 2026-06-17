@@ -20,6 +20,7 @@ import {
 } from "./chessEngineBridgeV0.js";
 import { observeChessClusterMoveV0 } from "./chessClusterObserverV0.js";
 import { finalizeChessClusterGameV0 } from "./chessClusterLearningV0.js";
+import { getChessClusterMemoryGraphSnapshotV0 } from "./chessClusterMemoryGraphV0.js";
 
 export const CHESS_GAME_CLUSTER_SCHEMA_V0 = "castle.rhizoh.chess_game_cluster.v0";
 export const CHESS_CLUSTER_SLOT_COUNT_V0 = 8;
@@ -254,6 +255,15 @@ export function startChessGameClusterV0(opts = {}) {
 
   void runClusterTickV0();
   publishClusterRegistryV0({ started: true });
+  if (typeof window !== "undefined") {
+    window.__rhizoh = window.__rhizoh || {};
+    window.__rhizoh.chessClusterMemory = getChessClusterMemoryGraphSnapshotV0();
+    window.__rhizoh.chessClusterLearning = Object.freeze({
+      schema: "castle.rhizoh.chess_cluster_learning.registry.v0",
+      last: null,
+      atMs: Date.now()
+    });
+  }
 
   return Object.freeze({
     ok: true,
