@@ -162,7 +162,7 @@ const LiveCameraBoardV0 = memo(function LiveCameraBoardV0({
   );
 });
 
-function LearningStripV0({ monitor, tr }) {
+function LearningStripV0({ monitor, router, tr }) {
   const recentMoves = monitor?.recentMoves || [];
   const lastMove = recentMoves[recentMoves.length - 1];
 
@@ -173,6 +173,11 @@ function LearningStripV0({ monitor, tr }) {
         <span>
           {tr ? "Motor" : "Engine"}: <span className="font-mono">{monitor?.engineStatus || "—"}</span>
         </span>
+        <span>
+          router: {router?.activeGames ?? 0}/{router?.gameCount ?? 8}{" "}
+          {tr ? "oyun" : "games"} · rr #{router?.roundRobinIndex ?? 0}
+        </span>
+        <span>mem {monitor?.memoryNodeCount ?? 0}</span>
         <span>tick {monitor?.clusterTick ?? 0}</span>
         <span>
           #{CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 + 1} ply {monitor?.spectator?.ply ?? 0}
@@ -202,6 +207,7 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
   const [highlightSlot, setHighlightSlot] = useState(null);
   const [tickCount, setTickCount] = useState(0);
   const [teacherStatus, setTeacherStatus] = useState(() => getChessStockfishEngineStatusV0());
+  const [routerSnap, setRouterSnap] = useState(() => window.__rhizoh?.chessGameRouter || null);
   const [monitor, setMonitor] = useState(() => getChessLearningMonitorSnapshotV0("ui_mount"));
 
   useEffect(() => {
@@ -209,8 +215,13 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
     const refresh = () => {
       setSlots(listChessClusterSlotsV0());
       setTeacherStatus(getChessStockfishEngineStatusV0());
+      setRouterSnap(window.__rhizoh?.chessGameRouter || null);
       setMonitor(getChessLearningMonitorSnapshotV0("poll"));
       setTickCount(window.__rhizoh?.chessGameCluster?.tickCount ?? 0);
+    };
+    const onEngineStatus = (ev) => {
+      if (ev?.detail?.status) setTeacherStatus(ev.detail.status);
+      refresh();
     };
     const onTick = () => refresh();
     const onMove = (ev) => {
@@ -228,14 +239,14 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
     window.addEventListener(CHESS_CLUSTER_TICK_EVENT_V0, onTick);
     window.addEventListener(CHESS_CLUSTER_MOVE_EVENT_V0, onMove);
     window.addEventListener(CHESS_LEARNING_MONITOR_EVENT_V0, onMonitor);
-    window.addEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, onTick);
+    window.addEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, onEngineStatus);
     refresh();
     const poll = window.setInterval(refresh, 500);
     return () => {
       window.removeEventListener(CHESS_CLUSTER_TICK_EVENT_V0, onTick);
       window.removeEventListener(CHESS_CLUSTER_MOVE_EVENT_V0, onMove);
       window.removeEventListener(CHESS_LEARNING_MONITOR_EVENT_V0, onMonitor);
-      window.removeEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, onTick);
+      window.removeEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, onEngineStatus);
       window.clearInterval(poll);
     };
   }, [open]);
@@ -288,10 +299,14 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
             <span>
               tick {tickCount} · {isChessGameClusterRunningV0() ? (tr ? "sim aktif" : "sim on") : "sim off"}
             </span>
+            <span>
+              {tr ? "router" : "router"}: {routerSnap?.activeGames ?? 0}/{CHESS_CLUSTER_SLOT_COUNT_V0}{" "}
+              {tr ? "oyun" : "games"}
+            </span>
             <span>{tr ? "öğretmen" : "teacher"}: {teacherLabel}</span>
             <span>{padded[0]?.clock?.timeControlId || "—"}</span>
           </div>
-          <LearningStripV0 monitor={monitor} tr={tr} />
+          <LearningStripV0 monitor={monitor} router={routerSnap} tr={tr} />
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-2 sm:p-3">

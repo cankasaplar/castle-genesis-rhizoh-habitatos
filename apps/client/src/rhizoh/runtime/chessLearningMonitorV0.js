@@ -4,6 +4,7 @@
  */
 
 import { CHESS_CLUSTER_POLICY_DIFF_EVENT_V0 } from "./chessClusterLearningTraceV0.js";
+import { CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, getChessStockfishEngineStatusV0 } from "./chessStockfishEngineV0.js";
 import { CHESS_CLUSTER_MOVE_EVENT_V0 } from "./chessGameClusterV0.js";
 import { getChessClusterSlotV0 } from "./chessGameClusterV0.js";
 
@@ -61,19 +62,21 @@ function publishChessLearningMonitorV0(reason = "update") {
  * @param {string} [reason]
  */
 export function getChessLearningMonitorSnapshotV0(reason = "poll") {
-  const engine = typeof window !== "undefined" ? window.__rhizoh?.chessStockfishEngine : null;
   const cluster = typeof window !== "undefined" ? window.__rhizoh?.chessGameCluster : null;
   const memory = typeof window !== "undefined" ? window.__rhizoh?.chessClusterMemory : null;
   const learning = typeof window !== "undefined" ? window.__rhizoh?.chessClusterLearning : null;
   const spectator = getChessClusterSlotV0(CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0);
+  const engineStatus = getChessStockfishEngineStatusV0();
 
   return Object.freeze({
     schema: CHESS_LEARNING_MONITOR_SCHEMA_V0,
     reason,
     spectatorSlotId: CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0,
     spectator,
-    engineStatus: engine?.status || "not_started",
-    spawnPolicy: engine?.spawnPolicy || null,
+    engineStatus,
+    spawnPolicy:
+      (typeof window !== "undefined" ? window.__rhizoh?.chessStockfishEngine?.spawnPolicy : null) ||
+      null,
     clusterTick: cluster?.tickCount ?? 0,
     clusterRunning: Boolean(cluster?.running),
     memoryNodeCount: memory?.nodeCount ?? 0,
@@ -94,6 +97,9 @@ export function ensureChessLearningMonitorListenersV0() {
   });
   window.addEventListener(CHESS_CLUSTER_POLICY_DIFF_EVENT_V0, (ev) => {
     recordChessLearningMonitorPolicyDiffV0(ev?.detail);
+  });
+  window.addEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, () => {
+    publishChessLearningMonitorV0("engine_status");
   });
   publishChessLearningMonitorV0("boot");
 }

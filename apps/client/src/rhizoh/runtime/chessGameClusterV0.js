@@ -29,6 +29,7 @@ import {
 import { ensureChessLearningMonitorListenersV0 } from "./chessLearningMonitorV0.js";
 import { readChessArenaSessionV0 } from "./chessArenaSessionV0.js";
 import { publishRhizohChessManagerV0 } from "./rhizohChessManagerV0.js";
+import { publishChessGameRouterV0 } from "./chessGameRouterV0.js";
 
 export const CHESS_GAME_CLUSTER_SCHEMA_V0 = "castle.rhizoh.chess_game_cluster.v0";
 export const CHESS_CLUSTER_SLOT_COUNT_V0 = 8;
@@ -99,6 +100,7 @@ function publishClusterRegistryV0(extra = {}) {
     atMs: Date.now()
   });
   publishRhizohChessManagerV0("cluster_registry");
+  publishChessGameRouterV0("cluster_registry");
 }
 
 /**
@@ -347,6 +349,16 @@ export function stopChessGameClusterV0() {
 
 export function isChessGameClusterRunningV0() {
   return runningV0;
+}
+
+export function getChessClusterRouterMetaV0() {
+  return Object.freeze({
+    roundRobinIndex: roundRobinIndexV0,
+    busy: busyV0,
+    tickCount: tickCountV0,
+    running: runningV0,
+    slotCount: CHESS_CLUSTER_SLOT_COUNT_V0
+  });
 }
 
 /** @internal vitest */
