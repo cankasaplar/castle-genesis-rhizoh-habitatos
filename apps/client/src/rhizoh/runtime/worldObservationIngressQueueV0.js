@@ -3,7 +3,7 @@
  * Auth failures (401/403) open a circuit — no fetch spam when token missing/invalid.
  */
 
-import { resolveGenesisGatewayHttpBaseV0, resolveGenesisDirectGatewayOriginV0 } from "../../castleFlight/castleFlightConfig.js";
+import { listGenesisAuthorityOriginsV0 } from "./genesisSingleAuthorityLockV0.js";
 import { getCastleFlightConfig } from "../../castleFlight/castleFlightConfig.js";
 import {
   buildWorldObservationIngressEnvelopeV1,
@@ -22,16 +22,7 @@ const AUTH_BLOCK_MS = 5 * 60 * 1000;
 const INGRESS_FETCH_TIMEOUT_MS_V0 = 12000;
 
 function listGenesisIngressOriginsV0() {
-  const primary = String(resolveGenesisGatewayHttpBaseV0() || "")
-    .trim()
-    .replace(/\/+$/, "");
-  const direct = String(resolveGenesisDirectGatewayOriginV0() || "")
-    .trim()
-    .replace(/\/+$/, "");
-  const out = [];
-  if (primary) out.push(primary);
-  if (direct && direct !== primary) out.push(direct);
-  return out;
+  return listGenesisAuthorityOriginsV0();
 }
 
 async function fetchIngressV0(url, init, timeoutMs = INGRESS_FETCH_TIMEOUT_MS_V0) {

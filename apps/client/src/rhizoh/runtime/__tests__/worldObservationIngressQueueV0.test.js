@@ -11,6 +11,19 @@ vi.mock("../../../castleFlight/castleFlightConfig.js", () => ({
   getCastleFlightConfig: () => ({ gatewayToken: "test-token" })
 }));
 
+vi.mock("../genesisSingleAuthorityLockV0.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    listGenesisAuthorityOriginsV0: () => {
+      if (String(import.meta.env?.VITE_GENESIS_ALLOW_DIRECT_FALLBACK || "").trim() === "1") {
+        return [mockOrigins.proxy, mockOrigins.direct].filter(Boolean);
+      }
+      return [mockOrigins.proxy].filter(Boolean);
+    }
+  };
+});
+
 describe("worldObservationIngressQueueV0", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -26,7 +39,8 @@ describe("worldObservationIngressQueueV0", () => {
     vi.unstubAllGlobals();
   });
 
-  it("falls back to direct gateway origin when proxy ingress returns 502", async () => {
+  it("falls back to direct gateway origin when proxy ingress returns 502 and fallback allowed", async () => {
+    vi.stubEnv("VITE_GENESIS_ALLOW_DIRECT_FALLBACK", "1");
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({
         ok: false,

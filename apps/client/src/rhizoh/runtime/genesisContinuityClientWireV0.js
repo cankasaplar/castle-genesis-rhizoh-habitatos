@@ -1,4 +1,5 @@
-import { resolveGenesisGatewayHttpBaseV0, resolveGenesisSseStreamBaseV0, resolveGenesisDirectGatewayOriginV0 } from "../../castleFlight/castleFlightConfig.js";
+import { resolveGenesisGatewayHttpBaseV0, resolveGenesisSseStreamBaseV0 } from "../../castleFlight/castleFlightConfig.js";
+import { listGenesisAuthorityOriginsV0 } from "./genesisSingleAuthorityLockV0.js";
 import {
   formatGenesisContinuityEventLine,
   GENESIS_CONTINUITY_EVENT_SCHEMA
@@ -31,16 +32,12 @@ const POLL_INTERVAL_MS_V0 = 6500;
 const GENESIS_POLL_FETCH_TIMEOUT_MS_V0 = 8000;
 
 function listGenesisPollOriginsV0(preferred = "") {
-  const primary = String(preferred || resolveGenesisGatewayHttpBaseV0() || "")
-    .trim()
-    .replace(/\/+$/, "");
-  const direct = String(resolveGenesisDirectGatewayOriginV0() || "")
-    .trim()
-    .replace(/\/+$/, "");
-  const out = [];
-  if (primary) out.push(primary);
-  if (direct && direct !== primary) out.push(direct);
-  return out;
+  const origins = listGenesisAuthorityOriginsV0();
+  if (!preferred) return origins;
+  const p = String(preferred).trim().replace(/\/+$/, "");
+  if (!p) return origins;
+  if (origins[0] === p) return origins;
+  return [p, ...origins.filter((o) => o !== p)];
 }
 
 function publishGenesisStreamRegistryV0(detail = {}) {

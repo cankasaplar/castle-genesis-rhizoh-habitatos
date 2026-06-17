@@ -13,6 +13,10 @@ import {
 import { getControlPlaneSnapshotV0 } from "./rhizohControlPlaneV0.js";
 import { TRACE_CLASS_V0 } from "./rhizohTraceSamplingV0.js";
 import { resolveRhizohCesiumLayerActiveV0 } from "./rhizohLayerContextV0.js";
+import {
+  estimateWorldSpaceDivergenceV0,
+  evaluateSpatialDriftQuarantineV0
+} from "./worldSpaceReattachmentV0.js";
 
 export const RHIZOH_LIVE_CONSISTENCY_AUDIT_SCHEMA_V0 = "rhizoh.live_consistency_audit.v0";
 export const RHIZOH_LIVE_CONSISTENCY_AUDIT_EVENT_V0 = "rhizoh:live-consistency-audit-v0";
@@ -200,6 +204,12 @@ export function auditSpatialDriftV0() {
     if (mapLayerExpected) issues.push("live_projection_without_camera_geo");
   }
 
+  const divergence = estimateWorldSpaceDivergenceV0();
+  const quarantine = evaluateSpatialDriftQuarantineV0(divergence);
+  if (quarantine.quarantine) {
+    issues.push("spatial_drift_quarantine_threshold_exceeded");
+  }
+
   const pass = issues.length === 0;
   return Object.freeze({
     axis: "spatial_drift",
@@ -208,6 +218,9 @@ export function auditSpatialDriftV0() {
     liveProjectionCount: liveCount,
     cesiumReady,
     hasCameraGeo: Boolean(cameraGeo),
+    divergence,
+    quarantineThreshold: quarantine.threshold,
+    quarantineActive: quarantine.quarantine,
     issues: Object.freeze(issues)
   });
 }
