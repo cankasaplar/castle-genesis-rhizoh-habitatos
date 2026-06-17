@@ -111,10 +111,10 @@ export function scoreSpatialProjectionConfidenceV0(candidate = {}) {
 
   const divergence = estimateWorldSpaceDivergenceV0();
   const quarantine = evaluateSpatialDriftQuarantineV0(divergence);
-  if (quarantine.quarantine) {
+  if (quarantine.quarantine && candidate.force !== true) {
     issues.push("divergence_quarantine");
     score -= 0.3;
-  } else {
+  } else if (!quarantine.quarantine) {
     score += 0.05;
   }
 

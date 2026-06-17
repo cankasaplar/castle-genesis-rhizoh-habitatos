@@ -191,7 +191,16 @@ export function computeCausalGraphDiffV0(causalMap) {
  */
 export function consumeCausalGraphDiffV0(opts = {}) {
   const map = opts.causalMap || (typeof window !== "undefined" ? window.__rhizoh?.causalMap : null);
-  const diff = computeCausalGraphDiffV0(map);
+  const diff =
+    opts.forceAll === true
+      ? Object.freeze({
+          added: Object.freeze([...(Array.isArray(map?.nodes) ? map.nodes : [])]),
+          changed: Object.freeze([]),
+          nodes: Object.freeze([...(Array.isArray(map?.nodes) ? map.nodes : [])]),
+          total: Array.isArray(map?.nodes) ? map.nodes.length : 0,
+          diffCount: Array.isArray(map?.nodes) ? map.nodes.length : 0
+        })
+      : computeCausalGraphDiffV0(map);
   if (!diff.diffCount) {
     return Object.freeze({
       ok: true,
@@ -313,6 +322,18 @@ export function projectCausalNodesToSpatialV0(causalMap, opts = {}) {
   }
 
   return snap;
+}
+
+/**
+ * Bridge active when causal map has bindable nodes.
+ * @param {object} [causalMap]
+ */
+export function isCausalGraphSpatialBridgeActiveV0(causalMap) {
+  const map = causalMap || (typeof window !== "undefined" ? window.__rhizoh?.causalMap : null);
+  const count = Number(map?.nodeCount ?? 0);
+  if (count > 0) return true;
+  const nodes = Array.isArray(map?.nodes) ? map.nodes : [];
+  return nodes.length > 0;
 }
 
 /**

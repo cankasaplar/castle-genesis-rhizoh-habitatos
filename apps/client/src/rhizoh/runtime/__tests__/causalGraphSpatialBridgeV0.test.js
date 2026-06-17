@@ -47,7 +47,7 @@ describe("causalGraphSpatialBridgeV0", () => {
       nodes: [{ id: "n1", kind: "runtime_substrate", label: "pulse", atMs: 1000 }],
       edges: []
     };
-    const consume = consumeCausalGraphDiffV0({ causalMap: map });
+    const consume = consumeCausalGraphDiffV0({ causalMap: map, force: true });
     expect(consume.staged).toBe(1);
     expect(listSpatialNodesV0().length).toBe(0);
 

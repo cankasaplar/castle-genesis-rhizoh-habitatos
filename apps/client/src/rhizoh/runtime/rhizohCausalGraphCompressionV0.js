@@ -27,6 +27,43 @@ export const CAUSAL_COMPRESSION_POLICY_V0 = Object.freeze({
   edgeWeightPruneThreshold: 2
 });
 
+let pruningDisabledV0 = false;
+/** @type {object | null} */
+let pruningDisabledReasonV0 = null;
+
+/**
+ * Disable node/edge pruning (graph shrink guard).
+ * @param {{ reason?: string, previousNodeCount?: number, nodeCount?: number }} [meta]
+ */
+export function disableCausalGraphPruningV0(meta = {}) {
+  pruningDisabledV0 = true;
+  pruningDisabledReasonV0 = Object.freeze({
+    atMs: Date.now(),
+    reason: meta.reason || "manual",
+    previousNodeCount: meta.previousNodeCount ?? null,
+    nodeCount: meta.nodeCount ?? null
+  });
+  if (typeof window !== "undefined") {
+    window.__rhizoh = window.__rhizoh || {};
+    window.__rhizoh.causalGraphPruningDisabled = pruningDisabledReasonV0;
+  }
+  return pruningDisabledReasonV0;
+}
+
+export function isCausalGraphPruningDisabledV0() {
+  return pruningDisabledV0;
+}
+
+export function getCausalGraphPruningDisabledReasonV0() {
+  return pruningDisabledReasonV0;
+}
+
+/** @internal vitest */
+export function __resetCausalGraphPruningForTestV0() {
+  pruningDisabledV0 = false;
+  pruningDisabledReasonV0 = null;
+}
+
 /** B-axis: minimum causal density per domain (semantic preservation budget). */
 export const SEMANTIC_PRESERVATION_BUDGET_V0 = Object.freeze({
   minDomainTransition: 1,
@@ -370,10 +407,47 @@ function capEdgesV0(edges, max, spineEdgeSigs = new Set(), nodeById = new Map())
  * @param {{ maxNodes?: number, maxEdges?: number }} [opts]
  */
 export function compressCausalGraphV0(raw, opts = {}) {
-  const maxNodes = opts.maxNodes ?? CAUSAL_COMPRESSION_POLICY_V0.maxNodes;
-  const maxEdges = opts.maxEdges ?? CAUSAL_COMPRESSION_POLICY_V0.maxEdges;
   const inputNodes = Array.isArray(raw?.nodes) ? [...raw.nodes] : [];
   const inputEdges = Array.isArray(raw?.edges) ? [...raw.edges] : [];
+
+  if (opts.skipPrune === true || isCausalGraphPruningDisabledV0()) {
+    return Object.freeze({
+      schema: RHIZOH_CAUSAL_GRAPH_COMPRESSION_SCHEMA_V0,
+      evaluatedAtMs: Date.now(),
+      influencesExecution: false,
+      policy: CAUSAL_COMPRESSION_POLICY_V0,
+      semanticBudget: SEMANTIC_PRESERVATION_BUDGET_V0,
+      compressionContext: Object.freeze({
+        intentional: false,
+        mode: "pruning_disabled",
+        structuralAxis: "passthrough",
+        semanticAxis: "graph_shrink_guard",
+        skipTruthLossAsFailure: true,
+        spineProtected: true
+      }),
+      stats: Object.freeze({
+        inputNodes: inputNodes.length,
+        inputEdges: inputEdges.length,
+        outputNodes: inputNodes.length,
+        outputEdges: inputEdges.length,
+        replayBranchesDropped: 0,
+        temporalTrailClustered: 0,
+        nodesPruned: 0,
+        semanticBudgetRestored: 0,
+        spineNodeCount: inputNodes.length,
+        spineEdgeCount: inputEdges.length,
+        edgesPruned: 0,
+        pruningDisabled: true,
+        compressionRatio: 0
+      }),
+      nodes: Object.freeze(inputNodes),
+      edges: Object.freeze(inputEdges),
+      selfNarrative: `Pruning disabled — passthrough ${inputNodes.length} nodes, ${inputEdges.length} edges.`
+    });
+  }
+
+  const maxNodes = opts.maxNodes ?? CAUSAL_COMPRESSION_POLICY_V0.maxNodes;
+  const maxEdges = opts.maxEdges ?? CAUSAL_COMPRESSION_POLICY_V0.maxEdges;
 
   const { spineNodeIds, spineEdgeSigs } = resolveSemanticSpineV0(inputNodes, inputEdges);
 
