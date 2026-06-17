@@ -9,6 +9,7 @@ import {
   disposeChessStockfishEngineV0,
   getChessStockfishEngineDetailV0,
   getChessStockfishEngineStatusV0,
+  invokeStockfishFactoryV0,
   resetChessStockfishEngineV0,
   resolveChessStockfishEffectiveSpawnPolicyV0
 } from "../chessStockfishEngineV0.js";
@@ -35,6 +36,19 @@ describe("chessStockfishEngineV0", () => {
       "blob_js_wasm_hash",
       "wasm_binary_inline"
     ]);
+  });
+
+  it("invokeStockfishFactoryV0 requires outer()(opts) call shape", async () => {
+    const outer = () => (opts) =>
+      Promise.resolve({
+        opts,
+        addMessageListener() {},
+        postMessage() {}
+      });
+    const engine = await invokeStockfishFactoryV0(outer, { wasmBinary: new Uint8Array([0]) });
+    expect(engine.opts.wasmBinary).toBeInstanceOf(Uint8Array);
+    await expect(invokeStockfishFactoryV0(() => 1, {})).rejects.toThrow("stockfish_factory_inner_missing");
+    await expect(invokeStockfishFactoryV0(() => () => null, {})).rejects.toThrow("stockfish_factory_not_promise");
   });
 
   it("starts in not_started and can reset after dispose", () => {

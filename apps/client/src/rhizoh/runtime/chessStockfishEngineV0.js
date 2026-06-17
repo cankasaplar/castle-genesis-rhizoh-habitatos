@@ -526,6 +526,27 @@ const STOCKFISH_ONMESSAGE_WORKER_GATE_DISABLED_V0 =
   'false&&"undefined"!=typeof onmessage&&("undefined"==typeof window||void 0===window.document)';
 const STOCKFISH_FACTORY_EXPORT_V0 =
   '(typeof self!=="undefined"?self.__SF_STOCKFISH_FACTORY__=i:0)';
+
+/**
+ * Stockfish hi-ogawa bundle exports outer factory `i`; engine boots via i()(opts).then.
+ * @param {Function} outerFactory
+ * @param {Record<string, unknown>} [opts]
+ */
+export function invokeStockfishFactoryV0(outerFactory, opts = {}) {
+  if (typeof outerFactory !== "function") {
+    return Promise.reject(new Error("stockfish_factory_missing"));
+  }
+  const inner = outerFactory();
+  if (typeof inner !== "function") {
+    return Promise.reject(new Error("stockfish_factory_inner_missing"));
+  }
+  const result = inner(opts);
+  if (result && typeof result.then === "function") {
+    return result;
+  }
+  return Promise.reject(new Error("stockfish_factory_not_promise"));
+}
+
 const STOCKFISH_AUTO_BOOT_TAIL_V0 =
   '):"object"==typeof document&&document.currentScript?document.currentScript._exports=i():i())';
 const STOCKFISH_AUTO_BOOT_TAIL_MANUAL_V0 =
@@ -655,7 +676,7 @@ self.addEventListener("message",function(ev){
     postMessage("sf_worker_stage:import_scripts_done");
     var create=self.__SF_STOCKFISH_FACTORY__;
     if(typeof create!=="function"){postMessage("sf_worker_error:stockfish_factory_missing");return;}
-    create({wasmBinary:self.__SF_WASM_BYTES__}).then(function(engine){
+    create()({wasmBinary:self.__SF_WASM_BYTES__}).then(function(engine){
       self.__sfEngine=engine;
       engine.addMessageListener(function(line){postMessage(line);});
       postMessage("sf_worker_stage:engine_ready");
@@ -704,7 +725,7 @@ async function initMainThreadStockfishEngineV0(assets) {
   const patched = patchStockfishSourceForManualInitV0(assets.jsSource);
   const factory = await loadStockfishFactoryFromPatchedSourceV0(patched);
   const wasmBinary = assets.wasmBytes.slice();
-  const engine = await factory({ wasmBinary });
+  const engine = await invokeStockfishFactoryV0(factory, { wasmBinary });
   stockfishMainEngineV0 = engine;
   attachMainThreadHandlersV0(engine);
   postStockfishBridgeMessageV0("uci");
