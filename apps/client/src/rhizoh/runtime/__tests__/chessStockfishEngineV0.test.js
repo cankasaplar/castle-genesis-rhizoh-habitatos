@@ -24,7 +24,11 @@ describe("chessStockfishEngineV0", () => {
     expect(detail.spawnPolicy).toBe("wasm_binary_inline");
     expect(detail.workerStrategy).toBe("blob");
     expect(detail.hashWorkersDisabled).toBe(true);
-    expect(detail.spawnStrategies).toEqual(["blob_js_wasm_hash", "wasm_binary_inline"]);
+    expect(detail.spawnStrategies).toEqual([
+      "blob_js_wasm_blob",
+      "blob_js_wasm_hash",
+      "wasm_binary_inline"
+    ]);
   });
 
   it("starts in not_started and can reset after dispose", () => {

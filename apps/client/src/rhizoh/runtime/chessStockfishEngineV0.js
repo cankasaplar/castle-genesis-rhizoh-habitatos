@@ -78,7 +78,12 @@ let currentPositionFenV0 = null;
 
 const STOCKFISH_UCI_TIMEOUT_MS_V0 = 45000;
 const STOCKFISH_READY_TIMEOUT_MS_V0 = 20000;
-const STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0 = 120000;
+const STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0 = 90000;
+const STOCKFISH_COMPILE_WATCHDOG_MS_V0 = 195000;
+
+/** @type {ReturnType<typeof setInterval> | null} */
+let compileWatchdogTimerV0 = null;
+let compileWatchdogStartedAtV0 = 0;
 
 export function getChessStockfishEngineStatusV0() {
   if (initFailedV0) return "heuristic_fallback";
@@ -90,13 +95,18 @@ export function getChessStockfishEngineStatusV0() {
 }
 
 export function getChessStockfishEngineDetailV0() {
+  const status = getChessStockfishEngineStatusV0();
   return Object.freeze({
-    status: getChessStockfishEngineStatusV0(),
+    status,
     initError: initErrorV0,
     assetsVerified: assetsVerifiedV0,
     workerUrl: resolveStockfishWorkerUrlV0(),
     wasmPath: CHESS_STOCKFISH_ASSET_PATHS_V0.wasm,
     lastSpawnStrategy: lastSpawnStrategyV0,
+    compileElapsedMs:
+      compileWatchdogStartedAtV0 > 0 && status.includes("stockfish")
+        ? Date.now() - compileWatchdogStartedAtV0
+        : null,
     spawnStrategies: listStockfishSpawnStrategiesV0().map((s) => s.name),
     spawnPolicy: CHESS_STOCKFISH_SPAWN_POLICY_V0,
     spawnPolicyEffective: resolveChessStockfishEffectiveSpawnPolicyV0(),
@@ -108,8 +118,42 @@ export function getChessStockfishEngineDetailV0() {
       siteCoep: "credentialless",
       workerJsSpawnDisabled: true
     }),
-    computeDegraded: getChessStockfishEngineStatusV0() === "heuristic_fallback"
+    computeDegraded: status === "heuristic_fallback"
   });
+}
+
+function clearCompileWatchdogV0() {
+  if (compileWatchdogTimerV0) {
+    clearInterval(compileWatchdogTimerV0);
+    compileWatchdogTimerV0 = null;
+  }
+  compileWatchdogStartedAtV0 = 0;
+}
+
+function armCompileWatchdogV0() {
+  clearCompileWatchdogV0();
+  compileWatchdogStartedAtV0 = Date.now();
+  compileWatchdogTimerV0 = setInterval(() => {
+    const status = getChessStockfishEngineStatusV0();
+    if (status === "stockfish_wasm" || status === "heuristic_fallback" || status === "not_started") {
+      clearCompileWatchdogV0();
+      return;
+    }
+    const elapsedMs = Date.now() - compileWatchdogStartedAtV0;
+    publishEngineStatusV0("compile_watchdog_tick");
+    if (elapsedMs > STOCKFISH_COMPILE_WATCHDOG_MS_V0) {
+      clearCompileWatchdogV0();
+      initFailedV0 = true;
+      initErrorV0 = "stockfish_compile_watchdog_timeout";
+      logStockfishV0("error", "compile watchdog timeout", {
+        elapsedMs,
+        lastSpawnStrategy: lastSpawnStrategyV0
+      });
+      disposeChessStockfishEngineV0();
+      initPromiseV0 = null;
+      publishEngineStatusV0("compile_watchdog_timeout");
+    }
+  }, 4000);
 }
 
 function logStockfishV0(level, message, detail = null) {
@@ -420,6 +464,23 @@ function bytesToBase64V0(bytes) {
   return btoa(binary);
 }
 
+function buildBlobJsWasmBlobWorkerUrlV0(assets) {
+  if (!STOCKFISH_WORKER_WEB_INIT_RE_V0.test(assets.jsSource)) {
+    throw new Error("stockfish_worker_patch_missing");
+  }
+  const wasmBlobUrl = URL.createObjectURL(
+    new Blob([assets.wasmBytes], { type: "application/wasm" })
+  );
+  trackSpawnBlobUrlV0(wasmBlobUrl);
+  const patched = assets.jsSource.replace(
+    STOCKFISH_WORKER_WEB_INIT_RE_V0,
+    `e={locateFile:function(e){return-1<e.indexOf(".wasm")?${JSON.stringify(wasmBlobUrl)}:self.location.origin+self.location.pathname+"#"+r+",worker"}},i()(e).then`
+  );
+  const jsBlobUrl = URL.createObjectURL(new Blob([patched], { type: "application/javascript" }));
+  trackSpawnBlobUrlV0(jsBlobUrl);
+  return `${jsBlobUrl}#wasm_blob,worker`;
+}
+
 function buildBlobJsWasmHashWorkerUrlV0(assets) {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const wasmUrl = `${origin}${CHESS_STOCKFISH_ASSET_PATHS_V0.wasm}`;
@@ -449,6 +510,14 @@ ${patched}`;
 
 function listStockfishSpawnStrategiesV0() {
   return [
+    {
+      name: "blob_js_wasm_blob",
+      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
+      build: async () => {
+        const assets = await ensureCachedStockfishAssetsV0();
+        return buildBlobJsWasmBlobWorkerUrlV0(assets);
+      }
+    },
     {
       name: "blob_js_wasm_hash",
       uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
@@ -545,6 +614,7 @@ async function ensureStockfishWorkerV0() {
 
   initPromiseV0 = (async () => {
     const initStartedAtMs = Date.now();
+    armCompileWatchdogV0();
     publishEngineStatusV0("init_started");
     try {
       const assetsOk = await verifyStockfishAssetsV0();
@@ -571,6 +641,7 @@ async function ensureStockfishWorkerV0() {
             strategy: strategy.name,
             initMs: Date.now() - initStartedAtMs
           });
+          clearCompileWatchdogV0();
           publishEngineStatusV0("init_ready");
           return workerV0;
         } catch (err) {
@@ -595,6 +666,7 @@ async function ensureStockfishWorkerV0() {
       initFailedV0 = true;
       initErrorV0 = String(err?.message || "stockfish_init_failed");
       logStockfishV0("error", "init failed", { error: initErrorV0 });
+      clearCompileWatchdogV0();
       publishEngineStatusV0("init_failed");
       try {
         workerV0?.terminate?.();
@@ -886,6 +958,7 @@ export function prewarmChessStockfishEngineV0() {
 
 export function resetChessStockfishEngineV0() {
   disposeChessStockfishEngineV0();
+  clearCompileWatchdogV0();
   initFailedV0 = false;
   initErrorV0 = null;
   initPromiseV0 = null;
