@@ -51,6 +51,18 @@ export function isReplayModeActiveV0() {
   return isRhizohCatchUpReplayActiveV0();
 }
 
+const CATCH_UP_SETTLE_MS_V0 = 5000;
+let lastCatchUpActivityAtMsV0 = 0;
+
+/** Mark catch-up activity — extends voice mute briefly after cascade completes. */
+export function markCatchUpActivityV0() {
+  lastCatchUpActivityAtMsV0 = Date.now();
+}
+
+export function isCatchUpSettlingV0() {
+  return Date.now() - lastCatchUpActivityAtMsV0 < CATCH_UP_SETTLE_MS_V0;
+}
+
 export function getVoiceTemporalModeV0() {
   return voiceModeV0;
 }
@@ -59,7 +71,11 @@ export function getVoiceTemporalModeV0() {
  * Voice output must be suppressed during replay.
  */
 export function shouldMuteVoiceOutputV0() {
-  return voiceModeV0 === VOICE_TEMPORAL_MODE_V0.MUTED_REPLAY || isRhizohCatchUpReplayActiveV0();
+  return (
+    voiceModeV0 === VOICE_TEMPORAL_MODE_V0.MUTED_REPLAY ||
+    isRhizohCatchUpReplayActiveV0() ||
+    isCatchUpSettlingV0()
+  );
 }
 
 /**
@@ -141,6 +157,7 @@ export function getTemporalBridgeSnapshotV0() {
 export function __resetTemporalBridgeForTestV0() {
   voiceModeV0 = VOICE_TEMPORAL_MODE_V0.LIVE;
   replayDepthV0 = 0;
+  lastCatchUpActivityAtMsV0 = 0;
   mutedReplayVoiceQueueV0.length = 0;
   if (typeof window !== "undefined" && window.__rhizoh?.temporalBridge) {
     delete window.__rhizoh.temporalBridge;
