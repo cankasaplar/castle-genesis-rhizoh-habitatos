@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { createChessArenaGameV0, pickChessArenaAiMoveV0 } from "../chessArenaEngineV0.js";
 import {
   CHESS_STOCKFISH_ASSET_PATHS_V0,
+  CHESS_STOCKFISH_SINGLE_PIPELINE_V0,
   CHESS_STOCKFISH_SPAWN_POLICY_V0,
   disposeChessStockfishEngineV0,
   getChessStockfishEngineDetailV0,
@@ -20,22 +21,19 @@ describe("chessStockfishEngineV0", () => {
     expect(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm).toBe("/chess-engine/stockfish-nnue-16-single.wasm");
   });
 
-  it("uses blob wasm-hash primary spawn with inline fallback", () => {
+  it("uses a single isolated main-thread pipeline without worker fallbacks", () => {
     disposeChessStockfishEngineV0();
-    expect(CHESS_STOCKFISH_SPAWN_POLICY_V0).toBe("wasm_binary_inline");
-    expect(resolveChessStockfishEffectiveSpawnPolicyV0()).toBe("wasm_binary_inline");
+    expect(CHESS_STOCKFISH_SPAWN_POLICY_V0).toBe("wasm_single_thread_isolated");
+    expect(CHESS_STOCKFISH_SINGLE_PIPELINE_V0).toBe("wasm_single_thread_isolated");
+    expect(resolveChessStockfishEffectiveSpawnPolicyV0()).toBe("wasm_single_thread_isolated");
     const detail = getChessStockfishEngineDetailV0();
-    expect(detail.spawnPolicy).toBe("wasm_binary_inline");
-    expect(detail.workerStrategy).toBe("blob");
+    expect(detail.spawnPolicy).toBe("wasm_single_thread_isolated");
+    expect(detail.workerStrategy).toBe("main_thread_isolated");
+    expect(detail.singlePipeline).toBe(true);
+    expect(detail.fallbackDisabled).toBe(true);
     expect(detail.hashWorkersDisabled).toBe(true);
-    expect(detail.spawnStrategies).toEqual([
-      "main_thread_wasm_binary",
-      "xfer_wasm_bytes_deferred_import",
-      "xfer_wasm_compiled_module",
-      "blob_js_wasm_blob",
-      "blob_js_wasm_hash",
-      "wasm_binary_inline"
-    ]);
+    expect(detail.spawnStrategies).toEqual(["wasm_single_thread_isolated"]);
+    expect(detail.deploymentLayer.workerFallbackDisabled).toBe(true);
   });
 
   it("invokeStockfishFactoryV0 requires outer()(opts) call shape", async () => {
@@ -58,21 +56,6 @@ describe("chessStockfishEngineV0", () => {
     const detail = getChessStockfishEngineDetailV0();
     expect(detail.status).toBe("not_started");
     expect(detail.wasmPath).toContain(".wasm");
-  });
-
-  it("stockfish worker source supports xfer wasm patch", () => {
-    const here = dirname(fileURLToPath(import.meta.url));
-    const stockfishPath = join(here, "../../../../public/chess-engine/stockfish-nnue-16-single.js");
-    const jsSource = readFileSync(stockfishPath, "utf8");
-    const patchRe =
-      /e=\{locateFile:function\(e\)\{return-1<e\.indexOf\("\.wasm"\)\?r:self\.location\.origin\+self\.location\.pathname\+"#"\+r\+",worker"\}\},i\(\)\(e\)\.then/;
-    expect(patchRe.test(jsSource)).toBe(true);
-    const patched = jsSource.replace(
-      patchRe,
-      'e={instantiateWasm:function(im,rcv){var m=self.__SF_WASM_MODULE__;if(!m)throw new Error("sf_wasm_module_missing");WebAssembly.instantiate(m,im).then(function(r){rcv(r.instance,r.module)}).catch(function(err){throw err;});return{}},locateFile:function(e){return-1<e.indexOf(".wasm")?r:self.location.origin+self.location.pathname+"#"+r+",worker"}},(self.__SF_WAIT_MODULE__?self.__SF_WAIT_MODULE__():Promise.resolve()).then(function(){return i()(e)}).then'
-    );
-    expect(patched).not.toBe(jsSource);
-    expect(patched).toContain("__SF_WASM_MODULE__");
   });
 
   it("stockfish worker source supports manual-init patch", () => {
@@ -98,22 +81,7 @@ describe("chessStockfishEngineV0", () => {
         '):"object"==typeof document&&document.currentScript?(typeof self!=="undefined"?self.__SF_STOCKFISH_FACTORY__=i:0):(typeof self!=="undefined"?self.__SF_STOCKFISH_FACTORY__=i:0))'
       );
     expect(patched).toContain("__SF_STOCKFISH_FACTORY__");
-    expect(patched).toContain('false&&"undefined"!=typeof self');
-    expect(patched).toContain('false&&"undefined"!=typeof onmessage');
     expect(patched).not.toContain("document.currentScript._exports=i()");
-  });
-
-  it("stockfish worker source supports wasm bytes deferred patch", () => {
-    const here = dirname(fileURLToPath(import.meta.url));
-    const stockfishPath = join(here, "../../../../public/chess-engine/stockfish-nnue-16-single.js");
-    const jsSource = readFileSync(stockfishPath, "utf8");
-    const patchRe =
-      /e=\{locateFile:function\(e\)\{return-1<e\.indexOf\("\.wasm"\)\?r:self\.location\.origin\+self\.location\.pathname\+"#"\+r\+",worker"\}\},i\(\)\(e\)\.then/;
-    const patched = jsSource.replace(
-      patchRe,
-      'e={wasmBinary:self.__SF_WASM_BYTES__,locateFile:function(e){return-1<e.indexOf(".wasm")?r:self.location.origin+self.location.pathname+"#"+r+",worker"}},i()(e).then'
-    );
-    expect(patched).toContain("__SF_WASM_BYTES__");
   });
 });
 
