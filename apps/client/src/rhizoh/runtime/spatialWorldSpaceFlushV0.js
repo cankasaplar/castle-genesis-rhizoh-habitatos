@@ -62,3 +62,14 @@ export function flushSpatialBufferToWorldSpaceV0(opts = {}) {
 
   return snap;
 }
+
+/**
+ * Alias for spatial execution tick — drain pre-ready buffer into world_space.
+ * @param {{ force?: boolean, atMs?: number, emitImmediate?: (domain: string, event: object) => unknown }} [opts]
+ */
+export function flushSpatialWorldSpaceBufferV0(opts = {}) {
+  return flushSpatialBufferToWorldSpaceV0({
+    force: opts.force,
+    emitImmediate: opts.emitImmediate
+  });
+}

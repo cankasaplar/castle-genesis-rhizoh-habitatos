@@ -6,6 +6,12 @@
 import { isCesiumExecutorCommandReadyV0 } from "../../castleFlight/cesiumCommandExecutorV0.js";
 import { RHIZOH_DOMAIN_ID_V0 } from "./rhizohDomainCoreStoreV0.js";
 import { traceFallbackV0 } from "./rhizohTruthTraceLayerV0.js";
+import {
+  getSpatialWorldSyncSnapshotV0,
+  isSpatialAdapterAliveV0,
+  isSpatialWorldSyncReadyV0,
+  isWorldSyncActiveV0
+} from "./spatialWorldSyncV0.js";
 
 export const RHIZOH_SPATIAL_READY_GATE_SCHEMA_V0 = "rhizoh.spatial_ready_gate.v0";
 export const RHIZOH_SPATIAL_READY_GATE_EVENT_V0 = "rhizoh:spatial-ready-gate-v0";
@@ -34,7 +40,7 @@ export function isCesiumViewerSpatialReadyV0() {
  */
 export function isSpatialReadyGateOpenV0() {
   if (forceOpenForTest) return true;
-  return isCesiumViewerSpatialReadyV0();
+  return isSpatialWorldSyncReadyV0();
 }
 
 /**
@@ -104,10 +110,14 @@ export function noteCesiumSpatialReadyV0(emitImmediate) {
 }
 
 export function getSpatialReadyGateSnapshotV0() {
+  const worldSync = getSpatialWorldSyncSnapshotV0();
   return Object.freeze({
     schema: RHIZOH_SPATIAL_READY_GATE_SCHEMA_V0,
     open: isSpatialReadyGateOpenV0(),
     cesiumReady: isCesiumViewerSpatialReadyV0(),
+    worldSyncActive: worldSync.worldSyncActive,
+    adapterAlive: worldSync.adapterAlive,
+    worldSyncReady: worldSync.ready,
     buffered: preReadyBuffer.length,
     lastDrainAtMs,
     gatedDomains: Object.freeze([...GATED_DOMAINS]),
@@ -128,10 +138,8 @@ export function installSpatialReadyGateWireV0(emitImmediate) {
   window.addEventListener(CASTLE_CESIUM_COMMAND_READY_EVENT_V0, onReady);
   let polls = 0;
   const pollId = window.setInterval(() => {
-    if (isSpatialReadyGateOpenV0()) {
-      window.clearInterval(pollId);
+    if (isSpatialReadyGateOpenV0() || isWorldSyncActiveV0()) {
       onReady();
-      return;
     }
     polls += 1;
     if (polls >= 120) window.clearInterval(pollId);

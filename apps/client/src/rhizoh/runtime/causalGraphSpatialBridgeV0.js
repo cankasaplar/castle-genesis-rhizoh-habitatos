@@ -6,7 +6,7 @@
 
 import { RHIZOH_DOMAIN_ID_V0 } from "./rhizohDomainCoreStoreV0.js";
 import { SPATIAL_NODE_TIER_V0, listSpatialNodesV0 } from "./rhizohSpatialNodeLayerV0.js";
-import { emitSpatialEventFromDomainV0 } from "./rhizohSpatialEventEmitterV0.js";
+import { emitSpatialEventFromDomainV0, stageSpatialProjectionV0 } from "./rhizohSpatialEventEmitterV0.js";
 import { normalizeSpatialVectorV0 } from "./worldSpaceReattachmentV0.js";
 import { getTruthTraceLogV0 } from "./rhizohTruthTraceLayerV0.js";
 import {
@@ -18,6 +18,9 @@ export const CAUSAL_GRAPH_SPATIAL_BRIDGE_SCHEMA_V0 = "castle.rhizoh.causal_graph
 
 /** @type {Set<string>} */
 const projectedCausalNodeIdsV0 = new Set();
+
+/** @type {Map<string, number>} */
+const lastConsumedCausalAtMsV0 = new Map();
 
 /**
  * Shannon-style entropy proxy from node/edge distribution (0..1).
@@ -69,9 +72,192 @@ function spatialNodeIdForCausalV0(causalNode, anchor) {
 }
 
 /**
+ * @param {object} causalNode
+ * @param {object} map
+ * @param {{ lat: number, lon: number }} anchor
+ * @param {Set<string>} existingIds
+ * @param {number} seq
+ * @param {{ force?: boolean, stage?: boolean }} opts
+ */
+function projectSingleCausalNodeV0(causalNode, map, anchor, existingIds, seq, opts = {}) {
+  const causalId = String(causalNode.id || "");
+  if (!causalId) {
+    return Object.freeze({ ok: false, reason: "missing_causal_id" });
+  }
+  if (!opts.force && projectedCausalNodeIdsV0.has(causalId)) {
+    return Object.freeze({ ok: true, skipped: true, reason: "already_projected" });
+  }
+
+  const nodeId = spatialNodeIdForCausalV0(causalNode, anchor);
+  if (existingIds.has(nodeId) && !opts.force) {
+    projectedCausalNodeIdsV0.add(causalId);
+    return Object.freeze({ ok: true, skipped: true, reason: "spatial_exists" });
+  }
+
+  const vector = normalizeSpatialVectorV0(anchor, {
+    dtMs: Date.now() - (Number(causalNode.atMs) || Date.now()),
+    seq
+  });
+
+  const validation = validateSpatialProjectionCandidateV0({
+    causalNode,
+    causalNodeId: causalId,
+    spatialVector: vector.ok ? vector.spatial_vector : null,
+    atMs: Number(causalNode.atMs) || Date.now(),
+    force: opts.force === true,
+    causalMap: map
+  });
+
+  if (!validation.allowWrite) {
+    return Object.freeze({
+      ok: false,
+      skipped: true,
+      quarantined: validation.verdict === SPATIAL_TRUTH_VERDICT_V0.QUARANTINE,
+      optimistic: validation.verdict === SPATIAL_TRUTH_VERDICT_V0.OPTIMISTIC_PASS,
+      validation
+    });
+  }
+
+  const event = {
+    tier: SPATIAL_NODE_TIER_V0.TEMPORAL,
+    nodeId,
+    kind: "causal_projection",
+    trigger: opts.stage ? "graph_to_space_stage" : "graph_to_space_bridge",
+    payload: {
+      causalNodeId: causalId,
+      causalKind: causalNode.kind,
+      label: causalNode.label,
+      spatial_vector: vector.ok ? vector.spatial_vector : null,
+      atMs: Number(causalNode.atMs) || Date.now(),
+      truthValidation: Object.freeze({
+        verdict: validation.verdict,
+        confidence: validation.confidence,
+        issues: validation.issues
+      })
+    }
+  };
+
+  const result = opts.stage
+    ? stageSpatialProjectionV0(RHIZOH_DOMAIN_ID_V0.OBSERVER, event)
+    : emitSpatialEventFromDomainV0(RHIZOH_DOMAIN_ID_V0.OBSERVER, event);
+
+  if (result.ok) {
+    projectedCausalNodeIdsV0.add(causalId);
+    existingIds.add(nodeId);
+    return Object.freeze({
+      ok: true,
+      staged: opts.stage === true,
+      projected: opts.stage !== true,
+      optimistic: validation.verdict === SPATIAL_TRUTH_VERDICT_V0.OPTIMISTIC_PASS,
+      nodeId,
+      causalId
+    });
+  }
+
+  return Object.freeze({ ok: false, skipped: true, reason: result.reason || "emit_failed" });
+}
+
+/**
+ * Compute causal graph diff since last consume (new or atMs-changed nodes).
+ * @param {object} [causalMap]
+ */
+export function computeCausalGraphDiffV0(causalMap) {
+  const map = causalMap || (typeof window !== "undefined" ? window.__rhizoh?.causalMap : null);
+  const nodes = Array.isArray(map?.nodes) ? map.nodes : [];
+  const added = [];
+  const changed = [];
+
+  for (const node of nodes) {
+    const id = String(node.id || "");
+    if (!id) continue;
+    const atMs = Number(node.atMs) || 0;
+    const prev = lastConsumedCausalAtMsV0.get(id);
+    if (prev === undefined) added.push(node);
+    else if (prev !== atMs) changed.push(node);
+  }
+
+  return Object.freeze({
+    added,
+    changed,
+    nodes: Object.freeze([...added, ...changed]),
+    total: nodes.length,
+    diffCount: added.length + changed.length
+  });
+}
+
+/**
+ * Consume graph diff — transform + stage (no registry commit until emitter flush).
+ * @param {{ causalMap?: object, force?: boolean, atMs?: number }} [opts]
+ */
+export function consumeCausalGraphDiffV0(opts = {}) {
+  const map = opts.causalMap || (typeof window !== "undefined" ? window.__rhizoh?.causalMap : null);
+  const diff = computeCausalGraphDiffV0(map);
+  if (!diff.diffCount) {
+    return Object.freeze({
+      ok: true,
+      consumed: 0,
+      staged: 0,
+      skipped: 0,
+      quarantined: 0,
+      optimistic: 0,
+      diff
+    });
+  }
+
+  const anchor = readWorldAnchorV0();
+  const existingIds = new Set(listSpatialNodesV0().map((n) => n.id));
+  let staged = 0;
+  let skipped = 0;
+  let quarantined = 0;
+  let optimistic = 0;
+
+  for (let i = 0; i < diff.nodes.length; i += 1) {
+    const causalNode = diff.nodes[i];
+    const causalId = String(causalNode.id || "");
+    const result = projectSingleCausalNodeV0(causalNode, map, anchor, existingIds, i, {
+      force: opts.force === true,
+      stage: true
+    });
+
+    if (result.staged) staged += 1;
+    else if (result.skipped) skipped += 1;
+    if (result.quarantined) quarantined += 1;
+    if (result.optimistic) optimistic += 1;
+
+    if (causalId) {
+      lastConsumedCausalAtMsV0.set(causalId, Number(causalNode.atMs) || 0);
+    }
+  }
+
+  const snap = Object.freeze({
+    ok: true,
+    atMs: Number(opts.atMs) || Date.now(),
+    consumed: diff.diffCount,
+    staged,
+    skipped,
+    quarantined,
+    optimistic,
+    diff,
+    spatialNodeCount: listSpatialNodesV0().length
+  });
+
+  if (typeof window !== "undefined") {
+    window.__rhizoh = window.__rhizoh || {};
+    window.__rhizoh.causalGraphSpatialBridge = Object.freeze({
+      schema: CAUSAL_GRAPH_SPATIAL_BRIDGE_SCHEMA_V0,
+      ...snap,
+      influencesExecution: false,
+      entropy: computeCausalMapEntropyV0(map)
+    });
+  }
+
+  return snap;
+}
+
+/**
  * Project causal map nodes into spatial registry (OBSERVER domain — bypasses WORLD gate).
  * @param {object} [causalMap]
- * @param {{ force?: boolean }} [opts]
+ * @param {{ force?: boolean, stage?: boolean }} [opts]
  */
 export function projectCausalNodesToSpatialV0(causalMap, opts = {}) {
   const map = causalMap || (typeof window !== "undefined" ? window.__rhizoh?.causalMap : null);
@@ -83,71 +269,27 @@ export function projectCausalNodesToSpatialV0(causalMap, opts = {}) {
   const anchor = readWorldAnchorV0();
   const existingIds = new Set(listSpatialNodesV0().map((n) => n.id));
   let projected = 0;
+  let staged = 0;
   let skipped = 0;
   let quarantined = 0;
   let optimistic = 0;
 
-  for (const causalNode of nodes) {
-    const causalId = String(causalNode.id || "");
-    if (!causalId) continue;
-    if (!opts.force && projectedCausalNodeIdsV0.has(causalId)) {
-      skipped += 1;
-      continue;
-    }
-
-    const nodeId = spatialNodeIdForCausalV0(causalNode, anchor);
-    if (existingIds.has(nodeId) && !opts.force) {
-      projectedCausalNodeIdsV0.add(causalId);
-      skipped += 1;
-      continue;
-    }
-
-    const vector = normalizeSpatialVectorV0(anchor, {
-      dtMs: Date.now() - (Number(causalNode.atMs) || Date.now()),
-      seq: projected
-    });
-
-    const validation = validateSpatialProjectionCandidateV0({
-      causalNode,
-      causalNodeId: causalId,
-      spatialVector: vector.ok ? vector.spatial_vector : null,
-      atMs: Number(causalNode.atMs) || Date.now(),
+  for (let i = 0; i < nodes.length; i += 1) {
+    const causalNode = nodes[i];
+    const result = projectSingleCausalNodeV0(causalNode, map, anchor, existingIds, i, {
       force: opts.force === true,
-      causalMap: map
+      stage: opts.stage === true
     });
 
-    if (!validation.allowWrite) {
-      if (validation.verdict === SPATIAL_TRUTH_VERDICT_V0.QUARANTINE) quarantined += 1;
-      else skipped += 1;
-      continue;
-    }
-    if (validation.verdict === SPATIAL_TRUTH_VERDICT_V0.OPTIMISTIC_PASS) optimistic += 1;
+    if (result.staged) staged += 1;
+    else if (result.projected) projected += 1;
+    else if (result.skipped) skipped += 1;
+    if (result.quarantined) quarantined += 1;
+    if (result.optimistic) optimistic += 1;
 
-    const result = emitSpatialEventFromDomainV0(RHIZOH_DOMAIN_ID_V0.OBSERVER, {
-      tier: SPATIAL_NODE_TIER_V0.TEMPORAL,
-      nodeId,
-      kind: "causal_projection",
-      trigger: "graph_to_space_bridge",
-      payload: {
-        causalNodeId: causalId,
-        causalKind: causalNode.kind,
-        label: causalNode.label,
-        spatial_vector: vector.ok ? vector.spatial_vector : null,
-        atMs: Number(causalNode.atMs) || Date.now(),
-        truthValidation: Object.freeze({
-          verdict: validation.verdict,
-          confidence: validation.confidence,
-          issues: validation.issues
-        })
-      }
-    });
-
-    if (result.ok) {
-      projectedCausalNodeIdsV0.add(causalId);
-      existingIds.add(nodeId);
-      projected += 1;
-    } else {
-      skipped += 1;
+    const causalId = String(causalNode.id || "");
+    if (causalId) {
+      lastConsumedCausalAtMsV0.set(causalId, Number(causalNode.atMs) || 0);
     }
   }
 
@@ -157,6 +299,7 @@ export function projectCausalNodesToSpatialV0(causalMap, opts = {}) {
     influencesExecution: false,
     causalNodeCount: nodes.length,
     projected,
+    staged,
     skipped,
     quarantined,
     optimistic,
@@ -222,4 +365,5 @@ export function bootstrapInternalSemanticMassV0(opts = {}) {
 /** @internal vitest */
 export function __resetCausalGraphSpatialBridgeForTestV0() {
   projectedCausalNodeIdsV0.clear();
+  lastConsumedCausalAtMsV0.clear();
 }

@@ -6,7 +6,7 @@
 
 import { traceRuntimeSubstrateEventV0 } from "./rhizohTruthTraceLayerV0.js";
 import { publishCausalMapLayerV0 } from "./rhizohCausalMapLayerV0.js";
-import { projectCausalNodesToSpatialV0 } from "./causalGraphSpatialBridgeV0.js";
+import { consumeCausalGraphDiffV0 } from "./causalGraphSpatialBridgeV0.js";
 
 export const RUNTIME_EVENT_GRAPH_BRIDGE_SCHEMA_V0 = "rhizoh.runtime_event_graph_bridge.v0";
 
@@ -55,7 +55,7 @@ export function scheduleCausalMapCommitV0() {
     commitTimerV0 = null;
     const map = publishCausalMapLayerV0();
     statsV0.lastCommitAtMs = Date.now();
-    const spatialBridge = projectCausalNodesToSpatialV0(map);
+    const spatialBridge = consumeCausalGraphDiffV0({ causalMap: map });
     publishRuntimeEventGraphBridgeRegistryV0(map, spatialBridge);
   }, 120);
 }
@@ -68,7 +68,7 @@ export function flushCausalMapCommitV0() {
   }
   const map = publishCausalMapLayerV0();
   statsV0.lastCommitAtMs = Date.now();
-  const spatialBridge = projectCausalNodesToSpatialV0(map);
+  const spatialBridge = consumeCausalGraphDiffV0({ causalMap: map });
   publishRuntimeEventGraphBridgeRegistryV0(map, spatialBridge);
   return map;
 }
@@ -93,7 +93,8 @@ export function publishRuntimeEventGraphBridgeRegistryV0(map = null, spatialBrid
       : null,
     lastSpatialBridge: spatialBridge
       ? Object.freeze({
-          projected: spatialBridge.projected ?? 0,
+          consumed: spatialBridge.consumed ?? 0,
+          staged: spatialBridge.staged ?? spatialBridge.projected ?? 0,
           skipped: spatialBridge.skipped ?? 0,
           spatialNodeCount: spatialBridge.spatialNodeCount ?? 0
         })
