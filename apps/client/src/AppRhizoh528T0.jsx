@@ -259,7 +259,7 @@ import {
 import { useRhizohGatewayMonitor, getRhizohApiBase } from "./rhizoh/useRhizohGatewayMonitor.js";
 import { resolveGatewayBootObservabilityLogV0 } from "./rhizoh/runtime/gatewayBootObservabilityFilterV0.js";
 import { getGatewaySessionKeeperSnapshotV1 } from "./rhizoh/runtime/gatewaySessionKeeperV1.js";
-import { startGenesisContinuityClientWireV0 } from "./rhizoh/runtime/genesisContinuityClientWireV0.js";
+import { ensureGenesisContinuityClientWireV0 } from "./rhizoh/runtime/genesisContinuityClientWireV0.js";
 import {
   maybePublishWorldTickObservationV0,
   publishAgentSpokeObservationV0
@@ -8840,12 +8840,10 @@ export default function AppRhizoh528() {
   }, [booted]);
 
   useEffect(() => {
-    if (!booted || !runtimeHealth.gatewayConnected) return undefined;
-    const stopGenesisWire = startGenesisContinuityClientWireV0();
-    return () => {
-      stopGenesisWire?.();
-    };
-  }, [booted, runtimeHealth.gatewayConnected]);
+    if (!booted) return undefined;
+    ensureGenesisContinuityClientWireV0();
+    return undefined;
+  }, [booted]);
 
   useEffect(() => {
     if (greenRoomLive?.phase !== "LIVE") {

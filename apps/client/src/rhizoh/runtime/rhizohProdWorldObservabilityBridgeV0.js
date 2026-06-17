@@ -16,6 +16,7 @@ import {
   installRhizohControlCenterV0,
   isRhizohControlCenterEnabledV0
 } from "../debug/rhizohControlCenterV0.js";
+import { ensureGenesisContinuityClientWireV0 } from "./genesisContinuityClientWireV0.js";
 
 let bridgeStarted = false;
 /** @type {ReturnType<typeof setInterval> | null} */
@@ -82,6 +83,7 @@ export function startProdWorldObservabilityBridgeV0(ctx = {}) {
     installRhizohControlCenterV0();
   }
   publishProdWorldObservabilitySnapshotV0(ctx);
+  ensureGenesisContinuityClientWireV0();
   void primeProdWorldObservabilityBridgeV0(ctx).catch(() => {});
 
   monitorTimer = setInterval(() => {
