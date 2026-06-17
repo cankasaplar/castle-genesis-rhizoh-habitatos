@@ -14,6 +14,10 @@ import {
   CHESS_TEACHER_STATUS_EVENT_V0
 } from "../rhizoh/runtime/chessTeacherInterfaceV0.js";
 import { getStockfishArenaMoveV0 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
+import {
+  CHESS_ENGINE_TASK_KIND_V0,
+  CHESS_ENGINE_TASK_PRIORITY_V0
+} from "../rhizoh/runtime/chessEngineTaskQueueV0.js";
 import { pickRhizohChessMoveV0 } from "../rhizoh/runtime/rhizohChessPlayerV0.js";
 import { CHESS_STOCKFISH_PRESET_V0 } from "../rhizoh/runtime/chessStockfishPresetsV0.js";
 import {
@@ -300,7 +304,10 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     resetChessTeacherV0();
     refreshEngineStatusV0();
     void getStockfishArenaMoveV0("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", {
-      ...CHESS_STOCKFISH_PRESET_V0.WARMUP
+      ...CHESS_STOCKFISH_PRESET_V0.WARMUP,
+      queuePriority: CHESS_ENGINE_TASK_PRIORITY_V0.BACKGROUND,
+      queueKind: CHESS_ENGINE_TASK_KIND_V0.PREWARM,
+      queueLabel: "arena_warmup"
     }).finally(refreshEngineStatusV0);
   }, [refreshEngineStatusV0]);
 
@@ -314,7 +321,10 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     };
     window.addEventListener(CHESS_TEACHER_STATUS_EVENT_V0, onEngineStatus);
     void getStockfishArenaMoveV0("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", {
-      ...CHESS_STOCKFISH_PRESET_V0.WARMUP
+      ...CHESS_STOCKFISH_PRESET_V0.WARMUP,
+      queuePriority: CHESS_ENGINE_TASK_PRIORITY_V0.BACKGROUND,
+      queueKind: CHESS_ENGINE_TASK_KIND_V0.PREWARM,
+      queueLabel: "arena_warmup"
     }).finally(refreshEngineStatusV0);
     return () => window.removeEventListener(CHESS_TEACHER_STATUS_EVENT_V0, onEngineStatus);
   }, [open, refreshEngineStatusV0]);

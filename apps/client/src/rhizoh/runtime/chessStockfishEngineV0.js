@@ -10,6 +10,11 @@ import {
   emitChessEngineBridgeV0
 } from "./chessEngineBridgeV0.js";
 import { CHESS_STOCKFISH_PRESET_V0 } from "./chessStockfishPresetsV0.js";
+import {
+  CHESS_ENGINE_TASK_KIND_V0,
+  CHESS_ENGINE_TASK_PRIORITY_V0,
+  enqueueChessEngineTaskV0
+} from "./chessEngineTaskQueueV0.js";
 
 export const CHESS_STOCKFISH_ENGINE_SCHEMA_V0 = "castle.chess_stockfish_engine.v0";
 export const CHESS_STOCKFISH_LOG_TAG_V0 = "[CASTLE_stockfish_engine]";
@@ -118,6 +123,38 @@ function stopStockfishSearchV0() {
   } catch {
     /* noop */
   }
+}
+
+/** Abort in-flight UCI search so a higher-priority queued task can run. */
+export function abortChessStockfishInFlightSearchV0() {
+  for (const [id, row] of [...pendingV0.entries()]) {
+    pendingV0.delete(id);
+    try {
+      row.resolve?.(null);
+    } catch {
+      /* noop */
+    }
+  }
+  if (activeAnalysisV0) {
+    clearTimeout(activeAnalysisV0.timer);
+    try {
+      activeAnalysisV0.resolve?.(null);
+    } catch {
+      /* noop */
+    }
+    activeAnalysisV0 = null;
+  }
+  if (activeMultiPvAnalysisV0) {
+    clearTimeout(activeMultiPvAnalysisV0.timer);
+    try {
+      activeMultiPvAnalysisV0.resolve?.(null);
+    } catch {
+      /* noop */
+    }
+    activeMultiPvAnalysisV0 = null;
+    multiPvSnapshotV0.clear();
+  }
+  stopStockfishSearchV0();
 }
 
 /** @type {(() => void) | null} */
@@ -402,8 +439,6 @@ function attachStockfishEngineHandlersV0(engine) {
 }
 
 let initPromiseV0 = null;
-/** @type {Promise<unknown>} */
-let engineOpChainV0 = Promise.resolve();
 /** Nested acquires must not deadlock (cluster scheduler + getStockfishArenaMoveV0). */
 let engineLockDepthV0 = 0;
 /** @type {{ resolve: Function, timer: ReturnType<typeof setTimeout>, multiPv: number } | null} */
@@ -412,28 +447,43 @@ let activeMultiPvAnalysisV0 = null;
 const multiPvSnapshotV0 = new Map();
 
 /**
- * Serialize all UCI traffic through the single shared worker.
+ * @typedef {{ priority?: number, kind?: string, label?: string }} ChessEngineQueueOptsV0
+ */
+
+function resolveChessEngineQueueOptsV0(opts) {
+  return {
+    priority: opts?.priority ?? CHESS_ENGINE_TASK_PRIORITY_V0.CLUSTER_MOVE,
+    kind: opts?.kind ?? CHESS_ENGINE_TASK_KIND_V0.ENGINE_OP,
+    label: opts?.label ?? opts?.kind ?? "engine_op"
+  };
+}
+
+/**
+ * Serialize all UCI traffic through the single shared worker (priority task queue).
  * @template T
  * @param {() => Promise<T>} fn
+ * @param {ChessEngineQueueOptsV0 | null} [queueOpts]
  * @returns {Promise<T>}
  */
-export function withChessStockfishEngineLockV0(fn) {
+export function withChessStockfishEngineLockV0(fn, queueOpts = null) {
   if (engineLockDepthV0 > 0) {
     return Promise.resolve().then(fn);
   }
-  const op = engineOpChainV0.then(async () => {
-    engineLockDepthV0 += 1;
-    try {
-      return await fn();
-    } finally {
-      engineLockDepthV0 = Math.max(0, engineLockDepthV0 - 1);
+  const q = resolveChessEngineQueueOptsV0(queueOpts);
+  return enqueueChessEngineTaskV0({
+    priority: q.priority,
+    kind: q.kind,
+    label: q.label,
+    onPreempt: abortChessStockfishInFlightSearchV0,
+    run: async () => {
+      engineLockDepthV0 += 1;
+      try {
+        return await fn();
+      } finally {
+        engineLockDepthV0 = Math.max(0, engineLockDepthV0 - 1);
+      }
     }
   });
-  engineOpChainV0 = op.then(
-    () => undefined,
-    () => undefined
-  );
-  return op;
 }
 
 function isWasmMagicValidV0(bytes) {
@@ -782,55 +832,67 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
       return null;
     }
   }
-  return withChessStockfishEngineLockV0(async () => {
-  const position = String(fen || "").trim();
-  if (!position) return null;
-  if (!getActiveStockfishBridgeV0()) return null;
+  return withChessStockfishEngineLockV0(
+    async () => {
+      const position = String(fen || "").trim();
+      if (!position) return null;
+      if (!getActiveStockfishBridgeV0()) return null;
 
-  const { skill, movetimeMs, depth } = resolveStockfishOptsV0(opts);
-  const contempt = Number.isFinite(Number(opts.contempt)) ? Number(opts.contempt) : null;
-  const timeoutMs = resolveArenaMoveTimeoutMsV0(movetimeMs);
+      const { skill, movetimeMs, depth } = resolveStockfishOptsV0(opts);
+      const contempt = Number.isFinite(Number(opts.contempt)) ? Number(opts.contempt) : null;
+      const timeoutMs = resolveArenaMoveTimeoutMsV0(movetimeMs);
 
-  await prepareStockfishForNewSearchV0(Math.min(500, Math.round(timeoutMs * 0.12)));
+      await prepareStockfishForNewSearchV0(Math.min(500, Math.round(timeoutMs * 0.12)));
 
-  return new Promise((resolve) => {
-    const id = nextId();
-    const timer = setTimeout(() => {
-      pendingV0.delete(id);
-      stopStockfishSearchV0();
-      logStockfishV0("warn", "arena move timeout", { movetimeMs, depth, timeoutMs, fen: position.slice(0, 40) });
-      resolve(null);
-    }, timeoutMs);
+      return new Promise((resolve) => {
+        const id = nextId();
+        const timer = setTimeout(() => {
+          pendingV0.delete(id);
+          stopStockfishSearchV0();
+          logStockfishV0("warn", "arena move timeout", {
+            movetimeMs,
+            depth,
+            timeoutMs,
+            fen: position.slice(0, 40)
+          });
+          resolve(null);
+        }, timeoutMs);
 
-    pendingV0.set(id, {
-      resolve: (move) => {
-        clearTimeout(timer);
-        resolve(move && move !== "(none)" ? move : null);
-      },
-      reject: () => {
-        clearTimeout(timer);
-        resolve(null);
-      }
-    });
+        pendingV0.set(id, {
+          resolve: (move) => {
+            clearTimeout(timer);
+            resolve(move && move !== "(none)" ? move : null);
+          },
+          reject: () => {
+            clearTimeout(timer);
+            resolve(null);
+          }
+        });
 
-    try {
-      postStockfishBridgeMessageV0("setoption name UCI_LimitStrength value true");
-      postStockfishBridgeMessageV0(`setoption name Skill Level value ${skill}`);
-      if (contempt != null) {
-        postStockfishBridgeMessageV0(
-          `setoption name Contempt value ${Math.max(-100, Math.min(100, contempt))}`
-        );
-      }
-      currentPositionFenV0 = position;
-      postStockfishBridgeMessageV0(`position fen ${position}`);
-      postStockfishBridgeMessageV0(`go movetime ${movetimeMs}`);
-    } catch {
-      clearTimeout(timer);
-      pendingV0.delete(id);
-      resolve(null);
+        try {
+          postStockfishBridgeMessageV0("setoption name UCI_LimitStrength value true");
+          postStockfishBridgeMessageV0(`setoption name Skill Level value ${skill}`);
+          if (contempt != null) {
+            postStockfishBridgeMessageV0(
+              `setoption name Contempt value ${Math.max(-100, Math.min(100, contempt))}`
+            );
+          }
+          currentPositionFenV0 = position;
+          postStockfishBridgeMessageV0(`position fen ${position}`);
+          postStockfishBridgeMessageV0(`go movetime ${movetimeMs}`);
+        } catch {
+          clearTimeout(timer);
+          pendingV0.delete(id);
+          resolve(null);
+        }
+      });
+    },
+    {
+      priority: opts.queuePriority ?? CHESS_ENGINE_TASK_PRIORITY_V0.ARENA_MATCH,
+      kind: opts.queueKind ?? CHESS_ENGINE_TASK_KIND_V0.ARENA_MOVE,
+      label: opts.queueLabel ?? "arena_move"
     }
-  });
-  });
+  );
 }
 
 /**
@@ -839,52 +901,59 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
  * @param {{ depth?: number, movetimeMs?: number }} [opts]
  */
 export async function analyzeChessPositionV0(fen, opts = {}) {
-  return withChessStockfishEngineLockV0(async () => {
-  const position = String(fen || "").trim();
-  if (!position) return null;
-  const worker = await ensureStockfishWorkerV0();
-  if (!worker) return null;
+  return withChessStockfishEngineLockV0(
+    async () => {
+      const position = String(fen || "").trim();
+      if (!position) return null;
+      const worker = await ensureStockfishWorkerV0();
+      if (!worker) return null;
 
-  const depth = Math.max(6, Math.min(18, Number(opts.depth) || 10));
-  const movetime = Math.max(120, Math.min(4000, Number(opts.movetimeMs) || 600));
+      const depth = Math.max(6, Math.min(18, Number(opts.depth) || 10));
+      const movetime = Math.max(120, Math.min(4000, Number(opts.movetimeMs) || 600));
 
-  await prepareStockfishForNewSearchV0(380);
+      await prepareStockfishForNewSearchV0(380);
 
-  lastAnalysisInfoV0 = { cp: null, mate: null, depth: 0, pv: "", bestMove: null };
+      lastAnalysisInfoV0 = { cp: null, mate: null, depth: 0, pv: "", bestMove: null };
 
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => {
-      activeAnalysisV0 = null;
-      resolve(
-        lastAnalysisInfoV0.bestMove || lastAnalysisInfoV0.cp != null
-          ? Object.freeze({ ...lastAnalysisInfoV0 })
-          : null
-      );
-    }, movetime + 800);
+      return new Promise((resolve) => {
+        const timer = setTimeout(() => {
+          activeAnalysisV0 = null;
+          resolve(
+            lastAnalysisInfoV0.bestMove || lastAnalysisInfoV0.cp != null
+              ? Object.freeze({ ...lastAnalysisInfoV0 })
+              : null
+          );
+        }, movetime + 800);
 
-    activeAnalysisV0 = {
-      resolve: (info) => {
-        clearTimeout(timer);
-        resolve(info);
-      },
-      reject: () => {
-        clearTimeout(timer);
-        resolve(null);
-      },
-      timer
-    };
+        activeAnalysisV0 = {
+          resolve: (info) => {
+            clearTimeout(timer);
+            resolve(info);
+          },
+          reject: () => {
+            clearTimeout(timer);
+            resolve(null);
+          },
+          timer
+        };
 
-    try {
-      currentPositionFenV0 = position;
-      postStockfishBridgeMessageV0(`position fen ${position}`);
-      postStockfishBridgeMessageV0(`go depth ${depth} movetime ${movetime}`);
-    } catch {
-      clearTimeout(timer);
-      activeAnalysisV0 = null;
-      resolve(null);
+        try {
+          currentPositionFenV0 = position;
+          postStockfishBridgeMessageV0(`position fen ${position}`);
+          postStockfishBridgeMessageV0(`go depth ${depth} movetime ${movetime}`);
+        } catch {
+          clearTimeout(timer);
+          activeAnalysisV0 = null;
+          resolve(null);
+        }
+      });
+    },
+    {
+      priority: opts.queuePriority ?? CHESS_ENGINE_TASK_PRIORITY_V0.BACKGROUND,
+      kind: opts.queueKind ?? CHESS_ENGINE_TASK_KIND_V0.ANALYSIS,
+      label: opts.queueLabel ?? "analysis"
     }
-  });
-  });
+  );
 }
 
 /**
@@ -893,57 +962,64 @@ export async function analyzeChessPositionV0(fen, opts = {}) {
  * @param {{ multiPv?: number, depth?: number, movetimeMs?: number }} [opts]
  */
 export async function analyzeChessPositionMultiPvV0(fen, opts = {}) {
-  return withChessStockfishEngineLockV0(async () => {
-    const position = String(fen || "").trim();
-    if (!position) return null;
-    const worker = await ensureStockfishWorkerV0();
-    if (!worker) return null;
+  return withChessStockfishEngineLockV0(
+    async () => {
+      const position = String(fen || "").trim();
+      if (!position) return null;
+      const worker = await ensureStockfishWorkerV0();
+      if (!worker) return null;
 
-    const multiPv = Math.max(
-      1,
-      Math.min(CHESS_STOCKFISH_CLUSTER_MULTI_PV_V0, Number(opts.multiPv) || CHESS_STOCKFISH_CLUSTER_MULTI_PV_V0)
-    );
-    const depth = Math.max(6, Math.min(16, Number(opts.depth) || 10));
-    const movetime = Math.max(200, Math.min(3000, Number(opts.movetimeMs) || 500));
+      const multiPv = Math.max(
+        1,
+        Math.min(CHESS_STOCKFISH_CLUSTER_MULTI_PV_V0, Number(opts.multiPv) || CHESS_STOCKFISH_CLUSTER_MULTI_PV_V0)
+      );
+      const depth = Math.max(6, Math.min(16, Number(opts.depth) || 10));
+      const movetime = Math.max(200, Math.min(3000, Number(opts.movetimeMs) || 500));
 
-    await prepareStockfishForNewSearchV0(380);
+      await prepareStockfishForNewSearchV0(380);
 
-    return new Promise((resolve) => {
-      const timer = setTimeout(() => {
-        activeMultiPvAnalysisV0 = null;
+      return new Promise((resolve) => {
+        const timer = setTimeout(() => {
+          activeMultiPvAnalysisV0 = null;
+          try {
+            postStockfishBridgeMessageV0("stop");
+          } catch {
+            /* noop */
+          }
+          const lines = [...multiPvSnapshotV0.values()].sort((a, b) => a.multipv - b.multipv);
+          multiPvSnapshotV0.clear();
+          resolve(
+            lines.length
+              ? Object.freeze({
+                  fen: position,
+                  multiPv,
+                  lines: Object.freeze(lines.map((row) => Object.freeze({ ...row })))
+                })
+              : null
+          );
+        }, movetime + 600);
+
+        activeMultiPvAnalysisV0 = { resolve, timer, multiPv };
+
         try {
-          postStockfishBridgeMessageV0("stop");
+          currentPositionFenV0 = position;
+          postStockfishBridgeMessageV0(`setoption name MultiPV value ${multiPv}`);
+          postStockfishBridgeMessageV0(`position fen ${position}`);
+          postStockfishBridgeMessageV0(`go depth ${depth} movetime ${movetime}`);
         } catch {
-          /* noop */
+          clearTimeout(timer);
+          activeMultiPvAnalysisV0 = null;
+          multiPvSnapshotV0.clear();
+          resolve(null);
         }
-        const lines = [...multiPvSnapshotV0.values()].sort((a, b) => a.multipv - b.multipv);
-        multiPvSnapshotV0.clear();
-        resolve(
-          lines.length
-            ? Object.freeze({
-                fen: position,
-                multiPv,
-                lines: Object.freeze(lines.map((row) => Object.freeze({ ...row })))
-              })
-            : null
-        );
-      }, movetime + 600);
-
-      activeMultiPvAnalysisV0 = { resolve, timer, multiPv };
-
-      try {
-        currentPositionFenV0 = position;
-        postStockfishBridgeMessageV0(`setoption name MultiPV value ${multiPv}`);
-        postStockfishBridgeMessageV0(`position fen ${position}`);
-        postStockfishBridgeMessageV0(`go depth ${depth} movetime ${movetime}`);
-      } catch {
-        clearTimeout(timer);
-        activeMultiPvAnalysisV0 = null;
-        multiPvSnapshotV0.clear();
-        resolve(null);
-      }
-    });
-  });
+      });
+    },
+    {
+      priority: opts.queuePriority ?? CHESS_ENGINE_TASK_PRIORITY_V0.LEARNING_MEASURE,
+      kind: CHESS_ENGINE_TASK_KIND_V0.MULTI_PV,
+      label: opts.queueLabel ?? "multi_pv"
+    }
+  );
 }
 
 /**
@@ -1015,7 +1091,10 @@ export async function pickChessArenaEngineMoveV0(game, opts = {}) {
       skill: opts.skill,
       movetimeMs: opts.movetimeMs,
       depth: opts.depth,
-      contempt: opts.contempt
+      contempt: opts.contempt,
+      queuePriority: opts.queuePriority,
+      queueKind: opts.queueKind,
+      queueLabel: opts.queueLabel
     });
     if (sf) return Object.freeze({ move: sf, engine: "stockfish_wasm" });
   } catch {

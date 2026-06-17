@@ -10,6 +10,10 @@ import {
   offChessEngineBridgeV0,
   onChessEngineBridgeV0
 } from "./chessEngineBridgeV0.js";
+import {
+  CHESS_ENGINE_TASK_KIND_V0,
+  CHESS_ENGINE_TASK_PRIORITY_V0
+} from "./chessEngineTaskQueueV0.js";
 import { analyzeChessPositionViaTeacherV0 } from "./chessTeacherInterfaceV0.js";
 import { encodeChessTopologyEventV0 } from "./rhizohGeometryChessEncoderV0.js";
 import { calculateTopologyDriftV0 } from "./rhizohGeometryTopologyV0.js";
@@ -198,7 +202,13 @@ async function processPlayedMoveObservationV0(detail) {
       typeof window !== "undefined" &&
       Boolean(window.__rhizoh?.chessGameCluster?.running);
     if (!clusterBusy) {
-      const analysis = await analyzeChessPositionViaTeacherV0(fenBefore, { movetimeMs: 240, depth: 8 });
+      const analysis = await analyzeChessPositionViaTeacherV0(fenBefore, {
+        movetimeMs: 240,
+        depth: 8,
+        queuePriority: CHESS_ENGINE_TASK_PRIORITY_V0.BACKGROUND,
+        queueKind: CHESS_ENGINE_TASK_KIND_V0.ANALYSIS,
+        queueLabel: "uge_teacher"
+      });
       teacherMove = analysis?.bestMove || null;
       stockfishEval = analysis;
       if (teacherMove) {
