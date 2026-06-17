@@ -44,11 +44,11 @@ export const CHESS_CLUSTER_SLOT_MODES_V0 = Object.freeze([
   Object.freeze({
     slotId: 2,
     modeId: CHESS_CLUSTER_SLOT_MODE_ID_V0.DEFENSIVE_HEURISTIC,
-    label: "Defensive heuristic",
-    moveStrategy: "heuristic",
+    label: "Fox defensive",
+    moveStrategy: "stockfish",
     whiteAgent: CHESS_CLUSTER_AGENT_ID_V0.FOX,
     blackAgent: CHESS_CLUSTER_AGENT_ID_V0.FOX,
-    learningTag: "defensive_heuristic"
+    learningTag: "defensive_fox"
   }),
   Object.freeze({
     slotId: 3,
@@ -62,8 +62,8 @@ export const CHESS_CLUSTER_SLOT_MODES_V0 = Object.freeze([
   Object.freeze({
     slotId: 4,
     modeId: CHESS_CLUSTER_SLOT_MODE_ID_V0.USER_REPLAY,
-    label: "User replay mirror",
-    moveStrategy: "heuristic_human",
+    label: "User mirror",
+    moveStrategy: "stockfish",
     whiteAgent: CHESS_CLUSTER_AGENT_ID_V0.USER,
     blackAgent: CHESS_CLUSTER_AGENT_ID_V0.USER,
     learningTag: "user_mirror"
@@ -89,8 +89,8 @@ export const CHESS_CLUSTER_SLOT_MODES_V0 = Object.freeze([
   Object.freeze({
     slotId: 7,
     modeId: CHESS_CLUSTER_SLOT_MODE_ID_V0.RL_TRACE,
-    label: "Experimental RL trace",
-    moveStrategy: "heuristic_explore",
+    label: "Octo vs Fox RL",
+    moveStrategy: "stockfish_aggressive",
     whiteAgent: CHESS_CLUSTER_AGENT_ID_V0.OCTOAI,
     blackAgent: CHESS_CLUSTER_AGENT_ID_V0.FOX,
     learningTag: "rl_trace"

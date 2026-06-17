@@ -532,7 +532,18 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   );
 
   const startMatchFromLobbyV0 = useCallback(
-    (nextMode) => {
+    (matchOpts) => {
+      const nextMode = typeof matchOpts === "string" ? matchOpts : matchOpts?.mode;
+      if (matchOpts && typeof matchOpts === "object") {
+        if (matchOpts.opponentPresetId) {
+          const session = saveChessArenaSessionV0({ opponentPresetId: matchOpts.opponentPresetId });
+          setArenaSession(session);
+        }
+        if (matchOpts.policyMode) {
+          const pm = saveChessPolicyModeV0(matchOpts.policyMode);
+          setPolicyMode(pm);
+        }
+      }
       resetGame(nextMode);
       setArenaPhase("playing");
       setStatus(tr ? "Maç hazır — iyi şanslar." : "Match ready — good luck.");
@@ -696,25 +707,22 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     let alive = true;
 
     void (async () => {
-      while (alive && getChessTeacherStatusV0() === "stockfish_compiling") {
-        setStatus(
-          tr
-            ? "Stockfish WASM derleniyor — maç başlamadan bekleniyor…"
-            : "Compiling Stockfish WASM — waiting before match starts…"
-        );
-        await new Promise((resolve) => window.setTimeout(resolve, 400));
-      }
-      if (!alive) return;
-      if (getChessTeacherStatusV0() !== "stockfish_wasm") {
-        setStatus(
-          tr
-            ? "Stockfish hazır değil — öğretmen kapalı, maç başlatılmadı."
-            : "Stockfish not ready — teacher offline, match not started."
-        );
-        return;
-      }
+      let teacherOnline = getChessTeacherStatusV0() === "stockfish_wasm";
+      setStatus(
+        teacherOnline
+          ? tr
+            ? "Maç başlıyor…"
+            : "Match starting…"
+          : tr
+            ? "Yedek motor ile başlıyor — Stockfish hazır olunca güçlenir"
+            : "Starting on fallback — upgrades when Stockfish is ready"
+      );
 
       while (alive && !game.isGameOver()) {
+        if (!teacherOnline && getChessTeacherStatusV0() === "stockfish_wasm") {
+          teacherOnline = true;
+          setStatus(tr ? "Stockfish hazır — güçlü mod aktif" : "Stockfish ready — strong mode on");
+        }
         setAiBusy(true);
         let pick = null;
         try {
@@ -723,11 +731,14 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
               game.turn() === "w"
                 ? await pickRhizohChessMoveV0(game, { policyMode, mindId })
                 : await pickChessArenaMoveViaTeacherV0(game, {
-                    useStockfish: true,
+                    useStockfish: teacherOnline,
                     preset: opponentPresetV0.preset
                   });
           } else {
-            pick = await pickChessArenaMoveViaTeacherV0(game, { useStockfish: true, preset: "ARENA" });
+            pick = await pickChessArenaMoveViaTeacherV0(game, {
+              useStockfish: teacherOnline,
+              preset: opponentPresetV0.preset || "ARENA"
+            });
           }
         } catch {
           pick = null;

@@ -16,7 +16,8 @@ export const CHESS_ARENA_QUICK_MATCH_V0 = Object.freeze([
     labelTr: "Sen vs Stockfish",
     labelEn: "You vs Stockfish",
     descTr: "Klasik arena — beyaz sensin",
-    descEn: "Classic arena — you play white"
+    descEn: "Classic arena — you play white",
+    defaultOpponentPresetId: "TEACHER_BACKUP"
   }),
   Object.freeze({
     id: "rhizoh_learning",
@@ -24,7 +25,8 @@ export const CHESS_ARENA_QUICK_MATCH_V0 = Object.freeze([
     labelTr: "Rhizoh öğrenme maçı",
     labelEn: "Rhizoh learning match",
     descTr: "Maç sonrası öğrenme döngüsü",
-    descEn: "Post-match learning loop"
+    descEn: "Post-match learning loop",
+    defaultOpponentPresetId: "ARENA"
   }),
   Object.freeze({
     id: "ai_spectator",
@@ -32,7 +34,8 @@ export const CHESS_ARENA_QUICK_MATCH_V0 = Object.freeze([
     labelTr: "Stockfish gözlem",
     labelEn: "Stockfish spectator",
     descTr: "AI vs AI — izle",
-    descEn: "AI vs AI — watch"
+    descEn: "AI vs AI — watch",
+    defaultOpponentPresetId: "STRONG"
   }),
   Object.freeze({
     id: "team_pets",
@@ -40,7 +43,8 @@ export const CHESS_ARENA_QUICK_MATCH_V0 = Object.freeze([
     labelTr: "Fox + Octo vs Rhizoh",
     labelEn: "Fox + Octo vs Rhizoh",
     descTr: "Takım varyantı",
-    descEn: "Team variant"
+    descEn: "Team variant",
+    defaultOpponentPresetId: "ARENA"
   })
 ]);
 
@@ -61,7 +65,8 @@ export const CHESS_ARENA_FIXTURES_V0 = Object.freeze([
     blackTr: "Stockfish",
     blackEn: "Stockfish",
     mode: CHESS_GAME_MODE_V0.AI_HUMAN,
-    status: "next"
+    status: "playable",
+    defaultOpponentPresetId: "TEACHER_BACKUP"
   }),
   Object.freeze({
     id: "fx_w24_r4_rhizoh",
@@ -71,7 +76,8 @@ export const CHESS_ARENA_FIXTURES_V0 = Object.freeze([
     blackTr: "Fox + Octo",
     blackEn: "Fox + Octo",
     mode: CHESS_GAME_MODE_V0.TEAM_PET_VS_RHIZOH,
-    status: "scheduled"
+    status: "playable",
+    defaultOpponentPresetId: "ARENA"
   }),
   Object.freeze({
     id: "fx_w24_r5_cluster",
@@ -81,7 +87,7 @@ export const CHESS_ARENA_FIXTURES_V0 = Object.freeze([
     blackTr: "MultiPV trace",
     blackEn: "MultiPV trace",
     mode: "cluster",
-    status: "scheduled"
+    status: "playable"
   })
 ]);
 
