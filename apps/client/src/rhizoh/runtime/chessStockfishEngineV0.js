@@ -13,6 +13,7 @@ import { CHESS_STOCKFISH_PRESET_V0 } from "./chessStockfishPresetsV0.js";
 export const CHESS_STOCKFISH_ENGINE_SCHEMA_V0 = "castle.chess_stockfish_engine.v0";
 export const CHESS_STOCKFISH_LOG_TAG_V0 = "[CASTLE_stockfish_engine]";
 export const CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0 = "rhizoh:chess-stockfish-engine-status-v0";
+export const CHESS_STOCKFISH_CLUSTER_MULTI_PV_V0 = 8;
 
 export const CHESS_STOCKFISH_ASSET_PATHS_V0 = Object.freeze({
   workerJs: "/chess-engine/stockfish-nnue-16-single.js",
@@ -187,7 +188,20 @@ function attachWorkerHandlersV0(worker) {
     const cpMatch = line.match(/\bscore cp (-?\d+)\b/);
     const mateMatch = line.match(/\bscore mate (-?\d+)\b/);
     const pvMatch = line.match(/\bpv (.+)$/);
-    if (depthMatch || cpMatch || mateMatch || pvMatch) {
+    const multipvMatch = line.match(/\bmultipv (\d+)\b/);
+
+    if (multipvMatch && activeMultiPvAnalysisV0) {
+      const idx = Number(multipvMatch[1]);
+      const pv = pvMatch ? pvMatch[1].trim() : "";
+      multiPvSnapshotV0.set(idx, {
+        multipv: idx,
+        cp: cpMatch ? Number(cpMatch[1]) : null,
+        mate: mateMatch ? Number(mateMatch[1]) : null,
+        depth: depthMatch ? Number(depthMatch[1]) : 0,
+        pv,
+        bestMove: pv ? pv.split(/\s+/)[0] : null
+      });
+    } else if (depthMatch || cpMatch || mateMatch || pvMatch) {
       lastAnalysisInfoV0 = {
         cp: cpMatch ? Number(cpMatch[1]) : lastAnalysisInfoV0.cp,
         mate: mateMatch ? Number(mateMatch[1]) : lastAnalysisInfoV0.mate,
@@ -202,6 +216,21 @@ function attachWorkerHandlersV0(worker) {
       const move = m[1] && m[1] !== "(none)" ? m[1] : null;
       lastAnalysisInfoV0 = { ...lastAnalysisInfoV0, bestMove: move };
       if (move) emitBestmoveBridgeV0(move);
+      if (activeMultiPvAnalysisV0) {
+        clearTimeout(activeMultiPvAnalysisV0.timer);
+        const { resolve } = activeMultiPvAnalysisV0;
+        activeMultiPvAnalysisV0 = null;
+        const lines = [...multiPvSnapshotV0.values()].sort((a, b) => a.multipv - b.multipv);
+        resolve(
+          lines.length
+            ? Object.freeze({
+                fen: currentPositionFenV0,
+                lines: Object.freeze(lines.map((row) => Object.freeze({ ...row })))
+              })
+            : null
+        );
+        return;
+      }
       if (activeAnalysisV0) {
         clearTimeout(activeAnalysisV0.timer);
         const { resolve } = activeAnalysisV0;
@@ -249,6 +278,27 @@ function attachWorkerHandlersV0(worker) {
 }
 
 let initPromiseV0 = null;
+/** @type {Promise<unknown>} */
+let engineOpChainV0 = Promise.resolve();
+/** @type {{ resolve: Function, timer: ReturnType<typeof setTimeout>, multiPv: number } | null} */
+let activeMultiPvAnalysisV0 = null;
+/** @type {Map<number, { multipv: number, cp: number | null, mate: number | null, depth: number, pv: string, bestMove: string | null }>} */
+const multiPvSnapshotV0 = new Map();
+
+/**
+ * Serialize all UCI traffic through the single shared worker.
+ * @template T
+ * @param {() => Promise<T>} fn
+ * @returns {Promise<T>}
+ */
+export function withChessStockfishEngineLockV0(fn) {
+  const op = engineOpChainV0.then(() => fn());
+  engineOpChainV0 = op.then(
+    () => undefined,
+    () => undefined
+  );
+  return op;
+}
 
 function isWasmMagicValidV0(bytes) {
   return (
@@ -601,6 +651,7 @@ function resolveStockfishOptsV0(opts = {}) {
  * @param {{ skill?: number, movetimeMs?: number }} [opts]
  */
 export async function getStockfishArenaMoveV0(fen, opts = {}) {
+  return withChessStockfishEngineLockV0(async () => {
   const position = String(fen || "").trim();
   if (!position) return null;
   const worker = await ensureStockfishWorkerV0();
@@ -642,6 +693,7 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
       resolve(null);
     }
   });
+  });
 }
 
 /**
@@ -650,6 +702,7 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
  * @param {{ depth?: number, movetimeMs?: number }} [opts]
  */
 export async function analyzeChessPositionV0(fen, opts = {}) {
+  return withChessStockfishEngineLockV0(async () => {
   const position = String(fen || "").trim();
   if (!position) return null;
   const worker = await ensureStockfishWorkerV0();
@@ -658,6 +711,11 @@ export async function analyzeChessPositionV0(fen, opts = {}) {
   const depth = Math.max(6, Math.min(18, Number(opts.depth) || 10));
   const movetime = Math.max(120, Math.min(4000, Number(opts.movetimeMs) || 600));
 
+  if (activeMultiPvAnalysisV0) {
+    clearTimeout(activeMultiPvAnalysisV0.timer);
+    activeMultiPvAnalysisV0 = null;
+    multiPvSnapshotV0.clear();
+  }
   if (activeAnalysisV0) {
     try {
       worker.postMessage("stop");
@@ -701,6 +759,74 @@ export async function analyzeChessPositionV0(fen, opts = {}) {
       activeAnalysisV0 = null;
       resolve(null);
     }
+  });
+  });
+}
+
+/**
+ * Multi-PV analysis — one engine, N strategic lines (cluster learning observatory).
+ * @param {string} fen
+ * @param {{ multiPv?: number, depth?: number, movetimeMs?: number }} [opts]
+ */
+export async function analyzeChessPositionMultiPvV0(fen, opts = {}) {
+  return withChessStockfishEngineLockV0(async () => {
+    const position = String(fen || "").trim();
+    if (!position) return null;
+    const worker = await ensureStockfishWorkerV0();
+    if (!worker) return null;
+
+    const multiPv = Math.max(
+      1,
+      Math.min(CHESS_STOCKFISH_CLUSTER_MULTI_PV_V0, Number(opts.multiPv) || CHESS_STOCKFISH_CLUSTER_MULTI_PV_V0)
+    );
+    const depth = Math.max(6, Math.min(16, Number(opts.depth) || 10));
+    const movetime = Math.max(200, Math.min(3000, Number(opts.movetimeMs) || 500));
+
+    if (activeAnalysisV0) {
+      clearTimeout(activeAnalysisV0.timer);
+      activeAnalysisV0 = null;
+    }
+    if (activeMultiPvAnalysisV0) {
+      clearTimeout(activeMultiPvAnalysisV0.timer);
+      activeMultiPvAnalysisV0 = null;
+    }
+    multiPvSnapshotV0.clear();
+
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        activeMultiPvAnalysisV0 = null;
+        try {
+          worker.postMessage("stop");
+        } catch {
+          /* noop */
+        }
+        const lines = [...multiPvSnapshotV0.values()].sort((a, b) => a.multipv - b.multipv);
+        multiPvSnapshotV0.clear();
+        resolve(
+          lines.length
+            ? Object.freeze({
+                fen: position,
+                multiPv,
+                lines: Object.freeze(lines.map((row) => Object.freeze({ ...row })))
+              })
+            : null
+        );
+      }, movetime + 600);
+
+      activeMultiPvAnalysisV0 = { resolve, timer, multiPv };
+
+      try {
+        currentPositionFenV0 = position;
+        worker.postMessage(`setoption name MultiPV value ${multiPv}`);
+        worker.postMessage(`position fen ${position}`);
+        worker.postMessage(`go depth ${depth} movetime ${movetime}`);
+      } catch {
+        clearTimeout(timer);
+        activeMultiPvAnalysisV0 = null;
+        multiPvSnapshotV0.clear();
+        resolve(null);
+      }
+    });
   });
 }
 

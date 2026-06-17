@@ -11,9 +11,8 @@ import {
 import { __resetChessClusterObserverForTestV0 } from "../chessClusterObserverV0.js";
 import { __resetChessClusterMemoryGraphForTestV0 } from "../chessClusterMemoryGraphV0.js";
 
-vi.mock("../chessStockfishEngineV0.js", () => ({
-  getChessStockfishEngineStatusV0: vi.fn(() => "stockfish_wasm"),
-  pickChessArenaEngineMoveV0: vi.fn(async (game) => {
+vi.mock("../chessClusterMovePickerV0.js", () => ({
+  pickChessClusterMoveV0: vi.fn(async (_slot, game) => {
     const moves = game.legalMoves();
     if (!moves.length) return { move: null, engine: "mock" };
     const uci = `${moves[0].from}${moves[0].to}${moves[0].promotion || ""}`;
@@ -43,6 +42,9 @@ describe("chessGameClusterV0", () => {
     expect(out.ok).toBe(true);
     expect(listChessClusterSlotsV0()).toHaveLength(CHESS_CLUSTER_SLOT_COUNT_V0);
     expect(getChessClusterSlotV0(0)?.status).toBe("active");
+    expect(getChessClusterSlotV0(0)?.modeId).toBe("stockfish_baseline");
+    expect(window.__rhizoh.chessGameCluster?.architecture).toBe("single_engine_multi_pv");
+    expect(window.__rhizoh.chessGameCluster?.engineScheduler?.engineInstances).toBe(1);
     stopChessGameClusterV0();
   });
 
