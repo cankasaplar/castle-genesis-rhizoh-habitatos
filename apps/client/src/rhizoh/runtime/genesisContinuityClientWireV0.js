@@ -1,4 +1,4 @@
-import { resolveGenesisGatewayHttpBaseV0 } from "../../castleFlight/castleFlightConfig.js";
+import { resolveGenesisGatewayHttpBaseV0, resolveGenesisSseStreamBaseV0 } from "../../castleFlight/castleFlightConfig.js";
 import {
   formatGenesisContinuityEventLine,
   GENESIS_CONTINUITY_EVENT_SCHEMA
@@ -145,8 +145,9 @@ function startGenesisContinuityClientWireInternalV0(opts = {}) {
     return stopGenesisContinuityClientWireV0;
   }
 
-  const origin = String(resolveGenesisGatewayHttpBaseV0() || "").trim().replace(/\/+$/, "");
-  if (!origin) {
+  const pollOrigin = String(resolveGenesisGatewayHttpBaseV0() || "").trim().replace(/\/+$/, "");
+  const sseOrigin = String(resolveGenesisSseStreamBaseV0() || pollOrigin).trim().replace(/\/+$/, "");
+  if (!pollOrigin && !sseOrigin) {
     publishGenesisStreamRegistryV0({
       status: "not_configured",
       hint: "resolveGenesisGatewayHttpBaseV0 returned empty"
@@ -164,11 +165,19 @@ function startGenesisContinuityClientWireInternalV0(opts = {}) {
     window.__rhizoh.uiTextVisibility = getRhizohUiTextVisibilityV0();
   }
 
-  const streamUrl = `${origin}/rhizoh/genesis/stream`;
+  const streamUrl = `${sseOrigin}/rhizoh/genesis/stream`;
+  const sseViaDirect = sseOrigin !== pollOrigin;
 
   if (typeof EventSource !== "undefined") {
     eventSource = new EventSource(streamUrl);
-    publishGenesisStreamRegistryV0({ status: "connecting", streamUrl, transport: "sse+poll" });
+    publishGenesisStreamRegistryV0({
+      status: "connecting",
+      streamUrl,
+      pollOrigin,
+      sseOrigin,
+      sseViaDirect,
+      transport: "sse+poll"
+    });
     eventSource.onopen = () => {
       publishGenesisStreamRegistryV0({
         status: "open",
@@ -183,7 +192,7 @@ function startGenesisContinuityClientWireInternalV0(opts = {}) {
         streamUrl,
         transport: "sse+poll",
         atMs: Date.now(),
-        hint: "SSE failed — upstream 503/CORS/offline; runtime poll fallback continues"
+        hint: "SSE failed — proxy 524 or upstream offline; poll fallback continues"
       });
     };
     eventSource.onmessage = (ev) => {
@@ -204,15 +213,15 @@ function startGenesisContinuityClientWireInternalV0(opts = {}) {
     publishGenesisStreamRegistryV0({ status: "poll_only", streamUrl, transport: "poll" });
   }
 
-  void pollGenesisRuntimeOnceV0(origin);
+  void pollGenesisRuntimeOnceV0(pollOrigin);
   pollTimer = window.setInterval(() => {
-    void pollGenesisRuntimeOnceV0(origin);
+    void pollGenesisRuntimeOnceV0(pollOrigin);
   }, POLL_INTERVAL_MS_V0);
 
   publishWorldObservationV0({
     type: "genesis.wire",
-    payload: { origin, transport: eventSource ? "sse+poll" : "poll" },
-    line: `genesis · wire armed · ${origin.replace(/^https?:\/\//, "")}`
+    payload: { pollOrigin, sseOrigin, sseViaDirect, transport: eventSource ? "sse+poll" : "poll" },
+    line: `genesis · wire armed · poll ${pollOrigin.replace(/^https?:\/\//, "")}${sseViaDirect ? ` · sse ${sseOrigin.replace(/^https?:\/\//, "")}` : ""}`
   });
 
   return stopGenesisContinuityClientWireV0;

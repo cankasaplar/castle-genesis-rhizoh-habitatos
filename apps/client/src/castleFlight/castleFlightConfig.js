@@ -253,6 +253,44 @@ export function resolveGenesisGatewayHttpBaseV0() {
     .replace(/\/+$/, "");
 }
 
+/**
+ * Direct Render (or configured live) gateway origin — bypasses same-origin Firebase proxy.
+ * Used for long-lived genesis SSE (proxy path returns 524 timeout).
+ */
+export function resolveGenesisDirectGatewayOriginV0() {
+  const localProxy = localDevGatewayProxyOriginV0();
+  if (localProxy) return localProxy.replace(/\/+$/, "");
+
+  const env = import.meta.env;
+  const liveBase = resolveLiveGatewayBaseFromEnv(env).replace(/\/+$/, "");
+  if (liveBase) {
+    try {
+      return new URL(liveBase).origin;
+    } catch {
+      return liveBase;
+    }
+  }
+
+  try {
+    return new URL(DEFAULT_LIVE_GATEWAY_BASE).origin;
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * SSE stream base — direct gateway on rhizoh.com product hosts; short poll stays on proxy.
+ */
+export function resolveGenesisSseStreamBaseV0() {
+  const pollBase = resolveGenesisGatewayHttpBaseV0();
+  const direct = String(resolveGenesisDirectGatewayOriginV0() || "").trim().replace(/\/+$/, "");
+  const proxy = getRhizohSameOriginGatewayProxyBaseV0();
+  if (proxy && direct && pollBase === proxy && direct !== proxy) {
+    return direct;
+  }
+  return pollBase;
+}
+
 export function getRhizohSameOriginGatewayProxyBaseV0() {
   if (!shouldUseSameOriginGatewayProxyV0() || typeof window === "undefined") return "";
   return `${window.location.origin}/api/gatewayProxy`;
