@@ -19,6 +19,12 @@ import { SPATIAL_NODE_TIER_V0, listSpatialNodesV0, __resetSpatialNodeLayerForTes
 import { __resetNervousSystemEventGraphForTestV0 } from "../rhizohNervousSystemEventGraphV0.js";
 import { auditSpatialDriftV0, __resetLiveConsistencyAuditForTestV0 } from "../rhizohLiveConsistencyAuditV0.js";
 import { registerCesiumExecutorApiV0, __resetCesiumExecutorForTestV0 } from "../../../castleFlight/cesiumCommandExecutorV0.js";
+import {
+  __resetGroundingLayerForTestV1,
+  noteGroundSignalV1,
+  evaluateGroundingV1,
+  GROUND_SIGNAL_KIND_V1
+} from "../rhizohGroundingLayerV1.js";
 
 function resetAll() {
   __resetSpatialReadyGateForTestV0();
@@ -27,8 +33,11 @@ function resetAll() {
   __resetNervousSystemEventGraphForTestV0();
   __resetLiveConsistencyAuditForTestV0();
   __resetCesiumExecutorForTestV0();
+  __resetGroundingLayerForTestV1();
   if (typeof window !== "undefined") {
     delete window.__CASTLE_CESIUM__;
+    delete window.__rhizoh;
+    window.__CASTLE_NEXUS_GEO__ = { lat: 41.04, lon: 29.0 };
   }
 }
 
@@ -53,7 +62,11 @@ describe("rhizohSpatialReadyGateV0", () => {
     expect(auditSpatialDriftV0().pass).toBe(true);
   });
 
-  it("drains buffer when cesium becomes ready", () => {
+  it("drains buffer when world sync and adapter are ready", () => {
+    noteGroundSignalV1(GROUND_SIGNAL_KIND_V1.USER_ACTIVITY);
+    evaluateGroundingV1({ semanticMass: 0.2, eventLog: { recent: [] } });
+    window.__rhizoh = { worldSpaceBridge: { ok: true, hydrated: true } };
+
     emitSpatialEventFromDomainV0(RHIZOH_DOMAIN_ID_V0.WORLD, {
       tier: SPATIAL_NODE_TIER_V0.STATIC,
       nodeId: "istanbul-pin",
@@ -65,6 +78,8 @@ describe("rhizohSpatialReadyGateV0", () => {
     expect(drained).toBe(1);
     expect(listSpatialNodesV0().length).toBe(1);
     expect(isSpatialReadyGateOpenV0()).toBe(true);
+    const snap = getSpatialReadyGateSnapshotV0();
+    expect(snap.worldSyncReady).toBe(true);
   });
 
   it("allows probe nodes through gate for system probes", () => {

@@ -5,6 +5,7 @@
 
 import { hydrateWorldSpaceCastleAnchorV0 } from "./castleWorldSpaceContinuityV0.js";
 import { resolveRhizohCesiumLayerActiveV0 } from "./rhizohLayerContextV0.js";
+import { listSpatialNodesV0 } from "./rhizohSpatialNodeLayerV0.js";
 
 export const WORLD_SPACE_REATTACHMENT_SCHEMA_V0 = "castle.rhizoh.world_space_reattachment.v0";
 export const SPATIAL_DRIFT_QUARANTINE_THRESHOLD_V0 = 0.23;
@@ -79,6 +80,14 @@ export function estimateWorldSpaceDivergenceV0() {
   }
   if (typeof window !== "undefined" && window.__rhizoh?.ingressQueue?.authBlocked === true) {
     divergence += 0.12;
+  }
+  const causalCount =
+    typeof window.__rhizoh?.causalMap?.nodeCount === "number"
+      ? Number(window.__rhizoh.causalMap.nodeCount)
+      : 0;
+  const spatialCount = typeof window !== "undefined" ? listSpatialNodesV0().length : 0;
+  if (causalCount > 0 && spatialCount === 0) {
+    divergence += 0.32;
   }
 
   return Math.min(1, divergence);

@@ -41,15 +41,23 @@ import { publishSpatialReplayEngineV0 } from "./rhizohSpatialReplayEngineV0.js";
 import { publishLiveConflictDetectorV0 } from "./rhizohLiveConflictDetectorV0.js";
 import { ensureGenesisContinuityClientWireV0 } from "./genesisContinuityClientWireV0.js";
 import { ensureOntologicalRepairProtocolV1 } from "./ontologicalRepairProtocolV1.js";
+import { startSpatialExecutionTickV0 } from "./spatialExecutionTickV0.js";
 
 export const RHIZOH_NERVOUS_SYSTEM_EVENT_V0 = "rhizoh:nervous-system-v0";
 
 /** @type {(() => void) | null} */
 let stopSpatialReadyGateWire = null;
+let spatialExecutionTickStarted = false;
 
 function ensureSpatialReadyGateWireV0() {
   if (typeof window === "undefined" || stopSpatialReadyGateWire) return;
   stopSpatialReadyGateWire = installSpatialReadyGateWireV0(emitSpatialEventImmediateV0);
+}
+
+function ensureSpatialExecutionTickV0() {
+  if (typeof window === "undefined" || spatialExecutionTickStarted) return;
+  spatialExecutionTickStarted = true;
+  startSpatialExecutionTickV0();
 }
 
 /**
@@ -83,6 +91,7 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
 
   if (typeof window !== "undefined") {
     ensureSpatialReadyGateWireV0();
+    ensureSpatialExecutionTickV0();
     window.__RHIZOH_NERVOUS_SYSTEM__ = Object.freeze({
       schema: "rhizoh.nervous_system.v1",
       pathname: p,

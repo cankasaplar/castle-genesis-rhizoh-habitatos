@@ -6,6 +6,7 @@
 
 import { traceRuntimeSubstrateEventV0 } from "./rhizohTruthTraceLayerV0.js";
 import { publishCausalMapLayerV0 } from "./rhizohCausalMapLayerV0.js";
+import { consumeCausalGraphDiffV0 } from "./causalGraphSpatialBridgeV0.js";
 
 export const RUNTIME_EVENT_GRAPH_BRIDGE_SCHEMA_V0 = "rhizoh.runtime_event_graph_bridge.v0";
 
@@ -54,7 +55,8 @@ export function scheduleCausalMapCommitV0() {
     commitTimerV0 = null;
     const map = publishCausalMapLayerV0();
     statsV0.lastCommitAtMs = Date.now();
-    publishRuntimeEventGraphBridgeRegistryV0(map);
+    const spatialBridge = consumeCausalGraphDiffV0({ causalMap: map });
+    publishRuntimeEventGraphBridgeRegistryV0(map, spatialBridge);
   }, 120);
 }
 
@@ -66,14 +68,16 @@ export function flushCausalMapCommitV0() {
   }
   const map = publishCausalMapLayerV0();
   statsV0.lastCommitAtMs = Date.now();
-  publishRuntimeEventGraphBridgeRegistryV0(map);
+  const spatialBridge = consumeCausalGraphDiffV0({ causalMap: map });
+  publishRuntimeEventGraphBridgeRegistryV0(map, spatialBridge);
   return map;
 }
 
 /**
  * @param {object} [map]
+ * @param {object} [spatialBridge]
  */
-export function publishRuntimeEventGraphBridgeRegistryV0(map = null) {
+export function publishRuntimeEventGraphBridgeRegistryV0(map = null, spatialBridge = null) {
   if (typeof window === "undefined") return;
   window.__rhizoh = window.__rhizoh || {};
   window.__rhizoh.runtimeEventGraphBridge = Object.freeze({
@@ -85,6 +89,14 @@ export function publishRuntimeEventGraphBridgeRegistryV0(map = null) {
           nodeCount: map.nodeCount ?? 0,
           edgeCount: map.edgeCount ?? 0,
           rawEdgeCount: map.causalMapRaw?.edgeCount ?? null
+        })
+      : null,
+    lastSpatialBridge: spatialBridge
+      ? Object.freeze({
+          consumed: spatialBridge.consumed ?? 0,
+          staged: spatialBridge.staged ?? spatialBridge.projected ?? 0,
+          skipped: spatialBridge.skipped ?? 0,
+          spatialNodeCount: spatialBridge.spatialNodeCount ?? 0
         })
       : null
   });

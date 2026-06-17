@@ -20,6 +20,9 @@ export const RHIZOH_SPATIAL_EVENT_V0 = "rhizoh:spatial-event-v0";
 /** @type {Set<string>} */
 const blockedEmitters = new Set();
 
+/** @type {{ domain: string, event: object, stagedAtMs: number }[]} */
+let pendingCommitQueue = [];
+
 /**
  * Block spatial emissions from a failed domain (cascade isolation).
  * @param {string} domainId
@@ -122,7 +125,75 @@ export function emitSpatialEventFromDomainV0(sourceDomain, event = {}) {
   return emitSpatialEventImmediateV0(sourceDomain, event);
 }
 
+/**
+ * Stage spatial projection (transform path) without registry commit.
+ * @param {string} sourceDomain
+ * @param {{ tier?: string, nodeId: string, kind: string, payload?: object, trigger?: string }} event
+ */
+export function stageSpatialProjectionV0(sourceDomain, event = {}) {
+  const domain = String(sourceDomain || "").trim();
+  const nodeId = String(event.nodeId || "").trim();
+  if (!nodeId) {
+    return Object.freeze({ ok: false, reason: "missing_node_id" });
+  }
+  if (blockedEmitters.has(domain)) {
+    return Object.freeze({ ok: false, reason: "emitter_blocked", domain });
+  }
+  pendingCommitQueue.push({
+    domain,
+    event: { ...event },
+    stagedAtMs: Date.now()
+  });
+  return Object.freeze({
+    ok: true,
+    staged: true,
+    pending: pendingCommitQueue.length,
+    domain,
+    nodeId
+  });
+}
+
+/**
+ * Commit staged spatial projections to registry (emit path).
+ * @param {{ atMs?: number }} [opts]
+ */
+export function flushSpatialEmitterCommitsV0(opts = {}) {
+  const atMs = Number(opts.atMs) || Date.now();
+  const pending = pendingCommitQueue.splice(0);
+  let committed = 0;
+  let deferred = 0;
+  let failed = 0;
+
+  for (const item of pending) {
+    const result = emitSpatialEventFromDomainV0(item.domain, {
+      ...item.event,
+      trigger: item.event?.trigger || "spatial_emit_commit"
+    });
+    if (result.ok && result.deferred) deferred += 1;
+    else if (result.ok) committed += 1;
+    else failed += 1;
+  }
+
+  return Object.freeze({
+    ok: true,
+    atMs,
+    flushed: pending.length,
+    committed,
+    deferred,
+    failed,
+    pending: pendingCommitQueue.length
+  });
+}
+
+export function getSpatialEmitterCommitQueueSnapshotV0() {
+  return Object.freeze({
+    pending: pendingCommitQueue.length,
+    atMs: Date.now()
+  });
+}
+
 /** @internal vitest */
 export function __resetSpatialEventEmitterForTestV0() {
   blockedEmitters.clear();
+  pendingCommitQueue = [];
 }
