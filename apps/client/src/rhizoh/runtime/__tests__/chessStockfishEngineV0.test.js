@@ -7,6 +7,7 @@ import {
   CHESS_STOCKFISH_ASSET_PATHS_V0,
   CHESS_STOCKFISH_SINGLE_PIPELINE_V0,
   CHESS_STOCKFISH_SPAWN_POLICY_V0,
+  deliverChessStockfishUciCommandV0,
   disposeChessStockfishEngineV0,
   getChessStockfishEngineDetailV0,
   getChessStockfishEngineStatusV0,
@@ -34,6 +35,20 @@ describe("chessStockfishEngineV0", () => {
     expect(detail.hashWorkersDisabled).toBe(true);
     expect(detail.spawnStrategies).toEqual(["wasm_single_thread_isolated"]);
     expect(detail.deploymentLayer.workerFallbackDisabled).toBe(true);
+  });
+
+  it("deliverChessStockfishUciCommandV0 prefers onCustomMessage for single-thread WASM", () => {
+    const received = [];
+    const bridge = {
+      postMessage() {
+        /* single-thread bundle: no-op without PThread */
+      },
+      onCustomMessage(cmd) {
+        received.push(cmd);
+      }
+    };
+    expect(deliverChessStockfishUciCommandV0(bridge, "uci")).toBe("onCustomMessage");
+    expect(received).toEqual(["uci"]);
   });
 
   it("invokeStockfishFactoryV0 requires outer()(opts) call shape", async () => {
