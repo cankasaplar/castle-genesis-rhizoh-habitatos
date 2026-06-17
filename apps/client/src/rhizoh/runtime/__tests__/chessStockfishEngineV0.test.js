@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { createChessArenaGameV0, pickChessArenaAiMoveV0 } from "../chessArenaEngineV0.js";
 import {
@@ -25,6 +28,7 @@ describe("chessStockfishEngineV0", () => {
     expect(detail.workerStrategy).toBe("blob");
     expect(detail.hashWorkersDisabled).toBe(true);
     expect(detail.spawnStrategies).toEqual([
+      "xfer_wasm_compiled_module",
       "blob_js_wasm_blob",
       "blob_js_wasm_hash",
       "wasm_binary_inline"
@@ -38,6 +42,21 @@ describe("chessStockfishEngineV0", () => {
     const detail = getChessStockfishEngineDetailV0();
     expect(detail.status).toBe("not_started");
     expect(detail.wasmPath).toContain(".wasm");
+  });
+
+  it("stockfish worker source supports xfer wasm patch", () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const stockfishPath = join(here, "../../../../public/chess-engine/stockfish-nnue-16-single.js");
+    const jsSource = readFileSync(stockfishPath, "utf8");
+    const patchRe =
+      /e=\{locateFile:function\(e\)\{return-1<e\.indexOf\("\.wasm"\)\?r:self\.location\.origin\+self\.location\.pathname\+"#"\+r\+",worker"\}\},i\(\)\(e\)\.then/;
+    expect(patchRe.test(jsSource)).toBe(true);
+    const patched = jsSource.replace(
+      patchRe,
+      'e={instantiateWasm:function(im,rcv){var m=self.__SF_WASM_MODULE__;if(!m)throw new Error("sf_wasm_module_missing");WebAssembly.instantiate(m,im).then(function(r){rcv(r.instance,r.module)});return{}},locateFile:function(e){return-1<e.indexOf(".wasm")?r:self.location.origin+self.location.pathname+"#"+r+",worker"}},(self.__SF_WAIT_MODULE__?self.__SF_WAIT_MODULE__():Promise.resolve()).then(function(){return i()(e)}).then'
+    );
+    expect(patched).not.toBe(jsSource);
+    expect(patched).toContain("__SF_WASM_MODULE__");
   });
 });
 

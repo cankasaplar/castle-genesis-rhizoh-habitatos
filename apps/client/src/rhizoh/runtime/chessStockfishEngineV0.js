@@ -72,6 +72,10 @@ let initErrorV0 = null;
 let assetsVerifiedV0 = false;
 /** @type {{ jsSource: string, wasmBytes: Uint8Array } | null} */
 let cachedAssetPayloadV0 = null;
+/** @type {WebAssembly.Module | null} */
+let cachedWasmModuleV0 = null;
+/** @type {number | null} */
+let lastMainThreadCompileMsV0 = null;
 /** @type {string[]} */
 const spawnBlobUrlsV0 = [];
 /** @type {string | null} */
@@ -108,6 +112,8 @@ export function getChessStockfishEngineDetailV0() {
       compileWatchdogStartedAtV0 > 0 && status.includes("stockfish")
         ? Date.now() - compileWatchdogStartedAtV0
         : null,
+    mainThreadCompileMs: lastMainThreadCompileMsV0,
+    wasmModuleCached: Boolean(cachedWasmModuleV0),
     spawnStrategies: listStockfishSpawnStrategiesV0().map((s) => s.name),
     spawnPolicy: CHESS_STOCKFISH_SPAWN_POLICY_V0,
     spawnPolicyEffective: resolveChessStockfishEffectiveSpawnPolicyV0(),
@@ -411,8 +417,9 @@ async function verifyStockfishAssetsV0() {
     workerJsCorpOkV0 = isCorpHeaderOkV0(jsCorp);
     wasmCorpOkV0 = isCorpHeaderOkV0(wasmCorp);
     if (!workerJsCorpOkV0) {
-      logStockfishV0("info", "worker js CORP absent — hash spawn disabled; using blob inline only", {
-        jsCorp: jsCorp || null
+      logStockfishV0("info", "worker js CORP absent — hash URL workers disabled; blob/xfer spawn only", {
+        jsCorp: jsCorp || null,
+        note: "expected_under_credentialless_when_using_blob_pipeline"
       });
     }
     if (wasmType.includes("text/html")) {
@@ -455,6 +462,27 @@ async function verifyStockfishAssetsV0() {
 const STOCKFISH_WORKER_WEB_INIT_RE_V0 =
   /e=\{locateFile:function\(e\)\{return-1<e\.indexOf\("\.wasm"\)\?r:self\.location\.origin\+self\.location\.pathname\+"#"\+r\+",worker"\}\},i\(\)\(e\)\.then/;
 
+const STOCKFISH_XFER_BOOTSTRAP_PREFIX_V0 = `"use strict";
+self.__SF_WASM_MODULE__=null;
+var __sfModuleWaiters=[];
+self.__SF_WAIT_MODULE__=function(){
+  return self.__SF_WASM_MODULE__?Promise.resolve(self.__SF_WASM_MODULE__):new Promise(function(r){__sfModuleWaiters.push(r);});
+};
+function __sfArmWasmModule(m){
+  self.__SF_WASM_MODULE__=m;
+  __sfModuleWaiters.forEach(function(r){r(m);});
+  __sfModuleWaiters=[];
+}
+self.addEventListener("message",function(ev){
+  if(ev.data&&ev.data.cmd==="sf_arm_wasm"){
+    __sfArmWasmModule(ev.data.wasmModule);
+  }
+});
+`;
+
+const STOCKFISH_XFER_WORKER_INIT_PATCH_V0 =
+  'e={instantiateWasm:function(im,rcv){var m=self.__SF_WASM_MODULE__;if(!m)throw new Error("sf_wasm_module_missing");WebAssembly.instantiate(m,im).then(function(r){rcv(r.instance,r.module)});return{}},locateFile:function(e){return-1<e.indexOf(".wasm")?r:self.location.origin+self.location.pathname+"#"+r+",worker"}},(self.__SF_WAIT_MODULE__?self.__SF_WAIT_MODULE__():Promise.resolve()).then(function(){return i()(e)}).then';
+
 function bytesToBase64V0(bytes) {
   const chunkSize = 0x8000;
   let binary = "";
@@ -492,6 +520,35 @@ function buildBlobJsWasmHashWorkerUrlV0(assets) {
   return `${jsBlobUrl}#${encodeURIComponent(wasmUrl)},worker`;
 }
 
+async function compileWasmModuleOnMainThreadV0(wasmBytes) {
+  if (cachedWasmModuleV0) return cachedWasmModuleV0;
+  if (typeof WebAssembly === "undefined" || typeof WebAssembly.compile !== "function") {
+    throw new Error("webassembly_compile_unavailable");
+  }
+  const startedAt = Date.now();
+  cachedWasmModuleV0 = await WebAssembly.compile(wasmBytes);
+  lastMainThreadCompileMsV0 = Date.now() - startedAt;
+  logStockfishV0("info", "main thread wasm compile complete", {
+    compileMs: lastMainThreadCompileMsV0,
+    wasmBytes: wasmBytes.length
+  });
+  return cachedWasmModuleV0;
+}
+
+function buildXferWasmCompiledWorkerUrlV0(assets) {
+  if (!STOCKFISH_WORKER_WEB_INIT_RE_V0.test(assets.jsSource)) {
+    throw new Error("stockfish_worker_patch_missing");
+  }
+  const patched = assets.jsSource.replace(
+    STOCKFISH_WORKER_WEB_INIT_RE_V0,
+    STOCKFISH_XFER_WORKER_INIT_PATCH_V0
+  );
+  const bootstrap = `${STOCKFISH_XFER_BOOTSTRAP_PREFIX_V0}${patched}`;
+  const jsBlobUrl = URL.createObjectURL(new Blob([bootstrap], { type: "application/javascript" }));
+  trackSpawnBlobUrlV0(jsBlobUrl);
+  return `${jsBlobUrl}#xfer_wasm,worker`;
+}
+
 function buildWasmBinaryInlineWorkerUrlV0(assets) {
   if (!STOCKFISH_WORKER_WEB_INIT_RE_V0.test(assets.jsSource)) {
     throw new Error("stockfish_worker_patch_missing");
@@ -511,6 +568,16 @@ ${patched}`;
 
 function listStockfishSpawnStrategiesV0() {
   return [
+    {
+      name: "xfer_wasm_compiled_module",
+      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
+      xferModule: true,
+      build: async () => {
+        const assets = await ensureCachedStockfishAssetsV0();
+        await compileWasmModuleOnMainThreadV0(assets.wasmBytes);
+        return buildXferWasmCompiledWorkerUrlV0(assets);
+      }
+    },
     {
       name: "blob_js_wasm_blob",
       uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
@@ -542,9 +609,18 @@ async function initStockfishWorkerWithStrategyV0(strategy) {
   lastSpawnStrategyV0 = strategy.name;
   const uciTimeoutMs = Number(strategy.uciTimeoutMs) || STOCKFISH_UCI_TIMEOUT_MS_V0;
   const workerUrl = await strategy.build();
-  logStockfishV0("info", "spawning worker", { workerUrl, strategy: strategy.name, uciTimeoutMs });
+  logStockfishV0("info", "spawning worker", {
+    workerUrl,
+    strategy: strategy.name,
+    uciTimeoutMs,
+    mainThreadCompileMs: lastMainThreadCompileMsV0
+  });
   const worker = new Worker(workerUrl, { type: "classic" });
   attachWorkerHandlersV0(worker);
+  if (strategy.xferModule) {
+    if (!cachedWasmModuleV0) throw new Error("sf_wasm_module_cache_missing");
+    worker.postMessage({ cmd: "sf_arm_wasm", wasmModule: cachedWasmModuleV0 });
+  }
   worker.postMessage("uci");
   await waitForWorkerOrUciV0(uciTimeoutMs);
   worker.postMessage("isready");
@@ -980,6 +1056,8 @@ export function resetChessStockfishEngineV0() {
   initPromiseV0 = null;
   assetsVerifiedV0 = false;
   cachedAssetPayloadV0 = null;
+  cachedWasmModuleV0 = null;
+  lastMainThreadCompileMsV0 = null;
   workerJsCorpOkV0 = null;
   wasmCorpOkV0 = null;
   publishEngineStatusV0("reset");

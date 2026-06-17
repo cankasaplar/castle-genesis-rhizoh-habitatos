@@ -28,6 +28,7 @@ import {
 } from "./chessClusterClockV0.js";
 import { ensureChessLearningMonitorListenersV0 } from "./chessLearningMonitorV0.js";
 import { readChessArenaSessionV0 } from "./chessArenaSessionV0.js";
+import { publishRhizohChessManagerV0 } from "./rhizohChessManagerV0.js";
 
 export const CHESS_GAME_CLUSTER_SCHEMA_V0 = "castle.rhizoh.chess_game_cluster.v0";
 export const CHESS_CLUSTER_SLOT_COUNT_V0 = 8;
@@ -97,6 +98,7 @@ function publishClusterRegistryV0(extra = {}) {
     ...extra,
     atMs: Date.now()
   });
+  publishRhizohChessManagerV0("cluster_registry");
 }
 
 /**
