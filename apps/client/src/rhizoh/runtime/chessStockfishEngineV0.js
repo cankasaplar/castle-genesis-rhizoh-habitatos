@@ -62,7 +62,9 @@ const STOCKFISH_READY_TIMEOUT_MS_V0 = 20000;
 export function getChessStockfishEngineStatusV0() {
   if (initFailedV0) return "heuristic_fallback";
   if (workerV0 && readyV0) return "stockfish_wasm";
-  if (workerV0) return "stockfish_initializing";
+  if (workerV0 && uciOkV0) return "stockfish_initializing";
+  if (workerV0) return "stockfish_compiling";
+  if (initPromiseV0) return "stockfish_compiling";
   return "not_started";
 }
 
@@ -318,7 +320,8 @@ function bytesToBase64V0(bytes) {
   const chunkSize = 0x8000;
   let binary = "";
   for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    const end = Math.min(i + chunkSize, bytes.length);
+    for (let j = i; j < end; j += 1) binary += String.fromCharCode(bytes[j]);
   }
   return btoa(binary);
 }
@@ -344,6 +347,14 @@ function listStockfishSpawnStrategiesV0() {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const absoluteWasm = `${origin}${CHESS_STOCKFISH_ASSET_PATHS_V0.wasm}`;
   return [
+    {
+      name: "absolute_hash",
+      build: async () => resolveStockfishWorkerUrlV0(absoluteWasm)
+    },
+    {
+      name: "relative_hash",
+      build: async () => resolveStockfishWorkerUrlV0(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm)
+    },
     {
       name: "wasm_binary_inline",
       build: async () => {
@@ -376,14 +387,6 @@ function listStockfishSpawnStrategiesV0() {
         trackSpawnBlobUrlV0(blobUrl);
         return `${blobUrl}#${encodeURIComponent(absoluteWasm)},worker`;
       }
-    },
-    {
-      name: "absolute_hash",
-      build: async () => resolveStockfishWorkerUrlV0(absoluteWasm)
-    },
-    {
-      name: "relative_hash",
-      build: async () => resolveStockfishWorkerUrlV0(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm)
     }
   ];
 }
@@ -463,6 +466,8 @@ async function ensureStockfishWorkerV0() {
   if (initPromiseV0) return initPromiseV0;
 
   initPromiseV0 = (async () => {
+    const initStartedAtMs = Date.now();
+    publishEngineStatusV0("init_started");
     try {
       const assetsOk = await verifyStockfishAssetsV0();
       if (!assetsOk) {
@@ -475,7 +480,11 @@ async function ensureStockfishWorkerV0() {
       for (const strategy of listStockfishSpawnStrategiesV0()) {
         try {
           workerV0 = await initStockfishWorkerWithStrategyV0(strategy);
-          logStockfishV0("info", "ready", { status: "stockfish_wasm", strategy: strategy.name });
+          logStockfishV0("info", "ready", {
+            status: "stockfish_wasm",
+            strategy: strategy.name,
+            initMs: Date.now() - initStartedAtMs
+          });
           publishEngineStatusV0("init_ready");
           return workerV0;
         } catch (err) {
@@ -695,6 +704,14 @@ export async function pickChessArenaEngineMoveV0(game, opts = {}) {
     /* fall through to heuristic */
   }
   return Object.freeze({ move: pickChessArenaAiMoveV0(game), engine: "heuristic_fallback" });
+}
+
+/**
+ * Non-blocking Stockfish warm-up — safe during core boot / ingress overlay.
+ */
+export function prewarmChessStockfishEngineV0() {
+  if (typeof window === "undefined") return Promise.resolve(null);
+  return ensureStockfishWorkerV0().catch(() => null);
 }
 
 export function resetChessStockfishEngineV0() {

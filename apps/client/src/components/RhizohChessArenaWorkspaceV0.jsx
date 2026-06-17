@@ -1168,9 +1168,13 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                   ? tr
                     ? "Motor: Stockfish yüklenemedi — öğretmen kapalı, yedek AI aktif"
                     : "Engine: Stockfish unavailable — teacher offline, fallback active"
-                  : tr
-                    ? "Motor: başlatılıyor…"
-                    : "Engine: starting…"}
+                  : engineStatus === "stockfish_compiling"
+                    ? tr
+                      ? "Motor: WASM derleniyor… (ilk açılış 30–60 sn sürebilir)"
+                      : "Engine: compiling WASM… (first load may take 30–60s)"
+                    : tr
+                      ? "Motor: başlatılıyor…"
+                      : "Engine: starting…"}
             </p>
             {engineStatus === "heuristic_fallback" ? (
               <div className="rounded-lg border border-amber-500/40 bg-amber-950/30 px-2 py-2 text-[10px] text-amber-100">
