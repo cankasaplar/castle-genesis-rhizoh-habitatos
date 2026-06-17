@@ -166,7 +166,11 @@ function resetReadyFlagsV0() {
 
 function attachWorkerHandlersV0(worker) {
   worker.onmessage = (ev) => {
-    const line = String(ev?.data || "");
+    const raw = ev?.data;
+    const line = typeof raw === "string" ? raw : raw != null ? String(raw) : "";
+    if (!uciOkV0 && line && line !== "uciok" && line !== "readyok") {
+      logStockfishV0("info", "worker message during init", { line: line.slice(0, 120) });
+    }
     if (line === "uciok") {
       uciOkV0 = true;
       publishEngineStatusV0("uciok");
@@ -416,6 +420,16 @@ function bytesToBase64V0(bytes) {
   return btoa(binary);
 }
 
+function buildBlobJsWasmHashWorkerUrlV0(assets) {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const wasmUrl = `${origin}${CHESS_STOCKFISH_ASSET_PATHS_V0.wasm}`;
+  const jsBlobUrl = URL.createObjectURL(
+    new Blob([assets.jsSource], { type: "application/javascript" })
+  );
+  trackSpawnBlobUrlV0(jsBlobUrl);
+  return `${jsBlobUrl}#${encodeURIComponent(wasmUrl)},worker`;
+}
+
 function buildWasmBinaryInlineWorkerUrlV0(assets) {
   if (!STOCKFISH_WORKER_WEB_INIT_RE_V0.test(assets.jsSource)) {
     throw new Error("stockfish_worker_patch_missing");
@@ -435,6 +449,14 @@ ${patched}`;
 
 function listStockfishSpawnStrategiesV0() {
   return [
+    {
+      name: "blob_js_wasm_hash",
+      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
+      build: async () => {
+        const assets = await ensureCachedStockfishAssetsV0();
+        return buildBlobJsWasmHashWorkerUrlV0(assets);
+      }
+    },
     {
       name: "wasm_binary_inline",
       uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
@@ -858,6 +880,7 @@ export function resetChessStockfishEngineV0() {
   disposeChessStockfishEngineV0();
   initFailedV0 = false;
   initErrorV0 = null;
+  initPromiseV0 = null;
   assetsVerifiedV0 = false;
   cachedAssetPayloadV0 = null;
   workerJsCorpOkV0 = null;
