@@ -628,10 +628,18 @@ function resolveStockfishOptsV0(opts = {}) {
  * @param {{ skill?: number, movetimeMs?: number }} [opts]
  */
 export async function getStockfishArenaMoveV0(fen, opts = {}) {
+  if (getChessStockfishEngineStatusV0() !== "stockfish_wasm") {
+    if (opts.awaitReady) {
+      const worker = await ensureStockfishWorkerV0();
+      if (!worker) return null;
+    } else {
+      return null;
+    }
+  }
   return withChessStockfishEngineLockV0(async () => {
   const position = String(fen || "").trim();
   if (!position) return null;
-  const worker = await ensureStockfishWorkerV0();
+  const worker = workerV0;
   if (!worker) return null;
 
   const { skill, movetimeMs, depth } = resolveStockfishOptsV0(opts);
