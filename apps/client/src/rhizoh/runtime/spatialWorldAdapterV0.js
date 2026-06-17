@@ -26,6 +26,9 @@ import {
   resolveSpatialSinkRoutePolicyV0,
   RHIZOH_INGRESS_ROUTE_EVENT_V0
 } from "./spatialSinkRoutePolicyV0.js";
+import { resolveRhizohCesiumLayerActiveV0 } from "./rhizohLayerContextV0.js";
+import { readRhizohWorldMapToolV0 } from "./rhizohWorldMapToolV0.js";
+import { readRhizohWorldSystemModeV0 } from "./rhizohWorldSystemModeV0.js";
 
 export const SPATIAL_WORLD_ADAPTER_SCHEMA_V0 = "castle.rhizoh.spatial_world_adapter.v0";
 export const SPATIAL_SINK_MISSING_CODE_V0 = "SPATIAL_SINK_MISSING";
@@ -168,6 +171,25 @@ export function retryDeferredSpatialCommitsV0() {
 }
 
 /**
+ * Whether spatial nodes should route into the Cesium commit surface on this route.
+ */
+export function shouldRouteSpatialNodeToCesiumV0() {
+  if (typeof window === "undefined") return false;
+  const api = getCesiumExecutorApiV0();
+  if (typeof api?.commitSpatialNode === "function" && isCesiumExecutorCommandReadyV0(api)) {
+    return true;
+  }
+  const pathname = String(window.location.pathname || "/");
+  const layerCtx = Object.freeze({
+    pathname,
+    worldSystemMode: readRhizohWorldSystemModeV0(),
+    mapSurfaceActive: true,
+    mapTool: readRhizohWorldMapToolV0()
+  });
+  return resolveRhizohCesiumLayerActiveV0(layerCtx);
+}
+
+/**
  * Commit one spatial node into world/Cesium sink.
  * @param {object} node
  * @param {{ retry?: boolean }} [opts]
@@ -180,6 +202,23 @@ export function commitSpatialNodeToWorldV0(node, opts = {}) {
   const key = spatialNodeKeyV0(node);
   if (!opts.retry && worldCommittedKeysV0.has(key)) {
     return Object.freeze({ ok: true, already: true, key, worldCommitted: true });
+  }
+
+  if (!shouldRouteSpatialNodeToCesiumV0()) {
+    deferredKeysV0.add(key);
+    return Object.freeze({
+      ok: false,
+      deferred: true,
+      failed: false,
+      worldCommitted: false,
+      key,
+      reason: "v11_map_no_cesium_sink",
+      result: Object.freeze({
+        ok: false,
+        deferred: true,
+        skipReason: "v11_map_no_cesium_sink"
+      })
+    });
   }
 
   const geo = resolveSpatialNodeGeoV0(node);

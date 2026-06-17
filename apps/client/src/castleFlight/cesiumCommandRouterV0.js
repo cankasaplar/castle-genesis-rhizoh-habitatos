@@ -43,6 +43,10 @@ const WORLD_LIFECYCLE_ACTIONS_V0 = new Set([
 const FLY_COALESCE_MS = 500;
 const COALESCE_OPS = new Set(["fly_to", "calibration_root"]);
 const COMMAND_DEDUPE_MS = 650;
+const DEFERRED_LOG_DEDUPE_MS = 5000;
+
+/** @type {Map<string, number>} */
+const deferredLogAtV0 = new Map();
 
 /** @type {ReturnType<typeof setTimeout> | null} */
 let flyCoalesceTimer = null;
@@ -99,27 +103,42 @@ function routeCesiumCommandImmediateV0(request = {}) {
   const result = executeCesiumCommandV0(request);
 
   if (typeof console !== "undefined" && console.info) {
-    console.info("[castle:cesium-router] routed to cesium_executor", {
-      op,
-      source: request.source ?? null,
-      canonical: request.canonical ?? null
-    });
+    const quietDeferred =
+      result.deferred === true &&
+      (op === "commit_spatial_node" || result.skipReason === "v11_map_no_cesium_sink");
+
+    if (!quietDeferred) {
+      console.info("[castle:cesium-router] routed to cesium_executor", {
+        op,
+        source: request.source ?? null,
+        canonical: request.canonical ?? null
+      });
+    }
 
     if (result.deferred) {
-      console.warn("[castle:cesium-router] deferred — viewer not ready", {
-        op,
-        skipReason: result.skipReason ?? "cesium_not_ready"
-      });
-    } else if (result.ok) {
-      console.info("[castle:cesium-router] executor ok", {
-        op,
-        height: result.height ?? null
-      });
-    } else if (result.skipped) {
-      console.info("[castle:cesium-router] executor skipped", {
-        op,
-        skipReason: result.skipReason ?? null
-      });
+      const skipReason = result.skipReason ?? "cesium_not_ready";
+      const logKey = `${op}:${skipReason}`;
+      const now = Date.now();
+      const last = deferredLogAtV0.get(logKey) || 0;
+      if (!quietDeferred && now - last >= DEFERRED_LOG_DEDUPE_MS) {
+        deferredLogAtV0.set(logKey, now);
+        console.warn("[castle:cesium-router] deferred — viewer not ready", {
+          op,
+          skipReason
+        });
+      }
+    } else if (!quietDeferred) {
+      if (result.ok) {
+        console.info("[castle:cesium-router] executor ok", {
+          op,
+          height: result.height ?? null
+        });
+      } else if (result.skipped) {
+        console.info("[castle:cesium-router] executor skipped", {
+          op,
+          skipReason: result.skipReason ?? null
+        });
+      }
     }
   }
 
