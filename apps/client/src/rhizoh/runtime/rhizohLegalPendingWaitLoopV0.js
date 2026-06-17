@@ -3,6 +3,7 @@
  */
 
 import { CHESS_GAME_MODE_V0 } from "./chessArenaEngineV0.js";
+import { RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0 } from "./chessGameClusterV0.js";
 import { RHIZOH_OPEN_CHESS_ARENA_EVENT_V1 } from "./symbyoMapIntentBridgeV0.js";
 import { hasLegalAccessAckV0, resolveIngressRouteV0 } from "../ingress/ingress_router.js";
 import { CHESS_LEARNING_SESSION_PRESET_V0 } from "./chessLearningSessionV0.js";
@@ -45,6 +46,11 @@ export function maybeDispatchLegalPendingChessArenaV0(opts = {}) {
   chessDispatched = true;
   const preset = CHESS_LEARNING_SESSION_PRESET_V0.BULLET_RESEARCH;
   try {
+    window.dispatchEvent(
+      new CustomEvent(RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0, {
+        detail: Object.freeze({ source: "legal_pending_wait_loop", atMs: Date.now() })
+      })
+    );
     window.dispatchEvent(
       new CustomEvent(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, {
         detail: Object.freeze({

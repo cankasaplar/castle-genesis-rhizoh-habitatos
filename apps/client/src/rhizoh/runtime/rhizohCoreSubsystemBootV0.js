@@ -8,6 +8,7 @@ import { runDomainGateForPathV0 } from "./rhizohDomainNervousSystemV0.js";
 import { bootRhizohLearningCoreV0 } from "./rhizohLearningCoreBootV0.js";
 import { startRhizohLegalPendingWaitLoopV0 } from "./rhizohLegalPendingWaitLoopV0.js";
 import { publishRhizohWorldNamespaceGateV0 } from "./rhizohWorldNamespaceGateV0.js";
+import { startChessGameClusterV0 } from "./chessGameClusterV0.js";
 
 export const RHIZOH_CORE_SUBSYSTEM_BOOT_SCHEMA_V0 = "castle.rhizoh.core_subsystem_boot.v0";
 
@@ -60,6 +61,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
 
   const learning = ensureRhizohLearningCoreBootV0(opts.userId);
   const worldGate = publishRhizohWorldNamespaceGateV0();
+  const cluster = startChessGameClusterV0({ intervalMs: 320 });
 
   const snap = Object.freeze({
     schema: RHIZOH_CORE_SUBSYSTEM_BOOT_SCHEMA_V0,
@@ -68,6 +70,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     pathname,
     learning,
     worldGate,
+    chessCluster: cluster,
     atMs: Date.now()
   });
 
