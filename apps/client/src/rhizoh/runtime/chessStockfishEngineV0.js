@@ -219,6 +219,11 @@ function attachWorkerHandlersV0(worker) {
   worker.onmessage = (ev) => {
     const raw = ev?.data;
     const line = typeof raw === "string" ? raw : raw != null ? String(raw) : "";
+    if (line.startsWith("sf_worker_error:")) {
+      initErrorV0 = line.slice("sf_worker_error:".length);
+      logStockfishV0("error", "worker bootstrap error", { error: initErrorV0, strategy: lastSpawnStrategyV0 });
+      return;
+    }
     if (!uciOkV0 && line && line !== "uciok" && line !== "readyok") {
       logStockfishV0("info", "worker message during init", { line: line.slice(0, 120) });
     }
@@ -480,8 +485,11 @@ self.addEventListener("message",function(ev){
 });
 `;
 
+const STOCKFISH_WASM_BINARY_WORKER_INIT_PATCH_V0 =
+  'e={wasmBinary:self.__SF_WASM_BYTES__,locateFile:function(e){return-1<e.indexOf(".wasm")?r:self.location.origin+self.location.pathname+"#"+r+",worker"}},i()(e).then';
+
 const STOCKFISH_XFER_WORKER_INIT_PATCH_V0 =
-  'e={instantiateWasm:function(im,rcv){var m=self.__SF_WASM_MODULE__;if(!m)throw new Error("sf_wasm_module_missing");WebAssembly.instantiate(m,im).then(function(r){rcv(r.instance,r.module)}).catch(function(err){throw err;})},locateFile:function(e){return-1<e.indexOf(".wasm")?r:self.location.origin+self.location.pathname+"#"+r+",worker"}},(self.__SF_WAIT_MODULE__?self.__SF_WAIT_MODULE__():Promise.resolve()).then(function(){return i()(e)}).then';
+  'e={instantiateWasm:function(im,rcv){var m=self.__SF_WASM_MODULE__;if(!m)throw new Error("sf_wasm_module_missing");WebAssembly.instantiate(m,im).then(function(r){rcv(r.instance,r.module)}).catch(function(err){throw err;});return{}},locateFile:function(e){return-1<e.indexOf(".wasm")?r:self.location.origin+self.location.pathname+"#"+r+",worker"}},(self.__SF_WAIT_MODULE__?self.__SF_WAIT_MODULE__():Promise.resolve()).then(function(){return i()(e)}).then';
 
 function bytesToBase64V0(bytes) {
   const chunkSize = 0x8000;
@@ -535,6 +543,37 @@ async function compileWasmModuleOnMainThreadV0(wasmBytes) {
   return cachedWasmModuleV0;
 }
 
+function buildXferWasmBytesDeferredWorkerUrlV0(assets) {
+  if (!STOCKFISH_WORKER_WEB_INIT_RE_V0.test(assets.jsSource)) {
+    throw new Error("stockfish_worker_patch_missing");
+  }
+  const patched = assets.jsSource.replace(
+    STOCKFISH_WORKER_WEB_INIT_RE_V0,
+    STOCKFISH_WASM_BINARY_WORKER_INIT_PATCH_V0
+  );
+  const stockfishBlobUrl = URL.createObjectURL(
+    new Blob([patched], { type: "application/javascript" })
+  );
+  trackSpawnBlobUrlV0(stockfishBlobUrl);
+  const bootstrap = `"use strict";
+var __sfStockfishLoaded=false;
+self.addEventListener("message",function(ev){
+  var d=ev.data;
+  if(!d||d.cmd!=="sf_arm_wasm_bytes"||!d.wasmBytes||__sfStockfishLoaded)return;
+  self.__SF_WASM_BYTES__=d.wasmBytes;
+  try{
+    importScripts(${JSON.stringify(stockfishBlobUrl)});
+    __sfStockfishLoaded=true;
+  }catch(err){
+    postMessage("sf_worker_error:"+String(err&&err.message||err));
+  }
+});
+`;
+  const jsBlobUrl = URL.createObjectURL(new Blob([bootstrap], { type: "application/javascript" }));
+  trackSpawnBlobUrlV0(jsBlobUrl);
+  return `${jsBlobUrl}#xfer_bytes,worker`;
+}
+
 function buildXferWasmCompiledWorkerUrlV0(assets) {
   if (!STOCKFISH_WORKER_WEB_INIT_RE_V0.test(assets.jsSource)) {
     throw new Error("stockfish_worker_patch_missing");
@@ -569,8 +608,17 @@ ${patched}`;
 function listStockfishSpawnStrategiesV0() {
   return [
     {
+      name: "xfer_wasm_bytes_deferred_import",
+      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
+      xferBytes: true,
+      build: async () => {
+        const assets = await ensureCachedStockfishAssetsV0();
+        return buildXferWasmBytesDeferredWorkerUrlV0(assets);
+      }
+    },
+    {
       name: "xfer_wasm_compiled_module",
-      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
+      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
       xferModule: true,
       build: async () => {
         const assets = await ensureCachedStockfishAssetsV0();
@@ -617,7 +665,11 @@ async function initStockfishWorkerWithStrategyV0(strategy) {
   });
   const worker = new Worker(workerUrl, { type: "classic" });
   attachWorkerHandlersV0(worker);
-  if (strategy.xferModule) {
+  if (strategy.xferBytes) {
+    if (!cachedAssetPayloadV0?.wasmBytes) throw new Error("sf_wasm_bytes_cache_missing");
+    const bytesCopy = cachedAssetPayloadV0.wasmBytes.slice();
+    worker.postMessage({ cmd: "sf_arm_wasm_bytes", wasmBytes: bytesCopy });
+  } else if (strategy.xferModule) {
     if (!cachedWasmModuleV0) throw new Error("sf_wasm_module_cache_missing");
     worker.postMessage({ cmd: "sf_arm_wasm", wasmModule: cachedWasmModuleV0 });
     await new Promise((resolve) => setTimeout(resolve, 0));
