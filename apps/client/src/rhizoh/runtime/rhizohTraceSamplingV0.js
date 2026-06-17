@@ -19,7 +19,8 @@ const TRACE_KIND_V0 = Object.freeze({
   FALLBACK: "fallback",
   SPATIAL_NODE: "spatial_node",
   CONTROL_PLANE: "control_plane",
-  CODEX_GHOST: "codex_ghost"
+  CODEX_GHOST: "codex_ghost",
+  RUNTIME_SUBSTRATE: "runtime_substrate"
 });
 
 export const TRACE_SAMPLE_TIER_V0 = Object.freeze({
@@ -70,7 +71,8 @@ const CRITICAL_KINDS_V0 = new Set([
   TRACE_KIND_V0.DOMAIN_PASS,
   TRACE_KIND_V0.FALLBACK,
   TRACE_KIND_V0.CONTROL_PLANE,
-  TRACE_KIND_V0.CODEX_GHOST
+  TRACE_KIND_V0.CODEX_GHOST,
+  TRACE_KIND_V0.RUNTIME_SUBSTRATE
 ]);
 
 const UI_KINDS_V0 = new Set([

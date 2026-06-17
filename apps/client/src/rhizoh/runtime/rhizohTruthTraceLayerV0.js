@@ -19,7 +19,8 @@ export const TRUTH_TRACE_KIND_V0 = Object.freeze({
   FALLBACK: "fallback",
   SPATIAL_NODE: "spatial_node",
   CONTROL_PLANE: "control_plane",
-  CODEX_GHOST: "codex_ghost"
+  CODEX_GHOST: "codex_ghost",
+  RUNTIME_SUBSTRATE: "runtime_substrate"
 });
 
 /** @type {object[]} */
@@ -186,6 +187,17 @@ export function traceSpatialNodeV0(tier, nodeId, detail = {}) {
     tier: t,
     nodeId: String(nodeId || ""),
     projectionOnly: t === "live",
+    ...detail
+  });
+}
+
+/**
+ * Runtime substrate event — pulse / identity / presence / genesis observation path.
+ */
+export function traceRuntimeSubstrateEventV0(subtype, detail = {}) {
+  return traceTruthEventV0(TRUTH_TRACE_KIND_V0.RUNTIME_SUBSTRATE, {
+    subtype: String(subtype || "unknown"),
+    influencesExecution: false,
     ...detail
   });
 }

@@ -4,6 +4,10 @@
  */
 
 import { enrichEventWithSemanticsV0 } from "./rhizohSemanticCompressionFilterV0.js";
+import {
+  commitRuntimeEventToGraphV0,
+  RUNTIME_SUBSTRATE_SOURCE_V0
+} from "./runtimeEventGraphBridgeV0.js";
 
 export const RHIZOH_IDENTITY_EVENT_LOG_SCHEMA_V0 = "rhizoh.identity_event_log.v0";
 
@@ -39,6 +43,13 @@ export function appendIdentityEventV0(event) {
   eventLogV0.push(row);
   if (eventLogV0.length > LOG_MAX_V0) eventLogV0.shift();
   publishIdentityEventLogV0();
+  commitRuntimeEventToGraphV0(RUNTIME_SUBSTRATE_SOURCE_V0.IDENTITY, {
+    eventId: row.id,
+    eventType: row.type,
+    intent: row.intent,
+    carrier: row.carrier,
+    identityMeaningful: row.identityMeaningful === true
+  });
   return row;
 }
 

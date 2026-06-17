@@ -11,6 +11,10 @@ import {
   getRhizohUiTextModeV0,
   getRhizohUiTextVisibilityV0
 } from "./rhizohUiTextModeV0.js";
+import {
+  commitRuntimeEventToGraphV0,
+  RUNTIME_SUBSTRATE_SOURCE_V0
+} from "./runtimeEventGraphBridgeV0.js";
 
 let eventSource = null;
 let stopIngressWire = () => {};
@@ -19,6 +23,16 @@ let stopCohortFeedbackMail = () => {};
 let pollTimer = 0;
 /** @type {number | null} */
 let lastSeq = null;
+
+function publishGenesisStreamRegistryV0(detail = {}) {
+  if (typeof window === "undefined") return;
+  window.__rhizoh = window.__rhizoh || {};
+  window.__rhizoh.genesisStream = Object.freeze({
+    schema: "rhizoh.genesis_stream_client.v0",
+    influencesExecution: false,
+    ...detail
+  });
+}
 
 function ingestGenesisEvent(j) {
   if (!j || j.schema !== GENESIS_CONTINUITY_EVENT_SCHEMA || !j.type) return;
@@ -41,13 +55,18 @@ function ingestGenesisEvent(j) {
       },
       line: String(p.line || line)
     });
-    return;
+  } else {
+    publishWorldObservationV0({
+      type: `genesis.${genesisType}`,
+      payload: { seq: j.seq ?? null, genesisType, line, ...p },
+      line
+    });
   }
 
-  publishWorldObservationV0({
-    type: `genesis.${genesisType}`,
-    payload: { seq: j.seq ?? null, genesisType, line, ...p },
-    line
+  commitRuntimeEventToGraphV0(RUNTIME_SUBSTRATE_SOURCE_V0.GENESIS, {
+    genesisType,
+    seq: j.seq ?? null,
+    via: p.via || "gateway_sse"
   });
 }
 
@@ -72,6 +91,18 @@ export function startGenesisContinuityClientWireV0() {
   if (typeof EventSource !== "undefined") {
     const streamUrl = `${origin}/rhizoh/genesis/stream`;
     eventSource = new EventSource(streamUrl);
+    publishGenesisStreamRegistryV0({ status: "connecting", streamUrl });
+    eventSource.onopen = () => {
+      publishGenesisStreamRegistryV0({ status: "open", streamUrl, atMs: Date.now() });
+    };
+    eventSource.onerror = () => {
+      publishGenesisStreamRegistryV0({
+        status: "error",
+        streamUrl,
+        atMs: Date.now(),
+        hint: "SSE failed — often upstream 503 or CORS; poll fallback may still work"
+      });
+    };
     eventSource.onmessage = (ev) => {
       try {
         ingestGenesisEvent(JSON.parse(ev.data));

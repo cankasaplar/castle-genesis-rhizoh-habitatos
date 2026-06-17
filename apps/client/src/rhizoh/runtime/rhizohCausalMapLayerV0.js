@@ -62,6 +62,9 @@ function causalLabelForTraceV0(entry) {
     const id = entry.ghostId || "?";
     return `${entry.phase || "spawn"}:${id}`;
   }
+  if (k === TRUTH_TRACE_KIND_V0.RUNTIME_SUBSTRATE) {
+    return `${entry.subtype || entry.source || "event"}`;
+  }
   return k;
 }
 
@@ -79,6 +82,7 @@ function linkTraceChainV0(traces) {
   let lastTensorId = null;
   /** @type {Map<string, string>} ghostId → spawn trace node id */
   const ghostSpawnNodeById = new Map();
+  let lastRuntimeSubstrateId = null;
 
   for (const t of traces) {
     const node = nodeFromTraceV0(t);
@@ -163,6 +167,29 @@ function linkTraceChainV0(traces) {
           );
         }
       }
+    }
+
+    if (t.kind === TRUTH_TRACE_KIND_V0.RUNTIME_SUBSTRATE) {
+      if (lastRuntimeSubstrateId) {
+        edges.push(
+          Object.freeze({
+            from: lastRuntimeSubstrateId,
+            to: node.id,
+            relation: CAUSAL_EDGE_RELATION_V0.CAUSES,
+            note: "runtime_substrate_sequence"
+          })
+        );
+      } else if (lastDomainId) {
+        edges.push(
+          Object.freeze({
+            from: lastDomainId,
+            to: node.id,
+            relation: CAUSAL_EDGE_RELATION_V0.ENABLES,
+            note: "domain_to_runtime_substrate"
+          })
+        );
+      }
+      lastRuntimeSubstrateId = node.id;
     }
   }
 
@@ -290,9 +317,10 @@ function buildCausalSelfNarrativeV0(nodes, edges) {
   const spatial = nodes.filter((n) => n.kind === TRUTH_TRACE_KIND_V0.SPATIAL_NODE);
   const trails = nodes.filter((n) => n.kind === "temporal_trail");
   const ghosts = nodes.filter((n) => n.kind === TRUTH_TRACE_KIND_V0.CODEX_GHOST);
+  const substrate = nodes.filter((n) => n.kind === TRUTH_TRACE_KIND_V0.RUNTIME_SUBSTRATE);
   return [
     `Causal graph: ${nodes.length} nodes, ${edges.length} edges.`,
-    `Domain transitions: ${domains.length}, tensor decisions: ${tensors.length}, spatial projections: ${spatial.length}, temporal trails: ${trails.length}, codex ghosts: ${ghosts.length}.`,
+    `Domain transitions: ${domains.length}, tensor decisions: ${tensors.length}, spatial projections: ${spatial.length}, temporal trails: ${trails.length}, codex ghosts: ${ghosts.length}, runtime substrate: ${substrate.length}.`,
     "System explains itself through trace — not through LLM inference."
   ].join(" ");
 }
