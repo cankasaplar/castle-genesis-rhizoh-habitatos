@@ -277,6 +277,12 @@ async function verifyStockfishAssetsV0() {
 
     const jsType = (jsRes.headers.get("content-type") || "").toLowerCase();
     const wasmType = (wasmRes.headers.get("content-type") || "").toLowerCase();
+    const jsCorp = (jsRes.headers.get("cross-origin-resource-policy") || "").toLowerCase();
+    if (!jsCorp.includes("same-origin") && !jsCorp.includes("same-site")) {
+      logStockfishV0("warn", "worker js missing CORP header — hash spawn strategies may fail under COEP", {
+        jsCorp: jsCorp || null
+      });
+    }
     if (wasmType.includes("text/html")) {
       initErrorV0 = "wasm_content_type_html_likely_spa_fallback";
       logStockfishV0("error", "wasm preflight content-type is html", { wasmType });
@@ -347,17 +353,7 @@ ${patched}`;
 function listStockfishSpawnStrategiesV0() {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const absoluteWasm = `${origin}${CHESS_STOCKFISH_ASSET_PATHS_V0.wasm}`;
-  return [
-    {
-      name: "absolute_hash",
-      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
-      build: async () => resolveStockfishWorkerUrlV0(absoluteWasm)
-    },
-    {
-      name: "relative_hash",
-      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
-      build: async () => resolveStockfishWorkerUrlV0(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm)
-    },
+  const blobStrategies = [
     {
       name: "wasm_binary_inline",
       uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
@@ -395,6 +391,20 @@ function listStockfishSpawnStrategiesV0() {
       }
     }
   ];
+  const hashStrategies = [
+    {
+      name: "absolute_hash",
+      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
+      build: async () => resolveStockfishWorkerUrlV0(absoluteWasm)
+    },
+    {
+      name: "relative_hash",
+      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
+      build: async () => resolveStockfishWorkerUrlV0(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm)
+    }
+  ];
+  // Blob strategies first — hash workers need CORP on /chess-engine/*.js under COEP.
+  return [...blobStrategies, ...hashStrategies];
 }
 
 async function initStockfishWorkerWithStrategyV0(strategy) {
