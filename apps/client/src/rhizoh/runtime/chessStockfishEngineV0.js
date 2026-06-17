@@ -220,6 +220,7 @@ function resetReadyFlagsV0() {
 }
 
 function handleStockfishLineV0(line) {
+  line = String(line ?? "").trim();
   if (line.startsWith("sf_worker_error:")) {
     initErrorV0 = line.slice("sf_worker_error:".length);
     logStockfishV0("error", "worker bootstrap error", { error: initErrorV0, strategy: lastSpawnStrategyV0 });
