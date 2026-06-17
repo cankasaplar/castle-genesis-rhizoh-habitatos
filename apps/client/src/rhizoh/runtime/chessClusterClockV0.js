@@ -48,6 +48,7 @@ export function applyChessClusterClockIncrementV0(slot, moverColor) {
  */
 export function tickChessClusterSlotClockV0(slot, deltaMs = 1000) {
   if (!slot || slot.status !== "active") return null;
+  if ((slot.ply || 0) < 1) return null;
   const turn = slot.game?.turn?.();
   if (turn === "w") {
     slot.whiteClockMs = Math.max(0, Number(slot.whiteClockMs) - deltaMs);

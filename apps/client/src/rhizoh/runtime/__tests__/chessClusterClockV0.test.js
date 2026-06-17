@@ -21,6 +21,7 @@ describe("chessClusterClockV0", () => {
     const slot = {
       status: "active",
       game,
+      ply: 3,
       whiteClockMs: 500,
       blackClockMs: 60_000,
       incrementMs: 0
@@ -28,6 +29,20 @@ describe("chessClusterClockV0", () => {
     const outcome = tickChessClusterSlotClockV0(slot, 1000);
     expect(outcome).toBe("black_wins");
     expect(slot.whiteClockMs).toBe(0);
+  });
+
+  it("does not tick clock before first move", () => {
+    const game = createChessArenaGameV0();
+    const slot = {
+      status: "active",
+      game,
+      ply: 0,
+      whiteClockMs: 60_000,
+      blackClockMs: 60_000,
+      incrementMs: 0
+    };
+    expect(tickChessClusterSlotClockV0(slot, 1000)).toBeNull();
+    expect(slot.whiteClockMs).toBe(60_000);
   });
 
   it("applies increment after move", () => {

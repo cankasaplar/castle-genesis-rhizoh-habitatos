@@ -331,6 +331,11 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
 
   useEffect(() => {
     if (!open || outcome) return undefined;
+    const needsTeacher =
+      mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH || mode === CHESS_GAME_MODE_V0.AI_AI;
+    const teacherReady = engineStatus === "stockfish_wasm";
+    const hasMoves = (game.moveHistory?.length || 0) > 0;
+    if (needsTeacher && !teacherReady && !hasMoves) return undefined;
     const id = window.setInterval(() => {
       if (activeColor === "w") {
         setWhiteClockMs((ms) => Math.max(0, ms - 1000));
@@ -339,7 +344,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       }
     }, 1000);
     return () => window.clearInterval(id);
-  }, [open, outcome, activeColor]);
+  }, [open, outcome, activeColor, engineStatus, mode, game, tick]);
 
   useEffect(() => {
     if (!open || !peerCastle?.uid) return;
@@ -691,6 +696,24 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     let alive = true;
 
     void (async () => {
+      while (alive && getChessTeacherStatusV0() === "stockfish_compiling") {
+        setStatus(
+          tr
+            ? "Stockfish WASM derleniyor — maç başlamadan bekleniyor…"
+            : "Compiling Stockfish WASM — waiting before match starts…"
+        );
+        await new Promise((resolve) => window.setTimeout(resolve, 400));
+      }
+      if (!alive) return;
+      if (getChessTeacherStatusV0() !== "stockfish_wasm") {
+        setStatus(
+          tr
+            ? "Stockfish hazır değil — öğretmen kapalı, maç başlatılmadı."
+            : "Stockfish not ready — teacher offline, match not started."
+        );
+        return;
+      }
+
       while (alive && !game.isGameOver()) {
         setAiBusy(true);
         let pick = null;
@@ -1277,7 +1300,19 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
               </div>
             ) : null}
             {aiBusy ? (
-              <p className="text-[10px] text-amber-200">{tr ? "Stockfish düşünüyor…" : "Stockfish thinking…"}</p>
+              <p className="text-[10px] text-amber-200">
+                {engineStatus === "stockfish_compiling"
+                  ? tr
+                    ? "Stockfish WASM derleniyor…"
+                    : "Compiling Stockfish WASM…"
+                  : engineStatus === "heuristic_fallback"
+                    ? tr
+                      ? "Yedek motor hamle seçiyor…"
+                      : "Fallback engine choosing move…"
+                    : tr
+                      ? "Stockfish düşünüyor…"
+                      : "Stockfish thinking…"}
+              </p>
             ) : null}
             {analysisBusy ? (
               <p className="text-[10px] text-cyan-200">
