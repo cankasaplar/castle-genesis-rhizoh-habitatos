@@ -950,6 +950,12 @@ export function prewarmChessStockfishEngineV0() {
   return ensureStockfishWorkerV0().catch(() => null);
 }
 
+/** Wait for the single pipeline init attempt to finish (ready or fallback). */
+export async function awaitChessStockfishEngineReadyV0() {
+  await ensureStockfishWorkerV0();
+  return getChessStockfishEngineStatusV0();
+}
+
 export function resetChessStockfishEngineV0() {
   disposeChessStockfishEngineV0();
   clearCompileWatchdogV0();
