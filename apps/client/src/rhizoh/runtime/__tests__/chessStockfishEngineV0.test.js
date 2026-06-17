@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import { createChessArenaGameV0, pickChessArenaAiMoveV0 } from "../chessArenaEngineV0.js";
 import {
   CHESS_STOCKFISH_ASSET_PATHS_V0,
+  CHESS_STOCKFISH_SPAWN_POLICY_V0,
   disposeChessStockfishEngineV0,
   getChessStockfishEngineDetailV0,
   getChessStockfishEngineStatusV0,
-  resetChessStockfishEngineV0
+  resetChessStockfishEngineV0,
+  resolveChessStockfishEffectiveSpawnPolicyV0
 } from "../chessStockfishEngineV0.js";
 
 describe("chessStockfishEngineV0", () => {
@@ -14,10 +16,14 @@ describe("chessStockfishEngineV0", () => {
     expect(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm).toBe("/chess-engine/stockfish-nnue-16-single.wasm");
   });
 
-  it("uses blob-only spawn policy (no hash URL workers under COEP)", () => {
+  it("uses auto spawn policy with blob fallback until CORP preflight passes", () => {
     disposeChessStockfishEngineV0();
+    expect(CHESS_STOCKFISH_SPAWN_POLICY_V0).toBe("auto");
+    expect(resolveChessStockfishEffectiveSpawnPolicyV0()).toBe("blob_degraded");
     const detail = getChessStockfishEngineDetailV0();
-    expect(detail.spawnPolicy).toBe("blob_only");
+    expect(detail.spawnPolicy).toBe("auto");
+    expect(detail.spawnPolicyEffective).toBe("blob_degraded");
+    expect(detail.computeDegraded).toBe(true);
     expect(detail.spawnStrategies).toEqual(["wasm_binary_inline", "blob_coep"]);
   });
 
