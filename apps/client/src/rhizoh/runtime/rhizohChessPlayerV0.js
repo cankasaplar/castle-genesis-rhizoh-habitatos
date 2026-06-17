@@ -4,7 +4,7 @@
 
 import { listRhizohOpeningBookV0 } from "./rhizohOpeningBookV0.js";
 import { readChessCivilizationV0 } from "./chessCivilizationV0.js";
-import { getStockfishArenaMoveV0 } from "./chessStockfishEngineV0.js";
+import { getStockfishArenaMoveV0, getChessStockfishEngineStatusV0 } from "./chessStockfishEngineV0.js";
 import { stockfishSkillFromEloV0 } from "./chessStockfishPresetsV0.js";
 import { pickChessArenaAiMoveV0, estimateChessMaterialBalanceV0 } from "./chessArenaEngineV0.js";
 import { readChessPolicyModeV0, resolveRhizohChessEngineParamsV0 } from "./chessPolicyModeV0.js";
@@ -65,20 +65,22 @@ export async function pickRhizohChessMoveV0(game, opts = {}) {
   });
 
   try {
-    const sf = await getStockfishArenaMoveV0(game.fen(), {
-      skill: engineParams.skill,
-      movetimeMs: engineParams.movetimeMs,
-      depth: engineParams.depth,
-      contempt: engineParams.contempt
-    });
-    if (sf) {
-      return Object.freeze({
-        move: sf,
-        engine: "rhizoh_learned_stockfish",
-        policyMode: engineParams.policyMode,
-        mindId: engineParams.mindId,
-        engineParams
+    if (getChessStockfishEngineStatusV0() === "stockfish_wasm") {
+      const sf = await getStockfishArenaMoveV0(game.fen(), {
+        skill: engineParams.skill,
+        movetimeMs: engineParams.movetimeMs,
+        depth: engineParams.depth,
+        contempt: engineParams.contempt
       });
+      if (sf) {
+        return Object.freeze({
+          move: sf,
+          engine: "rhizoh_learned_stockfish",
+          policyMode: engineParams.policyMode,
+          mindId: engineParams.mindId,
+          engineParams
+        });
+      }
     }
   } catch {
     /* noop */

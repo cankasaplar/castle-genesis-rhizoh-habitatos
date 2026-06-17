@@ -23,17 +23,23 @@ let totalMovesScheduledV0 = 0;
  * @param {{ useStockfish?: boolean, preset?: string, skill?: number, movetimeMs?: number, depth?: number, contempt?: number }} [opts]
  */
 export async function scheduleClusterEngineMoveV0(game, opts = {}) {
-  return withChessStockfishEngineLockV0(async () => {
+  const stockfishReady = getChessStockfishEngineStatusV0() === "stockfish_wasm";
+  const useStockfish = opts.useStockfish !== false && stockfishReady;
+
+  const run = async () => {
     queuedOpsV0 += 1;
     totalMovesScheduledV0 += 1;
     try {
-      const stockfishReady = getChessStockfishEngineStatusV0() === "stockfish_wasm";
-      const useStockfish = opts.useStockfish !== false && stockfishReady;
       return await pickChessArenaEngineMoveV0(game, { ...opts, useStockfish });
     } finally {
       queuedOpsV0 = Math.max(0, queuedOpsV0 - 1);
     }
-  });
+  };
+
+  if (useStockfish) {
+    return withChessStockfishEngineLockV0(run);
+  }
+  return run();
 }
 
 export function getChessClusterEngineSchedulerSnapshotV0() {

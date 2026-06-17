@@ -6,9 +6,13 @@ import {
   listChessClusterSlotsV0,
   isChessGameClusterRunningV0
 } from "../rhizoh/runtime/chessGameClusterV0.js";
-import { getChessStockfishEngineStatusV0 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
+import {
+  CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0,
+  getChessStockfishEngineStatusV0
+} from "../rhizoh/runtime/chessStockfishEngineV0.js";
 import { resolveChessClusterAgentPolicyV0 } from "../rhizoh/runtime/chessClusterAgentPolicyV0.js";
 import { createChessArenaGameV0 } from "../rhizoh/runtime/chessArenaEngineV0.js";
+import { CHESS_BOARD_THEME_V0 } from "../rhizoh/runtime/chessArenaThemeV0.js";
 import {
   CHESS_LEARNING_MONITOR_EVENT_V0,
   CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0,
@@ -16,7 +20,9 @@ import {
 } from "../rhizoh/runtime/chessLearningMonitorV0.js";
 import { PIECE_UNICODE_V0 } from "./RhizohCastleLibraryPanelV0.jsx";
 
-function boardRowsFromFen(fen, cellClass = "h-3 w-3 sm:h-4 sm:w-4") {
+const BOARD_COLORS_V0 = CHESS_BOARD_THEME_V0.classic;
+
+function boardRowsFromFen(fen) {
   const chess = createChessArenaGameV0({ fen });
   const board = chess.chess.board();
   const rows = [];
@@ -31,9 +37,7 @@ function boardRowsFromFen(fen, cellClass = "h-3 w-3 sm:h-4 sm:w-4") {
       const key = `${cell.color}${String(cell.type).toUpperCase()}`;
       row.push({
         color: cell.color,
-        type: cell.type,
-        glyph: PIECE_UNICODE_V0[key] || "?",
-        cellClass
+        glyph: PIECE_UNICODE_V0[key] || "?"
       });
     }
     rows.push(row);
@@ -44,49 +48,60 @@ function boardRowsFromFen(fen, cellClass = "h-3 w-3 sm:h-4 sm:w-4") {
 function ClockRowV0({ label, clock, active, tr }) {
   return (
     <div
-      className={`flex items-center justify-between rounded px-2 py-1 text-[10px] ${
-        active ? "bg-cyan-500/15 text-cyan-100" : "bg-slate-900/60 text-slate-400"
+      className={`flex items-center justify-between rounded px-1.5 py-0.5 text-[9px] ${
+        active ? "bg-cyan-500/20 text-cyan-50" : "bg-black/30 text-white/55"
       }`}
     >
       <span className="truncate">{label}</span>
-      <span className="font-mono tabular-nums">{clock || "—"}</span>
-      {active ? <span className="text-[9px] text-cyan-300/80">{tr ? "sırada" : "on clock"}</span> : null}
+      <span className="font-mono tabular-nums text-[10px]">{clock || "—"}</span>
+      {active ? <span className="text-[8px] text-cyan-200/90">{tr ? "●" : "●"}</span> : null}
     </div>
   );
 }
 
-const CameraSlotV0 = memo(function CameraSlotV0({ slot, highlight, tr, compact = false }) {
+const LiveCameraBoardV0 = memo(function LiveCameraBoardV0({
+  slot,
+  highlight,
+  featured,
+  tr
+}) {
   if (!slot) {
     return (
-      <div className="rounded-lg border border-slate-700/60 bg-slate-950/80 p-2 text-xs text-slate-500">
+      <div className="flex aspect-square items-center justify-center rounded-lg border border-white/10 bg-black/40 text-xs text-white/40">
         —
       </div>
     );
   }
 
-  const rows = boardRowsFromFen(
-    slot.fen,
-    compact ? "h-3 w-3 sm:h-4 sm:w-4" : "h-4 w-4 sm:h-5 sm:w-5"
-  );
+  const rows = boardRowsFromFen(slot.fen);
   const white = resolveChessClusterAgentPolicyV0(slot.whiteAgent);
   const black = resolveChessClusterAgentPolicyV0(slot.blackAgent);
   const turnW = slot.turn === "w";
 
   return (
     <div
-      className={`rounded-lg border p-2 ${
-        highlight
-          ? "border-cyan-400/70 bg-cyan-950/30 shadow-[0_0_12px_rgba(34,211,238,0.25)]"
-          : "border-slate-700/60 bg-slate-950/80"
+      className={`flex flex-col rounded-lg border bg-black/50 p-2 ${
+        featured
+          ? "border-cyan-400/80 shadow-[0_0_18px_rgba(34,211,238,0.35)]"
+          : highlight
+            ? "border-amber-400/70 shadow-[0_0_12px_rgba(251,191,36,0.3)]"
+            : "border-white/15"
       }`}
       data-chess-cluster-slot={slot.slotId}
     >
-      <div className="mb-1 flex items-center justify-between text-[10px] text-slate-400">
-        <span>#{slot.slotId + 1}</span>
-        <span className="truncate">{white.label} vs {black.label}</span>
-        <span>⚡{slot.attentionWeight?.toFixed?.(1) || "1.0"}</span>
+      <div className="mb-1.5 flex items-center justify-between gap-1 text-[9px] text-white/70">
+        <span className="font-bold text-white/90">
+          #{slot.slotId + 1}
+          {featured ? (
+            <span className="ml-1 rounded bg-cyan-500/25 px-1 py-px text-[8px] font-black uppercase text-cyan-100">
+              LIVE
+            </span>
+          ) : null}
+        </span>
+        <span className="truncate text-right">{white.label} vs {black.label}</span>
       </div>
-      <div className="mb-1 space-y-0.5">
+
+      <div className="mb-1 grid grid-cols-2 gap-1">
         <ClockRowV0
           label={white.label}
           clock={slot.clock?.whiteClock}
@@ -100,30 +115,45 @@ const CameraSlotV0 = memo(function CameraSlotV0({ slot, highlight, tr, compact =
           tr={tr}
         />
       </div>
-      <div className="grid grid-cols-8 gap-px rounded bg-slate-800/80 p-0.5">
+
+      <div className="grid flex-1 grid-cols-8 gap-px overflow-hidden rounded-md border border-black/40">
         {rows.map((row, ri) =>
           row.map((cell, ci) => {
             const dark = (ri + ci) % 2 === 1;
+            const bg = dark ? BOARD_COLORS_V0.dark : BOARD_COLORS_V0.light;
             return (
               <div
                 key={`${ri}-${ci}`}
-                className={`flex items-center justify-center text-[9px] leading-none sm:text-[10px] ${cell?.cellClass || ""} ${
-                  dark ? "bg-slate-700/90" : "bg-slate-600/40"
-                }`}
+                className="flex aspect-square items-center justify-center"
+                style={{ background: bg }}
               >
-                <span className={cell?.color === "w" ? "text-slate-100" : "text-slate-900"}>
-                  {cell?.glyph || ""}
-                </span>
+                {cell ? (
+                  <span
+                    className={`select-none font-black leading-none ${
+                      featured
+                        ? "text-[clamp(0.65rem,2.8vw,1.15rem)]"
+                        : "text-[clamp(0.55rem,2.2vw,0.95rem)]"
+                    } ${cell.color === "w" ? "text-white" : "text-black"}`}
+                    style={
+                      cell.color === "b"
+                        ? { textShadow: "0 0 1px #fff, 0 1px 0 #fff" }
+                        : { textShadow: "0 1px 2px rgba(0,0,0,0.55)" }
+                    }
+                  >
+                    {cell.glyph}
+                  </span>
+                ) : null}
               </div>
             );
           })
         )}
       </div>
-      <div className="mt-1 flex justify-between text-[10px] text-slate-500">
+
+      <div className="mt-1.5 flex justify-between text-[9px] text-white/50">
         <span>ply {slot.ply}</span>
-        <span>{slot.turn === "w" ? "…w" : "…b"}</span>
+        <span>{slot.turn === "w" ? (tr ? "beyaz" : "white") : tr ? "siyah" : "black"}</span>
         {slot.criticalEventCount > 0 ? (
-          <span className="text-amber-400">⚠ {slot.criticalEventCount}</span>
+          <span className="text-amber-300">⚠ {slot.criticalEventCount}</span>
         ) : (
           <span>{slot.endReason === "timeout" ? (tr ? "süre" : "flag") : slot.status}</span>
         )}
@@ -132,86 +162,35 @@ const CameraSlotV0 = memo(function CameraSlotV0({ slot, highlight, tr, compact =
   );
 });
 
-function LearningMonitorPanelV0({ monitor, tr }) {
-  const spectator = monitor?.spectator;
+function LearningStripV0({ monitor, tr }) {
   const recentMoves = monitor?.recentMoves || [];
-  const recentDiffs = monitor?.recentPolicyDiffs || [];
+  const lastMove = recentMoves[recentMoves.length - 1];
 
   return (
-    <section className="rounded-lg border border-violet-500/35 bg-violet-950/20 p-3">
-      <p className="text-[9px] font-black uppercase tracking-[0.18em] text-violet-300/70">
-        {tr ? "Öğrenme izleyici" : "Learning monitor"}
-      </p>
-      <div className="mt-2 grid gap-2 text-[10px] text-slate-300 sm:grid-cols-2">
-        <div>
-          <p className="text-slate-500">{tr ? "Motor" : "Engine"}</p>
-          <p className="font-mono text-[11px]">{monitor?.engineStatus || "—"}</p>
-          <p className="text-[9px] text-slate-500">
-            tick {monitor?.clusterTick ?? 0} · mem {monitor?.memoryNodeCount ?? 0}
-          </p>
-        </div>
-        <div>
-          <p className="text-slate-500">{tr ? "İzlenen maç" : "Featured match"}</p>
-          <p className="text-[11px]">
-            {spectator?.modeLabel || "Rhizoh AI vs Stockfish"} · ply {spectator?.ply ?? 0}
-          </p>
-          <p className="text-[9px] text-slate-500">
-            {spectator?.clock?.whiteClock} / {spectator?.clock?.blackClock}
-          </p>
-        </div>
+    <div className="rounded-lg border border-violet-500/30 bg-violet-950/25 px-3 py-2 text-[10px] text-white/75">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <span className="font-semibold text-violet-200/90">{tr ? "Öğrenme" : "Learning"}</span>
+        <span>
+          {tr ? "Motor" : "Engine"}: <span className="font-mono">{monitor?.engineStatus || "—"}</span>
+        </span>
+        <span>tick {monitor?.clusterTick ?? 0}</span>
+        <span>
+          #{CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 + 1} ply {monitor?.spectator?.ply ?? 0}
+        </span>
+        {lastMove ? (
+          <span className="font-mono text-cyan-200/90">
+            {tr ? "son" : "last"}: {lastMove.san} ({lastMove.engine})
+          </span>
+        ) : (
+          <span className="text-white/40">{tr ? "hamle bekleniyor" : "awaiting moves"}</span>
+        )}
       </div>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <div>
-          <p className="mb-1 text-[9px] font-semibold uppercase text-slate-500">
-            {tr ? "Son hamleler" : "Recent moves"}
-          </p>
-          <ul className="max-h-24 space-y-0.5 overflow-y-auto">
-            {recentMoves.length ? (
-              recentMoves
-                .slice()
-                .reverse()
-                .slice(0, 8)
-                .map((m, i) => (
-                  <li key={`${m.atMs}-${i}`} className="font-mono text-[9px] text-cyan-200/85">
-                    #{m.slotId + 1} {m.san} · {m.engine}
-                    {m.critical ? " ⚠" : ""}
-                  </li>
-                ))
-            ) : (
-              <li className="text-[9px] text-slate-500">{tr ? "Henüz hamle yok" : "No moves yet"}</li>
-            )}
-          </ul>
-        </div>
-        <div>
-          <p className="mb-1 text-[9px] font-semibold uppercase text-slate-500">policy_diff</p>
-          <ul className="max-h-24 space-y-0.5 overflow-y-auto">
-            {recentDiffs.length ? (
-              recentDiffs
-                .slice()
-                .reverse()
-                .slice(0, 6)
-                .map((d, i) => (
-                  <li key={`${d.atMs || i}-${i}`} className="text-[9px] text-violet-200/85">
-                    {d.summary || d.kind || "diff"} · slot {d.slotId ?? "?"}
-                  </li>
-                ))
-            ) : (
-              <li className="text-[9px] text-slate-500">
-                {tr ? "Öğrenme farkı bekleniyor" : "Awaiting policy diff"}
-              </li>
-            )}
-          </ul>
-        </div>
-      </div>
-      <p className="mt-2 font-mono text-[8px] text-slate-600">
-        window.__rhizoh.chessLearningMonitor
-      </p>
-    </section>
+    </div>
   );
 }
 
 /**
- * 8-camera Chess Cluster Arena — featured Rhizoh vs Stockfish + learning monitor.
+ * 8-camera Chess Cluster Arena — readable live boards + Rhizoh vs Stockfish featured slot.
  */
 export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0({
   open,
@@ -231,16 +210,14 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
       setSlots(listChessClusterSlotsV0());
       setTeacherStatus(getChessStockfishEngineStatusV0());
       setMonitor(getChessLearningMonitorSnapshotV0("poll"));
+      setTickCount(window.__rhizoh?.chessGameCluster?.tickCount ?? 0);
     };
-    const onTick = () => {
-      setTickCount((n) => n + 1);
-      refresh();
-    };
+    const onTick = () => refresh();
     const onMove = (ev) => {
       const slotId = ev?.detail?.slot?.slotId;
       if (slotId != null) {
         setHighlightSlot(slotId);
-        window.setTimeout(() => setHighlightSlot(null), 600);
+        window.setTimeout(() => setHighlightSlot(null), 700);
       }
       refresh();
     };
@@ -251,86 +228,77 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
     window.addEventListener(CHESS_CLUSTER_TICK_EVENT_V0, onTick);
     window.addEventListener(CHESS_CLUSTER_MOVE_EVENT_V0, onMove);
     window.addEventListener(CHESS_LEARNING_MONITOR_EVENT_V0, onMonitor);
+    window.addEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, onTick);
     refresh();
-    const poll = window.setInterval(refresh, 800);
+    const poll = window.setInterval(refresh, 500);
     return () => {
       window.removeEventListener(CHESS_CLUSTER_TICK_EVENT_V0, onTick);
       window.removeEventListener(CHESS_CLUSTER_MOVE_EVENT_V0, onMove);
       window.removeEventListener(CHESS_LEARNING_MONITOR_EVENT_V0, onMonitor);
+      window.removeEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, onTick);
       window.clearInterval(poll);
     };
   }, [open]);
 
   if (!open) return null;
 
-  const featured = slots[CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0] || null;
-  const others = Array.from({ length: CHESS_CLUSTER_SLOT_COUNT_V0 - 1 }, (_, i) => slots[i + 1] || null);
+  const padded = Array.from({ length: CHESS_CLUSTER_SLOT_COUNT_V0 }, (_, i) => slots[i] || null);
+  const teacherLabel =
+    teacherStatus === "stockfish_wasm"
+      ? tr
+        ? "Stockfish WASM ✓"
+        : "Stockfish WASM ✓"
+      : teacherStatus === "stockfish_compiling"
+        ? tr
+          ? "WASM derleniyor (heuristic ile devam)"
+          : "WASM compiling (continues on heuristic)"
+        : tr
+          ? "heuristic"
+          : "heuristic";
 
   return (
-    <div className="fixed inset-0 z-[340] flex items-center justify-center bg-black/85 p-2 backdrop-blur-sm sm:p-4">
-      <div className="flex max-h-[96vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-slate-700/80 bg-slate-950/95 shadow-2xl">
-        <header className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+    <div className="fixed inset-0 z-[340] flex items-center justify-center bg-black/90 p-1 backdrop-blur-sm sm:p-3">
+      <div className="flex max-h-[98vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-xl border border-white/15 bg-[#0a0f14] shadow-2xl">
+        <header className="flex shrink-0 items-center justify-between border-b border-white/10 px-3 py-2 sm:px-4 sm:py-3">
           <div>
-            <h2 className="text-sm font-semibold text-slate-100 sm:text-base">
-              {tr ? "Chess Cluster · Rhizoh AI vs Stockfish" : "Chess Cluster · Rhizoh AI vs Stockfish"}
+            <h2 className="text-sm font-semibold text-white sm:text-base">
+              {tr ? "8 Canlı Kamera · Chess Cluster" : "8 Live Cameras · Chess Cluster"}
             </h2>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[10px] text-white/45 sm:text-[11px]">
               {tr
-                ? "Slot 1 izleme tahtası · 7 paralel sim · zaman limiti + öğrenme izleyici"
-                : "Slot 1 featured board · 7 parallel sims · clocks + learning monitor"}
+                ? "#1 Rhizoh AI vs Stockfish · heuristic hemen başlar, Stockfish hazır olunca güçlenir"
+                : "#1 Rhizoh AI vs Stockfish · heuristic starts immediately, Stockfish upgrades when ready"}
             </p>
           </div>
           <button
             type="button"
-            className="rounded-md border border-slate-600 px-3 py-1 text-xs text-slate-300 hover:bg-slate-800"
+            className="rounded-md border border-white/20 px-3 py-1 text-xs text-white/80 hover:bg-white/10"
             onClick={onClose}
           >
             {tr ? "Kapat" : "Close"}
           </button>
         </header>
-        <div className="overflow-y-auto p-3 sm:p-4">
-          <div className="mb-3 text-[11px] text-slate-500">
-            tick {tickCount} · {isChessGameClusterRunningV0() ? (tr ? "sim aktif" : "sim on") : "sim off"} ·{" "}
-            {teacherStatus === "stockfish_wasm"
-              ? tr
-                ? "öğretmen: Stockfish WASM"
-                : "teacher: Stockfish WASM"
-              : teacherStatus === "stockfish_compiling"
-                ? tr
-                  ? "öğretmen: WASM derleniyor"
-                  : "teacher: WASM compiling"
-                : tr
-                  ? "öğretmen: heuristic"
-                  : "teacher: heuristic"}{" "}
-            · {featured?.clock?.timeControlId || "—"}
-          </div>
 
-          <div className="mb-4 grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
-            <div>
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-cyan-400/80">
-                {tr ? "İzleme tahtası (#1)" : "Spectator board (#1)"}
-              </p>
-              <CameraSlotV0
-                slot={featured}
-                highlight={highlightSlot === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0}
-                tr={tr}
-                compact={false}
-              />
-            </div>
-            <LearningMonitorPanelV0 monitor={monitor} tr={tr} />
+        <div className="shrink-0 border-b border-white/10 px-3 py-2 sm:px-4">
+          <div className="mb-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-white/55">
+            <span>
+              tick {tickCount} · {isChessGameClusterRunningV0() ? (tr ? "sim aktif" : "sim on") : "sim off"}
+            </span>
+            <span>{tr ? "öğretmen" : "teacher"}: {teacherLabel}</span>
+            <span>{padded[0]?.clock?.timeControlId || "—"}</span>
           </div>
+          <LearningStripV0 monitor={monitor} tr={tr} />
+        </div>
 
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-            {tr ? "Diğer masalar (#2–8)" : "Other boards (#2–8)"}
-          </p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-            {others.map((slot, i) => (
-              <CameraSlotV0
-                key={i + 1}
+        <div className="min-h-0 flex-1 overflow-y-auto p-2 sm:p-3">
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
+            {padded.map((slot, i) => (
+              <LiveCameraBoardV0
+                key={i}
                 slot={slot}
-                highlight={highlightSlot === i + 1}
+                featured={i === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0}
+                highlight={highlightSlot === i}
                 tr={tr}
-                compact
               />
             ))}
           </div>
