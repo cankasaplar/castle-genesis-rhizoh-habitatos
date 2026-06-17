@@ -417,8 +417,9 @@ async function verifyStockfishAssetsV0() {
     workerJsCorpOkV0 = isCorpHeaderOkV0(jsCorp);
     wasmCorpOkV0 = isCorpHeaderOkV0(wasmCorp);
     if (!workerJsCorpOkV0) {
-      logStockfishV0("info", "worker js CORP absent — hash spawn disabled; using blob inline only", {
-        jsCorp: jsCorp || null
+      logStockfishV0("info", "worker js CORP absent — hash URL workers disabled; blob/xfer spawn only", {
+        jsCorp: jsCorp || null,
+        note: "expected_under_credentialless_when_using_blob_pipeline"
       });
     }
     if (wasmType.includes("text/html")) {
