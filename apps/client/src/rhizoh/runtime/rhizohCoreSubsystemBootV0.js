@@ -11,6 +11,7 @@ import { publishRhizohWorldNamespaceGateV0 } from "./rhizohWorldNamespaceGateV0.
 import { startChessGameClusterV0 } from "./chessGameClusterV0.js";
 import {
   prewarmChessStockfishEngineV0,
+  getChessStockfishEngineStatusV0,
   CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0
 } from "./chessStockfishEngineV0.js";
 import { publishRhizohChessManagerV0, ensureRhizohChessManagerListenersV0 } from "./rhizohChessManagerV0.js";
@@ -70,8 +71,15 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
   const worldGate = publishRhizohWorldNamespaceGateV0();
   let cluster = Object.freeze({ ok: false, pendingEnginePrewarm: true });
   void prewarmChessStockfishEngineV0().finally(() => {
+    const engineStatus = getChessStockfishEngineStatusV0();
     cluster = startChessGameClusterV0({ intervalMs: 320 });
     publishRhizohChessManagerV0("engine_prewarm_done");
+    if (typeof window !== "undefined") {
+      window.__CASTLE_BOOT_LOG__?.ok?.(
+        "boot.chess_cluster",
+        `engine=${engineStatus} intervalMs=320`
+      );
+    }
     if (typeof window !== "undefined") {
       window.dispatchEvent(
         new CustomEvent(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, {
