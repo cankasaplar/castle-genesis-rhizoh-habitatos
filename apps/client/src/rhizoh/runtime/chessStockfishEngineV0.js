@@ -58,6 +58,7 @@ let currentPositionFenV0 = null;
 
 const STOCKFISH_UCI_TIMEOUT_MS_V0 = 45000;
 const STOCKFISH_READY_TIMEOUT_MS_V0 = 20000;
+const STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0 = 120000;
 
 export function getChessStockfishEngineStatusV0() {
   if (initFailedV0) return "heuristic_fallback";
@@ -349,14 +350,17 @@ function listStockfishSpawnStrategiesV0() {
   return [
     {
       name: "absolute_hash",
+      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
       build: async () => resolveStockfishWorkerUrlV0(absoluteWasm)
     },
     {
       name: "relative_hash",
+      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
       build: async () => resolveStockfishWorkerUrlV0(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm)
     },
     {
       name: "wasm_binary_inline",
+      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
       build: async () => {
         const assets = await ensureCachedStockfishAssetsV0();
         return buildWasmBinaryInlineWorkerUrlV0(assets);
@@ -364,6 +368,7 @@ function listStockfishSpawnStrategiesV0() {
     },
     {
       name: "blob_coep",
+      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
       build: async () => {
         const assets = await ensureCachedStockfishAssetsV0();
         const jsBlobUrl = URL.createObjectURL(
@@ -379,6 +384,7 @@ function listStockfishSpawnStrategiesV0() {
     },
     {
       name: "blob_worker",
+      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
       build: async () => {
         const assets = await ensureCachedStockfishAssetsV0();
         const blobUrl = URL.createObjectURL(
@@ -393,12 +399,13 @@ function listStockfishSpawnStrategiesV0() {
 
 async function initStockfishWorkerWithStrategyV0(strategy) {
   lastSpawnStrategyV0 = strategy.name;
+  const uciTimeoutMs = Number(strategy.uciTimeoutMs) || STOCKFISH_UCI_TIMEOUT_MS_V0;
   const workerUrl = await strategy.build();
-  logStockfishV0("info", "spawning worker", { workerUrl, strategy: strategy.name });
+  logStockfishV0("info", "spawning worker", { workerUrl, strategy: strategy.name, uciTimeoutMs });
   const worker = new Worker(workerUrl, { type: "classic" });
   attachWorkerHandlersV0(worker);
   worker.postMessage("uci");
-  await waitForWorkerOrUciV0(STOCKFISH_UCI_TIMEOUT_MS_V0);
+  await waitForWorkerOrUciV0(uciTimeoutMs);
   worker.postMessage("isready");
   await waitReadyV0(STOCKFISH_READY_TIMEOUT_MS_V0);
   worker.postMessage("setoption name UCI_AnalyseMode value false");
