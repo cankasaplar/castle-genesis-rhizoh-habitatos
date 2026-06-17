@@ -39,6 +39,7 @@ import { reconcileDomainPathCoherenceV0 } from "./rhizohDomainCoherenceV0.js";
 import { publishCausalMapLayerV0 } from "./rhizohCausalMapLayerV0.js";
 import { publishSpatialReplayEngineV0 } from "./rhizohSpatialReplayEngineV0.js";
 import { publishLiveConflictDetectorV0 } from "./rhizohLiveConflictDetectorV0.js";
+import { ensureGenesisContinuityClientWireV0 } from "./genesisContinuityClientWireV0.js";
 
 export const RHIZOH_NERVOUS_SYSTEM_EVENT_V0 = "rhizoh:nervous-system-v0";
 
@@ -109,6 +110,7 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
     mountPersonaLoopSchedulerV0();
     mountRhizohPulseLoopV1();
     mountOutputContractConsumerV0();
+    ensureGenesisContinuityClientWireV0();
     getLiveLayerSnapshotV0();
     getThinkingLayerSnapshotV0();
     window.dispatchEvent(

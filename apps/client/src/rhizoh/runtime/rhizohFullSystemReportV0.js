@@ -712,7 +712,7 @@ export function printFullSystemReportV0(report) {
     `    temporal trail: ${r.temporalTrail?.count ?? 0} markers`,
     `    causal map: ${r.causalMap?.nodeCount ?? 0} nodes / ${r.causalMap?.edgeCount ?? 0} edges (compressed:${r.causalMap?.compressed ? "yes" : "no"} ratio:${r.causalMap?.compression?.compressionRatio ?? 0})`,
     `    causal map raw: ${r.causalMap?.causalMapRaw?.nodeCount ?? 0} nodes / ${r.causalMap?.causalMapRaw?.edgeCount ?? 0} edges`,
-    `    event→graph bridge: commits ${r.eventGraphBridge?.stats?.committed ?? 0} · last ${r.eventGraphBridge?.stats?.lastSource ?? "—"} · genesis stream ${r.genesisStream?.status ?? "not_wired"}`,
+    `    event→graph bridge: commits ${r.eventGraphBridge?.stats?.committed ?? 0} · last ${r.eventGraphBridge?.stats?.lastSource ?? "—"} · genesis stream ${r.genesisStream?.status ?? "not_wired"}${r.genesisStream?.lastPollHttpStatus ? ` (poll ${r.genesisStream.lastPollHttpStatus})` : ""}`,
     `    truth loss: ${
       r.evaluation?.structuralTruthPass
         ? `structural ok (intentional:${r.causalMap?.truthLoss?.intentionalLossCount ?? 0})`
