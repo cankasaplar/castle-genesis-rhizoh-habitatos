@@ -14,6 +14,18 @@ describe("chessStockfishEngineV0", () => {
     expect(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm).toBe("/chess-engine/stockfish-nnue-16-single.wasm");
   });
 
+  it("prefers blob_coep spawn strategy for COEP credentialless hosts", () => {
+    disposeChessStockfishEngineV0();
+    const detail = getChessStockfishEngineDetailV0();
+    expect(detail.spawnStrategies[0]).toBe("blob_coep");
+    expect(detail.spawnStrategies).toEqual([
+      "blob_coep",
+      "blob_worker",
+      "absolute_hash",
+      "relative_hash"
+    ]);
+  });
+
   it("starts in not_started and can reset after dispose", () => {
     disposeChessStockfishEngineV0();
     expect(getChessStockfishEngineStatusV0()).toBe("not_started");

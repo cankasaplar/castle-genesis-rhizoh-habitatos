@@ -49,8 +49,15 @@ let readyV0 = false;
 let initFailedV0 = false;
 let initErrorV0 = null;
 let assetsVerifiedV0 = false;
+/** @type {{ jsSource: string, wasmBytes: Uint8Array } | null} */
+let cachedAssetPayloadV0 = null;
+/** @type {string[]} */
+const spawnBlobUrlsV0 = [];
 /** @type {string | null} */
 let currentPositionFenV0 = null;
+
+const STOCKFISH_UCI_TIMEOUT_MS_V0 = 45000;
+const STOCKFISH_READY_TIMEOUT_MS_V0 = 20000;
 
 export function getChessStockfishEngineStatusV0() {
   if (initFailedV0) return "heuristic_fallback";
@@ -65,7 +72,9 @@ export function getChessStockfishEngineDetailV0() {
     initError: initErrorV0,
     assetsVerified: assetsVerifiedV0,
     workerUrl: resolveStockfishWorkerUrlV0(),
-    wasmPath: CHESS_STOCKFISH_ASSET_PATHS_V0.wasm
+    wasmPath: CHESS_STOCKFISH_ASSET_PATHS_V0.wasm,
+    lastSpawnStrategy: lastSpawnStrategyV0,
+    spawnStrategies: listStockfishSpawnStrategiesV0().map((s) => s.name)
   });
 }
 
@@ -222,6 +231,31 @@ function isLikelyHtmlPayloadV0(bytes) {
   return head.includes("<!doc") || head.includes("<html");
 }
 
+function trackSpawnBlobUrlV0(url) {
+  const value = String(url || "");
+  if (value.startsWith("blob:")) spawnBlobUrlsV0.push(value);
+}
+
+function revokeSpawnBlobUrlsV0() {
+  while (spawnBlobUrlsV0.length) {
+    const url = spawnBlobUrlsV0.pop();
+    try {
+      URL.revokeObjectURL(url);
+    } catch {
+      /* noop */
+    }
+  }
+}
+
+async function ensureCachedStockfishAssetsV0() {
+  if (cachedAssetPayloadV0) return cachedAssetPayloadV0;
+  const ok = await verifyStockfishAssetsV0();
+  if (!ok || !cachedAssetPayloadV0) {
+    throw new Error(initErrorV0 || "stockfish_asset_cache_missing");
+  }
+  return cachedAssetPayloadV0;
+}
+
 async function verifyStockfishAssetsV0() {
   if (typeof fetch === "undefined") return false;
   try {
@@ -246,28 +280,28 @@ async function verifyStockfishAssetsV0() {
       return false;
     }
 
-    const wasmBytes = new Uint8Array(await wasmRes.arrayBuffer());
-    if (!isWasmMagicValidV0(wasmBytes)) {
-      initErrorV0 = isLikelyHtmlPayloadV0(wasmBytes)
+    const [jsSource, wasmBytes] = await Promise.all([jsRes.text(), wasmRes.arrayBuffer()]);
+    const wasmView = new Uint8Array(wasmBytes);
+    if (!isWasmMagicValidV0(wasmView)) {
+      initErrorV0 = isLikelyHtmlPayloadV0(wasmView)
         ? "wasm_magic_invalid_likely_cached_html"
         : "wasm_magic_invalid";
       logStockfishV0("error", "wasm magic preflight failed", {
         initError: initErrorV0,
         wasmType,
         jsType,
-        head: [...wasmBytes.slice(0, 8)]
+        head: [...wasmView.slice(0, 8)]
       });
       return false;
     }
 
-    const jsHead = new Uint8Array((await jsRes.arrayBuffer()).slice(0, 32));
-    const jsText = String.fromCharCode(...jsHead);
-    if (jsText.trimStart().startsWith("<") || jsType.includes("text/html")) {
+    if (jsSource.trimStart().startsWith("<") || jsType.includes("text/html")) {
       initErrorV0 = "worker_js_likely_html_shell";
       logStockfishV0("error", "worker js preflight looks like html", { jsType });
       return false;
     }
 
+    cachedAssetPayloadV0 = { jsSource, wasmBytes: wasmView };
     assetsVerifiedV0 = true;
     return true;
   } catch (err) {
@@ -282,12 +316,28 @@ function listStockfishSpawnStrategiesV0() {
   const absoluteWasm = `${origin}${CHESS_STOCKFISH_ASSET_PATHS_V0.wasm}`;
   return [
     {
+      name: "blob_coep",
+      build: async () => {
+        const assets = await ensureCachedStockfishAssetsV0();
+        const jsBlobUrl = URL.createObjectURL(
+          new Blob([assets.jsSource], { type: "application/javascript" })
+        );
+        const wasmBlobUrl = URL.createObjectURL(
+          new Blob([assets.wasmBytes], { type: "application/wasm" })
+        );
+        trackSpawnBlobUrlV0(jsBlobUrl);
+        trackSpawnBlobUrlV0(wasmBlobUrl);
+        return `${jsBlobUrl}#${encodeURIComponent(wasmBlobUrl)},worker`;
+      }
+    },
+    {
       name: "blob_worker",
       build: async () => {
-        const res = await fetch(CHESS_STOCKFISH_ASSET_PATHS_V0.workerJs, { cache: "no-store" });
-        if (!res.ok) throw new Error(`blob_worker_fetch_${res.status}`);
-        const source = await res.text();
-        const blobUrl = URL.createObjectURL(new Blob([source], { type: "application/javascript" }));
+        const assets = await ensureCachedStockfishAssetsV0();
+        const blobUrl = URL.createObjectURL(
+          new Blob([assets.jsSource], { type: "application/javascript" })
+        );
+        trackSpawnBlobUrlV0(blobUrl);
         return `${blobUrl}#${encodeURIComponent(absoluteWasm)},worker`;
       }
     },
@@ -309,9 +359,9 @@ async function initStockfishWorkerWithStrategyV0(strategy) {
   const worker = new Worker(workerUrl, { type: "classic" });
   attachWorkerHandlersV0(worker);
   worker.postMessage("uci");
-  await waitForWorkerOrUciV0(20000);
+  await waitForWorkerOrUciV0(STOCKFISH_UCI_TIMEOUT_MS_V0);
   worker.postMessage("isready");
-  await waitReadyV0(12000);
+  await waitReadyV0(STOCKFISH_READY_TIMEOUT_MS_V0);
   worker.postMessage("setoption name UCI_AnalyseMode value false");
   worker.postMessage("setoption name Hash value 64");
   return worker;
@@ -406,6 +456,7 @@ async function ensureStockfishWorkerV0() {
           workerV0 = null;
           workerErrorRejectV0 = null;
           resetReadyFlagsV0();
+          revokeSpawnBlobUrlsV0();
         }
       }
       throw lastErr || new Error("stockfish_worker_spawn_exhausted");
@@ -615,6 +666,7 @@ export function resetChessStockfishEngineV0() {
   initFailedV0 = false;
   initErrorV0 = null;
   assetsVerifiedV0 = false;
+  cachedAssetPayloadV0 = null;
   publishEngineStatusV0("reset");
 }
 
@@ -628,4 +680,5 @@ export function disposeChessStockfishEngineV0() {
   resetReadyFlagsV0();
   activeAnalysisV0 = null;
   pendingV0.clear();
+  revokeSpawnBlobUrlsV0();
 }

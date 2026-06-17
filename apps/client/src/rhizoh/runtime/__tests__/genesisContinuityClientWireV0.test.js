@@ -1,14 +1,18 @@
 import { describe, expect, it, beforeEach, vi, afterEach } from "vitest";
 
 const mockGenesisOrigin = vi.hoisted(() => ({ value: "https://gw.test" }));
+const mockDirectOrigin = vi.hoisted(() => ({ value: "https://direct.test" }));
 
-vi.mock("../../castleFlight/castleFlightConfig.js", () => ({
-  resolveGenesisGatewayHttpBaseV0: () => mockGenesisOrigin.value
+vi.mock("../../../castleFlight/castleFlightConfig.js", () => ({
+  resolveGenesisGatewayHttpBaseV0: () => mockGenesisOrigin.value,
+  resolveGenesisSseStreamBaseV0: () => mockGenesisOrigin.value,
+  resolveGenesisDirectGatewayOriginV0: () => mockDirectOrigin.value
 }));
 
 describe("genesisContinuityClientWireV0", () => {
   beforeEach(() => {
     mockGenesisOrigin.value = "https://gw.test";
+    mockDirectOrigin.value = "https://direct.test";
     vi.resetModules();
     window.__rhizoh = {};
     global.EventSource = vi.fn(() => ({
@@ -47,5 +51,33 @@ describe("genesisContinuityClientWireV0", () => {
 
     expect(window.__rhizoh.genesisStream?.status).toBe("upstream_503");
     stopA();
+  });
+
+  it("falls back to direct gateway poll origin after proxy network failure", async () => {
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ok: true,
+          genesisStream: { lastAcceptedSeq: 12 },
+          canonicalTick: { value: 12 }
+        })
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const mod = await import("../genesisContinuityClientWireV0.js");
+    const stop = mod.ensureGenesisContinuityClientWireV0();
+
+    await vi.waitFor(() => {
+      expect(window.__rhizoh.genesisStream?.status).toBe("poll_ok");
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0][0]).toBe("https://gw.test/rhizoh/genesis/runtime");
+    expect(fetchMock.mock.calls[1][0]).toBe("https://direct.test/rhizoh/genesis/runtime");
+    expect(window.__rhizoh.genesisStream?.pollViaDirect).toBe(true);
+    stop();
   });
 });
