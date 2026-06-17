@@ -12,6 +12,7 @@ import { __resetChessClusterObserverForTestV0 } from "../chessClusterObserverV0.
 import { __resetChessClusterMemoryGraphForTestV0 } from "../chessClusterMemoryGraphV0.js";
 
 vi.mock("../chessStockfishEngineV0.js", () => ({
+  getChessStockfishEngineStatusV0: vi.fn(() => "stockfish_wasm"),
   pickChessArenaEngineMoveV0: vi.fn(async (game) => {
     const moves = game.legalMoves();
     if (!moves.length) return { move: null, engine: "mock" };

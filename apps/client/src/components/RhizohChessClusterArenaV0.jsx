@@ -6,6 +6,7 @@ import {
   listChessClusterSlotsV0,
   isChessGameClusterRunningV0
 } from "../rhizoh/runtime/chessGameClusterV0.js";
+import { getChessStockfishEngineStatusV0 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
 import { resolveChessClusterAgentPolicyV0 } from "../rhizoh/runtime/chessClusterAgentPolicyV0.js";
 import { createChessArenaGameV0 } from "../rhizoh/runtime/chessArenaEngineV0.js";
 import { PIECE_UNICODE_V0 } from "./RhizohCastleLibraryPanelV0.jsx";
@@ -101,10 +102,14 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
   const [slots, setSlots] = useState(() => listChessClusterSlotsV0());
   const [highlightSlot, setHighlightSlot] = useState(null);
   const [tickCount, setTickCount] = useState(0);
+  const [teacherStatus, setTeacherStatus] = useState(() => getChessStockfishEngineStatusV0());
 
   useEffect(() => {
     if (!open) return undefined;
-    const refresh = () => setSlots(listChessClusterSlotsV0());
+    const refresh = () => {
+      setSlots(listChessClusterSlotsV0());
+      setTeacherStatus(getChessStockfishEngineStatusV0());
+    };
     const onTick = () => {
       setTickCount((n) => n + 1);
       refresh();
@@ -157,7 +162,18 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
         <div className="overflow-y-auto p-3 sm:p-4">
           <div className="mb-2 text-[11px] text-slate-500">
             tick {tickCount} · {isChessGameClusterRunningV0() ? (tr ? "sim aktif" : "sim on") : "sim off"} ·{" "}
-            {tr ? "canlı replay" : "live replay"}
+            {teacherStatus === "stockfish_wasm"
+              ? tr
+                ? "öğretmen: Stockfish WASM"
+                : "teacher: Stockfish WASM"
+              : teacherStatus === "stockfish_compiling"
+                ? tr
+                  ? "öğretmen: WASM derleniyor (sim heuristic ile devam)"
+                  : "teacher: WASM compiling (sim on heuristic)"
+                : tr
+                  ? "öğretmen: heuristic (Stockfish bekleniyor)"
+                  : "teacher: heuristic (awaiting Stockfish)"}{" "}
+            · {tr ? "canlı replay" : "live replay"}
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
             {padded.map((slot, i) => (

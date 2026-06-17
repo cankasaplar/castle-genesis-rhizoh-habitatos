@@ -8,7 +8,7 @@ import {
   CHESS_GAME_MODE_V0,
   createChessArenaGameV0
 } from "./chessArenaEngineV0.js";
-import { pickChessArenaEngineMoveV0 } from "./chessStockfishEngineV0.js";
+import { pickChessArenaEngineMoveV0, getChessStockfishEngineStatusV0 } from "./chessStockfishEngineV0.js";
 import {
   CHESS_CLUSTER_SLOT_AGENTS_V0,
   resolveChessClusterAgentPolicyV0,
@@ -128,8 +128,9 @@ async function advanceChessClusterSlotV0(slot) {
   const turn = slot.game.turn();
   const agentId = turn === "w" ? slot.whiteAgent : slot.blackAgent;
   const policy = resolveChessClusterAgentPolicyV0(agentId);
+  const stockfishReady = getChessStockfishEngineStatusV0() === "stockfish_wasm";
   const engine = await pickChessArenaEngineMoveV0(slot.game, {
-    useStockfish: true,
+    useStockfish: stockfishReady,
     ...resolveChessClusterStockfishOptsV0(agentId)
   });
 
