@@ -5,7 +5,7 @@
  */
 
 import { buildMatchMovesWithFenV0 } from "./chessMatchReplayV0.js";
-import { getChessStockfishEngineStatusV0 } from "./chessStockfishEngineV0.js";
+import { getChessTeacherStatusV0 } from "./chessTeacherInterfaceV0.js";
 import {
   buildRegretVectorsFromTraceV0,
   enrichRegretVectorWithTopologyV0
@@ -32,7 +32,7 @@ export const POLICY_EVOLUTION_COLLIDER_EVENT_V0 = "rhizoh:policy-evolution-colli
  * }} opts
  */
 export function observePolicyEvolutionColliderV0(opts = {}) {
-  const engineStatus = opts.engineStatus || getChessStockfishEngineStatusV0();
+  const engineStatus = opts.engineStatus || getChessTeacherStatusV0();
   if (engineStatus === "heuristic_fallback") {
     return Object.freeze({
       schema: POLICY_EVOLUTION_COLLIDER_SCHEMA_V0,

@@ -10,7 +10,7 @@ import {
 import { buildMatchMovesWithFenV0 } from "./chessMatchReplayV0.js";
 import { normalizeChessMovesToSanV0 } from "./chessMoveSanV0.js";
 import { computeChessLiveMetricsV0 } from "./chessLiveMetricsV0.js";
-import { getChessStockfishEngineStatusV0 } from "./chessStockfishEngineV0.js";
+import { getChessTeacherStatusV0 } from "./chessTeacherInterfaceV0.js";
 import { observeChessRegretGeometryV0 } from "./rhizohGeometryChessRegretObserverV0.js";
 import { observePolicyEvolutionColliderV0 } from "./policyEvolutionColliderV0.js";
 import {
@@ -67,7 +67,7 @@ export async function runRhizohChessLearningLoopV0(opts = {}) {
         matchId: opts.matchId || null,
         outcome: opts.outcome || null,
         localColor,
-        engineStatus: getChessStockfishEngineStatusV0()
+        engineStatus: getChessTeacherStatusV0()
       })
     : Object.freeze({
         schema: "rhizoh.policy_evolution_collider.v0.1",

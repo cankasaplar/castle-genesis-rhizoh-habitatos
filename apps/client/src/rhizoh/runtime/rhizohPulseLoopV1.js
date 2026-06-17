@@ -34,6 +34,10 @@ import {
   evaluateFoxProactiveOutcomeWatchV1
 } from "./foxProactiveAdaptationV1.js";
 import { publishFoxFirstContactObservationV1, mountFoxFirstContactObservationV1 } from "./foxProactiveFirstContactCohortV1.js";
+import {
+  commitRuntimeEventToGraphV0,
+  RUNTIME_SUBSTRATE_SOURCE_V0
+} from "./runtimeEventGraphBridgeV0.js";
 
 export const RHIZOH_PULSE_LOOP_SCHEMA_V1 = "rhizoh.pulse_loop.v1";
 
@@ -317,6 +321,25 @@ export function runRhizohPulseTickV1() {
       emitted: Boolean(emission?.ok),
       liveFirst: Boolean(emission?.layer === "live"),
       semanticMass: semanticFilter.result?.semanticMass
+    });
+  }
+
+  if (pulseSeqV1 % 15 === 0 || emission?.ok) {
+    commitRuntimeEventToGraphV0(RUNTIME_SUBSTRATE_SOURCE_V0.PULSE, {
+      seq: pulseSeqV1,
+      emitted: Boolean(emission?.ok),
+      emissionKind: emission?.kind ?? null,
+      eventLogCount: eventLog.count,
+      transportMode: transport.mode
+    });
+  }
+
+  if (emission?.ok) {
+    commitRuntimeEventToGraphV0(RUNTIME_SUBSTRATE_SOURCE_V0.PRESENCE, {
+      seq: pulseSeqV1,
+      kind: emission.kind ?? null,
+      layer: emission.layer ?? "live",
+      spoke: emission.spoke === true
     });
   }
 

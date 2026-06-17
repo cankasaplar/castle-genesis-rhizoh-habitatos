@@ -10,7 +10,7 @@ import {
   offChessEngineBridgeV0,
   onChessEngineBridgeV0
 } from "./chessEngineBridgeV0.js";
-import { analyzeChessPositionV0 } from "./chessStockfishEngineV0.js";
+import { analyzeChessPositionViaTeacherV0 } from "./chessTeacherInterfaceV0.js";
 import { encodeChessTopologyEventV0 } from "./rhizohGeometryChessEncoderV0.js";
 import { calculateTopologyDriftV0 } from "./rhizohGeometryTopologyV0.js";
 import {
@@ -193,7 +193,7 @@ async function processPlayedMoveObservationV0(detail) {
   let stockfishEval = teacher?.stockfishEval || detail?.stockfishEval || null;
 
   if (!teacherMove) {
-    const analysis = await analyzeChessPositionV0(fenBefore, { movetimeMs: 240, depth: 8 });
+    const analysis = await analyzeChessPositionViaTeacherV0(fenBefore, { movetimeMs: 240, depth: 8 });
     teacherMove = analysis?.bestMove || null;
     stockfishEval = analysis;
     if (teacherMove) {

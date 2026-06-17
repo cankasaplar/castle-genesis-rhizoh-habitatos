@@ -44,15 +44,20 @@ export function publishCodexStateV0(state) {
 
 /**
  * @param {object} world
+ * @param {{ source?: string, resumeSpiral?: boolean }} [meta]
  */
-export function publishSimulationWorldV0(world) {
+export function publishSimulationWorldV0(world, meta = {}) {
   simulationWorldCacheV0 = world;
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
     window.__rhizoh.simulationWorld = Object.freeze({ readOnly: true, ...world });
     window.dispatchEvent(
       new CustomEvent(RHIZOH_SIMULATION_WORLD_REBUILT_EVENT_V0, {
-        detail: Object.freeze({ world })
+        detail: Object.freeze({
+          world,
+          source: meta.source || "unknown",
+          resumeSpiral: meta.resumeSpiral === true
+        })
       })
     );
   }
@@ -70,7 +75,7 @@ export async function applyCodexEventLiveV0(event, state) {
 
   const worldBase = readSimulationWorldV0();
   const worldNext = foldSimulationWorldEventsV0([event], worldBase);
-  publishSimulationWorldV0(worldNext);
+  publishSimulationWorldV0(worldNext, { source: "live_codex" });
 
   if (event?.seq) {
     await maybeSnapshotCodexStateV0(event.seq, next);
@@ -132,7 +137,7 @@ export async function rebuildCodexStateV0() {
 export async function rebuildSimulationWorldV0() {
   if (!canPersistUserTopologyN12V0()) {
     const initial = createInitialSimulationWorldV0();
-    publishSimulationWorldV0(initial);
+    publishSimulationWorldV0(initial, { source: "initial" });
     return Object.freeze({ ok: false, reason: "n12_topology_denied", world: initial });
   }
 
@@ -140,7 +145,7 @@ export async function rebuildSimulationWorldV0() {
   const confirmed = (eventsOut.events || []).filter((e) => e.syncStatus !== "PENDING_SYNC");
   const { codexState, world } = reconstructFromEventsV0(confirmed);
   publishCodexStateV0(codexState);
-  publishSimulationWorldV0(world);
+  publishSimulationWorldV0(world, { source: "persistence_rebuild" });
 
   logCastleLifecycleV0("simulation_world_rebuild", {
     eventCount: confirmed.length,

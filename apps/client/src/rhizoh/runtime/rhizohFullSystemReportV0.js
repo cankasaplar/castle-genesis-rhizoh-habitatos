@@ -607,6 +607,10 @@ export function runFullSystemReportV0(opts = {}) {
   const domainCoherence = reconcileDomainPathCoherenceV0(pathname);
   const liveConflicts = detectLiveConflictsV0(pathname, { structuralOnly: true });
   const presenceRuntime = collectPresenceRuntimeDiagnosticV0();
+  const eventGraphBridge =
+    typeof window !== "undefined" ? window.__rhizoh?.runtimeEventGraphBridge ?? null : null;
+  const genesisStream =
+    typeof window !== "undefined" ? window.__rhizoh?.genesisStream ?? null : null;
 
   const report = Object.freeze({
     schema: RHIZOH_FULL_SYSTEM_REPORT_SCHEMA_V0,
@@ -636,6 +640,8 @@ export function runFullSystemReportV0(opts = {}) {
     spatialReadyGate: getSpatialReadyGateSnapshotV0(),
     temporalTrail: getSpatialTemporalTrailSnapshotV0(),
     causalMap,
+    eventGraphBridge,
+    genesisStream,
     liveConflicts,
     domainCoherence: auditDomainCoherenceV0(pathname),
     domainReconcile: domainCoherence,
@@ -705,6 +711,8 @@ export function printFullSystemReportV0(report) {
     `    spatial nodes: ${r.spatialNodes.total} (s:${r.spatialNodes.static} l:${r.spatialNodes.live} t:${r.spatialNodes.temporal})`,
     `    temporal trail: ${r.temporalTrail?.count ?? 0} markers`,
     `    causal map: ${r.causalMap?.nodeCount ?? 0} nodes / ${r.causalMap?.edgeCount ?? 0} edges (compressed:${r.causalMap?.compressed ? "yes" : "no"} ratio:${r.causalMap?.compression?.compressionRatio ?? 0})`,
+    `    causal map raw: ${r.causalMap?.causalMapRaw?.nodeCount ?? 0} nodes / ${r.causalMap?.causalMapRaw?.edgeCount ?? 0} edges`,
+    `    event→graph bridge: commits ${r.eventGraphBridge?.stats?.committed ?? 0} · last ${r.eventGraphBridge?.stats?.lastSource ?? "—"} · genesis stream ${r.genesisStream?.status ?? "not_wired"}`,
     `    truth loss: ${
       r.evaluation?.structuralTruthPass
         ? `structural ok (intentional:${r.causalMap?.truthLoss?.intentionalLossCount ?? 0})`
