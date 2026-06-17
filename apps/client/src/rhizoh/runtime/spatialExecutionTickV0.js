@@ -1,15 +1,9 @@
 /**
- * Spatial execution tick — graph diff consume + spatial emitter commit loop.
- * RESEARCH-ONLY — closes graph→space without replacing epistemic causal runtime.
- *
- * @see causalGraphSpatialBridgeV0.js
- * @see rhizohSpatialEventEmitterV0.js
- * @see spatialWorldSpaceFlushV0.js
+ * Spatial execution tick — delegates to Spatial Execution Governor.
+ * @see spatialExecutionGovernorV0.js
  */
 
-import { consumeCausalGraphDiffV0 } from './causalGraphSpatialBridgeV0.js';
-import { flushSpatialEmitterCommitsV0 } from './rhizohSpatialEventEmitterV0.js';
-import { flushSpatialWorldSpaceBufferV0 } from './spatialWorldSpaceFlushV0.js';
+import { runSpatialExecutionGovernorTickV0 } from './spatialExecutionGovernorV0.js';
 import { isSpatialWorldSyncReadyV0 } from './spatialWorldSyncV0.js';
 
 const DEFAULT_INTERVAL_MS = 50;
@@ -17,9 +11,7 @@ const DEFAULT_INTERVAL_MS = 50;
 let tickTimer = null;
 let tickCount = 0;
 let lastTickAtMs = 0;
-let lastConsume = null;
-let lastFlush = null;
-let lastWorldFlush = null;
+let lastGovernorTick = null;
 
 function publishSpatialExecutionTick() {
   if (typeof window === 'undefined') return;
@@ -29,9 +21,7 @@ function publishSpatialExecutionTick() {
     running: tickTimer != null,
     tickCount,
     lastTickAtMs,
-    lastConsume,
-    lastFlush,
-    lastWorldFlush,
+    lastGovernorTick,
     worldSyncReady: isSpatialWorldSyncReadyV0(),
     runOnce: runSpatialExecutionTickOnceV0,
     start: startSpatialExecutionTickV0,
@@ -40,25 +30,24 @@ function publishSpatialExecutionTick() {
 }
 
 /**
- * Single spatial execution tick: consume graph diff → commit staged emits → flush world buffer.
+ * Single spatial execution tick — governor orchestrates emitter activation.
  */
 export function runSpatialExecutionTickOnceV0() {
   const atMs = Date.now();
   lastTickAtMs = atMs;
   tickCount += 1;
 
-  lastConsume = consumeCausalGraphDiffV0({ atMs });
-  lastFlush = flushSpatialEmitterCommitsV0({ atMs });
-  lastWorldFlush = flushSpatialWorldSpaceBufferV0({ atMs, force: true });
+  lastGovernorTick = runSpatialExecutionGovernorTickV0({ atMs });
 
   publishSpatialExecutionTick();
   return Object.freeze({
     ok: true,
     atMs,
     tickCount,
-    consume: lastConsume,
-    flush: lastFlush,
-    worldFlush: lastWorldFlush,
+    governor: lastGovernorTick,
+    consume: lastGovernorTick?.emitterTick?.consume ?? null,
+    flush: lastGovernorTick?.emitterTick?.flush ?? null,
+    worldFlush: lastGovernorTick?.emitterTick?.worldFlush ?? null
   });
 }
 
@@ -103,9 +92,7 @@ export function getSpatialExecutionTickSnapshotV0() {
     running: tickTimer != null,
     tickCount,
     lastTickAtMs,
-    lastConsume,
-    lastFlush,
-    lastWorldFlush,
-    worldSyncReady: isSpatialWorldSyncReadyV0(),
+    lastGovernorTick,
+    worldSyncReady: isSpatialWorldSyncReadyV0()
   });
 }
