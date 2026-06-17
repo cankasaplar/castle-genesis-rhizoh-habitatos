@@ -14,6 +14,7 @@ import {
   resolveRhizohLayerModeV0
 } from "./rhizohLayerContextV0.js";
 import { readRhizohWorldSystemModeV0 } from "./rhizohWorldSystemModeV0.js";
+import { resolveSpatialSinkRoutePolicyV0 } from "./spatialSinkRoutePolicyV0.js";
 
 export const SPATIAL_WORLD_SINK_PROBE_SCHEMA_V0 = "castle.rhizoh.spatial_world_sink_probe.v0";
 
@@ -22,6 +23,7 @@ export const SPATIAL_WORLD_SINK_PROBE_SCHEMA_V0 = "castle.rhizoh.spatial_world_s
  */
 export function resolveSpatialSinkProbeV0() {
   const pathname = typeof window !== "undefined" ? String(window.location.pathname || "/") : "/";
+  const policy = resolveSpatialSinkRoutePolicyV0();
   const layerCtx = Object.freeze({
     pathname,
     worldSystemMode: readRhizohWorldSystemModeV0(),
@@ -48,11 +50,13 @@ export function resolveSpatialSinkProbeV0() {
     typeof window !== "undefined" ? window.__rhizoh?.cesiumRouter ?? null : null;
 
   let sink = "missing";
-  if (commandReady && hasCommitSurface) sink = "cesium";
+  if (!policy.sinkExpected) sink = "route_no_world_sink";
+  else if (commandReady && hasCommitSurface) sink = "cesium";
   else if (hasCommitSurface || api) sink = "cesium_deferred";
   else if (!worldLayerEnabled) sink = "world_layer_disabled";
   else if (!cesiumLayerActive) sink = "world_layer_unmounted";
   else if (!mapCommandGate.allowed) sink = "layer_gate_blocked";
+  else if (!policy.engineReady) sink = "engine_deferred";
 
   return Object.freeze({
     schema: SPATIAL_WORLD_SINK_PROBE_SCHEMA_V0,
@@ -70,7 +74,8 @@ export function resolveSpatialSinkProbeV0() {
     layerGateAllowed: mapCommandGate.allowed,
     layerGateReason: mapCommandGate.reason,
     worldSpaceBridgeOk: worldSpaceBridge?.ok === true || worldSpaceBridge?.hydrated === true,
-    pathname
+    pathname,
+    policy
   });
 }
 
@@ -93,5 +98,6 @@ export function publishSpatialSinkRegistriesV0(extra = {}) {
     sink: probe.sink,
   });
   window.__rhizoh.spatialSinkProbe = Object.freeze({ ...probe, ...extra });
+  window.__rhizoh.spatialSinkRoutePolicy = probe.policy;
   return probe;
 }

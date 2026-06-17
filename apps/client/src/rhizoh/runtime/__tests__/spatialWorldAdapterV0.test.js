@@ -13,6 +13,11 @@ import {
   __resetSpatialWorldAdapterForTestV0
 } from "../spatialWorldAdapterV0.js";
 import { resolveSpatialSinkProbeV0 } from "../spatialWorldSinkProbeV0.js";
+import {
+  markCastleAppEngineReadyV0,
+  publishIngressRouteV0,
+  SPATIAL_SINK_ROUTE_NO_WORLD_CODE_V0
+} from "../spatialSinkRoutePolicyV0.js";
 import { registerSpatialNodeV0, SPATIAL_NODE_TIER_V0, __resetSpatialNodeLayerForTestV0 } from "../rhizohSpatialNodeLayerV0.js";
 import { __resetCesiumExecutorForTestV0, registerCesiumExecutorApiV0 } from "../../../castleFlight/cesiumCommandExecutorV0.js";
 import { __resetSpatialExecutionGovernorForTestV0 } from "../spatialExecutionGovernorV0.js";
@@ -27,6 +32,9 @@ function resetAll() {
   window.__rhizoh = {};
   window.__CASTLE_NEXUS_GEO__ = { lat: 41.04, lon: 29.0 };
   delete window.__CASTLE_CESIUM__;
+  delete window.__rhizoh_ingress_phase;
+  delete window.__rhizoh_ingress_route;
+  window.history.replaceState({}, "", "/");
 }
 
 describe("spatialWorldAdapterV0", () => {
@@ -37,7 +45,10 @@ describe("spatialWorldAdapterV0", () => {
     delete window.__CASTLE_CESIUM__;
   });
 
-  it("validates SPATIAL_SINK_MISSING when nodes exist without cesium sink", () => {
+  it("validates SPATIAL_SINK_MISSING when nodes exist without cesium sink on world space", () => {
+    publishIngressRouteV0("app");
+    window.history.replaceState({}, "", "/world/space");
+    markCastleAppEngineReadyV0("test");
     registerSpatialNodeV0(SPATIAL_NODE_TIER_V0.TEMPORAL, "n1", {
       kind: "causal_projection",
       spatial_vector: { x: 0.1, y: 0.2, z: 0.9 }
@@ -47,6 +58,29 @@ describe("spatialWorldAdapterV0", () => {
     expect(sink.code).toBe(SPATIAL_SINK_MISSING_CODE_V0);
     expect(sink.worldCommittedCount).toBe(0);
     expect(sink.hasCommitSurface).toBe(false);
+  });
+
+  it("does not flag sink missing on T0 live route without commit surface", () => {
+    publishIngressRouteV0("app");
+    registerSpatialNodeV0(SPATIAL_NODE_TIER_V0.TEMPORAL, "t0-node", {
+      kind: "causal_projection"
+    });
+    const sink = validateSpatialSinkV0();
+    expect(sink.ok).toBe(true);
+    expect(sink.code).toBe(SPATIAL_SINK_ROUTE_NO_WORLD_CODE_V0);
+  });
+
+  it("does not drain on ingress legal_preamble route", () => {
+    publishIngressRouteV0("legal_preamble");
+    registerSpatialNodeV0(SPATIAL_NODE_TIER_V0.TEMPORAL, "ingress-node", {
+      kind: "causal_projection"
+    });
+    const out = ensureSpatialWorldAdapterForExecutionV0({
+      executionRunning: true,
+      emitterActivated: true
+    });
+    expect(out.drained).toBe(false);
+    expect(out.reason).toBe("ingress_no_drain");
   });
 
   it("does not count deferred executor commits as worldCommitted", () => {

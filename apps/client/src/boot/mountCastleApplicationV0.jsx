@@ -9,6 +9,7 @@ import { hideLegacyIndexHudV0 } from "./castleCrashTelemetry.js";
 import { installRhizohReflexDebugGlobalsV0 } from "../rhizoh/runtime/rhizohFastPrecheckV0.js";
 import { installRhizohVoiceSmokeGlobalsV0 } from "../rhizoh/runtime/rhizohVoiceCommandSmokeHarnessV0.js";
 import { startProdWorldObservabilityBridgeV0 } from "../rhizoh/runtime/rhizohProdWorldObservabilityBridgeV0.js";
+import { publishIngressRouteV0 } from "../rhizoh/runtime/spatialSinkRoutePolicyV0.js";
 
 /**
  * CORE-ELIGIBLE: mount after ontological gate (pre-render).
@@ -59,6 +60,7 @@ export async function mountCastleApplicationV0(ctx) {
   }
 
   const ingress = resolveIngressRouteV0();
+  publishIngressRouteV0(ingress.route, { source: "boot.mount" });
   const needsIngressFlow =
     ingress.required ||
     ingress.route === "legal_preamble" ||

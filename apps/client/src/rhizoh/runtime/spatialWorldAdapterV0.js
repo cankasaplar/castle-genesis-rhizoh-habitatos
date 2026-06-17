@@ -21,6 +21,11 @@ import {
   publishSpatialSinkRegistriesV0,
   resolveSpatialSinkProbeV0
 } from "./spatialWorldSinkProbeV0.js";
+import {
+  CASTLE_APP_ENGINE_READY_EVENT_V0,
+  resolveSpatialSinkRoutePolicyV0,
+  RHIZOH_INGRESS_ROUTE_EVENT_V0
+} from "./spatialSinkRoutePolicyV0.js";
 
 export const SPATIAL_WORLD_ADAPTER_SCHEMA_V0 = "castle.rhizoh.spatial_world_adapter.v0";
 export const SPATIAL_SINK_MISSING_CODE_V0 = "SPATIAL_SINK_MISSING";
@@ -76,22 +81,38 @@ export function resolveSpatialNodeGeoV0(node) {
  * Sink validation — honest world commit surface probe (not adapter-level accept).
  */
 export function validateSpatialSinkV0() {
+  const policy = resolveSpatialSinkRoutePolicyV0();
   const probe = resolveSpatialSinkProbeV0();
   const spatialCount = listSpatialNodesV0().length;
   const worldCommittedCount = worldCommittedKeysV0.size;
   const deferredCount = deferredKeysV0.size;
   const backlog = Math.max(0, spatialCount - worldCommittedCount);
 
-  const sinkMissing =
+  const surfaceAbsent =
     spatialCount > 0 &&
     worldCommittedCount === 0 &&
     !probe.commandReady &&
     !probe.hasCommitSurface;
 
+  let code = null;
+  let ok = true;
+  if (surfaceAbsent) {
+    if (!policy.sinkExpected) {
+      code = policy.deferCode;
+      ok = true;
+    } else if (!policy.engineReady) {
+      code = policy.deferCode;
+      ok = true;
+    } else {
+      code = SPATIAL_SINK_MISSING_CODE_V0;
+      ok = false;
+    }
+  }
+
   const snap = Object.freeze({
     schema: SPATIAL_WORLD_ADAPTER_SCHEMA_V0,
-    ok: !sinkMissing,
-    code: sinkMissing ? SPATIAL_SINK_MISSING_CODE_V0 : null,
+    ok,
+    code,
     sink: probe.sink,
     commandReady: probe.commandReady,
     hasCommitSurface: probe.hasCommitSurface,
@@ -108,6 +129,7 @@ export function validateSpatialSinkV0() {
     committedCount: worldCommittedCount,
     backlog,
     probe,
+    policy,
     atMs: Date.now()
   });
 
@@ -219,11 +241,16 @@ export function drainSpatialStreamToWorldV0(opts = {}) {
   }
 
   const sink = validateSpatialSinkV0();
-  if (opts.force === true && sink.code === SPATIAL_SINK_MISSING_CODE_V0) {
+  if (
+    opts.force === true &&
+    sink.code === SPATIAL_SINK_MISSING_CODE_V0 &&
+    sink.policy?.warnOnMissing === true
+  ) {
     console.warn(
       "[Rhizoh][spatialWorldAdapter] SPATIAL_SINK_MISSING",
       {
         sink: sink.sink,
+        ingressRoute: sink.policy?.ingressRoute,
         layerGateReason: sink.layerGateReason,
         deferred,
         worldCommitted
@@ -258,17 +285,25 @@ export function attachSpatialWorldAdapterV0() {
     const row = event?.detail?.row;
     if (row?.id) commitSpatialNodeToWorldV0(row);
   };
-  const onCesiumReady = () => {
+  const onSinkSurfaceReady = () => {
     retryDeferredSpatialCommitsV0();
     drainSpatialStreamToWorldV0({ force: true });
   };
+  const onIngressRoute = (event) => {
+    const route = String(event?.detail?.route || "");
+    if (route === "app") onSinkSurfaceReady();
+  };
 
   window.addEventListener(RHIZOH_SPATIAL_EVENT_V0, onSpatial);
-  window.addEventListener(CASTLE_CESIUM_COMMAND_READY_EVENT_V0, onCesiumReady);
+  window.addEventListener(CASTLE_CESIUM_COMMAND_READY_EVENT_V0, onSinkSurfaceReady);
+  window.addEventListener(CASTLE_APP_ENGINE_READY_EVENT_V0, onSinkSurfaceReady);
+  window.addEventListener(RHIZOH_INGRESS_ROUTE_EVENT_V0, onIngressRoute);
 
   stopAdapterWireV0 = () => {
     window.removeEventListener(RHIZOH_SPATIAL_EVENT_V0, onSpatial);
-    window.removeEventListener(CASTLE_CESIUM_COMMAND_READY_EVENT_V0, onCesiumReady);
+    window.removeEventListener(CASTLE_CESIUM_COMMAND_READY_EVENT_V0, onSinkSurfaceReady);
+    window.removeEventListener(CASTLE_APP_ENGINE_READY_EVENT_V0, onSinkSurfaceReady);
+    window.removeEventListener(RHIZOH_INGRESS_ROUTE_EVENT_V0, onIngressRoute);
     adapterAttachedV0 = false;
     stopAdapterWireV0 = null;
   };
@@ -283,6 +318,7 @@ export function ensureSpatialWorldAdapterForExecutionV0(opts = {}) {
   const tick = getSpatialExecutionTickSnapshotV0();
   const executionRunning = opts.executionRunning ?? tick.running === true;
   const emitterActivated = opts.emitterActivated === true;
+  const policy = resolveSpatialSinkRoutePolicyV0();
 
   attachSpatialWorldAdapterV0();
 
@@ -291,7 +327,8 @@ export function ensureSpatialWorldAdapterForExecutionV0(opts = {}) {
       ok: true,
       attached: adapterAttachedV0,
       drained: false,
-      reason: "execution_not_running"
+      reason: "execution_not_running",
+      policy
     });
   }
 
@@ -300,16 +337,28 @@ export function ensureSpatialWorldAdapterForExecutionV0(opts = {}) {
       ok: true,
       attached: adapterAttachedV0,
       drained: false,
-      reason: "emitter_inactive"
+      reason: "emitter_inactive",
+      policy
     });
   }
 
-  const drain = drainSpatialStreamToWorldV0({ force: true });
+  if (!policy.drainAllowed) {
+    return Object.freeze({
+      ok: true,
+      attached: adapterAttachedV0,
+      drained: false,
+      reason: "ingress_no_drain",
+      policy
+    });
+  }
+
+  const drain = drainSpatialStreamToWorldV0({ force: policy.warnOnMissing });
   return Object.freeze({
     ok: true,
     attached: adapterAttachedV0,
     drained: true,
-    drain
+    drain,
+    policy
   });
 }
 
