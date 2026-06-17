@@ -19,8 +19,30 @@ export const CHESS_STOCKFISH_ASSET_PATHS_V0 = Object.freeze({
   wasm: "/chess-engine/stockfish-nnue-16-single.wasm"
 });
 
-/** COEP-safe spawn: blob inline WASM only — hash URL workers disabled (CORP/cache fragile). */
-export const CHESS_STOCKFISH_SPAWN_POLICY_V0 = "blob_only";
+/** Compute-layer spawn policy. Deployment CORP headers gate wasm_direct under `auto`. */
+export const CHESS_STOCKFISH_SPAWN_POLICY_V0 = "auto";
+
+/** @type {boolean | null} */
+let workerJsCorpOkV0 = null;
+/** @type {boolean | null} */
+let wasmCorpOkV0 = null;
+
+function isCorpHeaderOkV0(value) {
+  const corp = String(value || "").toLowerCase();
+  return corp.includes("same-origin") || corp.includes("same-site");
+}
+
+/**
+ * Effective compute path — separate from deployment (COEP/CORP on /chess-engine/*).
+ * @returns {"wasm_direct" | "blob_degraded"}
+ */
+export function resolveChessStockfishEffectiveSpawnPolicyV0() {
+  const configured = CHESS_STOCKFISH_SPAWN_POLICY_V0;
+  if (configured === "blob_only") return "blob_degraded";
+  if (configured === "wasm_direct") return "wasm_direct";
+  if (workerJsCorpOkV0 === true && wasmCorpOkV0 === true) return "wasm_direct";
+  return "blob_degraded";
+}
 
 function resolveStockfishWorkerUrlV0(wasmInHash = null) {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -81,7 +103,14 @@ export function getChessStockfishEngineDetailV0() {
     wasmPath: CHESS_STOCKFISH_ASSET_PATHS_V0.wasm,
     lastSpawnStrategy: lastSpawnStrategyV0,
     spawnStrategies: listStockfishSpawnStrategiesV0().map((s) => s.name),
-    spawnPolicy: CHESS_STOCKFISH_SPAWN_POLICY_V0
+    spawnPolicy: CHESS_STOCKFISH_SPAWN_POLICY_V0,
+    spawnPolicyEffective: resolveChessStockfishEffectiveSpawnPolicyV0(),
+    deploymentLayer: Object.freeze({
+      workerJsCorpOk: workerJsCorpOkV0,
+      wasmCorpOk: wasmCorpOkV0,
+      siteCoep: "credentialless"
+    }),
+    computeDegraded: resolveChessStockfishEffectiveSpawnPolicyV0() === "blob_degraded"
   });
 }
 
@@ -282,9 +311,13 @@ async function verifyStockfishAssetsV0() {
     const jsType = (jsRes.headers.get("content-type") || "").toLowerCase();
     const wasmType = (wasmRes.headers.get("content-type") || "").toLowerCase();
     const jsCorp = (jsRes.headers.get("cross-origin-resource-policy") || "").toLowerCase();
-    if (!jsCorp.includes("same-origin") && !jsCorp.includes("same-site")) {
-      logStockfishV0("warn", "worker js missing CORP header — hash spawn strategies may fail under COEP", {
-        jsCorp: jsCorp || null
+    const wasmCorp = (wasmRes.headers.get("cross-origin-resource-policy") || "").toLowerCase();
+    workerJsCorpOkV0 = isCorpHeaderOkV0(jsCorp);
+    wasmCorpOkV0 = isCorpHeaderOkV0(wasmCorp);
+    if (!workerJsCorpOkV0) {
+      logStockfishV0("warn", "worker js missing CORP header — wasm_direct disabled under auto policy", {
+        jsCorp: jsCorp || null,
+        spawnPolicyEffective: resolveChessStockfishEffectiveSpawnPolicyV0()
       });
     }
     if (wasmType.includes("text/html")) {
@@ -354,10 +387,24 @@ ${patched}`;
   return `${jsBlobUrl}#inline_wasm,worker`;
 }
 
-function listStockfishSpawnStrategiesV0() {
-  // Single stable path under COEP: inline WASM in blob worker, then blob_coep fallback.
-  // absolute_hash / relative_hash / blob_worker disabled — they depend on /chess-engine/*.js CORP
-  // or cross-origin wasm fetch and crash with generic worker_error on rhizoh.com.
+function buildWasmDirectStrategiesV0() {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const absoluteWasm = `${origin}${CHESS_STOCKFISH_ASSET_PATHS_V0.wasm}`;
+  return [
+    {
+      name: "absolute_hash",
+      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
+      build: async () => resolveStockfishWorkerUrlV0(absoluteWasm)
+    },
+    {
+      name: "relative_hash",
+      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
+      build: async () => resolveStockfishWorkerUrlV0(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm)
+    }
+  ];
+}
+
+function buildBlobStrategiesV0() {
   return [
     {
       name: "wasm_binary_inline",
@@ -384,6 +431,14 @@ function listStockfishSpawnStrategiesV0() {
       }
     }
   ];
+}
+
+function listStockfishSpawnStrategiesV0() {
+  const blob = buildBlobStrategiesV0();
+  if (resolveChessStockfishEffectiveSpawnPolicyV0() === "wasm_direct") {
+    return [...buildWasmDirectStrategiesV0(), ...blob];
+  }
+  return blob;
 }
 
 async function initStockfishWorkerWithStrategyV0(strategy) {
@@ -470,6 +525,14 @@ async function ensureStockfishWorkerV0() {
         initFailedV0 = true;
         return null;
       }
+
+      logStockfishV0("info", "spawn policy resolved", {
+        spawnPolicy: CHESS_STOCKFISH_SPAWN_POLICY_V0,
+        spawnPolicyEffective: resolveChessStockfishEffectiveSpawnPolicyV0(),
+        workerJsCorpOk: workerJsCorpOkV0,
+        wasmCorpOk: wasmCorpOkV0
+      });
+      publishEngineStatusV0("preflight_ok");
 
       resetReadyFlagsV0();
       let lastErr = null;
@@ -716,6 +779,8 @@ export function resetChessStockfishEngineV0() {
   initErrorV0 = null;
   assetsVerifiedV0 = false;
   cachedAssetPayloadV0 = null;
+  workerJsCorpOkV0 = null;
+  wasmCorpOkV0 = null;
   publishEngineStatusV0("reset");
 }
 
