@@ -25,7 +25,11 @@ import {
 } from "./rhizohCausalGraphCompressionV0.js";
 import { getGroundingLayerSnapshotV1 } from "./rhizohGroundingLayerV1.js";
 import { listSpatialNodesV0 } from "./rhizohSpatialNodeLayerV0.js";
-import { publishCausalMapLayerV0 } from "./rhizohCausalMapLayerV0.js";
+import { getSpatialExecutionTickSnapshotV0 } from "./spatialExecutionTickV0.js";
+import {
+  ensureSpatialWorldAdapterForExecutionV0,
+  validateSpatialSinkV0
+} from "./spatialWorldAdapterV0.js";
 
 export const SPATIAL_EXECUTION_GOVERNOR_SCHEMA_V0 = "castle.rhizoh.spatial_execution_governor.v0";
 
@@ -205,6 +209,16 @@ export function runSpatialExecutionGovernorTickV0(opts = {}) {
     emitterActivated = true;
   }
 
+  const tickSnap = getSpatialExecutionTickSnapshotV0();
+  const worldAdapter =
+    emitterActivated || tickSnap.running
+      ? ensureSpatialWorldAdapterForExecutionV0({
+          executionRunning: tickSnap.running,
+          emitterActivated
+        })
+      : null;
+  const sinkValidation = validateSpatialSinkV0();
+
   const snap = Object.freeze({
     schema: SPATIAL_EXECUTION_GOVERNOR_SCHEMA_V0,
     ok: true,
@@ -222,6 +236,8 @@ export function runSpatialExecutionGovernorTickV0(opts = {}) {
       spatialNodeCount: balanceFix.spatialNodeCount
     }),
     emitterTick: lastEmitterTickV0,
+    worldAdapter,
+    sinkValidation,
     spatialNodeCount: listSpatialNodesV0().length,
     worldSyncReady: isSpatialWorldSyncReadyV0(),
     pruningDisabled: isCausalGraphPruningDisabledV0()
