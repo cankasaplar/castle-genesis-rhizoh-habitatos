@@ -42,7 +42,8 @@ describe("chessGameClusterV0", () => {
     expect(out.ok).toBe(true);
     expect(listChessClusterSlotsV0()).toHaveLength(CHESS_CLUSTER_SLOT_COUNT_V0);
     expect(getChessClusterSlotV0(0)?.status).toBe("active");
-    expect(getChessClusterSlotV0(0)?.modeId).toBe("stockfish_baseline");
+    expect(getChessClusterSlotV0(0)?.modeId).toBe("rhizoh_vs_stockfish");
+    expect(getChessClusterSlotV0(0)?.clock?.timeControlId).toBe("blitz_3_2");
     expect(window.__rhizoh.chessGameCluster?.architecture).toBe("single_engine_multi_pv");
     expect(window.__rhizoh.chessGameCluster?.engineScheduler?.engineInstances).toBe(1);
     stopChessGameClusterV0();

@@ -9,6 +9,7 @@ import { CHESS_CLUSTER_AGENT_ID_V0 } from "./chessClusterAgentPolicyV0.js";
 export const CHESS_CLUSTER_SLOT_MODE_SCHEMA_V0 = "castle.rhizoh.chess_cluster_slot_mode.v0";
 
 export const CHESS_CLUSTER_SLOT_MODE_ID_V0 = Object.freeze({
+  RHIZOH_VS_STOCKFISH: "rhizoh_vs_stockfish",
   STOCKFISH_BASELINE: "stockfish_baseline",
   AGGRESSIVE_ALPHA: "aggressive_alpha",
   DEFENSIVE_HEURISTIC: "defensive_heuristic",
@@ -23,12 +24,13 @@ export const CHESS_CLUSTER_SLOT_MODE_ID_V0 = Object.freeze({
 export const CHESS_CLUSTER_SLOT_MODES_V0 = Object.freeze([
   Object.freeze({
     slotId: 0,
-    modeId: CHESS_CLUSTER_SLOT_MODE_ID_V0.STOCKFISH_BASELINE,
-    label: "Stockfish baseline",
-    moveStrategy: "stockfish",
-    whiteAgent: CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH,
+    modeId: CHESS_CLUSTER_SLOT_MODE_ID_V0.RHIZOH_VS_STOCKFISH,
+    label: "Rhizoh AI vs Stockfish",
+    moveStrategy: "rhizoh_vs_stockfish",
+    spectatorFeatured: true,
+    whiteAgent: "rhizoh_ai",
     blackAgent: CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH,
-    learningTag: "baseline_pv"
+    learningTag: "rhizoh_vs_stockfish_learning"
   }),
   Object.freeze({
     slotId: 1,

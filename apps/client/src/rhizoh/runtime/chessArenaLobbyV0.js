@@ -5,6 +5,7 @@
 
 import { CHESS_GAME_MODE_V0 } from "./chessArenaEngineV0.js";
 import { listChessArenaArchiveV0 } from "./chessArenaMatchArchiveV0.js";
+import { getChessLearningMonitorSnapshotV0 } from "./chessLearningMonitorV0.js";
 
 export const CHESS_ARENA_LOBBY_SCHEMA_V0 = "castle.rhizoh.chess_arena_lobby.v0";
 
@@ -98,13 +99,24 @@ export function getChessArenaLearningFeedV0() {
   const mem = window.__rhizoh?.chessClusterMemory;
   const cluster = window.__rhizoh?.chessGameCluster;
   const engine = window.__rhizoh?.chessStockfishEngine;
-  const policyDiffs = (mem?.recent || []).filter((n) => n.kind === "policy_diff").slice(-4);
+  const monitor = getChessLearningMonitorSnapshotV0("lobby");
+  const policyDiffs = (mem?.recent || [])
+    .filter((n) => n.kind === "policy_diff")
+    .concat(monitor.recentPolicyDiffs || [])
+    .slice(-4);
+  const spectator = monitor.spectator;
   return Object.freeze({
     policyDiffs,
-    clusterTick: cluster?.tickCount ?? 0,
-    clusterRunning: Boolean(cluster?.running),
-    engineStatus: engine?.status || "not_started",
-    spawnPolicy: engine?.spawnPolicy || null
+    clusterTick: cluster?.tickCount ?? monitor.clusterTick ?? 0,
+    clusterRunning: Boolean(cluster?.running ?? monitor.clusterRunning),
+    engineStatus: engine?.status || monitor.engineStatus || "not_started",
+    spawnPolicy: engine?.spawnPolicy || monitor.spawnPolicy || null,
+    spectatorMode: spectator?.modeLabel || null,
+    spectatorPly: spectator?.ply ?? null,
+    spectatorClock: spectator?.clock
+      ? `${spectator.clock.whiteClock} / ${spectator.clock.blackClock}`
+      : null,
+    recentMoveCount: monitor.recentMoves?.length ?? 0
   });
 }
 

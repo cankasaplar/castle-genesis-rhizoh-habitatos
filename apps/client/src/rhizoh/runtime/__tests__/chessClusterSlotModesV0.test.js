@@ -12,10 +12,12 @@ describe("chessClusterSlotModesV0", () => {
     expect(new Set(ids).size).toBe(8);
   });
 
-  it("maps slot 0 to stockfish baseline", () => {
+  it("maps slot 0 to rhizoh vs stockfish spectator", () => {
     const mode = resolveChessClusterSlotModeV0(0);
-    expect(mode.modeId).toBe(CHESS_CLUSTER_SLOT_MODE_ID_V0.STOCKFISH_BASELINE);
-    expect(mode.moveStrategy).toBe("stockfish");
+    expect(mode.modeId).toBe(CHESS_CLUSTER_SLOT_MODE_ID_V0.RHIZOH_VS_STOCKFISH);
+    expect(mode.moveStrategy).toBe("rhizoh_vs_stockfish");
+    expect(mode.spectatorFeatured).toBe(true);
+    expect(mode.whiteAgent).toBe("rhizoh_ai");
   });
 
   it("maps slot 3 to random perturbation", () => {

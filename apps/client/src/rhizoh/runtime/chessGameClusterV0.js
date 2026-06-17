@@ -20,6 +20,14 @@ import {
 import { observeChessClusterMoveV0 } from "./chessClusterObserverV0.js";
 import { finalizeChessClusterGameV0 } from "./chessClusterLearningV0.js";
 import { getChessClusterMemoryGraphSnapshotV0 } from "./chessClusterMemoryGraphV0.js";
+import {
+  applyChessClusterClockIncrementV0,
+  createChessClusterClockStateV0,
+  summarizeChessClusterClockV0,
+  tickChessClusterSlotClockV0
+} from "./chessClusterClockV0.js";
+import { ensureChessLearningMonitorListenersV0 } from "./chessLearningMonitorV0.js";
+import { readChessArenaSessionV0 } from "./chessArenaSessionV0.js";
 
 export const CHESS_GAME_CLUSTER_SCHEMA_V0 = "castle.rhizoh.chess_game_cluster.v0";
 export const CHESS_CLUSTER_SLOT_COUNT_V0 = 8;
@@ -34,11 +42,15 @@ let runningV0 = false;
 let tickCountV0 = 0;
 /** @type {ReturnType<typeof setInterval> | null} */
 let tickTimerV0 = null;
+/** @type {ReturnType<typeof setInterval> | null} */
+let clockTimerV0 = null;
 let roundRobinIndexV0 = 0;
 let busyV0 = false;
+let clusterTimeControlIdV0 = readChessArenaSessionV0().timeControlId;
 
-function createSlotV0(slotId) {
+function createSlotV0(slotId, timeControlId = clusterTimeControlIdV0) {
   const mode = resolveChessClusterSlotModeV0(slotId);
+  const clock = createChessClusterClockStateV0(timeControlId);
   const matchId = `cluster_${slotId}_${Date.now().toString(36)}`;
   const game = createChessArenaGameV0({ mode: CHESS_GAME_MODE_V0.AI_AI });
   return {
@@ -47,14 +59,20 @@ function createSlotV0(slotId) {
     modeId: mode.modeId,
     modeLabel: mode.label,
     learningTag: mode.learningTag,
+    spectatorFeatured: Boolean(mode.spectatorFeatured),
     game,
     whiteAgent: mode.whiteAgent,
     blackAgent: mode.blackAgent,
+    timeControlId: clock.timeControlId,
+    whiteClockMs: clock.whiteClockMs,
+    blackClockMs: clock.blackClockMs,
+    incrementMs: clock.incrementMs,
     moveHistory: [],
     evalStream: [],
     attentionWeight: 1,
     status: "active",
     outcome: null,
+    endReason: null,
     ply: 0,
     lastMoveAtMs: Date.now(),
     criticalEvents: []
@@ -62,7 +80,7 @@ function createSlotV0(slotId) {
 }
 
 function resetSlotV0(slot) {
-  return createSlotV0(slot.slotId);
+  return createSlotV0(slot.slotId, clusterTimeControlIdV0);
 }
 
 function publishClusterRegistryV0(extra = {}) {
@@ -91,17 +109,20 @@ export function summarizeChessClusterSlotV0(slot) {
     matchId: slot.matchId,
     modeId: slot.modeId,
     modeLabel: slot.modeLabel,
+    spectatorFeatured: Boolean(slot.spectatorFeatured),
     fen: slot.game.fen(),
     turn: slot.game.turn(),
     status: slot.status,
     outcome: slot.outcome,
+    endReason: slot.endReason || null,
     ply: slot.ply,
     moveCount: slot.moveHistory.length,
     whiteAgent: slot.whiteAgent,
     blackAgent: slot.blackAgent,
     attentionWeight: slot.attentionWeight,
     lastEval: slot.evalStream[slot.evalStream.length - 1] || null,
-    criticalEventCount: slot.criticalEvents.length
+    criticalEventCount: slot.criticalEvents.length,
+    clock: summarizeChessClusterClockV0(slot)
   });
 }
 
@@ -122,6 +143,35 @@ function dispatchClusterEventV0(name, detail) {
   } catch {
     /* noop */
   }
+}
+
+function endChessClusterSlotV0(slot, outcome, endReason = "normal") {
+  if (!slot || slot.status === "ended") return;
+  slot.status = "ended";
+  slot.outcome = outcome;
+  slot.endReason = endReason;
+  dispatchClusterEventV0(CHESS_CLUSTER_GAME_END_EVENT_V0, {
+    slot: summarizeChessClusterSlotV0(slot),
+    outcome,
+    endReason,
+    moves: [...slot.moveHistory]
+  });
+  void finalizeChessClusterGameV0(slot).then(() => {
+    slotsV0[slot.slotId] = resetSlotV0(slot);
+    publishClusterRegistryV0();
+  });
+}
+
+function runClusterClockTickV0() {
+  if (!runningV0 || slotsV0.length === 0) return;
+  for (const slot of slotsV0) {
+    if (slot?.status !== "active") continue;
+    const flagOutcome = tickChessClusterSlotClockV0(slot, 1000);
+    if (flagOutcome) {
+      endChessClusterSlotV0(slot, flagOutcome, "timeout");
+    }
+  }
+  publishClusterRegistryV0({ clockTick: true });
 }
 
 /**
@@ -160,6 +210,7 @@ async function advanceChessClusterSlotV0(slot) {
   slot.moveHistory.push(moveRow);
   slot.ply += 1;
   slot.lastMoveAtMs = Date.now();
+  applyChessClusterClockIncrementV0(slot, turn);
 
   emitChessEngineBridgeV0(CHESS_ENGINE_BRIDGE_KIND_V0.PLAYED_MOVE, {
     matchId: slot.matchId,
@@ -187,17 +238,7 @@ async function advanceChessClusterSlotV0(slot) {
 
   const outcome = result.outcome || slot.game.outcome();
   if (outcome) {
-    slot.status = "ended";
-    slot.outcome = outcome;
-    dispatchClusterEventV0(CHESS_CLUSTER_GAME_END_EVENT_V0, {
-      slot: summarizeChessClusterSlotV0(slot),
-      outcome,
-      moves: [...slot.moveHistory]
-    });
-    void finalizeChessClusterGameV0(slot).then(() => {
-      slotsV0[slot.slotId] = resetSlotV0(slot);
-      publishClusterRegistryV0();
-    });
+    endChessClusterSlotV0(slot, outcome, "checkmate_or_draw");
   }
 
   return moveRow;
@@ -236,7 +277,7 @@ async function runClusterTickV0() {
 
 /**
  * Start 8-game cluster simulation.
- * @param {{ intervalMs?: number }} [opts]
+ * @param {{ intervalMs?: number, timeControlId?: string }} [opts]
  */
 export function startChessGameClusterV0(opts = {}) {
   if (typeof window === "undefined") return { ok: false, reason: "no_window" };
@@ -244,8 +285,14 @@ export function startChessGameClusterV0(opts = {}) {
     return Object.freeze({ ok: true, already: true, running: true, slotCount: CHESS_CLUSTER_SLOT_COUNT_V0 });
   }
   const intervalMs = Math.max(120, Number(opts.intervalMs) || 320);
+  clusterTimeControlIdV0 =
+    opts.timeControlId || readChessArenaSessionV0().timeControlId;
 
-  slotsV0 = Array.from({ length: CHESS_CLUSTER_SLOT_COUNT_V0 }, (_, i) => createSlotV0(i));
+  ensureChessLearningMonitorListenersV0();
+
+  slotsV0 = Array.from({ length: CHESS_CLUSTER_SLOT_COUNT_V0 }, (_, i) =>
+    createSlotV0(i, clusterTimeControlIdV0)
+  );
   runningV0 = true;
   tickCountV0 = 0;
   roundRobinIndexV0 = 0;
@@ -256,8 +303,13 @@ export function startChessGameClusterV0(opts = {}) {
     void runClusterTickV0();
   }, intervalMs);
 
+  if (clockTimerV0) clearInterval(clockTimerV0);
+  clockTimerV0 = setInterval(() => {
+    runClusterClockTickV0();
+  }, 1000);
+
   void runClusterTickV0();
-  publishClusterRegistryV0({ started: true });
+  publishClusterRegistryV0({ started: true, timeControlId: clusterTimeControlIdV0 });
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
     window.__rhizoh.chessClusterMemory = getChessClusterMemoryGraphSnapshotV0();
@@ -272,7 +324,8 @@ export function startChessGameClusterV0(opts = {}) {
     ok: true,
     running: true,
     slotCount: CHESS_CLUSTER_SLOT_COUNT_V0,
-    intervalMs
+    intervalMs,
+    timeControlId: clusterTimeControlIdV0
   });
 }
 
@@ -281,6 +334,10 @@ export function stopChessGameClusterV0() {
   if (tickTimerV0) {
     clearInterval(tickTimerV0);
     tickTimerV0 = null;
+  }
+  if (clockTimerV0) {
+    clearInterval(clockTimerV0);
+    clockTimerV0 = null;
   }
   publishClusterRegistryV0({ stopped: true });
   return { ok: true, running: false };
@@ -297,6 +354,7 @@ export function __resetChessGameClusterForTestV0() {
   tickCountV0 = 0;
   roundRobinIndexV0 = 0;
   busyV0 = false;
+  clusterTimeControlIdV0 = readChessArenaSessionV0().timeControlId;
 }
 
 /** @internal vitest — direct slot access */

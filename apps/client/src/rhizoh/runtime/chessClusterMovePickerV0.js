@@ -6,11 +6,13 @@
 import { pickChessArenaAiMoveV0 } from "./chessArenaEngineV0.js";
 import {
   resolveChessClusterAgentPolicyV0,
-  resolveChessClusterStockfishOptsV0
+  resolveChessClusterStockfishOptsV0,
+  CHESS_CLUSTER_AGENT_ID_V0
 } from "./chessClusterAgentPolicyV0.js";
 import { resolveChessClusterSlotModeV0 } from "./chessClusterSlotModesV0.js";
 import { scheduleClusterEngineMoveV0 } from "./chessClusterEngineSchedulerV0.js";
 import { getChessStockfishEngineStatusV0 } from "./chessStockfishEngineV0.js";
+import { pickRhizohChessMoveV0 } from "./rhizohChessPlayerV0.js";
 
 /**
  * @param {object} slot
@@ -25,6 +27,18 @@ export async function pickChessClusterMoveV0(slot, game) {
   const stockfishReady = getChessStockfishEngineStatusV0() === "stockfish_wasm";
 
   switch (mode.moveStrategy) {
+    case "rhizoh_vs_stockfish":
+      if (turn === "w") {
+        const rhizohPick = await pickRhizohChessMoveV0(game);
+        return Object.freeze({
+          move: rhizohPick?.move || pickChessArenaAiMoveV0(game),
+          engine: rhizohPick?.engine || "rhizoh_ai"
+        });
+      }
+      return scheduleClusterEngineMoveV0(game, {
+        useStockfish: stockfishReady,
+        ...resolveChessClusterStockfishOptsV0(CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH)
+      });
     case "stockfish":
       return scheduleClusterEngineMoveV0(game, {
         useStockfish: stockfishReady,

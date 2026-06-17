@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useEffect, useState } from "react";
 import {
   CHESS_ARENA_CURRENT_SEASON_V0,
   CHESS_ARENA_FIXTURES_V0,
@@ -8,6 +8,12 @@ import {
 } from "../rhizoh/runtime/chessArenaLobbyV0.js";
 import { formatChessOutcomeLabelV0 } from "../rhizoh/runtime/chessArenaEngineV0.js";
 import { RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0 } from "../rhizoh/runtime/chessGameClusterV0.js";
+import {
+  listChessTimeControlsV0,
+  readChessArenaSessionV0,
+  resolveChessTimeControlV0,
+  saveChessArenaSessionV0
+} from "../rhizoh/runtime/chessArenaSessionV0.js";
 
 function EngineStatusChipV0({ engineStatus, engineDetail, tr }) {
   const label =
@@ -59,6 +65,21 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
   const archive = listChessArenaArchivePreviewV0(4);
   const learning = getChessArenaLearningFeedV0();
   const season = CHESS_ARENA_CURRENT_SEASON_V0;
+  const timeControls = listChessTimeControlsV0();
+  const [timeControlId, setTimeControlId] = useState(() => readChessArenaSessionV0().timeControlId);
+
+  useEffect(() => {
+    const onStorage = () => setTimeControlId(readChessArenaSessionV0().timeControlId);
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  const activeTc = resolveChessTimeControlV0(timeControlId);
+
+  const onTimeControlChange = (id) => {
+    saveChessArenaSessionV0({ timeControlId: id });
+    setTimeControlId(id);
+  };
 
   const openCluster = () => {
     window.dispatchEvent(new CustomEvent(RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0));
@@ -76,9 +97,34 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
           </h3>
           <p className="mt-1 text-[11px] text-white/50">
             {tr
-              ? "Mod seç → tek tıkla tahtaya geç. 8 board observatory ayrı katman."
-              : "Pick a mode → one tap to board. 8-board observatory is a separate layer."}
+              ? "Mod seç → tek tıkla tahtaya geç. Zaman kontrolü cluster + arena için ortak."
+              : "Pick a mode → one tap to board. Time control applies to cluster + arena."}
           </p>
+          <div className="mt-3">
+            <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-white/45">
+              {tr ? "Zaman kontrolü" : "Time control"}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {timeControls.map((tc) => (
+                <button
+                  key={tc.id}
+                  type="button"
+                  onClick={() => onTimeControlChange(tc.id)}
+                  className={`rounded-md border px-2.5 py-1 text-[10px] font-semibold transition ${
+                    timeControlId === tc.id
+                      ? "border-emerald-400/55 bg-emerald-500/15 text-emerald-100"
+                      : "border-white/10 bg-black/30 text-white/55 hover:border-white/25"
+                  }`}
+                >
+                  {tr ? tc.labelTr : tc.labelEn}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[9px] text-white/35">
+              {tr ? "Aktif" : "Active"}: {tr ? activeTc.labelTr : activeTc.labelEn}
+              {activeTc.incrementMs > 0 ? ` (+${activeTc.incrementMs / 1000}s)` : ""}
+            </p>
+          </div>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {CHESS_ARENA_QUICK_MATCH_V0.map((row) => (
               <button
@@ -119,7 +165,14 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
             <p className="mt-1 text-[11px] text-white/70">
               tick {learning.clusterTick} ·{" "}
               {learning.clusterRunning ? (tr ? "cluster aktif" : "cluster on") : "cluster off"}
+              {learning.spectatorPly != null ? ` · #1 ply ${learning.spectatorPly}` : ""}
             </p>
+            {learning.spectatorMode ? (
+              <p className="mt-0.5 text-[9px] text-cyan-300/75">
+                {learning.spectatorMode}
+                {learning.spectatorClock ? ` · ${learning.spectatorClock}` : ""}
+              </p>
+            ) : null}
             {learning.policyDiffs.length ? (
               <ul className="mt-2 space-y-1">
                 {learning.policyDiffs.map((n) => (
