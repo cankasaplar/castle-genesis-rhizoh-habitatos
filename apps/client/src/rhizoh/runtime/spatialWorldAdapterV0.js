@@ -12,16 +12,28 @@ import {
   getCesiumExecutorApiV0,
   isCesiumExecutorCommandReadyV0
 } from "../../castleFlight/cesiumCommandExecutorV0.js";
+import { routeCesiumCommandV0 } from "../../castleFlight/cesiumCommandRouterV0.js";
 import {
   CASTLE_CESIUM_COMMAND_READY_EVENT_V0
 } from "./rhizohSpatialReadyGateV0.js";
 import { getSpatialExecutionTickSnapshotV0 } from "./spatialExecutionTickV0.js";
+import {
+  publishSpatialSinkRegistriesV0,
+  resolveSpatialSinkProbeV0
+} from "./spatialWorldSinkProbeV0.js";
+import {
+  CASTLE_APP_ENGINE_READY_EVENT_V0,
+  resolveSpatialSinkRoutePolicyV0,
+  RHIZOH_INGRESS_ROUTE_EVENT_V0
+} from "./spatialSinkRoutePolicyV0.js";
 
 export const SPATIAL_WORLD_ADAPTER_SCHEMA_V0 = "castle.rhizoh.spatial_world_adapter.v0";
 export const SPATIAL_SINK_MISSING_CODE_V0 = "SPATIAL_SINK_MISSING";
 
 /** @type {Set<string>} */
-const committedNodeKeysV0 = new Set();
+const worldCommittedKeysV0 = new Set();
+/** @type {Set<string>} */
+const deferredKeysV0 = new Set();
 
 let adapterAttachedV0 = false;
 /** @type {(() => void) | null} */
@@ -41,7 +53,6 @@ export function spatialNodeKeyV0(node) {
 }
 
 /**
- * Resolve WGS84 from spatial node payload + world anchor.
  * @param {object} node
  */
 export function resolveSpatialNodeGeoV0(node) {
@@ -67,57 +78,112 @@ export function resolveSpatialNodeGeoV0(node) {
 }
 
 /**
- * Sink validation — assert world adapter present when spatial nodes exist.
+ * Sink validation — honest world commit surface probe (not adapter-level accept).
  */
 export function validateSpatialSinkV0() {
-  const api =
-    getCesiumExecutorApiV0() ||
-    (typeof window !== "undefined" ? window.__CASTLE_CESIUM__ : null);
-  const commandReady = isCesiumExecutorCommandReadyV0(api);
-  const hasCommitSurface = typeof api?.commitSpatialNode === "function";
+  const policy = resolveSpatialSinkRoutePolicyV0();
+  const probe = resolveSpatialSinkProbeV0();
   const spatialCount = listSpatialNodesV0().length;
-  const sinkMissing = spatialCount > 0 && !commandReady && !hasCommitSurface;
+  const worldCommittedCount = worldCommittedKeysV0.size;
+  const deferredCount = deferredKeysV0.size;
+  const backlog = Math.max(0, spatialCount - worldCommittedCount);
+
+  const surfaceAbsent =
+    spatialCount > 0 &&
+    worldCommittedCount === 0 &&
+    !probe.commandReady &&
+    !probe.hasCommitSurface;
+
+  let code = null;
+  let ok = true;
+  if (surfaceAbsent) {
+    if (!policy.sinkExpected) {
+      code = policy.deferCode;
+      ok = true;
+    } else if (!policy.engineReady) {
+      code = policy.deferCode;
+      ok = true;
+    } else {
+      code = SPATIAL_SINK_MISSING_CODE_V0;
+      ok = false;
+    }
+  }
 
   const snap = Object.freeze({
     schema: SPATIAL_WORLD_ADAPTER_SCHEMA_V0,
-    ok: !sinkMissing,
-    code: sinkMissing ? SPATIAL_SINK_MISSING_CODE_V0 : null,
-    sink:
-      commandReady && hasCommitSurface
-        ? "cesium"
-        : api
-          ? "cesium_deferred"
-          : "missing",
-    commandReady,
-    hasCommitSurface,
+    ok,
+    code,
+    sink: probe.sink,
+    commandReady: probe.commandReady,
+    hasCommitSurface: probe.hasCommitSurface,
+    hasExecutorApi: probe.hasExecutorApi,
+    worldLayerEnabled: probe.worldLayerEnabled,
+    cesiumLayerActive: probe.cesiumLayerActive,
+    layerGateAllowed: probe.layerGateAllowed,
+    layerGateReason: probe.layerGateReason,
     attached: adapterAttachedV0,
     spatialNodeCount: spatialCount,
-    committedCount: committedNodeKeysV0.size,
-    backlog: Math.max(0, spatialCount - committedNodeKeysV0.size),
+    worldCommittedCount,
+    deferredCount,
+    /** @deprecated use worldCommittedCount — kept for one release of console scripts */
+    committedCount: worldCommittedCount,
+    backlog,
+    probe,
+    policy,
     atMs: Date.now()
   });
 
   lastSinkValidationV0 = snap;
   publishSpatialWorldAdapterV0({ sink: snap });
+  publishSpatialSinkRegistriesV0({ adapter: snap });
   return snap;
+}
+
+/**
+ * Retry deferred commits after Cesium / commit surface becomes available.
+ */
+export function retryDeferredSpatialCommitsV0() {
+  const pending = [...deferredKeysV0];
+  deferredKeysV0.clear();
+  let worldCommitted = 0;
+  let stillDeferred = 0;
+  let failed = 0;
+
+  for (const key of pending) {
+    const node = listSpatialNodesV0().find((n) => spatialNodeKeyV0(n) === key);
+    if (!node) continue;
+    const outcome = commitSpatialNodeToWorldV0(node, { retry: true });
+    if (outcome.worldCommitted) worldCommitted += 1;
+    else if (outcome.deferred) stillDeferred += 1;
+    else failed += 1;
+  }
+
+  return Object.freeze({
+    ok: true,
+    retried: pending.length,
+    worldCommitted,
+    stillDeferred,
+    failed
+  });
 }
 
 /**
  * Commit one spatial node into world/Cesium sink.
  * @param {object} node
+ * @param {{ retry?: boolean }} [opts]
  */
-export function commitSpatialNodeToWorldV0(node) {
+export function commitSpatialNodeToWorldV0(node, opts = {}) {
   if (!node?.id) {
-    return Object.freeze({ ok: false, reason: "missing_node" });
+    return Object.freeze({ ok: false, reason: "missing_node", worldCommitted: false });
   }
 
   const key = spatialNodeKeyV0(node);
-  if (committedNodeKeysV0.has(key)) {
-    return Object.freeze({ ok: true, already: true, key });
+  if (!opts.retry && worldCommittedKeysV0.has(key)) {
+    return Object.freeze({ ok: true, already: true, key, worldCommitted: true });
   }
 
   const geo = resolveSpatialNodeGeoV0(node);
-  const result = executeCesiumCommandV0({
+  const request = {
     schema: "castle.cesium_executor.request.v0",
     op: "commit_spatial_node",
     source: "spatial_world_adapter",
@@ -128,15 +194,24 @@ export function commitSpatialNodeToWorldV0(node) {
       tier: node.tier,
       kind: node.payload?.kind || null
     })
-  });
+  };
 
-  if (result.ok === true || result.deferred === true) {
-    committedNodeKeysV0.add(key);
+  const result = routeCesiumCommandV0(request);
+  const worldCommitted = result.ok === true;
+  const deferred = result.deferred === true;
+
+  if (worldCommitted) {
+    worldCommittedKeysV0.add(key);
+    deferredKeysV0.delete(key);
+  } else if (deferred) {
+    deferredKeysV0.add(key);
   }
 
   return Object.freeze({
-    ok: result.ok === true,
-    deferred: result.deferred === true,
+    ok: worldCommitted,
+    deferred,
+    failed: !worldCommitted && !deferred,
+    worldCommitted,
     key,
     geo,
     result
@@ -144,37 +219,49 @@ export function commitSpatialNodeToWorldV0(node) {
 }
 
 /**
- * Drain spatial registry stream into world sink (idempotent per node key).
  * @param {{ force?: boolean }} [opts]
  */
 export function drainSpatialStreamToWorldV0(opts = {}) {
   const nodes = listSpatialNodesV0();
-  let committed = 0;
+  let worldCommitted = 0;
   let deferred = 0;
   let failed = 0;
   let skipped = 0;
 
   for (const node of nodes) {
     const key = spatialNodeKeyV0(node);
-    if (committedNodeKeysV0.has(key)) {
+    if (worldCommittedKeysV0.has(key)) {
       skipped += 1;
       continue;
     }
     const outcome = commitSpatialNodeToWorldV0(node);
-    if (outcome.ok && !outcome.deferred) committed += 1;
+    if (outcome.worldCommitted) worldCommitted += 1;
     else if (outcome.deferred) deferred += 1;
     else failed += 1;
   }
 
   const sink = validateSpatialSinkV0();
-  if (opts.force === true && sink.code === SPATIAL_SINK_MISSING_CODE_V0) {
-    console.warn("[Rhizoh][spatialWorldAdapter] SPATIAL_SINK_MISSING — stream draining to backlog only");
+  if (
+    opts.force === true &&
+    sink.code === SPATIAL_SINK_MISSING_CODE_V0 &&
+    sink.policy?.warnOnMissing === true
+  ) {
+    console.warn(
+      "[Rhizoh][spatialWorldAdapter] SPATIAL_SINK_MISSING",
+      {
+        sink: sink.sink,
+        ingressRoute: sink.policy?.ingressRoute,
+        layerGateReason: sink.layerGateReason,
+        deferred,
+        worldCommitted
+      }
+    );
   }
 
   lastDrainV0 = Object.freeze({
     ok: true,
     atMs: Date.now(),
-    committed,
+    worldCommitted,
     deferred,
     failed,
     skipped,
@@ -187,9 +274,6 @@ export function drainSpatialStreamToWorldV0(opts = {}) {
   return lastDrainV0;
 }
 
-/**
- * Attach spatial stream consumer (spatial-event + cesium-ready).
- */
 export function attachSpatialWorldAdapterV0() {
   if (typeof window === "undefined") return { ok: false, reason: "no_window" };
   if (adapterAttachedV0) {
@@ -201,33 +285,40 @@ export function attachSpatialWorldAdapterV0() {
     const row = event?.detail?.row;
     if (row?.id) commitSpatialNodeToWorldV0(row);
   };
-  const onCesiumReady = () => {
+  const onSinkSurfaceReady = () => {
+    retryDeferredSpatialCommitsV0();
     drainSpatialStreamToWorldV0({ force: true });
+  };
+  const onIngressRoute = (event) => {
+    const route = String(event?.detail?.route || "");
+    if (route === "app") onSinkSurfaceReady();
   };
 
   window.addEventListener(RHIZOH_SPATIAL_EVENT_V0, onSpatial);
-  window.addEventListener(CASTLE_CESIUM_COMMAND_READY_EVENT_V0, onCesiumReady);
+  window.addEventListener(CASTLE_CESIUM_COMMAND_READY_EVENT_V0, onSinkSurfaceReady);
+  window.addEventListener(CASTLE_APP_ENGINE_READY_EVENT_V0, onSinkSurfaceReady);
+  window.addEventListener(RHIZOH_INGRESS_ROUTE_EVENT_V0, onIngressRoute);
 
   stopAdapterWireV0 = () => {
     window.removeEventListener(RHIZOH_SPATIAL_EVENT_V0, onSpatial);
-    window.removeEventListener(CASTLE_CESIUM_COMMAND_READY_EVENT_V0, onCesiumReady);
+    window.removeEventListener(CASTLE_CESIUM_COMMAND_READY_EVENT_V0, onSinkSurfaceReady);
+    window.removeEventListener(CASTLE_APP_ENGINE_READY_EVENT_V0, onSinkSurfaceReady);
+    window.removeEventListener(RHIZOH_INGRESS_ROUTE_EVENT_V0, onIngressRoute);
     adapterAttachedV0 = false;
     stopAdapterWireV0 = null;
   };
 
   adapterAttachedV0 = true;
+  publishSpatialSinkRegistriesV0();
   publishSpatialWorldAdapterV0();
   return { ok: true, attached: true };
 }
 
-/**
- * Attach + drain when spatial execution loop is active and emitter produced diff.
- * @param {{ executionRunning?: boolean, emitterActivated?: boolean }} [opts]
- */
 export function ensureSpatialWorldAdapterForExecutionV0(opts = {}) {
   const tick = getSpatialExecutionTickSnapshotV0();
   const executionRunning = opts.executionRunning ?? tick.running === true;
   const emitterActivated = opts.emitterActivated === true;
+  const policy = resolveSpatialSinkRoutePolicyV0();
 
   attachSpatialWorldAdapterV0();
 
@@ -236,7 +327,8 @@ export function ensureSpatialWorldAdapterForExecutionV0(opts = {}) {
       ok: true,
       attached: adapterAttachedV0,
       drained: false,
-      reason: "execution_not_running"
+      reason: "execution_not_running",
+      policy
     });
   }
 
@@ -245,16 +337,28 @@ export function ensureSpatialWorldAdapterForExecutionV0(opts = {}) {
       ok: true,
       attached: adapterAttachedV0,
       drained: false,
-      reason: "emitter_inactive"
+      reason: "emitter_inactive",
+      policy
     });
   }
 
-  const drain = drainSpatialStreamToWorldV0({ force: true });
+  if (!policy.drainAllowed) {
+    return Object.freeze({
+      ok: true,
+      attached: adapterAttachedV0,
+      drained: false,
+      reason: "ingress_no_drain",
+      policy
+    });
+  }
+
+  const drain = drainSpatialStreamToWorldV0({ force: policy.warnOnMissing });
   return Object.freeze({
     ok: true,
     attached: adapterAttachedV0,
     drained: true,
-    drain
+    drain,
+    policy
   });
 }
 
@@ -266,7 +370,9 @@ export function getSpatialWorldAdapterSnapshotV0() {
   return Object.freeze({
     schema: SPATIAL_WORLD_ADAPTER_SCHEMA_V0,
     attached: adapterAttachedV0,
-    committedCount: committedNodeKeysV0.size,
+    worldCommittedCount: worldCommittedKeysV0.size,
+    deferredCount: deferredKeysV0.size,
+    committedCount: worldCommittedKeysV0.size,
     lastDrain: lastDrainV0,
     lastSinkValidation: lastSinkValidationV0 || validateSpatialSinkV0()
   });
@@ -280,14 +386,17 @@ function publishSpatialWorldAdapterV0(extra = {}) {
     ...extra,
     attach: attachSpatialWorldAdapterV0,
     drain: drainSpatialStreamToWorldV0,
-    validateSink: validateSpatialSinkV0
+    validateSink: validateSpatialSinkV0,
+    retryDeferred: retryDeferredSpatialCommitsV0,
+    probeSink: resolveSpatialSinkProbeV0
   });
 }
 
 /** @internal vitest */
 export function __resetSpatialWorldAdapterForTestV0() {
   if (stopAdapterWireV0) stopAdapterWireV0();
-  committedNodeKeysV0.clear();
+  worldCommittedKeysV0.clear();
+  deferredKeysV0.clear();
   adapterAttachedV0 = false;
   lastDrainV0 = null;
   lastSinkValidationV0 = null;

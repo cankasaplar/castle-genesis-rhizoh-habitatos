@@ -53,6 +53,22 @@ let lastImmediateCommandAt = 0;
 
 let bridgeInstalled = false;
 
+export function getCesiumCommandRouterSnapshotV0() {
+  return Object.freeze({
+    schema: "castle.cesium_command_router.v0",
+    installed: bridgeInstalled,
+    flyCoalescePending: Boolean(flyCoalescePending),
+    spatialLayerOps: Object.freeze([...SPATIAL_LAYER_OPS_V0, "commit_spatial_node"]),
+    atMs: Date.now()
+  });
+}
+
+function publishCesiumCommandRouterRegistryV0() {
+  if (typeof window === "undefined") return;
+  window.__rhizoh = window.__rhizoh || {};
+  window.__rhizoh.cesiumRouter = getCesiumCommandRouterSnapshotV0();
+}
+
 const ROOM_POI_KEY_BY_ACTION = Object.freeze({
   room_library: "FATIH",
   room_garden: "BESIKTAS",
@@ -116,6 +132,10 @@ function routeCesiumCommandImmediateV0(request = {}) {
  */
 export function routeCesiumCommandV0(request = {}) {
   const op = String(request.op || "").trim();
+
+  if (op === "commit_spatial_node") {
+    return routeCesiumCommandImmediateV0(request);
+  }
 
   if (SPATIAL_LAYER_OPS_V0.has(op)) {
     const gate = gateRhizohSpatialCommandV0(op, resolveSpatialGateContextV0());
@@ -212,12 +232,16 @@ export function installCesiumCommandBridgeV0() {
   if (typeof window === "undefined" || bridgeInstalled) return;
   bridgeInstalled = true;
   window.addEventListener(RHIZOH_MAP_COMMAND_EVENT_V0, onRhizohMapCommand);
+  publishCesiumCommandRouterRegistryV0();
 }
 
 export function __uninstallCesiumCommandBridgeForTestV0() {
   if (typeof window === "undefined") return;
   window.removeEventListener(RHIZOH_MAP_COMMAND_EVENT_V0, onRhizohMapCommand);
   bridgeInstalled = false;
+  if (typeof window !== "undefined" && window.__rhizoh) {
+    delete window.__rhizoh.cesiumRouter;
+  }
   if (flyCoalesceTimer) {
     clearTimeout(flyCoalesceTimer);
     flyCoalesceTimer = null;

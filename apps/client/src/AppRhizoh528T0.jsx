@@ -142,6 +142,7 @@ import {
   shareWorldInviteV0,
   signalCastlePresenceV0
 } from "./rhizoh/runtime/rhizohDomainNervousSystemV0.js";
+import { markCastleAppEngineReadyV0 } from "./rhizoh/runtime/spatialSinkRoutePolicyV0.js";
 import { RHIZOH_DOMAIN_CAPABILITY_V0 } from "./rhizoh/runtime/domainAdapterRegistryV0.js";
 import { setRhizohDomainCoreUserV0 } from "./rhizoh/runtime/rhizohDomainCoreStoreV0.js";
 import { installChromeWebGpuNoiseSuppressV0 } from "./rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
@@ -12616,6 +12617,7 @@ export default function AppRhizoh528() {
     } catch {
       /* noop */
     }
+    markCastleAppEngineReadyV0("app.engine.ready");
     if (
       !shouldRhizohFlyToIstanbulV0({
         productSurface,
