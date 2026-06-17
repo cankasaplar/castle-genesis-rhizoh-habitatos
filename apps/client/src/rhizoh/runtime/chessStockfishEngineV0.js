@@ -520,14 +520,23 @@ const STOCKFISH_AUTO_WORKER_GATE_V0 =
   '"undefined"!=typeof self&&"worker"===self.location.hash.split(",")[1]';
 const STOCKFISH_AUTO_WORKER_GATE_DISABLED_V0 =
   'false&&"undefined"!=typeof self&&"worker"===self.location.hash.split(",")[1]';
+const STOCKFISH_ONMESSAGE_WORKER_GATE_V0 =
+  '"undefined"!=typeof onmessage&&("undefined"==typeof window||void 0===window.document)';
+const STOCKFISH_ONMESSAGE_WORKER_GATE_DISABLED_V0 =
+  'false&&"undefined"!=typeof onmessage&&("undefined"==typeof window||void 0===window.document)';
+const STOCKFISH_FACTORY_EXPORT_V0 =
+  '(typeof self!=="undefined"?self.__SF_STOCKFISH_FACTORY__=i:0)';
 const STOCKFISH_AUTO_BOOT_TAIL_V0 =
   '):"object"==typeof document&&document.currentScript?document.currentScript._exports=i():i())';
 const STOCKFISH_AUTO_BOOT_TAIL_MANUAL_V0 =
-  '):"object"==typeof document&&document.currentScript?document.currentScript._exports=i():(typeof self!=="undefined"?self.__SF_STOCKFISH_FACTORY__=i:0))';
+  `):"object"==typeof document&&document.currentScript?${STOCKFISH_FACTORY_EXPORT_V0}:${STOCKFISH_FACTORY_EXPORT_V0})`;
 
 function patchStockfishSourceForManualInitV0(jsSource) {
   if (!jsSource.includes(STOCKFISH_AUTO_WORKER_GATE_V0)) {
     throw new Error("stockfish_auto_worker_gate_missing");
+  }
+  if (!jsSource.includes(STOCKFISH_ONMESSAGE_WORKER_GATE_V0)) {
+    throw new Error("stockfish_onmessage_worker_gate_missing");
   }
   if (!jsSource.includes(STOCKFISH_AUTO_BOOT_TAIL_V0)) {
     throw new Error("stockfish_auto_boot_tail_missing");
@@ -535,6 +544,8 @@ function patchStockfishSourceForManualInitV0(jsSource) {
   return jsSource
     .split(STOCKFISH_AUTO_WORKER_GATE_V0)
     .join(STOCKFISH_AUTO_WORKER_GATE_DISABLED_V0)
+    .split(STOCKFISH_ONMESSAGE_WORKER_GATE_V0)
+    .join(STOCKFISH_ONMESSAGE_WORKER_GATE_DISABLED_V0)
     .split(STOCKFISH_AUTO_BOOT_TAIL_V0)
     .join(STOCKFISH_AUTO_BOOT_TAIL_MANUAL_V0);
 }
