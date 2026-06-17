@@ -229,6 +229,7 @@ function attachWorkerHandlersV0(worker) {
     }
     if (line === "uciok") {
       uciOkV0 = true;
+      logStockfishV0("info", "uciok", { strategy: lastSpawnStrategyV0 });
       publishEngineStatusV0("uciok");
       try {
         worker.postMessage("isready");
@@ -238,6 +239,7 @@ function attachWorkerHandlersV0(worker) {
     }
     if (line === "readyok") {
       readyV0 = true;
+      logStockfishV0("info", "readyok", { strategy: lastSpawnStrategyV0 });
       publishEngineStatusV0("readyok");
     }
 

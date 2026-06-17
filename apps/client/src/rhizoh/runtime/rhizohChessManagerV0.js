@@ -11,7 +11,7 @@ import {
   CHESS_CLUSTER_SLOT_COUNT_V0,
   CHESS_GAME_CLUSTER_SCHEMA_V0
 } from "./chessGameClusterV0.js";
-import { getChessStockfishEngineDetailV0 } from "./chessStockfishEngineV0.js";
+import { getChessStockfishEngineDetailV0, CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0 } from "./chessStockfishEngineV0.js";
 import {
   getChessGameRouterSnapshotV0,
   getChessLearningGraphSnapshotV0
@@ -100,4 +100,21 @@ export function publishRhizohChessManagerV0(reason = "publish") {
   window.__rhizoh = window.__rhizoh || {};
   window.__rhizoh.chessManager = snap;
   return snap;
+}
+
+/** Live snapshot — prefer over stale `window.__rhizoh.chessManager` in DevTools. */
+export function readRhizohChessManagerLiveV0(reason = "live") {
+  return getRhizohChessManagerSnapshotV0(reason);
+}
+
+let managerListenersInstalledV0 = false;
+
+export function ensureRhizohChessManagerListenersV0() {
+  if (typeof window === "undefined" || managerListenersInstalledV0) return;
+  managerListenersInstalledV0 = true;
+  window.addEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, () => {
+    publishRhizohChessManagerV0("engine_status");
+  });
+  window.__RHIZOH_CHESS_MANAGER_LIVE__ = () => readRhizohChessManagerLiveV0("devtools");
+  publishRhizohChessManagerV0("listeners_installed");
 }
