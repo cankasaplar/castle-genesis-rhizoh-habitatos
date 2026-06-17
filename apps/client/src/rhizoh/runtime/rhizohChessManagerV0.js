@@ -12,6 +12,10 @@ import {
   CHESS_GAME_CLUSTER_SCHEMA_V0
 } from "./chessGameClusterV0.js";
 import { getChessStockfishEngineDetailV0 } from "./chessStockfishEngineV0.js";
+import {
+  getChessGameRouterSnapshotV0,
+  getChessLearningGraphSnapshotV0
+} from "./chessGameRouterV0.js";
 
 export const RHIZOH_CHESS_MANAGER_SCHEMA_V0 = "castle.rhizoh.chess_manager.v0";
 export const RHIZOH_CHESS_MANAGER_ARCHITECTURE_V0 = "single_engine_multi_board_projection";
@@ -27,6 +31,8 @@ export function getRhizohChessManagerSnapshotV0(reason = "poll") {
     typeof window !== "undefined" ? window.__rhizoh?.chessGameCluster || null : null;
   const learning = getChessLearningMonitorSnapshotV0(reason);
   const memory = getChessClusterMemoryGraphSnapshotV0();
+  const gameRouter = getChessGameRouterSnapshotV0(reason);
+  const learningGraph = getChessLearningGraphSnapshotV0(reason);
 
   const engineReady = engine.status === "stockfish_wasm";
   const clusterRunning = Boolean(cluster?.running);
@@ -66,14 +72,21 @@ export function getRhizohChessManagerSnapshotV0(reason = "poll") {
       clusterSchema: CHESS_GAME_CLUSTER_SCHEMA_V0,
       running: Boolean(cluster?.running),
       tickCount: cluster?.tickCount ?? 0,
-      slots: cluster?.slots || []
+      activeGames: gameRouter.activeGames,
+      distinctFenCount: gameRouter.distinctFenCount,
+      roundRobinIndex: gameRouter.roundRobinIndex,
+      slots: cluster?.slots || gameRouter.slots || []
     }),
+    gameRouter,
+    learningGraph,
     learning,
     memory,
     probes: Object.freeze({
       engine: "window.__rhizoh.chessStockfishEngine",
       cluster: "window.__rhizoh.chessGameCluster",
       manager: "window.__rhizoh.chessManager",
+      gameRouter: "window.__rhizoh.chessGameRouter",
+      learningGraph: "window.__rhizoh.chessLearningGraph",
       learning: "window.__rhizoh.chessLearningMonitor",
       memory: "window.__rhizoh.chessClusterMemory"
     }),
