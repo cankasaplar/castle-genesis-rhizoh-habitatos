@@ -9,7 +9,10 @@ import { bootRhizohLearningCoreV0 } from "./rhizohLearningCoreBootV0.js";
 import { startRhizohLegalPendingWaitLoopV0 } from "./rhizohLegalPendingWaitLoopV0.js";
 import { publishRhizohWorldNamespaceGateV0 } from "./rhizohWorldNamespaceGateV0.js";
 import { startChessGameClusterV0 } from "./chessGameClusterV0.js";
-import { prewarmChessStockfishEngineV0 } from "./chessStockfishEngineV0.js";
+import {
+  prewarmChessStockfishEngineV0,
+  CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0
+} from "./chessStockfishEngineV0.js";
 import { publishRhizohChessManagerV0, ensureRhizohChessManagerListenersV0 } from "./rhizohChessManagerV0.js";
 import { publishChessGameRouterV0 } from "./chessGameRouterV0.js";
 
@@ -65,8 +68,18 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
 
   const learning = ensureRhizohLearningCoreBootV0(opts.userId);
   const worldGate = publishRhizohWorldNamespaceGateV0();
-  const cluster = startChessGameClusterV0({ intervalMs: 320 });
-  void prewarmChessStockfishEngineV0();
+  let cluster = Object.freeze({ ok: false, pendingEnginePrewarm: true });
+  void prewarmChessStockfishEngineV0().finally(() => {
+    cluster = startChessGameClusterV0({ intervalMs: 320 });
+    publishRhizohChessManagerV0("engine_prewarm_done");
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, {
+          detail: window.__rhizoh?.chessStockfishEngine || { reason: "engine_prewarm_done" }
+        })
+      );
+    }
+  });
   const chessManager = publishRhizohChessManagerV0("core_boot");
   const chessGameRouter = publishChessGameRouterV0("core_boot");
 

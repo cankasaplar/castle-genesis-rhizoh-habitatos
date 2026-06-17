@@ -28,6 +28,7 @@ import {
 } from "./chessClusterClockV0.js";
 import { ensureChessLearningMonitorListenersV0 } from "./chessLearningMonitorV0.js";
 import { readChessArenaSessionV0 } from "./chessArenaSessionV0.js";
+import { logChessMovePlayedV0 } from "./chessArenaTelemetryV0.js";
 import { publishRhizohChessManagerV0 } from "./rhizohChessManagerV0.js";
 import { publishChessGameRouterV0 } from "./chessGameRouterV0.js";
 
@@ -215,6 +216,17 @@ async function advanceChessClusterSlotV0(slot) {
   slot.ply += 1;
   slot.lastMoveAtMs = Date.now();
   applyChessClusterClockIncrementV0(slot, turn);
+
+  logChessMovePlayedV0({
+    san: moveRow.san,
+    color: turn === "w" ? "w" : "b",
+    engine: moveRow.engine,
+    fen: result.fen,
+    fenBefore,
+    matchId: slot.matchId,
+    moveNumber: slot.ply,
+    policyMode: slot.modeId
+  });
 
   emitChessEngineBridgeV0(CHESS_ENGINE_BRIDGE_KIND_V0.PLAYED_MOVE, {
     matchId: slot.matchId,

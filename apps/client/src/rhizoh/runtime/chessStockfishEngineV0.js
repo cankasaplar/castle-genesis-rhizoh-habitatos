@@ -21,9 +21,10 @@ export const CHESS_STOCKFISH_ASSET_PATHS_V0 = Object.freeze({
   wasm: "/chess-engine/stockfish-nnue-16-single.wasm"
 });
 
-/** COEP-safe: blob inline WASM only — hash URL workers permanently disabled. */
-export const CHESS_STOCKFISH_SPAWN_POLICY_V0 = "wasm_binary_inline";
-export const CHESS_STOCKFISH_WORKER_STRATEGY_V0 = "blob";
+/** Single isolated pipeline — main-thread wasm only; no worker fallback chain. */
+export const CHESS_STOCKFISH_SPAWN_POLICY_V0 = "wasm_single_thread_isolated";
+export const CHESS_STOCKFISH_SINGLE_PIPELINE_V0 = "wasm_single_thread_isolated";
+export const CHESS_STOCKFISH_WORKER_STRATEGY_V0 = "main_thread_isolated";
 
 /** @type {boolean | null} */
 let workerJsCorpOkV0 = null;
@@ -35,31 +36,15 @@ function isCorpHeaderOkV0(value) {
   return corp.includes("same-origin") || corp.includes("same-site");
 }
 
-/** @returns {"wasm_binary_inline"} */
+/** @returns {"wasm_single_thread_isolated"} */
 export function resolveChessStockfishEffectiveSpawnPolicyV0() {
-  return "wasm_binary_inline";
-}
-
-function resolveStockfishWorkerUrlV0(wasmInHash = null) {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const js = CHESS_STOCKFISH_ASSET_PATHS_V0.workerJs;
-  const wasmPath = wasmInHash || CHESS_STOCKFISH_ASSET_PATHS_V0.wasm;
-  const wasm =
-    wasmPath.startsWith("http://") || wasmPath.startsWith("https://")
-      ? wasmPath
-      : `${origin}${wasmPath}`;
-  return `${origin}${js}#${encodeURIComponent(wasm)},worker`;
+  return "wasm_single_thread_isolated";
 }
 
 /** @type {string | null} */
 let lastSpawnStrategyV0 = null;
 
-/** @type {((err: Error) => void) | null} */
-let workerErrorRejectV0 = null;
-
-/** @type {Worker | null} */
-let workerV0 = null;
-/** @type {{ postMessage: Function, terminate?: Function, addMessageListener?: Function } | null} */
+/** @type {{ postMessage: Function, terminate?: Function, addMessageListener: Function } | null} */
 let stockfishMainEngineV0 = null;
 /** @type {Map<number, { resolve: Function, reject: Function }>} */
 const pendingV0 = new Map();
@@ -74,8 +59,6 @@ let initErrorV0 = null;
 let assetsVerifiedV0 = false;
 /** @type {{ jsSource: string, wasmBytes: Uint8Array } | null} */
 let cachedAssetPayloadV0 = null;
-/** @type {WebAssembly.Module | null} */
-let cachedWasmModuleV0 = null;
 /** @type {number | null} */
 let lastMainThreadCompileMsV0 = null;
 /** @type {string[]} */
@@ -83,10 +66,9 @@ const spawnBlobUrlsV0 = [];
 /** @type {string | null} */
 let currentPositionFenV0 = null;
 
-const STOCKFISH_UCI_TIMEOUT_MS_V0 = 45000;
-const STOCKFISH_READY_TIMEOUT_MS_V0 = 20000;
-const STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0 = 90000;
-const STOCKFISH_COMPILE_WATCHDOG_MS_V0 = 195000;
+const STOCKFISH_UCI_TIMEOUT_MS_V0 = 60000;
+const STOCKFISH_READY_TIMEOUT_MS_V0 = 15000;
+const STOCKFISH_COMPILE_WATCHDOG_MS_V0 = 75000;
 
 /** @type {ReturnType<typeof setInterval> | null} */
 let compileWatchdogTimerV0 = null;
@@ -94,40 +76,27 @@ let compileWatchdogStartedAtV0 = 0;
 
 export function getChessStockfishEngineStatusV0() {
   if (initFailedV0) return "heuristic_fallback";
-  const bridgeActive = Boolean(workerV0 || stockfishMainEngineV0);
-  if (bridgeActive && readyV0) return "stockfish_wasm";
-  if (bridgeActive && uciOkV0) return "stockfish_initializing";
-  if (bridgeActive) return "stockfish_compiling";
+  if (stockfishMainEngineV0 && readyV0) return "stockfish_wasm";
+  if (stockfishMainEngineV0 && uciOkV0) return "stockfish_initializing";
+  if (stockfishMainEngineV0) return "stockfish_compiling";
   if (initPromiseV0) return "stockfish_compiling";
   return "not_started";
 }
 
 function getActiveStockfishBridgeV0() {
-  return workerV0 || stockfishMainEngineV0;
+  return stockfishMainEngineV0;
 }
 
 function postStockfishBridgeMessageV0(message) {
-  const bridge = getActiveStockfishBridgeV0();
-  if (!bridge) return;
-  if (workerV0) {
-    workerV0.postMessage(message);
-    return;
-  }
   stockfishMainEngineV0?.postMessage?.(message);
 }
 
 function disposeStockfishBridgeV0() {
   try {
-    workerV0?.terminate?.();
-  } catch {
-    /* noop */
-  }
-  try {
     stockfishMainEngineV0?.terminate?.();
   } catch {
     /* noop */
   }
-  workerV0 = null;
   stockfishMainEngineV0 = null;
 }
 
@@ -137,7 +106,7 @@ export function getChessStockfishEngineDetailV0() {
     status,
     initError: initErrorV0,
     assetsVerified: assetsVerifiedV0,
-    workerUrl: resolveStockfishWorkerUrlV0(),
+    pipeline: CHESS_STOCKFISH_SINGLE_PIPELINE_V0,
     wasmPath: CHESS_STOCKFISH_ASSET_PATHS_V0.wasm,
     lastSpawnStrategy: lastSpawnStrategyV0,
     compileElapsedMs:
@@ -145,17 +114,20 @@ export function getChessStockfishEngineDetailV0() {
         ? Date.now() - compileWatchdogStartedAtV0
         : null,
     mainThreadCompileMs: lastMainThreadCompileMsV0,
-    wasmModuleCached: Boolean(cachedWasmModuleV0),
-    spawnStrategies: listStockfishSpawnStrategiesV0().map((s) => s.name),
+    spawnStrategies: listStockfishSpawnStrategiesV0(),
     spawnPolicy: CHESS_STOCKFISH_SPAWN_POLICY_V0,
     spawnPolicyEffective: resolveChessStockfishEffectiveSpawnPolicyV0(),
     workerStrategy: CHESS_STOCKFISH_WORKER_STRATEGY_V0,
+    singlePipeline: true,
+    fallbackDisabled: true,
     hashWorkersDisabled: true,
     deploymentLayer: Object.freeze({
       workerJsCorpOk: workerJsCorpOkV0,
       wasmCorpOk: wasmCorpOkV0,
       siteCoep: "credentialless",
-      workerJsSpawnDisabled: true
+      coepNote: "credentialless intentional for Cesium; require-corp not used",
+      workerSpawnDisabled: true,
+      workerFallbackDisabled: true
     }),
     computeDegraded: status === "heuristic_fallback"
   });
@@ -339,48 +311,16 @@ function handleStockfishLineV0(line) {
   }
 }
 
-function attachMainThreadHandlersV0(engine) {
+function attachStockfishEngineHandlersV0(engine) {
+  if (!engine || typeof engine.postMessage !== "function") {
+    throw new Error("stockfish_engine_postMessage_missing");
+  }
+  if (typeof engine.addMessageListener !== "function") {
+    throw new Error("stockfish_addMessageListener_missing");
+  }
   engine.addMessageListener((line) => {
     handleStockfishLineV0(typeof line === "string" ? line : String(line ?? ""));
   });
-}
-
-function attachWorkerHandlersV0(worker) {
-  worker.onmessage = (ev) => {
-    const raw = ev?.data;
-    const line = typeof raw === "string" ? raw : raw != null ? String(raw) : "";
-    handleStockfishLineV0(line);
-  };
-  worker.onerror = (err) => {
-    const detail = {
-      error: String(err?.message || "worker_error"),
-      filename: err?.filename || null,
-      lineno: err?.lineno || null,
-      colno: err?.colno || null,
-      strategy: lastSpawnStrategyV0
-    };
-    initErrorV0 = detail.error;
-    logStockfishV0("error", "worker onerror", detail);
-    try {
-      worker?.terminate?.();
-    } catch {
-      /* noop */
-    }
-    workerV0 = null;
-    stockfishMainEngineV0 = null;
-    resetReadyFlagsV0();
-    publishEngineStatusV0("worker_error");
-    if (workerErrorRejectV0) {
-      workerErrorRejectV0(new Error(detail.error));
-      workerErrorRejectV0 = null;
-    }
-  };
-  worker.onmessageerror = () => {
-    initFailedV0 = true;
-    initErrorV0 = "worker_message_error";
-    logStockfishV0("error", "worker onmessageerror");
-    publishEngineStatusV0("worker_message_error");
-  };
 }
 
 let initPromiseV0 = null;
@@ -513,9 +453,6 @@ async function verifyStockfishAssetsV0() {
   }
 }
 
-const STOCKFISH_WORKER_WEB_INIT_RE_V0 =
-  /e=\{locateFile:function\(e\)\{return-1<e\.indexOf\("\.wasm"\)\?r:self\.location\.origin\+self\.location\.pathname\+"#"\+r\+",worker"\}\},i\(\)\(e\)\.then/;
-
 const STOCKFISH_AUTO_WORKER_GATE_V0 =
   '"undefined"!=typeof self&&"worker"===self.location.hash.split(",")[1]';
 const STOCKFISH_AUTO_WORKER_GATE_DISABLED_V0 =
@@ -571,129 +508,6 @@ function patchStockfishSourceForManualInitV0(jsSource) {
     .join(STOCKFISH_AUTO_BOOT_TAIL_MANUAL_V0);
 }
 
-const STOCKFISH_XFER_BOOTSTRAP_PREFIX_V0 = `"use strict";
-self.__SF_WASM_MODULE__=null;
-var __sfModuleWaiters=[];
-self.__SF_WAIT_MODULE__=function(){
-  return self.__SF_WASM_MODULE__?Promise.resolve(self.__SF_WASM_MODULE__):new Promise(function(r){__sfModuleWaiters.push(r);});
-};
-function __sfArmWasmModule(m){
-  self.__SF_WASM_MODULE__=m;
-  __sfModuleWaiters.forEach(function(r){r(m);});
-  __sfModuleWaiters=[];
-}
-self.addEventListener("message",function(ev){
-  if(ev.data&&ev.data.cmd==="sf_arm_wasm"){
-    __sfArmWasmModule(ev.data.wasmModule);
-  }
-});
-`;
-
-const STOCKFISH_WASM_BINARY_WORKER_INIT_PATCH_V0 =
-  'e={wasmBinary:self.__SF_WASM_BYTES__,locateFile:function(e){return-1<e.indexOf(".wasm")?r:self.location.origin+self.location.pathname+"#"+r+",worker"}},i()(e).then';
-
-const STOCKFISH_XFER_WORKER_INIT_PATCH_V0 =
-  'e={instantiateWasm:function(im,rcv){var m=self.__SF_WASM_MODULE__;if(!m)throw new Error("sf_wasm_module_missing");WebAssembly.instantiate(m,im).then(function(r){rcv(r.instance,r.module)}).catch(function(err){throw err;});return{}},locateFile:function(e){return-1<e.indexOf(".wasm")?r:self.location.origin+self.location.pathname+"#"+r+",worker"}},(self.__SF_WAIT_MODULE__?self.__SF_WAIT_MODULE__():Promise.resolve()).then(function(){return i()(e)}).then';
-
-function bytesToBase64V0(bytes) {
-  const chunkSize = 0x8000;
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const end = Math.min(i + chunkSize, bytes.length);
-    for (let j = i; j < end; j += 1) binary += String.fromCharCode(bytes[j]);
-  }
-  return btoa(binary);
-}
-
-function buildBlobJsWasmBlobWorkerUrlV0(assets) {
-  if (!STOCKFISH_WORKER_WEB_INIT_RE_V0.test(assets.jsSource)) {
-    throw new Error("stockfish_worker_patch_missing");
-  }
-  const wasmBlobUrl = URL.createObjectURL(
-    new Blob([assets.wasmBytes], { type: "application/wasm" })
-  );
-  trackSpawnBlobUrlV0(wasmBlobUrl);
-  const patched = assets.jsSource.replace(
-    STOCKFISH_WORKER_WEB_INIT_RE_V0,
-    `e={locateFile:function(e){return-1<e.indexOf(".wasm")?${JSON.stringify(wasmBlobUrl)}:self.location.origin+self.location.pathname+"#"+r+",worker"}},i()(e).then`
-  );
-  const jsBlobUrl = URL.createObjectURL(new Blob([patched], { type: "application/javascript" }));
-  trackSpawnBlobUrlV0(jsBlobUrl);
-  return `${jsBlobUrl}#wasm_blob,worker`;
-}
-
-function buildBlobJsWasmHashWorkerUrlV0(assets) {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const wasmUrl = `${origin}${CHESS_STOCKFISH_ASSET_PATHS_V0.wasm}`;
-  const jsBlobUrl = URL.createObjectURL(
-    new Blob([assets.jsSource], { type: "application/javascript" })
-  );
-  trackSpawnBlobUrlV0(jsBlobUrl);
-  return `${jsBlobUrl}#${encodeURIComponent(wasmUrl)},worker`;
-}
-
-async function compileWasmModuleOnMainThreadV0(wasmBytes) {
-  if (cachedWasmModuleV0) return cachedWasmModuleV0;
-  if (typeof WebAssembly === "undefined" || typeof WebAssembly.compile !== "function") {
-    throw new Error("webassembly_compile_unavailable");
-  }
-  const startedAt = Date.now();
-  cachedWasmModuleV0 = await WebAssembly.compile(wasmBytes);
-  lastMainThreadCompileMsV0 = Date.now() - startedAt;
-  logStockfishV0("info", "main thread wasm compile complete", {
-    compileMs: lastMainThreadCompileMsV0,
-    wasmBytes: wasmBytes.length
-  });
-  return cachedWasmModuleV0;
-}
-
-function buildXferWasmBytesDeferredWorkerUrlV0(assets) {
-  const patched = patchStockfishSourceForManualInitV0(assets.jsSource);
-  const stockfishBlobUrl = URL.createObjectURL(
-    new Blob([patched], { type: "application/javascript" })
-  );
-  trackSpawnBlobUrlV0(stockfishBlobUrl);
-  const bootstrap = `"use strict";
-var __sfBootstrapped=false;
-var __sfPendingUci=[];
-function __sfDrainPendingUci(){
-  if(!self.__sfEngine)return;
-  while(__sfPendingUci.length)self.__sfEngine.postMessage(__sfPendingUci.shift());
-}
-self.addEventListener("message",function(ev){
-  var d=ev.data;
-  if(typeof d==="string"){
-    if(self.__sfEngine)self.__sfEngine.postMessage(d);
-    else __sfPendingUci.push(d);
-    return;
-  }
-  if(!d||d.cmd!=="sf_arm_wasm_bytes"||!d.wasmBytes||__sfBootstrapped)return;
-  __sfBootstrapped=true;
-  self.__SF_WASM_BYTES__=d.wasmBytes;
-  try{
-    postMessage("sf_worker_stage:import_scripts_start");
-    importScripts(${JSON.stringify(stockfishBlobUrl)});
-    postMessage("sf_worker_stage:import_scripts_done");
-    var create=self.__SF_STOCKFISH_FACTORY__;
-    if(typeof create!=="function"){postMessage("sf_worker_error:stockfish_factory_missing");return;}
-    create()({wasmBinary:self.__SF_WASM_BYTES__}).then(function(engine){
-      self.__sfEngine=engine;
-      engine.addMessageListener(function(line){postMessage(line);});
-      postMessage("sf_worker_stage:engine_ready");
-      __sfDrainPendingUci();
-    }).catch(function(err){
-      postMessage("sf_worker_error:"+String(err&&err.message||err));
-    });
-  }catch(err){
-    postMessage("sf_worker_error:"+String(err&&err.message||err));
-  }
-});
-`;
-  const jsBlobUrl = URL.createObjectURL(new Blob([bootstrap], { type: "application/javascript" }));
-  trackSpawnBlobUrlV0(jsBlobUrl);
-  return `${jsBlobUrl}#xfer_bytes`;
-}
-
 function loadStockfishFactoryFromPatchedSourceV0(patchedSource) {
   if (typeof document === "undefined") {
     return Promise.reject(new Error("main_thread_requires_document"));
@@ -721,15 +535,25 @@ function loadStockfishFactoryFromPatchedSourceV0(patchedSource) {
   });
 }
 
-async function initMainThreadStockfishEngineV0(assets) {
+async function initStockfishEngineIsolatedV0() {
+  lastSpawnStrategyV0 = CHESS_STOCKFISH_SINGLE_PIPELINE_V0;
+  const assets = await ensureCachedStockfishAssetsV0();
+  const compileStartedAt = Date.now();
+  logStockfishV0("info", "starting isolated main-thread stockfish", {
+    strategy: CHESS_STOCKFISH_SINGLE_PIPELINE_V0,
+    uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
+    wasmBytes: assets.wasmBytes.length,
+    workerFallbackDisabled: true
+  });
   const patched = patchStockfishSourceForManualInitV0(assets.jsSource);
   const factory = await loadStockfishFactoryFromPatchedSourceV0(patched);
   const wasmBinary = assets.wasmBytes.slice();
   const engine = await invokeStockfishFactoryV0(factory, { wasmBinary });
+  lastMainThreadCompileMsV0 = Date.now() - compileStartedAt;
+  attachStockfishEngineHandlersV0(engine);
   stockfishMainEngineV0 = engine;
-  attachMainThreadHandlersV0(engine);
   postStockfishBridgeMessageV0("uci");
-  await waitForWorkerOrUciV0(STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0);
+  await waitUciOkV0(STOCKFISH_UCI_TIMEOUT_MS_V0);
   postStockfishBridgeMessageV0("isready");
   await waitReadyV0(STOCKFISH_READY_TIMEOUT_MS_V0);
   postStockfishBridgeMessageV0("setoption name UCI_AnalyseMode value false");
@@ -737,150 +561,8 @@ async function initMainThreadStockfishEngineV0(assets) {
   return engine;
 }
 
-function buildXferWasmCompiledWorkerUrlV0(assets) {
-  if (!STOCKFISH_WORKER_WEB_INIT_RE_V0.test(assets.jsSource)) {
-    throw new Error("stockfish_worker_patch_missing");
-  }
-  const patched = assets.jsSource.replace(
-    STOCKFISH_WORKER_WEB_INIT_RE_V0,
-    STOCKFISH_XFER_WORKER_INIT_PATCH_V0
-  );
-  const bootstrap = `${STOCKFISH_XFER_BOOTSTRAP_PREFIX_V0}${patched}`;
-  const jsBlobUrl = URL.createObjectURL(new Blob([bootstrap], { type: "application/javascript" }));
-  trackSpawnBlobUrlV0(jsBlobUrl);
-  return `${jsBlobUrl}#xfer_wasm,worker`;
-}
-
-function buildWasmBinaryInlineWorkerUrlV0(assets) {
-  if (!STOCKFISH_WORKER_WEB_INIT_RE_V0.test(assets.jsSource)) {
-    throw new Error("stockfish_worker_patch_missing");
-  }
-  const patched = assets.jsSource.replace(
-    STOCKFISH_WORKER_WEB_INIT_RE_V0,
-    'e={wasmBinary:self.__SF_WASM_BINARY__,locateFile:function(e){return-1<e.indexOf(".wasm")?r:self.location.origin+self.location.pathname+"#"+r+",worker"}},i()(e).then'
-  );
-  const wasmB64 = bytesToBase64V0(assets.wasmBytes);
-  const bootstrap = `"use strict";
-self.__SF_WASM_BINARY__=Uint8Array.from(atob(${JSON.stringify(wasmB64)}),function(c){return c.charCodeAt(0);});
-${patched}`;
-  const jsBlobUrl = URL.createObjectURL(new Blob([bootstrap], { type: "application/javascript" }));
-  trackSpawnBlobUrlV0(jsBlobUrl);
-  return `${jsBlobUrl}#inline_wasm,worker`;
-}
-
 function listStockfishSpawnStrategiesV0() {
-  return [
-    {
-      name: "main_thread_wasm_binary",
-      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
-      mainThread: true,
-      build: async () => {
-        await ensureCachedStockfishAssetsV0();
-        return "main_thread";
-      }
-    },
-    {
-      name: "xfer_wasm_bytes_deferred_import",
-      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
-      xferBytes: true,
-      build: async () => {
-        const assets = await ensureCachedStockfishAssetsV0();
-        return buildXferWasmBytesDeferredWorkerUrlV0(assets);
-      }
-    },
-    {
-      name: "xfer_wasm_compiled_module",
-      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
-      xferModule: true,
-      build: async () => {
-        const assets = await ensureCachedStockfishAssetsV0();
-        await compileWasmModuleOnMainThreadV0(assets.wasmBytes);
-        return buildXferWasmCompiledWorkerUrlV0(assets);
-      }
-    },
-    {
-      name: "blob_js_wasm_blob",
-      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
-      build: async () => {
-        const assets = await ensureCachedStockfishAssetsV0();
-        return buildBlobJsWasmBlobWorkerUrlV0(assets);
-      }
-    },
-    {
-      name: "blob_js_wasm_hash",
-      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
-      build: async () => {
-        const assets = await ensureCachedStockfishAssetsV0();
-        return buildBlobJsWasmHashWorkerUrlV0(assets);
-      }
-    },
-    {
-      name: "wasm_binary_inline",
-      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
-      build: async () => {
-        const assets = await ensureCachedStockfishAssetsV0();
-        return buildWasmBinaryInlineWorkerUrlV0(assets);
-      }
-    }
-  ];
-}
-
-async function initStockfishWorkerWithStrategyV0(strategy) {
-  lastSpawnStrategyV0 = strategy.name;
-  const uciTimeoutMs = Number(strategy.uciTimeoutMs) || STOCKFISH_UCI_TIMEOUT_MS_V0;
-
-  if (strategy.mainThread) {
-    const assets = await ensureCachedStockfishAssetsV0();
-    logStockfishV0("info", "starting main-thread stockfish", {
-      strategy: strategy.name,
-      uciTimeoutMs,
-      wasmBytes: assets.wasmBytes.length
-    });
-    await initMainThreadStockfishEngineV0(assets);
-    return stockfishMainEngineV0;
-  }
-
-  const workerUrl = await strategy.build();
-  logStockfishV0("info", "spawning worker", {
-    workerUrl,
-    strategy: strategy.name,
-    uciTimeoutMs,
-    mainThreadCompileMs: lastMainThreadCompileMsV0
-  });
-  const worker = new Worker(workerUrl, { type: "classic" });
-  workerV0 = worker;
-  attachWorkerHandlersV0(worker);
-  if (strategy.xferBytes) {
-    if (!cachedAssetPayloadV0?.wasmBytes) throw new Error("sf_wasm_bytes_cache_missing");
-    const bytesCopy = cachedAssetPayloadV0.wasmBytes.slice();
-    worker.postMessage({ cmd: "sf_arm_wasm_bytes", wasmBytes: bytesCopy });
-  } else if (strategy.xferModule) {
-    if (!cachedWasmModuleV0) throw new Error("sf_wasm_module_cache_missing");
-    worker.postMessage({ cmd: "sf_arm_wasm", wasmModule: cachedWasmModuleV0 });
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  }
-  worker.postMessage("uci");
-  await waitForWorkerOrUciV0(uciTimeoutMs);
-  worker.postMessage("isready");
-  await waitReadyV0(STOCKFISH_READY_TIMEOUT_MS_V0);
-  worker.postMessage("setoption name UCI_AnalyseMode value false");
-  worker.postMessage("setoption name Hash value 64");
-  return worker;
-}
-
-function waitForWorkerOrUciV0(timeoutMs) {
-  return new Promise((resolve, reject) => {
-    workerErrorRejectV0 = reject;
-    waitUciOkV0(timeoutMs)
-      .then((ok) => {
-        workerErrorRejectV0 = null;
-        resolve(ok);
-      })
-      .catch((err) => {
-        workerErrorRejectV0 = null;
-        reject(err);
-      });
-  });
+  return [CHESS_STOCKFISH_SINGLE_PIPELINE_V0];
 }
 
 function waitUciOkV0(timeoutMs) {
@@ -919,12 +601,10 @@ function waitReadyV0(timeoutMs) {
 
 async function ensureStockfishWorkerV0() {
   if (initFailedV0) return null;
-  if ((workerV0 || stockfishMainEngineV0) && readyV0) {
-    return workerV0 || stockfishMainEngineV0;
-  }
-  if (typeof Worker === "undefined") {
+  if (stockfishMainEngineV0 && readyV0) return stockfishMainEngineV0;
+  if (typeof document === "undefined") {
     initFailedV0 = true;
-    initErrorV0 = "worker_unavailable";
+    initErrorV0 = "main_thread_unavailable";
     return null;
   }
   if (initPromiseV0) return initPromiseV0;
@@ -943,53 +623,36 @@ async function ensureStockfishWorkerV0() {
       logStockfishV0("info", "spawn policy resolved", {
         spawnPolicy: CHESS_STOCKFISH_SPAWN_POLICY_V0,
         spawnPolicyEffective: resolveChessStockfishEffectiveSpawnPolicyV0(),
+        pipeline: CHESS_STOCKFISH_SINGLE_PIPELINE_V0,
         workerJsCorpOk: workerJsCorpOkV0,
-        wasmCorpOk: wasmCorpOkV0
+        wasmCorpOk: wasmCorpOkV0,
+        workerFallbackDisabled: true
       });
       publishEngineStatusV0("preflight_ok");
 
+      disposeStockfishBridgeV0();
       resetReadyFlagsV0();
-      let lastErr = null;
-      for (const strategy of listStockfishSpawnStrategiesV0()) {
-        try {
-          disposeStockfishBridgeV0();
-          resetReadyFlagsV0();
-          await initStockfishWorkerWithStrategyV0(strategy);
-          if (strategy.mainThread) {
-            workerV0 = null;
-          } else {
-            workerV0 = /** @type {Worker} */ (getActiveStockfishBridgeV0());
-            stockfishMainEngineV0 = null;
-          }
-          logStockfishV0("info", "ready", {
-            status: "stockfish_wasm",
-            strategy: strategy.name,
-            initMs: Date.now() - initStartedAtMs
-          });
-          clearCompileWatchdogV0();
-          publishEngineStatusV0("init_ready");
-          return getActiveStockfishBridgeV0();
-        } catch (err) {
-          lastErr = err;
-          logStockfishV0("warn", "worker strategy init failed", {
-            strategy: strategy.name,
-            error: String(err?.message || err)
-          });
-          disposeStockfishBridgeV0();
-          workerErrorRejectV0 = null;
-          resetReadyFlagsV0();
-          revokeSpawnBlobUrlsV0();
-        }
-      }
-      throw lastErr || new Error("stockfish_worker_spawn_exhausted");
+      await initStockfishEngineIsolatedV0();
+      logStockfishV0("info", "ready", {
+        status: "stockfish_wasm",
+        strategy: CHESS_STOCKFISH_SINGLE_PIPELINE_V0,
+        initMs: Date.now() - initStartedAtMs
+      });
+      clearCompileWatchdogV0();
+      publishEngineStatusV0("init_ready");
+      return stockfishMainEngineV0;
     } catch (err) {
       initFailedV0 = true;
       initErrorV0 = String(err?.message || "stockfish_init_failed");
-      logStockfishV0("error", "init failed", { error: initErrorV0 });
+      logStockfishV0("error", "init failed", {
+        error: initErrorV0,
+        strategy: CHESS_STOCKFISH_SINGLE_PIPELINE_V0
+      });
       clearCompileWatchdogV0();
       publishEngineStatusV0("init_failed");
       disposeStockfishBridgeV0();
       resetReadyFlagsV0();
+      revokeSpawnBlobUrlsV0();
       return null;
     } finally {
       initPromiseV0 = null;
@@ -1287,6 +950,12 @@ export function prewarmChessStockfishEngineV0() {
   return ensureStockfishWorkerV0().catch(() => null);
 }
 
+/** Wait for the single pipeline init attempt to finish (ready or fallback). */
+export async function awaitChessStockfishEngineReadyV0() {
+  await ensureStockfishWorkerV0();
+  return getChessStockfishEngineStatusV0();
+}
+
 export function resetChessStockfishEngineV0() {
   disposeChessStockfishEngineV0();
   clearCompileWatchdogV0();
@@ -1295,7 +964,6 @@ export function resetChessStockfishEngineV0() {
   initPromiseV0 = null;
   assetsVerifiedV0 = false;
   cachedAssetPayloadV0 = null;
-  cachedWasmModuleV0 = null;
   lastMainThreadCompileMsV0 = null;
   workerJsCorpOkV0 = null;
   wasmCorpOkV0 = null;

@@ -12,8 +12,25 @@ import {
 } from "./chessClusterAgentPolicyV0.js";
 import { resolveChessClusterSlotModeV0 } from "./chessClusterSlotModesV0.js";
 import { scheduleClusterEngineMoveV0 } from "./chessClusterEngineSchedulerV0.js";
-import { getChessStockfishEngineStatusV0 } from "./chessStockfishEngineV0.js";
+import {
+  awaitChessStockfishEngineReadyV0,
+  getChessStockfishEngineStatusV0
+} from "./chessStockfishEngineV0.js";
 import { pickRhizohChessMoveV0 } from "./rhizohChessPlayerV0.js";
+
+function clusterModeUsesStockfishV0(mode) {
+  return ["rhizoh_vs_stockfish", "stockfish", "stockfish_aggressive", "random_perturb"].includes(
+    mode.moveStrategy
+  );
+}
+
+async function resolveClusterStockfishReadyV0(mode) {
+  if (!clusterModeUsesStockfishV0(mode)) {
+    return getChessStockfishEngineStatusV0() === "stockfish_wasm";
+  }
+  await awaitChessStockfishEngineReadyV0();
+  return getChessStockfishEngineStatusV0() === "stockfish_wasm";
+}
 
 function pickClusterHeuristicMoveV0(game, slot, agentId, policy) {
   const uci = pickChessAgentHeuristicMoveV0(game, policy, {
@@ -34,7 +51,7 @@ export async function pickChessClusterMoveV0(slot, game) {
   const agentId = turn === "w" ? mode.whiteAgent : mode.blackAgent;
   const policy = resolveChessClusterAgentPolicyV0(agentId);
   const stockfishOpts = resolveChessClusterStockfishOptsV0(agentId);
-  const stockfishReady = getChessStockfishEngineStatusV0() === "stockfish_wasm";
+  const stockfishReady = await resolveClusterStockfishReadyV0(mode);
 
   switch (mode.moveStrategy) {
     case "rhizoh_vs_stockfish":
