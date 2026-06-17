@@ -7,6 +7,10 @@ import { getSpatialReadyGateSnapshotV0, drainPreReadySpatialQueueV0 } from "./rh
 import { emitSpatialEventImmediateV0 } from "./rhizohSpatialEventEmitterV0.js";
 import { getGroundingLayerSnapshotV1 } from "./rhizohGroundingLayerV1.js";
 import { listSpatialNodesV0 } from "./rhizohSpatialNodeLayerV0.js";
+import {
+  validateSpatialFlushCandidateV0,
+  SPATIAL_TRUTH_VERDICT_V0
+} from "./spatialTruthValidatorV0.js";
 
 export const SPATIAL_WORLD_SPACE_FLUSH_SCHEMA_V0 = "castle.rhizoh.spatial_world_space_flush.v0";
 
@@ -20,8 +24,21 @@ export function flushSpatialBufferToWorldSpaceV0(opts = {}) {
   const force = opts.force === true || grounding.worldAnchored === true;
 
   let drained = 0;
+  let flushBlocked = false;
+  let flushVerdict = SPATIAL_TRUTH_VERDICT_V0.STRICT_PASS;
+
   if (gate.buffered > 0 && (gate.open || force)) {
-    drained = drainPreReadySpatialQueueV0(emit, { force: force && !gate.open });
+    const flushValidation = validateSpatialFlushCandidateV0({
+      force: force && !gate.open,
+      cesiumReady: gate.cesiumReady,
+      buffered: gate.buffered
+    });
+    flushVerdict = flushValidation.verdict;
+    flushBlocked = !flushValidation.allowWrite;
+
+    if (!flushBlocked) {
+      drained = drainPreReadySpatialQueueV0(emit, { force: force && !gate.open });
+    }
   }
 
   const snap = Object.freeze({
@@ -31,6 +48,8 @@ export function flushSpatialBufferToWorldSpaceV0(opts = {}) {
     force,
     bufferedBefore: gate.buffered,
     drained,
+    flushBlocked,
+    flushVerdict,
     spatialNodeCount: listSpatialNodesV0().length,
     cesiumReady: gate.cesiumReady,
     worldAnchored: grounding.worldAnchored === true

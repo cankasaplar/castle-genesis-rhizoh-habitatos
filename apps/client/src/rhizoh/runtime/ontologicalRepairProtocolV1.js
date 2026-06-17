@@ -30,6 +30,7 @@ import {
 } from "./causalGraphSpatialBridgeV0.js";
 import { publishCausalMapLayerV0 } from "./rhizohCausalMapLayerV0.js";
 import { getSpatialReadyGateSnapshotV0 } from "./rhizohSpatialReadyGateV0.js";
+import { auditSpatialRegistryTruthV0 } from "./spatialTruthValidatorV0.js";
 
 export const ONTOLOGICAL_REPAIR_PROTOCOL_SCHEMA_V1 = "castle.rhizoh.ontological_repair_protocol.v1";
 
@@ -61,6 +62,7 @@ export function runOntologicalRepairProtocolV1(opts = {}) {
   const semanticBootstrap = bootstrapInternalSemanticMassV0({ causalMap, currentMass: 0 });
   const spatialGate = getSpatialReadyGateSnapshotV0();
   const spatialCount = listSpatialNodesV0().length;
+  const spatialTruth = auditSpatialRegistryTruthV0(causalMap);
 
   const divergence = estimateWorldSpaceDivergenceV0();
   const physicallyUnbound = orphanGraph.orphan && spatialCount === 0;
@@ -75,7 +77,9 @@ export function runOntologicalRepairProtocolV1(opts = {}) {
       orphanCausalGraph: orphanGraph.orphan,
       physicallyUnbound,
       epistemicHalfCollapse:
-        orphanGraph.causalNodeCount > 0 && spatialCount === 0 && semanticBootstrap.bootstrapped
+        orphanGraph.causalNodeCount > 0 && spatialCount === 0 && semanticBootstrap.bootstrapped,
+      ghostSpatialNodes: spatialTruth.ghostCount > 0,
+      optimisticProjections: spatialTruth.optimisticCount > 0
     }),
     genesisAuthority: genesisLock,
     genesisOrigins: Object.freeze(listGenesisAuthorityOriginsV0()),
@@ -102,11 +106,13 @@ export function runOntologicalRepairProtocolV1(opts = {}) {
       causalNodeCount: causalMap?.nodeCount ?? 0
     }),
     semanticMass: semanticBootstrap,
+    spatialTruth,
     pass:
       !cloneScan.temporalSpam &&
       genesisLock.lockActive &&
       divergence <= SPATIAL_DRIFT_QUARANTINE_THRESHOLD_V0 &&
-      !physicallyUnbound
+      !physicallyUnbound &&
+      spatialTruth.ghostCount === 0
   });
 
   if (typeof window !== "undefined") {

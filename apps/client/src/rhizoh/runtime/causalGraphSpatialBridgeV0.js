@@ -9,6 +9,10 @@ import { SPATIAL_NODE_TIER_V0, listSpatialNodesV0 } from "./rhizohSpatialNodeLay
 import { emitSpatialEventFromDomainV0 } from "./rhizohSpatialEventEmitterV0.js";
 import { normalizeSpatialVectorV0 } from "./worldSpaceReattachmentV0.js";
 import { getTruthTraceLogV0 } from "./rhizohTruthTraceLayerV0.js";
+import {
+  validateSpatialProjectionCandidateV0,
+  SPATIAL_TRUTH_VERDICT_V0
+} from "./spatialTruthValidatorV0.js";
 
 export const CAUSAL_GRAPH_SPATIAL_BRIDGE_SCHEMA_V0 = "castle.rhizoh.causal_graph_spatial_bridge.v0";
 
@@ -80,6 +84,8 @@ export function projectCausalNodesToSpatialV0(causalMap, opts = {}) {
   const existingIds = new Set(listSpatialNodesV0().map((n) => n.id));
   let projected = 0;
   let skipped = 0;
+  let quarantined = 0;
+  let optimistic = 0;
 
   for (const causalNode of nodes) {
     const causalId = String(causalNode.id || "");
@@ -101,6 +107,22 @@ export function projectCausalNodesToSpatialV0(causalMap, opts = {}) {
       seq: projected
     });
 
+    const validation = validateSpatialProjectionCandidateV0({
+      causalNode,
+      causalNodeId: causalId,
+      spatialVector: vector.ok ? vector.spatial_vector : null,
+      atMs: Number(causalNode.atMs) || Date.now(),
+      force: opts.force === true,
+      causalMap: map
+    });
+
+    if (!validation.allowWrite) {
+      if (validation.verdict === SPATIAL_TRUTH_VERDICT_V0.QUARANTINE) quarantined += 1;
+      else skipped += 1;
+      continue;
+    }
+    if (validation.verdict === SPATIAL_TRUTH_VERDICT_V0.OPTIMISTIC_PASS) optimistic += 1;
+
     const result = emitSpatialEventFromDomainV0(RHIZOH_DOMAIN_ID_V0.OBSERVER, {
       tier: SPATIAL_NODE_TIER_V0.TEMPORAL,
       nodeId,
@@ -111,7 +133,12 @@ export function projectCausalNodesToSpatialV0(causalMap, opts = {}) {
         causalKind: causalNode.kind,
         label: causalNode.label,
         spatial_vector: vector.ok ? vector.spatial_vector : null,
-        atMs: Number(causalNode.atMs) || Date.now()
+        atMs: Number(causalNode.atMs) || Date.now(),
+        truthValidation: Object.freeze({
+          verdict: validation.verdict,
+          confidence: validation.confidence,
+          issues: validation.issues
+        })
       }
     });
 
@@ -131,6 +158,8 @@ export function projectCausalNodesToSpatialV0(causalMap, opts = {}) {
     causalNodeCount: nodes.length,
     projected,
     skipped,
+    quarantined,
+    optimistic,
     spatialNodeCount: listSpatialNodesV0().length,
     entropy: computeCausalMapEntropyV0(map)
   });

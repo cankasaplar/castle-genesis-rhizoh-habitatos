@@ -8,7 +8,7 @@ import {
 import { emitSpatialEventImmediateV0, __resetSpatialEventEmitterForTestV0 } from "../rhizohSpatialEventEmitterV0.js";
 import { __resetSpatialNodeLayerForTestV0, listSpatialNodesV0 } from "../rhizohSpatialNodeLayerV0.js";
 import { __resetNervousSystemEventGraphForTestV0 } from "../rhizohNervousSystemEventGraphV0.js";
-import { __resetGroundingLayerForTestV1, noteGroundSignalV1, GROUND_SIGNAL_KIND_V1 } from "../rhizohGroundingLayerV1.js";
+import { __resetGroundingLayerForTestV1, noteGroundSignalV1, evaluateGroundingV1, GROUND_SIGNAL_KIND_V1 } from "../rhizohGroundingLayerV1.js";
 import { RHIZOH_DOMAIN_ID_V0 } from "../rhizohDomainCoreStoreV0.js";
 import { SPATIAL_NODE_TIER_V0 } from "../rhizohSpatialNodeLayerV0.js";
 
@@ -28,6 +28,7 @@ describe("spatialWorldSpaceFlushV0", () => {
 
   it("force-flushes buffered spatial events when world anchored", () => {
     noteGroundSignalV1(GROUND_SIGNAL_KIND_V1.USER_ACTIVITY);
+    evaluateGroundingV1({ semanticMass: 0.2, eventLog: { recent: [] } });
     enqueuePreReadySpatialEventV0(RHIZOH_DOMAIN_ID_V0.WORLD, {
       tier: SPATIAL_NODE_TIER_V0.LIVE,
       nodeId: "buf-node",
