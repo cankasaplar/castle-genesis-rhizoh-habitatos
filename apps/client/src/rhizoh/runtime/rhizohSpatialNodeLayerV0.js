@@ -3,6 +3,8 @@
  * Nodes sync ONLY through spatial engine — never bound to Castle/Studio domain state.
  */
 
+import { resolveVersionedEvolutionNodeIdV0 } from "./nodeTemporalFissionV0.js";
+
 export const SPATIAL_NODE_TIER_V0 = Object.freeze({
   STATIC: "static",
   LIVE: "live",
@@ -19,8 +21,15 @@ const nodeRegistry = new Map();
  */
 export function registerSpatialNodeV0(tier, nodeId, payload = {}) {
   const t = String(tier || SPATIAL_NODE_TIER_V0.STATIC);
-  const id = String(nodeId || "").trim();
-  if (!id) return null;
+  const rawId = String(nodeId || "").trim();
+  if (!rawId) return null;
+  const atMs = Math.floor(Number(payload?.atMs) || Date.now());
+  const evolved = resolveVersionedEvolutionNodeIdV0({
+    baseNodeId: rawId,
+    atMs,
+    semanticSeed: String(payload?.kind || payload?.sourceDomain || t)
+  });
+  const id = evolved.nodeId || rawId;
   const key = `${t}:${id}`;
   const projectionOnly = t === SPATIAL_NODE_TIER_V0.LIVE;
   const row = Object.freeze({
@@ -28,7 +37,12 @@ export function registerSpatialNodeV0(tier, nodeId, payload = {}) {
     id,
     payload,
     projectionOnly,
-    atMs: Date.now(),
+    atMs,
+    evolutionLine: Object.freeze({
+      baseNodeId: evolved.baseNodeId || rawId,
+      version: evolved.version || 1,
+      fissionApplied: evolved.evolved === true
+    }),
     source: "spatial_engine"
   });
   nodeRegistry.set(key, row);

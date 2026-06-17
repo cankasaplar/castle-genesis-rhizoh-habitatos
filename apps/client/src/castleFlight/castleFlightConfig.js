@@ -279,14 +279,17 @@ export function resolveGenesisDirectGatewayOriginV0() {
 }
 
 /**
- * SSE stream base — direct gateway on rhizoh.com product hosts; short poll stays on proxy.
+ * SSE stream base — single genesis authority (proxy on product hosts).
+ * Legacy dual-path: VITE_GENESIS_ALLOW_DIRECT_FALLBACK=1 restores direct Render SSE.
  */
 export function resolveGenesisSseStreamBaseV0() {
   const pollBase = resolveGenesisGatewayHttpBaseV0();
-  const direct = String(resolveGenesisDirectGatewayOriginV0() || "").trim().replace(/\/+$/, "");
-  const proxy = getRhizohSameOriginGatewayProxyBaseV0();
-  if (proxy && direct && pollBase === proxy && direct !== proxy) {
-    return direct;
+  if (String(import.meta.env?.VITE_GENESIS_ALLOW_DIRECT_FALLBACK || "").trim() === "1") {
+    const direct = String(resolveGenesisDirectGatewayOriginV0() || "").trim().replace(/\/+$/, "");
+    const proxy = getRhizohSameOriginGatewayProxyBaseV0();
+    if (proxy && direct && pollBase === proxy && direct !== proxy) {
+      return direct;
+    }
   }
   return pollBase;
 }

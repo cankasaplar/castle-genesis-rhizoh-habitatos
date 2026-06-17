@@ -9,6 +9,23 @@ vi.mock("../../../castleFlight/castleFlightConfig.js", () => ({
   resolveGenesisDirectGatewayOriginV0: () => mockDirectOrigin.value
 }));
 
+vi.mock("../genesisSingleAuthorityLockV0.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    listGenesisAuthorityOriginsV0: () => {
+      if (String(import.meta.env?.VITE_GENESIS_ALLOW_DIRECT_FALLBACK || "").trim() === "1") {
+        const out = [mockGenesisOrigin.value];
+        if (mockDirectOrigin.value && mockDirectOrigin.value !== mockGenesisOrigin.value) {
+          out.push(mockDirectOrigin.value);
+        }
+        return out;
+      }
+      return [mockGenesisOrigin.value].filter(Boolean);
+    }
+  };
+});
+
 describe("genesisContinuityClientWireV0", () => {
   beforeEach(() => {
     mockGenesisOrigin.value = "https://gw.test";
@@ -53,7 +70,8 @@ describe("genesisContinuityClientWireV0", () => {
     stopA();
   });
 
-  it("falls back to direct gateway poll origin after proxy network failure", async () => {
+  it("falls back to direct gateway poll origin after proxy network failure when allowed", async () => {
+    vi.stubEnv("VITE_GENESIS_ALLOW_DIRECT_FALLBACK", "1");
     const fetchMock = vi.fn()
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
       .mockResolvedValueOnce({
