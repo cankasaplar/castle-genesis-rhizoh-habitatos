@@ -87,8 +87,29 @@ function getActiveStockfishBridgeV0() {
   return stockfishMainEngineV0;
 }
 
+/**
+ * Route outbound UCI to Stockfish. Single-thread WASM aliases postMessage to
+ * postCustomMessage, which no-ops when PThread is undefined — use onCustomMessage.
+ * @param {{ onCustomMessage?: Function, postMessage?: Function } | null} bridge
+ * @param {string} message
+ * @returns {"onCustomMessage" | "postMessage" | false}
+ */
+export function deliverChessStockfishUciCommandV0(bridge, message) {
+  const cmd = String(message ?? "");
+  if (!bridge || !cmd) return false;
+  if (typeof bridge.onCustomMessage === "function") {
+    bridge.onCustomMessage(cmd);
+    return "onCustomMessage";
+  }
+  if (typeof bridge.postMessage === "function") {
+    bridge.postMessage(cmd);
+    return "postMessage";
+  }
+  return false;
+}
+
 function postStockfishBridgeMessageV0(message) {
-  stockfishMainEngineV0?.postMessage?.(message);
+  deliverChessStockfishUciCommandV0(stockfishMainEngineV0, message);
 }
 
 function disposeStockfishBridgeV0() {
