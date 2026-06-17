@@ -28,6 +28,7 @@ let ensureStopFnV0 = null;
 let wireActiveV0 = false;
 
 const POLL_INTERVAL_MS_V0 = 6500;
+const GENESIS_POLL_FETCH_TIMEOUT_MS_V0 = 8000;
 
 function listGenesisPollOriginsV0(preferred = "") {
   const primary = String(preferred || resolveGenesisGatewayHttpBaseV0() || "")
@@ -45,12 +46,39 @@ function listGenesisPollOriginsV0(preferred = "") {
 function publishGenesisStreamRegistryV0(detail = {}) {
   if (typeof window === "undefined") return;
   window.__rhizoh = window.__rhizoh || {};
-  window.__rhizoh.genesisStream = Object.freeze({
+  const prev =
+    window.__rhizoh.genesisStream && typeof window.__rhizoh.genesisStream === "object"
+      ? window.__rhizoh.genesisStream
+      : {};
+  const merged = {
+    ...prev,
     schema: "rhizoh.genesis_stream_client.v0",
     influencesExecution: false,
     wired: wireActiveV0,
     ...detail
-  });
+  };
+  if (detail.status === "sse_error" && prev.pollOk === true) {
+    merged.status = "poll_ok";
+    merged.sseStatus = "sse_error";
+  } else if (detail.status === "open") {
+    merged.sseStatus = "open";
+  } else if (detail.status === "connecting") {
+    merged.sseStatus = "connecting";
+  }
+  window.__rhizoh.genesisStream = Object.freeze(merged);
+}
+
+async function fetchGenesisPollV0(url, timeoutMs = GENESIS_POLL_FETCH_TIMEOUT_MS_V0) {
+  if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
+    return fetch(url, { method: "GET", cache: "no-store", signal: AbortSignal.timeout(timeoutMs) });
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { method: "GET", cache: "no-store", signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function ingestGenesisEvent(j) {
@@ -103,10 +131,7 @@ async function pollGenesisRuntimeOnceV0(origin) {
     const hasFallback = index < origins.length - 1;
 
     try {
-      const res = await fetch(`${pollOrigin}/rhizoh/genesis/runtime`, {
-        method: "GET",
-        cache: "no-store"
-      });
+      const res = await fetchGenesisPollV0(`${pollOrigin}/rhizoh/genesis/runtime`);
       const j = await res.json().catch(() => null);
 
       if (!res.ok || !j?.ok) {
@@ -149,7 +174,8 @@ async function pollGenesisRuntimeOnceV0(origin) {
       }
       return;
     } catch (err) {
-      lastPollError = String(err?.message || err || "fetch_failed");
+      const aborted = err?.name === "AbortError" || String(err?.message || "").includes("aborted");
+      lastPollError = aborted ? "poll_timeout" : String(err?.message || err || "fetch_failed");
       if (hasFallback) continue;
       publishGenesisStreamRegistryV0({
         status: "poll_unreachable",

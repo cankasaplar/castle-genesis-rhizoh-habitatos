@@ -80,4 +80,31 @@ describe("genesisContinuityClientWireV0", () => {
     expect(window.__rhizoh.genesisStream?.pollViaDirect).toBe(true);
     stop();
   });
+
+  it("records poll_timeout when gateway cold start hangs", async () => {
+    const fetchMock = vi.fn((_url, init) =>
+      new Promise((resolve, reject) => {
+        init?.signal?.addEventListener?.("abort", () => {
+          reject(new DOMException("The operation was aborted", "AbortError"));
+        });
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("AbortSignal", {
+      timeout: () => {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), 5);
+        return controller.signal;
+      }
+    });
+
+    const mod = await import("../genesisContinuityClientWireV0.js");
+    const stop = mod.ensureGenesisContinuityClientWireV0();
+
+    await vi.waitFor(() => {
+      expect(window.__rhizoh.genesisStream?.pollError).toBe("poll_timeout");
+    });
+
+    stop();
+  });
 });
