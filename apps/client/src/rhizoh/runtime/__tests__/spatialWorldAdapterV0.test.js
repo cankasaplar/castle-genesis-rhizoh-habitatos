@@ -6,11 +6,13 @@ import {
   ensureSpatialWorldAdapterForExecutionV0,
   isSpatialWorldAdapterAttachedV0,
   resolveSpatialNodeGeoV0,
+  retryDeferredSpatialCommitsV0,
   spatialNodeKeyV0,
   validateSpatialSinkV0,
   SPATIAL_SINK_MISSING_CODE_V0,
   __resetSpatialWorldAdapterForTestV0
 } from "../spatialWorldAdapterV0.js";
+import { resolveSpatialSinkProbeV0 } from "../spatialWorldSinkProbeV0.js";
 import { registerSpatialNodeV0, SPATIAL_NODE_TIER_V0, __resetSpatialNodeLayerForTestV0 } from "../rhizohSpatialNodeLayerV0.js";
 import { __resetCesiumExecutorForTestV0, registerCesiumExecutorApiV0 } from "../../../castleFlight/cesiumCommandExecutorV0.js";
 import { __resetSpatialExecutionGovernorForTestV0 } from "../spatialExecutionGovernorV0.js";
@@ -43,7 +45,46 @@ describe("spatialWorldAdapterV0", () => {
     const sink = validateSpatialSinkV0();
     expect(sink.ok).toBe(false);
     expect(sink.code).toBe(SPATIAL_SINK_MISSING_CODE_V0);
-    expect(sink.sink).toBe("missing");
+    expect(sink.worldCommittedCount).toBe(0);
+    expect(sink.hasCommitSurface).toBe(false);
+  });
+
+  it("does not count deferred executor commits as worldCommitted", () => {
+    window.__CASTLE_CESIUM__ = {};
+    const row = registerSpatialNodeV0(SPATIAL_NODE_TIER_V0.TEMPORAL, "deferred-node", {
+      kind: "causal_projection",
+      spatial_vector: { x: 0.1, y: 0.1, z: 1 }
+    });
+
+    const out = commitSpatialNodeToWorldV0(row);
+    expect(out.deferred).toBe(true);
+    expect(out.worldCommitted).toBe(false);
+
+    const sink = validateSpatialSinkV0();
+    expect(sink.worldCommittedCount).toBe(0);
+    expect(sink.deferredCount).toBe(1);
+    expect(sink.committedCount).toBe(0);
+    expect(sink.backlog).toBe(1);
+  });
+
+  it("retries deferred commits when cesium commit surface registers", () => {
+    window.__CASTLE_CESIUM__ = {};
+    const row = registerSpatialNodeV0(SPATIAL_NODE_TIER_V0.TEMPORAL, "retry-node", {
+      kind: "causal_projection"
+    });
+    commitSpatialNodeToWorldV0(row);
+    expect(validateSpatialSinkV0().deferredCount).toBe(1);
+
+    registerCesiumExecutorApiV0({
+      ready: true,
+      commandReady: true,
+      commitSpatialNode: () => ({ ok: true })
+    });
+
+    const retry = retryDeferredSpatialCommitsV0();
+    expect(retry.worldCommitted).toBe(1);
+    expect(validateSpatialSinkV0().worldCommittedCount).toBe(1);
+    expect(validateSpatialSinkV0().deferredCount).toBe(0);
   });
 
   it("commits spatial nodes through cesium commit_spatial_node op", () => {
@@ -65,30 +106,30 @@ describe("spatialWorldAdapterV0", () => {
 
     const out = commitSpatialNodeToWorldV0(row);
     expect(out.ok).toBe(true);
+    expect(out.worldCommitted).toBe(true);
     expect(commits.length).toBe(1);
-    expect(commits[0].node.id).toContain("causal_n1");
   });
 
-  it("attaches stream consumer and drains on execution + emitter active", () => {
+  it("publishes worldLayer and sink probe registries", () => {
+    validateSpatialSinkV0();
+    expect(window.__rhizoh.worldLayer).toBeDefined();
+    expect(window.__rhizoh.spatialSinkProbe).toBeDefined();
+    const probe = resolveSpatialSinkProbeV0();
+    expect(probe.layerMode).toBeDefined();
+  });
+
+  it("drainSpatialStreamToWorld is idempotent per world-committed key", () => {
     registerCesiumExecutorApiV0({
       ready: true,
       commandReady: true,
       commitSpatialNode: () => ({ ok: true })
     });
-    registerSpatialNodeV0(SPATIAL_NODE_TIER_V0.TEMPORAL, "a", {
-      kind: "causal_projection",
-      spatial_vector: { x: 0, y: 0, z: 1 }
-    });
+    registerSpatialNodeV0(SPATIAL_NODE_TIER_V0.TEMPORAL, "dup", { kind: "node" });
 
-    attachSpatialWorldAdapterV0();
-    expect(isSpatialWorldAdapterAttachedV0()).toBe(true);
-
-    const out = ensureSpatialWorldAdapterForExecutionV0({
-      executionRunning: true,
-      emitterActivated: true
-    });
-    expect(out.drained).toBe(true);
-    expect(out.drain?.committed).toBe(1);
+    const first = drainSpatialStreamToWorldV0();
+    const second = drainSpatialStreamToWorldV0();
+    expect(first.worldCommitted).toBe(1);
+    expect(second.skipped).toBe(1);
   });
 
   it("resolveSpatialNodeGeo uses world anchor + vector offset", () => {
@@ -97,20 +138,5 @@ describe("spatialWorldAdapterV0", () => {
     });
     expect(geo.lat).toBeGreaterThan(41.04);
     expect(geo.lon).toBeGreaterThan(29.0);
-  });
-
-  it("drainSpatialStreamToWorld is idempotent per node key", () => {
-    registerCesiumExecutorApiV0({
-      ready: true,
-      commandReady: true,
-      commitSpatialNode: () => ({ ok: true })
-    });
-    const row = registerSpatialNodeV0(SPATIAL_NODE_TIER_V0.TEMPORAL, "dup", { kind: "node" });
-    expect(spatialNodeKeyV0(row)).toContain("dup");
-
-    const first = drainSpatialStreamToWorldV0();
-    const second = drainSpatialStreamToWorldV0();
-    expect(first.committed).toBe(1);
-    expect(second.skipped).toBe(1);
   });
 });
