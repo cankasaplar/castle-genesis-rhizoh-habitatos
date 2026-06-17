@@ -24,9 +24,11 @@ import {
   __resetGroundingLayerForTestV1,
   evaluateGroundingV1
 } from "../rhizohGroundingLayerV1.js";
+import { __resetSpatialWorldAdapterForTestV0 } from "../spatialWorldAdapterV0.js";
 
 function resetAll() {
   __resetSpatialExecutionGovernorForTestV0();
+  __resetSpatialWorldAdapterForTestV0();
   __resetCausalGraphSpatialBridgeForTestV0();
   __resetSpatialEventEmitterForTestV0();
   __resetSpatialTruthValidatorForTestV0();
