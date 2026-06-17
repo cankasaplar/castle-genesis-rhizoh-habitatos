@@ -22,26 +22,30 @@ import {
 import { PIECE_UNICODE_V0 } from "./RhizohCastleLibraryPanelV0.jsx";
 
 function boardRowsFromFen(fen) {
-  const chess = createChessArenaGameV0({ fen });
-  const board = chess.chess.board();
-  const rows = [];
-  for (let r = 0; r < 8; r += 1) {
-    const row = [];
-    for (let c = 0; c < 8; c += 1) {
-      const cell = board[r][c];
-      if (!cell) {
-        row.push(null);
-        continue;
+  try {
+    const chess = createChessArenaGameV0({ fen });
+    const board = chess.chess.board();
+    const rows = [];
+    for (let r = 0; r < 8; r += 1) {
+      const row = [];
+      for (let c = 0; c < 8; c += 1) {
+        const cell = board[r][c];
+        if (!cell) {
+          row.push(null);
+          continue;
+        }
+        const key = `${cell.color}${String(cell.type).toUpperCase()}`;
+        row.push({
+          color: cell.color,
+          glyph: PIECE_UNICODE_V0[key] || "?"
+        });
       }
-      const key = `${cell.color}${String(cell.type).toUpperCase()}`;
-      row.push({
-        color: cell.color,
-        glyph: PIECE_UNICODE_V0[key] || "?"
-      });
+      rows.push(row);
     }
-    rows.push(row);
+    return rows;
+  } catch {
+    return Array.from({ length: 8 }, () => Array.from({ length: 8 }, () => null));
   }
-  return rows;
 }
 
 function ClockRowV0({ label, clock, active, tr }) {

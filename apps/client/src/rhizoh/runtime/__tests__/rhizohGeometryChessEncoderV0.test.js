@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Chess } from "chess.js";
-import { encodeChessTopologyEventV0 } from "../rhizohGeometryChessEncoderV0.js";
+import { encodeChessTopologyEventV0, measureEnemyKingMobilityV0 } from "../rhizohGeometryChessEncoderV0.js";
 import { RHIZOH_GEOMETRY_PATTERN_FAMILY_V0 } from "../rhizohGeometryPatternFamilyV0.js";
 
 describe("rhizohGeometryChessEncoderV0", () => {
@@ -25,5 +25,21 @@ describe("rhizohGeometryChessEncoderV0", () => {
   it("returns null for illegal SAN", () => {
     const chess = new Chess();
     expect(encodeChessTopologyEventV0(chess.fen(), "Qh5#")).toBeNull();
+  });
+
+  it("does not throw when encoding en passant (enemy-turn mobility probe clears ep square)", () => {
+    const before = "rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 2";
+    expect(() => encodeChessTopologyEventV0(before, "exd6")).not.toThrow();
+    const event = encodeChessTopologyEventV0(before, "exd6");
+    expect(event).not.toBeNull();
+    expect(event?.sourceSpace).toBe("chess");
+  });
+
+  it("measureEnemyKingMobilityV0 returns null for invalid FEN instead of throwing", () => {
+    const before = "rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 2";
+    const parts = before.split(" ");
+    parts[1] = "b";
+    const illegalEnemyTurn = parts.join(" ");
+    expect(measureEnemyKingMobilityV0(illegalEnemyTurn, "b")).toBeNull();
   });
 });

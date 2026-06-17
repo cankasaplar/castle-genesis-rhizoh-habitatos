@@ -95,28 +95,34 @@ const MODE_OPTIONS_V0 = [
 ];
 
 function boardRowsFromFen(fen) {
-  const chess = createChessArenaGameV0({ fen });
-  const board = chess.chess.board();
-  const rows = [];
-  // Rank 8 at top, rank 1 at bottom — white plays from bottom (standard UI).
-  for (let r = 0; r < 8; r += 1) {
-    const row = [];
-    for (let c = 0; c < 8; c += 1) {
-      const cell = board[r][c];
-      row.push(
-        cell
-          ? Object.freeze({
-              color: cell.color,
-              type: cell.type,
-              square: String.fromCharCode(97 + c) + String(8 - r),
-              glyph: PIECE_UNICODE_V0[`${cell.color}${cell.type.toUpperCase()}`] || "?"
-            })
-          : null
-      );
+  try {
+    const chess = createChessArenaGameV0({ fen });
+    const board = chess.chess.board();
+    const rows = [];
+    // Rank 8 at top, rank 1 at bottom — white plays from bottom (standard UI).
+    for (let r = 0; r < 8; r += 1) {
+      const row = [];
+      for (let c = 0; c < 8; c += 1) {
+        const cell = board[r][c];
+        row.push(
+          cell
+            ? Object.freeze({
+                color: cell.color,
+                type: cell.type,
+                square: String.fromCharCode(97 + c) + String(8 - r),
+                glyph: PIECE_UNICODE_V0[`${cell.color}${cell.type.toUpperCase()}`] || "?"
+              })
+            : null
+        );
+      }
+      rows.push(Object.freeze(row));
     }
-    rows.push(Object.freeze(row));
+    return Object.freeze(rows);
+  } catch {
+    return Object.freeze(
+      Array.from({ length: 8 }, () => Object.freeze(Array.from({ length: 8 }, () => null)))
+    );
   }
-  return Object.freeze(rows);
 }
 
 const MODE_LABELS_TR_V0 = Object.freeze({

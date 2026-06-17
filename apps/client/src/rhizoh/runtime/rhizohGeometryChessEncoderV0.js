@@ -18,11 +18,29 @@ function squareToCoordV0(square) {
 }
 
 /**
+ * Flip active color for mobility probes — must clear en-passant (only valid for side to move).
+ * @param {string} fen
+ * @param {'w'|'b'} color
+ */
+function flipActiveColorFenV0(fen, color) {
+  const parts = String(fen || "").trim().split(/\s+/);
+  if (parts.length < 4) return null;
+  parts[1] = color;
+  parts[3] = "-";
+  return parts.join(" ");
+}
+
+/**
  * @param {string} fen
  * @param {'w'|'b'} color
  */
 function findKingSquareV0(fen, color) {
-  const chess = new Chess(fen);
+  let chess;
+  try {
+    chess = new Chess(fen);
+  } catch {
+    return null;
+  }
   const board = chess.board();
   const target = color === "w" ? "w" : "b";
   for (let rank = 0; rank < 8; rank += 1) {
@@ -42,7 +60,12 @@ function findKingSquareV0(fen, color) {
  * @param {'w'|'b'} kingColor
  */
 export function measureEnemyKingMobilityV0(fen, kingColor) {
-  const chess = new Chess(fen);
+  let chess;
+  try {
+    chess = new Chess(fen);
+  } catch {
+    return null;
+  }
   if (chess.turn() !== kingColor) return null;
   const kingSq = findKingSquareV0(fen, kingColor);
   if (!kingSq) return 0;
@@ -76,7 +99,12 @@ function countFriendlyNeighborsV0(chess, square, color) {
  * @param {string} san
  */
 export function encodeChessTopologyEventV0(beforeFen, san) {
-  const chess = new Chess(String(beforeFen || ""));
+  let chess;
+  try {
+    chess = new Chess(String(beforeFen || ""));
+  } catch {
+    return null;
+  }
   const moverColor = chess.turn();
   const enemyColor = moverColor === "w" ? "b" : "w";
 
@@ -91,11 +119,10 @@ export function encodeChessTopologyEventV0(beforeFen, san) {
   const afterFen = chess.fen();
   const kingMobAfter = measureEnemyKingMobilityV0(afterFen, enemyColor);
 
-  const beforeEnemyTurn = new Chess(beforeFen);
-  const parts = beforeFen.split(" ");
-  parts[1] = enemyColor;
-  const enemyTurnFen = parts.join(" ");
-  const kingMobBefore = measureEnemyKingMobilityV0(enemyTurnFen, enemyColor);
+  const enemyTurnFen = flipActiveColorFenV0(beforeFen, enemyColor);
+  const kingMobBefore = enemyTurnFen
+    ? measureEnemyKingMobilityV0(enemyTurnFen, enemyColor)
+    : null;
 
   const enclosureDelta =
     kingMobBefore != null && kingMobAfter != null ? Math.max(0, kingMobBefore - kingMobAfter) : 0;
