@@ -1,6 +1,7 @@
 /**
  * Chess Game Cluster v0 — 8 parallel AI vs AI matches, round-robin Stockfish scheduler.
- * Simulation layer — always on; independent of spatial/world gates.
+ * Simulation + learning layers are spatial-independent and survive engine sandbox failures.
+ * Compute (Stockfish worker) is optional — heuristic sim keeps ticks/event bus alive offline.
  * RESEARCH-ONLY
  */
 

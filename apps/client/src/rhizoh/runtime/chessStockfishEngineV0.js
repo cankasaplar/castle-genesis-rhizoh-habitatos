@@ -19,6 +19,9 @@ export const CHESS_STOCKFISH_ASSET_PATHS_V0 = Object.freeze({
   wasm: "/chess-engine/stockfish-nnue-16-single.wasm"
 });
 
+/** COEP-safe spawn: blob inline WASM only — hash URL workers disabled (CORP/cache fragile). */
+export const CHESS_STOCKFISH_SPAWN_POLICY_V0 = "blob_only";
+
 function resolveStockfishWorkerUrlV0(wasmInHash = null) {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const js = CHESS_STOCKFISH_ASSET_PATHS_V0.workerJs;
@@ -77,7 +80,8 @@ export function getChessStockfishEngineDetailV0() {
     workerUrl: resolveStockfishWorkerUrlV0(),
     wasmPath: CHESS_STOCKFISH_ASSET_PATHS_V0.wasm,
     lastSpawnStrategy: lastSpawnStrategyV0,
-    spawnStrategies: listStockfishSpawnStrategiesV0().map((s) => s.name)
+    spawnStrategies: listStockfishSpawnStrategiesV0().map((s) => s.name),
+    spawnPolicy: CHESS_STOCKFISH_SPAWN_POLICY_V0
   });
 }
 
@@ -277,6 +281,12 @@ async function verifyStockfishAssetsV0() {
 
     const jsType = (jsRes.headers.get("content-type") || "").toLowerCase();
     const wasmType = (wasmRes.headers.get("content-type") || "").toLowerCase();
+    const jsCorp = (jsRes.headers.get("cross-origin-resource-policy") || "").toLowerCase();
+    if (!jsCorp.includes("same-origin") && !jsCorp.includes("same-site")) {
+      logStockfishV0("warn", "worker js missing CORP header — hash spawn strategies may fail under COEP", {
+        jsCorp: jsCorp || null
+      });
+    }
     if (wasmType.includes("text/html")) {
       initErrorV0 = "wasm_content_type_html_likely_spa_fallback";
       logStockfishV0("error", "wasm preflight content-type is html", { wasmType });
@@ -345,19 +355,10 @@ ${patched}`;
 }
 
 function listStockfishSpawnStrategiesV0() {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const absoluteWasm = `${origin}${CHESS_STOCKFISH_ASSET_PATHS_V0.wasm}`;
+  // Single stable path under COEP: inline WASM in blob worker, then blob_coep fallback.
+  // absolute_hash / relative_hash / blob_worker disabled — they depend on /chess-engine/*.js CORP
+  // or cross-origin wasm fetch and crash with generic worker_error on rhizoh.com.
   return [
-    {
-      name: "absolute_hash",
-      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
-      build: async () => resolveStockfishWorkerUrlV0(absoluteWasm)
-    },
-    {
-      name: "relative_hash",
-      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
-      build: async () => resolveStockfishWorkerUrlV0(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm)
-    },
     {
       name: "wasm_binary_inline",
       uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_HEAVY_MS_V0,
@@ -380,18 +381,6 @@ function listStockfishSpawnStrategiesV0() {
         trackSpawnBlobUrlV0(jsBlobUrl);
         trackSpawnBlobUrlV0(wasmBlobUrl);
         return `${jsBlobUrl}#${encodeURIComponent(wasmBlobUrl)},worker`;
-      }
-    },
-    {
-      name: "blob_worker",
-      uciTimeoutMs: STOCKFISH_UCI_TIMEOUT_MS_V0,
-      build: async () => {
-        const assets = await ensureCachedStockfishAssetsV0();
-        const blobUrl = URL.createObjectURL(
-          new Blob([assets.jsSource], { type: "application/javascript" })
-        );
-        trackSpawnBlobUrlV0(blobUrl);
-        return `${blobUrl}#${encodeURIComponent(absoluteWasm)},worker`;
       }
     }
   ];

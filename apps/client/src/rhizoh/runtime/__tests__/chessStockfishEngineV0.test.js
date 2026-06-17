@@ -14,17 +14,11 @@ describe("chessStockfishEngineV0", () => {
     expect(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm).toBe("/chess-engine/stockfish-nnue-16-single.wasm");
   });
 
-  it("prefers absolute_hash then wasm_binary_inline spawn strategies", () => {
+  it("uses blob-only spawn policy (no hash URL workers under COEP)", () => {
     disposeChessStockfishEngineV0();
     const detail = getChessStockfishEngineDetailV0();
-    expect(detail.spawnStrategies[0]).toBe("absolute_hash");
-    expect(detail.spawnStrategies).toEqual([
-      "absolute_hash",
-      "relative_hash",
-      "wasm_binary_inline",
-      "blob_coep",
-      "blob_worker"
-    ]);
+    expect(detail.spawnPolicy).toBe("blob_only");
+    expect(detail.spawnStrategies).toEqual(["wasm_binary_inline", "blob_coep"]);
   });
 
   it("starts in not_started and can reset after dispose", () => {
