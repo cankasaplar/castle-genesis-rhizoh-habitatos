@@ -11,7 +11,8 @@ import {
   __resetChessLearningMonitorForTestV0,
   ensureChessLearningMonitorListenersV0,
   getChessLearningMonitorSnapshotV0,
-  recordChessLearningMonitorMoveV0
+  recordChessLearningMonitorMoveV0,
+  startChessLearningMeasurementV0
 } from "../chessLearningMonitorV0.js";
 
 vi.mock("../chessClusterMovePickerV0.js", () => ({
@@ -73,5 +74,18 @@ describe("chessLearningMonitorV0", () => {
     expect(snap.recentMoves.some((m) => m.san === "Nf3")).toBe(true);
     expect(snap.recentPolicyDiffs.some((d) => d.summary === "book vs engine")).toBe(true);
     expect(window.__rhizoh.chessLearningMonitor).toBeTruthy();
+  });
+
+  it("startChessLearningMeasurementV0 exposes counters", () => {
+    __resetChessLearningMonitorForTestV0();
+    startChessLearningMeasurementV0();
+    recordChessLearningMonitorMoveV0({
+      move: { slotId: 1, san: "d4", engine: "rhizoh_ai", atMs: 2 },
+      observation: {}
+    });
+    const snap = getChessLearningMonitorSnapshotV0("measure");
+    expect(snap.measurement.active).toBe(true);
+    expect(snap.measurement.movesMeasured).toBe(1);
+    expect(snap.measurement.stockfishMovesMeasured).toBe(0);
   });
 });

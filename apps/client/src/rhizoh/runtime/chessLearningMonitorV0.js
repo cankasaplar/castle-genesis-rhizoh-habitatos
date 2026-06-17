@@ -17,6 +17,23 @@ const MAX_RING_V0 = 24;
 const recentMovesV0 = [];
 /** @type {object[]} */
 const recentPolicyDiffsV0 = [];
+let measurementStartedAtMsV0 = 0;
+let movesMeasuredV0 = 0;
+let stockfishMovesMeasuredV0 = 0;
+let policyDiffsMeasuredV0 = 0;
+let alignedPolicyDiffsV0 = 0;
+
+export function startChessLearningMeasurementV0() {
+  if (typeof window === "undefined") return getChessLearningMonitorSnapshotV0("already_off");
+  ensureChessLearningMonitorListenersV0();
+  if (!measurementStartedAtMsV0) measurementStartedAtMsV0 = Date.now();
+  return publishChessLearningMonitorV0("measurement_start");
+}
+
+function isStockfishEngineMoveV0(engine) {
+  const id = String(engine || "");
+  return id === "stockfish_wasm" || id.includes("stockfish");
+}
 
 function pushRingV0(list, row) {
   list.push(Object.freeze({ ...row }));
@@ -25,6 +42,9 @@ function pushRingV0(list, row) {
 
 export function recordChessLearningMonitorMoveV0(detail) {
   if (!detail?.move) return;
+  if (!measurementStartedAtMsV0) measurementStartedAtMsV0 = Date.now();
+  movesMeasuredV0 += 1;
+  if (isStockfishEngineMoveV0(detail.move.engine)) stockfishMovesMeasuredV0 += 1;
   pushRingV0(recentMovesV0, {
     kind: "move",
     slotId: detail.move.slotId,
@@ -39,6 +59,9 @@ export function recordChessLearningMonitorMoveV0(detail) {
 
 export function recordChessLearningMonitorPolicyDiffV0(policyDiff) {
   if (!policyDiff) return;
+  if (!measurementStartedAtMsV0) measurementStartedAtMsV0 = Date.now();
+  policyDiffsMeasuredV0 += 1;
+  if (!policyDiff.drifted) alignedPolicyDiffsV0 += 1;
   pushRingV0(recentPolicyDiffsV0, {
     kind: "policy_diff",
     ...policyDiff
@@ -47,7 +70,7 @@ export function recordChessLearningMonitorPolicyDiffV0(policyDiff) {
 }
 
 function publishChessLearningMonitorV0(reason = "update") {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") return null;
   const snap = getChessLearningMonitorSnapshotV0(reason);
   window.__rhizoh = window.__rhizoh || {};
   window.__rhizoh.chessLearningMonitor = snap;
@@ -56,6 +79,7 @@ function publishChessLearningMonitorV0(reason = "update") {
   } catch {
     /* noop */
   }
+  return snap;
 }
 
 /**
@@ -67,10 +91,23 @@ export function getChessLearningMonitorSnapshotV0(reason = "poll") {
   const learning = typeof window !== "undefined" ? window.__rhizoh?.chessClusterLearning : null;
   const spectator = getChessClusterSlotV0(CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0);
   const engineStatus = getChessStockfishEngineStatusV0();
+  const alignmentRate =
+    policyDiffsMeasuredV0 > 0
+      ? Number((alignedPolicyDiffsV0 / policyDiffsMeasuredV0).toFixed(3))
+      : null;
 
   return Object.freeze({
     schema: CHESS_LEARNING_MONITOR_SCHEMA_V0,
     reason,
+    measurement: Object.freeze({
+      active: Boolean(measurementStartedAtMsV0),
+      startedAtMs: measurementStartedAtMsV0 || null,
+      movesMeasured: movesMeasuredV0,
+      stockfishMovesMeasured: stockfishMovesMeasuredV0,
+      policyDiffsMeasured: policyDiffsMeasuredV0,
+      alignedPolicyDiffs: alignedPolicyDiffsV0,
+      alignmentRate
+    }),
     spectatorSlotId: CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0,
     spectator,
     engineStatus,
@@ -92,6 +129,7 @@ let listenersInstalledV0 = false;
 export function ensureChessLearningMonitorListenersV0() {
   if (typeof window === "undefined" || listenersInstalledV0) return;
   listenersInstalledV0 = true;
+  if (!measurementStartedAtMsV0) measurementStartedAtMsV0 = Date.now();
   window.addEventListener(CHESS_CLUSTER_MOVE_EVENT_V0, (ev) => {
     recordChessLearningMonitorMoveV0(ev?.detail);
   });
@@ -109,4 +147,9 @@ export function __resetChessLearningMonitorForTestV0() {
   recentMovesV0.length = 0;
   recentPolicyDiffsV0.length = 0;
   listenersInstalledV0 = false;
+  measurementStartedAtMsV0 = 0;
+  movesMeasuredV0 = 0;
+  stockfishMovesMeasuredV0 = 0;
+  policyDiffsMeasuredV0 = 0;
+  alignedPolicyDiffsV0 = 0;
 }

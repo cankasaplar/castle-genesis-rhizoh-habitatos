@@ -27,7 +27,7 @@ import {
   tickChessClusterSlotClockV0
 } from "./chessClusterClockV0.js";
 import { ensureChessLearningMonitorListenersV0 } from "./chessLearningMonitorV0.js";
-import { readChessArenaSessionV0 } from "./chessArenaSessionV0.js";
+import { readChessArenaSessionV0, resolveChessTimeControlV0, CHESS_ARENA_SESSION_EVENT_V0 } from "./chessArenaSessionV0.js";
 import { logChessMovePlayedV0 } from "./chessArenaTelemetryV0.js";
 import { publishRhizohChessManagerV0 } from "./rhizohChessManagerV0.js";
 import { publishChessGameRouterV0 } from "./chessGameRouterV0.js";
@@ -50,6 +50,36 @@ let clockTimerV0 = null;
 let roundRobinIndexV0 = 0;
 let busyV0 = false;
 let clusterTimeControlIdV0 = readChessArenaSessionV0().timeControlId;
+let sessionListenerInstalledV0 = false;
+
+function ensureChessClusterSessionListenerV0() {
+  if (typeof window === "undefined" || sessionListenerInstalledV0) return;
+  sessionListenerInstalledV0 = true;
+  window.addEventListener(CHESS_ARENA_SESSION_EVENT_V0, (ev) => {
+    const tcId = ev?.detail?.timeControlId;
+    if (!tcId || !runningV0) return;
+    applyChessClusterTimeControlV0(tcId);
+  });
+}
+
+/**
+ * Hot-apply arena session time control to active cluster slots (ply 0 clocks reset).
+ * @param {string} timeControlId
+ */
+export function applyChessClusterTimeControlV0(timeControlId) {
+  const tc = resolveChessTimeControlV0(timeControlId);
+  clusterTimeControlIdV0 = tc.id;
+  for (const slot of slotsV0) {
+    if (!slot || slot.status !== "active") continue;
+    slot.timeControlId = tc.id;
+    slot.incrementMs = tc.incrementMs;
+    if ((slot.ply || 0) < 1) {
+      slot.whiteClockMs = tc.initialMs;
+      slot.blackClockMs = tc.initialMs;
+    }
+  }
+  publishClusterRegistryV0({ timeControlId: tc.id });
+}
 
 function createSlotV0(slotId, timeControlId = clusterTimeControlIdV0) {
   const mode = resolveChessClusterSlotModeV0(slotId);
@@ -308,6 +338,7 @@ export function startChessGameClusterV0(opts = {}) {
     opts.timeControlId || readChessArenaSessionV0().timeControlId;
 
   ensureChessLearningMonitorListenersV0();
+  ensureChessClusterSessionListenerV0();
 
   slotsV0 = Array.from({ length: CHESS_CLUSTER_SLOT_COUNT_V0 }, (_, i) =>
     createSlotV0(i, clusterTimeControlIdV0)

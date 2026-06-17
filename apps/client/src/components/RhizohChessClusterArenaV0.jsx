@@ -10,17 +10,16 @@ import {
   CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0,
   getChessStockfishEngineStatusV0
 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
-import { resolveChessClusterAgentPolicyV0 } from "../rhizoh/runtime/chessClusterAgentPolicyV0.js";
 import { createChessArenaGameV0 } from "../rhizoh/runtime/chessArenaEngineV0.js";
-import { CHESS_BOARD_THEME_V0 } from "../rhizoh/runtime/chessArenaThemeV0.js";
+import { useChessArenaDisplaySettingsV0 } from "../hooks/useChessArenaDisplaySettingsV0.js";
+import { resolveChessClusterAgentPolicyV0 } from "../rhizoh/runtime/chessClusterAgentPolicyV0.js";
 import {
   CHESS_LEARNING_MONITOR_EVENT_V0,
   CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0,
-  getChessLearningMonitorSnapshotV0
+  getChessLearningMonitorSnapshotV0,
+  startChessLearningMeasurementV0
 } from "../rhizoh/runtime/chessLearningMonitorV0.js";
 import { PIECE_UNICODE_V0 } from "./RhizohCastleLibraryPanelV0.jsx";
-
-const BOARD_COLORS_V0 = CHESS_BOARD_THEME_V0.classic;
 
 function boardRowsFromFen(fen) {
   const chess = createChessArenaGameV0({ fen });
@@ -63,7 +62,9 @@ const LiveCameraBoardV0 = memo(function LiveCameraBoardV0({
   slot,
   highlight,
   featured,
-  tr
+  tr,
+  boardColors,
+  pieceBold
 }) {
   if (!slot) {
     return (
@@ -120,7 +121,7 @@ const LiveCameraBoardV0 = memo(function LiveCameraBoardV0({
         {rows.map((row, ri) =>
           row.map((cell, ci) => {
             const dark = (ri + ci) % 2 === 1;
-            const bg = dark ? BOARD_COLORS_V0.dark : BOARD_COLORS_V0.light;
+            const bg = dark ? boardColors.dark : boardColors.light;
             return (
               <div
                 key={`${ri}-${ci}`}
@@ -129,7 +130,9 @@ const LiveCameraBoardV0 = memo(function LiveCameraBoardV0({
               >
                 {cell ? (
                   <span
-                    className={`select-none font-black leading-none ${
+                    className={`select-none leading-none ${
+                      pieceBold ? "font-black" : "font-semibold"
+                    } ${
                       featured
                         ? "text-[clamp(0.65rem,2.8vw,1.15rem)]"
                         : "text-[clamp(0.55rem,2.2vw,0.95rem)]"
@@ -162,20 +165,27 @@ const LiveCameraBoardV0 = memo(function LiveCameraBoardV0({
   );
 });
 
-function LearningStripV0({ monitor, router, tr }) {
+function LearningStripV0({ monitor, router, tr, timeControlLabel }) {
   const recentMoves = monitor?.recentMoves || [];
   const lastMove = recentMoves[recentMoves.length - 1];
+  const m = monitor?.measurement;
 
   return (
     <div className="rounded-lg border border-violet-500/30 bg-violet-950/25 px-3 py-2 text-[10px] text-white/75">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-        <span className="font-semibold text-violet-200/90">{tr ? "Öğrenme" : "Learning"}</span>
+        <span className="font-semibold text-violet-200/90">{tr ? "Öğrenme ölçümü" : "Learning measure"}</span>
         <span>
           {tr ? "Motor" : "Engine"}: <span className="font-mono">{monitor?.engineStatus || "—"}</span>
         </span>
         <span>
-          router: {router?.activeGames ?? 0}/{router?.gameCount ?? 8}{" "}
-          {tr ? "oyun" : "games"} · rr #{router?.roundRobinIndex ?? 0}
+          {tr ? "hamle" : "moves"}: {m?.movesMeasured ?? 0} · SF {m?.stockfishMovesMeasured ?? 0}
+        </span>
+        <span>
+          policy_diff: {m?.policyDiffsMeasured ?? 0}
+          {m?.alignmentRate != null ? ` · align ${Math.round(m.alignmentRate * 100)}%` : ""}
+        </span>
+        <span>
+          router: {router?.activeGames ?? 0}/{router?.gameCount ?? 8} · {timeControlLabel || "—"}
         </span>
         <span>mem {monitor?.memoryNodeCount ?? 0}</span>
         <span>tick {monitor?.clusterTick ?? 0}</span>
@@ -203,6 +213,7 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
   uiLocale = "en"
 }) {
   const tr = uiLocale === "tr";
+  const { boardColors, pieceBold, timeControl } = useChessArenaDisplaySettingsV0();
   const [slots, setSlots] = useState(() => listChessClusterSlotsV0());
   const [highlightSlot, setHighlightSlot] = useState(null);
   const [tickCount, setTickCount] = useState(0);
@@ -212,6 +223,7 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
 
   useEffect(() => {
     if (!open) return undefined;
+    startChessLearningMeasurementV0();
     const refresh = () => {
       setSlots(listChessClusterSlotsV0());
       setTeacherStatus(getChessStockfishEngineStatusV0());
@@ -281,8 +293,8 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
             </h2>
             <p className="text-[10px] text-white/45 sm:text-[11px]">
               {tr
-                ? "#1 Rhizoh AI vs Stockfish · heuristic hemen başlar, Stockfish hazır olunca güçlenir"
-                : "#1 Rhizoh AI vs Stockfish · heuristic starts immediately, Stockfish upgrades when ready"}
+                ? `#1 Rhizoh AI vs Stockfish · tahta: ${timeControl.labelTr} · ${boardColors.label || "classic"}`
+                : `#1 Rhizoh AI vs Stockfish · ${timeControl.labelEn} · ${boardColors.label || "classic"}`}
             </p>
           </div>
           <button
@@ -304,9 +316,14 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
               {tr ? "oyun" : "games"}
             </span>
             <span>{tr ? "öğretmen" : "teacher"}: {teacherLabel}</span>
-            <span>{padded[0]?.clock?.timeControlId || "—"}</span>
+            <span>{timeControl.labelTr || padded[0]?.clock?.timeControlId || "—"}</span>
           </div>
-          <LearningStripV0 monitor={monitor} router={routerSnap} tr={tr} />
+          <LearningStripV0
+            monitor={monitor}
+            router={routerSnap}
+            tr={tr}
+            timeControlLabel={tr ? timeControl.labelTr : timeControl.labelEn}
+          />
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-2 sm:p-3">
@@ -318,6 +335,8 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
                 featured={i === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0}
                 highlight={highlightSlot === i}
                 tr={tr}
+                boardColors={boardColors}
+                pieceBold={pieceBold}
               />
             ))}
           </div>

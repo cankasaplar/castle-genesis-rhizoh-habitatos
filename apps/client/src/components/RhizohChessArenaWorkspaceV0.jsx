@@ -49,6 +49,7 @@ import {
   normalizeChessMovesToSanV0
 } from "../rhizoh/runtime/chessMoveSanV0.js";
 import {
+  CHESS_ARENA_SESSION_EVENT_V0,
   listChessOpponentPresetsV0,
   listChessTimeControlsV0,
   readChessArenaSessionV0,
@@ -72,6 +73,7 @@ import {
 } from "../rhizoh/runtime/chessLearningSessionV0.js";
 import { CHESS_VARIANT_ID_V0, resolveChessVariantV0 } from "../rhizoh/runtime/chessVariantRegistryV0.js";
 import {
+  CHESS_ARENA_THEME_EVENT_V0,
   CHESS_BOARD_THEME_V0,
   CHESS_PIECE_STYLE_V0,
   readChessArenaThemeV0,
@@ -310,6 +312,34 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     }).finally(refreshEngineStatusV0);
     return () => window.removeEventListener(CHESS_TEACHER_STATUS_EVENT_V0, onEngineStatus);
   }, [open, refreshEngineStatusV0]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onTheme = (ev) => setBoardTheme(ev?.detail || readChessArenaThemeV0());
+    const onSession = (ev) => {
+      const next = ev?.detail || readChessArenaSessionV0();
+      setArenaSession(next);
+      const clocks = initialClocksFromSessionV0(next);
+      setWhiteClockMs(clocks.white);
+      setBlackClockMs(clocks.black);
+    };
+    const onStorage = () => {
+      setBoardTheme(readChessArenaThemeV0());
+      const next = readChessArenaSessionV0();
+      setArenaSession(next);
+      const clocks = initialClocksFromSessionV0(next);
+      setWhiteClockMs(clocks.white);
+      setBlackClockMs(clocks.black);
+    };
+    window.addEventListener(CHESS_ARENA_THEME_EVENT_V0, onTheme);
+    window.addEventListener(CHESS_ARENA_SESSION_EVENT_V0, onSession);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(CHESS_ARENA_THEME_EVENT_V0, onTheme);
+      window.removeEventListener(CHESS_ARENA_SESSION_EVENT_V0, onSession);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return undefined;

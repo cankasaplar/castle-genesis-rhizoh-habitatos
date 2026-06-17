@@ -100,7 +100,15 @@ export function listChessArenaArchivePreviewV0(limit = 5) {
 
 export function getChessArenaLearningFeedV0() {
   if (typeof window === "undefined") {
-    return Object.freeze({ policyDiffs: [], clusterTick: 0, engineStatus: "unknown" });
+    return Object.freeze({
+      policyDiffs: [],
+      clusterTick: 0,
+      engineStatus: "unknown",
+      movesMeasured: 0,
+      stockfishMovesMeasured: 0,
+      policyDiffsMeasured: 0,
+      alignmentRate: null
+    });
   }
   const mem = window.__rhizoh?.chessClusterMemory;
   const cluster = window.__rhizoh?.chessGameCluster;
@@ -111,6 +119,7 @@ export function getChessArenaLearningFeedV0() {
     .concat(monitor.recentPolicyDiffs || [])
     .slice(-4);
   const spectator = monitor.spectator;
+  const measurement = monitor.measurement || {};
   return Object.freeze({
     policyDiffs,
     clusterTick: cluster?.tickCount ?? monitor.clusterTick ?? 0,
@@ -122,7 +131,12 @@ export function getChessArenaLearningFeedV0() {
     spectatorClock: spectator?.clock
       ? `${spectator.clock.whiteClock} / ${spectator.clock.blackClock}`
       : null,
-    recentMoveCount: monitor.recentMoves?.length ?? 0
+    recentMoveCount: monitor.recentMoves?.length ?? 0,
+    measurementActive: Boolean(measurement.active),
+    movesMeasured: measurement.movesMeasured ?? 0,
+    stockfishMovesMeasured: measurement.stockfishMovesMeasured ?? 0,
+    policyDiffsMeasured: measurement.policyDiffsMeasured ?? 0,
+    alignmentRate: measurement.alignmentRate ?? null
   });
 }
 

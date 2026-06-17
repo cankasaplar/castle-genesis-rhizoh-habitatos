@@ -4,6 +4,16 @@
 
 export const CHESS_ARENA_SESSION_SCHEMA_V0 = "rhizoh.chess_arena_session.v0";
 const LS_KEY_V0 = "rhizoh.chess_arena_session.v0";
+export const CHESS_ARENA_SESSION_EVENT_V0 = "rhizoh:chess-arena-session-v0";
+
+function publishChessArenaSessionV0(session) {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new CustomEvent(CHESS_ARENA_SESSION_EVENT_V0, { detail: session }));
+  } catch {
+    /* noop */
+  }
+}
 
 export const CHESS_TIME_CONTROL_V0 = Object.freeze({
   BULLET_1_0: Object.freeze({
@@ -126,6 +136,7 @@ export function saveChessArenaSessionV0(patch = {}) {
     } catch {
       /* noop */
     }
+    publishChessArenaSessionV0(next);
   }
   return next;
 }

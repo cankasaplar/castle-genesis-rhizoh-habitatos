@@ -14,8 +14,21 @@ import {
   readChessArenaSessionV0,
   resolveChessOpponentPresetV0,
   resolveChessTimeControlV0,
-  saveChessArenaSessionV0
+  saveChessArenaSessionV0,
+  CHESS_ARENA_SESSION_EVENT_V0
 } from "../rhizoh/runtime/chessArenaSessionV0.js";
+import {
+  CHESS_BOARD_THEME_V0,
+  CHESS_PIECE_STYLE_V0,
+  saveChessArenaThemeV0,
+  CHESS_ARENA_THEME_EVENT_V0
+} from "../rhizoh/runtime/chessArenaThemeV0.js";
+import {
+  CHESS_LEARNING_MONITOR_EVENT_V0,
+  getChessLearningMonitorSnapshotV0,
+  startChessLearningMeasurementV0
+} from "../rhizoh/runtime/chessLearningMonitorV0.js";
+import { useChessArenaDisplaySettingsV0 } from "../hooks/useChessArenaDisplaySettingsV0.js";
 import {
   CHESS_POLICY_MODE_V0,
   readChessPolicyModeV0,
@@ -70,10 +83,11 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
   onRetryEngine
 }) {
   const archive = listChessArenaArchivePreviewV0(4);
-  const learning = getChessArenaLearningFeedV0();
   const season = CHESS_ARENA_CURRENT_SEASON_V0;
   const timeControls = listChessTimeControlsV0();
   const opponentPresets = listChessOpponentPresetsV0();
+  const { theme: boardTheme, boardColors, pieceBold } = useChessArenaDisplaySettingsV0();
+  const [learning, setLearning] = useState(() => getChessArenaLearningFeedV0());
   const [timeControlId, setTimeControlId] = useState(() => readChessArenaSessionV0().timeControlId);
   const [opponentPresetId, setOpponentPresetId] = useState(
     () => readChessArenaSessionV0().opponentPresetId
@@ -85,9 +99,27 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
   const activeOpponent = resolveChessOpponentPresetV0(opponentPresetId);
 
   useEffect(() => {
-    const onStorage = () => setTimeControlId(readChessArenaSessionV0().timeControlId);
+    const refreshLearning = () => setLearning(getChessArenaLearningFeedV0());
+    const onSession = (ev) => {
+      const id = ev?.detail?.timeControlId;
+      if (id) setTimeControlId(id);
+      refreshLearning();
+    };
+    const onStorage = () => {
+      setTimeControlId(readChessArenaSessionV0().timeControlId);
+      refreshLearning();
+    };
+    window.addEventListener(CHESS_ARENA_SESSION_EVENT_V0, onSession);
+    window.addEventListener(CHESS_ARENA_THEME_EVENT_V0, refreshLearning);
+    window.addEventListener(CHESS_LEARNING_MONITOR_EVENT_V0, refreshLearning);
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    refreshLearning();
+    return () => {
+      window.removeEventListener(CHESS_ARENA_SESSION_EVENT_V0, onSession);
+      window.removeEventListener(CHESS_ARENA_THEME_EVENT_V0, refreshLearning);
+      window.removeEventListener(CHESS_LEARNING_MONITOR_EVENT_V0, refreshLearning);
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   const activeTc = resolveChessTimeControlV0(timeControlId);
@@ -133,6 +165,7 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
   };
 
   const openCluster = () => {
+    startChessLearningMeasurementV0();
     window.dispatchEvent(new CustomEvent(RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0));
   };
 
@@ -175,6 +208,55 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
               {tr ? "Aktif" : "Active"}: {tr ? activeTc.labelTr : activeTc.labelEn}
               {activeTc.incrementMs > 0 ? ` (+${activeTc.incrementMs / 1000}s)` : ""}
             </p>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div>
+              <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-white/45">
+                {tr ? "Tahta teması" : "Board theme"}
+              </p>
+              <select
+                value={boardTheme.boardThemeId}
+                onChange={(e) => saveChessArenaThemeV0({ boardThemeId: e.target.value })}
+                className="w-full rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+              >
+                {Object.entries(CHESS_BOARD_THEME_V0).map(([id, row]) => (
+                  <option key={id} value={id}>
+                    {row.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-white/45">
+                {tr ? "Taş stili" : "Piece style"}
+              </p>
+              <select
+                value={boardTheme.pieceStyleId}
+                onChange={(e) => saveChessArenaThemeV0({ pieceStyleId: e.target.value })}
+                className="w-full rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
+              >
+                <option value={CHESS_PIECE_STYLE_V0.unicode}>Unicode</option>
+                <option value={CHESS_PIECE_STYLE_V0.bold}>{tr ? "Kalın" : "Bold"}</option>
+              </select>
+            </div>
+          </div>
+          <div
+            className="mt-2 grid grid-cols-8 gap-px overflow-hidden rounded-md border border-white/10 p-1"
+            style={{ background: boardColors.dark }}
+            aria-hidden
+          >
+            {Array.from({ length: 16 }).map((_, i) => {
+              const dark = i % 2 === 1;
+              return (
+                <div
+                  key={i}
+                  className={`aspect-square ${pieceBold ? "font-black" : "font-semibold"} text-[10px] flex items-center justify-center`}
+                  style={{ background: dark ? boardColors.dark : boardColors.light, color: dark ? "#fff8" : "#0008" }}
+                >
+                  {i === 0 ? "♔" : ""}
+                </div>
+              );
+            })}
           </div>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <div>
@@ -272,7 +354,17 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
               tick {learning.clusterTick} ·{" "}
               {learning.clusterRunning ? (tr ? "cluster aktif" : "cluster on") : "cluster off"}
               {learning.spectatorPly != null ? ` · #1 ply ${learning.spectatorPly}` : ""}
+              {learning.movesMeasured != null ? ` · ${learning.movesMeasured} hamle` : ""}
+              {learning.stockfishMovesMeasured != null ? ` · SF ${learning.stockfishMovesMeasured}` : ""}
             </p>
+            {learning.policyDiffsMeasured != null ? (
+              <p className="mt-0.5 text-[9px] text-violet-200/80">
+                policy_diff {learning.policyDiffsMeasured}
+                {learning.alignmentRate != null
+                  ? ` · align ${Math.round(learning.alignmentRate * 100)}%`
+                  : ""}
+              </p>
+            ) : null}
             {learning.spectatorMode ? (
               <p className="mt-0.5 text-[9px] text-cyan-300/75">
                 {learning.spectatorMode}
