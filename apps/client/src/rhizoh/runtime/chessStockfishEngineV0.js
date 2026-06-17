@@ -277,18 +277,10 @@ async function verifyStockfishAssetsV0() {
   }
 }
 
-async function spawnStockfishWorkerV0() {
+function listStockfishSpawnStrategiesV0() {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const absoluteWasm = `${origin}${CHESS_STOCKFISH_ASSET_PATHS_V0.wasm}`;
-  const strategies = [
-    {
-      name: "absolute_hash",
-      build: async () => resolveStockfishWorkerUrlV0(absoluteWasm)
-    },
-    {
-      name: "relative_hash",
-      build: async () => resolveStockfishWorkerUrlV0(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm)
-    },
+  return [
     {
       name: "blob_worker",
       build: async () => {
@@ -298,25 +290,31 @@ async function spawnStockfishWorkerV0() {
         const blobUrl = URL.createObjectURL(new Blob([source], { type: "application/javascript" }));
         return `${blobUrl}#${encodeURIComponent(absoluteWasm)},worker`;
       }
+    },
+    {
+      name: "absolute_hash",
+      build: async () => resolveStockfishWorkerUrlV0(absoluteWasm)
+    },
+    {
+      name: "relative_hash",
+      build: async () => resolveStockfishWorkerUrlV0(CHESS_STOCKFISH_ASSET_PATHS_V0.wasm)
     }
   ];
+}
 
-  let lastErr = null;
-  for (const strategy of strategies) {
-    try {
-      lastSpawnStrategyV0 = strategy.name;
-      const workerUrl = await strategy.build();
-      logStockfishV0("info", "spawning worker", { workerUrl, strategy: strategy.name });
-      return new Worker(workerUrl, { type: "classic" });
-    } catch (err) {
-      lastErr = err;
-      logStockfishV0("warn", "worker spawn strategy failed", {
-        strategy: strategy.name,
-        error: String(err?.message || err)
-      });
-    }
-  }
-  throw lastErr || new Error("stockfish_worker_spawn_exhausted");
+async function initStockfishWorkerWithStrategyV0(strategy) {
+  lastSpawnStrategyV0 = strategy.name;
+  const workerUrl = await strategy.build();
+  logStockfishV0("info", "spawning worker", { workerUrl, strategy: strategy.name });
+  const worker = new Worker(workerUrl, { type: "classic" });
+  attachWorkerHandlersV0(worker);
+  worker.postMessage("uci");
+  await waitForWorkerOrUciV0(20000);
+  worker.postMessage("isready");
+  await waitReadyV0(12000);
+  worker.postMessage("setoption name UCI_AnalyseMode value false");
+  worker.postMessage("setoption name Hash value 64");
+  return worker;
 }
 
 function waitForWorkerOrUciV0(timeoutMs) {
@@ -387,17 +385,30 @@ async function ensureStockfishWorkerV0() {
       }
 
       resetReadyFlagsV0();
-      workerV0 = await spawnStockfishWorkerV0();
-      attachWorkerHandlersV0(workerV0);
-      workerV0.postMessage("uci");
-      await waitForWorkerOrUciV0(20000);
-      workerV0.postMessage("isready");
-      await waitReadyV0(12000);
-      workerV0.postMessage("setoption name UCI_AnalyseMode value false");
-      workerV0.postMessage("setoption name Hash value 64");
-      logStockfishV0("info", "ready", { status: "stockfish_wasm" });
-      publishEngineStatusV0("init_ready");
-      return workerV0;
+      let lastErr = null;
+      for (const strategy of listStockfishSpawnStrategiesV0()) {
+        try {
+          workerV0 = await initStockfishWorkerWithStrategyV0(strategy);
+          logStockfishV0("info", "ready", { status: "stockfish_wasm", strategy: strategy.name });
+          publishEngineStatusV0("init_ready");
+          return workerV0;
+        } catch (err) {
+          lastErr = err;
+          logStockfishV0("warn", "worker strategy init failed", {
+            strategy: strategy.name,
+            error: String(err?.message || err)
+          });
+          try {
+            workerV0?.terminate?.();
+          } catch {
+            /* noop */
+          }
+          workerV0 = null;
+          workerErrorRejectV0 = null;
+          resetReadyFlagsV0();
+        }
+      }
+      throw lastErr || new Error("stockfish_worker_spawn_exhausted");
     } catch (err) {
       initFailedV0 = true;
       initErrorV0 = String(err?.message || "stockfish_init_failed");

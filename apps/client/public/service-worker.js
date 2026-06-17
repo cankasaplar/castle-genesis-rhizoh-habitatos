@@ -3,7 +3,7 @@
  * N12 policy: never cache API, gateway, LLM, or user/ghost payloads.
  * Hashed /assets/ and /cesium/ are cached on demand after first load.
  */
-const SHELL_VERSION = "rhizoh-shell-v3";
+const SHELL_VERSION = "rhizoh-shell-v4";
 const CACHE_NAME = `rhizoh-app-shell-${SHELL_VERSION}`;
 
 const PRECACHE_URLS = ["/", "/index.html", "/manifest.webmanifest", "/favicon.svg"];
@@ -34,6 +34,12 @@ function isNavigationRequest(request) {
   const accept = request.headers.get("accept") || "";
   return accept.includes("text/html");
 }
+
+self.addEventListener("message", (event) => {
+  if (event?.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
