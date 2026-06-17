@@ -67,19 +67,26 @@ describe("chessStockfishEngineV0", () => {
     const jsSource = readFileSync(stockfishPath, "utf8");
     const autoGate =
       '"undefined"!=typeof self&&"worker"===self.location.hash.split(",")[1]';
+    const onmessageGate =
+      '"undefined"!=typeof onmessage&&("undefined"==typeof window||void 0===window.document)';
     const autoTail =
       '):"object"==typeof document&&document.currentScript?document.currentScript._exports=i():i())';
     expect(jsSource).toContain(autoGate);
+    expect(jsSource).toContain(onmessageGate);
     expect(jsSource).toContain(autoTail);
     const patched = jsSource
       .split(autoGate)
       .join('false&&"undefined"!=typeof self&&"worker"===self.location.hash.split(",")[1]')
+      .split(onmessageGate)
+      .join('false&&"undefined"!=typeof onmessage&&("undefined"==typeof window||void 0===window.document)')
       .split(autoTail)
       .join(
-        '):"object"==typeof document&&document.currentScript?document.currentScript._exports=i():(typeof self!=="undefined"?self.__SF_STOCKFISH_FACTORY__=i:0))'
+        '):"object"==typeof document&&document.currentScript?(typeof self!=="undefined"?self.__SF_STOCKFISH_FACTORY__=i:0):(typeof self!=="undefined"?self.__SF_STOCKFISH_FACTORY__=i:0))'
       );
     expect(patched).toContain("__SF_STOCKFISH_FACTORY__");
     expect(patched).toContain('false&&"undefined"!=typeof self');
+    expect(patched).toContain('false&&"undefined"!=typeof onmessage');
+    expect(patched).not.toContain("document.currentScript._exports=i()");
   });
 
   it("stockfish worker source supports wasm bytes deferred patch", () => {
