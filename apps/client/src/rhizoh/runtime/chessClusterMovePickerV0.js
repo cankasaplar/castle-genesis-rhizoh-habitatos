@@ -19,6 +19,9 @@ import {
 } from "./chessStockfishEngineV0.js";
 import { pickRhizohChessMoveV0 } from "./rhizohChessPlayerV0.js";
 import { enqueueRhizohPredictionCompareV0 } from "./rhizohChessPredictionCompareV0.js";
+import { isChessEngineContendedV0 } from "./chessEngineContentionGateV0.js";
+
+const CLUSTER_OPENING_FAST_HEURISTIC_PLY_V0 = 6;
 
 function clusterModeUsesStockfishV0(mode) {
   return ["rhizoh_vs_stockfish", "stockfish", "stockfish_aggressive", "random_perturb"].includes(
@@ -43,6 +46,16 @@ function pickClusterHeuristicMoveV0(game, slot, agentId, policy) {
   return pickChessArenaAiMoveV0(game);
 }
 
+function maybeFastHeuristicClusterMoveV0(slot, game, mode, agentId, policy) {
+  if (!clusterModeUsesStockfishV0(mode)) return null;
+  if ((slot?.ply || 0) >= CLUSTER_OPENING_FAST_HEURISTIC_PLY_V0) return null;
+  if (!isChessEngineContendedV0()) return null;
+  return Object.freeze({
+    move: pickClusterHeuristicMoveV0(game, slot, agentId, policy),
+    engine: "cluster_fast_heuristic_contention"
+  });
+}
+
 /**
  * @param {object} slot
  * @param {ReturnType<import('./chessArenaEngineV0.js').createChessArenaGameV0>} game
@@ -54,6 +67,8 @@ export async function pickChessClusterMoveV0(slot, game) {
   const policy = resolveChessClusterAgentPolicyV0(agentId);
   const stockfishOpts = resolveChessClusterStockfishOptsV0(agentId);
   const stockfishReady = await resolveClusterStockfishReadyV0(mode);
+  const fastHeuristic = maybeFastHeuristicClusterMoveV0(slot, game, mode, agentId, policy);
+  if (fastHeuristic) return fastHeuristic;
 
   switch (mode.moveStrategy) {
     case "rhizoh_vs_stockfish":

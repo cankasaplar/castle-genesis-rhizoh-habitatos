@@ -20,7 +20,7 @@ import {
 } from "../rhizoh/runtime/chessEngineTaskQueueV0.js";
 import { pickRhizohChessMoveV0 } from "../rhizoh/runtime/rhizohChessPlayerV0.js";
 import { CHESS_STOCKFISH_PRESET_V0 } from "../rhizoh/runtime/chessStockfishPresetsV0.js";
-import { shouldDeferArenaPrewarmV0 } from "../rhizoh/runtime/chessEngineContentionGateV0.js";
+import { shouldDeferArenaPrewarmV0, shouldDeferArenaEngineWorkV0 } from "../rhizoh/runtime/chessEngineContentionGateV0.js";
 import {
   archiveChessArenaMatchV0,
   enrichChessArenaArchiveEntryV0,
@@ -685,12 +685,13 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       if ((stockfishBlack || rhizohBlack || rhizohWhite) && !game.isGameOver()) {
         setAiBusy(true);
         let aiPick = null;
+        const deferArenaEngine = shouldDeferArenaEngineWorkV0();
         try {
           if (rhizohBlack || rhizohWhite) {
             aiPick = await pickRhizohChessMoveV0(game, { policyMode, mindId });
           } else {
             aiPick = await pickChessArenaMoveViaTeacherV0(game, {
-              useStockfish: true,
+              useStockfish: !deferArenaEngine,
               preset: opponentPresetV0.preset
             });
           }
@@ -784,6 +785,11 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           teacherOnline = true;
           setStatus(tr ? "Stockfish hazır — güçlü mod aktif" : "Stockfish ready — strong mode on");
         }
+        const deferArenaEngine = shouldDeferArenaEngineWorkV0();
+        if (deferArenaEngine) {
+          await new Promise((resolve) => window.setTimeout(resolve, 2000));
+          if (!alive || game.isGameOver()) break;
+        }
         setAiBusy(true);
         let pick = null;
         try {
@@ -792,12 +798,12 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
               game.turn() === "w"
                 ? await pickRhizohChessMoveV0(game, { policyMode, mindId })
                 : await pickChessArenaMoveViaTeacherV0(game, {
-                    useStockfish: teacherOnline,
+                    useStockfish: teacherOnline && !deferArenaEngine,
                     preset: opponentPresetV0.preset
                   });
           } else {
             pick = await pickChessArenaMoveViaTeacherV0(game, {
-              useStockfish: teacherOnline,
+              useStockfish: teacherOnline && !deferArenaEngine,
               preset: opponentPresetV0.preset || "ARENA"
             });
           }

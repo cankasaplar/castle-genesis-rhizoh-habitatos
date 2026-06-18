@@ -15,6 +15,7 @@ import {
   RHIZOH_V11_MAP_INTENT_EVENT_V0,
   SYMBYO_MAP_INTENT_TYPE_V0
 } from "./symbyoMapIntentBridgeV0.js";
+import { shouldDeferMapChessArenaOpenV0 } from "./chessEngineContentionGateV0.js";
 
 let orchestratorAttachedV1 = false;
 
@@ -61,6 +62,7 @@ export function attachRhizohMapExecutionOrchestratorV1() {
         break;
 
       case ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_CHESS_ARENA:
+        if (shouldDeferMapChessArenaOpenV0()) break;
         window.dispatchEvent(
           new CustomEvent(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, {
             detail: Object.freeze({ node, runtime, routed: detail })

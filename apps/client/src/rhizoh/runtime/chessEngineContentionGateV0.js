@@ -7,12 +7,30 @@ import { CHESS_ENGINE_TASK_KIND_V0 } from "./chessEngineTaskQueueV0.js";
 import { getChessEngineQueueSnapshotV0 } from "./chessEngineTaskQueueV0.js";
 
 export const CHESS_ENGINE_CONTENTION_GATE_SCHEMA_V0 = "castle.rhizoh.chess_engine_contention_gate.v0";
+export const CHESS_CLUSTER_ARENA_REGISTRY_SCHEMA_V0 = "castle.rhizoh.chess_cluster_arena.v0";
+
+/** @param {boolean} open */
+export function publishChessClusterArenaOpenV0(open) {
+  if (typeof window === "undefined") return;
+  window.__rhizoh = window.__rhizoh || {};
+  window.__rhizoh.chessClusterArena = Object.freeze({
+    schema: CHESS_CLUSTER_ARENA_REGISTRY_SCHEMA_V0,
+    open: Boolean(open),
+    atMs: Date.now()
+  });
+}
+
+export function isChessClusterArenaOpenV0() {
+  if (typeof window === "undefined") return false;
+  return Boolean(window.__rhizoh?.chessClusterArena?.open);
+}
 
 export function getChessEngineContentionSnapshotV0() {
   if (typeof window === "undefined") {
     return Object.freeze({
       schema: CHESS_ENGINE_CONTENTION_GATE_SCHEMA_V0,
       clusterRunning: false,
+      clusterArenaOpen: false,
       chessLock: false,
       queuePending: 0,
       contended: false,
@@ -23,6 +41,7 @@ export function getChessEngineContentionSnapshotV0() {
   const queue = window.__rhizoh?.chessEngineQueue;
   const scheduler = window.__rhizoh?.chessScheduler;
   const clusterRunning = Boolean(cluster?.running);
+  const clusterArenaOpen = isChessClusterArenaOpenV0();
   const chessLock = Boolean(scheduler?.chessLock);
   const queuePending = Number(queue?.pendingCount) || 0;
   const contended = clusterRunning && (chessLock || queuePending > 1);
@@ -30,6 +49,7 @@ export function getChessEngineContentionSnapshotV0() {
   return Object.freeze({
     schema: CHESS_ENGINE_CONTENTION_GATE_SCHEMA_V0,
     clusterRunning,
+    clusterArenaOpen,
     chessLock,
     queuePending,
     queueActive: Boolean(queue?.active),
@@ -44,8 +64,20 @@ export function isChessEngineContendedV0() {
 
 /** Defer arena map warmup while cluster holds the single WASM pipeline. */
 export function shouldDeferArenaPrewarmV0() {
+  return shouldDeferArenaEngineWorkV0();
+}
+
+/** Defer arena Stockfish work (map arena, AI auto-play) while cluster is active. */
+export function shouldDeferArenaEngineWorkV0() {
   const snap = getChessEngineContentionSnapshotV0();
-  return snap.clusterRunning && (snap.chessLock || snap.queuePending > 0);
+  if (!snap.clusterRunning) return false;
+  return snap.clusterArenaOpen || snap.chessLock || snap.queuePending > 0;
+}
+
+/** Block map chess arena open while cluster broadcast / observation UI is up. */
+export function shouldDeferMapChessArenaOpenV0() {
+  if (isChessClusterArenaOpenV0()) return true;
+  return Boolean(getChessEngineContentionSnapshotV0().clusterRunning);
 }
 
 /**
