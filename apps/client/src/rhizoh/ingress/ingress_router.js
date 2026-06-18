@@ -6,6 +6,7 @@
  */
 
 import {
+  ADMISSION_VERDICT_V0,
   evaluateClosedAdmissionV0,
   getAdmittedSubjectReportV0,
   isSubjectAdmittedV0
@@ -57,6 +58,13 @@ const CLOSED_ADMISSION_SUBJECT_KEY_V0 = "rhizoh_closed_admission_subject_ref_v0.
 const CLOSED_ADMISSION_DONE_KEY_V0 = "rhizoh_closed_admission_done_v0.1";
 /** UI decision gate only — not an admission engine input. */
 const COHORT_GATE_DECISION_KEY_V0 = "rhizoh_cohort_gate_decision_v0.1";
+/** Shadow prod invited cohort — human explorer band signals when enforce is on. */
+const COHORT_GATE_DEFAULT_SIGNALS_V0 = Object.freeze({
+  formalCorrectnessStress: 0.2,
+  infraReplayStress: 0.25,
+  physicalCouplingStress: 0.35,
+  interpretationStress: 0.45
+});
 
 export const COHORT_GATE_DECISION_V0 = Object.freeze({
   ACCEPTED: "accepted",
@@ -215,6 +223,82 @@ export function completeCohortGateNoOpV0(opts) {
   return true;
 }
 
+/**
+ * Cohort gate — no-op when enforce off; admission engine when enforce on.
+ * @param {{ decision?: 'accepted' | 'declined', signals?: Record<string, unknown>, riskFlags?: Record<string, boolean> }} [opts]
+ */
+export function completeCohortGateV0(opts = {}) {
+  const decision =
+    opts?.decision === COHORT_GATE_DECISION_V0.DECLINED
+      ? COHORT_GATE_DECISION_V0.DECLINED
+      : COHORT_GATE_DECISION_V0.ACCEPTED;
+
+  if (decision === COHORT_GATE_DECISION_V0.DECLINED) {
+    completeCohortGateNoOpV0({ decision });
+    return Object.freeze({
+      ok: false,
+      hook: "no_op_evaluation",
+      verdict: ADMISSION_VERDICT_V0.REJECT,
+      decision,
+      engineOutputIgnored: true
+    });
+  }
+
+  if (!isClosedAdmissionEnforcedV0()) {
+    completeCohortGateNoOpV0({ decision });
+    return Object.freeze({
+      ok: true,
+      hook: "no_op_evaluation",
+      verdict: ADMISSION_VERDICT_V0.ADMIT,
+      decision,
+      engineOutputIgnored: true
+    });
+  }
+
+  const report = evaluateClosedAdmissionForSessionV0({
+    signals: opts.signals || COHORT_GATE_DEFAULT_SIGNALS_V0,
+    riskFlags: opts.riskFlags || {}
+  });
+
+  if (typeof window !== "undefined") {
+    if (!window.__rhizoh) window.__rhizoh = {};
+    window.__rhizoh.cohortGate = Object.freeze({
+      hook: "engine_evaluation",
+      decision,
+      verdict: report.verdict,
+      engineOutputIgnored: false,
+      report
+    });
+  }
+
+  if (report.verdict !== ADMISSION_VERDICT_V0.ADMIT) {
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem(COHORT_GATE_DECISION_KEY_V0, decision);
+    }
+    return Object.freeze({
+      ok: false,
+      hook: "engine_evaluation",
+      verdict: report.verdict,
+      decision,
+      report,
+      engineOutputIgnored: false
+    });
+  }
+
+  if (typeof sessionStorage !== "undefined") {
+    sessionStorage.setItem(COHORT_GATE_DECISION_KEY_V0, decision);
+  }
+  markClosedAdmissionSessionDoneV0();
+  return Object.freeze({
+    ok: true,
+    hook: "engine_evaluation",
+    verdict: report.verdict,
+    decision,
+    report,
+    engineOutputIgnored: false
+  });
+}
+
 export function isClosedAdmissionCohortStepRequiredV0() {
   if (!isClosedAdmissionEnabledV0()) return false;
   if (!hasLegalPreambleAckV0()) return false;
@@ -252,14 +336,19 @@ export function resolveClosedAdmissionStatusV0() {
   const enabled = isClosedAdmissionEnabledV0();
   const enforced = isClosedAdmissionEnforcedV0();
   const subjectRef = getClosedAdmissionSubjectRefV0();
-  const admitted = enabled ? isCohortGateAcceptedV0() : true;
+  const engineAdmitted =
+    subjectRef !== "session_anonymous" && isSubjectAdmittedV0(subjectRef);
+  const admitted = enabled ? (enforced ? engineAdmitted : isCohortGateAcceptedV0()) : true;
+  const lastReport =
+    subjectRef !== "session_anonymous" ? getAdmittedSubjectReportV0(subjectRef) : null;
   return Object.freeze({
     enabled,
     enforced,
     admitted,
     subjectRef,
     cohortGate: getCohortGateDecisionV0(),
-    lastReport: null
+    lastReport,
+    engineAdmitted
   });
 }
 

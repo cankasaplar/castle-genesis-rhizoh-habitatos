@@ -18,6 +18,8 @@ import {
   assessEpistemicGraphInflationRiskV0
 } from "./rhizohEpistemicGraphInflationGuardV0.js";
 import { getLastCouncilAnomalyReasoningV0 } from "./rhizohEpistemicCouncilV0.js";
+import { foldWalSegmentHashV0, WAL_HASH_CHAIN_GENESIS_V0 } from "./continuity/walHashChainV0.js";
+import { getExecutionGovernanceSnapshotV0 } from "./rhizohExecutionGovernanceSwitchboardV0.js";
 
 export const RHIZOH_SHADOW_TRACE_LEDGER_SCHEMA_V0 = "castle.rhizoh.shadow_trace_ledger.v0";
 export const RHIZOH_SHADOW_TRACE_EVENT_V0 = "rhizoh:shadow-trace-ledger-v0";
@@ -271,6 +273,30 @@ export function appendShadowTraceFromChessMoveAnchorV0(row = {}) {
 let lastStressRunForComplianceV0 = null;
 
 /**
+ * Deterministic replay fingerprint for compliance export (interpretation-only).
+ * @param {object[]} rows
+ * @param {object | null} [stressRun]
+ */
+export function computeShadowReplayFingerprintV0(rows, stressRun = lastStressRunForComplianceV0) {
+  const tail = rows.slice(-64).map((r) =>
+    Object.freeze({
+      seq: r.seq,
+      eventType: r.eventType,
+      causalChainId: r.causalChainId,
+      sourceSystem: r.sourceSystem
+    })
+  );
+  const stressPayload =
+    stressRun?.ok && stressRun?.conflictGraph
+      ? Object.freeze({
+          stressRunId: stressRun.stressRunId,
+          nodeIds: (stressRun.conflictGraph.nodes || []).map((n) => n.id || n.lensId)
+        })
+      : null;
+  return foldWalSegmentHashV0(WAL_HASH_CHAIN_GENESIS_V0, Object.freeze({ tail, stress: stressPayload }));
+}
+
+/**
  * @param {object|null} run — from injectEpistemicStressV0
  */
 export function setLastStressRunForComplianceV0(run) {
@@ -322,10 +348,27 @@ export function exportShadowComplianceSnapshotV0(label = "checkpoint") {
     snapshotId: `shadow_snap_${Date.now().toString(36)}`,
     label,
     atMs: Date.now(),
+    interpretationOnly: true,
+    nonExecutive: true,
     shadowMode: isRhizohShadowModeActiveV0(),
     shadowModeReason: resolveShadowModeReasonV0(),
     recordCount: snap.recordCount,
     anchorMoveCount: anchorRows.length,
+    replayLock: Object.freeze({
+      interpretationOnly: true,
+      replayFingerprint: computeShadowReplayFingerprintV0(all),
+      stressRunId: lastStressRunForComplianceV0?.stressRunId || null,
+      memoryGraphDigest: getEpistemicMemoryGraphComplianceSummaryV0().memoryGraphDigest
+    }),
+    executionGovernance: getExecutionGovernanceSnapshotV0(),
+    clusterLearning:
+      typeof window !== "undefined" && window.__rhizoh?.chessGameCluster
+        ? Object.freeze({
+            running: Boolean(window.__rhizoh.chessGameCluster.running),
+            sessionGamesEnded: Number(window.__rhizoh.chessGameCluster.sessionGamesEnded) || 0,
+            timeControlId: window.__rhizoh.chessGameCluster.timeControlId || null
+          })
+        : null,
     entropySummary: Object.freeze({
       mean: Number(entropyMean.toFixed(4)),
       max: driftRows.reduce((m, r) => Math.max(m, Number(r.entropyScore) || 0), 0),

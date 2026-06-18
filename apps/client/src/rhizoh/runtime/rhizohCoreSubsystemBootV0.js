@@ -26,6 +26,7 @@ import { ensureRhizohChessEvolutionCurveV0 } from "./rhizohChessEvolutionCurveV0
 import { ensureRhizohChessLearningCheckpointV0 } from "./rhizohChessLearningCheckpointV0.js";
 import { ensureChessUnifiedMemoryGraphV0 } from "./chessUnifiedMemoryGraphBootV0.js";
 import { ensureChessOfflineBatchTrainerV0 } from "./chessOfflineBatchTrainerV0.js";
+import { ensureChessBroadcastOpponentMatrixDevToolsV0 } from "./chessBroadcastOpponentMatrixV0.js";
 
 export const RHIZOH_CORE_SUBSYSTEM_BOOT_SCHEMA_V0 = "castle.rhizoh.core_subsystem_boot.v0";
 
@@ -83,6 +84,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureRhizohChessLifetimeReportV0();
     ensureChessHistoryBrainV0();
     ensureRhizohChessEvolutionCurveV0();
+    ensureChessBroadcastOpponentMatrixDevToolsV0();
     runDomainGateForPathV0(pathname, { coreOnly: true });
     stopLegalWaitLoopV0 = startRhizohLegalPendingWaitLoopV0({ bootDelayMs: 2_500 });
   }

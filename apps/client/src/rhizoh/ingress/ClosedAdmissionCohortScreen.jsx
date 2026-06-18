@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import {
   COHORT_GATE_DECISION_V0,
-  completeCohortGateNoOpV0,
+  completeCohortGateV0,
   getClosedAdmissionCohortCopyV0
 } from "./ingress_router.js";
 import { INGRESS_SURFACE_V0 } from "./ingressFlowStylesV0.js";
 
 /**
- * UI decision gate — no-op evaluation hook (engine output ignored).
- * @param {{ onProceed: () => void }} props
+ * UI decision gate — engine evaluation when closed admission enforce is on.
+ * @param {{ onProceed: () => void, onHold?: () => void }} props
  */
-export function ClosedAdmissionCohortScreen({ onProceed }) {
+export function ClosedAdmissionCohortScreen({ onProceed, onHold }) {
   const copy = getClosedAdmissionCohortCopyV0();
   const [declined, setDeclined] = useState(false);
 
@@ -34,8 +34,12 @@ export function ClosedAdmissionCohortScreen({ onProceed }) {
           type="button"
           style={INGRESS_SURFACE_V0.primaryBtn(true)}
           onClick={() => {
-            completeCohortGateNoOpV0({ decision: COHORT_GATE_DECISION_V0.ACCEPTED });
-            onProceed();
+            const result = completeCohortGateV0({ decision: COHORT_GATE_DECISION_V0.ACCEPTED });
+            if (result.ok) {
+              onProceed();
+            } else if (result.verdict === "hold" && onHold) {
+              onHold();
+            }
           }}
         >
           {copy.acceptLabel}
@@ -49,7 +53,7 @@ export function ClosedAdmissionCohortScreen({ onProceed }) {
             border: "1px solid #475569"
           }}
           onClick={() => {
-            completeCohortGateNoOpV0({ decision: COHORT_GATE_DECISION_V0.DECLINED });
+            completeCohortGateV0({ decision: COHORT_GATE_DECISION_V0.DECLINED });
             setDeclined(true);
           }}
         >

@@ -30,8 +30,17 @@ This runbook focuses on **chess grid** as primary content for first test stream.
 
 | Slot | White | Black | Format |
 |------|-------|-------|--------|
-| 0 (featured) | RhizohAI | Stockfish MAX | Bullet / blitz research preset |
+| 0 (featured) | RhizohAI | Stockfish **MAX** | `cluster_sim_45_0` · broadcast featured |
 | 1–7 | Octo / Fox / self-play | mixed | Background boards |
+
+DevTools opponent matrix:
+
+```js
+window.__rhizoh.chessBroadcastOpponentMatrix?.()
+// featuredMatch.format === "RhizohAI vs Stockfish MAX"
+```
+
+See slot pairing table in `chessBroadcastOpponentMatrixV0.js`.
 
 Open arena manually during legal hold:
 
@@ -91,11 +100,17 @@ See [CASTLE_GENESIS_YOUTUBE_LIVE_SETTINGS_V0.md](CASTLE_GENESIS_YOUTUBE_LIVE_SET
 ## Post-stream compliance export
 
 ```js
-window.__rhizoh.exportShadowComplianceSnapshot?.('youtube_test_broadcast')
+const snap = window.__rhizoh.exportShadowComplianceSnapshot?.('youtube_test_broadcast')
+console.table({
+  interpretationOnly: snap?.interpretationOnly,
+  replayFingerprint: snap?.replayLock?.replayFingerprint,
+  gamesEnded: snap?.clusterLearning?.sessionGamesEnded,
+  governanceMode: snap?.executionGovernance?.mode
+})
 window.__rhizoh.refreshShadowDevTools?.()
 ```
 
-Archive: governance mode, ledger count, council anomaly, inflation level, graph lifecycle pass.
+Archive: governance mode, ledger count, council anomaly, inflation level, graph lifecycle pass, **replayLock** fingerprint.
 
 ---
 
