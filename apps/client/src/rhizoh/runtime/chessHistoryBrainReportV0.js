@@ -105,7 +105,8 @@ export function buildChessHistoryBrainReportV0() {
         note: "live cluster session — not corpus quality"
       }),
       openingPreferenceLive: session.preferredOpenings,
-      driftIsLearningSignal: session.avgDrift != null
+      driftIsLearningSignal: session.avgDrift != null,
+      evolutionCurveProbe: "window.__rhizoh.chessEvolutionCurve()"
     }),
     memoryLayout: Object.freeze({
       storeKey: "rhizoh.chess_memory_store.v0",

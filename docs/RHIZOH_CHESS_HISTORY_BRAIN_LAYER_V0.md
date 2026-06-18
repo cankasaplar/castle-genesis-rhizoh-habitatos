@@ -87,9 +87,7 @@ ENGINE BEHAVIOR UPDATE (inference only)
 
 ```js
 window.__rhizoh.chessHistoryBrain()
-// corpusGamesLoaded, qualityTierHistogram, playerStyleExposure,
-// intelligenceEvolution.weightMatrix vs liveObservation
-
+window.__rhizoh.chessEvolutionCurve()  // unified learning timeline
 window.__rhizoh.importChessPgn(`[White "Carlsen"]...`)
 ```
 
