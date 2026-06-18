@@ -119,14 +119,14 @@ export function resolveChessClusterStockfishOptsV0(agentId) {
   });
 }
 
-/** Featured slot 0 — stronger opponent; movetime capped for single-engine queue stability. */
+/** Featured slot 0 — RhizohAI vs Stockfish MAX for broadcast featured match. */
 export function resolveFeaturedSlotStockfishOptsV0() {
-  const strong = CHESS_STOCKFISH_PRESET_V0.STRONG || CHESS_STOCKFISH_PRESET_V0.ARENA;
+  const max = CHESS_STOCKFISH_PRESET_V0.MAX || CHESS_STOCKFISH_PRESET_V0.STRONG;
   return Object.freeze({
-    preset: "STRONG",
-    skill: Math.max(strong.skill ?? 18, 18),
-    movetimeMs: 1000,
-    depth: Math.max(strong.depth ?? 14, 15),
-    contempt: 18
+    preset: "MAX",
+    skill: Math.max(max.skill ?? 20, 20),
+    movetimeMs: 1100,
+    depth: Math.max(max.depth ?? 18, 17),
+    contempt: 24
   });
 }

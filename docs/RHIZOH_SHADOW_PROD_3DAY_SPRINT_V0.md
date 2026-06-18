@@ -78,15 +78,15 @@ Module: `rhizohHardSeparationLayerV0.js` + `rhizohInvitedUserAuthorityGateV0.js`
 
 ## Day 3 — Broadcast test + replay lock + invited cohort
 
-| Block | Deliverable |
-|-------|-------------|
+| Block | Deliverable | Status |
+|-------|-------------|--------|
 | **YT1** | 8-camera test runbook — chess grid + Octo lens lab OBS layout | `RHIZOH_CHESS_BROADCAST_8CAM_RUNBOOK_V0.md` |
-| **YT2** | Unlisted YouTube test: holding slide OR live chess grid capture (OBS manual) |
-| **YT3** | RhizohAI vs Stockfish MAX featured match format for stream |
-| **YT4** | Opponent matrix: RhizohAI / Stockfish tiers / Octo heuristic / Fox heuristic |
-| **C4** | Replay fingerprint tag `interpretationOnly` in compliance export |
-| **C5** | Invited cohort: server gate + engine admission wired (replace UI no-op when enforce on) |
-| **C6** | Shadow prod soak checklist (3-day window, not 7–14) |
+| **YT2** | Unlisted YouTube test: holding slide OR live chess grid capture (OBS manual) | manual ops |
+| **YT3** | RhizohAI vs Stockfish MAX featured match format for stream | `resolveFeaturedSlotStockfishOptsV0` + matrix |
+| **YT4** | Opponent matrix: RhizohAI / Stockfish tiers / Octo heuristic / Fox heuristic | `chessBroadcastOpponentMatrixV0.js` |
+| **C4** | Replay fingerprint tag `interpretationOnly` in compliance export | `exportShadowComplianceSnapshotV0` |
+| **C5** | Invited cohort: server gate + engine admission wired (replace UI no-op when enforce on) | `completeCohortGateV0` |
+| **C6** | Shadow prod soak checklist (3-day window, not 7–14) | `RHIZOH_SHADOW_PROD_SOAK_CHECKLIST_V0.md` |
 
 **Exit criteria Day 3:** one unlisted YouTube upload (test); compliance bundle export with governance + replay tags; invited user blocked from epistemic authority in prod.
 
@@ -161,4 +161,5 @@ console.log({
 
 - [RHIZOH_SHADOW_PRODUCTION_MODE_V0.md](RHIZOH_SHADOW_PRODUCTION_MODE_V0.md)
 - [RHIZOH_CHESS_BROADCAST_8CAM_RUNBOOK_V0.md](RHIZOH_CHESS_BROADCAST_8CAM_RUNBOOK_V0.md)
+- [RHIZOH_SHADOW_PROD_SOAK_CHECKLIST_V0.md](RHIZOH_SHADOW_PROD_SOAK_CHECKLIST_V0.md)
 - [RHIZOH_EPISTEMIC_EVOLUTION_ROADMAP_V0.md](RHIZOH_EPISTEMIC_EVOLUTION_ROADMAP_V0.md)

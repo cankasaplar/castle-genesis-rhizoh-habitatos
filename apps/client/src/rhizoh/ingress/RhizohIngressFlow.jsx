@@ -100,7 +100,12 @@ export function RhizohIngressFlow() {
       );
     }
     if (phase === INGRESS_ROUTE_V0.COHORT) {
-      return <ClosedAdmissionCohortScreen onProceed={mountApp} />;
+      return (
+        <ClosedAdmissionCohortScreen
+          onProceed={mountApp}
+          onHold={() => setPhase(INGRESS_ROUTE_V0.HOLD)}
+        />
+      );
     }
     if (phase === INGRESS_ROUTE_V0.HOLD) {
       return (

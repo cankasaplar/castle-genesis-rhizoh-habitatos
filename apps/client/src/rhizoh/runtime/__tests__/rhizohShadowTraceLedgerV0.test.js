@@ -5,6 +5,7 @@ import {
   appendShadowTraceFromDriftEventV0,
   appendShadowTraceFromStockfishTimeoutV0,
   appendShadowTraceRecordV0,
+  computeShadowReplayFingerprintV0,
   exportShadowComplianceSnapshotV0,
   getShadowTraceLedgerSnapshotV0,
   injectShadowEntropyTestV0,
@@ -85,6 +86,10 @@ describe("rhizohShadowTraceLedgerV0", () => {
     });
     const snap = exportShadowComplianceSnapshotV0("test_checkpoint");
     expect(snap.label).toBe("test_checkpoint");
+    expect(snap.interpretationOnly).toBe(true);
+    expect(snap.replayLock?.interpretationOnly).toBe(true);
+    expect(snap.replayLock?.replayFingerprint).toMatch(/^h[a-f0-9]{8}$/);
+    expect(snap.executionGovernance?.mode).toBeDefined();
     expect(snap.timeoutCount).toBeGreaterThanOrEqual(1);
     expect(snap.entropySummary.driftEventCount).toBeGreaterThanOrEqual(1);
     expect(snap).toHaveProperty("stressInjection");
@@ -108,6 +113,28 @@ describe("rhizohShadowTraceLedgerV0", () => {
     const row = mod.appendShadowTraceRecordV0({ eventType: "noop" });
     expect(row).toBeNull();
     expect(mod.getShadowTraceLedgerSnapshotV0().recordCount).toBe(0);
+  });
+
+  it("computes deterministic replay fingerprint", () => {
+    appendShadowTraceFromDriftEventV0({
+      kind: "DRIFT_EVENT",
+      severity: "info",
+      entropyScore: 0.5,
+      eventType: "TOPOLOGY_DRIFT_DETECTED",
+      causalChainId: "fp_a"
+    });
+    appendShadowTraceFromDriftEventV0({
+      kind: "DRIFT_EVENT",
+      severity: "info",
+      entropyScore: 0.6,
+      eventType: "TOPOLOGY_DRIFT_DETECTED",
+      causalChainId: "fp_b"
+    });
+    const rows = getShadowTraceLedgerSnapshotV0().recent;
+    const a = computeShadowReplayFingerprintV0(rows);
+    const b = computeShadowReplayFingerprintV0(rows);
+    expect(a).toBe(b);
+    expect(a).toMatch(/^h[a-f0-9]{8}$/);
   });
 
   it("isolates ledger governance from feedback loops", () => {
