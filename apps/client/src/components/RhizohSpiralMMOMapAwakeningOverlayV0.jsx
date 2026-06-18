@@ -143,7 +143,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
   const onCubeLandedV0 = useCallback((landedCube) => {
     setScene((prev) => {
       if (!prev) return prev;
-      const stacked = [...(prev.stackedCubes ?? []), { ...landedCube, landed: true }];
+      const stacked = [...(prev.stackedCubes ?? []), { ...landedCube, landed: true }].slice(-6);
       return {
         ...prev,
         stackedCubes: stacked,
@@ -451,7 +451,8 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
       }
       const destX = cube.p2.x + acc.x;
       const destY = cube.p2.y + acc.y;
-      const travelScale = i === 0 ? 0.38 : renderScale * (0.82 + eased * 0.32);
+      const travelScale =
+        renderScale <= 1.01 ? 1 : i === 0 ? 0.38 : renderScale * (0.82 + eased * 0.32);
       const atDest = i === steps;
       keyframes.push({
         left: `${atDest ? destX : pos.x}px`,

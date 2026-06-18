@@ -103,6 +103,6 @@ describe("rhizohUiLayoutResolverV0", () => {
     });
     resolveRhizohProductDrawerBottomCssV0();
     expect(window.__rhizoh.uiLayout.drawerOpen).toBe(true);
-    expect(window.__rhizoh.uiLayout.bottomCss.conversationDock).toContain("13.5rem");
+    expect(window.__rhizoh.uiLayout.bottomCss.conversationDock).toContain("21rem");
   });
 });

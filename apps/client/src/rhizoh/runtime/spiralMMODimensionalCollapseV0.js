@@ -24,10 +24,10 @@ import {
 } from "./spiralMMOAwakeningCubeFlowV0.js";
 
 export const SPIRAL_MMO_DIM_COLLAPSE_DEFAULTS_V0 = Object.freeze({
-  ghostDensity: 28,
+  ghostDensity: 10,
   arcCurve: 0.9,
-  waveAmp: 14,
-  chaosScatter: 28
+  waveAmp: 10,
+  chaosScatter: 12
 });
 
 /**
@@ -117,7 +117,8 @@ export function buildSpiralMMODimensionalCollapseLaunchesV0(input) {
       batchIndex: sequenceIndex,
       depthLayer,
       isOrder,
-      cycleSeed
+      cycleSeed,
+      uniformSize: true
     });
     const durationMs = Math.round(cubeSpec.durationMs * layerSpec.speedBias);
     const delayMs = sequenceIndex * staggerMs;
@@ -153,7 +154,7 @@ export function buildSpiralMMODimensionalCollapseLaunchesV0(input) {
         ),
         depthZIndex: layerSpec.zIndex,
         renderScale: cubeSpec.renderScaleFactor,
-        holdAtDest: true,
+        holdAtDest: kind === "order",
         waveAmplitude: params.waveAmp,
         chaosScatter: params.chaosScatter,
         transitionEase,
@@ -177,15 +178,12 @@ export function buildSpiralMMODimensionalCollapseLaunchesV0(input) {
     pushLaunch({ srcIdx, destIdx, kind: "order", gap, indexInGroup: i });
   }
 
-  const chaosCount = Math.floor(params.ghostDensity * 0.8);
+  const chaosCount = Math.max(2, Math.floor(params.ghostDensity * 0.35));
   for (let i = 0; i < chaosCount; i += 1) {
-    const rSrc = spiralMMOAwakeningSeedV0(cycleSeed, "chaos", i, "src");
-    const rDst = spiralMMOAwakeningSeedV0(cycleSeed, "chaos", i, "dst");
-    let srcIdx = Math.floor(rSrc * pins.length);
-    let destIdx = Math.floor(rDst * pins.length) % pins.length;
-    if (destIdx === srcIdx) destIdx = (destIdx + 1) % pins.length;
+    const srcIdx = i % 2 === 0 ? trigIdx : oppIdx;
+    let destIdx = i % 2 === 0 ? oppIdx : trigIdx;
     const gapSign = spiralMMOAwakeningSeedV0(cycleSeed, "chaos", i, "sign") < 0.5 ? 1 : -1;
-    const gapBase = 80 + spiralMMOAwakeningSeedV0(cycleSeed, "chaos", i, "gap") * 100;
+    const gapBase = 60 + spiralMMOAwakeningSeedV0(cycleSeed, "chaos", i, "gap") * 50;
     const gap = gapBase * gapSign * params.arcCurve;
     const scatterX =
       (spiralMMOAwakeningSeedV0(cycleSeed, "chaos", i, "sx") - 0.5) * params.chaosScatter;
@@ -195,17 +193,14 @@ export function buildSpiralMMODimensionalCollapseLaunchesV0(input) {
   }
 
   const specialKinds = ["mirror", "black", "white"];
-  const specialCount = Math.floor(params.ghostDensity * 0.45);
+  const specialCount = Math.max(1, Math.floor(params.ghostDensity * 0.2));
   for (let i = 0; i < specialCount; i += 1) {
     const kind =
       specialKinds[
         Math.floor(spiralMMOAwakeningSeedV0(cycleSeed, "special", i, "kind") * specialKinds.length)
       ];
     const srcIdx = trigIdx;
-    let destIdx = Math.floor(
-      spiralMMOAwakeningSeedV0(cycleSeed, "special", i, "dst") * pins.length
-    );
-    if (destIdx === srcIdx) destIdx = (destIdx + 1) % pins.length;
+    const destIdx = oppIdx;
     const gapSign = spiralMMOAwakeningSeedV0(cycleSeed, "special", i, "sign") < 0.5 ? 1 : -1;
     const gapBase = 40 + spiralMMOAwakeningSeedV0(cycleSeed, "special", i, "gap") * 70;
     const gap = gapBase * gapSign * params.arcCurve;

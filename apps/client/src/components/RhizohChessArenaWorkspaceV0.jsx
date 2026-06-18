@@ -87,6 +87,7 @@ import {
 } from "../rhizoh/runtime/chessArenaThemeV0.js";
 import { RhizohChessBoardV0 } from "./RhizohChessBoardV0.jsx";
 import { ChessSplitMoveListV0 } from "./ChessSplitMoveListV0.jsx";
+import { ChessLiveMatchFlankV0 } from "./ChessLiveMatchFlankV0.jsx";
 import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
 import { RhizohChessArenaLobbyV0 } from "./RhizohChessArenaLobbyV0.jsx";
 import { PIECE_UNICODE_V0 } from "./RhizohCastleLibraryPanelV0.jsx";
@@ -1457,34 +1458,48 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
 
         {arenaPhase === "playing" ? (
         <div className="flex min-h-0 flex-1 flex-col items-center gap-2 overflow-y-auto p-3">
-            <ChessPlayerBarV0
-              name={opponentsV0.black}
-              clockMs={blackClockMs}
-              active={activeColor === "b" && !outcome}
-              align="right"
+            <ChessLiveMatchFlankV0
+              moves={(game.moveHistory || []).map((m) => ({ san: m.san, color: m.color }))}
               tr={tr}
-              lastMoveSan={playerLastMovesV0.black}
-            />
-            <RhizohChessBoardV0
-              rows={rows}
-              boardColors={boardColors}
-              pieceStyleId={boardTheme.pieceStyleId}
-              pieceBold={pieceBold}
-              lastMove={lastMoveHighlightV0}
-              selectedSquare={selectedSquare}
-              onSquareClick={onSquareClick}
-              orientation={boardOrientationV0}
-              sizeClass="w-[min(100%,min(92vw,50dvh))]"
-              borderClass="border-2 border-cyan-500/45 shadow-[0_0_28px_rgba(0,204,255,0.15)]"
-            />
-            <ChessPlayerBarV0
-              name={opponentsV0.white}
-              clockMs={whiteClockMs}
-              active={activeColor === "w" && !outcome}
-              align="left"
-              tr={tr}
-              lastMoveSan={playerLastMovesV0.white}
-            />
+              rhizohColor={rhizohArenaColorV0}
+              whiteName={opponentsV0.white}
+              blackName={opponentsV0.black}
+              whiteClockMs={whiteClockMs}
+              blackClockMs={blackClockMs}
+              whiteActive={activeColor === "w" && !outcome}
+              blackActive={activeColor === "b" && !outcome}
+            >
+              <RhizohChessBoardV0
+                rows={rows}
+                boardColors={boardColors}
+                pieceStyleId={boardTheme.pieceStyleId}
+                pieceBold={pieceBold}
+                lastMove={lastMoveHighlightV0}
+                selectedSquare={selectedSquare}
+                onSquareClick={onSquareClick}
+                orientation={boardOrientationV0}
+                sizeClass="w-[min(100%,min(92vw,50dvh))]"
+                borderClass="border-2 border-cyan-500/45 shadow-[0_0_28px_rgba(0,204,255,0.15)]"
+              />
+            </ChessLiveMatchFlankV0>
+            <div className="flex w-full max-w-5xl justify-between gap-2 sm:hidden">
+              <ChessPlayerBarV0
+                name={opponentsV0.white}
+                clockMs={whiteClockMs}
+                active={activeColor === "w" && !outcome}
+                align="left"
+                tr={tr}
+                lastMoveSan={playerLastMovesV0.white}
+              />
+              <ChessPlayerBarV0
+                name={opponentsV0.black}
+                clockMs={blackClockMs}
+                active={activeColor === "b" && !outcome}
+                align="right"
+                tr={tr}
+                lastMoveSan={playerLastMovesV0.black}
+              />
+            </div>
             <p className="text-[9px] text-white/40">
               {engineStatus === "stockfish_wasm"
                 ? tr
@@ -1577,6 +1592,11 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
             {civilization?.elo ? (
               <p className="text-[10px] text-amber-100/80">
                 {tr ? "Kale ELO:" : "Castle ELO:"} {civilization.elo}
+                <span className="block text-[8px] font-normal text-white/40">
+                  {tr
+                    ? "Yerel öğrenme puanı — FIDE/resmi sıralama değil"
+                    : "Local training rating — not an official FIDE rank"}
+                </span>
               </p>
             ) : null}
             {lastFinishedMatchV0 ? (

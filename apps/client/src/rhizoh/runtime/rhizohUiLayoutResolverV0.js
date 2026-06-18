@@ -10,8 +10,8 @@ export const RHIZOH_UI_LAYOUT_SCHEMA_V0 = "rhizoh.ui_layout_resolver.v0";
 /** Product shell bar (`UnifiedProductShellBar`) fixed height. */
 export const RHIZOH_UI_SHELL_BAR_H_REM_V0 = 3.35;
 
-/** Bottom product drawer approximate height reserve when open. */
-export const RHIZOH_UI_PRODUCT_DRAWER_H_REM_V0 = 13.5;
+/** Bottom product drawer approximate height reserve when open (must match drawer max-h). */
+export const RHIZOH_UI_PRODUCT_DRAWER_H_REM_V0 = 21;
 
 /** Map tool strip height estimate (rem above bottom stack). */
 export const RHIZOH_UI_MAP_STRIP_ESTIMATE_REM_V0 = 4.25;

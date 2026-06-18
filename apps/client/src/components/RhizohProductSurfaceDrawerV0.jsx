@@ -127,7 +127,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
 
   return (
     <div
-      className="pointer-events-auto fixed inset-x-0 mx-auto max-h-[min(52vh,28rem)] w-full max-w-2xl overflow-hidden rounded-t-2xl border border-cyan-400/30 bg-[#050810] shadow-[0_-12px_48px_rgba(0,0,0,0.72)]"
+      className="pointer-events-auto fixed inset-x-0 mx-auto max-h-[min(38vh,21rem)] w-full max-w-2xl overflow-hidden rounded-t-2xl border border-cyan-400/30 bg-[#050810] shadow-[0_-12px_48px_rgba(0,0,0,0.72)]"
       style={{
         bottom: resolveRhizohProductDrawerBottomCssV0(),
         zIndex: RHIZOH_UI_Z_INDEX_V0.PRODUCT_DRAWER
@@ -157,7 +157,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
         </button>
       </div>
 
-      <div className="max-h-[calc(min(52vh,28rem)-3.25rem)] overflow-y-auto bg-[#050810] px-3 py-3 no-scrollbar">
+      <div className="max-h-[calc(min(38vh,21rem)-3.25rem)] overflow-y-auto bg-[#050810] px-3 py-3 no-scrollbar">
         {surface === "hall" ? (
           <RhizohStudioCitizenShellV0 surfaceKind="hall">
             <UserOutcomeCard surface="hall" locale={locale} />
