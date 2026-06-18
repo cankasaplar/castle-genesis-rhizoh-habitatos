@@ -26,8 +26,9 @@ export function isChessArenaWorkspaceOpenV0() {
   return Boolean(window.__rhizoh?.chessArenaWorkspace?.open);
 }
 
-/** Pause background cluster ticks while map arena match is active. */
+/** Pause background cluster ticks while map arena match is active (8-camera broadcast wins). */
 export function shouldPauseClusterTickForArenaV0() {
+  if (isChessClusterArenaOpenV0()) return false;
   return isChessArenaWorkspaceOpenV0();
 }
 

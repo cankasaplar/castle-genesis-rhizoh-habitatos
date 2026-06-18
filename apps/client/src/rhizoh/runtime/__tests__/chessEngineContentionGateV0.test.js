@@ -86,6 +86,14 @@ describe("chessEngineContentionGateV0", () => {
     expect(shouldPauseClusterTickForArenaV0()).toBe(false);
   });
 
+  it("does not pause cluster ticks when 8-camera broadcast is open", () => {
+    publishChessArenaWorkspaceOpenV0(true);
+    publishChessClusterArenaOpenV0(true);
+    expect(shouldPauseClusterTickForArenaV0()).toBe(false);
+    publishChessClusterArenaOpenV0(false);
+    expect(shouldPauseClusterTickForArenaV0()).toBe(true);
+  });
+
   it("getChessEngineContentionSnapshotV0 includes arenaWorkspaceOpen", () => {
     publishChessArenaWorkspaceOpenV0(true);
     const snap = getChessEngineContentionSnapshotV0();

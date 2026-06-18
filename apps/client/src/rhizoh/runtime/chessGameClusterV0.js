@@ -25,7 +25,14 @@ import {
 } from "./chessClusterClockV0.js";
 import { ensureChessLearningMonitorListenersV0 } from "./chessLearningMonitorV0.js";
 import { ensureRhizohChessLearningReportV0 } from "./rhizohChessLearningReportV0.js";
-import { shouldPauseClusterTickForArenaV0 } from "./chessEngineContentionGateV0.js";
+import { isChessClusterArenaOpenV0 } from "./chessEngineContentionGateV0.js";
+import {
+  CHESS_CLUSTER_BROADCAST_TICK_MIN_MS_V0,
+  isChessClusterBroadcastModeV0,
+  resolveChessClusterBroadcastMovesPerTickV0,
+  resolveChessClusterTickSlotOrderV0,
+  shouldFinalizeClusterBroadcastEndV0
+} from "./chessClusterBroadcastEnginePolicyV0.js";
 import { logChessMovePlayedV0 } from "./chessArenaTelemetryV0.js";
 import { publishRhizohChessManagerV0 } from "./rhizohChessManagerV0.js";
 import { publishChessGameRouterV0 } from "./chessGameRouterV0.js";
@@ -217,7 +224,10 @@ export function resolveChessClusterMinIntervalMsV0(opts = {}) {
  * @param {number} [lastMoveMs]
  */
 export function resolveChessClusterTickDelayMsV0(lastMoveMs = lastMoveWallMsV0) {
-  const adaptive = Math.max(configuredMinIntervalMsV0, Number(lastMoveMs) || 0);
+  const floorMs = isChessClusterBroadcastModeV0()
+    ? Math.min(configuredMinIntervalMsV0, CHESS_CLUSTER_BROADCAST_TICK_MIN_MS_V0)
+    : configuredMinIntervalMsV0;
+  const adaptive = Math.max(floorMs, Number(lastMoveMs) || 0);
   return Math.min(CHESS_CLUSTER_MAX_INTERVAL_MS_V0, adaptive);
 }
 
@@ -257,6 +267,7 @@ function snapshotChessClusterSlotForFinalizeV0(slot, outcome, endReason) {
 
 function endChessClusterSlotV0(slot, outcome, endReason = "normal") {
   if (!slot || slot.status === "ended") return;
+  if (!shouldFinalizeClusterBroadcastEndV0(slot, outcome, endReason)) return;
   const endedSummary = summarizeChessClusterSlotV0({
     ...slot,
     status: "ended",
@@ -405,15 +416,25 @@ async function runClusterTickV0(opts = {}) {
 
   let attempts = 0;
   let moved = false;
+  let movesThisTick = 0;
+  const movesPerTick = resolveChessClusterBroadcastMovesPerTickV0();
+  const slotOrder = resolveChessClusterTickSlotOrderV0(
+    roundRobinIndexV0,
+    CHESS_CLUSTER_SLOT_COUNT_V0
+  );
   try {
-    while (attempts < CHESS_CLUSTER_SLOT_COUNT_V0 && !moved) {
-      const idx = roundRobinIndexV0 % CHESS_CLUSTER_SLOT_COUNT_V0;
-      roundRobinIndexV0 = (roundRobinIndexV0 + 1) % CHESS_CLUSTER_SLOT_COUNT_V0;
+    while (movesThisTick < movesPerTick && attempts < CHESS_CLUSTER_SLOT_COUNT_V0) {
+      const slotId = slotOrder[attempts];
       attempts += 1;
-      const slot = slotsV0[idx];
+      if (slotId == null) continue;
+      roundRobinIndexV0 = (slotId + 1) % CHESS_CLUSTER_SLOT_COUNT_V0;
+      const slot = slotsV0[slotId];
       if (slot?.status === "active" && !slot.game.isGameOver()) {
         const move = await advanceChessClusterSlotV0(slot);
-        moved = Boolean(move);
+        if (move) {
+          moved = true;
+          movesThisTick += 1;
+        }
       }
     }
 

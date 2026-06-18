@@ -204,6 +204,12 @@ function LearningStripV0({ monitor, activeSlotCount, tr, timeControlLabel }) {
         <span>
           #{CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 + 1} ply {monitor?.spectator?.ply ?? 0}
         </span>
+        {typeof window !== "undefined" && window.__rhizoh?.chessGameCluster?.lastGameEnd ? (
+          <span className="text-white/40">
+            {tr ? "son bitiş" : "last end"}: {window.__rhizoh.chessGameCluster.lastGameEnd.endReason}@
+            {window.__rhizoh.chessGameCluster.lastGameEnd.ply}
+          </span>
+        ) : null}
         {lastMove ? (
           <span className="font-mono text-cyan-200/90">
             {tr ? "son" : "last"}: {lastMove.san} ({lastMove.engine})
