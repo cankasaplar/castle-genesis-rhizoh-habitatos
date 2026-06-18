@@ -62,6 +62,7 @@ Module: `rhizohHardSeparationLayerV0.js` + `rhizohInvitedUserAuthorityGateV0.js`
 | **Chess1** | **Engine presets** | Cluster featured slot: `STRONG`/`MAX` movetime bump (800–2000ms featured) |
 | **ChessStab** | **Engine scheduler** | ✅ adaptive cluster tick (≥800ms), movetime/timeout split, queue latest-only flatten |
 | **ChessSched** | **Scheduler unify** | ✅ `window.__rhizoh.chessLock` + 900ms throttle + `learningReport()` |
+| **ChessMetrics** | **Learning metrics** | ✅ `predictionAccuracy` + `stockfishAgreement` + Rhizoh→SF compare loop |
 | **Chess2** | **Engine registry stub** | `chessEngineRegistryV0.js` — Stockfish today, LC0 slot reserved (no weights yet) |
 | **Chess3** | **8-board arena** | `RhizohChessClusterArenaV0` OBS browser-source URL documented |
 

@@ -18,6 +18,7 @@ import {
   getChessStockfishEngineStatusV0
 } from "./chessStockfishEngineV0.js";
 import { pickRhizohChessMoveV0 } from "./rhizohChessPlayerV0.js";
+import { enqueueRhizohPredictionCompareV0 } from "./rhizohChessPredictionCompareV0.js";
 
 function clusterModeUsesStockfishV0(mode) {
   return ["rhizoh_vs_stockfish", "stockfish", "stockfish_aggressive", "random_perturb"].includes(
@@ -57,9 +58,24 @@ export async function pickChessClusterMoveV0(slot, game) {
   switch (mode.moveStrategy) {
     case "rhizoh_vs_stockfish":
       if (turn === "w") {
+        const fenBefore = game.fen();
         const rhizohPick = await pickRhizohChessMoveV0(game);
+        const legal = game.legalMoves();
+        const san = rhizohPick?.move;
+        const legalRow = san ? legal.find((m) => m.san === san) : null;
+        const uci = legalRow
+          ? `${legalRow.from}${legalRow.to}${legalRow.promotion || ""}`
+          : null;
+        if (uci) {
+          enqueueRhizohPredictionCompareV0(fenBefore, uci, {
+            slotId: slot?.slotId,
+            matchId: slot?.matchId,
+            engine: rhizohPick?.engine || "rhizoh_ai",
+            san
+          });
+        }
         return Object.freeze({
-          move: rhizohPick?.move || pickClusterHeuristicMoveV0(game, slot, agentId, policy),
+          move: san || pickClusterHeuristicMoveV0(game, slot, agentId, policy),
           engine: rhizohPick?.engine || "rhizoh_ai"
         });
       }
