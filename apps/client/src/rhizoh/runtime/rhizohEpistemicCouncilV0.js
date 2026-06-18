@@ -10,8 +10,10 @@ import { writeChessClusterMemoryNodeV0 } from "./chessClusterMemoryGraphV0.js";
 import { appendShadowTraceFromCouncilV0 } from "./rhizohShadowTraceLedgerV0.js";
 import { fetchCouncilAnomalyReasoningV0 } from "./rhizohEpistemicCouncilClientV0.js";
 import {
+  assessDampenedAnomalyScoreV2,
   assessEpistemicGraphInflationRiskV0,
-  recordCouncilTriggerForInflationGuardV0
+  recordCouncilTriggerForInflationGuardV0,
+  resolveCouncilCooldownMsV2
 } from "./rhizohEpistemicGraphInflationGuardV0.js";
 import { getEpistemicMemoryGraphComplianceSummaryV0 } from "./rhizohEpistemicMemoryGraphV0.js";
 
@@ -48,7 +50,7 @@ export const COUNCIL_OBSERVATION_GOVERNANCE_V0 = Object.freeze({
 
 const DRIFT_TRIGGER_THRESHOLD_V0 = 0.5;
 const SESSION_TTL_MS_V0 = 120_000;
-const COUNCIL_COOLDOWN_MS_V0 = 60_000;
+const COUNCIL_COOLDOWN_MS_V0 = 60_000; // base; v2 load balancing may extend via inflation guard
 
 /** @type {Map<string, object>} */
 const sessionsV0 = new Map();
@@ -109,14 +111,24 @@ export function evaluateCouncilTriggerV0(ctx = {}) {
 export function evaluateCouncilCooldownV0(triggerEval) {
   if (!triggerEval) return null;
   if (triggerEval.bypassCooldown === true) return null;
+  const inflation = assessEpistemicGraphInflationRiskV0();
+  const cooldownMs = inflation.recommendedCooldownMs || resolveCouncilCooldownMsV2(inflation.level);
+  if (inflation.councilLoadBalance?.throttled) {
+    return Object.freeze({
+      throttled: true,
+      matchKey: triggerEval.matchId || `slot_${triggerEval.slotId ?? "na"}`,
+      cooldownMs,
+      reason: "council_density_soft_cap"
+    });
+  }
   const matchKey = triggerEval.matchId || `slot_${triggerEval.slotId ?? "na"}`;
   const lastAt = lastCouncilAtByMatchKeyV0.get(matchKey) || 0;
   const elapsed = Date.now() - lastAt;
-  if (elapsed < COUNCIL_COOLDOWN_MS_V0) {
+  if (elapsed < cooldownMs) {
     return Object.freeze({
       throttled: true,
       matchKey,
-      cooldownMs: COUNCIL_COOLDOWN_MS_V0 - elapsed,
+      cooldownMs: cooldownMs - elapsed,
       reason: "council_match_cooldown"
     });
   }
@@ -176,9 +188,11 @@ export async function runEpistemicCouncilPipelineV0(triggerEval) {
   advanceCouncilPhaseV0(session.sessionId, COUNCIL_SESSION_PHASE_V0.SYNTHESIZE);
 
   const gatewayOk = Boolean(gatewayResult?.ok);
-  const anomalyScore = gatewayOk
+  const rawAnomalyScore = gatewayOk
     ? Number(gatewayResult.anomalyScore) || 0
     : Number(Math.min(1, (triggerEval.triggers?.length || 1) * 0.2).toFixed(4));
+  const dampened = assessDampenedAnomalyScoreV2(rawAnomalyScore);
+  const anomalyScore = dampened.dampened;
   const reasoningChain = gatewayOk
     ? gatewayResult.reasoningChain
     : Object.freeze([
@@ -200,6 +214,11 @@ export async function runEpistemicCouncilPipelineV0(triggerEval) {
     synthesis,
     lenses: Object.freeze(lenses || []),
     anomalyScore,
+    anomalyScoreRaw: rawAnomalyScore,
+    anomalyDampening: Object.freeze({
+      active: dampened.dampeningActive,
+      inflationLevel: dampened.inflationLevel
+    }),
     reasoningChain,
     gatewayOk,
     gatewayReason: gatewayOk ? null : gatewayResult?.reason || "fallback",
@@ -211,9 +230,11 @@ export async function runEpistemicCouncilPipelineV0(triggerEval) {
   lastAnomalyReasoningV0 = Object.freeze({
     sessionId: session.sessionId,
     anomalyScore,
+    anomalyScoreRaw: rawAnomalyScore,
     reasoningChain,
     gatewayOk,
     severity: gatewayResult?.gateway?.severity || null,
+    dampening: dampened,
     atMs: Date.now()
   });
 
@@ -246,7 +267,7 @@ export async function runEpistemicCouncilPipelineV0(triggerEval) {
       lastObservation: observation,
       lastAnomalyReasoning: lastAnomalyReasoningV0,
       sessionCount: sessionSeqV0,
-      cooldownMs: COUNCIL_COOLDOWN_MS_V0,
+      cooldownMs: assessEpistemicGraphInflationRiskV0().recommendedCooldownMs,
       triggerPipeline: (ctx = {}) => {
         const ev = evaluateCouncilTriggerV0(ctx);
         if (!ev) return null;

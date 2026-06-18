@@ -12,6 +12,7 @@ import {
   getEpistemicMemoryGraphComplianceSummaryV0,
   projectShadowTraceToEpistemicMemoryV0
 } from "./rhizohEpistemicMemoryGraphV0.js";
+import { __resetEpistemicGraphLifecycleForTestV0, getLastEpistemicGraphLifecyclePassV0 } from "./rhizohEpistemicGraphLifecycleV0.js";
 import {
   __resetEpistemicGraphInflationGuardForTestV0,
   assessEpistemicGraphInflationRiskV0
@@ -358,6 +359,7 @@ export function exportShadowComplianceSnapshotV0(label = "checkpoint") {
     })(),
     memoryGraph: getEpistemicMemoryGraphComplianceSummaryV0(),
     graphInflationRisk: assessEpistemicGraphInflationRiskV0(),
+    graphLifecycle: getLastEpistemicGraphLifecyclePassV0(),
     anomalyReasoning: (() => {
       const last = getLastCouncilAnomalyReasoningV0();
       if (!last) return null;
@@ -406,6 +408,7 @@ export function __resetShadowTraceLedgerForTestV0() {
   lastStressRunForComplianceV0 = null;
   __resetEpistemicMemoryGraphForTestV0();
   __resetEpistemicGraphInflationGuardForTestV0();
+  __resetEpistemicGraphLifecycleForTestV0();
   if (typeof window !== "undefined") {
     delete window.__rhizoh?.shadowTraceLedger;
     delete window.__rhizoh?.shadowComplianceSnapshot;

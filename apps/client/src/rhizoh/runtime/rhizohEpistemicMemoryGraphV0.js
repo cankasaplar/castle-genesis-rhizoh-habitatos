@@ -7,6 +7,12 @@
 import { foldWalSegmentHashV0, WAL_HASH_CHAIN_GENESIS_V0 } from "./continuity/walHashChainV0.js";
 import { isRhizohLegalPendingHoldV0 } from "./rhizohLegalPendingWaitLoopV0.js";
 import { resolveIngressRouteV0 } from "../ingress/ingress_router.js";
+import {
+  buildEpistemicGraphLifecyclePlanV0,
+  getLastEpistemicGraphLifecyclePassV0,
+  recordEpistemicGraphLifecyclePassV0
+} from "./rhizohEpistemicGraphLifecycleV0.js";
+import { assessEpistemicGraphInflationRiskV0 } from "./rhizohEpistemicGraphInflationGuardV0.js";
 
 export const EPISTEMIC_MEMORY_GRAPH_SCHEMA_V0 = "castle.rhizoh.epistemic_memory_graph.v0";
 export const EPISTEMIC_MEMORY_GRAPH_EVENT_V0 = "rhizoh:epistemic-memory-graph-v0";
@@ -125,6 +131,7 @@ function ensureStressRunHubNodeV0(stressRunId, ctx = {}) {
   stressHubByRunIdV0.set(stressRunId, node.nodeId);
   trimGraphV0();
   publishEpistemicMemoryGraphV0(node);
+  maybeAutoLifecyclePassV0();
   return node;
 }
 
@@ -149,6 +156,55 @@ function appendMemoryEdgeV0(row) {
   edgesV0.push(edge);
   while (edgesV0.length > MAX_EDGES_V0) edgesV0.shift();
   return edge;
+}
+
+function maybeAutoLifecyclePassV0() {
+  try {
+    const inflation = assessEpistemicGraphInflationRiskV0();
+    if (inflation.shouldRunLifecyclePass) runEpistemicMemoryGraphLifecycleV0();
+  } catch {
+    /* noop */
+  }
+}
+
+/**
+ * Apply node TTL + edge decay prune pass.
+ */
+export function runEpistemicMemoryGraphLifecycleV0() {
+  const plan = buildEpistemicGraphLifecyclePlanV0({
+    nodes: nodesV0,
+    edges: edgesV0
+  });
+
+  if (plan.expiredNodeIds.length) {
+    const expired = new Set(plan.expiredNodeIds);
+    for (let i = nodesV0.length - 1; i >= 0; i -= 1) {
+      const node = nodesV0[i];
+      if (!expired.has(node.nodeId)) continue;
+      nodesV0.splice(i, 1);
+      if (node.shadowRecordId) nodeByShadowRecordIdV0.delete(node.shadowRecordId);
+      if (node.kind === EPISTEMIC_MEMORY_NODE_KIND_V0.STRESS_RUN_HUB && node.stressRunId) {
+        stressHubByRunIdV0.delete(node.stressRunId);
+      }
+    }
+  }
+
+  if (plan.prunedEdgeIds.length) {
+    const prune = new Set(plan.prunedEdgeIds);
+    for (let i = edgesV0.length - 1; i >= 0; i -= 1) {
+      if (prune.has(edgesV0[i].edgeId)) edgesV0.splice(i, 1);
+    }
+  }
+
+  recordEpistemicGraphLifecyclePassV0(
+    Object.freeze({
+      ...plan,
+      nodeCountAfter: nodesV0.length,
+      edgeCountAfter: edgesV0.length
+    })
+  );
+  publishEpistemicMemoryGraphV0(null);
+  return getLastEpistemicGraphLifecyclePassV0();
 }
 
 function trimGraphV0() {
@@ -245,6 +301,7 @@ export function projectShadowTraceToEpistemicMemoryV0(record, opts = {}) {
   }
 
   publishEpistemicMemoryGraphV0(node);
+  maybeAutoLifecyclePassV0();
   return node;
 }
 
@@ -322,6 +379,7 @@ export function projectStressConflictGraphToEpistemicMemoryV0(input = {}, opts =
 
   trimGraphV0();
   publishEpistemicMemoryGraphV0(projected[projected.length - 1] || null);
+  maybeAutoLifecyclePassV0();
   return Object.freeze(projected);
 }
 
