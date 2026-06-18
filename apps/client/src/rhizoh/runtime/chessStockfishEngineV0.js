@@ -20,6 +20,7 @@ import {
   resolveChessTelemetryLevelV0
 } from "./chessTelemetryLogV0.js";
 import { maybeEnqueueEpistemicCouncilV0 } from "./rhizohEpistemicCouncilV0.js";
+import { appendShadowTraceFromStockfishTimeoutV0 } from "./rhizohShadowTraceLedgerV0.js";
 
 export const CHESS_STOCKFISH_ENGINE_SCHEMA_V0 = "castle.chess_stockfish_engine.v0";
 export const CHESS_STOCKFISH_LOG_TAG_V0 = "[CASTLE_stockfish_engine]";
@@ -284,6 +285,12 @@ function logStockfishV0(level, message, detail = null) {
     console[level](CHESS_STOCKFISH_LOG_TAG_V0, payload);
   }
   if (message === "arena move timeout") {
+    appendShadowTraceFromStockfishTimeoutV0({
+      matchId: detail?.matchId || null,
+      fen: detail?.fen || null,
+      movetimeMs: detail?.movetimeMs,
+      depth: detail?.depth
+    });
     maybeEnqueueEpistemicCouncilV0({
       stockfishTimeout: true,
       matchId: detail?.matchId || null,

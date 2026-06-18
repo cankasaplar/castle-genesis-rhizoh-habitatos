@@ -126,6 +126,12 @@ export function startRhizohLegalPendingWaitLoopV0(opts = {}) {
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
     window.__rhizoh.openLegalHoldChessArena = dispatchLegalHoldChessArenaManualV0;
+    import("./rhizohShadowTraceLedgerV0.js")
+      .then((m) => {
+        window.__rhizoh.exportShadowComplianceSnapshot = m.exportShadowComplianceSnapshotV0;
+        window.__rhizoh.shadowTraceLedgerSnapshot = m.getShadowTraceLedgerSnapshotV0;
+      })
+      .catch(() => null);
   }
 
   const bootTimer = window.setTimeout(() => {
