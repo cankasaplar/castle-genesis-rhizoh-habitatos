@@ -5,6 +5,12 @@
 
 import { emitCodexBusV0 } from "../../core/CodexBusV0.js";
 import { RHIZOH_GEOMETRY_PATTERN_FAMILY_V0 } from "./rhizohGeometryPatternFamilyV0.js";
+import {
+  buildChessDriftLogEnvelopeV0,
+  logChessTelemetryGatedV0,
+  shouldLogChessTopologyEventV0
+} from "./chessTelemetryLogV0.js";
+import { maybeEnqueueEpistemicCouncilV0 } from "./rhizohEpistemicCouncilV0.js";
 
 export const TOPOLOGY_EVENT_TYPES_V0 = Object.freeze({
   DRIFT_DETECTED: "TOPOLOGY_DRIFT_DETECTED",
@@ -89,12 +95,36 @@ export function emitTopologyCodexEventV0(opts) {
   });
 
   if (typeof console !== "undefined" && console.info) {
-    console.info(TOPOLOGY_EVENT_LOG_TAG_V0, {
-      eventType: payload.eventType,
-      layer: payload.layer,
-      canonicalPattern: payload.canonicalPattern,
-      mirrorPattern: payload.mirrorPattern,
-      driftMagnitude: payload.driftMagnitude
+    if (
+      shouldLogChessTopologyEventV0({
+        eventType: payload.eventType,
+        driftMagnitude: payload.driftMagnitude
+      })
+    ) {
+      logChessTelemetryGatedV0(
+        "info",
+        TOPOLOGY_EVENT_LOG_TAG_V0,
+        buildChessDriftLogEnvelopeV0(
+          payload.eventType === TOPOLOGY_EVENT_TYPES_V0.DRIFT_DETECTED ? "warn" : "info",
+          {
+            eventType: payload.eventType,
+            layer: payload.layer,
+            matchId: payload.matchId,
+            canonicalPattern: payload.canonicalPattern,
+            mirrorPattern: payload.mirrorPattern,
+            driftMagnitude: payload.driftMagnitude,
+            entropyScore: payload.driftMagnitude
+          }
+        )
+      );
+    }
+  }
+
+  if (payload.eventType === TOPOLOGY_EVENT_TYPES_V0.DRIFT_DETECTED) {
+    maybeEnqueueEpistemicCouncilV0({
+      topologyEventType: payload.eventType,
+      driftMagnitude: payload.driftMagnitude,
+      matchId: payload.matchId
     });
   }
 

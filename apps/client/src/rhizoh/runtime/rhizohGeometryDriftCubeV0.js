@@ -3,6 +3,12 @@
  * RESEARCH-ONLY: never writes WAL, gateway, or execution paths.
  */
 
+import {
+  buildChessDriftLogEnvelopeV0,
+  logChessTelemetryGatedV0,
+  shouldLogChessGeometryDriftV0
+} from "./chessTelemetryLogV0.js";
+
 export const RHIZOH_DRIFT_CUBE_SCHEMA_V0 = "rhizoh.drift_cube_point.v0";
 export const RHIZOH_DRIFT_CUBE_EVENT_V0 = "rhizoh:geometry-drift-cube-v0";
 export const RHIZOH_DRIFT_CUBE_LOG_TAG_V0 = "[CASTLE_geometry_drift]";
@@ -89,13 +95,30 @@ export function commitDriftCubeObservationV0(opts) {
   ensureWindowApiV0();
 
   if (typeof console !== "undefined" && console.info) {
-    console.info(RHIZOH_DRIFT_CUBE_LOG_TAG_V0, {
-      matchId: point.matchId,
-      moveNumber: point.y,
-      z: point.z,
-      playedFamily: point.context.playedPattern,
-      expectedFamily: point.context.expectedPattern
-    });
+    const familyMismatch = point.context.playedPattern !== point.context.expectedPattern;
+    if (
+      shouldLogChessGeometryDriftV0({
+        matchId: point.matchId,
+        moveNumber: point.y,
+        z: point.z,
+        driftMagnitude: point.z,
+        familyMismatch
+      })
+    ) {
+      logChessTelemetryGatedV0(
+        "info",
+        RHIZOH_DRIFT_CUBE_LOG_TAG_V0,
+        buildChessDriftLogEnvelopeV0(familyMismatch || point.z >= 0.12 ? "warn" : "info", {
+          matchId: point.matchId,
+          moveNumber: point.y,
+          z: point.z,
+          entropyScore: point.z,
+          playedFamily: point.context.playedPattern,
+          expectedFamily: point.context.expectedPattern,
+          familyMismatch
+        })
+      );
+    }
   }
 
   if (typeof window !== "undefined") {

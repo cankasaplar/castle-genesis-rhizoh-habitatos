@@ -1,5 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
+  dispatchLegalHoldChessArenaManualV0,
+  isLegalHoldAutoChessEnabledV0,
   isRhizohLegalPendingHoldV0,
   maybeDispatchLegalPendingChessArenaV0,
   resetRhizohLegalPendingWaitLoopForTestsV0,
@@ -30,7 +32,12 @@ describe("rhizohLegalPendingWaitLoopV0", () => {
     expect(isRhizohLegalPendingHoldV0()).toBe(true);
   });
 
-  it("dispatches chess arena once while hold active", () => {
+  it("does not auto-dispatch chess arena by default (C2 manual gate)", () => {
+    expect(isLegalHoldAutoChessEnabledV0()).toBe(false);
+    expect(maybeDispatchLegalPendingChessArenaV0()).toBe(false);
+  });
+
+  it("dispatches chess arena on manual open", () => {
     const arenaEvents = [];
     const clusterEvents = [];
     window.addEventListener(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, (ev) => arenaEvents.push(ev.detail));
@@ -38,20 +45,23 @@ describe("rhizohLegalPendingWaitLoopV0", () => {
       clusterEvents.push(ev.detail)
     );
 
-    expect(maybeDispatchLegalPendingChessArenaV0()).toBe(true);
-    expect(maybeDispatchLegalPendingChessArenaV0()).toBe(false);
+    expect(dispatchLegalHoldChessArenaManualV0()).toBe(true);
+    expect(dispatchLegalHoldChessArenaManualV0()).toBe(false);
     expect(arenaEvents).toHaveLength(1);
     expect(clusterEvents).toHaveLength(1);
-    expect(arenaEvents[0].initialMode).toBe("rhizoh_stockfish");
-    expect(arenaEvents[0].autoPlay).toBe(true);
+    expect(arenaEvents[0].source).toBe("legal_hold_manual");
   });
 
-  it("boots interval loop without throwing", () => {
+  it("boots interval loop without auto chess dispatch", () => {
     vi.useFakeTimers();
+    const clusterEvents = [];
+    window.addEventListener(RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0, (ev) =>
+      clusterEvents.push(ev.detail)
+    );
     const stop = startRhizohLegalPendingWaitLoopV0({ bootDelayMs: 10, pollMs: 100 });
-    vi.advanceTimersByTime(20);
+    vi.advanceTimersByTime(200);
     stop();
     vi.useRealTimers();
-    expect(true).toBe(true);
+    expect(clusterEvents).toHaveLength(0);
   });
 });

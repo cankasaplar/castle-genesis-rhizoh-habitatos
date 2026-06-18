@@ -10,6 +10,7 @@ import {
 } from "./chessStockfishEngineV0.js";
 import { writeChessClusterMemoryNodeV0 } from "./chessClusterMemoryGraphV0.js";
 import { resolveChessClusterSlotModeV0 } from "./chessClusterSlotModesV0.js";
+import { maybeEnqueueEpistemicCouncilV0 } from "./rhizohEpistemicCouncilV0.js";
 
 export const CHESS_CLUSTER_LEARNING_TRACE_SCHEMA_V0 =
   "castle.rhizoh.chess_cluster_learning_trace.v0";
@@ -76,6 +77,15 @@ export async function traceChessClusterPolicyDiffV0(slot, moveRow, fenBefore) {
     } catch {
       /* noop */
     }
+  }
+
+  if (policyDiff.drifted) {
+    maybeEnqueueEpistemicCouncilV0({
+      policyDiff,
+      matchId: slot.matchId,
+      slotId: slot.slotId,
+      fenBefore
+    });
   }
 
   return policyDiff;

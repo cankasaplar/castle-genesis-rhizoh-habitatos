@@ -253,6 +253,7 @@ async function advanceChessClusterSlotV0(slot) {
     engine: moveRow.engine,
     fen: result.fen,
     fenBefore,
+    slotId: slot.slotId,
     matchId: slot.matchId,
     moveNumber: slot.ply,
     policyMode: slot.modeId
