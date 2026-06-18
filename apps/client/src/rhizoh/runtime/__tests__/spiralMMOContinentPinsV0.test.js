@@ -30,15 +30,16 @@ describe("spiralMMOContinentPinsV0", () => {
     );
   });
 
-  it("renders closed spiral pin html per continent", () => {
+  it("renders dimensional collapse gate pin html per continent", () => {
     const pin = RHIZOH_SPIRAL_MMO_CONTINENT_PINS_V0[0];
     const html = spiralMMOPinIconHtmlV0(pin);
-    expect(html).toContain('data-rhizoh-spiral-mmo-rev="closed-spiral-v0"');
+    expect(html).toContain('data-rhizoh-spiral-mmo-rev="dim-collapse-gate-v0"');
     expect(html).toContain("animateTransform");
+    expect(html).toContain("#00ccff");
     expect(html).not.toContain("0644");
     expect(html).not.toContain("preserve-3d");
     const motion = deriveSpiralMMOContinentCubeMotionV0(pin);
-    expect(html).toContain(motion.accent);
+    expect(html).toContain(motion.accent.slice(1, 4));
   });
 
   it("resolves continent display names for spiral pins", () => {

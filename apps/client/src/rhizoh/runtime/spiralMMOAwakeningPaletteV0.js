@@ -10,7 +10,7 @@ export const SPIRAL_MMO_COLOR_HEX_V0 = Object.freeze({
   green: "#00ff66",
   purple: "#b026ff",
   yellow: "#ffcc00",
-  orange: "#ff9900",
+  orange: "#ff6600",
   red: "#ff3333",
   pink: "#ff33cc",
   mirror: "#e0e0e0",
