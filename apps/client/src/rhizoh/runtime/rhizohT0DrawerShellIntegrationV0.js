@@ -11,6 +11,19 @@ import {
   handleProductShellSelectV0,
   subscribeDrawerStateV0
 } from "./rhizohDrawerStateMachineV0.js";
+import {
+  applyT0DetailDrawerTogglePlanV0,
+  planT0DetailDrawerToggleV0,
+  planT0ProductDrawerOpenV0,
+  resolveT0DrawerCoordinatorStateV0
+} from "./rhizohT0DrawerCoordinatorV0.js";
+
+export {
+  applyT0DetailDrawerTogglePlanV0,
+  planT0DetailDrawerToggleV0,
+  planT0ProductDrawerOpenV0,
+  resolveT0DrawerCoordinatorStateV0
+};
 
 export {
   bootDrawerStateMachineV0 as bootRhizohT0DrawerShellV0,
@@ -73,5 +86,21 @@ export function runT0ProductShellSelectV0(surfaceId, ctx = {}) {
  * @param {string|null|undefined} openSurfaceDrawerId
  */
 export function resolveT0DetailDrawerVisibleV0(showDetailDrawer, openSurfaceDrawerId) {
-  return Boolean(showDetailDrawer) && !openSurfaceDrawerId;
+  return resolveT0DrawerCoordinatorStateV0({
+    detailRequested: showDetailDrawer,
+    openSurfaceDrawerId
+  }).detailDrawerVisible;
+}
+
+/**
+ * Coordinator toggle for legacy right detail drawer (A3).
+ * @param {boolean} showDetailDrawer
+ * @param {string|null|undefined} openSurfaceDrawerId
+ */
+export function toggleT0DetailDrawerCoordinatedV0(showDetailDrawer, openSurfaceDrawerId) {
+  const plan = planT0DetailDrawerToggleV0({
+    detailRequested: showDetailDrawer,
+    openSurfaceDrawerId
+  });
+  return applyT0DetailDrawerTogglePlanV0(plan);
 }

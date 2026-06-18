@@ -15,6 +15,7 @@ import {
 } from "./rhizohRuntimeGuarantees.js";
 import { buildFormalClosureBridgePayload } from "./rhizohFormalClosureBridgeV1.js";
 import { requestWebGpuAdapterQuietlyV0 } from "../rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
+import { shouldRunWebGpuComputeProbeV0 } from "../rhizoh/runtime/rhizohSpatialComputeProbePolicyV0.js";
 
 let _adapter = null;
 let _device = null;
@@ -25,6 +26,7 @@ export function isSwarmGpuAvailable() {
 }
 
 export async function getSwarmGpuDevice() {
+  if (!shouldRunWebGpuComputeProbeV0()) return null;
   if (_device) return _device;
   if (!isSwarmGpuAvailable()) return null;
   if (!_initPromise) {
@@ -49,6 +51,21 @@ export async function getSwarmGpuDevice() {
 
 /** Cihaz + yol haritası + Chronos’un okuyabileceği compute graph (shadow Pass 0–3). */
 export async function warmSwarmGpu(options = {}) {
+  if (!shouldRunWebGpuComputeProbeV0()) {
+    return {
+      device: "skipped",
+      computePath: "SKIPPED_NON_CESIUM_SINK",
+      computeFallback: getRhizohComputeFallbackStatus({ gpuAvailable: false }),
+      guaranteeTierDefault: RHIZOH_GUARANTEE_TIER.EXPERIMENTAL,
+      roadmap: getRhizohRoadmapManifest(),
+      formalClosureBridge: buildFormalClosureBridgePayload(),
+      sab: getSabReadiness(),
+      capabilities: getRuntimeCapabilityMap(),
+      computeGraph: null,
+      skipped: true,
+      skipReason: "spatial_sink_not_cesium"
+    };
+  }
   const device = await getSwarmGpuDevice();
   let computeGraph = null;
   if (device) {

@@ -149,7 +149,11 @@ import {
   shareWorldInviteV0,
   signalCastlePresenceV0
 } from "./rhizoh/runtime/rhizohDomainNervousSystemV0.js";
-import { markCastleAppEngineReadyV0 } from "./rhizoh/runtime/spatialSinkRoutePolicyV0.js";
+import { markCastleAppEngineReadyV0, releaseCastleAppEngineReadyV0 } from "./rhizoh/runtime/spatialSinkRoutePolicyV0.js";
+import {
+  claimRhizohEngineBootV0,
+  releaseRhizohEngineBootV0
+} from "./rhizoh/runtime/rhizohEngineBootGuardV0.js";
 import { RHIZOH_DOMAIN_CAPABILITY_V0 } from "./rhizoh/runtime/domainAdapterRegistryV0.js";
 import { setRhizohDomainCoreUserV0 } from "./rhizoh/runtime/rhizohDomainCoreStoreV0.js";
 import { installChromeWebGpuNoiseSuppressV0 } from "./rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
@@ -189,7 +193,8 @@ import {
   getDrawerStateSnapshotV0,
   resolveT0DetailDrawerVisibleV0,
   runT0ProductShellSelectV0,
-  subscribeDrawerStateV0
+  subscribeDrawerStateV0,
+  toggleT0DetailDrawerCoordinatedV0
 } from "./rhizoh/runtime/rhizohT0DrawerShellIntegrationV0.js";
 import {
   applyRhizohWorldMapToolV0,
@@ -7577,6 +7582,7 @@ export default function AppRhizoh528() {
   const bootLogRef = useRef(
     typeof window !== "undefined" && window.__CASTLE_BOOT_LOG__ ? window.__CASTLE_BOOT_LOG__ : null
   );
+  const engineReadyLoggedRef = useRef(false);
   const rhizohSocialPreReplyRef = useRef(null);
   const rhizohRegistryPreReplyRef = useRef(null);
   /** Last arbitration governor ring buffer (synced with continuity meta + optimistic turns). */
@@ -8554,17 +8560,13 @@ export default function AppRhizoh528() {
   }, [productSurface, location.pathname]);
 
   const toggleDetailDrawerV0 = useCallback(() => {
-    if (resolveOpenProductSurfaceDrawerIdV0()) {
-      closeProductSurfaceDrawerV0();
+    const openId = resolveOpenProductSurfaceDrawerIdV0();
+    const next = toggleT0DetailDrawerCoordinatedV0(showDetailDrawer, openId);
+    if (next) {
+      closeAllRhizohProductSurfacePanelsV0();
     }
-    setShowDetailDrawer((open) => {
-      const next = !open;
-      if (next) {
-        closeAllRhizohProductSurfacePanelsV0();
-      }
-      return next;
-    });
-  }, []);
+    setShowDetailDrawer(next);
+  }, [showDetailDrawer]);
 
   const onProductShellSelect = useCallback(
     (id) => {
@@ -8623,6 +8625,7 @@ export default function AppRhizoh528() {
           if (location.pathname !== "/") navigate("/");
         },
         onDrawerOpened: (openedSurface) => {
+          setShowDetailDrawer(false);
           triggerMicroExpressiveRealityTransitionV0(MICRO_MAP_SURFACE_OPEN_V0, {
             detail: { surface: openedSurface, source: "product_shell_v0" }
           });
@@ -11846,24 +11849,27 @@ export default function AppRhizoh528() {
       if (coreWorld.rhizohIdx === -1) coreWorld.allocate("RHIZOH-PRIME", STATE.RHIZOH);
 
       if (containerRef.current && !engineRef.current) {
-        try {
-          engineRef.current = new ApexEngine(containerRef.current);
-          notifyRealityEngineReady();
-          resizeObserver.observe(containerRef.current);
-        } catch (err) {
-          console.error("[Castle] ApexEngine boot failed", err);
+        if (claimRhizohEngineBootV0()) {
           try {
-            window.__CASTLE_LAST_FATAL__ = {
-              kind: "apex_engine_constructor",
-              err,
-              message: String(err?.message || err),
-              stack: String(err?.stack || ""),
-              at: Date.now()
-            };
-          } catch {
-            /* noop */
+            engineRef.current = new ApexEngine(containerRef.current);
+            notifyRealityEngineReady();
+            resizeObserver.observe(containerRef.current);
+          } catch (err) {
+            releaseRhizohEngineBootV0();
+            console.error("[Castle] ApexEngine boot failed", err);
+            try {
+              window.__CASTLE_LAST_FATAL__ = {
+                kind: "apex_engine_constructor",
+                err,
+                message: String(err?.message || err),
+                stack: String(err?.stack || ""),
+                at: Date.now()
+              };
+            } catch {
+              /* noop */
+            }
+            engineRef.current = null;
           }
-          engineRef.current = null;
         }
       }
       let lastTime = performance.now();
@@ -11948,6 +11954,9 @@ export default function AppRhizoh528() {
         engineRef.current.terminate();
         engineRef.current = null;
       }
+      releaseRhizohEngineBootV0();
+      releaseCastleAppEngineReadyV0();
+      engineReadyLoggedRef.current = false;
     };
   }, []);
 
@@ -12650,12 +12659,16 @@ export default function AppRhizoh528() {
 
   useEffect(() => {
     if (!booted) return;
-    try {
-      bootLogRef.current?.ok?.("app.engine.ready", "Apex engine + world loop active");
-    } catch {
-      /* noop */
+    let flyInterval = null;
+    if (!engineReadyLoggedRef.current) {
+      engineReadyLoggedRef.current = true;
+      try {
+        bootLogRef.current?.ok?.("app.engine.ready", "Apex engine + world loop active");
+      } catch {
+        /* noop */
+      }
+      markCastleAppEngineReadyV0("app.engine.ready");
     }
-    markCastleAppEngineReadyV0("app.engine.ready");
     if (
       !shouldRhizohFlyToIstanbulV0({
         productSurface,
@@ -12663,18 +12676,22 @@ export default function AppRhizoh528() {
         source: "BOOT_ENGINE_READY"
       })
     ) {
-      return;
+      return () => {
+        if (flyInterval) window.clearInterval(flyInterval);
+      };
     }
     let tries = 0;
-    const id = window.setInterval(() => {
+    flyInterval = window.setInterval(() => {
       tries += 1;
       const c = window.__CASTLE_CESIUM__;
       if (c?.flyToIstanbul) {
         c.flyToIstanbul();
-        window.clearInterval(id);
-      } else if (tries > 40) window.clearInterval(id);
+        window.clearInterval(flyInterval);
+      } else if (tries > 40) window.clearInterval(flyInterval);
     }, 250);
-    return () => window.clearInterval(id);
+    return () => {
+      if (flyInterval) window.clearInterval(flyInterval);
+    };
   }, [booted, realityMode, productSurface]);
 
   useEffect(() => {
