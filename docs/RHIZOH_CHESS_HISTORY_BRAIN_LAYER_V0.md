@@ -89,19 +89,18 @@ ENGINE BEHAVIOR UPDATE (inference only)
 - `window.__rhizoh.chessHistoryBrain()` — evolution report
 - `window.__rhizoh.importChessPgn(pgn)` — DevTools import
 
-### PR-B — Style Embedding System
+### PR-C — Offline Batch Trainer ✅
 
-- Compute `playerStyles[]` from corpus games (aggression, risk, endgame proxy)
-- Link to `chessHistoricalMindV0` presets as anchors
-- Store vectors in `embeddings[]`
-- Report: `playerStyleExposure`, style-match hints in move picker
+- `chessOfflineBatchTrainerV0.js` — `runChessOfflineBatchTrainerV0()`
+- `chessBatchRegretProxyV0.js` — corpus regret without per-move Stockfish
+- Replay corpus + arena archive → aggregate regret → `applyChessBatchLearningCorrectionV0`
+- Opening book merge from corpus buckets
+- WeightUpdateEdge + checkpoint freeze on each run
+- Auto-run once per 24h (deferred 12s boot, skips if engine contended)
+- `window.__rhizoh.runChessOfflineBatchTrainer()` — manual run
+- `window.__rhizoh.chessOfflineBatchTrainer()` — trainer report
 
-### PR-C — Offline Batch Trainer
-
-- `runChessOfflineBatchTrainerV0()` — scheduled / manual
-- Replay corpus + live archive → regret samples
-- Update `chessLearningWeightsV0` + opening book bias
-- Emit `intelligenceEvolution` delta in `chessHistoryBrain()`
+**Chain:** checkpoint + corpus + lifetime → unified graph → batch trainer → weight matrix
 
 ---
 
@@ -115,6 +114,8 @@ window.__rhizoh.chessUnifiedMemoryGraph()  // single notebook graph
 window.__rhizoh.freezeChessLearningCheckpoint()
 window.__rhizoh.exportChessLearningCheckpointJson()
 window.__rhizoh.rebuildChessUnifiedGraph()
+window.__rhizoh.runChessOfflineBatchTrainer()
+window.__rhizoh.chessOfflineBatchTrainer()
 window.__rhizoh.importChessPgn(`[White "Carlsen"]...`)
 ```
 

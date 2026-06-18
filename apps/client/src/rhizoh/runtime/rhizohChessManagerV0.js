@@ -94,7 +94,8 @@ export function getRhizohChessManagerSnapshotV0(reason = "poll") {
       chessHistoryBrain: "window.__rhizoh.chessHistoryBrain()",
       chessEvolutionCurve: "window.__rhizoh.chessEvolutionCurve()",
       chessLearningCheckpoint: "window.__rhizoh.chessLearningCheckpoint()",
-      chessUnifiedMemoryGraph: "window.__rhizoh.chessUnifiedMemoryGraph()"
+      chessUnifiedMemoryGraph: "window.__rhizoh.chessUnifiedMemoryGraph()",
+      chessOfflineBatchTrainer: "window.__rhizoh.chessOfflineBatchTrainer()"
     }),
     atMs: Date.now()
   });

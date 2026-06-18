@@ -68,6 +68,7 @@ Module: `rhizohHardSeparationLayerV0.js` + `rhizohInvitedUserAuthorityGateV0.js`
 | **ChessEvolution** | **Evolution curve** | ✅ `chessEvolutionCurve()` — unified session + lifetime + corpus timeline |
 | **ChessCheckpoint** | **Deploy-safe learning** | ✅ `chessLearningCheckpoint()` — `learning_snapshot_v1` freeze + resume merge |
 | **ChessUnifiedGraph** | **Single notebook graph** | ✅ `chessUnifiedMemoryGraph()` — Position/Move/Eval/WeightUpdate edges + corpus expansion |
+| **ChessBatchTrainer** | **Offline batch trainer PR-C** | ✅ `runChessOfflineBatchTrainer()` — corpus → weight matrix + opening bias |
 | **Chess2** | **Engine registry stub** | `chessEngineRegistryV0.js` — Stockfish today, LC0 slot reserved (no weights yet) |
 | **Chess3** | **8-board arena** | `RhizohChessClusterArenaV0` OBS browser-source URL documented |
 

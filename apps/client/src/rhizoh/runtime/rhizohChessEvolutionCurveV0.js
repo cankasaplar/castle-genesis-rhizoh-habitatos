@@ -13,6 +13,7 @@ import { CHESS_CLUSTER_POLICY_DIFF_EVENT_V0 } from "./chessClusterLearningTraceV
 import { RHIZOH_CHESS_PREDICTION_SCORE_EVENT_V0 } from "./rhizohChessLearningReportV0.js";
 import { CHESS_MATCH_ANALYZED_EVENT_V0 } from "./chessLearningBridgeV0.js";
 import { CHESS_HISTORY_IMPORTED_EVENT_V0 } from "./chessHistoryLoaderV0.js";
+import { CHESS_OFFLINE_BATCH_TRAINER_EVENT_V0 } from "./chessOfflineBatchTrainerV0.js";
 import {
   idbSimGetV0,
   openRhizohSimulationDbV0,
@@ -208,6 +209,7 @@ export function ensureRhizohChessEvolutionCurveV0() {
   window.addEventListener(RHIZOH_CHESS_PREDICTION_SCORE_EVENT_V0, () => bump("prediction_score"));
   window.addEventListener(CHESS_MATCH_ANALYZED_EVENT_V0, () => bump("match_analyzed"));
   window.addEventListener(CHESS_HISTORY_IMPORTED_EVENT_V0, () => bump("corpus_import"));
+  window.addEventListener(CHESS_OFFLINE_BATCH_TRAINER_EVENT_V0, () => bump("batch_trainer"));
 
   void readWorldEventSeqV0().then((seq) => {
     recordChessEvolutionPointV0({ force: true, worldEventSeq: seq, reason: "boot_backfill" });

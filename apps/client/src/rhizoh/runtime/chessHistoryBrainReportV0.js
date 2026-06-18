@@ -14,6 +14,7 @@ import { loadChessHistorySeedCorpusV0, importChessHistoryPgnV0, importChessHisto
 import { readChessMemoryStoreV0, listChessMemoryGamesV0 } from "./chessMemoryStoreV0.js";
 import { readChessUnifiedMemoryGraphV0 } from "./chessUnifiedMemoryGraphV0.js";
 import { computeChessStyleEmbeddingsV0 } from "./chessStyleEmbeddingV0.js";
+import { buildChessOfflineBatchTrainerReportV0 } from "./chessOfflineBatchTrainerV0.js";
 
 export const CHESS_HISTORY_BRAIN_REPORT_SCHEMA_V0 = "castle.rhizoh.chess_history_brain_report.v0";
 
@@ -76,6 +77,7 @@ export function buildChessHistoryBrainReportV0() {
   const games = listChessMemoryGamesV0(128);
   const unifiedGraph = readChessUnifiedMemoryGraphV0();
   const styleEmbeddings = computeChessStyleEmbeddingsV0();
+  const batchTrainerReport = buildChessOfflineBatchTrainerReportV0();
   const session = buildRhizohChessLearningReportV0();
   const weights = readChessLearningWeightsV0();
 
@@ -101,9 +103,12 @@ export function buildChessHistoryBrainReportV0() {
       note: "PR-B lightweight vectors from corpus + graph eval edges"
     }),
     batchTrainer: Object.freeze({
-      status: "graph_wired_pr_c_next",
-      lastRunAt: null,
-      note: "unified graph receives weight_update edges; batch trainer = PR-C"
+      status: batchTrainerReport.status,
+      lastRunAt: batchTrainerReport.lastRunAt,
+      runCount: batchTrainerReport.runCount,
+      lastAccuracy: batchTrainerReport.lastAccuracy,
+      graphWeightUpdates: batchTrainerReport.graphWeightUpdates,
+      probe: "window.__rhizoh.runChessOfflineBatchTrainer()"
     }),
     intelligenceEvolution: Object.freeze({
       weightMatrix: Object.freeze({

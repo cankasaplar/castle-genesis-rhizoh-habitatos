@@ -100,6 +100,48 @@ export function applyChessLearningCorrectionV0(regret) {
 }
 
 /**
+ * Batch trainer correction — aggregate corpus/live regret signals (PR-C).
+ * @param {{ forcedWinIgnored?: boolean, lossAvoidanceBias?: boolean, forcedWinRatio?: number, lossAvoidanceRatio?: number }} aggregate
+ * @param {{ gamesTrained?: number }} [opts]
+ */
+export function applyChessBatchLearningCorrectionV0(aggregate, opts = {}) {
+  const prev = readChessLearningWeightsV0();
+  if (!prev.learningMode || !aggregate) return prev;
+
+  const gamesTrained = Math.max(0, Number(opts.gamesTrained) || 0);
+  let { riskPenaltyWeight, winForcingWeight, aggressionBias, forcedWinCorrections, matchesLearned } =
+    prev;
+
+  matchesLearned += Math.min(Math.max(1, gamesTrained), 8);
+
+  const forcedRatio = Number(aggregate.forcedWinRatio) || (aggregate.forcedWinIgnored ? 0.25 : 0);
+  const lossRatio =
+    Number(aggregate.lossAvoidanceRatio) || (aggregate.lossAvoidanceBias ? 0.2 : 0);
+
+  if (aggregate.forcedWinIgnored || forcedRatio >= 0.2) {
+    const mult = 1 + Math.min(0.12, forcedRatio * 0.15);
+    winForcingWeight = Math.min(2.5, winForcingWeight * mult);
+    riskPenaltyWeight = Math.max(0.15, riskPenaltyWeight * (1 - Math.min(0.08, forcedRatio * 0.1)));
+    aggressionBias = clampBias(aggressionBias + Math.min(0.12, forcedRatio * 0.2));
+    forcedWinCorrections += Math.max(1, Math.round(forcedRatio * gamesTrained));
+  } else if (aggregate.lossAvoidanceBias || lossRatio >= 0.15) {
+    winForcingWeight = Math.min(2.5, winForcingWeight * 1.04);
+    riskPenaltyWeight = Math.max(0.2, riskPenaltyWeight * 0.97);
+    aggressionBias = clampBias(aggressionBias + 0.03);
+  }
+
+  return writeWeightsV0({
+    learningMode: true,
+    riskPenaltyWeight,
+    winForcingWeight,
+    aggressionBias,
+    matchesLearned,
+    forcedWinCorrections,
+    batchTrainedAt: new Date().toISOString()
+  });
+}
+
+/**
  * Map learning weights → engine tuning deltas.
  * @param {ReturnType<typeof readChessLearningWeightsV0>} weights
  */
