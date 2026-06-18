@@ -22,6 +22,7 @@ import {
 } from "./chessTelemetryLogV0.js";
 import { maybeEnqueueEpistemicCouncilV0 } from "./rhizohEpistemicCouncilV0.js";
 import { appendShadowTraceFromStockfishTimeoutV0 } from "./rhizohShadowTraceLedgerV0.js";
+import { resolveChessMoveTimeoutBufferMsV0 } from "./chessEngineContentionGateV0.js";
 
 export const CHESS_STOCKFISH_ENGINE_SCHEMA_V0 = "castle.chess_stockfish_engine.v0";
 export const CHESS_STOCKFISH_LOG_TAG_V0 = "[CASTLE_stockfish_engine]";
@@ -837,10 +838,12 @@ function resolveStockfishOptsV0(opts = {}) {
   };
 }
 
-function resolveArenaMoveTimeoutMsV0(movetimeMs) {
+function resolveArenaMoveTimeoutMsV0(movetimeMs, opts = {}) {
   const mt = Math.max(80, Number(movetimeMs) || 600);
-  // Wall-clock guard is separate from UCI movetime — fixed buffer avoids timeout storms.
-  return Math.min(20000, mt + 2000);
+  const buffer =
+    Number(opts.timeoutBufferMs) ||
+    resolveChessMoveTimeoutBufferMsV0({ queueKind: opts.queueKind });
+  return Math.min(25000, mt + buffer);
 }
 
 /**
@@ -864,7 +867,10 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
 
       const { skill, movetimeMs, depth } = resolveStockfishOptsV0(opts);
       const contempt = Number.isFinite(Number(opts.contempt)) ? Number(opts.contempt) : null;
-      const timeoutMs = resolveArenaMoveTimeoutMsV0(movetimeMs);
+      const timeoutMs = resolveArenaMoveTimeoutMsV0(movetimeMs, {
+        queueKind: opts.queueKind,
+        timeoutBufferMs: opts.timeoutBufferMs
+      });
 
       await prepareStockfishForNewSearchV0(Math.min(500, Math.round(timeoutMs * 0.12)));
 

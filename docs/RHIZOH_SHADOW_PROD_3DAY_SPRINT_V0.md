@@ -65,6 +65,7 @@ Module: `rhizohHardSeparationLayerV0.js` + `rhizohInvitedUserAuthorityGateV0.js`
 | **ChessMetrics** | **Learning metrics** | ✅ `predictionAccuracy` + `stockfishAgreement` + Rhizoh→SF compare loop |
 | **ChessLifetime** | **Lifetime report** | ✅ `chessLifetimeReport()` — persisted ledger vs session cluster |
 | **ChessHistoryA** | **History Brain PR-A** | ✅ PGN loader + versioned memory store + `chessHistoryBrain()` |
+| **ChessEvolution** | **Evolution curve** | ✅ `chessEvolutionCurve()` — unified session + lifetime + corpus timeline |
 | **Chess2** | **Engine registry stub** | `chessEngineRegistryV0.js` — Stockfish today, LC0 slot reserved (no weights yet) |
 | **Chess3** | **8-board arena** | `RhizohChessClusterArenaV0` OBS browser-source URL documented |
 

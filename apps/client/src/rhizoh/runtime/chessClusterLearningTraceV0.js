@@ -11,6 +11,7 @@ import {
 import { writeChessClusterMemoryNodeV0 } from "./chessClusterMemoryGraphV0.js";
 import { resolveChessClusterSlotModeV0 } from "./chessClusterSlotModesV0.js";
 import { maybeEnqueueEpistemicCouncilV0 } from "./rhizohEpistemicCouncilV0.js";
+import { isChessEngineContendedV0 } from "./chessEngineContentionGateV0.js";
 
 export const CHESS_CLUSTER_LEARNING_TRACE_SCHEMA_V0 =
   "castle.rhizoh.chess_cluster_learning_trace.v0";
@@ -26,6 +27,7 @@ let lastMultiPvTraceAtMsV0 = 0;
  */
 export async function traceChessClusterPolicyDiffV0(slot, moveRow, fenBefore) {
   if (getChessStockfishEngineStatusV0() !== "stockfish_wasm") return null;
+  if (isChessEngineContendedV0()) return null;
   const now = Date.now();
   if (now - lastMultiPvTraceAtMsV0 < MULTIPV_TRACE_THROTTLE_MS_V0) return null;
   lastMultiPvTraceAtMsV0 = now;
