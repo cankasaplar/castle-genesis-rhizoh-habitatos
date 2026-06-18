@@ -3,6 +3,7 @@ import {
   CHESS_CLUSTER_SLOT_COUNT_V0,
   CHESS_CLUSTER_MIN_INTERVAL_MS_V0,
   __resetChessGameClusterForTestV0,
+  applyChessClusterTimeControlV0,
   getChessClusterRouterMetaV0,
   getChessClusterSlotV0,
   isChessGameClusterRunningV0,
@@ -79,6 +80,15 @@ describe("chessGameClusterV0", () => {
     startChessGameClusterV0({ minIntervalMs: 900 });
     expect(getChessClusterRouterMetaV0().minIntervalMs).toBe(900);
     expect(window.__rhizoh.chessGameCluster?.tickScheduling).toBe("adaptive_settimeout_chess_lock");
+    stopChessGameClusterV0();
+  });
+
+  it("applyChessClusterTimeControlV0 resolves cluster TC without ReferenceError", () => {
+    startChessGameClusterV0({ testFastTick: true, intervalMs: 50 });
+    expect(() => applyChessClusterTimeControlV0("cluster_sim_45_0")).not.toThrow();
+    expect(getChessClusterSlotV0(0)?.clock?.timeControlId).toBe("cluster_sim_45_0");
+    expect(() => applyChessClusterTimeControlV0("blitz_3_2")).not.toThrow();
+    expect(getChessClusterSlotV0(0)?.clock?.timeControlId).toBe("blitz_3_2");
     stopChessGameClusterV0();
   });
 });
