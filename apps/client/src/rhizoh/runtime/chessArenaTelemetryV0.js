@@ -8,6 +8,10 @@ import {
 } from "./chessEngineBridgeV0.js";
 import { logCastleLifecycleV0 } from "./rhizohProductionLogNamespacesV0.js";
 import { formatChessMoveSanV0 } from "./chessMoveSanV0.js";
+import {
+  resolveChessTelemetrySlotIdV0,
+  shouldLogChessMovePlayedV0
+} from "./chessTelemetryLogV0.js";
 
 export const CHESS_ARENA_TELEMETRY_SCHEMA_V0 = "rhizoh.chess_arena_telemetry.v0";
 
@@ -22,12 +26,24 @@ export function logChessArenaTelemetryV0(kind, detail = {}) {
     atMs: Date.now(),
     ...detail
   });
+  if (kind === "move_played") {
+    const slotId = resolveChessTelemetrySlotIdV0(detail);
+    if (
+      !shouldLogChessMovePlayedV0({
+        slotId,
+        matchId: detail.matchId,
+        moveNumber: detail.moveNumber
+      })
+    ) {
+      return payload;
+    }
+  }
   logCastleLifecycleV0(`chess_${kind}`, payload);
   return payload;
 }
 
 /**
- * @param {{ san: string, color?: string, engine?: string, fen?: string, policyMode?: string }} row
+ * @param {{ san: string, color?: string, engine?: string, fen?: string, policyMode?: string, slotId?: number, matchId?: string, moveNumber?: number }} row
  */
 export function logChessMovePlayedV0(row) {
   const san = formatChessMoveSanV0(row.san);
@@ -37,7 +53,10 @@ export function logChessMovePlayedV0(row) {
     engine: row.engine || null,
     fen: row.fen || null,
     fenBefore: row.fenBefore || null,
-    policyMode: row.policyMode || null
+    policyMode: row.policyMode || null,
+    slotId: row.slotId ?? null,
+    matchId: row.matchId || null,
+    moveNumber: row.moveNumber ?? null
   });
   emitChessEngineBridgeV0(CHESS_ENGINE_BRIDGE_KIND_V0.PLAYED_MOVE, {
     san,

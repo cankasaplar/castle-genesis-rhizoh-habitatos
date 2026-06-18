@@ -27,6 +27,10 @@ import {
 } from "./rhizohTopologyEventEmitterV0.js";
 import { isPolicyInfluenceForbiddenV0 } from "./rhizohObservationPhaseV0.js";
 import { isReplayModeActiveV0 } from "./temporalBridgeV0.js";
+import {
+  logChessTelemetryGatedV0,
+  shouldLogChessUgeHookV0
+} from "./chessTelemetryLogV0.js";
 
 export const RHIZOH_UGE_ENGINE_HOOK_SCHEMA_V0 = "rhizoh.uge_engine_hook.v0";
 export const RHIZOH_UGE_ENGINE_HOOK_EVENT_V0 = "rhizoh:uge-engine-hook-v0";
@@ -149,12 +153,20 @@ export function observeRhizohUgeMovePairV0(row) {
   }
 
   if (typeof console !== "undefined" && console.info) {
-    console.info(RHIZOH_UGE_ENGINE_HOOK_LOG_TAG_V0, {
-      matchId: observation.matchId,
-      moveNumber: observation.moveNumber,
-      drift: drift.magnitude,
-      replayActive: false
-    });
+    if (
+      shouldLogChessUgeHookV0({
+        matchId: observation.matchId,
+        driftMagnitude: drift.magnitude,
+        moveNumber: observation.moveNumber
+      })
+    ) {
+      logChessTelemetryGatedV0("info", RHIZOH_UGE_ENGINE_HOOK_LOG_TAG_V0, {
+        matchId: observation.matchId,
+        moveNumber: observation.moveNumber,
+        drift: drift.magnitude,
+        replayActive: false
+      });
+    }
   }
 
   return observation;

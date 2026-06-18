@@ -15,6 +15,11 @@ import {
   CHESS_ENGINE_TASK_PRIORITY_V0,
   enqueueChessEngineTaskV0
 } from "./chessEngineTaskQueueV0.js";
+import {
+  CHESS_TELEMETRY_LEVEL_V0,
+  resolveChessTelemetryLevelV0
+} from "./chessTelemetryLogV0.js";
+import { maybeEnqueueEpistemicCouncilV0 } from "./rhizohEpistemicCouncilV0.js";
 
 export const CHESS_STOCKFISH_ENGINE_SCHEMA_V0 = "castle.chess_stockfish_engine.v0";
 export const CHESS_STOCKFISH_LOG_TAG_V0 = "[CASTLE_stockfish_engine]";
@@ -272,8 +277,18 @@ function armCompileWatchdogV0() {
 
 function logStockfishV0(level, message, detail = null) {
   const payload = detail == null ? message : { message, ...detail };
+  if (level === "info" && resolveChessTelemetryLevelV0() < CHESS_TELEMETRY_LEVEL_V0.VERBOSE) {
+    return;
+  }
   if (typeof console !== "undefined" && console[level]) {
     console[level](CHESS_STOCKFISH_LOG_TAG_V0, payload);
+  }
+  if (message === "arena move timeout") {
+    maybeEnqueueEpistemicCouncilV0({
+      stockfishTimeout: true,
+      matchId: detail?.matchId || null,
+      fen: detail?.fen || null
+    });
   }
 }
 
