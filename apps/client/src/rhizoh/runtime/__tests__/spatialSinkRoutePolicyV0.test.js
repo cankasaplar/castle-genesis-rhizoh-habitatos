@@ -49,8 +49,27 @@ describe("spatialSinkRoutePolicyV0", () => {
     const policy = resolveSpatialSinkRoutePolicyV0();
     expect(policy.sinkExpected).toBe(true);
     expect(policy.engineReady).toBe(true);
-    expect(policy.warnOnMissing).toBe(true);
+    expect(policy.leafletSinkExpected).toBe(true);
+    expect(policy.cesiumSinkExpected).toBe(false);
+    expect(policy.warnOnMissing).toBe(false);
     expect(policy.deferCode).toBeNull();
+  });
+
+  it("warns on missing only when Cesium opt-in is enabled on world space", () => {
+    const orig = import.meta.env.VITE_RHIZOH_WORLD_SPACE_CESIUM;
+    import.meta.env.VITE_RHIZOH_WORLD_SPACE_CESIUM = "1";
+    try {
+      publishIngressRouteV0("app");
+      window.history.replaceState({}, "", "/world/space");
+      markCastleAppEngineReadyV0("test");
+      const policy = resolveSpatialSinkRoutePolicyV0();
+      expect(policy.cesiumSinkExpected).toBe(true);
+      expect(policy.leafletSinkExpected).toBe(false);
+      expect(policy.warnOnMissing).toBe(true);
+    } finally {
+      if (orig === undefined) delete import.meta.env.VITE_RHIZOH_WORLD_SPACE_CESIUM;
+      else import.meta.env.VITE_RHIZOH_WORLD_SPACE_CESIUM = orig;
+    }
   });
 
   it("defers sink warning until engine ready on world space route", () => {

@@ -10,6 +10,7 @@ import {
 import { isWorldLayerEnabled } from "./castleWorldLayerGateV0.js";
 import {
   gateRhizohSpatialCommandV0,
+  isRhizohWorldSpaceCesiumEnvEnabledV0,
   resolveRhizohCesiumLayerActiveV0,
   resolveRhizohLayerModeV0
 } from "./rhizohLayerContextV0.js";
@@ -44,14 +45,25 @@ export function resolveSpatialSinkProbeV0() {
   const mapCommandGate = gateRhizohSpatialCommandV0("bootstrap_viewport", layerCtx);
   const worldSpaceBridge =
     typeof window !== "undefined" ? window.__rhizoh?.worldSpaceBridge ?? null : null;
+  const leafletMap =
+    typeof window !== "undefined" ? window.__rhizoh?.v11LeafletMap ?? null : null;
+  const leafletMapActive = Boolean(leafletMap);
   const executorRegistry =
     typeof window !== "undefined" ? window.__CASTLE_CESIUM_EXECUTOR__ ?? null : null;
   const cesiumRouterRegistry =
     typeof window !== "undefined" ? window.__rhizoh?.cesiumRouter ?? null : null;
 
+  const leafletSinkExpected =
+    policy.leafletSinkExpected === true ||
+    (policy.worldDomain === "space" && !isRhizohWorldSpaceCesiumEnvEnabledV0());
+
   let sink = "missing";
   if (!policy.sinkExpected) sink = "route_no_world_sink";
-  else if (commandReady && hasCommitSurface) sink = "cesium";
+  else if (leafletSinkExpected) {
+    if (leafletMapActive) sink = "leaflet";
+    else if (worldSpaceBridge?.ok === true || worldSpaceBridge?.hydrated === true) sink = "leaflet_deferred";
+    else sink = "leaflet_unmounted";
+  } else if (commandReady && hasCommitSurface) sink = "cesium";
   else if (hasCommitSurface || api) sink = "cesium_deferred";
   else if (!worldLayerEnabled) sink = "world_layer_disabled";
   else if (!cesiumLayerActive) sink = "world_layer_unmounted";
@@ -74,6 +86,8 @@ export function resolveSpatialSinkProbeV0() {
     layerGateAllowed: mapCommandGate.allowed,
     layerGateReason: mapCommandGate.reason,
     worldSpaceBridgeOk: worldSpaceBridge?.ok === true || worldSpaceBridge?.hydrated === true,
+    leafletMapActive,
+    leafletSinkExpected,
     pathname,
     policy
   });

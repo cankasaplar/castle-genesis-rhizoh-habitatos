@@ -46,7 +46,7 @@ describe("spatialWorldAdapterV0", () => {
     delete window.__CASTLE_CESIUM__;
   });
 
-  it("validates SPATIAL_SINK_MISSING when nodes exist without cesium sink on world space", () => {
+  it("does not flag sink missing on world space leaflet default (no Cesium env)", () => {
     publishIngressRouteV0("app");
     window.history.replaceState({}, "", "/world/space");
     markCastleAppEngineReadyV0("test");
@@ -55,10 +55,32 @@ describe("spatialWorldAdapterV0", () => {
       spatial_vector: { x: 0.1, y: 0.2, z: 0.9 }
     });
     const sink = validateSpatialSinkV0();
-    expect(sink.ok).toBe(false);
-    expect(sink.code).toBe(SPATIAL_SINK_MISSING_CODE_V0);
+    expect(sink.ok).toBe(true);
+    expect(sink.code).toBeNull();
+    expect(sink.probe.sink).toMatch(/^leaflet/);
     expect(sink.worldCommittedCount).toBe(0);
-    expect(sink.hasCommitSurface).toBe(false);
+  });
+
+  it("flags SPATIAL_SINK_MISSING when Cesium opt-in expected on world space", () => {
+    const orig = import.meta.env.VITE_RHIZOH_WORLD_SPACE_CESIUM;
+    import.meta.env.VITE_RHIZOH_WORLD_SPACE_CESIUM = "1";
+    try {
+      publishIngressRouteV0("app");
+      window.history.replaceState({}, "", "/world/space");
+      markCastleAppEngineReadyV0("test");
+      registerSpatialNodeV0(SPATIAL_NODE_TIER_V0.TEMPORAL, "n1", {
+        kind: "causal_projection",
+        spatial_vector: { x: 0.1, y: 0.2, z: 0.9 }
+      });
+      const sink = validateSpatialSinkV0();
+      expect(sink.ok).toBe(false);
+      expect(sink.code).toBe(SPATIAL_SINK_MISSING_CODE_V0);
+      expect(sink.worldCommittedCount).toBe(0);
+      expect(sink.hasCommitSurface).toBe(false);
+    } finally {
+      if (orig === undefined) delete import.meta.env.VITE_RHIZOH_WORLD_SPACE_CESIUM;
+      else import.meta.env.VITE_RHIZOH_WORLD_SPACE_CESIUM = orig;
+    }
   });
 
   it("does not flag sink missing on T0 live route without commit surface", () => {

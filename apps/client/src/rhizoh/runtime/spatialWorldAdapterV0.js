@@ -103,6 +103,10 @@ export function validateSpatialSinkV0() {
     if (!policy.sinkExpected) {
       code = policy.deferCode;
       ok = true;
+    } else if (policy.leafletSinkExpected) {
+      // v11 Leaflet renders spatial nodes in RhizohWorldSpaceMapHost — Cesium adapter deferrals are normal.
+      code = null;
+      ok = true;
     } else if (!policy.engineReady) {
       code = policy.deferCode;
       ok = true;
