@@ -21,6 +21,7 @@ import { pickRhizohChessMoveV0 } from "./rhizohChessPlayerV0.js";
 import { enqueueRhizohPredictionCompareV0 } from "./rhizohChessPredictionCompareV0.js";
 import { isChessEngineContendedV0 } from "./chessEngineContentionGateV0.js";
 import { shouldUseStockfishForClusterSlotV0 } from "./chessClusterBroadcastEnginePolicyV0.js";
+import { CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 } from "./chessLearningMonitorV0.js";
 
 const CLUSTER_OPENING_FAST_HEURISTIC_PLY_V0 = 6;
 
@@ -49,6 +50,9 @@ function pickClusterHeuristicMoveV0(game, slot, agentId, policy) {
 
 function maybeFastHeuristicClusterMoveV0(slot, game, mode, agentId, policy) {
   if (!clusterModeUsesStockfishV0(mode)) return null;
+  // Slot #0 = LIVE / YouTube featured — never downgrade to contention heuristic.
+  if (Number(slot?.slotId) === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0) return null;
+  if (shouldUseStockfishForClusterSlotV0(slot?.slotId)) return null;
   if ((slot?.ply || 0) >= CLUSTER_OPENING_FAST_HEURISTIC_PLY_V0) return null;
   if (!isChessEngineContendedV0()) return null;
   return Object.freeze({
