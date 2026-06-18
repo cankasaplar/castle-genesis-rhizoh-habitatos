@@ -34,6 +34,12 @@ import { publishChessGameRouterV0 } from "./chessGameRouterV0.js";
 
 export const CHESS_GAME_CLUSTER_SCHEMA_V0 = "castle.rhizoh.chess_game_cluster.v0";
 export const CHESS_CLUSTER_SLOT_COUNT_V0 = 8;
+/** Minimum wall-clock gap between cluster engine ticks (prod). */
+export const CHESS_CLUSTER_MIN_INTERVAL_MS_V0 = 800;
+/** Default cluster tick floor when boot does not override. */
+export const CHESS_CLUSTER_DEFAULT_INTERVAL_MS_V0 = 900;
+/** Upper bound for adaptive reschedule after slow WASM moves. */
+export const CHESS_CLUSTER_MAX_INTERVAL_MS_V0 = 2400;
 export const CHESS_CLUSTER_TICK_EVENT_V0 = "rhizoh:chess-cluster-tick-v0";
 export const CHESS_CLUSTER_MOVE_EVENT_V0 = "rhizoh:chess-cluster-move-v0";
 export const CHESS_CLUSTER_GAME_END_EVENT_V0 = "rhizoh:chess-cluster-game-end-v0";
@@ -43,12 +49,14 @@ export const RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0 = "RHIZOH_OPEN_CHESS_CLUST
 let slotsV0 = [];
 let runningV0 = false;
 let tickCountV0 = 0;
-/** @type {ReturnType<typeof setInterval> | null} */
+/** @type {ReturnType<typeof setTimeout> | null} */
 let tickTimerV0 = null;
 /** @type {ReturnType<typeof setInterval> | null} */
 let clockTimerV0 = null;
 let roundRobinIndexV0 = 0;
 let busyV0 = false;
+let lastMoveWallMsV0 = 0;
+let configuredMinIntervalMsV0 = CHESS_CLUSTER_DEFAULT_INTERVAL_MS_V0;
 let clusterTimeControlIdV0 = readChessArenaSessionV0().timeControlId;
 let sessionListenerInstalledV0 = false;
 
@@ -171,6 +179,39 @@ export function getChessClusterSlotV0(slotId) {
   return slot ? summarizeChessClusterSlotV0(slot) : null;
 }
 
+/**
+ * @param {{ intervalMs?: number, minIntervalMs?: number, testFastTick?: boolean }} [opts]
+ */
+export function resolveChessClusterMinIntervalMsV0(opts = {}) {
+  if (opts.testFastTick) {
+    return Math.max(20, Number(opts.minIntervalMs ?? opts.intervalMs) || 50);
+  }
+  const requested =
+    Number(opts.minIntervalMs ?? opts.intervalMs) || CHESS_CLUSTER_DEFAULT_INTERVAL_MS_V0;
+  return Math.max(CHESS_CLUSTER_MIN_INTERVAL_MS_V0, requested);
+}
+
+/**
+ * Adaptive delay — never schedule the next tick until the previous move wall time elapses.
+ * @param {number} [lastMoveMs]
+ */
+export function resolveChessClusterTickDelayMsV0(lastMoveMs = lastMoveWallMsV0) {
+  const adaptive = Math.max(configuredMinIntervalMsV0, Number(lastMoveMs) || 0);
+  return Math.min(CHESS_CLUSTER_MAX_INTERVAL_MS_V0, adaptive);
+}
+
+function scheduleClusterTickV0() {
+  if (!runningV0) return;
+  if (tickTimerV0) clearTimeout(tickTimerV0);
+  const delayMs = resolveChessClusterTickDelayMsV0();
+  tickTimerV0 = setTimeout(() => {
+    tickTimerV0 = null;
+    void runClusterTickV0().finally(() => {
+      if (runningV0) scheduleClusterTickV0();
+    });
+  }, delayMs);
+}
+
 function dispatchClusterEventV0(name, detail) {
   if (typeof window === "undefined") return;
   try {
@@ -219,7 +260,9 @@ async function advanceChessClusterSlotV0(slot) {
   const turn = slot.game.turn();
   const agentId = turn === "w" ? slot.whiteAgent : slot.blackAgent;
   const policy = resolveChessClusterAgentPolicyV0(agentId);
+  const moveStartedMs = Date.now();
   const engine = await pickChessClusterMoveV0(slot, slot.game);
+  lastMoveWallMsV0 = Date.now() - moveStartedMs;
 
   const moveUci = engine?.move;
   if (!moveUci) return null;
@@ -327,14 +370,14 @@ async function runClusterTickV0() {
 
 /**
  * Start 8-game cluster simulation.
- * @param {{ intervalMs?: number, timeControlId?: string }} [opts]
+ * @param {{ intervalMs?: number, minIntervalMs?: number, testFastTick?: boolean, timeControlId?: string }} [opts]
  */
 export function startChessGameClusterV0(opts = {}) {
   if (typeof window === "undefined") return { ok: false, reason: "no_window" };
   if (runningV0) {
     return Object.freeze({ ok: true, already: true, running: true, slotCount: CHESS_CLUSTER_SLOT_COUNT_V0 });
   }
-  const intervalMs = Math.max(120, Number(opts.intervalMs) || 320);
+  configuredMinIntervalMsV0 = resolveChessClusterMinIntervalMsV0(opts);
   clusterTimeControlIdV0 =
     opts.timeControlId || readChessArenaSessionV0().timeControlId;
 
@@ -348,19 +391,24 @@ export function startChessGameClusterV0(opts = {}) {
   tickCountV0 = 0;
   roundRobinIndexV0 = 0;
   busyV0 = false;
+  lastMoveWallMsV0 = 0;
 
-  if (tickTimerV0) clearInterval(tickTimerV0);
-  tickTimerV0 = setInterval(() => {
-    void runClusterTickV0();
-  }, intervalMs);
+  if (tickTimerV0) clearTimeout(tickTimerV0);
+  tickTimerV0 = null;
 
   if (clockTimerV0) clearInterval(clockTimerV0);
   clockTimerV0 = setInterval(() => {
     runClusterClockTickV0();
   }, 1000);
 
+  scheduleClusterTickV0();
   void runClusterTickV0();
-  publishClusterRegistryV0({ started: true, timeControlId: clusterTimeControlIdV0 });
+  publishClusterRegistryV0({
+    started: true,
+    timeControlId: clusterTimeControlIdV0,
+    minIntervalMs: configuredMinIntervalMsV0,
+    tickScheduling: "adaptive_settimeout"
+  });
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
     window.__rhizoh.chessClusterMemory = getChessClusterMemoryGraphSnapshotV0();
@@ -375,7 +423,7 @@ export function startChessGameClusterV0(opts = {}) {
     ok: true,
     running: true,
     slotCount: CHESS_CLUSTER_SLOT_COUNT_V0,
-    intervalMs,
+    minIntervalMs: configuredMinIntervalMsV0,
     timeControlId: clusterTimeControlIdV0
   });
 }
@@ -383,7 +431,7 @@ export function startChessGameClusterV0(opts = {}) {
 export function stopChessGameClusterV0() {
   runningV0 = false;
   if (tickTimerV0) {
-    clearInterval(tickTimerV0);
+    clearTimeout(tickTimerV0);
     tickTimerV0 = null;
   }
   if (clockTimerV0) {
@@ -404,7 +452,10 @@ export function getChessClusterRouterMetaV0() {
     busy: busyV0,
     tickCount: tickCountV0,
     running: runningV0,
-    slotCount: CHESS_CLUSTER_SLOT_COUNT_V0
+    slotCount: CHESS_CLUSTER_SLOT_COUNT_V0,
+    minIntervalMs: configuredMinIntervalMsV0,
+    lastMoveWallMs: lastMoveWallMsV0,
+    nextTickDelayMs: runningV0 ? resolveChessClusterTickDelayMsV0() : 0
   });
 }
 
@@ -415,6 +466,8 @@ export function __resetChessGameClusterForTestV0() {
   tickCountV0 = 0;
   roundRobinIndexV0 = 0;
   busyV0 = false;
+  lastMoveWallMsV0 = 0;
+  configuredMinIntervalMsV0 = CHESS_CLUSTER_DEFAULT_INTERVAL_MS_V0;
   clusterTimeControlIdV0 = readChessArenaSessionV0().timeControlId;
 }
 

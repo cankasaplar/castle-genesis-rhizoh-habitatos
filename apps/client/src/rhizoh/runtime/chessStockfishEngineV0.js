@@ -839,8 +839,8 @@ function resolveStockfishOptsV0(opts = {}) {
 
 function resolveArenaMoveTimeoutMsV0(movetimeMs) {
   const mt = Math.max(80, Number(movetimeMs) || 600);
-  // Single-thread WASM under cluster load needs extra wall-clock headroom.
-  return Math.min(16000, Math.round(mt * 1.35 + 2800));
+  // Wall-clock guard is separate from UCI movetime — fixed buffer avoids timeout storms.
+  return Math.min(20000, mt + 2000);
 }
 
 /**

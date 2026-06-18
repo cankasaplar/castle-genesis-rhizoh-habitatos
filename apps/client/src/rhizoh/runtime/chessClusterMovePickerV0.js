@@ -82,7 +82,7 @@ export async function pickChessClusterMoveV0(slot, game) {
         queueLabel: `cluster_slot_${slot.slotId}`,
         ...stockfishOpts,
         contempt: Math.max(stockfishOpts.contempt ?? 0, 24),
-        movetimeMs: Math.min(stockfishOpts.movetimeMs + 40, 400)
+        movetimeMs: Math.min(stockfishOpts.movetimeMs + 80, 1200)
       });
     case "heuristic":
       return Object.freeze({

@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import {
   CHESS_ENGINE_TASK_PRIORITY_V0,
+  CHESS_ENGINE_TASK_KIND_V0,
   __resetChessEngineTaskQueueForTestV0,
   enqueueChessEngineTaskV0,
   getChessEngineQueueSnapshotV0
@@ -57,6 +58,47 @@ describe("chessEngineTaskQueueV0", () => {
     await Promise.all([clusterSlow, clusterQueued, arenaQueued]);
 
     expect(order).toEqual(["cluster_start", "cluster_end", "arena", "cluster_queued"]);
+  });
+
+  it("supersedes pending cluster moves with latest-only flatten", async () => {
+    let releaseActive = null;
+    const active = enqueueChessEngineTaskV0({
+      priority: CHESS_ENGINE_TASK_PRIORITY_V0.CLUSTER_MOVE,
+      kind: CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE,
+      label: "cluster_active",
+      run: async () => {
+        await new Promise((resolve) => {
+          releaseActive = resolve;
+        });
+        return "active";
+      }
+    });
+    await Promise.resolve();
+
+    const superseded = enqueueChessEngineTaskV0({
+      priority: CHESS_ENGINE_TASK_PRIORITY_V0.CLUSTER_MOVE,
+      kind: CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE,
+      label: "cluster_old_pending",
+      run: async () => "old_pending"
+    });
+
+    const latest = enqueueChessEngineTaskV0({
+      priority: CHESS_ENGINE_TASK_PRIORITY_V0.CLUSTER_MOVE,
+      kind: CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE,
+      label: "cluster_latest",
+      run: async () => "latest"
+    });
+
+    releaseActive?.();
+    const [activeResult, supersededResult, latestResult] = await Promise.all([
+      active,
+      superseded,
+      latest
+    ]);
+    expect(activeResult).toBe("active");
+    expect(supersededResult).toBe(null);
+    expect(latestResult).toBe("latest");
+    expect(getChessEngineQueueSnapshotV0().clusterSupersededCount).toBeGreaterThanOrEqual(1);
   });
 
   it("preempts lower-priority active search when arena task is enqueued", async () => {

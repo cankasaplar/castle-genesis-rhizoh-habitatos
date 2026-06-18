@@ -54,7 +54,7 @@ describe("chessLearningMonitorV0", () => {
 
   it("listens to cluster move and policy_diff events", async () => {
     ensureChessLearningMonitorListenersV0();
-    startChessGameClusterV0({ intervalMs: 30, timeControlId: "bullet_1_0" });
+    startChessGameClusterV0({ testFastTick: true, intervalMs: 30, timeControlId: "bullet_1_0" });
 
     window.dispatchEvent(
       new CustomEvent(CHESS_CLUSTER_MOVE_EVENT_V0, {
