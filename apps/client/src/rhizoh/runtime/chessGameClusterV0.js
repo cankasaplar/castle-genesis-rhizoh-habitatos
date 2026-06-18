@@ -33,6 +33,7 @@ import {
   CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0,
   CHESS_CLUSTER_MAX_PLY_V0,
   resolveChessClusterBootOptsV0,
+  resolveChessClusterTimeControlV0,
   shouldEndChessClusterGameByPlyCapV0
 } from "./chessClusterSimulationPolicyV0.js";
 import {
@@ -90,7 +91,7 @@ function ensureChessClusterSessionListenerV0() {
  * @param {string} timeControlId
  */
 export function applyChessClusterTimeControlV0(timeControlId) {
-  const tc = resolveChessTimeControlV0(timeControlId);
+  const tc = resolveChessClusterTimeControlV0(timeControlId);
   clusterTimeControlIdV0 = tc.id;
   for (const slot of slotsV0) {
     if (!slot || slot.status !== "active") continue;
