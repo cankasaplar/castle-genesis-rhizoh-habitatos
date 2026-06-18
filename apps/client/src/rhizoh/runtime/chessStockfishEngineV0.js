@@ -1115,6 +1115,9 @@ export async function pickChessArenaEngineMoveV0(game, opts = {}) {
   if (opts.useStockfish === false) {
     return arenaHeuristicFallbackV0(game, opts);
   }
+  const queueKind = opts.queueKind ?? CHESS_ENGINE_TASK_KIND_V0.ARENA_MOVE;
+  const timeoutBufferMs =
+    opts.timeoutBufferMs ?? resolveChessMoveTimeoutBufferMsV0({ queueKind });
   try {
     const sf = await getStockfishArenaMoveV0(game.fen(), {
       preset: opts.preset || "ARENA",
@@ -1122,9 +1125,10 @@ export async function pickChessArenaEngineMoveV0(game, opts = {}) {
       movetimeMs: opts.movetimeMs,
       depth: opts.depth,
       contempt: opts.contempt,
-      queuePriority: opts.queuePriority,
-      queueKind: opts.queueKind,
-      queueLabel: opts.queueLabel
+      queuePriority: opts.queuePriority ?? CHESS_ENGINE_TASK_PRIORITY_V0.ARENA_MATCH,
+      queueKind,
+      queueLabel: opts.queueLabel ?? "arena_match_move",
+      timeoutBufferMs
     });
     if (sf) return Object.freeze({ move: sf, engine: "stockfish_wasm" });
   } catch {

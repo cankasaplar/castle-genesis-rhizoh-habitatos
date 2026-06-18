@@ -114,8 +114,13 @@ export function shouldDeferMapChessArenaOpenV0() {
 export function resolveChessMoveTimeoutBufferMsV0(opts = {}) {
   const queue = getChessEngineQueueSnapshotV0();
   const queueExtra = Math.min(2400, (Number(queue.pendingCount) || 0) * 400);
+  const snap = getChessEngineContentionSnapshotV0();
   let base = 2000;
   if (opts.queueKind === CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE) base = 2800;
   if (opts.queueKind === CHESS_ENGINE_TASK_KIND_V0.PREWARM) base = 1500;
+  if (opts.queueKind === CHESS_ENGINE_TASK_KIND_V0.ARENA_MOVE) {
+    base = snap.clusterRunning ? 5200 : 3200;
+    if (snap.arenaWorkspaceOpen) base = Math.max(base, 6000);
+  }
   return base + queueExtra;
 }

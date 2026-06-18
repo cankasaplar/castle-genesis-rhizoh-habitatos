@@ -743,6 +743,14 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         setAiBusy(false);
         setEngineStatus(getChessTeacherStatusV0());
         const aiMove = typeof aiPick === "string" ? aiPick : aiPick?.move;
+        if (!aiMove) {
+          setStatus(
+            tr
+              ? "Motor meşgul — tekrar deneniyor (cluster arka planda)"
+              : "Engine busy — retrying (cluster in background)"
+          );
+          return true;
+        }
         if (aiMove) {
           const fenBeforeAi = game.fen();
           const aiResult = game.tryMove(aiMove);

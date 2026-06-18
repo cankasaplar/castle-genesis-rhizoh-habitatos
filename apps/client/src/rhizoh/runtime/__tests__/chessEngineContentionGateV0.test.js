@@ -57,6 +57,20 @@ describe("chessEngineContentionGateV0", () => {
     expect(cluster).toBeGreaterThanOrEqual(2800);
   });
 
+  it("resolveChessMoveTimeoutBufferMsV0 gives arena moves extra time when cluster runs", () => {
+    const idle = resolveChessMoveTimeoutBufferMsV0({
+      queueKind: CHESS_ENGINE_TASK_KIND_V0.ARENA_MOVE
+    });
+    window.__rhizoh.chessGameCluster = { running: true };
+    const arena = resolveChessMoveTimeoutBufferMsV0({
+      queueKind: CHESS_ENGINE_TASK_KIND_V0.ARENA_MOVE
+    });
+    delete window.__rhizoh.chessGameCluster;
+    expect(arena).toBeGreaterThan(idle);
+    expect(arena).toBeGreaterThanOrEqual(5200);
+    expect(idle).toBeGreaterThanOrEqual(3200);
+  });
+
   it("getChessEngineContentionSnapshotV0 reports contended state", () => {
     window.__rhizoh.chessGameCluster = { running: true };
     window.__rhizoh.chessEngineQueue = { pendingCount: 3 };
