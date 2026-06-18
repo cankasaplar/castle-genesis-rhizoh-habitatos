@@ -103,15 +103,22 @@ import {
 } from "./rhizoh/runtime/expressiveRealityMicroTransitionV0.js";
 import {
   isRhizohT0FirstMatchIdentityV0,
-  resolveRhizohT0ChatBottomCssV0,
   resolveRhizohT0CapabilityHaloLayoutV0
 } from "./rhizoh/runtime/rhizohT0FirstMatchIdentityV0.js";
 import {
+  RHIZOH_UI_SURFACE_V0,
+  resolveRhizohUiLayoutV0
+} from "./rhizoh/runtime/rhizohUiLayoutResolverV0.js";
+import {
   applyRhizohWorldLandingLockV0,
+  isRhizohT0AmbientProceduralCityV0,
   resolveRhizohProductWorldRealityModeV0,
+  resolveRhizohT0HomeRealityModeV0,
+  RHIZOH_T0_AMBIENT_REALITY_SOURCE_V0,
   shouldHideT0ContinuityChromeOnWorldSpaceV0,
   shouldRhizohFlyToIstanbulV0,
   shouldRhizohT0LiveChromeVisibleV0,
+  shouldRhizohT0ShowGlobeHomeOverlayV0,
   shouldUseApexProceduralRealMapV0
 } from "./rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
 import {
@@ -8479,7 +8486,14 @@ export default function AppRhizoh528() {
       uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
       closeAllRhizohProductSurfacePanelsV0();
       runDomainGateForPathV0(pathname, { userId: gateUserId });
-      void setRealityMode("GLOBE", { source: "ROUTE_T0_LIVE", productSurface: "world" });
+      if (isRhizohT0AmbientProceduralCityV0()) {
+        void setRealityMode("REAL_MAP", {
+          source: RHIZOH_T0_AMBIENT_REALITY_SOURCE_V0,
+          productSurface: "world"
+        });
+      } else {
+        void setRealityMode("GLOBE", { source: "ROUTE_T0_LIVE", productSurface: "world" });
+      }
     }
   }, [location.pathname, location.search, applyBroadcastPresence, castleAuth?.user?.uid]);
 
@@ -8492,8 +8506,10 @@ export default function AppRhizoh528() {
         uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
         return;
       }
-      void setRealityMode(resolveRhizohProductWorldRealityModeV0("world"), {
-        source: "PRODUCT_SHELL_WORLD",
+      void setRealityMode(resolveRhizohT0HomeRealityModeV0(), {
+        source: isRhizohT0AmbientProceduralCityV0()
+          ? RHIZOH_T0_AMBIENT_REALITY_SOURCE_V0
+          : "PRODUCT_SHELL_WORLD",
         productSurface: "world"
       });
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
@@ -8782,17 +8798,24 @@ export default function AppRhizoh528() {
     ]
   );
 
-  const showGlobeHomeOverlayV0 =
-    !cesiumLayerActiveV0 &&
-    (!isWorldDomainActiveV0 || worldMapToolV0 === "globe");
+  const showGlobeHomeOverlayV0 = shouldRhizohT0ShowGlobeHomeOverlayV0({
+    cesiumLayerActive: cesiumLayerActiveV0,
+    isWorldDomainActive: isWorldDomainActiveV0,
+    worldMapTool: worldMapToolV0,
+    realityMode
+  });
 
-  const chatDockBottomCssV0 = useMemo(
+  const uiLayoutV0 = useMemo(
     () =>
-      resolveRhizohT0ChatBottomCssV0({
-        drawerOpen: isRhizohProductSurfaceDrawerOpenV0()
+      resolveRhizohUiLayoutV0({
+        surface: RHIZOH_UI_SURFACE_V0.T0_LIVE,
+        drawerOpen: isRhizohProductSurfaceDrawerOpenV0(),
+        publish: true
       }),
-    [chromePanelsV0, openSurfaceDrawerIdV0]
+    [openSurfaceDrawerIdV0]
   );
+
+  const chatDockBottomCssV0 = uiLayoutV0.bottomCss.chatDock;
 
   const onCloseSurfaceDrawerV0 = useCallback(() => {
     closeProductSurfaceDrawerV0();
