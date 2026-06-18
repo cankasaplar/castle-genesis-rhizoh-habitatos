@@ -156,6 +156,11 @@ export function listChessMemoryGamesV0(limit = 32) {
   return Object.freeze(games.slice(0, Math.max(1, limit)));
 }
 
+/** @internal checkpoint resume */
+export function invalidateChessMemoryStoreCacheV0() {
+  cachedStoreV0 = null;
+}
+
 /** @internal vitest */
 export function __resetChessMemoryStoreForTestV0() {
   cachedStoreV0 = null;

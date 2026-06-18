@@ -23,6 +23,7 @@ import { ensureRhizohChessLearningReportV0 } from "./rhizohChessLearningReportV0
 import { ensureRhizohChessLifetimeReportV0 } from "./rhizohChessLifetimeReportV0.js";
 import { ensureChessHistoryBrainV0 } from "./chessHistoryBrainReportV0.js";
 import { ensureRhizohChessEvolutionCurveV0 } from "./rhizohChessEvolutionCurveV0.js";
+import { ensureRhizohChessLearningCheckpointV0 } from "./rhizohChessLearningCheckpointV0.js";
 
 export const RHIZOH_CORE_SUBSYSTEM_BOOT_SCHEMA_V0 = "castle.rhizoh.core_subsystem_boot.v0";
 
@@ -73,6 +74,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureShadowTraceLedgerDevToolsV0();
     ensureExecutionGovernanceSwitchboardDevToolsV0();
     ensureHardSeparationDevToolsV0();
+    ensureRhizohChessLearningCheckpointV0();
     ensureRhizohChessLearningReportV0();
     ensureRhizohChessLifetimeReportV0();
     ensureChessHistoryBrainV0();
