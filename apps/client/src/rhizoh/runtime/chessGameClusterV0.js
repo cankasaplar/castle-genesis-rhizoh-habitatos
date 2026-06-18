@@ -70,6 +70,9 @@ let configuredMinIntervalMsV0 = CHESS_CLUSTER_DEFAULT_INTERVAL_MS_V0;
 let testFastTickV0 = false;
 let clusterTimeControlIdV0 = CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0;
 let clusterMaxPlyV0 = CHESS_CLUSTER_MAX_PLY_V0;
+let sessionGamesEndedV0 = 0;
+/** @type {object | null} */
+let lastGameEndV0 = null;
 let sessionListenerInstalledV0 = false;
 
 function ensureChessClusterSessionListenerV0() {
@@ -146,6 +149,8 @@ function publishClusterRegistryV0(extra = {}) {
     tickCount: tickCountV0,
     slotCount: CHESS_CLUSTER_SLOT_COUNT_V0,
     engineScheduler: getChessClusterEngineSchedulerSnapshotV0(),
+    sessionGamesEnded: sessionGamesEndedV0,
+    lastGameEnd: lastGameEndV0 ? Object.freeze({ ...lastGameEndV0 }) : null,
     slots: slotsV0.map((s) => summarizeChessClusterSlotV0(s)),
     ...extra,
     atMs: Date.now()
@@ -238,6 +243,15 @@ function endChessClusterSlotV0(slot, outcome, endReason = "normal") {
   slot.status = "ended";
   slot.outcome = outcome;
   slot.endReason = endReason;
+  sessionGamesEndedV0 += 1;
+  lastGameEndV0 = Object.freeze({
+    slotId: slot.slotId,
+    matchId: slot.matchId,
+    outcome,
+    endReason,
+    ply: slot.ply,
+    atMs: Date.now()
+  });
   dispatchClusterEventV0(CHESS_CLUSTER_GAME_END_EVENT_V0, {
     slot: summarizeChessClusterSlotV0(slot),
     outcome,
@@ -415,6 +429,8 @@ export function startChessGameClusterV0(opts = {}) {
   const boot = resolveChessClusterBootOptsV0(opts);
   clusterTimeControlIdV0 = boot.timeControlId;
   clusterMaxPlyV0 = boot.maxPly;
+  sessionGamesEndedV0 = 0;
+  lastGameEndV0 = null;
 
   ensureChessLearningMonitorListenersV0();
   ensureChessClusterSessionListenerV0();
@@ -507,7 +523,9 @@ export function __resetChessGameClusterForTestV0() {
   configuredMinIntervalMsV0 = CHESS_CLUSTER_DEFAULT_INTERVAL_MS_V0;
   __resetChessSchedulerUnifyForTestV0();
   testFastTickV0 = false;
-  clusterTimeControlIdV0 = readChessArenaSessionV0().timeControlId;
+  clusterTimeControlIdV0 = CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0;
+  sessionGamesEndedV0 = 0;
+  lastGameEndV0 = null;
 }
 
 /** @internal vitest — direct slot access */

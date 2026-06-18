@@ -279,7 +279,11 @@ export function buildRhizohChessLearningReportV0() {
 
   const totalMovesSeen = Math.max(monitor.measurement.movesMeasured || 0, 0);
   const gamesObserved = Math.max(observedMatchIdsV0.size, gameRowsV0.size);
-  const gamesCompleted = Math.max(gamesCompletedV0, compressionGames);
+  const clusterSessionEnded =
+    typeof window !== "undefined"
+      ? Number(window.__rhizoh?.chessGameCluster?.sessionGamesEnded) || 0
+      : 0;
+  const gamesCompleted = Math.max(gamesCompletedV0, compressionGames, clusterSessionEnded);
   const policyChanges = monitor.measurement.policyDiffsMeasured || 0;
 
   const avgDrift =
@@ -328,6 +332,14 @@ export function buildRhizohChessLearningReportV0() {
       weights.matchesLearned > 0,
     matchesLearned: weights.matchesLearned,
     clusterRunning: Boolean(monitor.clusterRunning),
+    clusterSession: Object.freeze({
+      gamesEnded: clusterSessionEnded,
+      lastGameEnd:
+        typeof window !== "undefined"
+          ? window.__rhizoh?.chessGameCluster?.lastGameEnd ?? null
+          : null,
+      probeNote: "slots reset immediately after end — use sessionGamesEnded not status===ended"
+    }),
     engineStatus: monitor.engineStatus,
     agreementSamples: agreement.samples,
     atMs: Date.now()

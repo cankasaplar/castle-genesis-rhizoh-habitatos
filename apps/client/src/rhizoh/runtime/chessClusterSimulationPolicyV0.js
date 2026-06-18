@@ -8,15 +8,22 @@ import { CHESS_TIME_CONTROL_V0 } from "./chessArenaSessionV0.js";
 export const CHESS_CLUSTER_SIMULATION_POLICY_SCHEMA_V0 =
   "castle.rhizoh.chess_cluster_simulation_policy.v0";
 
-/** Default cluster TC — faster flags than arena blitz_3_2 for shadow prod learning. */
-export const CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0 = "cluster_sim_1_0";
+/** Default cluster TC — 45s for faster session game_end in shadow prod. */
+export const CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0 = "cluster_sim_45_0";
 
-/** Force draw after this ply so session gamesCompleted increments in reasonable wall time. */
-export const CHESS_CLUSTER_MAX_PLY_V0 = 120;
+/** Force draw after this ply (~7s/board → ~9 min worst case; clock flags first). */
+export const CHESS_CLUSTER_MAX_PLY_V0 = 80;
 
 export const CHESS_CLUSTER_SIM_TIME_CONTROLS_V0 = Object.freeze({
+  CLUSTER_SIM_45_0: Object.freeze({
+    id: "cluster_sim_45_0",
+    labelTr: "Cluster sim 45+0",
+    labelEn: "Cluster sim 45+0",
+    initialMs: 45_000,
+    incrementMs: 0
+  }),
   CLUSTER_SIM_1_0: Object.freeze({
-    id: CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0,
+    id: "cluster_sim_1_0",
     labelTr: "Cluster sim 1+0",
     labelEn: "Cluster sim 1+0",
     initialMs: 60_000,
@@ -37,14 +44,16 @@ export const CHESS_CLUSTER_SIM_TIME_CONTROLS_V0 = Object.freeze({
 export function resolveChessClusterTimeControlV0(raw) {
   const id = String(raw || CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0);
   const cluster =
-    CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_1_0.id === id
-      ? CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_1_0
-      : CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_2_1.id === id
-        ? CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_2_1
-        : null;
+    CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_45_0.id === id
+      ? CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_45_0
+      : CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_1_0.id === id
+        ? CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_1_0
+        : CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_2_1.id === id
+          ? CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_2_1
+          : null;
   if (cluster) return cluster;
   const arena = Object.values(CHESS_TIME_CONTROL_V0).find((tc) => tc.id === id);
-  return arena || CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_1_0;
+  return arena || CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_45_0;
 }
 
 export function resolveChessClusterBootOptsV0(opts = {}) {
