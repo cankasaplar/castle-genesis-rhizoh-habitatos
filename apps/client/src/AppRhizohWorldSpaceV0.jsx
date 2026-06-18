@@ -686,7 +686,8 @@ export default function AppRhizohWorldSpaceV0() {
     () =>
       resolveRhizohUiLayoutV0({
         surface: RHIZOH_UI_SURFACE_V0.WORLD_SPACE,
-        drawerOpen: Boolean(openSurfaceDrawerIdV0)
+        drawerOpen: Boolean(openSurfaceDrawerIdV0),
+        publish: true
       }),
     [openSurfaceDrawerIdV0]
   );
