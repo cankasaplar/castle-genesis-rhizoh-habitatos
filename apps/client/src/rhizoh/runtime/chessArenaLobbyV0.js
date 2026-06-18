@@ -6,6 +6,8 @@
 import { CHESS_GAME_MODE_V0 } from "./chessArenaEngineV0.js";
 import { listChessArenaArchiveV0 } from "./chessArenaMatchArchiveV0.js";
 import { getChessLearningMonitorSnapshotV0 } from "./chessLearningMonitorV0.js";
+import { readChessCivilizationV0 } from "./chessCivilizationV0.js";
+import { formatClusterEndReasonLabelV0 } from "./chessClusterObservatoryCopyV0.js";
 
 export const CHESS_ARENA_LOBBY_SCHEMA_V0 = "castle.rhizoh.chess_arena_lobby.v0";
 
@@ -82,10 +84,10 @@ export const CHESS_ARENA_FIXTURES_V0 = Object.freeze([
   Object.freeze({
     id: "fx_w24_r5_cluster",
     round: 5,
-    whiteTr: "8 Board Observatory",
-    whiteEn: "8 Board Observatory",
-    blackTr: "MultiPV trace",
-    blackEn: "MultiPV trace",
+    whiteTr: "Rhizoh 8 stile karşı",
+    whiteEn: "Rhizoh vs 8 styles",
+    blackTr: "Canlı yayın + iz kameraları",
+    blackEn: "Live broadcast + trace cameras",
     mode: "cluster",
     status: "playable"
   })
@@ -120,6 +122,10 @@ export function getChessArenaLearningFeedV0() {
     .slice(-4);
   const spectator = monitor.spectator;
   const measurement = monitor.measurement || {};
+  const civilization = readChessCivilizationV0();
+  const lastEnd = cluster?.lastGameEnd || null;
+  const sessionGamesEnded = Number(cluster?.sessionGamesEnded) || 0;
+  const tr = typeof window !== "undefined" && window.__rhizoh?.uiLocale === "tr";
   return Object.freeze({
     policyDiffs,
     clusterTick: cluster?.tickCount ?? monitor.clusterTick ?? 0,
@@ -136,7 +142,13 @@ export function getChessArenaLearningFeedV0() {
     movesMeasured: measurement.movesMeasured ?? 0,
     stockfishMovesMeasured: measurement.stockfishMovesMeasured ?? 0,
     policyDiffsMeasured: measurement.policyDiffsMeasured ?? 0,
-    alignmentRate: measurement.alignmentRate ?? null
+    alignmentRate: measurement.alignmentRate ?? null,
+    rhizohElo: civilization?.elo ?? null,
+    sessionGamesEnded,
+    lastGameEndLabel: lastEnd
+      ? formatClusterEndReasonLabelV0(lastEnd.endReason, lastEnd.ply, tr !== false)
+      : null,
+    lastGameEnd: lastEnd
   });
 }
 

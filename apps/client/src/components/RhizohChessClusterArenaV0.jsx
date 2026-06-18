@@ -23,6 +23,12 @@ import {
   getChessLearningMonitorSnapshotV0,
   startChessLearningMeasurementV0
 } from "../rhizoh/runtime/chessLearningMonitorV0.js";
+import {
+  formatClusterEndReasonLabelV0,
+  formatEngineDisplayLabelV0,
+  getChessObservatoryHeroCopyV0,
+  resolveClusterSlotRoleCopyV0
+} from "../rhizoh/runtime/chessClusterObservatoryCopyV0.js";
 import { PIECE_UNICODE_V0 } from "./RhizohCastleLibraryPanelV0.jsx";
 
 function boardRowsFromFen(fen) {
@@ -72,7 +78,8 @@ const LiveCameraBoardV0 = memo(function LiveCameraBoardV0({
   featured,
   tr,
   boardColors,
-  pieceBold
+  pieceBold,
+  roleCopy
 }) {
   if (!slot) {
     return (
@@ -105,10 +112,19 @@ const LiveCameraBoardV0 = memo(function LiveCameraBoardV0({
             <span className="ml-1 rounded bg-cyan-500/25 px-1 py-px text-[8px] font-black uppercase text-cyan-100">
               LIVE
             </span>
+          ) : roleCopy ? (
+            <span className="ml-1 rounded bg-white/10 px-1 py-px text-[7px] font-semibold uppercase text-white/55">
+              {roleCopy.tag}
+            </span>
           ) : null}
         </span>
         <span className="truncate text-right">{white.label} vs {black.label}</span>
       </div>
+      {roleCopy ? (
+        <p className="mb-1 line-clamp-2 text-[8px] leading-tight text-white/40" title={roleCopy.observes}>
+          {roleCopy.role}
+        </p>
+      ) : null}
 
       <div className="mb-1 grid grid-cols-2 gap-1">
         <ClockRowV0
@@ -165,64 +181,92 @@ const LiveCameraBoardV0 = memo(function LiveCameraBoardV0({
         <span>{slot.turn === "w" ? (tr ? "beyaz" : "white") : tr ? "siyah" : "black"}</span>
         {slot.criticalEventCount > 0 ? (
           <span className="text-amber-300">⚠ {slot.criticalEventCount}</span>
+        ) : slot.endReason ? (
+          <span className="text-white/40">
+            {formatClusterEndReasonLabelV0(slot.endReason, slot.ply, tr)}
+          </span>
         ) : (
-          <span>{slot.endReason === "timeout" ? (tr ? "süre" : "flag") : slot.status}</span>
+          <span>{slot.status}</span>
         )}
       </div>
     </div>
   );
 });
 
-function LearningStripV0({ monitor, activeSlotCount, tr, timeControlLabel }) {
+function LearningStripV0({ monitor, activeSlotCount, tr, timeControlLabel, sessionGamesEnded, lastGameEnd, showTech }) {
   const recentMoves = monitor?.recentMoves || [];
   const lastMove = recentMoves[recentMoves.length - 1];
   const m = monitor?.measurement;
+  const alignPct =
+    m?.alignmentRate != null ? `${Math.round(m.alignmentRate * 100)}%` : "—";
+  const lastEndLabel = lastGameEnd
+    ? formatClusterEndReasonLabelV0(lastGameEnd.endReason, lastGameEnd.ply, tr)
+    : null;
 
   return (
     <div className="rounded-lg border border-violet-500/30 bg-violet-950/25 px-3 py-2 text-[10px] text-white/75">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-        <span className="font-semibold text-violet-200/90">{tr ? "Öğrenme ölçümü" : "Learning measure"}</span>
-        <span>
-          {tr ? "Motor" : "Engine"}: <span className="font-mono">{monitor?.engineStatus || "—"}</span>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="font-semibold text-violet-200/90">
+          {tr ? "Öğrenme durumu" : "Learning status"}
         </span>
         <span>
-          {tr ? "hamle" : "moves"}: {m?.movesMeasured ?? 0} · SF {m?.stockfishMovesMeasured ?? 0}
+          {tr ? "ölçülen hamle" : "moves measured"}: {m?.movesMeasured ?? 0}
         </span>
         <span>
-          policy_diff: {m?.policyDiffsMeasured ?? 0}
-          {m?.alignmentRate != null ? ` · align ${Math.round(m.alignmentRate * 100)}%` : ""}
+          Stockfish: {m?.stockfishMovesMeasured ?? 0}
         </span>
         <span>
-          {tr ? "aktif slot" : "active slots"}: {activeSlotCount}/{CHESS_CLUSTER_SLOT_COUNT_V0} ·{" "}
-          {timeControlLabel || "—"}
-        </span>
-        <span>mem {monitor?.memoryNodeCount ?? 0}</span>
-        <span>tick {monitor?.clusterTick ?? 0}</span>
-        <span>
-          {tr ? "bitti" : "ended"}: {typeof window !== "undefined" ? window.__rhizoh?.chessGameCluster?.sessionGamesEnded ?? 0 : 0}
+          {tr ? "uyum" : "align"}: {alignPct}
         </span>
         <span>
-          #{CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 + 1} ply {monitor?.spectator?.ply ?? 0}
+          {tr ? "biten maç" : "games ended"}: {sessionGamesEnded}
         </span>
-        {typeof window !== "undefined" && window.__rhizoh?.chessGameCluster?.lastGameEnd ? (
-          <span className="text-white/40">
-            {tr ? "son bitiş" : "last end"}: {window.__rhizoh.chessGameCluster.lastGameEnd.endReason}@
-            {window.__rhizoh.chessGameCluster.lastGameEnd.ply}
+        {lastEndLabel ? (
+          <span className="text-amber-200/80">
+            {tr ? "son bitiş" : "last end"}: {lastEndLabel}
           </span>
         ) : null}
         {lastMove ? (
           <span className="font-mono text-cyan-200/90">
-            {tr ? "son" : "last"}: {lastMove.san} ({lastMove.engine})
+            {tr ? "son hamle" : "last move"}: {lastMove.san} ({formatEngineDisplayLabelV0(lastMove.engine, tr)})
           </span>
         ) : (
           <span className="text-white/40">{tr ? "hamle bekleniyor" : "awaiting moves"}</span>
         )}
       </div>
+      {showTech ? (
+        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 border-t border-violet-500/20 pt-1.5 text-[9px] text-white/40">
+          <span>
+            {tr ? "Motor" : "Engine"}: {monitor?.engineStatus || "—"}
+          </span>
+          <span>policy_diff: {m?.policyDiffsMeasured ?? 0}</span>
+          <span>
+            {tr ? "aktif slot" : "active slots"}: {activeSlotCount}/{CHESS_CLUSTER_SLOT_COUNT_V0}
+          </span>
+          <span>{timeControlLabel || "—"}</span>
+          <span>mem {monitor?.memoryNodeCount ?? 0}</span>
+          <span>tick {monitor?.clusterTick ?? 0}</span>
+          <span>
+            #{CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 + 1} ply {monitor?.spectator?.ply ?? 0}
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function FeaturedMatchBroadcastV0({ slot, monitor, tr, boardColors, pieceBold, civilization, sessionGamesEnded }) {
+function FeaturedMatchBroadcastV0({
+  slot,
+  monitor,
+  tr,
+  boardColors,
+  pieceBold,
+  civilization,
+  sessionGamesEnded,
+  heroCopy,
+  roleCopy,
+  lastGameEnd
+}) {
   if (!slot) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-white/40">
@@ -238,10 +282,20 @@ function FeaturedMatchBroadcastV0({ slot, monitor, tr, boardColors, pieceBold, c
   const slotMoves = (monitor?.recentMoves || []).filter(
     (m) => m.slotId === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0
   );
+  const lastEndLabel = lastGameEnd
+    ? formatClusterEndReasonLabelV0(lastGameEnd.endReason, lastGameEnd.ply, tr)
+    : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 lg:flex-row">
       <div className="flex min-w-0 flex-1 flex-col">
+        <div className="mb-2 rounded-lg border border-cyan-500/25 bg-cyan-950/20 px-3 py-2">
+          <p className="text-[11px] font-semibold text-cyan-100">{heroCopy?.title}</p>
+          <p className="mt-0.5 text-[10px] text-white/50">{heroCopy?.subtitle}</p>
+          {roleCopy ? (
+            <p className="mt-1 text-[9px] text-violet-200/75">{roleCopy.observes}</p>
+          ) : null}
+        </div>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-white/70">
           <span className="font-semibold text-cyan-100">
             LIVE · {white.label} vs {black.label}
@@ -296,7 +350,9 @@ function FeaturedMatchBroadcastV0({ slot, monitor, tr, boardColors, pieceBold, c
         </div>
         <p className="mt-2 text-center text-[10px] text-white/45">
           ply {slot.ply} · {tr ? "oturum maç" : "session games"}: {sessionGamesEnded}
+          {lastEndLabel ? ` · ${tr ? "son bitiş" : "last end"}: ${lastEndLabel}` : ""}
         </p>
+        <p className="mt-1 text-center text-[9px] text-white/35">{heroCopy?.learningNote}</p>
       </div>
       <div className="flex w-full shrink-0 flex-col rounded-lg border border-white/10 bg-black/40 p-3 lg:w-56">
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-violet-200/80">
@@ -310,7 +366,7 @@ function FeaturedMatchBroadcastV0({ slot, monitor, tr, boardColors, pieceBold, c
               .map((m, i) => (
                 <li key={`${m.san}-${i}`}>
                   {m.san}{" "}
-                  <span className="text-white/35">({m.engine})</span>
+                  <span className="text-white/35">({formatEngineDisplayLabelV0(m.engine, tr)})</span>
                 </li>
               ))
           ) : (
@@ -346,11 +402,20 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
   const [teacherStatus, setTeacherStatus] = useState(() => getChessStockfishEngineStatusV0());
   const [routerSnap, setRouterSnap] = useState(() => window.__rhizoh?.chessGameRouter || null);
   const [monitor, setMonitor] = useState(() => getChessLearningMonitorSnapshotV0("ui_mount"));
-  const [viewMode, setViewMode] = useState("grid");
+  const [viewMode, setViewMode] = useState("featured");
+  const [showTechStrip, setShowTechStrip] = useState(false);
   const [sessionGamesEnded, setSessionGamesEnded] = useState(
     () => Number(window.__rhizoh?.chessGameCluster?.sessionGamesEnded) || 0
   );
+  const [lastGameEnd, setLastGameEnd] = useState(
+    () => window.__rhizoh?.chessGameCluster?.lastGameEnd || null
+  );
   const civilization = useMemo(() => readChessCivilizationV0(), [monitor, tickCount]);
+  const heroCopy = useMemo(() => getChessObservatoryHeroCopyV0(tr), [tr]);
+  const featuredRoleCopy = useMemo(
+    () => resolveClusterSlotRoleCopyV0(CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0, tr),
+    [tr]
+  );
 
   useEffect(() => {
     publishChessClusterArenaOpenV0(Boolean(open));
@@ -368,6 +433,7 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
       setTickCount(window.__rhizoh?.chessGameCluster?.tickCount ?? 0);
       setClusterTimeControlId(window.__rhizoh?.chessGameCluster?.timeControlId || null);
       setSessionGamesEnded(Number(window.__rhizoh?.chessGameCluster?.sessionGamesEnded) || 0);
+      setLastGameEnd(window.__rhizoh?.chessGameCluster?.lastGameEnd || null);
     };
     const onEngineStatus = (ev) => {
       if (ev?.detail?.status) setTeacherStatus(ev.detail.status);
@@ -429,29 +495,31 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
         <header className="flex shrink-0 items-center justify-between border-b border-white/10 px-3 py-2 sm:px-4 sm:py-3">
           <div>
             <h2 className="text-sm font-semibold text-white sm:text-base">
-              {tr ? "8 Canlı Kamera · Chess Cluster" : "8 Live Cameras · Chess Cluster"}
+              {heroCopy.title}
             </h2>
             <p className="text-[10px] text-white/45 sm:text-[11px]">
-              {tr
-                ? `#1 Rhizoh AI vs Stockfish · tahta: ${clusterTimeControl.labelTr} · ${boardColors.label || "classic"}`
-                : `#1 Rhizoh AI vs Stockfish · ${clusterTimeControl.labelEn} · ${boardColors.label || "classic"}`}
+              {heroCopy.subtitle}
+              {" · "}
+              {tr ? clusterTimeControl.labelTr : clusterTimeControl.labelEn}
+              {" · "}
+              {boardColors.label || "classic"}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex rounded-md border border-white/15 p-0.5 text-[10px]">
               <button
                 type="button"
-                className={`rounded px-2 py-0.5 ${viewMode === "grid" ? "bg-white/15 text-white" : "text-white/50"}`}
-                onClick={() => setViewMode("grid")}
-              >
-                8 {tr ? "kamera" : "cam"}
-              </button>
-              <button
-                type="button"
                 className={`rounded px-2 py-0.5 ${viewMode === "featured" ? "bg-cyan-500/25 text-cyan-50" : "text-white/50"}`}
                 onClick={() => setViewMode("featured")}
               >
-                {tr ? "Canlı maç" : "Live match"}
+                {heroCopy.ctaLive}
+              </button>
+              <button
+                type="button"
+                className={`rounded px-2 py-0.5 ${viewMode === "grid" ? "bg-white/15 text-white" : "text-white/50"}`}
+                onClick={() => setViewMode("grid")}
+              >
+                {heroCopy.ctaGrid}
               </button>
             </div>
             <button
@@ -465,27 +533,49 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
         </header>
 
         <div className="shrink-0 border-b border-white/10 px-3 py-2 sm:px-4">
-          <div className="mb-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-white/55">
+          <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-white/55">
             <span>
-              tick {tickCount} · {isChessGameClusterRunningV0() ? (tr ? "sim aktif" : "sim on") : "sim off"}
+              {isChessGameClusterRunningV0() ? (tr ? "● yayın aktif" : "● broadcast on") : tr ? "○ yayın kapalı" : "○ broadcast off"}
             </span>
             <span>
-              {tr ? "aktif slot" : "active slots"}: {activeSlotCount}/{CHESS_CLUSTER_SLOT_COUNT_V0}
-            </span>
-            <span>
-              {tr ? "motor kuyruğu" : "engine queue"}: {routerSnap?.queuedOps ?? 0}
+              {tr ? "aktif kamera" : "active cameras"}: {activeSlotCount}/{CHESS_CLUSTER_SLOT_COUNT_V0}
             </span>
             <span>{tr ? "öğretmen" : "teacher"}: {teacherLabel}</span>
-            <span>{clusterTimeControl.labelTr || clusterTimeControl.labelEn || "—"}</span>
-            <span className="text-white/35">
-              {tr ? "· saat ply≥1" : "· clock after move 1"}
-            </span>
+            {civilization?.elo != null ? (
+              <span className="text-cyan-200/80">Rhizoh ELO {civilization.elo}</span>
+            ) : null}
+            <button
+              type="button"
+              className="text-[9px] text-white/35 underline decoration-white/20 hover:text-white/55"
+              onClick={() => setShowTechStrip((v) => !v)}
+            >
+              {showTechStrip
+                ? tr
+                  ? "teknik detayı gizle"
+                  : "hide tech details"
+                : tr
+                  ? "teknik detay"
+                  : "tech details"}
+            </button>
           </div>
+          {showTechStrip ? (
+            <div className="mb-2 flex flex-wrap gap-x-3 gap-y-1 text-[9px] text-white/35">
+              <span>tick {tickCount}</span>
+              <span>
+                {tr ? "motor kuyruğu" : "engine queue"}: {routerSnap?.queuedOps ?? 0}
+              </span>
+              <span>{tr ? clusterTimeControl.labelTr : clusterTimeControl.labelEn}</span>
+              <span>{tr ? "saat ply≥1" : "clock after move 1"}</span>
+            </div>
+          ) : null}
           <LearningStripV0
             monitor={monitor}
             activeSlotCount={activeSlotCount}
             tr={tr}
             timeControlLabel={tr ? clusterTimeControl.labelTr : clusterTimeControl.labelEn}
+            sessionGamesEnded={sessionGamesEnded}
+            lastGameEnd={lastGameEnd}
+            showTech={showTechStrip}
           />
         </div>
 
@@ -499,6 +589,9 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
               pieceBold={pieceBold}
               civilization={civilization}
               sessionGamesEnded={sessionGamesEnded}
+              heroCopy={heroCopy}
+              roleCopy={featuredRoleCopy}
+              lastGameEnd={lastGameEnd}
             />
           ) : (
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
@@ -511,6 +604,7 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
                   tr={tr}
                   boardColors={boardColors}
                   pieceBold={pieceBold}
+                  roleCopy={resolveClusterSlotRoleCopyV0(i, tr)}
                 />
               ))}
             </div>
