@@ -241,6 +241,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     autoPlay || initialMode ? "playing" : "lobby"
   );
   const [lastMoveHighlightV0, setLastMoveHighlightV0] = useState(null);
+  const [clockStartedV0, setClockStartedV0] = useState(false);
   const [rhizohArenaColorV0, setRhizohArenaColorV0] = useState("w");
   const [rhizohMatchCountV0, setRhizohMatchCountV0] = useState(0);
 
@@ -410,7 +411,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
 
   useEffect(() => {
     if (!open || outcome) return undefined;
-    if (aiBusy) return undefined;
+    if (aiBusy || !clockStartedV0) return undefined;
     const needsTeacher =
       mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH || mode === CHESS_GAME_MODE_V0.AI_AI;
     const teacherReady = engineStatus === "stockfish_wasm";
@@ -424,7 +425,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       }
     }, 1000);
     return () => window.clearInterval(id);
-  }, [open, outcome, activeColor, engineStatus, mode, game, tick, aiBusy]);
+  }, [open, outcome, activeColor, engineStatus, mode, game, tick, aiBusy, clockStartedV0]);
 
   useEffect(() => {
     if (!open || !peerCastle?.uid) return;
@@ -450,6 +451,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       if (c2cMatch && detail.payload.matchId && detail.payload.matchId !== c2cMatch.matchId) return;
       const result = game.tryMove(detail.payload.move);
       if (result.ok && result.move?.from && result.move?.to) {
+        setClockStartedV0(true);
         setLastMoveHighlightV0(
           Object.freeze({ from: result.move.from, to: result.move.to })
         );
@@ -476,6 +478,10 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const persistFinishedMatchV0 = useCallback(
     (outcomeVal, engineLabel = engineStatus, extra = {}) => {
       const sanMoves = normalizeChessMovesToSanV0(game.moveHistory || []);
+      if (!sanMoves.length) {
+        setStatus(tr ? "Hamle oynanmadı — maç arşive yazılmadı." : "No moves played — match not archived.");
+        return null;
+      }
       const entry = archiveChessArenaMatchV0({
         matchId: c2cMatch?.matchId || `chess_${Date.now().toString(36)}`,
         mode,
@@ -599,6 +605,12 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const finishMatchOnTimeFlagV0 = useCallback(
     (flagOutcome) => {
       if (outcome || flagHandledRef.current) return;
+      if (!(game.moveHistory?.length > 0)) {
+        setStatus(tr ? "Süre sayacı ilk hamleden sonra başlar." : "Clock starts after the first move.");
+        setWhiteClockMs(initialClocksFromSessionV0().white);
+        setBlackClockMs(initialClocksFromSessionV0().black);
+        return;
+      }
       flagHandledRef.current = true;
       const label = formatChessOutcomeLabelV0(flagOutcome, tr);
       setStatus(tr ? `Süre doldu — ${label}` : `Time flag — ${label}`);
@@ -648,6 +660,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       setStatus(tr ? "Yeni oyun." : "New game.");
       setLastMoveHighlightV0(null);
       setRhizohArenaColorV0("w");
+      setClockStartedV0(false);
       setGameEpoch((n) => n + 1);
       flagHandledRef.current = false;
     },
@@ -699,6 +712,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         setStatus(tr ? `Geçersiz hamle: ${move}` : `Illegal move: ${move}`);
         return false;
       }
+      setClockStartedV0(true);
       if (timeControlV0.incrementMs > 0) {
         if (moverColor === "w") {
           setWhiteClockMs((ms) => ms + timeControlV0.incrementMs);
@@ -788,6 +802,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           const fenBeforeAi = game.fen();
           const aiResult = game.tryMove(aiMove);
           if (aiResult.ok) {
+            setClockStartedV0(true);
             setTick((n) => n + 1);
             if (aiResult.move?.from && aiResult.move?.to) {
               setLastMoveHighlightV0(
@@ -919,6 +934,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         const fenBeforeAi = game.fen();
         const aiResult = game.tryMove(aiMove);
         if (!aiResult.ok) break;
+        setClockStartedV0(true);
         setTick((n) => n + 1);
         const engineLabel =
           pick?.engine === "stockfish_wasm"
@@ -1336,7 +1352,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         ) : null}
 
         {arenaPhase === "archive" ? (
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 [scrollbar-color:rgba(255,255,255,0.15)_transparent] [scrollbar-width:thin]">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white">
                 {tr ? "Maç arşivi" : "Match archive"}

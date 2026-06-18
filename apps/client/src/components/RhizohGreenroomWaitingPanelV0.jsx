@@ -105,7 +105,7 @@ export const RhizohGreenroomWaitingPanelV0 = memo(function RhizohGreenroomWaitin
 
   return (
     <div
-      className="mb-3 rounded-xl border border-emerald-400/25 bg-emerald-950/20 p-3"
+      className="mb-3 rounded-xl border border-emerald-400/30 bg-[#061a14] p-3 shadow-inner"
       data-rhizoh-greenroom-waiting-panel="1"
       data-rhizoh-surface={surface}
     >
@@ -130,7 +130,7 @@ export const RhizohGreenroomWaitingPanelV0 = memo(function RhizohGreenroomWaitin
         {statusRows.map((row) => (
           <li
             key={row.key}
-            className="flex items-start gap-2 rounded-lg border border-white/5 bg-black/25 px-2 py-1.5"
+            className="flex items-start gap-2 rounded-lg border border-white/8 bg-[#030a08] px-2 py-1.5"
           >
             {row.ok ? (
               <Wifi size={12} className="mt-0.5 shrink-0 text-emerald-400" />

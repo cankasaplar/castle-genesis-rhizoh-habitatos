@@ -98,21 +98,21 @@ export function deriveSpiralMMOAwakeningCubeSpecV0(input) {
  * @param {ReturnType<typeof deriveSpiralMMOAwakeningCubeSpecV0>} spec
  */
 export function spiralMMOAwakeningCubeHtmlV0(spec) {
-  const half = spec.sizePx / 2;
-  const border =
-    spec.colorClass === "mirror"
-      ? "1px solid #fff"
-      : spec.colorClass === "black"
-        ? "1px solid #333"
-        : `1px solid ${spec.hex}`;
-  const bg = spec.mirrorSheen
-    ? "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(150,150,150,0.6) 50%, rgba(30,30,30,0.9) 100%)"
-    : spec.faceFill;
   const shadow = `${spec.shadowX}px ${spec.shadowY}px ${spec.shadowBlur}px rgba(0,0,0,0.55)`;
-  const glow = `0 0 ${spec.glowBlur}px ${spec.hex}, 0 0 ${spec.glowSpread}px ${spec.hex}88 inset`;
 
-  const face = (transform) =>
-    `<div style="position:absolute;width:${spec.sizePx}px;height:${spec.sizePx}px;background:${bg};border:${border};box-shadow:${glow};filter:drop-shadow(${shadow});display:flex;align-items:center;justify-content:center;backface-visibility:hidden;transform:${transform}"></div>`;
+  const faceFill = spec.mirrorSheen
+    ? "transparent"
+    : spec.colorClass === "white"
+      ? "rgba(240,240,255,0.15)"
+      : spec.colorClass === "black"
+        ? "rgba(5,5,5,0.35)"
+        : "rgba(3,3,8,0.55)";
+  const edge = spec.hex;
+  const sz = spec.sizePx;
+  const off = sz * 0.35;
+
+  const wireRect = (x, y, w, h, alpha = 1) =>
+    `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="${edge}" stroke-width="1" opacity="${alpha}"/>`;
 
   const spinKeyframes = `@keyframes rhizohSpiralCubeSpin${spec.axisType}${spec.spinDirection > 0 ? "P" : "N"}V0 {
   from { transform: rotateX(-18deg) ${spec.axisType}(0deg); }
@@ -120,14 +120,16 @@ export function spiralMMOAwakeningCubeHtmlV0(spec) {
 }`;
 
   return {
-    html: `<div class="rhizoh-spiral-flight-cube" data-rhizoh-spiral-cube-color="${spec.colorClass}" style="position:absolute;width:0;height:0;transform-style:preserve-3d;perspective:220px">
-      <div style="position:relative;width:${spec.sizePx}px;height:${spec.sizePx}px;transform-style:preserve-3d;animation:rhizohSpiralCubeSpin${spec.axisType}${spec.spinDirection > 0 ? "P" : "N"}V0 ${spec.spinPeriodSec}s linear infinite">
-        ${face(`translateZ(${half}px)`)}
-        ${face(`rotateY(90deg) translateZ(${half}px)`)}
-        ${face(`rotateY(180deg) translateZ(${half}px)`)}
-        ${face(`rotateY(-90deg) translateZ(${half}px)`)}
-        ${face(`rotateX(90deg) translateZ(${half}px)`)}
-        ${face(`rotateX(-90deg) translateZ(${half}px)`)}
+    html: `<div class="rhizoh-spiral-flight-cube" data-rhizoh-spiral-cube-color="${spec.colorClass}" style="position:absolute;width:0;height:0;transform-style:preserve-3d;filter:drop-shadow(${shadow})">
+      <div style="position:relative;width:${sz}px;height:${sz}px;transform-style:preserve-3d;animation:rhizohSpiralCubeSpin${spec.axisType}${spec.spinDirection > 0 ? "P" : "N"}V0 ${spec.spinPeriodSec}s linear infinite">
+        <svg viewBox="0 0 ${sz} ${sz}" width="${sz}" height="${sz}" style="position:absolute;left:0;top:0;overflow:visible">
+          <rect x="0.5" y="0.5" width="${sz - 1}" height="${sz - 1}" fill="${faceFill}" stroke="${edge}" stroke-width="1"/>
+          ${wireRect(off, -off, sz, sz, 0.5)}
+          <line x1="0.5" y1="0.5" x2="${off + 0.5}" y2="${-off + 0.5}" stroke="${edge}" stroke-width="0.75" opacity="0.55"/>
+          <line x1="${sz - 0.5}" y1="0.5" x2="${off + sz - 0.5}" y2="${-off + 0.5}" stroke="${edge}" stroke-width="0.75" opacity="0.55"/>
+          <line x1="${sz - 0.5}" y1="${sz - 0.5}" x2="${off + sz - 0.5}" y2="${sz - off - 0.5}" stroke="${edge}" stroke-width="0.75" opacity="0.55"/>
+          <line x1="0.5" y1="${sz - 0.5}" x2="${off + 0.5}" y2="${sz - off - 0.5}" stroke="${edge}" stroke-width="0.75" opacity="0.55"/>
+        </svg>
       </div>
     </div>`,
     spinKeyframes

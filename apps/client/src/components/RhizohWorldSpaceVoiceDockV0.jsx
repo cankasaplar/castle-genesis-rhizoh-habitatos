@@ -110,7 +110,7 @@ export const RhizohWorldSpaceVoiceDockV0 = memo(function RhizohWorldSpaceVoiceDo
 
   return (
     <div
-      className={`overflow-hidden rounded-2xl border border-cyan-400/20 bg-[#030711]/92 shadow-lg backdrop-blur-md ${className}`}
+      className={`overflow-hidden rounded-2xl border border-cyan-400/25 bg-[#050810] shadow-lg ${className}`.trim()}
       data-rhizoh-world-space-voice-dock="1"
       data-field-state={dock.fieldState}
     >
