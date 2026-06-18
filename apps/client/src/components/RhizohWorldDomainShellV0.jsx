@@ -57,7 +57,8 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
   onCapNodeIntent,
   onSeedIntent,
   onFocusLayer,
-  onModeSelect
+  onModeSelect,
+  mapStripBottomCss
 }) {
   const navigate = useNavigate();
   const locale = uiLocale || readUiLocaleV0();
@@ -67,7 +68,8 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
   const isSpace = domain === RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE;
   const [wheelOpen, setWheelOpen] = useState(false);
   const [mapLayersOpen, setMapLayersOpen] = useState(false);
-  const mapStripBottomCssV0 = resolveRhizohWorldSpaceMapStripBottomCssV0();
+  const mapStripBottomCssV0 =
+    mapStripBottomCss || resolveRhizohWorldSpaceMapStripBottomCssV0();
 
   const wheelPack = useMemo(
     () => resolveRhizohContextWheelPackV0(layerMode, locale),

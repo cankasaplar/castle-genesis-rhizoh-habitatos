@@ -18,7 +18,10 @@ import { RhizohEventCreatePanelV12 } from "./RhizohEventCreatePanelV12.jsx";
 import { RhizohStudioSecuritySharingPanelV0 } from "./RhizohStudioSecuritySharingPanelV0.jsx";
 import { isDrawerModuleAwakenedV0 } from "../rhizoh/runtime/rhizohDrawerAwakeningV0.js";
 import { writeRhizohWorldSystemModeV0 } from "../rhizoh/runtime/rhizohWorldSystemModeV0.js";
-import { RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0 } from "../rhizoh/runtime/rhizohT0FirstMatchIdentityV0.js";
+import {
+  resolveRhizohProductDrawerBottomCssV0,
+  RHIZOH_UI_Z_INDEX_V0
+} from "../rhizoh/runtime/rhizohUiLayoutResolverV0.js";
 import { RhizohGreenroomWaitingPanelV0 } from "./RhizohGreenroomWaitingPanelV0.jsx";
 
 const PROFILE_OBS_TABS_V0 = Object.freeze([
@@ -124,9 +127,10 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
 
   return (
     <div
-      className="pointer-events-auto fixed inset-x-0 z-[58] mx-auto max-h-[min(52vh,28rem)] w-full max-w-2xl overflow-hidden rounded-t-2xl border border-cyan-400/25 bg-[#030711]/95 shadow-[0_-8px_40px_rgba(0,0,0,0.55)] backdrop-blur-xl"
+      className="pointer-events-auto fixed inset-x-0 mx-auto max-h-[min(52vh,28rem)] w-full max-w-2xl overflow-hidden rounded-t-2xl border border-cyan-400/25 bg-[#030711]/95 shadow-[0_-8px_40px_rgba(0,0,0,0.55)] backdrop-blur-xl"
       style={{
-        bottom: `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + env(safe-area-inset-bottom, 0px))`
+        bottom: resolveRhizohProductDrawerBottomCssV0(),
+        zIndex: RHIZOH_UI_Z_INDEX_V0.PRODUCT_DRAWER
       }}
       role="dialog"
       aria-label={`${meta.title} surface`}

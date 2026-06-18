@@ -30,10 +30,12 @@ import {
 import { readLastRhizohPresenceStateV0 } from "./rhizohPresenceStateEngineV0.js";
 import { useRhizohT0PresenceFrameV0 } from "./useRhizohT0PresenceFrameV0.js";
 import {
-  isRhizohT0FirstMatchIdentityV0,
-  RHIZOH_CHROME_TOGGLE_STRIP_H_REM_V0,
-  RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0
+  isRhizohT0FirstMatchIdentityV0
 } from "./rhizohT0FirstMatchIdentityV0.js";
+import {
+  resolveRhizohUiLayoutV0,
+  RHIZOH_UI_Z_INDEX_V0
+} from "./rhizohUiLayoutResolverV0.js";
 import { RHIZOH_INTENT_PLAIN_TR_V0 } from "./rhizohProductPlainCopyV0.js";
 import {
   bootstrapRhizohContinuityFirstPaintV0,
@@ -190,13 +192,16 @@ export function T0ContinuitySurfaceRailV0({
     }
   };
 
+  const continuityLayoutV0 = useMemo(() => resolveRhizohUiLayoutV0(), []);
+
   return (
     <div
-      className={`pointer-events-auto fixed left-0 right-0 z-[58] border-t border-white/8 bg-[#030711]/88 backdrop-blur-xl ${
+      className={`pointer-events-auto fixed left-0 right-0 border-t border-white/8 bg-[#030711]/88 backdrop-blur-xl ${
         compactIdentity ? "max-h-[5.75rem] overflow-y-auto no-scrollbar" : ""
       }`}
       style={{
-        bottom: `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + ${RHIZOH_CHROME_TOGGLE_STRIP_H_REM_V0}rem)`
+        bottom: continuityLayoutV0.bottomCss.continuityRail,
+        zIndex: RHIZOH_UI_Z_INDEX_V0.CONTINUITY_RAIL
       }}
       data-rhizoh-t0-continuity-surface="1"
       data-ceol-state={ceol?.choreography_state || "PLAY_READY"}

@@ -32,9 +32,10 @@ import {
 import { RHIZOH_WORLD_DRAWER_DOMAIN_V0, writeRhizohWorldDrawerDomainV0 } from "./rhizoh/runtime/rhizohWorldDrawerDomainV0.js";
 import { resolveWorldDomainFromPathV0 } from "./rhizoh/runtime/rhizohWorldDomainRoutesV0.js";
 import {
-  resolveRhizohWorldSpaceMapStripBottomCssV0,
-  resolveRhizohWorldSpaceVoiceDockBottomCssV0
-} from "./rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
+  resolveRhizohUiLayoutV0,
+  RHIZOH_UI_SURFACE_V0,
+  RHIZOH_UI_Z_INDEX_V0
+} from "./rhizoh/runtime/rhizohUiLayoutResolverV0.js";
 import { navigateRhizohProductSurfaceV0 } from "./rhizoh/product/rhizohProductTopologyV0.js";
 import {
   configureSpatialRealityInfraV0,
@@ -681,8 +682,16 @@ export default function AppRhizohWorldSpaceV0() {
     }
   }, [uiLocale]);
 
-  const mapStripBottomCssV0 = resolveRhizohWorldSpaceMapStripBottomCssV0();
-  const voiceDockBottomCssV0 = resolveRhizohWorldSpaceVoiceDockBottomCssV0();
+  const uiLayoutV0 = useMemo(
+    () =>
+      resolveRhizohUiLayoutV0({
+        surface: RHIZOH_UI_SURFACE_V0.WORLD_SPACE,
+        drawerOpen: Boolean(openSurfaceDrawerIdV0)
+      }),
+    [openSurfaceDrawerIdV0]
+  );
+  const mapStripBottomCssV0 = uiLayoutV0.bottomCss.mapStrip;
+  const voiceDockBottomCssV0 = uiLayoutV0.bottomCss.voiceDock;
   const bootstrapPlaceLabelV0 = resolveWorldMapBootstrapGeoV0().label;
 
   return (
@@ -761,6 +770,7 @@ export default function AppRhizohWorldSpaceV0() {
         onSelectMapTool={(toolId) => onApplyWorldMapToolV0(toolId, "WORLD_DOMAIN_MAP_STRIP")}
         spatialEngineActive
         mapToolCesiumReady={isRhizohWorldSpaceCesiumEnvEnabledV0()}
+        mapStripBottomCss={mapStripBottomCssV0}
         onOpenGreenroom={() => navigate("/greenroom/main")}
         onOpenBroadcast={() => navigate("/broadcast/main")}
         onShareInvite={() => {}}
@@ -771,8 +781,9 @@ export default function AppRhizohWorldSpaceV0() {
       />
 
       <div
-        className="pointer-events-none fixed inset-x-0 z-[24] flex justify-center px-2 sm:px-4"
-        style={{ bottom: voiceDockBottomCssV0 }}
+        className="pointer-events-none fixed inset-x-0 flex justify-center px-2 sm:px-4"
+        style={{ bottom: voiceDockBottomCssV0, zIndex: RHIZOH_UI_Z_INDEX_V0.VOICE_DOCK }}
+        data-rhizoh-world-space-voice-dock="1"
       >
         <div className="pointer-events-auto w-full max-w-3xl">
           <RhizohWorldSpaceVoiceDockV0 firebaseUser={castleAuth?.user} uiLocale={uiLocale} />
