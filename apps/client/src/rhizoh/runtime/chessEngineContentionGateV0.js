@@ -4,6 +4,7 @@
  */
 
 import { CHESS_ENGINE_TASK_KIND_V0 } from "./chessEngineTaskQueueV0.js";
+import { getChessEngineQueueSnapshotV0 } from "./chessEngineTaskQueueV0.js";
 
 export const CHESS_ENGINE_CONTENTION_GATE_SCHEMA_V0 = "castle.rhizoh.chess_engine_contention_gate.v0";
 
@@ -51,7 +52,10 @@ export function shouldDeferArenaPrewarmV0() {
  * @param {{ queueKind?: string }} [opts]
  */
 export function resolveChessMoveTimeoutBufferMsV0(opts = {}) {
-  if (opts.queueKind === CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE) return 3200;
-  if (opts.queueKind === CHESS_ENGINE_TASK_KIND_V0.PREWARM) return 1500;
-  return 2000;
+  const queue = getChessEngineQueueSnapshotV0();
+  const queueExtra = Math.min(2400, (Number(queue.pendingCount) || 0) * 400);
+  let base = 2000;
+  if (opts.queueKind === CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE) base = 2800;
+  if (opts.queueKind === CHESS_ENGINE_TASK_KIND_V0.PREWARM) base = 1500;
+  return base + queueExtra;
 }
