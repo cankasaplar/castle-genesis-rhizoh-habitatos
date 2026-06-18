@@ -9,6 +9,15 @@ import { isChessClusterArenaOpenV0 } from "./chessEngineContentionGateV0.js";
 export const CHESS_CLUSTER_BROADCAST_ENGINE_POLICY_SCHEMA_V0 =
   "castle.rhizoh.chess_cluster_broadcast_engine_policy.v0";
 
+/** Min ply before a broadcast grid slot may reset on non-decisive game end. */
+export const CHESS_CLUSTER_BROADCAST_MIN_GRID_PLY_V0 = 8;
+/** Min ply before featured LIVE slot may reset on non-decisive game end. */
+export const CHESS_CLUSTER_BROADCAST_MIN_FEATURED_PLY_V0 = 16;
+/** Faster cluster tick floor while 8-camera UI is open. */
+export const CHESS_CLUSTER_BROADCAST_TICK_MIN_MS_V0 = 550;
+/** Extra move budget per tick during broadcast (featured + grid B-roll). */
+export const CHESS_CLUSTER_BROADCAST_MOVES_PER_TICK_V0 = 2;
+
 /** Featured slot uses WASM; background grid slots use fast heuristic during 8-camera UI. */
 export function isChessClusterBroadcastModeV0() {
   return isChessClusterArenaOpenV0();
@@ -22,6 +31,44 @@ export function shouldUseStockfishForClusterSlotV0(slotId) {
   return Number(slotId) === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0;
 }
 
+/**
+ * Hold premature max-ply resets while broadcast UI is open (keeps boards visually alive).
+ * @param {object} slot
+ * @param {string|null} _outcome
+ * @param {string} endReason
+ */
+export function shouldFinalizeClusterBroadcastEndV0(slot, _outcome, endReason) {
+  if (!isChessClusterBroadcastModeV0()) return true;
+  if (endReason !== "max_ply_cap") return true;
+  const ply = Number(slot?.ply) || 0;
+  const slotId = Number(slot?.slotId);
+  const minPly =
+    slotId === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0
+      ? CHESS_CLUSTER_BROADCAST_MIN_FEATURED_PLY_V0
+      : CHESS_CLUSTER_BROADCAST_MIN_GRID_PLY_V0;
+  return ply >= minPly;
+}
+
+export function resolveChessClusterBroadcastMovesPerTickV0() {
+  return isChessClusterBroadcastModeV0() ? CHESS_CLUSTER_BROADCAST_MOVES_PER_TICK_V0 : 1;
+}
+
+/**
+ * @param {number} roundRobinIndex
+ * @param {number} slotCount
+ */
+export function resolveChessClusterTickSlotOrderV0(
+  roundRobinIndex,
+  slotCount = 8
+) {
+  const count = Math.max(1, Number(slotCount) || 8);
+  if (!isChessClusterBroadcastModeV0()) {
+    const start = Number(roundRobinIndex) % count;
+    return Array.from({ length: count }, (_, i) => (start + i) % count);
+  }
+  return Array.from({ length: count }, (_, i) => i);
+}
+
 export function getChessClusterBroadcastEnginePolicySnapshotV0() {
   return Object.freeze({
     schema: CHESS_CLUSTER_BROADCAST_ENGINE_POLICY_SCHEMA_V0,
@@ -29,6 +76,10 @@ export function getChessClusterBroadcastEnginePolicySnapshotV0() {
     featuredSlotId: CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0,
     featuredUsesStockfish: true,
     gridUsesHeuristic: isChessClusterBroadcastModeV0(),
+    minFeaturedPly: CHESS_CLUSTER_BROADCAST_MIN_FEATURED_PLY_V0,
+    minGridPly: CHESS_CLUSTER_BROADCAST_MIN_GRID_PLY_V0,
+    tickMinMs: CHESS_CLUSTER_BROADCAST_TICK_MIN_MS_V0,
+    movesPerTick: resolveChessClusterBroadcastMovesPerTickV0(),
     atMs: Date.now()
   });
 }

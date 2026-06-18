@@ -37,7 +37,10 @@ export function RhizohCoreSubsystemHostV0({ userId = "" } = {}) {
       if (!detail?.node) return;
       setChessArena(detail);
     };
-    const onClusterArena = () => setClusterOpen(true);
+    const onClusterArena = () => {
+      setChessArena(null);
+      setClusterOpen(true);
+    };
     window.addEventListener(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, onChessArena);
     window.addEventListener(RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0, onClusterArena);
     return () => {
