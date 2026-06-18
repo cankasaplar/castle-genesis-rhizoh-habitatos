@@ -69,7 +69,29 @@ describe("rhizohChessLearningReportV0", () => {
     expect(report.uniquePositions).toBeGreaterThanOrEqual(2);
     expect(report.policyChanges).toBeGreaterThanOrEqual(0);
     expect(report.preferredOpenings.length).toBeGreaterThan(0);
+    expect(report.openingCoverage).toBeTruthy();
+    expect(report).toHaveProperty("predictionAccuracy");
+    expect(report).toHaveProperty("stockfishAgreement");
+    expect(report).toHaveProperty("topLearnedLines");
     expect(report.schema).toContain("chess_learning_report");
+  });
+
+  it("computes stockfishAgreement from policy diff rank", () => {
+    ensureRhizohChessLearningReportV0();
+    window.dispatchEvent(
+      new CustomEvent(CHESS_CLUSTER_POLICY_DIFF_EVENT_V0, {
+        detail: { drifted: false, matchedRank: 1, winningLine: { depth: 12, pv: "e2e4" } }
+      })
+    );
+    window.dispatchEvent(
+      new CustomEvent(CHESS_CLUSTER_POLICY_DIFF_EVENT_V0, {
+        detail: { drifted: true, matchedRank: 4, winningLine: { depth: 10, pv: "d2d4" } }
+      })
+    );
+    const report = window.__rhizoh.learningReport();
+    expect(report.stockfishAgreement).toBe(0.5);
+    expect(report.predictionAccuracy).toBeGreaterThan(0);
+    expect(report.averageDepthSeen).toBe(11);
   });
 
   it("buildRhizohChessLearningReportV0 returns frozen snapshot", () => {
