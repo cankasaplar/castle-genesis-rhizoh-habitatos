@@ -90,6 +90,8 @@ Module: `rhizohHardSeparationLayerV0.js` + `rhizohInvitedUserAuthorityGateV0.js`
 
 **Exit criteria Day 3:** one unlisted YouTube upload (test); compliance bundle export with governance + replay tags; invited user blocked from epistemic authority in prod.
 
+**Hafta 2 (opsiyonel, plan sadakati):** [RHIZOH_SHADOW_PROD_WEEK2_FIELD_VOICE_PLAN_V0.md](RHIZOH_SHADOW_PROD_WEEK2_FIELD_VOICE_PLAN_V0.md) — mobil saha, ses, davetli, duygusal ton.
+
 ---
 
 ## Layer-by-layer production behavior (target)

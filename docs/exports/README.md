@@ -8,6 +8,7 @@ Tek `export` adi altinda karismasin diye alt klasorler:
 | **`legal/`** | Counsel PDF/HTML (legal pack) |
 | **`media/youtube/`** | YouTube test videolari, ses kopyalari, ffmpeg log |
 | **`media/mail/`** | Morning report HTML onizleme |
+| **`broadcast-ready/assets/`** | Sabah premiere SVG; Kanagawa kup PNG: `apps/client/public/ops/real-layer-morning/` (`node scripts/export-kanagawa-wave-cube-png.mjs`) |
 
 Eski yollar (kaldirildi):
 
