@@ -8,16 +8,21 @@ const repoRoot = path.resolve(__dirname, "..");
 const require = createRequire(path.join(repoRoot, "scripts/_img-tools/package.json"));
 const { Resvg } = require("@resvg/resvg-js");
 
-const svgPath = path.join(
-  repoRoot,
-  "apps/client/public/ops/youtube-test/castle-genesis-holding-slide.svg"
-);
-const pngPath = path.join(
-  repoRoot,
-  "apps/client/public/ops/youtube-test/castle-genesis-holding-slide.png"
-);
+const svgArg = process.argv[2];
+const pngArg = process.argv[3];
+const svgPath = svgArg
+  ? path.isAbsolute(svgArg)
+    ? svgArg
+    : path.join(repoRoot, svgArg)
+  : path.join(repoRoot, "apps/client/public/ops/youtube-test/castle-genesis-holding-slide.svg");
+const pngPath = pngArg
+  ? path.isAbsolute(pngArg)
+    ? pngArg
+    : path.join(repoRoot, pngArg)
+  : path.join(repoRoot, "apps/client/public/ops/youtube-test/castle-genesis-holding-slide.png");
 
 const svg = fs.readFileSync(svgPath, "utf8");
 const resvg = new Resvg(svg, { fitTo: { mode: "width", value: 1920 } });
+fs.mkdirSync(path.dirname(pngPath), { recursive: true });
 fs.writeFileSync(pngPath, resvg.render().asPng());
 console.log(`PNG=${pngPath}`);

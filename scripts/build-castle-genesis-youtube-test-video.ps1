@@ -2,7 +2,8 @@
 param(
   [string]$RepoRoot = "C:\Users\LENOVO\Desktop\castle",
   [string]$AudioPath = "",
-  [string]$OutPath = ""
+  [string]$OutPath = "",
+  [int]$MaxAudioSec = 0
 )
 
 Set-StrictMode -Version Latest
@@ -83,13 +84,18 @@ if (Test-Path -LiteralPath $OutPath) {
   Remove-Item -LiteralPath $OutPath -Force
 }
 
-# 1 fps still image — ~14 dk ses icin bellek dostu (25 fps malloc patlamasin)
+# 1 fps still image — bellek dostu; MaxAudioSec ile kisa embed onizlemesi
 $ffmpegArgs = @(
   "-y",
   "-loop", "1",
   "-framerate", "1",
   "-i", $slidePng,
-  "-i", $audioCopy,
+  "-i", $audioCopy
+)
+if ($MaxAudioSec -gt 0) {
+  $ffmpegArgs += @("-t", "$MaxAudioSec")
+}
+$ffmpegArgs += @(
   "-c:v", "libx264",
   "-preset", "ultrafast",
   "-tune", "stillimage",
