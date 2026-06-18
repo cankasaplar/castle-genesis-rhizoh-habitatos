@@ -25,7 +25,7 @@ import {
 } from "./chessClusterClockV0.js";
 import { ensureChessLearningMonitorListenersV0 } from "./chessLearningMonitorV0.js";
 import { ensureRhizohChessLearningReportV0 } from "./rhizohChessLearningReportV0.js";
-import { isChessClusterArenaOpenV0 } from "./chessEngineContentionGateV0.js";
+import { shouldPauseClusterTickForArenaV0 } from "./chessEngineContentionGateV0.js";
 import {
   CHESS_CLUSTER_BROADCAST_TICK_MIN_MS_V0,
   isChessClusterBroadcastModeV0,
