@@ -78,7 +78,7 @@ describe("chessGameClusterV0", () => {
   it("publishes adaptive tick metadata when started", () => {
     startChessGameClusterV0({ minIntervalMs: 900 });
     expect(getChessClusterRouterMetaV0().minIntervalMs).toBe(900);
-    expect(window.__rhizoh.chessGameCluster?.tickScheduling).toBe("adaptive_settimeout");
+    expect(window.__rhizoh.chessGameCluster?.tickScheduling).toBe("adaptive_settimeout_chess_lock");
     stopChessGameClusterV0();
   });
 });
