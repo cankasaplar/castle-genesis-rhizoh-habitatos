@@ -92,7 +92,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
   let cluster = Object.freeze({ ok: false, pendingEnginePrewarm: true });
   void prewarmChessStockfishEngineV0().finally(() => {
     const engineStatus = getChessStockfishEngineStatusV0();
-    cluster = startChessGameClusterV0({ minIntervalMs: 900 });
+    cluster = startChessGameClusterV0({ minIntervalMs: 900, timeControlId: "cluster_sim_1_0" });
     publishRhizohChessManagerV0("engine_prewarm_done");
     if (typeof window !== "undefined") {
       window.__CASTLE_BOOT_LOG__?.ok?.(

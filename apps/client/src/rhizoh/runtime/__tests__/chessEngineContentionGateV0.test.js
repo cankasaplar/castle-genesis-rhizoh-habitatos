@@ -25,6 +25,7 @@ describe("chessEngineContentionGateV0", () => {
       queueKind: CHESS_ENGINE_TASK_KIND_V0.PREWARM
     });
     expect(cluster).toBeGreaterThan(prewarm);
+    expect(cluster).toBeGreaterThanOrEqual(2800);
   });
 
   it("getChessEngineContentionSnapshotV0 reports contended state", () => {

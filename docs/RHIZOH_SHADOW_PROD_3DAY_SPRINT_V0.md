@@ -59,7 +59,7 @@ Module: `rhizohHardSeparationLayerV0.js` + `rhizohInvitedUserAuthorityGateV0.js`
 | **A7** | **Robotics academy** | Regression-only: drawer tab stable, no duplicate mount (perception alignment snapshot) |
 | **B2** | **Council** | Cooldown + inflation dampening frozen in compliance export |
 | **B3** | **Graph lifecycle** | Lifecycle pass fingerprint in shadow compliance snapshot |
-| **Chess1** | **Engine presets** | Cluster featured slot: `STRONG`/`MAX` movetime bump (800–2000ms featured) |
+| **Chess1** | **Engine presets** | ✅ featured slot STRONG + cluster_sim_1_0 time control + ply cap |
 | **ChessStab** | **Engine scheduler** | ✅ adaptive cluster tick (≥800ms), movetime/timeout split, queue latest-only flatten |
 | **ChessSched** | **Scheduler unify** | ✅ `window.__rhizoh.chessLock` + 900ms throttle + `learningReport()` |
 | **ChessMetrics** | **Learning metrics** | ✅ `predictionAccuracy` + `stockfishAgreement` + Rhizoh→SF compare loop |

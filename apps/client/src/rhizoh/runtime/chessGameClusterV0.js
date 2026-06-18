@@ -5,10 +5,7 @@
  * RESEARCH-ONLY
  */
 
-import {
-  CHESS_GAME_MODE_V0,
-  createChessArenaGameV0
-} from "./chessArenaEngineV0.js";
+import { pickChessArenaAiMoveV0, CHESS_GAME_MODE_V0, createChessArenaGameV0 } from "./chessArenaEngineV0.js";
 import { pickChessClusterMoveV0 } from "./chessClusterMovePickerV0.js";
 import { resolveChessClusterSlotModeV0 } from "./chessClusterSlotModesV0.js";
 import { getChessClusterEngineSchedulerSnapshotV0 } from "./chessClusterEngineSchedulerV0.js";
@@ -28,10 +25,16 @@ import {
 } from "./chessClusterClockV0.js";
 import { ensureChessLearningMonitorListenersV0 } from "./chessLearningMonitorV0.js";
 import { ensureRhizohChessLearningReportV0 } from "./rhizohChessLearningReportV0.js";
-import { readChessArenaSessionV0, resolveChessTimeControlV0, CHESS_ARENA_SESSION_EVENT_V0 } from "./chessArenaSessionV0.js";
+import { readChessArenaSessionV0, CHESS_ARENA_SESSION_EVENT_V0 } from "./chessArenaSessionV0.js";
 import { logChessMovePlayedV0 } from "./chessArenaTelemetryV0.js";
 import { publishRhizohChessManagerV0 } from "./rhizohChessManagerV0.js";
 import { publishChessGameRouterV0 } from "./chessGameRouterV0.js";
+import {
+  CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0,
+  CHESS_CLUSTER_MAX_PLY_V0,
+  resolveChessClusterBootOptsV0,
+  shouldEndChessClusterGameByPlyCapV0
+} from "./chessClusterSimulationPolicyV0.js";
 import {
   CHESS_SCHEDULER_MIN_GAP_MS_V0,
   endChessSchedulerCallV0,
@@ -65,7 +68,8 @@ let busyV0 = false;
 let lastMoveWallMsV0 = 0;
 let configuredMinIntervalMsV0 = CHESS_CLUSTER_DEFAULT_INTERVAL_MS_V0;
 let testFastTickV0 = false;
-let clusterTimeControlIdV0 = readChessArenaSessionV0().timeControlId;
+let clusterTimeControlIdV0 = CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0;
+let clusterMaxPlyV0 = CHESS_CLUSTER_MAX_PLY_V0;
 let sessionListenerInstalledV0 = false;
 
 function ensureChessClusterSessionListenerV0() {
@@ -272,7 +276,16 @@ async function advanceChessClusterSlotV0(slot) {
   const engine = await pickChessClusterMoveV0(slot, slot.game);
   lastMoveWallMsV0 = Date.now() - moveStartedMs;
 
-  const moveUci = engine?.move;
+  let moveUci = engine?.move;
+  let engineLabel = engine?.engine || "unknown";
+  if (!moveUci) {
+    const legal = slot.game.legalMoves();
+    if (legal.length) {
+      const pick = legal[0];
+      moveUci = `${pick.from}${pick.to}${pick.promotion || ""}`;
+      engineLabel = "cluster_last_resort";
+    }
+  }
   if (!moveUci) return null;
 
   const fenBefore = slot.game.fen();
@@ -289,7 +302,7 @@ async function advanceChessClusterSlotV0(slot) {
     fenAfter: result.fen,
     turn,
     agentId,
-    engine: engine.engine || "unknown",
+    engine: engineLabel,
     atMs: Date.now()
   });
 
@@ -337,6 +350,8 @@ async function advanceChessClusterSlotV0(slot) {
   const outcome = result.outcome || slot.game.outcome();
   if (outcome) {
     endChessClusterSlotV0(slot, outcome, "checkmate_or_draw");
+  } else if (shouldEndChessClusterGameByPlyCapV0(slot.ply, clusterMaxPlyV0)) {
+    endChessClusterSlotV0(slot, "draw", "max_ply_cap");
   }
 
   return moveRow;
@@ -397,8 +412,9 @@ export function startChessGameClusterV0(opts = {}) {
   }
   configuredMinIntervalMsV0 = resolveChessClusterMinIntervalMsV0(opts);
   testFastTickV0 = Boolean(opts.testFastTick);
-  clusterTimeControlIdV0 =
-    opts.timeControlId || readChessArenaSessionV0().timeControlId;
+  const boot = resolveChessClusterBootOptsV0(opts);
+  clusterTimeControlIdV0 = boot.timeControlId;
+  clusterMaxPlyV0 = boot.maxPly;
 
   ensureChessLearningMonitorListenersV0();
   ensureChessClusterSessionListenerV0();
@@ -426,6 +442,7 @@ export function startChessGameClusterV0(opts = {}) {
   publishClusterRegistryV0({
     started: true,
     timeControlId: clusterTimeControlIdV0,
+    maxPly: clusterMaxPlyV0,
     minIntervalMs: configuredMinIntervalMsV0,
     tickScheduling: "adaptive_settimeout_chess_lock"
   });

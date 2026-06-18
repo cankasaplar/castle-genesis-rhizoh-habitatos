@@ -5,8 +5,8 @@
 
 import {
   readChessArenaSessionV0,
-  resolveChessTimeControlV0
 } from "./chessArenaSessionV0.js";
+import { resolveChessClusterTimeControlV0 } from "./chessClusterSimulationPolicyV0.js";
 
 export const CHESS_CLUSTER_CLOCK_SCHEMA_V0 = "castle.rhizoh.chess_cluster_clock.v0";
 
@@ -14,7 +14,7 @@ export const CHESS_CLUSTER_CLOCK_SCHEMA_V0 = "castle.rhizoh.chess_cluster_clock.
  * @param {string} [timeControlId]
  */
 export function createChessClusterClockStateV0(timeControlId) {
-  const tc = resolveChessTimeControlV0(
+  const tc = resolveChessClusterTimeControlV0(
     timeControlId || readChessArenaSessionV0().timeControlId
   );
   return Object.freeze({
