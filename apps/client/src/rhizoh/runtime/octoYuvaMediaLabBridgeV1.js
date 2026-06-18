@@ -44,7 +44,16 @@ export const OCTO_YUVA_EIGHT_CAMERA_LENSES_V1 = Object.freeze([
     facing: OCTO_CAMERA_FACING_V1.OTHER
   }),
   Object.freeze({
-    id: "lens_nasa",
+    id: "lens_castle_chess",
+    kind: "youtube_lab",
+    channelId: "castle_chess",
+    label: "Chess 8-Cam Broadcast",
+    dimension: "chess_cluster_broadcast",
+    actor: OCTO_CAMERA_ACTOR_V1.FOX,
+    actors: Object.freeze([OCTO_CAMERA_ACTOR_V1.FOX, OCTO_CAMERA_ACTOR_V1.OCTO]),
+    facing: OCTO_CAMERA_FACING_V1.OTHER
+  }),
+  Object.freeze({
     kind: "youtube_lab",
     channelId: "nasa",
     label: "NASA ISS Earth",

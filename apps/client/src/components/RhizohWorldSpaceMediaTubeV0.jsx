@@ -569,8 +569,8 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                     </p>
                     <p className="max-w-md text-[10px] leading-relaxed text-white/75 normal-case">
                       {tr
-                        ? "Canlı yayın embed için kanal ID gerekir (VITE_CASTLE_GENESIS_YOUTUBE_CHANNEL_ID). Şimdilik YouTube'da aç veya Studio/OBS ile yayınla."
-                        : "Live embed needs channel ID (VITE_CASTLE_GENESIS_YOUTUBE_CHANNEL_ID). Open on YouTube or stream via Studio/OBS."}
+                        ? "Kısa Honest Baseline klip yüklenene kadar bu kart gösterilir. Uzun manifesto VOD veya sim profil (Nisa vb.) anlatımı embed varsayılanı değildir — VITE_CASTLE_GENESIS_YOUTUBE_SHORT_VIDEO_ID ayarla."
+                        : "Holding card until short Honest Baseline clip is configured. Long manifesto VOD or sim-profile narration (Nisa, etc.) is not the embed default — set VITE_CASTLE_GENESIS_YOUTUBE_SHORT_VIDEO_ID."}
                     </p>
                   </div>
                   <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 p-4 pt-28">
