@@ -154,7 +154,9 @@ export function evaluatePresencePrimitiveOnPulseV1(ctx = {}) {
   const continuity = ctx.continuity;
   const eventLogCount = ctx.eventLogCount ?? 0;
   const lastLiveAt = getLastLiveEmitAtMsV0();
-  const sinceLiveMs = lastLiveAt ? Date.now() - lastLiveAt : Infinity;
+  // No prior live emit in this tab → treat as fresh, not infinitely stale (avoids
+  // immediate idle_alive voice on /world/space route change when boot already fired).
+  const sinceLiveMs = lastLiveAt > 0 ? Date.now() - lastLiveAt : 0;
 
   if (seq === 1 && !bootAlreadyFiredV1()) {
     return emitPresencePrimitiveV1(PRESENCE_PRIMITIVE_ACT_V1.BOOT_READY, {
