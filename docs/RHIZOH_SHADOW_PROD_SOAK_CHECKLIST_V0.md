@@ -40,6 +40,14 @@ Expect: `externalEffect === false`, `legalGateHardBlock === true`, shadow mode a
 window.__rhizoh.chessGameCluster?.slots?.[0]?.clock?.timeControlId
 // cluster_sim_45_0 — must not bleed to blitz_3_2 from arena session
 
+// Live learning strip (NOT a function — use __RHIZOH_CHESS_LEARNING_LIVE__)
+const learn = window.__RHIZOH_CHESS_LEARNING_LIVE__?.()
+console.table({
+  sfMoves: learn?.measurement?.stockfishMovesMeasured,
+  lastEngine: learn?.recentMoves?.at(-1)?.engine,
+  lastSan: learn?.recentMoves?.at(-1)?.san
+})
+
 const lr = await window.__rhizoh.learningReport()
 console.table({
   sessionGamesEnded: lr.clusterSession?.gamesEnded,
