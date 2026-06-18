@@ -3,6 +3,8 @@
  */
 import { injectEpistemicStressV0 } from "./rhizohEpistemicStressInjectionV0.js";
 import { getEpistemicMemoryGraphSnapshotV0 } from "./rhizohEpistemicMemoryGraphV0.js";
+import { assessEpistemicGraphInflationRiskV0 } from "./rhizohEpistemicGraphInflationGuardV0.js";
+import { getLastCouncilAnomalyReasoningV0 } from "./rhizohEpistemicCouncilV0.js";
 import {
   exportShadowComplianceSnapshotV0,
   getShadowTraceLedgerSnapshotV0,
@@ -17,6 +19,8 @@ export function ensureShadowTraceLedgerDevToolsV0() {
   window.__rhizoh.injectShadowEntropyTest = injectShadowEntropyTestV0;
   window.__rhizoh.injectEpistemicStress = injectEpistemicStressV0;
   window.__rhizoh.epistemicMemoryGraph = getEpistemicMemoryGraphSnapshotV0();
+  window.__rhizoh.graphInflationRisk = assessEpistemicGraphInflationRiskV0();
+  window.__rhizoh.councilAnomalyReasoning = getLastCouncilAnomalyReasoningV0();
   window.__rhizoh.shadowTraceLedger = getShadowTraceLedgerSnapshotV0();
   return getShadowTraceLedgerSnapshotV0();
 }

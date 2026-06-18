@@ -146,6 +146,7 @@ import {
 } from "./rhizohProductOutcomeIngestGateway.js";
 import { initRhizoh } from "./rhizohProductionBootstrap.js";
 import { handleAcademicObservatoryExportGetV0 } from "./rhizoh/academicObservatoryHttpV0.js";
+import { handleCouncilAnomalyReasoningPostV0 } from "./council/rhizohEpistemicCouncilHttpV0.js";
 import {
   handleLiveSportsBundleGetV0,
   handleLiveNewsHeadlinesGetV0,
@@ -977,6 +978,22 @@ const httpServer = createServer(async (req, res) => {
       operational,
       drift: { ok: drift.ok, errors: drift.drift?.errors, warnings: drift.drift?.warnings }
     });
+    return;
+  }
+
+  if (req.method === "POST" && pathname === rhizohRuntime.routes.councilAnomalyReasoning) {
+    const ip = getHttpClientIp(req);
+    if (!checkHttpRateLimit(`rhizoh_council_anomaly:${ip}`, 30, 60_000)) {
+      sendJson(res, 429, { ok: false, error: "rate_limit_exceeded" });
+      return;
+    }
+    try {
+      const body = await readHttpJson(req);
+      const out = handleCouncilAnomalyReasoningPostV0(body);
+      sendJson(res, out.status, out.body);
+    } catch (e) {
+      sendJson(res, 502, { ok: false, error: String(e?.message || e) });
+    }
     return;
   }
 

@@ -23,8 +23,9 @@ import {
   COUNCIL_TRIGGER_KIND_V0,
   evaluateCouncilTriggerV0,
   maybeEnqueueEpistemicCouncilV0,
-  runEpistemicCouncilDryRunV0
+  runEpistemicCouncilPipelineV0
 } from "./rhizohEpistemicCouncilV0.js";
+import { recordStressRunForInflationGuardV0 } from "./rhizohEpistemicGraphInflationGuardV0.js";
 import { TOPOLOGY_EVENT_TYPES_V0 } from "./rhizohTopologyEventEmitterV0.js";
 
 export const EPISTEMIC_STRESS_INJECTION_SCHEMA_V0 =
@@ -77,6 +78,8 @@ const PROFILE_PRESETS_V0 = Object.freeze({
 let lastStressRunV0 = null;
 
 let stressRunSeqV0 = 0;
+let lastStressInjectAtMsV0 = 0;
+const STRESS_MIN_INTERVAL_MS_V0 = 30_000;
 
 /**
  * Heuristic multi-lens disagreement — not gateway LLM wire yet.
@@ -144,6 +147,19 @@ export async function injectEpistemicStressV0(opts = {}) {
       shadowModeReason: resolveShadowModeReasonV0()
     });
   }
+
+  if (opts.force !== true && Date.now() - lastStressInjectAtMsV0 < STRESS_MIN_INTERVAL_MS_V0) {
+    return Object.freeze({
+      schema: EPISTEMIC_STRESS_INJECTION_SCHEMA_V0,
+      ok: false,
+      reason: "stress_repetition_throttled",
+      retryAfterMs: STRESS_MIN_INTERVAL_MS_V0 - (Date.now() - lastStressInjectAtMsV0),
+      shadowModeReason: resolveShadowModeReasonV0()
+    });
+  }
+
+  lastStressInjectAtMsV0 = Date.now();
+  recordStressRunForInflationGuardV0();
 
   const profile = String(opts.profile || EPISTEMIC_STRESS_PROFILE_V0.LIGHT).toLowerCase();
   const preset =
@@ -251,8 +267,11 @@ export async function injectEpistemicStressV0(opts = {}) {
   let councilObservation = null;
 
   if (forceCouncil && councilTrigger?.shouldInvoke) {
-    councilObservation = await runEpistemicCouncilDryRunV0({
+    councilObservation = await runEpistemicCouncilPipelineV0({
       ...councilTrigger,
+      bypassCooldown: true,
+      stressRunId,
+      conflictGraph,
       triggers: Object.freeze([
         ...new Set([
           ...(councilTrigger.triggers || []),
@@ -322,6 +341,7 @@ export function getLastEpistemicStressRunV0() {
 export function __resetEpistemicStressInjectionForTestV0() {
   lastStressRunV0 = null;
   stressRunSeqV0 = 0;
+  lastStressInjectAtMsV0 = 0;
   setLastStressRunForComplianceV0(null);
   if (typeof window !== "undefined") {
     delete window.__rhizoh?.epistemicStress;
