@@ -169,16 +169,21 @@ import {
 } from "./rhizoh/runtime/rhizohUiLocaleV0.js";
 import { RhizohProductSurfaceDrawerV0 } from "./components/RhizohProductSurfaceDrawerV0.jsx";
 import {
-  getRhizohChromePanelsSnapshotV0,
   isRhizohProductChromePanelOpenV0,
   isRhizohProductSurfaceDrawerOpenV0,
   resolveOpenProductSurfaceDrawerIdV0,
   setRhizohProductChromePanelOpenV0,
   closeAllRhizohProductSurfacePanelsV0,
-  setRhizohProductSurfacePanelExclusiveV0,
-  subscribeRhizohChromePanelsV0,
-  toggleRhizohProductSurfacePanelV0
+  setRhizohProductSurfacePanelExclusiveV0
 } from "./rhizoh/runtime/rhizohProductChromePanelsV0.js";
+import {
+  bootRhizohT0DrawerShellV0,
+  closeProductSurfaceDrawerV0,
+  getDrawerStateSnapshotV0,
+  resolveT0DetailDrawerVisibleV0,
+  runT0ProductShellSelectV0,
+  subscribeDrawerStateV0
+} from "./rhizoh/runtime/rhizohT0DrawerShellIntegrationV0.js";
 import {
   applyRhizohWorldMapToolV0,
   cycleRhizohWorldMapToolV0,
@@ -7385,6 +7390,9 @@ export default function AppRhizoh528() {
   useEffect(() => {
     void warmSwarmGpu();
   }, []);
+  useEffect(() => {
+    bootRhizohT0DrawerShellV0();
+  }, []);
   const [booted, setBooted] = useState(false);
   const [cmd, setCmd] = useState("");
   const [rhizohFieldState, setRhizohFieldState] = useState("IDLE");
@@ -8530,6 +8538,9 @@ export default function AppRhizoh528() {
   }, [productSurface, location.pathname]);
 
   const toggleDetailDrawerV0 = useCallback(() => {
+    if (resolveOpenProductSurfaceDrawerIdV0()) {
+      closeProductSurfaceDrawerV0();
+    }
     setShowDetailDrawer((open) => {
       const next = !open;
       if (next) {
@@ -8553,68 +8564,67 @@ export default function AppRhizoh528() {
       });
       writeProductSurfaceV0(surface);
 
-      if (surface === "world") {
-        if (isRhizohWorldDomainPathV0(location.pathname)) {
-          closeAllRhizohProductSurfacePanelsV0();
-          uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
-          const targetPath = resolveWorldDomainPathV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE);
-          if (location.pathname !== targetPath) {
-            navigate(targetPath);
-          }
-          void setRealityMode("REAL_MAP", {
-            source: "PRODUCT_SHELL_WORLD_DOMAIN",
-            productSurface: "world"
-          });
-          const tool = readRhizohWorldMapToolV0();
-          if (tool === "globe") {
-            void applyRhizohWorldMapToolV0("city_map", {
-              setRealityMode,
-              flyContext: {
-                nexusGeo: typeof window !== "undefined" ? window.__CASTLE_NEXUS_GEO__ : null,
-                castles: remoteCastles
-              },
-              source: "PRODUCT_SHELL_WORLD_DOMAIN"
+      runT0ProductShellSelectV0(surface, {
+        pathname: location.pathname,
+        resolveWorldTargetPath: () => resolveWorldDomainPathV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE),
+        onWorldSelect: ({ targetPath }) => {
+          if (isRhizohWorldDomainPathV0(location.pathname)) {
+            uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
+            if (location.pathname !== targetPath) {
+              navigate(targetPath);
+            }
+            void setRealityMode("REAL_MAP", {
+              source: "PRODUCT_SHELL_WORLD_DOMAIN",
+              productSurface: "world"
             });
+            const tool = readRhizohWorldMapToolV0();
+            if (tool === "globe") {
+              void applyRhizohWorldMapToolV0("city_map", {
+                setRealityMode,
+                flyContext: {
+                  nexusGeo: typeof window !== "undefined" ? window.__CASTLE_NEXUS_GEO__ : null,
+                  castles: remoteCastles
+                },
+                source: "PRODUCT_SHELL_WORLD_DOMAIN"
+              });
+            }
+            return;
           }
-          return;
-        }
-        closeAllRhizohProductSurfacePanelsV0();
-        uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
-        writeRhizohWorldDrawerDomainV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE);
-        const targetPath = resolveWorldDomainPathV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE);
-        bootstrapRhizohDomainGateV0(RHIZOH_DOMAIN_ID_V0.WORLD, {
-          pathname: targetPath,
-          worldDomain: RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE,
-          fromDomain: RHIZOH_DOMAIN_ID_V0.T0
-        });
-        navigate(targetPath);
-        return;
-      }
-
-      const toggled = toggleRhizohProductSurfacePanelV0(surface, productSurface);
-
-      if (toggled.closed) {
-        if (surface !== "world") {
+          uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
+          writeRhizohWorldDrawerDomainV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE);
+          bootstrapRhizohDomainGateV0(RHIZOH_DOMAIN_ID_V0.WORLD, {
+            pathname: targetPath,
+            worldDomain: RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE,
+            fromDomain: RHIZOH_DOMAIN_ID_V0.T0
+          });
+          navigate(targetPath);
+        },
+        onDrawerClosed: () => {
           uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
           void setRealityMode("GLOBE", { source: "PRODUCT_SHELL_PANEL_CLOSE" });
           uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
           uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
           if (location.pathname !== "/") navigate("/");
+        },
+        onDrawerOpened: (openedSurface) => {
+          triggerMicroExpressiveRealityTransitionV0(MICRO_MAP_SURFACE_OPEN_V0, {
+            detail: { surface: openedSurface, source: "product_shell_v0" }
+          });
+          if (productSurface !== openedSurface) {
+            uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: openedSurface });
+            const target = resolveRhizohProductPathV0(openedSurface);
+            if (target && location.pathname !== target) {
+              navigateRhizohProductSurfaceV0(openedSurface, navigate, location.pathname);
+            }
+          }
+        },
+        onNavigateSurface: (navSurface) => {
+          const target = resolveRhizohProductPathV0(navSurface);
+          if (target && location.pathname !== target) {
+            navigateRhizohProductSurfaceV0(navSurface, navigate, location.pathname);
+          }
         }
-        return;
-      }
-
-      triggerMicroExpressiveRealityTransitionV0(MICRO_MAP_SURFACE_OPEN_V0, {
-        detail: { surface, source: "product_shell_v0" }
       });
-
-      if (productSurface !== surface) {
-        uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: surface });
-        const target = resolveRhizohProductPathV0(surface);
-        if (target && location.pathname !== target) {
-          navigateRhizohProductSurfaceV0(surface, navigate, location.pathname);
-        }
-      }
     },
     [productSurface, location.pathname, navigate, remoteCastles]
   );
@@ -8669,11 +8679,12 @@ export default function AppRhizoh528() {
     [onProductShellSelect, onOpenMapToolV0, onOpenChromePanelV0]
   );
 
-  const chromePanelsV0 = useSyncExternalStore(
-    subscribeRhizohChromePanelsV0,
-    getRhizohChromePanelsSnapshotV0,
-    getRhizohChromePanelsSnapshotV0
+  const drawerStateV0 = useSyncExternalStore(
+    subscribeDrawerStateV0,
+    getDrawerStateSnapshotV0,
+    getDrawerStateSnapshotV0
   );
+  const chromePanelsV0 = drawerStateV0.panels;
 
   const worldMapToolV0 = useSyncExternalStore(
     subscribeRhizohWorldMapToolV0,
@@ -8741,7 +8752,11 @@ export default function AppRhizoh528() {
 
   const showCapabilityWheelV0 = false;
 
-  const openSurfaceDrawerIdV0 = resolveOpenProductSurfaceDrawerIdV0();
+  const openSurfaceDrawerIdV0 = drawerStateV0.openDrawerId;
+  const detailDrawerVisibleV0 = resolveT0DetailDrawerVisibleV0(
+    showDetailDrawer,
+    openSurfaceDrawerIdV0
+  );
 
   const cesiumLayerActiveV0 = useMemo(
     () =>
@@ -8752,7 +8767,7 @@ export default function AppRhizoh528() {
         worldDomain: activeWorldDomainV0,
         mapTool: worldMapToolV0,
         openProductDrawerId: openSurfaceDrawerIdV0,
-        detailDrawerOpen: showDetailDrawer
+        detailDrawerOpen: detailDrawerVisibleV0
       }),
     [
       mapSurfaceActive,
@@ -8761,7 +8776,9 @@ export default function AppRhizoh528() {
       activeWorldDomainV0,
       worldMapToolV0,
       openSurfaceDrawerIdV0,
-      showDetailDrawer
+      showDetailDrawer,
+      detailDrawerVisibleV0,
+      openSurfaceDrawerIdV0
     ]
   );
 
@@ -8778,13 +8795,11 @@ export default function AppRhizoh528() {
   );
 
   const onCloseSurfaceDrawerV0 = useCallback(() => {
-    if (openSurfaceDrawerIdV0) {
-      setRhizohProductSurfacePanelExclusiveV0(openSurfaceDrawerIdV0, false);
-    }
+    closeProductSurfaceDrawerV0();
     uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
     void setRealityMode("GLOBE", { source: "PRODUCT_SHELL_DRAWER_CLOSE" });
     if (location.pathname !== "/") navigate("/");
-  }, [openSurfaceDrawerIdV0, location.pathname, navigate]);
+  }, [location.pathname, navigate]);
 
   const onT0SoftAffordanceV0 = useCallback(
     (affordanceId) => {
@@ -13115,7 +13130,7 @@ export default function AppRhizoh528() {
       </div>
       ) : null}
 
-      {showDetailDrawer ? (
+      {detailDrawerVisibleV0 ? (
           <div
             id="rhizoh-detail-drawer"
             className="pointer-events-auto fixed inset-y-0 right-0 z-[220] w-full max-w-md border-l border-cyan-400/25 bg-[#050a14]/95 p-4 shadow-2xl backdrop-blur-xl overflow-y-auto"
@@ -13512,22 +13527,22 @@ export default function AppRhizoh528() {
               <button
                 type="button"
                 onClick={toggleDetailDrawerV0}
-                aria-expanded={showDetailDrawer}
+                aria-expanded={detailDrawerVisibleV0}
                 aria-controls="rhizoh-detail-drawer"
                 className="mt-2 w-full rounded-xl border border-white/15 py-1.5 text-[9px] tracking-[0.12em] text-white/70 hover:border-cyan-400/35"
               >
-                {showDetailDrawer ? detailChromeCopyV0.closeDrawer : detailChromeCopyV0.moreButton}
+                {detailDrawerVisibleV0 ? detailChromeCopyV0.closeDrawer : detailChromeCopyV0.moreButton}
               </button>
             </div>
           ) : (
             <button
               type="button"
               onClick={toggleDetailDrawerV0}
-              aria-expanded={showDetailDrawer}
+              aria-expanded={detailDrawerVisibleV0}
               aria-controls="rhizoh-detail-drawer"
               className="rounded-xl border border-white/12 bg-black/40 px-3 py-2 text-[9px] tracking-[0.12em] text-white/55 normal-case hover:text-white/80 hover:border-cyan-400/35"
             >
-              {showDetailDrawer ? detailChromeCopyV0.close : detailChromeCopyV0.open}
+              {detailDrawerVisibleV0 ? detailChromeCopyV0.close : detailChromeCopyV0.open}
             </button>
           )}
         </div>
