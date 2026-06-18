@@ -8,6 +8,7 @@ import {
   getShadowTraceLedgerSnapshotV0,
   injectShadowEntropyTestV0
 } from "./rhizohShadowTraceLedgerV0.js";
+import { ensureExecutionGovernanceSwitchboardDevToolsV0 } from "./rhizohExecutionGovernanceSwitchboardV0.js";
 
 export { refreshRhizohShadowDevToolsV0 } from "./rhizohShadowDevToolsRefreshV0.js";
 
@@ -19,5 +20,6 @@ export function ensureShadowTraceLedgerDevToolsV0() {
   window.__rhizoh.refreshShadowDevTools = refreshRhizohShadowDevToolsV0;
   window.__rhizoh.injectShadowEntropyTest = injectShadowEntropyTestV0;
   window.__rhizoh.injectEpistemicStress = injectEpistemicStressV0;
+  ensureExecutionGovernanceSwitchboardDevToolsV0();
   return refreshRhizohShadowDevToolsV0();
 }
