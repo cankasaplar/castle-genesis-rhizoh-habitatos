@@ -40,6 +40,24 @@ let drainingV0 = false;
 let taskSeqV0 = 0;
 let preemptCountV0 = 0;
 let completedCountV0 = 0;
+let clusterSupersededCountV0 = 0;
+
+function flattenPendingClusterMovesV0(keepRow) {
+  const next = [];
+  for (const task of queueV0) {
+    if (
+      task.id !== keepRow.id &&
+      task.priority === CHESS_ENGINE_TASK_PRIORITY_V0.CLUSTER_MOVE &&
+      task.kind === CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE
+    ) {
+      clusterSupersededCountV0 += 1;
+      task.resolve(null);
+      continue;
+    }
+    next.push(task);
+  }
+  queueV0 = next;
+}
 
 function insertTaskSortedV0(row) {
   const idx = queueV0.findIndex(
@@ -125,6 +143,13 @@ export function enqueueChessEngineTaskV0(task) {
       reject
     });
     insertTaskSortedV0(row);
+    const latestOnlyCluster =
+      task.latestOnly !== false &&
+      row.priority === CHESS_ENGINE_TASK_PRIORITY_V0.CLUSTER_MOVE &&
+      row.kind === CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE;
+    if (latestOnlyCluster) {
+      flattenPendingClusterMovesV0(row);
+    }
     maybePreemptForTaskV0(row);
     publishChessEngineQueueRegistryV0();
     void drainChessEngineTaskQueueV0();
@@ -153,6 +178,7 @@ export function getChessEngineQueueSnapshotV0() {
         })
       : null,
     preemptCount: preemptCountV0,
+    clusterSupersededCount: clusterSupersededCountV0,
     completedCount: completedCountV0,
     atMs: Date.now()
   });
@@ -166,6 +192,7 @@ export function __resetChessEngineTaskQueueForTestV0() {
   taskSeqV0 = 0;
   preemptCountV0 = 0;
   completedCountV0 = 0;
+  clusterSupersededCountV0 = 0;
   if (typeof window !== "undefined" && window.__rhizoh?.chessEngineQueue) {
     delete window.__rhizoh.chessEngineQueue;
   }

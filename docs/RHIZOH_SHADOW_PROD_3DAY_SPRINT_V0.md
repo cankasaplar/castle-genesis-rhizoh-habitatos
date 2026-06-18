@@ -60,6 +60,7 @@ Module: `rhizohHardSeparationLayerV0.js` + `rhizohInvitedUserAuthorityGateV0.js`
 | **B2** | **Council** | Cooldown + inflation dampening frozen in compliance export |
 | **B3** | **Graph lifecycle** | Lifecycle pass fingerprint in shadow compliance snapshot |
 | **Chess1** | **Engine presets** | Cluster featured slot: `STRONG`/`MAX` movetime bump (800–2000ms featured) |
+| **ChessStab** | **Engine scheduler** | ✅ adaptive cluster tick (≥800ms), movetime/timeout split, queue latest-only flatten |
 | **Chess2** | **Engine registry stub** | `chessEngineRegistryV0.js` — Stockfish today, LC0 slot reserved (no weights yet) |
 | **Chess3** | **8-board arena** | `RhizohChessClusterArenaV0` OBS browser-source URL documented |
 

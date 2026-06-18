@@ -14,7 +14,7 @@ describe("chessClusterAgentPolicyV0", () => {
   it("resolves fox agent with defensive risk profile", () => {
     const p = resolveChessClusterAgentPolicyV0(CHESS_CLUSTER_AGENT_ID_V0.FOX);
     expect(p.riskProfile).toBe("defensive");
-    expect(p.movetimeMs).toBeLessThan(200);
+    expect(p.movetimeMs).toBeGreaterThanOrEqual(600);
   });
 
   it("maps agent to stockfish opts", () => {

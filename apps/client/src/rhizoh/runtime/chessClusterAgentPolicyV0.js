@@ -15,12 +15,15 @@ export const CHESS_CLUSTER_AGENT_ID_V0 = Object.freeze({
   USER: "user_agent"
 });
 
+const CLUSTER_AGENT_MOVETIME_FLOOR_MS_V0 = 600;
+const CLUSTER_AGENT_MOVETIME_CEIL_MS_V0 = 1200;
+
 const AGENT_TABLE_V0 = Object.freeze({
   [CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_AI]: Object.freeze({
     label: "Rhizoh AI",
     preset: "TEACHER_BACKUP",
     skill: 12,
-    movetimeMs: 200,
+    movetimeMs: 600,
     depth: 10,
     contempt: 6,
     explorationRate: 0.12,
@@ -30,7 +33,7 @@ const AGENT_TABLE_V0 = Object.freeze({
     label: "Rhizoh Stockfish",
     preset: "ARENA",
     skill: 16,
-    movetimeMs: 180,
+    movetimeMs: 700,
     depth: 12,
     contempt: 12,
     explorationRate: 0.08,
@@ -40,7 +43,7 @@ const AGENT_TABLE_V0 = Object.freeze({
     label: "OctoAI",
     preset: "STRONG",
     skill: 18,
-    movetimeMs: 280,
+    movetimeMs: 900,
     depth: 14,
     contempt: 32,
     explorationRate: 0.1,
@@ -50,7 +53,7 @@ const AGENT_TABLE_V0 = Object.freeze({
     label: "Fox",
     preset: "TEACHER_BACKUP",
     skill: 14,
-    movetimeMs: 200,
+    movetimeMs: 650,
     depth: 11,
     contempt: -8,
     explorationRate: 0.12,
@@ -60,7 +63,7 @@ const AGENT_TABLE_V0 = Object.freeze({
     label: "User mirror",
     preset: "TEACHER_BACKUP",
     skill: 12,
-    movetimeMs: 160,
+    movetimeMs: 600,
     depth: 10,
     contempt: 0,
     explorationRate: 0.1,
@@ -107,7 +110,10 @@ export function resolveChessClusterStockfishOptsV0(agentId) {
   return Object.freeze({
     preset: p.preset,
     skill: p.skill,
-    movetimeMs: p.movetimeMs,
+    movetimeMs: Math.max(
+      CLUSTER_AGENT_MOVETIME_FLOOR_MS_V0,
+      Math.min(CLUSTER_AGENT_MOVETIME_CEIL_MS_V0, p.movetimeMs)
+    ),
     depth: p.depth,
     contempt: p.contempt
   });

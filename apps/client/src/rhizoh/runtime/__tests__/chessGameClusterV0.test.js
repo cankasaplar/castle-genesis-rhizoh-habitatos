@@ -1,10 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   CHESS_CLUSTER_SLOT_COUNT_V0,
+  CHESS_CLUSTER_MIN_INTERVAL_MS_V0,
   __resetChessGameClusterForTestV0,
+  getChessClusterRouterMetaV0,
   getChessClusterSlotV0,
   isChessGameClusterRunningV0,
   listChessClusterSlotsV0,
+  resolveChessClusterMinIntervalMsV0,
+  resolveChessClusterTickDelayMsV0,
   startChessGameClusterV0,
   stopChessGameClusterV0
 } from "../chessGameClusterV0.js";
@@ -38,7 +42,7 @@ describe("chessGameClusterV0", () => {
   });
 
   it("starts 8 independent slots", () => {
-    const out = startChessGameClusterV0({ intervalMs: 50 });
+    const out = startChessGameClusterV0({ testFastTick: true, intervalMs: 50 });
     expect(out.ok).toBe(true);
     expect(listChessClusterSlotsV0()).toHaveLength(CHESS_CLUSTER_SLOT_COUNT_V0);
     expect(getChessClusterSlotV0(0)?.status).toBe("active");
@@ -50,15 +54,31 @@ describe("chessGameClusterV0", () => {
   });
 
   it("is idempotent on second start", () => {
-    startChessGameClusterV0({ intervalMs: 50 });
-    const second = startChessGameClusterV0({ intervalMs: 50 });
+    startChessGameClusterV0({ testFastTick: true, intervalMs: 50 });
+    const second = startChessGameClusterV0({ testFastTick: true, intervalMs: 50 });
     expect(second.already).toBe(true);
     stopChessGameClusterV0();
   });
 
   it("stops cluster simulation", () => {
-    startChessGameClusterV0({ intervalMs: 50 });
+    startChessGameClusterV0({ testFastTick: true, intervalMs: 50 });
     stopChessGameClusterV0();
     expect(isChessGameClusterRunningV0()).toBe(false);
+  });
+
+  it("clamps prod min interval to 800ms band", () => {
+    expect(resolveChessClusterMinIntervalMsV0({ intervalMs: 320 })).toBe(
+      CHESS_CLUSTER_MIN_INTERVAL_MS_V0
+    );
+    expect(resolveChessClusterMinIntervalMsV0({ minIntervalMs: 900 })).toBe(900);
+    expect(resolveChessClusterTickDelayMsV0(1200)).toBe(1200);
+    expect(resolveChessClusterTickDelayMsV0(400)).toBe(900);
+  });
+
+  it("publishes adaptive tick metadata when started", () => {
+    startChessGameClusterV0({ minIntervalMs: 900 });
+    expect(getChessClusterRouterMetaV0().minIntervalMs).toBe(900);
+    expect(window.__rhizoh.chessGameCluster?.tickScheduling).toBe("adaptive_settimeout");
+    stopChessGameClusterV0();
   });
 });
