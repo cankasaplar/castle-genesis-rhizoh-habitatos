@@ -8,6 +8,7 @@
 
 import { resolveIngressRouteV0 } from "../ingress/ingress_router.js";
 import { isRhizohSpatialProductShellEnabled } from "./castleWorldLayerGateV0.js";
+import { isRhizohWorldSpaceCesiumEnvEnabledV0 } from "./rhizohLayerContextV0.js";
 import {
   isRhizohT0LivePathV0,
   resolveWorldDomainFromPathV0
@@ -120,7 +121,12 @@ export function resolveSpatialSinkRoutePolicyV0() {
   }
 
   const drainAllowed = !onIngress;
-  const warnOnMissing = sinkExpected && engineReady;
+  const worldSpaceRoute = worldDomain === "space";
+  const cesiumEnvEnabled = isRhizohWorldSpaceCesiumEnvEnabledV0();
+  const leafletSinkExpected = worldSpaceRoute && !spatialShell && !cesiumEnvEnabled;
+  const cesiumSinkExpected =
+    spatialShell || (worldSpaceRoute && cesiumEnvEnabled);
+  const warnOnMissing = cesiumSinkExpected && engineReady;
 
   let deferCode = null;
   if (onIngress || t0Live || !sinkExpected) {
@@ -143,6 +149,9 @@ export function resolveSpatialSinkRoutePolicyV0() {
     onIngress,
     reason,
     deferCode,
+    leafletSinkExpected,
+    cesiumSinkExpected,
+    cesiumEnvEnabled,
     atMs: Date.now()
   });
 }
