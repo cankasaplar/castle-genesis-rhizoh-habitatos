@@ -8,6 +8,28 @@ import { getChessEngineQueueSnapshotV0 } from "./chessEngineTaskQueueV0.js";
 
 export const CHESS_ENGINE_CONTENTION_GATE_SCHEMA_V0 = "castle.rhizoh.chess_engine_contention_gate.v0";
 export const CHESS_CLUSTER_ARENA_REGISTRY_SCHEMA_V0 = "castle.rhizoh.chess_cluster_arena.v0";
+export const CHESS_ARENA_WORKSPACE_REGISTRY_SCHEMA_V0 = "castle.rhizoh.chess_arena_workspace.v0";
+
+/** @param {boolean} open */
+export function publishChessArenaWorkspaceOpenV0(open) {
+  if (typeof window === "undefined") return;
+  window.__rhizoh = window.__rhizoh || {};
+  window.__rhizoh.chessArenaWorkspace = Object.freeze({
+    schema: CHESS_ARENA_WORKSPACE_REGISTRY_SCHEMA_V0,
+    open: Boolean(open),
+    atMs: Date.now()
+  });
+}
+
+export function isChessArenaWorkspaceOpenV0() {
+  if (typeof window === "undefined") return false;
+  return Boolean(window.__rhizoh?.chessArenaWorkspace?.open);
+}
+
+/** Pause background cluster ticks while map arena match is active. */
+export function shouldPauseClusterTickForArenaV0() {
+  return isChessArenaWorkspaceOpenV0();
+}
 
 /** @param {boolean} open */
 export function publishChessClusterArenaOpenV0(open) {
@@ -31,6 +53,7 @@ export function getChessEngineContentionSnapshotV0() {
       schema: CHESS_ENGINE_CONTENTION_GATE_SCHEMA_V0,
       clusterRunning: false,
       clusterArenaOpen: false,
+      arenaWorkspaceOpen: false,
       chessLock: false,
       queuePending: 0,
       contended: false,
@@ -42,6 +65,7 @@ export function getChessEngineContentionSnapshotV0() {
   const scheduler = window.__rhizoh?.chessScheduler;
   const clusterRunning = Boolean(cluster?.running);
   const clusterArenaOpen = isChessClusterArenaOpenV0();
+  const arenaWorkspaceOpen = isChessArenaWorkspaceOpenV0();
   const chessLock = Boolean(scheduler?.chessLock);
   const queuePending = Number(queue?.pendingCount) || 0;
   const contended = clusterRunning && (chessLock || queuePending > 1);
@@ -50,6 +74,7 @@ export function getChessEngineContentionSnapshotV0() {
     schema: CHESS_ENGINE_CONTENTION_GATE_SCHEMA_V0,
     clusterRunning,
     clusterArenaOpen,
+    arenaWorkspaceOpen,
     chessLock,
     queuePending,
     queueActive: Boolean(queue?.active),
