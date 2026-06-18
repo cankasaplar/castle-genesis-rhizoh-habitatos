@@ -40,6 +40,7 @@ export function useChessArenaDisplaySettingsV0() {
     [theme.boardThemeId]
   );
   const pieceBold = theme.pieceStyleId === CHESS_PIECE_STYLE_V0.bold;
+  const pieceFide = theme.pieceStyleId === CHESS_PIECE_STYLE_V0.fide;
   const timeControl = useMemo(
     () => resolveChessTimeControlV0(session.timeControlId),
     [session.timeControlId]
@@ -50,6 +51,8 @@ export function useChessArenaDisplaySettingsV0() {
     session,
     boardColors,
     pieceBold,
+    pieceFide,
+    pieceStyleId: theme.pieceStyleId,
     timeControl
   });
 }

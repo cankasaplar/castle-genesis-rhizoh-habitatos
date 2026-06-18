@@ -100,6 +100,33 @@ export function listChessArenaArchivePreviewV0(limit = 5) {
   return listChessArenaArchiveV0(limit);
 }
 
+/** Live lobby presence — castles online, active cluster boards, invites scaffold. */
+export function getChessArenaLobbyPresenceV0() {
+  if (typeof window === "undefined") {
+    return Object.freeze({
+      onlineCastles: 0,
+      liveBoards: 0,
+      clusterRunning: false,
+      invitePending: 0
+    });
+  }
+  const cluster = window.__rhizoh?.chessGameCluster;
+  const presence = window.__rhizoh?.worldPresence || window.__rhizoh?.liveMonitor;
+  const liveBoards =
+    cluster?.slots?.filter((s) => s?.status === "active" && (s.ply || 0) > 0).length ?? 0;
+  const onlineCastles = Math.max(
+    1,
+    Number(presence?.peerCount) || Number(presence?.activeNodes) || (cluster?.running ? 1 : 0)
+  );
+  return Object.freeze({
+    onlineCastles,
+    liveBoards,
+    clusterRunning: Boolean(cluster?.running),
+    clusterTick: cluster?.tickCount ?? 0,
+    invitePending: 0
+  });
+}
+
 export function getChessArenaLearningFeedV0() {
   if (typeof window === "undefined") {
     return Object.freeze({
@@ -159,6 +186,7 @@ export function getChessArenaLobbySnapshotV0() {
     fixtures: CHESS_ARENA_FIXTURES_V0,
     quickMatches: CHESS_ARENA_QUICK_MATCH_V0,
     archivePreview: listChessArenaArchivePreviewV0(4),
+    presence: getChessArenaLobbyPresenceV0(),
     learningFeed: getChessArenaLearningFeedV0(),
     atMs: Date.now()
   });

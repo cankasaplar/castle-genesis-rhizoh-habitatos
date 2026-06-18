@@ -4,6 +4,7 @@ import {
   CHESS_ARENA_FIXTURES_V0,
   CHESS_ARENA_QUICK_MATCH_V0,
   getChessArenaLearningFeedV0,
+  getChessArenaLobbyPresenceV0,
   listChessArenaArchivePreviewV0
 } from "../rhizoh/runtime/chessArenaLobbyV0.js";
 import { formatChessOutcomeLabelV0 } from "../rhizoh/runtime/chessArenaEngineV0.js";
@@ -34,7 +35,6 @@ import {
   readChessPolicyModeV0,
   saveChessPolicyModeV0
 } from "../rhizoh/runtime/chessPolicyModeV0.js";
-import { getChessObservatoryHeroCopyV0 } from "../rhizoh/runtime/chessClusterObservatoryCopyV0.js";
 
 function EngineStatusChipV0({ engineStatus, engineDetail, tr }) {
   const label =
@@ -89,6 +89,7 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
   const opponentPresets = listChessOpponentPresetsV0();
   const { theme: boardTheme, boardColors, pieceBold } = useChessArenaDisplaySettingsV0();
   const [learning, setLearning] = useState(() => getChessArenaLearningFeedV0());
+  const [presence, setPresence] = useState(() => getChessArenaLobbyPresenceV0());
   const [timeControlId, setTimeControlId] = useState(() => readChessArenaSessionV0().timeControlId);
   const [opponentPresetId, setOpponentPresetId] = useState(
     () => readChessArenaSessionV0().opponentPresetId
@@ -98,10 +99,12 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
 
   const selectedQuick = CHESS_ARENA_QUICK_MATCH_V0.find((m) => m.id === selectedMatchId) || null;
   const activeOpponent = resolveChessOpponentPresetV0(opponentPresetId);
-  const heroCopy = getChessObservatoryHeroCopyV0(tr);
 
   useEffect(() => {
-    const refreshLearning = () => setLearning(getChessArenaLearningFeedV0());
+    const refreshLearning = () => {
+      setLearning(getChessArenaLearningFeedV0());
+      setPresence(getChessArenaLobbyPresenceV0());
+    };
     const onSession = (ev) => {
       const id = ev?.detail?.timeControlId;
       if (id) setTimeControlId(id);
@@ -173,42 +176,62 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:p-4">
-      <section className="rounded-xl border border-cyan-500/35 bg-gradient-to-br from-cyan-950/40 to-violet-950/25 p-4">
-        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-300/70">
-          {tr ? "Rhizoh Chess Observatory" : "Rhizoh Chess Observatory"}
-        </p>
-        <h2 className="mt-1 text-lg font-bold text-cyan-50">{heroCopy.title}</h2>
-        <p className="mt-1 max-w-xl text-[11px] text-white/55">{heroCopy.lobbyDesc}</p>
+      <section className="rounded-xl border border-cyan-500/30 bg-[#071018] p-4">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-lg border border-cyan-400/25 bg-cyan-950/20 px-3 py-2.5 text-center">
+            <p className="text-[9px] uppercase tracking-wider text-cyan-200/60">
+              {tr ? "Çevrimiçi kale" : "Castles online"}
+            </p>
+            <p className="mt-1 text-2xl font-bold text-cyan-50">{presence.onlineCastles}</p>
+          </div>
+          <div className="rounded-lg border border-emerald-400/25 bg-emerald-950/20 px-3 py-2.5 text-center">
+            <p className="text-[9px] uppercase tracking-wider text-emerald-200/60">
+              {tr ? "Canlı tahta" : "Live boards"}
+            </p>
+            <p className="mt-1 text-2xl font-bold text-emerald-50">{presence.liveBoards}</p>
+          </div>
+          <div className="rounded-lg border border-violet-400/25 bg-violet-950/20 px-3 py-2.5 text-center">
+            <p className="text-[9px] uppercase tracking-wider text-violet-200/60">ELO</p>
+            <p className="mt-1 text-2xl font-bold text-violet-50">{learning.rhizohElo ?? "—"}</p>
+          </div>
+        </div>
         <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={openCluster}
-            className="rounded-lg border border-cyan-400/55 bg-cyan-500/20 px-4 py-2.5 text-[12px] font-bold text-cyan-50 hover:bg-cyan-500/30"
+            className="rounded-lg border border-cyan-400/55 bg-cyan-500/20 px-4 py-2 text-[12px] font-bold text-cyan-50 hover:bg-cyan-500/30"
           >
-            {heroCopy.lobbyCta}
+            {tr ? "Canlı yayını izle" : "Watch live broadcast"}
           </button>
-          {learning.clusterRunning ? (
-            <span className="flex items-center rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-3 py-2 text-[10px] text-emerald-200/90">
-              ● {tr ? "Yayın aktif" : "Broadcast live"} · tick {learning.clusterTick}
-            </span>
-          ) : null}
+          <button
+            type="button"
+            onClick={() => launchSelectedMatch()}
+            disabled={!selectedQuick}
+            className="rounded-lg border border-emerald-400/45 bg-emerald-500/15 px-4 py-2 text-[12px] font-semibold text-emerald-50 hover:bg-emerald-500/25 disabled:opacity-40"
+          >
+            {tr ? "Oyun oluştur" : "Create game"}
+          </button>
+          <button
+            type="button"
+            disabled
+            className="rounded-lg border border-white/10 bg-black/30 px-4 py-2 text-[12px] text-white/35"
+            title={tr ? "Yakında" : "Coming soon"}
+          >
+            {tr ? "Davet gönder" : "Send invite"}
+          </button>
         </div>
-        <p className="mt-2 text-[9px] text-white/35">{heroCopy.learningNote}</p>
+        {presence.clusterRunning ? (
+          <p className="mt-2 text-[10px] text-emerald-300/80">
+            ● {tr ? "Cluster aktif" : "Cluster live"} · tick {presence.clusterTick}
+          </p>
+        ) : null}
       </section>
 
       <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
         <section className="rounded-xl border border-emerald-500/25 bg-emerald-950/20 p-3">
-          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-300/70">
-            {tr ? "Maç hazırlığı" : "Match preparation"}
-          </p>
-          <h3 className="mt-1 text-base font-bold text-emerald-50">
-            {tr ? "Yeni oyun başlat" : "Start a new game"}
+          <h3 className="text-base font-bold text-emerald-50">
+            {tr ? "Maç seç" : "Pick a match"}
           </h3>
-          <p className="mt-1 text-[11px] text-white/50">
-            {tr
-              ? "Mod seç → tek tıkla tahtaya geç. Zaman kontrolü cluster + arena için ortak."
-              : "Pick a mode → one tap to board. Time control applies to cluster + arena."}
-          </p>
           <div className="mt-3">
             <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-white/45">
               {tr ? "Zaman kontrolü" : "Time control"}
@@ -260,6 +283,7 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
                 onChange={(e) => saveChessArenaThemeV0({ pieceStyleId: e.target.value })}
                 className="w-full rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
               >
+                <option value={CHESS_PIECE_STYLE_V0.fide}>FIDE</option>
                 <option value={CHESS_PIECE_STYLE_V0.unicode}>Unicode</option>
                 <option value={CHESS_PIECE_STYLE_V0.bold}>{tr ? "Kalın" : "Bold"}</option>
               </select>
