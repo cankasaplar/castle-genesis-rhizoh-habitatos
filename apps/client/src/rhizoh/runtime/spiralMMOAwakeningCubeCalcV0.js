@@ -7,6 +7,7 @@ import { deriveSpiralMMOContinentCubeMotionV0 } from "./spiralMMOContinentCubeMo
 import {
   resolveSpiralCubeRenderScaleV0,
   resolveSpiralCubeSizePxV0,
+  SPIRAL_CUBE_CANONICAL_CELL_PX_V0,
   SPIRAL_CUBE_UNIT_SCHEMA_V0
 } from "./spiralMMOCubeUnitV0.js";
 
@@ -57,13 +58,16 @@ export function deriveSpiralMMOAwakeningCubeSpecV0(input) {
   const axisTypes = /** @type {SpiralMMOCubeAxisV0[]} */ (["rotateY", "rotateX", "rotateZ", "rotate3d"]);
   const axisType = axisTypes[Math.floor(r3 * axisTypes.length) % axisTypes.length];
 
-  const sizePx = resolveSpiralCubeSizePxV0({
-    depthLayer,
-    sizeNoise: r2,
-    isOrder: input.isOrder
-  });
-  const depth = 0.22 + depthLayer * 0.3 + r2 * 0.18;
-  const renderScaleFactor = resolveSpiralCubeRenderScaleV0({ depth });
+  const uniformSize = input.uniformSize === true;
+  const sizePx = uniformSize
+    ? SPIRAL_CUBE_CANONICAL_CELL_PX_V0
+    : resolveSpiralCubeSizePxV0({
+        depthLayer,
+        sizeNoise: r2,
+        isOrder: input.isOrder
+      });
+  const depth = uniformSize ? 0.42 : 0.22 + depthLayer * 0.3 + r2 * 0.18;
+  const renderScaleFactor = uniformSize ? 1 : resolveSpiralCubeRenderScaleV0({ depth });
   const glowBlur = Math.round(6 + depth * 14);
   const glowSpread = Math.round(2 + depth * 6);
   const shadowX = Math.round(2 + depth * 5);

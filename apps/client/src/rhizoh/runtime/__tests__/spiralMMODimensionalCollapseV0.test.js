@@ -32,14 +32,15 @@ describe("spiralMMODimensionalCollapseV0", () => {
 
     expect(meta.triggerIndex).toBe(trigger);
     expect(meta.partnerIndex).toBe(partner);
-    expect(launches.length).toBeGreaterThan(50);
+    expect(launches.length).toBeLessThan(25);
+    expect(launches.length).toBeGreaterThan(10);
 
     const order = launches.filter((l) => l.kind === "order");
     const chaos = launches.filter((l) => l.kind === "chaos");
     const special = launches.filter((l) => ["mirror", "black", "white"].includes(l.kind));
     expect(order.length).toBe(params.ghostDensity);
-    expect(chaos.length).toBe(Math.floor(params.ghostDensity * 0.8));
-    expect(special.length).toBe(Math.floor(params.ghostDensity * 0.45));
+    expect(chaos.length).toBe(Math.max(2, Math.floor(params.ghostDensity * 0.35)));
+    expect(special.length).toBe(Math.max(1, Math.floor(params.ghostDensity * 0.2)));
 
     expect(order[0].srcIdx).toBe(partner);
     expect(order[0].destIdx).toBe(trigger);
@@ -66,5 +67,6 @@ describe("spiralMMODimensionalCollapseV0", () => {
     const chaos = launches.filter((l) => l.kind === "chaos");
     expect(chaos.some((l) => l.scatterX !== 0 || l.scatterY !== 0)).toBe(true);
     expect(chaos.every((l) => Number.isFinite(l.scatterX) && Number.isFinite(l.scatterY))).toBe(true);
+    expect(chaos.every((l) => l.srcIdx === 0 || l.srcIdx === 3)).toBe(true);
   });
 });
