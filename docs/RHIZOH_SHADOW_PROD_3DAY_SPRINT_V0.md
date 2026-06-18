@@ -39,7 +39,7 @@ Module: `rhizohHardSeparationLayerV0.js` + `rhizohInvitedUserAuthorityGateV0.js`
 | **C1** | Hard separation enforcement wired to switchboard | `rhizohHardSeparationLayerV0.js`, stress/council/memory gates |
 | **C2** | Invited-user authority lock (graph write, council trigger, stress inject) | `rhizohInvitedUserAuthorityGateV0.js` |
 | **C3** | Subject ref SSOT (sessionStorage = ingress) | `ingress_router.js`, switchboard |
-| **A1** | Drawer state machine on T0 (parity with World Space) | `rhizohDrawerStateMachineV0.js`, `AppRhizoh528T0.jsx` |
+| **A1** | Drawer state machine on T0 (parity with World Space) | ✅ `rhizohT0DrawerShellIntegrationV0.js`, `AppRhizoh528T0.jsx` |
 | **A2** | `rhizohUiLayoutResolverV0` — z-index + bottom offset SSOT | new module; replace scattered `calc()` |
 | **B1** | Stress determinism harness (same profile → same conflict graph hash) | test + export `stressRunFingerprint` |
 
