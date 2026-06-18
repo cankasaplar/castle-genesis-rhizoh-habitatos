@@ -20,6 +20,7 @@ import { ensureShadowTraceLedgerDevToolsV0 } from "./rhizohShadowTraceLedgerDevT
 import { ensureExecutionGovernanceSwitchboardDevToolsV0 } from "./rhizohExecutionGovernanceSwitchboardV0.js";
 import { ensureHardSeparationDevToolsV0 } from "./rhizohHardSeparationLayerV0.js";
 import { ensureRhizohChessLearningReportV0 } from "./rhizohChessLearningReportV0.js";
+import { ensureChessHistoryBrainV0 } from "./chessHistoryBrainReportV0.js";
 
 export const RHIZOH_CORE_SUBSYSTEM_BOOT_SCHEMA_V0 = "castle.rhizoh.core_subsystem_boot.v0";
 
@@ -71,6 +72,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureExecutionGovernanceSwitchboardDevToolsV0();
     ensureHardSeparationDevToolsV0();
     ensureRhizohChessLearningReportV0();
+    ensureChessHistoryBrainV0();
     runDomainGateForPathV0(pathname, { coreOnly: true });
     stopLegalWaitLoopV0 = startRhizohLegalPendingWaitLoopV0({ bootDelayMs: 2_500 });
   }
