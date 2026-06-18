@@ -27,10 +27,17 @@ import {
   tickChessClusterSlotClockV0
 } from "./chessClusterClockV0.js";
 import { ensureChessLearningMonitorListenersV0 } from "./chessLearningMonitorV0.js";
+import { ensureRhizohChessLearningReportV0 } from "./rhizohChessLearningReportV0.js";
 import { readChessArenaSessionV0, resolveChessTimeControlV0, CHESS_ARENA_SESSION_EVENT_V0 } from "./chessArenaSessionV0.js";
 import { logChessMovePlayedV0 } from "./chessArenaTelemetryV0.js";
 import { publishRhizohChessManagerV0 } from "./rhizohChessManagerV0.js";
 import { publishChessGameRouterV0 } from "./chessGameRouterV0.js";
+import {
+  CHESS_SCHEDULER_MIN_GAP_MS_V0,
+  endChessSchedulerCallV0,
+  tryBeginChessSchedulerCallV0,
+  __resetChessSchedulerUnifyForTestV0
+} from "./chessSchedulerUnifyV0.js";
 
 export const CHESS_GAME_CLUSTER_SCHEMA_V0 = "castle.rhizoh.chess_game_cluster.v0";
 export const CHESS_CLUSTER_SLOT_COUNT_V0 = 8;
@@ -57,6 +64,7 @@ let roundRobinIndexV0 = 0;
 let busyV0 = false;
 let lastMoveWallMsV0 = 0;
 let configuredMinIntervalMsV0 = CHESS_CLUSTER_DEFAULT_INTERVAL_MS_V0;
+let testFastTickV0 = false;
 let clusterTimeControlIdV0 = readChessArenaSessionV0().timeControlId;
 let sessionListenerInstalledV0 = false;
 
@@ -206,7 +214,7 @@ function scheduleClusterTickV0() {
   const delayMs = resolveChessClusterTickDelayMsV0();
   tickTimerV0 = setTimeout(() => {
     tickTimerV0 = null;
-    void runClusterTickV0().finally(() => {
+    void runClusterTickV0({ testFast: testFastTickV0 }).finally(() => {
       if (runningV0) scheduleClusterTickV0();
     });
   }, delayMs);
@@ -334,8 +342,14 @@ async function advanceChessClusterSlotV0(slot) {
   return moveRow;
 }
 
-async function runClusterTickV0() {
-  if (!runningV0 || busyV0 || slotsV0.length === 0) return;
+async function runClusterTickV0(opts = {}) {
+  if (!runningV0 || slotsV0.length === 0) return;
+  if (!tryBeginChessSchedulerCallV0({
+    minGapMs: configuredMinIntervalMsV0,
+    testFast: opts.testFast
+  })) {
+    return;
+  }
   busyV0 = true;
   tickCountV0 += 1;
 
@@ -365,6 +379,10 @@ async function runClusterTickV0() {
     dispatchClusterEventV0(CHESS_CLUSTER_TICK_EVENT_V0, snap);
   } finally {
     busyV0 = false;
+    endChessSchedulerCallV0({
+      releaseMs: Math.max(configuredMinIntervalMsV0, CHESS_SCHEDULER_MIN_GAP_MS_V0),
+      testFast: opts.testFast
+    });
   }
 }
 
@@ -378,11 +396,13 @@ export function startChessGameClusterV0(opts = {}) {
     return Object.freeze({ ok: true, already: true, running: true, slotCount: CHESS_CLUSTER_SLOT_COUNT_V0 });
   }
   configuredMinIntervalMsV0 = resolveChessClusterMinIntervalMsV0(opts);
+  testFastTickV0 = Boolean(opts.testFastTick);
   clusterTimeControlIdV0 =
     opts.timeControlId || readChessArenaSessionV0().timeControlId;
 
   ensureChessLearningMonitorListenersV0();
   ensureChessClusterSessionListenerV0();
+  ensureRhizohChessLearningReportV0();
 
   slotsV0 = Array.from({ length: CHESS_CLUSTER_SLOT_COUNT_V0 }, (_, i) =>
     createSlotV0(i, clusterTimeControlIdV0)
@@ -402,12 +422,12 @@ export function startChessGameClusterV0(opts = {}) {
   }, 1000);
 
   scheduleClusterTickV0();
-  void runClusterTickV0();
+  void runClusterTickV0({ testFast: testFastTickV0 });
   publishClusterRegistryV0({
     started: true,
     timeControlId: clusterTimeControlIdV0,
     minIntervalMs: configuredMinIntervalMsV0,
-    tickScheduling: "adaptive_settimeout"
+    tickScheduling: "adaptive_settimeout_chess_lock"
   });
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
@@ -468,6 +488,8 @@ export function __resetChessGameClusterForTestV0() {
   busyV0 = false;
   lastMoveWallMsV0 = 0;
   configuredMinIntervalMsV0 = CHESS_CLUSTER_DEFAULT_INTERVAL_MS_V0;
+  __resetChessSchedulerUnifyForTestV0();
+  testFastTickV0 = false;
   clusterTimeControlIdV0 = readChessArenaSessionV0().timeControlId;
 }
 
