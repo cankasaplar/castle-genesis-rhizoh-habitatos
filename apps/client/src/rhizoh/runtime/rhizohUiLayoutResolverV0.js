@@ -37,6 +37,7 @@ export const RHIZOH_UI_SURFACE_V0 = Object.freeze({
 export const RHIZOH_UI_Z_INDEX_V0 = Object.freeze({
   MAP_HOST: 1,
   WORLD_DOMAIN_SHELL: 20,
+  /** @deprecated use CONVERSATION_DOCK for T0 + World · Space voice/chat shells */
   VOICE_DOCK: 24,
   MAP_HINT: 25,
   MAP_OVERLAY: 26,
@@ -45,6 +46,8 @@ export const RHIZOH_UI_Z_INDEX_V0 = Object.freeze({
   PRODUCT_DRAWER: 58,
   CONTINUITY_RAIL: 58,
   PRODUCT_SHELL_BAR: 61,
+  /** T0 chat dock + World · Space voice dock — above product shell bar */
+  CONVERSATION_DOCK: 64,
   CAPABILITY_TOOL_STRIP: 67,
   CAPABILITY_HALO: 68,
   MEDIA_TUBE: 315
@@ -94,6 +97,8 @@ export function resolveRhizohUiLayoutV0(ctx = {}) {
   const voiceDockStack = onWorldSpace
     ? [mapStripRem, RHIZOH_UI_VOICE_DOCK_GAP_REM_V0, drawerStackRem]
     : [drawerStackRem];
+  const chatDockStack = [drawerStackRem];
+  const conversationDockStack = onWorldSpace ? voiceDockStack : chatDockStack;
   const mapOverlayStack = onWorldSpace
     ? [mapStripExpandedRem, 0.5, drawerStackRem]
     : [drawerStackRem];
@@ -116,7 +121,8 @@ export function resolveRhizohUiLayoutV0(ctx = {}) {
       continuityRail: buildRhizohUiBottomCalcV0([RHIZOH_UI_CHROME_TOGGLE_STRIP_H_REM_V0]),
       mapStrip: buildRhizohUiBottomCalcV0(mapStripStack),
       voiceDock: buildRhizohUiBottomCalcV0(voiceDockStack),
-      chatDock: buildRhizohUiBottomCalcV0([drawerStackRem]),
+      chatDock: buildRhizohUiBottomCalcV0(chatDockStack),
+      conversationDock: buildRhizohUiBottomCalcV0(conversationDockStack),
       mapOverlay: buildRhizohUiBottomCalcV0(mapOverlayStack)
     }),
     atMs: Date.now()
@@ -149,10 +155,10 @@ export function resolveRhizohWorldSpaceUiLayoutFromDrawerV0(drawerOpen = false, 
 
 /** T0 live chat dock bottom offset. */
 export function resolveRhizohT0ChatBottomCssV0(opts = {}) {
-  return resolveRhizohUiLayoutV0({
+  return resolveRhizohConversationDockBottomCssV0({
     surface: RHIZOH_UI_SURFACE_V0.T0_LIVE,
     drawerOpen: opts.drawerOpen === true
-  }).bottomCss.chatDock;
+  });
 }
 
 /** World · Space map tool strip bottom. */
@@ -166,11 +172,60 @@ export function resolveRhizohWorldSpaceMapStripBottomCssV0(opts = {}) {
 
 /** World · Space voice dock bottom. */
 export function resolveRhizohWorldSpaceVoiceDockBottomCssV0(opts = {}) {
-  return resolveRhizohUiLayoutV0({
+  return resolveRhizohConversationDockBottomCssV0({
     surface: RHIZOH_UI_SURFACE_V0.WORLD_SPACE,
     drawerOpen: opts.drawerOpen === true,
     mapStripExpanded: opts.mapStripExpanded === true
-  }).bottomCss.voiceDock;
+  });
+}
+
+/**
+ * Unified conversation dock bottom — T0 chat + World · Space voice dock (A5 SSOT).
+ * @param {{
+ *   surface?: string,
+ *   drawerOpen?: boolean,
+ *   mapStripExpanded?: boolean
+ * }} [ctx]
+ */
+export function resolveRhizohConversationDockBottomCssV0(ctx = {}) {
+  const layout = resolveRhizohUiLayoutV0({
+    surface:
+      String(ctx.surface || "").trim() === RHIZOH_UI_SURFACE_V0.WORLD_SPACE
+        ? RHIZOH_UI_SURFACE_V0.WORLD_SPACE
+        : RHIZOH_UI_SURFACE_V0.T0_LIVE,
+    drawerOpen: ctx.drawerOpen === true,
+    mapStripExpanded: ctx.mapStripExpanded === true
+  });
+  return layout.bottomCss.conversationDock;
+}
+
+/**
+ * Shell wrapper layout for RhizohT0ShellChromeV1 + RhizohWorldSpaceVoiceDockV0.
+ * @param {{
+ *   surface?: string,
+ *   drawerOpen?: boolean,
+ *   mapStripExpanded?: boolean,
+ *   publish?: boolean
+ * }} [ctx]
+ */
+export function resolveRhizohConversationDockShellLayoutV0(ctx = {}) {
+  const layout = resolveRhizohUiLayoutV0({
+    surface:
+      String(ctx.surface || "").trim() === RHIZOH_UI_SURFACE_V0.WORLD_SPACE
+        ? RHIZOH_UI_SURFACE_V0.WORLD_SPACE
+        : RHIZOH_UI_SURFACE_V0.T0_LIVE,
+    drawerOpen: ctx.drawerOpen === true,
+    mapStripExpanded: ctx.mapStripExpanded === true,
+    publish: ctx.publish === true
+  });
+  return Object.freeze({
+    schema: RHIZOH_UI_LAYOUT_SCHEMA_V0,
+    surface: layout.surface,
+    drawerOpen: layout.drawerOpen,
+    bottomCss: layout.bottomCss.conversationDock,
+    zIndex: RHIZOH_UI_Z_INDEX_V0.CONVERSATION_DOCK,
+    rem: layout.rem
+  });
 }
 
 /** World · Space left/right map overlays (event stream). */
