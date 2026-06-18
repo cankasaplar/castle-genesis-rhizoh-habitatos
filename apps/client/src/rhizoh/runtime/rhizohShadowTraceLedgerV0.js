@@ -7,6 +7,11 @@
 import { isRhizohLegalPendingHoldV0 } from "./rhizohLegalPendingWaitLoopV0.js";
 import { resolveIngressRouteV0 } from "../ingress/ingress_router.js";
 import { CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 } from "./chessLearningMonitorV0.js";
+import {
+  __resetEpistemicMemoryGraphForTestV0,
+  getEpistemicMemoryGraphComplianceSummaryV0,
+  projectShadowTraceToEpistemicMemoryV0
+} from "./rhizohEpistemicMemoryGraphV0.js";
 
 export const RHIZOH_SHADOW_TRACE_LEDGER_SCHEMA_V0 = "castle.rhizoh.shadow_trace_ledger.v0";
 export const RHIZOH_SHADOW_TRACE_EVENT_V0 = "rhizoh:shadow-trace-ledger-v0";
@@ -135,6 +140,7 @@ export function appendShadowTraceRecordV0(row = {}) {
 
   ringV0.push(record);
   while (ringV0.length > RING_MAX_V0) ringV0.shift();
+  projectShadowTraceToEpistemicMemoryV0(record);
   publishShadowTraceLedgerV0(record);
   return record;
 }
@@ -345,6 +351,7 @@ export function exportShadowComplianceSnapshotV0(label = "checkpoint") {
         councilTriggered: Boolean(lastStress.councilObservation || lastStress.councilTrigger)
       });
     })(),
+    memoryGraph: getEpistemicMemoryGraphComplianceSummaryV0(),
     governance: SHADOW_LEDGER_GOVERNANCE_V0
   });
 
@@ -380,6 +387,7 @@ export function __resetShadowTraceLedgerForTestV0() {
   ringV0.length = 0;
   recordSeqV0 = 0;
   lastStressRunForComplianceV0 = null;
+  __resetEpistemicMemoryGraphForTestV0();
   if (typeof window !== "undefined") {
     delete window.__rhizoh?.shadowTraceLedger;
     delete window.__rhizoh?.shadowComplianceSnapshot;

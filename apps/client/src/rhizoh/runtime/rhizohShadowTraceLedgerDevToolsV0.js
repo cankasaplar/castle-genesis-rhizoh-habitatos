@@ -2,6 +2,7 @@
  * Expose shadow trace ledger on window (sync — core boot, not async legal loop only).
  */
 import { injectEpistemicStressV0 } from "./rhizohEpistemicStressInjectionV0.js";
+import { getEpistemicMemoryGraphSnapshotV0 } from "./rhizohEpistemicMemoryGraphV0.js";
 import {
   exportShadowComplianceSnapshotV0,
   getShadowTraceLedgerSnapshotV0,
@@ -15,6 +16,7 @@ export function ensureShadowTraceLedgerDevToolsV0() {
   window.__rhizoh.shadowTraceLedgerSnapshot = getShadowTraceLedgerSnapshotV0;
   window.__rhizoh.injectShadowEntropyTest = injectShadowEntropyTestV0;
   window.__rhizoh.injectEpistemicStress = injectEpistemicStressV0;
+  window.__rhizoh.epistemicMemoryGraph = getEpistemicMemoryGraphSnapshotV0();
   window.__rhizoh.shadowTraceLedger = getShadowTraceLedgerSnapshotV0();
   return getShadowTraceLedgerSnapshotV0();
 }
