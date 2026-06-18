@@ -8,7 +8,7 @@ import { listChessHistoricalMindsV0 } from "./chessHistoricalMindV0.js";
 
 export const CHESS_MEMORY_STORE_SCHEMA_V0 = "castle.rhizoh.chess_memory_store.v0";
 export const CHESS_MEMORY_STORE_LS_KEY_V0 = "rhizoh.chess_memory_store.v0";
-export const CHESS_MEMORY_GRAPH_VERSION_V0 = 1;
+export const CHESS_MEMORY_GRAPH_VERSION_V0 = 2;
 export const CHESS_MEMORY_MAX_GAMES_V0 = 128;
 
 /** @type {object | null} */
@@ -70,6 +70,21 @@ function migrateStoreV0(raw) {
         ...base.stats,
         totalGamesImported: Array.isArray(raw.games) ? raw.games.length : 0
       },
+      migratedAt: new Date().toISOString()
+    };
+  }
+  if (version < CHESS_MEMORY_GRAPH_VERSION_V0) {
+    return {
+      ...base,
+      ...raw,
+      graphVersion: CHESS_MEMORY_GRAPH_VERSION_V0,
+      games: Array.isArray(raw.games) ? raw.games : [],
+      embeddings: Array.isArray(raw.embeddings) ? raw.embeddings : [],
+      playerStyles:
+        Array.isArray(raw.playerStyles) && raw.playerStyles.length > 0
+          ? raw.playerStyles
+          : seedPlayerStylesFromMindsV0(),
+      stats: { ...base.stats, ...(raw.stats || {}) },
       migratedAt: new Date().toISOString()
     };
   }

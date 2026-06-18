@@ -27,6 +27,12 @@ import { captureChessEvolutionSnapshotV0, RHIZOH_CHESS_EVOLUTION_CURVE_LS_KEY_V0
 import { CHESS_MATCH_ANALYZED_EVENT_V0 } from "./chessLearningBridgeV0.js";
 import { CHESS_CLUSTER_GAME_END_EVENT_V0 } from "./chessGameClusterV0.js";
 import { CHESS_LEARNING_WEIGHTS_EVENT_V0 } from "./chessLearningWeightsV0.js";
+import {
+  readChessUnifiedMemoryGraphV0,
+  mergeChessUnifiedMemoryGraphV0,
+  invalidateChessUnifiedMemoryGraphCacheV0
+} from "./chessUnifiedMemoryGraphV0.js";
+import { syncChessStyleEmbeddingsToStoreV0 } from "./chessStyleEmbeddingV0.js";
 
 export const RHIZOH_CHESS_LEARNING_CHECKPOINT_SCHEMA_V0 = "castle.rhizoh.chess_learning_checkpoint.v1";
 export const RHIZOH_CHESS_LEARNING_CHECKPOINT_LS_KEY_V0 = "rhizoh.chess.learning_checkpoint.v0";
@@ -113,6 +119,7 @@ export function captureChessLearningCheckpointV0(extra = {}) {
   const memory = readChessMemoryStoreV0();
   const openingEntries = listRhizohOpeningBookV0();
   const evolution = captureChessEvolutionSnapshotV0({ reason: extra.reason || "checkpoint" });
+  const unifiedGraph = readChessUnifiedMemoryGraphV0();
   const deployTag = extra.deployTag || resolveChessLearningDeployTagV0();
   const checkpointVersion = 1;
   const snapshotId = extra.snapshotId || snapshotIdV0();
@@ -150,11 +157,18 @@ export function captureChessLearningCheckpointV0(extra = {}) {
       games: (memory.games || []).map((g) => ({ ...g }))
     }),
     evolution: Object.freeze({ ...evolution }),
+    unifiedGraph: Object.freeze({
+      graphVersion: unifiedGraph.graphVersion,
+      stats: unifiedGraph.stats,
+      nodes: (unifiedGraph.nodes || []).map((n) => ({ ...n })),
+      edges: (unifiedGraph.edges || []).map((e) => ({ ...e }))
+    }),
     trainingResume: Object.freeze({
       matchesLearned: weights.matchesLearned,
       lifetimeMoves: lifetime.movesSeen || 0,
       corpusGames: memory.games?.length || 0,
       openingGames: openingEntries.reduce((sum, row) => sum + (Number(row.games) || 0), 0),
+      positionNodes: unifiedGraph.stats?.positionCount || 0,
       weightFingerprint: weightFingerprintV0(weights)
     })
   });
@@ -326,6 +340,13 @@ export function resumeChessLearningFromCheckpointV0(opts = {}) {
   writeJsonLsV0(CHESS_MEMORY_STORE_LS_KEY_V0, mergedCorpus);
   invalidateChessLifetimeStatsCacheV0();
   invalidateChessMemoryStoreCacheV0();
+
+  if (best.unifiedGraph?.nodes?.length || best.unifiedGraph?.edges?.length) {
+    mergeChessUnifiedMemoryGraphV0(best.unifiedGraph);
+    invalidateChessUnifiedMemoryGraphCacheV0();
+    syncChessStyleEmbeddingsToStoreV0();
+    regressionsFixed.push("unifiedGraph.merge");
+  }
 
   writeDeployMetaV0({
     resumeCount: readDeployMetaV0().resumeCount + 1,
