@@ -8,19 +8,19 @@ import {
 } from "../chessClusterSimulationPolicyV0.js";
 
 describe("chessClusterSimulationPolicyV0", () => {
-  it("defaults to cluster_sim_1_0 for boot", () => {
+  it("defaults to cluster_sim_45_0 for boot", () => {
     const boot = resolveChessClusterBootOptsV0();
-    expect(boot.timeControlId).toBe(CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0);
+    expect(boot.timeControlId).toBe("cluster_sim_45_0");
     expect(boot.maxPly).toBe(CHESS_CLUSTER_MAX_PLY_V0);
   });
 
-  it("resolves cluster time control with 60s initial", () => {
-    const tc = resolveChessClusterTimeControlV0("cluster_sim_1_0");
-    expect(tc.initialMs).toBe(60_000);
+  it("resolves cluster_sim_45_0 with 45s initial", () => {
+    const tc = resolveChessClusterTimeControlV0("cluster_sim_45_0");
+    expect(tc.initialMs).toBe(45_000);
   });
 
   it("ends game at max ply cap", () => {
-    expect(shouldEndChessClusterGameByPlyCapV0(119)).toBe(false);
-    expect(shouldEndChessClusterGameByPlyCapV0(120)).toBe(true);
+    expect(shouldEndChessClusterGameByPlyCapV0(79)).toBe(false);
+    expect(shouldEndChessClusterGameByPlyCapV0(80)).toBe(true);
   });
 });
