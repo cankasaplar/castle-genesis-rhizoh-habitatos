@@ -65,6 +65,16 @@ ENGINE BEHAVIOR UPDATE (inference only)
 
 **Resume rule:** never decrease `matchesLearned`, `lifetimeMoves`, opening game counts, or corpus games.
 
+### Unified Chess Memory Graph ✅ (Option C — PR-B foundation)
+
+- `chessUnifiedMemoryGraphV0.js` — single notebook: PositionNode / MoveEdge / EvalEdge / WeightUpdateEdge
+- `chessUnifiedGraphProjectorV0.js` — project corpus + live + learning into graph
+- `chessHistoryCorpusBundlesV0.js` — GM expansion, engine league, opening tree, tactical motifs
+- `chessCorpusExpansionLoaderV0.js` — idempotent bundle load
+- `chessStyleEmbeddingV0.js` — lightweight style vectors from corpus exposure
+- `window.__rhizoh.chessUnifiedMemoryGraph()` — unified graph report
+- Deploy merge: checkpoint + corpus + lifetime → unified graph → weight matrix
+
 ---
 
 ## PR split
@@ -101,8 +111,10 @@ ENGINE BEHAVIOR UPDATE (inference only)
 window.__rhizoh.chessHistoryBrain()
 window.__rhizoh.chessEvolutionCurve()  // unified learning timeline
 window.__rhizoh.chessLearningCheckpoint()  // deploy-safe learning snapshot
+window.__rhizoh.chessUnifiedMemoryGraph()  // single notebook graph
 window.__rhizoh.freezeChessLearningCheckpoint()
 window.__rhizoh.exportChessLearningCheckpointJson()
+window.__rhizoh.rebuildChessUnifiedGraph()
 window.__rhizoh.importChessPgn(`[White "Carlsen"]...`)
 ```
 

@@ -30,6 +30,7 @@ describe("chessHistoryBrainReportV0", () => {
     expect(report.qualityTierHistogram.gm_classical).toBeGreaterThanOrEqual(2);
     expect(report.playerStylesKnown.length).toBeGreaterThanOrEqual(3);
     expect(report.intelligenceEvolution.weightMatrix).toBeTruthy();
-    expect(report.batchTrainer.status).toBe("pending_pr_c");
+    expect(report.batchTrainer.status).toBe("graph_wired_pr_c_next");
+    expect(report.unifiedMemoryGraph).toHaveProperty("stats");
   });
 });

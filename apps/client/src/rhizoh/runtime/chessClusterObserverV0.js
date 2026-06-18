@@ -75,6 +75,8 @@ export function observeChessClusterMoveV0(slot, moveRow, policy) {
     matchId: slot.matchId,
     ply: moveRow.ply,
     san: moveRow.san,
+    fenBefore: moveRow.fenBefore || null,
+    fenAfter: moveRow.fenAfter || null,
     agentId: moveRow.agentId,
     policyRisk: policy?.riskProfile || null,
     evalDelta,

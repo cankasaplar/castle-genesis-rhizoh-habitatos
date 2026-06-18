@@ -12,6 +12,8 @@ import {
 } from "./chessHistoryCorpusSeedV0.js";
 import { loadChessHistorySeedCorpusV0, importChessHistoryPgnV0, importChessHistoryPgnBundleV0 } from "./chessHistoryLoaderV0.js";
 import { readChessMemoryStoreV0, listChessMemoryGamesV0 } from "./chessMemoryStoreV0.js";
+import { readChessUnifiedMemoryGraphV0 } from "./chessUnifiedMemoryGraphV0.js";
+import { computeChessStyleEmbeddingsV0 } from "./chessStyleEmbeddingV0.js";
 
 export const CHESS_HISTORY_BRAIN_REPORT_SCHEMA_V0 = "castle.rhizoh.chess_history_brain_report.v0";
 
@@ -72,6 +74,8 @@ export function buildChessHistoryBrainReportV0() {
 
   const store = readChessMemoryStoreV0();
   const games = listChessMemoryGamesV0(128);
+  const unifiedGraph = readChessUnifiedMemoryGraphV0();
+  const styleEmbeddings = computeChessStyleEmbeddingsV0();
   const session = buildRhizohChessLearningReportV0();
   const weights = readChessLearningWeightsV0();
 
@@ -85,11 +89,21 @@ export function buildChessHistoryBrainReportV0() {
     openingHistogram: resolveOpeningHistogramFromCorpusV0(games),
     playerStylesKnown: Object.freeze((store.playerStyles || []).map((s) => Object.freeze({ ...s }))),
     playerStyleExposure: resolvePlayerStyleExposureV0(games, store.playerStyles || []),
-    embeddingsCount: store.embeddings?.length || 0,
+    embeddingsCount: store.embeddings?.length || styleEmbeddings.embeddings.length,
+    unifiedMemoryGraph: Object.freeze({
+      graphVersion: unifiedGraph.graphVersion,
+      stats: unifiedGraph.stats,
+      probe: "window.__rhizoh.chessUnifiedMemoryGraph()"
+    }),
+    styleEmbeddings: Object.freeze({
+      count: styleEmbeddings.embeddings.length,
+      ready: styleEmbeddings.embeddings.filter((e) => e.embeddingReady).length,
+      note: "PR-B lightweight vectors from corpus + graph eval edges"
+    }),
     batchTrainer: Object.freeze({
-      status: "pending_pr_c",
+      status: "graph_wired_pr_c_next",
       lastRunAt: null,
-      note: "offline batch trainer not wired — PR-C"
+      note: "unified graph receives weight_update edges; batch trainer = PR-C"
     }),
     intelligenceEvolution: Object.freeze({
       weightMatrix: Object.freeze({
@@ -110,8 +124,10 @@ export function buildChessHistoryBrainReportV0() {
     }),
     memoryLayout: Object.freeze({
       storeKey: "rhizoh.chess_memory_store.v0",
-      paths: Object.freeze(["games", "embeddings", "player_styles"]),
-      graphMigratesOnDeploy: true
+      graphKey: "rhizoh.chess.unified_memory_graph.v0",
+      paths: Object.freeze(["games", "embeddings", "player_styles", "unified_graph"]),
+      graphMigratesOnDeploy: true,
+      singleNotebook: true
     }),
     atMs: Date.now()
   });
