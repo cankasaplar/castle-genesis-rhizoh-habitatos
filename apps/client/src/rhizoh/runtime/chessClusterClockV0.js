@@ -1,12 +1,12 @@
 /**
- * Chess cluster clocks — per-board time limits from arena session time controls.
+ * Chess cluster clocks — per-board time limits from cluster simulation policy.
  * RESEARCH-ONLY
  */
 
 import {
-  readChessArenaSessionV0,
-} from "./chessArenaSessionV0.js";
-import { resolveChessClusterTimeControlV0 } from "./chessClusterSimulationPolicyV0.js";
+  CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0,
+  resolveChessClusterTimeControlV0
+} from "./chessClusterSimulationPolicyV0.js";
 
 export const CHESS_CLUSTER_CLOCK_SCHEMA_V0 = "castle.rhizoh.chess_cluster_clock.v0";
 
@@ -15,7 +15,7 @@ export const CHESS_CLUSTER_CLOCK_SCHEMA_V0 = "castle.rhizoh.chess_cluster_clock.
  */
 export function createChessClusterClockStateV0(timeControlId) {
   const tc = resolveChessClusterTimeControlV0(
-    timeControlId || readChessArenaSessionV0().timeControlId
+    timeControlId || CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0
   );
   return Object.freeze({
     schema: CHESS_CLUSTER_CLOCK_SCHEMA_V0,
