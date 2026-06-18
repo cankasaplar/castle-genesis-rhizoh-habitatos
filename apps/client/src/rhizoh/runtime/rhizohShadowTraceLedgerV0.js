@@ -255,6 +255,16 @@ export function appendShadowTraceFromChessMoveAnchorV0(row = {}) {
   });
 }
 
+/** @type {object|null} */
+let lastStressRunForComplianceV0 = null;
+
+/**
+ * @param {object|null} run — from injectEpistemicStressV0
+ */
+export function setLastStressRunForComplianceV0(run) {
+  lastStressRunForComplianceV0 = run?.ok ? run : null;
+}
+
 /**
  * Controlled entropy injection for shadow pipeline validation (DevTools / legal hold).
  */
@@ -324,6 +334,17 @@ export function exportShadowComplianceSnapshotV0(label = "checkpoint") {
       lastTrigger: councilRows[councilRows.length - 1]?.policyContext?.triggers || []
     }),
     timeoutCount: timeoutRows.length,
+    stressInjection: (() => {
+      const lastStress = lastStressRunForComplianceV0;
+      if (!lastStress?.ok) return null;
+      return Object.freeze({
+        stressRunId: lastStress.stressRunId,
+        profile: lastStress.profile,
+        recordCount: lastStress.recordCount,
+        conflictGraph: lastStress.conflictGraph,
+        councilTriggered: Boolean(lastStress.councilObservation || lastStress.councilTrigger)
+      });
+    })(),
     governance: SHADOW_LEDGER_GOVERNANCE_V0
   });
 
@@ -358,6 +379,7 @@ export function getShadowTraceLedgerSnapshotV0() {
 export function __resetShadowTraceLedgerForTestV0() {
   ringV0.length = 0;
   recordSeqV0 = 0;
+  lastStressRunForComplianceV0 = null;
   if (typeof window !== "undefined") {
     delete window.__rhizoh?.shadowTraceLedger;
     delete window.__rhizoh?.shadowComplianceSnapshot;

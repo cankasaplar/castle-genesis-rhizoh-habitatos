@@ -87,6 +87,7 @@ describe("rhizohShadowTraceLedgerV0", () => {
     expect(snap.label).toBe("test_checkpoint");
     expect(snap.timeoutCount).toBeGreaterThanOrEqual(1);
     expect(snap.entropySummary.driftEventCount).toBeGreaterThanOrEqual(1);
+    expect(snap).toHaveProperty("stressInjection");
   });
 
   it("does not append when shadow mode inactive", async () => {
