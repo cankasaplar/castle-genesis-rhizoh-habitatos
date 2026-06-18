@@ -166,7 +166,13 @@ export async function runEpistemicCouncilDryRunV0(triggerEval) {
     window.__rhizoh.epistemicCouncil = Object.freeze({
       lastSession: session,
       lastObservation: observation,
-      sessionCount: sessionSeqV0
+      sessionCount: sessionSeqV0,
+      triggerDryRun: (ctx = {}) => {
+        const ev = evaluateCouncilTriggerV0(ctx);
+        if (!ev) return null;
+        void runEpistemicCouncilDryRunV0(ev).catch(() => null);
+        return ev;
+      }
     });
     try {
       window.dispatchEvent(

@@ -5,6 +5,8 @@
  */
 
 import { isRhizohLegalPendingHoldV0 } from "./rhizohLegalPendingWaitLoopV0.js";
+import { resolveIngressRouteV0 } from "../ingress/ingress_router.js";
+import { CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 } from "./chessLearningMonitorV0.js";
 
 export const RHIZOH_SHADOW_TRACE_LEDGER_SCHEMA_V0 = "castle.rhizoh.shadow_trace_ledger.v0";
 export const RHIZOH_SHADOW_TRACE_EVENT_V0 = "rhizoh:shadow-trace-ledger-v0";
@@ -41,6 +43,7 @@ const ringV0 = [];
 
 /**
  * Shadow Mode = parallel observation runtime without execution authority.
+ * Active during legal hold, legal preamble UI, or live chess cluster (pre-READY observation).
  * @returns {boolean}
  */
 export function isRhizohShadowModeActiveV0() {
@@ -49,6 +52,16 @@ export function isRhizohShadowModeActiveV0() {
   }
   try {
     if (isRhizohLegalPendingHoldV0()) return true;
+    const ingress = resolveIngressRouteV0();
+    if (ingress?.route === "legal_preamble") return true;
+    if (ingress?.required && !ingress?.acked) return true;
+  } catch {
+    /* noop */
+  }
+  try {
+    if (typeof window !== "undefined" && window.__rhizoh?.chessGameCluster?.running) {
+      return true;
+    }
   } catch {
     /* noop */
   }
@@ -56,6 +69,30 @@ export function isRhizohShadowModeActiveV0() {
     return true;
   }
   return false;
+}
+
+/**
+ * @returns {string}
+ */
+export function resolveShadowModeReasonV0() {
+  if (typeof window !== "undefined" && window.__rhizoh?.shadowMode?.force === true) {
+    return "force_flag";
+  }
+  try {
+    if (isRhizohLegalPendingHoldV0()) return "legal_pending_hold";
+    const ingress = resolveIngressRouteV0();
+    if (ingress?.route === "legal_preamble") return "ingress_legal_preamble";
+    if (ingress?.required && !ingress?.acked) return "legal_required_unacked";
+  } catch {
+    /* noop */
+  }
+  if (typeof window !== "undefined" && window.__rhizoh?.chessGameCluster?.running) {
+    return "chess_cluster_observation";
+  }
+  if (typeof import.meta !== "undefined" && import.meta.env?.VITE_RHIZOH_SHADOW_MODE === "1") {
+    return "env_shadow_mode";
+  }
+  return "inactive";
 }
 
 /**
@@ -181,6 +218,7 @@ export function appendShadowTraceFromStockfishTimeoutV0(detail = {}) {
     entropyScore: 0.65,
     causalChainId: `stockfish_timeout_${String(detail.matchId || "na")}_${Date.now()}`,
     matchId: detail.matchId || null,
+    slotId: detail.slotId ?? null,
     policyContext: Object.freeze({
       movetimeMs: detail.movetimeMs ?? null,
       depth: detail.depth ?? null,
@@ -193,16 +231,66 @@ export function appendShadowTraceFromStockfishTimeoutV0(detail = {}) {
 }
 
 /**
+ * Deterministic anchor trace — slot 0 every move seeds the evidence chain.
+ * @param {{ san?: string, slotId?: number, matchId?: string, moveNumber?: number, color?: string }} row
+ */
+export function appendShadowTraceFromChessMoveAnchorV0(row = {}) {
+  const slotId = row.slotId ?? null;
+  if (slotId !== CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 && slotId != null) return null;
+  return appendShadowTraceRecordV0({
+    sourceSystem: SHADOW_SOURCE_SYSTEM_V0.CHESS,
+    eventType: "CHESS_MOVE_ANCHOR",
+    entropyScore: 0.05,
+    causalChainId: `anchor_${String(row.matchId || "na")}_${String(row.moveNumber ?? "x")}`,
+    matchId: row.matchId || null,
+    slotId: slotId ?? CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0,
+    policyContext: Object.freeze({
+      san: row.san || null,
+      color: row.color || null,
+      moveNumber: row.moveNumber ?? null
+    }),
+    hypotheticalOutcome:
+      "If executed in live kernel: move would advance game state and clock; shadow records only.",
+    payload: row
+  });
+}
+
+/**
+ * Controlled entropy injection for shadow pipeline validation (DevTools / legal hold).
+ */
+export function injectShadowEntropyTestV0(opts = {}) {
+  const drift = appendShadowTraceFromDriftEventV0({
+    kind: "DRIFT_EVENT",
+    severity: "warn",
+    eventType: "SYNTHETIC_DRIFT_INJECTION",
+    causalChainId: `synthetic_${Date.now().toString(36)}`,
+    matchId: opts.matchId || "cluster_0_synthetic",
+    slotId: opts.slotId ?? CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0,
+    entropyScore: Number(opts.entropyScore) || 0.85,
+    canonicalPattern: "cluster",
+    mirrorPattern: "jump"
+  });
+  const timeout = appendShadowTraceFromStockfishTimeoutV0({
+    matchId: opts.matchId || "cluster_0_synthetic",
+    slotId: opts.slotId ?? 0,
+    movetimeMs: 320,
+    depth: 14,
+    fen: opts.fen || "synthetic"
+  });
+  return Object.freeze({ drift, timeout, shadowModeReason: resolveShadowModeReasonV0() });
+}
+
+/**
  * Compliance / YouTube-style deterministic snapshot boundary (state export, not video).
  * @param {string} [label]
  */
 export function exportShadowComplianceSnapshotV0(label = "checkpoint") {
+  const all = [...ringV0];
   const snap = getShadowTraceLedgerSnapshotV0();
-  const driftRows = snap.recent.filter((r) =>
-    String(r.eventType || "").includes("DRIFT")
-  );
-  const councilRows = snap.recent.filter((r) => r.sourceSystem === SHADOW_SOURCE_SYSTEM_V0.COUNCIL);
-  const timeoutRows = snap.recent.filter((r) => r.eventType === "STOCKFISH_TIMEOUT");
+  const driftRows = all.filter((r) => String(r.eventType || "").includes("DRIFT"));
+  const councilRows = all.filter((r) => r.sourceSystem === SHADOW_SOURCE_SYSTEM_V0.COUNCIL);
+  const timeoutRows = all.filter((r) => r.eventType === "STOCKFISH_TIMEOUT");
+  const anchorRows = all.filter((r) => r.eventType === "CHESS_MOVE_ANCHOR");
 
   const entropySum = driftRows.reduce((a, r) => a + (Number(r.entropyScore) || 0), 0);
   const entropyMean = driftRows.length ? entropySum / driftRows.length : 0;
@@ -213,7 +301,9 @@ export function exportShadowComplianceSnapshotV0(label = "checkpoint") {
     label,
     atMs: Date.now(),
     shadowMode: isRhizohShadowModeActiveV0(),
+    shadowModeReason: resolveShadowModeReasonV0(),
     recordCount: snap.recordCount,
+    anchorMoveCount: anchorRows.length,
     entropySummary: Object.freeze({
       mean: Number(entropyMean.toFixed(4)),
       max: driftRows.reduce((m, r) => Math.max(m, Number(r.entropyScore) || 0), 0),
@@ -256,6 +346,7 @@ export function getShadowTraceLedgerSnapshotV0() {
   return Object.freeze({
     schema: RHIZOH_SHADOW_TRACE_LEDGER_SCHEMA_V0,
     shadowMode: isRhizohShadowModeActiveV0(),
+    shadowModeReason: resolveShadowModeReasonV0(),
     recordCount: ringV0.length,
     bySource,
     recent,

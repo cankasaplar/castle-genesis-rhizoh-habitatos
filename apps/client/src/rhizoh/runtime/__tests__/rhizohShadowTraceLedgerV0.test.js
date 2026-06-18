@@ -7,7 +7,9 @@ import {
   appendShadowTraceRecordV0,
   exportShadowComplianceSnapshotV0,
   getShadowTraceLedgerSnapshotV0,
+  injectShadowEntropyTestV0,
   isRhizohShadowModeActiveV0,
+  resolveShadowModeReasonV0,
   SHADOW_LEDGER_GOVERNANCE_V0
 } from "../rhizohShadowTraceLedgerV0.js";
 
@@ -19,12 +21,31 @@ describe("rhizohShadowTraceLedgerV0", () => {
   beforeEach(() => {
     __resetShadowTraceLedgerForTestV0();
     if (typeof window !== "undefined") {
-      window.__rhizoh = { shadowMode: { force: true } };
+      window.localStorage?.removeItem("rhizoh_chess_telemetry_level_v0");
+      window.__rhizoh = { shadowMode: { force: true }, chessGameCluster: { running: true } };
     }
   });
 
-  it("activates shadow mode under legal hold mock", () => {
-    expect(isRhizohShadowModeActiveV0()).toBe(true);
+  it("activates shadow mode when chess cluster is running", async () => {
+    vi.resetModules();
+    vi.doMock("../rhizohLegalPendingWaitLoopV0.js", () => ({
+      isRhizohLegalPendingHoldV0: () => false
+    }));
+    vi.doMock("../ingress/ingress_router.js", () => ({
+      resolveIngressRouteV0: () => ({ route: "app", required: false, acked: true })
+    }));
+    if (typeof window === "undefined") return;
+    window.__rhizoh = { chessGameCluster: { running: true } };
+    const mod = await import("../rhizohShadowTraceLedgerV0.js");
+    expect(mod.isRhizohShadowModeActiveV0()).toBe(true);
+    expect(mod.resolveShadowModeReasonV0()).toBe("chess_cluster_observation");
+  });
+
+  it("injects synthetic entropy for pipeline validation", () => {
+    const out = injectShadowEntropyTestV0({ matchId: "cluster_0_test" });
+    expect(out?.drift?.eventType).toContain("SYNTHETIC");
+    expect(out?.timeout?.eventType).toBe("STOCKFISH_TIMEOUT");
+    expect(getShadowTraceLedgerSnapshotV0().recordCount).toBeGreaterThanOrEqual(2);
   });
 
   it("appends drift envelope with hypothetical outcome", () => {
@@ -73,8 +94,11 @@ describe("rhizohShadowTraceLedgerV0", () => {
     vi.doMock("../rhizohLegalPendingWaitLoopV0.js", () => ({
       isRhizohLegalPendingHoldV0: () => false
     }));
+    vi.doMock("../ingress/ingress_router.js", () => ({
+      resolveIngressRouteV0: () => ({ route: "app", required: false, acked: true })
+    }));
     if (typeof window !== "undefined") {
-      window.__rhizoh = { shadowMode: { force: false } };
+      window.__rhizoh = { shadowMode: { force: false }, chessGameCluster: { running: false } };
     }
     const mod = await import("../rhizohShadowTraceLedgerV0.js");
     mod.__resetShadowTraceLedgerForTestV0();
