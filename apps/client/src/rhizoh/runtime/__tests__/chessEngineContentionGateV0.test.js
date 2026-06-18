@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   getChessEngineContentionSnapshotV0,
+  isChessClusterArenaOpenV0,
+  publishChessClusterArenaOpenV0,
   resolveChessMoveTimeoutBufferMsV0,
-  shouldDeferArenaPrewarmV0
+  shouldDeferArenaEngineWorkV0,
+  shouldDeferArenaPrewarmV0,
+  shouldDeferMapChessArenaOpenV0
 } from "../chessEngineContentionGateV0.js";
 import { CHESS_ENGINE_TASK_KIND_V0 } from "../chessEngineTaskQueueV0.js";
 
@@ -15,6 +19,21 @@ describe("chessEngineContentionGateV0", () => {
     window.__rhizoh.chessGameCluster = { running: true };
     window.__rhizoh.chessScheduler = { chessLock: true };
     expect(shouldDeferArenaPrewarmV0()).toBe(true);
+    expect(shouldDeferArenaEngineWorkV0()).toBe(true);
+  });
+
+  it("shouldDeferMapChessArenaOpenV0 when cluster arena modal is open", () => {
+    publishChessClusterArenaOpenV0(true);
+    expect(isChessClusterArenaOpenV0()).toBe(true);
+    expect(shouldDeferMapChessArenaOpenV0()).toBe(true);
+    publishChessClusterArenaOpenV0(false);
+    expect(isChessClusterArenaOpenV0()).toBe(false);
+  });
+
+  it("shouldDeferArenaEngineWorkV0 when cluster arena open even without lock", () => {
+    window.__rhizoh.chessGameCluster = { running: true };
+    publishChessClusterArenaOpenV0(true);
+    expect(shouldDeferArenaEngineWorkV0()).toBe(true);
   });
 
   it("resolveChessMoveTimeoutBufferMsV0 gives cluster moves more wall time", () => {

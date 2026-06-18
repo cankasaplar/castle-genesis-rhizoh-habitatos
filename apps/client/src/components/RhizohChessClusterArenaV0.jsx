@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState } from "react";
+import React, { memo, useEffect, useMemo, useState } from "react";
 import {
   CHESS_CLUSTER_MOVE_EVENT_V0,
   CHESS_CLUSTER_SLOT_COUNT_V0,
@@ -6,6 +6,8 @@ import {
   listChessClusterSlotsV0,
   isChessGameClusterRunningV0
 } from "../rhizoh/runtime/chessGameClusterV0.js";
+import { publishChessClusterArenaOpenV0 } from "../rhizoh/runtime/chessEngineContentionGateV0.js";
+import { resolveChessClusterTimeControlV0 } from "../rhizoh/runtime/chessClusterSimulationPolicyV0.js";
 import {
   CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0,
   getChessStockfishEngineStatusV0
@@ -218,7 +220,14 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
   uiLocale = "en"
 }) {
   const tr = uiLocale === "tr";
-  const { boardColors, pieceBold, timeControl } = useChessArenaDisplaySettingsV0();
+  const { boardColors, pieceBold } = useChessArenaDisplaySettingsV0();
+  const [clusterTimeControlId, setClusterTimeControlId] = useState(
+    () => window.__rhizoh?.chessGameCluster?.timeControlId || null
+  );
+  const clusterTimeControl = useMemo(
+    () => resolveChessClusterTimeControlV0(clusterTimeControlId),
+    [clusterTimeControlId]
+  );
   const [slots, setSlots] = useState(() => listChessClusterSlotsV0());
   const activeSlotCount = slots.filter((s) => s?.status === "active").length;
   const [highlightSlot, setHighlightSlot] = useState(null);
@@ -226,6 +235,11 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
   const [teacherStatus, setTeacherStatus] = useState(() => getChessStockfishEngineStatusV0());
   const [routerSnap, setRouterSnap] = useState(() => window.__rhizoh?.chessGameRouter || null);
   const [monitor, setMonitor] = useState(() => getChessLearningMonitorSnapshotV0("ui_mount"));
+
+  useEffect(() => {
+    publishChessClusterArenaOpenV0(Boolean(open));
+    return () => publishChessClusterArenaOpenV0(false);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -236,6 +250,7 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
       setRouterSnap(window.__rhizoh?.chessGameRouter || null);
       setMonitor(getChessLearningMonitorSnapshotV0("poll"));
       setTickCount(window.__rhizoh?.chessGameCluster?.tickCount ?? 0);
+      setClusterTimeControlId(window.__rhizoh?.chessGameCluster?.timeControlId || null);
     };
     const onEngineStatus = (ev) => {
       if (ev?.detail?.status) setTeacherStatus(ev.detail.status);
@@ -299,8 +314,8 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
             </h2>
             <p className="text-[10px] text-white/45 sm:text-[11px]">
               {tr
-                ? `#1 Rhizoh AI vs Stockfish · tahta: ${timeControl.labelTr} · ${boardColors.label || "classic"}`
-                : `#1 Rhizoh AI vs Stockfish · ${timeControl.labelEn} · ${boardColors.label || "classic"}`}
+                ? `#1 Rhizoh AI vs Stockfish · tahta: ${clusterTimeControl.labelTr} · ${boardColors.label || "classic"}`
+                : `#1 Rhizoh AI vs Stockfish · ${clusterTimeControl.labelEn} · ${boardColors.label || "classic"}`}
             </p>
           </div>
           <button
@@ -324,13 +339,16 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
               {tr ? "motor kuyruğu" : "engine queue"}: {routerSnap?.queuedOps ?? 0}
             </span>
             <span>{tr ? "öğretmen" : "teacher"}: {teacherLabel}</span>
-            <span>{timeControl.labelTr || padded[0]?.clock?.timeControlId || "—"}</span>
+            <span>{clusterTimeControl.labelTr || clusterTimeControl.labelEn || "—"}</span>
+            <span className="text-white/35">
+              {tr ? "· saat ply≥1" : "· clock after move 1"}
+            </span>
           </div>
           <LearningStripV0
             monitor={monitor}
             activeSlotCount={activeSlotCount}
             tr={tr}
-            timeControlLabel={tr ? timeControl.labelTr : timeControl.labelEn}
+            timeControlLabel={tr ? clusterTimeControl.labelTr : clusterTimeControl.labelEn}
           />
         </div>
 
