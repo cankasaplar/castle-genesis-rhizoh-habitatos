@@ -76,6 +76,15 @@ describe("chessLearningMonitorV0", () => {
     expect(window.__rhizoh.chessLearningMonitor).toBeTruthy();
   });
 
+  it("installs DevTools live reader (snapshot object is not callable)", () => {
+    ensureChessLearningMonitorListenersV0();
+    expect(typeof window.__RHIZOH_CHESS_LEARNING_LIVE__).toBe("function");
+    expect(typeof window.__rhizoh.chessLearningMonitor).toBe("object");
+    const live = window.__RHIZOH_CHESS_LEARNING_LIVE__();
+    expect(live.schema).toBe("castle.rhizoh.chess_learning_monitor.v0");
+    expect(live.measurement).toBeTruthy();
+  });
+
   it("startChessLearningMeasurementV0 exposes counters", () => {
     __resetChessLearningMonitorForTestV0();
     startChessLearningMeasurementV0();

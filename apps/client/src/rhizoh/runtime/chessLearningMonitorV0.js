@@ -126,6 +126,11 @@ export function getChessLearningMonitorSnapshotV0(reason = "poll") {
 
 let listenersInstalledV0 = false;
 
+/** Live snapshot — prefer over stale `window.__rhizoh.chessLearningMonitor` in DevTools. */
+export function readChessLearningMonitorLiveV0(reason = "live") {
+  return getChessLearningMonitorSnapshotV0(reason);
+}
+
 export function ensureChessLearningMonitorListenersV0() {
   if (typeof window === "undefined" || listenersInstalledV0) return;
   listenersInstalledV0 = true;
@@ -139,6 +144,7 @@ export function ensureChessLearningMonitorListenersV0() {
   window.addEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, () => {
     publishChessLearningMonitorV0("engine_status");
   });
+  window.__RHIZOH_CHESS_LEARNING_LIVE__ = () => readChessLearningMonitorLiveV0("devtools");
   publishChessLearningMonitorV0("boot");
 }
 
