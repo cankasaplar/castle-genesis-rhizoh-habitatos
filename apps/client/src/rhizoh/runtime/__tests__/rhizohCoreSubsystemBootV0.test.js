@@ -17,7 +17,8 @@ vi.mock("../rhizohLearningCoreBootV0.js", () => ({
 }));
 
 vi.mock("../rhizohLegalPendingWaitLoopV0.js", () => ({
-  startRhizohLegalPendingWaitLoopV0: vi.fn(() => () => {})
+  startRhizohLegalPendingWaitLoopV0: vi.fn(() => () => {}),
+  isRhizohLegalPendingHoldV0: vi.fn(() => false)
 }));
 
 import { runDomainGateForPathV0 } from "../rhizohDomainNervousSystemV0.js";
