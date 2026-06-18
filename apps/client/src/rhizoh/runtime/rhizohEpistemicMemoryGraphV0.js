@@ -5,6 +5,8 @@
  */
 
 import { foldWalSegmentHashV0, WAL_HASH_CHAIN_GENESIS_V0 } from "./continuity/walHashChainV0.js";
+import { isRhizohLegalPendingHoldV0 } from "./rhizohLegalPendingWaitLoopV0.js";
+import { resolveIngressRouteV0 } from "../ingress/ingress_router.js";
 
 export const EPISTEMIC_MEMORY_GRAPH_SCHEMA_V0 = "castle.rhizoh.epistemic_memory_graph.v0";
 export const EPISTEMIC_MEMORY_GRAPH_EVENT_V0 = "rhizoh:epistemic-memory-graph-v0";
@@ -57,7 +59,18 @@ function resolveShadowModeForMemoryGraphV0() {
   if (typeof window !== "undefined" && window.__rhizoh?.shadowTraceLedger?.shadowMode === true) {
     return true;
   }
+  try {
+    if (isRhizohLegalPendingHoldV0()) return true;
+    const ingress = resolveIngressRouteV0();
+    if (ingress?.route === "legal_preamble") return true;
+    if (ingress?.required && !ingress?.acked) return true;
+  } catch {
+    /* noop */
+  }
   if (typeof window !== "undefined" && window.__rhizoh?.chessGameCluster?.running) return true;
+  if (typeof import.meta !== "undefined" && import.meta.env?.VITE_RHIZOH_SHADOW_MODE === "1") {
+    return true;
+  }
   return false;
 }
 
@@ -150,9 +163,11 @@ function trimGraphV0() {
 
 /**
  * @param {object} record — shadow trace ledger row
+ * @param {{ trustedCaller?: boolean }} [opts]
  */
-export function projectShadowTraceToEpistemicMemoryV0(record) {
-  if (!record || !resolveShadowModeForMemoryGraphV0()) return null;
+export function projectShadowTraceToEpistemicMemoryV0(record, opts = {}) {
+  if (!record) return null;
+  if (!opts.trustedCaller && !resolveShadowModeForMemoryGraphV0()) return null;
   if (nodeByShadowRecordIdV0.has(record.recordId)) {
     return nodesV0.find((n) => n.nodeId === nodeByShadowRecordIdV0.get(record.recordId)) || null;
   }
@@ -237,9 +252,9 @@ export function projectShadowTraceToEpistemicMemoryV0(record) {
  * Project stress conflict-graph lenses onto memory graph.
  * @param {{ stressRunId: string, conflictGraph: object, councilObservation?: object|null, matchId?: string, slotId?: number }} input
  */
-export function projectStressConflictGraphToEpistemicMemoryV0(input = {}) {
+export function projectStressConflictGraphToEpistemicMemoryV0(input = {}, opts = {}) {
   if (!input.stressRunId || !input.conflictGraph?.nodes?.length) return Object.freeze([]);
-  if (!resolveShadowModeForMemoryGraphV0()) return Object.freeze([]);
+  if (!opts.trustedCaller && !resolveShadowModeForMemoryGraphV0()) return Object.freeze([]);
 
   const hub = ensureStressRunHubNodeV0(input.stressRunId, {
     matchId: input.matchId,

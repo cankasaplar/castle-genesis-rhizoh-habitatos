@@ -145,7 +145,7 @@ export function appendShadowTraceRecordV0(row = {}) {
 
   ringV0.push(record);
   while (ringV0.length > RING_MAX_V0) ringV0.shift();
-  projectShadowTraceToEpistemicMemoryV0(record);
+  projectShadowTraceToEpistemicMemoryV0(record, { trustedCaller: true });
   publishShadowTraceLedgerV0(record);
   return record;
 }

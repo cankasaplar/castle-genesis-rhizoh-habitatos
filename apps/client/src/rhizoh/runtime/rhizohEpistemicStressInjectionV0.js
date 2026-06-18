@@ -309,13 +309,20 @@ export async function injectEpistemicStressV0(opts = {}) {
   lastStressRunV0 = result;
   setLastStressRunForComplianceV0(result);
 
-  projectStressConflictGraphToEpistemicMemoryV0({
-    stressRunId,
-    conflictGraph,
-    councilObservation,
-    matchId,
-    slotId
-  });
+  projectStressConflictGraphToEpistemicMemoryV0(
+    {
+      stressRunId,
+      conflictGraph,
+      councilObservation,
+      matchId,
+      slotId
+    },
+    { trustedCaller: true }
+  );
+
+  void import("./rhizohShadowDevToolsRefreshV0.js")
+    .then((mod) => mod.refreshRhizohShadowDevToolsV0())
+    .catch(() => null);
 
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
