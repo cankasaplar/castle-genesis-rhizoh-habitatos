@@ -82,7 +82,8 @@ DevTools:
 ```js
 window.__rhizoh.shadowTraceLedger
 window.__rhizoh.exportShadowComplianceSnapshot('daily')
-window.__rhizoh.injectEpistemicStress?.({ profile: 'medium' })  // Phase 4
+window.__rhizoh.injectEpistemicStress?.({ profile: 'medium' })  // Phase 3.5
+window.__rhizoh.epistemicMemoryGraph                        // Phase 4
 ```
 
-See [RHIZOH_EPISTEMIC_STRESS_INJECTION_V0.md](RHIZOH_EPISTEMIC_STRESS_INJECTION_V0.md).
+See [RHIZOH_EPISTEMIC_STRESS_INJECTION_V0.md](RHIZOH_EPISTEMIC_STRESS_INJECTION_V0.md) · [RHIZOH_EPISTEMIC_MEMORY_GRAPH_V0.md](RHIZOH_EPISTEMIC_MEMORY_GRAPH_V0.md).

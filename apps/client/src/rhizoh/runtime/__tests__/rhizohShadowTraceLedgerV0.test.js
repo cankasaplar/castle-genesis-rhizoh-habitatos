@@ -88,6 +88,8 @@ describe("rhizohShadowTraceLedgerV0", () => {
     expect(snap.timeoutCount).toBeGreaterThanOrEqual(1);
     expect(snap.entropySummary.driftEventCount).toBeGreaterThanOrEqual(1);
     expect(snap).toHaveProperty("stressInjection");
+    expect(snap).toHaveProperty("memoryGraph");
+    expect(snap.memoryGraph.memoryGraphDigest).toMatch(/^h[a-f0-9]{8}$/);
   });
 
   it("does not append when shadow mode inactive", async () => {

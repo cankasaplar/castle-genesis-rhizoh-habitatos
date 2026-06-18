@@ -5,6 +5,9 @@
  * RESEARCH-ONLY
  */
 
+import {
+  projectStressConflictGraphToEpistemicMemoryV0
+} from "./rhizohEpistemicMemoryGraphV0.js";
 import { CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 } from "./chessLearningMonitorV0.js";
 import {
   appendShadowTraceFromDriftEventV0,
@@ -286,6 +289,14 @@ export async function injectEpistemicStressV0(opts = {}) {
 
   lastStressRunV0 = result;
   setLastStressRunForComplianceV0(result);
+
+  projectStressConflictGraphToEpistemicMemoryV0({
+    stressRunId,
+    conflictGraph,
+    councilObservation,
+    matchId,
+    slotId
+  });
 
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
