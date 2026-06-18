@@ -51,7 +51,7 @@ Module: `rhizohHardSeparationLayerV0.js` + `rhizohInvitedUserAuthorityGateV0.js`
 
 | Block | Surface | Action |
 |-------|---------|--------|
-| **A3** | **Drawer** | Merge T0 detail drawer into product drawer OR shared coordinator |
+| **A3** | **Drawer** | ✅ T0 detail ↔ product drawer coordinator (`rhizohT0DrawerCoordinatorV0.js`) |
 | **A4** | **Map / pins** | Single Cesium pin owner; Leaflet fallback documented; no Sarıyer flyTo on world surface |
 | **A5** | **Voice** | Unify `RhizohT0ShellChromeV1` + `RhizohWorldSpaceVoiceDockV0` bottom offset via layout resolver |
 | **A6** | **Studio / greenroom** | Greenroom mesh gate aligned with drawer surface id; `RhizohStudioCitizenShellV0` mount order locked |

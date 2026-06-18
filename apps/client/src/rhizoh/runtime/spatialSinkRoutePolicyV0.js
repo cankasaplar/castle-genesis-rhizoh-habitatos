@@ -58,11 +58,12 @@ export function isCastleAppEngineReadyV0() {
 /**
  * Mark Apex engine boot complete — idempotent.
  * @param {string} [source]
+ * @returns {boolean} true on first mark; false when already ready
  */
 export function markCastleAppEngineReadyV0(source = "app.engine.ready") {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") return false;
   window.__rhizoh = window.__rhizoh || {};
-  if (window.__rhizoh.appEngineReady === true) return;
+  if (window.__rhizoh.appEngineReady === true) return false;
   const atMs = Date.now();
   window.__rhizoh.appEngineReady = true;
   window.__rhizoh.appEngineReadyAtMs = atMs;
@@ -71,6 +72,15 @@ export function markCastleAppEngineReadyV0(source = "app.engine.ready") {
       detail: Object.freeze({ source, atMs })
     })
   );
+  return true;
+}
+
+/** Reset engine-ready latch on Apex teardown (route unmount). */
+export function releaseCastleAppEngineReadyV0() {
+  if (typeof window === "undefined") return;
+  window.__rhizoh = window.__rhizoh || {};
+  window.__rhizoh.appEngineReady = false;
+  delete window.__rhizoh.appEngineReadyAtMs;
 }
 
 /**
