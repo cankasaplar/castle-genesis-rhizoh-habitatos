@@ -10,6 +10,7 @@ import {
   getAdmittedSubjectReportV0,
   isSubjectAdmittedV0
 } from "../ingress/closedUserAdmissionEngineV0.js";
+import { readClosedAdmissionSubjectRefV0 } from "../ingress/ingress_router.js";
 import { isRhizohShadowModeActiveV0, resolveShadowModeReasonV0 } from "./rhizohShadowTraceLedgerV0.js";
 
 export const RHIZOH_EXECUTION_GOVERNANCE_SWITCHBOARD_SCHEMA_V0 =
@@ -64,8 +65,6 @@ const SHADOW_PRODUCTION_LAYER_MATRIX_V0 = Object.freeze({
   [GOVERNANCE_LAYER_V0.LEGAL_GATE]: GOVERNANCE_LAYER_STATE_V0.HARD_BLOCK,
   [GOVERNANCE_LAYER_V0.USER_IMPACTING_MUTATIONS]: GOVERNANCE_LAYER_STATE_V0.OFF
 });
-
-const CLOSED_ADMISSION_SUBJECT_KEY_V0 = "rhizoh_closed_admission_subject_ref_v0.1";
 
 /**
  * @returns {string}
@@ -133,25 +132,13 @@ export function isLegalGateHardBlockedV0() {
 }
 
 /**
- * Read opaque admitted subject ref from ingress storage (no PII).
- * @returns {string|null}
- */
-export function readClosedAdmissionSubjectRefV0() {
-  if (typeof localStorage === "undefined") return null;
-  try {
-    const ref = String(localStorage.getItem(CLOSED_ADMISSION_SUBJECT_KEY_V0) || "").trim();
-    return ref || null;
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Invited users = quarantine cohort: full observation, sandbox interaction, limited writes.
  * @param {{ subjectRef?: string|null }} [opts]
  */
 export function resolveInvitedUserQuarantineCohortV0(opts = {}) {
-  const subjectRef = String(opts.subjectRef ?? readClosedAdmissionSubjectRefV0() ?? "").trim();
+  const subjectRef = String(
+    opts.subjectRef ?? readClosedAdmissionSubjectRefV0() ?? ""
+  ).trim();
   const admitted = subjectRef ? isSubjectAdmittedV0(subjectRef) : false;
   const admissionReport = subjectRef ? getAdmittedSubjectReportV0(subjectRef) : null;
   const mode = resolveExecutionGovernanceModeV0();

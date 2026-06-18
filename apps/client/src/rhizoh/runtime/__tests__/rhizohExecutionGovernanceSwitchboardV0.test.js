@@ -36,7 +36,8 @@ vi.mock("../../ingress/ingress_router.js", () => ({
     route: "legal_preamble",
     required: true,
     acked: false
-  })
+  }),
+  readClosedAdmissionSubjectRefV0: () => null
 }));
 
 describe("rhizohExecutionGovernanceSwitchboardV0", () => {

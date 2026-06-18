@@ -8,6 +8,7 @@ import { pickChessAgentHeuristicMoveV0 } from "./chessAgentHeuristicV0.js";
 import {
   resolveChessClusterAgentPolicyV0,
   resolveChessClusterStockfishOptsV0,
+  resolveFeaturedSlotStockfishOptsV0,
   CHESS_CLUSTER_AGENT_ID_V0
 } from "./chessClusterAgentPolicyV0.js";
 import { resolveChessClusterSlotModeV0 } from "./chessClusterSlotModesV0.js";
@@ -65,7 +66,9 @@ export async function pickChessClusterMoveV0(slot, game) {
       return scheduleClusterEngineMoveV0(game, {
         useStockfish: stockfishReady,
         queueLabel: `cluster_slot_${slot.slotId}`,
-        ...resolveChessClusterStockfishOptsV0(CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH)
+        ...(slot.slotId === 0 || mode.spectatorFeatured
+          ? resolveFeaturedSlotStockfishOptsV0()
+          : resolveChessClusterStockfishOptsV0(CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH))
       });
     case "stockfish":
       return scheduleClusterEngineMoveV0(game, {
