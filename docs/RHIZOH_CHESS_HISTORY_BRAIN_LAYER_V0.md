@@ -50,8 +50,20 @@ ENGINE BEHAVIOR UPDATE (inference only)
 | `player_styles/` | same → `playerStyles[]` | A seed, B compute |
 | `embeddings/` | same → `embeddings[]` | B |
 | `opening_book_vX/` | `rhizoh_opening_book_v0` (existing) | C sync |
+| `learning_snapshot_vX/` | `rhizoh.chess.learning_checkpoint.v0` + history ring | Checkpoint ✅ |
 
 **Versioned graph:** `graphVersion` on memory store; migrate on read (`graph_v1` → `graph_v2`).
+
+### Deploy-safe learning checkpoint ✅ (Option B)
+
+- `rhizohChessLearningCheckpointV0.js` — versioned learning store (not world IndexedDB)
+- On deploy: weight matrix freeze, corpus merge, incremental training resume
+- `learning_snapshot_v1_{deployTag}_{id}.json` export shape
+- `window.__rhizoh.chessLearningCheckpoint()` — checkpoint report
+- `window.__rhizoh.freezeChessLearningCheckpoint()` — manual freeze
+- `window.__rhizoh.exportChessLearningCheckpointJson()` — DevTools export
+
+**Resume rule:** never decrease `matchesLearned`, `lifetimeMoves`, opening game counts, or corpus games.
 
 ---
 
@@ -88,6 +100,9 @@ ENGINE BEHAVIOR UPDATE (inference only)
 ```js
 window.__rhizoh.chessHistoryBrain()
 window.__rhizoh.chessEvolutionCurve()  // unified learning timeline
+window.__rhizoh.chessLearningCheckpoint()  // deploy-safe learning snapshot
+window.__rhizoh.freezeChessLearningCheckpoint()
+window.__rhizoh.exportChessLearningCheckpointJson()
 window.__rhizoh.importChessPgn(`[White "Carlsen"]...`)
 ```
 

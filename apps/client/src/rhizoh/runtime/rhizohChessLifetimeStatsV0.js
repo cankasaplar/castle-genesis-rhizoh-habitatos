@@ -201,6 +201,11 @@ export function recordChessLifetimeMatchAnalyzedV0(observation = {}) {
   });
 }
 
+/** @internal checkpoint resume */
+export function invalidateChessLifetimeStatsCacheV0() {
+  cachedStatsV0 = null;
+}
+
 /** @internal vitest */
 export function __resetChessLifetimeStatsForTestV0() {
   cachedStatsV0 = null;
