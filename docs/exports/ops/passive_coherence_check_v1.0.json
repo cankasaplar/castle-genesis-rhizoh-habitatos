@@ -1,6 +1,6 @@
 {
   "schema": "castle.rhizoh.passive_coherence_check.v1",
-  "generatedAt": "2026-06-14T03:36:15.730Z",
+  "generatedAt": "2026-06-18T20:26:51.021Z",
   "mode": "observe_only",
   "legalFreezeRef": "LEGAL_FREEZE_SPEC_V1.0",
   "allOk": true,

@@ -343,7 +343,13 @@ function runClusterClockTickV0() {
     if (!shouldTickChessClusterSlotClockV0(slot)) continue;
     const flagOutcome = tickChessClusterSlotClockV0(slot, 1000);
     if (flagOutcome) {
-      endChessClusterSlotV0(slot, flagOutcome, "timeout");
+      if (shouldFinalizeClusterBroadcastEndV0(slot, flagOutcome, "timeout")) {
+        endChessClusterSlotV0(slot, flagOutcome, "timeout");
+      } else if (Number(slot.slotId) === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0) {
+        const refillMs = 45_000;
+        slot.whiteClockMs = Math.max(Number(slot.whiteClockMs) || 0, refillMs);
+        slot.blackClockMs = Math.max(Number(slot.blackClockMs) || 0, refillMs);
+      }
     }
   }
   publishClusterRegistryV0({ clockTick: true });

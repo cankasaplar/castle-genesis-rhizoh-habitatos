@@ -51,6 +51,8 @@ function boardRowsFromFen(fen) {
         const key = `${cell.color}${String(cell.type).toUpperCase()}`;
         row.push({
           color: cell.color,
+          type: cell.type,
+          square: String.fromCharCode(97 + c) + String(8 - r),
           glyph: PIECE_UNICODE_V0[key] || "?"
         });
       }

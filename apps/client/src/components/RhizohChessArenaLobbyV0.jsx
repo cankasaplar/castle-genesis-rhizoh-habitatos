@@ -35,6 +35,7 @@ import {
   readChessPolicyModeV0,
   saveChessPolicyModeV0
 } from "../rhizoh/runtime/chessPolicyModeV0.js";
+import { RhizohChessOfflineStudiesPanelV0 } from "./RhizohChessOfflineStudiesPanelV0.jsx";
 
 function EngineStatusChipV0({ engineStatus, engineDetail, tr }) {
   const label =
@@ -447,6 +448,8 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
           </div>
         </section>
       </div>
+
+      <RhizohChessOfflineStudiesPanelV0 tr={tr} />
 
       <div className="grid gap-3 lg:grid-cols-2">
         <section className="rounded-xl border border-white/10 bg-black/30 p-3">
