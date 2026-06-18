@@ -112,3 +112,15 @@ export function resolveChessClusterStockfishOptsV0(agentId) {
     contempt: p.contempt
   });
 }
+
+/** Featured slot 0 — stronger opponent for broadcast / YouTube test observation. */
+export function resolveFeaturedSlotStockfishOptsV0() {
+  const strong = CHESS_STOCKFISH_PRESET_V0.STRONG || CHESS_STOCKFISH_PRESET_V0.ARENA;
+  return Object.freeze({
+    preset: "STRONG",
+    skill: Math.max(strong.skill ?? 18, 18),
+    movetimeMs: 1200,
+    depth: Math.max(strong.depth ?? 14, 16),
+    contempt: 18
+  });
+}

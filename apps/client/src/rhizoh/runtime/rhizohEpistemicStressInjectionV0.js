@@ -27,6 +27,11 @@ import {
 } from "./rhizohEpistemicCouncilV0.js";
 import { recordStressRunForInflationGuardV0 } from "./rhizohEpistemicGraphInflationGuardV0.js";
 import { TOPOLOGY_EVENT_TYPES_V0 } from "./rhizohTopologyEventEmitterV0.js";
+import {
+  assertInvitedUserEpistemicAuthorityV0,
+  EPISTEMIC_AUTHORITY_KIND_V0,
+  GOVERNANCE_ACTOR_V0
+} from "./rhizohInvitedUserAuthorityGateV0.js";
 
 export const EPISTEMIC_STRESS_INJECTION_SCHEMA_V0 =
   "castle.rhizoh.epistemic_stress_injection.v0";
@@ -135,10 +140,26 @@ export function buildEpistemicConflictGraphV0(input = {}) {
  *   matchId?: string,
  *   slotId?: number,
  *   forceCouncil?: boolean,
- *   fen?: string
+ *   fen?: string,
+ *   force?: boolean,
+ *   actor?: string
  * }} opts
  */
 export async function injectEpistemicStressV0(opts = {}) {
+  const actor = String(opts.actor || GOVERNANCE_ACTOR_V0.USER).toLowerCase();
+  const authority = assertInvitedUserEpistemicAuthorityV0(
+    EPISTEMIC_AUTHORITY_KIND_V0.STRESS_INJECTION,
+    { actor }
+  );
+  if (!authority.permitted) {
+    return Object.freeze({
+      schema: EPISTEMIC_STRESS_INJECTION_SCHEMA_V0,
+      ok: false,
+      reason: authority.reason,
+      shadowModeReason: resolveShadowModeReasonV0()
+    });
+  }
+
   if (!isRhizohShadowModeActiveV0()) {
     return Object.freeze({
       schema: EPISTEMIC_STRESS_INJECTION_SCHEMA_V0,

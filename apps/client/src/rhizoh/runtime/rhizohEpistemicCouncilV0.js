@@ -16,6 +16,11 @@ import {
   resolveCouncilCooldownMsV2
 } from "./rhizohEpistemicGraphInflationGuardV0.js";
 import { getEpistemicMemoryGraphComplianceSummaryV0 } from "./rhizohEpistemicMemoryGraphV0.js";
+import {
+  assertInvitedUserEpistemicAuthorityV0,
+  EPISTEMIC_AUTHORITY_KIND_V0,
+  GOVERNANCE_ACTOR_V0
+} from "./rhizohInvitedUserAuthorityGateV0.js";
 
 export const RHIZOH_EPISTEMIC_COUNCIL_SCHEMA_V0 = "castle.rhizoh.epistemic_council.v0";
 export const RHIZOH_EPISTEMIC_COUNCIL_EVENT_V0 = "rhizoh:epistemic-council-v0";
@@ -273,6 +278,13 @@ export async function runEpistemicCouncilPipelineV0(triggerEval) {
         if (!ev) return null;
         const throttle = evaluateCouncilCooldownV0(ev);
         if (throttle) return throttle;
+        const authority = assertInvitedUserEpistemicAuthorityV0(
+          EPISTEMIC_AUTHORITY_KIND_V0.COUNCIL_TRIGGER,
+          { actor: GOVERNANCE_ACTOR_V0.USER }
+        );
+        if (!authority.permitted) {
+          return Object.freeze({ blocked: true, reason: authority.reason });
+        }
         void runEpistemicCouncilPipelineV0(ev).catch(() => null);
         return ev;
       }
@@ -303,6 +315,18 @@ export async function runEpistemicCouncilDryRunV0(triggerEval) {
  * @param {object} ctx
  */
 export function maybeEnqueueEpistemicCouncilV0(ctx = {}) {
+  const actor = String(ctx.actor || GOVERNANCE_ACTOR_V0.SYSTEM).toLowerCase();
+  const authority = assertInvitedUserEpistemicAuthorityV0(
+    EPISTEMIC_AUTHORITY_KIND_V0.COUNCIL_TRIGGER,
+    { actor }
+  );
+  if (!authority.permitted) {
+    return Object.freeze({
+      blocked: true,
+      reason: authority.reason,
+      authorityKind: EPISTEMIC_AUTHORITY_KIND_V0.COUNCIL_TRIGGER
+    });
+  }
   if (ctx.sourceKind === COUNCIL_MEMORY_KIND_V0.CONTEXTUAL_ANNOTATION) return null;
   const triggerEval = evaluateCouncilTriggerV0(ctx);
   if (!triggerEval?.shouldInvoke) return null;

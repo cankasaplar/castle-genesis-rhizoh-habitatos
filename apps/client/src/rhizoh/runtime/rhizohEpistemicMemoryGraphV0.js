@@ -13,6 +13,11 @@ import {
   recordEpistemicGraphLifecyclePassV0
 } from "./rhizohEpistemicGraphLifecycleV0.js";
 import { assessEpistemicGraphInflationRiskV0 } from "./rhizohEpistemicGraphInflationGuardV0.js";
+import {
+  assertInvitedUserEpistemicAuthorityV0,
+  EPISTEMIC_AUTHORITY_KIND_V0,
+  GOVERNANCE_ACTOR_V0
+} from "./rhizohInvitedUserAuthorityGateV0.js";
 
 export const EPISTEMIC_MEMORY_GRAPH_SCHEMA_V0 = "castle.rhizoh.epistemic_memory_graph.v0";
 export const EPISTEMIC_MEMORY_GRAPH_EVENT_V0 = "rhizoh:epistemic-memory-graph-v0";
@@ -224,6 +229,12 @@ function trimGraphV0() {
 export function projectShadowTraceToEpistemicMemoryV0(record, opts = {}) {
   if (!record) return null;
   if (!opts.trustedCaller && !resolveShadowModeForMemoryGraphV0()) return null;
+  const actor = String(opts.actor || GOVERNANCE_ACTOR_V0.SYSTEM).toLowerCase();
+  const authority = assertInvitedUserEpistemicAuthorityV0(
+    EPISTEMIC_AUTHORITY_KIND_V0.GRAPH_WRITE,
+    { actor }
+  );
+  if (!authority.permitted) return null;
   if (nodeByShadowRecordIdV0.has(record.recordId)) {
     return nodesV0.find((n) => n.nodeId === nodeByShadowRecordIdV0.get(record.recordId)) || null;
   }
@@ -312,6 +323,12 @@ export function projectShadowTraceToEpistemicMemoryV0(record, opts = {}) {
 export function projectStressConflictGraphToEpistemicMemoryV0(input = {}, opts = {}) {
   if (!input.stressRunId || !input.conflictGraph?.nodes?.length) return Object.freeze([]);
   if (!opts.trustedCaller && !resolveShadowModeForMemoryGraphV0()) return Object.freeze([]);
+  const actor = String(opts.actor || GOVERNANCE_ACTOR_V0.SYSTEM).toLowerCase();
+  const authority = assertInvitedUserEpistemicAuthorityV0(
+    EPISTEMIC_AUTHORITY_KIND_V0.GRAPH_WRITE,
+    { actor }
+  );
+  if (!authority.permitted) return Object.freeze([]);
 
   const hub = ensureStressRunHubNodeV0(input.stressRunId, {
     matchId: input.matchId,

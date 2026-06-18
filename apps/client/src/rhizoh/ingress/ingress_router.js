@@ -143,6 +143,12 @@ function getClosedAdmissionSubjectRefV0() {
   }
 }
 
+/** Opaque subject ref for quarantine cohort + admission (sessionStorage SSOT). */
+export function readClosedAdmissionSubjectRefV0() {
+  const ref = getClosedAdmissionSubjectRefV0();
+  return ref === "session_anonymous" ? null : ref;
+}
+
 export function ensureClosedAdmissionSubjectRefV0() {
   if (typeof sessionStorage === "undefined") return "session_anonymous";
   let ref = getClosedAdmissionSubjectRefV0();
