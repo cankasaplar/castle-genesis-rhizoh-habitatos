@@ -7,7 +7,6 @@ import {
   ensureRhizohCoreSubsystemsBootV0,
   ensureRhizohLearningCoreBootV0
 } from "../rhizoh/runtime/rhizohCoreSubsystemBootV0.js";
-import { isRhizohLegalPendingHoldV0 } from "../rhizoh/runtime/rhizohLegalPendingWaitLoopV0.js";
 import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
 
 /**
@@ -20,11 +19,6 @@ export function RhizohCoreSubsystemHostV0({ userId = "" } = {}) {
 
   useEffect(() => {
     ensureRhizohCoreSubsystemsBootV0({ userId });
-    if (isRhizohLegalPendingHoldV0()) {
-      const t = window.setTimeout(() => setClusterOpen(true), 3_500);
-      return () => window.clearTimeout(t);
-    }
-    return undefined;
   }, [userId]);
 
   useEffect(() => {

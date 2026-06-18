@@ -4,6 +4,7 @@ import {
   isChessClusterBroadcastModeV0,
   resolveChessClusterTickSlotOrderV0,
   shouldFinalizeClusterBroadcastEndV0,
+  shouldTickChessClusterSlotClockV0,
   shouldUseStockfishForClusterSlotV0
 } from "../chessClusterBroadcastEnginePolicyV0.js";
 import { publishChessClusterArenaOpenV0 } from "../chessEngineContentionGateV0.js";
@@ -54,5 +55,23 @@ describe("chessClusterBroadcastEnginePolicyV0", () => {
       true
     );
     expect(shouldFinalizeClusterBroadcastEndV0(slot, "draw", "checkmate_or_draw")).toBe(true);
+  });
+
+  it("holds timeout reset for grid slot below min ply during broadcast", () => {
+    publishChessClusterArenaOpenV0(true);
+    expect(shouldFinalizeClusterBroadcastEndV0({ slotId: 1, ply: 2 }, "white_wins", "timeout")).toBe(
+      false
+    );
+    expect(shouldFinalizeClusterBroadcastEndV0({ slotId: 1, ply: 12 }, "white_wins", "timeout")).toBe(
+      true
+    );
+  });
+
+  it("ticks clock only for featured slot during broadcast", () => {
+    publishChessClusterArenaOpenV0(true);
+    expect(shouldTickChessClusterSlotClockV0({ slotId: 0 })).toBe(true);
+    expect(shouldTickChessClusterSlotClockV0({ slotId: 3 })).toBe(false);
+    publishChessClusterArenaOpenV0(false);
+    expect(shouldTickChessClusterSlotClockV0({ slotId: 3 })).toBe(true);
   });
 });

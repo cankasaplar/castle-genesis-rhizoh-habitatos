@@ -31,7 +31,8 @@ import {
   isChessClusterBroadcastModeV0,
   resolveChessClusterBroadcastMovesPerTickV0,
   resolveChessClusterTickSlotOrderV0,
-  shouldFinalizeClusterBroadcastEndV0
+  shouldFinalizeClusterBroadcastEndV0,
+  shouldTickChessClusterSlotClockV0
 } from "./chessClusterBroadcastEnginePolicyV0.js";
 import { logChessMovePlayedV0 } from "./chessArenaTelemetryV0.js";
 import { publishRhizohChessManagerV0 } from "./rhizohChessManagerV0.js";
@@ -299,6 +300,7 @@ function runClusterClockTickV0() {
   if (!runningV0 || slotsV0.length === 0) return;
   for (const slot of slotsV0) {
     if (slot?.status !== "active") continue;
+    if (!shouldTickChessClusterSlotClockV0(slot)) continue;
     const flagOutcome = tickChessClusterSlotClockV0(slot, 1000);
     if (flagOutcome) {
       endChessClusterSlotV0(slot, flagOutcome, "timeout");
