@@ -5,8 +5,6 @@
 import { applyRhizohWorldMapToolV0 } from "./rhizohWorldMapToolV0.js";
 import { handleProductShellSelectV0 } from "./rhizohDrawerStateMachineV0.js";
 import { RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0 } from "./spiralMMOAwakeningCycleV0.js";
-import { dispatchWorldSpaceMapFlyV0 } from "./worldSpaceMapCommandFacadeV0.js";
-import { resolveMapViewportHomeV0 } from "./worldMapViewportBootstrapV0.js";
 import { logCastleLifecycleV0 } from "./rhizohProductionLogNamespacesV0.js";
 import { isReplayModeActiveV0, isCatchUpSettlingV0 } from "./temporalBridgeV0.js";
 import { isRhizohCatchUpReplayActiveV0 } from "./rhizohCatchUpGuardV0.js";
@@ -56,14 +54,10 @@ export async function handoffSpiralCountdownToWaitingRoomV1(opts = {}) {
       source: opts.source || "SPIRAL_COUNTDOWN_HANDOFF"
     });
 
-    const home = resolveMapViewportHomeV0();
-    dispatchWorldSpaceMapFlyV0({
-      lat: home.lat,
-      lon: home.lon,
-      zoom: home.zoom,
-      source: opts.source || "spiral_countdown_handoff"
+    logCastleLifecycleV0("spiral_handoff_stage", {
+      stage: "v11_recenter_skipped",
+      reason: "full_map_visible_policy"
     });
-    logCastleLifecycleV0("spiral_handoff_stage", { stage: "v11_recenter", ...home });
 
     await delayMs(900);
     handleProductShellSelectV0("greenroom", {

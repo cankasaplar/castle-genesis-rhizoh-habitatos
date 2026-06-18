@@ -176,7 +176,6 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
 
         {surface === "greenroom" || surface === "broadcast" ? (
           <RhizohStudioCitizenShellV0 surfaceKind={surface} showKernelStrips={false}>
-            <UserOutcomeCard surface={surface} locale={locale} />
             <RhizohGreenroomWaitingPanelV0
               uiLocale={locale}
               gatewayPhase={gatewayPhase}
@@ -200,7 +199,6 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
 
         {surface === "studio" ? (
           <RhizohStudioCitizenShellV0 surfaceKind="studio">
-            <UserOutcomeCard surface="studio" locale={locale} />
             {isDrawerModuleAwakenedV0("studio") ? (
               <p className="mb-2 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-2 py-1 text-[9px] font-semibold uppercase tracking-wider text-emerald-100">
                 {locale === "tr" ? "Drawer uyanık · Sprint 37" : "Drawer awake · Sprint 37"}

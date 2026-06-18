@@ -8,7 +8,6 @@ import {
   dispatchSpiralMMOAwakeningV0,
   resolveSpiralMMOTriggerIndexFromPinIdV0
 } from "./spiralMMOAwakeningCycleV0.js";
-import { listSpiralMMOContinentMapPinsV0 } from "./spiralMMOContinentPinsV0.js";
 
 export const WORLD_MAP_TRANSITION_SCHEMA_V0 = "rhizoh.world_map_meaningful_transition.v0";
 export const RHIZOH_MAP_TRANSITION_PHASE_EVENT_V0 = "rhizoh:map-transition-phase-v0";
@@ -126,35 +125,14 @@ export function runMapPinApproachThenV0(map, node, opts = {}, onCommit) {
 }
 
 /**
- * Staged SpiralMMO awakening — approach pin, dwell, then awakening (deduped entry).
+ * Staged SpiralMMO awakening — commit at trigger pin without camera zoom (full map stays visible).
  * @param {string} pinId
  * @param {object} [map]
  */
 export function dispatchSpiralMMOAwakeningStagedV0(pinId, map = null) {
   const triggerIndex = resolveSpiralMMOTriggerIndexFromPinIdV0(String(pinId || ""));
-  const node = listSpiralMMOContinentMapPinsV0().find((p) => p.id === pinId) || null;
-
-  const commitAwakening = () => {
-    publishMapTransitionPhaseV0("spiral_awaken", { pinId, triggerIndex });
-    dispatchSpiralMMOAwakeningV0(triggerIndex);
-  };
-
-  if (!map || !node) {
-    commitAwakening();
-    return;
-  }
-
-  runMapPinApproachThenV0(
-    map,
-    node,
-    {
-      flyMs: SPIRAL_PIN_FLY_TO_MS_V0,
-      dwellMs: SPIRAL_PIN_APPROACH_DWELL_MS_V0,
-      zoom: Math.max(map.getZoom?.() || 4, 5),
-      label: node.label || node.name || "SpiralMMO"
-    },
-    commitAwakening
-  );
+  publishMapTransitionPhaseV0("spiral_awaken", { pinId, triggerIndex, mapZoomSkipped: true });
+  dispatchSpiralMMOAwakeningV0(triggerIndex);
 }
 
 /**

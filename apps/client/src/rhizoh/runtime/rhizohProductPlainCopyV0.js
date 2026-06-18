@@ -51,7 +51,7 @@ export const RHIZOH_CAPABILITY_HALO_NODES_TR_V0 = Object.freeze([
     id: "broadcast",
     label: "Yayın",
     geometryKind: "spiral",
-    whisper: "Yayın hazırlığı beta — davet ve durum akışına geçebilirsin.",
+    whisper: "Yayın hazırlığı — davet ve durum akışına geçebilirsin.",
     seedIntent: "yayın hazırlığını aç"
   }),
   Object.freeze({
@@ -98,9 +98,9 @@ export const RHIZOH_CAPABILITY_HALO_NODES_TR_V0 = Object.freeze([
 export const RHIZOH_SHELL_HINT_TR_V0 = Object.freeze({
   world: "Dünya · harita, konum ve sohbet",
   hall: "Salon · gözlem özeti ve kayıt bağlantıları",
-  greenroom: "Hazırlık · davet linki oluşturma (beta)",
-  broadcast: "Yayın · davet ve yayın hazırlığı (beta)",
-  studio: "Stüdyo · üretim durumu ve harita özeti (beta)",
+  greenroom: "Hazırlık · davet linki oluşturma",
+  broadcast: "Yayın · davet ve yayın hazırlığı",
+  studio: "Stüdyo · üretim durumu ve harita özeti",
   profile: "Profil paneli (aç/kapat)"
 });
 
@@ -129,9 +129,9 @@ export function resolveProductStatusHeadlineTrV0(input = {}) {
     }
     return "Dünya · Haritayı aç, konumunu seç veya Rhizoh'a yaz";
   }
-  if (surface === "studio") return "Stüdyo · Beta üretim yüzeyi";
-  if (surface === "broadcast") return "Yayın · Beta hazırlık ve davet";
-  if (surface === "greenroom") return "Hazırlık odası · Beta davet akışı";
+  if (surface === "studio") return "Stüdyo · üretim yüzeyi";
+  if (surface === "broadcast") return "Yayın · hazırlık ve davet";
+  if (surface === "greenroom") return "Hazırlık odası · davet akışı";
   if (surface === "hall") return "Salon · Gözlem özeti ve kayıt bağlantıları";
   if (surface === "profile") return "Profil · Hesap ve kimlik";
 

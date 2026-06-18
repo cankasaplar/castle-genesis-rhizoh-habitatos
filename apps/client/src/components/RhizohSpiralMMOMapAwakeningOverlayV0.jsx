@@ -137,31 +137,10 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
       h
     }));
 
-    if (canPersistUserTopologyN12V0()) {
-      for (const launch of plan.launches || []) {
-        void PersistentCodexBusV0.GHOST_SPAWN({
-          id: launch.id,
-          ghostId: launch.id,
-          type: launch.isOrder ? "order" : "chaos",
-          kind: launch.isOrder ? "order" : "chaos",
-          origin: launch.srcContinent || "",
-          destination: launch.destContinent || "",
-          src: launch.srcContinent || "",
-          dst: launch.destContinent || "",
-          cycleLayer: readCodexStateV0().cycleLayer || 0
-        });
-      }
-    }
+    // AWAKEN + per-cube GHOST_SPAWN already emitted in dispatchSpiralMMOAwakeningV0 — avoid codex spam here.
   }, []);
 
   const onCubeLandedV0 = useCallback((landedCube) => {
-    if (canPersistUserTopologyN12V0() && landedCube?.key) {
-      void PersistentCodexBusV0.GHOST_DEATH({
-        id: landedCube.key,
-        ghostId: landedCube.key,
-        loc: landedCube.destContinent || ""
-      });
-    }
     setScene((prev) => {
       if (!prev) return prev;
       const stacked = [...(prev.stackedCubes ?? []), { ...landedCube, landed: true }];

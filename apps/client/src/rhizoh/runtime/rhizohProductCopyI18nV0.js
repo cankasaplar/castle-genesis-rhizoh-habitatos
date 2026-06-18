@@ -27,18 +27,18 @@ import { normalizeUiLocaleV0, readUiLocaleV0 } from "./rhizohUiLocaleV0.js";
 export const RHIZOH_PRODUCT_SURFACE_COPY_EN_V0 = Object.freeze({
   world: Object.freeze({ shell: "World", short: "World", pathHint: "Map, location, and chat" }),
   hall: Object.freeze({ shell: "Hall", short: "Hall", pathHint: "Observation summary and records" }),
-  greenroom: Object.freeze({ shell: "Prep", short: "Prep", pathHint: "Invite-link flow (beta)" }),
-  broadcast: Object.freeze({ shell: "Broadcast", short: "Live", pathHint: "Broadcast prep (beta)" }),
-  studio: Object.freeze({ shell: "Studio", short: "Studio", pathHint: "Production status (beta)" }),
+  greenroom: Object.freeze({ shell: "Prep", short: "Prep", pathHint: "Invite-link flow" }),
+  broadcast: Object.freeze({ shell: "Broadcast", short: "Live", pathHint: "Broadcast prep" }),
+  studio: Object.freeze({ shell: "Studio", short: "Studio", pathHint: "Production status" }),
   profile: Object.freeze({ shell: "Profile", short: "Profile", pathHint: "Account and settings" })
 });
 
 export const RHIZOH_SHELL_HINT_EN_V0 = Object.freeze({
   world: "World · map, location, and chat",
   hall: "Hall · observation summary and records",
-  greenroom: "Prep · invite-link flow (beta)",
-  broadcast: "Broadcast · broadcast prep (beta)",
-  studio: "Studio · production status (beta)",
+  greenroom: "Prep · invite-link flow",
+  broadcast: "Broadcast · broadcast prep",
+  studio: "Studio · production status",
   profile: "Profile panel (toggle)"
 });
 
@@ -64,22 +64,22 @@ export const RHIZOH_WORLD_CENTER_SUBTITLE_EN_V0 = "Rhizoh field · Agent swarm a
 
 export const RHIZOH_PRODUCT_DRAWER_COPY_EN_V0 = Object.freeze({
   hall: Object.freeze({ title: "Hall", blurb: "Observation summary, records, and where to inspect next." }),
-  greenroom: Object.freeze({ title: "Prep · Beta", blurb: "Create an invite-only experience link; no new room opens yet." }),
-  broadcast: Object.freeze({ title: "Broadcast · Beta", blurb: "Prepare an invite and verify status before any live claim." }),
-  studio: Object.freeze({ title: "Studio · Beta", blurb: "Production status only; heavy consoles are hidden from the user surface." }),
+  greenroom: Object.freeze({ title: "Prep", blurb: "Create an invite-only experience link; no new room opens yet." }),
+  broadcast: Object.freeze({ title: "Broadcast", blurb: "Prepare an invite and verify status before any live claim." }),
+  studio: Object.freeze({ title: "Studio", blurb: "Production status only; heavy consoles are hidden from the user surface." }),
   profile: Object.freeze({ title: "Profile", blurb: "Account, identity, and settings." }),
   close: "Close",
-  broadcastNote: "This beta creates a shareable invite record. It does not claim a live stream has started."
+  broadcastNote: "This creates a shareable invite record. It does not claim a live stream has started."
 });
 
 export const RHIZOH_PRODUCT_DRAWER_COPY_TR_V0 = Object.freeze({
   hall: Object.freeze({ title: "Salon", blurb: "Gözlem özeti, kayıtlar ve sıradaki inceleme bağlantıları." }),
-  greenroom: Object.freeze({ title: "Hazırlık · Beta", blurb: "Davetli deneyim linki oluşturur; yeni oda henüz açılmaz." }),
-  broadcast: Object.freeze({ title: "Yayın · Beta", blurb: "Canlı iddiası kurmadan önce davet ve durum hazırlığı." }),
-  studio: Object.freeze({ title: "Stüdyo · Beta", blurb: "Üretim durumu; ağır konsollar kullanıcı yüzeyinden gizlendi." }),
+  greenroom: Object.freeze({ title: "Hazırlık", blurb: "Davetli deneyim linki oluşturur; yeni oda henüz açılmaz." }),
+  broadcast: Object.freeze({ title: "Yayın", blurb: "Canlı iddiası kurmadan önce davet ve durum hazırlığı." }),
+  studio: Object.freeze({ title: "Stüdyo", blurb: "Üretim durumu; ağır konsollar kullanıcı yüzeyinden gizlendi." }),
   profile: Object.freeze({ title: "Profil", blurb: "Hesap, kimlik ve ayarlar." }),
   close: "Kapat",
-  broadcastNote: "Bu beta paylaşılabilir davet kaydı üretir. Canlı yayın başladı iddiası kurmaz."
+  broadcastNote: "Bu paylaşılabilir davet kaydı üretir. Canlı yayın başladı iddiası kurmaz."
 });
 
 export const RHIZOH_PRODUCT_DETAIL_CHROME_TR_V0 = Object.freeze({
@@ -222,10 +222,10 @@ export function formatPlainSurfaceOpenV0(surfaceId, locale) {
   if (resolveUiCopyLocaleV0(locale) === "tr") return formatPlainSurfaceOpenTrV0(surfaceId);
   const map = Object.freeze({
     world: "World open — map, location, and chat.",
-    studio: "Studio beta open — status only.",
+    studio: "Studio open — status only.",
     hall: "Hall open — observation summary and records.",
-    greenroom: "Prep beta open — create an invite link.",
-    broadcast: "Broadcast beta open — create an invite and verify status.",
+    greenroom: "Prep open — create an invite link.",
+    broadcast: "Broadcast open — create an invite and verify status.",
     profile: "Profile and settings open."
   });
   return map[String(surfaceId || "world")] || `${surfaceId} opened.`;
@@ -251,9 +251,9 @@ export function resolveProductStatusHeadlineV0(input = {}, locale) {
   if (resolveUiCopyLocaleV0(locale) === "tr") return resolveProductStatusHeadlineTrV0(input);
   const surface = String(input.activeSurface || "world");
   if (surface === "world") return "World · open the map, choose a place, or type";
-  if (surface === "studio") return "Studio · beta status";
-  if (surface === "broadcast") return "Broadcast · beta prep";
-  if (surface === "greenroom") return "Prep · beta invite flow";
+  if (surface === "studio") return "Studio · production status";
+  if (surface === "broadcast") return "Broadcast · prep";
+  if (surface === "greenroom") return "Prep · invite flow";
   if (surface === "hall") return "Hall · observation summary";
   if (surface === "profile") return "Profile · account";
   return "Rhizoh";
@@ -284,17 +284,17 @@ export function resolveLocalPanelOpenLineV0(panel, locale) {
   if (tr) {
     if (p === "world" || p === "wheel") return "Dünya açıldı — harita ve sohbet.";
     if (p === "hall") return "Salon açıldı — gözlem özeti.";
-    if (p === "studio") return "Stüdyo beta açıldı — durum özeti.";
-    if (p === "broadcast") return "Yayın beta açıldı — davet hazırlığı.";
-    if (p === "greenroom") return "Hazırlık beta açıldı — davet linki.";
+    if (p === "studio") return "Stüdyo açıldı — durum özeti.";
+    if (p === "broadcast") return "Yayın açıldı — davet hazırlığı.";
+    if (p === "greenroom") return "Hazırlık açıldı — davet linki.";
     if (p === "profile") return "Profil paneli açıldı.";
     return "Bölüm açıldı.";
   }
   if (p === "world" || p === "wheel") return "World open — map and chat.";
   if (p === "hall") return "Hall open — observation summary.";
-  if (p === "studio") return "Studio beta open — status summary.";
-  if (p === "broadcast") return "Broadcast beta open — invite prep.";
-  if (p === "greenroom") return "Prep beta open — invite link.";
+  if (p === "studio") return "Studio open — status summary.";
+  if (p === "broadcast") return "Broadcast open — invite prep.";
+  if (p === "greenroom") return "Prep open — invite link.";
   if (p === "profile") return "Profile panel open.";
   return "Section open.";
 }
