@@ -15,6 +15,7 @@ import {
 } from "../chessGameClusterV0.js";
 import { __resetChessClusterObserverForTestV0 } from "../chessClusterObserverV0.js";
 import { __resetChessClusterMemoryGraphForTestV0 } from "../chessClusterMemoryGraphV0.js";
+import { CHESS_ARENA_SESSION_EVENT_V0 } from "../chessArenaSessionV0.js";
 
 vi.mock("../chessClusterMovePickerV0.js", () => ({
   pickChessClusterMoveV0: vi.fn(async (_slot, game) => {
@@ -89,6 +90,18 @@ describe("chessGameClusterV0", () => {
     expect(getChessClusterSlotV0(0)?.clock?.timeControlId).toBe("cluster_sim_45_0");
     expect(() => applyChessClusterTimeControlV0("blitz_3_2")).not.toThrow();
     expect(getChessClusterSlotV0(0)?.clock?.timeControlId).toBe("blitz_3_2");
+    stopChessGameClusterV0();
+  });
+
+  it("ignores arena session blitz_3_2 — cluster keeps boot TC", () => {
+    startChessGameClusterV0({ testFastTick: true, intervalMs: 50, timeControlId: "cluster_sim_45_0" });
+    window.dispatchEvent(
+      new CustomEvent(CHESS_ARENA_SESSION_EVENT_V0, {
+        detail: { timeControlId: "blitz_3_2" }
+      })
+    );
+    expect(getChessClusterSlotV0(0)?.clock?.timeControlId).toBe("cluster_sim_45_0");
+    expect(window.__rhizoh.chessGameCluster?.timeControlId).toBe("cluster_sim_45_0");
     stopChessGameClusterV0();
   });
 });

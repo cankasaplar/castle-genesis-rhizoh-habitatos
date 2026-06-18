@@ -16,6 +16,12 @@ describe("chessClusterClockV0", () => {
     expect(clock.incrementMs).toBe(0);
   });
 
+  it("defaults to cluster_sim_45_0 when no time control passed", () => {
+    const clock = createChessClusterClockStateV0();
+    expect(clock.timeControlId).toBe("cluster_sim_45_0");
+    expect(clock.whiteClockMs).toBe(45_000);
+  });
+
   it("ticks white clock and flags black win", () => {
     const game = createChessArenaGameV0();
     const slot = {

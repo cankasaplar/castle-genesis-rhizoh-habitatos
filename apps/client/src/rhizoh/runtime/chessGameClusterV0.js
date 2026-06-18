@@ -25,13 +25,14 @@ import {
 } from "./chessClusterClockV0.js";
 import { ensureChessLearningMonitorListenersV0 } from "./chessLearningMonitorV0.js";
 import { ensureRhizohChessLearningReportV0 } from "./rhizohChessLearningReportV0.js";
-import { readChessArenaSessionV0, CHESS_ARENA_SESSION_EVENT_V0 } from "./chessArenaSessionV0.js";
+import { CHESS_ARENA_SESSION_EVENT_V0 } from "./chessArenaSessionV0.js";
 import { logChessMovePlayedV0 } from "./chessArenaTelemetryV0.js";
 import { publishRhizohChessManagerV0 } from "./rhizohChessManagerV0.js";
 import { publishChessGameRouterV0 } from "./chessGameRouterV0.js";
 import {
   CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0,
   CHESS_CLUSTER_MAX_PLY_V0,
+  isChessClusterSimulationTimeControlIdV0,
   resolveChessClusterBootOptsV0,
   resolveChessClusterTimeControlV0,
   shouldEndChessClusterGameByPlyCapV0
@@ -82,6 +83,7 @@ function ensureChessClusterSessionListenerV0() {
   window.addEventListener(CHESS_ARENA_SESSION_EVENT_V0, (ev) => {
     const tcId = ev?.detail?.timeControlId;
     if (!tcId || !runningV0) return;
+    if (!isChessClusterSimulationTimeControlIdV0(tcId)) return;
     applyChessClusterTimeControlV0(tcId);
   });
 }

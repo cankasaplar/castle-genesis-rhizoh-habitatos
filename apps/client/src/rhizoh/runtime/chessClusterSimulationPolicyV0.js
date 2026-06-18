@@ -39,6 +39,14 @@ export const CHESS_CLUSTER_SIM_TIME_CONTROLS_V0 = Object.freeze({
 });
 
 /**
+ * Cluster sim TC ids — arena session TCs must not bleed into the learning cluster.
+ * @param {string} [raw]
+ */
+export function isChessClusterSimulationTimeControlIdV0(raw) {
+  return String(raw || "").startsWith("cluster_sim_");
+}
+
+/**
  * @param {string} [raw]
  */
 export function resolveChessClusterTimeControlV0(raw) {
