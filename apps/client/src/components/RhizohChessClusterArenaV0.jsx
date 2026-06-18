@@ -29,6 +29,8 @@ import {
   getChessObservatoryHeroCopyV0,
   resolveClusterSlotRoleCopyV0
 } from "../rhizoh/runtime/chessClusterObservatoryCopyV0.js";
+import { formatChessOutcomeLabelV0 } from "../rhizoh/runtime/chessArenaEngineV0.js";
+import { RHIZOH_OPEN_CHESS_ARENA_EVENT_V1 } from "../rhizoh/runtime/symbyoMapIntentBridgeV0.js";
 import { PIECE_UNICODE_V0 } from "./RhizohCastleLibraryPanelV0.jsx";
 
 function boardRowsFromFen(fen) {
@@ -193,6 +195,60 @@ const LiveCameraBoardV0 = memo(function LiveCameraBoardV0({
   );
 });
 
+function GameEndBannerV0({ banner, tr, onDismiss }) {
+  if (!banner) return null;
+  const endLabel = formatClusterEndReasonLabelV0(banner.endReason, banner.ply, tr);
+  const outcomeLabel = formatChessOutcomeLabelV0(banner.outcome, tr);
+  return (
+    <div className="mb-2 rounded-lg border border-amber-400/45 bg-amber-950/40 px-3 py-2 text-[11px] text-amber-50">
+      <p className="font-semibold">
+        #{banner.slotId + 1} · {outcomeLabel}
+      </p>
+      <p className="mt-0.5 text-[10px] text-amber-100/80">
+        {endLabel} · {banner.moveCount} {tr ? "hamle" : "moves"}
+      </p>
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="mt-1 text-[9px] text-amber-200/70 underline hover:text-amber-100"
+      >
+        {tr ? "Tamam" : "Dismiss"}
+      </button>
+    </div>
+  );
+}
+
+function LiveMatchPreflightV0({ tr, teacherStatus, featuredPly, onOpenLobby }) {
+  const engineReady = teacherStatus === "stockfish_wasm";
+  const matchWarm = featuredPly >= 4;
+  if (engineReady && matchWarm) return null;
+  return (
+    <div className="mb-2 rounded-lg border border-white/15 bg-black/50 px-3 py-3 text-[11px] text-white/70">
+      <p className="font-semibold text-white/90">
+        {tr ? "Canlı maç hazırlanıyor" : "Live match warming up"}
+      </p>
+      <ul className="mt-2 space-y-1 text-[10px]">
+        <li>{engineReady ? "✓" : "○"} Stockfish WASM</li>
+        <li>
+          {matchWarm ? "✓" : "○"} {tr ? "Ana tahta en az 4 hamle" : "Featured board ≥ 4 moves"} (ply {featuredPly})
+        </li>
+      </ul>
+      <p className="mt-2 text-[9px] text-white/45">
+        {tr
+          ? "Henüz hazır değiliz — önce lobiden maç seç veya 8 kamera izleme moduna geç."
+          : "Not ready yet — pick a match from lobby or watch the 8-camera grid."}
+      </p>
+      <button
+        type="button"
+        onClick={onOpenLobby}
+        className="mt-2 rounded border border-cyan-400/40 px-2 py-1 text-[10px] font-semibold text-cyan-100 hover:bg-cyan-500/15"
+      >
+        {tr ? "Chess lobisini aç" : "Open chess lobby"}
+      </button>
+    </div>
+  );
+}
+
 function LearningStripV0({ monitor, activeSlotCount, tr, timeControlLabel, sessionGamesEnded, lastGameEnd, showTech }) {
   const recentMoves = monitor?.recentMoves || [];
   const lastMove = recentMoves[recentMoves.length - 1];
@@ -316,8 +372,8 @@ function FeaturedMatchBroadcastV0({
             tr={tr}
           />
         </div>
-        <div className="mx-auto w-full max-w-[min(100%,520px)]">
-          <div className="grid grid-cols-8 gap-px overflow-hidden rounded-lg border-2 border-cyan-400/50 shadow-[0_0_24px_rgba(34,211,238,0.2)]">
+        <div className="mx-auto w-full max-w-[min(100%,min(72vw,52dvh))]">
+          <div className="grid aspect-square w-full grid-cols-8 gap-px overflow-hidden rounded-lg border-2 border-cyan-400/50 shadow-[0_0_24px_rgba(34,211,238,0.2)]">
             {rows.map((row, ri) =>
               row.map((cell, ci) => {
                 const dark = (ri + ci) % 2 === 1;
@@ -330,7 +386,7 @@ function FeaturedMatchBroadcastV0({
                   >
                     {cell ? (
                       <span
-                        className={`select-none text-[clamp(1.25rem,5vw,2.5rem)] leading-none ${
+                        className={`select-none text-[clamp(0.85rem,3.8vw,1.85rem)] leading-none ${
                           pieceBold ? "font-black" : "font-semibold"
                         } ${cell.color === "w" ? "text-white" : "text-black"}`}
                         style={
@@ -410,12 +466,31 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
   const [lastGameEnd, setLastGameEnd] = useState(
     () => window.__rhizoh?.chessGameCluster?.lastGameEnd || null
   );
+  const [gameEndBanner, setGameEndBanner] = useState(null);
   const civilization = useMemo(() => readChessCivilizationV0(), [monitor, tickCount]);
   const heroCopy = useMemo(() => getChessObservatoryHeroCopyV0(tr), [tr]);
   const featuredRoleCopy = useMemo(
     () => resolveClusterSlotRoleCopyV0(CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0, tr),
     [tr]
   );
+
+  const openChessLobby = () => {
+    window.dispatchEvent(
+      new CustomEvent(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, {
+        detail: Object.freeze({
+          source: "cluster_arena",
+          node: Object.freeze({
+            id: "chess_arena",
+            type: "zone",
+            label: "CHESS",
+            name: tr ? "Rhizoh Chess Lobby" : "Rhizoh Chess Lobby",
+            color: "#22d3ee"
+          })
+        })
+      })
+    );
+    onClose?.();
+  };
 
   useEffect(() => {
     publishChessClusterArenaOpenV0(Boolean(open));
@@ -452,9 +527,26 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
       if (ev?.detail) setMonitor(ev.detail);
       else refresh();
     };
+    const onGameEnd = (ev) => {
+      const detail = ev?.detail;
+      const ended = detail?.slot;
+      if (ended) {
+        setGameEndBanner(
+          Object.freeze({
+            slotId: ended.slotId,
+            outcome: detail.outcome,
+            endReason: detail.endReason,
+            ply: ended.ply,
+            moveCount: detail.moves?.length ?? ended.moveCount ?? ended.ply ?? 0
+          })
+        );
+        window.setTimeout(() => setGameEndBanner(null), 6000);
+      }
+      refresh();
+    };
     window.addEventListener(CHESS_CLUSTER_TICK_EVENT_V0, onTick);
     window.addEventListener(CHESS_CLUSTER_MOVE_EVENT_V0, onMove);
-    window.addEventListener(CHESS_CLUSTER_GAME_END_EVENT_V0, onTick);
+    window.addEventListener(CHESS_CLUSTER_GAME_END_EVENT_V0, onGameEnd);
     window.addEventListener(CHESS_LEARNING_MONITOR_EVENT_V0, onMonitor);
     window.addEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, onEngineStatus);
     refresh();
@@ -462,7 +554,7 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
     return () => {
       window.removeEventListener(CHESS_CLUSTER_TICK_EVENT_V0, onTick);
       window.removeEventListener(CHESS_CLUSTER_MOVE_EVENT_V0, onMove);
-      window.removeEventListener(CHESS_CLUSTER_GAME_END_EVENT_V0, onTick);
+      window.removeEventListener(CHESS_CLUSTER_GAME_END_EVENT_V0, onGameEnd);
       window.removeEventListener(CHESS_LEARNING_MONITOR_EVENT_V0, onMonitor);
       window.removeEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, onEngineStatus);
       window.clearInterval(poll);
@@ -472,6 +564,9 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
   if (!open) return null;
 
   const padded = Array.from({ length: CHESS_CLUSTER_SLOT_COUNT_V0 }, (_, i) => slots[i] || null);
+  const featuredSlot = padded[CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0];
+  const liveMatchReady =
+    teacherStatus === "stockfish_wasm" && (featuredSlot?.ply ?? 0) >= 4;
   const teacherLabel =
     teacherStatus === "stockfish_wasm"
       ? tr
@@ -506,6 +601,13 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={openChessLobby}
+              className="hidden rounded-md border border-white/20 px-2 py-1 text-[10px] text-white/70 hover:bg-white/10 sm:inline"
+            >
+              {tr ? "Lobi" : "Lobby"}
+            </button>
             <div className="flex rounded-md border border-white/15 p-0.5 text-[10px]">
               <button
                 type="button"
@@ -533,6 +635,11 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
         </header>
 
         <div className="shrink-0 border-b border-white/10 px-3 py-2 sm:px-4">
+          <GameEndBannerV0
+            banner={gameEndBanner}
+            tr={tr}
+            onDismiss={() => setGameEndBanner(null)}
+          />
           <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-white/55">
             <span>
               {isChessGameClusterRunningV0() ? (tr ? "● yayın aktif" : "● broadcast on") : tr ? "○ yayın kapalı" : "○ broadcast off"}
@@ -581,18 +688,39 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
 
         <div className="min-h-0 flex-1 overflow-y-auto p-2 sm:p-3">
           {viewMode === "featured" ? (
-            <FeaturedMatchBroadcastV0
-              slot={padded[CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0]}
-              monitor={monitor}
-              tr={tr}
-              boardColors={boardColors}
-              pieceBold={pieceBold}
-              civilization={civilization}
-              sessionGamesEnded={sessionGamesEnded}
-              heroCopy={heroCopy}
-              roleCopy={featuredRoleCopy}
-              lastGameEnd={lastGameEnd}
-            />
+            <>
+              <LiveMatchPreflightV0
+                tr={tr}
+                teacherStatus={teacherStatus}
+                featuredPly={featuredSlot?.ply ?? 0}
+                onOpenLobby={openChessLobby}
+              />
+              {liveMatchReady ? (
+                <FeaturedMatchBroadcastV0
+                  slot={featuredSlot}
+                  monitor={monitor}
+                  tr={tr}
+                  boardColors={boardColors}
+                  pieceBold={pieceBold}
+                  civilization={civilization}
+                  sessionGamesEnded={sessionGamesEnded}
+                  heroCopy={heroCopy}
+                  roleCopy={featuredRoleCopy}
+                  lastGameEnd={lastGameEnd}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-3 py-8 text-center text-sm text-white/45">
+                  <p>{tr ? "Canlı maç henüz hazır değil." : "Live match not ready yet."}</p>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("grid")}
+                    className="rounded border border-white/20 px-3 py-1.5 text-[11px] text-white/70 hover:bg-white/10"
+                  >
+                    {tr ? "8 kamera izle" : "Watch 8 cameras"}
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
               {padded.map((slot, i) => (

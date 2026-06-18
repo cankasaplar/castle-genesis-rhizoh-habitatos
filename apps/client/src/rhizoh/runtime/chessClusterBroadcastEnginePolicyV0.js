@@ -32,21 +32,33 @@ export function shouldUseStockfishForClusterSlotV0(slotId) {
 }
 
 /**
- * Hold premature max-ply resets while broadcast UI is open (keeps boards visually alive).
+ * B-roll grid slots are untimed during broadcast — only featured LIVE uses the clock.
+ * @param {object} slot
+ */
+export function shouldTickChessClusterSlotClockV0(slot) {
+  if (!isChessClusterBroadcastModeV0()) return true;
+  return Number(slot?.slotId) === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0;
+}
+
+/**
+ * Hold premature game ends while broadcast UI is open (keeps boards visually alive).
  * @param {object} slot
  * @param {string|null} _outcome
  * @param {string} endReason
  */
 export function shouldFinalizeClusterBroadcastEndV0(slot, _outcome, endReason) {
   if (!isChessClusterBroadcastModeV0()) return true;
-  if (endReason !== "max_ply_cap") return true;
+  if (endReason === "checkmate_or_draw") return true;
   const ply = Number(slot?.ply) || 0;
   const slotId = Number(slot?.slotId);
   const minPly =
     slotId === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0
       ? CHESS_CLUSTER_BROADCAST_MIN_FEATURED_PLY_V0
       : CHESS_CLUSTER_BROADCAST_MIN_GRID_PLY_V0;
-  return ply >= minPly;
+  if (endReason === "max_ply_cap" || endReason === "timeout") {
+    return ply >= minPly;
+  }
+  return true;
 }
 
 export function resolveChessClusterBroadcastMovesPerTickV0() {
