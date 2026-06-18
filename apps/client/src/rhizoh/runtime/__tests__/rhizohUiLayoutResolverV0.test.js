@@ -5,6 +5,7 @@ import {
   RHIZOH_UI_SURFACE_V0,
   RHIZOH_UI_Z_INDEX_V0,
   buildRhizohUiBottomCalcV0,
+  resolveRhizohProductDrawerBottomCssV0,
   resolveRhizohT0ChatBottomCssV0,
   resolveRhizohUiLayoutV0,
   resolveRhizohWorldSpaceMapStripBottomCssV0,
@@ -51,8 +52,23 @@ describe("rhizohUiLayoutResolverV0", () => {
     expect(layout.zIndex.CAPABILITY_HALO).toBeGreaterThan(layout.zIndex.PRODUCT_SHELL_BAR);
   });
 
-  it("publishes layout snapshot on window", () => {
+  it("publishes layout snapshot only when publish flag set", () => {
+    window.__rhizoh = {};
     resolveRhizohUiLayoutV0({ surface: RHIZOH_UI_SURFACE_V0.WORLD_SPACE });
+    expect(window.__rhizoh.uiLayout).toBeUndefined();
+    resolveRhizohUiLayoutV0({ surface: RHIZOH_UI_SURFACE_V0.WORLD_SPACE, publish: true });
     expect(window.__rhizoh?.uiLayout?.schema).toBe("rhizoh.ui_layout_resolver.v0");
+  });
+
+  it("product drawer bottom helper does not stomp published layout", () => {
+    window.__rhizoh = {};
+    resolveRhizohUiLayoutV0({
+      surface: RHIZOH_UI_SURFACE_V0.WORLD_SPACE,
+      drawerOpen: true,
+      publish: true
+    });
+    resolveRhizohProductDrawerBottomCssV0();
+    expect(window.__rhizoh.uiLayout.drawerOpen).toBe(true);
+    expect(window.__rhizoh.uiLayout.bottomCss.voiceDock).toContain("13.5rem");
   });
 });

@@ -68,7 +68,8 @@ export function buildRhizohUiBottomCalcV0(remParts = []) {
  * @param {{
  *   surface?: string,
  *   drawerOpen?: boolean,
- *   mapStripExpanded?: boolean
+ *   mapStripExpanded?: boolean,
+ *   publish?: boolean
  * }} [ctx]
  */
 export function resolveRhizohUiLayoutV0(ctx = {}) {
@@ -121,12 +122,29 @@ export function resolveRhizohUiLayoutV0(ctx = {}) {
     atMs: Date.now()
   });
 
-  if (typeof window !== "undefined") {
-    window.__rhizoh = window.__rhizoh || {};
-    window.__rhizoh.uiLayout = layout;
+  if (typeof window !== "undefined" && ctx.publish === true) {
+    publishRhizohUiLayoutSnapshotV0(layout);
   }
 
   return layout;
+}
+
+/** Publish authoritative layout snapshot for DevTools (does not recompute). */
+export function publishRhizohUiLayoutSnapshotV0(layout) {
+  if (typeof window === "undefined" || !layout) return layout;
+  window.__rhizoh = window.__rhizoh || {};
+  window.__rhizoh.uiLayout = layout;
+  return layout;
+}
+
+/** Read drawer-aware World · Space layout from drawer state machine SSOT. */
+export function resolveRhizohWorldSpaceUiLayoutFromDrawerV0(drawerOpen = false, extra = {}) {
+  return resolveRhizohUiLayoutV0({
+    surface: RHIZOH_UI_SURFACE_V0.WORLD_SPACE,
+    drawerOpen: drawerOpen === true,
+    ...extra,
+    publish: true
+  });
 }
 
 /** T0 live chat dock bottom offset. */
@@ -166,7 +184,7 @@ export function resolveRhizohWorldSpaceMapOverlayBottomCssV0(opts = {}) {
 
 /** Product drawer panel bottom (sits on shell bar). */
 export function resolveRhizohProductDrawerBottomCssV0() {
-  return resolveRhizohUiLayoutV0().bottomCss.productDrawer;
+  return buildRhizohUiBottomCalcV0([]);
 }
 
 /** Capability halo fixed top-right layout (T0). */
