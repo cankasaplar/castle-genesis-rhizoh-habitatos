@@ -256,6 +256,10 @@ export async function runEpistemicCouncilPipelineV0(triggerEval) {
         return ev;
       }
     });
+    window.__rhizoh.councilAnomalyReasoning = lastAnomalyReasoningV0;
+    void import("./rhizohShadowDevToolsRefreshV0.js")
+      .then((mod) => mod.refreshRhizohShadowDevToolsV0())
+      .catch(() => null);
     try {
       window.dispatchEvent(
         new CustomEvent(RHIZOH_EPISTEMIC_COUNCIL_EVENT_V0, { detail: observation })
