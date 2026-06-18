@@ -1,12 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   getChessEngineContentionSnapshotV0,
+  isChessArenaWorkspaceOpenV0,
   isChessClusterArenaOpenV0,
+  publishChessArenaWorkspaceOpenV0,
   publishChessClusterArenaOpenV0,
   resolveChessMoveTimeoutBufferMsV0,
   shouldDeferArenaEngineWorkV0,
   shouldDeferArenaPrewarmV0,
-  shouldDeferMapChessArenaOpenV0
+  shouldDeferMapChessArenaOpenV0,
+  shouldPauseClusterTickForArenaV0
 } from "../chessEngineContentionGateV0.js";
 import { CHESS_ENGINE_TASK_KIND_V0 } from "../chessEngineTaskQueueV0.js";
 
@@ -54,10 +57,38 @@ describe("chessEngineContentionGateV0", () => {
     expect(cluster).toBeGreaterThanOrEqual(2800);
   });
 
+  it("resolveChessMoveTimeoutBufferMsV0 gives arena moves extra time when cluster runs", () => {
+    const idle = resolveChessMoveTimeoutBufferMsV0({
+      queueKind: CHESS_ENGINE_TASK_KIND_V0.ARENA_MOVE
+    });
+    window.__rhizoh.chessGameCluster = { running: true };
+    const arena = resolveChessMoveTimeoutBufferMsV0({
+      queueKind: CHESS_ENGINE_TASK_KIND_V0.ARENA_MOVE
+    });
+    delete window.__rhizoh.chessGameCluster;
+    expect(arena).toBeGreaterThan(idle);
+    expect(arena).toBeGreaterThanOrEqual(5200);
+    expect(idle).toBeGreaterThanOrEqual(3200);
+  });
+
   it("getChessEngineContentionSnapshotV0 reports contended state", () => {
     window.__rhizoh.chessGameCluster = { running: true };
     window.__rhizoh.chessEngineQueue = { pendingCount: 3 };
     const snap = getChessEngineContentionSnapshotV0();
     expect(snap.contended).toBe(true);
+  });
+
+  it("shouldPauseClusterTickForArenaV0 when map arena workspace is open", () => {
+    publishChessArenaWorkspaceOpenV0(true);
+    expect(isChessArenaWorkspaceOpenV0()).toBe(true);
+    expect(shouldPauseClusterTickForArenaV0()).toBe(true);
+    publishChessArenaWorkspaceOpenV0(false);
+    expect(shouldPauseClusterTickForArenaV0()).toBe(false);
+  });
+
+  it("getChessEngineContentionSnapshotV0 includes arenaWorkspaceOpen", () => {
+    publishChessArenaWorkspaceOpenV0(true);
+    const snap = getChessEngineContentionSnapshotV0();
+    expect(snap.arenaWorkspaceOpen).toBe(true);
   });
 });

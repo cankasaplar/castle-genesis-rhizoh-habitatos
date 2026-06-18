@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Settings } from "lucide-react";
 import {
   CHESS_GAME_MODE_V0,
@@ -20,7 +20,7 @@ import {
 } from "../rhizoh/runtime/chessEngineTaskQueueV0.js";
 import { pickRhizohChessMoveV0 } from "../rhizoh/runtime/rhizohChessPlayerV0.js";
 import { CHESS_STOCKFISH_PRESET_V0 } from "../rhizoh/runtime/chessStockfishPresetsV0.js";
-import { shouldDeferArenaPrewarmV0, shouldDeferArenaEngineWorkV0 } from "../rhizoh/runtime/chessEngineContentionGateV0.js";
+import { shouldDeferArenaPrewarmV0, shouldDeferArenaEngineWorkV0, publishChessArenaWorkspaceOpenV0 } from "../rhizoh/runtime/chessEngineContentionGateV0.js";
 import {
   archiveChessArenaMatchV0,
   enrichChessArenaArchiveEntryV0,
@@ -320,6 +320,11 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   }, [refreshEngineStatusV0]);
 
   useEffect(() => {
+    publishChessArenaWorkspaceOpenV0(Boolean(open));
+    return () => publishChessArenaWorkspaceOpenV0(false);
+  }, [open]);
+
+  useEffect(() => {
     if (!open) return;
     const onEngineStatus = (ev) => {
       const detail = ev?.detail;
@@ -392,6 +397,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
 
   useEffect(() => {
     if (!open || outcome) return undefined;
+    if (aiBusy) return undefined;
     const needsTeacher =
       mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH || mode === CHESS_GAME_MODE_V0.AI_AI;
     const teacherReady = engineStatus === "stockfish_wasm";
@@ -405,7 +411,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       }
     }, 1000);
     return () => window.clearInterval(id);
-  }, [open, outcome, activeColor, engineStatus, mode, game, tick]);
+  }, [open, outcome, activeColor, engineStatus, mode, game, tick, aiBusy]);
 
   useEffect(() => {
     if (!open || !peerCastle?.uid) return;
@@ -475,6 +481,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     },
     [c2cMatch?.matchId, engineStatus, game, mode, opponentsV0, policyMode, mindId]
   );
+
+  const flagHandledRef = useRef(false);
 
   const runMatchLearningV0 = useCallback(
     async (outcomeVal, matchRow, extra = {}) => {
@@ -570,6 +578,39 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     ]
   );
 
+  const finishMatchOnTimeFlagV0 = useCallback(
+    (flagOutcome) => {
+      if (outcome || flagHandledRef.current) return;
+      flagHandledRef.current = true;
+      const label = formatChessOutcomeLabelV0(flagOutcome, tr);
+      setStatus(tr ? `Süre doldu — ${label}` : `Time flag — ${label}`);
+      const archiveEntry = persistFinishedMatchV0(flagOutcome, engineStatus, { mindId });
+      void runMatchLearningV0(flagOutcome, c2cMatch, {
+        opponentCastleId:
+          mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH ? "teacher_stockfish" : "stockfish",
+        archiveId: archiveEntry?.id
+      });
+    },
+    [outcome, tr, persistFinishedMatchV0, engineStatus, mindId, runMatchLearningV0, c2cMatch, mode]
+  );
+
+  useEffect(() => {
+    if (!open || outcome || game.isGameOver()) return;
+    if (activeColor === "w" && whiteClockMs <= 0) {
+      finishMatchOnTimeFlagV0("black_wins");
+    } else if (activeColor === "b" && blackClockMs <= 0) {
+      finishMatchOnTimeFlagV0("white_wins");
+    }
+  }, [
+    open,
+    outcome,
+    game,
+    activeColor,
+    whiteClockMs,
+    blackClockMs,
+    finishMatchOnTimeFlagV0
+  ]);
+
   const resetGame = useCallback(
     (nextMode = mode) => {
       const g = createChessArenaGameV0({ mode: nextMode });
@@ -588,6 +629,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       setBlackClockMs(clocks.black);
       setStatus(tr ? "Yeni oyun." : "New game.");
       setGameEpoch((n) => n + 1);
+      flagHandledRef.current = false;
     },
     [mode, tr]
   );
@@ -701,6 +743,14 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         setAiBusy(false);
         setEngineStatus(getChessTeacherStatusV0());
         const aiMove = typeof aiPick === "string" ? aiPick : aiPick?.move;
+        if (!aiMove) {
+          setStatus(
+            tr
+              ? "Motor meşgul — tekrar deneniyor (cluster arka planda)"
+              : "Engine busy — retrying (cluster in background)"
+          );
+          return true;
+        }
         if (aiMove) {
           const fenBeforeAi = game.fen();
           const aiResult = game.tryMove(aiMove);
@@ -814,7 +864,10 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         setEngineStatus(getChessTeacherStatusV0());
         if (!alive || game.isGameOver()) break;
         const aiMove = pick?.move;
-        if (!aiMove) break;
+        if (!aiMove) {
+          await new Promise((resolve) => window.setTimeout(resolve, 800));
+          continue;
+        }
         const fenBeforeAi = game.fen();
         const aiResult = game.tryMove(aiMove);
         if (!aiResult.ok) break;

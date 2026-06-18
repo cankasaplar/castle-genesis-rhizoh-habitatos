@@ -25,7 +25,7 @@ import {
 } from "./chessClusterClockV0.js";
 import { ensureChessLearningMonitorListenersV0 } from "./chessLearningMonitorV0.js";
 import { ensureRhizohChessLearningReportV0 } from "./rhizohChessLearningReportV0.js";
-import { CHESS_ARENA_SESSION_EVENT_V0 } from "./chessArenaSessionV0.js";
+import { shouldPauseClusterTickForArenaV0 } from "./chessEngineContentionGateV0.js";
 import { logChessMovePlayedV0 } from "./chessArenaTelemetryV0.js";
 import { publishRhizohChessManagerV0 } from "./rhizohChessManagerV0.js";
 import { publishChessGameRouterV0 } from "./chessGameRouterV0.js";
@@ -43,6 +43,7 @@ import {
   tryBeginChessSchedulerCallV0,
   __resetChessSchedulerUnifyForTestV0
 } from "./chessSchedulerUnifyV0.js";
+import { CHESS_ARENA_SESSION_EVENT_V0 } from "./chessArenaSessionV0.js";
 
 export const CHESS_GAME_CLUSTER_SCHEMA_V0 = "castle.rhizoh.chess_game_cluster.v0";
 export const CHESS_CLUSTER_SLOT_COUNT_V0 = 8;
@@ -392,6 +393,7 @@ async function advanceChessClusterSlotV0(slot) {
 
 async function runClusterTickV0(opts = {}) {
   if (!runningV0 || slotsV0.length === 0) return;
+  if (shouldPauseClusterTickForArenaV0()) return;
   if (!tryBeginChessSchedulerCallV0({
     minGapMs: configuredMinIntervalMsV0,
     testFast: opts.testFast

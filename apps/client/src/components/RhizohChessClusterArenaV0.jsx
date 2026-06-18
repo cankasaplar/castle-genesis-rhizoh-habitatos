@@ -3,9 +3,11 @@ import {
   CHESS_CLUSTER_MOVE_EVENT_V0,
   CHESS_CLUSTER_SLOT_COUNT_V0,
   CHESS_CLUSTER_TICK_EVENT_V0,
+  CHESS_CLUSTER_GAME_END_EVENT_V0,
   listChessClusterSlotsV0,
   isChessGameClusterRunningV0
 } from "../rhizoh/runtime/chessGameClusterV0.js";
+import { readChessCivilizationV0 } from "../rhizoh/runtime/chessCivilizationV0.js";
 import { publishChessClusterArenaOpenV0 } from "../rhizoh/runtime/chessEngineContentionGateV0.js";
 import { resolveChessClusterTimeControlV0 } from "../rhizoh/runtime/chessClusterSimulationPolicyV0.js";
 import {
@@ -197,6 +199,9 @@ function LearningStripV0({ monitor, activeSlotCount, tr, timeControlLabel }) {
         <span>mem {monitor?.memoryNodeCount ?? 0}</span>
         <span>tick {monitor?.clusterTick ?? 0}</span>
         <span>
+          {tr ? "bitti" : "ended"}: {typeof window !== "undefined" ? window.__rhizoh?.chessGameCluster?.sessionGamesEnded ?? 0 : 0}
+        </span>
+        <span>
           #{CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 + 1} ply {monitor?.spectator?.ply ?? 0}
         </span>
         {lastMove ? (
@@ -206,6 +211,106 @@ function LearningStripV0({ monitor, activeSlotCount, tr, timeControlLabel }) {
         ) : (
           <span className="text-white/40">{tr ? "hamle bekleniyor" : "awaiting moves"}</span>
         )}
+      </div>
+    </div>
+  );
+}
+
+function FeaturedMatchBroadcastV0({ slot, monitor, tr, boardColors, pieceBold, civilization, sessionGamesEnded }) {
+  if (!slot) {
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-white/40">
+        —
+      </div>
+    );
+  }
+
+  const rows = boardRowsFromFen(slot.fen);
+  const white = resolveChessClusterAgentPolicyV0(slot.whiteAgent);
+  const black = resolveChessClusterAgentPolicyV0(slot.blackAgent);
+  const turnW = slot.turn === "w";
+  const slotMoves = (monitor?.recentMoves || []).filter(
+    (m) => m.slotId === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0
+  );
+
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-3 lg:flex-row">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-white/70">
+          <span className="font-semibold text-cyan-100">
+            LIVE · {white.label} vs {black.label}
+          </span>
+          <span className="font-mono text-[10px] text-white/45">{slot.matchId}</span>
+        </div>
+        <div className="mb-2 grid grid-cols-2 gap-2 max-w-md">
+          <ClockRowV0
+            label={`${white.label} · ELO ${civilization?.elo ?? "—"}`}
+            clock={slot.clock?.whiteClock}
+            active={turnW && slot.status === "active"}
+            tr={tr}
+          />
+          <ClockRowV0
+            label={black.label}
+            clock={slot.clock?.blackClock}
+            active={!turnW && slot.status === "active"}
+            tr={tr}
+          />
+        </div>
+        <div className="mx-auto w-full max-w-[min(100%,520px)]">
+          <div className="grid grid-cols-8 gap-px overflow-hidden rounded-lg border-2 border-cyan-400/50 shadow-[0_0_24px_rgba(34,211,238,0.2)]">
+            {rows.map((row, ri) =>
+              row.map((cell, ci) => {
+                const dark = (ri + ci) % 2 === 1;
+                const bg = dark ? boardColors.dark : boardColors.light;
+                return (
+                  <div
+                    key={`${ri}-${ci}`}
+                    className="flex aspect-square items-center justify-center"
+                    style={{ background: bg }}
+                  >
+                    {cell ? (
+                      <span
+                        className={`select-none text-[clamp(1.25rem,5vw,2.5rem)] leading-none ${
+                          pieceBold ? "font-black" : "font-semibold"
+                        } ${cell.color === "w" ? "text-white" : "text-black"}`}
+                        style={
+                          cell.color === "b"
+                            ? { textShadow: "0 0 1px #fff, 0 1px 0 #fff" }
+                            : { textShadow: "0 1px 3px rgba(0,0,0,0.55)" }
+                        }
+                      >
+                        {cell.glyph}
+                      </span>
+                    ) : null}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+        <p className="mt-2 text-center text-[10px] text-white/45">
+          ply {slot.ply} · {tr ? "oturum maç" : "session games"}: {sessionGamesEnded}
+        </p>
+      </div>
+      <div className="flex w-full shrink-0 flex-col rounded-lg border border-white/10 bg-black/40 p-3 lg:w-56">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-violet-200/80">
+          {tr ? "Canlı hamleler" : "Live moves"}
+        </p>
+        <ul className="max-h-48 space-y-1 overflow-y-auto font-mono text-[10px] text-cyan-100/90">
+          {slotMoves.length ? (
+            slotMoves
+              .slice(-12)
+              .reverse()
+              .map((m, i) => (
+                <li key={`${m.san}-${i}`}>
+                  {m.san}{" "}
+                  <span className="text-white/35">({m.engine})</span>
+                </li>
+              ))
+          ) : (
+            <li className="text-white/35">{tr ? "hamle bekleniyor" : "awaiting moves"}</li>
+          )}
+        </ul>
       </div>
     </div>
   );
@@ -235,6 +340,11 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
   const [teacherStatus, setTeacherStatus] = useState(() => getChessStockfishEngineStatusV0());
   const [routerSnap, setRouterSnap] = useState(() => window.__rhizoh?.chessGameRouter || null);
   const [monitor, setMonitor] = useState(() => getChessLearningMonitorSnapshotV0("ui_mount"));
+  const [viewMode, setViewMode] = useState("grid");
+  const [sessionGamesEnded, setSessionGamesEnded] = useState(
+    () => Number(window.__rhizoh?.chessGameCluster?.sessionGamesEnded) || 0
+  );
+  const civilization = useMemo(() => readChessCivilizationV0(), [monitor, tickCount]);
 
   useEffect(() => {
     publishChessClusterArenaOpenV0(Boolean(open));
@@ -251,6 +361,7 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
       setMonitor(getChessLearningMonitorSnapshotV0("poll"));
       setTickCount(window.__rhizoh?.chessGameCluster?.tickCount ?? 0);
       setClusterTimeControlId(window.__rhizoh?.chessGameCluster?.timeControlId || null);
+      setSessionGamesEnded(Number(window.__rhizoh?.chessGameCluster?.sessionGamesEnded) || 0);
     };
     const onEngineStatus = (ev) => {
       if (ev?.detail?.status) setTeacherStatus(ev.detail.status);
@@ -271,6 +382,7 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
     };
     window.addEventListener(CHESS_CLUSTER_TICK_EVENT_V0, onTick);
     window.addEventListener(CHESS_CLUSTER_MOVE_EVENT_V0, onMove);
+    window.addEventListener(CHESS_CLUSTER_GAME_END_EVENT_V0, onTick);
     window.addEventListener(CHESS_LEARNING_MONITOR_EVENT_V0, onMonitor);
     window.addEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, onEngineStatus);
     refresh();
@@ -278,6 +390,7 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
     return () => {
       window.removeEventListener(CHESS_CLUSTER_TICK_EVENT_V0, onTick);
       window.removeEventListener(CHESS_CLUSTER_MOVE_EVENT_V0, onMove);
+      window.removeEventListener(CHESS_CLUSTER_GAME_END_EVENT_V0, onTick);
       window.removeEventListener(CHESS_LEARNING_MONITOR_EVENT_V0, onMonitor);
       window.removeEventListener(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, onEngineStatus);
       window.clearInterval(poll);
@@ -318,13 +431,31 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
                 : `#1 Rhizoh AI vs Stockfish · ${clusterTimeControl.labelEn} · ${boardColors.label || "classic"}`}
             </p>
           </div>
-          <button
-            type="button"
-            className="rounded-md border border-white/20 px-3 py-1 text-xs text-white/80 hover:bg-white/10"
-            onClick={onClose}
-          >
-            {tr ? "Kapat" : "Close"}
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-md border border-white/15 p-0.5 text-[10px]">
+              <button
+                type="button"
+                className={`rounded px-2 py-0.5 ${viewMode === "grid" ? "bg-white/15 text-white" : "text-white/50"}`}
+                onClick={() => setViewMode("grid")}
+              >
+                8 {tr ? "kamera" : "cam"}
+              </button>
+              <button
+                type="button"
+                className={`rounded px-2 py-0.5 ${viewMode === "featured" ? "bg-cyan-500/25 text-cyan-50" : "text-white/50"}`}
+                onClick={() => setViewMode("featured")}
+              >
+                {tr ? "Canlı maç" : "Live match"}
+              </button>
+            </div>
+            <button
+              type="button"
+              className="rounded-md border border-white/20 px-3 py-1 text-xs text-white/80 hover:bg-white/10"
+              onClick={onClose}
+            >
+              {tr ? "Kapat" : "Close"}
+            </button>
+          </div>
         </header>
 
         <div className="shrink-0 border-b border-white/10 px-3 py-2 sm:px-4">
@@ -353,19 +484,31 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-2 sm:p-3">
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
-            {padded.map((slot, i) => (
-              <LiveCameraBoardV0
-                key={i}
-                slot={slot}
-                featured={i === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0}
-                highlight={highlightSlot === i}
-                tr={tr}
-                boardColors={boardColors}
-                pieceBold={pieceBold}
-              />
-            ))}
-          </div>
+          {viewMode === "featured" ? (
+            <FeaturedMatchBroadcastV0
+              slot={padded[CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0]}
+              monitor={monitor}
+              tr={tr}
+              boardColors={boardColors}
+              pieceBold={pieceBold}
+              civilization={civilization}
+              sessionGamesEnded={sessionGamesEnded}
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
+              {padded.map((slot, i) => (
+                <LiveCameraBoardV0
+                  key={i}
+                  slot={slot}
+                  featured={i === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0}
+                  highlight={highlightSlot === i}
+                  tr={tr}
+                  boardColors={boardColors}
+                  pieceBold={pieceBold}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
