@@ -31,7 +31,9 @@ INIT
 ```
 
 Client stub: `rhizohEpistemicCouncilV0.js`  
-Gateway stub: `apps/gateway/src/council/rhizohEpistemicCouncilGatewayV0.js`
+Gateway: `apps/gateway/src/council/rhizohEpistemicCouncilAnomalyV0.js` · POST `/rhizoh/council/anomaly-reasoning`
+
+See [RHIZOH_COUNCIL_ANOMALY_REASONING_V0.md](RHIZOH_COUNCIL_ANOMALY_REASONING_V0.md).
 
 All transitions are **async** and **non-blocking** relative to the move pipeline.
 

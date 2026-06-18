@@ -12,6 +12,11 @@ import {
   getEpistemicMemoryGraphComplianceSummaryV0,
   projectShadowTraceToEpistemicMemoryV0
 } from "./rhizohEpistemicMemoryGraphV0.js";
+import {
+  __resetEpistemicGraphInflationGuardForTestV0,
+  assessEpistemicGraphInflationRiskV0
+} from "./rhizohEpistemicGraphInflationGuardV0.js";
+import { getLastCouncilAnomalyReasoningV0 } from "./rhizohEpistemicCouncilV0.js";
 
 export const RHIZOH_SHADOW_TRACE_LEDGER_SCHEMA_V0 = "castle.rhizoh.shadow_trace_ledger.v0";
 export const RHIZOH_SHADOW_TRACE_EVENT_V0 = "rhizoh:shadow-trace-ledger-v0";
@@ -352,6 +357,18 @@ export function exportShadowComplianceSnapshotV0(label = "checkpoint") {
       });
     })(),
     memoryGraph: getEpistemicMemoryGraphComplianceSummaryV0(),
+    graphInflationRisk: assessEpistemicGraphInflationRiskV0(),
+    anomalyReasoning: (() => {
+      const last = getLastCouncilAnomalyReasoningV0();
+      if (!last) return null;
+      return Object.freeze({
+        sessionId: last.sessionId,
+        anomalyScore: last.anomalyScore,
+        gatewayOk: last.gatewayOk,
+        severity: last.severity,
+        reasoningChain: last.reasoningChain
+      });
+    })(),
     governance: SHADOW_LEDGER_GOVERNANCE_V0
   });
 
@@ -388,6 +405,7 @@ export function __resetShadowTraceLedgerForTestV0() {
   recordSeqV0 = 0;
   lastStressRunForComplianceV0 = null;
   __resetEpistemicMemoryGraphForTestV0();
+  __resetEpistemicGraphInflationGuardForTestV0();
   if (typeof window !== "undefined") {
     delete window.__rhizoh?.shadowTraceLedger;
     delete window.__rhizoh?.shadowComplianceSnapshot;

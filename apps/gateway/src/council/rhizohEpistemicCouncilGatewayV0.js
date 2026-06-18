@@ -1,7 +1,9 @@
 /**
- * Epistemic Council gateway stub v0 — Karpathy-style collect/rank/synthesize (deferred).
+ * Epistemic Council gateway stub v0 — Karpathy-style collect/rank/synthesize.
  * Observation-only; no move authority. RESEARCH-ONLY
  */
+
+import { runCouncilAnomalyReasoningV0 } from "./rhizohEpistemicCouncilAnomalyV0.js";
 
 export const RHIZOH_EPISTEMIC_COUNCIL_GATEWAY_SCHEMA_V0 =
   "castle.rhizoh.epistemic_council_gateway.v0";
@@ -36,16 +38,12 @@ export function buildCouncilGatewayRequestV0(payload = {}) {
 }
 
 /**
- * Stub response until OpenRouter / multi-model wiring.
  * @param {object} request
  */
 export function runCouncilGatewayStubV0(request) {
-  return Object.freeze({
-    schema: RHIZOH_EPISTEMIC_COUNCIL_GATEWAY_SCHEMA_V0,
-    request,
-    status: "stub",
-    synthesis: "Gateway council stub — wire Karpathy collect/rank/chairman here.",
-    lenses: Object.freeze([]),
-    atMs: Date.now()
+  return runCouncilAnomalyReasoningV0({
+    fen: request?.fen,
+    matchId: request?.matchId,
+    triggers: request?.triggers || []
   });
 }

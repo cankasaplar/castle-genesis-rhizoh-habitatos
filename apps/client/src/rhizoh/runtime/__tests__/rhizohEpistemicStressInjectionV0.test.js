@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
   __resetEpistemicStressInjectionForTestV0,
   buildEpistemicConflictGraphV0,
@@ -17,6 +17,19 @@ describe("rhizohEpistemicStressInjectionV0", () => {
     if (typeof window !== "undefined") {
       window.__rhizoh = { shadowMode: { force: true }, chessGameCluster: { running: true } };
     }
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          anomalyScore: 0.62,
+          synthesis: "test",
+          reasoningChain: [{ step: "COLLECT" }],
+          lenses: []
+        })
+      }))
+    );
   });
 
   it("rejects injection when shadow mode inactive", async () => {
@@ -51,6 +64,16 @@ describe("rhizohEpistemicStressInjectionV0", () => {
     expect(out.conflictGraph.lensCount).toBe(4);
     expect(out.records.some((r) => r.eventType === "STOCKFISH_TIMEOUT")).toBe(true);
     expect(out.records.some((r) => r.trustClass === "adversarial")).toBe(true);
+  });
+
+  it("throttles rapid stress repetition unless forced", async () => {
+    const first = await injectEpistemicStressV0({ profile: "light" });
+    expect(first.ok).toBe(true);
+    const second = await injectEpistemicStressV0({ profile: "light" });
+    expect(second.ok).toBe(false);
+    expect(second.reason).toBe("stress_repetition_throttled");
+    const forced = await injectEpistemicStressV0({ profile: "light", force: true });
+    expect(forced.ok).toBe(true);
   });
 
   it("builds conflict graph with stance divergence edges", () => {

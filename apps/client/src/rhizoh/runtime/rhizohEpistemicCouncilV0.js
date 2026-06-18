@@ -1,6 +1,6 @@
 /**
  * Epistemic Council v0 — gatekeeper only (observation augmentation, never execution).
- * Triggered on uncertainty spikes; output is contextual_annotation isolated from drift loop.
+ * Phase 5: gateway collect/rank/synthesize wire + inflation cooldown guards.
  * RESEARCH-ONLY
  */
 
@@ -8,6 +8,12 @@ import { TOPOLOGY_EVENT_TYPES_V0 } from "./rhizohTopologyEventEmitterV0.js";
 import { parseChessClusterSlotIdFromMatchIdV0 } from "./chessTelemetryLogV0.js";
 import { writeChessClusterMemoryNodeV0 } from "./chessClusterMemoryGraphV0.js";
 import { appendShadowTraceFromCouncilV0 } from "./rhizohShadowTraceLedgerV0.js";
+import { fetchCouncilAnomalyReasoningV0 } from "./rhizohEpistemicCouncilClientV0.js";
+import {
+  assessEpistemicGraphInflationRiskV0,
+  recordCouncilTriggerForInflationGuardV0
+} from "./rhizohEpistemicGraphInflationGuardV0.js";
+import { getEpistemicMemoryGraphComplianceSummaryV0 } from "./rhizohEpistemicMemoryGraphV0.js";
 
 export const RHIZOH_EPISTEMIC_COUNCIL_SCHEMA_V0 = "castle.rhizoh.epistemic_council.v0";
 export const RHIZOH_EPISTEMIC_COUNCIL_EVENT_V0 = "rhizoh:epistemic-council-v0";
@@ -42,9 +48,15 @@ export const COUNCIL_OBSERVATION_GOVERNANCE_V0 = Object.freeze({
 
 const DRIFT_TRIGGER_THRESHOLD_V0 = 0.5;
 const SESSION_TTL_MS_V0 = 120_000;
+const COUNCIL_COOLDOWN_MS_V0 = 60_000;
 
 /** @type {Map<string, object>} */
 const sessionsV0 = new Map();
+/** @type {Map<string, number>} matchKey → last council atMs */
+const lastCouncilAtByMatchKeyV0 = new Map();
+
+/** @type {object|null} */
+let lastAnomalyReasoningV0 = null;
 
 let sessionSeqV0 = 0;
 
@@ -84,8 +96,31 @@ export function evaluateCouncilTriggerV0(ctx = {}) {
     matchId: ctx.matchId || null,
     slotId: ctx.slotId ?? parseChessClusterSlotIdFromMatchIdV0(ctx.matchId),
     fen: ctx.fen || ctx.fenBefore || null,
+    stressRunId: ctx.stressRunId || null,
+    conflictGraph: ctx.conflictGraph || null,
     atMs: Date.now()
   });
+}
+
+/**
+ * @param {object} triggerEval
+ * @returns {object|null}
+ */
+export function evaluateCouncilCooldownV0(triggerEval) {
+  if (!triggerEval) return null;
+  if (triggerEval.bypassCooldown === true) return null;
+  const matchKey = triggerEval.matchId || `slot_${triggerEval.slotId ?? "na"}`;
+  const lastAt = lastCouncilAtByMatchKeyV0.get(matchKey) || 0;
+  const elapsed = Date.now() - lastAt;
+  if (elapsed < COUNCIL_COOLDOWN_MS_V0) {
+    return Object.freeze({
+      throttled: true,
+      matchKey,
+      cooldownMs: COUNCIL_COOLDOWN_MS_V0 - elapsed,
+      reason: "council_match_cooldown"
+    });
+  }
+  return null;
 }
 
 /**
@@ -119,14 +154,40 @@ function advanceCouncilPhaseV0(sessionId, nextPhase) {
 }
 
 /**
- * Dry-run council pipeline — no external LLM until gateway wired.
+ * Gateway-first council pipeline with dry-run fallback.
  * @param {object} triggerEval
  */
-export async function runEpistemicCouncilDryRunV0(triggerEval) {
+export async function runEpistemicCouncilPipelineV0(triggerEval) {
   const session = createCouncilSessionV0(triggerEval);
   advanceCouncilPhaseV0(session.sessionId, COUNCIL_SESSION_PHASE_V0.COLLECT);
+
+  const gatewayResult = await fetchCouncilAnomalyReasoningV0({
+    matchId: triggerEval.matchId,
+    slotId: triggerEval.slotId,
+    fen: triggerEval.fen,
+    triggers: triggerEval.triggers,
+    sessionId: session.sessionId,
+    stressRunId: triggerEval.stressRunId || null,
+    conflictGraph: triggerEval.conflictGraph || null,
+    memoryGraph: getEpistemicMemoryGraphComplianceSummaryV0()
+  });
+
   advanceCouncilPhaseV0(session.sessionId, COUNCIL_SESSION_PHASE_V0.RANK);
   advanceCouncilPhaseV0(session.sessionId, COUNCIL_SESSION_PHASE_V0.SYNTHESIZE);
+
+  const gatewayOk = Boolean(gatewayResult?.ok);
+  const anomalyScore = gatewayOk
+    ? Number(gatewayResult.anomalyScore) || 0
+    : Number(Math.min(1, (triggerEval.triggers?.length || 1) * 0.2).toFixed(4));
+  const reasoningChain = gatewayOk
+    ? gatewayResult.reasoningChain
+    : Object.freeze([
+        Object.freeze({ step: "FALLBACK", atMs: Date.now(), reason: gatewayResult?.reason })
+      ]);
+  const synthesis = gatewayOk
+    ? gatewayResult.synthesis
+    : "Council dry-run fallback: gateway unreachable; local annotation only.";
+  const lenses = gatewayOk ? gatewayResult.lenses || Object.freeze([]) : Object.freeze([]);
 
   const observation = Object.freeze({
     schema: RHIZOH_EPISTEMIC_COUNCIL_SCHEMA_V0,
@@ -136,10 +197,23 @@ export async function runEpistemicCouncilDryRunV0(triggerEval) {
     matchId: triggerEval.matchId,
     slotId: triggerEval.slotId,
     fen: triggerEval.fen,
-    synthesis:
-      "Council dry-run: uncertainty spike recorded; multi-model collect/rank deferred to gateway.",
-    lenses: Object.freeze([]),
+    synthesis,
+    lenses: Object.freeze(lenses || []),
+    anomalyScore,
+    reasoningChain,
+    gatewayOk,
+    gatewayReason: gatewayOk ? null : gatewayResult?.reason || "fallback",
+    graphInflationRisk: assessEpistemicGraphInflationRiskV0(),
     governance: COUNCIL_OBSERVATION_GOVERNANCE_V0,
+    atMs: Date.now()
+  });
+
+  lastAnomalyReasoningV0 = Object.freeze({
+    sessionId: session.sessionId,
+    anomalyScore,
+    reasoningChain,
+    gatewayOk,
+    severity: gatewayResult?.gateway?.severity || null,
     atMs: Date.now()
   });
 
@@ -161,16 +235,24 @@ export async function runEpistemicCouncilDryRunV0(triggerEval) {
 
   advanceCouncilPhaseV0(session.sessionId, COUNCIL_SESSION_PHASE_V0.CLOSED);
 
+  const matchKey = triggerEval.matchId || `slot_${triggerEval.slotId ?? "na"}`;
+  lastCouncilAtByMatchKeyV0.set(matchKey, Date.now());
+  recordCouncilTriggerForInflationGuardV0();
+
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
     window.__rhizoh.epistemicCouncil = Object.freeze({
       lastSession: session,
       lastObservation: observation,
+      lastAnomalyReasoning: lastAnomalyReasoningV0,
       sessionCount: sessionSeqV0,
-      triggerDryRun: (ctx = {}) => {
+      cooldownMs: COUNCIL_COOLDOWN_MS_V0,
+      triggerPipeline: (ctx = {}) => {
         const ev = evaluateCouncilTriggerV0(ctx);
         if (!ev) return null;
-        void runEpistemicCouncilDryRunV0(ev).catch(() => null);
+        const throttle = evaluateCouncilCooldownV0(ev);
+        if (throttle) return throttle;
+        void runEpistemicCouncilPipelineV0(ev).catch(() => null);
         return ev;
       }
     });
@@ -186,6 +268,11 @@ export async function runEpistemicCouncilDryRunV0(triggerEval) {
   return observation;
 }
 
+/** @deprecated alias — use runEpistemicCouncilPipelineV0 */
+export async function runEpistemicCouncilDryRunV0(triggerEval) {
+  return runEpistemicCouncilPipelineV0(triggerEval);
+}
+
 /**
  * Non-blocking council enqueue — never touches move pipeline.
  * @param {object} ctx
@@ -194,8 +281,14 @@ export function maybeEnqueueEpistemicCouncilV0(ctx = {}) {
   if (ctx.sourceKind === COUNCIL_MEMORY_KIND_V0.CONTEXTUAL_ANNOTATION) return null;
   const triggerEval = evaluateCouncilTriggerV0(ctx);
   if (!triggerEval?.shouldInvoke) return null;
-  void runEpistemicCouncilDryRunV0(triggerEval).catch(() => null);
+  const throttle = evaluateCouncilCooldownV0(triggerEval);
+  if (throttle) return throttle;
+  void runEpistemicCouncilPipelineV0(triggerEval).catch(() => null);
   return triggerEval;
+}
+
+export function getLastCouncilAnomalyReasoningV0() {
+  return lastAnomalyReasoningV0;
 }
 
 export function listCouncilSessionsV0() {
@@ -209,5 +302,7 @@ export function listCouncilSessionsV0() {
 /** @internal vitest */
 export function __resetEpistemicCouncilForTestV0() {
   sessionsV0.clear();
+  lastCouncilAtByMatchKeyV0.clear();
+  lastAnomalyReasoningV0 = null;
   sessionSeqV0 = 0;
 }
