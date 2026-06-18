@@ -62,22 +62,25 @@ export function isChessEngineContendedV0() {
   return getChessEngineContentionSnapshotV0().contended;
 }
 
-/** Defer arena map warmup while cluster holds the single WASM pipeline. */
+/** Defer arena WASM warmup while cluster holds the single pipeline (background only). */
 export function shouldDeferArenaPrewarmV0() {
-  return shouldDeferArenaEngineWorkV0();
+  const snap = getChessEngineContentionSnapshotV0();
+  return snap.clusterRunning && (snap.chessLock || snap.queuePending > 0);
 }
 
-/** Defer arena Stockfish work (map arena, AI auto-play) while cluster is active. */
+/**
+ * Defer arena Stockfish while the 8-camera cluster modal is open (broadcast).
+ * Background cluster sim must not block map chess arena entry or play.
+ */
 export function shouldDeferArenaEngineWorkV0() {
   const snap = getChessEngineContentionSnapshotV0();
   if (!snap.clusterRunning) return false;
-  return snap.clusterArenaOpen || snap.chessLock || snap.queuePending > 0;
+  return snap.clusterArenaOpen;
 }
 
-/** Block map chess arena open while cluster broadcast / observation UI is up. */
+/** Block map chess arena only while 8-camera observation UI is open. */
 export function shouldDeferMapChessArenaOpenV0() {
-  if (isChessClusterArenaOpenV0()) return true;
-  return Boolean(getChessEngineContentionSnapshotV0().clusterRunning);
+  return isChessClusterArenaOpenV0();
 }
 
 /**
