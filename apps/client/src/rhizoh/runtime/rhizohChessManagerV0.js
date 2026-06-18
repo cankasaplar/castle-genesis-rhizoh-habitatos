@@ -90,7 +90,8 @@ export function getRhizohChessManagerSnapshotV0(reason = "poll") {
       learning: "window.__rhizoh.chessLearningMonitor",
       memory: "window.__rhizoh.chessClusterMemory",
       learningReport: "window.__rhizoh.learningReport()",
-      chessLifetimeReport: "window.__rhizoh.chessLifetimeReport()"
+      chessLifetimeReport: "window.__rhizoh.chessLifetimeReport()",
+      chessHistoryBrain: "window.__rhizoh.chessHistoryBrain()"
     }),
     atMs: Date.now()
   });
