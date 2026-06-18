@@ -109,8 +109,19 @@ export function listChessArenaArchiveV0(limit = 12) {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     const entries = Array.isArray(parsed?.entries) ? parsed.entries : [];
-    return entries.slice(0, Math.max(1, limit));
+    return entries
+      .filter((row) => isChessArenaArchiveMeaningfulV0(row))
+      .slice(0, Math.max(1, limit));
   } catch {
     return [];
   }
+}
+
+/**
+ * Completed games with zero moves are abandoned sessions (clock opened, no play).
+ * @param {{ moves?: unknown[] }} row
+ */
+export function isChessArenaArchiveMeaningfulV0(row) {
+  const moves = Array.isArray(row?.moves) ? row.moves : [];
+  return moves.length > 0;
 }

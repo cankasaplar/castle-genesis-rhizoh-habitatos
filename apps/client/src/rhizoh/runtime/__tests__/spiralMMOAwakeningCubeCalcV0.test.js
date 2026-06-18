@@ -35,6 +35,8 @@ describe("spiralMMOAwakeningCubeCalcV0", () => {
     });
     const built = spiralMMOAwakeningCubeHtmlV0(spec);
     expect(built.html).toContain("rhizoh-spiral-flight-cube");
+    expect(built.html).toContain("<svg");
+    expect(built.html).toContain("<line");
     expect(built.spinKeyframes).toContain("@keyframes");
   });
 });

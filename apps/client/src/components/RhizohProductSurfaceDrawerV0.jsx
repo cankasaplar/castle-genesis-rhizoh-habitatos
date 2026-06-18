@@ -127,7 +127,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
 
   return (
     <div
-      className="pointer-events-auto fixed inset-x-0 mx-auto max-h-[min(52vh,28rem)] w-full max-w-2xl overflow-hidden rounded-t-2xl border border-cyan-400/25 bg-[#030711]/95 shadow-[0_-8px_40px_rgba(0,0,0,0.55)] backdrop-blur-xl"
+      className="pointer-events-auto fixed inset-x-0 mx-auto max-h-[min(52vh,28rem)] w-full max-w-2xl overflow-hidden rounded-t-2xl border border-cyan-400/30 bg-[#050810] shadow-[0_-12px_48px_rgba(0,0,0,0.72)]"
       style={{
         bottom: resolveRhizohProductDrawerBottomCssV0(),
         zIndex: RHIZOH_UI_Z_INDEX_V0.PRODUCT_DRAWER
@@ -143,7 +143,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
       data-rhizoh-wal-entry={memory?.wal_entry_id ?? ""}
       data-rhizoh-pack-id={memory?.pack_id ?? ""}
     >
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
+      <div className="flex items-center justify-between border-b border-white/12 bg-[#061018] px-4 py-2.5">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-200/90">{meta.title}</p>
           <p className="text-[10px] text-white/55 normal-case">{meta.blurb}</p>
@@ -157,7 +157,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
         </button>
       </div>
 
-      <div className="max-h-[calc(min(52vh,28rem)-3rem)] overflow-y-auto px-3 py-3 no-scrollbar">
+      <div className="max-h-[calc(min(52vh,28rem)-3.25rem)] overflow-y-auto bg-[#050810] px-3 py-3 no-scrollbar">
         {surface === "hall" ? (
           <RhizohStudioCitizenShellV0 surfaceKind="hall">
             <UserOutcomeCard surface="hall" locale={locale} />
@@ -175,7 +175,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
         ) : null}
 
         {surface === "greenroom" || surface === "broadcast" ? (
-          <RhizohStudioCitizenShellV0 surfaceKind={surface}>
+          <RhizohStudioCitizenShellV0 surfaceKind={surface} showKernelStrips={false}>
             <UserOutcomeCard surface={surface} locale={locale} />
             <RhizohGreenroomWaitingPanelV0
               uiLocale={locale}
@@ -271,7 +271,7 @@ function UserOutcomeCard({ surface, locale }) {
   const copy = USER_OUTCOME_COPY_V0[surface]?.[tr ? "tr" : "en"];
   if (!copy) return null;
   return (
-    <section className="mb-3 rounded-xl border border-cyan-400/20 bg-cyan-950/15 px-3 py-3 normal-case">
+    <section className="mb-3 rounded-xl border border-cyan-400/25 bg-[#081420] px-3 py-3 normal-case shadow-inner">
       <p className="text-[8px] font-black uppercase tracking-[0.2em] text-cyan-200/80">
         {copy.eyebrow}
       </p>
