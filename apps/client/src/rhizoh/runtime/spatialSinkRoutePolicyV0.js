@@ -9,6 +9,7 @@
 import { resolveIngressRouteV0 } from "../ingress/ingress_router.js";
 import { isRhizohSpatialProductShellEnabled } from "./castleWorldLayerGateV0.js";
 import { isRhizohWorldSpaceCesiumEnvEnabledV0 } from "./rhizohLayerContextV0.js";
+import { publishRhizohSpatialModeV0 } from "./rhizohSpatialModeV0.js";
 import {
   isRhizohT0LivePathV0,
   resolveWorldDomainFromPathV0
@@ -72,6 +73,11 @@ export function markCastleAppEngineReadyV0(source = "app.engine.ready") {
       detail: Object.freeze({ source, atMs })
     })
   );
+  try {
+    publishRhizohSpatialModeV0();
+  } catch {
+    /* spatial mode optional in tests */
+  }
   return true;
 }
 

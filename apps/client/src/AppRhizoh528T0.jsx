@@ -231,6 +231,7 @@ import { recordCastleRuntimeFrame } from "./kernel/castleRuntimeMetrics.js";
 import { getL9BackgroundTickStride } from "./kernel/castleL9GatePolicy.js";
 import { CASTLE_L9_EXECUTION_FEEDBACK } from "./kernel/castleL9ExecutionFeedback.js";
 import { warmSwarmGpu, createRhizohAutonomousCompanyRuntimeV0 } from "./kernel/swarmGpuBridge.js";
+import { publishRhizohSpatialModeV0 } from "./rhizoh/runtime/rhizohSpatialModeV0.js";
 import { composeRhizohVisualCognitionStateV1 } from "./kernel/visual/RhizohVisualCognitionComposerV1.js";
 import { composeRelationalPresenceStateV1 } from "./kernel/visual/RelationalPresenceComposerV1.js";
 import { computeRhizohCinematicOutputV1, resolveAdaptiveIntroRouteV1 } from "./kernel/visual/RhizohCinematicOrchestratorV1.js";
@@ -7400,6 +7401,7 @@ export default function AppRhizoh528() {
     }
   }, []);
   useEffect(() => {
+    publishRhizohSpatialModeV0();
     void warmSwarmGpu();
   }, []);
   useEffect(() => {
