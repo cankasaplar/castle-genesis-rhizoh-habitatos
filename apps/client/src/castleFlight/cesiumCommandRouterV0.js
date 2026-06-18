@@ -6,6 +6,7 @@
 import { executeCesiumCommandV0 } from "./cesiumCommandExecutorV0.js";
 import { RHIZOH_MAP_COMMAND_EVENT_V0 } from "../rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
 import { gateRhizohSpatialCommandV0 } from "../rhizoh/runtime/rhizohLayerContextV0.js";
+import { shouldRhizohAllowBootstrapCalibrationFlyV0 } from "../rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
 import { readRhizohWorldSystemModeV0 } from "../rhizoh/runtime/rhizohWorldSystemModeV0.js";
 
 function resolveSpatialGateContextV0() {
@@ -157,7 +158,8 @@ export function routeCesiumCommandV0(request = {}) {
   }
 
   if (SPATIAL_LAYER_OPS_V0.has(op)) {
-    const gate = gateRhizohSpatialCommandV0(op, resolveSpatialGateContextV0());
+    const gateCtx = resolveSpatialGateContextV0();
+    const gate = gateRhizohSpatialCommandV0(op, gateCtx);
     if (!gate.allowed) {
       const blocked = Object.freeze({
         ok: false,
@@ -171,6 +173,23 @@ export function routeCesiumCommandV0(request = {}) {
         console.warn("[castle:cesium-router] blocked — layer gate", { op, skipReason: gate.reason });
       }
       return blocked;
+    }
+    if (
+      (op === "calibration_root" || op === "bootstrap_viewport") &&
+      !shouldRhizohAllowBootstrapCalibrationFlyV0({
+        pathname: gateCtx.pathname,
+        userIntent: request.meta?.userIntent === true || request.userIntent === true,
+        source: String(request.source || request.meta?.source || "")
+      })
+    ) {
+      return Object.freeze({
+        ok: false,
+        op,
+        skipped: true,
+        deferred: false,
+        skipReason: "world_space_no_unsolicited_bootstrap_fly",
+        coalesced: false
+      });
     }
   }
 

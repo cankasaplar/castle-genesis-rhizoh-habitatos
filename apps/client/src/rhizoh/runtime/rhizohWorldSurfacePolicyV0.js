@@ -179,6 +179,26 @@ export function coerceRhizohProductRealityModeV0(mode, opts = {}) {
 }
 
 /**
+ * Block unsolicited Sarıyer / bootstrap viewport fly on World · Space.
+ * Explicit userIntent or directed fly sources may still move the camera.
+ * @param {{ pathname?: string, worldDomain?: string, userIntent?: boolean, source?: string, productSurface?: string, realityMode?: string }} [ctx]
+ */
+export function shouldRhizohAllowBootstrapCalibrationFlyV0(ctx = {}) {
+  if (ctx.userIntent === true) return true;
+  const source = String(ctx.source || "");
+  const allowedSources = new Set([
+    "voice_warp",
+    "pin_click",
+    "map_fly_to",
+    "world_space_facade",
+    "explicit_fly"
+  ]);
+  if (allowedSources.has(source)) return true;
+  if (isRhizohWorldSpaceMapStageV0(ctx)) return false;
+  return shouldRhizohFlyToIstanbulV0(ctx);
+}
+
+/**
  * @param {{ productSurface?: string, realityMode?: string, source?: string }} ctx
  * @returns {boolean}
  */

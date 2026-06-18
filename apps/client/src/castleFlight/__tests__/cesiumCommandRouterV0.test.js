@@ -134,7 +134,7 @@ describe("cesiumCommandRouterV0", () => {
     );
 
     expect(zoomByFactor).not.toHaveBeenCalled();
-    expect(flyToBootstrapViewport).toHaveBeenCalledOnce();
+    expect(flyToBootstrapViewport).not.toHaveBeenCalled();
   });
 
   it("maps center, castle, and room commands to executor ops", () => {
@@ -161,9 +161,18 @@ describe("cesiumCommandRouterV0", () => {
     );
 
     __flushCesiumFlyCoalesceForTestV0();
-    expect(flyToIstanbul).toHaveBeenCalledOnce();
+    expect(flyToIstanbul).not.toHaveBeenCalled();
     expect(focusCastle).toHaveBeenCalledOnce();
     expect(focusPOI).toHaveBeenCalledWith("FATIH");
+  });
+
+  it("blocks unsolicited calibration_root on world space", () => {
+    const flyToIstanbul = vi.fn();
+    registerCesiumExecutorApiV0({ ready: true, commandReady: true, flyToIstanbul });
+    const result = routeCesiumCommandV0({ op: "calibration_root", source: "map_center" });
+    __flushCesiumFlyCoalesceForTestV0();
+    expect(result.skipReason).toBe("world_space_no_unsolicited_bootstrap_fly");
+    expect(flyToIstanbul).not.toHaveBeenCalled();
   });
 
   it("coalesces rapid calibration_root into one executor call (latest wins)", () => {
@@ -171,9 +180,9 @@ describe("cesiumCommandRouterV0", () => {
     const flyToIstanbul = vi.fn();
     registerCesiumExecutorApiV0({ ready: true, commandReady: true, flyToIstanbul });
 
-    routeCesiumCommandV0({ op: "calibration_root", source: "a" });
-    routeCesiumCommandV0({ op: "calibration_root", source: "b" });
-    routeCesiumCommandV0({ op: "calibration_root", source: "c" });
+    routeCesiumCommandV0({ op: "calibration_root", source: "a", userIntent: true });
+    routeCesiumCommandV0({ op: "calibration_root", source: "b", userIntent: true });
+    routeCesiumCommandV0({ op: "calibration_root", source: "c", userIntent: true });
 
     expect(flyToIstanbul).not.toHaveBeenCalled();
 
