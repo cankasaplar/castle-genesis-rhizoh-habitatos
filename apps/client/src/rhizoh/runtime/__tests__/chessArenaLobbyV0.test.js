@@ -30,6 +30,8 @@ describe("chessArenaLobbyV0", () => {
     expect(feed.stockfishMovesMeasured).toBe(1);
     expect(feed.policyDiffsMeasured).toBe(1);
     expect(feed.alignmentRate).toBe(1);
+    expect(feed).toHaveProperty("sessionGamesEnded");
+    expect(feed).toHaveProperty("lastGameEndLabel");
     __resetChessLearningMonitorForTestV0();
   });
 });

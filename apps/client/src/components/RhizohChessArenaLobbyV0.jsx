@@ -34,6 +34,7 @@ import {
   readChessPolicyModeV0,
   saveChessPolicyModeV0
 } from "../rhizoh/runtime/chessPolicyModeV0.js";
+import { getChessObservatoryHeroCopyV0 } from "../rhizoh/runtime/chessClusterObservatoryCopyV0.js";
 
 function EngineStatusChipV0({ engineStatus, engineDetail, tr }) {
   const label =
@@ -97,6 +98,7 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
 
   const selectedQuick = CHESS_ARENA_QUICK_MATCH_V0.find((m) => m.id === selectedMatchId) || null;
   const activeOpponent = resolveChessOpponentPresetV0(opponentPresetId);
+  const heroCopy = getChessObservatoryHeroCopyV0(tr);
 
   useEffect(() => {
     const refreshLearning = () => setLearning(getChessArenaLearningFeedV0());
@@ -171,6 +173,29 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:p-4">
+      <section className="rounded-xl border border-cyan-500/35 bg-gradient-to-br from-cyan-950/40 to-violet-950/25 p-4">
+        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-300/70">
+          {tr ? "Rhizoh Chess Observatory" : "Rhizoh Chess Observatory"}
+        </p>
+        <h2 className="mt-1 text-lg font-bold text-cyan-50">{heroCopy.title}</h2>
+        <p className="mt-1 max-w-xl text-[11px] text-white/55">{heroCopy.lobbyDesc}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={openCluster}
+            className="rounded-lg border border-cyan-400/55 bg-cyan-500/20 px-4 py-2.5 text-[12px] font-bold text-cyan-50 hover:bg-cyan-500/30"
+          >
+            {heroCopy.lobbyCta}
+          </button>
+          {learning.clusterRunning ? (
+            <span className="flex items-center rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-3 py-2 text-[10px] text-emerald-200/90">
+              ● {tr ? "Yayın aktif" : "Broadcast live"} · tick {learning.clusterTick}
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-2 text-[9px] text-white/35">{heroCopy.learningNote}</p>
+      </section>
+
       <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
         <section className="rounded-xl border border-emerald-500/25 bg-emerald-950/20 p-3">
           <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-300/70">
@@ -329,9 +354,9 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
           <button
             type="button"
             onClick={openCluster}
-            className="mt-3 w-full rounded-lg border border-cyan-400/45 bg-cyan-500/10 px-3 py-2.5 text-[12px] font-semibold text-cyan-100 hover:bg-cyan-500/20"
+            className="mt-3 w-full rounded-lg border border-cyan-400/35 bg-cyan-500/5 px-3 py-2 text-[11px] font-semibold text-cyan-200/80 hover:bg-cyan-500/15"
           >
-            {tr ? "8 Board Observatory · MultiPV öğrenme" : "8 Board Observatory · MultiPV learning"}
+            {tr ? "Gözlem kameralarını aç" : "Open trace cameras"}
           </button>
         </section>
 
@@ -346,28 +371,37 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
               {tr ? "Stockfish'i yeniden dene" : "Retry Stockfish"}
             </button>
           ) : null}
-          <div className="rounded-xl border border-white/10 bg-black/35 p-3">
-            <p className="text-[9px] font-semibold uppercase tracking-wider text-white/45">
-              {tr ? "Canlı öğrenme" : "Live learning"}
+          <div className="rounded-xl border border-violet-500/25 bg-violet-950/20 p-3">
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-violet-200/70">
+              {tr ? "Rhizoh öğreniyor mu?" : "Is Rhizoh learning?"}
             </p>
+            {learning.rhizohElo != null ? (
+              <p className="mt-1 text-xl font-bold text-cyan-100">
+                ELO {learning.rhizohElo}
+              </p>
+            ) : null}
             <p className="mt-1 text-[11px] text-white/70">
-              tick {learning.clusterTick} ·{" "}
-              {learning.clusterRunning ? (tr ? "cluster aktif" : "cluster on") : "cluster off"}
-              {learning.spectatorPly != null ? ` · #1 ply ${learning.spectatorPly}` : ""}
-              {learning.movesMeasured != null ? ` · ${learning.movesMeasured} hamle` : ""}
-              {learning.stockfishMovesMeasured != null ? ` · SF ${learning.stockfishMovesMeasured}` : ""}
+              {learning.movesMeasured ?? 0} {tr ? "ölçülen hamle" : "moves measured"}
+              {learning.stockfishMovesMeasured != null ? ` · Stockfish ${learning.stockfishMovesMeasured}` : ""}
+              {learning.sessionGamesEnded != null ? ` · ${learning.sessionGamesEnded} ${tr ? "biten maç" : "games ended"}` : ""}
             </p>
+            {learning.lastGameEndLabel ? (
+              <p className="mt-1 text-[10px] text-amber-200/80">
+                {tr ? "Son bitiş" : "Last end"}: {learning.lastGameEndLabel}
+              </p>
+            ) : null}
             {learning.policyDiffsMeasured != null ? (
               <p className="mt-0.5 text-[9px] text-violet-200/80">
-                policy_diff {learning.policyDiffsMeasured}
+                {tr ? "Stockfish ile uyum" : "Stockfish alignment"}:{" "}
                 {learning.alignmentRate != null
-                  ? ` · align ${Math.round(learning.alignmentRate * 100)}%`
-                  : ""}
+                  ? `${Math.round(learning.alignmentRate * 100)}%`
+                  : "—"}
+                {" · "}policy_diff {learning.policyDiffsMeasured}
               </p>
             ) : null}
             {learning.spectatorMode ? (
               <p className="mt-0.5 text-[9px] text-cyan-300/75">
-                {learning.spectatorMode}
+                {tr ? "Canlı kamera" : "Live camera"}: {learning.spectatorMode}
                 {learning.spectatorClock ? ` · ${learning.spectatorClock}` : ""}
               </p>
             ) : null}
@@ -381,7 +415,9 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
               </ul>
             ) : (
               <p className="mt-2 text-[10px] text-white/40">
-                {tr ? "Henüz policy_diff yok — cluster veya maç sonrası dolar." : "No policy_diff yet — fills after cluster or match."}
+                {tr
+                  ? "Maçlar oynandıkça policy_diff ve ELO burada görünür."
+                  : "policy_diff and ELO appear here as matches play."}
               </p>
             )}
           </div>
