@@ -5,6 +5,8 @@ import {
   RHIZOH_UI_SURFACE_V0,
   RHIZOH_UI_Z_INDEX_V0,
   buildRhizohUiBottomCalcV0,
+  resolveRhizohConversationDockBottomCssV0,
+  resolveRhizohConversationDockShellLayoutV0,
   resolveRhizohProductDrawerBottomCssV0,
   resolveRhizohT0ChatBottomCssV0,
   resolveRhizohUiLayoutV0,
@@ -32,6 +34,38 @@ describe("rhizohUiLayoutResolverV0", () => {
     expect(open).toContain(`${RHIZOH_UI_PRODUCT_DRAWER_H_REM_V0}rem`);
     expect(closed).not.toContain(`${RHIZOH_UI_PRODUCT_DRAWER_H_REM_V0}rem`);
     expect(open.length).toBeGreaterThan(closed.length);
+    expect(open).toBe(resolveRhizohConversationDockBottomCssV0({
+      surface: RHIZOH_UI_SURFACE_V0.WORLD_SPACE,
+      drawerOpen: true
+    }));
+  });
+
+  it("T0 and world space share conversation dock shell z-index", () => {
+    const t0 = resolveRhizohConversationDockShellLayoutV0({
+      surface: RHIZOH_UI_SURFACE_V0.T0_LIVE,
+      drawerOpen: true
+    });
+    const ws = resolveRhizohConversationDockShellLayoutV0({
+      surface: RHIZOH_UI_SURFACE_V0.WORLD_SPACE,
+      drawerOpen: true
+    });
+    expect(t0.zIndex).toBe(RHIZOH_UI_Z_INDEX_V0.CONVERSATION_DOCK);
+    expect(ws.zIndex).toBe(t0.zIndex);
+    expect(t0.bottomCss).toContain(`${RHIZOH_UI_PRODUCT_DRAWER_H_REM_V0}rem`);
+    expect(ws.bottomCss).toContain(`${RHIZOH_UI_PRODUCT_DRAWER_H_REM_V0}rem`);
+  });
+
+  it("conversationDock bottomCss is unified DevTools key", () => {
+    const layout = resolveRhizohUiLayoutV0({
+      surface: RHIZOH_UI_SURFACE_V0.T0_LIVE,
+      drawerOpen: true
+    });
+    expect(layout.bottomCss.conversationDock).toBe(layout.bottomCss.chatDock);
+    const ws = resolveRhizohUiLayoutV0({
+      surface: RHIZOH_UI_SURFACE_V0.WORLD_SPACE,
+      drawerOpen: true
+    });
+    expect(ws.bottomCss.conversationDock).toBe(ws.bottomCss.voiceDock);
   });
 
   it("world space map strip and voice dock share drawer-aware stack", () => {
@@ -69,6 +103,6 @@ describe("rhizohUiLayoutResolverV0", () => {
     });
     resolveRhizohProductDrawerBottomCssV0();
     expect(window.__rhizoh.uiLayout.drawerOpen).toBe(true);
-    expect(window.__rhizoh.uiLayout.bottomCss.voiceDock).toContain("13.5rem");
+    expect(window.__rhizoh.uiLayout.bottomCss.conversationDock).toContain("13.5rem");
   });
 });

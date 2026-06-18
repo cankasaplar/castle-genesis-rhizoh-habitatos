@@ -16,6 +16,7 @@ import {
   RhizohWorldSpaceMapHostV0
 } from "./components/RhizohWorldSpaceMapHostV0.jsx";
 import { RhizohWorldSpaceVoiceDockV0 } from "./components/RhizohWorldSpaceVoiceDockV0.jsx";
+import { RhizohConversationDockShellV0 } from "./components/RhizohConversationDockShellV0.jsx";
 import {
   applyRhizohWorldMapToolV0,
   getRhizohWorldMapToolSnapshotV0,
@@ -33,8 +34,7 @@ import { RHIZOH_WORLD_DRAWER_DOMAIN_V0, writeRhizohWorldDrawerDomainV0 } from ".
 import { resolveWorldDomainFromPathV0 } from "./rhizoh/runtime/rhizohWorldDomainRoutesV0.js";
 import {
   resolveRhizohUiLayoutV0,
-  RHIZOH_UI_SURFACE_V0,
-  RHIZOH_UI_Z_INDEX_V0
+  RHIZOH_UI_SURFACE_V0
 } from "./rhizoh/runtime/rhizohUiLayoutResolverV0.js";
 import { navigateRhizohProductSurfaceV0 } from "./rhizoh/product/rhizohProductTopologyV0.js";
 import {
@@ -692,7 +692,6 @@ export default function AppRhizohWorldSpaceV0() {
     [openSurfaceDrawerIdV0]
   );
   const mapStripBottomCssV0 = uiLayoutV0.bottomCss.mapStrip;
-  const voiceDockBottomCssV0 = uiLayoutV0.bottomCss.voiceDock;
   const bootstrapPlaceLabelV0 = resolveWorldMapBootstrapGeoV0().label;
 
   return (
@@ -781,15 +780,13 @@ export default function AppRhizohWorldSpaceV0() {
         onFocusLayer={() => {}}
       />
 
-      <div
-        className="pointer-events-none fixed inset-x-0 flex justify-center px-2 sm:px-4"
-        style={{ bottom: voiceDockBottomCssV0, zIndex: RHIZOH_UI_Z_INDEX_V0.VOICE_DOCK }}
-        data-rhizoh-world-space-voice-dock="1"
+      <RhizohConversationDockShellV0
+        surface={RHIZOH_UI_SURFACE_V0.WORLD_SPACE}
+        drawerOpen={Boolean(openSurfaceDrawerIdV0)}
+        publish
       >
-        <div className="pointer-events-auto w-full max-w-3xl">
-          <RhizohWorldSpaceVoiceDockV0 firebaseUser={castleAuth?.user} uiLocale={uiLocale} />
-        </div>
-      </div>
+        <RhizohWorldSpaceVoiceDockV0 firebaseUser={castleAuth?.user} uiLocale={uiLocale} />
+      </RhizohConversationDockShellV0>
 
       <UnifiedProductShellBar
         active={openSurfaceDrawerIdV0 || "world"}

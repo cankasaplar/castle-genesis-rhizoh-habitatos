@@ -612,6 +612,7 @@ import {
   inferRhizohUserGoalHint
 } from "./rhizoh/experience/index.js";
 import { RhizohT0ShellChromeV1 } from "./components/RhizohT0ShellChromeV1.jsx";
+import { RhizohConversationDockShellV0 } from "./components/RhizohConversationDockShellV0.jsx";
 import { startYoutubeLabOctoBridgeV1 } from "./rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
 import { startRhizohLegalPendingWaitLoopV0 } from "./rhizoh/runtime/rhizohLegalPendingWaitLoopV0.js";
 import { writeProductSurfaceV0 } from "./rhizoh/spatial/rhizohProductShellBridgeV0.js";
@@ -8818,7 +8819,7 @@ export default function AppRhizoh528() {
     [openSurfaceDrawerIdV0]
   );
 
-  const chatDockBottomCssV0 = uiLayoutV0.bottomCss.chatDock;
+  const chatDockBottomCssV0 = uiLayoutV0.bottomCss.conversationDock;
 
   const onCloseSurfaceDrawerV0 = useCallback(() => {
     closeProductSurfaceDrawerV0();
@@ -13097,12 +13098,10 @@ export default function AppRhizoh528() {
           aria-hidden
         />
 
-        <div
-          className="pointer-events-none fixed inset-x-0 z-[64] flex justify-center px-2 sm:px-4"
-          style={{ bottom: chatDockBottomCssV0 }}
-          data-rhizoh-t0-chat-dock="1"
+        <RhizohConversationDockShellV0
+          surface={RHIZOH_UI_SURFACE_V0.T0_LIVE}
+          drawerOpen={isRhizohProductSurfaceDrawerOpenV0()}
         >
-          <div className="pointer-events-auto w-full max-w-3xl">
         <RhizohT0ShellChromeV1
           uiLocale={uiLocaleV0}
           phaseLabel={rhizohConversationUx.label}
@@ -13164,8 +13163,7 @@ export default function AppRhizoh528() {
           onCameraClick={handleCameraButtonClick}
           productCameraStream={productCameraStream}
         />
-          </div>
-        </div>
+        </RhizohConversationDockShellV0>
 
       </div>
       ) : null}
