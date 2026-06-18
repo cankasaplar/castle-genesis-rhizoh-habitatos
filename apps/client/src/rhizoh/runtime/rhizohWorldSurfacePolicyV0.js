@@ -6,7 +6,14 @@
 import { readUserAnchorV0 } from "./memoryAnchorSystemV0.js";
 import { RHIZOH_WORLD_DRAWER_DOMAIN_V0 } from "./rhizohWorldDrawerDomainV0.js";
 import { shouldMountRhizohWorldSpaceMapEngineV0 } from "./rhizohLayerContextV0.js";
-import { RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0 } from "./rhizohT0FirstMatchIdentityV0.js";
+import {
+  RHIZOH_UI_MAP_STRIP_ESTIMATE_REM_V0,
+  RHIZOH_UI_MAP_STRIP_EXPANDED_REM_V0,
+  RHIZOH_UI_SHELL_BAR_H_REM_V0,
+  resolveRhizohWorldSpaceMapOverlayBottomCssV0,
+  resolveRhizohWorldSpaceMapStripBottomCssV0,
+  resolveRhizohWorldSpaceVoiceDockBottomCssV0
+} from "./rhizohUiLayoutResolverV0.js";
 
 export const RHIZOH_WORLD_SURFACE_POLICY_CONTRACT_V0 = "rhizoh-world-surface-policy-v0";
 
@@ -55,25 +62,20 @@ export function shouldHideT0ContinuityChromeOnWorldSpaceV0(ctx = {}) {
   return isRhizohWorldSpaceMapStageV0(ctx);
 }
 
-/** Map tool strip + marker filter panel height estimate (rem above bottom nav). */
-export const RHIZOH_WORLD_SPACE_MAP_STRIP_ESTIMATE_REM_V0 = 4.25;
-/** Expanded strip with marker filters + data footer. */
-export const RHIZOH_WORLD_SPACE_MAP_STRIP_EXPANDED_REM_V0 = 7.25;
+/** @deprecated use RHIZOH_UI_MAP_STRIP_ESTIMATE_REM_V0 */
+export const RHIZOH_WORLD_SPACE_MAP_STRIP_ESTIMATE_REM_V0 = RHIZOH_UI_MAP_STRIP_ESTIMATE_REM_V0;
 
-/** Map tool strip — directly above bottom nav. */
-export function resolveRhizohWorldSpaceMapStripBottomCssV0() {
-  return `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + 0.35rem + env(safe-area-inset-bottom, 0px))`;
-}
+/** @deprecated use RHIZOH_UI_MAP_STRIP_EXPANDED_REM_V0 */
+export const RHIZOH_WORLD_SPACE_MAP_STRIP_EXPANDED_REM_V0 = RHIZOH_UI_MAP_STRIP_EXPANDED_REM_V0;
 
-/** Voice dock — clears compact map strip + gap. */
-export function resolveRhizohWorldSpaceVoiceDockBottomCssV0() {
-  return `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + ${RHIZOH_WORLD_SPACE_MAP_STRIP_ESTIMATE_REM_V0}rem + 0.75rem + env(safe-area-inset-bottom, 0px))`;
-}
+/** @deprecated use RHIZOH_UI_SHELL_BAR_H_REM_V0 */
+export const RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0 = RHIZOH_UI_SHELL_BAR_H_REM_V0;
 
-/** Left/right map overlays (event stream) — above expanded strip. */
-export function resolveRhizohWorldSpaceMapOverlayBottomCssV0() {
-  return `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + ${RHIZOH_WORLD_SPACE_MAP_STRIP_EXPANDED_REM_V0}rem + 0.5rem + env(safe-area-inset-bottom, 0px))`;
-}
+export {
+  resolveRhizohWorldSpaceMapStripBottomCssV0,
+  resolveRhizohWorldSpaceVoiceDockBottomCssV0,
+  resolveRhizohWorldSpaceMapOverlayBottomCssV0
+};
 
 /**
  * Apex procedural REAL_MAP drones — suppressed when Cesium owns World · Space.

@@ -40,7 +40,7 @@ Module: `rhizohHardSeparationLayerV0.js` + `rhizohInvitedUserAuthorityGateV0.js`
 | **C2** | Invited-user authority lock (graph write, council trigger, stress inject) | `rhizohInvitedUserAuthorityGateV0.js` |
 | **C3** | Subject ref SSOT (sessionStorage = ingress) | `ingress_router.js`, switchboard |
 | **A1** | Drawer state machine on T0 (parity with World Space) | ✅ `rhizohT0DrawerShellIntegrationV0.js`, `AppRhizoh528T0.jsx` |
-| **A2** | `rhizohUiLayoutResolverV0` — z-index + bottom offset SSOT | new module; replace scattered `calc()` |
+| **A2** | `rhizohUiLayoutResolverV0` — z-index + bottom offset SSOT | ✅ `rhizohUiLayoutResolverV0.js`; T0 + World Space wired |
 | **B1** | Stress determinism harness (same profile → same conflict graph hash) | test + export `stressRunFingerprint` |
 
 **Exit criteria Day 1:** quarantine user cannot `injectEpistemicStress`; founder DevTools still works; `executionGovernance` unchanged on legal hold.
