@@ -11,7 +11,8 @@ import {
   resolveChessClusterMinIntervalMsV0,
   resolveChessClusterTickDelayMsV0,
   startChessGameClusterV0,
-  stopChessGameClusterV0
+  stopChessGameClusterV0,
+  __endChessClusterSlotForTestV0
 } from "../chessGameClusterV0.js";
 import { __resetChessClusterObserverForTestV0 } from "../chessClusterObserverV0.js";
 import { __resetChessClusterMemoryGraphForTestV0 } from "../chessClusterMemoryGraphV0.js";
@@ -102,6 +103,26 @@ describe("chessGameClusterV0", () => {
     );
     expect(getChessClusterSlotV0(0)?.clock?.timeControlId).toBe("cluster_sim_45_0");
     expect(window.__rhizoh.chessGameCluster?.timeControlId).toBe("cluster_sim_45_0");
+    stopChessGameClusterV0();
+  });
+
+  it("resets slot immediately while finalize is still in flight", async () => {
+    const { finalizeChessClusterGameV0 } = await import("../chessClusterLearningV0.js");
+    /** @type {(() => void) | null} */
+    let releaseFinalize = null;
+    finalizeChessClusterGameV0.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          releaseFinalize = () => resolve({ ok: true, mocked: true });
+        })
+    );
+    startChessGameClusterV0({ testFastTick: true, intervalMs: 30 });
+    __endChessClusterSlotForTestV0(0, "draw");
+    expect(window.__rhizoh?.chessGameCluster?.sessionGamesEnded).toBe(1);
+    const active = listChessClusterSlotsV0().filter((s) => s.status === "active").length;
+    expect(active).toBe(CHESS_CLUSTER_SLOT_COUNT_V0);
+    expect(getChessClusterSlotV0(0)?.ply).toBe(0);
+    releaseFinalize?.();
     stopChessGameClusterV0();
   });
 });

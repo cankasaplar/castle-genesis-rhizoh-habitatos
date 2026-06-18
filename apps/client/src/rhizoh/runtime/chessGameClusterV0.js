@@ -241,11 +241,28 @@ function dispatchClusterEventV0(name, detail) {
   }
 }
 
+function snapshotChessClusterSlotForFinalizeV0(slot, outcome, endReason) {
+  return Object.freeze({
+    slotId: slot.slotId,
+    matchId: slot.matchId,
+    modeId: slot.modeId,
+    outcome,
+    endReason,
+    ply: slot.ply,
+    moveHistory: [...slot.moveHistory],
+    criticalEvents: [...(slot.criticalEvents || [])]
+  });
+}
+
 function endChessClusterSlotV0(slot, outcome, endReason = "normal") {
   if (!slot || slot.status === "ended") return;
-  slot.status = "ended";
-  slot.outcome = outcome;
-  slot.endReason = endReason;
+  const endedSummary = summarizeChessClusterSlotV0({
+    ...slot,
+    status: "ended",
+    outcome,
+    endReason
+  });
+  const finalizePayload = snapshotChessClusterSlotForFinalizeV0(slot, outcome, endReason);
   sessionGamesEndedV0 += 1;
   lastGameEndV0 = Object.freeze({
     slotId: slot.slotId,
@@ -256,15 +273,14 @@ function endChessClusterSlotV0(slot, outcome, endReason = "normal") {
     atMs: Date.now()
   });
   dispatchClusterEventV0(CHESS_CLUSTER_GAME_END_EVENT_V0, {
-    slot: summarizeChessClusterSlotV0(slot),
+    slot: endedSummary,
     outcome,
     endReason,
     moves: [...slot.moveHistory]
   });
-  void finalizeChessClusterGameV0(slot).then(() => {
-    slotsV0[slot.slotId] = resetSlotV0(slot);
-    publishClusterRegistryV0();
-  });
+  slotsV0[slot.slotId] = resetSlotV0(slot);
+  publishClusterRegistryV0();
+  void finalizeChessClusterGameV0(finalizePayload);
 }
 
 function runClusterClockTickV0() {
@@ -534,4 +550,12 @@ export function __resetChessGameClusterForTestV0() {
 /** @internal vitest — direct slot access */
 export function __getChessClusterSlotsForTestV0() {
   return slotsV0;
+}
+
+/** @internal vitest — trigger game end path */
+export function __endChessClusterSlotForTestV0(slotId, outcome = "draw") {
+  const slot = slotsV0[Number(slotId)];
+  if (!slot) return null;
+  endChessClusterSlotV0(slot, outcome, "test");
+  return summarizeChessClusterSlotV0(slotsV0[Number(slotId)]);
 }
