@@ -7,6 +7,7 @@
 import { TOPOLOGY_EVENT_TYPES_V0 } from "./rhizohTopologyEventEmitterV0.js";
 import { parseChessClusterSlotIdFromMatchIdV0 } from "./chessTelemetryLogV0.js";
 import { writeChessClusterMemoryNodeV0 } from "./chessClusterMemoryGraphV0.js";
+import { appendShadowTraceFromCouncilV0 } from "./rhizohShadowTraceLedgerV0.js";
 
 export const RHIZOH_EPISTEMIC_COUNCIL_SCHEMA_V0 = "castle.rhizoh.epistemic_council.v0";
 export const RHIZOH_EPISTEMIC_COUNCIL_EVENT_V0 = "rhizoh:epistemic-council-v0";
@@ -155,6 +156,8 @@ export async function runEpistemicCouncilDryRunV0(triggerEval) {
       governance: COUNCIL_OBSERVATION_GOVERNANCE_V0
     })
   });
+
+  appendShadowTraceFromCouncilV0(observation);
 
   advanceCouncilPhaseV0(session.sessionId, COUNCIL_SESSION_PHASE_V0.CLOSED);
 

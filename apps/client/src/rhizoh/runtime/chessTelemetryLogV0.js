@@ -6,6 +6,7 @@
 
 import { CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 } from "./chessLearningMonitorV0.js";
 import { TOPOLOGY_EVENT_TYPES_V0 } from "./rhizohTopologyEventEmitterV0.js";
+import { appendShadowTraceFromDriftEventV0 } from "./rhizohShadowTraceLedgerV0.js";
 
 export const CHESS_TELEMETRY_LOG_SCHEMA_V0 = "castle.rhizoh.chess_telemetry_log.v0";
 export const CHESS_TELEMETRY_LEVEL_STORAGE_KEY_V0 = "rhizoh_chess_telemetry_level_v0";
@@ -179,6 +180,9 @@ export function logChessTelemetryGatedV0(level, tag, detail = {}) {
   const fn = level === "warn" ? console.warn : console.info;
   if (!fn) return null;
   fn(tag, detail);
+  if (detail?.kind === "DRIFT_EVENT") {
+    appendShadowTraceFromDriftEventV0(detail);
+  }
   return detail;
 }
 
