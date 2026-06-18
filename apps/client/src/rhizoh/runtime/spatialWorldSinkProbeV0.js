@@ -16,6 +16,7 @@ import {
 } from "./rhizohLayerContextV0.js";
 import { readRhizohWorldSystemModeV0 } from "./rhizohWorldSystemModeV0.js";
 import { resolveSpatialSinkRoutePolicyV0 } from "./spatialSinkRoutePolicyV0.js";
+import { publishRhizohSpatialModeV0 } from "./rhizohSpatialModeV0.js";
 
 export const SPATIAL_WORLD_SINK_PROBE_SCHEMA_V0 = "castle.rhizoh.spatial_world_sink_probe.v0";
 
@@ -113,5 +114,6 @@ export function publishSpatialSinkRegistriesV0(extra = {}) {
   });
   window.__rhizoh.spatialSinkProbe = Object.freeze({ ...probe, ...extra });
   window.__rhizoh.spatialSinkRoutePolicy = probe.policy;
+  publishRhizohSpatialModeV0({ sink: probe.sink });
   return probe;
 }
