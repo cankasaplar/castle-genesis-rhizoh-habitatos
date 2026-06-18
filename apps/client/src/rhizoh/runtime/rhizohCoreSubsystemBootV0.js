@@ -16,6 +16,7 @@ import {
 } from "./chessStockfishEngineV0.js";
 import { publishRhizohChessManagerV0, ensureRhizohChessManagerListenersV0 } from "./rhizohChessManagerV0.js";
 import { publishChessGameRouterV0 } from "./chessGameRouterV0.js";
+import { ensureShadowTraceLedgerDevToolsV0 } from "./rhizohShadowTraceLedgerDevToolsV0.js";
 
 export const RHIZOH_CORE_SUBSYSTEM_BOOT_SCHEMA_V0 = "castle.rhizoh.core_subsystem_boot.v0";
 
@@ -63,6 +64,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
   if (!coreBootedV0) {
     coreBootedV0 = true;
     ensureRhizohChessManagerListenersV0();
+    ensureShadowTraceLedgerDevToolsV0();
     runDomainGateForPathV0(pathname, { coreOnly: true });
     stopLegalWaitLoopV0 = startRhizohLegalPendingWaitLoopV0({ bootDelayMs: 2_500 });
   }

@@ -17,6 +17,7 @@ import {
 } from "./chessEngineTaskQueueV0.js";
 import {
   CHESS_TELEMETRY_LEVEL_V0,
+  parseChessClusterSlotIdFromMatchIdV0,
   resolveChessTelemetryLevelV0
 } from "./chessTelemetryLogV0.js";
 import { maybeEnqueueEpistemicCouncilV0 } from "./rhizohEpistemicCouncilV0.js";
@@ -287,6 +288,7 @@ function logStockfishV0(level, message, detail = null) {
   if (message === "arena move timeout") {
     appendShadowTraceFromStockfishTimeoutV0({
       matchId: detail?.matchId || null,
+      slotId: parseChessClusterSlotIdFromMatchIdV0(detail?.matchId),
       fen: detail?.fen || null,
       movetimeMs: detail?.movetimeMs,
       depth: detail?.depth

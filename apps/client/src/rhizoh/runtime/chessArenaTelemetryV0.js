@@ -12,6 +12,8 @@ import {
   resolveChessTelemetrySlotIdV0,
   shouldLogChessMovePlayedV0
 } from "./chessTelemetryLogV0.js";
+import { CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 } from "./chessLearningMonitorV0.js";
+import { appendShadowTraceFromChessMoveAnchorV0 } from "./rhizohShadowTraceLedgerV0.js";
 
 export const CHESS_ARENA_TELEMETRY_SCHEMA_V0 = "rhizoh.chess_arena_telemetry.v0";
 
@@ -28,13 +30,21 @@ export function logChessArenaTelemetryV0(kind, detail = {}) {
   });
   if (kind === "move_played") {
     const slotId = resolveChessTelemetrySlotIdV0(detail);
-    if (
-      !shouldLogChessMovePlayedV0({
+    const shouldLog = shouldLogChessMovePlayedV0({
+      slotId,
+      matchId: detail.matchId,
+      moveNumber: detail.moveNumber
+    });
+    if (slotId === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0) {
+      appendShadowTraceFromChessMoveAnchorV0({
+        san: detail.san,
         slotId,
         matchId: detail.matchId,
-        moveNumber: detail.moveNumber
-      })
-    ) {
+        moveNumber: detail.moveNumber,
+        color: detail.color
+      });
+    }
+    if (!shouldLog) {
       return payload;
     }
   }

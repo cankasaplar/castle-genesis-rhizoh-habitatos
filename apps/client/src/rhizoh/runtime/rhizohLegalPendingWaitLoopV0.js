@@ -7,6 +7,7 @@ import { CHESS_GAME_MODE_V0 } from "./chessArenaEngineV0.js";
 import { RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0 } from "./chessGameClusterV0.js";
 import { RHIZOH_OPEN_CHESS_ARENA_EVENT_V1 } from "./symbyoMapIntentBridgeV0.js";
 import { hasLegalAccessAckV0, resolveIngressRouteV0 } from "../ingress/ingress_router.js";
+import { ensureShadowTraceLedgerDevToolsV0 } from "./rhizohShadowTraceLedgerDevToolsV0.js";
 import { CHESS_LEARNING_SESSION_PRESET_V0 } from "./chessLearningSessionV0.js";
 
 export const RHIZOH_LEGAL_PENDING_WAIT_LOOP_SCHEMA_V0 = "castle.rhizoh.legal_pending_wait_loop.v0";
@@ -126,12 +127,7 @@ export function startRhizohLegalPendingWaitLoopV0(opts = {}) {
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};
     window.__rhizoh.openLegalHoldChessArena = dispatchLegalHoldChessArenaManualV0;
-    import("./rhizohShadowTraceLedgerV0.js")
-      .then((m) => {
-        window.__rhizoh.exportShadowComplianceSnapshot = m.exportShadowComplianceSnapshotV0;
-        window.__rhizoh.shadowTraceLedgerSnapshot = m.getShadowTraceLedgerSnapshotV0;
-      })
-      .catch(() => null);
+    ensureShadowTraceLedgerDevToolsV0();
   }
 
   const bootTimer = window.setTimeout(() => {
