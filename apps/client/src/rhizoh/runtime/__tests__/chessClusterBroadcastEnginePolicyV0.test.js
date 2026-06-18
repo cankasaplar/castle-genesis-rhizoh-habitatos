@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   getChessClusterBroadcastEnginePolicySnapshotV0,
   isChessClusterBroadcastModeV0,
+  resolveChessClusterBroadcastTickPlanV0,
   resolveChessClusterTickSlotOrderV0,
   shouldFinalizeClusterBroadcastEndV0,
   shouldTickChessClusterSlotClockV0,
@@ -73,5 +74,15 @@ describe("chessClusterBroadcastEnginePolicyV0", () => {
     expect(shouldTickChessClusterSlotClockV0({ slotId: 3 })).toBe(false);
     publishChessClusterArenaOpenV0(false);
     expect(shouldTickChessClusterSlotClockV0({ slotId: 3 })).toBe(true);
+  });
+
+  it("rotates B-roll slot 1–7 each broadcast tick with featured slot 0", () => {
+    publishChessClusterArenaOpenV0(true);
+    expect(resolveChessClusterBroadcastTickPlanV0(0)).toEqual([0, 1]);
+    expect(resolveChessClusterBroadcastTickPlanV0(1)).toEqual([0, 2]);
+    expect(resolveChessClusterBroadcastTickPlanV0(6)).toEqual([0, 7]);
+    expect(resolveChessClusterBroadcastTickPlanV0(7)).toEqual([0, 1]);
+    publishChessClusterArenaOpenV0(false);
+    expect(resolveChessClusterBroadcastTickPlanV0(3)).toBeNull();
   });
 });

@@ -66,6 +66,16 @@ export function resolveChessClusterBroadcastMovesPerTickV0() {
 }
 
 /**
+ * Broadcast tick plan — featured slot + one rotating B-roll slot per tick (slots 2–7 were starved).
+ * @param {number} roundRobinIndex
+ */
+export function resolveChessClusterBroadcastTickPlanV0(roundRobinIndex) {
+  if (!isChessClusterBroadcastModeV0()) return null;
+  const brollSlot = 1 + (Math.max(0, Number(roundRobinIndex) || 0) % 7);
+  return Object.freeze([CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0, brollSlot]);
+}
+
+/**
  * @param {number} roundRobinIndex
  * @param {number} slotCount
  */

@@ -85,6 +85,7 @@ import {
   resolveChessBoardColorsV0,
   saveChessArenaThemeV0
 } from "../rhizoh/runtime/chessArenaThemeV0.js";
+import { RhizohChessBoardV0 } from "./RhizohChessBoardV0.jsx";
 import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
 import { RhizohChessArenaLobbyV0 } from "./RhizohChessArenaLobbyV0.jsx";
 import { PIECE_UNICODE_V0 } from "./RhizohCastleLibraryPanelV0.jsx";
@@ -237,6 +238,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const [arenaPhase, setArenaPhase] = useState(() =>
     autoPlay || initialMode ? "playing" : "lobby"
   );
+  const [lastMoveHighlightV0, setLastMoveHighlightV0] = useState(null);
 
   const timeControlV0 = useMemo(
     () => resolveChessTimeControlV0(arenaSession.timeControlId),
@@ -435,7 +437,12 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       const detail = ev?.detail;
       if (detail?.type !== CASTLE_C2C_MESSAGE_TYPE_V0.CHESS_MOVE || !detail?.payload?.move) return;
       if (c2cMatch && detail.payload.matchId && detail.payload.matchId !== c2cMatch.matchId) return;
-      game.tryMove(detail.payload.move);
+      const result = game.tryMove(detail.payload.move);
+      if (result.ok && result.move?.from && result.move?.to) {
+        setLastMoveHighlightV0(
+          Object.freeze({ from: result.move.from, to: result.move.to })
+        );
+      }
       setTick((n) => n + 1);
       setStatus(tr ? `Uzak hamle: ${detail.payload.move}` : `Remote move: ${detail.payload.move}`);
     };
@@ -628,6 +635,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       setWhiteClockMs(clocks.white);
       setBlackClockMs(clocks.black);
       setStatus(tr ? "Yeni oyun." : "New game.");
+      setLastMoveHighlightV0(null);
       setGameEpoch((n) => n + 1);
       flagHandledRef.current = false;
     },
@@ -682,6 +690,11 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         }
       }
       setTick((n) => n + 1);
+      if (result.move?.from && result.move?.to) {
+        setLastMoveHighlightV0(
+          Object.freeze({ from: result.move.from, to: result.move.to })
+        );
+      }
       logChessMovePlayedV0({
         san: result.move.san,
         color: moverColor,
@@ -756,6 +769,11 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           const aiResult = game.tryMove(aiMove);
           if (aiResult.ok) {
             setTick((n) => n + 1);
+            if (aiResult.move?.from && aiResult.move?.to) {
+              setLastMoveHighlightV0(
+                Object.freeze({ from: aiResult.move.from, to: aiResult.move.to })
+              );
+            }
             const engineLabel =
               aiPick?.engine === "stockfish_wasm"
                 ? "Stockfish"
@@ -993,9 +1011,6 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
             <div className="mt-1">
               <RhizohTowerLiveStatusBadgeV0 towerId="chess_arena" uiLocale={uiLocale} compact />
             </div>
-            <p className="mt-1 text-[10px] text-white/50">
-              {tr ? "Gerçek satranç kuralları · sesli hamle · kale-kale modu" : "Real chess rules · voice moves · castle-to-castle"}
-            </p>
           </div>
           <div className="flex items-start gap-2">
             {arenaPhase !== "lobby" ? (
@@ -1060,6 +1075,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                 }}
                 className="rounded-lg border border-white/15 bg-black/50 px-2 py-1.5 text-[11px] text-white"
               >
+                <option value={CHESS_PIECE_STYLE_V0.fide}>FIDE</option>
                 <option value={CHESS_PIECE_STYLE_V0.unicode}>{tr ? "Unicode" : "Unicode"}</option>
                 <option value={CHESS_PIECE_STYLE_V0.bold}>{tr ? "Kalın" : "Bold"}</option>
               </select>
@@ -1337,56 +1353,17 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
               align="right"
               tr={tr}
             />
-            <div className="my-2 flex w-[min(100%,min(88vw,46vh))] shrink-0 flex-col items-center gap-1">
-              <div className="flex w-full items-stretch gap-1">
-                <div className="grid shrink-0 grid-rows-8 text-[8px] font-semibold text-white/50 sm:text-[9px]">
-                  {[8, 7, 6, 5, 4, 3, 2, 1].map((rank) => (
-                    <span key={rank} className="flex items-center justify-center pr-0.5">
-                      {rank}
-                    </span>
-                  ))}
-                </div>
-                <div className="aspect-square min-w-0 flex-1">
-                  <div className="grid h-full w-full grid-cols-8 grid-rows-8 overflow-visible rounded-lg border-2 border-emerald-600/50 shadow-lg shadow-black/40">
-                    {rows.map((row, ri) =>
-                      row.map((cell, ci) => {
-                        const dark = (ri + ci) % 2 === 1;
-                        const rank = 8 - ri;
-                        const sq = cell?.square || `${String.fromCharCode(97 + ci)}${rank}`;
-                        const selected = selectedSquare === sq;
-                        const isWhitePiece = cell?.color === "w";
-                        return (
-                          <button
-                            key={`${ri}-${ci}`}
-                            type="button"
-                            onClick={() => onSquareClick(sq)}
-                            style={{ background: dark ? boardColors.dark : boardColors.light }}
-                            className={`flex items-center justify-center text-[clamp(1rem,4.2vmin,1.75rem)] sm:text-2xl ${
-                              selected ? "ring-2 ring-cyan-300 ring-inset z-10" : ""
-                            } ${pieceBold ? "font-black" : ""}`}
-                          >
-                            <span
-                              className={
-                                isWhitePiece
-                                  ? "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
-                                  : "text-neutral-950 drop-shadow-[0_0_2px_rgba(255,255,255,0.75)]"
-                              }
-                            >
-                              {cell?.glyph || ""}
-                            </span>
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="grid w-full grid-cols-8 gap-0 pl-4 text-center text-[8px] font-semibold text-white/45 sm:pl-5 sm:text-[9px]">
-                {"abcdefgh".split("").map((f) => (
-                  <span key={f}>{f}</span>
-                ))}
-              </div>
-            </div>
+            <RhizohChessBoardV0
+              rows={rows}
+              boardColors={boardColors}
+              pieceStyleId={boardTheme.pieceStyleId}
+              pieceBold={pieceBold}
+              lastMove={lastMoveHighlightV0}
+              selectedSquare={selectedSquare}
+              onSquareClick={onSquareClick}
+              sizeClass="w-[min(100%,min(92vw,50dvh))]"
+              borderClass="border-2 border-cyan-500/45 shadow-[0_0_28px_rgba(0,204,255,0.15)]"
+            />
             <ChessPlayerBarV0
               name={opponentsV0.white}
               clockMs={whiteClockMs}

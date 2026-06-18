@@ -30,6 +30,7 @@ import {
   CHESS_CLUSTER_BROADCAST_TICK_MIN_MS_V0,
   isChessClusterBroadcastModeV0,
   resolveChessClusterBroadcastMovesPerTickV0,
+  resolveChessClusterBroadcastTickPlanV0,
   resolveChessClusterTickSlotOrderV0,
   shouldFinalizeClusterBroadcastEndV0,
   shouldTickChessClusterSlotClockV0
@@ -194,7 +195,12 @@ export function summarizeChessClusterSlotV0(slot) {
     attentionWeight: slot.attentionWeight,
     lastEval: slot.evalStream[slot.evalStream.length - 1] || null,
     criticalEventCount: slot.criticalEvents.length,
-    clock: summarizeChessClusterClockV0(slot)
+    clock: summarizeChessClusterClockV0(slot),
+    lastMove: (() => {
+      const hist = slot.moveHistory[slot.moveHistory.length - 1];
+      if (!hist) return null;
+      return Object.freeze({ uci: hist.uci, san: hist.san });
+    })()
   });
 }
 
@@ -425,17 +431,29 @@ async function runClusterTickV0(opts = {}) {
     CHESS_CLUSTER_SLOT_COUNT_V0
   );
   try {
-    while (movesThisTick < movesPerTick && attempts < CHESS_CLUSTER_SLOT_COUNT_V0) {
-      const slotId = slotOrder[attempts];
-      attempts += 1;
-      if (slotId == null) continue;
-      roundRobinIndexV0 = (slotId + 1) % CHESS_CLUSTER_SLOT_COUNT_V0;
-      const slot = slotsV0[slotId];
-      if (slot?.status === "active" && !slot.game.isGameOver()) {
-        const move = await advanceChessClusterSlotV0(slot);
-        if (move) {
-          moved = true;
-          movesThisTick += 1;
+    const broadcastPlan = resolveChessClusterBroadcastTickPlanV0(roundRobinIndexV0);
+    if (broadcastPlan) {
+      for (const slotId of broadcastPlan) {
+        roundRobinIndexV0 = (slotId + 1) % CHESS_CLUSTER_SLOT_COUNT_V0;
+        const slot = slotsV0[slotId];
+        if (slot?.status === "active" && !slot.game.isGameOver()) {
+          const move = await advanceChessClusterSlotV0(slot);
+          if (move) moved = true;
+        }
+      }
+    } else {
+      while (movesThisTick < movesPerTick && attempts < CHESS_CLUSTER_SLOT_COUNT_V0) {
+        const slotId = slotOrder[attempts];
+        attempts += 1;
+        if (slotId == null) continue;
+        roundRobinIndexV0 = (slotId + 1) % CHESS_CLUSTER_SLOT_COUNT_V0;
+        const slot = slotsV0[slotId];
+        if (slot?.status === "active" && !slot.game.isGameOver()) {
+          const move = await advanceChessClusterSlotV0(slot);
+          if (move) {
+            moved = true;
+            movesThisTick += 1;
+          }
         }
       }
     }

@@ -31,6 +31,7 @@ import {
 } from "../rhizoh/runtime/chessClusterObservatoryCopyV0.js";
 import { formatChessOutcomeLabelV0 } from "../rhizoh/runtime/chessArenaEngineV0.js";
 import { RHIZOH_OPEN_CHESS_ARENA_EVENT_V1 } from "../rhizoh/runtime/symbyoMapIntentBridgeV0.js";
+import { RhizohChessBoardV0 } from "./RhizohChessBoardV0.jsx";
 import { PIECE_UNICODE_V0 } from "./RhizohCastleLibraryPanelV0.jsx";
 
 function boardRowsFromFen(fen) {
@@ -81,6 +82,7 @@ const LiveCameraBoardV0 = memo(function LiveCameraBoardV0({
   tr,
   boardColors,
   pieceBold,
+  pieceStyleId,
   roleCopy
 }) {
   if (!slot) {
@@ -92,6 +94,7 @@ const LiveCameraBoardV0 = memo(function LiveCameraBoardV0({
   }
 
   const rows = boardRowsFromFen(slot.fen);
+  const lastMove = slot.lastMove || null;
   const white = resolveChessClusterAgentPolicyV0(slot.whiteAgent);
   const black = resolveChessClusterAgentPolicyV0(slot.blackAgent);
   const turnW = slot.turn === "w";
@@ -143,40 +146,21 @@ const LiveCameraBoardV0 = memo(function LiveCameraBoardV0({
         />
       </div>
 
-      <div className="grid flex-1 grid-cols-8 gap-px overflow-hidden rounded-md border border-black/40">
-        {rows.map((row, ri) =>
-          row.map((cell, ci) => {
-            const dark = (ri + ci) % 2 === 1;
-            const bg = dark ? boardColors.dark : boardColors.light;
-            return (
-              <div
-                key={`${ri}-${ci}`}
-                className="flex aspect-square items-center justify-center"
-                style={{ background: bg }}
-              >
-                {cell ? (
-                  <span
-                    className={`select-none leading-none ${
-                      pieceBold ? "font-black" : "font-semibold"
-                    } ${
-                      featured
-                        ? "text-[clamp(0.65rem,2.8vw,1.15rem)]"
-                        : "text-[clamp(0.55rem,2.2vw,0.95rem)]"
-                    } ${cell.color === "w" ? "text-white" : "text-black"}`}
-                    style={
-                      cell.color === "b"
-                        ? { textShadow: "0 0 1px #fff, 0 1px 0 #fff" }
-                        : { textShadow: "0 1px 2px rgba(0,0,0,0.55)" }
-                    }
-                  >
-                    {cell.glyph}
-                  </span>
-                ) : null}
-              </div>
-            );
-          })
-        )}
-      </div>
+      <RhizohChessBoardV0
+        rows={rows}
+        boardColors={boardColors}
+        pieceStyleId={pieceStyleId}
+        pieceBold={pieceBold}
+        lastMove={lastMove}
+        sizeClass="w-full"
+        showCoords={false}
+        interactive={false}
+        borderClass={
+          featured
+            ? "border border-cyan-400/50 shadow-[0_0_12px_rgba(0,204,255,0.2)]"
+            : "border border-white/10"
+        }
+      />
 
       <div className="mt-1.5 flex justify-between text-[9px] text-white/50">
         <span>ply {slot.ply}</span>
@@ -317,6 +301,7 @@ function FeaturedMatchBroadcastV0({
   tr,
   boardColors,
   pieceBold,
+  pieceStyleId,
   civilization,
   sessionGamesEnded,
   heroCopy,
@@ -338,6 +323,7 @@ function FeaturedMatchBroadcastV0({
   const slotMoves = (monitor?.recentMoves || []).filter(
     (m) => m.slotId === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0
   );
+  const lastMove = slot.lastMove || slotMoves[slotMoves.length - 1] || null;
   const lastEndLabel = lastGameEnd
     ? formatClusterEndReasonLabelV0(lastGameEnd.endReason, lastGameEnd.ply, tr)
     : null;
@@ -372,38 +358,16 @@ function FeaturedMatchBroadcastV0({
             tr={tr}
           />
         </div>
-        <div className="mx-auto w-full max-w-[min(100%,min(72vw,52dvh))]">
-          <div className="grid aspect-square w-full grid-cols-8 gap-px overflow-hidden rounded-lg border-2 border-cyan-400/50 shadow-[0_0_24px_rgba(34,211,238,0.2)]">
-            {rows.map((row, ri) =>
-              row.map((cell, ci) => {
-                const dark = (ri + ci) % 2 === 1;
-                const bg = dark ? boardColors.dark : boardColors.light;
-                return (
-                  <div
-                    key={`${ri}-${ci}`}
-                    className="flex aspect-square items-center justify-center"
-                    style={{ background: bg }}
-                  >
-                    {cell ? (
-                      <span
-                        className={`select-none text-[clamp(0.85rem,3.8vw,1.85rem)] leading-none ${
-                          pieceBold ? "font-black" : "font-semibold"
-                        } ${cell.color === "w" ? "text-white" : "text-black"}`}
-                        style={
-                          cell.color === "b"
-                            ? { textShadow: "0 0 1px #fff, 0 1px 0 #fff" }
-                            : { textShadow: "0 1px 3px rgba(0,0,0,0.55)" }
-                        }
-                      >
-                        {cell.glyph}
-                      </span>
-                    ) : null}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
+        <RhizohChessBoardV0
+          rows={rows}
+          boardColors={boardColors}
+          pieceStyleId={pieceStyleId}
+          pieceBold={pieceBold}
+          lastMove={lastMove}
+          sizeClass="mx-auto w-full max-w-[min(100%,min(72vw,52dvh))]"
+          interactive={false}
+          borderClass="border-2 border-cyan-400/50 shadow-[0_0_24px_rgba(0,204,255,0.2)]"
+        />
         <p className="mt-2 text-center text-[10px] text-white/45">
           ply {slot.ply} · {tr ? "oturum maç" : "session games"}: {sessionGamesEnded}
           {lastEndLabel ? ` · ${tr ? "son bitiş" : "last end"}: ${lastEndLabel}` : ""}
@@ -443,7 +407,7 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
   uiLocale = "en"
 }) {
   const tr = uiLocale === "tr";
-  const { boardColors, pieceBold } = useChessArenaDisplaySettingsV0();
+  const { boardColors, pieceBold, pieceStyleId } = useChessArenaDisplaySettingsV0();
   const [clusterTimeControlId, setClusterTimeControlId] = useState(
     () => window.__rhizoh?.chessGameCluster?.timeControlId || null
   );
@@ -702,6 +666,7 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
                   tr={tr}
                   boardColors={boardColors}
                   pieceBold={pieceBold}
+                  pieceStyleId={pieceStyleId}
                   civilization={civilization}
                   sessionGamesEnded={sessionGamesEnded}
                   heroCopy={heroCopy}
@@ -732,6 +697,7 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
                   tr={tr}
                   boardColors={boardColors}
                   pieceBold={pieceBold}
+                  pieceStyleId={pieceStyleId}
                   roleCopy={resolveClusterSlotRoleCopyV0(i, tr)}
                 />
               ))}
