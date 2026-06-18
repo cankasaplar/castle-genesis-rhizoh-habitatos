@@ -44,23 +44,29 @@ describe("spiralMMOAwakeningCycleV0", () => {
     expect(html).not.toContain("0644");
   });
 
-  it("launch plan spans order colors, routes, birds and 6:44 deadline", () => {
+  it("launch plan spans order colors, dimensional collapse arcs, birds and 6:44 deadline", () => {
     const plan = buildSpiralMMOAwakeningLaunchPlanV0(2, 1_700_000_000_000, { commit: false });
     expect(plan.triggerPinIndex).toBe(2);
     expect(plan.durationMs).toBe((6 * 60 + 44) * 1000);
     expect(plan.deadlineMs).toBe(plan.durationMs + 1_700_000_000_000);
     expect(plan.routeLines.length).toBe(0);
-    expect(plan.launches.length).toBeGreaterThan(10);
+    expect(plan.launches.length).toBeGreaterThan(50);
     expect(plan.launches[0].cubeSpec).toBeTruthy();
-    expect(plan.launches.every((l) => l.routeId.includes("|"))).toBe(true);
+    expect(plan.launches.some((l) => l.kind === "order")).toBe(true);
+    expect(plan.launches.some((l) => l.kind === "chaos")).toBe(true);
     const colors = new Set(plan.launches.map((l) => l.colorClass));
     for (const c of SPIRAL_MMO_ORDER_COLORS_V0) expect(colors.has(c)).toBe(true);
     const mockCubes = plan.launches.map((l) => ({
       id: l.id,
       p0: { x: 10, y: 10 },
+      p2: { x: 80, y: 80 },
+      kind: l.kind,
       delayMs: l.delayMs
     }));
-    const birds = buildSpiralMMOAwakeningBirdPlanV0(mockCubes, plan.cycleSeed);
+    const birds = buildSpiralMMOAwakeningBirdPlanV0(mockCubes, plan.cycleSeed, {
+      triggerX: 50,
+      triggerY: 50
+    });
     expect(birds.length).toBeGreaterThan(0);
   });
 

@@ -34,7 +34,6 @@ import {
   publishRhizohMapPinOwnerRegistryV0,
   readWorldSpaceSessionMapPinRowsV0
 } from "../rhizoh/runtime/rhizohMapPinOwnerV0.js";
-import { SOVEREIGN_REGIONAL_BRIDGE_EDGES_V0 } from "../rhizoh/runtime/worldMapBridgeGraphV0.js";
 import { isSpiralCountdownCalmVisualV0 } from "../rhizoh/runtime/worldDomainCalmModeV0.js";
 import { RHIZOH_MAP_COMMAND_EVENT_V0 } from "../rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
 import { RhizohCatchUpCascadeOverlayV0 } from "./RhizohCatchUpCascadeOverlayV0.jsx";
@@ -447,23 +446,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
 
       graphLayerRef.current?.clearLayers?.();
       if (!graphLayerRef.current) graphLayerRef.current = L.layerGroup().addTo(mapRef.current);
-      for (const edge of SOVEREIGN_REGIONAL_BRIDGE_EDGES_V0) {
-        const n1 = nodeById.current.get(edge.source);
-        const n2 = nodeById.current.get(edge.target);
-        if (!n1 || !n2) continue;
-        L.polyline(
-          [
-            [n1.lat, n1.lon],
-            [n2.lat, n2.lon]
-          ],
-          {
-            color: edge.color || "#06b6d4",
-            weight: edge.kind === "hub_spoke" ? 2.2 : 1.6,
-            opacity: edge.kind === "hub_spoke" ? 0.55 : 0.38,
-            dashArray: edge.kind === "regional_ring" ? "4, 8" : undefined
-          }
-        ).addTo(graphLayerRef.current);
-      }
+      /* Route polylines removed — dimensional collapse uses gate arcs only (no static mesh). */
     } catch {
       /* noop */
     }

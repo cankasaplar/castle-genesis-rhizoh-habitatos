@@ -105,7 +105,16 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
     const cubes = plan.launches.map((launch) => resolveLaunchGeometry(launch, w, h));
     cubeTargetsRef.current = cubes.map((c) => ({ x: c.p2.x, y: c.p2.y, key: c.key }));
 
-    const birds = buildSpiralMMOAwakeningBirdPlanV0(cubes, plan.cycleSeed);
+    const triggerPin = listSpiralMMOContinentMapPinsV0()[plan.triggerPinIndex ?? 0];
+    const triggerPct = triggerPin
+      ? spiralMMOGeoToPercentV0(triggerPin.lat, triggerPin.lon)
+      : cubes[0]?.srcPct;
+    const triggerPx = triggerPct ? pctToPx(triggerPct, w, h) : { x: w / 2, y: h / 2 };
+
+    const birds = buildSpiralMMOAwakeningBirdPlanV0(cubes, plan.cycleSeed, {
+      triggerX: triggerPx.x,
+      triggerY: triggerPx.y
+    });
     const bottles = buildSpiralMMOAwakeningBottlePlanV0(cubes, w, h);
 
     const kfBlocks = [];
@@ -222,11 +231,11 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
       }
 
       const pins = listSpiralMMOContinentMapPinsV0();
-      const handoffTo = planRef.current?.collapseHandoff?.toIndex ?? 0;
-      const nextPin = pins[handoffTo] || pins[0];
+      const triggerIdx = planRef.current?.triggerPinIndex ?? 0;
+      const collapsePin = pins[triggerIdx] || pins[0];
+      const collapsePct = spiralMMOGeoToPercentV0(collapsePin.lat, collapsePin.lon);
       setScene((prev) => {
         if (!prev) return prev;
-        const collapsePct = spiralMMOGeoToPercentV0(nextPin.lat, nextPin.lon);
         return {
           ...prev,
           birds: prev.birds.map((b, idx) => ({
@@ -443,13 +452,23 @@ const SpiralMMOFlightCubeV0 = memo(function SpiralMMOFlightCubeV0({ cube, collap
       const t = i / steps;
       const eased = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
       let pos = spiralMMOBezierPointV0(eased, cube.p0, cube.cp, cube.p2);
-      if (cube.isOrder) {
+      const dx = cube.p2.x - cube.p0.x;
+      const dy = cube.p2.y - cube.p0.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const waveT = eased * Math.PI * 4 + (cube.groupIndex ?? cube.sequenceIndex ?? 0);
+      if (cube.isOrder || cube.kind === "order") {
         const waveAmp = cube.waveAmplitude ?? 4;
-        const wave = Math.sin(eased * Math.PI * 2 + (cube.sequenceIndex || 0) * 0.35) * waveAmp;
-        const dx = cube.p2.x - cube.p0.x;
-        const dy = cube.p2.y - cube.p0.y;
-        const len = Math.hypot(dx, dy) || 1;
+        const wave = Math.sin(waveT) * waveAmp;
         pos = { x: pos.x + (-dy / len) * wave, y: pos.y + (dx / len) * wave };
+      } else if (cube.kind === "chaos") {
+        const waveAmp = (cube.waveAmplitude ?? 4) * 0.5;
+        const wave = Math.sin(waveT) * waveAmp;
+        const scatterX = cube.scatterX ?? 0;
+        const scatterY = cube.scatterY ?? 0;
+        pos = {
+          x: pos.x + (-dy / len) * wave + scatterX * eased,
+          y: pos.y + (dx / len) * wave + scatterY * eased
+        };
       }
       const destX = cube.p2.x + acc.x;
       const destY = cube.p2.y + acc.y;
@@ -546,11 +565,21 @@ const SpiralMMOBirdV0 = memo(function SpiralMMOBirdV0({ bird, hostRef, cubeTarge
     };
 
     const startDelay = window.setTimeout(() => {
-      flyTo(
-        Math.random() * (host.clientWidth || window.innerWidth),
-        Math.random() * (host.clientHeight || window.innerHeight),
-        3600 + Math.random() * 2800
-      );
+      const firstTarget =
+        bird.arcTarget && Number.isFinite(bird.arcTarget.x)
+          ? { x: bird.arcTarget.x, y: bird.arcTarget.y }
+          : cubeTargets.length > 0
+            ? cubeTargets[Math.floor(Math.random() * cubeTargets.length)]
+            : null;
+      if (firstTarget) {
+        flyTo(firstTarget.x, firstTarget.y, 2800 + Math.random() * 2200);
+      } else {
+        flyTo(
+          Math.random() * (host.clientWidth || window.innerWidth),
+          Math.random() * (host.clientHeight || window.innerHeight),
+          3600 + Math.random() * 2800
+        );
+      }
     }, 400 + Math.random() * 1400);
 
     return () => {

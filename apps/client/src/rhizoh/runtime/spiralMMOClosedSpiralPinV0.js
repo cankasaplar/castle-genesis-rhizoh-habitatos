@@ -1,9 +1,15 @@
 /**
- * SpiralMMO closed spiral map pin — dormant portal rings (v0 visual).
+ * SpiralMMO closed spiral map pin — dimensional collapse gate rings (v0 visual).
  */
 
-import { RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0 } from "./spiralMMOContinentPinsV0.js";
 import { deriveSpiralMMOContinentCubeMotionV0 } from "./spiralMMOContinentCubeMotionV0.js";
+
+const GATE_ORDER_COLOR_V0 = "#00ccff";
+const GATE_RING_DEFS_V0 = Object.freeze([
+  { r: 42, speed: 1.0, dash: "28 52" },
+  { r: 28, speed: -1.6, dash: "18 34" },
+  { r: 14, speed: 2.4, dash: "10 20" }
+]);
 
 /**
  * @param {object} node
@@ -12,37 +18,32 @@ import { deriveSpiralMMOContinentCubeMotionV0 } from "./spiralMMOContinentCubeMo
 export function spiralMMOClosedSpiralPinHtmlV0(node) {
   const motion = deriveSpiralMMOContinentCubeMotionV0(node);
   const id = String(node?.id || `spiralmmo_${motion.continent}`);
-  const size = 24;
+  const size = 26;
   const cx = 50;
   const cy = 50;
+  const accent = GATE_ORDER_COLOR_V0;
+  const chaosHint = motion.accent;
 
-  const rings = [
-    { r: 42, dash: "180 40", dur: "4s", dir: "1" },
-    { r: 28, dash: "90 30", dur: "2.5s", dir: "-1" },
-    { r: 14, dash: "40 15", dur: "1.5s", dir: "1" }
-  ];
+  const ringSvg = GATE_RING_DEFS_V0.map((ring, idx) => {
+    const dur = `${2.2 + idx * 0.8}s`;
+    const from = ring.speed > 0 ? "0 50 50" : "360 50 50";
+    const to = ring.speed > 0 ? "360 50 50" : "0 50 50";
+    return `<circle cx="${cx}" cy="${cy}" r="${ring.r}" fill="none" stroke="${accent}" stroke-width="4" stroke-dasharray="${ring.dash}" opacity="0.88">
+      <animateTransform attributeName="transform" type="rotate" from="${from}" to="${to}" dur="${dur}" repeatCount="indefinite"/>
+    </circle>`;
+  }).join("");
 
-  const ringSvg = rings
-    .map((ring) => {
-      const from = ring.dir === "1" ? "0 50 50" : "360 50 50";
-      const to = ring.dir === "1" ? "360 50 50" : "0 50 50";
-      return `<circle cx="${cx}" cy="${cy}" r="${ring.r}" fill="none" stroke="${motion.accent}" stroke-width="5" stroke-dasharray="${ring.dash}" opacity="0.92">
-        <animateTransform attributeName="transform" type="rotate" from="${from}" to="${to}" dur="${ring.dur}" repeatCount="indefinite"/>
-      </circle>`;
-    })
-    .join("");
+  const label = String(node?.shortLabel || motion.continent.slice(0, 2).toUpperCase());
 
-  return `<div data-rhizoh-spiral-mmo-pin="${id}" data-rhizoh-spiral-mmo-rev="closed-spiral-v0" data-rhizoh-spiral-continent="${motion.continent}" style="width:${size}px;height:${size}px;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto">
-    <div style="width:${size}px;height:${size}px;border-radius:50%;background:#000;box-shadow:0 0 8px ${motion.accent}88,0 0 14px rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center">
+  return `<div data-rhizoh-spiral-mmo-pin="${id}" data-rhizoh-spiral-mmo-rev="dim-collapse-gate-v0" data-rhizoh-spiral-continent="${motion.continent}" style="width:${size}px;height:${size}px;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto">
+    <div style="width:${size}px;height:${size}px;border-radius:50%;background:#030308;box-shadow:0 0 10px ${accent}66,0 0 6px ${chaosHint}44;display:flex;align-items:center;justify-content:center">
       <svg viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true" style="border-radius:50%">
         ${ringSvg}
-        <circle cx="${cx}" cy="${cy}" r="5" fill="${motion.accent}" opacity="0.95"/>
+        <circle cx="${cx}" cy="${cy}" r="5" fill="#ffffff" opacity="0.92"/>
+        <text x="${cx}" y="88" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-family="Courier New,monospace" font-size="10">${label}</text>
       </svg>
     </div>
   </div>`;
 }
 
-/**
- * Whirlpool path helper re-export for tests.
- */
-export { RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0 };
+export { RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0 } from "./spiralMMOContinentPinsV0.js";

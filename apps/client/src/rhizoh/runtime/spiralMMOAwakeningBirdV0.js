@@ -31,6 +31,8 @@ export function buildSpiralMMOAwakeningBirdSpecV0(input) {
     id: input.id,
     startX: input.startX,
     startY: input.startY,
+    arcTarget: input.arcTarget || null,
+    kind: input.kind || "order",
     gray,
     depthScale,
     depthOpacity,
@@ -56,20 +58,36 @@ export function spiralMMOAwakeningBirdHtmlV0(spec) {
 }
 
 /**
- * @param {ReadonlyArray<{ id: string, p0: { x: number, y: number }, delayMs: number }>} launches
+ * @param {ReadonlyArray<{ id: string, p0: { x: number, y: number }, p2?: { x: number, y: number }, delayMs: number, kind?: string }>} launches
  * @param {number} cycleSeed
+ * @param {{ triggerX?: number, triggerY?: number }} [opts]
  */
-export function buildSpiralMMOAwakeningBirdPlanV0(launches, cycleSeed) {
+export function buildSpiralMMOAwakeningBirdPlanV0(launches, cycleSeed, opts = {}) {
   const birds = [];
+  if (Number.isFinite(opts.triggerX) && Number.isFinite(opts.triggerY)) {
+    birds.push(
+      buildSpiralMMOAwakeningBirdSpecV0({
+        id: "bird-gate-anchor",
+        startX: opts.triggerX,
+        startY: opts.triggerY,
+        cycleSeed,
+        birdIndex: -1
+      })
+    );
+  }
   launches.forEach((launch, idx) => {
-    if (idx % 2 !== 0) return;
+    if (idx % 3 !== 0) return;
+    const startX = launch.p0?.x ?? opts.triggerX ?? 0;
+    const startY = launch.p0?.y ?? opts.triggerY ?? 0;
     birds.push(
       buildSpiralMMOAwakeningBirdSpecV0({
         id: `bird-${launch.id}`,
-        startX: launch.p0.x,
-        startY: launch.p0.y,
+        startX,
+        startY,
         cycleSeed,
-        birdIndex: idx
+        birdIndex: idx,
+        arcTarget: launch.p2 || null,
+        kind: launch.kind || "order"
       })
     );
   });
