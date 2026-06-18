@@ -8,13 +8,24 @@ import { CHESS_TIME_CONTROL_V0 } from "./chessArenaSessionV0.js";
 export const CHESS_CLUSTER_SIMULATION_POLICY_SCHEMA_V0 =
   "castle.rhizoh.chess_cluster_simulation_policy.v0";
 
-/** Default cluster TC — 45s for faster session game_end in shadow prod. */
+/** Default cluster TC — B-roll sim; featured LIVE uses cluster_live_3_2. */
 export const CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0 = "cluster_sim_45_0";
+/** Featured LIVE slot — long enough for middlegame + endgame study. */
+export const CHESS_CLUSTER_FEATURED_TIME_CONTROL_ID_V0 = "cluster_live_3_2";
 
-/** Force draw after this ply (~7s/board → ~9 min worst case; clock flags first). */
+/** Force draw after this ply on B-roll boards. */
 export const CHESS_CLUSTER_MAX_PLY_V0 = 80;
+/** Featured LIVE may play deeper before sim cap. */
+export const CHESS_CLUSTER_FEATURED_MAX_PLY_V0 = 120;
 
 export const CHESS_CLUSTER_SIM_TIME_CONTROLS_V0 = Object.freeze({
+  CLUSTER_LIVE_3_2: Object.freeze({
+    id: "cluster_live_3_2",
+    labelTr: "Canlı 3+2",
+    labelEn: "Live 3+2",
+    initialMs: 180_000,
+    incrementMs: 2_000
+  }),
   CLUSTER_SIM_45_0: Object.freeze({
     id: "cluster_sim_45_0",
     labelTr: "Cluster sim 45+0",
@@ -52,7 +63,9 @@ export function isChessClusterSimulationTimeControlIdV0(raw) {
 export function resolveChessClusterTimeControlV0(raw) {
   const id = String(raw || CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0);
   const cluster =
-    CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_45_0.id === id
+    CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_LIVE_3_2.id === id
+      ? CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_LIVE_3_2
+      : CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_45_0.id === id
       ? CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_45_0
       : CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_1_0.id === id
         ? CHESS_CLUSTER_SIM_TIME_CONTROLS_V0.CLUSTER_SIM_1_0

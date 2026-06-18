@@ -68,6 +68,16 @@ describe("chessClusterBroadcastEnginePolicyV0", () => {
     );
   });
 
+  it("never ends featured LIVE slot on timeout during broadcast", () => {
+    publishChessClusterArenaOpenV0(true);
+    expect(
+      shouldFinalizeClusterBroadcastEndV0({ slotId: 0, ply: 40 }, "white_wins", "timeout")
+    ).toBe(false);
+    expect(
+      shouldFinalizeClusterBroadcastEndV0({ slotId: 0, ply: 40 }, "white_wins", "checkmate_or_draw")
+    ).toBe(true);
+  });
+
   it("ticks clock only for featured slot during broadcast", () => {
     publishChessClusterArenaOpenV0(true);
     expect(shouldTickChessClusterSlotClockV0({ slotId: 0 })).toBe(true);

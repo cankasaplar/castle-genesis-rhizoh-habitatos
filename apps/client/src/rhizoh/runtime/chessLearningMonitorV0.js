@@ -49,6 +49,7 @@ export function recordChessLearningMonitorMoveV0(detail) {
     kind: "move",
     slotId: detail.move.slotId,
     san: detail.move.san,
+    color: detail.move.color || detail.move.turn || null,
     engine: detail.move.engine,
     agentId: detail.move.agentId,
     critical: Boolean(detail.observation?.critical),

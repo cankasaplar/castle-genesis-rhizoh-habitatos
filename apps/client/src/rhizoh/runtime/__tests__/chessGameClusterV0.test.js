@@ -50,7 +50,8 @@ describe("chessGameClusterV0", () => {
     expect(listChessClusterSlotsV0()).toHaveLength(CHESS_CLUSTER_SLOT_COUNT_V0);
     expect(getChessClusterSlotV0(0)?.status).toBe("active");
     expect(getChessClusterSlotV0(0)?.modeId).toBe("rhizoh_vs_stockfish");
-    expect(getChessClusterSlotV0(0)?.clock?.timeControlId).toBe("cluster_sim_45_0");
+    expect(getChessClusterSlotV0(0)?.clock?.timeControlId).toBe("cluster_live_3_2");
+    expect(getChessClusterSlotV0(1)?.clock?.timeControlId).toBe("cluster_sim_45_0");
     expect(window.__rhizoh.chessGameCluster?.architecture).toBe("single_engine_multi_pv");
     expect(window.__rhizoh.chessGameCluster?.engineScheduler?.engineInstances).toBe(1);
     stopChessGameClusterV0();
@@ -88,9 +89,10 @@ describe("chessGameClusterV0", () => {
   it("applyChessClusterTimeControlV0 resolves cluster TC without ReferenceError", () => {
     startChessGameClusterV0({ testFastTick: true, intervalMs: 50 });
     expect(() => applyChessClusterTimeControlV0("cluster_sim_45_0")).not.toThrow();
-    expect(getChessClusterSlotV0(0)?.clock?.timeControlId).toBe("cluster_sim_45_0");
+    expect(getChessClusterSlotV0(0)?.clock?.timeControlId).toBe("cluster_live_3_2");
     expect(() => applyChessClusterTimeControlV0("blitz_3_2")).not.toThrow();
-    expect(getChessClusterSlotV0(0)?.clock?.timeControlId).toBe("blitz_3_2");
+    expect(getChessClusterSlotV0(0)?.clock?.timeControlId).toBe("cluster_live_3_2");
+    expect(getChessClusterSlotV0(1)?.clock?.timeControlId).toBe("blitz_3_2");
     stopChessGameClusterV0();
   });
 
@@ -101,7 +103,8 @@ describe("chessGameClusterV0", () => {
         detail: { timeControlId: "blitz_3_2" }
       })
     );
-    expect(getChessClusterSlotV0(0)?.clock?.timeControlId).toBe("cluster_sim_45_0");
+    expect(getChessClusterSlotV0(0)?.clock?.timeControlId).toBe("cluster_live_3_2");
+    expect(getChessClusterSlotV0(1)?.clock?.timeControlId).toBe("cluster_sim_45_0");
     expect(window.__rhizoh.chessGameCluster?.timeControlId).toBe("cluster_sim_45_0");
     stopChessGameClusterV0();
   });
