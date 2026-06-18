@@ -3,8 +3,10 @@ import {
   RHIZOH_MAP_CAMERA_FEEDBACK_EVENT_V0,
   dispatchWorldSpaceMapFlyV0,
   emitMapCameraFeedbackV0,
-  installWorldSpaceMapCommandFacadeV0
+  installWorldSpaceMapCommandFacadeV0,
+  recenterWorldSpaceMapV0
 } from "../worldSpaceMapCommandFacadeV0.js";
+import { RHIZOH_WORLD_SPACE_NEUTRAL_VIEW_V0 } from "../worldMapViewportBootstrapV0.js";
 import { RHIZOH_MAP_COMMAND_EVENT_V0 } from "../rhizohLocalCommandHandlersV0.js";
 
 describe("worldSpaceMapCommandFacadeV0", () => {
@@ -62,5 +64,14 @@ describe("worldSpaceMapCommandFacadeV0", () => {
     expect(() => {
       payload.action = "mutate";
     }).toThrow();
+  });
+
+  it("recenters to neutral world view without user castle (no Istanbul cluster)", () => {
+    recenterWorldSpaceMapV0("map_center");
+    expect(window.__rhizoh.v11LeafletMap.flyTo).toHaveBeenCalledWith(
+      [RHIZOH_WORLD_SPACE_NEUTRAL_VIEW_V0.lat, RHIZOH_WORLD_SPACE_NEUTRAL_VIEW_V0.lon],
+      RHIZOH_WORLD_SPACE_NEUTRAL_VIEW_V0.zoom,
+      expect.any(Object)
+    );
   });
 });

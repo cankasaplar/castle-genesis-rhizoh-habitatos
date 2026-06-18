@@ -2,6 +2,7 @@ import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import {
   resolveRhizohProductWorldRealityModeV0,
   shouldRhizohFlyToIstanbulV0,
+  shouldRhizohAllowBootstrapCalibrationFlyV0,
   hasRhizohReturningUserAnchorV0,
   coerceRhizohProductRealityModeV0,
   shouldHideT0ContinuityChromeOnWorldSpaceV0,
@@ -41,6 +42,19 @@ describe("rhizohWorldSurfacePolicyV0", () => {
         source: "PRODUCT_SHELL_WORLD_MAP"
       })
     ).toBe(false);
+    expect(
+      shouldRhizohAllowBootstrapCalibrationFlyV0({
+        pathname: "/world/space",
+        worldDomain: "space",
+        source: "map_center"
+      })
+    ).toBe(false);
+    expect(
+      shouldRhizohAllowBootstrapCalibrationFlyV0({
+        pathname: "/world/space",
+        source: "voice_warp"
+      })
+    ).toBe(true);
   });
 
   it("allows Istanbul fly on explicit REAL_MAP hall route", () => {

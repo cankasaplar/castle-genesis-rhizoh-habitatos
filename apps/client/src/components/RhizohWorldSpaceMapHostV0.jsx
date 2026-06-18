@@ -28,9 +28,12 @@ import {
   scheduleMapPinHoverDwellV0
 } from "../rhizoh/runtime/worldMapMeaningfulTransitionV0.js";
 import {
-  resolveMapViewportFitNodesV0,
-  resolveMapViewportHomeV0
+  resolveMapViewportFitNodesV0
 } from "../rhizoh/runtime/worldMapViewportBootstrapV0.js";
+import {
+  publishRhizohMapPinOwnerRegistryV0,
+  readWorldSpaceSessionMapPinRowsV0
+} from "../rhizoh/runtime/rhizohMapPinOwnerV0.js";
 import { SOVEREIGN_REGIONAL_BRIDGE_EDGES_V0 } from "../rhizoh/runtime/worldMapBridgeGraphV0.js";
 import { isSpiralCountdownCalmVisualV0 } from "../rhizoh/runtime/worldDomainCalmModeV0.js";
 import { RHIZOH_MAP_COMMAND_EVENT_V0 } from "../rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
@@ -45,7 +48,6 @@ export { RHIZOH_V11_MAP_INTENT_EVENT_V0, RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0 }
 import {
   SOVEREIGN_MAP_DEFAULT_HOME_V0,
   buildRemoteCastleMapNodesV0,
-  listSovereignWorldMapNodesForViewV0,
   RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1,
   sovereignNodeIconHtmlV0,
   writeSovereignPortalCoordsV0
@@ -205,7 +207,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
   }, []);
 
   const displayNodes = useMemo(
-    () => [...listSovereignWorldMapNodesForViewV0({ userCastle: userCastleGeo }), ...liveMatchPins],
+    () => readWorldSpaceSessionMapPinRowsV0({ userCastle: userCastleGeo, liveMatchPins }),
     [userCastleGeo, liveMatchPins]
   );
   const remoteNodes = useMemo(
@@ -425,17 +427,20 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
       }
 
       if (!boundsFittedRef.current && allNodes.length) {
-        const fitNodes = resolveMapViewportFitNodesV0(allNodes);
-        const bounds = L.latLngBounds(fitNodes.map((n) => [n.lat, n.lon]));
-        const home = resolveMapViewportHomeV0(userCastleGeo);
-        mapRef.current.fitBounds(bounds, {
-          paddingTopLeft: [28, 88],
-          paddingBottomRight: [28, 32],
-          maxZoom: userCastleGeo ? 15 : 14,
-          animate: false
+        const fitNodes = resolveMapViewportFitNodesV0(allNodes, {
+          worldSpaceNeutral: true,
+          userCastle: userCastleGeo
         });
-        if (!userCastleGeo && fitNodes.length <= 2) {
-          mapRef.current.setView([home.lat, home.lon], home.zoom, { animate: false });
+        if (fitNodes.length >= 2) {
+          const bounds = L.latLngBounds(fitNodes.map((n) => [n.lat, n.lon]));
+          mapRef.current.fitBounds(bounds, {
+            paddingTopLeft: [28, 88],
+            paddingBottomRight: [28, 32],
+            maxZoom: userCastleGeo ? 15 : 14,
+            animate: false
+          });
+        } else if (userCastleGeo) {
+          mapRef.current.setView([userCastleGeo.lat, userCastleGeo.lon], 15, { animate: false });
         }
         boundsFittedRef.current = true;
       }

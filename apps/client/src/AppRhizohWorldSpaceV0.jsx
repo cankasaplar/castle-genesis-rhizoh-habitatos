@@ -37,6 +37,8 @@ import {
   RHIZOH_UI_SURFACE_V0
 } from "./rhizoh/runtime/rhizohUiLayoutResolverV0.js";
 import { navigateRhizohProductSurfaceV0 } from "./rhizoh/product/rhizohProductTopologyV0.js";
+import { publishRhizohSpatialModeV0 } from "./rhizoh/runtime/rhizohSpatialModeV0.js";
+import { publishRhizohMapPinOwnerRegistryV0 } from "./rhizoh/runtime/rhizohMapPinOwnerV0.js";
 import {
   configureSpatialRealityInfraV0,
   clearSpatialRealityInfraV0
@@ -214,6 +216,15 @@ export default function AppRhizohWorldSpaceV0() {
   }, [location.pathname]);
 
   useEffect(() => {
+    publishRhizohMapPinOwnerRegistryV0({
+      pathname: location.pathname || "/world/space",
+      worldDomain: worldDrawerDomainV0,
+      mapTool: worldMapToolV0,
+      mapSurfaceActive
+    });
+  }, [location.pathname, worldDrawerDomainV0, worldMapToolV0, mapSurfaceActive, cesiumLayerActiveV0]);
+
+  useEffect(() => {
     writeRhizohWorldDrawerDomainV0(worldDrawerDomainV0);
   }, [worldDrawerDomainV0]);
 
@@ -276,6 +287,7 @@ export default function AppRhizohWorldSpaceV0() {
 
   useEffect(() => {
     writeRhizohWorldDrawerDomainV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE);
+    publishRhizohSpatialModeV0();
     configureSpatialRealityInfraV0({
       gatewayPhase: gateway.phase,
       mapSurfaceActive: true,

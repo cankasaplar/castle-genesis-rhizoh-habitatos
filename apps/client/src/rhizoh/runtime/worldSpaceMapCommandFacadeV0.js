@@ -6,7 +6,7 @@
 import { RHIZOH_MAP_COMMAND_EVENT_V0 } from "./rhizohLocalCommandHandlersV0.js";
 import { routeCesiumCommandV0 } from "../../castleFlight/cesiumCommandRouterV0.js";
 import { logCastleLifecycleV0 } from "./rhizohProductionLogNamespacesV0.js";
-import { resolveMapViewportHomeV0 } from "./worldMapViewportBootstrapV0.js";
+import { resolveWorldSpaceMapRecenterHomeV0 } from "./worldMapViewportBootstrapV0.js";
 import { installWorldMapVisualFeedbackV0 } from "./worldMapVisualFeedbackV0.js";
 
 export const RHIZOH_MAP_CAMERA_FEEDBACK_EVENT_V0 = "rhizoh:map-camera-feedback-v0";
@@ -54,12 +54,10 @@ export function dispatchWorldSpaceMapFlyV0(geo) {
 }
 
 /**
- * Recenter to bootstrap home (Istanbul cluster or user castle).
+ * Recenter to user castle, bootstrap seed, or neutral world view (not demo Istanbul cluster).
  */
 export function recenterWorldSpaceMapV0(source = "map_recenter") {
-  const home = resolveMapViewportHomeV0(
-    typeof window !== "undefined" ? window.__rhizoh?.userCastleGeo : null
-  );
+  const home = resolveWorldSpaceMapRecenterHomeV0();
   return dispatchWorldSpaceMapFlyV0({ ...home, source });
 }
 
