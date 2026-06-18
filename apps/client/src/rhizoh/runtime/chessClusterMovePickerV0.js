@@ -22,6 +22,10 @@ import { enqueueRhizohPredictionCompareV0 } from "./rhizohChessPredictionCompare
 import { isChessEngineContendedV0 } from "./chessEngineContentionGateV0.js";
 import { shouldUseStockfishForClusterSlotV0 } from "./chessClusterBroadcastEnginePolicyV0.js";
 import { CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 } from "./chessLearningMonitorV0.js";
+import {
+  isRhizohClusterTurnV0,
+  resolveChessLegalMoveUciV0
+} from "./chessArenaMoveResolveV0.js";
 
 const CLUSTER_OPENING_FAST_HEURISTIC_PLY_V0 = 6;
 
@@ -88,26 +92,23 @@ export async function pickChessClusterMoveV0(slot, game) {
 
   switch (mode.moveStrategy) {
     case "rhizoh_vs_stockfish":
-      if (turn === "w") {
+      if (isRhizohClusterTurnV0(slot, turn)) {
         const fenBefore = game.fen();
         const rhizohPick = await pickRhizohChessMoveV0(game);
-        const legal = game.legalMoves();
-        const san = rhizohPick?.move;
-        const legalRow = san ? legal.find((m) => m.san === san) : null;
-        const uci = legalRow
-          ? `${legalRow.from}${legalRow.to}${legalRow.promotion || ""}`
-          : null;
+        const uci = resolveChessLegalMoveUciV0(game, rhizohPick?.move);
         if (uci) {
           enqueueRhizohPredictionCompareV0(fenBefore, uci, {
             slotId: slot?.slotId,
             matchId: slot?.matchId,
             engine: rhizohPick?.engine || "rhizoh_ai",
-            san
+            san: rhizohPick?.move
           });
         }
         return Object.freeze({
-          move: san || pickClusterHeuristicMoveV0(game, slot, agentId, policy),
-          engine: rhizohPick?.engine || "rhizoh_ai"
+          move:
+            uci ||
+            pickClusterHeuristicMoveV0(game, slot, agentId, policy),
+          engine: uci ? rhizohPick?.engine || "rhizoh_ai" : "rhizoh_heuristic_fallback"
         });
       }
       return scheduleClusterEngineMoveV0(game, {

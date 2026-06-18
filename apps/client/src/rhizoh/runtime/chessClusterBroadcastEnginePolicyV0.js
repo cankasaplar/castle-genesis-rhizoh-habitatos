@@ -49,8 +49,12 @@ export function shouldTickChessClusterSlotClockV0(slot) {
 export function shouldFinalizeClusterBroadcastEndV0(slot, _outcome, endReason) {
   if (!isChessClusterBroadcastModeV0()) return true;
   if (endReason === "checkmate_or_draw") return true;
-  const ply = Number(slot?.ply) || 0;
   const slotId = Number(slot?.slotId);
+  // LIVE featured: play to decisive end — no flag on zero clock during broadcast.
+  if (slotId === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 && endReason === "timeout") {
+    return false;
+  }
+  const ply = Number(slot?.ply) || 0;
   const minPly =
     slotId === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0
       ? CHESS_CLUSTER_BROADCAST_MIN_FEATURED_PLY_V0

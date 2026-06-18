@@ -133,21 +133,15 @@ export function resolveClusterSlotRoleCopyV0(slotId, tr = true) {
 export function getChessObservatoryHeroCopyV0(tr = true) {
   return Object.freeze({
     schema: CHESS_CLUSTER_OBSERVATORY_COPY_SCHEMA_V0,
-    title: tr ? "Rhizoh 8 stile karşı öğreniyor" : "Rhizoh learns against 8 styles",
-    subtitle: tr
-      ? "Canlı maç = gerçek Stockfish. Diğer kameralar = gözlem ve B-roll."
-      : "Live match = real Stockfish. Other cameras = observation B-roll.",
+    title: "rhizohchess",
+    subtitle: tr ? "Canlı maç · 8 kamera" : "Live match · 8 cameras",
     ctaLive: tr ? "Canlı maç" : "Live match",
     ctaGrid: tr ? "8 kamera" : "8 cameras",
     learningNote: tr
       ? "Fox & Octo burada motor değil — öğrenme izi üretirler."
       : "Fox & Octo are not engines here — they generate learning traces.",
-    lobbyCta: tr
-      ? "Canlı yayın — Rhizoh 8 stile karşı öğreniyor"
-      : "Live broadcast — Rhizoh learns against 8 styles",
-    lobbyDesc: tr
-      ? "Ana kamera gerçek Stockfish ile öğrenir; diğer 7 kamera stil izleri üretir."
-      : "Featured camera learns with real Stockfish; other 7 cameras generate style traces."
+    lobbyCta: tr ? "Canlı yayını izle" : "Watch live broadcast",
+    lobbyDesc: tr ? "Ana tahta + 7 iz kamera" : "Featured board + 7 trace cameras"
   });
 }
 

@@ -28,7 +28,7 @@ describe("chessClusterObservatoryCopyV0", () => {
 
   it("exposes hero lobby CTA", () => {
     const hero = getChessObservatoryHeroCopyV0(true);
-    expect(hero.title).toContain("8 stile");
+    expect(hero.title).toBe("rhizohchess");
     expect(hero.lobbyCta).toContain("Canlı yayın");
   });
 

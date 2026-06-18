@@ -32,6 +32,7 @@ import {
 import { formatChessOutcomeLabelV0 } from "../rhizoh/runtime/chessArenaEngineV0.js";
 import { RHIZOH_OPEN_CHESS_ARENA_EVENT_V1 } from "../rhizoh/runtime/symbyoMapIntentBridgeV0.js";
 import { RhizohChessBoardV0 } from "./RhizohChessBoardV0.jsx";
+import { ChessSplitMoveListV0 } from "./ChessSplitMoveListV0.jsx";
 import { PIECE_UNICODE_V0 } from "./RhizohCastleLibraryPanelV0.jsx";
 
 function boardRowsFromFen(fen) {
@@ -202,10 +203,9 @@ function GameEndBannerV0({ banner, tr, onDismiss }) {
   );
 }
 
-function LiveMatchPreflightV0({ tr, teacherStatus, featuredPly, onOpenLobby }) {
+function LiveMatchPreflightV0({ tr, teacherStatus, onOpenLobby }) {
   const engineReady = teacherStatus === "stockfish_wasm";
-  const matchWarm = featuredPly >= 4;
-  if (engineReady && matchWarm) return null;
+  if (engineReady) return null;
   return (
     <div className="mb-2 rounded-lg border border-white/15 bg-black/50 px-3 py-3 text-[11px] text-white/70">
       <p className="font-semibold text-white/90">
@@ -213,9 +213,6 @@ function LiveMatchPreflightV0({ tr, teacherStatus, featuredPly, onOpenLobby }) {
       </p>
       <ul className="mt-2 space-y-1 text-[10px]">
         <li>{engineReady ? "✓" : "○"} Stockfish WASM</li>
-        <li>
-          {matchWarm ? "✓" : "○"} {tr ? "Ana tahta en az 4 hamle" : "Featured board ≥ 4 moves"} (ply {featuredPly})
-        </li>
       </ul>
       <p className="mt-2 text-[9px] text-white/45">
         {tr
@@ -324,6 +321,8 @@ function FeaturedMatchBroadcastV0({
     (m) => m.slotId === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0
   );
   const lastMove = slot.lastMove || slotMoves[slotMoves.length - 1] || null;
+  const rhizohColor = slot.rhizohColor || "w";
+  const boardOrientation = rhizohColor === "b" ? "black" : "white";
   const lastEndLabel = lastGameEnd
     ? formatClusterEndReasonLabelV0(lastGameEnd.endReason, lastGameEnd.ply, tr)
     : null;
@@ -332,10 +331,9 @@ function FeaturedMatchBroadcastV0({
     <div className="flex h-full min-h-0 flex-col gap-3 lg:flex-row">
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="mb-2 rounded-lg border border-cyan-500/25 bg-cyan-950/20 px-3 py-2">
-          <p className="text-[11px] font-semibold text-cyan-100">{heroCopy?.title}</p>
-          <p className="mt-0.5 text-[10px] text-white/50">{heroCopy?.subtitle}</p>
+          <p className="text-[11px] font-semibold text-cyan-100">rhizohchess · LIVE</p>
           {roleCopy ? (
-            <p className="mt-1 text-[9px] text-violet-200/75">{roleCopy.observes}</p>
+            <p className="mt-1 text-[9px] text-violet-200/75">{roleCopy.role}</p>
           ) : null}
         </div>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-white/70">
@@ -364,6 +362,7 @@ function FeaturedMatchBroadcastV0({
           pieceStyleId={pieceStyleId}
           pieceBold={pieceBold}
           lastMove={lastMove}
+          orientation={boardOrientation}
           sizeClass="mx-auto w-full max-w-[min(100%,min(72vw,52dvh))]"
           interactive={false}
           borderClass="border-2 border-cyan-400/50 shadow-[0_0_24px_rgba(0,204,255,0.2)]"
@@ -374,25 +373,15 @@ function FeaturedMatchBroadcastV0({
         </p>
         <p className="mt-1 text-center text-[9px] text-white/35">{heroCopy?.learningNote}</p>
       </div>
-      <div className="flex w-full shrink-0 flex-col rounded-lg border border-white/10 bg-black/40 p-3 lg:w-56">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-violet-200/80">
-          {tr ? "Canlı hamleler" : "Live moves"}
-        </p>
-        <ul className="max-h-48 space-y-1 overflow-y-auto font-mono text-[10px] text-cyan-100/90">
-          {slotMoves.length ? (
-            slotMoves
-              .slice(-12)
-              .reverse()
-              .map((m, i) => (
-                <li key={`${m.san}-${i}`}>
-                  {m.san}{" "}
-                  <span className="text-white/35">({formatEngineDisplayLabelV0(m.engine, tr)})</span>
-                </li>
-              ))
-          ) : (
-            <li className="text-white/35">{tr ? "hamle bekleniyor" : "awaiting moves"}</li>
-          )}
-        </ul>
+      <div className="flex w-full shrink-0 flex-col lg:w-56">
+        <ChessSplitMoveListV0
+          moves={slotMoves.map((m, i) => ({
+            san: m.san,
+            color: m.color || (i % 2 === 0 ? "w" : "b")
+          }))}
+          rhizohColor={rhizohColor}
+          tr={tr}
+        />
       </div>
     </div>
   );
@@ -529,8 +518,7 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
 
   const padded = Array.from({ length: CHESS_CLUSTER_SLOT_COUNT_V0 }, (_, i) => slots[i] || null);
   const featuredSlot = padded[CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0];
-  const liveMatchReady =
-    teacherStatus === "stockfish_wasm" && (featuredSlot?.ply ?? 0) >= 4;
+  const liveMatchReady = Boolean(featuredSlot);
   const teacherLabel =
     teacherStatus === "stockfish_wasm"
       ? tr
@@ -656,7 +644,6 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
               <LiveMatchPreflightV0
                 tr={tr}
                 teacherStatus={teacherStatus}
-                featuredPly={featuredSlot?.ply ?? 0}
                 onOpenLobby={openChessLobby}
               />
               {liveMatchReady ? (
@@ -687,7 +674,7 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
               )}
             </>
           ) : (
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-rows-2 lg:gap-2">
               {padded.map((slot, i) => (
                 <LiveCameraBoardV0
                   key={i}

@@ -23,7 +23,7 @@ import {
   summarizeChessClusterClockV0,
   tickChessClusterSlotClockV0
 } from "./chessClusterClockV0.js";
-import { ensureChessLearningMonitorListenersV0 } from "./chessLearningMonitorV0.js";
+import { ensureChessLearningMonitorListenersV0, CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 } from "./chessLearningMonitorV0.js";
 import { ensureRhizohChessLearningReportV0 } from "./rhizohChessLearningReportV0.js";
 import { shouldPauseClusterTickForArenaV0 } from "./chessEngineContentionGateV0.js";
 import {
@@ -35,11 +35,14 @@ import {
   shouldFinalizeClusterBroadcastEndV0,
   shouldTickChessClusterSlotClockV0
 } from "./chessClusterBroadcastEnginePolicyV0.js";
+import { resolveChessLegalMoveUciV0 } from "./chessArenaMoveResolveV0.js";
 import { logChessMovePlayedV0 } from "./chessArenaTelemetryV0.js";
 import { publishRhizohChessManagerV0 } from "./rhizohChessManagerV0.js";
 import { publishChessGameRouterV0 } from "./chessGameRouterV0.js";
 import {
   CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0,
+  CHESS_CLUSTER_FEATURED_MAX_PLY_V0,
+  CHESS_CLUSTER_FEATURED_TIME_CONTROL_ID_V0,
   CHESS_CLUSTER_MAX_PLY_V0,
   isChessClusterSimulationTimeControlIdV0,
   resolveChessClusterBootOptsV0,
@@ -83,6 +86,7 @@ let testFastTickV0 = false;
 let clusterTimeControlIdV0 = CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0;
 let clusterMaxPlyV0 = CHESS_CLUSTER_MAX_PLY_V0;
 let sessionGamesEndedV0 = 0;
+let featuredRhizohColorV0 = "w";
 /** @type {object | null} */
 let lastGameEndV0 = null;
 let sessionListenerInstalledV0 = false;
@@ -107,21 +111,46 @@ export function applyChessClusterTimeControlV0(timeControlId) {
   clusterTimeControlIdV0 = tc.id;
   for (const slot of slotsV0) {
     if (!slot || slot.status !== "active") continue;
-    slot.timeControlId = tc.id;
-    slot.incrementMs = tc.incrementMs;
+    const slotTcId = resolveSlotTimeControlIdV0(slot.slotId);
+    slot.timeControlId = slotTcId;
+    const slotTc = resolveChessClusterTimeControlV0(slotTcId);
+    slot.incrementMs = slotTc.incrementMs;
     if ((slot.ply || 0) < 1) {
-      slot.whiteClockMs = tc.initialMs;
-      slot.blackClockMs = tc.initialMs;
+      slot.whiteClockMs = slotTc.initialMs;
+      slot.blackClockMs = slotTc.initialMs;
     }
   }
   publishClusterRegistryV0({ timeControlId: tc.id });
 }
 
+function resolveSlotTimeControlIdV0(slotId) {
+  return Number(slotId) === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0
+    ? CHESS_CLUSTER_FEATURED_TIME_CONTROL_ID_V0
+    : clusterTimeControlIdV0;
+}
+
+function resolveSlotMaxPlyV0(slotId) {
+  return Number(slotId) === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0
+    ? CHESS_CLUSTER_FEATURED_MAX_PLY_V0
+    : clusterMaxPlyV0;
+}
+
 function createSlotV0(slotId, timeControlId = clusterTimeControlIdV0) {
   const mode = resolveChessClusterSlotModeV0(slotId);
-  const clock = createChessClusterClockStateV0(timeControlId);
+  const slotTcId = resolveSlotTimeControlIdV0(slotId);
+  const clock = createChessClusterClockStateV0(slotTcId);
   const matchId = `cluster_${slotId}_${Date.now().toString(36)}`;
   const game = createChessArenaGameV0({ mode: CHESS_GAME_MODE_V0.AI_AI });
+  let rhizohColor = "w";
+  let whiteAgent = mode.whiteAgent;
+  let blackAgent = mode.blackAgent;
+  if (Number(slotId) === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0) {
+    rhizohColor = featuredRhizohColorV0;
+    if (rhizohColor === "b") {
+      whiteAgent = mode.blackAgent;
+      blackAgent = mode.whiteAgent;
+    }
+  }
   return {
     slotId,
     matchId,
@@ -129,9 +158,10 @@ function createSlotV0(slotId, timeControlId = clusterTimeControlIdV0) {
     modeLabel: mode.label,
     learningTag: mode.learningTag,
     spectatorFeatured: Boolean(mode.spectatorFeatured),
+    rhizohColor,
     game,
-    whiteAgent: mode.whiteAgent,
-    blackAgent: mode.blackAgent,
+    whiteAgent,
+    blackAgent,
     timeControlId: clock.timeControlId,
     whiteClockMs: clock.whiteClockMs,
     blackClockMs: clock.blackClockMs,
@@ -149,6 +179,9 @@ function createSlotV0(slotId, timeControlId = clusterTimeControlIdV0) {
 }
 
 function resetSlotV0(slot) {
+  if (Number(slot?.slotId) === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0) {
+    featuredRhizohColorV0 = featuredRhizohColorV0 === "w" ? "b" : "w";
+  }
   return createSlotV0(slot.slotId, clusterTimeControlIdV0);
 }
 
@@ -192,6 +225,7 @@ export function summarizeChessClusterSlotV0(slot) {
     moveCount: slot.moveHistory.length,
     whiteAgent: slot.whiteAgent,
     blackAgent: slot.blackAgent,
+    rhizohColor: slot.rhizohColor || "w",
     attentionWeight: slot.attentionWeight,
     lastEval: slot.evalStream[slot.evalStream.length - 1] || null,
     criticalEventCount: slot.criticalEvents.length,
@@ -329,7 +363,7 @@ async function advanceChessClusterSlotV0(slot) {
   const engine = await pickChessClusterMoveV0(slot, slot.game);
   lastMoveWallMsV0 = Date.now() - moveStartedMs;
 
-  let moveUci = engine?.move;
+  let moveUci = resolveChessLegalMoveUciV0(slot.game, engine?.move);
   let engineLabel = engine?.engine || "unknown";
   if (!moveUci) {
     const legal = slot.game.legalMoves();
@@ -351,6 +385,7 @@ async function advanceChessClusterSlotV0(slot) {
     ply: slot.ply + 1,
     san: result.move?.san || moveUci,
     uci: moveUci,
+    color: turn,
     fenBefore,
     fenAfter: result.fen,
     turn,
@@ -403,7 +438,7 @@ async function advanceChessClusterSlotV0(slot) {
   const outcome = result.outcome || slot.game.outcome();
   if (outcome) {
     endChessClusterSlotV0(slot, outcome, "checkmate_or_draw");
-  } else if (shouldEndChessClusterGameByPlyCapV0(slot.ply, clusterMaxPlyV0)) {
+  } else if (shouldEndChessClusterGameByPlyCapV0(slot.ply, resolveSlotMaxPlyV0(slot.slotId))) {
     endChessClusterSlotV0(slot, "draw", "max_ply_cap");
   }
 
