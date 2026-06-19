@@ -9,6 +9,7 @@ import {
   ensureRhizohLearningCoreBootV0
 } from "../rhizoh/runtime/rhizohCoreSubsystemBootV0.js";
 import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
+import { shouldRhizohCoreHostOwnChessArenaV0 } from "../rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
 
 /**
  * Core subsystem host — chess + cluster + learning; legal/world independent.
@@ -17,6 +18,9 @@ export function RhizohCoreSubsystemHostV0({ userId = "" } = {}) {
   const [chessArena, setChessArena] = useState(null);
   const [clusterOpen, setClusterOpen] = useState(false);
   const uiLocale = readUiLocaleV0();
+  const coreHostOwnsChessArenaV0 = shouldRhizohCoreHostOwnChessArenaV0({
+    pathname: typeof window !== "undefined" ? window.location.pathname : ""
+  });
 
   useEffect(() => {
     ensureRhizohCoreSubsystemsBootV0({ userId });
@@ -28,6 +32,7 @@ export function RhizohCoreSubsystemHostV0({ userId = "" } = {}) {
 
   useEffect(() => {
     const onChessArena = (ev) => {
+      if (!shouldRhizohCoreHostOwnChessArenaV0()) return;
       const detail = ev?.detail;
       if (!detail?.node) return;
       setClusterOpen(false);
@@ -50,7 +55,7 @@ export function RhizohCoreSubsystemHostV0({ userId = "" } = {}) {
 
   return (
     <>
-      {chessArena ? (
+      {chessArena && coreHostOwnsChessArenaV0 ? (
         <RhizohChessArenaWorkspaceV0
           open
           node={chessArena.node}
