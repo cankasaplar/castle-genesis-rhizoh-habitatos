@@ -4,9 +4,9 @@ import {
   CHESS_GAME_MODE_V0,
   createChessArenaGameV0,
   createCastleToCastleChessMatchV0,
-  formatChessOutcomeLabelV0,
-  pickChessArenaAiMoveV0
+  formatChessOutcomeLabelV0
 } from "../rhizoh/runtime/chessArenaEngineV0.js";
+import { pickArenaAutoplayMoveV0 } from "../rhizoh/runtime/chessArenaAutoplayPickV0.js";
 import {
   getChessTeacherStatusV0,
   getChessTeacherDetailV0,
@@ -164,8 +164,6 @@ const MODE_LABELS_EN_V0 = Object.freeze({
 });
 
 const DEFAULT_CLOCK_MS_V0 = 3 * 60 * 1000;
-/** Hard cap so autoplay never waits forever on a wedged engine queue. */
-const ARENA_AUTOPLAY_MOVE_PICK_CAP_MS_V0 = 5500;
 
 function initialClocksFromSessionV0(session = readChessArenaSessionV0()) {
   const tc = resolveChessTimeControlV0(session.timeControlId);
@@ -239,6 +237,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const [status, setStatus] = useState("");
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [aiBusy, setAiBusy] = useState(false);
+  const [arenaFallbackMode, setArenaFallbackMode] = useState(false);
   const [thinkingActorV0, setThinkingActorV0] = useState(null);
   const [analysisBusy, setAnalysisBusy] = useState(false);
   const [matchResult, setMatchResult] = useState(null);
@@ -684,42 +683,16 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   runMatchLearningRef.current = runMatchLearningV0;
 
   const pickAutoplayMoveWithFallbackV0 = useCallback(
-    async ({ rhizohTurnNow, teacherOnline, deferArenaEngine, activeMode }) => {
-      const g = gameRef.current;
-      const pickWork = async () => {
-        if (activeMode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH) {
-          return rhizohTurnNow
-            ? pickRhizohChessMoveV0(g, {
-                policyMode: policyModeRef.current,
-                mindId: mindIdRef.current
-              })
-            : pickChessArenaMoveViaTeacherV0(g, {
-                useStockfish: teacherOnline && !deferArenaEngine,
-                preset: opponentPresetRef.current
-              });
-        }
-        return pickChessArenaMoveViaTeacherV0(g, {
-          useStockfish: teacherOnline && !deferArenaEngine,
-          preset: opponentPresetRef.current || "ARENA"
-        });
-      };
-      try {
-        const raced = await Promise.race([
-          pickWork(),
-          new Promise((resolve) => {
-            window.setTimeout(() => resolve(null), ARENA_AUTOPLAY_MOVE_PICK_CAP_MS_V0);
-          })
-        ]);
-        if (raced?.move) return raced;
-      } catch {
-        /* fall through to heuristic */
-      }
-      return Object.freeze({
-        move: pickChessArenaAiMoveV0(g),
-        engine: "heuristic_autoplay_cap",
-        policyMode: policyModeRef.current
-      });
-    },
+    async ({ rhizohTurnNow, teacherOnline, activeMode }) =>
+      pickArenaAutoplayMoveV0({
+        game: gameRef.current,
+        rhizohTurnNow,
+        teacherOnline,
+        activeMode,
+        policyMode: policyModeRef.current,
+        mindId: mindIdRef.current,
+        opponentPreset: opponentPresetRef.current
+      }),
     []
   );
 
@@ -784,6 +757,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       setRhizohArenaColorV0("w");
       setClockStartedV0(false);
       setForcedOutcomeV0(null);
+      setArenaFallbackMode(false);
       setGameEpoch((n) => n + 1);
       flagHandledRef.current = false;
     },
@@ -1075,9 +1049,9 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           pick = await pickAutoplayMoveWithFallbackV0({
             rhizohTurnNow,
             teacherOnline,
-            deferArenaEngine,
             activeMode: mode
           });
+          setArenaFallbackMode(Boolean(pick?.fallbackMode));
         } catch {
           pick = null;
         }
@@ -1669,6 +1643,13 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
             {analysisBusy ? (
               <p className="text-[10px] text-cyan-200">
                 {tr ? "Gözlem → Analiz → Öğren → Öğret…" : "Observe → Analyze → Learn → Teach…"}
+              </p>
+            ) : null}
+            {arenaFallbackMode ? (
+              <p className="rounded border border-amber-500/35 bg-amber-950/25 px-2 py-1 text-center text-[10px] text-amber-200">
+                {tr
+                  ? "Yedek sezgisel motor — Stockfish kuyruğu meşgul"
+                  : "Heuristic fallback — Stockfish queue busy"}
               </p>
             ) : null}
             <p className="text-center text-[10px] text-white/55">{status}</p>

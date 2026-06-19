@@ -32,6 +32,18 @@ describe("chessArenaEngineV0", () => {
     expect(game.tryMove(ai).ok).toBe(true);
   });
 
+  it("avoids Na3/Na6 alphabetical trap in early opening", () => {
+    const start = createChessArenaGameV0({ mode: CHESS_GAME_MODE_V0.AI_AI });
+    expect(pickChessArenaAiMoveV0(start)).not.toBe("Na3");
+
+    const afterE4E5 = createChessArenaGameV0({ mode: CHESS_GAME_MODE_V0.AI_AI });
+    afterE4E5.tryMove("e4");
+    afterE4E5.tryMove("e5");
+    const black = pickChessArenaAiMoveV0(afterE4E5);
+    expect(black).not.toBe("Na6");
+    expect(black).not.toBe("Na3");
+  });
+
   it("estimates material balance for Rhizoh as white", () => {
     const game = createChessArenaGameV0();
     expect(estimateChessMaterialBalanceV0(game, "w")).toBe(0);

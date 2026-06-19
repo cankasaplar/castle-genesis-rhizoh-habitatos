@@ -165,22 +165,57 @@ export function formatChessOutcomeLabelV0(outcome, tr = false) {
 
 /**
  * Simple material-aware AI move (not Stockfish — local deterministic pick).
+ * Opening-aware: avoids Na3/Na6 alphabetical trap; uses FEN-seeded tie-break.
  * @param {ReturnType<typeof createChessArenaGameV0>} game
  */
+function fenSeedTieBreakV0(fen, san) {
+  let h = 0;
+  const s = `${String(fen || "")}|${String(san || "")}`;
+  for (let i = 0; i < s.length; i += 1) {
+    h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  }
+  return h;
+}
+
+/**
+ * @param {object} m chess.js verbose move
+ * @param {number} ply
+ */
+function scoreArenaHeuristicMoveV0(m, ply) {
+  const pieceValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+  let score = 0;
+  if (m.captured) score += (pieceValue[m.captured] || 0) * 10;
+  if (m.san.includes("+")) score += 2;
+  if (m.san.includes("#")) score += 100;
+
+  if (ply < 10) {
+    const san = m.san;
+    if (san === "e4" || san === "d4" || san === "e5" || san === "d5") score += 5;
+    if (san === "Nf3" || san === "Nc3" || san === "Nf6" || san === "Nc6") score += 4;
+    if (san === "c4" || san === "c5") score += 3;
+    if (/^N[a-h]3$/.test(san) || /^N[a-h]6$/.test(san)) score -= 4;
+    if (m.piece === "p" && /^[a-h]3$/.test(san)) score -= 3;
+  }
+
+  return score;
+}
+
 export function pickChessArenaAiMoveV0(game) {
   const moves = game.legalMoves();
   if (!moves.length) return null;
 
-  const pieceValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+  const ply = game.moveHistory?.length || 0;
+  const fen = game.fen();
   let best = moves[0];
   let bestScore = -Infinity;
+  let bestTie = -1;
+
   for (const m of moves) {
-    let score = 0;
-    if (m.captured) score += (pieceValue[m.captured] || 0) * 10;
-    if (m.san.includes("+")) score += 2;
-    if (m.san.includes("#")) score += 100;
-    if (score > bestScore || (score === bestScore && m.san < best.san)) {
+    const score = scoreArenaHeuristicMoveV0(m, ply);
+    const tie = fenSeedTieBreakV0(fen, m.san);
+    if (score > bestScore || (score === bestScore && tie > bestTie)) {
       bestScore = score;
+      bestTie = tie;
       best = m;
     }
   }
