@@ -2,10 +2,11 @@
  * Ticket Security Validator V0 — single source of truth for "may this transition occur?"
  *
  * interpretationOnly · nonExecutive · validates only; does not mutate state
- * @see docs/RHIZOH_SECURITY_BOUNDARY_V1.md (SC-01, SC-02)
+ * @see docs/RHIZOH_SECURITY_BOUNDARY_V1.md (SC-01, SC-02, SC-03)
  */
 
 import { assertNodeExecutionJurisdictionV0 } from "../runtime/continuity/temporalIdentityBindingV0.js";
+import { isTombstonedTicketV0 } from "./ticketTombstoneLayerV0.js";
 import {
   CORE_EPOCH_WINDOWS_V0,
   EXECUTION_CLASS_RANK_V0,
@@ -95,7 +96,9 @@ function epochAllowsClassV0(executionClass, epochWindow) {
  *   epochWindow?: string,
  *   nowMs?: number,
  *   temporalContract?: object | null,
- *   childCapabilityScope?: string | null
+ *   childCapabilityScope?: string | null,
+ *   directTicketExecution?: boolean,
+ *   intentId?: string | null
  * }} input
  */
 export function validateTicketTransitionV0(input) {
@@ -107,9 +110,27 @@ export function validateTicketTransitionV0(input) {
   const executionClass = String(input.executionClass || intent.executionClass || "");
   const epochWindow = String(input.epochWindow || intent.epochWindow || TICKET_EPOCH_WINDOW_V0.REC_SOFT);
   const targetCube = input.targetCube ?? intent.targetCube ?? null;
+  const intentId = String(input.intentId || intent.intentId || "");
+
+  if (input.directTicketExecution === true) {
+    reasons.push(TICKET_REJECT_REASON_V0.TICKET_PACKET_DIRECT_EXECUTION);
+  }
+
+  if (
+    executionClass !== TICKET_EXECUTION_CLASS_V0.READ_ONLY &&
+    executionClass !== TICKET_EXECUTION_CLASS_V0.SUGGEST &&
+    !intentId
+  ) {
+    reasons.push(TICKET_REJECT_REASON_V0.INTENT_ID_REQUIRED);
+  }
 
   if (!ticket?.ticketId) {
     reasons.push(TICKET_REJECT_REASON_V0.TICKET_MISSING);
+    return buildValidationResultV0(false, reasons, executionClass, TICKET_VALIDATION_DECISION_V0.REJECTED);
+  }
+
+  if (isTombstonedTicketV0(ticket.ticketId)) {
+    reasons.push(TICKET_REJECT_REASON_V0.TICKET_TOMBSTONED);
     return buildValidationResultV0(false, reasons, executionClass, TICKET_VALIDATION_DECISION_V0.REJECTED);
   }
 
@@ -199,7 +220,8 @@ export function validateTicketTransitionV0(input) {
         : TICKET_VALIDATION_DECISION_V0.REJECTED;
 
   return buildValidationResultV0(valid, reasons, executionClass, decision, {
-    mutationClass: valid && isMutate ? "allowed" : valid ? "read_only" : "denied"
+    mutationClass: valid && isMutate ? "allowed" : valid ? "read_only" : "denied",
+    intentId: intentId || null
   });
 }
 
@@ -228,6 +250,8 @@ function buildValidationResultV0(valid, reasons, executionClass, decision, extra
     reasons: Object.freeze([...reasons]),
     mutationClass: extra.mutationClass ?? (valid ? "allowed" : "denied"),
     executionClass,
-    decision
+    decision,
+    intentId: extra.intentId ?? null,
+    deferred: extra.deferred === true
   });
 }

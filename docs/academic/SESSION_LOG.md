@@ -98,20 +98,18 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 ### 2026-06-19 — Ticket Network Schema v1 (UX unification layer)
 
 **Summary:**
-- Document stack order: **Security Boundary → Ticket Network → State Transitions**.
-- Security Boundary v1: five constitutional invariants; `executionClass` expanded (`read_only`, `suggest`, `mutate_l1`, `mutate_l2`, `system_reconcile`).
-- Ticket = Capability + Journey; nervous network: Signals / Invites / Discoveries / Events.
-- State Transitions v1: `invite_join`, `arena_enter`, `ghost_attach`, `flight_depart`, `corporate_admission`.
-- Mutation record schema for Invariant 3 (every mutation has an owner).
+- Document stack: Security Boundary → Reality Transition Engine → Ticket Network → State Transitions.
+- SC-03: no direct TicketPacket execution; all execution via TransitionIntent (`intentId`, `intentEpoch`).
+- Ticket Tombstone Layer + REC Deferred Intent Queue implemented.
+- Audit chain: ticketId → intentId → mutationId.
+- Epistemic OS chain: Identity → Ticket → Intent → Validator → Admission → CubeState → Prism.
 
 **Linked Artifacts:**
-- `docs/RHIZOH_SECURITY_BOUNDARY_V1.md`
-- `docs/RHIZOH_TICKET_NETWORK_SCHEMA_V1.md`
-- `docs/RHIZOH_STATE_TRANSITIONS_V1.md`
-- `apps/client/src/rhizoh/ticket/ticketTransitionIntentV0.js`
-- `apps/client/src/rhizoh/ticket/ticketSecurityValidatorV0.js`
-- `apps/client/src/rhizoh/ticket/mutationRecordEmitterV0.js`
-- `apps/client/src/rhizoh/ticket/ticketKernelFacadeV0.js`
+- `docs/RHIZOH_REALITY_TRANSITION_ENGINE_V1.md`
+- `docs/RHIZOH_SECURITY_BOUNDARY_V1.md` (SC-03)
+- `apps/client/src/rhizoh/ticket/ticketTransitionIntentV1.js`
+- `apps/client/src/rhizoh/ticket/ticketTombstoneLayerV0.js`
+- `apps/client/src/rhizoh/ticket/recDeferredIntentQueueV0.js`
 
 - **Habitat:** Academic / product architecture
 - **Katılımcılar:** Principal, **Cursor Agent (Castle)**

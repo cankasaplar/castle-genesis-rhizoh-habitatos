@@ -180,6 +180,33 @@ Admission Engine commits or rejects the proposal.
 
 ---
 
+### Invariant SC-03 — No execution from TicketPacket
+
+No component MAY execute directly on `TicketPacket`. All execution MUST pass through `TicketTransitionIntent`.
+
+```text
+❌ ArenaTicket → ArenaScheduler
+✅ ArenaTicket → ArenaEnterIntent → Validator → ArenaScheduler
+```
+
+**Required audit chain (never collapse):**
+
+```text
+ticketId  →  intentId  →  mutationId  →  (optional) admissionCommitId
+```
+
+| Link | Question answered |
+|------|-------------------|
+| `ticketId` | Which ticket authorized this? |
+| `intentId` | Which intent derived from that ticket? |
+| `mutationId` | Which commit came from that intent? |
+
+Schedulers, arena engines, LLM gateways, and reconcilers MUST accept **Intent**, not raw TicketPacket.
+
+**Code enforcement:** `ticket_packet_direct_execution` → validator `reject`.
+
+---
+
 ### Invariant SC-02 — Every CubeState mutation has an admission path
 
 Every `CubeState` commit MUST originate from **one of**:
@@ -359,7 +386,7 @@ ISSUE ──▶ ACTIVE ──▶ CONSUMED | EXPIRED ──▶ ARCHIVED
 - [ ] Invariant 5: no self-authority expansion; admission on new scope  
 - [ ] `mutate_l1` does not touch frozen v562–v570 subgraph  
 - [ ] Invariant SC-01: `system_reconcile` never writes CubeState directly  
-- [ ] Invariant SC-02: CubeState commit only via signed ticket, frozen DAG, or admission  
+- [ ] Invariant SC-03: no direct TicketPacket execution; intentId on mutate paths  
 - [ ] No import from ticket module into frozen phase chain  
 
 ---
@@ -377,7 +404,9 @@ ISSUE ──▶ ACTIVE ──▶ CONSUMED | EXPIRED ──▶ ARCHIVED
 | Transition intent | `apps/client/src/rhizoh/ticket/ticketTransitionIntentV0.js` |
 | Security validator | `apps/client/src/rhizoh/ticket/ticketSecurityValidatorV0.js` |
 | Mutation record emitter | `apps/client/src/rhizoh/ticket/mutationRecordEmitterV0.js` |
-| Ticket kernel facade | `apps/client/src/rhizoh/ticket/ticketKernelFacadeV0.js` |
+| Transition intent v1 | `apps/client/src/rhizoh/ticket/ticketTransitionIntentV1.js` |
+| Tombstone layer | `apps/client/src/rhizoh/ticket/ticketTombstoneLayerV0.js` |
+| REC deferred queue | `apps/client/src/rhizoh/ticket/recDeferredIntentQueueV0.js` |
 
 ---
 
@@ -387,3 +416,4 @@ ISSUE ──▶ ACTIVE ──▶ CONSUMED | EXPIRED ──▶ ARCHIVED
 |------|--------|
 | 2026-06-19 | v1.0 — five constitutional invariants; executionClass expanded; lifecycle + escalation ban |
 | 2026-06-19 | v1.1 — SC-01/SC-02: SYSTEM_RECONCILE = Graph Accountant; CubeState admission-only |
+| 2026-06-19 | v1.2 — SC-03: execution via Intent only; tombstone + deferred queue refs |
