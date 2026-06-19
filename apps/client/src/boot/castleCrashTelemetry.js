@@ -188,6 +188,9 @@ export function isCastleBenignDomErrorV0(errOrMsg, extra = {}) {
   if (combined.includes("google-analytics.com")) return true;
   // Chrome benign: ResizeObserver callback triggered nested layout in same frame (Cesium/dock).
   if (/resizeobserver loop completed with undelivered notifications/i.test(combined)) return true;
+  // DevTools console probes against __rhizoh APIs (typos / snapshot without method).
+  if (/__rhizoh\.\w+.*is not a function/i.test(combined)) return true;
+  if (/continuitykernel\.rebuildcausalgraph is not a function/i.test(combined)) return true;
   return false;
 }
 

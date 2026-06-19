@@ -13,7 +13,8 @@ import { CHESS_STOCKFISH_PRESET_V0 } from "./chessStockfishPresetsV0.js";
 import {
   CHESS_ENGINE_TASK_KIND_V0,
   CHESS_ENGINE_TASK_PRIORITY_V0,
-  enqueueChessEngineTaskV0
+  enqueueChessEngineTaskV0,
+  getChessEngineQueueSnapshotV0
 } from "./chessEngineTaskQueueV0.js";
 import {
   CHESS_TELEMETRY_LEVEL_V0,
@@ -843,7 +844,13 @@ function resolveArenaMoveTimeoutMsV0(movetimeMs, opts = {}) {
   const buffer =
     Number(opts.timeoutBufferMs) ||
     resolveChessMoveTimeoutBufferMsV0({ queueKind: opts.queueKind });
-  return Math.min(25000, mt + buffer);
+  const queue = getChessEngineQueueSnapshotV0();
+  const pending = Number(queue.pendingCount) || 0;
+  const clusterCongestion =
+    opts.queueKind === CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE
+      ? Math.min(8000, pending * 600)
+      : 0;
+  return Math.min(32000, mt + buffer + clusterCongestion);
 }
 
 /**
@@ -879,7 +886,10 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
         const timer = setTimeout(() => {
           pendingV0.delete(id);
           stopStockfishSearchV0();
-          logStockfishV0("warn", "arena move timeout", {
+          logStockfishV0(
+            opts.queueKind === CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE ? "info" : "warn",
+            "arena move timeout",
+            {
             movetimeMs,
             depth,
             timeoutMs,
