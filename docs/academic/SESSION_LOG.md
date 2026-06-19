@@ -400,6 +400,31 @@ Invariant confirmed: Media may inform observation; media may never define canoni
 - **Karar özeti:** Koordinasyon katmanı eklendi; graf/hash CI hakemi değişmedi.  
 - **Frozen core:** dokunulmadı  
 
+### 2026-06-19 — Domain Fabric + Arena Router v0 (UGL multi-domain scaffold)
+
+**Source:** Principal cold-read — UGL-complete but domain-incomplete; chess-only active execution.
+
+**Summary:**
+- Domain Fabric registry: chess `full_active`, go/shogi `passive_stub`, sports `not_instantiated`
+- Arena Router: `routeUglEventV0` → domain resolve → adapter select; enriches `meta.arenaRoute` on append
+- Sports adapter stub + `sport_scoreboard.v0` schema; sports live context ≠ sports game arena
+- UGL schema extended: `SPORTS` game type + `event` / `play` / `possession` / `score_delta` actions
+- DevTools: `uglDomainFabric()`, `uglArenaRouter()`, `uglSportsAdapter()`
+
+**Linked Artifacts:**
+- `docs/RHIZOH_DOMAIN_FABRIC_V0.md`
+- `docs/RHIZOH_ARENA_ROUTER_V0.md`
+- `docs/RHIZOH_UGL_V1.md` §9
+- `apps/client/src/rhizoh/runtime/rhizohDomainFabricV0.js`
+- `apps/client/src/rhizoh/runtime/rhizohArenaRouterV0.js`
+- `apps/client/src/rhizoh/runtime/rhizohUglSportsAdapterV0.js`
+
+**Next (roadmap):** Sports Adapter v0 (streaming state) → Multi-Arena Scheduler → CUX wire.
+
+- **Katılımcılar:** Principal, **Cursor Agent (Castle)**
+- **SPECFLOW:** RESEARCH-ONLY / FUTURE-PROOF-ONLY
+- **Frozen core:** dokunulmadı
+
 ---
 
 *(Sonraki oturumlar için üste veya alta yeni blok ekleyin.)*

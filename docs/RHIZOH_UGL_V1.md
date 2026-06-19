@@ -182,9 +182,30 @@ Probe: `window.__rhizoh.chessEvolutionCurve()` → `performanceDelta`.
 
 ---
 
-## 9. Future: multi-sport arena (out of v1 scope)
+## 9. Domain fabric + arena router (v0 scaffold)
 
-Chess arena pin / lobby remains chess-first. **Multi-sport arena** is a **UI routing** concern (Phase 2): same UGL substrate, new adapters (`go`, `shogi`, custom graph rules).
+**Cold read:** Rhizoh is **UGL-complete, domain-incomplete**.
+
+| Domain | Coverage |
+|--------|----------|
+| Chess | FULL ACTIVE |
+| Go / Shogi | passive stub |
+| Sports arena | not instantiated (live fixture context ≠ game arena) |
+
+**Missing routing layer (now scaffolded):**
+
+```text
+UGL Event → rhizohArenaRouterV0 → rhizohDomainFabricV0 → adapter
+```
+
+| Doc | Module |
+|-----|--------|
+| [`RHIZOH_DOMAIN_FABRIC_V0.md`](RHIZOH_DOMAIN_FABRIC_V0.md) | `rhizohDomainFabricV0.js` |
+| [`RHIZOH_ARENA_ROUTER_V0.md`](RHIZOH_ARENA_ROUTER_V0.md) | `rhizohArenaRouterV0.js` |
+
+**Roadmap:** Domain Fabric → Arena Router → Sports Adapter → Multi-Arena Scheduler.
+
+`chessGameRouterV0` remains **chess cluster** (8-board / 1 engine) — not cross-domain.
 
 ---
 

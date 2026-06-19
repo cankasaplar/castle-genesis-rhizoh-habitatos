@@ -10,6 +10,7 @@ import {
 } from "./rhizohUglSchemaV0.js";
 import { upsertChessWeightUpdateEdgeV0 } from "./chessUnifiedMemoryGraphV0.js";
 import { readChessLearningWeightsV0 } from "./chessLearningWeightsV0.js";
+import { routeUglEventV0 } from "./rhizohArenaRouterV0.js";
 
 const MAX_EVENTS_V0 = 256;
 let logicalTickV0 = 0;
@@ -93,18 +94,31 @@ function projectRewardToUnifiedGraphV0(event) {
  */
 export function appendUglEventV0(event) {
   if (!event?.schema?.includes("ugl_event")) return null;
-  sessionRingV0 = [event, ...sessionRingV0].slice(0, MAX_EVENTS_V0);
-  const persisted = [...readPersistedRingV0(), event].slice(-MAX_EVENTS_V0);
+  const route = routeUglEventV0(event);
+  const enriched = Object.freeze({
+    ...event,
+    meta: Object.freeze({
+      ...event.meta,
+      arenaRoute: Object.freeze({
+        domainId: route.domainId,
+        adapterId: route.adapterId,
+        coverage: route.coverage,
+        routable: route.routable
+      })
+    })
+  });
+  sessionRingV0 = [enriched, ...sessionRingV0].slice(0, MAX_EVENTS_V0);
+  const persisted = [...readPersistedRingV0(), enriched].slice(-MAX_EVENTS_V0);
   writePersistedRingV0(persisted);
   try {
-    projectRewardToUnifiedGraphV0(event);
+    projectRewardToUnifiedGraphV0(enriched);
   } catch {
     /* projection best-effort */
   }
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent(RHIZOH_UGL_EVENT_V0, { detail: event }));
+    window.dispatchEvent(new CustomEvent(RHIZOH_UGL_EVENT_V0, { detail: enriched }));
   }
-  return event;
+  return enriched;
 }
 
 export function readUglEventStreamV0(limit = 32) {
