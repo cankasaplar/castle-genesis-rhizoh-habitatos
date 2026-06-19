@@ -57,16 +57,18 @@ describe("rhizohArenaRouterV0", () => {
     expect(route.domainId).toBe("chess");
     expect(route.routable).toBe(true);
     expect(route.adapterId).toBe("rhizohUglChessAdapterV0");
+    expect(route.executionGranted).toBe(true);
+    expect(route.scheduler?.spaceId).toBe("chess.causal.space");
   });
 
-  it("routes sports UGL events with EVENT_ACTIVE coverage", () => {
+  it("routes sports with scheduler executionGranted false outside burst", () => {
     const route = routeUglEventV0({
       meta: { gameType: RHIZOH_UGL_GAME_TYPE_V0.SPORTS, causalChainId: "ugl_sports_1" }
     });
     expect(route.domainId).toBe("sports");
     expect(route.routable).toBe(true);
-    expect(route.coverage).toBe(DOMAIN_COVERAGE_V0.EVENT_ACTIVE);
-    expect(route.executionClass).toBe("suggest");
+    expect(route.executionGranted).toBe(false);
+    expect(route.scheduler?.spaceId).toBe("sports.causal.space");
   });
 
   it("resolveArenaForGameTypeV0 returns adapter for chess", () => {

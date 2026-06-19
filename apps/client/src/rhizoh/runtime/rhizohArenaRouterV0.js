@@ -11,6 +11,7 @@ import {
 } from "./rhizohDomainFabricV0.js";
 import { getChessUglAdapterV0 } from "./rhizohUglChessAdapterV0.js";
 import { getSportsUglAdapterV0 } from "./rhizohUglSportsAdapterV0.js";
+import { resolveSchedulerRouteForGameTypeV0 } from "./multiArenaSchedulerV0.js";
 import { RHIZOH_UGL_GAME_TYPE_V0 } from "./rhizohUglSchemaV0.js";
 
 export const RHIZOH_ARENA_ROUTER_SCHEMA_V0 = "castle.rhizoh.arena_router.v0";
@@ -48,6 +49,7 @@ export function routeUglEventV0(uglEvent) {
   const descriptor = resolveDomainDescriptorV0(gameType);
   const routable = isRoutableCoverageV0(descriptor.coverage);
   const adapter = descriptor.adapterId ? selectAdapterByIdV0(descriptor.adapterId) : null;
+  const scheduler = resolveSchedulerRouteForGameTypeV0(descriptor.gameType);
 
   const route = Object.freeze({
     schema: RHIZOH_ARENA_ROUTER_SCHEMA_V0,
@@ -58,6 +60,9 @@ export function routeUglEventV0(uglEvent) {
     routable,
     executionClass:
       descriptor.coverage === DOMAIN_COVERAGE_V0.FULL_ACTIVE ? "read_only" : "suggest",
+    scheduler,
+    executionGranted: routable && scheduler.executionGranted,
+    activeSpaceId: scheduler.primarySpaceId,
     adapter: adapter
       ? Object.freeze({
           schema: adapter.schema,

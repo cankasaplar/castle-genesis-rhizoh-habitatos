@@ -72,12 +72,15 @@ Admission → CubeState                                        [sole write gate]
 
 ---
 
-## 4. Multi-arena scheduler (future)
+## 4. Multi-arena scheduler
+
+**Implemented:** [`RHIZOH_MULTI_ARENA_SCHEDULER_V0.md`](RHIZOH_MULTI_ARENA_SCHEDULER_V0.md) · `multiArenaSchedulerV0.js`
 
 ```text
 rhizohArenaRouterV0
-  ├─ chess pipeline (PLAY + LEARN) — existing ugl scheduler
-  └─ sports pipeline (STREAM + LEARN) — future
+  ├─ multiArenaSchedulerV0 (reality multiplexer)
+  ├─ chess pipeline (PLAY + LEARN) — ugl match scheduler
+  └─ sports pipeline (burst window) — sports event adapter
 ```
 
 Parallel execution requires router + fabric before sports arena UI.

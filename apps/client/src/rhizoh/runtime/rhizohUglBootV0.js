@@ -17,6 +17,10 @@ import { getChessUglAdapterV0 } from "./rhizohUglChessAdapterV0.js";
 import { getSportsUglAdapterV0 } from "./rhizohUglSportsAdapterV0.js";
 import { getDomainFabricSnapshotV0 } from "./rhizohDomainFabricV0.js";
 import { getArenaRouterSnapshotV0 } from "./rhizohArenaRouterV0.js";
+import {
+  buildMultiArenaSchedulerReportV0,
+  ensureMultiArenaSchedulerV0
+} from "./multiArenaSchedulerV0.js";
 import { RHIZOH_UGL_SCHEMA_V0, RHIZOH_UGL_VERSION_V0 } from "./rhizohUglSchemaV0.js";
 import { chessTerminalRewardV0 } from "./rhizohUglChessAdapterV0.js";
 import {
@@ -53,6 +57,7 @@ export function buildRhizohUglReportV0() {
     adapters: Object.freeze([getChessUglAdapterV0().gameType, getSportsUglAdapterV0().gameType]),
     domainFabric: getDomainFabricSnapshotV0(),
     arenaRouter: getArenaRouterSnapshotV0(),
+    multiArenaScheduler: buildMultiArenaSchedulerReportV0(),
     stateEncoder: buildUglStateEncoderReportV0(),
     actionSpace: buildUglActionSpaceReportV0(),
     rewardModel: buildUglRewardModelReportV0(),
@@ -70,6 +75,7 @@ export function buildRhizohUglReportV0() {
       adapter: "window.__rhizoh.uglChessAdapter()",
       domainFabric: "window.__rhizoh.uglDomainFabric()",
       arenaRouter: "window.__rhizoh.uglArenaRouter()",
+      multiArenaScheduler: "window.__rhizoh.multiArenaScheduler()",
       sportsAdapter: "window.__rhizoh.uglSportsAdapter()",
       league: "window.__rhizoh.uglLeagueHarness()",
       trainingRecords: "window.__rhizoh.uglTrainingRecords()",
@@ -243,6 +249,7 @@ export function ensureRhizohUglV0() {
   if (!window.__rhizoh.uglArenaRouter) {
     window.__rhizoh.uglArenaRouter = () => getArenaRouterSnapshotV0();
   }
+  ensureMultiArenaSchedulerV0();
   if (!window.__rhizoh.uglSportsAdapter) {
     window.__rhizoh.uglSportsAdapter = () => getSportsUglAdapterV0();
   }
@@ -300,6 +307,10 @@ export function __resetRhizohUglBootForTestV0() {
     delete window.__rhizoh.uglChessAdapter;
     delete window.__rhizoh.uglDomainFabric;
     delete window.__rhizoh.uglArenaRouter;
+    delete window.__rhizoh.multiArenaScheduler;
+    delete window.__rhizoh.multiArenaSchedulerReport;
+    delete window.__rhizoh.multiArenaTick;
+    delete window.__rhizoh.notifySportsArenaActivity;
     delete window.__rhizoh.uglSportsAdapter;
     delete window.__rhizoh.uglLeagueHarness;
     delete window.__rhizoh.uglTrainingRecords;

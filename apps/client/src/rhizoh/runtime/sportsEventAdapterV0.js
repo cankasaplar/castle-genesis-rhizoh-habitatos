@@ -6,6 +6,7 @@
 
 import { buildUglEventV0, appendUglEventV0 } from "./rhizohUglEventV0.js";
 import { encodeUglActionV0 } from "./rhizohUglActionSpaceV0.js";
+import { notifySportsArenaActivityV0, runMultiArenaTickV0 } from "./multiArenaSchedulerV0.js";
 import { RHIZOH_UGL_GAME_TYPE_V0, RHIZOH_UGL_ACTION_TYPE_V0 } from "./rhizohUglSchemaV0.js";
 import { appendSportsSpaceEventV0, CAUSAL_SPACE_ID_V0 } from "./sportsCausalSpaceV0.js";
 import {
@@ -92,6 +93,11 @@ export function sportsEventToDriftReasonsV0(normalized) {
  */
 export function ingestSportsMatchEventV0(normalized, opts = {}) {
   appendSportsSpaceEventV0(normalized.matchId, normalized);
+  notifySportsArenaActivityV0({
+    reason: normalized.eventType,
+    durationMs: opts.burstDurationMs
+  });
+  runMultiArenaTickV0();
   const action = sportsEventToUglActionV0(normalized);
   const driftReasons = sportsEventToDriftReasonsV0(normalized);
   const signals = deriveSportsDriftSignalsV0(normalized);
