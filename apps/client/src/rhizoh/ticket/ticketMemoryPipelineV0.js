@@ -1,13 +1,19 @@
 /**
- * Ticket Memory Pipeline V0 — MutationRecord → TraceGraph Index → Drift Analytics → Signals.
+ * Ticket Memory Pipeline V0 — MutationRecord → Live Index → Drift → Alerts → REC Cleanup.
  *
- * Causal Memory Organism perception chain (observational cognition runtime).
+ * Hybrid causal memory organism:
+ *   Live path  → incremental measurement (no truth mutation)
+ *   Drift path → read-only snapshot + AlertPacket (suggest only)
+ *   REC path   → deferred tombstone + soft compression
+ *
  * interpretationOnly · nonExecutive · DR-01 enforced throughout
  * @see docs/RHIZOH_TRACE_GRAPH_INDEX_OPTIMIZER_V1.md
  * @see docs/RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md
  */
 
 import { runDriftAnalyticsV0 } from "./driftAnalyticsEngineV0.js";
+import { detectDriftAnomaliesV0 } from "./driftAnomalyDetectorV0.js";
+import { exportLearningFeatureVectorV0 } from "./learningFeatureVectorExportV0.js";
 import { deriveReconcileProposalV0 } from "./ticketReconcileProposalV0.js";
 import { commitProposedCubeDeltaV0 } from "./admissionCubeCommitV0.js";
 import { optimizeTraceGraphIndexV0 } from "./traceGraphIndexOptimizerV0.js";
@@ -18,12 +24,16 @@ export const TICKET_MEMORY_PIPELINE_SCHEMA_V0 = "castle.rhizoh.ticket_memory_pip
 /**
  * @param {{
  *   records: object[],
- *   compress?: boolean,
+ *   recCycle?: boolean,
+ *   epochId?: string,
  *   tombstoneTickets?: boolean,
  *   windowSize?: number,
  *   traceGraphLink?: string,
  *   ticketId?: string,
  *   wireSignals?: boolean,
+ *   detectAnomalies?: boolean,
+ *   baselineShares?: Record<string, number>,
+ *   exportFeatureVector?: boolean,
  *   reconcile?: boolean,
  *   reconcileEpochId?: string,
  *   commit?: { subjectRef: string, cubeId: string, auditChain?: object, skipAdmissionCheck?: boolean }
@@ -33,7 +43,8 @@ export function runTicketMemoryPipelineV0(input) {
   const records = input.records || [];
   const index = optimizeTraceGraphIndexV0({
     records,
-    compress: input.compress,
+    recCycle: input.recCycle,
+    epochId: input.epochId ?? input.reconcileEpochId,
     tombstoneTickets: input.tombstoneTickets,
     windowSize: input.windowSize
   });
@@ -42,6 +53,27 @@ export function runTicketMemoryPipelineV0(input) {
     records,
     drift: index.drift
   });
+
+  const anomalies =
+    input.detectAnomalies !== false
+      ? detectDriftAnomaliesV0({
+          categoryCounts: index.drift.categoryCounts || {},
+          total: index.drift.windowSize || records.length,
+          epochId: input.epochId ?? input.reconcileEpochId,
+          baselineShares: input.baselineShares
+        })
+      : null;
+
+  const featureVector =
+    input.exportFeatureVector !== false
+      ? exportLearningFeatureVectorV0({
+          records,
+          indexSnapshot: index.indexSnapshot,
+          drift: index.drift,
+          analytics,
+          alerts: anomalies
+        })
+      : null;
 
   const wired =
     input.wireSignals !== false
@@ -60,7 +92,7 @@ export function runTicketMemoryPipelineV0(input) {
     reconcile = deriveReconcileProposalV0({
       records,
       indexSnapshot: index.indexSnapshot,
-      epochId: input.reconcileEpochId,
+      epochId: input.reconcileEpochId ?? input.epochId,
       ticketId: input.ticketId
     });
 
@@ -79,6 +111,8 @@ export function runTicketMemoryPipelineV0(input) {
     schema: TICKET_MEMORY_PIPELINE_SCHEMA_V0,
     index,
     analytics,
+    anomalies,
+    featureVector,
     nervousSignals: wired,
     reconcile,
     commit,

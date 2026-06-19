@@ -28,8 +28,38 @@ Rhizoh is an **Explainable State Machine** → **Causal Learning Organism** (obs
 
 | Risk | Guard |
 |------|-------|
+| TraceGraph becomes mutable perception | **Live index** = counters only; no delete/restructure on ingest |
+| Observation → execution leakage | Compression + tombstone = **REC-cycle only** (`runRecCycleCleanupV0`) |
 | Reason ontology mixes with admission | Optimizer is **read-only** on mutation ledger; never calls `AdmissionEngine.commit()` |
 | Learning layer policy collapse | Drift signals are **`suggest` class observations** — no auto-mutate, no self-justification loop |
+
+---
+
+## 1.1 Hybrid model (canonical)
+
+```text
+MutationRecord
+   ↓
+Live Index (incremental counters + pointer register — measurement only)
+   ↓
+Drift Engine (read-only snapshot)
+   ↓
+AlertPacket (suggest only)
+   ↓
+REC Cycle (SYSTEM_RECONCILE)
+   ↓
+Tombstone Queue → soft compression → causal residue
+   ↓
+TraceGraph final consistency
+```
+
+| Path | Mutates trace truth? | When |
+|------|---------------------|------|
+| Live index | No | Immediate on ingest |
+| Drift / AlertPacket | No | Always-on |
+| REC cleanup | Yes (soft compression) | 06:44 / 18:44 batch only |
+
+**One-line rule:** Tombstone is REC-deferred; index stays live — measurement only, never change.
 
 ---
 
@@ -109,13 +139,18 @@ Signals include `confidenceHint01` (observation only — not frozen trust).
 ## 6. Pipeline
 
 ```text
-ingestMutationRecordForIndexV0(record)
-  → buildIndexFromMutationRecordV0
-  → (optional) compressEligibleRecordsV0
-  → extractDriftSignalsV0
+ingestMutationRecordForIndexV0(record)   ← live path only
+  → updateLiveIndexV0 (counters + pointers)
+  → enqueueDeferredCompressionV0 (queue, no compress)
 
-optimizeTraceGraphIndexV0({ records, compress, windowSize })
-  → batch entry point for REC reconcile
+runRecCycleCleanupV0({ epochId })        ← REC batch only
+  → compressEligibleRecordsV0 (recCycle:true)
+  → tombstone finalize (optional)
+
+extractDriftSignalsV0                    ← read-only
+
+optimizeTraceGraphIndexV0({ records, recCycle?, epochId? })
+  → live ingest + optional REC cleanup
 ```
 
 ---
@@ -125,10 +160,11 @@ optimizeTraceGraphIndexV0({ records, compress, windowSize })
 ```text
 traceGraphIndexOptimizerV0
   → driftAnalyticsEngineV0
-  → learning feature vector export (future, RESEARCH-ONLY)
+  → driftAnomalyDetectorV0 (AlertPacket)
+  → learningFeatureVectorExportV0
 ```
 
-See [`RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md`](RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md).
+See [`RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md`](RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md) · [`RHIZOH_DRIFT_ANOMALY_DETECTOR_V1.md`](RHIZOH_DRIFT_ANOMALY_DETECTOR_V1.md) · [`RHIZOH_LEARNING_FEATURE_VECTOR_EXPORT_V1.md`](RHIZOH_LEARNING_FEATURE_VECTOR_EXPORT_V1.md).
 
 ---
 
@@ -136,4 +172,5 @@ See [`RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md`](RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md)
 
 | Date | Change |
 |------|--------|
+| 2026-06-19 | v1.1 — hybrid live index + REC-deferred tombstone queue |
 | 2026-06-19 | v1.0 — index builder + causal compressor + drift extractor |

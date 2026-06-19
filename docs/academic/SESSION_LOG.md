@@ -95,6 +95,28 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 
 ## Günlük
 
+### 2026-06-19 — Hybrid live index + REC-deferred tombstone
+
+**Summary:**
+- Architectural decision: live index = measurement only; tombstone/compression = REC-cycle batch (SYSTEM_RECONCILE).
+- `recTombstoneQueueV0`: deferred soft compression queue — not immediate delete.
+- `traceGraphIndexOptimizerV0` refactored: `updateLiveIndexV0` (counters) vs `runRecCycleCleanupV0` (truth mutation).
+- `driftAnomalyDetectorV0`: 3-layer threshold (absolute + relative + persistence) → AlertPacket (suggest only).
+- `learningFeatureVectorExportV0`: reason.category, drift severity, epoch trend, acceptance ratio, permission stress.
+- 44 ticket-module tests passing.
+
+**Linked Artifacts:**
+- `docs/RHIZOH_TRACE_GRAPH_INDEX_OPTIMIZER_V1.md` (v1.1 hybrid model)
+- `docs/RHIZOH_DRIFT_ANOMALY_DETECTOR_V1.md`
+- `docs/RHIZOH_LEARNING_FEATURE_VECTOR_EXPORT_V1.md`
+- `apps/client/src/rhizoh/ticket/recTombstoneQueueV0.js`
+- `apps/client/src/rhizoh/ticket/driftAnomalyDetectorV0.js`
+- `apps/client/src/rhizoh/ticket/learningFeatureVectorExportV0.js`
+
+- **SPECFLOW:** RESEARCH-ONLY · FUTURE-PROOF-ONLY
+- **Karar özeti:** Index canlı kalır (ölçüm); tombstone REC'ye bırakılır (soft compression). TraceGraph asla "current state optimizer" olmaz.
+- **Frozen core:** dokunulmadı
+
 ### 2026-06-19 — Causal Memory Organism: Drift Analytics + Admission commit path
 
 **Summary:**
