@@ -4,7 +4,8 @@ import { __resetChessEngineTaskQueueForTestV0 } from "../chessEngineTaskQueueV0.
 import {
   convertGeometryDriftToUglRewardV0,
   convertPolicyDiffToUglRewardV0,
-  compileObservationToUglEventV0
+  compileObservationToUglEventV0,
+  resolveUglActorIdV0
 } from "../rhizohDriftRewardConverterV0.js";
 import { __resetUglEventStreamForTestV0, appendUglEventV0, readUglEventStreamV0 } from "../rhizohUglEventV0.js";
 import {
@@ -78,6 +79,25 @@ describe("rhizohUglLayerV0", () => {
       context: { playedPattern: "cluster", expectedPattern: "jump" }
     });
     expect(r.drift).toBeGreaterThan(0.3);
+  });
+
+  it("compiles geometry drift without policyDiff (no slotId crash)", () => {
+    const event = compileObservationToUglEventV0({
+      matchId: "cluster_3_test",
+      geometryDrift: {
+        z: 0.54,
+        context: { playedPattern: "cluster", expectedPattern: "jump" }
+      },
+      source: "geometry_drift"
+    });
+    expect(event.a.actorId).toBe("unknown");
+    expect(event.r.drift).toBeGreaterThan(0);
+  });
+
+  it("resolveUglActorId prefers explicit actorId", () => {
+    expect(resolveUglActorIdV0({ actorId: "rhizoh_ai" })).toBe("rhizoh_ai");
+    expect(resolveUglActorIdV0({ policyDiff: { slotId: 2 } })).toBe("slot_2");
+    expect(resolveUglActorIdV0({})).toBe("unknown");
   });
 
   it("compiles observation artifacts into UGLEvent", () => {

@@ -12,6 +12,15 @@ import { RHIZOH_UGL_GAME_TYPE_V0 } from "./rhizohUglSchemaV0.js";
 export const RHIZOH_UGL_DRIFT_REWARD_SCHEMA_V0 = "castle.rhizoh.ugl_drift_reward.v0";
 
 /**
+ * @param {{ actorId?: string, policyDiff?: { slotId?: number|null } }} input
+ */
+export function resolveUglActorIdV0(input = {}) {
+  if (input.actorId) return String(input.actorId);
+  if (input.policyDiff?.slotId != null) return `slot_${input.policyDiff.slotId}`;
+  return "unknown";
+}
+
+/**
  * @param {object} policyDiff — chessClusterLearningTrace policy_diff row
  * @param {{ fenBefore?: string, fenAfter?: string, actorId?: string, terminal?: number }} ctx
  */
@@ -97,7 +106,7 @@ export function compileObservationToUglEventV0(input = {}) {
   const s = encodeUglStateV0(gameType, { fen: fenBefore, rulesetId: input.rulesetId });
   const sNext = encodeUglStateV0(gameType, { fen: fenAfter, rulesetId: input.rulesetId });
   const a = encodeUglActionV0(gameType, {
-    actorId: input.actorId || input.policyDiff?.slotId != null ? `slot_${input.policyDiff.slotId}` : "unknown",
+    actorId: resolveUglActorIdV0(input),
     uci: input.uci || input.policyDiff?.played,
     san: input.san,
     type: input.actionType || "move"
