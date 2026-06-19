@@ -207,7 +207,23 @@ Schedulers, arena engines, LLM gateways, and reconcilers MUST accept **Intent**,
 
 ---
 
-### Invariant SC-02 — Every CubeState mutation has an admission path
+### Invariant DR-01 — Drift is prediction, not execution
+
+Drift signals and analytics outputs SHALL NOT trigger mutations.
+
+| Allowed | Forbidden |
+|---------|-----------|
+| `suggest` class suggestions | `mutate_l1` / `mutate_l2` from drift layer |
+| Forecast + `confidenceHint01` | Auto quota / admission / CubeState change |
+| REC **proposals** via reconcile | Drift → direct reality write |
+
+**Failure mode:** feedback loop collapse — system writes its own predicted future.
+
+**Code enforcement:** `driftAnalyticsEngineV0` — `assertDriftSuggestionDr01V0()`; all outputs `executionClass: suggest`.
+
+See [`RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md`](RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md).
+
+---
 
 Every `CubeState` commit MUST originate from **one of**:
 
@@ -386,7 +402,7 @@ ISSUE ──▶ ACTIVE ──▶ CONSUMED | EXPIRED ──▶ ARCHIVED
 - [ ] Invariant 5: no self-authority expansion; admission on new scope  
 - [ ] `mutate_l1` does not touch frozen v562–v570 subgraph  
 - [ ] Invariant SC-01: `system_reconcile` never writes CubeState directly  
-- [ ] Invariant SC-03: no direct TicketPacket execution; intentId on mutate paths  
+- [ ] Invariant DR-01: drift/analytics outputs are suggest-only  
 - [ ] No import from ticket module into frozen phase chain  
 
 ---
@@ -406,7 +422,7 @@ ISSUE ──▶ ACTIVE ──▶ CONSUMED | EXPIRED ──▶ ARCHIVED
 | Mutation record emitter | `apps/client/src/rhizoh/ticket/mutationRecordEmitterV0.js` |
 | Transition intent v1 | `apps/client/src/rhizoh/ticket/ticketTransitionIntentV1.js` |
 | Tombstone layer | `apps/client/src/rhizoh/ticket/ticketTombstoneLayerV0.js` |
-| REC deferred queue | `apps/client/src/rhizoh/ticket/recDeferredIntentQueueV0.js` |
+| Drift analytics engine | `apps/client/src/rhizoh/ticket/driftAnalyticsEngineV0.js` |
 
 ---
 

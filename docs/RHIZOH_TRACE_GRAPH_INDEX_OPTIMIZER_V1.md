@@ -124,9 +124,11 @@ optimizeTraceGraphIndexV0({ records, compress, windowSize })
 
 ```text
 traceGraphIndexOptimizerV0
-  → driftAnalyticsEngineV0 (future)
+  → driftAnalyticsEngineV0
   → learning feature vector export (future, RESEARCH-ONLY)
 ```
+
+See [`RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md`](RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md).
 
 ---
 

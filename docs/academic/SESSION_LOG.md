@@ -95,6 +95,31 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 
 ## Günlük
 
+### 2026-06-19 — Causal Memory Organism: Drift Analytics + Admission commit path
+
+**Summary:**
+- Architectural threshold: TraceGraph = active epistemic nervous system (not storage).
+- `driftAnalyticsEngineV0`: Temporal Curves · Causal Forecasting · Suggestion Generator (DR-01 enforced).
+- `ticketMemoryPipelineV0`: MutationRecord → Index → Drift → Nervous Signal bucket.
+- SC-01/SC-02 closed in code: `ticketReconcileProposalV0` (proposals only) → `admissionCubeCommitV0` (sole CubeState writer).
+- `ticketDriftSignalWireV0`: drift suggestions → nervous network Signal bucket (`suggest` only).
+- Facade `observeMemory` hook wires perception chain after transition submit.
+- 39 ticket-module tests passing.
+
+**Linked Artifacts:**
+- `docs/RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md`
+- `apps/client/src/rhizoh/ticket/driftAnalyticsEngineV0.js`
+- `apps/client/src/rhizoh/ticket/ticketMemoryPipelineV0.js`
+- `apps/client/src/rhizoh/ticket/ticketReconcileProposalV0.js`
+- `apps/client/src/rhizoh/ticket/admissionCubeCommitV0.js`
+- `apps/client/src/rhizoh/ticket/ticketDriftSignalWireV0.js`
+
+- **Habitat:** Academic / epistemic OS
+- **Katılımcılar:** Principal, **Cursor Agent (Castle)**
+- **SPECFLOW:** RESEARCH-ONLY · FUTURE-PROOF-ONLY
+- **Karar özeti:** DR-01 constitutional — drift predicts, never mutates. Rhizoh framed as self-observing causal memory system (observational cognition runtime).
+- **Frozen core:** dokunulmadı
+
 ### 2026-06-19 — Ticket Network Schema v1 (UX unification layer)
 
 **Summary:**
