@@ -163,10 +163,12 @@ See [`schemas/rhizoh-mutation-record-v2.schema.json`](schemas/rhizoh-mutation-re
 ## 6. Downstream pipeline (next)
 
 ```text
-mutationRecordEmitterV1
-  → traceGraphIndexOptimizerV0
-  → driftAnalyticsEngineV0
+mutationRecordEmitterV0
+  → traceGraphIndexOptimizerV0   ← Index · Compressor · Drift
+  → driftAnalyticsEngineV0       (future)
 ```
+
+See [`RHIZOH_TRACE_GRAPH_INDEX_OPTIMIZER_V1.md`](RHIZOH_TRACE_GRAPH_INDEX_OPTIMIZER_V1.md).
 
 ---
 
