@@ -15,6 +15,10 @@ import {
   stabilizeCrossSpaceFusionV0
 } from "./crossSpaceStabilizationLayerV0.js";
 import {
+  ensureExecutionPhaseSynchronizerV0,
+  runAlignedExecutionPhaseV0
+} from "./executionPhaseSynchronizerV0.js";
+import {
   ingestSportsMatchEventV0,
   normalizeSportsMatchEventV0
 } from "./sportsEventAdapterV0.js";
@@ -28,7 +32,8 @@ export const RUNTIME_SURFACE_API_KEYS_V0 = Object.freeze([
   "ingestCuxPerceptionLane",
   "fuseCrossSpaceEpistemic",
   "fuseAndStabilizeCrossSpace",
-  "stabilizeCrossSpaceFusion"
+  "stabilizeCrossSpaceFusion",
+  "runExecutionPhase"
 ]);
 
 /**
@@ -46,6 +51,7 @@ export function bindRhizohRuntimeSurfaceV0(target) {
   rhizoh.fuseCrossSpaceEpistemic = (opts) => fuseCrossSpaceEpistemicV0(opts);
   rhizoh.fuseAndStabilizeCrossSpace = (opts) => fuseAndStabilizeCrossSpaceV0(opts);
   rhizoh.stabilizeCrossSpaceFusion = (fusion) => stabilizeCrossSpaceFusionV0(fusion);
+  rhizoh.runExecutionPhase = (opts) => runAlignedExecutionPhaseV0(opts);
 
   return rhizoh;
 }
@@ -79,6 +85,7 @@ export function ensureRhizohRuntimeSurfaceBinderV0(opts = {}) {
 
   bindRhizohRuntimeSurfaceV0(window.__rhizoh);
   ensureCrossSpaceStabilizationLayerV0();
+  ensureExecutionPhaseSynchronizerV0();
 
   const strict = opts.strict !== false;
   const assertResult = strict ? assertRhizohRuntimeSurfaceV0(window.__rhizoh) : null;

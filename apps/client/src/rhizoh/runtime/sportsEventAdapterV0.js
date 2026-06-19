@@ -6,7 +6,11 @@
 
 import { buildUglEventV0, appendUglEventV0 } from "./rhizohUglEventV0.js";
 import { encodeUglActionV0 } from "./rhizohUglActionSpaceV0.js";
-import { notifySportsArenaActivityV0, runMultiArenaTickV0 } from "./multiArenaSchedulerV0.js";
+import { notifySportsArenaActivityV0 } from "./multiArenaSchedulerV0.js";
+import {
+  INGESTION_LANE_V0,
+  schedulePhaseCommitV0
+} from "./executionPhaseSynchronizerV0.js";
 import { ingestSpaceDriftSignalV0 } from "./crossSpaceRecReconciliationV0.js";
 import { RHIZOH_UGL_GAME_TYPE_V0, RHIZOH_UGL_ACTION_TYPE_V0 } from "./rhizohUglSchemaV0.js";
 import { appendSportsSpaceEventV0, CAUSAL_SPACE_ID_V0 } from "./sportsCausalSpaceV0.js";
@@ -103,14 +107,36 @@ export function ingestSportsMatchEventV0(normalized, opts = {}) {
       recAffinity: "stochastic_rec"
     });
   }
-  notifySportsArenaActivityV0({
-    reason: normalized.eventType,
-    durationMs: opts.burstDurationMs
+
+  const signals = deriveSportsDriftSignalsV0(normalized);
+  const categoryShares = {};
+  let entropy01 = 0;
+  for (const sig of signals) {
+    categoryShares[sig.category] = (categoryShares[sig.category] || 0) + (sig.confidence || 0);
+    if (sig.category === "ENTROPY_DRIFT") {
+      entropy01 = Math.max(entropy01, sig.confidence || 0);
+    }
+  }
+
+  schedulePhaseCommitV0({
+    atMs: normalized.atMs,
+    source: `sports:${normalized.eventType}`,
+    ingest: [
+      {
+        lane: INGESTION_LANE_V0.SPORTS,
+        payload: {
+          eventType: normalized.eventType,
+          matchId: normalized.matchId,
+          categoryShares,
+          entropy01,
+          burstDurationMs: opts.burstDurationMs
+        }
+      }
+    ]
   });
-  runMultiArenaTickV0();
+
   const action = sportsEventToUglActionV0(normalized);
   const driftReasons = sportsEventToDriftReasonsV0(normalized);
-  const signals = deriveSportsDriftSignalsV0(normalized);
 
   const rewardTotal = signals.reduce((sum, s) => sum + (s.confidence || 0) * 0.1, 0);
 

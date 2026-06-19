@@ -39,6 +39,10 @@ import {
   buildCrossSpaceStabilizationReportV0,
   ensureCrossSpaceStabilizationLayerV0
 } from "./crossSpaceStabilizationLayerV0.js";
+import {
+  buildExecutionPhaseSynchronizerReportV0,
+  ensureExecutionPhaseSynchronizerV0
+} from "./executionPhaseSynchronizerV0.js";
 import { RHIZOH_UGL_SCHEMA_V0, RHIZOH_UGL_VERSION_V0 } from "./rhizohUglSchemaV0.js";
 import { chessTerminalRewardV0 } from "./rhizohUglChessAdapterV0.js";
 import {
@@ -80,6 +84,7 @@ export function buildRhizohUglReportV0() {
     crossSpaceFusion: buildCrossSpaceFusionReportV0(),
     crossSpaceResourceGuard: buildCrossSpaceResourceGuardReportV0(),
     crossSpaceStabilization: buildCrossSpaceStabilizationReportV0(),
+    executionPhase: buildExecutionPhaseSynchronizerReportV0(),
     stateEncoder: buildUglStateEncoderReportV0(),
     actionSpace: buildUglActionSpaceReportV0(),
     rewardModel: buildUglRewardModelReportV0(),
@@ -103,6 +108,8 @@ export function buildRhizohUglReportV0() {
       crossSpaceResourceGuard: "window.__rhizoh.crossSpaceResourceGuard()",
       crossSpaceStabilization: "window.__rhizoh.crossSpaceStabilization()",
       fuseAndStabilize: "window.__rhizoh.fuseAndStabilizeCrossSpace()",
+      executionPhase: "window.__rhizoh.executionPhase()",
+      runExecutionPhase: "window.__rhizoh.runExecutionPhase()",
       sportsAdapter: "window.__rhizoh.uglSportsAdapter()",
       ingestSportsEvent: "window.__rhizoh.ingestSportsEvent({ eventType, delta })",
       league: "window.__rhizoh.uglLeagueHarness()",
@@ -282,6 +289,7 @@ export function ensureRhizohUglV0() {
   ensureCrossSpaceCausalFusionV0();
   ensureCrossSpaceResourceGuardV0();
   ensureCrossSpaceStabilizationLayerV0();
+  ensureExecutionPhaseSynchronizerV0();
   if (!window.__rhizoh.__crossSpaceRecTickWired) {
     window.__rhizoh.__crossSpaceRecTickWired = true;
     window.addEventListener(MULTI_ARENA_TICK_EVENT_V0, (ev) => {
@@ -371,6 +379,11 @@ export function __resetRhizohUglBootForTestV0() {
     delete window.__rhizoh.stabilizeCrossSpaceFusion;
     delete window.__rhizoh.fuseAndStabilizeCrossSpace;
     delete window.__rhizoh.__crossSpaceStabilizationWired;
+    delete window.__rhizoh.executionPhase;
+    delete window.__rhizoh.executionPhaseReport;
+    delete window.__rhizoh.runExecutionPhase;
+    delete window.__rhizoh.commitExecutionPhase;
+    delete window.__rhizoh.beginExecutionPhase;
     delete window.__rhizoh.uglSportsAdapter;
     delete window.__rhizoh.ingestSportsEvent;
     delete window.__rhizoh.uglLeagueHarness;
