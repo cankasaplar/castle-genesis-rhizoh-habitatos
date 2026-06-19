@@ -19,6 +19,11 @@ import { commitProposedCubeDeltaV0 } from "./admissionCubeCommitV0.js";
 import { optimizeTraceGraphIndexV0 } from "./traceGraphIndexOptimizerV0.js";
 import { wireDriftSuggestionsToNervousNetworkV0 } from "./ticketDriftSignalWireV0.js";
 import { bindCognitiveVisualizationV0 } from "./cognitiveVisualizationBindingV0.js";
+import {
+  bindCognitiveActionV0,
+  CAL_INTERACTION_TYPE_V0
+} from "./cognitiveActionLayerV0.js";
+import { MUTATION_REASON_CATEGORY_V1 } from "./mutationReasonCodeOntologyV1.js";
 
 export const TICKET_MEMORY_PIPELINE_SCHEMA_V0 = "castle.rhizoh.ticket_memory_pipeline.v0";
 
@@ -36,6 +41,8 @@ export const TICKET_MEMORY_PIPELINE_SCHEMA_V0 = "castle.rhizoh.ticket_memory_pip
  *   baselineShares?: Record<string, number>,
  *   exportFeatureVector?: boolean,
  *   bindVisualization?: boolean,
+ *   bindCux?: boolean,
+ *   cuxInteraction?: object,
  *   reconcile?: boolean,
  *   reconcileEpochId?: string,
  *   commit?: { subjectRef: string, cubeId: string, auditChain?: object, skipAdmissionCheck?: boolean }
@@ -109,6 +116,36 @@ export function runTicketMemoryPipelineV0(input) {
     }
   }
 
+  const pipelineBody = {
+    index,
+    analytics,
+    anomalies,
+    reconcile,
+    commit,
+    admission: null
+  };
+
+  const cognitiveBinding =
+    input.bindVisualization !== false
+      ? bindCognitiveVisualizationV0({
+          pipeline: pipelineBody,
+          dispatchEvent: false
+        })
+      : null;
+
+  const cognitiveAction =
+    input.bindCux !== false && input.bindVisualization !== false
+      ? bindCognitiveActionV0({
+          interaction:
+            input.cuxInteraction ??
+            Object.freeze({
+              interactionType: CAL_INTERACTION_TYPE_V0.CATEGORY_SPIKE_CLICK,
+              targetCategory: MUTATION_REASON_CATEGORY_V1.SC
+            }),
+          pipeline: pipelineBody
+        })
+      : null;
+
   return Object.freeze({
     schema: TICKET_MEMORY_PIPELINE_SCHEMA_V0,
     index,
@@ -118,20 +155,8 @@ export function runTicketMemoryPipelineV0(input) {
     nervousSignals: wired,
     reconcile,
     commit,
-    cognitiveBinding:
-      input.bindVisualization !== false
-        ? bindCognitiveVisualizationV0({
-            pipeline: {
-              index,
-              analytics,
-              anomalies,
-              reconcile,
-              commit,
-              admission: null
-            },
-            dispatchEvent: false
-          })
-        : null,
+    cognitiveBinding,
+    cognitiveAction,
     interpretationOnly: true,
     nonExecutive: true
   });

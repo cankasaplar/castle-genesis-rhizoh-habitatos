@@ -95,6 +95,39 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 
 ## Günlük
 
+### 2026-06-19 — Causal Navigation Runtime (CNR) + Cognitive UX scaffold
+
+**Summary:**
+- `RHIZOH_CAUSAL_NAVIGATION_RUNTIME_V1.md` — four-axis model · perception ≠ interaction ≠ execution.
+- `RHIZOH_COGNITIVE_UX_LAYER_V1.md` — CUX scaffold (gezer · görür · onaylar).
+- `causalNavigationRuntimeV0.js` — CNR descriptor + CNR-01 triple-separation guard.
+- CAL reframed as Epistemic Traversal Layer (axis 4); Binding = görmek, CAL = yürümek.
+- 66 ticket-module tests passing.
+
+**Linked Artifacts:**
+- `docs/RHIZOH_CAUSAL_NAVIGATION_RUNTIME_V1.md`
+- `docs/RHIZOH_COGNITIVE_UX_LAYER_V1.md`
+- `apps/client/src/rhizoh/ticket/causalNavigationRuntimeV0.js`
+
+- **Karar özeti:** permission-separated causal traversal runtime; epistemic topology = navigable space.
+- **Frozen core:** dokunulmadı
+
+### 2026-06-19 — Cognitive Action Layer (Interactive Epistemic Simulator)
+
+**Summary:**
+- `RHIZOH_COGNITIVE_ACTION_LAYER_V1.md` — CAL-01: suggestion space is causally inert.
+- `cognitiveActionLayerV0.js` — interaction-based exploration (lineage, cause chain, REC window).
+- User traverses thought topology — no mutation, no admission leak.
+- Three-layer runtime locked: Epistemic · Authority · Temporal.
+- 62 ticket-module tests passing.
+
+**Linked Artifacts:**
+- `docs/RHIZOH_COGNITIVE_ACTION_LAYER_V1.md`
+- `apps/client/src/rhizoh/ticket/cognitiveActionLayerV0.js`
+
+- **Karar özeti:** Perception OS → Interactive epistemic simulator; system cannot hallucinate authority.
+- **Frozen core:** dokunulmadı
+
 ### 2026-06-19 — Cognitive Visualization Binding (EOS · hybrid alert flow)
 
 **Summary:**
@@ -366,6 +399,55 @@ Invariant confirmed: Media may inform observation; media may never define canoni
 - **Çıktılar:** `AGENTS.md`, `.cursor/rules/frozen-core-habitat.mdc`, `ARCHITECTURE_POST_FREEZE_SUMMARY.md` §6 güncellemesi, bu SESSION_LOG.  
 - **Karar özeti:** Koordinasyon katmanı eklendi; graf/hash CI hakemi değişmedi.  
 - **Frozen core:** dokunulmadı  
+
+### 2026-06-19 — CUX v0 scaffold (perception → traversal → experience)
+
+**Source:** Principal — CNR theory-complete, interface-incomplete; CAL idle without spatial experience.
+
+**Summary:**
+- `cognitiveUxLayerV0.js` compositor: Binding + CAL + CNR-01 guard
+- `onUserTraverseV0(nodeId)` → `exploreEpistemicInteractionV0` (read_only)
+- `cognitiveUxSpatialProjectionV0.js` — drift field / REC waveform / SC spike → SVG
+- `RhizohCognitiveUxShellV0.jsx` — 4 mandatory panels (Drift · REC · CAL · Authority)
+- Pipeline wires `cognitiveAction` when `bindCux: true`
+- Event bridge: `rhizoh:cognitive-ux-traversal-v0` + `rhizoh:epistemic-ui-v0`
+- DevTools: `cognitiveUxSnapshot()` · `cognitiveUxTraverse(nodeId)` · DEV auto / `castle.cux.v0=1`
+
+**Linked Artifacts:**
+- `docs/RHIZOH_COGNITIVE_UX_LAYER_V1.md`
+- `apps/client/src/rhizoh/ticket/cognitiveUxLayerV0.js`
+- `apps/client/src/rhizoh/ticket/RhizohCognitiveUxShellV0.jsx`
+
+**Next:** Sports Adapter v0 (stochastic domain stress test) after CUX field validation.
+
+- **Katılımcılar:** Principal, **Cursor Agent (Castle)**
+- **SPECFLOW:** RESEARCH-ONLY / FUTURE-PROOF-ONLY
+- **Frozen core:** dokunulmadı
+
+### 2026-06-19 — Domain Fabric + Arena Router v0 (UGL multi-domain scaffold)
+
+**Source:** Principal cold-read — UGL-complete but domain-incomplete; chess-only active execution.
+
+**Summary:**
+- Domain Fabric registry: chess `full_active`, go/shogi `passive_stub`, sports `not_instantiated`
+- Arena Router: `routeUglEventV0` → domain resolve → adapter select; enriches `meta.arenaRoute` on append
+- Sports adapter stub + `sport_scoreboard.v0` schema; sports live context ≠ sports game arena
+- UGL schema extended: `SPORTS` game type + `event` / `play` / `possession` / `score_delta` actions
+- DevTools: `uglDomainFabric()`, `uglArenaRouter()`, `uglSportsAdapter()`
+
+**Linked Artifacts:**
+- `docs/RHIZOH_DOMAIN_FABRIC_V0.md`
+- `docs/RHIZOH_ARENA_ROUTER_V0.md`
+- `docs/RHIZOH_UGL_V1.md` §9
+- `apps/client/src/rhizoh/runtime/rhizohDomainFabricV0.js`
+- `apps/client/src/rhizoh/runtime/rhizohArenaRouterV0.js`
+- `apps/client/src/rhizoh/runtime/rhizohUglSportsAdapterV0.js`
+
+**Next (roadmap):** Sports Adapter v0 (streaming state) → Multi-Arena Scheduler → CUX wire.
+
+- **Katılımcılar:** Principal, **Cursor Agent (Castle)**
+- **SPECFLOW:** RESEARCH-ONLY / FUTURE-PROOF-ONLY
+- **Frozen core:** dokunulmadı
 
 ---
 

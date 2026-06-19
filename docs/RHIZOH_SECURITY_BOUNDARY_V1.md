@@ -263,6 +263,24 @@ See [`RHIZOH_COGNITIVE_VISUALIZATION_BINDING_V1.md`](RHIZOH_COGNITIVE_VISUALIZAT
 
 ---
 
+### Invariant CAL-01 — Cognitive action is causally inert
+
+> **Suggestion space is causally inert.**
+
+CAL interactions SHALL NOT mutate CubeState, admission, trace truth, or tombstone state.
+
+| Allowed | Forbidden |
+|---------|-----------|
+| `read_only` exploration packets | Mutation from UI interaction |
+| Lineage / cause-chain fetch | Auto admission from CAL click |
+| `exploration_view` state proposals | DR-02 violating action prescriptions |
+
+**Code enforcement:** `cognitiveActionLayerV0` — `assertCognitiveActionCaInertV0()`.
+
+See [`RHIZOH_COGNITIVE_ACTION_LAYER_V1.md`](RHIZOH_COGNITIVE_ACTION_LAYER_V1.md).
+
+---
+
 Every `CubeState` commit MUST originate from **one of**:
 
 1. **User-signed ticket** (`mutate_l1` / `mutate_l2` with valid signature)  
@@ -442,6 +460,7 @@ ISSUE ──▶ ACTIVE ──▶ CONSUMED | EXPIRED ──▶ ARCHIVED
 - [ ] Invariant SC-01: `system_reconcile` never writes CubeState directly  
 - [ ] Invariant DR-01: drift/analytics outputs are suggest-only  
 - [ ] Invariant DR-02: suggestions reference categories/deltas only  
+- [ ] Invariant CAL-01: cognitive exploration is causally inert  
 - [ ] No import from ticket module into frozen phase chain  
 
 ---

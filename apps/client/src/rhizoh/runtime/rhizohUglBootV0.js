@@ -14,6 +14,9 @@ import { buildUglActionSpaceReportV0 } from "./rhizohUglActionSpaceV0.js";
 import { buildUglRewardModelReportV0 } from "./rhizohUglRewardModelV0.js";
 import { buildUglMatchSchedulerReportV0 } from "./rhizohUglMatchSchedulerV0.js";
 import { getChessUglAdapterV0 } from "./rhizohUglChessAdapterV0.js";
+import { getSportsUglAdapterV0 } from "./rhizohUglSportsAdapterV0.js";
+import { getDomainFabricSnapshotV0 } from "./rhizohDomainFabricV0.js";
+import { getArenaRouterSnapshotV0 } from "./rhizohArenaRouterV0.js";
 import { RHIZOH_UGL_SCHEMA_V0, RHIZOH_UGL_VERSION_V0 } from "./rhizohUglSchemaV0.js";
 import { chessTerminalRewardV0 } from "./rhizohUglChessAdapterV0.js";
 import {
@@ -47,7 +50,9 @@ export function buildRhizohUglReportV0() {
     schema: `${RHIZOH_UGL_SCHEMA_V0}.report`,
     version: RHIZOH_UGL_VERSION_V0,
     note: "UGL compiles domain play into canonical state-action-reward events",
-    adapters: Object.freeze([getChessUglAdapterV0().gameType]),
+    adapters: Object.freeze([getChessUglAdapterV0().gameType, getSportsUglAdapterV0().gameType]),
+    domainFabric: getDomainFabricSnapshotV0(),
+    arenaRouter: getArenaRouterSnapshotV0(),
     stateEncoder: buildUglStateEncoderReportV0(),
     actionSpace: buildUglActionSpaceReportV0(),
     rewardModel: buildUglRewardModelReportV0(),
@@ -63,6 +68,9 @@ export function buildRhizohUglReportV0() {
       events: "window.__rhizoh.uglEventStream()",
       scheduler: "window.__rhizoh.uglScheduler()",
       adapter: "window.__rhizoh.uglChessAdapter()",
+      domainFabric: "window.__rhizoh.uglDomainFabric()",
+      arenaRouter: "window.__rhizoh.uglArenaRouter()",
+      sportsAdapter: "window.__rhizoh.uglSportsAdapter()",
       league: "window.__rhizoh.uglLeagueHarness()",
       trainingRecords: "window.__rhizoh.uglTrainingRecords()",
       engineHealth: "window.__rhizoh.chessEngineHealthReport()",
@@ -229,6 +237,15 @@ export function ensureRhizohUglV0() {
   if (!window.__rhizoh.uglChessAdapter) {
     window.__rhizoh.uglChessAdapter = () => getChessUglAdapterV0();
   }
+  if (!window.__rhizoh.uglDomainFabric) {
+    window.__rhizoh.uglDomainFabric = () => getDomainFabricSnapshotV0();
+  }
+  if (!window.__rhizoh.uglArenaRouter) {
+    window.__rhizoh.uglArenaRouter = () => getArenaRouterSnapshotV0();
+  }
+  if (!window.__rhizoh.uglSportsAdapter) {
+    window.__rhizoh.uglSportsAdapter = () => getSportsUglAdapterV0();
+  }
   if (!window.__rhizoh.uglLeagueHarness) {
     window.__rhizoh.uglLeagueHarness = () => buildUglLeagueHarnessReportV0();
   }
@@ -281,6 +298,9 @@ export function __resetRhizohUglBootForTestV0() {
     delete window.__rhizoh.uglScheduler;
     delete window.__rhizoh.uglRewardModel;
     delete window.__rhizoh.uglChessAdapter;
+    delete window.__rhizoh.uglDomainFabric;
+    delete window.__rhizoh.uglArenaRouter;
+    delete window.__rhizoh.uglSportsAdapter;
     delete window.__rhizoh.uglLeagueHarness;
     delete window.__rhizoh.uglTrainingRecords;
     delete window.__rhizoh.exportUglTrainingRecordsJson;

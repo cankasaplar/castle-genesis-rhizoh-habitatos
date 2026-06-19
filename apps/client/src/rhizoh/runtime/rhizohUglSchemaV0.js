@@ -11,6 +11,7 @@ export const RHIZOH_UGL_GAME_TYPE_V0 = Object.freeze({
   CHESS: "chess",
   GO: "go",
   SHOGI: "shogi",
+  SPORTS: "sports",
   CUSTOM: "custom"
 });
 
@@ -18,7 +19,11 @@ export const RHIZOH_UGL_ACTION_TYPE_V0 = Object.freeze({
   MOVE: "move",
   PASS: "pass",
   INTERACT: "interact",
-  SPECIAL: "special"
+  SPECIAL: "special",
+  EVENT: "event",
+  PLAY: "play",
+  POSSESSION: "possession",
+  SCORE_DELTA: "score_delta"
 });
 
 export const RHIZOH_UGL_PIPELINE_V0 = Object.freeze({
