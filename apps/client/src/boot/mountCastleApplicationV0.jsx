@@ -82,6 +82,7 @@ export async function mountCastleApplicationV0(ctx) {
       ? `armed shadow=${bridgeSnap.shadowCount ?? 0} shared=${bridgeSnap.sharedOfficialHistory}`
       : "not_armed"
   );
+  bootLog?.ok?.("boot.authority_replay_alignment", "armed deterministic-only");
 
   const observability = startProdWorldObservabilityBridgeV0();
   if (observability.started) {

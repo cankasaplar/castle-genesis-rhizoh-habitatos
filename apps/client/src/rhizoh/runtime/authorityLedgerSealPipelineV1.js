@@ -6,9 +6,8 @@
  * @see docs/RHIZOH_AUTHORITY_LEDGER_SEAL_PIPELINE_V1.md
  */
 
-import {
-  ensureAuthorityGatewayPersistenceBridgeV1
-} from "./authorityGatewayPersistenceBridgeV1.js";
+import { ensureAuthorityGatewayPersistenceBridgeV1 } from "./authorityGatewayPersistenceBridgeV1.js";
+import { ensureWorkerAuthorityReplayAlignmentV1 } from "./workerAuthorityReplayAlignmentV1.js";
 import {
   ADMISSION_VERDICT_V1,
   getAdmissionArbitrationSnapshotV1
@@ -353,6 +352,7 @@ export function ensureAuthorityLedgerSealPipelineV1() {
   }
 
   ensureAuthorityGatewayPersistenceBridgeV1();
+  ensureWorkerAuthorityReplayAlignmentV1();
 
   return window.__rhizoh.authorityLedger;
 }

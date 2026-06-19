@@ -163,6 +163,80 @@ export function getAuthorityLedgerWitnessTotalV1() {
   return totalWitnessedEntriesV1;
 }
 
+/**
+ * Deterministic gateway-side replay of witnessed client seal chain.
+ * Witness link verification only — no admission/fusion reinterpretation.
+ * @param {string} subjectId
+ */
+export function replayAuthorityLedgerWitnessChainV1(subjectId) {
+  const chain = subjectId ? subjectChainsV1.get(String(subjectId)) : null;
+
+  if (!chain || chain.height === 0) {
+    return Object.freeze({
+      schema: `${AUTHORITY_LEDGER_WITNESS_SCHEMA_V1}.replay`,
+      ok: true,
+      height: 0,
+      sealHead: AUTHORITY_WAL_HASH_GENESIS_V1,
+      entriesReplayed: 0,
+      workerReplayAvailable: false,
+      gatewayReplayAvailable: true,
+      trace: Object.freeze([]),
+      interpretationOnly: true,
+      nonExecutive: true
+    });
+  }
+
+  const chronological = [...chain.entries].reverse();
+  let head = AUTHORITY_WAL_HASH_GENESIS_V1;
+  /** @type {object[]} */
+  const trace = [];
+
+  for (const row of chronological) {
+    const height = Number(row?.height);
+    const prev = String(row?.prevClientSealHash || "");
+    const seal = String(row?.clientSealHash || "");
+    const ok = prev === head && Boolean(seal);
+    trace.push(
+      Object.freeze({
+        height,
+        ok,
+        expectedPrev: head,
+        actualPrev: prev,
+        clientSealHash: seal || null
+      })
+    );
+    if (!ok) {
+      return Object.freeze({
+        schema: `${AUTHORITY_LEDGER_WITNESS_SCHEMA_V1}.replay`,
+        ok: false,
+        reason: "witness_chain_break",
+        height,
+        sealHead: head,
+        entriesReplayed: trace.length,
+        workerReplayAvailable: false,
+        gatewayReplayAvailable: true,
+        trace: Object.freeze(trace),
+        interpretationOnly: true,
+        nonExecutive: true
+      });
+    }
+    head = seal;
+  }
+
+  return Object.freeze({
+    schema: `${AUTHORITY_LEDGER_WITNESS_SCHEMA_V1}.replay`,
+    ok: true,
+    height: chain.height,
+    sealHead: head,
+    entriesReplayed: chronological.length,
+    workerReplayAvailable: false,
+    gatewayReplayAvailable: true,
+    trace: Object.freeze(trace),
+    interpretationOnly: true,
+    nonExecutive: true
+  });
+}
+
 /** @internal node:test */
 export function resetAuthorityLedgerWitnessStoreForTestV1() {
   subjectChainsV1.clear();

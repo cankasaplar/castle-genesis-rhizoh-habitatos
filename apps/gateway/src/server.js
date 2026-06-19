@@ -136,7 +136,11 @@ import { getTraceById, listTracesBySession } from "./infra/traceRegistry.js";
 import { canonicalEpistemicSealString, hashAndSignEpistemicSeal, EPISTEMIC_SEAL_SCHEMA } from "./epistemicSeal.js";
 import { persistEpistemicLedgerBatch } from "./epistemicLedgerStore.js";
 import { persistEpistemicForecastBatch } from "./epistemicForecastStore.js";
-import { persistAuthorityLedgerWitnessBatchV1 } from "./authorityLedgerWitnessStoreV1.js";
+import {
+  persistAuthorityLedgerWitnessBatchV1,
+  getAuthorityLedgerWitnessSnapshotV1,
+  replayAuthorityLedgerWitnessChainV1
+} from "./authorityLedgerWitnessStoreV1.js";
 import { buildRhizohExternalGroundTruthPayload } from "./rhizohExternalGroundTruthGateway.js";
 import { ingestRhizohExternalLossBatchHttp } from "./rhizohExternalLossIngestGateway.js";
 import {
@@ -871,7 +875,8 @@ const httpServer = createServer(async (req, res) => {
       routes: {
         seal: rhizohRuntime.routes.epistemicSeal,
         logsBatch: rhizohRuntime.routes.epistemicLogsBatch,
-        authorityLedgerBatch: rhizohRuntime.routes.authorityLedgerBatch
+        authorityLedgerBatch: rhizohRuntime.routes.authorityLedgerBatch,
+        authorityLedgerReplay: rhizohRuntime.routes.authorityLedgerReplay
       },
       hasGatewayToken: Boolean(REQUIRED_GATEWAY_TOKEN),
       gatewayTokenLen: REQUIRED_GATEWAY_TOKEN ? REQUIRED_GATEWAY_TOKEN.length : 0
@@ -3526,6 +3531,27 @@ const httpServer = createServer(async (req, res) => {
       });
     } catch (e) {
       sendJson(res, 400, { ok: false, error: String(e?.message || e || "authority_ledger_witness_failed") });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && pathname === rhizohRuntime.routes.authorityLedgerReplay) {
+    try {
+      const auth = await resolveEpistemicIngestActor(req);
+      if (!auth.ok) {
+        sendJson(res, 401, { ok: false, error: auth.reason || "auth_required" });
+        return;
+      }
+      const snapshot = getAuthorityLedgerWitnessSnapshotV1(auth.uid);
+      const replay = replayAuthorityLedgerWitnessChainV1(auth.uid);
+      sendJson(res, 200, {
+        ok: true,
+        snapshot,
+        replay,
+        schema: "castle.rhizoh.authority_ledger_witness.v1.replay_surface"
+      });
+    } catch (e) {
+      sendJson(res, 400, { ok: false, error: String(e?.message || e || "authority_ledger_replay_failed") });
     }
     return;
   }

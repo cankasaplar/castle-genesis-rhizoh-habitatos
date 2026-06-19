@@ -30,6 +30,7 @@ export function initRhizoh() {
     epistemicSeal: "/rhizoh/epistemic/seal",
     epistemicLogsBatch: "/rhizoh/epistemic/logs/batch",
     authorityLedgerBatch: "/rhizoh/authority/ledger/batch",
+    authorityLedgerReplay: "/rhizoh/authority/ledger/replay",
     rhizohLlm: "/rhizoh/llm"
   });
   const telemetry = {
@@ -82,6 +83,7 @@ export function initRhizoh() {
     epistemicSeal: "/rhizoh/epistemic/seal",
     epistemicLogsBatch: "/rhizoh/epistemic/logs/batch",
     authorityLedgerBatch: "/rhizoh/authority/ledger/batch",
+    authorityLedgerReplay: "/rhizoh/authority/ledger/replay",
     genesisRuntime: "/rhizoh/genesis/runtime",
     genesisStream: "/rhizoh/genesis/stream",
     genesisIngress: "/rhizoh/genesis/ingress",
