@@ -5,7 +5,7 @@ import {
   listMutationRecordsV0
 } from "../mutationRecordEmitterV0.js";
 import { TICKET_VALIDATION_DECISION_V0 } from "../ticketSecurityConstantsV0.js";
-import { buildTicketTransitionIntentV0, TICKET_TRANSITION_TYPE_V0 } from "../ticketTransitionIntentV0.js";
+import { buildTicketTransitionIntentV1, TICKET_TRANSITION_TYPE_V0 } from "../ticketTransitionIntentV1.js";
 
 describe("mutationRecordEmitterV0", () => {
   beforeEach(() => {
@@ -13,7 +13,7 @@ describe("mutationRecordEmitterV0", () => {
   });
 
   it("records accepted transitions", () => {
-    const intent = buildTicketTransitionIntentV0({
+    const intent = buildTicketTransitionIntentV1({
       transitionType: TICKET_TRANSITION_TYPE_V0.ARENA_ENTER,
       ticketId: "tkt_1",
       traceGraphLink: "edge_1"
@@ -29,12 +29,13 @@ describe("mutationRecordEmitterV0", () => {
     expect(record.decision).toBe("accepted");
     expect(record.validatorVersion).toBe("v1");
     expect(record.ticketId).toBe("tkt_1");
+    expect(record.intentId).toBe(intent.intentId);
     expect(record.interpretationOnly).toBe(true);
     expect(listMutationRecordsV0()).toHaveLength(1);
   });
 
   it("records rejected and quota_denied", () => {
-    const intent = buildTicketTransitionIntentV0({
+    const intent = buildTicketTransitionIntentV1({
       transitionType: TICKET_TRANSITION_TYPE_V0.INVITE_JOIN,
       ticketId: "tkt_2"
     });

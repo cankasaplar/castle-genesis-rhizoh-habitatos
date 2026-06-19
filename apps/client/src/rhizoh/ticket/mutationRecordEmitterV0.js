@@ -45,6 +45,7 @@ export function emitMutationRecordV0(input) {
     epochId: String(input.epochId || "rec_soft"),
     executionClass: String(input.validation?.executionClass || "read_only"),
     capabilityScope: String(input.ticket?.capabilityScope || ""),
+    intentId: String(input.intent?.intentId || ""),
     transitionId: String(input.intent?.transitionType || ""),
     cubeId: String(input.cubeId || input.ticket?.contextNodeCube || ""),
     valid: input.validation?.valid === true,

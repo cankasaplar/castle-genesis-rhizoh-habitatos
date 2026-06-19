@@ -1,24 +1,26 @@
 /**
- * Ticket Kernel Facade V0 — orchestrates validator + admission hook + mutation record.
+ * Ticket Kernel Facade V0 — orchestrates validator + admission + mutation record + defer queue.
  *
  * interpretationOnly · nonExecutive · no CubeState write; admission commit is external
- * @see docs/RHIZOH_SECURITY_BOUNDARY_V1.md
+ * @see docs/RHIZOH_REALITY_TRANSITION_ENGINE_V1.md
  */
 
 import { evaluateClosedAdmissionV0 } from "../ingress/closedUserAdmissionEngineV0.js";
 import { emitMutationRecordV0 } from "./mutationRecordEmitterV0.js";
-import { TICKET_VALIDATION_DECISION_V0 } from "./ticketSecurityConstantsV0.js";
+import { enqueueDeferredIntentV0 } from "./recDeferredIntentQueueV0.js";
+import { TICKET_REJECT_REASON_V0, TICKET_VALIDATION_DECISION_V0 } from "./ticketSecurityConstantsV0.js";
 import { validateTicketTransitionV0 } from "./ticketSecurityValidatorV0.js";
+import { registerActiveTicketV0 } from "./ticketTombstoneLayerV0.js";
 
 /**
- * @typedef {import('./ticketTransitionIntentV0.js').TicketTransitionIntentV0} TicketTransitionIntentV0
+ * @typedef {import('./ticketTransitionIntentV1.js').TicketTransitionIntentV1} TicketTransitionIntentV1
  * @typedef {import('./ticketSecurityValidatorV0.js').TicketPacketLikeV0} TicketPacketLikeV0
  * @typedef {import('./ticketSecurityValidatorV0.js').TicketTransitionActorV0} TicketTransitionActorV0
  */
 
 /**
  * @param {{
- *   intent: TicketTransitionIntentV0,
+ *   intent: TicketTransitionIntentV1,
  *   ticket: TicketPacketLikeV0,
  *   actor: TicketTransitionActorV0,
  *   epochWindow?: string,
@@ -27,10 +29,15 @@ import { validateTicketTransitionV0 } from "./ticketSecurityValidatorV0.js";
  *   temporalContract?: object | null,
  *   admissionSignals?: object,
  *   subjectRef?: string,
- *   skipAdmission?: boolean
+ *   skipAdmission?: boolean,
+ *   directTicketExecution?: boolean,
+ *   deferOnEpochClosed?: boolean,
+ *   targetRecEpoch?: string
  * }} input
  */
 export function submitTicketTransitionV0(input) {
+  registerActiveTicketV0(input.ticket.ticketId);
+
   let validation = validateTicketTransitionV0({
     intent: input.intent,
     ticket: input.ticket,
@@ -39,8 +46,32 @@ export function submitTicketTransitionV0(input) {
     executionClass: input.intent.executionClass,
     epochWindow: input.epochWindow ?? input.intent.epochWindow,
     nowMs: input.nowMs,
-    temporalContract: input.temporalContract
+    temporalContract: input.temporalContract,
+    directTicketExecution: input.directTicketExecution,
+    intentId: input.intent.intentId
   });
+
+  let deferredEntry = null;
+  if (
+    !validation.valid &&
+    input.deferOnEpochClosed === true &&
+    validation.reasons.includes(TICKET_REJECT_REASON_V0.EPOCH_CLOSED) &&
+    input.intent.intentId
+  ) {
+    deferredEntry = enqueueDeferredIntentV0({
+      intent: input.intent,
+      validation,
+      deferReason: TICKET_REJECT_REASON_V0.EPOCH_CLOSED,
+      targetRecEpoch: input.targetRecEpoch ?? input.intent.intentEpoch,
+      enqueuedAtMs: input.nowMs
+    });
+    validation = Object.freeze({
+      ...validation,
+      valid: false,
+      deferred: true,
+      decision: TICKET_VALIDATION_DECISION_V0.REJECTED
+    });
+  }
 
   let admission = null;
   if (
@@ -74,7 +105,7 @@ export function submitTicketTransitionV0(input) {
     intent: input.intent,
     ticket: input.ticket,
     actor: input.actor,
-    epochId: input.epochId,
+    epochId: input.epochId ?? input.intent.intentEpoch,
     cubeId: input.ticket.contextNodeCube,
     issuedAtMs: input.nowMs
   });
@@ -85,7 +116,13 @@ export function submitTicketTransitionV0(input) {
     validation,
     admission,
     mutationRecord,
+    deferredEntry,
     cubeStateCommit: false,
-    proposedCubeDelta: input.intent.proposedCubeDelta ?? null
+    proposedCubeDelta: input.intent.proposedCubeDelta ?? null,
+    auditChain: Object.freeze({
+      ticketId: input.ticket.ticketId,
+      intentId: input.intent.intentId,
+      mutationId: mutationRecord.mutationId
+    })
   });
 }

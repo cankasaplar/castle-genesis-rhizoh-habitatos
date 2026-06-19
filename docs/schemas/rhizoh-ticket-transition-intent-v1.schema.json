@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://castle.system/schemas/rhizoh-ticket-transition-intent-v1.schema.json",
+  "title": "RhizohTicketTransitionIntentV1",
+  "description": "RESEARCH-ONLY v1: SC-03 execution surface. All runtime execution must pass through Intent, not TicketPacket.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "intentId",
+    "transitionType",
+    "ticketId",
+    "executionClass",
+    "intentEpoch"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "intentId": { "type": "string", "minLength": 8, "maxLength": 256 },
+    "transitionType": {
+      "type": "string",
+      "enum": [
+        "invite_join",
+        "arena_enter",
+        "ghost_attach",
+        "flight_depart",
+        "corporate_admission",
+        "system_reconcile"
+      ]
+    },
+    "ticketId": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "sourceCube": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "targetCube": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "executionClass": {
+      "type": "string",
+      "enum": ["read_only", "suggest", "mutate_l1", "mutate_l2", "system_reconcile"]
+    },
+    "intentEpoch": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 64,
+      "description": "e.g. rec_2026_06_19_0644"
+    },
+    "epochWindow": {
+      "type": "string",
+      "enum": ["rec_core_morning", "rec_core_evening", "rec_soft", "rec_burst"]
+    },
+    "traceGraphLink": { "type": "string", "minLength": 8, "maxLength": 256 },
+    "continuityAnchor": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "directCubeMutation": { "type": "boolean" },
+    "proposedCubeDelta": { "type": "object", "additionalProperties": true }
+  }
+}

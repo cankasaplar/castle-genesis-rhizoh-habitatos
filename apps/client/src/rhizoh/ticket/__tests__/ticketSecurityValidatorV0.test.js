@@ -4,9 +4,9 @@ import { EPISTEMIC_PAST_V0 } from "../../runtime/continuity/replayCorruptionTaxo
 import {
   TICKET_EXECUTION_CLASS_V0,
   TICKET_EPOCH_WINDOW_V0,
-  TICKET_TRANSITION_TYPE_V0,
-  buildTicketTransitionIntentV0
+  TICKET_TRANSITION_TYPE_V0
 } from "../ticketTransitionIntentV0.js";
+import { buildTicketTransitionIntentV1 } from "../ticketTransitionIntentV1.js";
 import { TICKET_REJECT_REASON_V0, TICKET_VALIDATION_DECISION_V0 } from "../ticketSecurityConstantsV0.js";
 import { validateTicketTransitionV0 } from "../ticketSecurityValidatorV0.js";
 
@@ -37,7 +37,7 @@ function temporalContractOk() {
 
 describe("ticketSecurityValidatorV0", () => {
   it("accepts valid arena_enter mutate_l1 with signature", () => {
-    const intent = buildTicketTransitionIntentV0({
+    const intent = buildTicketTransitionIntentV1({
       transitionType: TICKET_TRANSITION_TYPE_V0.ARENA_ENTER,
       ticketId: "tkt_test_001",
       executionClass: TICKET_EXECUTION_CLASS_V0.MUTATE_L1,
@@ -58,7 +58,7 @@ describe("ticketSecurityValidatorV0", () => {
   });
 
   it("rejects quota exceeded", () => {
-    const intent = buildTicketTransitionIntentV0({
+    const intent = buildTicketTransitionIntentV1({
       transitionType: TICKET_TRANSITION_TYPE_V0.ARENA_ENTER,
       ticketId: "tkt_test_001",
       executionClass: TICKET_EXECUTION_CLASS_V0.MUTATE_L1,
@@ -78,7 +78,7 @@ describe("ticketSecurityValidatorV0", () => {
   });
 
   it("rejects expired ticket for mutate", () => {
-    const intent = buildTicketTransitionIntentV0({
+    const intent = buildTicketTransitionIntentV1({
       transitionType: TICKET_TRANSITION_TYPE_V0.ARENA_ENTER,
       ticketId: "tkt_test_001",
       executionClass: TICKET_EXECUTION_CLASS_V0.MUTATE_L1,
@@ -97,7 +97,7 @@ describe("ticketSecurityValidatorV0", () => {
   });
 
   it("allows read_only on expired ticket for journey restore", () => {
-    const intent = buildTicketTransitionIntentV0({
+    const intent = buildTicketTransitionIntentV1({
       transitionType: TICKET_TRANSITION_TYPE_V0.GHOST_ATTACH,
       ticketId: "tkt_test_001",
       executionClass: TICKET_EXECUTION_CLASS_V0.READ_ONLY,
@@ -114,7 +114,7 @@ describe("ticketSecurityValidatorV0", () => {
   });
 
   it("rejects suggest ticket attempting mutate (SC-02)", () => {
-    const intent = buildTicketTransitionIntentV0({
+    const intent = buildTicketTransitionIntentV1({
       transitionType: TICKET_TRANSITION_TYPE_V0.INVITE_JOIN,
       ticketId: "tkt_test_001",
       executionClass: TICKET_EXECUTION_CLASS_V0.MUTATE_L1,
@@ -133,7 +133,7 @@ describe("ticketSecurityValidatorV0", () => {
   });
 
   it("rejects system_reconcile direct CubeState write (SC-01)", () => {
-    const intent = buildTicketTransitionIntentV0({
+    const intent = buildTicketTransitionIntentV1({
       transitionType: TICKET_TRANSITION_TYPE_V0.SYSTEM_RECONCILE,
       ticketId: "tkt_test_001",
       executionClass: TICKET_EXECUTION_CLASS_V0.SYSTEM_RECONCILE,
@@ -152,7 +152,7 @@ describe("ticketSecurityValidatorV0", () => {
   });
 
   it("rejects orphan edge missing traceGraphLink", () => {
-    const intent = buildTicketTransitionIntentV0({
+    const intent = buildTicketTransitionIntentV1({
       transitionType: TICKET_TRANSITION_TYPE_V0.ARENA_ENTER,
       ticketId: "tkt_test_001",
       executionClass: TICKET_EXECUTION_CLASS_V0.MUTATE_L1
@@ -169,7 +169,7 @@ describe("ticketSecurityValidatorV0", () => {
   });
 
   it("rejects unsigned mutate_l1", () => {
-    const intent = buildTicketTransitionIntentV0({
+    const intent = buildTicketTransitionIntentV1({
       transitionType: TICKET_TRANSITION_TYPE_V0.ARENA_ENTER,
       ticketId: "tkt_test_001",
       executionClass: TICKET_EXECUTION_CLASS_V0.MUTATE_L1,
@@ -185,5 +185,47 @@ describe("ticketSecurityValidatorV0", () => {
     });
     expect(result.valid).toBe(false);
     expect(result.reasons).toContain(TICKET_REJECT_REASON_V0.UNSIGNED_MUTATE);
+  });
+
+  it("rejects direct TicketPacket execution (SC-03)", () => {
+    const intent = buildTicketTransitionIntentV1({
+      transitionType: TICKET_TRANSITION_TYPE_V0.ARENA_ENTER,
+      ticketId: "tkt_test_001",
+      executionClass: TICKET_EXECUTION_CLASS_V0.MUTATE_L1,
+      traceGraphLink: "edge_001",
+      continuityAnchor: "anchor_001"
+    });
+    const result = validateTicketTransitionV0({
+      intent,
+      ticket: baseTicket(),
+      actor: { actorId: "castle:a", userSigned: true },
+      directTicketExecution: true,
+      epochWindow: TICKET_EPOCH_WINDOW_V0.REC_BURST,
+      temporalContract: temporalContractOk()
+    });
+    expect(result.valid).toBe(false);
+    expect(result.reasons).toContain(TICKET_REJECT_REASON_V0.TICKET_PACKET_DIRECT_EXECUTION);
+  });
+
+  it("rejects mutate without intentId (SC-03)", () => {
+    const intent = buildTicketTransitionIntentV1({
+      transitionType: TICKET_TRANSITION_TYPE_V0.ARENA_ENTER,
+      ticketId: "tkt_test_001",
+      executionClass: TICKET_EXECUTION_CLASS_V0.MUTATE_L1,
+      traceGraphLink: "edge_001",
+      continuityAnchor: "anchor_001",
+      intentId: ""
+    });
+    const broken = { ...intent, intentId: "" };
+    const result = validateTicketTransitionV0({
+      intent: broken,
+      ticket: baseTicket(),
+      actor: { actorId: "castle:a", userSigned: true },
+      intentId: "",
+      epochWindow: TICKET_EPOCH_WINDOW_V0.REC_BURST,
+      temporalContract: temporalContractOk()
+    });
+    expect(result.valid).toBe(false);
+    expect(result.reasons).toContain(TICKET_REJECT_REASON_V0.INTENT_ID_REQUIRED);
   });
 });

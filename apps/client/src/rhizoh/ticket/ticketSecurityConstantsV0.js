@@ -25,7 +25,10 @@ export const TICKET_REJECT_REASON_V0 = Object.freeze({
   SYSTEM_RECONCILE_CUBE_WRITE_FORBIDDEN: "system_reconcile_cube_write_forbidden",
   SYSTEM_RECONCILE_OUTSIDE_CORE: "system_reconcile_outside_core",
   UNSIGNED_MUTATE: "unsigned_mutate",
-  DIRECT_CUBE_MUTATE_FORBIDDEN: "direct_cube_mutate_without_admission"
+  DIRECT_CUBE_MUTATE_FORBIDDEN: "direct_cube_mutate_without_admission",
+  TICKET_PACKET_DIRECT_EXECUTION: "ticket_packet_direct_execution",
+  INTENT_ID_REQUIRED: "intent_id_required",
+  TICKET_TOMBSTONED: "ticket_tombstoned"
 });
 
 /** Partial order rank for class comparison (higher = more authority). */
