@@ -24,7 +24,12 @@ export const CATEGORY_VISUAL_MAP_V0 = Object.freeze({
   [MUTATION_REASON_CATEGORY_V1.REC]: Object.freeze({ hueDeg: 280, geometry: "waveform_bands", label: "temporal_continuity" }),
   [MUTATION_REASON_CATEGORY_V1.SIG]: Object.freeze({ hueDeg: 45, geometry: "halo_rings", label: "trust_binding" }),
   [MUTATION_REASON_CATEGORY_V1.INTENT]: Object.freeze({ hueDeg: 120, geometry: "directed_edges", label: "intent_binding" }),
-  [MUTATION_REASON_CATEGORY_V1.ADMIT]: Object.freeze({ hueDeg: 180, geometry: "gate_brackets", label: "admission_gate" })
+  [MUTATION_REASON_CATEGORY_V1.ADMIT]: Object.freeze({ hueDeg: 180, geometry: "gate_brackets", label: "admission_gate" }),
+  [MUTATION_REASON_CATEGORY_V1.ENTROPY_DRIFT]: Object.freeze({
+    hueDeg: 300,
+    geometry: "particle_field",
+    label: "stochastic_entropy"
+  })
 });
 
 const REC_WAVEFORM_ANCHORS_V0 = Object.freeze({

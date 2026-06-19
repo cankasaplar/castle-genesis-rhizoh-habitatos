@@ -10,6 +10,7 @@ export const RHIZOH_DOMAIN_FABRIC_SCHEMA_V0 = "castle.rhizoh.domain_fabric.v0";
 
 export const DOMAIN_COVERAGE_V0 = Object.freeze({
   FULL_ACTIVE: "full_active",
+  EVENT_ACTIVE: "event_active",
   PASSIVE_STUB: "passive_stub",
   NOT_INSTANTIATED: "not_instantiated"
 });
@@ -54,9 +55,10 @@ const DOMAIN_REGISTRY_V0 = Object.freeze({
   [RHIZOH_UGL_GAME_TYPE_V0.SPORTS]: Object.freeze({
     domainId: "sports",
     gameType: RHIZOH_UGL_GAME_TYPE_V0.SPORTS,
-    coverage: DOMAIN_COVERAGE_V0.NOT_INSTANTIATED,
-    stateSchema: SPORT_SCOREBOARD_SCHEMA_V0,
-    stateRepr: "scoreboard_continuous",
+    coverage: DOMAIN_COVERAGE_V0.EVENT_ACTIVE,
+    causalSpaceId: "sports.causal.space",
+    stateSchema: "sports.event_stream.v0",
+    stateRepr: "event_dense_stochastic",
     actionTypes: Object.freeze([
       RHIZOH_UGL_ACTION_TYPE_V0.EVENT,
       RHIZOH_UGL_ACTION_TYPE_V0.PLAY,
@@ -65,7 +67,7 @@ const DOMAIN_REGISTRY_V0 = Object.freeze({
     ]),
     rewardSignals: Object.freeze(["outcome", "momentum", "entropy", "team_dynamics"]),
     adapterId: "rhizohUglSportsAdapterV0",
-    arenaId: null
+    arenaId: "sports_arena"
   })
 });
 
@@ -115,12 +117,16 @@ export function normalizeSportScoreboardV0(raw = {}) {
 
 export function getDomainFabricSnapshotV0() {
   const domains = listDomainDescriptorsV0();
+  const isActive = (d) =>
+    d.coverage === DOMAIN_COVERAGE_V0.FULL_ACTIVE ||
+    d.coverage === DOMAIN_COVERAGE_V0.EVENT_ACTIVE;
   return Object.freeze({
     schema: RHIZOH_DOMAIN_FABRIC_SCHEMA_V0,
     uglComplete: true,
-    domainComplete: domains.some((d) => d.coverage === DOMAIN_COVERAGE_V0.FULL_ACTIVE),
-    activeDomainCount: domains.filter((d) => d.coverage === DOMAIN_COVERAGE_V0.FULL_ACTIVE).length,
+    domainComplete: domains.filter(isActive).length >= 2,
+    activeDomainCount: domains.filter(isActive).length,
     domains,
+    causalSpaces: Object.freeze(["chess.causal.space", "sports.causal.space"]),
     interpretationOnly: true,
     nonExecutive: true
   });

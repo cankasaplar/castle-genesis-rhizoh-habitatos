@@ -14,15 +14,23 @@ import {
 import {
   bindCognitiveActionV0,
   CAL_INTERACTION_TYPE_V0,
-  exploreEpistemicInteractionV0
+  exploreEpistemicInteractionV0,
+  exploreEpistemicSpaceV0
 } from "./cognitiveActionLayerV0.js";
 import { listMutationRecordsV0 } from "./mutationRecordEmitterV0.js";
 import { runTicketMemoryPipelineV0 } from "./ticketMemoryPipelineV0.js";
-import { buildEpistemicViewportV0 } from "./cognitiveUxSpatialProjectionV0.js";
+import { buildMultiSpaceViewportV0 } from "./cognitiveUxSpatialProjectionV0.js";
 import { MUTATION_REASON_CATEGORY_V1 } from "./mutationReasonCodeOntologyV1.js";
+import { CAUSAL_SPACE_ID_V0 } from "../runtime/sportsCausalSpaceV0.js";
+import { getSportsDriftCategoryCountsV0 } from "../runtime/rhizohUglSportsAdapterV0.js";
+import {
+  ingestSportsMatchEventV0,
+  normalizeSportsMatchEventV0
+} from "../runtime/sportsEventAdapterV0.js";
 
 export const COGNITIVE_UX_SCHEMA_V0 = "castle.rhizoh.cognitive_ux.v0";
 export const COGNITIVE_UX_TRAVERSAL_EVENT_V0 = "rhizoh:cognitive-ux-traversal-v0";
+export const COGNITIVE_UX_SPACE_TRAVERSAL_EVENT_V0 = "rhizoh:cognitive-ux-space-traversal-v0";
 
 /**
  * @param {string} nodeId
@@ -121,10 +129,56 @@ export function onUserTraverseV0(input) {
 }
 
 /**
+ * Space-level traversal — CAL multiplexing across causal spaces.
+ * @param {{
+ *   spaceId: string,
+ *   nodeId?: string,
+ *   matchId?: string,
+ *   mode?: string,
+ *   lineageDepth?: number,
+ *   dispatchEvent?: boolean
+ * }} input
+ */
+export function onUserTraverseSpaceV0(input) {
+  const mode = String(input.mode || "read_only");
+  if (mode !== "read_only") {
+    throw new Error("CAL-01: space traversal mode must be read_only");
+  }
+
+  const exploration = exploreEpistemicSpaceV0({
+    spaceId: input.spaceId,
+    nodeId: input.nodeId,
+    matchId: input.matchId || input.nodeId,
+    lineageDepth: input.lineageDepth ?? 50
+  });
+
+  const packet = Object.freeze({
+    schema: COGNITIVE_UX_SCHEMA_V0,
+    eventKind: "cognitive:space-traversal",
+    spaceId: input.spaceId,
+    nodeId: input.nodeId,
+    matchId: input.matchId || input.nodeId,
+    mode,
+    exploration,
+    executionClass: "read_only",
+    causallyInert: true,
+    interpretationOnly: true,
+    nonExecutive: true
+  });
+
+  if (input.dispatchEvent !== false && typeof globalThis !== "undefined" && globalThis.dispatchEvent) {
+    globalThis.dispatchEvent(new CustomEvent(COGNITIVE_UX_SPACE_TRAVERSAL_EVENT_V0, { detail: packet }));
+  }
+
+  return packet;
+}
+
+/**
  * @param {{
  *   pipeline: object,
  *   interaction?: object | null,
- *   dispatchEvents?: boolean
+ *   dispatchEvents?: boolean,
+ *   matchId?: string
  * }} input
  */
 export function bindCognitiveUxV0(input) {
@@ -148,7 +202,9 @@ export function bindCognitiveUxV0(input) {
       })
     : null;
 
-  const viewport = buildEpistemicViewportV0(binding);
+  const viewport = buildMultiSpaceViewportV0(binding, {
+    sportsDriftCategories: getSportsDriftCategoryCountsV0(input.matchId || "")
+  });
   const cnrGuard = assertCnrTripleSeparationV0({
     cognitiveBinding: binding,
     cognitiveAction,
@@ -207,8 +263,10 @@ export function buildCognitiveUxSnapshotV0(input = {}) {
     cux,
     eventChannels: Object.freeze({
       perception: EPISTEMIC_UI_EVENT_V0,
-      traversal: COGNITIVE_UX_TRAVERSAL_EVENT_V0
+      traversal: COGNITIVE_UX_TRAVERSAL_EVENT_V0,
+      spaceTraversal: COGNITIVE_UX_SPACE_TRAVERSAL_EVENT_V0
     }),
+    causalSpaces: Object.freeze([CAUSAL_SPACE_ID_V0.CHESS, CAUSAL_SPACE_ID_V0.SPORTS]),
     atMs: Date.now(),
     interpretationOnly: true,
     nonExecutive: true
@@ -234,6 +292,19 @@ export function ensureCognitiveUxV0() {
   if (!window.__rhizoh.cognitiveUxTraverse) {
     window.__rhizoh.cognitiveUxTraverse = (nodeId, opts) =>
       onUserTraverseV0({ nodeId, ...(opts || {}) });
+  }
+  if (!window.__rhizoh.traverseSpace) {
+    window.__rhizoh.traverseSpace = (spaceId, nodeIdOrMatchId, opts) =>
+      onUserTraverseSpaceV0({
+        spaceId,
+        nodeId: nodeIdOrMatchId,
+        matchId: nodeIdOrMatchId,
+        ...(opts || {})
+      });
+  }
+  if (!window.__rhizoh.ingestSportsEvent) {
+    window.__rhizoh.ingestSportsEvent = (raw) =>
+      ingestSportsMatchEventV0(normalizeSportsMatchEventV0(raw));
   }
   if (!window.__rhizoh.cognitiveUxEnabled) {
     window.__rhizoh.cognitiveUxEnabled = () => isCognitiveUxEnabledV0();

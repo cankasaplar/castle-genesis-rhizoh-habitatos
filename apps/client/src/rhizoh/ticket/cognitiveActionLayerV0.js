@@ -12,6 +12,12 @@ import { listAdmissionCommitsV0 } from "./admissionCubeCommitV0.js";
 import { listMutationRecordsV0 } from "./mutationRecordEmitterV0.js";
 import { listPendingCompressionQueueV0, listRecCycleHistoryV0 } from "./recTombstoneQueueV0.js";
 import { assertDriftOutputGuardsV0, assertDriftSuggestionDr02V0 } from "./driftSuggestionGuardsV0.js";
+import {
+  CAUSAL_SPACE_ID_V0,
+  readSportsSpaceEventsV0,
+  resolveCausalSpaceV0
+} from "../runtime/sportsCausalSpaceV0.js";
+import { aggregateSportsDriftCategoriesV0 } from "../runtime/sportsDriftMapperV0.js";
 
 export const COGNITIVE_ACTION_SCHEMA_V0 = "castle.rhizoh.cognitive_action.v0";
 export const EPISTEMIC_EXPLORATION_SCHEMA_V0 = "castle.rhizoh.epistemic_exploration.v0";
@@ -20,7 +26,8 @@ export const CAL_INTERACTION_TYPE_V0 = Object.freeze({
   CATEGORY_SPIKE_CLICK: "category_spike_click",
   ALERT_PACKET_CLICK: "alert_packet_click",
   REC_EPOCH_CLICK: "rec_epoch_click",
-  AUDIT_CHAIN_CLICK: "audit_chain_click"
+  AUDIT_CHAIN_CLICK: "audit_chain_click",
+  SPACE_TRAVERSE: "space_traverse"
 });
 
 /**
@@ -215,6 +222,85 @@ export function exploreEpistemicInteractionV0(input) {
 }
 
 /**
+ * Space-level traversal — user moves between causal reality types (CAL multiplexing).
+ * @param {{
+ *   spaceId: string,
+ *   nodeId?: string,
+ *   matchId?: string,
+ *   lineageDepth?: number,
+ *   records?: object[],
+ *   alerts?: object[]
+ * }} input
+ */
+export function exploreEpistemicSpaceV0(input) {
+  const spaceId = String(input.spaceId || CAUSAL_SPACE_ID_V0.CHESS);
+  const space = resolveCausalSpaceV0(spaceId);
+  const matchId = String(input.matchId || input.nodeId || "");
+
+  let sportsEventLineage = Object.freeze([]);
+  let sportsDriftCategories = Object.freeze({});
+
+  if (spaceId === CAUSAL_SPACE_ID_V0.SPORTS && matchId) {
+    const events = readSportsSpaceEventsV0(matchId, input.lineageDepth ?? 50);
+    sportsEventLineage = Object.freeze(
+      events.map((ev) =>
+        Object.freeze({
+          eventType: ev.eventType,
+          matchId: ev.matchId,
+          actorId: ev.actorId,
+          atMs: ev.atMs
+        })
+      )
+    );
+    sportsDriftCategories = aggregateSportsDriftCategoriesV0(events);
+  }
+
+  const nodeExploration =
+    input.nodeId && spaceId === CAUSAL_SPACE_ID_V0.CHESS
+      ? exploreEpistemicInteractionV0({
+          interactionType: CAL_INTERACTION_TYPE_V0.CATEGORY_SPIKE_CLICK,
+          targetCategory: input.nodeId.includes(":") ? input.nodeId.split(":")[1] : input.nodeId,
+          records: input.records ?? listMutationRecordsV0(input.lineageDepth ?? 50),
+          alerts: input.alerts
+        })
+      : input.nodeId && spaceId === CAUSAL_SPACE_ID_V0.SPORTS
+        ? exploreEpistemicInteractionV0({
+            interactionType: CAL_INTERACTION_TYPE_V0.CATEGORY_SPIKE_CLICK,
+            targetCategory: "ENTROPY_DRIFT",
+            records: input.records ?? listMutationRecordsV0(input.lineageDepth ?? 50),
+            alerts: input.alerts
+          })
+        : null;
+
+  const packet = Object.freeze({
+    schema: EPISTEMIC_EXPLORATION_SCHEMA_V0,
+    interactionType: CAL_INTERACTION_TYPE_V0.SPACE_TRAVERSE,
+    spaceId,
+    space,
+    matchId: matchId || undefined,
+    executionClass: "read_only",
+    causallyInert: true,
+    sportsEventLineage,
+    sportsDriftCategories,
+    nodeExploration,
+    traversalMode: "space_level",
+    stateProposal: Object.freeze({
+      kind: "space_exploration_view",
+      summary: `causal_space_${spaceId.replace(/\./g, "_")}`,
+      spaceId,
+      executionClass: "read_only"
+    }),
+    interpretationOnly: true,
+    nonExecutive: true
+  });
+
+  const guard = assertCognitiveActionCaInertV0(packet);
+  if (!guard.ok) throw new Error(guard.message);
+
+  return packet;
+}
+
+/**
  * @param {{
  *   interaction: object,
  *   pipeline?: object
@@ -222,11 +308,22 @@ export function exploreEpistemicInteractionV0(input) {
  */
 export function bindCognitiveActionV0(input) {
   const p = input.pipeline || {};
-  const exploration = exploreEpistemicInteractionV0({
-    ...input.interaction,
-    records: p.index ? listMutationRecordsV0(200) : input.interaction.records,
-    alerts: p.anomalies?.alerts
-  });
+  const interaction = input.interaction || {};
+
+  const exploration =
+    interaction.interactionType === CAL_INTERACTION_TYPE_V0.SPACE_TRAVERSE
+      ? exploreEpistemicSpaceV0({
+          spaceId: interaction.spaceId,
+          nodeId: interaction.nodeId,
+          matchId: interaction.matchId,
+          records: p.index ? listMutationRecordsV0(200) : interaction.records,
+          alerts: p.anomalies?.alerts
+        })
+      : exploreEpistemicInteractionV0({
+          ...interaction,
+          records: p.index ? listMutationRecordsV0(200) : interaction.records,
+          alerts: p.anomalies?.alerts
+        });
 
   return Object.freeze({
     schema: COGNITIVE_ACTION_SCHEMA_V0,

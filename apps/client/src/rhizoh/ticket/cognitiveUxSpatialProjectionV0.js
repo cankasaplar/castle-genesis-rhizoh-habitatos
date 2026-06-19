@@ -72,6 +72,16 @@ function buildGeometryPathsV0(geometry, cx, cy, radius, intensity01) {
     const h = r * 0.8;
     paths.push(`M ${cx - w} ${cy - h} L ${cx - w * 0.5} ${cy - h} L ${cx - w * 0.5} ${cy + h} L ${cx - w} ${cy + h}`);
     paths.push(`M ${cx + w} ${cy - h} L ${cx + w * 0.5} ${cy - h} L ${cx + w * 0.5} ${cy + h} L ${cx + w} ${cy + h}`);
+  } else if (geometry === "particle_field") {
+    const particles = 14;
+    for (let i = 0; i < particles; i += 1) {
+      const a = (i / particles) * TAU + intensity01;
+      const dist = r * (0.2 + ((i * 5) % 7) / 10);
+      const px = cx + Math.cos(a) * dist;
+      const py = cy + Math.sin(a * 1.3) * dist * 0.85;
+      const pr = 1.2 + (i % 3) * 0.6;
+      paths.push(`M ${px} ${py} m -${pr} 0 a ${pr} ${pr} 0 1 0 ${pr * 2} 0 a ${pr} ${pr} 0 1 0 -${pr * 2} 0`);
+    }
   } else {
     paths.push(`M ${cx} ${cy} m -${r * 0.2} 0 a ${r * 0.2} ${r * 0.2} 0 1 0 ${r * 0.4} 0 a ${r * 0.2} ${r * 0.2} 0 1 0 -${r * 0.4} 0`);
   }
@@ -179,6 +189,68 @@ export function projectScSpikeViewportV0(densityField) {
     schema: COGNITIVE_UX_SPATIAL_SCHEMA_V0,
     kind: "sc_spike_viewport",
     layer: projected,
+    interpretationOnly: true,
+    nonExecutive: true
+  });
+}
+
+/**
+ * @param {Record<string, number>} categoryCounts
+ */
+export function projectStochasticFieldViewportV0(categoryCounts = {}) {
+  const entries = Object.entries(categoryCounts);
+  const total = entries.reduce((s, [, c]) => s + c, 0) || 1;
+  const layers = entries.map(([category, count], i) =>
+    projectDensityLayerV0(
+      {
+        category,
+        share01: count / total,
+        visual: {
+          geometry: category === "ENTROPY_DRIFT" ? "particle_field" : "halo_rings",
+          hueDeg: category === "ENTROPY_DRIFT" ? 300 : 260,
+          intensity01: count / total
+        }
+      },
+      { cx: 25 + (i % 2) * 50, cy: 40 + Math.floor(i / 2) * 25, radius: 22 }
+    )
+  );
+
+  return Object.freeze({
+    schema: COGNITIVE_UX_SPATIAL_SCHEMA_V0,
+    kind: "stochastic_field_viewport",
+    spaceId: "sports.causal.space",
+    layers: Object.freeze(layers),
+    interpretationOnly: true,
+    nonExecutive: true
+  });
+}
+
+/**
+ * @param {object} binding
+ * @param {{ sportsDriftCategories?: Record<string, number> }} [opts]
+ */
+export function buildMultiSpaceViewportV0(binding, opts = {}) {
+  const chessViewport = buildEpistemicViewportV0(binding);
+  const sportsField = projectStochasticFieldViewportV0(opts.sportsDriftCategories || {});
+
+  return Object.freeze({
+    schema: COGNITIVE_UX_SPATIAL_SCHEMA_V0,
+    kind: "multi_space_viewport",
+    chess: Object.freeze({
+      spaceId: "chess.causal.space",
+      projection: "deterministic_field",
+      viewport: chessViewport
+    }),
+    sports: Object.freeze({
+      spaceId: "sports.causal.space",
+      projection: "stochastic_field",
+      viewport: sportsField
+    }),
+    hybridOverlap: Object.freeze({
+      kind: "drift_overlap_zone",
+      note: "deterministic chess field + stochastic sports entropy overlay",
+      interpretationOnly: true
+    }),
     interpretationOnly: true,
     nonExecutive: true
   });

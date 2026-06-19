@@ -19,7 +19,7 @@ describe("rhizohDomainFabricV0", () => {
     const snap = getDomainFabricSnapshotV0();
     expect(snap.uglComplete).toBe(true);
     expect(snap.domainComplete).toBe(true);
-    expect(snap.activeDomainCount).toBe(1);
+    expect(snap.activeDomainCount).toBe(2);
 
     const chess = resolveDomainDescriptorV0(RHIZOH_UGL_GAME_TYPE_V0.CHESS);
     expect(chess.coverage).toBe(DOMAIN_COVERAGE_V0.FULL_ACTIVE);
@@ -28,7 +28,8 @@ describe("rhizohDomainFabricV0", () => {
     expect(go.coverage).toBe(DOMAIN_COVERAGE_V0.PASSIVE_STUB);
 
     const sports = resolveDomainDescriptorV0(RHIZOH_UGL_GAME_TYPE_V0.SPORTS);
-    expect(sports.coverage).toBe(DOMAIN_COVERAGE_V0.NOT_INSTANTIATED);
+    expect(sports.coverage).toBe(DOMAIN_COVERAGE_V0.EVENT_ACTIVE);
+    expect(sports.causalSpaceId).toBe("sports.causal.space");
     expect(sports.actionTypes).toContain("score_delta");
   });
 
@@ -58,13 +59,14 @@ describe("rhizohArenaRouterV0", () => {
     expect(route.adapterId).toBe("rhizohUglChessAdapterV0");
   });
 
-  it("does not route sports to active execution", () => {
+  it("routes sports UGL events with EVENT_ACTIVE coverage", () => {
     const route = routeUglEventV0({
       meta: { gameType: RHIZOH_UGL_GAME_TYPE_V0.SPORTS, causalChainId: "ugl_sports_1" }
     });
     expect(route.domainId).toBe("sports");
-    expect(route.routable).toBe(false);
-    expect(route.coverage).toBe(DOMAIN_COVERAGE_V0.NOT_INSTANTIATED);
+    expect(route.routable).toBe(true);
+    expect(route.coverage).toBe(DOMAIN_COVERAGE_V0.EVENT_ACTIVE);
+    expect(route.executionClass).toBe("suggest");
   });
 
   it("resolveArenaForGameTypeV0 returns adapter for chess", () => {
