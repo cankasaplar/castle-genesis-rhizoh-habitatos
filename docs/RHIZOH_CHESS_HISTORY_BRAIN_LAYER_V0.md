@@ -69,6 +69,7 @@ ENGINE BEHAVIOR UPDATE (inference only)
 
 - `chessUnifiedMemoryGraphV0.js` — single notebook: PositionNode / MoveEdge / EvalEdge / WeightUpdateEdge
 - `chessUnifiedGraphProjectorV0.js` — project corpus + live + learning into graph
+- [**UGL v1**](RHIZOH_UGL_V1.md) — semantic compiler: StateEncoder / ActionSpace / RewardModel / play-learn scheduler (`RESEARCH-ONLY`)
 - `chessHistoryCorpusBundlesV0.js` — GM expansion, engine league, opening tree, tactical motifs
 - `chessCorpusExpansionLoaderV0.js` — idempotent bundle load
 - `chessStyleEmbeddingV0.js` — lightweight style vectors from corpus exposure

@@ -21,6 +21,7 @@ import {
   SIM_STORE_META_V0
 } from "../../storage/rhizohSimulationDbV0.js";
 import { getChessEngineContentionSnapshotV0 } from "./chessEngineContentionGateV0.js";
+import { readChessUnifiedMemoryGraphV0 } from "./chessUnifiedMemoryGraphV0.js";
 
 export const RHIZOH_CHESS_EVOLUTION_CURVE_SCHEMA_V0 = "castle.rhizoh.chess_evolution_curve.v0";
 export const RHIZOH_CHESS_EVOLUTION_CURVE_LS_KEY_V0 = "rhizoh.chess.evolution_curve.v0";
@@ -139,6 +140,35 @@ export function recordChessEvolutionPointV0(opts = {}) {
   return point;
 }
 
+function resolvePerformanceDeltaV0(current, previous) {
+  if (!previous) {
+    return Object.freeze({
+      graphVersionChanged: false,
+      weightFingerprintChanged: false,
+      predictionAccuracyDelta: null,
+      stockfishAgreementDelta: null,
+      matchesLearnedDelta: null,
+      note: "no prior curve point"
+    });
+  }
+  const accNow = current.predictionAccuracy;
+  const accPrev = previous.predictionAccuracy;
+  const agreeNow = current.stockfishAgreement;
+  const agreePrev = previous.stockfishAgreement;
+  return Object.freeze({
+    graphVersionChanged: Number(current.graphVersion) !== Number(previous.graphVersion),
+    weightFingerprintChanged: current.weightFingerprint !== previous.weightFingerprint,
+    predictionAccuracyDelta:
+      accNow != null && accPrev != null ? Number((accNow - accPrev).toFixed(4)) : null,
+    stockfishAgreementDelta:
+      agreeNow != null && agreePrev != null ? Number((agreeNow - agreePrev).toFixed(4)) : null,
+    matchesLearnedDelta:
+      Number(current.matchesLearned || 0) - Number(previous.matchesLearned || 0),
+    uglGraphVersion: readChessUnifiedMemoryGraphV0().graphVersion,
+    note: "graphVersion 2+ performance delta — session vs prior curve point"
+  });
+}
+
 /**
  * Build unified evolution curve report.
  */
@@ -149,12 +179,15 @@ export async function buildRhizohChessEvolutionCurveV0() {
 
   const ring = readCurveRingV0();
   const curve = Object.freeze(ring.map((p) => Object.freeze({ ...p })));
+  const previousPoint = curve.length > 0 ? curve[curve.length - 1] : null;
+  const performanceDelta = resolvePerformanceDeltaV0(current, previousPoint);
 
   const report = Object.freeze({
     schema: RHIZOH_CHESS_EVOLUTION_CURVE_SCHEMA_V0,
     current,
     curve,
     curvePoints: curve.length,
+    performanceDelta,
     trends: Object.freeze({
       lifetimeMoves7d: resolveTrendPctV0(
         ring.filter((p) => Date.now() - Number(p.atMs) < 7 * 86400000),

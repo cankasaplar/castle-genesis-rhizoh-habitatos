@@ -12,6 +12,7 @@ import { writeChessClusterMemoryNodeV0 } from "./chessClusterMemoryGraphV0.js";
 import { resolveChessClusterSlotModeV0 } from "./chessClusterSlotModesV0.js";
 import { maybeEnqueueEpistemicCouncilV0 } from "./rhizohEpistemicCouncilV0.js";
 import { isChessEngineContendedV0 } from "./chessEngineContentionGateV0.js";
+import { scheduleUglLearnTaskV0 } from "./rhizohUglMatchSchedulerV0.js";
 
 export const CHESS_CLUSTER_LEARNING_TRACE_SCHEMA_V0 =
   "castle.rhizoh.chess_cluster_learning_trace.v0";
@@ -33,11 +34,15 @@ export async function traceChessClusterPolicyDiffV0(slot, moveRow, fenBefore) {
   lastMultiPvTraceAtMsV0 = now;
 
   const mode = resolveChessClusterSlotModeV0(slot.slotId);
-  const multi = await analyzeChessPositionMultiPvV0(fenBefore, {
-    multiPv: 8,
-    movetimeMs: 420,
-    depth: 10
-  });
+  const multi = await scheduleUglLearnTaskV0(
+    () =>
+      analyzeChessPositionMultiPvV0(fenBefore, {
+        multiPv: 8,
+        movetimeMs: 420,
+        depth: 10
+      }),
+    { label: `policy_diff_slot_${slot.slotId}` }
+  );
   if (!multi?.lines?.length) return null;
 
   const played = String(moveRow.uci || "");
