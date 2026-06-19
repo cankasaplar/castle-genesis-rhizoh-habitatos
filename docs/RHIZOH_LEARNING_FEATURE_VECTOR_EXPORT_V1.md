@@ -12,6 +12,16 @@
 
 > **Feature vectors describe observation substrate — they do not authorize mutation.**
 
+Rhizoh transforms **events → semantic embedding → learning vector** (not classic event log + analytics).
+
+```text
+MutationRecord
+  → live index (category counters)
+  → drift / AlertPacket
+  → exportLearningFeatureVectorV0
+  → semantic_category_embedding_v0
+```
+
 ---
 
 ## 1. Vector fields

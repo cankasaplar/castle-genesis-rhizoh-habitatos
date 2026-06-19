@@ -14,16 +14,28 @@ describe("driftAnomalyDetectorV0", () => {
     clearAnomalyDetectorStateForTestV0();
   });
 
-  it("builds suggest-only AlertPacket", () => {
+  it("builds suggest-only AlertPacket with DR-02 category language", () => {
     const packet = buildAlertPacketV0({
       category: MUTATION_REASON_CATEGORY_V1.SC,
       severity: ANOMALY_SEVERITY_V0.MEDIUM,
-      suggestion: "review_admission_policy",
-      confidence: 0.73
+      suggestion: "sc_frequency_increased",
+      confidence: 0.73,
+      deltaHint: { category: "SC", shareDelta01: 0.2, countDelta: 6 }
     });
     expect(packet.type).toBe(DRIFT_ANOMALY_TYPE_V0);
     expect(packet.executionClass).toBe("suggest");
-    expect(packet.confidence).toBeCloseTo(0.73, 2);
+    expect(packet.suggestion).toBe("sc_frequency_increased");
+    expect(packet.deltaHint?.shareDelta01).toBeCloseTo(0.2, 2);
+  });
+
+  it("rejects DR-02 violating suggestion text", () => {
+    expect(() =>
+      buildAlertPacketV0({
+        category: MUTATION_REASON_CATEGORY_V1.SC,
+        suggestion: "user castle:u1 should be blocked",
+        confidence: 0.5
+      })
+    ).toThrow(/DR-02/);
   });
 
   it("requires all 3 layers for alert eligibility", () => {
@@ -78,6 +90,8 @@ describe("driftAnomalyDetectorV0", () => {
     });
     expect(out.alerts.length).toBeGreaterThan(0);
     expect(out.alerts[0].executionClass).toBe("suggest");
+    expect(out.alerts[0].suggestion).toBe("sc_frequency_increased");
     expect(out.dr01Enforced).toBe(true);
+    expect(out.dr02Enforced).toBe(true);
   });
 });

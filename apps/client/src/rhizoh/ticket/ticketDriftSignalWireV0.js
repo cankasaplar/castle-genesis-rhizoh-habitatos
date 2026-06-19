@@ -6,6 +6,7 @@
  */
 
 import { DRIFT_SUGGESTION_SCHEMA_V0 } from "./driftAnalyticsEngineV0.js";
+import { assertDriftOutputGuardsV0 } from "./driftSuggestionGuardsV0.js";
 
 export const RHIZOH_TICKET_SIGNAL_EVENT_V0 = "rhizoh:ticket-signal-v0";
 export const TICKET_NERVOUS_MESSAGE_SCHEMA_V0 = "castle.rhizoh.ticket_message.v1";
@@ -24,9 +25,7 @@ const signalInboxV0 = [];
  */
 export function buildNervousSignalMessageV0(input) {
   const suggestion = input.suggestion;
-  if (suggestion?.executionClass && suggestion.executionClass !== "suggest") {
-    throw new Error("DR-01: nervous Signal bucket accepts suggest class only");
-  }
+  assertDriftOutputGuardsV0(suggestion);
 
   return Object.freeze({
     schemaVersion: 1,
@@ -89,6 +88,29 @@ export function wireDriftSuggestionsToNervousNetworkV0(input) {
     count: messages.length,
     interpretationOnly: true,
     nonExecutive: true
+  });
+}
+
+/**
+ * Wire AlertPackets to nervous network Signal bucket (DR-01 + DR-02).
+ * @param {{ alerts: object[], dispatchEvent?: boolean }} input
+ */
+export function wireAlertPacketsToNervousNetworkV0(input) {
+  const suggestions = (input.alerts || []).map((a) =>
+    Object.freeze({
+      suggestionId: a.alertId,
+      suggestion: a.suggestion,
+      confidence: a.confidence,
+      executionClass: "suggest",
+      invariantAtRisk: a.category,
+      basedOn: a.type,
+      deltaHint: a.deltaHint
+    })
+  );
+
+  return wireDriftSuggestionsToNervousNetworkV0({
+    suggestions,
+    dispatchEvent: input.dispatchEvent
   });
 }
 

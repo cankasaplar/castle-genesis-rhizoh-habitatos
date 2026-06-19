@@ -10,7 +10,19 @@
 
 ## 0. SSOT sentence
 
-> **AlertPacket = suggestion-only event. Never mutation trigger. Never auto-reconcile input.**
+> **AlertPacket = suggestion-only event. Never mutation trigger. Never auto-reconcile input. Never user/cube-specific prescription (DR-02).**
+
+---
+
+## 1.1 Invariant DR-02
+
+| Allowed | Forbidden |
+|---------|-----------|
+| `sc_frequency_increased` | `user X should be blocked` |
+| `quota_stress_detected` | `cube rank should decrease` |
+| `deltaHint.shareDelta01` | `targetUserId`, `proposedMutation` |
+
+**Code:** `driftSuggestionGuardsV0.assertDriftSuggestionDr02V0()`
 
 ---
 
@@ -33,7 +45,8 @@ Only when **all three** pass → `AlertPacket` emitted.
   "type": "DRIFT_ANOMALY",
   "severity": "medium",
   "category": "SC",
-  "suggestion": "review_admission_policy_and_permission_boundaries",
+  "suggestion": "sc_frequency_increased",
+  "deltaHint": { "category": "SC", "shareDelta01": 0.22, "countDelta": 6 },
   "confidence": 0.73,
   "executionClass": "suggest"
 }
