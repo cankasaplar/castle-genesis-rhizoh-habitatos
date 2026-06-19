@@ -8,7 +8,6 @@ import { buildUglEventV0, appendUglEventV0 } from "./rhizohUglEventV0.js";
 import { encodeUglActionV0 } from "./rhizohUglActionSpaceV0.js";
 import { notifySportsArenaActivityV0, runMultiArenaTickV0 } from "./multiArenaSchedulerV0.js";
 import { ingestSpaceDriftSignalV0 } from "./crossSpaceRecReconciliationV0.js";
-import { deriveSportsDriftSignalsV0 } from "./sportsDriftMapperV0.js";
 import { RHIZOH_UGL_GAME_TYPE_V0, RHIZOH_UGL_ACTION_TYPE_V0 } from "./rhizohUglSchemaV0.js";
 import { appendSportsSpaceEventV0, CAUSAL_SPACE_ID_V0 } from "./sportsCausalSpaceV0.js";
 import {
