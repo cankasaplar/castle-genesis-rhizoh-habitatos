@@ -95,6 +95,20 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 
 ## Günlük
 
+### 2026-06-19 — DR-02 Suggestion Isolation + epistemic visualization scaffold
+
+**Summary:**
+- Invariant DR-02: AlertPacket/suggestions reference categories and deltas only — never user/cube mutations.
+- `driftSuggestionGuardsV0`: `assertDriftSuggestionDr02V0()` + shared DR-01/DR-02 enforcement.
+- AlertPacket suggestions reframed: `sc_frequency_increased`, `quota_stress_detected` + `deltaHint`.
+- `learningFeatureVectorExportV0`: semantic embedding substrate (event → embedding → vector).
+- `RHIZOH_EPISTEMIC_VISUALIZATION_LAYER_V1.md` — UI as perception projection, not execution shortcut.
+- 51 ticket-module tests passing.
+
+- **SPECFLOW:** RESEARCH-ONLY · FUTURE-PROOF-ONLY
+- **Karar özeti:** Truth / Memory / Interpretation üçlüsü korunuyor; UI = epistemic visualization layer.
+- **Frozen core:** dokunulmadı
+
 ### 2026-06-19 — Hybrid live index + REC-deferred tombstone
 
 **Summary:**

@@ -1,7 +1,9 @@
 /**
- * Learning Feature Vector Export V0 — RESEARCH-ONLY substrate for downstream learning.
+ * Learning Feature Vector Export V0 — RESEARCH-ONLY semantic embedding substrate.
  *
- * Exports read-only feature vectors from mutation ledger + live index + drift.
+ * Drift → Feature Space transformation point:
+ *   event → semantic embedding → learning vector
+ *
  * Never writes CubeState, admission, or trace truth.
  * @see docs/RHIZOH_LEARNING_FEATURE_VECTOR_EXPORT_V1.md
  */
@@ -58,6 +60,16 @@ export function exportLearningFeatureVectorV0(input) {
 
   return Object.freeze({
     schema: LEARNING_FEATURE_VECTOR_SCHEMA_V0,
+    embedding: Object.freeze({
+      kind: "semantic_category_embedding_v0",
+      dimensions: Object.freeze([
+        "reasonCategoryShares",
+        "driftSeverity01",
+        "epochTrend",
+        "acceptanceRatio01",
+        "permissionStress01"
+      ])
+    }),
     vector: Object.freeze({
       reasonCategoryShares: Object.freeze({ ...categoryShares }),
       driftSeverity01: maxDriftSeverity,

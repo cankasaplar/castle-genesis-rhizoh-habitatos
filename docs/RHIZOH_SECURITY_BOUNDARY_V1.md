@@ -225,6 +225,24 @@ See [`RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md`](RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md)
 
 ---
 
+### Invariant DR-02 — Suggestion isolation
+
+AlertPacket and drift suggestions SHALL NOT reference specific CubeState mutations, users, or cube targets.
+
+| Allowed | Forbidden |
+|---------|-----------|
+| Category + delta language (`sc_frequency_increased`) | `user X should be blocked` |
+| `deltaHint` with share/count deltas | `cube rank should decrease` |
+| Invariant category references (`SC`, `QUOTA`) | `proposedMutation`, `targetUserId`, `targetCubeId` |
+
+**Failure mode:** interpretation layer prescribes execution — soft authority creep into admission.
+
+**Code enforcement:** `driftSuggestionGuardsV0` — `assertDriftSuggestionDr02V0()`; `buildAlertPacketV0()` guarded.
+
+See [`RHIZOH_DRIFT_ANOMALY_DETECTOR_V1.md`](RHIZOH_DRIFT_ANOMALY_DETECTOR_V1.md).
+
+---
+
 Every `CubeState` commit MUST originate from **one of**:
 
 1. **User-signed ticket** (`mutate_l1` / `mutate_l2` with valid signature)  
@@ -403,6 +421,7 @@ ISSUE ──▶ ACTIVE ──▶ CONSUMED | EXPIRED ──▶ ARCHIVED
 - [ ] `mutate_l1` does not touch frozen v562–v570 subgraph  
 - [ ] Invariant SC-01: `system_reconcile` never writes CubeState directly  
 - [ ] Invariant DR-01: drift/analytics outputs are suggest-only  
+- [ ] Invariant DR-02: suggestions reference categories/deltas only  
 - [ ] No import from ticket module into frozen phase chain  
 
 ---
@@ -423,6 +442,7 @@ ISSUE ──▶ ACTIVE ──▶ CONSUMED | EXPIRED ──▶ ARCHIVED
 | Transition intent v1 | `apps/client/src/rhizoh/ticket/ticketTransitionIntentV1.js` |
 | Tombstone layer | `apps/client/src/rhizoh/ticket/ticketTombstoneLayerV0.js` |
 | Drift analytics engine | `apps/client/src/rhizoh/ticket/driftAnalyticsEngineV0.js` |
+| Drift suggestion guards | `apps/client/src/rhizoh/ticket/driftSuggestionGuardsV0.js` |
 
 ---
 

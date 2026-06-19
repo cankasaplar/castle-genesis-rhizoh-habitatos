@@ -1,12 +1,16 @@
 /**
  * Drift Analytics Engine V0 — Temporal Curves · Causal Forecast · Suggestion Generator.
  *
- * interpretationOnly · nonExecutive · DR-01: drift never mutates
+ * DR-01: drift never mutates · DR-02: category/delta suggestions only
  * @see docs/RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md
  */
 
 import { MUTATION_REASON_CATEGORY_V1, MUTATION_REASON_CODE_V1 } from "./mutationReasonCodeOntologyV1.js";
 import { DRIFT_SIGNAL_KIND_V0 } from "./traceGraphIndexOptimizerV0.js";
+import {
+  assertDriftOutputGuardsV0,
+  INVARIANT_DR_01_LOOP_V0
+} from "./driftSuggestionGuardsV0.js";
 
 export const DRIFT_ANALYTICS_SCHEMA_V0 = "castle.rhizoh.drift_analytics.v0";
 export const DRIFT_SUGGESTION_SCHEMA_V0 = "castle.rhizoh.drift_suggestion.v0";
@@ -19,7 +23,7 @@ export const INVARIANT_RISK_ID_V0 = Object.freeze({
   QUOTA_TOPOLOGY: "QUOTA_TOPOLOGY",
   REC_CONTINUITY: "REC_CONTINUITY",
   SIG_TRUST: "SIG_TRUST",
-  DR_01_LOOP: "DR_01_FEEDBACK_LOOP"
+  DR_01_LOOP: INVARIANT_DR_01_LOOP_V0
 });
 
 let suggestionSeqV0 = 0;
@@ -206,36 +210,23 @@ export function generateDriftSuggestionsV0(forecast) {
 function suggestionTemplateForRiskV0(risk) {
   switch (risk.invariantId) {
     case INVARIANT_RISK_ID_V0.SC_03:
-      return { text: "audit_intent_layer_for_direct_ticket_execution_bypass" };
+      return { text: "sc_03_execution_bypass_drift_detected" };
     case INVARIANT_RISK_ID_V0.SC_02:
-      return { text: "review_mutation_source_paths_and_reconcile_proposals" };
+      return { text: "sc_02_mutation_source_drift_detected" };
     case INVARIANT_RISK_ID_V0.SC_04:
-      return { text: "tighten_ticket_spawn_matrix_and_admission_grants" };
+      return { text: "sc_04_permission_escalation_drift_detected" };
     case INVARIANT_RISK_ID_V0.QUOTA_TOPOLOGY:
-      return { text: "increase_quota_window_or_burst_layer_capacity_review" };
+      return { text: "quota_stress_detected" };
     case INVARIANT_RISK_ID_V0.REC_CONTINUITY:
-      return { text: "align_epoch_windows_and_continuity_anchor_policy" };
+      return { text: "rec_continuity_drift_detected" };
     case INVARIANT_RISK_ID_V0.SIG_TRUST:
-      return { text: "review_temporal_binding_and_signature_requirements" };
+      return { text: "sig_trust_drift_detected" };
     default:
-      return { text: "review_drift_forecast_and_invariant_health" };
+      return { text: "invariant_drift_detected" };
   }
 }
 
-/**
- * DR-01 guard — reject any non-suggest execution class from analytics output.
- * @param {object} suggestion
- */
-export function assertDriftSuggestionDr01V0(suggestion) {
-  if (suggestion?.executionClass && suggestion.executionClass !== "suggest") {
-    return Object.freeze({
-      ok: false,
-      code: INVARIANT_RISK_ID_V0.DR_01_LOOP,
-      message: "DR-01: drift output must not request mutation"
-    });
-  }
-  return Object.freeze({ ok: true });
-}
+export { assertDriftSuggestionDr01V0 } from "./driftSuggestionGuardsV0.js";
 
 /**
  * @param {{
@@ -249,17 +240,18 @@ export function runDriftAnalyticsV0(input) {
   const suggestions = generateDriftSuggestionsV0(forecast);
 
   for (const s of suggestions.suggestions) {
-    const guard = assertDriftSuggestionDr01V0(s);
-    if (!guard.ok) {
-      throw new Error(guard.message);
-    }
+    assertDriftOutputGuardsV0(s);
   }
 
   return Object.freeze({
     schema: DRIFT_ANALYTICS_SCHEMA_V0,
     curves,
     forecast,
-    suggestions,
+    suggestions: Object.freeze({
+      ...suggestions,
+      dr01Enforced: true,
+      dr02Enforced: true
+    }),
     interpretationOnly: true,
     nonExecutive: true
   });

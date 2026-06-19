@@ -1,16 +1,17 @@
 /**
  * Drift Anomaly Detector V0 — 3-layer threshold + AlertPacket (suggest only).
  *
- * Layers (all required for AlertPacket):
- *   1. Absolute spike — category count > N in window
- *   2. Relative drift — share increase > baseline + σ
- *   3. Persistence — spike across 2 consecutive REC cycles
- *
  * DR-01: AlertPacket never triggers mutation or auto-reconcile.
+ * DR-02: AlertPacket references categories and deltas only — no user/cube mutations.
  * @see docs/RHIZOH_DRIFT_ANOMALY_DETECTOR_V1.md
  */
 
 import { MUTATION_REASON_CATEGORY_V1 } from "./mutationReasonCodeOntologyV1.js";
+import {
+  assertDriftOutputGuardsV0,
+  assertDriftSuggestionDr02V0,
+  INVARIANT_DR_02_ISOLATION_V0
+} from "./driftSuggestionGuardsV0.js";
 
 export const ALERT_PACKET_SCHEMA_V0 = "castle.rhizoh.alert_packet.v0";
 export const DRIFT_ANOMALY_TYPE_V0 = "DRIFT_ANOMALY";
@@ -28,15 +29,21 @@ const DEFAULT_ANOMALY_THRESHOLDS_V0 = Object.freeze({
   windowSize: 50
 });
 
+/** DR-02 compliant: category + delta language only. */
+const SUGGESTION_BY_CATEGORY_V0 = Object.freeze({
+  [MUTATION_REASON_CATEGORY_V1.SC]: "sc_frequency_increased",
+  [MUTATION_REASON_CATEGORY_V1.QUOTA]: "quota_stress_detected",
+  [MUTATION_REASON_CATEGORY_V1.REC]: "rec_continuity_drift_detected",
+  [MUTATION_REASON_CATEGORY_V1.SIG]: "sig_trust_drift_detected",
+  [MUTATION_REASON_CATEGORY_V1.INTENT]: "intent_binding_drift_detected",
+  [MUTATION_REASON_CATEGORY_V1.ADMIT]: "admission_gate_stress_detected"
+});
+
 /** @type {Map<string, { epochId: string, share: number }[]>} */
 const categoryEpochHistoryV0 = new Map();
 
 let alertSeqV0 = 0;
 
-/**
- * @param {Record<string, number>} categoryCounts
- * @param {number} total
- */
 function categorySharesV0(categoryCounts, total) {
   /** @type {Record<string, number>} */
   const shares = {};
@@ -46,11 +53,6 @@ function categorySharesV0(categoryCounts, total) {
   return shares;
 }
 
-/**
- * @param {string} category
- * @param {string} epochId
- * @param {number} share
- */
 function recordCategoryEpochV0(category, epochId, share) {
   if (!categoryEpochHistoryV0.has(category)) {
     categoryEpochHistoryV0.set(category, []);
@@ -63,10 +65,6 @@ function recordCategoryEpochV0(category, epochId, share) {
   }
 }
 
-/**
- * @param {string} category
- * @param {number} requiredCycles
- */
 function hasPersistenceAcrossRecCyclesV0(category, requiredCycles) {
   const hist = categoryEpochHistoryV0.get(category) || [];
   if (hist.length < requiredCycles) return false;
@@ -107,6 +105,11 @@ export function evaluateAnomalyLayersV0(input) {
         category,
         count,
         share01: share,
+        deltaHint: Object.freeze({
+          category,
+          shareDelta01: Math.max(0, share - baseShare),
+          countDelta: count
+        }),
         layers: Object.freeze({
           absoluteSpike,
           relativeDrift,
@@ -132,33 +135,29 @@ export function evaluateAnomalyLayersV0(input) {
  *   severity: string,
  *   suggestion: string,
  *   confidence: number,
+ *   deltaHint?: object,
  *   layers?: object
  * }} input
  */
 export function buildAlertPacketV0(input) {
-  return Object.freeze({
+  const packet = Object.freeze({
     schema: ALERT_PACKET_SCHEMA_V0,
     alertId: `alert_${++alertSeqV0}`,
     type: DRIFT_ANOMALY_TYPE_V0,
     severity: input.severity || ANOMALY_SEVERITY_V0.MEDIUM,
     category: input.category,
     suggestion: input.suggestion,
+    deltaHint: input.deltaHint ? Object.freeze({ ...input.deltaHint }) : undefined,
     confidence: Math.max(0, Math.min(1, input.confidence)),
     executionClass: "suggest",
     layers: input.layers ? Object.freeze({ ...input.layers }) : undefined,
     interpretationOnly: true,
     nonExecutive: true
   });
-}
 
-const SUGGESTION_BY_CATEGORY_V0 = Object.freeze({
-  [MUTATION_REASON_CATEGORY_V1.SC]: "review_admission_policy_and_permission_boundaries",
-  [MUTATION_REASON_CATEGORY_V1.QUOTA]: "review_quota_window_and_burst_layer_capacity",
-  [MUTATION_REASON_CATEGORY_V1.REC]: "align_epoch_windows_and_continuity_anchor_policy",
-  [MUTATION_REASON_CATEGORY_V1.SIG]: "review_temporal_binding_and_signature_requirements",
-  [MUTATION_REASON_CATEGORY_V1.INTENT]: "audit_intent_layer_for_binding_violations",
-  [MUTATION_REASON_CATEGORY_V1.ADMIT]: "review_closed_admission_gate_thresholds"
-});
+  assertDriftOutputGuardsV0(packet);
+  return packet;
+}
 
 /**
  * @param {{
@@ -188,8 +187,9 @@ export function detectDriftAnomaliesV0(input) {
       buildAlertPacketV0({
         category: ev.category,
         severity,
-        suggestion: SUGGESTION_BY_CATEGORY_V0[ev.category] || "review_drift_anomaly_and_invariant_health",
+        suggestion: SUGGESTION_BY_CATEGORY_V0[ev.category] || "category_drift_detected",
         confidence: Math.max(0, Math.min(1, ev.share01 + (ev.layers.persistence ? 0.1 : 0))),
+        deltaHint: ev.deltaHint,
         layers: ev.layers
       })
     );
@@ -200,10 +200,13 @@ export function detectDriftAnomaliesV0(input) {
     evaluation,
     alerts: Object.freeze(alerts),
     dr01Enforced: true,
+    dr02Enforced: true,
     interpretationOnly: true,
     nonExecutive: true
   });
 }
+
+export { assertDriftSuggestionDr02V0, INVARIANT_DR_02_ISOLATION_V0 };
 
 /** Test only. */
 export function clearAnomalyDetectorStateForTestV0() {
