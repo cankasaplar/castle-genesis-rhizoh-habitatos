@@ -204,7 +204,27 @@ Chess arena pin / lobby remains chess-first. **Multi-sport arena** is a **UI rou
 
 ```bash
 npm run test -w apps/client -- src/rhizoh/runtime/__tests__/rhizohUglLayerV0.test.js
+npm run test -w apps/client -- src/rhizoh/runtime/__tests__/rhizohUglLeagueHarnessV0.test.js
 npm run stabilization:validate-specflow
+```
+
+---
+
+## 12. Phase 2 — League harness + training WAL (v1.1)
+
+| Module | Role |
+|--------|------|
+| `rhizohUglTrainingRecordV0.js` | WAL: position / expected / played / evalDelta / outcome |
+| `rhizohUglLeagueHarnessV0.js` | Stockfish tier ladder WARMUP → MAX |
+| `rhizohChessEngineHealthV0.js` | Timeout ring + queue + scheduler health |
+
+DevTools:
+
+```js
+window.__rhizoh.uglLeagueHarness()
+window.__rhizoh.uglTrainingRecords(32)
+window.__rhizoh.exportUglTrainingRecordsJson()
+window.__rhizoh.chessEngineHealthReport()
 ```
 
 ---

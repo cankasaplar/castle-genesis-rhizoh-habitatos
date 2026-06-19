@@ -23,6 +23,7 @@ import {
 } from "./chessTelemetryLogV0.js";
 import { maybeEnqueueEpistemicCouncilV0 } from "./rhizohEpistemicCouncilV0.js";
 import { appendShadowTraceFromStockfishTimeoutV0 } from "./rhizohShadowTraceLedgerV0.js";
+import { recordChessEngineTimeoutV0 } from "./rhizohChessEngineHealthV0.js";
 import { resolveChessMoveTimeoutBufferMsV0 } from "./chessEngineContentionGateV0.js";
 
 export const CHESS_STOCKFISH_ENGINE_SCHEMA_V0 = "castle.chess_stockfish_engine.v0";
@@ -288,6 +289,15 @@ function logStockfishV0(level, message, detail = null) {
     console[level](CHESS_STOCKFISH_LOG_TAG_V0, payload);
   }
   if (message === "arena move timeout") {
+    const slotId = parseChessClusterSlotIdFromMatchIdV0(detail?.matchId);
+    recordChessEngineTimeoutV0({
+      matchId: detail?.matchId || null,
+      slotId,
+      fen: detail?.fen || null,
+      movetimeMs: detail?.movetimeMs,
+      depth: detail?.depth,
+      timeoutMs: detail?.timeoutMs
+    });
     appendShadowTraceFromStockfishTimeoutV0({
       matchId: detail?.matchId || null,
       slotId: parseChessClusterSlotIdFromMatchIdV0(detail?.matchId),

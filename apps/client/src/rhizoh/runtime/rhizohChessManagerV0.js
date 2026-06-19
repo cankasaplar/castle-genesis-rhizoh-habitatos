@@ -100,6 +100,9 @@ export function getRhizohChessManagerSnapshotV0(reason = "poll") {
       uglReport: "window.__rhizoh.uglReport()",
       uglEventStream: "window.__rhizoh.uglEventStream()",
       uglScheduler: "window.__rhizoh.uglScheduler()",
+      uglLeagueHarness: "window.__rhizoh.uglLeagueHarness()",
+      uglTrainingRecords: "window.__rhizoh.uglTrainingRecords()",
+      chessEngineHealth: "window.__rhizoh.chessEngineHealthReport()",
       chessOfflineBatchTrainer: "window.__rhizoh.chessOfflineBatchTrainer()"
     }),
     atMs: Date.now()
