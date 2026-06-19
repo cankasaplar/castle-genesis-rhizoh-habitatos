@@ -79,4 +79,5 @@ f.fusionReliability
 |-------|--------|
 | L3b Causal fusion | ✔ |
 | L3c **Resource contention guard** | ✔ this module |
-| L3d Ledger / seal | ❌ phase gate |
+| L3d **Cross-space stabilization** | ✔ [`RHIZOH_CROSS_SPACE_STABILIZATION_LAYER_V0.md`](RHIZOH_CROSS_SPACE_STABILIZATION_LAYER_V0.md) |
+| L3e Ledger / seal | ❌ phase gate |
