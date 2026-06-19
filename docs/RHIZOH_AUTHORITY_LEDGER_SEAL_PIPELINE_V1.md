@@ -60,4 +60,5 @@ window.__rhizoh.recordHumanAttestation()
 |-------|--------|
 | L3f Admission arbitration | ✔ |
 | L3g **Authority ledger + seal** | ✔ this module |
-| L3h Gateway worker persistence | ❌ phase gate |
+| L3h Gateway witness persistence | ✔ [`RHIZOH_GATEWAY_AUTHORITY_PERSISTENCE_BRIDGE_V1.md`](RHIZOH_GATEWAY_AUTHORITY_PERSISTENCE_BRIDGE_V1.md) (deploy-gated) |
+| L3i Distributed worker replay | ❌ data-plane READY |

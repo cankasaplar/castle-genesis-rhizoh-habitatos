@@ -7,6 +7,9 @@
  */
 
 import {
+  ensureAuthorityGatewayPersistenceBridgeV1
+} from "./authorityGatewayPersistenceBridgeV1.js";
+import {
   ADMISSION_VERDICT_V1,
   getAdmissionArbitrationSnapshotV1
 } from "./admissionArbitrationLayerV1.js";
@@ -348,6 +351,8 @@ export function ensureAuthorityLedgerSealPipelineV1() {
   if (!window.__rhizoh.recordHumanAttestation) {
     window.__rhizoh.recordHumanAttestation = (opts) => recordHumanAttestationV1(opts);
   }
+
+  ensureAuthorityGatewayPersistenceBridgeV1();
 
   return window.__rhizoh.authorityLedger;
 }

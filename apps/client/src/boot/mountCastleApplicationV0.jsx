@@ -74,6 +74,14 @@ export async function mountCastleApplicationV0(ctx) {
     "boot.authority_ledger",
     `height=${phaseCommit.commit.ledgerHeight ?? 0} seal=${phaseCommit.commit.sealHash ? String(phaseCommit.commit.sealHash).slice(0, 10) : "none"}`
   );
+  const bridgeSnap =
+    typeof window !== "undefined" ? window.__rhizoh?.authorityGatewayBridge?.() : null;
+  bootLog?.ok?.(
+    "boot.authority_gateway_bridge",
+    bridgeSnap?.wired
+      ? `armed shadow=${bridgeSnap.shadowCount ?? 0} shared=${bridgeSnap.sharedOfficialHistory}`
+      : "not_armed"
+  );
 
   const observability = startProdWorldObservabilityBridgeV0();
   if (observability.started) {
