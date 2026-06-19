@@ -42,6 +42,17 @@ export function buildRhizohUglReportV0() {
   });
 }
 
+function safeCompileUglEventV0(input) {
+  try {
+    return compileObservationToUglEventV0(input);
+  } catch (err) {
+    if (typeof console !== "undefined" && console.warn) {
+      console.warn("[RHIZOH_UGL] compile skipped", input?.source, err?.message || err);
+    }
+    return null;
+  }
+}
+
 function handleClusterMoveV0(detail) {
   const move = detail?.move;
   if (!move?.matchId) return;
@@ -49,7 +60,7 @@ function handleClusterMoveV0(detail) {
   const fenBefore = move.fenBefore || lastFenByMatchV0.get(matchId);
   const fenAfter = move.fenAfter;
   if (fenBefore && fenAfter) {
-    const event = compileObservationToUglEventV0({
+    const event = safeCompileUglEventV0({
       matchId,
       fenBefore,
       fenAfter,
@@ -58,7 +69,7 @@ function handleClusterMoveV0(detail) {
       actorId: move.agentId || `slot_${move.slotId ?? "?"}`,
       source: "cluster_move"
     });
-    appendUglEventV0(event);
+    if (event) appendUglEventV0(event);
   }
   if (fenAfter) lastFenByMatchV0.set(matchId, fenAfter);
   while (lastFenByMatchV0.size > 128) {
@@ -71,7 +82,7 @@ function handlePolicyDiffV0(detail) {
   if (!detail) return;
   const matchId = String(detail.matchId || "");
   const fenBefore = lastFenByMatchV0.get(matchId);
-  const event = compileObservationToUglEventV0({
+  const event = safeCompileUglEventV0({
     policyDiff: detail,
     matchId,
     fenBefore: fenBefore || undefined,
@@ -80,18 +91,18 @@ function handlePolicyDiffV0(detail) {
     actorId: detail.slotId != null ? `slot_${detail.slotId}` : "unknown",
     source: "policy_diff"
   });
-  appendUglEventV0(event);
+  if (event) appendUglEventV0(event);
 }
 
 function handleGeometryDriftV0(detail) {
   if (!detail) return;
   const matchId = String(detail.matchId || "");
-  const event = compileObservationToUglEventV0({
+  const event = safeCompileUglEventV0({
     geometryDrift: detail,
     matchId,
     source: "geometry_drift"
   });
-  appendUglEventV0(event);
+  if (event) appendUglEventV0(event);
 }
 
 function handleGameEndV0(detail) {
@@ -102,14 +113,14 @@ function handleGameEndV0(detail) {
   const terminal = chessTerminalRewardV0(outcome, "white");
   const fenBefore = lastFenByMatchV0.get(matchId);
   if (fenBefore == null) return;
-  const event = compileObservationToUglEventV0({
+  const event = safeCompileUglEventV0({
     matchId,
     fenBefore,
     fenAfter: fenBefore,
     terminal,
     source: "game_end"
   });
-  appendUglEventV0(event);
+  if (event) appendUglEventV0(event);
   lastFenByMatchV0.delete(matchId);
 }
 
