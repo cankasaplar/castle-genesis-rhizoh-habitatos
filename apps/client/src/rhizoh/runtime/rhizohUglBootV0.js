@@ -35,10 +35,6 @@ import {
   buildCrossSpaceResourceGuardReportV0,
   ensureCrossSpaceResourceGuardV0
 } from "./crossSpaceResourceContentionGuardV0.js";
-import {
-  ingestSportsMatchEventV0,
-  normalizeSportsMatchEventV0
-} from "./sportsEventAdapterV0.js";
 import { RHIZOH_UGL_SCHEMA_V0, RHIZOH_UGL_VERSION_V0 } from "./rhizohUglSchemaV0.js";
 import { chessTerminalRewardV0 } from "./rhizohUglChessAdapterV0.js";
 import {
@@ -287,10 +283,7 @@ export function ensureRhizohUglV0() {
   if (!window.__rhizoh.uglSportsAdapter) {
     window.__rhizoh.uglSportsAdapter = () => getSportsUglAdapterV0();
   }
-  if (!window.__rhizoh.ingestSportsEvent) {
-    window.__rhizoh.ingestSportsEvent = (raw) =>
-      ingestSportsMatchEventV0(normalizeSportsMatchEventV0(raw));
-  }
+  // ingestSportsEvent — bound by rhizohRuntimeSurfaceBinderV0 (post ontological gate)
   if (!window.__rhizoh.uglLeagueHarness) {
     window.__rhizoh.uglLeagueHarness = () => buildUglLeagueHarnessReportV0();
   }
