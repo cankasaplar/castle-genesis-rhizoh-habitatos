@@ -3,8 +3,7 @@
  * RESEARCH-ONLY
  */
 
-import { CHESS_ENGINE_TASK_KIND_V0 } from "./chessEngineTaskQueueV0.js";
-import { getChessEngineQueueSnapshotV0 } from "./chessEngineTaskQueueV0.js";
+import { CHESS_ENGINE_TASK_KIND_V0, getChessEngineQueueSnapshotV0 } from "./chessEngineTaskQueueV0.js";
 
 export const CHESS_ENGINE_CONTENTION_GATE_SCHEMA_V0 = "castle.rhizoh.chess_engine_contention_gate.v0";
 export const CHESS_CLUSTER_ARENA_REGISTRY_SCHEMA_V0 = "castle.rhizoh.chess_cluster_arena.v0";
@@ -13,12 +12,18 @@ export const CHESS_ARENA_WORKSPACE_REGISTRY_SCHEMA_V0 = "castle.rhizoh.chess_are
 /** @param {boolean} open */
 export function publishChessArenaWorkspaceOpenV0(open) {
   if (typeof window === "undefined") return;
+  const wasOpen = isChessArenaWorkspaceOpenV0();
   window.__rhizoh = window.__rhizoh || {};
   window.__rhizoh.chessArenaWorkspace = Object.freeze({
     schema: CHESS_ARENA_WORKSPACE_REGISTRY_SCHEMA_V0,
     open: Boolean(open),
     atMs: Date.now()
   });
+  if (open && !wasOpen) {
+    void import("./chessStockfishEngineV0.js").then((mod) => {
+      mod.abortChessStockfishInFlightSearchV0?.();
+    });
+  }
 }
 
 export function isChessArenaWorkspaceOpenV0() {

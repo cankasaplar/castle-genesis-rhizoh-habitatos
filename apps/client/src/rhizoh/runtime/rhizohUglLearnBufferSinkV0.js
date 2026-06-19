@@ -8,6 +8,7 @@ import { appendUglTrainingRecordV0 } from "./rhizohUglTrainingRecordV0.js";
 import { getActiveUglLeagueTierV0 } from "./rhizohUglLeagueHarnessV0.js";
 import { getChessEngineQueueSnapshotV0 } from "./chessEngineTaskQueueV0.js";
 import { CHESS_ENGINE_TASK_KIND_V0 } from "./chessEngineTaskQueueV0.js";
+import { isChessArenaWorkspaceOpenV0 } from "./chessEngineContentionGateV0.js";
 
 export const RHIZOH_UGL_LEARN_BUFFER_SCHEMA_V0 = "castle.rhizoh.ugl_learn_buffer.v0";
 
@@ -26,6 +27,7 @@ export function registerUglLearnBufferEnrichHandlerV0(handler) {
 }
 
 function isEngineIdleForLearnEnrichmentV0() {
+  if (isChessArenaWorkspaceOpenV0()) return false;
   const queue = getChessEngineQueueSnapshotV0();
   const playPending =
     (queue.pendingByPriority?.arena || 0) + (queue.pendingByPriority?.cluster || 0);

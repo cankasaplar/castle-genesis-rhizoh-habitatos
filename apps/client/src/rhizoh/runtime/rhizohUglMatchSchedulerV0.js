@@ -10,7 +10,7 @@ import {
   enqueueChessEngineTaskV0,
   getChessEngineQueueSnapshotV0
 } from "./chessEngineTaskQueueV0.js";
-import { getChessEngineContentionSnapshotV0 } from "./chessEngineContentionGateV0.js";
+import { getChessEngineContentionSnapshotV0, isChessArenaWorkspaceOpenV0 } from "./chessEngineContentionGateV0.js";
 import { drainUglLearnBufferV0 } from "./rhizohUglLearnBufferSinkV0.js";
 import { RHIZOH_UGL_PIPELINE_V0 } from "./rhizohUglSchemaV0.js";
 
@@ -25,6 +25,7 @@ let learnTasksDeferredV0 = 0;
 let drainingLearnV0 = false;
 
 function isPlayPipelineBusyV0() {
+  if (isChessArenaWorkspaceOpenV0()) return true;
   const queue = getChessEngineQueueSnapshotV0();
   const contention = getChessEngineContentionSnapshotV0();
   if (queue.active) {
