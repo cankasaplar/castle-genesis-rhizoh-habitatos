@@ -143,6 +143,8 @@ runTicketMemoryPipelineV0(...)
 
 All exports: `interpretationOnly` · `nonExecutive` · DR-01/DR-02 guarded.
 
+**Next layer:** [`RHIZOH_COGNITIVE_ACTION_LAYER_V1.md`](RHIZOH_COGNITIVE_ACTION_LAYER_V1.md) — interactive epistemic simulator (`cognitiveActionLayerV0.js`).
+
 ---
 
 ## 5. Invariants (UI binding)

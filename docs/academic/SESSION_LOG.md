@@ -95,6 +95,22 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 
 ## Günlük
 
+### 2026-06-19 — Cognitive Action Layer (Interactive Epistemic Simulator)
+
+**Summary:**
+- `RHIZOH_COGNITIVE_ACTION_LAYER_V1.md` — CAL-01: suggestion space is causally inert.
+- `cognitiveActionLayerV0.js` — interaction-based exploration (lineage, cause chain, REC window).
+- User traverses thought topology — no mutation, no admission leak.
+- Three-layer runtime locked: Epistemic · Authority · Temporal.
+- 62 ticket-module tests passing.
+
+**Linked Artifacts:**
+- `docs/RHIZOH_COGNITIVE_ACTION_LAYER_V1.md`
+- `apps/client/src/rhizoh/ticket/cognitiveActionLayerV0.js`
+
+- **Karar özeti:** Perception OS → Interactive epistemic simulator; system cannot hallucinate authority.
+- **Frozen core:** dokunulmadı
+
 ### 2026-06-19 — Cognitive Visualization Binding (EOS · hybrid alert flow)
 
 **Summary:**
