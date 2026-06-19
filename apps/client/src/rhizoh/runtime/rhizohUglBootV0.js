@@ -19,8 +19,14 @@ import { getDomainFabricSnapshotV0 } from "./rhizohDomainFabricV0.js";
 import { getArenaRouterSnapshotV0 } from "./rhizohArenaRouterV0.js";
 import {
   buildMultiArenaSchedulerReportV0,
-  ensureMultiArenaSchedulerV0
+  ensureMultiArenaSchedulerV0,
+  MULTI_ARENA_TICK_EVENT_V0
 } from "./multiArenaSchedulerV0.js";
+import {
+  buildCrossSpaceRecReportV0,
+  ensureCrossSpaceRecV0,
+  reconcileCrossSpaceRecV0
+} from "./crossSpaceRecReconciliationV0.js";
 import { RHIZOH_UGL_SCHEMA_V0, RHIZOH_UGL_VERSION_V0 } from "./rhizohUglSchemaV0.js";
 import { chessTerminalRewardV0 } from "./rhizohUglChessAdapterV0.js";
 import {
@@ -58,6 +64,7 @@ export function buildRhizohUglReportV0() {
     domainFabric: getDomainFabricSnapshotV0(),
     arenaRouter: getArenaRouterSnapshotV0(),
     multiArenaScheduler: buildMultiArenaSchedulerReportV0(),
+    crossSpaceRec: buildCrossSpaceRecReportV0(),
     stateEncoder: buildUglStateEncoderReportV0(),
     actionSpace: buildUglActionSpaceReportV0(),
     rewardModel: buildUglRewardModelReportV0(),
@@ -76,6 +83,7 @@ export function buildRhizohUglReportV0() {
       domainFabric: "window.__rhizoh.uglDomainFabric()",
       arenaRouter: "window.__rhizoh.uglArenaRouter()",
       multiArenaScheduler: "window.__rhizoh.multiArenaScheduler()",
+      crossSpaceRec: "window.__rhizoh.crossSpaceRec()",
       sportsAdapter: "window.__rhizoh.uglSportsAdapter()",
       league: "window.__rhizoh.uglLeagueHarness()",
       trainingRecords: "window.__rhizoh.uglTrainingRecords()",
@@ -250,6 +258,13 @@ export function ensureRhizohUglV0() {
     window.__rhizoh.uglArenaRouter = () => getArenaRouterSnapshotV0();
   }
   ensureMultiArenaSchedulerV0();
+  ensureCrossSpaceRecV0();
+  if (!window.__rhizoh.__crossSpaceRecTickWired) {
+    window.__rhizoh.__crossSpaceRecTickWired = true;
+    window.addEventListener(MULTI_ARENA_TICK_EVENT_V0, (ev) => {
+      reconcileCrossSpaceRecV0({ selection: ev?.detail?.selection, atMs: ev?.detail?.atMs });
+    });
+  }
   if (!window.__rhizoh.uglSportsAdapter) {
     window.__rhizoh.uglSportsAdapter = () => getSportsUglAdapterV0();
   }
@@ -311,6 +326,11 @@ export function __resetRhizohUglBootForTestV0() {
     delete window.__rhizoh.multiArenaSchedulerReport;
     delete window.__rhizoh.multiArenaTick;
     delete window.__rhizoh.notifySportsArenaActivity;
+    delete window.__rhizoh.crossSpaceRec;
+    delete window.__rhizoh.crossSpaceRecReport;
+    delete window.__rhizoh.reconcileCrossSpaceRec;
+    delete window.__rhizoh.ingestSpaceDriftSignal;
+    delete window.__rhizoh.__crossSpaceRecTickWired;
     delete window.__rhizoh.uglSportsAdapter;
     delete window.__rhizoh.uglLeagueHarness;
     delete window.__rhizoh.uglTrainingRecords;

@@ -20,6 +20,7 @@ import {
   labelCastleMediaEventStateV0,
   labelCastleMediaFrequencyBandV0
 } from "../rhizoh/runtime/castleArchiveMediaMetaV0.js";
+import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
 
 const PIECE_UNICODE_V0 = Object.freeze({
   wK: "♔",
