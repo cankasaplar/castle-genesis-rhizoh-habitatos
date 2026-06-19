@@ -9,7 +9,7 @@ import {
   getChessTeacherStatusV0,
   pickChessArenaMoveViaTeacherV0
 } from "./chessTeacherInterfaceV0.js";
-import { shouldDeferArenaEngineWorkV0 } from "./chessEngineContentionGateV0.js";
+import { shouldDeferArenaEngineWorkV0, prioritizeArenaEngineForMoveV0, isChessArenaWorkspaceOpenV0 } from "./chessEngineContentionGateV0.js";
 import { pickRhizohChessMoveV0 } from "./rhizohChessPlayerV0.js";
 
 export const CHESS_ARENA_AUTOPLAY_PICK_SCHEMA_V0 = "castle.chess_arena_autoplay_pick.v0";
@@ -76,7 +76,11 @@ async function pickOnceV0(input) {
  * @param {Parameters<typeof pickOnceV0>[0]} input
  */
 export async function pickArenaAutoplayMoveV0(input) {
-  const deadline = Date.now() + ARENA_AUTOPLAY_MAX_WAIT_MS_V0;
+  if (isChessArenaWorkspaceOpenV0()) {
+    prioritizeArenaEngineForMoveV0();
+  }
+  const maxWaitMs = isChessArenaWorkspaceOpenV0() ? 20_000 : ARENA_AUTOPLAY_MAX_WAIT_MS_V0;
+  const deadline = Date.now() + maxWaitMs;
 
   while (Date.now() < deadline) {
     if (shouldDeferArenaEngineWorkV0()) {

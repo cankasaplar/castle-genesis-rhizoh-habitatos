@@ -885,16 +885,18 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         setThinkingActorV0(rhizohTurn ? "rhizoh" : "stockfish");
         setAiBusy(true);
         let aiPick = null;
-        const deferArenaEngine = shouldDeferArenaEngineWorkV0();
         try {
-          if (rhizohTurn) {
-            aiPick = await pickRhizohChessMoveV0(game, { policyMode, mindId });
-          } else {
-            aiPick = await pickChessArenaMoveViaTeacherV0(game, {
-              useStockfish: !deferArenaEngine,
-              preset: opponentPresetV0.preset
-            });
-          }
+          const pick = await pickArenaAutoplayMoveV0({
+            game,
+            rhizohTurnNow: rhizohTurn,
+            teacherOnline: getChessTeacherStatusV0() === "stockfish_wasm",
+            activeMode: mode,
+            policyMode,
+            mindId,
+            opponentPreset: opponentPresetV0.preset
+          });
+          setArenaFallbackMode(Boolean(pick?.fallbackMode));
+          aiPick = pick;
         } catch {
           aiPick = null;
         }

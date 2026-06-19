@@ -22,6 +22,13 @@ export function releaseBroadcastForArenaPlayV0() {
   }
 }
 
+/** Arena move priority — clear cluster queue before Stockfish pick. */
+export function prioritizeArenaEngineForMoveV0() {
+  if (!isChessArenaWorkspaceOpenV0()) return false;
+  releaseBroadcastForArenaPlayV0();
+  return true;
+}
+
 /** @param {boolean} open */
 export function publishChessArenaWorkspaceOpenV0(open) {
   if (typeof window === "undefined") return;

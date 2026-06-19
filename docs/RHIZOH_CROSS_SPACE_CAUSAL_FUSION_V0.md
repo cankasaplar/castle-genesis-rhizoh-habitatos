@@ -98,7 +98,7 @@ window.__rhizoh.ingestSportsEvent({ eventType: "score_delta", delta: 2 })
 |-------|--------|
 | L3a Cross-space REC | ✔ |
 | L3b Causal fusion | ✔ this module |
-| L3c Resource contention guard | ❌ next |
+| L3c Resource contention guard | ✔ [`RHIZOH_CROSS_SPACE_RESOURCE_CONTENTION_GUARD_V0.md`](RHIZOH_CROSS_SPACE_RESOURCE_CONTENTION_GUARD_V0.md) |
 | L3d Ledger / seal | ❌ phase gate |
 
 ---
