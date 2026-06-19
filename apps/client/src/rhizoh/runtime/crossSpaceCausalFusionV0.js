@@ -394,6 +394,8 @@ export function ensureCrossSpaceCausalFusionV0() {
   if (!window.__rhizoh.crossSpaceFusionReport) {
     window.__rhizoh.crossSpaceFusionReport = () => buildCrossSpaceFusionReportV0();
   }
+  // Fusion lane surface APIs — bound by rhizohRuntimeSurfaceBinderV0 (post ontological gate).
+  // Fallback for vitest paths that skip mountCastleApplicationV0:
   if (!window.__rhizoh.fuseCrossSpaceEpistemic) {
     window.__rhizoh.fuseCrossSpaceEpistemic = (opts) => fuseCrossSpaceEpistemicV0(opts);
   }
