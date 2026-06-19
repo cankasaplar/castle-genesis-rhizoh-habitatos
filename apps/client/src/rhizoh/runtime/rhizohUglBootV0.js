@@ -6,6 +6,7 @@
 import { CHESS_CLUSTER_MOVE_EVENT_V0, CHESS_CLUSTER_GAME_END_EVENT_V0 } from "./chessGameClusterV0.js";
 import { CHESS_CLUSTER_POLICY_DIFF_EVENT_V0 } from "./chessClusterLearningTraceV0.js";
 import { RHIZOH_DRIFT_CUBE_EVENT_V0 } from "./rhizohGeometryDriftCubeV0.js";
+import { RHIZOH_CHESS_PREDICTION_SCORE_EVENT_V0 } from "./rhizohChessLearningReportV0.js";
 import { compileObservationToUglEventV0, buildUglDriftRewardReportV0 } from "./rhizohDriftRewardConverterV0.js";
 import { appendUglEventV0, getUglEventStreamSnapshotV0, readUglEventStreamV0 } from "./rhizohUglEventV0.js";
 import { buildUglStateEncoderReportV0 } from "./rhizohUglStateEncoderV0.js";
@@ -15,6 +16,19 @@ import { buildUglMatchSchedulerReportV0 } from "./rhizohUglMatchSchedulerV0.js";
 import { getChessUglAdapterV0 } from "./rhizohUglChessAdapterV0.js";
 import { RHIZOH_UGL_SCHEMA_V0, RHIZOH_UGL_VERSION_V0 } from "./rhizohUglSchemaV0.js";
 import { chessTerminalRewardV0 } from "./rhizohUglChessAdapterV0.js";
+import {
+  trainingRecordFromPolicyDiffV0,
+  trainingRecordFromPredictionScoreV0,
+  appendUglTrainingRecordV0,
+  getUglTrainingRecordSnapshotV0,
+  readUglTrainingRecordsV0
+} from "./rhizohUglTrainingRecordV0.js";
+import {
+  buildUglLeagueHarnessReportV0,
+  exportUglTrainingRecordsJsonV0,
+  getActiveUglLeagueTierV0
+} from "./rhizohUglLeagueHarnessV0.js";
+import { buildChessEngineHealthReportV0 } from "./rhizohChessEngineHealthV0.js";
 
 let listenersInstalledV0 = false;
 /** @type {Map<string, string>} */
@@ -32,11 +46,17 @@ export function buildRhizohUglReportV0() {
     driftReward: buildUglDriftRewardReportV0(),
     scheduler: buildUglMatchSchedulerReportV0(),
     eventStream: getUglEventStreamSnapshotV0(),
+    trainingRecords: getUglTrainingRecordSnapshotV0(),
+    leagueHarness: buildUglLeagueHarnessReportV0(),
+    engineHealth: buildChessEngineHealthReportV0(),
     apis: Object.freeze({
       report: "window.__rhizoh.uglReport()",
       events: "window.__rhizoh.uglEventStream()",
       scheduler: "window.__rhizoh.uglScheduler()",
-      adapter: "window.__rhizoh.uglChessAdapter()"
+      adapter: "window.__rhizoh.uglChessAdapter()",
+      league: "window.__rhizoh.uglLeagueHarness()",
+      trainingRecords: "window.__rhizoh.uglTrainingRecords()",
+      engineHealth: "window.__rhizoh.chessEngineHealthReport()"
     }),
     atMs: Date.now()
   });
@@ -82,6 +102,7 @@ function handlePolicyDiffV0(detail) {
   if (!detail) return;
   const matchId = String(detail.matchId || "");
   const fenBefore = lastFenByMatchV0.get(matchId);
+  const tier = getActiveUglLeagueTierV0();
   const event = safeCompileUglEventV0({
     policyDiff: detail,
     matchId,
@@ -91,7 +112,19 @@ function handlePolicyDiffV0(detail) {
     actorId: detail.slotId != null ? `slot_${detail.slotId}` : "unknown",
     source: "policy_diff"
   });
-  if (event) appendUglEventV0(event);
+  if (event) {
+    appendUglEventV0(event);
+    trainingRecordFromPolicyDiffV0(detail, {
+      fenBefore,
+      leagueTier: tier,
+      uglReward: event.r?.total
+    });
+  }
+}
+
+function handlePredictionScoreV0(detail) {
+  if (!detail) return;
+  trainingRecordFromPredictionScoreV0(detail, { leagueTier: getActiveUglLeagueTierV0() });
 }
 
 function handleGeometryDriftV0(detail) {
@@ -121,6 +154,15 @@ function handleGameEndV0(detail) {
     source: "game_end"
   });
   if (event) appendUglEventV0(event);
+  appendUglTrainingRecordV0({
+    position: fenBefore,
+    outcome,
+    leagueTier: getActiveUglLeagueTierV0(),
+    uglReward: terminal,
+    matchId,
+    slotId: slot.slotId,
+    source: "game_end"
+  });
   lastFenByMatchV0.delete(matchId);
 }
 
@@ -143,19 +185,32 @@ export function ensureRhizohUglV0() {
   if (!window.__rhizoh.uglChessAdapter) {
     window.__rhizoh.uglChessAdapter = () => getChessUglAdapterV0();
   }
+  if (!window.__rhizoh.uglLeagueHarness) {
+    window.__rhizoh.uglLeagueHarness = () => buildUglLeagueHarnessReportV0();
+  }
+  if (!window.__rhizoh.uglTrainingRecords) {
+    window.__rhizoh.uglTrainingRecords = (limit) => readUglTrainingRecordsV0(limit);
+  }
+  if (!window.__rhizoh.exportUglTrainingRecordsJson) {
+    window.__rhizoh.exportUglTrainingRecordsJson = exportUglTrainingRecordsJsonV0;
+  }
 
   if (listenersInstalledV0) return window.__rhizoh.uglReport;
   listenersInstalledV0 = true;
 
   window.addEventListener(CHESS_CLUSTER_MOVE_EVENT_V0, (ev) => handleClusterMoveV0(ev?.detail));
   window.addEventListener(CHESS_CLUSTER_POLICY_DIFF_EVENT_V0, (ev) => handlePolicyDiffV0(ev?.detail));
+  window.addEventListener(RHIZOH_CHESS_PREDICTION_SCORE_EVENT_V0, (ev) =>
+    handlePredictionScoreV0(ev?.detail)
+  );
   window.addEventListener(RHIZOH_DRIFT_CUBE_EVENT_V0, (ev) => handleGeometryDriftV0(ev?.detail));
   window.addEventListener(CHESS_CLUSTER_GAME_END_EVENT_V0, (ev) => handleGameEndV0(ev?.detail));
 
   window.__rhizoh.uglBoot = Object.freeze({
     schema: `${RHIZOH_UGL_SCHEMA_V0}.boot`,
     version: RHIZOH_UGL_VERSION_V0,
-    listeners: true
+    listeners: true,
+    phase: "league_harness_v0"
   });
 
   return window.__rhizoh.uglReport;
@@ -171,6 +226,9 @@ export function __resetRhizohUglBootForTestV0() {
     delete window.__rhizoh.uglScheduler;
     delete window.__rhizoh.uglRewardModel;
     delete window.__rhizoh.uglChessAdapter;
+    delete window.__rhizoh.uglLeagueHarness;
+    delete window.__rhizoh.uglTrainingRecords;
+    delete window.__rhizoh.exportUglTrainingRecordsJson;
     delete window.__rhizoh.uglBoot;
   }
 }

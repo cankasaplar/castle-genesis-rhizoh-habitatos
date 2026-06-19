@@ -24,6 +24,7 @@ import { ensureRhizohChessLifetimeReportV0 } from "./rhizohChessLifetimeReportV0
 import { ensureChessHistoryBrainV0 } from "./chessHistoryBrainReportV0.js";
 import { ensureRhizohChessEvolutionCurveV0 } from "./rhizohChessEvolutionCurveV0.js";
 import { ensureRhizohUglV0 } from "./rhizohUglBootV0.js";
+import { ensureChessEngineHealthDevToolsV0 } from "./rhizohChessEngineHealthV0.js";
 import { ensureRhizohChessLearningCheckpointV0 } from "./rhizohChessLearningCheckpointV0.js";
 import { ensureChessUnifiedMemoryGraphV0 } from "./chessUnifiedMemoryGraphBootV0.js";
 import { ensureChessOfflineBatchTrainerV0 } from "./chessOfflineBatchTrainerV0.js";
@@ -90,6 +91,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureChessHistoryBrainV0();
     ensureRhizohChessEvolutionCurveV0();
     ensureRhizohUglV0();
+    ensureChessEngineHealthDevToolsV0();
     ensureChessBroadcastOpponentMatrixDevToolsV0();
     ensureRhizohCausalGraphDevToolsV0();
     ensureContinuityKernelDevToolsV0();
