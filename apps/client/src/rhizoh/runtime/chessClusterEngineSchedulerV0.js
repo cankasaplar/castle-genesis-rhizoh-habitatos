@@ -14,6 +14,7 @@ import {
   CHESS_ENGINE_TASK_PRIORITY_V0,
   getChessEngineQueueSnapshotV0
 } from "./chessEngineTaskQueueV0.js";
+import { resolveAdaptiveClusterEngineOptsV0 } from "./chessEngineAdaptiveSliceV0.js";
 
 export const CHESS_CLUSTER_ENGINE_SCHEDULER_SCHEMA_V0 =
   "castle.rhizoh.chess_cluster_engine_scheduler.v0";
@@ -30,14 +31,14 @@ export async function scheduleClusterEngineMoveV0(game, opts = {}) {
   const useStockfish = opts.useStockfish !== false && stockfishReady;
   const queue = getChessEngineQueueSnapshotV0();
   const pending = Number(queue.pendingCount) || 0;
-  const tunedOpts = { ...opts };
+  const tunedOpts = resolveAdaptiveClusterEngineOptsV0({ ...opts });
   if (pending > 1 && tunedOpts.movetimeMs) {
     tunedOpts.movetimeMs = Math.max(
-      450,
+      320,
       Math.round(Number(tunedOpts.movetimeMs) * (pending > 3 ? 0.55 : 0.75))
     );
     tunedOpts.timeoutBufferMs =
-      (Number(opts.timeoutBufferMs) || 0) + Math.min(4000, pending * 450);
+      (Number(tunedOpts.timeoutBufferMs) || 0) + Math.min(2400, pending * 350);
   }
 
   totalMovesScheduledV0 += 1;

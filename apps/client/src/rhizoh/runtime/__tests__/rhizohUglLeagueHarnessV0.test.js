@@ -86,8 +86,10 @@ describe("rhizohUglLeagueHarnessV0", () => {
     ensureRhizohUglV0();
     expect(typeof window.__rhizoh.uglLeagueHarness).toBe("function");
     expect(typeof window.__rhizoh.uglTrainingRecords).toBe("function");
+    expect(typeof window.__rhizoh.uglLearnBuffer).toBe("function");
     const report = window.__rhizoh.uglReport();
     expect(report.leagueHarness).toBeTruthy();
     expect(report.trainingRecords).toBeTruthy();
+    expect(report.learnBuffer).toBeTruthy();
   });
 });

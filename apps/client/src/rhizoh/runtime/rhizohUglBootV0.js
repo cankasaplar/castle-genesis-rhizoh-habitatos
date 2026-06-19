@@ -29,6 +29,8 @@ import {
   getActiveUglLeagueTierV0
 } from "./rhizohUglLeagueHarnessV0.js";
 import { buildChessEngineHealthReportV0 } from "./rhizohChessEngineHealthV0.js";
+import { getUglLearnBufferSnapshotV0 } from "./rhizohUglLearnBufferSinkV0.js";
+import { drainUglLearnBufferV0 } from "./rhizohUglLearnBufferSinkV0.js";
 
 let listenersInstalledV0 = false;
 /** @type {Map<string, string>} */
@@ -49,6 +51,7 @@ export function buildRhizohUglReportV0() {
     trainingRecords: getUglTrainingRecordSnapshotV0(),
     leagueHarness: buildUglLeagueHarnessReportV0(),
     engineHealth: buildChessEngineHealthReportV0(),
+    learnBuffer: getUglLearnBufferSnapshotV0(),
     apis: Object.freeze({
       report: "window.__rhizoh.uglReport()",
       events: "window.__rhizoh.uglEventStream()",
@@ -56,7 +59,8 @@ export function buildRhizohUglReportV0() {
       adapter: "window.__rhizoh.uglChessAdapter()",
       league: "window.__rhizoh.uglLeagueHarness()",
       trainingRecords: "window.__rhizoh.uglTrainingRecords()",
-      engineHealth: "window.__rhizoh.chessEngineHealthReport()"
+      engineHealth: "window.__rhizoh.chessEngineHealthReport()",
+      learnBuffer: "window.__rhizoh.uglLearnBuffer()"
     }),
     atMs: Date.now()
   });
@@ -194,6 +198,9 @@ export function ensureRhizohUglV0() {
   if (!window.__rhizoh.exportUglTrainingRecordsJson) {
     window.__rhizoh.exportUglTrainingRecordsJson = exportUglTrainingRecordsJsonV0;
   }
+  if (!window.__rhizoh.uglLearnBuffer) {
+    window.__rhizoh.uglLearnBuffer = () => getUglLearnBufferSnapshotV0();
+  }
 
   if (listenersInstalledV0) return window.__rhizoh.uglReport;
   listenersInstalledV0 = true;
@@ -229,6 +236,7 @@ export function __resetRhizohUglBootForTestV0() {
     delete window.__rhizoh.uglLeagueHarness;
     delete window.__rhizoh.uglTrainingRecords;
     delete window.__rhizoh.exportUglTrainingRecordsJson;
+    delete window.__rhizoh.uglLearnBuffer;
     delete window.__rhizoh.uglBoot;
   }
 }
