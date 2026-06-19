@@ -18,6 +18,7 @@ import { deriveReconcileProposalV0 } from "./ticketReconcileProposalV0.js";
 import { commitProposedCubeDeltaV0 } from "./admissionCubeCommitV0.js";
 import { optimizeTraceGraphIndexV0 } from "./traceGraphIndexOptimizerV0.js";
 import { wireDriftSuggestionsToNervousNetworkV0 } from "./ticketDriftSignalWireV0.js";
+import { bindCognitiveVisualizationV0 } from "./cognitiveVisualizationBindingV0.js";
 
 export const TICKET_MEMORY_PIPELINE_SCHEMA_V0 = "castle.rhizoh.ticket_memory_pipeline.v0";
 
@@ -34,6 +35,7 @@ export const TICKET_MEMORY_PIPELINE_SCHEMA_V0 = "castle.rhizoh.ticket_memory_pip
  *   detectAnomalies?: boolean,
  *   baselineShares?: Record<string, number>,
  *   exportFeatureVector?: boolean,
+ *   bindVisualization?: boolean,
  *   reconcile?: boolean,
  *   reconcileEpochId?: string,
  *   commit?: { subjectRef: string, cubeId: string, auditChain?: object, skipAdmissionCheck?: boolean }
@@ -116,6 +118,20 @@ export function runTicketMemoryPipelineV0(input) {
     nervousSignals: wired,
     reconcile,
     commit,
+    cognitiveBinding:
+      input.bindVisualization !== false
+        ? bindCognitiveVisualizationV0({
+            pipeline: {
+              index,
+              analytics,
+              anomalies,
+              reconcile,
+              commit,
+              admission: null
+            },
+            dispatchEvent: false
+          })
+        : null,
     interpretationOnly: true,
     nonExecutive: true
   });

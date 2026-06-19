@@ -95,6 +95,24 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 
 ## Günlük
 
+### 2026-06-19 — Cognitive Visualization Binding (EOS · hybrid alert flow)
+
+**Summary:**
+- `RHIZOH_COGNITIVE_VISUALIZATION_BINDING_V1.md` — Cognitive Transparency Interface spec.
+- Constitutional: Drift = perception stream; Admission = only control channel.
+- Hybrid alert flow: PUSH (suggest-only drift) + PULL (admission authority context).
+- Visual binding: category → color/geometry density field; REC → 06:44/18:44 waveform.
+- `cognitiveVisualizationBindingV0.js` — push/pull/density/recTimeLayer + pipeline hook.
+- 56 ticket-module tests passing.
+
+**Linked Artifacts:**
+- `docs/RHIZOH_COGNITIVE_VISUALIZATION_BINDING_V1.md`
+- `apps/client/src/rhizoh/ticket/cognitiveVisualizationBindingV0.js`
+
+- **SPECFLOW:** RESEARCH-ONLY · FUTURE-PROOF-ONLY
+- **Karar özeti:** Rhizoh = Epistemic OS; sistem karar vermez — kendi kararlarının nedenini izler.
+- **Frozen core:** dokunulmadı
+
 ### 2026-06-19 — DR-02 Suggestion Isolation + epistemic visualization scaffold
 
 **Summary:**
