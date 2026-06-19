@@ -215,11 +215,11 @@ function buildLaneAuditV0() {
 
 /**
  * Fuse lanes into unified epistemic update.
- * @param {{ recReconciliation?: object, schedulerSelection?: object, atMs?: number, force?: boolean }} [opts]
+ * @param {{ recReconciliation?: object, schedulerSelection?: object, atMs?: number, force?: boolean, phaseLock?: boolean, suppressEvent?: boolean }} [opts]
  */
 export function fuseCrossSpaceEpistemicV0(opts = {}) {
   const atMs = Number(opts.atMs) || Date.now();
-  const guard = guardFusionAdmissionV0({ atMs, force: opts.force });
+  const guard = guardFusionAdmissionV0({ atMs, force: opts.force, phaseLock: opts.phaseLock });
   const laneAudit = buildLaneAuditV0();
 
   if (!guard.admitted) {
@@ -339,7 +339,7 @@ export function fuseCrossSpaceEpistemicV0(opts = {}) {
   fusionLogV0.unshift(fusion);
   if (fusionLogV0.length > 32) fusionLogV0.length = 32;
 
-  if (typeof globalThis !== "undefined" && globalThis.dispatchEvent) {
+  if (!opts.suppressEvent && typeof globalThis !== "undefined" && globalThis.dispatchEvent) {
     globalThis.dispatchEvent(new CustomEvent(CROSS_SPACE_FUSION_EVENT_V0, { detail: fusion }));
   }
 

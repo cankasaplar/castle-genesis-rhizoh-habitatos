@@ -297,7 +297,7 @@ export function resolveSchedulerRouteForGameTypeV0(gameType, now = Date.now()) {
 }
 
 /**
- * @param {{ atMs?: number }} [opts]
+ * @param {{ atMs?: number, phaseSeq?: number, phaseLock?: boolean }} [opts]
  */
 export function runMultiArenaTickV0(opts = {}) {
   const now = Number(opts.atMs) || Date.now();
@@ -308,6 +308,8 @@ export function runMultiArenaTickV0(opts = {}) {
     schema: MULTI_ARENA_SCHEDULER_SCHEMA_V0,
     tickId: tickCounterV0,
     atMs: now,
+    phaseSeq: opts.phaseSeq ?? null,
+    phaseLock: Boolean(opts.phaseLock),
     selection,
     interpretationOnly: true,
     nonExecutive: true,

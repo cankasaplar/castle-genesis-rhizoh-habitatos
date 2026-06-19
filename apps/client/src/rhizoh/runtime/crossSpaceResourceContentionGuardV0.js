@@ -161,7 +161,7 @@ export function releaseResourceSlotV0(input) {
 
 /**
  * Admission gate before fusion synthesis — anti noise-amplification.
- * @param {{ atMs?: number, force?: boolean }} [opts]
+ * @param {{ atMs?: number, force?: boolean, phaseLock?: boolean }} [opts]
  */
 export function guardFusionAdmissionV0(opts = {}) {
   const atMs = Number(opts.atMs) || Date.now();
@@ -178,6 +178,8 @@ export function guardFusionAdmissionV0(opts = {}) {
     if (load.overload) {
       admitted = false;
       reason = GUARD_DENY_REASON_V0.EPISTEMIC_OVERLOAD;
+    } else if (opts.phaseLock) {
+      acquireResourceSlotV0({ lane: "fusion", cost: 0.03 });
     } else if (load.recommendDeferFusion) {
       const slot = acquireResourceSlotV0({ lane: "fusion", cost: 0.04 });
       if (!slot.granted) {
@@ -195,6 +197,7 @@ export function guardFusionAdmissionV0(opts = {}) {
     guardSeq: guardSeqV0,
     admitted,
     reason,
+    phaseLock: Boolean(opts.phaseLock),
     separabilityRequired: true,
     load,
     atMs,

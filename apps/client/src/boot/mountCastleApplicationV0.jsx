@@ -10,6 +10,7 @@ import { installRhizohVoiceSmokeGlobalsV0 } from "../rhizoh/runtime/rhizohVoiceC
 import { startProdWorldObservabilityBridgeV0 } from "../rhizoh/runtime/rhizohProdWorldObservabilityBridgeV0.js";
 import { publishIngressRouteV0 } from "../rhizoh/runtime/spatialSinkRoutePolicyV0.js";
 import { ensureRhizohRuntimeSurfaceBinderV0 } from "../rhizoh/runtime/rhizohRuntimeSurfaceBinderV0.js";
+import { runBootExecutionPhaseV0 } from "../rhizoh/runtime/executionPhaseSynchronizerV0.js";
 
 /**
  * CORE-ELIGIBLE: mount after ontological gate (pre-render).
@@ -58,6 +59,12 @@ export async function mountCastleApplicationV0(ctx) {
   bootLog?.ok?.(
     "boot.runtime_surface",
     `fusion surface bound (${surfaceAssert?.apis?.join("|") || "ingest|fuse"})`
+  );
+
+  const phaseCommit = runBootExecutionPhaseV0({ gate });
+  bootLog?.ok?.(
+    "boot.execution_phase",
+    `phase=${phaseCommit.commit.phaseSeq} aligned=${phaseCommit.phaseAligned} admission=${phaseCommit.admissionSafe}`
   );
 
   const observability = startProdWorldObservabilityBridgeV0();
