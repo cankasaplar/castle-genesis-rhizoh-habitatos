@@ -95,6 +95,30 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 
 ## Günlük
 
+### 2026-06-19 — Ticket Network Schema v1 (UX unification layer)
+
+**Summary:**
+- Document stack order: **Security Boundary → Ticket Network → State Transitions**.
+- Security Boundary v1: five constitutional invariants; `executionClass` expanded (`read_only`, `suggest`, `mutate_l1`, `mutate_l2`, `system_reconcile`).
+- Ticket = Capability + Journey; nervous network: Signals / Invites / Discoveries / Events.
+- State Transitions v1: `invite_join`, `arena_enter`, `ghost_attach`, `flight_depart`, `corporate_admission`.
+- Mutation record schema for Invariant 3 (every mutation has an owner).
+
+**Linked Artifacts:**
+- `docs/RHIZOH_SECURITY_BOUNDARY_V1.md`
+- `docs/RHIZOH_TICKET_NETWORK_SCHEMA_V1.md`
+- `docs/RHIZOH_STATE_TRANSITIONS_V1.md`
+- `apps/client/src/rhizoh/ticket/ticketTransitionIntentV0.js`
+- `apps/client/src/rhizoh/ticket/ticketSecurityValidatorV0.js`
+- `apps/client/src/rhizoh/ticket/mutationRecordEmitterV0.js`
+- `apps/client/src/rhizoh/ticket/ticketKernelFacadeV0.js`
+
+- **Habitat:** Academic / product architecture
+- **Katılımcılar:** Principal, **Cursor Agent (Castle)**
+- **SPECFLOW:** RESEARCH-ONLY · FUTURE-PROOF-ONLY
+- **Karar özeti:** SC-01/SC-02: SYSTEM_RECONCILE = Graph Accountant; CubeState admission-only. Implementasyon: TicketTransitionIntent → validator → mutation emitter → facade.
+- **Frozen core:** dokunulmadı
+
 ### 2026-06-12 — World · Space map pins + cohort allowlist (gün kapanışı)
 
 **Summary:**

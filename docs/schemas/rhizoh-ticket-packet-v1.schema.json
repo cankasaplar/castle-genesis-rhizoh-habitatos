@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://castle.system/schemas/rhizoh-ticket-packet-v1.schema.json",
+  "title": "RhizohTicketPacketV1",
+  "description": "RESEARCH-ONLY v1: portable Capability + Journey face over CubeState, permission graph, and temporal binding. Not execution authority alone.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "ticketId",
+    "ticketKind",
+    "prismProjection",
+    "capabilityScope",
+    "contextNodeCube",
+    "epochWindow",
+    "quota",
+    "traceGraphLink",
+    "executionClass",
+    "journey",
+    "issuerRef",
+    "issuedAt",
+    "signature"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Bump only on breaking ticket packet changes."
+    },
+    "ticketId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 256,
+      "description": "Globally unique ticket identifier (ULID recommended)."
+    },
+    "ticketKind": {
+      "type": "string",
+      "enum": [
+        "llm_gateway",
+        "dev",
+        "media",
+        "corporate",
+        "arena",
+        "ghost",
+        "event",
+        "invite",
+        "discovery"
+      ],
+      "description": "Routing + UX class; not a security decision by itself."
+    },
+    "prismProjection": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "cesium_global",
+          "leaflet_semantic",
+          "arena_rules",
+          "media_timeline",
+          "ghost_sim",
+          "dev_sandbox",
+          "corporate_enclave",
+          "event_timeline"
+        ]
+      },
+      "description": "Reality layers this ticket refracts into; one event may fan out to many prisms."
+    },
+    "capabilityScope": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "Single domain authority id (e.g. castle.flight.enter, arena.go.match)."
+    },
+    "contextNodeCube": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "Active CubeState id; required for restorable tickets."
+    },
+    "epochWindow": {
+      "type": "string",
+      "enum": [
+        "rec_core_morning",
+        "rec_core_evening",
+        "rec_soft",
+        "rec_burst"
+      ],
+      "description": "Rhizoh Epoch Clock gate this ticket respects."
+    },
+    "quota": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["usageLimit", "usageCount", "expiresAt"],
+      "properties": {
+        "usageLimit": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum consumptions; 0 may mean unlimited per product policy."
+        },
+        "usageCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Current consumption count."
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO-8601 expiration."
+        }
+      }
+    },
+    "traceGraphLink": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 256,
+      "description": "Sovereign graph edge id; every ticket is a graph edge."
+    },
+    "executionClass": {
+      "type": "string",
+      "enum": [
+        "read_only",
+        "suggest",
+        "mutate_l1",
+        "mutate_l2",
+        "system_reconcile"
+      ],
+      "description": "Authoritative rules: RHIZOH_SECURITY_BOUNDARY_V1.md section 3. system_reconcile is REC reconciler only."
+    },
+    "journey": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "departureNode",
+        "visitedNodes",
+        "discoveries",
+        "continuityAnchor"
+      ],
+      "properties": {
+        "departureNode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "visitedNodes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "description": "Append-only path during ticket life."
+        },
+        "discoveries": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "description": "Unlocked capability or ticket kind hints earned on path."
+        },
+        "continuityAnchor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "Binding to temporalIdentityBinding / checkpoint tick."
+        }
+      }
+    },
+    "issuerRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "description": "castleId:userId or system issuer ref."
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signature": {
+      "type": "string",
+      "maxLength": 8192,
+      "description": "Issuer signature over canonical packet bytes; empty only in pre-production."
+    }
+  }
+}
