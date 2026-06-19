@@ -47,6 +47,10 @@ import {
   buildAdmissionArbitrationReportV1,
   ensureAdmissionArbitrationLayerV1
 } from "./admissionArbitrationLayerV1.js";
+import {
+  buildAuthorityLedgerReportV1,
+  ensureAuthorityLedgerSealPipelineV1
+} from "./authorityLedgerSealPipelineV1.js";
 import { RHIZOH_UGL_SCHEMA_V0, RHIZOH_UGL_VERSION_V0 } from "./rhizohUglSchemaV0.js";
 import { chessTerminalRewardV0 } from "./rhizohUglChessAdapterV0.js";
 import {
@@ -90,6 +94,7 @@ export function buildRhizohUglReportV0() {
     crossSpaceStabilization: buildCrossSpaceStabilizationReportV0(),
     executionPhase: buildExecutionPhaseSynchronizerReportV0(),
     admissionArbitration: buildAdmissionArbitrationReportV1(),
+    authorityLedger: buildAuthorityLedgerReportV1(),
     stateEncoder: buildUglStateEncoderReportV0(),
     actionSpace: buildUglActionSpaceReportV0(),
     rewardModel: buildUglRewardModelReportV0(),
@@ -117,6 +122,8 @@ export function buildRhizohUglReportV0() {
       runExecutionPhase: "window.__rhizoh.runExecutionPhase()",
       admissionArbitration: "window.__rhizoh.admissionArbitration()",
       arbitrateAdmission: "window.__rhizoh.arbitrateAdmission()",
+      authorityLedger: "window.__rhizoh.authorityLedger()",
+      replayAuthorityLedger: "window.__rhizoh.replayAuthorityLedger()",
       sportsAdapter: "window.__rhizoh.uglSportsAdapter()",
       ingestSportsEvent: "window.__rhizoh.ingestSportsEvent({ eventType, delta })",
       league: "window.__rhizoh.uglLeagueHarness()",
@@ -298,6 +305,7 @@ export function ensureRhizohUglV0() {
   ensureCrossSpaceStabilizationLayerV0();
   ensureExecutionPhaseSynchronizerV0();
   ensureAdmissionArbitrationLayerV1();
+  ensureAuthorityLedgerSealPipelineV1();
   if (!window.__rhizoh.__crossSpaceRecTickWired) {
     window.__rhizoh.__crossSpaceRecTickWired = true;
     window.addEventListener(MULTI_ARENA_TICK_EVENT_V0, (ev) => {
@@ -397,6 +405,11 @@ export function __resetRhizohUglBootForTestV0() {
     delete window.__rhizoh.arbitrateAdmission;
     delete window.__rhizoh.requestHumanAdmissionAttestation;
     delete window.__rhizoh.__admissionArbitrationWired;
+    delete window.__rhizoh.authorityLedger;
+    delete window.__rhizoh.authorityLedgerReport;
+    delete window.__rhizoh.sealAuthorityDecision;
+    delete window.__rhizoh.replayAuthorityLedger;
+    delete window.__rhizoh.recordHumanAttestation;
     delete window.__rhizoh.uglSportsAdapter;
     delete window.__rhizoh.ingestSportsEvent;
     delete window.__rhizoh.uglLeagueHarness;

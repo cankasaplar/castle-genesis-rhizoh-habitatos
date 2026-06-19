@@ -72,5 +72,6 @@ Boot log: `boot.admission_arbitration`
 | Level | Status |
 |-------|--------|
 | L3e Execution phase sync | ✔ |
-| L3f **Admission arbitration** | ✔ this module |
-| L3g Ledger / seal | ❌ phase gate |
+| L3f **Admission arbitration** | ✔ [`RHIZOH_ADMISSION_ARBITRATION_LAYER_V1.md`](RHIZOH_ADMISSION_ARBITRATION_LAYER_V1.md) |
+| L3g **Authority ledger + seal** | ✔ [`RHIZOH_AUTHORITY_LEDGER_SEAL_PIPELINE_V1.md`](RHIZOH_AUTHORITY_LEDGER_SEAL_PIPELINE_V1.md) |
+| L3h Gateway worker persistence | ❌ phase gate |

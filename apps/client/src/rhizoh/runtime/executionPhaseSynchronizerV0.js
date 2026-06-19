@@ -14,6 +14,7 @@ import {
 } from "./crossSpaceCausalFusionV0.js";
 import { stabilizeCrossSpaceFusionV0 } from "./crossSpaceStabilizationLayerV0.js";
 import { arbitrateAdmissionV1 } from "./admissionArbitrationLayerV1.js";
+import { processAuthorityPipelineV1 } from "./authorityLedgerSealPipelineV1.js";
 import {
   notifySportsArenaActivityV0,
   runMultiArenaTickV0
@@ -195,6 +196,7 @@ export function commitExecutionPhaseV0(opts = {}) {
     },
     { atMs, source: opts.source || phase.source }
   );
+  const authorityLedger = processAuthorityPipelineV1({ arbitration, atMs });
 
   const commit = Object.freeze({
     schema: `${EXECUTION_PHASE_SYNCHRONIZER_SCHEMA_V0}.commit`,
@@ -209,6 +211,9 @@ export function commitExecutionPhaseV0(opts = {}) {
     fusion,
     projection,
     arbitration,
+    authorityLedger,
+    ledgerHeight: authorityLedger.ledgerHeight,
+    sealHash: authorityLedger.sealHash,
     admissionSafe: arbitration.inferenceEligible,
     inferenceEligible: arbitration.inferenceEligible,
     realityMutationPermitted: arbitration.realityMutationPermitted,
