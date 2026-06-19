@@ -27,6 +27,10 @@ import {
   ensureCrossSpaceRecV0,
   reconcileCrossSpaceRecV0
 } from "./crossSpaceRecReconciliationV0.js";
+import {
+  buildCrossSpaceFusionReportV0,
+  ensureCrossSpaceCausalFusionV0
+} from "./crossSpaceCausalFusionV0.js";
 import { RHIZOH_UGL_SCHEMA_V0, RHIZOH_UGL_VERSION_V0 } from "./rhizohUglSchemaV0.js";
 import { chessTerminalRewardV0 } from "./rhizohUglChessAdapterV0.js";
 import {
@@ -65,6 +69,7 @@ export function buildRhizohUglReportV0() {
     arenaRouter: getArenaRouterSnapshotV0(),
     multiArenaScheduler: buildMultiArenaSchedulerReportV0(),
     crossSpaceRec: buildCrossSpaceRecReportV0(),
+    crossSpaceFusion: buildCrossSpaceFusionReportV0(),
     stateEncoder: buildUglStateEncoderReportV0(),
     actionSpace: buildUglActionSpaceReportV0(),
     rewardModel: buildUglRewardModelReportV0(),
@@ -84,6 +89,7 @@ export function buildRhizohUglReportV0() {
       arenaRouter: "window.__rhizoh.uglArenaRouter()",
       multiArenaScheduler: "window.__rhizoh.multiArenaScheduler()",
       crossSpaceRec: "window.__rhizoh.crossSpaceRec()",
+      crossSpaceFusion: "window.__rhizoh.crossSpaceFusion()",
       sportsAdapter: "window.__rhizoh.uglSportsAdapter()",
       league: "window.__rhizoh.uglLeagueHarness()",
       trainingRecords: "window.__rhizoh.uglTrainingRecords()",
@@ -259,6 +265,7 @@ export function ensureRhizohUglV0() {
   }
   ensureMultiArenaSchedulerV0();
   ensureCrossSpaceRecV0();
+  ensureCrossSpaceCausalFusionV0();
   if (!window.__rhizoh.__crossSpaceRecTickWired) {
     window.__rhizoh.__crossSpaceRecTickWired = true;
     window.addEventListener(MULTI_ARENA_TICK_EVENT_V0, (ev) => {
@@ -331,6 +338,13 @@ export function __resetRhizohUglBootForTestV0() {
     delete window.__rhizoh.reconcileCrossSpaceRec;
     delete window.__rhizoh.ingestSpaceDriftSignal;
     delete window.__rhizoh.__crossSpaceRecTickWired;
+    delete window.__rhizoh.crossSpaceFusion;
+    delete window.__rhizoh.crossSpaceFusionReport;
+    delete window.__rhizoh.fuseCrossSpaceEpistemic;
+    delete window.__rhizoh.ingestChessDriftLane;
+    delete window.__rhizoh.ingestSportsEntropyLane;
+    delete window.__rhizoh.ingestCuxPerceptionLane;
+    delete window.__rhizoh.__crossSpaceFusionWired;
     delete window.__rhizoh.uglSportsAdapter;
     delete window.__rhizoh.uglLeagueHarness;
     delete window.__rhizoh.uglTrainingRecords;
