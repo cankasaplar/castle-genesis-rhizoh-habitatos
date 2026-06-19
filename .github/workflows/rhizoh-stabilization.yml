@@ -89,7 +89,7 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        run: bash scripts/npm-ci-retry.sh
 
       - name: Audit chain verify (self-test)
         run: node scripts/rhizoh-audit-chain-verify.mjs

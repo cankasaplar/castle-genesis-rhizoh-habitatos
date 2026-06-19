@@ -37,11 +37,11 @@ jobs:
           cache: "npm"
 
       - name: Install root
-        run: npm ci
+        run: bash scripts/npm-ci-retry.sh
 
       - name: Install functions dependencies
         working-directory: functions
-        run: npm ci
+        run: bash ../scripts/npm-ci-retry.sh
 
       - name: Write functions/.env for Gen2 runtime
         working-directory: functions

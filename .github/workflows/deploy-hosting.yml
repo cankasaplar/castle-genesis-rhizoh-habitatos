@@ -73,7 +73,7 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        run: bash scripts/npm-ci-retry.sh
 
       - name: Materialize client .env.production (spatial-main profile + secrets)
         run: node scripts/write-rhizoh-client-prod-env-ci.mjs

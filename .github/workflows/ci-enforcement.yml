@@ -20,7 +20,7 @@ jobs:
           cache: "npm"
 
       - name: Install
-        run: npm ci
+        run: bash scripts/npm-ci-retry.sh
 
       - name: Typecheck
         run: npm run typecheck -w apps/client
