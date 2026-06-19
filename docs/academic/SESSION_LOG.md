@@ -263,4 +263,33 @@ Invariant confirmed: Media may inform observation; media may never define canoni
 
 ---
 
+### 2026-06-19 — World darkness regression (prod observation — deferred)
+
+**Summary:**
+- Prod (`index-DLrhb7we.js`, `/world/space`): arka plan dünya çok karanlık; önceden şehir / drone / sürü görünürlüğü vardı.
+- Boot: `simulation_world_rebuild` → `activeGhosts: 0`, `totalGhosts: 0` (swarm katmanı boş replay sonrası).
+- Chess arena overlay: `RhizohChessArenaWorkspaceV0` → `bg-black/80 backdrop-blur-sm` (bilinçli dim; frozen core değil).
+- Surface policy: T0 `/` = Apex GLOBE + procedural swarm; `/world/space` = Cesium map stage — **Apex drones suppressed** (`shouldUseApexProceduralRealMapV0` false on space route).
+- Olası katmanlar (sonra bakılacak): `spatialBootGate` renderMode, `worldLayerStatus` RENDERER_PENDING, `worldDomainCalmMode` (legal hold / spiral countdown), Cesium mount vs V11 fallback, kamera framing inside arena vs world mesh.
+- Frozen core (v562–v570): dokunulmadı; perception/camera = regression-only per phase gate.
+
+**Prod diagnostics (bookmark):**
+```js
+window.__rhizoh.worldLayerStatus
+window.__rhizoh.spatialRendererRegistry
+window.__CASTLE_BUILD_RUNTIME_SNAPSHOT__ // dev only
+await __RHIZOH_FULL_REPORT__()
+```
+
+**Linked Artifacts:**
+- `docs/RHIZOH_WORLD_SURFACE_HIERARCHY_V0.md` (policy red line)
+- `docs/SURFACE_REDUCTION_PASS_LIVE_V0.md` (prod debug overlays off)
+- `apps/client/src/components/RhizohChessArenaWorkspaceV0.jsx` (arena dim layer)
+- `apps/client/src/rhizoh/runtime/rhizohWorldSurfacePolicyV0.js`
+
+- **Katılımcılar:** Principal, **Cursor Agent**
+- **SPECFLOW:** RESEARCH-ONLY
+- **Frozen core:** dokunulmadı
+- **Durum:** not alındı — implementasyon ertelendi (UGL/chess öncelikli sprint)
+
 *(Sonraki oturumlar için üste veya alta yeni blok ekleyin.)*
