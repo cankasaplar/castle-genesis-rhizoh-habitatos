@@ -20,9 +20,13 @@ describe("chessTelemetryLogV0", () => {
     }
   });
 
-  it("always logs slot 0 moves at critical level", () => {
+  it("samples slot 0 moves at critical level (prod-quiet)", () => {
     setChessTelemetryLevelV0(CHESS_TELEMETRY_LEVEL_V0.CRITICAL);
-    expect(shouldLogChessMovePlayedV0({ slotId: 0, moveNumber: 1 })).toBe(true);
+    const slot0 = Array.from({ length: 20 }, (_, i) =>
+      shouldLogChessMovePlayedV0({ slotId: 0, moveNumber: i })
+    );
+    expect(slot0.filter(Boolean).length).toBeGreaterThan(0);
+    expect(slot0.filter(Boolean).length).toBeLessThan(20);
     expect(shouldLogChessMovePlayedV0({ slotId: 3, moveNumber: 1 })).toBe(false);
   });
 

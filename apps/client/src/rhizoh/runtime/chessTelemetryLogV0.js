@@ -87,9 +87,11 @@ export function resolveChessTelemetrySlotIdV0(ctx = {}) {
 export function shouldLogChessMovePlayedV0(ctx = {}) {
   const level = resolveChessTelemetryLevelV0();
   const slotId = resolveChessTelemetrySlotIdV0(ctx);
-  if (slotId === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0) return true;
+  moveSampleCounterV0 += 1;
   if (level >= CHESS_TELEMETRY_LEVEL_V0.MOVES) {
-    moveSampleCounterV0 += 1;
+    return moveSampleCounterV0 % MOVE_SAMPLE_MOD_V0 === 0;
+  }
+  if (slotId === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0) {
     return moveSampleCounterV0 % MOVE_SAMPLE_MOD_V0 === 0;
   }
   return false;
