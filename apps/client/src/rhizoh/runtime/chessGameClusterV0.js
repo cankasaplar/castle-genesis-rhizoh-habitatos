@@ -69,6 +69,7 @@ export const CHESS_CLUSTER_TICK_EVENT_V0 = "rhizoh:chess-cluster-tick-v0";
 export const CHESS_CLUSTER_MOVE_EVENT_V0 = "rhizoh:chess-cluster-move-v0";
 export const CHESS_CLUSTER_GAME_END_EVENT_V0 = "rhizoh:chess-cluster-game-end-v0";
 export const RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0 = "RHIZOH_OPEN_CHESS_CLUSTER_ARENA";
+export { RHIZOH_CLOSE_CHESS_CLUSTER_ARENA_EVENT_V0 } from "./chessEngineContentionGateV0.js";
 
 /** @type {object[]} */
 let slotsV0 = [];

@@ -558,6 +558,14 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
             <button
               type="button"
               onClick={openChessLobby}
+              className="rounded-md border border-emerald-400/55 bg-emerald-500/20 px-3 py-1 text-[11px] font-semibold text-emerald-50 hover:bg-emerald-500/30"
+              title={heroCopy.playDesc}
+            >
+              {heroCopy.playCta}
+            </button>
+            <button
+              type="button"
+              onClick={openChessLobby}
               className="hidden rounded-md border border-white/20 px-2 py-1 text-[10px] text-white/70 hover:bg-white/10 sm:inline"
             >
               {tr ? "Lobi" : "Lobby"}

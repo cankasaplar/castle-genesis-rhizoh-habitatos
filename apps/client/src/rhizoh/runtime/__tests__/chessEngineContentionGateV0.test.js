@@ -5,6 +5,7 @@ import {
   isChessClusterArenaOpenV0,
   publishChessArenaWorkspaceOpenV0,
   publishChessClusterArenaOpenV0,
+  releaseBroadcastForArenaPlayV0,
   resolveChessMoveTimeoutBufferMsV0,
   shouldDeferArenaEngineWorkV0,
   shouldDeferArenaPrewarmV0,
@@ -44,6 +45,14 @@ describe("chessEngineContentionGateV0", () => {
     window.__rhizoh.chessGameCluster = { running: true };
     publishChessClusterArenaOpenV0(true);
     expect(shouldDeferArenaEngineWorkV0()).toBe(true);
+  });
+
+  it("shouldDeferArenaEngineWorkV0 false when map arena workspace is playing", () => {
+    window.__rhizoh.chessGameCluster = { running: true };
+    publishChessClusterArenaOpenV0(true);
+    publishChessArenaWorkspaceOpenV0(true);
+    expect(shouldDeferArenaEngineWorkV0()).toBe(false);
+    publishChessArenaWorkspaceOpenV0(false);
   });
 
   it("resolveChessMoveTimeoutBufferMsV0 gives cluster moves more wall time", () => {
@@ -86,17 +95,25 @@ describe("chessEngineContentionGateV0", () => {
     expect(shouldPauseClusterTickForArenaV0()).toBe(false);
   });
 
-  it("does not pause cluster ticks when 8-camera broadcast is open", () => {
+  it("pauses cluster ticks when map arena workspace is open (even if broadcast UI was open)", () => {
     publishChessArenaWorkspaceOpenV0(true);
     publishChessClusterArenaOpenV0(true);
-    expect(shouldPauseClusterTickForArenaV0()).toBe(false);
-    publishChessClusterArenaOpenV0(false);
     expect(shouldPauseClusterTickForArenaV0()).toBe(true);
+    publishChessArenaWorkspaceOpenV0(false);
+    publishChessClusterArenaOpenV0(false);
+  });
+
+  it("releaseBroadcastForArenaPlayV0 clears cluster arena registry", () => {
+    publishChessClusterArenaOpenV0(true);
+    releaseBroadcastForArenaPlayV0();
+    expect(isChessClusterArenaOpenV0()).toBe(false);
   });
 
   it("getChessEngineContentionSnapshotV0 includes arenaWorkspaceOpen", () => {
     publishChessArenaWorkspaceOpenV0(true);
     const snap = getChessEngineContentionSnapshotV0();
     expect(snap.arenaWorkspaceOpen).toBe(true);
+    expect(isChessClusterArenaOpenV0()).toBe(false);
+    publishChessArenaWorkspaceOpenV0(false);
   });
 });

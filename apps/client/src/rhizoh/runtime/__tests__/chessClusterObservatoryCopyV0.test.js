@@ -30,6 +30,8 @@ describe("chessClusterObservatoryCopyV0", () => {
     const hero = getChessObservatoryHeroCopyV0(true);
     expect(hero.title).toBe("rhizohchess");
     expect(hero.lobbyCta).toContain("Canlı yayın");
+    expect(hero.playCta).toBe("1v1 Oyna");
+    expect(hero.playDesc).toContain("harita");
   });
 
   it("simplifies engine telemetry labels", () => {

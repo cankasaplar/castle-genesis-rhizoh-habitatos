@@ -67,6 +67,35 @@ function insertTaskSortedV0(row) {
   else queueV0.splice(idx, 0, row);
 }
 
+/** Drop pending cluster tasks so arena play can own the single engine. */
+export function cancelPendingClusterEngineTasksV0() {
+  const next = [];
+  for (const task of queueV0) {
+    if (
+      task.priority === CHESS_ENGINE_TASK_PRIORITY_V0.CLUSTER_MOVE &&
+      task.kind === CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE
+    ) {
+      clusterSupersededCountV0 += 1;
+      task.resolve(null);
+      continue;
+    }
+    next.push(task);
+  }
+  queueV0 = next;
+  if (
+    activeTaskV0?.priority === CHESS_ENGINE_TASK_PRIORITY_V0.CLUSTER_MOVE &&
+    activeTaskV0?.kind === CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE
+  ) {
+    preemptCountV0 += 1;
+    try {
+      activeTaskV0.onPreempt?.();
+    } catch {
+      /* noop */
+    }
+  }
+  publishChessEngineQueueRegistryV0();
+}
+
 function publishChessEngineQueueRegistryV0() {
   if (typeof window === "undefined") return;
   window.__rhizoh = window.__rhizoh || {};

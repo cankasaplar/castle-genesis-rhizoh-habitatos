@@ -27,7 +27,7 @@ export const CHESS_OFFLINE_BATCH_TRAINER_LS_KEY_V0 = "rhizoh.chess.batch_trainer
 export const CHESS_OFFLINE_BATCH_TRAINER_EVENT_V0 = "rhizoh:chess-offline-batch-trainer-v0";
 
 const MAX_CORPUS_GAMES_V0 = 24;
-const MAX_ARCHIVE_GAMES_V0 = 4;
+const MAX_ARCHIVE_GAMES_V0 = 16;
 const AUTO_RUN_INTERVAL_MS_V0 = 24 * 60 * 60 * 1000;
 
 let autoRunAttemptedV0 = false;
@@ -222,6 +222,7 @@ export function buildChessOfflineBatchTrainerReportV0() {
     }),
     graphWeightUpdates: graph.stats?.weightUpdateCount || 0,
     lastAccuracy: last?.accuracy || null,
+    maxArchiveGames: MAX_ARCHIVE_GAMES_V0,
     apis: Object.freeze({
       run: "window.__rhizoh.runChessOfflineBatchTrainer()",
       report: "window.__rhizoh.chessOfflineBatchTrainer()"

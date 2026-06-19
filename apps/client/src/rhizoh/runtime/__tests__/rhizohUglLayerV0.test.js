@@ -30,6 +30,11 @@ import {
 import { __resetRhizohUglBootForTestV0, buildRhizohUglReportV0, ensureRhizohUglV0 } from "../rhizohUglBootV0.js";
 import { buildRhizohChessEvolutionCurveV0, __resetRhizohChessEvolutionCurveForTestV0 } from "../rhizohChessEvolutionCurveV0.js";
 import { publishChessArenaWorkspaceOpenV0 } from "../chessEngineContentionGateV0.js";
+import {
+  CHESS_ENGINE_BRIDGE_KIND_V0,
+  emitChessEngineBridgeV0
+} from "../chessEngineBridgeV0.js";
+import { readUglTrainingRecordsV0 } from "../rhizohUglTrainingRecordV0.js";
 
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -170,6 +175,30 @@ describe("rhizohUglLayerV0", () => {
     expect(report.version).toBe(1);
     expect(report.adapters).toContain("chess");
     expect(report.scheduler.pipelines).toContain("play");
+  });
+
+  it("compiles map arena moves into UGL WAL (not cluster slot moves)", () => {
+    ensureRhizohUglV0();
+    emitChessEngineBridgeV0(CHESS_ENGINE_BRIDGE_KIND_V0.PLAYED_MOVE, {
+      san: "e4",
+      fenBefore: START_FEN,
+      fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+      engine: "human",
+      matchId: "arena_test_1"
+    });
+    emitChessEngineBridgeV0(CHESS_ENGINE_BRIDGE_KIND_V0.PLAYED_MOVE, {
+      san: "Nf3",
+      fenBefore: START_FEN,
+      fen: "rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKBBNR b KQkq - 1 1",
+      engine: "stockfish_wasm",
+      slotId: 0,
+      matchId: "cluster_slot_0"
+    });
+    const records = readUglTrainingRecordsV0(8);
+    const arenaRows = records.filter((r) => r.source === "arena_move");
+    expect(arenaRows.length).toBe(1);
+    expect(arenaRows[0].playedMove).toBe("e4");
+    expect(arenaRows[0].matchId).toBe("arena_test_1");
   });
 
   it("evolution curve exposes performanceDelta", async () => {

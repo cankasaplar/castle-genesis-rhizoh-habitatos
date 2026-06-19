@@ -3,6 +3,7 @@ import { RhizohChessArenaWorkspaceV0 } from "./RhizohChessArenaWorkspaceV0.jsx";
 import { RhizohChessClusterArenaV0 } from "./RhizohChessClusterArenaV0.jsx";
 import { RHIZOH_OPEN_CHESS_ARENA_EVENT_V1 } from "../rhizoh/runtime/symbyoMapIntentBridgeV0.js";
 import { RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0 } from "../rhizoh/runtime/chessGameClusterV0.js";
+import { RHIZOH_CLOSE_CHESS_CLUSTER_ARENA_EVENT_V0 } from "../rhizoh/runtime/chessEngineContentionGateV0.js";
 import {
   ensureRhizohCoreSubsystemsBootV0,
   ensureRhizohLearningCoreBootV0
@@ -29,17 +30,21 @@ export function RhizohCoreSubsystemHostV0({ userId = "" } = {}) {
     const onChessArena = (ev) => {
       const detail = ev?.detail;
       if (!detail?.node) return;
+      setClusterOpen(false);
       setChessArena(detail);
     };
     const onClusterArena = () => {
       setChessArena(null);
       setClusterOpen(true);
     };
+    const onCloseClusterArena = () => setClusterOpen(false);
     window.addEventListener(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, onChessArena);
     window.addEventListener(RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0, onClusterArena);
+    window.addEventListener(RHIZOH_CLOSE_CHESS_CLUSTER_ARENA_EVENT_V0, onCloseClusterArena);
     return () => {
       window.removeEventListener(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, onChessArena);
       window.removeEventListener(RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0, onClusterArena);
+      window.removeEventListener(RHIZOH_CLOSE_CHESS_CLUSTER_ARENA_EVENT_V0, onCloseClusterArena);
     };
   }, []);
 

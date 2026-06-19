@@ -3,11 +3,24 @@
  * RESEARCH-ONLY
  */
 
-import { CHESS_ENGINE_TASK_KIND_V0, getChessEngineQueueSnapshotV0 } from "./chessEngineTaskQueueV0.js";
+import { CHESS_ENGINE_TASK_KIND_V0, cancelPendingClusterEngineTasksV0, getChessEngineQueueSnapshotV0 } from "./chessEngineTaskQueueV0.js";
 
 export const CHESS_ENGINE_CONTENTION_GATE_SCHEMA_V0 = "castle.rhizoh.chess_engine_contention_gate.v0";
 export const CHESS_CLUSTER_ARENA_REGISTRY_SCHEMA_V0 = "castle.rhizoh.chess_cluster_arena.v0";
 export const CHESS_ARENA_WORKSPACE_REGISTRY_SCHEMA_V0 = "castle.rhizoh.chess_arena_workspace.v0";
+export const RHIZOH_CLOSE_CHESS_CLUSTER_ARENA_EVENT_V0 = "RHIZOH_CLOSE_CHESS_CLUSTER_ARENA";
+
+/** Close 8-camera broadcast + free the single engine for map arena play. */
+export function releaseBroadcastForArenaPlayV0() {
+  publishChessClusterArenaOpenV0(false);
+  cancelPendingClusterEngineTasksV0();
+  void import("./chessStockfishEngineV0.js").then((mod) => {
+    mod.abortChessStockfishInFlightSearchV0?.();
+  });
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(RHIZOH_CLOSE_CHESS_CLUSTER_ARENA_EVENT_V0));
+  }
+}
 
 /** @param {boolean} open */
 export function publishChessArenaWorkspaceOpenV0(open) {
@@ -20,9 +33,7 @@ export function publishChessArenaWorkspaceOpenV0(open) {
     atMs: Date.now()
   });
   if (open && !wasOpen) {
-    void import("./chessStockfishEngineV0.js").then((mod) => {
-      mod.abortChessStockfishInFlightSearchV0?.();
-    });
+    releaseBroadcastForArenaPlayV0();
   }
 }
 
@@ -31,9 +42,8 @@ export function isChessArenaWorkspaceOpenV0() {
   return Boolean(window.__rhizoh?.chessArenaWorkspace?.open);
 }
 
-/** Pause background cluster ticks while map arena match is active (8-camera broadcast wins). */
+/** Pause background cluster ticks while map arena match is active. */
 export function shouldPauseClusterTickForArenaV0() {
-  if (isChessClusterArenaOpenV0()) return false;
   return isChessArenaWorkspaceOpenV0();
 }
 
@@ -100,10 +110,10 @@ export function shouldDeferArenaPrewarmV0() {
 }
 
 /**
- * Defer arena Stockfish while the 8-camera cluster modal is open (broadcast).
- * Background cluster sim must not block map chess arena entry or play.
+ * Defer arena Stockfish only while 8-camera broadcast is open and no map arena is playing.
  */
 export function shouldDeferArenaEngineWorkV0() {
+  if (isChessArenaWorkspaceOpenV0()) return false;
   const snap = getChessEngineContentionSnapshotV0();
   if (!snap.clusterRunning) return false;
   return snap.clusterArenaOpen;

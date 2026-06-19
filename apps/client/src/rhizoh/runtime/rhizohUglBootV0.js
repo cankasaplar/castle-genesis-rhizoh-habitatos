@@ -31,8 +31,14 @@ import {
 import { buildChessEngineHealthReportV0 } from "./rhizohChessEngineHealthV0.js";
 import { getUglLearnBufferSnapshotV0 } from "./rhizohUglLearnBufferSinkV0.js";
 import { drainUglLearnBufferV0 } from "./rhizohUglLearnBufferSinkV0.js";
+import {
+  CHESS_ENGINE_BRIDGE_KIND_V0,
+  onChessEngineBridgeV0
+} from "./chessEngineBridgeV0.js";
 
 let listenersInstalledV0 = false;
+/** @type {(() => void) | null} */
+let unsubArenaBridgeV0 = null;
 /** @type {Map<string, string>} */
 const lastFenByMatchV0 = new Map();
 
@@ -170,6 +176,40 @@ function handleGameEndV0(detail) {
   lastFenByMatchV0.delete(matchId);
 }
 
+/** Map 1v1 arena moves — cluster slot moves use CHESS_CLUSTER_MOVE_EVENT instead. */
+function handleArenaPlayedMoveV0(detail) {
+  if (detail?.slotId != null) return;
+  const fenBefore = String(detail.fenBefore || "").trim();
+  const fenAfter = String(detail.fen || "").trim();
+  const san = detail.san || detail.rhizohMove || detail.move;
+  if (!fenBefore || !fenAfter || !san) return;
+
+  const matchId = String(detail.matchId || "arena_local");
+  const actorId =
+    detail.engine === "human"
+      ? "human"
+      : String(detail.engine || "arena_engine").replace(/\s+/g, "_");
+
+  const event = safeCompileUglEventV0({
+    matchId,
+    fenBefore,
+    fenAfter,
+    san,
+    actorId,
+    source: "arena_move"
+  });
+  if (event) appendUglEventV0(event);
+
+  appendUglTrainingRecordV0({
+    position: fenBefore,
+    playedMove: String(san),
+    leagueTier: getActiveUglLeagueTierV0(),
+    matchId,
+    source: "arena_move"
+  });
+  lastFenByMatchV0.set(matchId, fenAfter);
+}
+
 export function ensureRhizohUglV0() {
   if (typeof window === "undefined") return null;
   window.__rhizoh = window.__rhizoh || {};
@@ -212,12 +252,16 @@ export function ensureRhizohUglV0() {
   );
   window.addEventListener(RHIZOH_DRIFT_CUBE_EVENT_V0, (ev) => handleGeometryDriftV0(ev?.detail));
   window.addEventListener(CHESS_CLUSTER_GAME_END_EVENT_V0, (ev) => handleGameEndV0(ev?.detail));
+  unsubArenaBridgeV0 = onChessEngineBridgeV0(
+    CHESS_ENGINE_BRIDGE_KIND_V0.PLAYED_MOVE,
+    handleArenaPlayedMoveV0
+  );
 
   window.__rhizoh.uglBoot = Object.freeze({
     schema: `${RHIZOH_UGL_SCHEMA_V0}.boot`,
     version: RHIZOH_UGL_VERSION_V0,
     listeners: true,
-    phase: "league_harness_v0"
+    phase: "arena_transform_v0"
   });
 
   return window.__rhizoh.uglReport;
@@ -226,6 +270,10 @@ export function ensureRhizohUglV0() {
 /** @internal vitest */
 export function __resetRhizohUglBootForTestV0() {
   listenersInstalledV0 = false;
+  if (unsubArenaBridgeV0) {
+    unsubArenaBridgeV0();
+    unsubArenaBridgeV0 = null;
+  }
   lastFenByMatchV0.clear();
   if (typeof window !== "undefined" && window.__rhizoh) {
     delete window.__rhizoh.uglReport;
