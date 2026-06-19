@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { RhizohChessArenaWorkspaceV0 } from "./RhizohChessArenaWorkspaceV0.jsx";
 import { RhizohChessClusterArenaV0 } from "./RhizohChessClusterArenaV0.jsx";
 import { RHIZOH_OPEN_CHESS_ARENA_EVENT_V1 } from "../rhizoh/runtime/symbyoMapIntentBridgeV0.js";
-import { RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0, RHIZOH_CLOSE_CHESS_CLUSTER_ARENA_EVENT_V0 } from "../rhizoh/runtime/chessGameClusterV0.js";
+import { RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0 } from "../rhizoh/runtime/chessGameClusterV0.js";
+import { RHIZOH_CLOSE_CHESS_CLUSTER_ARENA_EVENT_V0 } from "../rhizoh/runtime/chessEngineContentionGateV0.js";
 import {
   ensureRhizohCoreSubsystemsBootV0,
   ensureRhizohLearningCoreBootV0

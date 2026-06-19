@@ -5,6 +5,7 @@ import {
   isChessClusterArenaOpenV0,
   publishChessArenaWorkspaceOpenV0,
   publishChessClusterArenaOpenV0,
+  releaseBroadcastForArenaPlayV0,
   resolveChessMoveTimeoutBufferMsV0,
   shouldDeferArenaEngineWorkV0,
   shouldDeferArenaPrewarmV0,
@@ -100,6 +101,12 @@ describe("chessEngineContentionGateV0", () => {
     expect(shouldPauseClusterTickForArenaV0()).toBe(true);
     publishChessArenaWorkspaceOpenV0(false);
     publishChessClusterArenaOpenV0(false);
+  });
+
+  it("releaseBroadcastForArenaPlayV0 clears cluster arena registry", () => {
+    publishChessClusterArenaOpenV0(true);
+    releaseBroadcastForArenaPlayV0();
+    expect(isChessClusterArenaOpenV0()).toBe(false);
   });
 
   it("getChessEngineContentionSnapshotV0 includes arenaWorkspaceOpen", () => {

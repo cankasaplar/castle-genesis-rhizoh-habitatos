@@ -20,8 +20,13 @@ import {
 } from "../rhizoh/runtime/chessEngineTaskQueueV0.js";
 import { pickRhizohChessMoveV0 } from "../rhizoh/runtime/rhizohChessPlayerV0.js";
 import { CHESS_STOCKFISH_PRESET_V0 } from "../rhizoh/runtime/chessStockfishPresetsV0.js";
-import { shouldDeferArenaPrewarmV0, shouldDeferArenaEngineWorkV0, publishChessArenaWorkspaceOpenV0 } from "../rhizoh/runtime/chessEngineContentionGateV0.js";
-import { RHIZOH_CLOSE_CHESS_CLUSTER_ARENA_EVENT_V0 } from "../rhizoh/runtime/chessGameClusterV0.js";
+import {
+  shouldDeferArenaPrewarmV0,
+  shouldDeferArenaEngineWorkV0,
+  publishChessArenaWorkspaceOpenV0,
+  releaseBroadcastForArenaPlayV0,
+  RHIZOH_CLOSE_CHESS_CLUSTER_ARENA_EVENT_V0
+} from "../rhizoh/runtime/chessEngineContentionGateV0.js";
 import {
   archiveChessArenaMatchV0,
   enrichChessArenaArchiveEntryV0,
@@ -744,6 +749,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         setRhizohArenaColorV0(color);
         setRhizohMatchCountV0((n) => n + 1);
       }
+      releaseBroadcastForArenaPlayV0();
       setArenaPhase("playing");
       setStatus(tr ? "Maç hazır — iyi şanslar." : "Match ready — good luck.");
     },
@@ -950,7 +956,11 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   );
 
   useEffect(() => {
-    if (!open || (mode !== CHESS_GAME_MODE_V0.AI_AI && mode !== CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH)) {
+    if (
+      !open ||
+      arenaPhase !== "playing" ||
+      (mode !== CHESS_GAME_MODE_V0.AI_AI && mode !== CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH)
+    ) {
       return undefined;
     }
     let alive = true;
@@ -1100,6 +1110,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     };
   }, [
     open,
+    arenaPhase,
     mode,
     gameEpoch,
     game,
