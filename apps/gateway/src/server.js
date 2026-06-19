@@ -136,6 +136,7 @@ import { getTraceById, listTracesBySession } from "./infra/traceRegistry.js";
 import { canonicalEpistemicSealString, hashAndSignEpistemicSeal, EPISTEMIC_SEAL_SCHEMA } from "./epistemicSeal.js";
 import { persistEpistemicLedgerBatch } from "./epistemicLedgerStore.js";
 import { persistEpistemicForecastBatch } from "./epistemicForecastStore.js";
+import { persistAuthorityLedgerWitnessBatchV1 } from "./authorityLedgerWitnessStoreV1.js";
 import { buildRhizohExternalGroundTruthPayload } from "./rhizohExternalGroundTruthGateway.js";
 import { ingestRhizohExternalLossBatchHttp } from "./rhizohExternalLossIngestGateway.js";
 import {
@@ -869,7 +870,8 @@ const httpServer = createServer(async (req, res) => {
       epistemicIngestActorV2: true,
       routes: {
         seal: rhizohRuntime.routes.epistemicSeal,
-        logsBatch: rhizohRuntime.routes.epistemicLogsBatch
+        logsBatch: rhizohRuntime.routes.epistemicLogsBatch,
+        authorityLedgerBatch: rhizohRuntime.routes.authorityLedgerBatch
       },
       hasGatewayToken: Boolean(REQUIRED_GATEWAY_TOKEN),
       gatewayTokenLen: REQUIRED_GATEWAY_TOKEN ? REQUIRED_GATEWAY_TOKEN.length : 0
@@ -3484,6 +3486,46 @@ const httpServer = createServer(async (req, res) => {
       });
     } catch (e) {
       sendJson(res, 400, { ok: false, error: String(e?.message || e || "epistemic_log_ingest_failed") });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && pathname === rhizohRuntime.routes.authorityLedgerBatch) {
+    try {
+      const auth = await resolveEpistemicIngestActor(req);
+      if (!auth.ok) {
+        sendJson(res, 401, { ok: false, error: auth.reason || "auth_required" });
+        return;
+      }
+      const ip = getHttpClientIp(req);
+      const rlKey = `uid:${auth.uid || ip}`;
+      if (!checkHttpRateLimit(`authority_ledger:${rlKey}`, RL_EPISTEMIC_LOG_PER_MIN, 60_000)) {
+        sendJson(res, 429, { ok: false, error: "rate_limit_exceeded" });
+        return;
+      }
+      const body = await readHttpJson(req, 512 * 1024);
+      const entries = Array.isArray(body?.entries) ? body.entries.slice(0, 80) : [];
+      if (!entries.length) {
+        sendJson(res, 400, { ok: false, error: "entries_required" });
+        return;
+      }
+      const witnessed = persistAuthorityLedgerWitnessBatchV1(auth.uid, entries, EPISTEMIC_SEAL_SECRET);
+      if (witnessed.witnessed > 0) {
+        recordGenesisEpistemicLedgerPersisted(witnessed.witnessed);
+        const clientSeal = witnessed.lastWitness?.clientSealHash;
+        if (clientSeal) recordGenesisEpistemicSealIssued(clientSeal);
+      }
+      sendJson(res, 200, {
+        ok: true,
+        witnessed: witnessed.witnessed,
+        quarantined: witnessed.quarantined,
+        chainHeight: witnessed.chainHeight,
+        chainHead: witnessed.chainHead,
+        lastWitness: witnessed.lastWitness,
+        results: witnessed.results
+      });
+    } catch (e) {
+      sendJson(res, 400, { ok: false, error: String(e?.message || e || "authority_ledger_witness_failed") });
     }
     return;
   }
