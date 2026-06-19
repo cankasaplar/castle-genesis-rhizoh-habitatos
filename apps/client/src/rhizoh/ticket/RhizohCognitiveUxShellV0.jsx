@@ -1,12 +1,16 @@
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
+  COGNITIVE_UX_SPACE_TRAVERSAL_EVENT_V0,
   COGNITIVE_UX_TRAVERSAL_EVENT_V0,
   buildCognitiveUxSnapshotV0,
   isCognitiveUxEnabledV0,
+  onUserTraverseSpaceV0,
   onUserTraverseV0
 } from "./cognitiveUxLayerV0.js";
 import { EPISTEMIC_UI_EVENT_V0 } from "./cognitiveVisualizationBindingV0.js";
 import { MUTATION_REASON_CATEGORY_V1 } from "./mutationReasonCodeOntologyV1.js";
+import { CAUSAL_SPACE_ID_V0 } from "../runtime/sportsCausalSpaceV0.js";
+import { SPORTS_EVENT_V0 } from "../runtime/sportsEventAdapterV0.js";
 
 /**
  * Epistemic UX shell — 4 mandatory panels (CNR-01 / UI-01).
@@ -19,6 +23,7 @@ export const RhizohCognitiveUxShellV0 = memo(function RhizohCognitiveUxShellV0({
   const [collapsed, setCollapsed] = useState(collapsedProp ?? false);
   const [tick, setTick] = useState(0);
   const [traversal, setTraversal] = useState(/** @type {object | null} */ (null));
+  const [activeSpace, setActiveSpace] = useState(CAUSAL_SPACE_ID_V0.CHESS);
 
   const bump = useCallback(() => setTick((n) => n + 1), []);
 
@@ -28,10 +33,14 @@ export const RhizohCognitiveUxShellV0 = memo(function RhizohCognitiveUxShellV0({
       bump();
     };
     window.addEventListener(COGNITIVE_UX_TRAVERSAL_EVENT_V0, onTraversal);
+    window.addEventListener(COGNITIVE_UX_SPACE_TRAVERSAL_EVENT_V0, onTraversal);
     window.addEventListener(EPISTEMIC_UI_EVENT_V0, bump);
+    window.addEventListener(SPORTS_EVENT_V0, bump);
     return () => {
       window.removeEventListener(COGNITIVE_UX_TRAVERSAL_EVENT_V0, onTraversal);
+      window.removeEventListener(COGNITIVE_UX_SPACE_TRAVERSAL_EVENT_V0, onTraversal);
       window.removeEventListener(EPISTEMIC_UI_EVENT_V0, bump);
+      window.removeEventListener(SPORTS_EVENT_V0, bump);
     };
   }, [bump]);
 
@@ -47,19 +56,21 @@ export const RhizohCognitiveUxShellV0 = memo(function RhizohCognitiveUxShellV0({
   const cux = snapshot?.cux;
   const binding = cux?.binding;
   const viewport = cux?.viewport;
+  const chessViewport = viewport?.chess?.viewport || viewport;
+  const sportsViewport = viewport?.sports?.viewport;
   const authority = binding?.pull;
 
-  const handleTraverse = useCallback(
-    (nodeId) => {
-      const packet = onUserTraverseV0({
+  const handleTraverseSpace = useCallback(
+    (spaceId, nodeId) => {
+      const packet = onUserTraverseSpaceV0({
+        spaceId,
         nodeId,
-        pipeline: snapshot?.pipeline,
-        alerts: snapshot?.pipeline?.anomalies?.alerts,
+        matchId: nodeId,
         lineageDepth: 50
       });
       setTraversal(packet);
     },
-    [snapshot]
+    []
   );
 
   const setCollapsedState = (next) => {
@@ -99,17 +110,59 @@ export const RhizohCognitiveUxShellV0 = memo(function RhizohCognitiveUxShellV0({
       </header>
 
       <div className="max-h-[48vh] overflow-y-auto p-2 space-y-2 text-[9px] normal-case text-white/80 no-scrollbar">
+        <div className="flex gap-1 mb-1">
+          {[CAUSAL_SPACE_ID_V0.CHESS, CAUSAL_SPACE_ID_V0.SPORTS].map((sid) => (
+            <button
+              key={sid}
+              type="button"
+              className={`rounded px-1.5 py-0.5 text-[7px] uppercase tracking-wide border ${
+                activeSpace === sid
+                  ? "border-violet-300/60 text-violet-100 bg-violet-950/40"
+                  : "border-white/15 text-white/50"
+              }`}
+              onClick={() => {
+                setActiveSpace(sid);
+                handleTraverseSpace(sid, sid === CAUSAL_SPACE_ID_V0.SPORTS ? "demo_match" : "SC");
+              }}
+            >
+              {sid.split(".")[0]}
+            </button>
+          ))}
+        </div>
+
         <Panel title="Drift Space" subtitle="görür · suggest-only" tone="drift">
-          <DriftFieldPanel viewport={viewport?.driftField} onTraverse={handleTraverse} />
-          <ScSpikePanel viewport={viewport?.scSpike} onTraverse={handleTraverse} />
+          {activeSpace === CAUSAL_SPACE_ID_V0.SPORTS ? (
+            <SportsStochasticPanel
+              viewport={sportsViewport}
+              onTraverse={(id) => handleTraverseSpace(CAUSAL_SPACE_ID_V0.SPORTS, id)}
+            />
+          ) : (
+            <>
+              <DriftFieldPanel
+                viewport={chessViewport?.driftField}
+                onTraverse={(id) => onUserTraverseV0({ nodeId: id, pipeline: snapshot?.pipeline })}
+              />
+              <ScSpikePanel
+                viewport={chessViewport?.scSpike}
+                onTraverse={(id) => onUserTraverseV0({ nodeId: id, pipeline: snapshot?.pipeline })}
+              />
+            </>
+          )}
         </Panel>
 
         <Panel title="REC Temporal" subtitle="memory waveform" tone="rec">
-          <RecWaveformPanel viewport={viewport?.recWaveform} onTraverse={handleTraverse} />
+          <RecWaveformPanel
+            viewport={chessViewport?.recWaveform}
+            onTraverse={(id) => onUserTraverseV0({ nodeId: id, pipeline: snapshot?.pipeline })}
+          />
         </Panel>
 
-        <Panel title="CAL Traversal" subtitle="gezer · read_only" tone="cal">
-          <TraversalPanel traversal={traversal} onTraverse={handleTraverse} />
+        <Panel title="CAL Traversal" subtitle="gezer · space-aware" tone="cal">
+          <TraversalPanel
+            traversal={traversal}
+            activeSpace={activeSpace}
+            onTraverseSpace={handleTraverseSpace}
+          />
         </Panel>
 
         <Panel title="Authority Gate" subtitle="onaylar · mutation locked" tone="authority">
@@ -221,39 +274,78 @@ function RecWaveformPanel({ viewport, onTraverse }) {
   );
 }
 
-/** @param {{ traversal?: object | null, onTraverse: (id: string) => void }} props */
-function TraversalPanel({ traversal, onTraverse }) {
+/** @param {{ viewport?: object, onTraverse: (id: string) => void }} props */
+function SportsStochasticPanel({ viewport, onTraverse }) {
+  const layers = viewport?.layers || [];
+  if (!layers.length) {
+    return (
+      <button
+        type="button"
+        className="text-[8px] text-violet-200/80 underline"
+        onClick={() => onTraverse("demo_match")}
+      >
+        Open sports.causal.space (demo_match)
+      </button>
+    );
+  }
+  return (
+    <div className="space-y-1">
+      {layers.map((layer) => (
+        <button
+          key={layer.category}
+          type="button"
+          className="flex w-full items-center gap-2 rounded border border-violet-400/25 bg-violet-950/20 px-1.5 py-1"
+          onClick={() => onTraverse(`category:${layer.category}`)}
+        >
+          <SvgGlyph projected={layer} size={32} />
+          <span className="text-[8px] text-violet-100/80 truncate">
+            {layer.category} · stochastic
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** @param {{ traversal?: object | null, activeSpace: string, onTraverseSpace: (spaceId: string, nodeId: string) => void }} props */
+function TraversalPanel({ traversal, activeSpace, onTraverseSpace }) {
   const ex = traversal?.exploration;
-  const lineage = ex?.ticketLineage || [];
+  const lineage = ex?.ticketLineage || ex?.sportsEventLineage || [];
 
   return (
     <div className="space-y-1">
       <button
         type="button"
         className="text-[8px] text-fuchsia-200/90 underline"
-        onClick={() => onTraverse(`category:${MUTATION_REASON_CATEGORY_V1.SC}`)}
+        onClick={() =>
+          onTraverseSpace(
+            activeSpace,
+            activeSpace === CAUSAL_SPACE_ID_V0.SPORTS ? "demo_match" : "category:SC"
+          )
+        }
       >
-        Walk SC lineage
+        Walk {activeSpace}
       </button>
       {ex ? (
         <ul className="max-h-16 overflow-y-auto space-y-0.5">
-          {lineage.slice(0, 6).map((row) => (
-            <li key={row.mutationId || row.ticketId} className="text-[7px] font-mono text-white/55 truncate">
-              <button
-                type="button"
-                className="hover:text-fuchsia-200"
-                onClick={() =>
-                  onTraverse(row.mutationId ? `audit:${row.mutationId}` : `ticket:${row.ticketId}`)
-                }
-              >
-                {row.ticketId || "—"} → {row.mutationId?.slice(0, 12) || "—"}
-              </button>
+          {lineage.slice(0, 6).map((row, i) => (
+            <li
+              key={row.mutationId || row.ticketId || row.eventType || i}
+              className="text-[7px] font-mono text-white/55 truncate"
+            >
+              {row.eventType || row.ticketId || "—"}
+              {row.mutationId ? ` → ${row.mutationId.slice(0, 12)}` : ""}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-[8px] text-white/40">Click drift field to traverse</p>
+        <p className="text-[8px] text-white/40">Select a causal space to traverse</p>
       )}
+      {ex?.sportsDriftCategories ? (
+        <p className="text-[7px] text-violet-200/60">
+          sports drift: {JSON.stringify(ex.sportsDriftCategories)}
+        </p>
+      ) : null}
       {ex?.stateProposal?.summary ? (
         <p className="text-[7px] text-white/45 italic">{ex.stateProposal.summary}</p>
       ) : null}

@@ -12,7 +12,8 @@ export const MUTATION_REASON_CATEGORY_V1 = Object.freeze({
   SIG: "SIG",
   INTENT: "INTENT",
   SYS: "SYS",
-  ADMIT: "ADMIT"
+  ADMIT: "ADMIT",
+  ENTROPY_DRIFT: "ENTROPY_DRIFT"
 });
 
 export const MUTATION_REASON_CODE_V1 = Object.freeze({
@@ -50,7 +51,8 @@ export const MUTATION_REASON_CODE_V1 = Object.freeze({
   ADMIT_PRISM_DENIED: "ADMIT_PRISM_DENIED",
   ADMIT_CAPABILITY_NOT_FOUND: "ADMIT_CAPABILITY_NOT_FOUND",
   ADMIT_CUBE_LOCKED: "ADMIT_CUBE_LOCKED",
-  ADMIT_RATE_CONTROLLED: "ADMIT_RATE_CONTROLLED"
+  ADMIT_RATE_CONTROLLED: "ADMIT_RATE_CONTROLLED",
+  ENTROPY_DRIFT_STOCHASTIC_ANOMALY: "ENTROPY_DRIFT_STOCHASTIC_ANOMALY"
 });
 
 /** @type {Record<string, string>} */
@@ -89,7 +91,9 @@ const REASON_MESSAGES_V1 = Object.freeze({
   [MUTATION_REASON_CODE_V1.ADMIT_PRISM_DENIED]: "Admission denied prism access",
   [MUTATION_REASON_CODE_V1.ADMIT_CAPABILITY_NOT_FOUND]: "Required capability not found",
   [MUTATION_REASON_CODE_V1.ADMIT_CUBE_LOCKED]: "Cube locked by admission",
-  [MUTATION_REASON_CODE_V1.ADMIT_RATE_CONTROLLED]: "Admission rate controlled"
+  [MUTATION_REASON_CODE_V1.ADMIT_RATE_CONTROLLED]: "Admission rate controlled",
+  [MUTATION_REASON_CODE_V1.ENTROPY_DRIFT_STOCHASTIC_ANOMALY]:
+    "Stochastic entropy drift anomaly in open causal space"
 });
 
 /** Maps validator legacy slug → ontology code. */

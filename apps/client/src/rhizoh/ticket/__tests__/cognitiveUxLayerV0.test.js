@@ -112,7 +112,8 @@ describe("cognitiveUxLayerV0", () => {
       }
     });
     expect(cux.cnrGuard.ok).toBe(true);
-    expect(cux.viewport.driftField).toBeDefined();
+    expect(cux.viewport.chess).toBeDefined();
+    expect(cux.viewport.sports).toBeDefined();
     expect(cux.cognitiveAction?.exploration).toBeDefined();
     expect(cux.cubeStateCommit).toBe(false);
   });

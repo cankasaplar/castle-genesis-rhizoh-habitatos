@@ -15,6 +15,13 @@ import { RHIZOH_UGL_GAME_TYPE_V0 } from "./rhizohUglSchemaV0.js";
 
 export const RHIZOH_ARENA_ROUTER_SCHEMA_V0 = "castle.rhizoh.arena_router.v0";
 
+function isRoutableCoverageV0(coverage) {
+  return (
+    coverage === DOMAIN_COVERAGE_V0.FULL_ACTIVE ||
+    coverage === DOMAIN_COVERAGE_V0.EVENT_ACTIVE
+  );
+}
+
 /** @type {object[]} */
 const routeLogV0 = [];
 
@@ -39,8 +46,8 @@ export function routeUglEventV0(uglEvent) {
   const gameType =
     uglEvent?.meta?.gameType || uglEvent?.s?.meta?.gameType || RHIZOH_UGL_GAME_TYPE_V0.CHESS;
   const descriptor = resolveDomainDescriptorV0(gameType);
-  const routable = descriptor.coverage === DOMAIN_COVERAGE_V0.FULL_ACTIVE;
-  const adapter = routable && descriptor.adapterId ? selectAdapterByIdV0(descriptor.adapterId) : null;
+  const routable = isRoutableCoverageV0(descriptor.coverage);
+  const adapter = descriptor.adapterId ? selectAdapterByIdV0(descriptor.adapterId) : null;
 
   const route = Object.freeze({
     schema: RHIZOH_ARENA_ROUTER_SCHEMA_V0,
@@ -49,7 +56,8 @@ export function routeUglEventV0(uglEvent) {
     adapterId: descriptor.adapterId,
     coverage: descriptor.coverage,
     routable,
-    executionClass: routable ? "read_only" : "suggest",
+    executionClass:
+      descriptor.coverage === DOMAIN_COVERAGE_V0.FULL_ACTIVE ? "read_only" : "suggest",
     adapter: adapter
       ? Object.freeze({
           schema: adapter.schema,
@@ -74,7 +82,7 @@ export function routeUglEventV0(uglEvent) {
 export function resolveArenaForGameTypeV0(gameType) {
   const descriptor = resolveDomainDescriptorV0(gameType);
   const adapter =
-    descriptor.coverage === DOMAIN_COVERAGE_V0.FULL_ACTIVE && descriptor.adapterId
+    isRoutableCoverageV0(descriptor.coverage) && descriptor.adapterId
       ? selectAdapterByIdV0(descriptor.adapterId)
       : descriptor.adapterId
         ? selectAdapterByIdV0(descriptor.adapterId)

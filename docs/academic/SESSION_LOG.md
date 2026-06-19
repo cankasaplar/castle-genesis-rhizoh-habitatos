@@ -400,6 +400,28 @@ Invariant confirmed: Media may inform observation; media may never define canoni
 - **Karar özeti:** Koordinasyon katmanı eklendi; graf/hash CI hakemi değişmedi.  
 - **Frozen core:** dokunulmadı  
 
+### 2026-06-19 — Sports Adapter v0 (event-dense · multi-causal-space)
+
+**Source:** Principal — Sports as epistemic stress test, not feature add.
+
+**Summary:**
+- Event-dense model (no snapshot): `match_event` · `player_action` · `momentum_shift` · `score_delta`
+- `sports.causal.space` + `chess.causal.space` multiplexing
+- `EVENT_ACTIVE` coverage; arena router routable with `suggest` execution class
+- `ENTROPY_DRIFT` category for stochastic anomalies
+- CAL space traversal: `traverseSpace(spaceId, matchId)`
+- CUX multi-space viewport: deterministic + stochastic + hybrid overlap
+
+**Linked Artifacts:**
+- `docs/RHIZOH_SPORTS_ADAPTER_V0.md`
+- `apps/client/src/rhizoh/runtime/sportsCausalSpaceV0.js`
+- `apps/client/src/rhizoh/runtime/sportsEventAdapterV0.js`
+- `apps/client/src/rhizoh/runtime/sportsDriftMapperV0.js`
+
+- **Katılımcılar:** Principal, **Cursor Agent (Castle)**
+- **SPECFLOW:** RESEARCH-ONLY / FUTURE-PROOF-ONLY
+- **Frozen core:** dokunulmadı
+
 ### 2026-06-19 — CUX v0 scaffold (perception → traversal → experience)
 
 **Source:** Principal — CNR theory-complete, interface-incomplete; CAL idle without spatial experience.
