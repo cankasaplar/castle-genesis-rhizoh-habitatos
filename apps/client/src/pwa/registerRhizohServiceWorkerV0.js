@@ -4,7 +4,7 @@
 
 import { logCastleLifecycleV0 } from "../rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
 
-export const RHIZOH_PWA_SHELL_VERSION_V0 = "rhizoh-shell-v1";
+export const RHIZOH_PWA_SHELL_VERSION_V0 = "rhizoh-shell-v4";
 export const RHIZOH_PWA_SW_URL_V0 = "/service-worker.js";
 
 /**
@@ -24,12 +24,19 @@ export async function registerRhizohServiceWorkerV0() {
       updateViaCache: "none"
     });
 
+    try {
+      await registration.update();
+    } catch {
+      /* non-fatal */
+    }
+
     registration.addEventListener("updatefound", () => {
       const worker = registration.installing;
       if (!worker) return;
       worker.addEventListener("statechange", () => {
         if (worker.state === "installed" && navigator.serviceWorker.controller) {
           logCastleLifecycleV0("pwa_sw_update", { version: RHIZOH_PWA_SHELL_VERSION_V0 });
+          worker.postMessage({ type: "SKIP_WAITING" });
         }
       });
     });

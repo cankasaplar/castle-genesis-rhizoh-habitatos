@@ -5,9 +5,16 @@
  */
 
 import { isRhizohProductSurfaceDrawerOpenV0 } from "./rhizohProductChromePanelsV0.js";
+import {
+  RHIZOH_UI_CHROME_TOGGLE_STRIP_H_REM_V0,
+  RHIZOH_UI_PRODUCT_DRAWER_H_REM_V0,
+  RHIZOH_UI_SHELL_BAR_H_REM_V0,
+  resolveRhizohT0CapabilityHaloLayoutV0,
+  resolveRhizohT0ChatBottomCssV0 as resolveT0ChatBottomFromLayoutV0
+} from "./rhizohUiLayoutResolverV0.js";
 
-/** Bottom product drawer (`RhizohProductSurfaceDrawerV0`) approximate height reserve. */
-export const RHIZOH_PRODUCT_SURFACE_DRAWER_H_REM_V0 = 13.5;
+/** @deprecated use RHIZOH_UI_PRODUCT_DRAWER_H_REM_V0 */
+export const RHIZOH_PRODUCT_SURFACE_DRAWER_H_REM_V0 = RHIZOH_UI_PRODUCT_DRAWER_H_REM_V0;
 
 /**
  * Visible in first-match mode: CEOL + continuity rail, GLOBE/swarm world, anchor/intent, chat, bottom drawers.
@@ -25,11 +32,11 @@ export function isRhizohT0FirstMatchIdentityV0() {
   return String(env.VITE_DEBUG ?? "").trim() !== "1";
 }
 
-/** Product shell bar (`UnifiedProductShellBar`) fixed height. */
-export const RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0 = 3.35;
+/** @deprecated use RHIZOH_UI_SHELL_BAR_H_REM_V0 */
+export const RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0 = RHIZOH_UI_SHELL_BAR_H_REM_V0;
 
-/** @deprecated separate toggle strip removed — bottom nav toggles panels. */
-export const RHIZOH_CHROME_TOGGLE_STRIP_H_REM_V0 = 0;
+/** @deprecated use RHIZOH_UI_CHROME_TOGGLE_STRIP_H_REM_V0 */
+export const RHIZOH_CHROME_TOGGLE_STRIP_H_REM_V0 = RHIZOH_UI_CHROME_TOGGLE_STRIP_H_REM_V0;
 
 /**
  * Chat dock `bottom` offset — product bar + optional surface drawer.
@@ -38,19 +45,7 @@ export const RHIZOH_CHROME_TOGGLE_STRIP_H_REM_V0 = 0;
 export function resolveRhizohT0ChatBottomCssV0(opts = {}) {
   const drawerOpen =
     opts.drawerOpen !== undefined ? opts.drawerOpen === true : isRhizohProductSurfaceDrawerOpenV0();
-  const drawerRem = drawerOpen ? RHIZOH_PRODUCT_SURFACE_DRAWER_H_REM_V0 : 0;
-  return `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + ${drawerRem}rem + env(safe-area-inset-bottom, 0px))`;
+  return resolveT0ChatBottomFromLayoutV0({ drawerOpen });
 }
 
-/** Capability wheel — fixed top-right hub (keeps reply / octo bands clear). */
-export function resolveRhizohT0CapabilityHaloLayoutV0() {
-  return Object.freeze({
-    position: "fixed",
-    top: "max(12px, env(safe-area-inset-top, 0px))",
-    right: "max(12px, env(safe-area-inset-right, 0px))",
-    left: "auto",
-    bottom: "auto",
-    transform: "none",
-    zIndex: 68
-  });
-}
+export { resolveRhizohT0CapabilityHaloLayoutV0 };

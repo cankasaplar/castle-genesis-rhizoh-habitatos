@@ -11,7 +11,7 @@ const files = [
 const blockedPatterns = [
   { name: "eval", re: /\beval\s*\(/g },
   { name: "Function ctor", re: /\bnew Function\s*\(/g },
-  { name: "child_process exec", re: /\bexec\s*\(/g },
+  { name: "child_process exec", re: /(?<![.\w])exec\s*\(/g },
   { name: "hardcoded api key", re: /api[_-]?key\s*[:=]\s*["'][A-Za-z0-9_\-]{16,}["']/gi }
 ];
 

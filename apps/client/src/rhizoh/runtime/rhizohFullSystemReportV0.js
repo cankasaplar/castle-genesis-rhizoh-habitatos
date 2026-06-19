@@ -50,6 +50,9 @@ import { getLiveLayerSnapshotV0 } from "./rhizohLiveLayerV0.js";
 import { getThinkingLayerSnapshotV0 } from "./rhizohThinkingLayerV0.js";
 import { getPresencePrimitiveSnapshotV1 } from "./rhizohPresencePrimitiveV1.js";
 import { getTranscriptAcceptanceSnapshotV0 } from "./rhizohTranscriptAcceptanceLedgerV0.js";
+import { buildSystemIntegrityTiersV0 } from "./rhizohSystemIntegrityTiersV0.js";
+import { resolveWorldLayerActivationStatusV0 } from "./rhizohWorldLayerActivationStatusV0.js";
+import { getSpatialRendererRegistrySnapshotV0 } from "./rhizohSpatialSurfaceRendererRegistryV0.js";
 
 export const RHIZOH_FULL_SYSTEM_REPORT_SCHEMA_V0 = "rhizoh.full_system_report.v0";
 
@@ -403,7 +406,8 @@ function collectEpistemicSubstrateV0() {
       "__rhizoh.turnBehaviorConsistency",
       "__RHIZOH_REPLAY_CAUSAL__(domain, intent)",
       "__rhizoh.identityContinuity",
-      "__rhizoh.continuityKernel",
+      "__rhizoh.continuityKernel.rebuildCausalGraph()",
+      "__rhizoh.rebuildCausalGraph()",
       "__rhizoh.personaScheduler",
       "__rhizoh.pulseLoop",
       "__rhizoh.identityEventLog",
@@ -422,7 +426,10 @@ function collectEpistemicSubstrateV0() {
       "__rhizoh.transcriptAcceptance",
       "__rhizoh.lastPresenceEvent",
       "__rhizoh.textOutputQueue",
-      "__rhizoh.gatewayTransport"
+      "__rhizoh.gatewayTransport",
+      "__rhizoh.worldLayerStatus",
+      "__rhizoh.spatialRendererRegistry",
+      "__rhizoh.integrityTiers"
     ])
   });
 }
@@ -607,6 +614,31 @@ export function runFullSystemReportV0(opts = {}) {
   const domainCoherence = reconcileDomainPathCoherenceV0(pathname);
   const liveConflicts = detectLiveConflictsV0(pathname, { structuralOnly: true });
   const presenceRuntime = collectPresenceRuntimeDiagnosticV0();
+  const eventGraphBridge =
+    typeof window !== "undefined" ? window.__rhizoh?.runtimeEventGraphBridge ?? null : null;
+  const genesisStream =
+    typeof window !== "undefined" ? window.__rhizoh?.genesisStream ?? null : null;
+
+  const worldLayerStatus = resolveWorldLayerActivationStatusV0();
+  const rendererRegistry = getSpatialRendererRegistrySnapshotV0();
+
+  const integrityTiers = buildSystemIntegrityTiersV0({
+    causalMap,
+    audit,
+    liveConflicts,
+    domainCoherence,
+    envBlockers: collectEnvBlockersV0(),
+    probe,
+    spatialNodes: {
+      total: listSpatialNodesV0().length,
+      static: listSpatialNodesV0(SPATIAL_NODE_TIER_V0.STATIC).length,
+      live: listSpatialNodesV0(SPATIAL_NODE_TIER_V0.LIVE).length,
+      temporal: listSpatialNodesV0(SPATIAL_NODE_TIER_V0.TEMPORAL).length
+    },
+    spatialReadyGate: getSpatialReadyGateSnapshotV0(),
+    worldLayerStatus,
+    rendererRegistry
+  });
 
   const report = Object.freeze({
     schema: RHIZOH_FULL_SYSTEM_REPORT_SCHEMA_V0,
@@ -634,8 +666,13 @@ export function runFullSystemReportV0(opts = {}) {
       temporal: listSpatialNodesV0(SPATIAL_NODE_TIER_V0.TEMPORAL).length
     }),
     spatialReadyGate: getSpatialReadyGateSnapshotV0(),
+    worldLayerStatus,
+    rendererRegistry,
+    integrityTiers,
     temporalTrail: getSpatialTemporalTrailSnapshotV0(),
     causalMap,
+    eventGraphBridge,
+    genesisStream,
     liveConflicts,
     domainCoherence: auditDomainCoherenceV0(pathname),
     domainReconcile: domainCoherence,
@@ -644,6 +681,9 @@ export function runFullSystemReportV0(opts = {}) {
     presenceRuntime,
     evaluation: Object.freeze({
       structuralTruthPass: causalMap.truthLoss?.structuralPass !== false,
+      structuralPass: integrityTiers.structuralPass,
+      spatialSurfaceStatus: integrityTiers.spatialSurfaceStatus,
+      operationalPass: integrityTiers.operationalPass,
       compressionBudget: causalMap.truthLoss?.compressionBudget ?? null,
       compressionContext: causalMap.compressionContext ?? null,
       probeMode: probe?.isolated ? "isolated_read_only" : probe ? "live_mutating" : "none",
@@ -653,13 +693,9 @@ export function runFullSystemReportV0(opts = {}) {
     windowSnapshots: collectWindowSnapshotsV0(),
     probe,
     audit,
-    pass:
-      causalMap.truthLoss?.structuralPass !== false &&
-      (probe?.pass ?? true) &&
-      (audit?.pass ?? true) &&
-      domainCoherence.pass === true &&
-      liveConflicts.structuralPass === true &&
-      collectEnvBlockersV0().length === 0
+    pass: integrityTiers.operationalPass,
+    structuralPass: integrityTiers.structuralPass,
+    spatialSurfaceStatus: integrityTiers.spatialSurfaceStatus
   });
 
   if (typeof window !== "undefined") {
@@ -686,7 +722,27 @@ export function printFullSystemReportV0(report) {
     `  path: ${r.location.pathname}`,
     `  domain: ${r.domainCore.activeDomain} (path→${r.domainCoherence?.expectedDomain ?? "?"})`,
     `  coherence: ${r.domainCoherence?.pass ? "✔ aligned" : `✘ ${(r.domainCoherence?.issues || []).join(", ")}`}`,
-    `  pass: ${r.pass ? "✔ YES" : "✘ NO"}`,
+    "  OVERALL",
+    ...(r.integrityTiers?.tiers || []).map((tier) => {
+      const suffix =
+        tier.status === "pending"
+          ? ` PENDING${tier.note ? ` — ${tier.note}` : ""}`
+          : tier.pass
+            ? ""
+            : " FAIL";
+      return `  ${tier.glyph} ${tier.label}${suffix}`;
+    }),
+    `  structural: ${r.structuralPass ? "✔ YES" : "✘ NO"}`,
+    `  spatial surface: ${
+      r.spatialSurfaceStatus === "pending"
+        ? "⏳ PENDING"
+        : r.spatialSurfaceStatus === "pass"
+          ? "✔ YES"
+          : "✘ NO"
+    }`,
+    `  operational: ${r.pass ? "✔ YES" : "✘ NO"}`,
+    `  worldLayer: ${r.worldLayerStatus?.phase ?? "—"} · target ${r.worldLayerStatus?.target ?? "—"}`,
+    `  renderer: ${r.rendererRegistry?.activeRenderer ?? "none"} · ${r.rendererRegistry?.narrative ?? ""}`,
     "───────────────────────────────────────────",
     "  ENV",
     `    gateway: ${r.env.gateway ? "✔" : "✘"}  cesium: ${r.env.cesium ? "✔" : "✘"}  worldLayer: ${r.env.worldLayer ? "✔" : "✘"}`,
@@ -705,6 +761,8 @@ export function printFullSystemReportV0(report) {
     `    spatial nodes: ${r.spatialNodes.total} (s:${r.spatialNodes.static} l:${r.spatialNodes.live} t:${r.spatialNodes.temporal})`,
     `    temporal trail: ${r.temporalTrail?.count ?? 0} markers`,
     `    causal map: ${r.causalMap?.nodeCount ?? 0} nodes / ${r.causalMap?.edgeCount ?? 0} edges (compressed:${r.causalMap?.compressed ? "yes" : "no"} ratio:${r.causalMap?.compression?.compressionRatio ?? 0})`,
+    `    causal map raw: ${r.causalMap?.causalMapRaw?.nodeCount ?? 0} nodes / ${r.causalMap?.causalMapRaw?.edgeCount ?? 0} edges`,
+    `    event→graph bridge: commits ${r.eventGraphBridge?.stats?.committed ?? 0} · last ${r.eventGraphBridge?.stats?.lastSource ?? "—"} · genesis stream ${r.genesisStream?.status ?? "not_wired"}${r.genesisStream?.lastPollHttpStatus ? ` (poll ${r.genesisStream.lastPollHttpStatus})` : ""}`,
     `    truth loss: ${
       r.evaluation?.structuralTruthPass
         ? `structural ok (intentional:${r.causalMap?.truthLoss?.intentionalLossCount ?? 0})`
@@ -714,7 +772,7 @@ export function printFullSystemReportV0(report) {
     `    conflicts: ${r.liveConflicts?.structuralPass ? "none (structural)" : r.liveConflicts?.structuralConflictCount ?? 0}`,
     `    probe mode: ${r.evaluation?.probeMode ?? "none"}`,
     `    truthTrace: ${r.truthTrace.enabled ? "on" : "off"} (${r.truthTrace.count} entries)`,
-    `    spatial gate: ${r.spatialReadyGate?.open ? "open" : "buffered"} (cesium:${r.spatialReadyGate?.cesiumReady ? "ready" : "pending"} buf:${r.spatialReadyGate?.buffered ?? 0})`,
+    `    spatial gate: ${r.spatialReadyGate?.open ? "open" : "buffered"} (renderer:${r.rendererRegistry?.activeRenderer ?? "none"} cesium:${r.spatialReadyGate?.cesiumReady ? "ready" : "pending"} buf:${r.spatialReadyGate?.buffered ?? 0})`,
     `    ws: ${r.websocket?.httpFallbackActive ? "HTTP fallback active" : r.websocket?.configured ? "configured" : "missing"}`,
     `    voice out: ${r.epistemicSubstrate?.voiceOutput?.ttsAvailable ? "tts" : "text-buffer"} (never dead)`,
     `    compute adapter: ${r.epistemicSubstrate?.computeAdapter?.note ?? "isolated from voice"}`,
@@ -776,8 +834,13 @@ export function printFullSystemReportV0(report) {
 
   if (r.audit && !r.probe) {
     lines.push("  CONSISTENCY AUDIT");
+    lines.push(
+      `    structural: ${r.audit.structuralPass ? "✔" : "✘"} · spatial: ${r.audit.spatialSurfaceStatus ?? (r.audit.axes?.spatialDrift?.status ?? "—")}`
+    );
     for (const [key, axis] of Object.entries(r.audit.axes)) {
-      lines.push(`    ${axis.pass ? "✔" : "✘"} ${key}`);
+      const glyph =
+        axis.status === "pending" ? "⏳" : axis.pass ? "✔" : "✘";
+      lines.push(`    ${glyph} ${key}${axis.pendingReason ? ` (${axis.pendingReason})` : ""}`);
     }
   }
 

@@ -75,7 +75,20 @@
         ]
       },
       {
-        "source": "**/*.wasm",
+        "source": "/chess-engine/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-store, no-cache, must-revalidate"
+          },
+          {
+            "key": "Cross-Origin-Resource-Policy",
+            "value": "same-origin"
+          }
+        ]
+      },
+      {
+        "source": "/chess-engine/*.wasm",
         "headers": [
           {
             "key": "Content-Type",
@@ -83,13 +96,38 @@
           },
           {
             "key": "Cache-Control",
-            "value": "public,max-age=31536000,immutable"
+            "value": "no-store, no-cache, must-revalidate"
+          },
+          {
+            "key": "Cross-Origin-Resource-Policy",
+            "value": "same-origin"
           }
         ]
       },
       {
-        "source": "/chess-engine/**",
+        "source": "/chess-engine/*.js",
         "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/javascript"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "no-store, no-cache, must-revalidate"
+          },
+          {
+            "key": "Cross-Origin-Resource-Policy",
+            "value": "same-origin"
+          }
+        ]
+      },
+      {
+        "source": "/assets/**/*.wasm",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/wasm"
+          },
           {
             "key": "Cache-Control",
             "value": "public,max-age=31536000,immutable"
@@ -118,7 +156,11 @@
           },
           {
             "key": "Cross-Origin-Opener-Policy",
-            "value": "same-origin-allow-popups"
+            "value": "same-origin"
+          },
+          {
+            "key": "Cross-Origin-Embedder-Policy",
+            "value": "credentialless"
           }
         ]
       }

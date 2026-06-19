@@ -1,9 +1,14 @@
 /**
  * Compute adapter registry — WebGPU/rendering ONLY.
  * Chrome "No available adapters" belongs HERE, never voice STT/TTS.
+ * Gated by rhizohSpatialModeV0 — single active world engine.
  */
 
 import { requestWebGpuAdapterQuietlyV0 } from "./rhizohProductionLogNamespacesV0.js";
+import {
+  buildRhizohComputeSkipSnapshotV0,
+  resolveRhizohComputeGateV0
+} from "./rhizohSpatialModeV0.js";
 
 export const RHIZOH_COMPUTE_ADAPTER_SCHEMA_V0 = "rhizoh.compute_adapter_registry.v0";
 
@@ -14,6 +19,22 @@ let computeSnapshotV0 = null;
  * Probe WebGPU adapter availability (soft signal).
  */
 export async function probeComputeAdapterV0() {
+  const gate = resolveRhizohComputeGateV0();
+  if (gate.skip) {
+    computeSnapshotV0 = Object.freeze({
+      schema: RHIZOH_COMPUTE_ADAPTER_SCHEMA_V0,
+      webgpuApiPresent: null,
+      adapterAvailable: null,
+      indirectCouplingRisk: null,
+      ...buildRhizohComputeSkipSnapshotV0(gate)
+    });
+    if (typeof window !== "undefined") {
+      window.__rhizoh = window.__rhizoh || {};
+      window.__rhizoh.computeAdapter = computeSnapshotV0;
+    }
+    return computeSnapshotV0;
+  }
+
   let webgpuApiPresent = false;
   let adapterAvailable = false;
   let note = "compute_layer_independent_from_voice";

@@ -13,7 +13,8 @@ export const CHESS_GAME_MODE_V0 = Object.freeze({
   AI_HUMAN: "ai_human",
   HUMAN_HUMAN: "human_human",
   AI_AI: "ai_ai",
-  RHIZOH_STOCKFISH: "rhizoh_stockfish"
+  RHIZOH_STOCKFISH: "rhizoh_stockfish",
+  TEAM_PET_VS_RHIZOH: "team_pet_vs_rhizoh"
 });
 
 export const CHESS_PLAYER_SIDE_V0 = Object.freeze({
@@ -40,6 +41,9 @@ function modeMeta(mode) {
   }
   if (m === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH) {
     return Object.freeze({ label: "Rhizoh vs Stockfish", timeControlMs: 900_000 });
+  }
+  if (m === CHESS_GAME_MODE_V0.TEAM_PET_VS_RHIZOH) {
+    return Object.freeze({ label: "Fox+Octo vs Rhizoh AI", timeControlMs: 180_000 });
   }
   return Object.freeze({ label: "Standard", timeControlMs: 600_000 });
 }
@@ -114,6 +118,52 @@ export function createChessArenaGameV0(opts = {}) {
 }
 
 /**
+ * Rough material balance from Rhizoh's color (positive = Rhizoh ahead).
+ * @param {ReturnType<typeof createChessArenaGameV0>} game
+ * @param {'w'|'b'} rhizohColor
+ */
+export function estimateChessMaterialBalanceV0(game, rhizohColor = "w") {
+  const board = game.chess.board();
+  const values = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+  let white = 0;
+  let black = 0;
+  for (const row of board) {
+    for (const cell of row) {
+      if (!cell) continue;
+      const v = values[cell.type] || 0;
+      if (cell.color === "w") white += v;
+      else black += v;
+    }
+  }
+  const balance = white - black;
+  return rhizohColor === "w" ? balance : -balance;
+}
+
+/**
+ * @param {string|null} outcome
+ * @param {boolean} [tr]
+ */
+export function formatChessOutcomeLabelV0(outcome, tr = false) {
+  const id = String(outcome || "").toLowerCase();
+  const map = tr
+    ? {
+        white_wins: "Beyaz kazandı (Rhizoh AI)",
+        black_wins: "Siyah kazandı (Stockfish)",
+        draw: "Berabere",
+        stalemate: "Pat — berabere",
+        unknown: "Bilinmiyor"
+      }
+    : {
+        white_wins: "White wins (Rhizoh AI)",
+        black_wins: "Black wins (Stockfish)",
+        draw: "Draw",
+        stalemate: "Stalemate — draw",
+        unknown: "Unknown"
+      };
+  return map[id] || id || map.unknown;
+}
+
+/**
  * Simple material-aware AI move (not Stockfish — local deterministic pick).
  * @param {ReturnType<typeof createChessArenaGameV0>} game
  */
@@ -125,11 +175,11 @@ export function pickChessArenaAiMoveV0(game) {
   let best = moves[0];
   let bestScore = -Infinity;
   for (const m of moves) {
-    let score = Math.random() * 0.01;
+    let score = 0;
     if (m.captured) score += (pieceValue[m.captured] || 0) * 10;
     if (m.san.includes("+")) score += 2;
     if (m.san.includes("#")) score += 100;
-    if (score > bestScore) {
+    if (score > bestScore || (score === bestScore && m.san < best.san)) {
       bestScore = score;
       best = m;
     }

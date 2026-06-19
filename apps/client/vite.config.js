@@ -153,17 +153,39 @@ function resolveFirebaseConfigObject(env) {
 /** Copy Stockfish single-thread assets — npm package main field points at missing file. */
 function copyStockfishAssetsPlugin() {
   const files = ["stockfish-nnue-16-single.js", "stockfish-nnue-16-single.wasm"];
-  return {
-    name: "castle-copy-stockfish-assets",
-    closeBundle() {
-      const pkgRoot = path.resolve(process.cwd(), "../../node_modules/stockfish/src");
-      const distRoot = path.resolve(process.cwd(), "dist/chess-engine");
-      mkdirSync(distRoot, { recursive: true });
+  const pkgRoot = path.resolve(process.cwd(), "../../node_modules/stockfish/src");
+  const publicRoot = path.resolve(process.cwd(), "public/chess-engine");
+  const distRoot = path.resolve(process.cwd(), "dist/chess-engine");
+
+  const copyAll = () => {
+    for (const destRoot of [publicRoot, distRoot]) {
+      mkdirSync(destRoot, { recursive: true });
       for (const name of files) {
         const src = path.join(pkgRoot, name);
-        const dest = path.join(distRoot, name);
-        if (existsSync(src)) copyFileSync(src, dest);
+        const dest = path.join(destRoot, name);
+        if (!existsSync(src)) {
+          throw new Error(`[stockfish-guard] missing source asset: ${src}`);
+        }
+        copyFileSync(src, dest);
       }
+    }
+  };
+
+  return {
+    name: "castle-copy-stockfish-assets",
+    buildStart() {
+      copyAll();
+    },
+    closeBundle() {
+      copyAll();
+      const wasmPath = path.join(distRoot, "stockfish-nnue-16-single.wasm");
+      const jsPath = path.join(distRoot, "stockfish-nnue-16-single.js");
+      if (!existsSync(wasmPath) || !existsSync(jsPath)) {
+        throw new Error(
+          `[stockfish-guard] dist/chess-engine assets missing — wasm=${existsSync(wasmPath)} js=${existsSync(jsPath)}`
+        );
+      }
+      console.log("[stockfish-guard] OK — Stockfish NNUE single-thread assets in dist/chess-engine/");
     }
   };
 }

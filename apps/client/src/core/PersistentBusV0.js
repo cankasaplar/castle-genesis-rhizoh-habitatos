@@ -11,6 +11,10 @@ import { incrementEdgeWeightV0 } from "../storage/EdgeStoreV0.js";
 import { canPersistUserTopologyN12V0 } from "../pwa/rhizohPwaPermissionsN12V0.js";
 import { enqueueRhizohPwaSyncV0 } from "../pwa/rhizohPwaSyncManagerV0.js";
 import { logCastleLifecycleV0 } from "../rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
+import {
+  bridgeCodexGhostToTruthTraceV0,
+  publishCodexGhostTruthBridgeRegistryV0
+} from "../rhizoh/runtime/codexGhostTruthTraceBridgeV0.js";
 
 export const RHIZOH_PERSISTENT_BUS_SCHEMA_V0 = "castle.rhizoh.persistent_bus.v0";
 
@@ -65,6 +69,13 @@ export async function persistentCodexEmitV0(type, payload = {}) {
     persisted,
     seq: event?.seq ?? null
   });
+
+  bridgeCodexGhostToTruthTraceV0(eventType, payload, {
+    persisted,
+    seq: event?.seq ?? null,
+    cycle
+  });
+  publishCodexGhostTruthBridgeRegistryV0();
 
   return Object.freeze({
     ok: true,

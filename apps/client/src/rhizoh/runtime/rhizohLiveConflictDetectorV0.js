@@ -130,16 +130,19 @@ export function detectLiveConflictsV0(pathname, opts = {}) {
 
   if (causal.nodeCount > 0 && causal.edgeCount === 0) {
     const intentional = causal.compressionContext?.intentional === true;
+    const bootstrapSparse = causal.nodeCount <= 3;
     conflicts.push(
       Object.freeze({
-        code: "causal_graph_disconnected",
-        lossType: intentional ? "intentional" : "structural",
-        severity: intentional ? "info" : "low",
+        code: bootstrapSparse ? "causal_graph_bootstrap_sparse" : "causal_graph_disconnected",
+        lossType: intentional || bootstrapSparse ? "intentional" : "structural",
+        severity: intentional || bootstrapSparse ? "info" : "low",
         nodeCount: causal.nodeCount,
-        excludedFromPass: intentional,
-        hint: intentional
-          ? "Compressed graph awaiting spine edges — not a structural failure."
-          : "Events exist but no causal edges — narrative chain incomplete"
+        excludedFromPass: intentional || bootstrapSparse,
+        hint: bootstrapSparse
+          ? "Early session — truth trace spine not populated yet; not epistemic lock."
+          : intentional
+            ? "Compressed graph awaiting spine edges — not a structural failure."
+            : "Events exist but no causal edges — narrative chain incomplete"
       })
     );
   }

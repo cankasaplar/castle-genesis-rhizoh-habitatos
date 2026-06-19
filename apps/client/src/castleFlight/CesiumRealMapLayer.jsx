@@ -468,6 +468,8 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
       let poiPointCollection = null;
       /** @type {import("cesium").PointPrimitiveCollection | null} */
       let buildingPointCollection = null;
+      /** @type {import("cesium").PointPrimitiveCollection | null} */
+      let spatialCommitPinCollection = null;
       let renderRecoveryUntilMs = 0;
 
       const clearPoiPointCollectionV0 = () => {
@@ -492,6 +494,17 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         }
         buildingPointCollection = null;
         fallbackBuildingEntitiesRef.current = [];
+      };
+
+      const clearSpatialCommitPinCollectionV0 = () => {
+        try {
+          if (spatialCommitPinCollection && viewer && !viewer.isDestroyed?.()) {
+            viewer.scene.primitives.remove(spatialCommitPinCollection);
+          }
+        } catch {
+          /* noop */
+        }
+        spatialCommitPinCollection = null;
       };
 
       const applyCesiumSafeMode = () => {
@@ -558,6 +571,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
         try {
           clearPoiPointCollectionV0();
           clearBuildingPointCollectionV0();
+          clearSpatialCommitPinCollectionV0();
         } catch {
           /* noop */
         }
@@ -1027,6 +1041,47 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
             duration: 0.35
           });
           return { ok: true, height: h, factor };
+        },
+        commitSpatialNode(node, meta = {}) {
+          if (!node || !viewer || viewer.isDestroyed?.()) {
+            return { ok: false, reason: "no_viewer" };
+          }
+          const payload = node.payload && typeof node.payload === "object" ? node.payload : node;
+          const geoMeta = meta.geo && typeof meta.geo === "object" ? meta.geo : {};
+          const anchor = resolveCesiumMapCameraAnchorV0(readMapToolSnapshot());
+          let lat = Number.isFinite(Number(geoMeta.lat)) ? Number(geoMeta.lat) : anchor.lat;
+          let lon = Number.isFinite(Number(geoMeta.lon)) ? Number(geoMeta.lon) : anchor.lon;
+          let alt = Number.isFinite(Number(geoMeta.alt)) ? Number(geoMeta.alt) : 120;
+          const vec = payload.spatial_vector;
+          if (
+            !Number.isFinite(Number(geoMeta.lat)) &&
+            vec &&
+            Number.isFinite(Number(vec.x)) &&
+            Number.isFinite(Number(vec.y))
+          ) {
+            lat += Number(vec.y) * 0.0008;
+            lon += Number(vec.x) * 0.0008;
+            alt += Number(vec.z || 0) * 40;
+          }
+          if (!spatialCommitPinCollection) {
+            spatialCommitPinCollection = new Cesium.PointPrimitiveCollection();
+            viewer.scene.primitives.add(spatialCommitPinCollection);
+          }
+          const position = Cesium.Cartesian3.fromDegrees(lon, lat, alt);
+          if (!position) return { ok: false, reason: "invalid_geo" };
+          spatialCommitPinCollection.add({
+            position,
+            pixelSize: 7,
+            color: Cesium.Color.fromCssColorString("#22d3ee").withAlpha(0.88),
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 1
+          });
+          viewer.scene.requestRender();
+          return {
+            ok: true,
+            nodeId: String(node.id || meta.nodeId || ""),
+            geo: { lat, lon, alt }
+          };
         }
       });
 
@@ -1979,7 +2034,7 @@ const CesiumRealMapLayerImpl = memo(({ active }) => {
   }, [active]);
 
   return (
-    <div className="absolute inset-0 z-[2] h-full w-full min-h-0">
+    <div className="absolute inset-0 z-[2] h-full w-full min-h-0" data-cesium-real-map-layer="1">
       <div
         ref={hostRef}
         data-castle-cesium-host="1"

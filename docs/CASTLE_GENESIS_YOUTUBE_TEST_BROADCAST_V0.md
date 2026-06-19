@@ -16,6 +16,15 @@ powershell -File scripts\build-castle-genesis-youtube-test-video.ps1
 
 Cikti: `docs\exports\media\youtube\castle_genesis_test_kendi_yalanina.mp4`
 
+**Embed icin kullanmayin** — ~14 dk ve sim-profil anlatimi riski. Bunun yerine:
+
+```powershell
+node scripts\build-castle-genesis-youtube-short-intro.mjs
+```
+
+Kisa klip: `docs\exports\media\youtube\castle_genesis_short_honest_baseline.mp4` (~45s)  
+Kanal paketi: `docs/CASTLE_GENESIS_MEDIA_PLAYER_CHANNELS_V0.md`
+
 `ffmpeg` yoksa: [gyan.dev ffmpeg builds](https://www.gyan.dev/ffmpeg/builds/) — `ffmpeg.exe` PATH'e.  
 Alternatif: OBS — sahne = `apps/client/public/ops/youtube-test/castle-genesis-holding-slide.png`, ses = m4a, MP4 kayit.
 

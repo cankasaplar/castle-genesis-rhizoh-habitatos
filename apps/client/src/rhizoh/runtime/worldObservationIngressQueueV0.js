@@ -3,7 +3,7 @@
  * Auth failures (401/403) open a circuit — no fetch spam when token missing/invalid.
  */
 
-import { resolveGenesisGatewayHttpBaseV0 } from "../../castleFlight/castleFlightConfig.js";
+import { listGenesisAuthorityOriginsV0 } from "./genesisSingleAuthorityLockV0.js";
 import { getCastleFlightConfig } from "../../castleFlight/castleFlightConfig.js";
 import {
   buildWorldObservationIngressEnvelopeV1,
@@ -19,6 +19,24 @@ const MAX_ATTEMPTS = 5;
 const RETRY_BASE_MS = 700;
 const DRAIN_INTERVAL_MS = 400;
 const AUTH_BLOCK_MS = 5 * 60 * 1000;
+const INGRESS_FETCH_TIMEOUT_MS_V0 = 12000;
+
+function listGenesisIngressOriginsV0() {
+  return listGenesisAuthorityOriginsV0();
+}
+
+async function fetchIngressV0(url, init, timeoutMs = INGRESS_FETCH_TIMEOUT_MS_V0) {
+  if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
+    return fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 /** @type {{ row: object, envelope: object, attempts: number, nextAt: number }[]} */
 let queue = [];
@@ -134,14 +152,13 @@ export function enqueueWorldObservationIngressV0(row) {
   return true;
 }
 
-async function postEnvelope(envelope) {
-  const origin = String(resolveGenesisGatewayHttpBaseV0() || "").trim().replace(/\/+$/, "");
-  if (!origin) throw new Error("no_gateway_origin");
+async function postEnvelopeToOrigin(origin, envelope) {
   const token = gatewayToken();
   if (!token) {
     return {
       res: { ok: false, status: 401 },
-      json: { ok: false, error: "no_gateway_token", deferred: false }
+      json: { ok: false, error: "no_gateway_token", deferred: false },
+      ingressOrigin: origin
     };
   }
   const headers = {
@@ -149,14 +166,41 @@ async function postEnvelope(envelope) {
     "X-Castle-Ingress-Contract": WORLD_OBSERVATION_INGRESS_ENVELOPE_SCHEMA_V1,
     "X-Castle-Gateway-Token": token
   };
-  const res = await fetch(`${origin}${WORLD_OBSERVATION_INGRESS_PATH_V0}`, {
+  const res = await fetchIngressV0(`${origin}${WORLD_OBSERVATION_INGRESS_PATH_V0}`, {
     method: "POST",
     headers,
     body: JSON.stringify(envelope),
     keepalive: queue.length <= 1
   });
   const json = await res.json().catch(() => ({}));
-  return { res, json };
+  return { res, json, ingressOrigin: origin };
+}
+
+async function postEnvelope(envelope) {
+  const origins = listGenesisIngressOriginsV0();
+  if (!origins.length) throw new Error("no_gateway_origin");
+
+  let lastResult = null;
+  for (let index = 0; index < origins.length; index += 1) {
+    const origin = origins[index];
+    const hasFallback = index < origins.length - 1;
+    try {
+      const result = await postEnvelopeToOrigin(origin, envelope);
+      lastResult = result;
+      if (result.res.ok) return result;
+      if (hasFallback && [502, 503, 504].includes(result.res.status)) continue;
+      return result;
+    } catch (err) {
+      lastResult = {
+        res: { ok: false, status: 0 },
+        json: { ok: false, error: String(err?.message || err || "fetch_failed") },
+        ingressOrigin: origin
+      };
+      if (hasFallback) continue;
+      throw err;
+    }
+  }
+  return lastResult || { res: { ok: false, status: 0 }, json: { ok: false, error: "no_gateway_origin" } };
 }
 
 async function drainOnce() {
@@ -205,15 +249,6 @@ async function drainOnce() {
       queue.push(item);
     }
   } catch (err) {
-    const msg = String(err?.message || err).toLowerCase();
-    const networkFail =
-      err instanceof TypeError || msg.includes("failed to fetch") || msg.includes("networkerror");
-    if (networkFail) {
-      blockIngressAuthV0("network_or_cors");
-      inflight -= 1;
-      publishQueueTruth();
-      return;
-    }
     item.attempts += 1;
     if (item.attempts < MAX_ATTEMPTS) {
       item.nextAt = Date.now() + RETRY_BASE_MS * item.attempts;

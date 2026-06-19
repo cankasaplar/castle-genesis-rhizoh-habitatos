@@ -72,7 +72,7 @@ export const RhizohWorldSocialPanelV0 = memo(function RhizohWorldSocialPanelV0({
           onClick={onOpenGreenroom}
         />
         <SocialAction
-          title={tr ? "Yayın hazırlığı · beta" : "Broadcast prep · beta"}
+          title={tr ? "Yayın hazırlığı" : "Broadcast prep"}
           blurb={tr ? "Davet ve durum hazırlığına geç" : "Open invite and status prep"}
           onClick={onOpenBroadcast}
         />

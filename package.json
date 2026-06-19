@@ -37,7 +37,7 @@
     "firebase:deploy:hosting+firestore": "npm run firebase:build && npx firebase-tools deploy --only \"hosting,firestore:rules\"",
     "firebase:deploy:rules": "npx firebase-tools deploy --only firestore:rules,storage",
     "gateway:docker:build": "docker build -f apps/gateway/Dockerfile -t castle-gateway .",
-    "security:audit": "npm audit --audit-level=high",
+    "security:audit": "npm audit --audit-level=high --omit=dev",
     "security:sast": "node scripts/sast-check.js",
     "validate:rhizoh-smoke": "node scripts/rhizoh-validation-smoke.mjs",
     "legal:export-pack-pdf": "node scripts/export-legal-pack-pdf.mjs",

@@ -17,6 +17,7 @@ import {
   setCookieConsentV0,
   COHORT_GATE_DECISION_V0,
   completeCohortGateNoOpV0,
+  completeCohortGateV0,
   deriveIngressPhaseV0,
   getCohortGateDecisionV0,
   getIngressEnvFlagsV0,
@@ -84,6 +85,40 @@ describe("ingress_router v0.1", () => {
   it("completeCohortGateNoOp does not require admission engine", () => {
     completeCohortGateNoOpV0({ decision: COHORT_GATE_DECISION_V0.ACCEPTED });
     expect(isCohortGateAcceptedV0()).toBe(true);
+  });
+
+  it("completeCohortGateV0 uses engine when enforce on", () => {
+    const origAdmission = import.meta.env.VITE_RHIZOH_CLOSED_ADMISSION;
+    const origEnforce = import.meta.env.VITE_RHIZOH_CLOSED_ADMISSION_ENFORCE;
+    import.meta.env.VITE_RHIZOH_CLOSED_ADMISSION = "1";
+    import.meta.env.VITE_RHIZOH_CLOSED_ADMISSION_ENFORCE = "1";
+    try {
+      const result = completeCohortGateV0({ decision: COHORT_GATE_DECISION_V0.ACCEPTED });
+      expect(result.hook).toBe("engine_evaluation");
+      expect(result.engineOutputIgnored).toBe(false);
+      expect(result.ok).toBe(true);
+      expect(result.verdict).toBe("admit");
+      expect(window.__rhizoh?.closedAdmission?.verdict).toBe("admit");
+    } finally {
+      import.meta.env.VITE_RHIZOH_CLOSED_ADMISSION = origAdmission;
+      import.meta.env.VITE_RHIZOH_CLOSED_ADMISSION_ENFORCE = origEnforce;
+    }
+  });
+
+  it("completeCohortGateV0 stays no-op when enforce off", () => {
+    const origAdmission = import.meta.env.VITE_RHIZOH_CLOSED_ADMISSION;
+    const origEnforce = import.meta.env.VITE_RHIZOH_CLOSED_ADMISSION_ENFORCE;
+    import.meta.env.VITE_RHIZOH_CLOSED_ADMISSION = "1";
+    import.meta.env.VITE_RHIZOH_CLOSED_ADMISSION_ENFORCE = "0";
+    try {
+      const result = completeCohortGateV0({ decision: COHORT_GATE_DECISION_V0.ACCEPTED });
+      expect(result.hook).toBe("no_op_evaluation");
+      expect(result.engineOutputIgnored).toBe(true);
+      expect(result.ok).toBe(true);
+    } finally {
+      import.meta.env.VITE_RHIZOH_CLOSED_ADMISSION = origAdmission;
+      import.meta.env.VITE_RHIZOH_CLOSED_ADMISSION_ENFORCE = origEnforce;
+    }
   });
 
   it("resolveIngressRoute declares fallbackCarriesState false", () => {

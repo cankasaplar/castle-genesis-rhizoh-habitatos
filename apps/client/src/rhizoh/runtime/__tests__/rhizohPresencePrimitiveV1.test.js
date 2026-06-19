@@ -49,4 +49,15 @@ describe("rhizohPresencePrimitiveV1", () => {
     expect(out?.ok).toBe(true);
     expect(out?.act).toBe(PRESENCE_PRIMITIVE_ACT_V1.IDLE_ALIVE);
   });
+
+  it("does not voice idle_alive on pulse seq 1 when boot already fired (route change)", () => {
+    emitPresencePrimitiveV1(PRESENCE_PRIMITIVE_ACT_V1.BOOT_READY, { speak: false, force: true });
+    __setLastLiveEmitAtMsForTestV0(0);
+    const out = evaluatePresencePrimitiveOnPulseV1({
+      seq: 1,
+      continuity: { state: CONTINUITY_STATE_V0.IDLE },
+      eventLogCount: 0
+    });
+    expect(out).toBeNull();
+  });
 });

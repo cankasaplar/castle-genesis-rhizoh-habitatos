@@ -18,7 +18,10 @@ import { RhizohEventCreatePanelV12 } from "./RhizohEventCreatePanelV12.jsx";
 import { RhizohStudioSecuritySharingPanelV0 } from "./RhizohStudioSecuritySharingPanelV0.jsx";
 import { isDrawerModuleAwakenedV0 } from "../rhizoh/runtime/rhizohDrawerAwakeningV0.js";
 import { writeRhizohWorldSystemModeV0 } from "../rhizoh/runtime/rhizohWorldSystemModeV0.js";
-import { RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0 } from "../rhizoh/runtime/rhizohT0FirstMatchIdentityV0.js";
+import {
+  resolveRhizohProductDrawerBottomCssV0,
+  RHIZOH_UI_Z_INDEX_V0
+} from "../rhizoh/runtime/rhizohUiLayoutResolverV0.js";
 import { RhizohGreenroomWaitingPanelV0 } from "./RhizohGreenroomWaitingPanelV0.jsx";
 
 const PROFILE_OBS_TABS_V0 = Object.freeze([
@@ -124,9 +127,10 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
 
   return (
     <div
-      className="pointer-events-auto fixed inset-x-0 z-[58] mx-auto max-h-[min(52vh,28rem)] w-full max-w-2xl overflow-hidden rounded-t-2xl border border-cyan-400/25 bg-[#030711]/95 shadow-[0_-8px_40px_rgba(0,0,0,0.55)] backdrop-blur-xl"
+      className="pointer-events-auto fixed inset-x-0 mx-auto max-h-[min(38vh,21rem)] w-full max-w-2xl overflow-hidden rounded-t-2xl border border-cyan-400/30 bg-[#050810] shadow-[0_-12px_48px_rgba(0,0,0,0.72)]"
       style={{
-        bottom: `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + env(safe-area-inset-bottom, 0px))`
+        bottom: resolveRhizohProductDrawerBottomCssV0(),
+        zIndex: RHIZOH_UI_Z_INDEX_V0.PRODUCT_DRAWER
       }}
       role="dialog"
       aria-label={`${meta.title} surface`}
@@ -139,7 +143,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
       data-rhizoh-wal-entry={memory?.wal_entry_id ?? ""}
       data-rhizoh-pack-id={memory?.pack_id ?? ""}
     >
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
+      <div className="flex items-center justify-between border-b border-white/12 bg-[#061018] px-4 py-2.5">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-200/90">{meta.title}</p>
           <p className="text-[10px] text-white/55 normal-case">{meta.blurb}</p>
@@ -153,7 +157,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
         </button>
       </div>
 
-      <div className="max-h-[calc(min(52vh,28rem)-3rem)] overflow-y-auto px-3 py-3 no-scrollbar">
+      <div className="max-h-[calc(min(38vh,21rem)-3.25rem)] overflow-y-auto bg-[#050810] px-3 py-3 no-scrollbar">
         {surface === "hall" ? (
           <RhizohStudioCitizenShellV0 surfaceKind="hall">
             <UserOutcomeCard surface="hall" locale={locale} />
@@ -171,8 +175,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
         ) : null}
 
         {surface === "greenroom" || surface === "broadcast" ? (
-          <RhizohStudioCitizenShellV0 surfaceKind={surface}>
-            <UserOutcomeCard surface={surface} locale={locale} />
+          <RhizohStudioCitizenShellV0 surfaceKind={surface} showKernelStrips={false}>
             <RhizohGreenroomWaitingPanelV0
               uiLocale={locale}
               gatewayPhase={gatewayPhase}
@@ -196,7 +199,6 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
 
         {surface === "studio" ? (
           <RhizohStudioCitizenShellV0 surfaceKind="studio">
-            <UserOutcomeCard surface="studio" locale={locale} />
             {isDrawerModuleAwakenedV0("studio") ? (
               <p className="mb-2 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-2 py-1 text-[9px] font-semibold uppercase tracking-wider text-emerald-100">
                 {locale === "tr" ? "Drawer uyanık · Sprint 37" : "Drawer awake · Sprint 37"}
@@ -267,7 +269,7 @@ function UserOutcomeCard({ surface, locale }) {
   const copy = USER_OUTCOME_COPY_V0[surface]?.[tr ? "tr" : "en"];
   if (!copy) return null;
   return (
-    <section className="mb-3 rounded-xl border border-cyan-400/20 bg-cyan-950/15 px-3 py-3 normal-case">
+    <section className="mb-3 rounded-xl border border-cyan-400/25 bg-[#081420] px-3 py-3 normal-case shadow-inner">
       <p className="text-[8px] font-black uppercase tracking-[0.2em] text-cyan-200/80">
         {copy.eyebrow}
       </p>

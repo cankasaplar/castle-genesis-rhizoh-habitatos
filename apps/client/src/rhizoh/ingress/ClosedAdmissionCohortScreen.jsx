@@ -7,10 +7,10 @@ import {
 import { INGRESS_SURFACE_V0 } from "./ingressFlowStylesV0.js";
 
 /**
- * UI decision gate — no-op evaluation hook (engine output ignored).
- * @param {{ onProceed: () => void }} props
+ * UI decision gate — engine evaluation when closed admission enforce is on.
+ * @param {{ onProceed: () => void, onHold?: () => void }} props
  */
-export function ClosedAdmissionCohortScreen({ onProceed }) {
+export function ClosedAdmissionCohortScreen({ onProceed, onHold }) {
   const copy = getClosedAdmissionCohortCopyV0();
   const [declined, setDeclined] = useState(false);
 

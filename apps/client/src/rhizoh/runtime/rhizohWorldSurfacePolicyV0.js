@@ -6,7 +6,14 @@
 import { readUserAnchorV0 } from "./memoryAnchorSystemV0.js";
 import { RHIZOH_WORLD_DRAWER_DOMAIN_V0 } from "./rhizohWorldDrawerDomainV0.js";
 import { shouldMountRhizohWorldSpaceMapEngineV0 } from "./rhizohLayerContextV0.js";
-import { RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0 } from "./rhizohT0FirstMatchIdentityV0.js";
+import {
+  RHIZOH_UI_MAP_STRIP_ESTIMATE_REM_V0,
+  RHIZOH_UI_MAP_STRIP_EXPANDED_REM_V0,
+  RHIZOH_UI_SHELL_BAR_H_REM_V0,
+  resolveRhizohWorldSpaceMapOverlayBottomCssV0,
+  resolveRhizohWorldSpaceMapStripBottomCssV0,
+  resolveRhizohWorldSpaceVoiceDockBottomCssV0
+} from "./rhizohUiLayoutResolverV0.js";
 
 export const RHIZOH_WORLD_SURFACE_POLICY_CONTRACT_V0 = "rhizoh-world-surface-policy-v0";
 
@@ -55,15 +62,20 @@ export function shouldHideT0ContinuityChromeOnWorldSpaceV0(ctx = {}) {
   return isRhizohWorldSpaceMapStageV0(ctx);
 }
 
-/** Map tool strip — directly above bottom nav. */
-export function resolveRhizohWorldSpaceMapStripBottomCssV0() {
-  return `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + 0.35rem + env(safe-area-inset-bottom, 0px))`;
-}
+/** @deprecated use RHIZOH_UI_MAP_STRIP_ESTIMATE_REM_V0 */
+export const RHIZOH_WORLD_SPACE_MAP_STRIP_ESTIMATE_REM_V0 = RHIZOH_UI_MAP_STRIP_ESTIMATE_REM_V0;
 
-/** Voice dock — above map strip + bottom nav on World · Space. */
-export function resolveRhizohWorldSpaceVoiceDockBottomCssV0() {
-  return `calc(${RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0}rem + 5.25rem + env(safe-area-inset-bottom, 0px))`;
-}
+/** @deprecated use RHIZOH_UI_MAP_STRIP_EXPANDED_REM_V0 */
+export const RHIZOH_WORLD_SPACE_MAP_STRIP_EXPANDED_REM_V0 = RHIZOH_UI_MAP_STRIP_EXPANDED_REM_V0;
+
+/** @deprecated use RHIZOH_UI_SHELL_BAR_H_REM_V0 */
+export const RHIZOH_PRODUCT_SHELL_BAR_H_REM_V0 = RHIZOH_UI_SHELL_BAR_H_REM_V0;
+
+export {
+  resolveRhizohWorldSpaceMapStripBottomCssV0,
+  resolveRhizohWorldSpaceVoiceDockBottomCssV0,
+  resolveRhizohWorldSpaceMapOverlayBottomCssV0
+};
 
 /**
  * Apex procedural REAL_MAP drones — suppressed when Cesium owns World · Space.
@@ -93,13 +105,55 @@ const WORLD_REALITY_BLOCK_SOURCES_V0 = [
   "PRODUCT_SHELL"
 ];
 
+/** spatial-main shadow prod — Apex procedural city on T0 home (not Cesium drawer). */
+export const RHIZOH_T0_AMBIENT_REALITY_SOURCE_V0 = "SPATIAL_SHADOW_AMBIENT_CITY";
+
 const WORLD_REALITY_ALLOW_SOURCES_V0 = [
   "ROUTE_WORLD_DOMAIN",
   "PRODUCT_SHELL_WORLD_DOMAIN",
   "ROUTE_MAP",
   "MAP_TOOL_EXPLICIT",
-  "WORLD_DOMAIN_MAP_STRIP"
+  "WORLD_DOMAIN_MAP_STRIP",
+  RHIZOH_T0_AMBIENT_REALITY_SOURCE_V0
 ];
+
+/**
+ * spatial-main profile — procedural buildings + drones on T0 `/` (Apex REAL_MAP, not Cesium).
+ * @returns {boolean}
+ */
+export function isRhizohT0AmbientProceduralCityV0() {
+  if (typeof import.meta === "undefined" || !import.meta.env) return false;
+  const raw = String(import.meta.env.VITE_RHIZOH_T0_AMBIENT_PROCEDURAL_CITY ?? "").trim().toLowerCase();
+  return raw === "1" || raw === "true" || raw === "on";
+}
+
+/**
+ * T0 home reality — GLOBE default; ambient city uses Apex REAL_MAP.
+ * @returns {"GLOBE" | "REAL_MAP"}
+ */
+export function resolveRhizohT0HomeRealityModeV0() {
+  return isRhizohT0AmbientProceduralCityV0() ? "REAL_MAP" : RHIZOH_PRODUCT_WORLD_REALITY_V0;
+}
+
+/**
+ * Globe home overlay (orb + gradient) — hide when ambient procedural city is active.
+ * @param {{
+ *   cesiumLayerActive?: boolean,
+ *   isWorldDomainActive?: boolean,
+ *   worldMapTool?: string,
+ *   realityMode?: string
+ * }} [ctx]
+ * @returns {boolean}
+ */
+export function shouldRhizohT0ShowGlobeHomeOverlayV0(ctx = {}) {
+  if (ctx.cesiumLayerActive === true) return false;
+  if (ctx.isWorldDomainActive === true) {
+    return String(ctx.worldMapTool || "globe") === "globe";
+  }
+  if (isRhizohT0AmbientProceduralCityV0()) return false;
+  if (String(ctx.realityMode || "") === "REAL_MAP") return false;
+  return true;
+}
 
 /**
  * Enforces red line: product "Dünya" cannot commit REAL_MAP (map tool only).
@@ -122,6 +176,26 @@ export function coerceRhizohProductRealityModeV0(mode, opts = {}) {
     return RHIZOH_PRODUCT_WORLD_REALITY_V0;
   }
   return "REAL_MAP";
+}
+
+/**
+ * Block unsolicited Sarıyer / bootstrap viewport fly on World · Space.
+ * Explicit userIntent or directed fly sources may still move the camera.
+ * @param {{ pathname?: string, worldDomain?: string, userIntent?: boolean, source?: string, productSurface?: string, realityMode?: string }} [ctx]
+ */
+export function shouldRhizohAllowBootstrapCalibrationFlyV0(ctx = {}) {
+  if (ctx.userIntent === true) return true;
+  const source = String(ctx.source || "");
+  const allowedSources = new Set([
+    "voice_warp",
+    "pin_click",
+    "map_fly_to",
+    "world_space_facade",
+    "explicit_fly"
+  ]);
+  if (allowedSources.has(source)) return true;
+  if (isRhizohWorldSpaceMapStageV0(ctx)) return false;
+  return shouldRhizohFlyToIstanbulV0(ctx);
 }
 
 /**
@@ -186,6 +260,28 @@ export async function applyRhizohWorldLandingLockV0(opts = {}) {
     } catch {
       /* noop */
     }
+  }
+
+  if (isRhizohT0AmbientProceduralCityV0() && opts.setRealityMode) {
+    await opts.setRealityMode("REAL_MAP", {
+      source: RHIZOH_T0_AMBIENT_REALITY_SOURCE_V0,
+      productSurface: "world"
+    });
+    const { writeRhizohWorldMapToolV0 } = await import("./rhizohWorldMapToolV0.js");
+    writeRhizohWorldMapToolV0("city_map");
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(LANDING_LOCK_SESSION_KEY_V0, "1");
+      } catch {
+        /* noop */
+      }
+    }
+    return Object.freeze({
+      skipped: false,
+      persona: resolveRhizohWorldEntryPersonaV0(),
+      ambientCity: true,
+      realityMode: "REAL_MAP"
+    });
   }
 
   const persona = resolveRhizohWorldEntryPersonaV0();

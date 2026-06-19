@@ -15,7 +15,8 @@ describe("spiralMMOAwakeningCubeCalcV0", () => {
       isOrder: true,
       cycleSeed: 42
     });
-    expect(spec.sizePx).toBeGreaterThan(12);
+    expect(spec.sizePx).toBeGreaterThan(24);
+    expect(spec.renderScaleFactor).toBeGreaterThan(1);
     expect(spec.durationMs).toBeGreaterThan(2000);
     expect(spec.glowBlur).toBeGreaterThan(5);
     expect(spec.shadowBlur).toBeGreaterThan(3);
@@ -34,6 +35,8 @@ describe("spiralMMOAwakeningCubeCalcV0", () => {
     });
     const built = spiralMMOAwakeningCubeHtmlV0(spec);
     expect(built.html).toContain("rhizoh-spiral-flight-cube");
+    expect(built.html).toContain("<svg");
+    expect(built.html).toContain("<line");
     expect(built.spinKeyframes).toContain("@keyframes");
   });
 });

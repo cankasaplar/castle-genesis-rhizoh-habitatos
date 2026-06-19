@@ -10,7 +10,7 @@ import { RhizohCastleCoPresenceStripV0 } from "./RhizohCastleCoPresenceStripV0.j
 /**
  * Studio panels — SCR citizen shell (world editor frame, not isolated runtime).
  */
-export function RhizohStudioCitizenShellV0({ children, surfaceKind = "studio" }) {
+export function RhizohStudioCitizenShellV0({ children, surfaceKind = "studio", showKernelStrips = true }) {
   const studioProjection = useSurfaceCitizenProjectionV0(SSL_SURFACE_ID_V0.STUDIO);
   const panelProjection = readStudioCitizenProjectionV0();
   const organism = useRhizohStudioProductionOrganismV0();
@@ -34,8 +34,12 @@ export function RhizohStudioCitizenShellV0({ children, surfaceKind = "studio" })
       data-rhizoh-wal-entry={mem?.wal_entry_id ?? episode?.wal_entry_id ?? ""}
       data-rhizoh-pack-id={mem?.pack_id ?? ""}
     >
-      <RhizohStudioProductionContextStripV0 surfaceKind={surfaceKind} />
-      <RhizohCastleCoPresenceStripV0 />
+      {showKernelStrips ? (
+        <>
+          <RhizohStudioProductionContextStripV0 surfaceKind={surfaceKind} />
+          <RhizohCastleCoPresenceStripV0 />
+        </>
+      ) : null}
       {children}
     </div>
   );

@@ -21,6 +21,20 @@ import {
 } from "../rhizoh/runtime/worldMapBootstrapGeoV0.js";
 
 import { dispatchV11MapEventPinV0 } from "../rhizoh/runtime/mapEventPinDispatchV0.js";
+import {
+  cancelMapPinHoverDwellV0,
+  isMapTransitionBusyV0,
+  runMapPinApproachThenV0,
+  scheduleMapPinHoverDwellV0
+} from "../rhizoh/runtime/worldMapMeaningfulTransitionV0.js";
+import {
+  resolveMapViewportFitNodesV0
+} from "../rhizoh/runtime/worldMapViewportBootstrapV0.js";
+import {
+  publishRhizohMapPinOwnerRegistryV0,
+  readWorldSpaceSessionMapPinRowsV0
+} from "../rhizoh/runtime/rhizohMapPinOwnerV0.js";
+import { isSpiralCountdownCalmVisualV0 } from "../rhizoh/runtime/worldDomainCalmModeV0.js";
 import { RHIZOH_MAP_COMMAND_EVENT_V0 } from "../rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
 import { RhizohCatchUpCascadeOverlayV0 } from "./RhizohCatchUpCascadeOverlayV0.jsx";
 import { RhizohSpiralMMOMapAwakeningOverlayV0 } from "./RhizohSpiralMMOMapAwakeningOverlayV0.jsx";
@@ -32,9 +46,7 @@ export { RHIZOH_V11_MAP_INTENT_EVENT_V0, RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0 }
 
 import {
   SOVEREIGN_MAP_DEFAULT_HOME_V0,
-  SOVEREIGN_TOWER_GRAPH_EDGES_V0,
   buildRemoteCastleMapNodesV0,
-  listSovereignWorldMapNodesForViewV0,
   RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1,
   sovereignNodeIconHtmlV0,
   writeSovereignPortalCoordsV0
@@ -166,7 +178,7 @@ function leafletTileUrlForToolV0(activeMapTool) {
   return "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 }
 
-function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], remoteCastlesVisible = false }) {
+function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], remoteCastlesVisible = false, uiLocale = "en" }) {
   const mapRef = useRef(null);
   const hostRef = useRef(null);
   const tileLayerRef = useRef(null);
@@ -175,6 +187,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
   const portalMarkerRef = useRef(null);
   const boundsFittedRef = useRef(false);
   const [userCastleGeo, setUserCastleGeo] = useState(() => resolveUserCastleGeoForMapViewV0());
+  const [localAnchors, setLocalAnchors] = useState(() => readLocalGhostCastleAnchorsV0());
   const presenceCountV0 = useSyncExternalStore(
     subscribeCastlePresenceV0,
     readPresenceCountSnapshotV0,
@@ -193,7 +206,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
   }, []);
 
   const displayNodes = useMemo(
-    () => [...listSovereignWorldMapNodesForViewV0({ userCastle: userCastleGeo }), ...liveMatchPins],
+    () => readWorldSpaceSessionMapPinRowsV0({ userCastle: userCastleGeo, liveMatchPins }),
     [userCastleGeo, liveMatchPins]
   );
   const remoteNodes = useMemo(
@@ -202,7 +215,14 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
   );
   const nodeById = useRef(new Map(displayNodes.map((n) => [n.id, n])));
   const [leafletReady, setLeafletReady] = useState(false);
-  const [localAnchors, setLocalAnchors] = useState(() => readLocalGhostCastleAnchorsV0());
+  const [spiralCalmVisual, setSpiralCalmVisual] = useState(() => isSpiralCountdownCalmVisualV0());
+
+  useEffect(() => {
+    const tick = () => setSpiralCalmVisual(isSpiralCountdownCalmVisualV0());
+    tick();
+    const id = window.setInterval(tick, 500);
+    return () => window.clearInterval(id);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -238,6 +258,12 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
         markerLayerRef.current = L.layerGroup().addTo(map);
         graphLayerRef.current = L.layerGroup().addTo(map);
         mapRef.current = map;
+        try {
+          window.__rhizoh = window.__rhizoh || {};
+          window.__rhizoh.v11LeafletMap = map;
+        } catch {
+          /* noop */
+        }
         setLeafletReady(true);
         setTimeout(() => {
           try {
@@ -368,24 +394,31 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
           } catch {
             /* noop */
           }
-          if (node.type !== "spiralmmo") {
-            try {
-              const z = Math.max(mapRef.current?.getZoom?.() || 14, 16);
-              mapRef.current?.flyTo?.([node.lat, node.lon], z, { animate: true, duration: 1.2 });
-            } catch {
-              /* noop */
-            }
-          }
+          if (isMapTransitionBusyV0()) return;
+          const map = mapRef.current;
           if (node.type === "remote_castle") {
-            dispatchV11MapEventPinV0(node, "click", mapRef.current);
+            dispatchV11MapEventPinV0(node, "click", map);
             return;
           }
-          dispatchV11MapEventPinV0(node, "click", mapRef.current);
+          if (node.type === "spiralmmo") {
+            dispatchV11MapEventPinV0(node, "click", map);
+            return;
+          }
+          runMapPinApproachThenV0(map, node, {}, () =>
+            dispatchV11MapEventPinV0(node, "click", map)
+          );
         });
-        marker.on("mouseover", () =>
-          dispatchV11MapEventPinV0(node, "hover", mapRef.current)
-        );
-        marker.on("mouseout", () => emitV11MapClearPreviewV0());
+        marker.on("mouseover", () => {
+          if (node.type === "spiralmmo") return;
+          scheduleMapPinHoverDwellV0(
+            node,
+            (n) => dispatchV11MapEventPinV0(n, "hover", mapRef.current),
+            () => emitV11MapClearPreviewV0()
+          );
+        });
+        marker.on("mouseout", () => {
+          cancelMapPinHoverDwellV0(() => emitV11MapClearPreviewV0());
+        });
         if (node.id === "rhizoh_portal") {
           portalMarkerRef.current = marker;
           writeSovereignPortalCoordsV0(node.lat, node.lon);
@@ -393,35 +426,27 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
       }
 
       if (!boundsFittedRef.current && allNodes.length) {
-        const bounds = L.latLngBounds(allNodes.map((n) => [n.lat, n.lon]));
-        mapRef.current.fitBounds(bounds, {
-          paddingTopLeft: [28, 104],
-          paddingBottomRight: [28, 36],
-          maxZoom: userCastleGeo ? 16 : 5,
-          animate: false
+        const fitNodes = resolveMapViewportFitNodesV0(allNodes, {
+          worldSpaceNeutral: true,
+          userCastle: userCastleGeo
         });
-        try {
-          mapRef.current.panBy([0, 52], { animate: false });
-        } catch {
-          /* noop */
+        if (fitNodes.length >= 2) {
+          const bounds = L.latLngBounds(fitNodes.map((n) => [n.lat, n.lon]));
+          mapRef.current.fitBounds(bounds, {
+            paddingTopLeft: [28, 88],
+            paddingBottomRight: [28, 32],
+            maxZoom: userCastleGeo ? 15 : 14,
+            animate: false
+          });
+        } else if (userCastleGeo) {
+          mapRef.current.setView([userCastleGeo.lat, userCastleGeo.lon], 15, { animate: false });
         }
         boundsFittedRef.current = true;
       }
 
       graphLayerRef.current?.clearLayers?.();
       if (!graphLayerRef.current) graphLayerRef.current = L.layerGroup().addTo(mapRef.current);
-      for (const edge of SOVEREIGN_TOWER_GRAPH_EDGES_V0) {
-        const n1 = nodeById.current.get(edge.source);
-        const n2 = nodeById.current.get(edge.target);
-        if (!n1 || !n2) continue;
-        L.polyline(
-          [
-            [n1.lat, n1.lon],
-            [n2.lat, n2.lon]
-          ],
-          { color: "#a855f7", weight: 1, opacity: 0.18, dashArray: "5, 10" }
-        ).addTo(graphLayerRef.current);
-      }
+      /* Route polylines removed — dimensional collapse uses gate arcs only (no static mesh). */
     } catch {
       /* noop */
     }
@@ -444,7 +469,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
 
   return (
     <div
-      className="absolute inset-0 overflow-hidden bg-[radial-gradient(circle_at_center,rgba(14,116,144,0.18),rgba(8,14,28,0.52)_72%)]"
+      className="absolute inset-0 overflow-hidden bg-[radial-gradient(circle_at_center,rgba(14,116,144,0.18),rgba(8,14,28,0.52)_72%)] transition-opacity duration-700 ease-in-out"
       data-rhizoh-v11-core-map-layer="1"
       data-rhizoh-v11-leaflet-ready={leafletReady ? "1" : "0"}
       aria-label="Rhizoh Primary Spatial Surface V11"
@@ -466,10 +491,10 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
           background: transparent !important;
         }
       `}</style>
-      <RhizohSpiralMMOMapAwakeningOverlayV0 />
-      <RhizohCatchUpCascadeOverlayV0 />
-      <RhizohN12PersistenceGateV0 />
-      <RhizohCodexEventStreamV0 />
+      <RhizohSpiralMMOMapAwakeningOverlayV0 calmVisual={spiralCalmVisual} uiLocale={uiLocale} />
+      {!spiralCalmVisual ? <RhizohCatchUpCascadeOverlayV0 /> : null}
+      {!spiralCalmVisual ? <RhizohN12PersistenceGateV0 /> : null}
+      {!spiralCalmVisual ? <RhizohCodexEventStreamV0 /> : null}
       <RhizohOfflineVoidOverlayV0 />
       {!leafletReady ? displayNodes.map((node) => {
         const pos = projectV11CoreMapGeoV0(node.lat, node.lon);
@@ -532,7 +557,7 @@ function SafeWorldShellV0() {
   );
 }
 
-function renderFallbackForModeV0(renderMode, activeMapTool, remoteCastles, remoteCastlesVisible) {
+function renderFallbackForModeV0(renderMode, activeMapTool, remoteCastles, remoteCastlesVisible, uiLocale) {
   if (renderMode === RHIZOH_SPATIAL_RENDER_MODE_V0.EMPTY_CANVAS) return <EmptyCanvasV0 />;
   if (renderMode === RHIZOH_SPATIAL_RENDER_MODE_V0.SAFE_WORLD_SHELL) return <SafeWorldShellV0 />;
   return (
@@ -540,6 +565,7 @@ function renderFallbackForModeV0(renderMode, activeMapTool, remoteCastles, remot
       activeMapTool={activeMapTool}
       remoteCastles={remoteCastles}
       remoteCastlesVisible={remoteCastlesVisible}
+      uiLocale={uiLocale}
     />
   );
 }
@@ -553,7 +579,8 @@ export const RhizohWorldSpaceMapHostV0 = memo(function RhizohWorldSpaceMapHostV0
   renderMode = RHIZOH_SPATIAL_RENDER_MODE_V0.V11_CORE_MAP,
   activeMapTool = "city_map",
   remoteCastles = [],
-  remoteCastlesVisible = false
+  remoteCastlesVisible = false,
+  uiLocale = "en"
 }) {
   return (
     <div
@@ -566,7 +593,7 @@ export const RhizohWorldSpaceMapHostV0 = memo(function RhizohWorldSpaceMapHostV0
       {active ? (
         <CesiumRealMapLayer active />
       ) : (
-        renderFallbackForModeV0(renderMode, activeMapTool, remoteCastles, remoteCastlesVisible)
+        renderFallbackForModeV0(renderMode, activeMapTool, remoteCastles, remoteCastlesVisible, uiLocale)
       )}
     </div>
   );

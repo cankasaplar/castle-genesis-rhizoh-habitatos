@@ -6,6 +6,7 @@
 import { executeCesiumCommandV0 } from "./cesiumCommandExecutorV0.js";
 import { RHIZOH_MAP_COMMAND_EVENT_V0 } from "../rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
 import { gateRhizohSpatialCommandV0 } from "../rhizoh/runtime/rhizohLayerContextV0.js";
+import { shouldRhizohAllowBootstrapCalibrationFlyV0 } from "../rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
 import { readRhizohWorldSystemModeV0 } from "../rhizoh/runtime/rhizohWorldSystemModeV0.js";
 
 function resolveSpatialGateContextV0() {
@@ -43,6 +44,10 @@ const WORLD_LIFECYCLE_ACTIONS_V0 = new Set([
 const FLY_COALESCE_MS = 500;
 const COALESCE_OPS = new Set(["fly_to", "calibration_root"]);
 const COMMAND_DEDUPE_MS = 650;
+const DEFERRED_LOG_DEDUPE_MS = 5000;
+
+/** @type {Map<string, number>} */
+const deferredLogAtV0 = new Map();
 
 /** @type {ReturnType<typeof setTimeout> | null} */
 let flyCoalesceTimer = null;
@@ -52,6 +57,22 @@ let lastImmediateCommandKey = "";
 let lastImmediateCommandAt = 0;
 
 let bridgeInstalled = false;
+
+export function getCesiumCommandRouterSnapshotV0() {
+  return Object.freeze({
+    schema: "castle.cesium_command_router.v0",
+    installed: bridgeInstalled,
+    flyCoalescePending: Boolean(flyCoalescePending),
+    spatialLayerOps: Object.freeze([...SPATIAL_LAYER_OPS_V0, "commit_spatial_node"]),
+    atMs: Date.now()
+  });
+}
+
+function publishCesiumCommandRouterRegistryV0() {
+  if (typeof window === "undefined") return;
+  window.__rhizoh = window.__rhizoh || {};
+  window.__rhizoh.cesiumRouter = getCesiumCommandRouterSnapshotV0();
+}
 
 const ROOM_POI_KEY_BY_ACTION = Object.freeze({
   room_library: "FATIH",
@@ -83,27 +104,42 @@ function routeCesiumCommandImmediateV0(request = {}) {
   const result = executeCesiumCommandV0(request);
 
   if (typeof console !== "undefined" && console.info) {
-    console.info("[castle:cesium-router] routed to cesium_executor", {
-      op,
-      source: request.source ?? null,
-      canonical: request.canonical ?? null
-    });
+    const quietDeferred =
+      result.deferred === true &&
+      (op === "commit_spatial_node" || result.skipReason === "v11_map_no_cesium_sink");
+
+    if (!quietDeferred) {
+      console.info("[castle:cesium-router] routed to cesium_executor", {
+        op,
+        source: request.source ?? null,
+        canonical: request.canonical ?? null
+      });
+    }
 
     if (result.deferred) {
-      console.warn("[castle:cesium-router] deferred — viewer not ready", {
-        op,
-        skipReason: result.skipReason ?? "cesium_not_ready"
-      });
-    } else if (result.ok) {
-      console.info("[castle:cesium-router] executor ok", {
-        op,
-        height: result.height ?? null
-      });
-    } else if (result.skipped) {
-      console.info("[castle:cesium-router] executor skipped", {
-        op,
-        skipReason: result.skipReason ?? null
-      });
+      const skipReason = result.skipReason ?? "cesium_not_ready";
+      const logKey = `${op}:${skipReason}`;
+      const now = Date.now();
+      const last = deferredLogAtV0.get(logKey) || 0;
+      if (!quietDeferred && now - last >= DEFERRED_LOG_DEDUPE_MS) {
+        deferredLogAtV0.set(logKey, now);
+        console.warn("[castle:cesium-router] deferred — viewer not ready", {
+          op,
+          skipReason
+        });
+      }
+    } else if (!quietDeferred) {
+      if (result.ok) {
+        console.info("[castle:cesium-router] executor ok", {
+          op,
+          height: result.height ?? null
+        });
+      } else if (result.skipped) {
+        console.info("[castle:cesium-router] executor skipped", {
+          op,
+          skipReason: result.skipReason ?? null
+        });
+      }
     }
   }
 
@@ -117,8 +153,13 @@ function routeCesiumCommandImmediateV0(request = {}) {
 export function routeCesiumCommandV0(request = {}) {
   const op = String(request.op || "").trim();
 
+  if (op === "commit_spatial_node") {
+    return routeCesiumCommandImmediateV0(request);
+  }
+
   if (SPATIAL_LAYER_OPS_V0.has(op)) {
-    const gate = gateRhizohSpatialCommandV0(op, resolveSpatialGateContextV0());
+    const gateCtx = resolveSpatialGateContextV0();
+    const gate = gateRhizohSpatialCommandV0(op, gateCtx);
     if (!gate.allowed) {
       const blocked = Object.freeze({
         ok: false,
@@ -132,6 +173,23 @@ export function routeCesiumCommandV0(request = {}) {
         console.warn("[castle:cesium-router] blocked — layer gate", { op, skipReason: gate.reason });
       }
       return blocked;
+    }
+    if (
+      (op === "calibration_root" || op === "bootstrap_viewport") &&
+      !shouldRhizohAllowBootstrapCalibrationFlyV0({
+        pathname: gateCtx.pathname,
+        userIntent: request.meta?.userIntent === true || request.userIntent === true,
+        source: String(request.source || request.meta?.source || "")
+      })
+    ) {
+      return Object.freeze({
+        ok: false,
+        op,
+        skipped: true,
+        deferred: false,
+        skipReason: "world_space_no_unsolicited_bootstrap_fly",
+        coalesced: false
+      });
     }
   }
 
@@ -212,12 +270,16 @@ export function installCesiumCommandBridgeV0() {
   if (typeof window === "undefined" || bridgeInstalled) return;
   bridgeInstalled = true;
   window.addEventListener(RHIZOH_MAP_COMMAND_EVENT_V0, onRhizohMapCommand);
+  publishCesiumCommandRouterRegistryV0();
 }
 
 export function __uninstallCesiumCommandBridgeForTestV0() {
   if (typeof window === "undefined") return;
   window.removeEventListener(RHIZOH_MAP_COMMAND_EVENT_V0, onRhizohMapCommand);
   bridgeInstalled = false;
+  if (typeof window !== "undefined" && window.__rhizoh) {
+    delete window.__rhizoh.cesiumRouter;
+  }
   if (flyCoalesceTimer) {
     clearTimeout(flyCoalesceTimer);
     flyCoalesceTimer = null;

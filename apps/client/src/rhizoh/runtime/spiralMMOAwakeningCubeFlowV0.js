@@ -1,23 +1,18 @@
 /**
- * SpiralMMO awakening cube flow — sequenced dual-direction launches across all routes + depth layers.
+ * SpiralMMO awakening cube flow — dimensional collapse gate arcs + legacy route-walk helpers.
  */
 
 import { listSpiralMMOContinentMapPinsV0 } from "./spiralMMOContinentPinsV0.js";
 import { resolveSpiralMMOAwakeningRoutePairsV0 } from "./spiralMMOContinentRouteGraphV0.js";
-import {
-  deriveSpiralMMOAwakeningCubeSpecV0
-} from "./spiralMMOAwakeningCubeCalcV0.js";
+import { buildSpiralMMODimensionalCollapseLaunchesV0 } from "./spiralMMODimensionalCollapseV0.js";
 import {
   SPIRAL_MMO_CHAOS_COLORS_V0,
   SPIRAL_MMO_ORDER_COLORS_V0,
   SPIRAL_MMO_SPECIAL_COLORS_V0
 } from "./spiralMMOAwakeningPaletteV0.js";
 
-import { spiralMMOMapGeoToPercentV0 } from "./spiralMMOMapGeoProjectV0.js";
-import { takeSpiralMMOSessionAccumIndexV0 } from "./spiralMMOSessionAccumulationV0.js";
-
 export const SPIRAL_MMO_CUBE_DEPTH_LAYERS_V0 = Object.freeze([0, 1, 2]);
-export const SPIRAL_MMO_CUBE_STAGGER_MS_V0 = 140;
+export const SPIRAL_MMO_CUBE_STAGGER_MS_V0 = 280;
 export const SPIRAL_MMO_CUBE_WAVE_COLORS_V0 = Object.freeze([
   ...SPIRAL_MMO_ORDER_COLORS_V0,
   ...SPIRAL_MMO_CHAOS_COLORS_V0,
@@ -64,10 +59,6 @@ export function resolveSpiralMMOCubeDepthLayerSpecV0(depthLayer) {
     gapScale: 0.85 + layer * 0.22,
     speedBias: 1.08 - layer * 0.12
   });
-}
-
-function routeLengthPctV0(aPct, bPct) {
-  return Math.hypot(bPct.x - aPct.x, bPct.y - aPct.y);
 }
 
 /**
@@ -138,109 +129,7 @@ export function buildSpiralMMOOrderedRouteWalkV0(triggerPinIndex, pins, behavior
  * }} input
  */
 export function buildSpiralMMOSequencedCubeLaunchesV0(input) {
-  const pins = input.pins || listSpiralMMOContinentMapPinsV0();
-  const safeIndex = Math.max(0, Math.min(pins.length - 1, Number(input.triggerPinIndex) || 0));
-  const cycleSeed = Number(input.cycleSeed) || 0;
-  const behavior = input.behavior || {};
-  const depthLayers = behavior.depthLayerOrder?.length
-    ? behavior.depthLayerOrder
-    : SPIRAL_MMO_CUBE_DEPTH_LAYERS_V0;
-  const staggerMs = SPIRAL_MMO_CUBE_STAGGER_MS_V0 * (behavior.staggerScale ?? 1);
-  const colorWaveOffset = behavior.colorWaveOffset ?? 0;
-  const gapPolarity = behavior.gapPolarity ?? 1;
-  const waveAmplitude = behavior.waveAmplitude ?? 4;
-  const transitionEase = behavior.transitionEase || "cubic-bezier(0.42, 0, 0.22, 1)";
-  const routeWalk = buildSpiralMMOOrderedRouteWalkV0(safeIndex, pins, behavior);
-  let sequenceIndex = 0;
-
-  for (const route of routeWalk) {
-    const [srcIdx, destIdx] = route.pair;
-    const src = pins[srcIdx];
-    const dest = pins[destIdx];
-    if (!src || !dest) continue;
-
-    const srcPct = spiralMMOMapGeoToPercentV0(src.lat, src.lon);
-    const destPct = spiralMMOMapGeoToPercentV0(dest.lat, dest.lon);
-    const routeLengthPct = routeLengthPctV0(srcPct, destPct);
-
-    for (const depthLayer of depthLayers) {
-      const layerSpec = resolveSpiralMMOCubeDepthLayerSpecV0(depthLayer);
-      const colorClass =
-        SPIRAL_MMO_CUBE_WAVE_COLORS_V0[(sequenceIndex + colorWaveOffset) % SPIRAL_MMO_CUBE_WAVE_COLORS_V0.length];
-      const isOrder = SPIRAL_MMO_ORDER_COLORS_V0.includes(colorClass);
-      const accKey = dest.continent;
-      const accumulationIndex = takeSpiralMMOSessionAccumIndexV0(accKey);
-
-      const gapBase = 72 + routeLengthPct * 0.35;
-      const gap =
-        gapBase *
-        layerSpec.gapScale *
-        gapPolarity *
-        (route.direction === "forward" ? 1 : -1);
-      const delayMs = sequenceIndex * staggerMs;
-      const cubeSpec = deriveSpiralMMOAwakeningCubeSpecV0({
-        colorClass,
-        srcContinent: src.continent,
-        destContinent: dest.continent,
-        routeLengthPct,
-        batchIndex: sequenceIndex,
-        depthLayer,
-        isOrder,
-        cycleSeed
-      });
-      const durationMs = Math.round(cubeSpec.durationMs * layerSpec.speedBias);
-
-      input.addLaunch(
-        Object.freeze({
-          id: `seq-${sequenceIndex}-${colorClass}-${src.continent}-${dest.continent}-L${depthLayer}`,
-          colorClass,
-          srcIdx,
-          destIdx,
-          srcContinent: src.continent,
-          destContinent: dest.continent,
-          srcPct,
-          destPct,
-          gap,
-          isOrder,
-          delayMs,
-          durationMs,
-          batchIndex: sequenceIndex,
-          sequenceIndex,
-          depthLayer,
-          direction: route.direction,
-          edgeKey: route.edgeKey,
-          routeLengthPct,
-          accumulationIndex,
-          accumulationOffset: resolveSpiralMMOAccumulationOffsetV0(
-            accumulationIndex,
-            0.9 + layerSpec.depth * 0.4,
-            depthLayer
-          ),
-          depthZIndex: layerSpec.zIndex,
-          depthScale: layerSpec.scaleBias,
-          holdAtDest: true,
-          waveAmplitude,
-          transitionEase,
-          handoffFromContinent: sequenceIndex === 0 ? input.handoffFromContinent || null : null,
-          cubeSpec: Object.freeze({
-            ...cubeSpec,
-            durationMs,
-            depth: layerSpec.depth
-          }),
-          routeId: `${src.continent}|${dest.continent}`
-        })
-      );
-
-      sequenceIndex += 1;
-    }
-  }
-
-  return Object.freeze({
-    sequenceCount: sequenceIndex,
-    routeStepCount: routeWalk.length,
-    depthLayerCount: depthLayers.length,
-    behaviorContinent: behavior.continent || pins[safeIndex]?.continent || ""
-  });
+  return buildSpiralMMODimensionalCollapseLaunchesV0(input);
 }
 
 /**
@@ -255,18 +144,14 @@ export function verifySpiralMMOCubeFlowContinuityV0(launches) {
       return { ok: false, reason: "sequence_not_monotonic", index: i };
     }
   }
-  const edges = new Set(launches.map((l) => l.edgeKey).filter(Boolean));
-  const hasDual = [...edges].every((key) => {
-    const fwd = launches.some((l) => l.edgeKey === key && l.direction === "forward");
-    const rev = launches.some((l) => l.edgeKey === key && l.direction === "reverse");
-    return fwd && rev;
-  });
+  const orderCount = launches.filter((l) => l.kind === "order" || l.isOrder).length;
+  const chaosCount = launches.filter((l) => l.kind === "chaos").length;
   const layers = new Set(launches.map((l) => l.depthLayer));
   return Object.freeze({
     ok: true,
     launchCount: launches.length,
-    edgeCount: edges.size,
-    dualDirectionCoverage: hasDual,
+    orderCount,
+    chaosCount,
     depthLayers: [...layers].sort()
   });
 }

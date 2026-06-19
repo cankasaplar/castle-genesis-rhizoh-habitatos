@@ -103,15 +103,22 @@ import {
 } from "./rhizoh/runtime/expressiveRealityMicroTransitionV0.js";
 import {
   isRhizohT0FirstMatchIdentityV0,
-  resolveRhizohT0ChatBottomCssV0,
   resolveRhizohT0CapabilityHaloLayoutV0
 } from "./rhizoh/runtime/rhizohT0FirstMatchIdentityV0.js";
 import {
+  RHIZOH_UI_SURFACE_V0,
+  resolveRhizohUiLayoutV0
+} from "./rhizoh/runtime/rhizohUiLayoutResolverV0.js";
+import {
   applyRhizohWorldLandingLockV0,
+  isRhizohT0AmbientProceduralCityV0,
   resolveRhizohProductWorldRealityModeV0,
+  resolveRhizohT0HomeRealityModeV0,
+  RHIZOH_T0_AMBIENT_REALITY_SOURCE_V0,
   shouldHideT0ContinuityChromeOnWorldSpaceV0,
   shouldRhizohFlyToIstanbulV0,
   shouldRhizohT0LiveChromeVisibleV0,
+  shouldRhizohT0ShowGlobeHomeOverlayV0,
   shouldUseApexProceduralRealMapV0
 } from "./rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
 import {
@@ -142,6 +149,11 @@ import {
   shareWorldInviteV0,
   signalCastlePresenceV0
 } from "./rhizoh/runtime/rhizohDomainNervousSystemV0.js";
+import { markCastleAppEngineReadyV0, releaseCastleAppEngineReadyV0 } from "./rhizoh/runtime/spatialSinkRoutePolicyV0.js";
+import {
+  claimRhizohEngineBootV0,
+  releaseRhizohEngineBootV0
+} from "./rhizoh/runtime/rhizohEngineBootGuardV0.js";
 import { RHIZOH_DOMAIN_CAPABILITY_V0 } from "./rhizoh/runtime/domainAdapterRegistryV0.js";
 import { setRhizohDomainCoreUserV0 } from "./rhizoh/runtime/rhizohDomainCoreStoreV0.js";
 import { installChromeWebGpuNoiseSuppressV0 } from "./rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
@@ -168,16 +180,22 @@ import {
 } from "./rhizoh/runtime/rhizohUiLocaleV0.js";
 import { RhizohProductSurfaceDrawerV0 } from "./components/RhizohProductSurfaceDrawerV0.jsx";
 import {
-  getRhizohChromePanelsSnapshotV0,
   isRhizohProductChromePanelOpenV0,
   isRhizohProductSurfaceDrawerOpenV0,
   resolveOpenProductSurfaceDrawerIdV0,
   setRhizohProductChromePanelOpenV0,
   closeAllRhizohProductSurfacePanelsV0,
-  setRhizohProductSurfacePanelExclusiveV0,
-  subscribeRhizohChromePanelsV0,
-  toggleRhizohProductSurfacePanelV0
+  setRhizohProductSurfacePanelExclusiveV0
 } from "./rhizoh/runtime/rhizohProductChromePanelsV0.js";
+import {
+  bootRhizohT0DrawerShellV0,
+  closeProductSurfaceDrawerV0,
+  getDrawerStateSnapshotV0,
+  resolveT0DetailDrawerVisibleV0,
+  runT0ProductShellSelectV0,
+  subscribeDrawerStateV0,
+  toggleT0DetailDrawerCoordinatedV0
+} from "./rhizoh/runtime/rhizohT0DrawerShellIntegrationV0.js";
 import {
   applyRhizohWorldMapToolV0,
   cycleRhizohWorldMapToolV0,
@@ -213,6 +231,7 @@ import { recordCastleRuntimeFrame } from "./kernel/castleRuntimeMetrics.js";
 import { getL9BackgroundTickStride } from "./kernel/castleL9GatePolicy.js";
 import { CASTLE_L9_EXECUTION_FEEDBACK } from "./kernel/castleL9ExecutionFeedback.js";
 import { warmSwarmGpu, createRhizohAutonomousCompanyRuntimeV0 } from "./kernel/swarmGpuBridge.js";
+import { publishRhizohSpatialModeV0 } from "./rhizoh/runtime/rhizohSpatialModeV0.js";
 import { composeRhizohVisualCognitionStateV1 } from "./kernel/visual/RhizohVisualCognitionComposerV1.js";
 import { composeRelationalPresenceStateV1 } from "./kernel/visual/RelationalPresenceComposerV1.js";
 import { computeRhizohCinematicOutputV1, resolveAdaptiveIntroRouteV1 } from "./kernel/visual/RhizohCinematicOrchestratorV1.js";
@@ -259,7 +278,7 @@ import {
 import { useRhizohGatewayMonitor, getRhizohApiBase } from "./rhizoh/useRhizohGatewayMonitor.js";
 import { resolveGatewayBootObservabilityLogV0 } from "./rhizoh/runtime/gatewayBootObservabilityFilterV0.js";
 import { getGatewaySessionKeeperSnapshotV1 } from "./rhizoh/runtime/gatewaySessionKeeperV1.js";
-import { startGenesisContinuityClientWireV0 } from "./rhizoh/runtime/genesisContinuityClientWireV0.js";
+import { ensureGenesisContinuityClientWireV0 } from "./rhizoh/runtime/genesisContinuityClientWireV0.js";
 import {
   maybePublishWorldTickObservationV0,
   publishAgentSpokeObservationV0
@@ -594,6 +613,7 @@ import {
   inferRhizohUserGoalHint
 } from "./rhizoh/experience/index.js";
 import { RhizohT0ShellChromeV1 } from "./components/RhizohT0ShellChromeV1.jsx";
+import { RhizohConversationDockShellV0 } from "./components/RhizohConversationDockShellV0.jsx";
 import { startYoutubeLabOctoBridgeV1 } from "./rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
 import { startRhizohLegalPendingWaitLoopV0 } from "./rhizoh/runtime/rhizohLegalPendingWaitLoopV0.js";
 import { writeProductSurfaceV0 } from "./rhizoh/spatial/rhizohProductShellBridgeV0.js";
@@ -7382,7 +7402,11 @@ export default function AppRhizoh528() {
     }
   }, []);
   useEffect(() => {
+    publishRhizohSpatialModeV0();
     void warmSwarmGpu();
+  }, []);
+  useEffect(() => {
+    bootRhizohT0DrawerShellV0();
   }, []);
   const [booted, setBooted] = useState(false);
   const [cmd, setCmd] = useState("");
@@ -7561,6 +7585,7 @@ export default function AppRhizoh528() {
   const bootLogRef = useRef(
     typeof window !== "undefined" && window.__CASTLE_BOOT_LOG__ ? window.__CASTLE_BOOT_LOG__ : null
   );
+  const engineReadyLoggedRef = useRef(false);
   const rhizohSocialPreReplyRef = useRef(null);
   const rhizohRegistryPreReplyRef = useRef(null);
   /** Last arbitration governor ring buffer (synced with continuity meta + optimistic turns). */
@@ -8470,7 +8495,14 @@ export default function AppRhizoh528() {
       uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
       closeAllRhizohProductSurfacePanelsV0();
       runDomainGateForPathV0(pathname, { userId: gateUserId });
-      void setRealityMode("GLOBE", { source: "ROUTE_T0_LIVE", productSurface: "world" });
+      if (isRhizohT0AmbientProceduralCityV0()) {
+        void setRealityMode("REAL_MAP", {
+          source: RHIZOH_T0_AMBIENT_REALITY_SOURCE_V0,
+          productSurface: "world"
+        });
+      } else {
+        void setRealityMode("GLOBE", { source: "ROUTE_T0_LIVE", productSurface: "world" });
+      }
     }
   }, [location.pathname, location.search, applyBroadcastPresence, castleAuth?.user?.uid]);
 
@@ -8483,8 +8515,10 @@ export default function AppRhizoh528() {
         uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
         return;
       }
-      void setRealityMode(resolveRhizohProductWorldRealityModeV0("world"), {
-        source: "PRODUCT_SHELL_WORLD",
+      void setRealityMode(resolveRhizohT0HomeRealityModeV0(), {
+        source: isRhizohT0AmbientProceduralCityV0()
+          ? RHIZOH_T0_AMBIENT_REALITY_SOURCE_V0
+          : "PRODUCT_SHELL_WORLD",
         productSurface: "world"
       });
       uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
@@ -8529,14 +8563,13 @@ export default function AppRhizoh528() {
   }, [productSurface, location.pathname]);
 
   const toggleDetailDrawerV0 = useCallback(() => {
-    setShowDetailDrawer((open) => {
-      const next = !open;
-      if (next) {
-        closeAllRhizohProductSurfacePanelsV0();
-      }
-      return next;
-    });
-  }, []);
+    const openId = resolveOpenProductSurfaceDrawerIdV0();
+    const next = toggleT0DetailDrawerCoordinatedV0(showDetailDrawer, openId);
+    if (next) {
+      closeAllRhizohProductSurfacePanelsV0();
+    }
+    setShowDetailDrawer(next);
+  }, [showDetailDrawer]);
 
   const onProductShellSelect = useCallback(
     (id) => {
@@ -8552,68 +8585,68 @@ export default function AppRhizoh528() {
       });
       writeProductSurfaceV0(surface);
 
-      if (surface === "world") {
-        if (isRhizohWorldDomainPathV0(location.pathname)) {
-          closeAllRhizohProductSurfacePanelsV0();
-          uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
-          const targetPath = resolveWorldDomainPathV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE);
-          if (location.pathname !== targetPath) {
-            navigate(targetPath);
-          }
-          void setRealityMode("REAL_MAP", {
-            source: "PRODUCT_SHELL_WORLD_DOMAIN",
-            productSurface: "world"
-          });
-          const tool = readRhizohWorldMapToolV0();
-          if (tool === "globe") {
-            void applyRhizohWorldMapToolV0("city_map", {
-              setRealityMode,
-              flyContext: {
-                nexusGeo: typeof window !== "undefined" ? window.__CASTLE_NEXUS_GEO__ : null,
-                castles: remoteCastles
-              },
-              source: "PRODUCT_SHELL_WORLD_DOMAIN"
+      runT0ProductShellSelectV0(surface, {
+        pathname: location.pathname,
+        resolveWorldTargetPath: () => resolveWorldDomainPathV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE),
+        onWorldSelect: ({ targetPath }) => {
+          if (isRhizohWorldDomainPathV0(location.pathname)) {
+            uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
+            if (location.pathname !== targetPath) {
+              navigate(targetPath);
+            }
+            void setRealityMode("REAL_MAP", {
+              source: "PRODUCT_SHELL_WORLD_DOMAIN",
+              productSurface: "world"
             });
+            const tool = readRhizohWorldMapToolV0();
+            if (tool === "globe") {
+              void applyRhizohWorldMapToolV0("city_map", {
+                setRealityMode,
+                flyContext: {
+                  nexusGeo: typeof window !== "undefined" ? window.__CASTLE_NEXUS_GEO__ : null,
+                  castles: remoteCastles
+                },
+                source: "PRODUCT_SHELL_WORLD_DOMAIN"
+              });
+            }
+            return;
           }
-          return;
-        }
-        closeAllRhizohProductSurfacePanelsV0();
-        uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
-        writeRhizohWorldDrawerDomainV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE);
-        const targetPath = resolveWorldDomainPathV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE);
-        bootstrapRhizohDomainGateV0(RHIZOH_DOMAIN_ID_V0.WORLD, {
-          pathname: targetPath,
-          worldDomain: RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE,
-          fromDomain: RHIZOH_DOMAIN_ID_V0.T0
-        });
-        navigate(targetPath);
-        return;
-      }
-
-      const toggled = toggleRhizohProductSurfacePanelV0(surface, productSurface);
-
-      if (toggled.closed) {
-        if (surface !== "world") {
+          uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
+          writeRhizohWorldDrawerDomainV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE);
+          bootstrapRhizohDomainGateV0(RHIZOH_DOMAIN_ID_V0.WORLD, {
+            pathname: targetPath,
+            worldDomain: RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE,
+            fromDomain: RHIZOH_DOMAIN_ID_V0.T0
+          });
+          navigate(targetPath);
+        },
+        onDrawerClosed: () => {
           uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
           void setRealityMode("GLOBE", { source: "PRODUCT_SHELL_PANEL_CLOSE" });
           uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 10 });
           uiStore.dispatch({ type: "SET_GREENROOM", payload: false });
           if (location.pathname !== "/") navigate("/");
+        },
+        onDrawerOpened: (openedSurface) => {
+          setShowDetailDrawer(false);
+          triggerMicroExpressiveRealityTransitionV0(MICRO_MAP_SURFACE_OPEN_V0, {
+            detail: { surface: openedSurface, source: "product_shell_v0" }
+          });
+          if (productSurface !== openedSurface) {
+            uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: openedSurface });
+            const target = resolveRhizohProductPathV0(openedSurface);
+            if (target && location.pathname !== target) {
+              navigateRhizohProductSurfaceV0(openedSurface, navigate, location.pathname);
+            }
+          }
+        },
+        onNavigateSurface: (navSurface) => {
+          const target = resolveRhizohProductPathV0(navSurface);
+          if (target && location.pathname !== target) {
+            navigateRhizohProductSurfaceV0(navSurface, navigate, location.pathname);
+          }
         }
-        return;
-      }
-
-      triggerMicroExpressiveRealityTransitionV0(MICRO_MAP_SURFACE_OPEN_V0, {
-        detail: { surface, source: "product_shell_v0" }
       });
-
-      if (productSurface !== surface) {
-        uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: surface });
-        const target = resolveRhizohProductPathV0(surface);
-        if (target && location.pathname !== target) {
-          navigateRhizohProductSurfaceV0(surface, navigate, location.pathname);
-        }
-      }
     },
     [productSurface, location.pathname, navigate, remoteCastles]
   );
@@ -8668,11 +8701,12 @@ export default function AppRhizoh528() {
     [onProductShellSelect, onOpenMapToolV0, onOpenChromePanelV0]
   );
 
-  const chromePanelsV0 = useSyncExternalStore(
-    subscribeRhizohChromePanelsV0,
-    getRhizohChromePanelsSnapshotV0,
-    getRhizohChromePanelsSnapshotV0
+  const drawerStateV0 = useSyncExternalStore(
+    subscribeDrawerStateV0,
+    getDrawerStateSnapshotV0,
+    getDrawerStateSnapshotV0
   );
+  const chromePanelsV0 = drawerStateV0.panels;
 
   const worldMapToolV0 = useSyncExternalStore(
     subscribeRhizohWorldMapToolV0,
@@ -8740,7 +8774,11 @@ export default function AppRhizoh528() {
 
   const showCapabilityWheelV0 = false;
 
-  const openSurfaceDrawerIdV0 = resolveOpenProductSurfaceDrawerIdV0();
+  const openSurfaceDrawerIdV0 = drawerStateV0.openDrawerId;
+  const detailDrawerVisibleV0 = resolveT0DetailDrawerVisibleV0(
+    showDetailDrawer,
+    openSurfaceDrawerIdV0
+  );
 
   const cesiumLayerActiveV0 = useMemo(
     () =>
@@ -8751,7 +8789,7 @@ export default function AppRhizoh528() {
         worldDomain: activeWorldDomainV0,
         mapTool: worldMapToolV0,
         openProductDrawerId: openSurfaceDrawerIdV0,
-        detailDrawerOpen: showDetailDrawer
+        detailDrawerOpen: detailDrawerVisibleV0
       }),
     [
       mapSurfaceActive,
@@ -8760,30 +8798,37 @@ export default function AppRhizoh528() {
       activeWorldDomainV0,
       worldMapToolV0,
       openSurfaceDrawerIdV0,
-      showDetailDrawer
+      showDetailDrawer,
+      detailDrawerVisibleV0,
+      openSurfaceDrawerIdV0
     ]
   );
 
-  const showGlobeHomeOverlayV0 =
-    !cesiumLayerActiveV0 &&
-    (!isWorldDomainActiveV0 || worldMapToolV0 === "globe");
+  const showGlobeHomeOverlayV0 = shouldRhizohT0ShowGlobeHomeOverlayV0({
+    cesiumLayerActive: cesiumLayerActiveV0,
+    isWorldDomainActive: isWorldDomainActiveV0,
+    worldMapTool: worldMapToolV0,
+    realityMode
+  });
 
-  const chatDockBottomCssV0 = useMemo(
+  const uiLayoutV0 = useMemo(
     () =>
-      resolveRhizohT0ChatBottomCssV0({
-        drawerOpen: isRhizohProductSurfaceDrawerOpenV0()
+      resolveRhizohUiLayoutV0({
+        surface: RHIZOH_UI_SURFACE_V0.T0_LIVE,
+        drawerOpen: isRhizohProductSurfaceDrawerOpenV0(),
+        publish: true
       }),
-    [chromePanelsV0, openSurfaceDrawerIdV0]
+    [openSurfaceDrawerIdV0]
   );
 
+  const chatDockBottomCssV0 = uiLayoutV0.bottomCss.conversationDock;
+
   const onCloseSurfaceDrawerV0 = useCallback(() => {
-    if (openSurfaceDrawerIdV0) {
-      setRhizohProductSurfacePanelExclusiveV0(openSurfaceDrawerIdV0, false);
-    }
+    closeProductSurfaceDrawerV0();
     uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
     void setRealityMode("GLOBE", { source: "PRODUCT_SHELL_DRAWER_CLOSE" });
     if (location.pathname !== "/") navigate("/");
-  }, [openSurfaceDrawerIdV0, location.pathname, navigate]);
+  }, [location.pathname, navigate]);
 
   const onT0SoftAffordanceV0 = useCallback(
     (affordanceId) => {
@@ -8840,12 +8885,10 @@ export default function AppRhizoh528() {
   }, [booted]);
 
   useEffect(() => {
-    if (!booted || !runtimeHealth.gatewayConnected) return undefined;
-    const stopGenesisWire = startGenesisContinuityClientWireV0();
-    return () => {
-      stopGenesisWire?.();
-    };
-  }, [booted, runtimeHealth.gatewayConnected]);
+    if (!booted) return undefined;
+    ensureGenesisContinuityClientWireV0();
+    return undefined;
+  }, [booted]);
 
   useEffect(() => {
     if (greenRoomLive?.phase !== "LIVE") {
@@ -11809,24 +11852,27 @@ export default function AppRhizoh528() {
       if (coreWorld.rhizohIdx === -1) coreWorld.allocate("RHIZOH-PRIME", STATE.RHIZOH);
 
       if (containerRef.current && !engineRef.current) {
-        try {
-          engineRef.current = new ApexEngine(containerRef.current);
-          notifyRealityEngineReady();
-          resizeObserver.observe(containerRef.current);
-        } catch (err) {
-          console.error("[Castle] ApexEngine boot failed", err);
+        if (claimRhizohEngineBootV0()) {
           try {
-            window.__CASTLE_LAST_FATAL__ = {
-              kind: "apex_engine_constructor",
-              err,
-              message: String(err?.message || err),
-              stack: String(err?.stack || ""),
-              at: Date.now()
-            };
-          } catch {
-            /* noop */
+            engineRef.current = new ApexEngine(containerRef.current);
+            notifyRealityEngineReady();
+            resizeObserver.observe(containerRef.current);
+          } catch (err) {
+            releaseRhizohEngineBootV0();
+            console.error("[Castle] ApexEngine boot failed", err);
+            try {
+              window.__CASTLE_LAST_FATAL__ = {
+                kind: "apex_engine_constructor",
+                err,
+                message: String(err?.message || err),
+                stack: String(err?.stack || ""),
+                at: Date.now()
+              };
+            } catch {
+              /* noop */
+            }
+            engineRef.current = null;
           }
-          engineRef.current = null;
         }
       }
       let lastTime = performance.now();
@@ -11911,6 +11957,9 @@ export default function AppRhizoh528() {
         engineRef.current.terminate();
         engineRef.current = null;
       }
+      releaseRhizohEngineBootV0();
+      releaseCastleAppEngineReadyV0();
+      engineReadyLoggedRef.current = false;
     };
   }, []);
 
@@ -12613,10 +12662,15 @@ export default function AppRhizoh528() {
 
   useEffect(() => {
     if (!booted) return;
-    try {
-      bootLogRef.current?.ok?.("app.engine.ready", "Apex engine + world loop active");
-    } catch {
-      /* noop */
+    let flyInterval = null;
+    if (!engineReadyLoggedRef.current) {
+      engineReadyLoggedRef.current = true;
+      try {
+        bootLogRef.current?.ok?.("app.engine.ready", "Apex engine + world loop active");
+      } catch {
+        /* noop */
+      }
+      markCastleAppEngineReadyV0("app.engine.ready");
     }
     if (
       !shouldRhizohFlyToIstanbulV0({
@@ -12625,18 +12679,22 @@ export default function AppRhizoh528() {
         source: "BOOT_ENGINE_READY"
       })
     ) {
-      return;
+      return () => {
+        if (flyInterval) window.clearInterval(flyInterval);
+      };
     }
     let tries = 0;
-    const id = window.setInterval(() => {
+    flyInterval = window.setInterval(() => {
       tries += 1;
       const c = window.__CASTLE_CESIUM__;
       if (c?.flyToIstanbul) {
         c.flyToIstanbul();
-        window.clearInterval(id);
-      } else if (tries > 40) window.clearInterval(id);
+        window.clearInterval(flyInterval);
+      } else if (tries > 40) window.clearInterval(flyInterval);
     }, 250);
-    return () => window.clearInterval(id);
+    return () => {
+      if (flyInterval) window.clearInterval(flyInterval);
+    };
   }, [booted, realityMode, productSurface]);
 
   useEffect(() => {
@@ -13042,12 +13100,10 @@ export default function AppRhizoh528() {
           aria-hidden
         />
 
-        <div
-          className="pointer-events-none fixed inset-x-0 z-[64] flex justify-center px-2 sm:px-4"
-          style={{ bottom: chatDockBottomCssV0 }}
-          data-rhizoh-t0-chat-dock="1"
+        <RhizohConversationDockShellV0
+          surface={RHIZOH_UI_SURFACE_V0.T0_LIVE}
+          drawerOpen={isRhizohProductSurfaceDrawerOpenV0()}
         >
-          <div className="pointer-events-auto w-full max-w-3xl">
         <RhizohT0ShellChromeV1
           uiLocale={uiLocaleV0}
           phaseLabel={rhizohConversationUx.label}
@@ -13109,13 +13165,12 @@ export default function AppRhizoh528() {
           onCameraClick={handleCameraButtonClick}
           productCameraStream={productCameraStream}
         />
-          </div>
-        </div>
+        </RhizohConversationDockShellV0>
 
       </div>
       ) : null}
 
-      {showDetailDrawer ? (
+      {detailDrawerVisibleV0 ? (
           <div
             id="rhizoh-detail-drawer"
             className="pointer-events-auto fixed inset-y-0 right-0 z-[220] w-full max-w-md border-l border-cyan-400/25 bg-[#050a14]/95 p-4 shadow-2xl backdrop-blur-xl overflow-y-auto"
@@ -13512,22 +13567,22 @@ export default function AppRhizoh528() {
               <button
                 type="button"
                 onClick={toggleDetailDrawerV0}
-                aria-expanded={showDetailDrawer}
+                aria-expanded={detailDrawerVisibleV0}
                 aria-controls="rhizoh-detail-drawer"
                 className="mt-2 w-full rounded-xl border border-white/15 py-1.5 text-[9px] tracking-[0.12em] text-white/70 hover:border-cyan-400/35"
               >
-                {showDetailDrawer ? detailChromeCopyV0.closeDrawer : detailChromeCopyV0.moreButton}
+                {detailDrawerVisibleV0 ? detailChromeCopyV0.closeDrawer : detailChromeCopyV0.moreButton}
               </button>
             </div>
           ) : (
             <button
               type="button"
               onClick={toggleDetailDrawerV0}
-              aria-expanded={showDetailDrawer}
+              aria-expanded={detailDrawerVisibleV0}
               aria-controls="rhizoh-detail-drawer"
               className="rounded-xl border border-white/12 bg-black/40 px-3 py-2 text-[9px] tracking-[0.12em] text-white/55 normal-case hover:text-white/80 hover:border-cyan-400/35"
             >
-              {showDetailDrawer ? detailChromeCopyV0.close : detailChromeCopyV0.open}
+              {detailDrawerVisibleV0 ? detailChromeCopyV0.close : detailChromeCopyV0.open}
             </button>
           )}
         </div>

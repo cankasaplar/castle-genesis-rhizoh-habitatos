@@ -4,6 +4,7 @@
  */
 
 import { logVoiceInfoV0 } from "./rhizohProductionLogNamespacesV0.js";
+import { bootstrapInternalSemanticMassV0 } from "./causalGraphSpatialBridgeV0.js";
 
 export const RHIZOH_GROUNDING_LAYER_SCHEMA_V1 = "rhizoh.grounding_layer.v1";
 
@@ -71,7 +72,9 @@ function externalSignalMassV1(signals) {
 export function evaluateGroundingV1(ctx = {}) {
   const signals = activeSignalsV1();
   const externalMass = externalSignalMassV1(signals);
-  const internalMass = Number(ctx.semanticMass ?? 0);
+  const rawInternalMass = Number(ctx.semanticMass ?? 0);
+  const bootstrap = bootstrapInternalSemanticMassV0({ currentMass: rawInternalMass });
+  const internalMass = bootstrap.bootstrapped ? bootstrap.mass : rawInternalMass;
   const mismatch = Math.abs(externalMass - internalMass) > MISMATCH_THRESHOLD_V1;
 
   const wsFail =
@@ -129,6 +132,8 @@ export function evaluateGroundingV1(ctx = {}) {
     worldAnchored,
     externalMass,
     internalMass,
+    internalMassBootstrapped: bootstrap.bootstrapped === true,
+    internalMassSource: bootstrap.source,
     mismatch,
     anomalyInjected,
     unexpectedImportant,

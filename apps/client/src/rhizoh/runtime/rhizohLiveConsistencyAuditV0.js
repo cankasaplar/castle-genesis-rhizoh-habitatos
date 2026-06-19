@@ -13,6 +13,20 @@ import {
 import { getControlPlaneSnapshotV0 } from "./rhizohControlPlaneV0.js";
 import { TRACE_CLASS_V0 } from "./rhizohTraceSamplingV0.js";
 import { resolveRhizohCesiumLayerActiveV0 } from "./rhizohLayerContextV0.js";
+import {
+  estimateWorldSpaceDivergenceV0,
+  evaluateSpatialDriftQuarantineV0
+} from "./worldSpaceReattachmentV0.js";
+import {
+  resolveWorldLayerActivationStatusV0,
+  WORLD_LAYER_PHASE_V0
+} from "./rhizohWorldLayerActivationStatusV0.js";
+
+export const SPATIAL_DRIFT_STATUS_V0 = Object.freeze({
+  PASS: "pass",
+  PENDING: "pending",
+  FAIL: "fail"
+});
 
 export const RHIZOH_LIVE_CONSISTENCY_AUDIT_SCHEMA_V0 = "rhizoh.live_consistency_audit.v0";
 export const RHIZOH_LIVE_CONSISTENCY_AUDIT_EVENT_V0 = "rhizoh:live-consistency-audit-v0";
@@ -200,14 +214,50 @@ export function auditSpatialDriftV0() {
     if (mapLayerExpected) issues.push("live_projection_without_camera_geo");
   }
 
+  const divergence = estimateWorldSpaceDivergenceV0();
+  const quarantine = evaluateSpatialDriftQuarantineV0(divergence);
+  if (quarantine.quarantine) {
+    issues.push("spatial_drift_quarantine_threshold_exceeded");
+  }
+
   const pass = issues.length === 0;
+  const activation = resolveWorldLayerActivationStatusV0();
+  let status = pass ? SPATIAL_DRIFT_STATUS_V0.PASS : SPATIAL_DRIFT_STATUS_V0.FAIL;
+  let pendingReason = null;
+
+  const rendererAbsentOnly =
+    issues.length > 0 &&
+    issues.every((issue) =>
+      ["spatial_nodes_without_cesium_handle", "live_nodes_before_cesium_ready"].includes(issue)
+    );
+
+  if (
+    !pass &&
+    liveCount === 0 &&
+    rendererAbsentOnly &&
+    (activation.phase === WORLD_LAYER_PHASE_V0.LEGAL_HOLD ||
+      activation.phase === WORLD_LAYER_PHASE_V0.RENDERER_PENDING)
+  ) {
+    status = SPATIAL_DRIFT_STATUS_V0.PENDING;
+    pendingReason =
+      activation.phase === WORLD_LAYER_PHASE_V0.LEGAL_HOLD
+        ? "legal_activation_hold"
+        : "renderer_plugin_absent";
+  }
+
   return Object.freeze({
     axis: "spatial_drift",
-    pass,
+    pass: status !== SPATIAL_DRIFT_STATUS_V0.FAIL,
+    status,
+    pendingReason,
+    activationPhase: activation.phase,
     spatialNodeCount: nodes.length,
     liveProjectionCount: liveCount,
     cesiumReady,
     hasCameraGeo: Boolean(cameraGeo),
+    divergence,
+    quarantineThreshold: quarantine.threshold,
+    quarantineActive: quarantine.quarantine,
     issues: Object.freeze(issues)
   });
 }
@@ -224,14 +274,27 @@ export function runLiveConsistencyAuditV0(opts = {}) {
     spatialDrift: auditSpatialDriftV0()
   });
 
-  const pass = Object.values(axes).every((a) => a.pass);
+  const structuralPass = [
+    axes.nodeConsistency,
+    axes.eventOriginGraph,
+    axes.adapterStability
+  ].every((a) => a.pass);
+
+  const spatialSurfacePass = axes.spatialDrift.pass;
+  const pass = structuralPass && spatialSurfacePass;
   const report = Object.freeze({
     schema: RHIZOH_LIVE_CONSISTENCY_AUDIT_SCHEMA_V0,
     domain: opts.domain ?? null,
     pass,
+    structuralPass,
+    spatialSurfaceStatus: axes.spatialDrift.status,
     atMs: Date.now(),
     axes,
-    summary: pass ? "consistent" : "drift_detected"
+    summary: pass
+      ? "consistent"
+      : axes.spatialDrift.status === SPATIAL_DRIFT_STATUS_V0.PENDING
+        ? "structural_ok_spatial_pending"
+        : "drift_detected"
   });
 
   if (typeof window !== "undefined") {

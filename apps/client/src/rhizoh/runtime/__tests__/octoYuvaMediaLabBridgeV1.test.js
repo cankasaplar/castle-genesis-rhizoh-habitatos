@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import {
   OCTO_YUVA_EIGHT_CAMERA_LENSES_V1,
+  dismissOctoLabToWorldMapV1,
   maybePublishOctoYuvaActivationV1,
   openOctoYuvaEightCameraLabV1,
   publishOctoPerformanceFeedV1,
@@ -61,5 +62,14 @@ describe("octoYuvaMediaLabBridgeV1", () => {
   it("openOctoYuvaEightCameraLab arms lens registry on window", () => {
     openOctoYuvaEightCameraLabV1({ source: "test" });
     expect(window.__rhizoh.octoEightCameraLab.lenses).toHaveLength(8);
+  });
+
+  it("dismissOctoLabToWorldMapV1 clears lab state and emits dismiss event", () => {
+    openOctoYuvaEightCameraLabV1({ source: "test" });
+    const dismissed = [];
+    window.addEventListener("rhizoh:octo-lab-dismiss-v1", (ev) => dismissed.push(ev.detail));
+    expect(dismissOctoLabToWorldMapV1({ source: "test_dismiss" })).toBe(true);
+    expect(window.__rhizoh.octoEightCameraLab).toBeUndefined();
+    expect(dismissed).toHaveLength(1);
   });
 });

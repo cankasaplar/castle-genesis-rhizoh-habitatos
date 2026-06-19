@@ -5,6 +5,7 @@
 import { deriveDeterministicLayerSeedV0 } from "./simulationDeviceParityV0.js";
 import { readCodexStateV0, readSimulationWorldV0 } from "./ReplayEngineV0.js";
 import { logCastleLifecycleV0 } from "../rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
+import { markCatchUpActivityV0 } from "../rhizoh/runtime/temporalBridgeV0.js";
 
 export const RHIZOH_CATCH_UP_CASCADE_SCHEMA_V0 = "castle.rhizoh.catch_up_cascade.v0";
 export const RHIZOH_CATCH_UP_CASCADE_EVENT_V0 = "rhizoh:catch-up-cascade-v0";
@@ -108,6 +109,7 @@ export async function runCatchUpCascadePlanV0(plan, onPhase) {
     toLayer: plan.toLayer,
     steps: steps.length
   });
+  markCatchUpActivityV0();
 
   return Object.freeze({ ok: true, steps: steps.length });
 }

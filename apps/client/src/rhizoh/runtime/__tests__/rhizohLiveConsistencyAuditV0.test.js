@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
   runLiveConsistencyAuditV0,
   auditNodeConsistencyV0,
@@ -66,6 +66,22 @@ describe("rhizohLiveConsistencyAuditV0", () => {
     });
     const axis = auditEventOriginGraphV0();
     expect(axis.edgeCount).toBeGreaterThan(0);
+  });
+
+  it("reports spatial drift as pending when topology exists without cesium under legal hold", () => {
+    vi.stubEnv("VITE_RHIZOH_CLOSED_ADMISSION", "1");
+    vi.stubEnv("VITE_ONTOLOGICAL_BOOT_GATE", "0");
+    vi.stubEnv("VITE_CESIUM_WORLD_PROJECTION_BIND", "1");
+    __forceSpatialReadyGateOpenForTestV0(true);
+    emitSpatialEventFromDomainV0(RHIZOH_DOMAIN_ID_V0.WORLD, {
+      tier: SPATIAL_NODE_TIER_V0.TEMPORAL,
+      nodeId: "topology-seed",
+      kind: "trail"
+    });
+    const axis = auditSpatialDriftV0();
+    expect(axis.status).toBe("pending");
+    expect(axis.pass).toBe(true);
+    expect(axis.pendingReason).toBe("legal_activation_hold");
   });
 
   it("reports spatial drift when live nodes exist without cesium (immediate path)", () => {

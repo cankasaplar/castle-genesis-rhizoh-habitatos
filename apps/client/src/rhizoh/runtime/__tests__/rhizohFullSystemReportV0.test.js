@@ -52,9 +52,11 @@ describe("rhizohFullSystemReportV0", () => {
     expect(report.probe?.gates.length).toBe(FULL_SYSTEM_PROBE_ROUTES_V0.length);
   });
 
-  it("prints report text", () => {
+  it("prints report text with integrity tiers", () => {
     const text = printFullSystemReportV0(runFullSystemReportV0({ probe: false }));
     expect(text).toContain("RHIZOH FULL SYSTEM REPORT");
-    expect(text).toContain("LAYERS");
+    expect(text).toContain("OVERALL");
+    expect(text).toContain("Core Integrity");
+    expect(text).toContain("structural:");
   });
 });

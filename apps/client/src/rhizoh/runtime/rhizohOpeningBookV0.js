@@ -2,6 +2,8 @@
  * Rhizoh Opening Book v0 — Layer 4 (Learn): LLM-free opening statistics.
  */
 
+import { setRhizohLocalStorageJsonV0 } from "./rhizohLocalStorageSafeV0.js";
+
 export const RHIZOH_OPENING_BOOK_SCHEMA_V0 = "rhizoh.opening_book.v0";
 export const RHIZOH_OPENING_BOOK_LS_KEY_V0 = "rhizoh_opening_book_v0";
 export const RHIZOH_OPENING_BOOK_EVENT_V0 = "rhizoh:opening-book-v0";
@@ -36,21 +38,43 @@ function readRawV0() {
   }
 }
 
+function compactOpeningEntriesV0(entries, max = MAX_ENTRIES) {
+  return entries
+    .slice(0, max)
+    .map((entry) => ({
+      ...entry,
+      name: String(entry.name || "").slice(0, 120),
+      moves: Object.freeze((entry.moves || []).slice(0, 12))
+    }));
+}
+
 function writeRawV0(entries) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(
-    RHIZOH_OPENING_BOOK_LS_KEY_V0,
-    JSON.stringify({ schema: RHIZOH_OPENING_BOOK_SCHEMA_V0, entries: entries.slice(0, MAX_ENTRIES) })
-  );
+  if (typeof window === "undefined") return Object.freeze({ ok: false, reason: "no_window" });
+  const payload = {
+    schema: RHIZOH_OPENING_BOOK_SCHEMA_V0,
+    entries: compactOpeningEntriesV0(entries, MAX_ENTRIES)
+  };
+  const out = setRhizohLocalStorageJsonV0(RHIZOH_OPENING_BOOK_LS_KEY_V0, payload, {
+    compactLevels: [
+      payload,
+      { schema: RHIZOH_OPENING_BOOK_SCHEMA_V0, entries: compactOpeningEntriesV0(entries, 64) },
+      { schema: RHIZOH_OPENING_BOOK_SCHEMA_V0, entries: compactOpeningEntriesV0(entries, 32) }
+    ],
+    minimalOnQuota: () => ({
+      schema: RHIZOH_OPENING_BOOK_SCHEMA_V0,
+      entries: compactOpeningEntriesV0(entries, 8)
+    })
+  });
   try {
     window.dispatchEvent(
       new CustomEvent(RHIZOH_OPENING_BOOK_EVENT_V0, {
-        detail: Object.freeze({ count: Math.min(entries.length, MAX_ENTRIES) })
+        detail: Object.freeze({ count: payload.entries.length, storage: out })
       })
     );
   } catch {
     /* noop */
   }
+  return out;
 }
 
 /**

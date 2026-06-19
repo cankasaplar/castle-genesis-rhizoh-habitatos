@@ -1,6 +1,7 @@
 import React, { memo, useCallback, useMemo } from "react";
-import { Clock, Radio, Swords, Wifi, WifiOff } from "lucide-react";
+import { Clock, Radio, Swords, Video, Wifi, WifiOff } from "lucide-react";
 import { RHIZOH_OPEN_CHESS_ARENA_EVENT_V1 } from "../rhizoh/runtime/symbyoMapIntentBridgeV0.js";
+import { openOctoYuvaEightCameraLabV1 } from "../rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
 import { CHESS_GAME_MODE_V0 } from "../rhizoh/runtime/chessArenaEngineV0.js";
 import {
   isRhizohLegalPendingHoldV0,
@@ -52,6 +53,13 @@ export const RhizohGreenroomWaitingPanelV0 = memo(function RhizohGreenroomWaitin
     }
   }, [tr]);
 
+  const onOpenOctoLab = useCallback(() => {
+    openOctoYuvaEightCameraLabV1({
+      source: "greenroom_waiting_panel",
+      title: tr ? "Octo Lab · Bekleme odası" : "Octo Lab · Waiting room"
+    });
+  }, [tr]);
+
   const statusRows = [
     {
       key: "legal",
@@ -97,7 +105,7 @@ export const RhizohGreenroomWaitingPanelV0 = memo(function RhizohGreenroomWaitin
 
   return (
     <div
-      className="mb-3 rounded-xl border border-emerald-400/25 bg-emerald-950/20 p-3"
+      className="mb-3 rounded-xl border border-emerald-400/30 bg-[#061a14] p-3 shadow-inner"
       data-rhizoh-greenroom-waiting-panel="1"
       data-rhizoh-surface={surface}
     >
@@ -122,7 +130,7 @@ export const RhizohGreenroomWaitingPanelV0 = memo(function RhizohGreenroomWaitin
         {statusRows.map((row) => (
           <li
             key={row.key}
-            className="flex items-start gap-2 rounded-lg border border-white/5 bg-black/25 px-2 py-1.5"
+            className="flex items-start gap-2 rounded-lg border border-white/8 bg-[#030a08] px-2 py-1.5"
           >
             {row.ok ? (
               <Wifi size={12} className="mt-0.5 shrink-0 text-emerald-400" />
@@ -137,6 +145,14 @@ export const RhizohGreenroomWaitingPanelV0 = memo(function RhizohGreenroomWaitin
         ))}
       </ul>
 
+      <button
+        type="button"
+        onClick={onOpenOctoLab}
+        className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl border border-purple-400/35 bg-purple-500/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-purple-100 hover:bg-purple-500/20"
+      >
+        <Video size={14} />
+        {tr ? "Octo Lab (8 kamera)" : "Octo Lab (8 cameras)"}
+      </button>
       <button
         type="button"
         onClick={onPlayChess}

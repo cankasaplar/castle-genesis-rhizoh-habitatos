@@ -253,6 +253,60 @@ export function resolveGenesisGatewayHttpBaseV0() {
     .replace(/\/+$/, "");
 }
 
+/**
+ * Direct Render (or configured live) gateway origin — bypasses same-origin Firebase proxy.
+ * Used for long-lived genesis SSE (proxy path returns 524 timeout).
+ */
+export function resolveGenesisDirectGatewayOriginV0() {
+  const localProxy = localDevGatewayProxyOriginV0();
+  if (localProxy) return localProxy.replace(/\/+$/, "");
+
+  const env = import.meta.env;
+  const liveBase = resolveLiveGatewayBaseFromEnv(env).replace(/\/+$/, "");
+  if (liveBase) {
+    try {
+      return new URL(liveBase).origin;
+    } catch {
+      return liveBase;
+    }
+  }
+
+  try {
+    return new URL(DEFAULT_LIVE_GATEWAY_BASE).origin;
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * SSE stream base — single genesis authority (proxy on product hosts).
+ * Legacy dual-path: VITE_GENESIS_ALLOW_DIRECT_FALLBACK=1 restores direct Render SSE.
+ */
+export function resolveGenesisSseStreamBaseV0() {
+  const pollBase = resolveGenesisGatewayHttpBaseV0();
+  const proxy = getRhizohSameOriginGatewayProxyBaseV0();
+  if (String(import.meta.env?.VITE_GENESIS_ALLOW_DIRECT_FALLBACK || "").trim() === "1") {
+    const direct = String(resolveGenesisDirectGatewayOriginV0() || "").trim().replace(/\/+$/, "");
+    if (proxy && direct && pollBase === proxy && direct !== proxy) {
+      return direct;
+    }
+  }
+  return pollBase;
+}
+
+/**
+ * Firebase gatewayProxy cannot hold long-lived SSE (524 at CDN) — use poll transport instead.
+ * Opt-in direct Render SSE: VITE_GENESIS_ALLOW_DIRECT_FALLBACK=1.
+ * @returns {boolean}
+ */
+export function isGenesisSseBlockedViaGatewayProxyV0() {
+  if (String(import.meta.env?.VITE_GENESIS_ALLOW_DIRECT_FALLBACK || "").trim() === "1") {
+    return false;
+  }
+  const sseBase = String(resolveGenesisSseStreamBaseV0() || "");
+  return sseBase.includes("/api/gatewayProxy");
+}
+
 export function getRhizohSameOriginGatewayProxyBaseV0() {
   if (!shouldUseSameOriginGatewayProxyV0() || typeof window === "undefined") return "";
   return `${window.location.origin}/api/gatewayProxy`;

@@ -3,7 +3,6 @@ import {
   buildSpiralMMOOrderedRouteWalkV0,
   buildSpiralMMOSequencedCubeLaunchesV0,
   resolveSpiralMMOAccumulationOffsetV0,
-  SPIRAL_MMO_CUBE_DEPTH_LAYERS_V0,
   verifySpiralMMOCubeFlowContinuityV0
 } from "../spiralMMOAwakeningCubeFlowV0.js";
 import { listSpiralMMOContinentMapPinsV0 } from "../spiralMMOContinentPinsV0.js";
@@ -12,13 +11,14 @@ import { buildSpiralMMOAwakeningLaunchPlanV0 } from "../spiralMMOAwakeningCycleV
 import { resetSpiralMMOContinuityForTestV0 } from "../spiralMMOContinuityV0.js";
 import { resetSpiralMMOSessionCubeAccumV0 } from "../spiralMMOSessionAccumulationV0.js";
 import { resolveSpiralMMOBehaviorProfileV0 } from "../spiralMMOSpiralBehaviorV0.js";
+import { SPIRAL_MMO_DIM_COLLAPSE_DEFAULTS_V0 } from "../spiralMMODimensionalCollapseV0.js";
 
 describe("spiralMMOAwakeningCubeFlowV0", () => {
   beforeEach(() => {
     resetSpiralMMOContinuityForTestV0();
     resetSpiralMMOSessionCubeAccumV0();
   });
-  it("orders route walk with forward then reverse per edge", () => {
+  it("orders route walk with forward then reverse per edge (legacy helper)", () => {
     const pins = listSpiralMMOContinentMapPinsV0();
     const walk = buildSpiralMMOOrderedRouteWalkV0(2, pins);
     expect(walk.length).toBe(listSpiralMMOContinentRouteEdgesV0().length * 2);
@@ -30,7 +30,7 @@ describe("spiralMMOAwakeningCubeFlowV0", () => {
     expect(walk.indexOf(fwd)).toBeLessThan(walk.indexOf(rev));
   });
 
-  it("builds sequenced launches across all routes, depths, and dual directions", () => {
+  it("builds dimensional collapse launches with order, chaos, and special kinds", () => {
     const pins = listSpiralMMOContinentMapPinsV0();
     /** @type {Record<string, unknown>[]} */
     const launches = [];
@@ -40,15 +40,16 @@ describe("spiralMMOAwakeningCubeFlowV0", () => {
       cycleSeed: 42,
       addLaunch: (launch) => launches.push(launch)
     });
-    const edgeCount = listSpiralMMOContinentRouteEdgesV0().length;
-    expect(meta.routeStepCount).toBe(edgeCount * 2);
-    expect(meta.depthLayerCount).toBe(SPIRAL_MMO_CUBE_DEPTH_LAYERS_V0.length);
-    expect(launches.length).toBe(edgeCount * 2 * SPIRAL_MMO_CUBE_DEPTH_LAYERS_V0.length);
+    expect(meta.sequenceCount).toBe(launches.length);
+    expect(launches.length).toBeGreaterThan(50);
+    expect(launches.some((l) => l.kind === "order")).toBe(true);
+    expect(launches.some((l) => l.kind === "chaos")).toBe(true);
+    expect(launches.some((l) => ["mirror", "black", "white"].includes(l.kind))).toBe(true);
 
     const continuity = verifySpiralMMOCubeFlowContinuityV0(launches);
     expect(continuity.ok).toBe(true);
-    expect(continuity.dualDirectionCoverage).toBe(true);
-    expect(continuity.depthLayers).toEqual([0, 1, 2]);
+    expect(continuity.orderCount).toBeGreaterThan(0);
+    expect(continuity.chaosCount).toBeGreaterThan(0);
 
     for (let i = 1; i < launches.length; i += 1) {
       expect(launches[i].delayMs).toBeGreaterThanOrEqual(launches[i - 1].delayMs);
@@ -64,16 +65,20 @@ describe("spiralMMOAwakeningCubeFlowV0", () => {
     expect(outer.stackScale).toBeGreaterThan(inner.stackScale);
   });
 
-  it("launch plan uses sequenced flow (no random scatter delays)", () => {
+  it("launch plan uses dimensional collapse wave (no route mesh scatter)", () => {
     const plan = buildSpiralMMOAwakeningLaunchPlanV0(0, 1_700_000_000_000, { commit: false });
-    expect(plan.launches.length).toBeGreaterThan(60);
+    const expectedMin =
+      SPIRAL_MMO_DIM_COLLAPSE_DEFAULTS_V0.ghostDensity +
+      Math.floor(SPIRAL_MMO_DIM_COLLAPSE_DEFAULTS_V0.ghostDensity * 0.8) +
+      Math.floor(SPIRAL_MMO_DIM_COLLAPSE_DEFAULTS_V0.ghostDensity * 0.45);
+    expect(plan.launches.length).toBeGreaterThanOrEqual(expectedMin);
     expect(plan.launches[0].sequenceIndex).toBe(0);
     expect(plan.launches[1].sequenceIndex).toBe(1);
-    expect(new Set(plan.launches.map((l) => l.depthLayer)).size).toBe(3);
+    expect(plan.launches.some((l) => l.kind === "order")).toBe(true);
     expect(plan.behavior.continent).toBeTruthy();
   });
 
-  it("reverse-first behavior swaps dual direction order on an edge", () => {
+  it("reverse-first behavior swaps dual direction order on an edge (legacy walk)", () => {
     const pins = listSpiralMMOContinentMapPinsV0();
     const forwardFirst = buildSpiralMMOOrderedRouteWalkV0(2, pins, { dualLead: "forward" });
     const reverseFirst = buildSpiralMMOOrderedRouteWalkV0(2, pins, { dualLead: "reverse" });
@@ -81,7 +86,7 @@ describe("spiralMMOAwakeningCubeFlowV0", () => {
     expect(reverseFirst[0]?.direction).toBe("reverse");
   });
 
-  it("behavior profile alters stagger and color wave in launches", () => {
+  it("behavior profile alters ghost density via stagger scale", () => {
     const pins = listSpiralMMOContinentMapPinsV0();
     const asia = resolveSpiralMMOBehaviorProfileV0("asia", 0);
     const europe = resolveSpiralMMOBehaviorProfileV0("europe", 0);
@@ -102,7 +107,7 @@ describe("spiralMMOAwakeningCubeFlowV0", () => {
       behavior: europe,
       addLaunch: (l) => europeLaunches.push(l)
     });
-    expect(asiaLaunches[1].delayMs).not.toBe(europeLaunches[1].delayMs);
+    expect(asiaLaunches.length).not.toBe(europeLaunches.length);
     expect(asiaLaunches[0].colorClass).not.toBe(europeLaunches[0].colorClass);
   });
 });

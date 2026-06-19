@@ -3,7 +3,7 @@
  * N12 policy: never cache API, gateway, LLM, or user/ghost payloads.
  * Hashed /assets/ and /cesium/ are cached on demand after first load.
  */
-const SHELL_VERSION = "rhizoh-shell-v1";
+const SHELL_VERSION = "rhizoh-shell-v4";
 const CACHE_NAME = `rhizoh-app-shell-${SHELL_VERSION}`;
 
 const PRECACHE_URLS = ["/", "/index.html", "/manifest.webmanifest", "/favicon.svg"];
@@ -22,6 +22,7 @@ const NEVER_CACHE_PATH_RE = [
 function shouldBypassCache(url) {
   if (url.origin !== self.location.origin) return true;
   const path = url.pathname || "";
+  if (path.startsWith("/chess-engine/")) return true;
   return NEVER_CACHE_PATH_RE.some((re) => re.test(path));
 }
 
@@ -33,6 +34,12 @@ function isNavigationRequest(request) {
   const accept = request.headers.get("accept") || "";
   return accept.includes("text/html");
 }
+
+self.addEventListener("message", (event) => {
+  if (event?.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -63,6 +70,13 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(event.request.url);
   if (shouldBypassCache(url)) return;
+
+  if (url.pathname.startsWith("/chess-engine/")) {
+    event.respondWith(
+      fetch(event.request, { cache: "no-store" }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
 
   if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/cesium/")) {
     event.respondWith(

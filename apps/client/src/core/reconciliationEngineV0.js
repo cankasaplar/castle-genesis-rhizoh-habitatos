@@ -91,7 +91,8 @@ export async function reconcileWithCanonicalAuthorityV0(canonical, pendingEvents
       cycleLayer: layer || world.cycleLayer,
       seed: seed || world.seed,
       voidPending: false
-    })
+    }),
+    { source: "reconciliation_rebuild" }
   );
 
   publishOfflineVoidStateV0(false);

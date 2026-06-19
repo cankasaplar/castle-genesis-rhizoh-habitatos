@@ -2,12 +2,17 @@ import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import {
   resolveRhizohProductWorldRealityModeV0,
   shouldRhizohFlyToIstanbulV0,
+  shouldRhizohAllowBootstrapCalibrationFlyV0,
   hasRhizohReturningUserAnchorV0,
   coerceRhizohProductRealityModeV0,
   shouldHideT0ContinuityChromeOnWorldSpaceV0,
   shouldRhizohT0LiveChromeVisibleV0,
   shouldRhizohWorldSpaceVoiceDockVisibleV0,
-  shouldUseApexProceduralRealMapV0
+  shouldUseApexProceduralRealMapV0,
+  isRhizohT0AmbientProceduralCityV0,
+  resolveRhizohT0HomeRealityModeV0,
+  shouldRhizohT0ShowGlobeHomeOverlayV0,
+  RHIZOH_T0_AMBIENT_REALITY_SOURCE_V0
 } from "../rhizohWorldSurfacePolicyV0.js";
 import { isRhizohContextWheelVisibleV0 } from "../rhizohLayerContextV0.js";
 import {
@@ -37,6 +42,19 @@ describe("rhizohWorldSurfacePolicyV0", () => {
         source: "PRODUCT_SHELL_WORLD_MAP"
       })
     ).toBe(false);
+    expect(
+      shouldRhizohAllowBootstrapCalibrationFlyV0({
+        pathname: "/world/space",
+        worldDomain: "space",
+        source: "map_center"
+      })
+    ).toBe(false);
+    expect(
+      shouldRhizohAllowBootstrapCalibrationFlyV0({
+        pathname: "/world/space",
+        source: "voice_warp"
+      })
+    ).toBe(true);
   });
 
   it("allows Istanbul fly on explicit REAL_MAP hall route", () => {
@@ -119,5 +137,38 @@ describe("rhizohWorldSurfacePolicyV0", () => {
     ).toBe(true);
     expect(shouldUseApexProceduralRealMapV0({ pathname: "/world/space" })).toBe(false);
     expect(shouldUseApexProceduralRealMapV0({ pathname: "/" })).toBe(true);
+  });
+
+  it("ambient procedural city allows REAL_MAP on T0 home", () => {
+    vi.stubEnv("VITE_RHIZOH_T0_AMBIENT_PROCEDURAL_CITY", "1");
+    expect(isRhizohT0AmbientProceduralCityV0()).toBe(true);
+    expect(resolveRhizohT0HomeRealityModeV0()).toBe("REAL_MAP");
+    expect(
+      coerceRhizohProductRealityModeV0("REAL_MAP", {
+        source: RHIZOH_T0_AMBIENT_REALITY_SOURCE_V0,
+        productSurface: "world"
+      })
+    ).toBe("REAL_MAP");
+    expect(
+      shouldRhizohT0ShowGlobeHomeOverlayV0({
+        cesiumLayerActive: false,
+        isWorldDomainActive: false,
+        realityMode: "REAL_MAP"
+      })
+    ).toBe(false);
+    vi.unstubAllEnvs();
+  });
+
+  it("default T0 home keeps GLOBE overlay", () => {
+    vi.stubEnv("VITE_RHIZOH_T0_AMBIENT_PROCEDURAL_CITY", "0");
+    expect(resolveRhizohT0HomeRealityModeV0()).toBe("GLOBE");
+    expect(
+      shouldRhizohT0ShowGlobeHomeOverlayV0({
+        cesiumLayerActive: false,
+        isWorldDomainActive: false,
+        realityMode: "GLOBE"
+      })
+    ).toBe(true);
+    vi.unstubAllEnvs();
   });
 });

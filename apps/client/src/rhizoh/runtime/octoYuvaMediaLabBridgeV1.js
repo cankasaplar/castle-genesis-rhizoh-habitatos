@@ -9,10 +9,15 @@ import { fetchYoutubePublisherAnalyticsSnapshotV0, bridgeAnalyticsSnapshotToCohe
 import { applyRhizohWorldMapToolV0 } from "./rhizohWorldMapToolV0.js";
 import { RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1 } from "./sovereignWorldMapNodesV0.js";
 import { STUDIO_CAMERA_MODE_V1 } from "../../studio/studioLiveRoomCameraV1.js";
+import { closeProductSurfaceDrawerV0 } from "./rhizohDrawerStateMachineV0.js";
+import { dispatchWorldSpaceMapFlyV0 } from "./worldSpaceMapCommandFacadeV0.js";
+import { resolveMapViewportHomeV0 } from "./worldMapViewportBootstrapV0.js";
+import { logCastleLifecycleV0 } from "./rhizohProductionLogNamespacesV0.js";
 
 export const OCTO_YUVA_MEDIA_LAB_BRIDGE_SCHEMA_V1 = "castle.octo_yuva_media_lab_bridge.v1";
 export const RHIZOH_OCTO_YUVA_ACTIVATED_EVENT_V1 = "rhizoh:octo-yuva-activated-v1";
 export const RHIZOH_OCTO_PERFORMANCE_FEED_EVENT_V1 = "rhizoh:octo-performance-feed-v1";
+export const RHIZOH_OCTO_LAB_DISMISS_EVENT_V1 = "rhizoh:octo-lab-dismiss-v1";
 
 /** Eight observation lenses — Leaflet + Cesium Ion + YouTube lab + studio + cube. */
 /** Default nest birth facing — pet ghosts observe counterpart first. */
@@ -39,7 +44,16 @@ export const OCTO_YUVA_EIGHT_CAMERA_LENSES_V1 = Object.freeze([
     facing: OCTO_CAMERA_FACING_V1.OTHER
   }),
   Object.freeze({
-    id: "lens_nasa",
+    id: "lens_castle_chess",
+    kind: "youtube_lab",
+    channelId: "castle_chess",
+    label: "Chess 8-Cam Broadcast",
+    dimension: "chess_cluster_broadcast",
+    actor: OCTO_CAMERA_ACTOR_V1.FOX,
+    actors: Object.freeze([OCTO_CAMERA_ACTOR_V1.FOX, OCTO_CAMERA_ACTOR_V1.OCTO]),
+    facing: OCTO_CAMERA_FACING_V1.OTHER
+  }),
+  Object.freeze({
     kind: "youtube_lab",
     channelId: "nasa",
     label: "NASA ISS Earth",
@@ -224,6 +238,61 @@ export function openOctoYuvaEightCameraLabV1(opts = {}) {
     }
   }
   primeDualMapObservationForOctoLabV1();
+}
+
+/**
+ * Clear armed Octo lab state (does not close UI shells by itself).
+ */
+export function closeOctoYuvaEightCameraLabV1() {
+  if (typeof window === "undefined") return false;
+  try {
+    if (window.__rhizoh?.octoEightCameraLab) {
+      delete window.__rhizoh.octoEightCameraLab;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Exit Octo lab → map: close drawer, restore city map, recenter home.
+ * @param {{ source?: string, closeMediaTube?: boolean }} [opts]
+ */
+export function dismissOctoLabToWorldMapV1(opts = {}) {
+  if (typeof window === "undefined") return false;
+  closeOctoYuvaEightCameraLabV1();
+  closeProductSurfaceDrawerV0();
+  void applyRhizohWorldMapToolV0("city_map", {
+    leafletOnly: true,
+    source: opts.source || "octo_lab_dismiss"
+  });
+  const home = resolveMapViewportHomeV0(
+    typeof window !== "undefined" ? window.__rhizoh?.userCastleGeo : null
+  );
+  dispatchWorldSpaceMapFlyV0({
+    lat: home.lat,
+    lon: home.lon,
+    zoom: home.zoom,
+    source: opts.source || "octo_lab_dismiss"
+  });
+  if (opts.closeMediaTube !== false) {
+    try {
+      window.dispatchEvent(
+        new CustomEvent(RHIZOH_OCTO_LAB_DISMISS_EVENT_V1, {
+          detail: Object.freeze({
+            schema: OCTO_YUVA_MEDIA_LAB_BRIDGE_SCHEMA_V1,
+            atMs: Date.now(),
+            source: opts.source || "octo_lab_dismiss"
+          })
+        })
+      );
+    } catch {
+      /* noop */
+    }
+  }
+  logCastleLifecycleV0("octo_lab_dismiss", { source: opts.source || "octo_lab_dismiss" });
+  return true;
 }
 
 /**

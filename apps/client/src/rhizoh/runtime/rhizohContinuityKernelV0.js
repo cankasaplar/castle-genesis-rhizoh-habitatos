@@ -5,6 +5,7 @@
  */
 
 import { logVoiceInfoV0 } from "./rhizohProductionLogNamespacesV0.js";
+import { rebuildRhizohCausalGraphV0 } from "./runtimeEventGraphBridgeV0.js";
 
 export const RHIZOH_CONTINUITY_KERNEL_SCHEMA_V0 = "rhizoh.continuity_kernel.v0";
 
@@ -41,11 +42,25 @@ export function transitionContinuityStateV0(next, detail = {}) {
   pulseRingV0.push(pulse);
   if (pulseRingV0.length > PULSE_RING_MAX_V0) pulseRingV0.shift();
   logVoiceInfoV0("CONTINUITY_STATE", { prev, next: currentStateV0, ...detail });
-  if (typeof window !== "undefined") {
-    window.__rhizoh = window.__rhizoh || {};
-    window.__rhizoh.continuityKernel = getContinuityKernelSnapshotV0();
-  }
+  publishContinuityKernelRegistryV0();
   return pulse;
+}
+
+function publishContinuityKernelRegistryV0() {
+  if (typeof window === "undefined") return;
+  window.__rhizoh = window.__rhizoh || {};
+  const snapshot = getContinuityKernelSnapshotV0();
+  window.__rhizoh.continuityKernel = Object.freeze({
+    ...snapshot,
+    rebuildCausalGraph: rebuildRhizohCausalGraphV0,
+    snapshot: () => getContinuityKernelSnapshotV0()
+  });
+}
+
+export function ensureContinuityKernelDevToolsV0() {
+  if (typeof window === "undefined") return null;
+  publishContinuityKernelRegistryV0();
+  return window.__rhizoh.continuityKernel;
 }
 
 /**

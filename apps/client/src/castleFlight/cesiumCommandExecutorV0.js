@@ -22,7 +22,8 @@ const SPATIAL_OPS_V0 = new Set([
   "calibration_root",
   "topology_globe",
   "bootstrap_viewport",
-  "street_view"
+  "street_view",
+  "commit_spatial_node"
 ]);
 
 /** @type {null | Record<string, unknown>} */
@@ -307,6 +308,21 @@ function executeSpatialOpV0(op, request) {
         ok = true;
       } else {
         skipReason = "invalid_street_view_geo";
+      }
+      break;
+    case "commit_spatial_node":
+      if (typeof api.commitSpatialNode === "function") {
+        const spatialNode = request.meta?.spatialNode || request.meta || null;
+        const commitOut = api.commitSpatialNode(spatialNode, {
+          geo: { lat, lon, alt },
+          nodeId: request.meta?.nodeId || spatialNode?.id || null,
+          tier: request.meta?.tier || spatialNode?.tier || null,
+          source: request.source || "spatial_world_adapter"
+        });
+        ok = commitOut?.ok !== false;
+        if (!ok) skipReason = String(commitOut?.reason || "commit_spatial_node_failed");
+      } else {
+        skipReason = "commit_spatial_node_missing";
       }
       break;
     default:

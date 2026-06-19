@@ -39,21 +39,35 @@ import { reconcileDomainPathCoherenceV0 } from "./rhizohDomainCoherenceV0.js";
 import { publishCausalMapLayerV0 } from "./rhizohCausalMapLayerV0.js";
 import { publishSpatialReplayEngineV0 } from "./rhizohSpatialReplayEngineV0.js";
 import { publishLiveConflictDetectorV0 } from "./rhizohLiveConflictDetectorV0.js";
+import { ensureGenesisContinuityClientWireV0 } from "./genesisContinuityClientWireV0.js";
+import { ensureOntologicalRepairProtocolV1 } from "./ontologicalRepairProtocolV1.js";
+import { startSpatialExecutionTickV0 } from "./spatialExecutionTickV0.js";
+import { attachSpatialWorldAdapterV0 } from "./spatialWorldAdapterV0.js";
+import { isRhizohSpatialExecutionAllowedV0 } from "./rhizohWorldNamespaceGateV0.js";
 
 export const RHIZOH_NERVOUS_SYSTEM_EVENT_V0 = "rhizoh:nervous-system-v0";
 
 /** @type {(() => void) | null} */
 let stopSpatialReadyGateWire = null;
+let spatialExecutionTickStarted = false;
 
 function ensureSpatialReadyGateWireV0() {
   if (typeof window === "undefined" || stopSpatialReadyGateWire) return;
   stopSpatialReadyGateWire = installSpatialReadyGateWireV0(emitSpatialEventImmediateV0);
 }
 
+function ensureSpatialExecutionTickV0() {
+  if (typeof window === "undefined" || spatialExecutionTickStarted) return;
+  if (!isRhizohSpatialExecutionAllowedV0()) return;
+  spatialExecutionTickStarted = true;
+  attachSpatialWorldAdapterV0();
+  startSpatialExecutionTickV0();
+}
+
 /**
  * Bootstrap domain gate from pathname — call on every route sync.
  * @param {string} pathname
- * @param {{ fromDomain?: string, passPayload?: unknown, userId?: string | null }} [ctx]
+ * @param {{ fromDomain?: string, passPayload?: unknown, userId?: string | null, coreOnly?: boolean }} [ctx]
  */
 export function runDomainGateForPathV0(pathname, ctx = {}) {
   const p = String(pathname || "/").trim();
@@ -81,6 +95,9 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
 
   if (typeof window !== "undefined") {
     ensureSpatialReadyGateWireV0();
+    if (!ctx.coreOnly) {
+      ensureSpatialExecutionTickV0();
+    }
     window.__RHIZOH_NERVOUS_SYSTEM__ = Object.freeze({
       schema: "rhizoh.nervous_system.v1",
       pathname: p,
@@ -109,6 +126,8 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
     mountPersonaLoopSchedulerV0();
     mountRhizohPulseLoopV1();
     mountOutputContractConsumerV0();
+    ensureGenesisContinuityClientWireV0();
+    ensureOntologicalRepairProtocolV1();
     getLiveLayerSnapshotV0();
     getThinkingLayerSnapshotV0();
     window.dispatchEvent(

@@ -1,0 +1,132 @@
+/**
+ * Chess cluster agent policies — multi-agent evaluation strategies.
+ * RESEARCH-ONLY — Rhizoh observes; agents play via Stockfish/heuristic.
+ */
+
+import { CHESS_STOCKFISH_PRESET_V0 } from "./chessStockfishPresetsV0.js";
+
+export const CHESS_CLUSTER_AGENT_SCHEMA_V0 = "castle.rhizoh.chess_cluster_agent.v0";
+
+export const CHESS_CLUSTER_AGENT_ID_V0 = Object.freeze({
+  RHIZOH_AI: "rhizoh_ai",
+  RHIZOH_STOCKFISH: "rhizoh_stockfish_agent",
+  OCTOAI: "octoai_agent",
+  FOX: "fox_agent",
+  USER: "user_agent"
+});
+
+const CLUSTER_AGENT_MOVETIME_FLOOR_MS_V0 = 600;
+const CLUSTER_AGENT_MOVETIME_CEIL_MS_V0 = 1200;
+
+const AGENT_TABLE_V0 = Object.freeze({
+  [CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_AI]: Object.freeze({
+    label: "Rhizoh AI",
+    preset: "TEACHER_BACKUP",
+    skill: 12,
+    movetimeMs: 600,
+    depth: 10,
+    contempt: 6,
+    explorationRate: 0.12,
+    riskProfile: "learning"
+  }),
+  [CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH]: Object.freeze({
+    label: "Rhizoh Stockfish",
+    preset: "ARENA",
+    skill: 16,
+    movetimeMs: 700,
+    depth: 12,
+    contempt: 12,
+    explorationRate: 0.08,
+    riskProfile: "balanced"
+  }),
+  [CHESS_CLUSTER_AGENT_ID_V0.OCTOAI]: Object.freeze({
+    label: "OctoAI",
+    preset: "STRONG",
+    skill: 18,
+    movetimeMs: 900,
+    depth: 14,
+    contempt: 32,
+    explorationRate: 0.1,
+    riskProfile: "aggressive"
+  }),
+  [CHESS_CLUSTER_AGENT_ID_V0.FOX]: Object.freeze({
+    label: "Fox",
+    preset: "TEACHER_BACKUP",
+    skill: 14,
+    movetimeMs: 650,
+    depth: 11,
+    contempt: -8,
+    explorationRate: 0.12,
+    riskProfile: "defensive"
+  }),
+  [CHESS_CLUSTER_AGENT_ID_V0.USER]: Object.freeze({
+    label: "User mirror",
+    preset: "TEACHER_BACKUP",
+    skill: 12,
+    movetimeMs: 600,
+    depth: 10,
+    contempt: 0,
+    explorationRate: 0.1,
+    riskProfile: "human_like"
+  })
+});
+
+/** Default 8-slot agent pairing (white, black) */
+export const CHESS_CLUSTER_SLOT_AGENTS_V0 = Object.freeze([
+  [CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH, CHESS_CLUSTER_AGENT_ID_V0.OCTOAI],
+  [CHESS_CLUSTER_AGENT_ID_V0.OCTOAI, CHESS_CLUSTER_AGENT_ID_V0.FOX],
+  [CHESS_CLUSTER_AGENT_ID_V0.FOX, CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH],
+  [CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH, CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH],
+  [CHESS_CLUSTER_AGENT_ID_V0.OCTOAI, CHESS_CLUSTER_AGENT_ID_V0.OCTOAI],
+  [CHESS_CLUSTER_AGENT_ID_V0.FOX, CHESS_CLUSTER_AGENT_ID_V0.USER],
+  [CHESS_CLUSTER_AGENT_ID_V0.USER, CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH],
+  [CHESS_CLUSTER_AGENT_ID_V0.OCTOAI, CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH]
+]);
+
+/**
+ * @param {string} agentId
+ */
+export function resolveChessClusterAgentPolicyV0(agentId) {
+  const id = String(agentId || CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH);
+  const row = AGENT_TABLE_V0[id] || AGENT_TABLE_V0[CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH];
+  const preset =
+    CHESS_STOCKFISH_PRESET_V0[row.preset] || CHESS_STOCKFISH_PRESET_V0.ARENA;
+  return Object.freeze({
+    schema: CHESS_CLUSTER_AGENT_SCHEMA_V0,
+    agentId: id,
+    ...row,
+    presetSkill: preset.skill,
+    presetMovetimeMs: preset.movetimeMs,
+    presetDepth: preset.depth
+  });
+}
+
+/**
+ * Stockfish opts for pickChessArenaEngineMoveV0.
+ * @param {string} agentId
+ */
+export function resolveChessClusterStockfishOptsV0(agentId) {
+  const p = resolveChessClusterAgentPolicyV0(agentId);
+  return Object.freeze({
+    preset: p.preset,
+    skill: p.skill,
+    movetimeMs: Math.max(
+      CLUSTER_AGENT_MOVETIME_FLOOR_MS_V0,
+      Math.min(CLUSTER_AGENT_MOVETIME_CEIL_MS_V0, p.movetimeMs)
+    ),
+    depth: p.depth,
+    contempt: p.contempt
+  });
+}
+
+/** Featured slot 0 — RhizohAI vs Stockfish MAX for broadcast featured match. */
+export function resolveFeaturedSlotStockfishOptsV0() {
+  const max = CHESS_STOCKFISH_PRESET_V0.MAX || CHESS_STOCKFISH_PRESET_V0.STRONG;
+  return Object.freeze({
+    preset: "MAX",
+    skill: Math.max(max.skill ?? 20, 20),
+    movetimeMs: 1100,
+    depth: Math.max(max.depth ?? 18, 17),
+    contempt: 24
+  });
+}

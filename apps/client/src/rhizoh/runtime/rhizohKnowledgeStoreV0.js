@@ -4,6 +4,7 @@
 
 import { detectRhizohMultilingualLocaleV0 } from "./rhizohMultilingualBridgeV0.js";
 import { resolveOutputLanguageCodeV0 } from "./rhizohOutputLanguagePolicyV0.js";
+import { setRhizohLocalStorageJsonV0 } from "./rhizohLocalStorageSafeV0.js";
 
 export const RHIZOH_KNOWLEDGE_STORE_SCHEMA_V0 = "rhizoh.knowledge_store.v0";
 export const RHIZOH_KNOWLEDGE_LS_KEY_V0 = "rhizoh_knowledge_store_v0";
@@ -20,7 +21,8 @@ export const RHIZOH_TEACHER_SOURCE_V0 = Object.freeze({
   ARCHIVE: "teacher_archive"
 });
 
-const MAX_ENTRIES = 512;
+const MAX_ENTRIES = 256;
+const MAX_ANSWER_CHARS = 1600;
 
 function nowIso() {
   return new Date().toISOString();
@@ -62,22 +64,51 @@ function readRawV0() {
   }
 }
 
+function compactKnowledgeEntriesV0(entries, level = 0) {
+  const limits = [
+    { max: MAX_ENTRIES, answerLen: MAX_ANSWER_CHARS },
+    { max: 160, answerLen: 1200 },
+    { max: 96, answerLen: 800 },
+    { max: 48, answerLen: 480 }
+  ];
+  const { max, answerLen } = limits[Math.min(level, limits.length - 1)];
+  return entries.slice(0, max).map((entry) => ({
+    ...entry,
+    question: String(entry.question || "").slice(0, 480),
+    answer: String(entry.answer || "").slice(0, answerLen)
+  }));
+}
+
 function writeRawV0(entries) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") return Object.freeze({ ok: false, reason: "no_window" });
+  const trimmed = compactKnowledgeEntriesV0(entries.slice(0, MAX_ENTRIES), 0);
   const payload = {
     schema: RHIZOH_KNOWLEDGE_STORE_SCHEMA_V0,
-    entries: entries.slice(0, MAX_ENTRIES)
+    entries: trimmed
   };
-  window.localStorage.setItem(RHIZOH_KNOWLEDGE_LS_KEY_V0, JSON.stringify(payload));
+  const compactLevels = [
+    payload,
+    { schema: RHIZOH_KNOWLEDGE_STORE_SCHEMA_V0, entries: compactKnowledgeEntriesV0(trimmed, 1) },
+    { schema: RHIZOH_KNOWLEDGE_STORE_SCHEMA_V0, entries: compactKnowledgeEntriesV0(trimmed, 2) },
+    { schema: RHIZOH_KNOWLEDGE_STORE_SCHEMA_V0, entries: compactKnowledgeEntriesV0(trimmed, 3) }
+  ];
+  const out = setRhizohLocalStorageJsonV0(RHIZOH_KNOWLEDGE_LS_KEY_V0, payload, {
+    compactLevels,
+    minimalOnQuota: () => ({
+      schema: RHIZOH_KNOWLEDGE_STORE_SCHEMA_V0,
+      entries: compactKnowledgeEntriesV0(trimmed, 3).slice(0, 16)
+    })
+  });
   try {
     window.dispatchEvent(
       new CustomEvent(RHIZOH_KNOWLEDGE_EVENT_V0, {
-        detail: Object.freeze({ count: payload.entries.length })
+        detail: Object.freeze({ count: compactLevels[0].entries.length, storage: out })
       })
     );
   } catch {
     /* noop */
   }
+  return out;
 }
 
 /**
@@ -141,7 +172,7 @@ export function upsertRhizohKnowledgeV0(input = {}) {
     id: idx >= 0 ? entries[idx].id : newId(),
     question: question.slice(0, 480),
     questionNorm,
-    answer: answer.slice(0, 4000),
+    answer: answer.slice(0, MAX_ANSWER_CHARS),
     teacher,
     tags: Object.freeze((input.tags || []).map((t) => String(t).slice(0, 32)).slice(0, 8)),
     confidence: Math.max(0, Math.min(1, Number(input.confidence) || 0.72)),

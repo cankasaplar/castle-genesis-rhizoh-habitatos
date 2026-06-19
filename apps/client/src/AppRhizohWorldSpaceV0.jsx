@@ -16,6 +16,7 @@ import {
   RhizohWorldSpaceMapHostV0
 } from "./components/RhizohWorldSpaceMapHostV0.jsx";
 import { RhizohWorldSpaceVoiceDockV0 } from "./components/RhizohWorldSpaceVoiceDockV0.jsx";
+import { RhizohConversationDockShellV0 } from "./components/RhizohConversationDockShellV0.jsx";
 import {
   applyRhizohWorldMapToolV0,
   getRhizohWorldMapToolSnapshotV0,
@@ -32,10 +33,12 @@ import {
 import { RHIZOH_WORLD_DRAWER_DOMAIN_V0, writeRhizohWorldDrawerDomainV0 } from "./rhizoh/runtime/rhizohWorldDrawerDomainV0.js";
 import { resolveWorldDomainFromPathV0 } from "./rhizoh/runtime/rhizohWorldDomainRoutesV0.js";
 import {
-  resolveRhizohWorldSpaceMapStripBottomCssV0,
-  resolveRhizohWorldSpaceVoiceDockBottomCssV0
-} from "./rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
+  resolveRhizohUiLayoutV0,
+  RHIZOH_UI_SURFACE_V0
+} from "./rhizoh/runtime/rhizohUiLayoutResolverV0.js";
 import { navigateRhizohProductSurfaceV0 } from "./rhizoh/product/rhizohProductTopologyV0.js";
+import { publishRhizohSpatialModeV0 } from "./rhizoh/runtime/rhizohSpatialModeV0.js";
+import { publishRhizohMapPinOwnerRegistryV0 } from "./rhizoh/runtime/rhizohMapPinOwnerV0.js";
 import {
   configureSpatialRealityInfraV0,
   clearSpatialRealityInfraV0
@@ -116,16 +119,23 @@ import {
   persistWorldSpaceCastleAnchorV0
 } from "./rhizoh/runtime/castleWorldSpaceContinuityV0.js";
 import { bootRhizohOsStabilReleaseLayerV0 } from "./rhizoh/runtime/rhizohOsStabilReleaseLayerV0.js";
+import {
+  dispatchWorldSpaceMapFlyV0,
+  installWorldSpaceMapCommandFacadeV0
+} from "./rhizoh/runtime/worldSpaceMapCommandFacadeV0.js";
 import { getActiveFederationOverlayNodeV0 } from "./rhizoh/runtime/rhizohDomainGraphV0.js";
 import {
   RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0,
   RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0
 } from "./rhizoh/runtime/spiralMMOAwakeningCycleV0.js";
 import { startCanonicalTickClientV0 } from "./core/canonicalTickClientV0.js";
-import { startYoutubeLabOctoBridgeV1 } from "./rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
+import { startYoutubeLabOctoBridgeV1, RHIZOH_OCTO_LAB_DISMISS_EVENT_V1 } from "./rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
 import { startRhizohLegalPendingWaitLoopV0 } from "./rhizoh/runtime/rhizohLegalPendingWaitLoopV0.js";
 import { startCityMapLegalCountdownMediaGateV0 } from "./rhizoh/runtime/cityMapLegalCountdownMediaGateV0.js";
 import { RhizohCityMapLegalCountdownStripV0 } from "./components/RhizohCityMapLegalCountdownStripV0.jsx";
+import { resolveWorldEntryMapToolV0, isWorldDomainCalmModeV0 } from "./rhizoh/runtime/worldDomainCalmModeV0.js";
+import { runSpiralImmersionEnterStagedV0 } from "./rhizoh/runtime/worldMapMeaningfulTransitionV0.js";
+import { RhizohMapTransitionApproachStripV0 } from "./components/RhizohMapTransitionApproachStripV0.jsx";
 import { loadRhizohExperienceSessionContextV0 } from "./rhizoh/experience/rhizohExperienceSessionContextV0.js";
 import { loadRhizohProductSession } from "./rhizoh/product/rhizohProductSessionPersistenceV1.js";
 
@@ -208,6 +218,15 @@ export default function AppRhizohWorldSpaceV0() {
   }, [location.pathname]);
 
   useEffect(() => {
+    publishRhizohMapPinOwnerRegistryV0({
+      pathname: location.pathname || "/world/space",
+      worldDomain: worldDrawerDomainV0,
+      mapTool: worldMapToolV0,
+      mapSurfaceActive
+    });
+  }, [location.pathname, worldDrawerDomainV0, worldMapToolV0, mapSurfaceActive, cesiumLayerActiveV0]);
+
+  useEffect(() => {
     writeRhizohWorldDrawerDomainV0(worldDrawerDomainV0);
   }, [worldDrawerDomainV0]);
 
@@ -270,6 +289,7 @@ export default function AppRhizohWorldSpaceV0() {
 
   useEffect(() => {
     writeRhizohWorldDrawerDomainV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE);
+    publishRhizohSpatialModeV0();
     configureSpatialRealityInfraV0({
       gatewayPhase: gateway.phase,
       mapSurfaceActive: true,
@@ -279,7 +299,7 @@ export default function AppRhizohWorldSpaceV0() {
     const nexusGeo = resolveUserCastleGeoForMapViewV0();
     const savedTool = readRhizohWorldMapToolV0();
     const nextTool = normalizeRhizohWorldSpaceLeafletToolV0(
-      !nexusGeo || savedTool === "globe" ? "city_map" : savedTool
+      resolveWorldEntryMapToolV0(savedTool, Boolean(nexusGeo))
     );
     writeRhizohWorldMapToolV0(nextTool);
 
@@ -297,16 +317,20 @@ export default function AppRhizohWorldSpaceV0() {
     window.addEventListener("castle:open-init-gate-v0", onOpenCastleGate);
     window.addEventListener("castle:open-anchor-offer-v0", onOpenCastleGate);
 
+    installWorldSpaceMapCommandFacadeV0();
+
     const onSovereignWarp = (ev) => {
       const detail = ev?.detail;
       const lat = Number(detail?.lat);
       const lon = Number(detail?.lon);
+      const zoom = Number(detail?.zoom) || 14;
       if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-      try {
-        window.__CASTLE_CESIUM__?.flyToCustom?.(lat, lon, 1200, { source: detail?.source || "voice_warp" });
-      } catch {
-        /* noop */
-      }
+      dispatchWorldSpaceMapFlyV0({
+        lat,
+        lon,
+        zoom,
+        source: detail?.source || "voice_warp"
+      });
     };
     window.addEventListener(RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1, onSovereignWarp);
 
@@ -414,7 +438,9 @@ export default function AppRhizohWorldSpaceV0() {
     window.addEventListener(RHIZOH_OPEN_LIBRARY_EVENT_V1, onLibrary);
     window.addEventListener(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, onChessArena);
     window.addEventListener(RHIZOH_OPEN_TOWER_PORTAL_EVENT_V1, onTowerPortal);
+    const onOctoLabDismiss = () => setV11MediaTube(null);
     window.addEventListener(RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1, onMediaTube);
+    window.addEventListener(RHIZOH_OCTO_LAB_DISMISS_EVENT_V1, onOctoLabDismiss);
     window.addEventListener(RHIZOH_OPEN_CASTLE_EVENT_V1, onCastle);
     window.addEventListener(RHIZOH_SHOW_INFO_EVENT_V1, onInfo);
     window.addEventListener(CASTLE_ARCHIVE_OPEN_MEDIA_EVENT_V0, onArchiveMedia);
@@ -430,6 +456,7 @@ export default function AppRhizohWorldSpaceV0() {
       window.removeEventListener(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, onChessArena);
       window.removeEventListener(RHIZOH_OPEN_TOWER_PORTAL_EVENT_V1, onTowerPortal);
       window.removeEventListener(RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1, onMediaTube);
+      window.removeEventListener(RHIZOH_OCTO_LAB_DISMISS_EVENT_V1, onOctoLabDismiss);
       window.removeEventListener(RHIZOH_OPEN_CASTLE_EVENT_V1, onCastle);
       window.removeEventListener(RHIZOH_SHOW_INFO_EVENT_V1, onInfo);
       window.removeEventListener(CASTLE_ARCHIVE_OPEN_MEDIA_EVENT_V0, onArchiveMedia);
@@ -457,13 +484,11 @@ export default function AppRhizohWorldSpaceV0() {
   useEffect(() => {
     const enterImmersion = () => {
       preSpiralMapToolRef.current = readRhizohWorldMapToolV0();
-      void applyRhizohWorldMapToolV0("satellite", {
-        leafletOnly: true,
-        source: "SPIRAL_MMO_IMMERSION"
+      runSpiralImmersionEnterStagedV0(() => {
+        setSpiralImmersionActive(true);
+        setV11NodePanel(null);
+        closeProductSurfaceDrawerV0();
       });
-      setSpiralImmersionActive(true);
-      setV11NodePanel(null);
-      closeProductSurfaceDrawerV0();
     };
     const exitImmersion = () => {
       setSpiralImmersionActive(false);
@@ -673,8 +698,16 @@ export default function AppRhizohWorldSpaceV0() {
     }
   }, [uiLocale]);
 
-  const mapStripBottomCssV0 = resolveRhizohWorldSpaceMapStripBottomCssV0();
-  const voiceDockBottomCssV0 = resolveRhizohWorldSpaceVoiceDockBottomCssV0();
+  const uiLayoutV0 = useMemo(
+    () =>
+      resolveRhizohUiLayoutV0({
+        surface: RHIZOH_UI_SURFACE_V0.WORLD_SPACE,
+        drawerOpen: Boolean(openSurfaceDrawerIdV0),
+        publish: true
+      }),
+    [openSurfaceDrawerIdV0]
+  );
+  const mapStripBottomCssV0 = uiLayoutV0.bottomCss.mapStrip;
   const bootstrapPlaceLabelV0 = resolveWorldMapBootstrapGeoV0().label;
 
   return (
@@ -685,6 +718,7 @@ export default function AppRhizohWorldSpaceV0() {
       data-rhizoh-spiral-immersion={spiralImmersionActive ? "1" : "0"}
       data-cesium-active={cesiumLayerActiveV0 ? "1" : "0"}
       data-world-layer-enabled={worldLayerEnabledV0 ? "1" : "0"}
+      data-world-domain-calm={isWorldDomainCalmModeV0() ? "1" : "0"}
       data-spatial-render-mode={spatialBootGateV0.renderMode}
       data-spatial-boot-reason={spatialBootGateV0.reason}
       data-map-tool={worldMapToolV0}
@@ -705,6 +739,21 @@ export default function AppRhizohWorldSpaceV0() {
         [data-rhizoh-spiral-immersion="1"] [data-rhizoh-spiral-mmo-awakening-overlay] {
           z-index: 31 !important;
         }
+        [data-rhizoh-world-space-map-host] {
+          transition: opacity 0.85s ease-in-out, filter 0.85s ease-in-out;
+        }
+        .rhizoh-map-camera-pulse-v0 {
+          animation: rhizoh-map-camera-pulse-keyframes 0.52s ease-out;
+        }
+        @keyframes rhizoh-map-camera-pulse-keyframes {
+          0% { box-shadow: inset 0 0 0 0 rgba(34, 211, 238, 0); filter: brightness(1); }
+          35% { box-shadow: inset 0 0 0 3px rgba(34, 211, 238, 0.55); filter: brightness(1.08); }
+          100% { box-shadow: inset 0 0 0 0 rgba(34, 211, 238, 0); filter: brightness(1); }
+        }
+        [data-rhizoh-spiral-immersion="1"] [data-rhizoh-world-space-map-host] {
+          opacity: 1;
+          filter: none;
+        }
       `}</style>
       <RhizohAtmospherePresenceBridge />
       <RhizohWorldSpaceMapHostV0
@@ -713,6 +762,7 @@ export default function AppRhizohWorldSpaceV0() {
         activeMapTool={worldMapToolV0}
         remoteCastles={remoteCastles}
         remoteCastlesVisible={remoteCastlesVisibleV0}
+        uiLocale={uiLocale}
       />
 
       {spiralImmersionActive ? (
@@ -736,6 +786,7 @@ export default function AppRhizohWorldSpaceV0() {
         onSelectMapTool={(toolId) => onApplyWorldMapToolV0(toolId, "WORLD_DOMAIN_MAP_STRIP")}
         spatialEngineActive
         mapToolCesiumReady={isRhizohWorldSpaceCesiumEnvEnabledV0()}
+        mapStripBottomCss={mapStripBottomCssV0}
         onOpenGreenroom={() => navigate("/greenroom/main")}
         onOpenBroadcast={() => navigate("/broadcast/main")}
         onShareInvite={() => {}}
@@ -745,14 +796,13 @@ export default function AppRhizohWorldSpaceV0() {
         onFocusLayer={() => {}}
       />
 
-      <div
-        className="pointer-events-none fixed inset-x-0 z-[24] flex justify-center px-2 sm:px-4"
-        style={{ bottom: voiceDockBottomCssV0 }}
+      <RhizohConversationDockShellV0
+        surface={RHIZOH_UI_SURFACE_V0.WORLD_SPACE}
+        drawerOpen={Boolean(openSurfaceDrawerIdV0)}
+        publish
       >
-        <div className="pointer-events-auto w-full max-w-3xl">
-          <RhizohWorldSpaceVoiceDockV0 firebaseUser={castleAuth?.user} uiLocale={uiLocale} />
-        </div>
-      </div>
+        <RhizohWorldSpaceVoiceDockV0 firebaseUser={castleAuth?.user} uiLocale={uiLocale} />
+      </RhizohConversationDockShellV0>
 
       <UnifiedProductShellBar
         active={openSurfaceDrawerIdV0 || "world"}
@@ -781,9 +831,12 @@ export default function AppRhizohWorldSpaceV0() {
       ) : null}
 
       {!spiralImmersionActive ? (
-        <div className="pointer-events-none fixed inset-x-0 top-16 z-[27] flex justify-center px-4">
+        <div className="pointer-events-none fixed inset-x-0 top-16 z-[27] flex flex-col items-center gap-2 px-4">
           <div className="pointer-events-auto w-full max-w-xl">
             <RhizohCityMapLegalCountdownStripV0 uiLocale={uiLocale} />
+          </div>
+          <div className="pointer-events-auto w-full max-w-md">
+            <RhizohMapTransitionApproachStripV0 uiLocale={uiLocale} />
           </div>
         </div>
       ) : null}

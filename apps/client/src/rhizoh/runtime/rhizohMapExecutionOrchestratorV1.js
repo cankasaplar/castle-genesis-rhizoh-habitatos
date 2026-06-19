@@ -1,9 +1,8 @@
 import { resolveEntityRuntimeV1 } from "./rhizohEntityRegistryV1.js";
 import { RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1 } from "./sovereignWorldMapNodesV0.js";
 import {
-  dispatchSpiralMMOAwakeningV0,
-  resolveSpiralMMOTriggerIndexFromPinIdV0
-} from "./spiralMMOAwakeningCycleV0.js";
+  dispatchSpiralMMOAwakeningStagedV0
+} from "./worldMapMeaningfulTransitionV0.js";
 import { resolveWorldSpaceMediaChannelForMapNodeV0 } from "./worldSpaceMediaChannelsV0.js";
 import {
   ORCHESTRATOR_ACTION_REGISTRY_V0,
@@ -16,6 +15,7 @@ import {
   RHIZOH_V11_MAP_INTENT_EVENT_V0,
   SYMBYO_MAP_INTENT_TYPE_V0
 } from "./symbyoMapIntentBridgeV0.js";
+import { shouldDeferMapChessArenaOpenV0 } from "./chessEngineContentionGateV0.js";
 
 let orchestratorAttachedV1 = false;
 
@@ -62,6 +62,7 @@ export function attachRhizohMapExecutionOrchestratorV1() {
         break;
 
       case ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_CHESS_ARENA:
+        if (shouldDeferMapChessArenaOpenV0()) break;
         window.dispatchEvent(
           new CustomEvent(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, {
             detail: Object.freeze({ node, runtime, routed: detail })
@@ -102,9 +103,12 @@ export function attachRhizohMapExecutionOrchestratorV1() {
         );
         break;
 
-      case ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_SPIRAL_MMO:
-        dispatchSpiralMMOAwakeningV0(resolveSpiralMMOTriggerIndexFromPinIdV0(String(node.id || "")));
+      case ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_SPIRAL_MMO: {
+        const leafletMap =
+          typeof window !== "undefined" ? window.__rhizoh?.v11LeafletMap || null : null;
+        dispatchSpiralMMOAwakeningStagedV0(String(node.id || ""), leafletMap);
         break;
+      }
 
       case ORCHESTRATOR_ACTION_REGISTRY_V0.LOAD_WORLD_NODE:
       default:

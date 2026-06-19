@@ -1,6 +1,5 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { CastleShellRouter } from "../shell/CastleShellRouter.jsx";
 import { bootstrapRhizohOntologicalGateV0 } from "../rhizoh/runtime/continuity/bootstrapOntologicalGateV0.js";
 import { QuarantineOntologicalGateShell } from "./QuarantineOntologicalGateShell.jsx";
 import { resolveIngressRouteV0 } from "../rhizoh/ingress/ingress_router.js";
@@ -9,6 +8,7 @@ import { hideLegacyIndexHudV0 } from "./castleCrashTelemetry.js";
 import { installRhizohReflexDebugGlobalsV0 } from "../rhizoh/runtime/rhizohFastPrecheckV0.js";
 import { installRhizohVoiceSmokeGlobalsV0 } from "../rhizoh/runtime/rhizohVoiceCommandSmokeHarnessV0.js";
 import { startProdWorldObservabilityBridgeV0 } from "../rhizoh/runtime/rhizohProdWorldObservabilityBridgeV0.js";
+import { publishIngressRouteV0 } from "../rhizoh/runtime/spatialSinkRoutePolicyV0.js";
 
 /**
  * CORE-ELIGIBLE: mount after ontological gate (pre-render).
@@ -59,25 +59,12 @@ export async function mountCastleApplicationV0(ctx) {
   }
 
   const ingress = resolveIngressRouteV0();
-  const needsIngressFlow =
-    ingress.required ||
-    ingress.route === "legal_preamble" ||
-    ingress.route === "closed_admission_hold" ||
-    ingress.closedAdmission?.enabled;
-
-  if (needsIngressFlow) {
-    bootLog?.ok?.("boot.rhizoh_ingress", `route=${ingress.route}`);
-    reactRoot.render(
-      <RootErrorBoundary>
-        <RhizohIngressFlow />
-      </RootErrorBoundary>
-    );
-    return { mounted: true, quarantine: false, gate, ingress: ingress.route };
-  }
+  publishIngressRouteV0(ingress.route, { source: "boot.mount" });
+  bootLog?.ok?.("boot.rhizoh_ingress", `route=${ingress.route} overlay=1`);
 
   reactRoot.render(
     <RootErrorBoundary>
-      <CastleShellRouter />
+      <RhizohIngressFlow />
     </RootErrorBoundary>
   );
 

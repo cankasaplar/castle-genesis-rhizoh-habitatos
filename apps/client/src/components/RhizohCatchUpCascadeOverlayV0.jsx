@@ -54,7 +54,7 @@ export const RhizohCatchUpCascadeOverlayV0 = memo(function RhizohCatchUpCascadeO
 
   return (
     <div
-      className="pointer-events-none absolute bottom-24 left-3 z-[160] max-w-[12rem] sm:max-w-[14rem]"
+      className="pointer-events-none absolute right-3 top-24 z-[160] max-w-[12rem] sm:max-w-[14rem]"
       data-rhizoh-catch-up-cascade="1"
       aria-live="polite"
     >

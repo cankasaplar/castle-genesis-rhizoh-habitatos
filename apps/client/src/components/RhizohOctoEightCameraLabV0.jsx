@@ -1,12 +1,26 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Camera, Eye, Users, Video } from "lucide-react";
+import { ArrowLeft, Camera, ChevronDown, ChevronUp, Eye, Users, Video } from "lucide-react";
 import {
   OCTO_CAMERA_FACING_V1,
-  OCTO_YUVA_EIGHT_CAMERA_LENSES_V1
+  OCTO_YUVA_EIGHT_CAMERA_LENSES_V1,
+  dismissOctoLabToWorldMapV1
 } from "../rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
 import { resolveWorldSpaceMediaChannelV0 } from "../rhizoh/runtime/worldSpaceMediaChannelsV0.js";
 import { createWorldSpaceMediaCaptureV0 } from "../rhizoh/runtime/worldSpaceMediaEngineV0.js";
 import { RhizohMediaStageWithOctoV0 } from "./RhizohMediaOctoCompanionOverlayV0.jsx";
+import { ActorGlbNestPreviewV0 } from "./ActorGlbNestPreviewV0.jsx";
+
+const PRIMARY_LENS_IDS_V0 = Object.freeze([
+  "lens_castle_genesis",
+  "lens_cesium_ion",
+  "lens_leaflet_satellite",
+  "lens_octo_fox_nest"
+]);
+
+function lensShortLabelV0(lens) {
+  const raw = String(lens?.label || "");
+  return raw.split("·")[0].trim();
+}
 
 const FACING_OPTIONS_V1 = Object.freeze([
   OCTO_CAMERA_FACING_V1.OTHER,
@@ -25,32 +39,8 @@ function lensChannelV0(lens) {
 }
 
 function ActorNestPlaceholderV0({ actor, facing, tr, compact = false }) {
-  const isOcto = actor === "octo";
-  const label = isOcto
-    ? tr
-      ? "Octo · karşı yuva"
-      : "Octo · counterpart nest"
-    : tr
-      ? "Fox · karşı yuva"
-      : "Fox · counterpart nest";
   return (
-    <div
-      className={`flex flex-col items-center justify-center rounded-xl border bg-gradient-to-br ${
-        isOcto
-          ? "border-cyan-400/35 from-cyan-950/50 to-black/70"
-          : "border-amber-400/35 from-amber-950/50 to-black/70"
-      } ${compact ? "min-h-[7rem] p-2" : "min-h-[10rem] p-4"}`}
-      data-rhizoh-octo-lab-facing={facing}
-      data-rhizoh-octo-lab-actor={actor}
-    >
-      <p className="text-3xl">{isOcto ? "🐙" : "🦊"}</p>
-      <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-wider text-white/80">
-        {label}
-      </p>
-      <p className="mt-1 text-center text-[9px] normal-case text-white/45">
-        {tr ? "Varsayılan: karşıyı göster" : "Default: facing other"}
-      </p>
-    </div>
+    <ActorGlbNestPreviewV0 actor={actor} facing={facing} tr={tr} compact={compact} />
   );
 }
 
@@ -70,16 +60,34 @@ function LensPreviewPaneV0({
   const secondaryActor = actors[1] || "fox";
 
   if (lens.kind === "youtube_lab" && youtubeSrc) {
+    const companionActor = primaryActor === "fox" ? "fox" : "octo";
     return (
-      <RhizohMediaStageWithOctoV0 className="flex min-h-0 flex-1 flex-col" mediaStream={localStream}>
-        <iframe
-          className="min-h-0 h-full w-full flex-1"
-          src={youtubeSrc}
-          title={youtubeTitle || lens.label}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-        />
-      </RhizohMediaStageWithOctoV0>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        {companionActor === "octo" ? (
+          <RhizohMediaStageWithOctoV0 className="flex min-h-0 flex-1 flex-col" mediaStream={localStream}>
+            <iframe
+              className="min-h-0 h-full w-full flex-1"
+              src={youtubeSrc}
+              title={youtubeTitle || lens.label}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </RhizohMediaStageWithOctoV0>
+        ) : (
+          <>
+            <iframe
+              className="min-h-0 h-full w-full flex-1"
+              src={youtubeSrc}
+              title={youtubeTitle || lens.label}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+            <div className="pointer-events-none absolute bottom-3 right-3 z-10 w-36 opacity-95">
+              <ActorGlbNestPreviewV0 actor="fox" tr={tr} compact facing={facing} />
+            </div>
+          </>
+        )}
+      </div>
     );
   }
 
@@ -239,19 +247,50 @@ export const RhizohOctoEightCameraLabV0 = memo(function RhizohOctoEightCameraLab
     };
   }, [armLocalCapture]);
 
+  const [showAllLenses, setShowAllLenses] = useState(false);
+
+  const visibleLenses = useMemo(() => {
+    if (showAllLenses) return lenses;
+    const primary = lenses.filter((l) => PRIMARY_LENS_IDS_V0.includes(l.id));
+    if (primary.length >= 3) return primary;
+    return lenses.slice(0, 4);
+  }, [lenses, showAllLenses]);
+
+  const onBackToMap = useCallback(() => {
+    dismissOctoLabToWorldMapV1({ source: "octo_lab_ui_back" });
+  }, []);
+
+  useEffect(() => {
+    const onKey = (ev) => {
+      if (ev.key === "Escape") {
+        ev.preventDefault();
+        onBackToMap();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onBackToMap]);
+
   if (!activeLens) return null;
 
   return (
     <div
-      className="flex min-h-0 flex-1 flex-col gap-3"
+      className="flex min-h-0 flex-1 flex-col gap-2.5"
       data-rhizoh-octo-eight-camera-lab="1"
       data-rhizoh-octo-lens={activeLens.id}
       data-rhizoh-octo-facing={facing}
     >
       <div className="flex flex-wrap items-center gap-2">
-        <p className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-cyan-200/80">
-          <Video size={12} />
-          {tr ? "8 kamera · boyutlar" : "8 cameras · dimensions"}
+        <button
+          type="button"
+          onClick={onBackToMap}
+          className="flex items-center gap-1.5 rounded-lg border border-cyan-400/35 bg-cyan-500/10 px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-wider text-cyan-100 hover:bg-cyan-500/20"
+        >
+          <ArrowLeft size={12} />
+          {tr ? "Haritaya dön" : "Back to map"}
+        </button>
+        <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/45">
+          {lensShortLabelV0(activeLens)}
         </p>
         <div className="ml-auto flex flex-wrap gap-1">
           {FACING_OPTIONS_V1.map((opt) => (
@@ -259,10 +298,10 @@ export const RhizohOctoEightCameraLabV0 = memo(function RhizohOctoEightCameraLab
               key={opt}
               type="button"
               onClick={() => setFacing(opt)}
-              className={`rounded-lg border px-2 py-1 text-[8px] font-semibold uppercase tracking-wide ${
+              className={`rounded-md border px-2 py-0.5 text-[7px] font-semibold uppercase tracking-wide ${
                 facing === opt
-                  ? "border-cyan-400/50 bg-cyan-500/20 text-cyan-100"
-                  : "border-white/10 bg-black/40 text-white/50 hover:text-white"
+                  ? "border-cyan-400/40 bg-cyan-500/15 text-cyan-100"
+                  : "border-white/8 bg-black/30 text-white/45 hover:text-white/80"
               }`}
             >
               {opt === OCTO_CAMERA_FACING_V1.OTHER
@@ -281,31 +320,41 @@ export const RhizohOctoEightCameraLabV0 = memo(function RhizohOctoEightCameraLab
         </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-        {lenses.map((lens) => (
+      <div className="flex flex-wrap items-center gap-1.5">
+        {visibleLenses.map((lens, idx) => (
           <button
             key={lens.id}
             type="button"
             onClick={() => setActiveLensId(lens.id)}
-            className={`shrink-0 rounded-xl border px-2.5 py-2 text-left transition-all ${
+            style={{ animationDelay: `${idx * 45}ms` }}
+            className={`rounded-full border px-2.5 py-1 text-[8px] font-medium transition-all duration-300 ${
               activeLens.id === lens.id
-                ? "border-purple-500/50 bg-purple-500/20 text-purple-100"
-                : "border-white/10 bg-black/40 text-white/55 hover:text-white"
+                ? "border-purple-400/45 bg-purple-500/20 text-purple-100"
+                : "border-white/10 bg-black/35 text-white/50 hover:border-white/20 hover:text-white/80"
             }`}
           >
-            <span className="block text-[9px] font-bold">{lens.label}</span>
-            <span className="mt-0.5 block text-[7px] uppercase tracking-wider text-white/35">
-              {lens.dimension}
-            </span>
-            <span className="mt-0.5 flex items-center gap-1 text-[7px] text-white/40">
-              <Users size={9} />
-              {(lens.actors || [lens.actor]).join(" · ")}
-            </span>
+            {lensShortLabelV0(lens)}
           </button>
         ))}
+        {lenses.length > visibleLenses.length || showAllLenses ? (
+          <button
+            type="button"
+            onClick={() => setShowAllLenses((v) => !v)}
+            className="flex items-center gap-0.5 rounded-full border border-white/10 px-2 py-1 text-[7px] uppercase text-white/40 hover:text-white/70"
+          >
+            {showAllLenses ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+            {showAllLenses
+              ? tr
+                ? "Daha az"
+                : "Less"
+              : tr
+                ? `+${lenses.length - visibleLenses.length}`
+                : `+${lenses.length - visibleLenses.length}`}
+          </button>
+        ) : null}
       </div>
 
-      <div className="relative flex min-h-[12rem] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl sm:min-h-[16rem]">
+      <div className="relative flex min-h-[10rem] min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-white/10 bg-black/80 shadow-xl sm:min-h-[14rem]">
         <div className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-lg border border-white/10 bg-black/70 px-2 py-1">
           <Eye size={11} className="text-cyan-300/80" />
           <span className="text-[8px] font-semibold uppercase tracking-wider text-white/70">
