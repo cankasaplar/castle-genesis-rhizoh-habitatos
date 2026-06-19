@@ -28,10 +28,21 @@ let totalMovesScheduledV0 = 0;
 export async function scheduleClusterEngineMoveV0(game, opts = {}) {
   const stockfishReady = getChessStockfishEngineStatusV0() === "stockfish_wasm";
   const useStockfish = opts.useStockfish !== false && stockfishReady;
+  const queue = getChessEngineQueueSnapshotV0();
+  const pending = Number(queue.pendingCount) || 0;
+  const tunedOpts = { ...opts };
+  if (pending > 1 && tunedOpts.movetimeMs) {
+    tunedOpts.movetimeMs = Math.max(
+      450,
+      Math.round(Number(tunedOpts.movetimeMs) * (pending > 3 ? 0.55 : 0.75))
+    );
+    tunedOpts.timeoutBufferMs =
+      (Number(opts.timeoutBufferMs) || 0) + Math.min(4000, pending * 450);
+  }
 
   totalMovesScheduledV0 += 1;
   return pickChessArenaEngineMoveV0(game, {
-    ...opts,
+    ...tunedOpts,
     useStockfish,
     queuePriority: CHESS_ENGINE_TASK_PRIORITY_V0.CLUSTER_MOVE,
     queueKind: CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE,

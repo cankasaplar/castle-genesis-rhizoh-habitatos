@@ -6,7 +6,11 @@
 
 import { traceRuntimeSubstrateEventV0 } from "./rhizohTruthTraceLayerV0.js";
 import { publishCausalMapLayerV0 } from "./rhizohCausalMapLayerV0.js";
-import { consumeCausalGraphDiffV0 } from "./causalGraphSpatialBridgeV0.js";
+import {
+  consumeCausalGraphDiffV0,
+  detectOrphanCausalGraphV0,
+  projectCausalNodesToSpatialV0
+} from "./causalGraphSpatialBridgeV0.js";
 
 export const RUNTIME_EVENT_GRAPH_BRIDGE_SCHEMA_V0 = "rhizoh.runtime_event_graph_bridge.v0";
 
@@ -71,6 +75,50 @@ export function flushCausalMapCommitV0() {
   const spatialBridge = consumeCausalGraphDiffV0({ causalMap: map });
   publishRuntimeEventGraphBridgeRegistryV0(map, spatialBridge);
   return map;
+}
+
+/**
+ * DevTools repair — rebuild causal map + optional spatial bridge (fixes 0-edge orphan graph).
+ * @param {{ forceSpatialBridge?: boolean }} [opts]
+ */
+export function rebuildRhizohCausalGraphV0(opts = {}) {
+  const map = flushCausalMapCommitV0();
+  const orphan = detectOrphanCausalGraphV0();
+  let spatialBridge = null;
+  if (orphan.orphan || opts.forceSpatialBridge) {
+    spatialBridge = projectCausalNodesToSpatialV0(map, { force: true });
+    consumeCausalGraphDiffV0({ causalMap: map, force: true });
+  }
+  const result = Object.freeze({
+    ok: true,
+    schema: `${RUNTIME_EVENT_GRAPH_BRIDGE_SCHEMA_V0}.rebuild`,
+    nodeCount: map?.nodeCount ?? 0,
+    edgeCount: map?.edgeCount ?? 0,
+    rawEdgeCount: map?.causalMapRaw?.edgeCount ?? 0,
+    orphanBefore: Object.freeze({ ...orphan }),
+    spatialBridge: spatialBridge
+      ? Object.freeze({
+          consumed: spatialBridge.consumed ?? 0,
+          staged: spatialBridge.staged ?? spatialBridge.projected ?? 0,
+          skipped: spatialBridge.skipped ?? 0
+        })
+      : null,
+    atMs: Date.now()
+  });
+  if (typeof window !== "undefined") {
+    window.__rhizoh = window.__rhizoh || {};
+    window.__rhizoh.lastCausalGraphRebuild = result;
+    window.__rhizoh.rebuildCausalGraph = rebuildRhizohCausalGraphV0;
+  }
+  return result;
+}
+
+export function ensureRhizohCausalGraphDevToolsV0() {
+  if (typeof window === "undefined") return null;
+  window.__rhizoh = window.__rhizoh || {};
+  window.__rhizoh.rebuildCausalGraph = rebuildRhizohCausalGraphV0;
+  window.__rhizoh.flushCausalMapCommit = flushCausalMapCommitV0;
+  return rebuildRhizohCausalGraphV0;
 }
 
 /**

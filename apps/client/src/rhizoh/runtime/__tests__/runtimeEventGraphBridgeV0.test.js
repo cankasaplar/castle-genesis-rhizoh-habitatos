@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
   commitRuntimeEventToGraphV0,
   flushCausalMapCommitV0,
+  rebuildRhizohCausalGraphV0,
   RUNTIME_SUBSTRATE_SOURCE_V0,
   __resetRuntimeEventGraphBridgeForTestV0
 } from "../runtimeEventGraphBridgeV0.js";
@@ -38,5 +39,13 @@ describe("runtimeEventGraphBridgeV0", () => {
     const seqEdges = (map.edges || []).filter((e) => e.note === "runtime_substrate_sequence");
     expect(seqEdges.length).toBe(1);
     expect(map.selfNarrative).toContain("runtime substrate: 2");
+  });
+
+  it("rebuildRhizohCausalGraphV0 exposes DevTools rebuild API", () => {
+    commitRuntimeEventToGraphV0(RUNTIME_SUBSTRATE_SOURCE_V0.PULSE, { seq: 1 });
+    const result = rebuildRhizohCausalGraphV0();
+    expect(result.ok).toBe(true);
+    expect(result.nodeCount).toBeGreaterThanOrEqual(0);
+    expect(typeof window.__rhizoh.rebuildCausalGraph).toBe("function");
   });
 });
