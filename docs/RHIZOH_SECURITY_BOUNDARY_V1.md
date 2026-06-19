@@ -243,6 +243,26 @@ See [`RHIZOH_DRIFT_ANOMALY_DETECTOR_V1.md`](RHIZOH_DRIFT_ANOMALY_DETECTOR_V1.md)
 
 ---
 
+### Epistemic OS channel law (EOS)
+
+> **Drift is a perception stream, not a control channel.**
+
+> **Admission is the only control channel in Rhizoh.**
+
+> **No suggestion can contain actionable authority.**
+
+| Channel | Role |
+|---------|------|
+| Drift / AlertPacket | Commentary (yorum) |
+| Admission | Reality (gerçeklik) |
+| TraceGraph | Past (geçmiş) |
+| CubeState | Present (şimdi) |
+| REC | Temporal accounting |
+
+See [`RHIZOH_COGNITIVE_VISUALIZATION_BINDING_V1.md`](RHIZOH_COGNITIVE_VISUALIZATION_BINDING_V1.md).
+
+---
+
 Every `CubeState` commit MUST originate from **one of**:
 
 1. **User-signed ticket** (`mutate_l1` / `mutate_l2` with valid signature)  

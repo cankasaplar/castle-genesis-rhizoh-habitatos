@@ -1,53 +1,64 @@
 # Rhizoh Epistemic Visualization Layer v1
 
-**SPECFLOW:** `RESEARCH-ONLY` · `FUTURE-PROOF-ONLY` — UI is not control surface; it is perception projection.
+**SPECFLOW:** `RESEARCH-ONLY` · `FUTURE-PROOF-ONLY` — **Cognitive Transparency Interface**; not execution.
 
-**Prerequisites:** [`RHIZOH_TICKET_NETWORK_SCHEMA_V1.md`](RHIZOH_TICKET_NETWORK_SCHEMA_V1.md) · [`RHIZOH_DRIFT_ANOMALY_DETECTOR_V1.md`](RHIZOH_DRIFT_ANOMALY_DETECTOR_V1.md) · [`RHIZOH_LEARNING_FEATURE_VECTOR_EXPORT_V1.md`](RHIZOH_LEARNING_FEATURE_VECTOR_EXPORT_V1.md)
+**Prerequisites:** [`RHIZOH_COGNITIVE_VISUALIZATION_BINDING_V1.md`](RHIZOH_COGNITIVE_VISUALIZATION_BINDING_V1.md) · [`RHIZOH_DRIFT_ANOMALY_DETECTOR_V1.md`](RHIZOH_DRIFT_ANOMALY_DETECTOR_V1.md) · [`RHIZOH_LEARNING_FEATURE_VECTOR_EXPORT_V1.md`](RHIZOH_LEARNING_FEATURE_VECTOR_EXPORT_V1.md)
 
 ---
 
-## 0. SSOT sentence
+## 0. SSOT sentences (locked)
+
+> **Drift is a perception stream, not a control channel.**
+
+> **Admission is the only control channel in Rhizoh.**
 
 > **UI is the epistemic visualization layer — not an execution shortcut.**
 
-Three planes must remain visually and logically separated:
-
-| Plane | Role | UI panel |
-|-------|------|----------|
-| **Truth** | CubeState | Admission approval (human gate only) |
-| **Memory** | TraceGraph | REC cycle · tombstone · residue view |
-| **Interpretation** | Drift + Reconcile | Suggest-only signals · AlertPacket |
+The user sees not only outcomes but **why the system thought what it thought**.
 
 ---
 
-## 1. Nervous network wire (planned)
+## 1. Three planes (Cognitive Transparency Interface)
 
-```text
-AlertPacket / drift suggestions
-  → Signal bucket (suggest only)
-  → Epistemic visualization panels
-  → (never) direct CubeState write
-```
+| Plane | Epistemic role | UI panel | May mutate? |
+|-------|----------------|----------|-------------|
+| **Interpretation** | Drift = commentary | Suggest-only · Drift Space | No |
+| **Truth** | Admission = reality | Authority Gate | Yes (gated) |
+| **Memory** | TraceGraph = past | REC Cycle · Temporal Anatomy | Batch only |
 
-| Panel | Data source | May mutate? |
-|-------|-------------|-------------|
-| Drift signals | `driftAnalyticsEngineV0` | No |
-| Alert anomalies | `driftAnomalyDetectorV0` | No |
-| Feature vectors | `learningFeatureVectorExportV0` | No |
-| REC cycle | `runRecCycleCleanupV0` | Batch only (reconcile) |
-| Admission | `admissionCubeCommitV0` | Yes — human/admission gate |
+| Concept | Time |
+|---------|------|
+| Drift | Now (perception) |
+| CubeState | Now (truth snapshot) |
+| TraceGraph | Past (immutable) |
+| REC | Epoch accounting |
 
 ---
 
-## 2. DR-01 + DR-02 in UI
+## 2. Alert flow — hybrid
 
-- Panels MUST NOT render suggestions as actionable mutate buttons without admission gate.
-- AlertPacket text MUST display category/delta language only (DR-02).
+| Mode | Use | Content |
+|------|-----|---------|
+| **PUSH** | Drift / AlertPacket | `suggest` only · rate-limited |
+| **PULL** | Admission context | Proposals · pending commits |
+
+System *shouts* (drift) but does not *speak authority* (no mutation on PUSH).
+
+**Binding:** [`RHIZOH_COGNITIVE_VISUALIZATION_BINDING_V1.md`](RHIZOH_COGNITIVE_VISUALIZATION_BINDING_V1.md) · `cognitiveVisualizationBindingV0.js`
 
 ---
 
-## 3. Changelog
+## 3. DR-01 + DR-02 in UI
+
+- No single panel merging Drift actions + Admission mutate buttons (UI-01).
+- AlertPacket text = category + delta only (DR-02).
+- Epistemic feature artifacts ≠ policy signals.
+
+---
+
+## 4. Changelog
 
 | Date | Change |
 |------|--------|
-| 2026-06-19 | v1.0 — epistemic visualization layer spec (UI wire scaffold) |
+| 2026-06-19 | v1.1 — Cognitive Transparency Interface · hybrid alert flow · binding link |
+| 2026-06-19 | v1.0 — epistemic visualization layer scaffold |
