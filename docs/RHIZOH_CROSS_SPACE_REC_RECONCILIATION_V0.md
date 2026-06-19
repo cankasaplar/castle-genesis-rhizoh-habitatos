@@ -101,3 +101,5 @@ Event: `rhizoh:cross-space-rec-v0`
 - Durable sealed history (ledger height = 0 remains phase-gate track)
 - Quota enforcement against WASM/CPU
 - Chess ticket pipeline auto-tagging (manual / sports path only in v0)
+
+**Next:** [`RHIZOH_CROSS_SPACE_CAUSAL_FUSION_V0.md`](RHIZOH_CROSS_SPACE_CAUSAL_FUSION_V0.md)
