@@ -31,7 +31,7 @@ export async function scheduleClusterEngineMoveV0(game, opts = {}) {
   const useStockfish = opts.useStockfish !== false && stockfishReady;
   const queue = getChessEngineQueueSnapshotV0();
   const pending = Number(queue.pendingCount) || 0;
-  const tunedOpts = resolveAdaptiveClusterEngineOptsV0({ ...opts });
+  const tunedOpts = { ...resolveAdaptiveClusterEngineOptsV0({ ...opts }) };
   if (pending > 1 && tunedOpts.movetimeMs) {
     tunedOpts.movetimeMs = Math.max(
       320,
