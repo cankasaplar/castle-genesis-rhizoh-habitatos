@@ -34,6 +34,15 @@ export function isRhizohWorldSpaceMapStageV0(ctx = {}) {
 }
 
 /**
+ * `/world/space` mounts its own RhizohChessArenaWorkspaceV0 — avoid duplicate hosts fighting one WASM engine.
+ * @param {{ pathname?: string, worldDomain?: string | null }} [ctx]
+ * @returns {boolean}
+ */
+export function shouldRhizohCoreHostOwnChessArenaV0(ctx = {}) {
+  return !isRhizohWorldSpaceMapStageV0(ctx);
+}
+
+/**
  * T0 fox + full chat dock — live home (/), World · Social, World · Modes.
  * @param {{ isWorldDomainActive?: boolean, worldDomain?: string }} [ctx]
  * @returns {boolean}

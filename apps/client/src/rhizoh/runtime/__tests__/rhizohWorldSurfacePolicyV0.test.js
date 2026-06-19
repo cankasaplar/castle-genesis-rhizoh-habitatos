@@ -8,6 +8,8 @@ import {
   shouldHideT0ContinuityChromeOnWorldSpaceV0,
   shouldRhizohT0LiveChromeVisibleV0,
   shouldRhizohWorldSpaceVoiceDockVisibleV0,
+  isRhizohWorldSpaceMapStageV0,
+  shouldRhizohCoreHostOwnChessArenaV0,
   shouldUseApexProceduralRealMapV0,
   isRhizohT0AmbientProceduralCityV0,
   resolveRhizohT0HomeRealityModeV0,
@@ -137,6 +139,12 @@ describe("rhizohWorldSurfacePolicyV0", () => {
     ).toBe(true);
     expect(shouldUseApexProceduralRealMapV0({ pathname: "/world/space" })).toBe(false);
     expect(shouldUseApexProceduralRealMapV0({ pathname: "/" })).toBe(true);
+  });
+
+  it("core host skips 1v1 arena on /world/space (map owns the workspace)", () => {
+    expect(isRhizohWorldSpaceMapStageV0({ pathname: "/world/space" })).toBe(true);
+    expect(shouldRhizohCoreHostOwnChessArenaV0({ pathname: "/world/space" })).toBe(false);
+    expect(shouldRhizohCoreHostOwnChessArenaV0({ pathname: "/" })).toBe(true);
   });
 
   it("ambient procedural city allows REAL_MAP on T0 home", () => {
