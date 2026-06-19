@@ -88,4 +88,5 @@ Until gateway deploys this route, client history remains local-only (expected).
 |-------|--------|
 | L3g Authority ledger + client seal | ✔ |
 | L3h **Gateway witness persistence** | ✔ this bridge (deploy-gated) |
-| L3i Distributed worker replay | ❌ data-plane READY |
+| L3i Worker authority replay alignment | ✔ [`RHIZOH_WORKER_AUTHORITY_REPLAY_ALIGNMENT_V1.md`](RHIZOH_WORKER_AUTHORITY_REPLAY_ALIGNMENT_V1.md) |
+| L3j Distributed worker replay (full) | ❌ data-plane READY |

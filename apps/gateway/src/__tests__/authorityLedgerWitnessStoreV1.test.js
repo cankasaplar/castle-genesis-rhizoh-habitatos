@@ -6,7 +6,8 @@ import {
 } from "../authorityWalHashChainV1.js";
 import {
   persistAuthorityLedgerWitnessBatchV1,
-  resetAuthorityLedgerWitnessStoreForTestV1
+  resetAuthorityLedgerWitnessStoreForTestV1,
+  replayAuthorityLedgerWitnessChainV1
 } from "../authorityLedgerWitnessStoreV1.js";
 
 const SECRET = "test_witness_secret_16b";
@@ -87,4 +88,17 @@ test("quarantines seal hash mismatch", () => {
   assert.equal(r.witnessed, 0);
   assert.equal(r.quarantined, 1);
   assert.equal(r.results[0]?.code, "seal_hash_mismatch");
+});
+
+test("replay verifies witnessed seal chain", () => {
+  resetAuthorityLedgerWitnessStoreForTestV1();
+  const e1 = buildSealedEntryV1(1, AUTHORITY_WAL_HASH_GENESIS_V1);
+  const r1 = persistAuthorityLedgerWitnessBatchV1("subj-replay", [e1], SECRET);
+  const e2 = buildSealedEntryV1(2, r1.chainHead);
+  persistAuthorityLedgerWitnessBatchV1("subj-replay", [e2], SECRET);
+  const replay = replayAuthorityLedgerWitnessChainV1("subj-replay");
+  assert.equal(replay.ok, true);
+  assert.equal(replay.height, 2);
+  assert.equal(replay.entriesReplayed, 2);
+  assert.equal(replay.sealHead, e2.seal.sealHash);
 });
