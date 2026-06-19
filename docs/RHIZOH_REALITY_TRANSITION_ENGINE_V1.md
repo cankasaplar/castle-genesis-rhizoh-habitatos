@@ -149,6 +149,12 @@ Intent submitted (epoch closed)
 | Tombstone | `ticketTombstoneLayerV0.js` |
 | Deferred queue | `recDeferredIntentQueueV0.js` |
 | Facade | `ticketKernelFacadeV0.js` |
+| TraceGraph index | `traceGraphIndexOptimizerV0.js` |
+| Drift analytics | `driftAnalyticsEngineV0.js` |
+| Memory pipeline | `ticketMemoryPipelineV0.js` |
+| Reconcile proposal | `ticketReconcileProposalV0.js` |
+| Admission commit | `admissionCubeCommitV0.js` |
+| Drift → Signal wire | `ticketDriftSignalWireV0.js` |
 
 ---
 

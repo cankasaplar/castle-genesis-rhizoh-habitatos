@@ -6,12 +6,12 @@
  */
 
 import { evaluateClosedAdmissionV0 } from "../ingress/closedUserAdmissionEngineV0.js";
-import { emitMutationRecordV0 } from "./mutationRecordEmitterV0.js";
+import { emitMutationRecordV0, listMutationRecordsV0 } from "./mutationRecordEmitterV0.js";
 import { enqueueDeferredIntentV0 } from "./recDeferredIntentQueueV0.js";
 import { TICKET_REJECT_REASON_V0, TICKET_VALIDATION_DECISION_V0 } from "./ticketSecurityConstantsV0.js";
 import { validateTicketTransitionV0 } from "./ticketSecurityValidatorV0.js";
 import { registerActiveTicketV0 } from "./ticketTombstoneLayerV0.js";
-
+import { runTicketMemoryPipelineV0 } from "./ticketMemoryPipelineV0.js";
 /**
  * @typedef {import('./ticketTransitionIntentV1.js').TicketTransitionIntentV1} TicketTransitionIntentV1
  * @typedef {import('./ticketSecurityValidatorV0.js').TicketPacketLikeV0} TicketPacketLikeV0
@@ -32,7 +32,9 @@ import { registerActiveTicketV0 } from "./ticketTombstoneLayerV0.js";
  *   skipAdmission?: boolean,
  *   directTicketExecution?: boolean,
  *   deferOnEpochClosed?: boolean,
- *   targetRecEpoch?: string
+ *   targetRecEpoch?: string,
+ *   observeMemory?: boolean,
+ *   memoryPipeline?: { compress?: boolean, wireSignals?: boolean, reconcile?: boolean }
  * }} input
  */
 export function submitTicketTransitionV0(input) {
@@ -110,6 +112,26 @@ export function submitTicketTransitionV0(input) {
     issuedAtMs: input.nowMs
   });
 
+  const auditChain = Object.freeze({
+    ticketId: input.ticket.ticketId,
+    intentId: input.intent.intentId,
+    mutationId: mutationRecord.mutationId
+  });
+
+  let memoryPipeline = null;
+  if (input.observeMemory === true) {
+    const mpOpts = input.memoryPipeline || {};
+    memoryPipeline = runTicketMemoryPipelineV0({
+      records: listMutationRecordsV0(200),
+      compress: mpOpts.compress,
+      wireSignals: mpOpts.wireSignals,
+      reconcile: mpOpts.reconcile,
+      reconcileEpochId: input.epochId ?? input.intent.intentEpoch,
+      traceGraphLink: input.intent.traceGraphLink,
+      ticketId: input.ticket.ticketId
+    });
+  }
+
   return Object.freeze({
     interpretationOnly: true,
     nonExecutive: true,
@@ -119,10 +141,7 @@ export function submitTicketTransitionV0(input) {
     deferredEntry,
     cubeStateCommit: false,
     proposedCubeDelta: input.intent.proposedCubeDelta ?? null,
-    auditChain: Object.freeze({
-      ticketId: input.ticket.ticketId,
-      intentId: input.intent.intentId,
-      mutationId: mutationRecord.mutationId
-    })
+    auditChain,
+    memoryPipeline
   });
 }
