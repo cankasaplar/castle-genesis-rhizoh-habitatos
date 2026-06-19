@@ -4,14 +4,16 @@ import { TICKET_VALIDATION_DECISION_V0 } from "../ticketSecurityConstantsV0.js";
 import { clearMutationRecordsForTestV0, emitMutationRecordV0 } from "../mutationRecordEmitterV0.js";
 import { clearTicketTombstonesForTestV0 } from "../ticketTombstoneLayerV0.js";
 import { buildTicketTransitionIntentV1, TICKET_TRANSITION_TYPE_V0 } from "../ticketTransitionIntentV1.js";
+import { clearRecTombstoneQueueForTestV0, getPendingCompressionCountV0 } from "../recTombstoneQueueV0.js";
 import {
   clearTraceGraphIndexForTestV0,
   DRIFT_SIGNAL_KIND_V0,
   extractDriftSignalsV0,
-  getTraceGraphIndexSnapshotV0,
+  getLiveIndexSnapshotV0,
   ingestMutationRecordForIndexV0,
   listCausalResiduesV0,
-  optimizeTraceGraphIndexV0
+  optimizeTraceGraphIndexV0,
+  runRecCycleCleanupV0
 } from "../traceGraphIndexOptimizerV0.js";
 
 function emitRejected(reasonSlug) {
@@ -32,31 +34,45 @@ function emitRejected(reasonSlug) {
 describe("traceGraphIndexOptimizerV0", () => {
   beforeEach(() => {
     clearTraceGraphIndexForTestV0();
+    clearRecTombstoneQueueForTestV0();
     clearMutationRecordsForTestV0();
     clearTicketTombstonesForTestV0();
   });
 
-  it("builds reason, actor, and epoch indexes", () => {
+  it("live index increments counters without compression", () => {
     const record = emitRejected("ticket_packet_direct_execution");
     ingestMutationRecordForIndexV0(record);
-    const snap = getTraceGraphIndexSnapshotV0();
-    expect(snap.reasonShards[MUTATION_REASON_CODE_V1.SC_03_TICKET_EXECUTION_DIRECT]).toBe(1);
-    expect(snap.actorBuckets["castle:u1"]).toBe(1);
-    expect(snap.epochPartitions["rec_2026_06_19_0644"]).toBe(1);
+    const snap = getLiveIndexSnapshotV0();
+    expect(snap.reasonCounts[MUTATION_REASON_CODE_V1.SC_03_TICKET_EXECUTION_DIRECT]).toBe(1);
+    expect(snap.actorCounts["castle:u1"]).toBe(1);
+    expect(snap.epochCounts["rec_2026_06_19_0644"]).toBe(1);
+    expect(snap.causalResidueCount).toBe(0);
+    expect(getPendingCompressionCountV0()).toBe(1);
   });
 
-  it("compresses rejected records into causal residue", () => {
+  it("defers compression until REC cycle (not on live ingest)", () => {
     const records = [
       emitRejected("orphan_edge"),
       emitRejected("orphan_edge"),
       emitRejected("quota_exceeded")
     ];
-    const result = optimizeTraceGraphIndexV0({ records, compress: true });
-    expect(result.residueCount).toBeGreaterThan(0);
+    const live = optimizeTraceGraphIndexV0({ records });
+    expect(live.mode).toBe("live_only");
+    expect(live.residueCount).toBe(0);
+    expect(getPendingCompressionCountV0()).toBe(3);
+
+    const rec = runRecCycleCleanupV0({ epochId: "rec_2026_06_19_0644" });
+    expect(rec.residues.length).toBeGreaterThan(0);
     expect(listCausalResiduesV0().length).toBeGreaterThan(0);
-    const residue = listCausalResiduesV0()[0];
-    expect(residue.mutationCount).toBeGreaterThan(0);
-    expect(residue.interpretationOnly).toBe(true);
+    expect(getPendingCompressionCountV0()).toBe(0);
+  });
+
+  it("compresses via recCycle flag on optimizeTraceGraphIndexV0", () => {
+    const records = [emitRejected("orphan_edge"), emitRejected("orphan_edge")];
+    optimizeTraceGraphIndexV0({ records });
+    const result = optimizeTraceGraphIndexV0({ records: [], recCycle: true, epochId: "rec_epoch_b" });
+    expect(result.mode).toBe("live_plus_rec_cleanup");
+    expect(result.residueCount).toBeGreaterThan(0);
   });
 
   it("detects permission drift when SC reasons dominate", () => {

@@ -1,5 +1,10 @@
 /**
- * Trace Graph Index Optimizer V0 — Index Builder · Causal Compressor · Drift Signal Extractor.
+ * Trace Graph Index Optimizer V0 — Live Index · REC Compression · Drift (read-only).
+ *
+ * Hybrid model:
+ *   Live path  → incremental counters + pointer register (never deletes/restructures)
+ *   REC path   → tombstone + soft compression (SYSTEM_RECONCILE batch only)
+ *   Drift path → read-only snapshot (never writes)
  *
  * interpretationOnly · nonExecutive · never mutates CubeState or admission
  * @see docs/RHIZOH_TRACE_GRAPH_INDEX_OPTIMIZER_V1.md
@@ -7,10 +12,16 @@
 
 import { MUTATION_REASON_CATEGORY_V1, MUTATION_REASON_CODE_V1 } from "./mutationReasonCodeOntologyV1.js";
 import { tombstoneTicketV0, TOMBSTONE_REASON_V0 } from "./ticketTombstoneLayerV0.js";
+import {
+  drainPendingCompressionBatchV0,
+  enqueueDeferredCompressionV0,
+  recordRecCycleCompletionV0
+} from "./recTombstoneQueueV0.js";
 
 export const TRACE_GRAPH_INDEX_SCHEMA_V0 = "castle.rhizoh.trace_graph_index.v0";
 export const CAUSAL_RESIDUE_SCHEMA_V0 = "castle.rhizoh.causal_residue.v0";
 export const DRIFT_SIGNAL_SCHEMA_V0 = "castle.rhizoh.drift_signal.v0";
+export const LIVE_INDEX_SCHEMA_V0 = "castle.rhizoh.live_index.v0";
 
 export const DRIFT_SIGNAL_KIND_V0 = Object.freeze({
   PERMISSION_DRIFT: "permission_drift",
@@ -19,14 +30,30 @@ export const DRIFT_SIGNAL_KIND_V0 = Object.freeze({
   IDENTITY_DRIFT: "identity_drift"
 });
 
+/** Lightweight live counters — measurement only. */
+/** @type {Map<string, number>} */
+const liveCategoryCountsV0 = new Map();
+/** @type {Map<string, number>} */
+const liveReasonCountsV0 = new Map();
+/** @type {Map<string, number>} */
+const liveActorCountsV0 = new Map();
+/** @type {Map<string, number>} */
+const liveEpochCountsV0 = new Map();
+/** @type {Map<string, number>} */
+const liveStatusCountsV0 = new Map();
+/** @type {Set<string>} */
+const mutationIdPointersV0 = new Set();
+
+/** Structural index (mutationId pointers) — grows but never pruned on live path. */
 /** @type {Map<string, Set<string>>} */
 const reasonShardIndexV0 = new Map();
 /** @type {Map<string, Set<string>>} */
 const actorBucketIndexV0 = new Map();
-/** @type {Map<string, Set<string>>} */
+/** @type {Map<string, number>} */
 const epochPartitionIndexV0 = new Map();
 /** @type {Map<string, Set<string>>} */
 const statusLaneIndexV0 = new Map();
+
 /** @type {object[]} */
 const causalResidueStoreV0 = [];
 /** @type {object[]} */
@@ -35,6 +62,7 @@ const ingestedRecordsV0 = [];
 const compressedMutationIdsV0 = new Set();
 
 let residueSeqV0 = 0;
+let liveIngestCountV0 = 0;
 
 const DEFAULT_DRIFT_THRESHOLDS_V0 = Object.freeze({
   permissionDriftShare: 0.35,
@@ -45,11 +73,22 @@ const DEFAULT_DRIFT_THRESHOLDS_V0 = Object.freeze({
 });
 
 /**
+ * Increment live counter map.
+ * @param {Map<string, number>} map
+ * @param {string} key
+ */
+function bumpCounterV0(map, key) {
+  const k = String(key || "unknown");
+  map.set(k, (map.get(k) || 0) + 1);
+}
+
+/**
+ * Register mutationId pointer in structural shard (no delete on live path).
  * @param {Map<string, Set<string>>} map
  * @param {string} key
  * @param {string} mutationId
  */
-function indexAddV0(map, key, mutationId) {
+function registerPointerV0(map, key, mutationId) {
   const k = String(key || "unknown");
   if (!map.has(k)) map.set(k, new Set());
   map.get(k).add(mutationId);
@@ -58,45 +97,75 @@ function indexAddV0(map, key, mutationId) {
 /**
  * @param {object} record — MutationRecord v2
  */
-export function buildIndexFromMutationRecordV0(record) {
+export function updateLiveIndexV0(record) {
   const mutationId = String(record?.mutationId || "");
-  if (!mutationId) return null;
+  if (!mutationId || mutationIdPointersV0.has(mutationId)) return null;
 
   const reasonPrimary = record?.reason?.primary || "NONE";
+  const reasonCategory = record?.reason?.category || "NONE";
   const actorId = record?.actor?.actorId || "unknown";
   const epoch = record?.epoch || "rec_soft";
   const status = record?.status || "rejected";
 
-  indexAddV0(reasonShardIndexV0, reasonPrimary, mutationId);
-  indexAddV0(actorBucketIndexV0, actorId, mutationId);
-  indexAddV0(epochPartitionIndexV0, epoch, mutationId);
-  indexAddV0(statusLaneIndexV0, status, mutationId);
+  mutationIdPointersV0.add(mutationId);
+  liveIngestCountV0 += 1;
+
+  bumpCounterV0(liveCategoryCountsV0, reasonCategory);
+  bumpCounterV0(liveReasonCountsV0, reasonPrimary);
+  bumpCounterV0(liveActorCountsV0, actorId);
+  bumpCounterV0(liveEpochCountsV0, epoch);
+  bumpCounterV0(liveStatusCountsV0, status);
+
+  registerPointerV0(reasonShardIndexV0, reasonPrimary, mutationId);
+  registerPointerV0(actorBucketIndexV0, actorId, mutationId);
+  bumpCounterV0(epochPartitionIndexV0, epoch);
+  registerPointerV0(statusLaneIndexV0, status, mutationId);
 
   return Object.freeze({
-    schema: TRACE_GRAPH_INDEX_SCHEMA_V0,
+    schema: LIVE_INDEX_SCHEMA_V0,
     mutationId,
     reasonShard: reasonPrimary,
     actorBucket: actorId,
     epochPartition: epoch,
     statusLane: status,
+    mode: "live_incremental",
     interpretationOnly: true,
     nonExecutive: true
   });
 }
 
+/** @deprecated use updateLiveIndexV0 */
+export function buildIndexFromMutationRecordV0(record) {
+  return updateLiveIndexV0(record);
+}
+
 /**
+ * Live ingest: counter update + pointer register + deferred queue enqueue.
+ * Does NOT compress, tombstone, or restructure graph.
  * @param {object} record
  */
 export function ingestMutationRecordForIndexV0(record) {
   ingestedRecordsV0.push(record);
-  return buildIndexFromMutationRecordV0(record);
+  const ref = updateLiveIndexV0(record);
+
+  const compressibleStatuses = new Set(["expired", "rejected", "quota_denied"]);
+  if (compressibleStatuses.has(record?.status)) {
+    enqueueDeferredCompressionV0(record);
+  }
+
+  return ref;
 }
 
 /**
+ * REC-cycle only: soft compression + optional tombstone finalize.
  * @param {object[]} records
- * @param {{ tombstoneTickets?: boolean }} [opts]
+ * @param {{ tombstoneTickets?: boolean, recCycle?: boolean }} [opts]
  */
 export function compressEligibleRecordsV0(records, opts = {}) {
+  if (opts.recCycle !== true) {
+    throw new Error("compressEligibleRecordsV0: recCycle:true required — compression is REC-batch only");
+  }
+
   const compressibleStatuses = new Set(["expired", "rejected", "quota_denied"]);
   /** @type {Map<string, object[]>} */
   const groups = new Map();
@@ -156,6 +225,35 @@ export function compressEligibleRecordsV0(records, opts = {}) {
 }
 
 /**
+ * REC-cycle batch: drain queue → compress → record completion.
+ * @param {{ epochId: string, tombstoneTickets?: boolean }} input
+ */
+export function runRecCycleCleanupV0(input) {
+  const batch = drainPendingCompressionBatchV0();
+  const residues = compressEligibleRecordsV0(batch, {
+    tombstoneTickets: input.tombstoneTickets === true,
+    recCycle: true
+  });
+
+  const cycleRecord = recordRecCycleCompletionV0({
+    epochId: input.epochId,
+    processedCount: batch.length,
+    residueCount: residues.length
+  });
+
+  return Object.freeze({
+    schema: TRACE_GRAPH_INDEX_SCHEMA_V0,
+    epochId: input.epochId,
+    residues,
+    cycleRecord,
+    processedCount: batch.length,
+    interpretationOnly: true,
+    nonExecutive: true
+  });
+}
+
+/**
+ * Read-only drift extraction from live index snapshot + record window.
  * @param {{
  *   windowSize?: number,
  *   thresholds?: Partial<typeof DEFAULT_DRIFT_THRESHOLDS_V0>,
@@ -167,7 +265,14 @@ export function extractDriftSignalsV0(opts = {}) {
   const thresholds = { ...DEFAULT_DRIFT_THRESHOLDS_V0, ...(opts.thresholds || {}) };
   const window = (opts.records ?? ingestedRecordsV0).slice(-windowSize);
   if (window.length === 0) {
-    return Object.freeze({ signals: Object.freeze([]), windowSize: 0 });
+    return Object.freeze({
+      schema: DRIFT_SIGNAL_SCHEMA_V0,
+      signals: Object.freeze([]),
+      windowSize: 0,
+      mode: "read_only",
+      interpretationOnly: true,
+      nonExecutive: true
+    });
   }
 
   /** @type {Record<string, number>} */
@@ -243,19 +348,17 @@ export function extractDriftSignalsV0(opts = {}) {
   }
 
   return Object.freeze({
-    schema: TRACE_GRAPH_INDEX_SCHEMA_V0,
+    schema: DRIFT_SIGNAL_SCHEMA_V0,
     windowSize: window.length,
     categoryCounts: Object.freeze({ ...categoryCounts }),
     signals: Object.freeze(signals),
+    indexSnapshot: getLiveIndexSnapshotV0(),
+    mode: "read_only",
     interpretationOnly: true,
     nonExecutive: true
   });
 }
 
-/**
- * @param {Record<string, number>} codeCounts
- * @param {string} prefix
- */
 function topCodeInCategoryV0(codeCounts, prefix) {
   let best = "";
   let max = 0;
@@ -269,15 +372,6 @@ function topCodeInCategoryV0(codeCounts, prefix) {
   return best || prefix;
 }
 
-/**
- * @param {{
- *   kind: string,
- *   category: string,
- *   share: number,
- *   topCode: string,
- *   message: string
- * }} input
- */
 function buildDriftSignalV0(input) {
   return Object.freeze({
     schema: DRIFT_SIGNAL_SCHEMA_V0,
@@ -294,9 +388,11 @@ function buildDriftSignalV0(input) {
 }
 
 /**
+ * Live path: ingest + read-only drift. Compression only when recCycle:true.
  * @param {{
  *   records: object[],
- *   compress?: boolean,
+ *   recCycle?: boolean,
+ *   epochId?: string,
  *   tombstoneTickets?: boolean,
  *   windowSize?: number
  * }} input
@@ -304,36 +400,67 @@ function buildDriftSignalV0(input) {
 export function optimizeTraceGraphIndexV0(input) {
   const records = input.records || [];
   const indexRefs = records.map((r) => ingestMutationRecordForIndexV0(r)).filter(Boolean);
-  const residues =
-    input.compress === true ? compressEligibleRecordsV0(records, { tombstoneTickets: input.tombstoneTickets }) : [];
+
+  let recCleanup = null;
+  if (input.recCycle === true) {
+    recCleanup = runRecCycleCleanupV0({
+      epochId: input.epochId || "rec_soft",
+      tombstoneTickets: input.tombstoneTickets
+    });
+  }
+
   const drift = extractDriftSignalsV0({ records, windowSize: input.windowSize });
 
   return Object.freeze({
     schema: TRACE_GRAPH_INDEX_SCHEMA_V0,
     indexedCount: indexRefs.length,
-    residueCount: residues.length,
-    indexSnapshot: getTraceGraphIndexSnapshotV0(),
+    mode: input.recCycle ? "live_plus_rec_cleanup" : "live_only",
+    recCleanup,
+    residueCount: recCleanup?.residues?.length ?? 0,
+    indexSnapshot: getLiveIndexSnapshotV0(),
     drift,
     interpretationOnly: true,
     nonExecutive: true
   });
 }
 
-export function getTraceGraphIndexSnapshotV0() {
-  const mapToCounts = (m) => {
+export function getLiveIndexSnapshotV0() {
+  const mapToObject = (m) => {
+    /** @type {Record<string, number>} */
+    const out = {};
+    for (const [k, v] of m.entries()) out[k] = v;
+    return Object.freeze(out);
+  };
+
+  const shardToCounts = (m) => {
     /** @type {Record<string, number>} */
     const out = {};
     for (const [k, set] of m.entries()) out[k] = set.size;
     return Object.freeze(out);
   };
+
   return Object.freeze({
-    reasonShards: mapToCounts(reasonShardIndexV0),
-    actorBuckets: mapToCounts(actorBucketIndexV0),
-    epochPartitions: mapToCounts(epochPartitionIndexV0),
-    statusLanes: mapToCounts(statusLaneIndexV0),
+    schema: LIVE_INDEX_SCHEMA_V0,
+    liveIngestCount: liveIngestCountV0,
+    categoryCounts: mapToObject(liveCategoryCountsV0),
+    reasonCounts: mapToObject(liveReasonCountsV0),
+    actorCounts: mapToObject(liveActorCountsV0),
+    epochCounts: mapToObject(liveEpochCountsV0),
+    statusCounts: mapToObject(liveStatusCountsV0),
+    mutationPointerCount: mutationIdPointersV0.size,
+    reasonShards: shardToCounts(reasonShardIndexV0),
+    actorBuckets: shardToCounts(actorBucketIndexV0),
+    epochPartitions: mapToObject(epochPartitionIndexV0),
+    statusLanes: shardToCounts(statusLaneIndexV0),
     causalResidueCount: causalResidueStoreV0.length,
-    ingestedCount: ingestedRecordsV0.length
+    ingestedCount: ingestedRecordsV0.length,
+    mode: "read_only_snapshot"
   });
+}
+
+/** @deprecated use getLiveIndexSnapshotV0 */
+export function getTraceGraphIndexSnapshotV0() {
+  return getLiveIndexSnapshotV0();
 }
 
 export function listCausalResiduesV0(limit = 50) {
@@ -342,6 +469,12 @@ export function listCausalResiduesV0(limit = 50) {
 
 /** Test only. */
 export function clearTraceGraphIndexForTestV0() {
+  liveCategoryCountsV0.clear();
+  liveReasonCountsV0.clear();
+  liveActorCountsV0.clear();
+  liveEpochCountsV0.clear();
+  liveStatusCountsV0.clear();
+  mutationIdPointersV0.clear();
   reasonShardIndexV0.clear();
   actorBucketIndexV0.clear();
   epochPartitionIndexV0.clear();
@@ -350,4 +483,5 @@ export function clearTraceGraphIndexForTestV0() {
   ingestedRecordsV0.length = 0;
   compressedMutationIdsV0.clear();
   residueSeqV0 = 0;
+  liveIngestCountV0 = 0;
 }

@@ -8,6 +8,8 @@ import {
   wireDriftSuggestionsToNervousNetworkV0
 } from "../ticketDriftSignalWireV0.js";
 import { runTicketMemoryPipelineV0 } from "../ticketMemoryPipelineV0.js";
+import { clearRecTombstoneQueueForTestV0 } from "../recTombstoneQueueV0.js";
+import { clearAnomalyDetectorStateForTestV0 } from "../driftAnomalyDetectorV0.js";
 import { clearTraceGraphIndexForTestV0 } from "../traceGraphIndexOptimizerV0.js";
 import { resetDriftSuggestionSequenceForTestV0 } from "../driftAnalyticsEngineV0.js";
 
@@ -66,6 +68,8 @@ describe("ticketMemoryPipelineV0", () => {
   beforeEach(() => {
     clearMutationRecordsForTestV0();
     clearTraceGraphIndexForTestV0();
+    clearRecTombstoneQueueForTestV0();
+    clearAnomalyDetectorStateForTestV0();
     resetDriftSuggestionSequenceForTestV0();
     clearNervousSignalInboxForTestV0();
   });
@@ -82,6 +86,7 @@ describe("ticketMemoryPipelineV0", () => {
     expect(pipeline.index.indexedCount).toBe(4);
     expect(pipeline.analytics.suggestions.suggestions.length).toBeGreaterThan(0);
     expect(pipeline.nervousSignals?.count).toBeGreaterThan(0);
+    expect(pipeline.featureVector?.vector.sampleCount).toBe(4);
   });
 
   it("optionally derives reconcile proposal without commit", () => {
