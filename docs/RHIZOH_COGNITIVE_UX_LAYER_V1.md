@@ -4,7 +4,9 @@
 
 **Prerequisites:** [`RHIZOH_CAUSAL_NAVIGATION_RUNTIME_V1.md`](RHIZOH_CAUSAL_NAVIGATION_RUNTIME_V1.md) · [`RHIZOH_EPISTEMIC_VISUALIZATION_LAYER_V1.md`](RHIZOH_EPISTEMIC_VISUALIZATION_LAYER_V1.md) · [`RHIZOH_COGNITIVE_ACTION_LAYER_V1.md`](RHIZOH_COGNITIVE_ACTION_LAYER_V1.md)
 
-**Status:** Spec scaffold — implementation follows Cesium/Leaflet panel wire.
+**Status:** v0 scaffold — `cognitiveUxLayerV0.js` + `RhizohCognitiveUxShellV0.jsx` wired.
+
+**Code:** `apps/client/src/rhizoh/ticket/cognitiveUxLayerV0.js` · `cognitiveUxSpatialProjectionV0.js` · `RhizohCognitiveUxShellV0.jsx`
 
 ---
 
@@ -62,15 +64,19 @@ Panels MUST remain visually and logically separated (CNR-01 / UI-01).
 
 ---
 
-## 4. Wire map (planned)
+## 4. Wire map (v0)
 
 | Source | Target panel | Flow |
 |--------|--------------|------|
 | `pushPerceptionStreamV0` | Drift Space | PUSH · rate-limited |
 | `pullAuthorityContextV0` | Authority Gate | PULL · audit-safe |
 | `buildRecTimeLayerV0` | REC Time Layer | read-only |
-| `exploreEpistemicInteractionV0` | CAL Traversal | read_only |
-| `bindCognitiveVisualizationV0` + `bindCognitiveActionV0` | Full CUX shell | composite |
+| `onUserTraverseV0` | CAL Traversal | read_only · `rhizoh:cognitive-ux-traversal-v0` |
+| `bindCognitiveUxV0` | Full CUX shell | composite + CNR-01 guard |
+
+**DevTools:** `window.__rhizoh.cognitiveUxSnapshot()` · `cognitiveUxTraverse(nodeId)` · `localStorage castle.cux.v0=1` (prod opt-in)
+
+**nodeId conventions:** `category:SC` · `alert:<id>` · `rec:<epoch>` · `audit:<mutationId>` · `ticket:<ticketId>`
 
 ---
 
@@ -89,4 +95,5 @@ Panels MUST remain visually and logically separated (CNR-01 / UI-01).
 
 | Date | Change |
 |------|--------|
+| 2026-06-19 | v0.1 — CUX compositor + spatial projection + 4-panel shell + CAL pipeline wire |
 | 2026-06-19 | v1.0 — CUX scaffold · three verbs · panel composition |

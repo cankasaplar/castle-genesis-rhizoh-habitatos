@@ -400,6 +400,30 @@ Invariant confirmed: Media may inform observation; media may never define canoni
 - **Karar özeti:** Koordinasyon katmanı eklendi; graf/hash CI hakemi değişmedi.  
 - **Frozen core:** dokunulmadı  
 
+### 2026-06-19 — CUX v0 scaffold (perception → traversal → experience)
+
+**Source:** Principal — CNR theory-complete, interface-incomplete; CAL idle without spatial experience.
+
+**Summary:**
+- `cognitiveUxLayerV0.js` compositor: Binding + CAL + CNR-01 guard
+- `onUserTraverseV0(nodeId)` → `exploreEpistemicInteractionV0` (read_only)
+- `cognitiveUxSpatialProjectionV0.js` — drift field / REC waveform / SC spike → SVG
+- `RhizohCognitiveUxShellV0.jsx` — 4 mandatory panels (Drift · REC · CAL · Authority)
+- Pipeline wires `cognitiveAction` when `bindCux: true`
+- Event bridge: `rhizoh:cognitive-ux-traversal-v0` + `rhizoh:epistemic-ui-v0`
+- DevTools: `cognitiveUxSnapshot()` · `cognitiveUxTraverse(nodeId)` · DEV auto / `castle.cux.v0=1`
+
+**Linked Artifacts:**
+- `docs/RHIZOH_COGNITIVE_UX_LAYER_V1.md`
+- `apps/client/src/rhizoh/ticket/cognitiveUxLayerV0.js`
+- `apps/client/src/rhizoh/ticket/RhizohCognitiveUxShellV0.jsx`
+
+**Next:** Sports Adapter v0 (stochastic domain stress test) after CUX field validation.
+
+- **Katılımcılar:** Principal, **Cursor Agent (Castle)**
+- **SPECFLOW:** RESEARCH-ONLY / FUTURE-PROOF-ONLY
+- **Frozen core:** dokunulmadı
+
 ### 2026-06-19 — Domain Fabric + Arena Router v0 (UGL multi-domain scaffold)
 
 **Source:** Principal cold-read — UGL-complete but domain-incomplete; chess-only active execution.

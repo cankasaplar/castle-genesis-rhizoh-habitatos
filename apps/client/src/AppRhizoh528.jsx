@@ -18,6 +18,8 @@ import {
   installRhizohControlCenterV0,
   shouldMountRhizohControlCenterV0
 } from "./rhizoh/debug/rhizohControlCenterV0.js";
+import { RhizohCognitiveUxMountV0 } from "./rhizoh/ticket/RhizohCognitiveUxShellV0.jsx";
+import { ensureCognitiveUxV0 } from "./rhizoh/ticket/cognitiveUxLayerV0.js";
 
 function ProdWorldObservabilityHost({ children }) {
   useEffect(() => {
@@ -33,12 +35,14 @@ export default function AppRhizoh528() {
 
   useEffect(() => {
     if (mountControlCenterBridge) installRhizohControlCenterV0();
+    ensureCognitiveUxV0();
   }, [mountControlCenterBridge]);
 
   if (spatialShell) {
     return (
       <>
         <ExpressiveRealityTransitionHostV0 />
+        <RhizohCognitiveUxMountV0 />
         <AppRhizoh528LivingEntry />
       </>
     );
@@ -48,6 +52,7 @@ export default function AppRhizoh528() {
     <ProdWorldObservabilityHost>
       <Suspense fallback={<div className="min-h-screen bg-black" data-rhizoh-t0-boot="1" />}>
         <ExpressiveRealityTransitionHostV0 />
+        <RhizohCognitiveUxMountV0 />
         <AppRhizoh528T0 />
       </Suspense>
     </ProdWorldObservabilityHost>
