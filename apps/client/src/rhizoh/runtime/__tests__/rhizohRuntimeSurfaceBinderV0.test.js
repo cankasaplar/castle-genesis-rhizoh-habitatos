@@ -18,7 +18,7 @@ describe("rhizohRuntimeSurfaceBinderV0", () => {
     const result = assertRhizohRuntimeSurfaceV0(window.__rhizoh);
 
     expect(result.ok).toBe(true);
-    expect(RUNTIME_SURFACE_API_KEYS_V0).toHaveLength(7);
+    expect(RUNTIME_SURFACE_API_KEYS_V0).toHaveLength(9);
     for (const key of RUNTIME_SURFACE_API_KEYS_V0) {
       expect(typeof window.__rhizoh[key]).toBe("function");
     }
