@@ -24,6 +24,11 @@ import {
   getAdmissionArbitrationSnapshotV1
 } from "./admissionArbitrationLayerV1.js";
 import {
+  ensureAuthorityLedgerSealPipelineV1,
+  getAuthorityLedgerSnapshotV1,
+  replayAuthorityLedgerV1
+} from "./authorityLedgerSealPipelineV1.js";
+import {
   ingestSportsMatchEventV0,
   normalizeSportsMatchEventV0
 } from "./sportsEventAdapterV0.js";
@@ -40,7 +45,9 @@ export const RUNTIME_SURFACE_API_KEYS_V0 = Object.freeze([
   "stabilizeCrossSpaceFusion",
   "runExecutionPhase",
   "arbitrateAdmission",
-  "admissionArbitration"
+  "admissionArbitration",
+  "authorityLedger",
+  "replayAuthorityLedger"
 ]);
 
 /**
@@ -61,6 +68,8 @@ export function bindRhizohRuntimeSurfaceV0(target) {
   rhizoh.runExecutionPhase = (opts) => runAlignedExecutionPhaseV0(opts);
   rhizoh.arbitrateAdmission = (projection) => arbitrateAdmissionV1({ projection });
   rhizoh.admissionArbitration = () => getAdmissionArbitrationSnapshotV1();
+  rhizoh.authorityLedger = () => getAuthorityLedgerSnapshotV1();
+  rhizoh.replayAuthorityLedger = () => replayAuthorityLedgerV1();
 
   return rhizoh;
 }
@@ -96,6 +105,7 @@ export function ensureRhizohRuntimeSurfaceBinderV0(opts = {}) {
   ensureCrossSpaceStabilizationLayerV0();
   ensureExecutionPhaseSynchronizerV0();
   ensureAdmissionArbitrationLayerV1();
+  ensureAuthorityLedgerSealPipelineV1();
 
   const strict = opts.strict !== false;
   const assertResult = strict ? assertRhizohRuntimeSurfaceV0(window.__rhizoh) : null;

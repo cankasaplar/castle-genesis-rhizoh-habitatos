@@ -70,6 +70,10 @@ export async function mountCastleApplicationV0(ctx) {
     "boot.admission_arbitration",
     `verdict=${phaseCommit.commit.arbitration?.verdict || "hold"} mutation=${phaseCommit.commit.realityMutationPermitted}`
   );
+  bootLog?.ok?.(
+    "boot.authority_ledger",
+    `height=${phaseCommit.commit.ledgerHeight ?? 0} seal=${phaseCommit.commit.sealHash ? String(phaseCommit.commit.sealHash).slice(0, 10) : "none"}`
+  );
 
   const observability = startProdWorldObservabilityBridgeV0();
   if (observability.started) {

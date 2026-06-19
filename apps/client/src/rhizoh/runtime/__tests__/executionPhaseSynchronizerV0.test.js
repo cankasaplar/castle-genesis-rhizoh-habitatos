@@ -19,6 +19,8 @@ import {
   schedulePhaseCommitV0
 } from "../executionPhaseSynchronizerV0.js";
 import { resetMultiArenaSchedulerForTestV0 } from "../multiArenaSchedulerV0.js";
+import { resetAdmissionArbitrationForTestV1 } from "../admissionArbitrationLayerV1.js";
+import { resetAuthorityLedgerForTestV1 } from "../authorityLedgerSealPipelineV1.js";
 import { CAUSAL_SPACE_ID_V0 } from "../sportsCausalSpaceV0.js";
 
 vi.mock("../multiArenaSchedulerV0.js", async (importOriginal) => {
@@ -41,6 +43,8 @@ describe("executionPhaseSynchronizerV0", () => {
     resetCrossSpaceCausalFusionForTestV0();
     resetCrossSpaceResourceGuardForTestV0();
     resetCrossSpaceStabilizationForTestV0();
+    resetAdmissionArbitrationForTestV1();
+    resetAuthorityLedgerForTestV1();
   });
 
   it("commits scheduler, fusion, stabilization, and arbitration in one phase", () => {
@@ -52,6 +56,8 @@ describe("executionPhaseSynchronizerV0", () => {
     expect(aligned.commit.fusion).toBeTruthy();
     expect(aligned.commit.projection.schema).toContain("projection");
     expect(aligned.commit.arbitration.schema).toContain("verdict");
+    expect(aligned.commit.ledgerHeight).toBe(1);
+    expect(aligned.commit.sealHash).toMatch(/^h[0-9a-f]{8}$/);
     expect(aligned.commit.realityMutationPermitted).toBe(false);
     expect(aligned.commit.tick.atMs).toBe(aligned.commit.projection.atMs);
   });
