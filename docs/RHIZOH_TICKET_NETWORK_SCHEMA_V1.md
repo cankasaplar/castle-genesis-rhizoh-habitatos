@@ -2,10 +2,12 @@
 
 **SPECFLOW:** `RESEARCH-ONLY` · `FUTURE-PROOF-ONLY` — **spec / UX unification layer**; frozen execution core (**v562–v570**) değiştirilmez. Ticket katmanı mevcut alt sistemlerin **kullanıcıya görünen tek dili**dir; yeni execution motoru değildir.
 
-**Status:** DRAFT v1.0 — interpretation + contract freeze candidate  
-**JSON Schema:** [`schemas/rhizoh-ticket-packet-v1.schema.json`](schemas/rhizoh-ticket-packet-v1.schema.json) · [`schemas/rhizoh-ticket-message-v1.schema.json`](schemas/rhizoh-ticket-message-v1.schema.json)
+**Status:** DRAFT v1.1 — built on Security Boundary v1  
+**Prerequisite (read first):** [`RHIZOH_SECURITY_BOUNDARY_V1.md`](RHIZOH_SECURITY_BOUNDARY_V1.md)  
+**State catalog:** [`RHIZOH_STATE_TRANSITIONS_V1.md`](RHIZOH_STATE_TRANSITIONS_V1.md)  
+**JSON Schema:** [`schemas/rhizoh-ticket-packet-v1.schema.json`](schemas/rhizoh-ticket-packet-v1.schema.json) · [`schemas/rhizoh-ticket-message-v1.schema.json`](schemas/rhizoh-ticket-message-v1.schema.json) · [`schemas/rhizoh-mutation-record-v1.schema.json`](schemas/rhizoh-mutation-record-v1.schema.json)
 
-**Related:** [`OBSERVATION_FABRIC_V1.md`](OBSERVATION_FABRIC_V1.md) · [`SOVEREIGN_NETWORK_KERNEL_SPEC_V0.md`](SOVEREIGN_NETWORK_KERNEL_SPEC_V0.md) · [`SOVEREIGN_NETWORK_CONTRACT_SCHEMAS_V0.md`](SOVEREIGN_NETWORK_CONTRACT_SCHEMAS_V0.md) · [`RHIZOH_CUBE_FIELD_V0.md`](RHIZOH_CUBE_FIELD_V0.md) · [`WORLDSTATE_V0_SPEC.md`](WORLDSTATE_V0_SPEC.md) · [`RHIZOH_CLOSED_USER_ADMISSION_V0.1.md`](RHIZOH_CLOSED_USER_ADMISSION_V0.1.md) · [`LAYER_EXPANSION_PROTOCOL.md`](LAYER_EXPANSION_PROTOCOL.md)
+**Related:** [`OBSERVATION_FABRIC_V1.md`](OBSERVATION_FABRIC_V1.md) · [`SOVEREIGN_NETWORK_KERNEL_SPEC_V0.md`](SOVEREIGN_NETWORK_KERNEL_SPEC_V0.md) · [`RHIZOH_CUBE_FIELD_V0.md`](RHIZOH_CUBE_FIELD_V0.md) · [`WORLDSTATE_V0_SPEC.md`](WORLDSTATE_V0_SPEC.md)
 
 ---
 
@@ -25,8 +27,6 @@
 
 ## 1. Problem: five internal names, one human experience
 
-Today the repo already contains the machinery; it is fragmented across internal names:
-
 | Internal (engineering) | User-facing (ticket dialect) |
 |------------------------|------------------------------|
 | `CubeState` | **Node cube** — where you are cognitively |
@@ -36,13 +36,11 @@ Today the repo already contains the machinery; it is fragmented across internal 
 | `closedUserAdmissionEngineV0` | **Invite / gate verdict** — controlled graph expansion |
 | Observation Fabric records | **Signals** — interpreted suggestions, not commands |
 
-**Ticket unifies these** without replacing them. Implementation binds ticket fields to existing artifacts; ticket layer MUST NOT become a parallel truth source.
+**Ticket unifies these** without replacing them. Security law lives in [`RHIZOH_SECURITY_BOUNDARY_V1.md`](RHIZOH_SECURITY_BOUNDARY_V1.md).
 
 ---
 
 ## 2. Ticket anatomy: Capability + Journey
-
-A ticket is **not** a flat object. It is always two halves:
 
 ```text
 Ticket
@@ -50,81 +48,50 @@ Ticket
  └─ Journey      — continuity trace (where, what was discovered)
 ```
 
-### 2.1 Capability (permission face)
+### 2.1 Capability
 
 | Field | Role |
 |-------|------|
-| `ticketKind` | Routing + UX label (`llm_gateway`, `dev`, `media`, `corporate`, `arena`, `invite`, `ghost`, `event`, …) |
-| `capabilityScope` | Single domain authority id (e.g. `castle.flight.enter`, `arena.go.match`) |
-| `prismProjection` | Which reality layers this ticket refracts into |
-| `executionClass` | `read_only` \| `suggest` \| `mutate_l1` |
-| `quota` | Usage limit + expiration |
-| `epochWindow` | REC gate this ticket respects |
+| `ticketKind` | Routing + UX label |
+| `capabilityScope` | Single domain authority id |
+| `prismProjection` | Reality layers this ticket refracts into |
+| `executionClass` | See Security Boundary §3 |
+| `quota` | Usage limit + **mandatory** `expiresAt` |
+| `epochWindow` | REC gate |
 
-### 2.2 Journey (continuity face)
+### 2.2 Journey
 
 | Field | Role |
 |-------|------|
 | `departureNode` | Graph node where journey started |
-| `visitedNodes` | Ordered path (append-only during ticket life) |
-| `discoveries` | Unlocked capabilities / prism hints earned on path |
-| `continuityAnchor` | Binding to `temporalIdentityBindingV0` / checkpoint tick |
-| `contextNodeCube` | Active `CubeState` id this ticket restores |
-
-**Example — Castle Flight Ticket:**
-
-```json
-{
-  "ticketId": "tkt_cf_7k2m",
-  "capability": {
-    "ticketKind": "event",
-    "capabilityScope": "castle.flight.enter",
-    "prismProjection": ["cesium_global", "media_timeline"],
-    "executionClass": "mutate_l1",
-    "quota": { "usageLimit": 3, "usageCount": 1, "expiresAt": "2026-12-31T23:59:59Z" },
-    "epochWindow": "rec_burst"
-  },
-  "journey": {
-    "departureNode": "node_istanbul_bootstrap",
-    "visitedNodes": ["node_istanbul_bootstrap", "node_serencebey_window"],
-    "discoveries": ["ghost_ticket_preview"],
-    "continuityAnchor": "anchor_tick_18442",
-    "contextNodeCube": "cube_7f3a"
-  }
-}
-```
+| `visitedNodes` | Append-only path |
+| `discoveries` | Unlocked hints (not automatic new tickets) |
+| `continuityAnchor` | `temporalIdentityBindingV0` ref |
+| `contextNodeCube` | Active `CubeState` id |
 
 ---
 
-## 3. Hard invariants (non-negotiable)
+## 3. Graph invariants (structural)
 
-These three invariants are the spam / permission-explosion firewall:
+These complement Security Boundary constitutional invariants:
 
-1. **Every Ticket is a Graph Edge** — issuance or transfer MUST create or reference a `traceGraphLink` (sovereign graph edge id).
-2. **Every Graph Edge is a Continuity Anchor** — edge MUST bind `continuityAnchor` + `contextNodeCube`; orphan edges are invalid.
-3. **Every Continuity Anchor binds to CubeState** — restore path always flows: ticket → journey → `CubeState` → projection layers.
-
-**Corollaries:**
-
-- A message without graph edge = **invalid state transition** (rejected by admission).
-- A ticket without `contextNodeCube` = **non-restorable** (cannot be a return ticket).
-- Autonomous producers MAY NOT skip journey binding; they emit **suggest** only.
+1. **Every Ticket is a Graph Edge** — `traceGraphLink` required.  
+2. **Every Graph Edge is a Continuity Anchor** — `continuityAnchor` + `contextNodeCube`.  
+3. **Every Continuity Anchor binds to CubeState** — restore path: ticket → journey → `CubeState` → prisms.
 
 ---
 
-## 4. TicketPacket wire shape (immutable constraints)
-
-Canonical packet for transport, signing, and admission. See JSON Schema for machine validation.
+## 4. TicketPacket wire shape
 
 ```json
 {
   "schemaVersion": 1,
   "ticketId": "tkt_ulid",
   "ticketKind": "invite",
-  "prismProjection": ["arena_local", "leaflet_semantic"],
+  "prismProjection": ["leaflet_semantic"],
   "capabilityScope": "graph.node.extend",
   "contextNodeCube": "cube_uuid",
-  "epochWindow": "rec_core_morning",
+  "epochWindow": "rec_burst",
   "quota": {
     "usageLimit": 1,
     "usageCount": 0,
@@ -148,277 +115,139 @@ Canonical packet for transport, signing, and admission. See JSON Schema for mach
 
 | Kind | Primary prism | Typical `executionClass` |
 |------|---------------|--------------------------|
-| `llm_gateway` | `dev` / `corporate` | `read_only` (routing) or `suggest` |
-| `dev` | `dev_sandbox` | `mutate_l1` (sandbox only) |
-| `media` | `media_timeline` | `read_only` or `mutate_l1` |
-| `corporate` | `corporate_enclave` | `read_only` + policy envelope |
-| `arena` | `arena_rules` | `mutate_l1` (match state) |
+| `llm_gateway` | `dev_sandbox` / `corporate_enclave` | `read_only` |
+| `dev` | `dev_sandbox` | `mutate_l1` |
+| `media` | `media_timeline` | `read_only` \| `mutate_l1` |
+| `corporate` | `corporate_enclave` | `suggest` → `mutate_l1` |
+| `arena` | `arena_rules` | `mutate_l1` |
 | `ghost` | `ghost_sim` | `read_only` |
-| `event` | `event_timeline` | `suggest` or `mutate_l1` |
-| `invite` | `leaflet_semantic` | `suggest` until accepted |
-| `discovery` | multi | `read_only` (unlock hint) |
+| `event` | `event_timeline` | `mutate_l1` |
+| `invite` | `leaflet_semantic` | `suggest` → `mutate_l1` |
+| `discovery` | multi | `read_only` |
 
 ### 4.2 `prismProjection` enum (v1)
 
-| Prism | Render / semantics layer |
-|-------|--------------------------|
-| `cesium_global` | 3D world — continents, institutions, arena clusters |
-| `leaflet_semantic` | Local nodes, events, invite chains, discovery paths |
-| `arena_rules` | Chess / Go / rule-based micro-world |
-| `media_timeline` | Time-based perception (video = timeline physics) |
-| `ghost_sim` | Simulation / counterfactual layer |
-| `dev_sandbox` | Developer tool boundary |
-| `corporate_enclave` | Institution-scoped model + data membrane |
-| `event_timeline` | Epoch-scoped event history |
+| Prism | Layer |
+|-------|-------|
+| `cesium_global` | 3D topology — institutions, arena clusters |
+| `leaflet_semantic` | Local nodes, invite chains, discovery paths |
+| `arena_rules` | Chess / Go micro-world |
+| `media_timeline` | Time-based perception |
+| `ghost_sim` | Simulation / counterfactual |
+| `dev_sandbox` | Developer boundary |
+| `corporate_enclave` | Institution membrane |
+| `event_timeline` | Epoch-scoped history |
 
-**Prism rule:** one event MAY fan out to many prisms; each prism gets a **projection view** of the same graph edge, not a duplicate authority.
+**Prism rule:** one graph edge → many projection views; not duplicate authority.
 
-### 4.3 `executionClass` (security boundary — priority)
+### 4.3 `executionClass`
 
-| Class | Who may emit | CubeState write | L1 mutate | Admission |
-|-------|--------------|-----------------|-----------|-----------|
-| `read_only` | User, system, observer | No | No | Auto if graph valid |
-| `suggest` | Autonomous agents, Fox, drift engines | No | No | Delivered as Signal; human or signed ticket promotes |
-| `mutate_l1` | User-signed ticket OR frozen-DAG-verified path | Indirect via L1 adapters only | Yes, gated | `closedUserAdmissionEngine` + `temporalIdentityBinding` |
+**Authoritative definition:** [`RHIZOH_SECURITY_BOUNDARY_V1.md`](RHIZOH_SECURITY_BOUNDARY_V1.md) §3.
 
-**Frozen core rule:** `mutate_l1` MUST NOT write v562–v570 `phase*.js` execution paths. Ticket layer stops at L1 epistemic state plane per Sovereign Kernel §1.
-
-**Observation Fabric rule:** *Agents may influence interpretation, never execution.* Autonomous class is always `suggest` unless explicitly promoted.
+| Class | Summary |
+|-------|---------|
+| `read_only` | Explore; no mutate |
+| `suggest` | Propose only; no auto-promotion |
+| `mutate_l1` | L1 epistemic state (user-signed or frozen-DAG) |
+| `mutate_l2` | L2 transport (presence, broadcast) |
+| `system_reconcile` | REC reconciler only — merge, expire, quota, rewards |
 
 ---
 
 ## 5. Rhizoh Epoch Clock (REC)
 
-Système nefes ritmi — üç katman:
-
-| Layer | Schedule | Ticket behavior |
+| Layer | Schedule | Allowed classes |
 |-------|----------|-----------------|
-| **Core cycle** | `06:44` and `18:44` local (configurable; `19:44` alt in some founder notes) | Graph reconciliation, `mutate_l1` finalize, quota reset windows, ticket evolution |
-| **Soft layer** | Always-on | `read_only` exploration, history, shadow trace viewing |
-| **Burst layer** | Event-triggered (arena entry, invite accept, LLM burst) | `suggest` + admission-gated `mutate_l1` |
+| **Core** | 06:44 / 18:44 (19:44 configurable) | `system_reconcile` |
+| **Soft** | Always-on | `read_only`, `suggest` |
+| **Burst** | Event-triggered | `mutate_l1`, `mutate_l2` |
 
-### 5.1 `epochWindow` values
-
-| Value | Meaning |
-|-------|---------|
-| `rec_core_morning` | Morning core window (starts 06:44) |
-| `rec_core_evening` | Evening core window (starts 18:44) |
-| `rec_soft` | Soft layer (no heavy mutate) |
-| `rec_burst` | Burst layer (event-driven) |
-
-**Spam as invalid transition:** continuous messaging outside allowed `epochWindow` + `executionClass` → admission `reject` with reason `invalid_epoch_transition`.
+`epochWindow`: `rec_core_morning` \| `rec_core_evening` \| `rec_soft` \| `rec_burst`
 
 ---
 
-## 6. Nervous network: not Inbox — Signals, Invites, Discoveries, Events
+## 6. Nervous network buckets
 
-Rhizoh mail is **not** email. UX buckets:
+Not Inbox/Outbox — **Signals · Invites · Discoveries · Events**.
 
-| Bucket | Meaning | Typical `executionClass` |
-|--------|---------|--------------------------|
-| **Signal** | Interpretation / suggestion from observer or Fox | `suggest` |
-| **Invite** | Controlled graph expansion offer | `suggest` until accept → `mutate_l1` |
-| **Discovery** | Unlock earned on journey | `read_only` |
-| **Event** | System or arena factual transition | `read_only` or `mutate_l1` |
+| Bucket | Typical class |
+|--------|---------------|
+| Signal | `suggest` |
+| Invite | `suggest` → `mutate_l1` on accept |
+| Discovery | `read_only` |
+| Event | `read_only` factual |
 
-### 6.1 Message examples
-
-**Signal:**
-
-```json
-{
-  "messageKind": "signal",
-  "from": { "sourceKind": "fox", "sourceRef": "session_abc" },
-  "prism": "arena",
-  "epoch": "rec_core_morning",
-  "executionClass": "suggest",
-  "payloadRef": "suggest_open_arena_12",
-  "ticketRef": "tkt_parent_ulid"
-}
-```
-
-**Discovery:**
-
-```json
-{
-  "messageKind": "discovery",
-  "source": { "sourceKind": "arena", "sourceRef": "go_match_881" },
-  "node": "cube_143",
-  "unlocks": ["ghost_ticket"],
-  "executionClass": "read_only",
-  "traceGraphLink": "edge_discovery_ulid"
-}
-```
-
-Every message MUST reference `traceGraphLink` or create one on ingest. Messages without continuity binding are ephemeral UI toasts only — they do not enter the ticket graph.
+Messages without `traceGraphLink` are ephemeral UI toasts only.
 
 ---
 
-## 7. Map = relationship graph (not place pins)
+## 7. Map = relationship graph
 
-| Surface | Shows | Binds to |
-|---------|-------|----------|
-| **Cesium** | Global topology — continents, institutions, universities, companies, arena clusters | `cesium_global` prism |
-| **Leaflet** | Local semantic graph — nodes, events, discovery paths, invite chains | `leaflet_semantic` prism |
+| Surface | Shows |
+|---------|-------|
+| **Cesium** | Global topology (`cesium_global`) |
+| **Leaflet** | Local semantic graph (`leaflet_semantic`) |
 
-**Navigation rule:** user does not “browse a map”; user **traverses the ticket graph**. Map layers are **projections** of graph edges onto geo/semantic coordinates.
-
-Cube Field binding: visible motion on either surface MUST trace to `CubeState` scalars per [`RHIZOH_CUBE_FIELD_V0.md`](RHIZOH_CUBE_FIELD_V0.md) — map decoration without cube binding is forbidden in v1.
+User traverses **ticket graph**; map is projection. Cube Field binding required per [`RHIZOH_CUBE_FIELD_V0.md`](RHIZOH_CUBE_FIELD_V0.md).
 
 ---
 
-## 8. LLM Gateway ticket = AI traffic director
+## 8. LLM Gateway ticket
 
-Ticket kind `llm_gateway` routes by capability, not by UI picker:
+Routes by `capabilityScope`, not UI picker:
 
-| Ticket flavor | Typical route | Prism |
-|---------------|---------------|-------|
-| Research | Claude-class long context | `corporate_enclave` or `dev_sandbox` |
-| Code | GPT-class codegen | `dev_sandbox` |
-| Visual | Image / video model | `media_timeline` |
-| Corporate | Tenant-owned endpoint | `corporate_enclave` |
+| Flavor | Route | Class |
+|--------|-------|-------|
+| Research | Claude-class | `read_only` |
+| Code | GPT-class | `read_only` |
+| Visual | Image model | `read_only` |
+| Corporate | Tenant endpoint | `read_only` |
 
-Rhizoh becomes **protocol** when gateway selection is encoded in `capabilityScope` + signed ticket, not hardcoded in client.
+Gateway selects model; it does not grant new authority (Invariant 5).
 
 ---
 
-## 9. Return journey (six months later)
-
-**Wrong:** “I logged in.”  
-**Right:** “I returned with my last ticket.”
-
-Restore sequence:
+## 9. Return journey
 
 ```text
-1. Present ticketId (or signed ticket packet)
+1. Present ticketId
 2. Verify traceGraphLink + temporalIdentityBinding
 3. Load contextNodeCube → CubeState
-4. Replay journey.discoveries + open invites (Signals bucket)
-5. Reattach arena bindings + epoch history (Events bucket)
-6. Project to active prisms (Cesium / Leaflet / Arena)
+4. Replay discoveries + open invites
+5. Reattach arena / epoch history
+6. Project to active prisms
 ```
 
-Admission engine role: validate ticket still within quota + epoch + stress gate; **hold** does not destroy journey — it pauses `mutate_l1`.
+Expired ticket: journey `read_only` restore only.
 
 ---
 
-## 10. Worked scenario A — Invite (controlled graph expansion)
+## 10. Binding map (spec → code)
 
-**Actors:** Alice (sender), Bob (recipient), AdmissionEngine, CubeState adapter.
-
-```text
-[06:44 REC core — Alice]
-  Alice holds invite_ticket (capability: graph.node.extend, executionClass: suggest)
-  → creates traceGraphLink edge_inv_001
-  → nervous message: Invite bucket → Bob
-
-[Soft layer — Bob reads]
-  Bob sees Invite (suggest only)
-  → no CubeState write yet
-
-[Burst — Bob accepts]
-  Bob signs accept → executionClass promoted to mutate_l1
-  → AdmissionEngine.evaluateClosedAdmission(subjectRef)
-  → verdict: admit | hold | reject
-
-[admit]
-  → new graph node node_bob_ext
-  → journey.visitedNodes append
-  → CubeState delta (read-only adapter path)
-  → Leaflet prism: invite chain edge visible
-
-[reject]
-  → edge marked invalid_transition
-  → no node extension; invite quota not consumed
-```
-
-**Spam case:** unsolicited invite without `continuityAnchor` → `reject` (`orphan_edge`).
-
----
-
-## 11. Worked scenario B — Arena entry (Go match)
-
-**Actors:** User U, arena_ticket, Go arena service, discovery engine.
-
-```text
-[Burst — U presents arena_ticket]
-  capabilityScope: arena.go.match
-  executionClass: mutate_l1
-  prismProjection: [arena_rules, leaflet_semantic]
-
-[Admission]
-  quota.usageCount < usageLimit
-  epochWindow: rec_burst OK
-  temporalIdentityBinding: executionPermitted
-
-[Match complete]
-  → Event message (read_only factual)
-  → Discovery message if threshold met:
-      unlocks: [ghost_ticket]
-      node: cube_143
-
-[18:44 REC core]
-  → graph reconciliation
-  → journey.discoveries finalized
-  → WorldState snapshot optional export
-```
-
-**Storm case:** autonomous arena bot emits 500 `mutate_l1` → all rejected; only `suggest` Signals allowed from bots.
-
----
-
-## 12. Binding map (spec → code today)
-
-| Ticket concept | Current repo anchor |
-|----------------|---------------------|
-| `contextNodeCube` | `spiralReservoirCubeStateAdapterV0` / Cube Field `CubeState` |
+| Ticket concept | Repo anchor |
+|----------------|-------------|
+| `contextNodeCube` | `spiralReservoirCubeStateAdapterV0` |
 | Permission face | `sovereign-network-permission-v0.schema.json` |
-| Event transport | `sovereign-network-event-envelope-v0.schema.json` (`epochId`) |
+| Event transport | `sovereign-network-event-envelope-v0.schema.json` |
 | Continuity anchor | `temporalIdentityBindingV0.js` |
-| Admission / invite gate | `closedUserAdmissionEngineV0.js` |
-| World restore | `WORLDSTATE_V0_SPEC.md` |
-| Observation → Signal | `OBSERVATION_FABRIC_V1.md` |
-| LLM route hint | `rhizohDomainZoneAdaptersV0.js` (`rhizoh_llm_gateway`) |
-
-**v1 implementation stance:** ticket kernel is a **facade + validator** over these; no new WAL writer.
+| Admission | `closedUserAdmissionEngineV0.js` |
+| Security law | `RHIZOH_SECURITY_BOUNDARY_V1.md` |
+| Transitions | `RHIZOH_STATE_TRANSITIONS_V1.md` |
 
 ---
 
-## 13. Security boundary summary (standalone extract)
-
-See §4.3 for full matrix. Minimum bar for any PR touching ticket runtime:
-
-- [ ] Autonomous paths use `suggest` only
-- [ ] `mutate_l1` requires user signature or frozen-DAG verification
-- [ ] Every packet has `traceGraphLink` + `contextNodeCube`
-- [ ] `temporalIdentityBinding` checked before L1 mutate
-- [ ] Admission `reject` for invalid epoch / orphan edge / quota exceeded
-- [ ] No import into v562–v570 frozen subgraph from ticket module
-- [ ] Cesium/Leaflet bindings are projection-only (Cube Field read path)
-
----
-
-## 14. Versioning
+## 11. Versioning
 
 | schemaVersion | Date | Summary |
 |---------------|------|---------|
-| 1 | 2026-06-19 | Initial ticket packet + message schema; Capability+Journey; REC; scenarios A/B |
-
-Breaking changes → increment `schemaVersion`, migration note here, never silent `additionalProperties` extension on frozen objects.
-
----
-
-## 15. Open questions (v1.1)
-
-- Exact crypto on `signature` field (reuse sovereign envelope signing hooks?)
-- `19:44` vs `18:44` evening REC — product config vs fixed constant
-- Firebase / Firestore collection layout for ticket graph (separate ADR)
-- Promotion flow: `suggest` → `mutate_l1` user gesture vs automatic for trusted issuers
+| 1 | 2026-06-19 | Initial packet + message |
+| 1.1 | 2026-06-19 | Security Boundary split; executionClass expanded; transitions extracted |
 
 ---
 
-## 16. Changelog
+## 12. Changelog
 
 | Date | Change |
 |------|--------|
-| 2026-06-19 | v1.0 draft — unified UX dialect, security boundary, invite + arena scenarios |
+| 2026-06-19 | v1.0 draft |
+| 2026-06-19 | v1.1 — Security Boundary prerequisite; scenarios → STATE_TRANSITIONS_V1 |

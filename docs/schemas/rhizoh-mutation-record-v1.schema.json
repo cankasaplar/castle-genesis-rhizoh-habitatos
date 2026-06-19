@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://castle.system/schemas/rhizoh-mutation-record-v1.schema.json",
+  "title": "RhizohMutationRecordV1",
+  "description": "RESEARCH-ONLY v1: audit record for every state mutation (Security Boundary Invariant 3). Anonymous mutation is invalid.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "mutationId",
+    "actorId",
+    "ticketId",
+    "traceGraphLink",
+    "epochId",
+    "executionClass",
+    "capabilityScope",
+    "issuedAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "mutationId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 256
+    },
+    "actorId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "description": "castleId:userId | system:rec_reconciler | service:arena_scheduler"
+    },
+    "ticketId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 256
+    },
+    "traceGraphLink": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 256
+    },
+    "epochId": {
+      "type": "string",
+      "minLength": 4,
+      "maxLength": 256,
+      "description": "REC bucket id or sovereign envelope epochId."
+    },
+    "executionClass": {
+      "type": "string",
+      "enum": [
+        "read_only",
+        "suggest",
+        "mutate_l1",
+        "mutate_l2",
+        "system_reconcile"
+      ]
+    },
+    "capabilityScope": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "transitionId": {
+      "type": "string",
+      "enum": [
+        "invite_join",
+        "arena_enter",
+        "ghost_attach",
+        "flight_depart",
+        "corporate_admission"
+      ],
+      "description": "Named transition from RHIZOH_STATE_TRANSITIONS_V1."
+    }
+  }
+}

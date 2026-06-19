@@ -29,7 +29,14 @@
     },
     "executionClass": {
       "type": "string",
-      "enum": ["read_only", "suggest", "mutate_l1"]
+      "enum": [
+        "read_only",
+        "suggest",
+        "mutate_l1",
+        "mutate_l2",
+        "system_reconcile"
+      ],
+      "description": "Messages MUST NOT use system_reconcile; REC reconciler uses mutation records only."
     },
     "from": {
       "type": "object",

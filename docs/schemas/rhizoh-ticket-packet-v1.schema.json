@@ -119,8 +119,14 @@
     },
     "executionClass": {
       "type": "string",
-      "enum": ["read_only", "suggest", "mutate_l1"],
-      "description": "read_only: explore; suggest: autonomous only; mutate_l1: user-signed or frozen-DAG-verified L1 mutate."
+      "enum": [
+        "read_only",
+        "suggest",
+        "mutate_l1",
+        "mutate_l2",
+        "system_reconcile"
+      ],
+      "description": "Authoritative rules: RHIZOH_SECURITY_BOUNDARY_V1.md section 3. system_reconcile is REC reconciler only."
     },
     "journey": {
       "type": "object",

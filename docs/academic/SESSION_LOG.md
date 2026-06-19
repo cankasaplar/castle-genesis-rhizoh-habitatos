@@ -98,21 +98,24 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 ### 2026-06-19 — Ticket Network Schema v1 (UX unification layer)
 
 **Summary:**
-- Ticket = kullanıcıya görünen tek dil; altında CubeState, Permission Graph, Temporal Binding, WorldState, Admission, Observation Fabric.
-- Ticket anatomy: **Capability** + **Journey** (not a flat object).
-- Nervous network buckets: Signals / Invites / Discoveries / Events (not Inbox/Outbox).
-- REC: 06:44 / 18:44 core + soft + burst layers; `executionClass` security boundary.
-- Worked scenarios: invite graph expansion + arena entry state transitions.
+- Document stack order: **Security Boundary → Ticket Network → State Transitions**.
+- Security Boundary v1: five constitutional invariants; `executionClass` expanded (`read_only`, `suggest`, `mutate_l1`, `mutate_l2`, `system_reconcile`).
+- Ticket = Capability + Journey; nervous network: Signals / Invites / Discoveries / Events.
+- State Transitions v1: `invite_join`, `arena_enter`, `ghost_attach`, `flight_depart`, `corporate_admission`.
+- Mutation record schema for Invariant 3 (every mutation has an owner).
 
 **Linked Artifacts:**
+- `docs/RHIZOH_SECURITY_BOUNDARY_V1.md`
 - `docs/RHIZOH_TICKET_NETWORK_SCHEMA_V1.md`
+- `docs/RHIZOH_STATE_TRANSITIONS_V1.md`
 - `docs/schemas/rhizoh-ticket-packet-v1.schema.json`
 - `docs/schemas/rhizoh-ticket-message-v1.schema.json`
+- `docs/schemas/rhizoh-mutation-record-v1.schema.json`
 
 - **Habitat:** Academic / product architecture
 - **Katılımcılar:** Principal, **Cursor Agent (Castle)**
 - **SPECFLOW:** RESEARCH-ONLY · FUTURE-PROOF-ONLY
-- **Karar özeti:** Her ticket = graph edge + continuity anchor + CubeState bind; otonom yalnızca `suggest`.
+- **Karar özeti:** Security first; suggest→mutate promotion forbidden without signature/DAG/reconcile; no ticket self-authority expansion.
 - **Frozen core:** dokunulmadı
 
 ### 2026-06-12 — World · Space map pins + cohort allowlist (gün kapanışı)
