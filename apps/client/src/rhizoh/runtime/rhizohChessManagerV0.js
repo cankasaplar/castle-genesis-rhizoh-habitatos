@@ -97,6 +97,9 @@ export function getRhizohChessManagerSnapshotV0(reason = "poll") {
       chessEvolutionCurve: "window.__rhizoh.chessEvolutionCurve()",
       chessLearningCheckpoint: "window.__rhizoh.chessLearningCheckpoint()",
       chessUnifiedMemoryGraph: "window.__rhizoh.chessUnifiedMemoryGraph()",
+      uglReport: "window.__rhizoh.uglReport()",
+      uglEventStream: "window.__rhizoh.uglEventStream()",
+      uglScheduler: "window.__rhizoh.uglScheduler()",
       chessOfflineBatchTrainer: "window.__rhizoh.chessOfflineBatchTrainer()"
     }),
     atMs: Date.now()
