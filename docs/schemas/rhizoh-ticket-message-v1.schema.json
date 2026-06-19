@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://castle.system/schemas/rhizoh-ticket-message-v1.schema.json",
+  "title": "RhizohTicketMessageV1",
+  "description": "RESEARCH-ONLY v1: nervous-network message (Signal | Invite | Discovery | Event). Not email; state transition edge or ephemeral suggest.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "messageId",
+    "messageKind",
+    "executionClass",
+    "issuedAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "messageId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 256
+    },
+    "messageKind": {
+      "type": "string",
+      "enum": ["signal", "invite", "discovery", "event"],
+      "description": "UX bucket; not Inbox/Outbox."
+    },
+    "executionClass": {
+      "type": "string",
+      "enum": ["read_only", "suggest", "mutate_l1"]
+    },
+    "from": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceKind", "sourceRef"],
+      "properties": {
+        "sourceKind": {
+          "type": "string",
+          "enum": [
+            "human",
+            "fox",
+            "arena",
+            "system",
+            "external_llm",
+            "cursor_agent"
+          ]
+        },
+        "sourceRef": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "description": "Required for signal and invite kinds."
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceKind", "sourceRef"],
+      "properties": {
+        "sourceKind": {
+          "type": "string",
+          "enum": ["arena", "system", "discovery_engine", "go_arena", "chess_arena"]
+        },
+        "sourceRef": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "description": "Required for discovery and event kinds."
+    },
+    "prism": {
+      "type": "string",
+      "enum": [
+        "cesium_global",
+        "leaflet_semantic",
+        "arena_rules",
+        "media_timeline",
+        "ghost_sim",
+        "dev_sandbox",
+        "corporate_enclave",
+        "event_timeline",
+        "arena"
+      ]
+    },
+    "epoch": {
+      "type": "string",
+      "enum": [
+        "rec_core_morning",
+        "rec_core_evening",
+        "rec_soft",
+        "rec_burst"
+      ]
+    },
+    "node": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "Cube or graph node ref for discovery messages."
+    },
+    "unlocks": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 256 },
+      "description": "Ticket kinds or capability scopes unlocked."
+    },
+    "payloadRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "description": "Opaque suggestion or event body pointer."
+    },
+    "ticketRef": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 256,
+      "description": "Parent ticket id when message attaches to a journey."
+    },
+    "traceGraphLink": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 256,
+      "description": "Required for graph-persistent messages; omit only for ephemeral UI toasts."
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "messageKind": { "const": "signal" } },
+        "required": ["messageKind"]
+      },
+      "then": {
+        "required": ["from", "executionClass"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "messageKind": { "const": "invite" } },
+        "required": ["messageKind"]
+      },
+      "then": {
+        "required": ["from", "ticketRef", "traceGraphLink"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "messageKind": { "const": "discovery" } },
+        "required": ["messageKind"]
+      },
+      "then": {
+        "required": ["source", "node", "unlocks", "traceGraphLink"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "messageKind": { "const": "event" } },
+        "required": ["messageKind"]
+      },
+      "then": {
+        "required": ["source", "traceGraphLink"]
+      }
+    }
+  ]
+}

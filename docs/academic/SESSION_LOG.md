@@ -95,6 +95,26 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 
 ## Günlük
 
+### 2026-06-19 — Ticket Network Schema v1 (UX unification layer)
+
+**Summary:**
+- Ticket = kullanıcıya görünen tek dil; altında CubeState, Permission Graph, Temporal Binding, WorldState, Admission, Observation Fabric.
+- Ticket anatomy: **Capability** + **Journey** (not a flat object).
+- Nervous network buckets: Signals / Invites / Discoveries / Events (not Inbox/Outbox).
+- REC: 06:44 / 18:44 core + soft + burst layers; `executionClass` security boundary.
+- Worked scenarios: invite graph expansion + arena entry state transitions.
+
+**Linked Artifacts:**
+- `docs/RHIZOH_TICKET_NETWORK_SCHEMA_V1.md`
+- `docs/schemas/rhizoh-ticket-packet-v1.schema.json`
+- `docs/schemas/rhizoh-ticket-message-v1.schema.json`
+
+- **Habitat:** Academic / product architecture
+- **Katılımcılar:** Principal, **Cursor Agent (Castle)**
+- **SPECFLOW:** RESEARCH-ONLY · FUTURE-PROOF-ONLY
+- **Karar özeti:** Her ticket = graph edge + continuity anchor + CubeState bind; otonom yalnızca `suggest`.
+- **Frozen core:** dokunulmadı
+
 ### 2026-06-12 — World · Space map pins + cohort allowlist (gün kapanışı)
 
 **Summary:**
