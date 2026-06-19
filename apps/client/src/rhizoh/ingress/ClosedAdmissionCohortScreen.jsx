@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   COHORT_GATE_DECISION_V0,
-  completeCohortGateV0,
+  completeCohortGateNoOpV0,
   getClosedAdmissionCohortCopyV0
 } from "./ingress_router.js";
 import { INGRESS_SURFACE_V0 } from "./ingressFlowStylesV0.js";
@@ -34,12 +34,8 @@ export function ClosedAdmissionCohortScreen({ onProceed, onHold }) {
           type="button"
           style={INGRESS_SURFACE_V0.primaryBtn(true)}
           onClick={() => {
-            const result = completeCohortGateV0({ decision: COHORT_GATE_DECISION_V0.ACCEPTED });
-            if (result.ok) {
-              onProceed();
-            } else if (result.verdict === "hold" && onHold) {
-              onHold();
-            }
+            completeCohortGateNoOpV0({ decision: COHORT_GATE_DECISION_V0.ACCEPTED });
+            onProceed();
           }}
         >
           {copy.acceptLabel}
@@ -53,7 +49,7 @@ export function ClosedAdmissionCohortScreen({ onProceed, onHold }) {
             border: "1px solid #475569"
           }}
           onClick={() => {
-            completeCohortGateV0({ decision: COHORT_GATE_DECISION_V0.DECLINED });
+            completeCohortGateNoOpV0({ decision: COHORT_GATE_DECISION_V0.DECLINED });
             setDeclined(true);
           }}
         >

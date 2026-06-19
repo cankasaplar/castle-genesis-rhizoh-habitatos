@@ -1,6 +1,6 @@
 {
   "schema": "castle.rhizoh.activation_readiness.v1",
-  "generatedAt": "2026-06-14T03:36:15.806Z",
+  "generatedAt": "2026-06-18T20:26:51.089Z",
   "go": "AUTO_PASS_MANUAL_PENDING",
   "autoPass": true,
   "checks": [
