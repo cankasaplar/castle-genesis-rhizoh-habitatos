@@ -141,7 +141,11 @@ export function getChessObservatoryHeroCopyV0(tr = true) {
       ? "Fox & Octo burada motor değil — öğrenme izi üretirler."
       : "Fox & Octo are not engines here — they generate learning traces.",
     lobbyCta: tr ? "Canlı yayını izle" : "Watch live broadcast",
-    lobbyDesc: tr ? "Ana tahta + 7 iz kamera" : "Featured board + 7 trace cameras"
+    lobbyDesc: tr ? "Ana tahta + 7 iz kamera" : "Featured board + 7 trace cameras",
+    playCta: tr ? "1v1 Oyna" : "Play 1v1",
+    playDesc: tr
+      ? "Yayını kapat · harita arenasına geç"
+      : "Close broadcast · open map arena"
   });
 }
 

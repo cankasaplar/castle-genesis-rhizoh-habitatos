@@ -16,6 +16,8 @@ import {
   getChessGameRouterSnapshotV0,
   getChessLearningGraphSnapshotV0
 } from "./chessGameRouterV0.js";
+import { getChessClusterBroadcastEnginePolicySnapshotV0 } from "./chessClusterBroadcastEnginePolicyV0.js";
+import { getChessEngineContentionSnapshotV0 } from "./chessEngineContentionGateV0.js";
 
 export const RHIZOH_CHESS_MANAGER_SCHEMA_V0 = "castle.rhizoh.chess_manager.v0";
 export const RHIZOH_CHESS_MANAGER_ARCHITECTURE_V0 = "single_engine_multi_board_projection";
@@ -103,7 +105,9 @@ export function getRhizohChessManagerSnapshotV0(reason = "poll") {
       uglLeagueHarness: "window.__rhizoh.uglLeagueHarness()",
       uglTrainingRecords: "window.__rhizoh.uglTrainingRecords()",
       chessEngineHealth: "window.__rhizoh.chessEngineHealthReport()",
-      chessOfflineBatchTrainer: "window.__rhizoh.chessOfflineBatchTrainer()"
+      chessOfflineBatchTrainer: "window.__rhizoh.chessOfflineBatchTrainer()",
+      chessClusterBroadcastEnginePolicy: "window.__rhizoh.chessClusterBroadcastEnginePolicy()",
+      chessEngineContention: "window.__rhizoh.chessEngineContention()"
     }),
     atMs: Date.now()
   });
@@ -131,5 +135,13 @@ export function ensureRhizohChessManagerListenersV0() {
     publishRhizohChessManagerV0("engine_status");
   });
   window.__RHIZOH_CHESS_MANAGER_LIVE__ = () => readRhizohChessManagerLiveV0("devtools");
+  window.__rhizoh = window.__rhizoh || {};
+  if (!window.__rhizoh.chessClusterBroadcastEnginePolicy) {
+    window.__rhizoh.chessClusterBroadcastEnginePolicy = () =>
+      getChessClusterBroadcastEnginePolicySnapshotV0();
+  }
+  if (!window.__rhizoh.chessEngineContention) {
+    window.__rhizoh.chessEngineContention = () => getChessEngineContentionSnapshotV0();
+  }
   publishRhizohChessManagerV0("listeners_installed");
 }
