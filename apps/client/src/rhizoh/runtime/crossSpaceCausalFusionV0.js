@@ -18,6 +18,12 @@ import {
 } from "./multiArenaSchedulerV0.js";
 import { CAUSAL_SPACE_ID_V0 } from "./sportsCausalSpaceV0.js";
 import { RHIZOH_DRIFT_CUBE_EVENT_V0 } from "./rhizohGeometryDriftCubeV0.js";
+import {
+  decayResourceBudgetsV0,
+  guardFusionAdmissionV0,
+  releaseResourceSlotV0,
+  scoreFusionReliabilityV0
+} from "./crossSpaceResourceContentionGuardV0.js";
 
 export const CROSS_SPACE_CAUSAL_FUSION_SCHEMA_V0 = "castle.rhizoh.cross_space_causal_fusion.v0";
 export const CROSS_SPACE_FUSION_EVENT_V0 = "rhizoh:cross-space-fusion-v0";
@@ -184,11 +190,53 @@ function hydrateSportsLaneFromRecV0(recSnap) {
 }
 
 /**
+ * Immutable lane audit — separability preserved for debugging.
+ */
+function buildLaneAuditV0() {
+  return Object.freeze({
+    separabilityPreserved: true,
+    chess: Object.freeze({
+      present: Boolean(chessLaneV0),
+      raw: chessLaneV0,
+      spaceId: CAUSAL_SPACE_ID_V0.CHESS
+    }),
+    sports: Object.freeze({
+      present: Boolean(sportsLaneV0),
+      raw: sportsLaneV0,
+      spaceId: CAUSAL_SPACE_ID_V0.SPORTS
+    }),
+    cux: Object.freeze({
+      present: Boolean(cuxLaneV0),
+      raw: cuxLaneV0,
+      spaceId: ARENA_SPACE_OVERLAY_V0
+    })
+  });
+}
+
+/**
  * Fuse lanes into unified epistemic update.
- * @param {{ recReconciliation?: object, schedulerSelection?: object, atMs?: number }} [opts]
+ * @param {{ recReconciliation?: object, schedulerSelection?: object, atMs?: number, force?: boolean }} [opts]
  */
 export function fuseCrossSpaceEpistemicV0(opts = {}) {
   const atMs = Number(opts.atMs) || Date.now();
+  const guard = guardFusionAdmissionV0({ atMs, force: opts.force });
+  const laneAudit = buildLaneAuditV0();
+
+  if (!guard.admitted) {
+    return Object.freeze({
+      schema: `${CROSS_SPACE_CAUSAL_FUSION_SCHEMA_V0}.deferred`,
+      deferred: true,
+      reason: guard.reason,
+      guard,
+      laneAudit,
+      fusionReliability: scoreFusionReliabilityV0({ laneAudit, guard }),
+      atMs,
+      interpretationOnly: true,
+      nonExecutive: true
+    });
+  }
+
+  decayResourceBudgetsV0(0.92);
   const selection = opts.schedulerSelection || selectActiveArenaFrameV0(atMs);
   const recSnap = getCrossSpaceRecSnapshotV0();
   const rec =
@@ -237,19 +285,22 @@ export function fuseCrossSpaceEpistemicV0(opts = {}) {
         lane: FUSION_LANE_V0.CHESS_DRIFT,
         weight: chessWeight,
         shares: chessShares,
-        present: Boolean(chessLaneV0)
+        present: Boolean(chessLaneV0),
+        rawShares: chessLaneV0?.shares || emptySharesV0()
       }),
       sports: Object.freeze({
         lane: FUSION_LANE_V0.SPORTS_ENTROPY,
         weight: sportsWeight,
         shares: sportsShares,
-        present: Boolean(sportsLaneV0)
+        present: Boolean(sportsLaneV0),
+        rawShares: sportsLaneV0?.shares || emptySharesV0()
       }),
       cux: Object.freeze({
         lane: FUSION_LANE_V0.CUX_PERCEPTION,
         weight: cuxWeight,
         shares: cuxShares,
-        present: Boolean(cuxLaneV0)
+        present: Boolean(cuxLaneV0),
+        rawShares: cuxLaneV0?.shares || emptySharesV0()
       })
     }),
     crossCouplings,
@@ -259,6 +310,8 @@ export function fuseCrossSpaceEpistemicV0(opts = {}) {
     interpretationOnly: true,
     nonExecutive: true
   });
+
+  const fusionReliability = scoreFusionReliabilityV0({ epistemicUpdate, laneAudit, guard });
 
   const fusion = Object.freeze({
     schema: CROSS_SPACE_CAUSAL_FUSION_SCHEMA_V0,
@@ -272,6 +325,9 @@ export function fuseCrossSpaceEpistemicV0(opts = {}) {
       sports: sportsLaneV0,
       cux: cuxLaneV0
     }),
+    laneAudit,
+    guard,
+    fusionReliability,
     epistemicUpdate,
     atMs,
     interpretationOnly: true,
@@ -287,6 +343,7 @@ export function fuseCrossSpaceEpistemicV0(opts = {}) {
     globalThis.dispatchEvent(new CustomEvent(CROSS_SPACE_FUSION_EVENT_V0, { detail: fusion }));
   }
 
+  releaseResourceSlotV0({ lane: "fusion", cost: 0.03 });
   return fusion;
 }
 

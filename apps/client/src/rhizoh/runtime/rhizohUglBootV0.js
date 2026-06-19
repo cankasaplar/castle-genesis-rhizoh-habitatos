@@ -31,6 +31,14 @@ import {
   buildCrossSpaceFusionReportV0,
   ensureCrossSpaceCausalFusionV0
 } from "./crossSpaceCausalFusionV0.js";
+import {
+  buildCrossSpaceResourceGuardReportV0,
+  ensureCrossSpaceResourceGuardV0
+} from "./crossSpaceResourceContentionGuardV0.js";
+import {
+  ingestSportsMatchEventV0,
+  normalizeSportsMatchEventV0
+} from "./sportsEventAdapterV0.js";
 import { RHIZOH_UGL_SCHEMA_V0, RHIZOH_UGL_VERSION_V0 } from "./rhizohUglSchemaV0.js";
 import { chessTerminalRewardV0 } from "./rhizohUglChessAdapterV0.js";
 import {
@@ -70,6 +78,7 @@ export function buildRhizohUglReportV0() {
     multiArenaScheduler: buildMultiArenaSchedulerReportV0(),
     crossSpaceRec: buildCrossSpaceRecReportV0(),
     crossSpaceFusion: buildCrossSpaceFusionReportV0(),
+    crossSpaceResourceGuard: buildCrossSpaceResourceGuardReportV0(),
     stateEncoder: buildUglStateEncoderReportV0(),
     actionSpace: buildUglActionSpaceReportV0(),
     rewardModel: buildUglRewardModelReportV0(),
@@ -90,7 +99,9 @@ export function buildRhizohUglReportV0() {
       multiArenaScheduler: "window.__rhizoh.multiArenaScheduler()",
       crossSpaceRec: "window.__rhizoh.crossSpaceRec()",
       crossSpaceFusion: "window.__rhizoh.crossSpaceFusion()",
+      crossSpaceResourceGuard: "window.__rhizoh.crossSpaceResourceGuard()",
       sportsAdapter: "window.__rhizoh.uglSportsAdapter()",
+      ingestSportsEvent: "window.__rhizoh.ingestSportsEvent({ eventType, delta })",
       league: "window.__rhizoh.uglLeagueHarness()",
       trainingRecords: "window.__rhizoh.uglTrainingRecords()",
       engineHealth: "window.__rhizoh.chessEngineHealthReport()",
@@ -266,6 +277,7 @@ export function ensureRhizohUglV0() {
   ensureMultiArenaSchedulerV0();
   ensureCrossSpaceRecV0();
   ensureCrossSpaceCausalFusionV0();
+  ensureCrossSpaceResourceGuardV0();
   if (!window.__rhizoh.__crossSpaceRecTickWired) {
     window.__rhizoh.__crossSpaceRecTickWired = true;
     window.addEventListener(MULTI_ARENA_TICK_EVENT_V0, (ev) => {
@@ -274,6 +286,10 @@ export function ensureRhizohUglV0() {
   }
   if (!window.__rhizoh.uglSportsAdapter) {
     window.__rhizoh.uglSportsAdapter = () => getSportsUglAdapterV0();
+  }
+  if (!window.__rhizoh.ingestSportsEvent) {
+    window.__rhizoh.ingestSportsEvent = (raw) =>
+      ingestSportsMatchEventV0(normalizeSportsMatchEventV0(raw));
   }
   if (!window.__rhizoh.uglLeagueHarness) {
     window.__rhizoh.uglLeagueHarness = () => buildUglLeagueHarnessReportV0();
@@ -345,7 +361,12 @@ export function __resetRhizohUglBootForTestV0() {
     delete window.__rhizoh.ingestSportsEntropyLane;
     delete window.__rhizoh.ingestCuxPerceptionLane;
     delete window.__rhizoh.__crossSpaceFusionWired;
+    delete window.__rhizoh.crossSpaceResourceGuard;
+    delete window.__rhizoh.crossSpaceResourceGuardReport;
+    delete window.__rhizoh.assessCrossSpaceResourceLoad;
+    delete window.__rhizoh.guardFusionAdmission;
     delete window.__rhizoh.uglSportsAdapter;
+    delete window.__rhizoh.ingestSportsEvent;
     delete window.__rhizoh.uglLeagueHarness;
     delete window.__rhizoh.uglTrainingRecords;
     delete window.__rhizoh.exportUglTrainingRecordsJson;

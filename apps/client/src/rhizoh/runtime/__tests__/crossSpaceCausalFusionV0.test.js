@@ -47,6 +47,8 @@ describe("crossSpaceCausalFusionV0", () => {
     expect(fusion.epistemicUpdate.laneContributions.cux.present).toBe(true);
     expect(fusion.epistemicUpdate.fusedShares.ENTROPY_DRIFT).toBeGreaterThan(0);
     expect(fusion.epistemicUpdate.cubeStateCommit).toBe(false);
+    expect(fusion.laneAudit?.separabilityPreserved).toBe(true);
+    expect(fusion.fusionReliability?.reliability01).toBeGreaterThan(0);
   });
 
   it("marks realitiesIntegrated when chess and sports lanes both present", () => {
