@@ -19,6 +19,11 @@ import {
   runAlignedExecutionPhaseV0
 } from "./executionPhaseSynchronizerV0.js";
 import {
+  ensureAdmissionArbitrationLayerV1,
+  arbitrateAdmissionV1,
+  getAdmissionArbitrationSnapshotV1
+} from "./admissionArbitrationLayerV1.js";
+import {
   ingestSportsMatchEventV0,
   normalizeSportsMatchEventV0
 } from "./sportsEventAdapterV0.js";
@@ -33,7 +38,9 @@ export const RUNTIME_SURFACE_API_KEYS_V0 = Object.freeze([
   "fuseCrossSpaceEpistemic",
   "fuseAndStabilizeCrossSpace",
   "stabilizeCrossSpaceFusion",
-  "runExecutionPhase"
+  "runExecutionPhase",
+  "arbitrateAdmission",
+  "admissionArbitration"
 ]);
 
 /**
@@ -52,6 +59,8 @@ export function bindRhizohRuntimeSurfaceV0(target) {
   rhizoh.fuseAndStabilizeCrossSpace = (opts) => fuseAndStabilizeCrossSpaceV0(opts);
   rhizoh.stabilizeCrossSpaceFusion = (fusion) => stabilizeCrossSpaceFusionV0(fusion);
   rhizoh.runExecutionPhase = (opts) => runAlignedExecutionPhaseV0(opts);
+  rhizoh.arbitrateAdmission = (projection) => arbitrateAdmissionV1({ projection });
+  rhizoh.admissionArbitration = () => getAdmissionArbitrationSnapshotV1();
 
   return rhizoh;
 }
@@ -86,6 +95,7 @@ export function ensureRhizohRuntimeSurfaceBinderV0(opts = {}) {
   bindRhizohRuntimeSurfaceV0(window.__rhizoh);
   ensureCrossSpaceStabilizationLayerV0();
   ensureExecutionPhaseSynchronizerV0();
+  ensureAdmissionArbitrationLayerV1();
 
   const strict = opts.strict !== false;
   const assertResult = strict ? assertRhizohRuntimeSurfaceV0(window.__rhizoh) : null;

@@ -64,7 +64,11 @@ export async function mountCastleApplicationV0(ctx) {
   const phaseCommit = runBootExecutionPhaseV0({ gate });
   bootLog?.ok?.(
     "boot.execution_phase",
-    `phase=${phaseCommit.commit.phaseSeq} aligned=${phaseCommit.phaseAligned} admission=${phaseCommit.admissionSafe}`
+    `phase=${phaseCommit.commit.phaseSeq} aligned=${phaseCommit.phaseAligned} inference=${phaseCommit.commit.inferenceEligible}`
+  );
+  bootLog?.ok?.(
+    "boot.admission_arbitration",
+    `verdict=${phaseCommit.commit.arbitration?.verdict || "hold"} mutation=${phaseCommit.commit.realityMutationPermitted}`
   );
 
   const observability = startProdWorldObservabilityBridgeV0();

@@ -62,5 +62,6 @@ window.__rhizoh.commitExecutionPhase()
 | Level | Status |
 |-------|--------|
 | L3d Stabilization | ✔ |
-| L3e **Execution phase sync** | ✔ this module |
-| L3f Ledger / seal | ❌ phase gate |
+| L3e **Execution phase sync** | ✔ [`RHIZOH_EXECUTION_PHASE_SYNCHRONIZER_V0.md`](RHIZOH_EXECUTION_PHASE_SYNCHRONIZER_V0.md) |
+| L3f **Admission arbitration** | ✔ [`RHIZOH_ADMISSION_ARBITRATION_LAYER_V1.md`](RHIZOH_ADMISSION_ARBITRATION_LAYER_V1.md) |
+| L3g Ledger / seal | ❌ phase gate |

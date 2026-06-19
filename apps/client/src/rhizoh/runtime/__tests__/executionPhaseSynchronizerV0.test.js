@@ -43,7 +43,7 @@ describe("executionPhaseSynchronizerV0", () => {
     resetCrossSpaceStabilizationForTestV0();
   });
 
-  it("commits scheduler, fusion, and stabilization in one phase", () => {
+  it("commits scheduler, fusion, stabilization, and arbitration in one phase", () => {
     ingestChessDriftLaneV0({ z: 0.5, category: MUTATION_REASON_CATEGORY_V1.SC });
     const aligned = runAlignedExecutionPhaseV0({ source: "test" });
 
@@ -51,6 +51,8 @@ describe("executionPhaseSynchronizerV0", () => {
     expect(aligned.commit.tick.phaseLock).toBe(true);
     expect(aligned.commit.fusion).toBeTruthy();
     expect(aligned.commit.projection.schema).toContain("projection");
+    expect(aligned.commit.arbitration.schema).toContain("verdict");
+    expect(aligned.commit.realityMutationPermitted).toBe(false);
     expect(aligned.commit.tick.atMs).toBe(aligned.commit.projection.atMs);
   });
 

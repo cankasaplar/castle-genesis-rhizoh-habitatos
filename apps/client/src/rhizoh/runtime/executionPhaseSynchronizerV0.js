@@ -13,6 +13,7 @@ import {
   ingestSportsEntropyLaneV0
 } from "./crossSpaceCausalFusionV0.js";
 import { stabilizeCrossSpaceFusionV0 } from "./crossSpaceStabilizationLayerV0.js";
+import { arbitrateAdmissionV1 } from "./admissionArbitrationLayerV1.js";
 import {
   notifySportsArenaActivityV0,
   runMultiArenaTickV0
@@ -183,6 +184,17 @@ export function commitExecutionPhaseV0(opts = {}) {
     phaseLock: true,
     forceAdmission: opts.forceAdmission
   });
+  const arbitration = arbitrateAdmissionV1(
+    {
+      projection,
+      phaseContext: {
+        phaseSeq: phase.phaseSeq,
+        phaseAligned: true,
+        source: opts.source || phase.source
+      }
+    },
+    { atMs, source: opts.source || phase.source }
+  );
 
   const commit = Object.freeze({
     schema: `${EXECUTION_PHASE_SYNCHRONIZER_SCHEMA_V0}.commit`,
@@ -196,7 +208,10 @@ export function commitExecutionPhaseV0(opts = {}) {
     rec,
     fusion,
     projection,
-    admissionSafe: projection.admissionSafe,
+    arbitration,
+    admissionSafe: arbitration.inferenceEligible,
+    inferenceEligible: arbitration.inferenceEligible,
+    realityMutationPermitted: arbitration.realityMutationPermitted,
     primarySpaceId: tick.selection?.primarySpaceId || CAUSAL_SPACE_ID_V0.CHESS,
     atMs,
     interpretationOnly: true,
@@ -231,6 +246,9 @@ export function runAlignedExecutionPhaseV0(opts = {}) {
     commit,
     phaseAligned: true,
     admissionSafe: commit.admissionSafe,
+    inferenceEligible: commit.inferenceEligible,
+    realityMutationPermitted: commit.realityMutationPermitted,
+    arbitration: commit.arbitration,
     atMs: commit.atMs,
     interpretationOnly: true,
     nonExecutive: true
@@ -275,6 +293,9 @@ export function schedulePhaseCommitV0(opts = {}) {
     phase,
     commit,
     admissionSafe: commit.admissionSafe,
+    inferenceEligible: commit.inferenceEligible,
+    realityMutationPermitted: commit.realityMutationPermitted,
+    arbitration: commit.arbitration,
     atMs: commit.atMs,
     interpretationOnly: true,
     nonExecutive: true
