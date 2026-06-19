@@ -7,6 +7,64 @@ import { resolveCastleLayerVoiceContextV1 } from "../../castle/layers/castleLaye
 
 const WEBGPU_ADAPTER_NOISE = /no available adapters/i;
 
+/** High-frequency heartbeat tags — prod console quiet unless VITE_DEBUG=1. */
+const VOICE_PROD_QUIET_TAGS_V0 = new Set([
+  "PULSE_LOOP_TICK",
+  "PULSE_LOOP_MOUNT",
+  "LIVE_PRESENCE_EMIT",
+  "PRESENCE_PRIMITIVE_EMIT",
+  "THINKING_OBSERVATION",
+  "CONTINUITY_STATE",
+  "PERSONA_PULSE",
+  "PERSONA_SCHEDULER_MOUNT",
+  "FOX_SILENT_OBSERVATION",
+  "SPEECH_GLUE_HANDOFF",
+  "GROUNDING_OVERRIDE",
+  "OUTPUT_CONTRACT_LOG"
+]);
+
+/** Routine lifecycle stages — errors/warnings still surface via logVoiceWarnV0. */
+const CASTLE_PROD_QUIET_STAGES_V0 = new Set([
+  "chess_move_played",
+  "speech_meaning",
+  "runtime_stability",
+  "influence_observability",
+  "first_speech_soft",
+  "voice_turn_llm"
+]);
+
+/**
+ * Prod default: quiet console (observability via __RHIZOH_FULL_REPORT__ / registries).
+ * @returns {boolean}
+ */
+export function isRhizohVerboseConsoleV0() {
+  if (typeof window !== "undefined" && window.__rhizoh?.debug?.consoleVerbose === true) {
+    return true;
+  }
+  if (typeof import.meta !== "undefined") {
+    if (String(import.meta.env?.VITE_DEBUG ?? "").trim() === "1") return true;
+  }
+  return false;
+}
+
+/**
+ * @param {string} tag
+ * @returns {boolean}
+ */
+export function shouldEmitVoiceConsoleInfoV0(tag) {
+  if (isRhizohVerboseConsoleV0()) return true;
+  return !VOICE_PROD_QUIET_TAGS_V0.has(String(tag || ""));
+}
+
+/**
+ * @param {string} stage
+ * @returns {boolean}
+ */
+export function shouldEmitCastleLifecycleConsoleV0(stage) {
+  if (isRhizohVerboseConsoleV0()) return true;
+  return !CASTLE_PROD_QUIET_STAGES_V0.has(String(stage || ""));
+}
+
 /** @param {unknown[]} args */
 function isWebGpuAdapterNoise(args) {
   try {
@@ -56,6 +114,7 @@ export async function requestWebGpuAdapterQuietlyV0(options = {}) {
 
 /** @param {string} tag @param {Record<string, unknown>} [detail] */
 export function logVoiceInfoV0(tag, detail = {}) {
+  if (!shouldEmitVoiceConsoleInfoV0(tag)) return;
   let enriched = detail;
   try {
     const castleLayer = resolveCastleLayerVoiceContextV1({
@@ -95,6 +154,7 @@ export function logWebGpuInfoV0(tag, detail = {}) {
 
 /** Castle system lifecycle (LLM turn, boot-adjacent health — not STT / not GPU). */
 export function logCastleLifecycleV0(stage, detail = {}) {
+  if (!shouldEmitCastleLifecycleConsoleV0(stage)) return;
   const meta = detail && typeof detail === "object" ? detail : {};
   console.info(`[CASTLE_${String(stage || "unknown")}]`, meta);
 }
