@@ -20,6 +20,9 @@ import {
 import { pickRhizohChessMoveV0 } from "./rhizohChessPlayerV0.js";
 import { enqueueRhizohPredictionCompareV0 } from "./rhizohChessPredictionCompareV0.js";
 import { isChessEngineContendedV0 } from "./chessEngineContentionGateV0.js";
+import {
+  shouldPreferClusterHeuristicUnderContentionV0
+} from "./chessEngineAdaptiveSliceV0.js";
 import { shouldUseStockfishForClusterSlotV0 } from "./chessClusterBroadcastEnginePolicyV0.js";
 import { CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 } from "./chessLearningMonitorV0.js";
 import {
@@ -50,6 +53,16 @@ function pickClusterHeuristicMoveV0(game, slot, agentId, policy) {
   });
   if (uci) return uci;
   return pickChessArenaAiMoveV0(game);
+}
+
+function maybeContentionHeuristicClusterMoveV0(slot, game, mode, agentId, policy) {
+  if (Number(slot?.slotId) === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0) return null;
+  if (!clusterModeUsesStockfishV0(mode)) return null;
+  if (!shouldPreferClusterHeuristicUnderContentionV0({ slotId: slot?.slotId })) return null;
+  return Object.freeze({
+    move: pickClusterHeuristicMoveV0(game, slot, agentId, policy),
+    engine: "cluster_contention_heuristic"
+  });
 }
 
 function maybeFastHeuristicClusterMoveV0(slot, game, mode, agentId, policy) {
@@ -87,6 +100,14 @@ export async function pickChessClusterMoveV0(slot, game) {
   const stockfishReady = await resolveClusterStockfishReadyV0(mode);
   const fastHeuristic = maybeFastHeuristicClusterMoveV0(slot, game, mode, agentId, policy);
   if (fastHeuristic) return fastHeuristic;
+  const contentionHeuristic = maybeContentionHeuristicClusterMoveV0(
+    slot,
+    game,
+    mode,
+    agentId,
+    policy
+  );
+  if (contentionHeuristic) return contentionHeuristic;
   const gridHeuristic = maybeBroadcastGridHeuristicMoveV0(slot, game, mode, agentId, policy);
   if (gridHeuristic) return gridHeuristic;
 

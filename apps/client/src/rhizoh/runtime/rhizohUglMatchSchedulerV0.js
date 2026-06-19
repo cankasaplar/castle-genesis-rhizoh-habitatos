@@ -11,6 +11,7 @@ import {
   getChessEngineQueueSnapshotV0
 } from "./chessEngineTaskQueueV0.js";
 import { getChessEngineContentionSnapshotV0 } from "./chessEngineContentionGateV0.js";
+import { drainUglLearnBufferV0 } from "./rhizohUglLearnBufferSinkV0.js";
 import { RHIZOH_UGL_PIPELINE_V0 } from "./rhizohUglSchemaV0.js";
 
 export const RHIZOH_UGL_MATCH_SCHEDULER_SCHEMA_V0 = "castle.rhizoh.ugl_match_scheduler.v0";
@@ -81,6 +82,7 @@ export function scheduleUglPlayTaskV0(run, opts = {}) {
       playTasksCompletedV0 += 1;
       publishUglSchedulerRegistryV0();
       void drainDeferredLearnQueueV0();
+      void drainUglLearnBufferV0();
       return result;
     }
   });

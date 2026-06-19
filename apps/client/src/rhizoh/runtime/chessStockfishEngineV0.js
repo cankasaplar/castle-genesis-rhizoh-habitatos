@@ -842,10 +842,12 @@ function resolveStockfishOptsV0(opts = {}) {
   const preset = opts.preset && CHESS_STOCKFISH_PRESET_V0[opts.preset]
     ? CHESS_STOCKFISH_PRESET_V0[opts.preset]
     : CHESS_STOCKFISH_PRESET_V0.ARENA;
+  const depthCap =
+    opts.queueKind === CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE ? 16 : 22;
   return {
     skill: Math.max(1, Math.min(20, Number(opts.skill) || preset.skill)),
     movetimeMs: Math.max(80, Math.min(12000, Number(opts.movetimeMs) || preset.movetimeMs)),
-    depth: Math.max(6, Math.min(22, Number(opts.depth) || preset.depth))
+    depth: Math.max(6, Math.min(depthCap, Number(opts.depth) || preset.depth))
   };
 }
 
@@ -929,7 +931,11 @@ export async function getStockfishArenaMoveV0(fen, opts = {}) {
           }
           currentPositionFenV0 = position;
           postStockfishBridgeMessageV0(`position fen ${position}`);
-          postStockfishBridgeMessageV0(`go movetime ${movetimeMs}`);
+          const goCmd =
+            opts.queueKind === CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE
+              ? `go depth ${depth} movetime ${movetimeMs}`
+              : `go movetime ${movetimeMs}`;
+          postStockfishBridgeMessageV0(goCmd);
         } catch {
           clearTimeout(timer);
           pendingV0.delete(id);
