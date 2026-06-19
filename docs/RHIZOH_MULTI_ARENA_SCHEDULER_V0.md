@@ -108,7 +108,7 @@ Event: `rhizoh:multi-arena-tick-v0`
 
 ## 6. Not in v0 (next)
 
-- Cross-space REC reconciliation
+- ~~Cross-space REC reconciliation~~ → [`RHIZOH_CROSS_SPACE_REC_RECONCILIATION_V0.md`](RHIZOH_CROSS_SPACE_REC_RECONCILIATION_V0.md)
 - Resource contention guard (quota enforcement against chess engine queue)
 - Data-plane seal / ledger activation (phase gate — separate track)
 - Production CUX mount without localStorage gate
