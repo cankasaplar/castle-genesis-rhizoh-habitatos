@@ -1,4 +1,8 @@
-import { resolveGenesisGatewayHttpBaseV0, resolveGenesisSseStreamBaseV0 } from "../../castleFlight/castleFlightConfig.js";
+import {
+  isGenesisSseBlockedViaGatewayProxyV0,
+  resolveGenesisGatewayHttpBaseV0,
+  resolveGenesisSseStreamBaseV0
+} from "../../castleFlight/castleFlightConfig.js";
 import { listGenesisAuthorityOriginsV0 } from "./genesisSingleAuthorityLockV0.js";
 import {
   formatGenesisContinuityEventLine,
@@ -219,8 +223,9 @@ function startGenesisContinuityClientWireInternalV0(opts = {}) {
 
   const streamUrl = `${sseOrigin}/rhizoh/genesis/stream`;
   const sseViaDirect = sseOrigin !== pollOrigin;
+  const skipSseViaProxy = isGenesisSseBlockedViaGatewayProxyV0();
 
-  if (typeof EventSource !== "undefined") {
+  if (typeof EventSource !== "undefined" && !skipSseViaProxy) {
     eventSource = new EventSource(streamUrl);
     publishGenesisStreamRegistryV0({
       status: "connecting",
@@ -262,7 +267,18 @@ function startGenesisContinuityClientWireInternalV0(opts = {}) {
       }
     });
   } else {
-    publishGenesisStreamRegistryV0({ status: "poll_only", streamUrl, transport: "poll" });
+    publishGenesisStreamRegistryV0({
+      status: "poll_only",
+      streamUrl,
+      pollOrigin,
+      sseOrigin,
+      sseViaDirect,
+      transport: "poll",
+      sseSkipped: skipSseViaProxy,
+      hint: skipSseViaProxy
+        ? "gatewayProxy cannot hold SSE — poll fallback only (no 524)"
+        : "EventSource unavailable"
+    });
   }
 
   void pollGenesisRuntimeOnceV0(pollOrigin);
