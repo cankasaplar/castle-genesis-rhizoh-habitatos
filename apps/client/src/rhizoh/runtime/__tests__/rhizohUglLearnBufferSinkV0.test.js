@@ -11,6 +11,7 @@ import {
   readUglTrainingRecordsV0
 } from "../rhizohUglTrainingRecordV0.js";
 import { __resetUglLeagueHarnessForTestV0 } from "../rhizohUglLeagueHarnessV0.js";
+import { publishChessArenaWorkspaceOpenV0 } from "../chessEngineContentionGateV0.js";
 import {
   CHESS_ENGINE_TASK_KIND_V0,
   CHESS_ENGINE_TASK_PRIORITY_V0,
@@ -58,6 +59,23 @@ describe("rhizohUglLearnBufferSinkV0", () => {
     const snap = getUglLearnBufferSnapshotV0();
     expect(snap.enrichSuccess).toBe(1);
     expect(snap.buffered).toBe(0);
+  });
+
+  it("skips enrich drain while map arena workspace is open", async () => {
+    const enrich = vi.fn(async () => ({ ok: true }));
+    registerUglLearnBufferEnrichHandlerV0(enrich);
+    publishChessArenaWorkspaceOpenV0(true);
+
+    enqueueUglLearnBufferObservationV0({
+      slot: { slotId: 2, matchId: "cluster_2_x" },
+      moveRow: { uci: "e7e5" },
+      fenBefore: FEN
+    });
+
+    await drainUglLearnBufferV0();
+    expect(enrich).not.toHaveBeenCalled();
+    expect(getUglLearnBufferSnapshotV0().buffered).toBe(1);
+    expect(getUglLearnBufferSnapshotV0().engineIdle).toBe(false);
   });
 
   it("skips enrich drain while play pipeline is busy", async () => {

@@ -29,6 +29,7 @@ import {
 } from "../rhizohUglMatchSchedulerV0.js";
 import { __resetRhizohUglBootForTestV0, buildRhizohUglReportV0, ensureRhizohUglV0 } from "../rhizohUglBootV0.js";
 import { buildRhizohChessEvolutionCurveV0, __resetRhizohChessEvolutionCurveForTestV0 } from "../rhizohChessEvolutionCurveV0.js";
+import { publishChessArenaWorkspaceOpenV0 } from "../chessEngineContentionGateV0.js";
 
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -152,6 +153,14 @@ describe("rhizohUglLayerV0", () => {
       },
       { timeout: 2000 }
     );
+  });
+
+  it("defers learn tasks when map arena workspace is open", async () => {
+    publishChessArenaWorkspaceOpenV0(true);
+    const learnResult = await scheduleUglLearnTaskV0(async () => "learn", { label: "arena_open" });
+    expect(learnResult).toBe(null);
+    expect(getUglMatchSchedulerSnapshotV0().learnPipeline.deferred).toBeGreaterThanOrEqual(1);
+    publishChessArenaWorkspaceOpenV0(false);
   });
 
   it("installs ugl DevTools and report", () => {
