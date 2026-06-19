@@ -23,4 +23,18 @@ describe("castleArchiveVaultV0", () => {
     expect(events.some((e) => e.type === "entity_saved")).toBe(true);
     expect(events.some((e) => e.type === "entity_tombstoned")).toBe(true);
   });
+
+  it("persists media meta fields on save", () => {
+    const ent = saveCastleArchiveEntityV0({
+      title: "Frequency track",
+      format: "text/plain",
+      content: "ambient loop",
+      frequencyBand: "ambient",
+      eventState: "live",
+      contentKind: "music"
+    });
+    expect(ent.frequencyBand).toBe("ambient");
+    expect(ent.eventState).toBe("live");
+    expect(ent.contentKind).toBe("music");
+  });
 });
