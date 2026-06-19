@@ -1,8 +1,8 @@
 # Rhizoh Cognitive Action Layer v1
 
-**SPECFLOW:** `RESEARCH-ONLY` · `FUTURE-PROOF-ONLY` — **Interactive Epistemic Simulator**; not execution.
+**SPECFLOW:** `RESEARCH-ONLY` · `FUTURE-PROOF-ONLY` — **Epistemic Traversal Layer**; not UI.
 
-**Prerequisites:** [`RHIZOH_COGNITIVE_VISUALIZATION_BINDING_V1.md`](RHIZOH_COGNITIVE_VISUALIZATION_BINDING_V1.md) · [`RHIZOH_SECURITY_BOUNDARY_V1.md`](RHIZOH_SECURITY_BOUNDARY_V1.md) (DR-01, DR-02, CAL-01)
+**Prerequisites:** [`RHIZOH_CAUSAL_NAVIGATION_RUNTIME_V1.md`](RHIZOH_CAUSAL_NAVIGATION_RUNTIME_V1.md) · [`RHIZOH_COGNITIVE_VISUALIZATION_BINDING_V1.md`](RHIZOH_COGNITIVE_VISUALIZATION_BINDING_V1.md) · [`RHIZOH_SECURITY_BOUNDARY_V1.md`](RHIZOH_SECURITY_BOUNDARY_V1.md) (DR-01, DR-02, CAL-01)
 
 **Code:** `apps/client/src/rhizoh/ticket/cognitiveActionLayerV0.js`
 
@@ -10,37 +10,40 @@
 
 ## 0. SSOT sentences (locked)
 
+> **CAL is the Epistemic Traversal Layer — user walks the causality graph, not data, state, or decisions.**
+
 > **Suggestion space is causally inert.**
 
-> **Drift is a perception stream, not a control channel.**
+> **perception ≠ interaction ≠ execution**
 
-> **Admission is the only control channel in Rhizoh.**
-
-Rhizoh is a **Causal-perception separated epistemic runtime with single-authority mutation gate**.
+User does not see data — user **navigates how causality formed**.
 
 ---
 
-## 1. Three-layer runtime (canonical)
+## 1. Four-axis runtime — Traversal field (axis 4)
 
-| Layer | Question | Components | Mutates truth? |
-|-------|----------|------------|----------------|
-| **Epistemic** | What is happening? | TraceGraph · Drift · Reason Ontology | No — thinks, does not change |
-| **Authority** | What will happen? | Admission · CubeState commit · executionClass gate | Yes — reality created here only |
-| **Temporal** | What happened? | REC · Tombstone · Residue compression | Batch only — writes memory, not past |
+| Axis | Field | Question |
+|------|-------|----------|
+| Epistemic | Reason | What is the system thinking? |
+| Authority | Commit | What becomes real? |
+| Temporal | Memory | How is past remembered? |
+| **Traversal** | **CAL** | **How does the user move inside?** |
+
+Full model: [`RHIZOH_CAUSAL_NAVIGATION_RUNTIME_V1.md`](RHIZOH_CAUSAL_NAVIGATION_RUNTIME_V1.md)
 
 ---
 
-## 2. What CAL is
+## 2. CAL vs Binding (critical split)
 
-CAL is not UI. CAL is **interaction-based epistemic exploration** — the user traverses the system's thought topology without speaking to it or commanding it.
+| Layer | Direction | Verbs | Module |
+|-------|-----------|-------|--------|
+| **Binding** | state → perception | görmek | `cognitiveVisualizationBindingV0` |
+| **CAL** | perception → traversal | yürümek | `cognitiveActionLayerV0` |
+| **Admission** | authority → reality | onaylamak | `admissionCubeCommitV0` |
 
-| CAL is | CAL is not |
-|--------|------------|
-| Interactive epistemic simulator | Chat interface |
-| State proposal generator (read-only) | Mutation trigger |
-| Causal visibility on demand | Control panel |
+CAL does not explain the system. CAL does not change the system. CAL **walks** the system.
 
-**User does not talk to the system. User walks the system's thought topology.**
+> User gains **viewpoint**, not **power**.
 
 ---
 
@@ -52,85 +55,58 @@ CAL is not UI. CAL is **interaction-based epistemic exploration** — the user t
 |---------|-----------|
 | `read_only` exploration packets | `mutate_l1` / `mutate_l2` from CAL |
 | Lineage / cause-chain fetch | Auto admission from CAL click |
-| State proposal views | DR-02 violating action text |
-
-**Completion of DR-02:** suggestion space cannot leak into execution space.
-
-```text
-drift ↑ · alert created · feature vector changed
-  → nothing crosses into execution space without admission gate
-```
+| `exploration_view` proposals | DR-02 violating prescriptions |
 
 ---
 
 ## 4. Interaction model
 
-### 4.1 Trigger types
-
 | Interaction | User action | CAL output |
 |-------------|-------------|------------|
-| `category_spike_click` | Tap SC/QUOTA/REC density field | Category lineage + drift cause chain |
-| `alert_packet_click` | Tap AlertPacket | Alert context + related mutations |
-| `rec_epoch_click` | Tap REC waveform band | Tombstone queue + residue window |
-| `audit_chain_click` | Tap ticketId → intentId → mutationId | Full audit chain expansion |
+| `category_spike_click` | Tap SC/QUOTA/REC density | Lineage + drift cause chain |
+| `alert_packet_click` | Tap AlertPacket | Alert context + mutations |
+| `rec_epoch_click` | Tap REC waveform | Tombstone + residue window |
+| `audit_chain_click` | Tap audit link | Chain expansion |
 
-### 4.2 Exploration packet shape
+---
+
+## 5. Exploration packet
 
 ```json
 {
   "schema": "castle.rhizoh.epistemic_exploration.v0",
-  "interactionType": "category_spike_click",
-  "targetCategory": "SC",
   "executionClass": "read_only",
   "causallyInert": true,
   "ticketLineage": [],
-  "admissionHistory": [],
   "driftCauseChain": [],
-  "recInfluenceWindow": { "epochId": "rec_core_morning", "pendingCount": 3 },
-  "stateProposal": {
-    "kind": "exploration_view",
-    "summary": "sc_frequency_increased_in_window"
-  }
+  "recInfluenceWindow": {},
+  "stateProposal": { "kind": "exploration_view" }
 }
 ```
 
-`stateProposal` is a **view model** — never an execution directive.
-
 ---
 
-## 5. Pipeline position
+## 6. Pipeline
 
 ```text
-cognitiveVisualizationBindingV0 (epistemic projection compiler)
-  → UI renders density field / AlertPacket / REC waveform
+cognitiveVisualizationBindingV0  (görmek)
   → user interaction
-  → cognitiveActionLayerV0.exploreEpistemicInteractionV0(...)
-  → EpistemicExplorationPacket (read_only)
+  → cognitiveActionLayerV0       (yürümek)
+  → EpistemicExplorationPacket
   → (never) admissionCubeCommitV0
 ```
 
 ---
 
-## 6. Architectural class
+## 7. Next: Cognitive UX Layer
 
-Rhizoh at this level is a **Perception Operating System**:
-
-- Does not process events as commands
-- Produces **how events are perceived**
-- Shows **state production process**, not just state
-
-| Threshold crossed | System class |
-|-------------------|----------------|
-| 1 | Event System (log → graph) |
-| 2 | Graph System (graph → memory) |
-| 3 | Memory System (memory → reasoning) |
-| **Now** | **Perception OS** (reasoning → visibility) |
-| **Next (CAL)** | **Interactive epistemic simulator** |
+[`RHIZOH_COGNITIVE_UX_LAYER_V1.md`](RHIZOH_COGNITIVE_UX_LAYER_V1.md) — gezer · görür · onaylar as unified consciousness-model UX.
 
 ---
 
-## 7. Changelog
+## 8. Changelog
 
 | Date | Change |
 |------|--------|
-| 2026-06-19 | v1.0 — CAL-01 · interaction model · exploration packet |
+| 2026-06-19 | v1.1 — CNR four-axis · traversal field · binding split |
+| 2026-06-19 | v1.0 — CAL-01 · exploration packet |

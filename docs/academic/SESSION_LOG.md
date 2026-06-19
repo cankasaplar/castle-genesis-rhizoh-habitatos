@@ -95,6 +95,23 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 
 ## Günlük
 
+### 2026-06-19 — Causal Navigation Runtime (CNR) + Cognitive UX scaffold
+
+**Summary:**
+- `RHIZOH_CAUSAL_NAVIGATION_RUNTIME_V1.md` — four-axis model · perception ≠ interaction ≠ execution.
+- `RHIZOH_COGNITIVE_UX_LAYER_V1.md` — CUX scaffold (gezer · görür · onaylar).
+- `causalNavigationRuntimeV0.js` — CNR descriptor + CNR-01 triple-separation guard.
+- CAL reframed as Epistemic Traversal Layer (axis 4); Binding = görmek, CAL = yürümek.
+- 66 ticket-module tests passing.
+
+**Linked Artifacts:**
+- `docs/RHIZOH_CAUSAL_NAVIGATION_RUNTIME_V1.md`
+- `docs/RHIZOH_COGNITIVE_UX_LAYER_V1.md`
+- `apps/client/src/rhizoh/ticket/causalNavigationRuntimeV0.js`
+
+- **Karar özeti:** permission-separated causal traversal runtime; epistemic topology = navigable space.
+- **Frozen core:** dokunulmadı
+
 ### 2026-06-19 — Cognitive Action Layer (Interactive Epistemic Simulator)
 
 **Summary:**

@@ -1,11 +1,11 @@
 /**
- * Cognitive Action Layer V0 — Interactive Epistemic Simulator.
+ * Cognitive Action Layer V0 — Epistemic Traversal Layer (CNR axis 4).
  *
- * User traverses thought topology via interaction — never mutates truth.
- * CAL-01: exploration is causally inert (suggestion space cannot leak to execution).
- *
- * interpretationOnly · nonExecutive · read_only · DR-01 · DR-02 · CAL-01
+ * perception → traversal: click · expand · lineage walk · causal zoom
+ * User walks causality graph — not data, state, or decisions.
+ * CAL-01: causally inert · DR-01 · DR-02
  * @see docs/RHIZOH_COGNITIVE_ACTION_LAYER_V1.md
+ * @see docs/RHIZOH_CAUSAL_NAVIGATION_RUNTIME_V1.md
  */
 
 import { listAdmissionCommitsV0 } from "./admissionCubeCommitV0.js";
