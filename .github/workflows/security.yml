@@ -23,7 +23,7 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        run: bash scripts/npm-ci-retry.sh
 
       - name: Build client (compile smoke — prod gateway secrets not required)
         run: npm run build:ci -w apps/client
