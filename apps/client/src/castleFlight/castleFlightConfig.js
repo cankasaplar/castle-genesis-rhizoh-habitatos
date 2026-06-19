@@ -284,14 +284,27 @@ export function resolveGenesisDirectGatewayOriginV0() {
  */
 export function resolveGenesisSseStreamBaseV0() {
   const pollBase = resolveGenesisGatewayHttpBaseV0();
+  const proxy = getRhizohSameOriginGatewayProxyBaseV0();
   if (String(import.meta.env?.VITE_GENESIS_ALLOW_DIRECT_FALLBACK || "").trim() === "1") {
     const direct = String(resolveGenesisDirectGatewayOriginV0() || "").trim().replace(/\/+$/, "");
-    const proxy = getRhizohSameOriginGatewayProxyBaseV0();
     if (proxy && direct && pollBase === proxy && direct !== proxy) {
       return direct;
     }
   }
   return pollBase;
+}
+
+/**
+ * Firebase gatewayProxy cannot hold long-lived SSE (524 at CDN) — use poll transport instead.
+ * Opt-in direct Render SSE: VITE_GENESIS_ALLOW_DIRECT_FALLBACK=1.
+ * @returns {boolean}
+ */
+export function isGenesisSseBlockedViaGatewayProxyV0() {
+  if (String(import.meta.env?.VITE_GENESIS_ALLOW_DIRECT_FALLBACK || "").trim() === "1") {
+    return false;
+  }
+  const sseBase = String(resolveGenesisSseStreamBaseV0() || "");
+  return sseBase.includes("/api/gatewayProxy");
 }
 
 export function getRhizohSameOriginGatewayProxyBaseV0() {

@@ -7,6 +7,7 @@ import {
   resolveGenesisGatewayHttpBaseV0,
   resolveGenesisSseStreamBaseV0,
   resolveGenesisDirectGatewayOriginV0,
+  isGenesisSseBlockedViaGatewayProxyV0,
   isCastleGenesisFirebasePreviewHostV0,
   isInvalidBakedGatewayUrl,
   shouldUseSameOriginGatewayProxyV0
@@ -103,6 +104,27 @@ describe("castleFlightConfig gateway URL hygiene", () => {
       "https://castle-genesis-rhizoh-habitatos.onrender.com"
     );
     expect(resolveGenesisSseStreamBaseV0()).toBe("https://rhizoh.com/api/gatewayProxy");
+  });
+
+  it("rhizoh.com skips SSE via gatewayProxy by default (poll_only)", () => {
+    vi.stubGlobal("window", {
+      location: {
+        hostname: "rhizoh.com",
+        origin: "https://rhizoh.com",
+        href: "https://rhizoh.com/",
+        protocol: "https:"
+      }
+    });
+
+    vi.stubEnv("VITE_GATEWAY_HTTP", "https://castle-genesis-rhizoh-habitatos.onrender.com/rhizoh/llm");
+    vi.stubEnv("VITE_LIVE_GATEWAY_BASE", "https://castle-genesis-rhizoh-habitatos.onrender.com");
+
+    expect(resolveGenesisGatewayHttpBaseV0()).toBe("https://rhizoh.com/api/gatewayProxy");
+    expect(resolveGenesisDirectGatewayOriginV0()).toBe(
+      "https://castle-genesis-rhizoh-habitatos.onrender.com"
+    );
+    expect(resolveGenesisSseStreamBaseV0()).toBe("https://rhizoh.com/api/gatewayProxy");
+    expect(isGenesisSseBlockedViaGatewayProxyV0()).toBe(true);
   });
 
   it("rhizoh.com may use direct Render SSE only when direct fallback is explicitly allowed", () => {
