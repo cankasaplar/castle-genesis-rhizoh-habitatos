@@ -4,7 +4,8 @@ import {
   CHESS_GAME_MODE_V0,
   createChessArenaGameV0,
   createCastleToCastleChessMatchV0,
-  formatChessOutcomeLabelV0
+  formatChessOutcomeLabelV0,
+  pickChessArenaAiMoveV0
 } from "../rhizoh/runtime/chessArenaEngineV0.js";
 import {
   getChessTeacherStatusV0,
@@ -163,6 +164,8 @@ const MODE_LABELS_EN_V0 = Object.freeze({
 });
 
 const DEFAULT_CLOCK_MS_V0 = 3 * 60 * 1000;
+/** Hard cap so autoplay never waits forever on a wedged engine queue. */
+const ARENA_AUTOPLAY_MOVE_PICK_CAP_MS_V0 = 5500;
 
 function initialClocksFromSessionV0(session = readChessArenaSessionV0()) {
   const tc = resolveChessTimeControlV0(session.timeControlId);
@@ -528,7 +531,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   );
 
   const persistFinishedMatchV0 = useCallback(
-    (outcomeVal, engineLabel = engineStatus, extra = {}) => {
+    (outcomeVal, engineLabel = getChessTeacherStatusV0(), extra = {}) => {
       const sanMoves = normalizeChessMovesToSanV0(game.moveHistory || []);
       if (!sanMoves.length) {
         setStatus(tr ? "Hamle oynanmadı — maç arşive yazılmadı." : "No moves played — match not archived.");
@@ -554,13 +557,27 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         setExpandedArchiveId(entry.id);
       }
       setArchiveTick((n) => n + 1);
+      return entry;
     },
-    [c2cMatch?.matchId, engineStatus, game, mode, opponentsV0, policyMode, mindId]
+    [c2cMatch?.matchId, game, mode, opponentsV0, policyMode, mindId, tr]
   );
 
   const flagHandledRef = useRef(false);
   const aiMoveMutexRef = useRef(false);
   const aiAutoLoopGenRef = useRef(0);
+  const gameRef = useRef(game);
+  const policyModeRef = useRef(policyMode);
+  const mindIdRef = useRef(mindId);
+  const opponentPresetRef = useRef(opponentPresetV0.preset);
+  const c2cMatchRef = useRef(c2cMatch);
+  const persistFinishedMatchRef = useRef(null);
+  const runMatchLearningRef = useRef(null);
+
+  gameRef.current = game;
+  policyModeRef.current = policyMode;
+  mindIdRef.current = mindId;
+  opponentPresetRef.current = opponentPresetV0.preset;
+  c2cMatchRef.current = c2cMatch;
 
   const runMatchLearningV0 = useCallback(
     async (outcomeVal, matchRow, extra = {}) => {
@@ -661,6 +678,49 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       learningSessionV0,
       rhizohArenaColorV0
     ]
+  );
+
+  persistFinishedMatchRef.current = persistFinishedMatchV0;
+  runMatchLearningRef.current = runMatchLearningV0;
+
+  const pickAutoplayMoveWithFallbackV0 = useCallback(
+    async ({ rhizohTurnNow, teacherOnline, deferArenaEngine, activeMode }) => {
+      const g = gameRef.current;
+      const pickWork = async () => {
+        if (activeMode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH) {
+          return rhizohTurnNow
+            ? pickRhizohChessMoveV0(g, {
+                policyMode: policyModeRef.current,
+                mindId: mindIdRef.current
+              })
+            : pickChessArenaMoveViaTeacherV0(g, {
+                useStockfish: teacherOnline && !deferArenaEngine,
+                preset: opponentPresetRef.current
+              });
+        }
+        return pickChessArenaMoveViaTeacherV0(g, {
+          useStockfish: teacherOnline && !deferArenaEngine,
+          preset: opponentPresetRef.current || "ARENA"
+        });
+      };
+      try {
+        const raced = await Promise.race([
+          pickWork(),
+          new Promise((resolve) => {
+            window.setTimeout(() => resolve(null), ARENA_AUTOPLAY_MOVE_PICK_CAP_MS_V0);
+          })
+        ]);
+        if (raced?.move) return raced;
+      } catch {
+        /* fall through to heuristic */
+      }
+      return Object.freeze({
+        move: pickChessArenaAiMoveV0(g),
+        engine: "heuristic_autoplay_cap",
+        policyMode: policyModeRef.current
+      });
+    },
+    []
   );
 
   const finishMatchOnTimeFlagV0 = useCallback(
@@ -982,9 +1042,10 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       while (
         alive &&
         loopGen === aiAutoLoopGenRef.current &&
-        !game.isGameOver() &&
+        !gameRef.current.isGameOver() &&
         !flagHandledRef.current
       ) {
+        const gameNow = gameRef.current;
         if (!teacherOnline && getChessTeacherStatusV0() === "stockfish_wasm") {
           teacherOnline = true;
           setStatus(tr ? "Stockfish hazır — güçlü mod aktif" : "Stockfish ready — strong mode on");
@@ -992,14 +1053,14 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         const deferArenaEngine = shouldDeferArenaEngineWorkV0();
         if (deferArenaEngine) {
           await new Promise((resolve) => window.setTimeout(resolve, 2000));
-          if (!alive || loopGen !== aiAutoLoopGenRef.current || game.isGameOver()) break;
+          if (!alive || loopGen !== aiAutoLoopGenRef.current || gameRef.current.isGameOver()) break;
         }
         if (aiMoveMutexRef.current) {
           await new Promise((resolve) => window.setTimeout(resolve, 120));
           continue;
         }
         const rhizohTurnNow =
-          mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH && game.turn() === rhizohArenaColorV0;
+          mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH && gameNow.turn() === rhizohArenaColorV0;
         setThinkingActorV0(
           mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH
             ? rhizohTurnNow
@@ -1011,25 +1072,18 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         setAiBusy(true);
         let pick = null;
         try {
-          if (mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH) {
-            pick = rhizohTurnNow
-              ? await pickRhizohChessMoveV0(game, { policyMode, mindId })
-              : await pickChessArenaMoveViaTeacherV0(game, {
-                  useStockfish: teacherOnline && !deferArenaEngine,
-                  preset: opponentPresetV0.preset
-                });
-          } else {
-            pick = await pickChessArenaMoveViaTeacherV0(game, {
-              useStockfish: teacherOnline && !deferArenaEngine,
-              preset: opponentPresetV0.preset || "ARENA"
-            });
-          }
+          pick = await pickAutoplayMoveWithFallbackV0({
+            rhizohTurnNow,
+            teacherOnline,
+            deferArenaEngine,
+            activeMode: mode
+          });
         } catch {
           pick = null;
         }
         setAiBusy(false);
         setThinkingActorV0(null);
-        if (!alive || loopGen !== aiAutoLoopGenRef.current || game.isGameOver()) {
+        if (!alive || loopGen !== aiAutoLoopGenRef.current || gameRef.current.isGameOver()) {
           aiMoveMutexRef.current = false;
           break;
         }
@@ -1039,8 +1093,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           await new Promise((resolve) => window.setTimeout(resolve, 800));
           continue;
         }
-        const fenBeforeAi = game.fen();
-        const aiResult = tryResolvedChessMoveV0(game, aiMove);
+        const fenBeforeAi = gameRef.current.fen();
+        const aiResult = tryResolvedChessMoveV0(gameRef.current, aiMove);
         if (!aiResult.ok) {
           aiMoveMutexRef.current = false;
           setStatus(
@@ -1050,7 +1104,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           continue;
         }
         setClockStartedV0(true);
-        const aiMoverColor = game.turn() === "w" ? "b" : "w";
+        const aiMoverColor = gameRef.current.turn() === "w" ? "b" : "w";
         applyClockIncrementV0(aiMoverColor);
         setTick((n) => n + 1);
         if (aiResult.move?.from && aiResult.move?.to) {
@@ -1069,12 +1123,12 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         setStatus(`${engineLabel}: ${aiResult.move.san}`);
         logChessMovePlayedV0({
           san: aiResult.move.san,
-          color: game.turn() === "w" ? "b" : "w",
+          color: gameRef.current.turn() === "w" ? "b" : "w",
           fenBefore: fenBeforeAi,
-          fen: game.fen(),
+          fen: gameRef.current.fen(),
           engine: pick?.engine || engineLabel,
-          policyMode: pick?.policyMode || policyMode,
-          matchId: c2cMatch?.matchId || null
+          policyMode: pick?.policyMode || policyModeRef.current,
+          matchId: c2cMatchRef.current?.matchId || null
         });
         if (aiResult.outcome) {
           const label = formatChessOutcomeLabelV0(aiResult.outcome, tr);
@@ -1087,11 +1141,11 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
                 ? `AI vs AI bitti — ${label}`
                 : `AI vs AI finished — ${label}`
           );
-          const archiveEntry = persistFinishedMatchV0(aiResult.outcome, pick?.engine || engineStatus, {
-            policyMode: pick?.policyMode || policyMode,
-            mindId
+          const archiveEntry = persistFinishedMatchRef.current?.(aiResult.outcome, pick?.engine || getChessTeacherStatusV0(), {
+            policyMode: pick?.policyMode || policyModeRef.current,
+            mindId: mindIdRef.current
           });
-          void runMatchLearningV0(aiResult.outcome, c2cMatch, {
+          void runMatchLearningRef.current?.(aiResult.outcome, c2cMatchRef.current, {
             opponentCastleId: mode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH ? "teacher_stockfish" : "stockfish",
             archiveId: archiveEntry?.id
           });
@@ -1107,22 +1161,20 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
 
     return () => {
       alive = false;
+      aiMoveMutexRef.current = false;
+      setAiBusy(false);
+      setThinkingActorV0(null);
     };
   }, [
     open,
     arenaPhase,
     mode,
     gameEpoch,
-    game,
     tr,
-    c2cMatch,
-    runMatchLearningV0,
-    persistFinishedMatchV0,
-    policyMode,
-    mindId,
-    opponentPresetV0.preset,
+    rhizohArenaColorV0,
     arenaSession.aiMoveDelayMs,
-    rhizohArenaColorV0
+    pickAutoplayMoveWithFallbackV0,
+    applyClockIncrementV0
   ]);
 
   const onSquareClick = useCallback(
