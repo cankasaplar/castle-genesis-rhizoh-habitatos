@@ -25,6 +25,10 @@ State transitions written before security boundary are **provisional** and MUST 
 
 > **Deny-by-default. Observation ≠ Execution. Every mutation has an owner. Every ticket dies.**
 
+**Ontology spine (SC):**
+
+> **TraceGraph is writable by observation. CubeState is writable only by admission. SYSTEM_RECONCILE may summarize reality, but may not become reality.**
+
 ---
 
 ## 1. Constitutional invariants (page one)
@@ -48,11 +52,13 @@ No observation MAY directly produce a state change.
 
 A `suggest` ticket or message MUST NOT initiate mutation by itself.
 
-Promotion to any mutate class requires **one of**:
+Promotion to any **CubeState** mutate class requires **one of**:
 
 1. **User signature** on a new or upgraded ticket packet, or  
 2. **Frozen DAG verification** — code path in CI-validated import graph (v562–v570 subgraph or explicitly allowlisted L1 adapter), or  
-3. **`system_reconcile`** — REC-scheduled reconciler identity only (see §3).
+3. **Admission Engine commit** after `proposedCubeDelta` (see SC-02)
+
+`system_reconcile` produces proposals only — it is **not** a promotion path to CubeState mutate.
 
 **Forbidden:**
 
@@ -130,6 +136,88 @@ This is the **permission escalation ban**.
 
 ---
 
+### Invariant SC-01 — SYSTEM_RECONCILE is Graph Accountant, not CubeState writer
+
+`system_reconcile` MAY:
+
+- Derive summaries from `TraceGraph`  
+- Derive reward **proposals** (`rewardDelta`, `confidence`, `reason[]`)  
+- Derive quota **summaries** (`remaining`, `nextEpochReset`)  
+- Emit `proposedCubeDelta` objects  
+
+`system_reconcile` SHALL NOT:
+
+- Write `CubeState` fields directly (e.g. `cubeState.rank = 8`)  
+- Commit quota counters into CubeState  
+- Bypass Admission Engine for any L1 truth change  
+
+**Example — reward settlement (allowed):**
+
+```json
+{
+  "ticketId": "arena_442",
+  "rewardDelta": 0.32,
+  "confidence": 0.91,
+  "reason": ["prediction_match", "novel_position"]
+}
+```
+
+**Example — forbidden direct mutate:**
+
+```json
+{ "cubeState.rank": 8 }
+```
+
+**Replace with proposal:**
+
+```json
+{
+  "proposedMutation": { "rankDelta": 1 }
+}
+```
+
+Admission Engine commits or rejects the proposal.
+
+---
+
+### Invariant SC-02 — Every CubeState mutation has an admission path
+
+Every `CubeState` commit MUST originate from **one of**:
+
+1. **User-signed ticket** (`mutate_l1` / `mutate_l2` with valid signature)  
+2. **Frozen DAG verified ticket** (CI-allowlisted adapter path)  
+3. **Admission Engine commit** (after `proposedCubeDelta` or transition verdict `admit`)  
+
+No other path may write CubeState — including `system_reconcile`.
+
+**Pipeline (locked):**
+
+```text
+Ticket Events
+      ↓
+TraceGraph
+      ↓
+SYSTEM_RECONCILE        ← Graph Accountant (summaries + proposals only)
+      ↓
+Summary Layer
+      ↓
+ProposedCubeDelta
+      ↓
+Admission Engine        ← State Authority
+      ↓
+CubeState Commit
+      ↓
+Prism Projection
+```
+
+| Layer | Role |
+|-------|------|
+| **TraceGraph** | System memory — observation writes edges |
+| **CubeState** | Current reality — admission writes only |
+| **SYSTEM_RECONCILE** | Accountant — reads graph, proposes; never becomes reality |
+
+---
+
 ## 2. The five questions (answered)
 
 | Question | Answer |
@@ -138,7 +226,7 @@ This is the **permission escalation ban**.
 | **When may they change state?** | Matching `epochWindow` + quota + ticket not expired |
 | **Which ticket may change state?** | Ticket whose `capabilityScope` covers the transition; class ≥ required class |
 | **May a ticket spawn another ticket?** | Only **narrower or equal** scope, **lower or equal** class, via admission or frozen template |
-| **May system change state without user?** | Yes — **`system_reconcile` only**, REC core window, reconciler identity |
+| **May system change state without user?** | **No direct CubeState write.** REC proposes; Admission Engine commits |
 
 ---
 
@@ -150,7 +238,7 @@ This is the **permission escalation ban**.
 | `suggest` | Autonomous agents, Fox, drift engines | None | Emit Signal / proposal only |
 | `mutate_l1` | User-signed ticket; frozen-DAG L1 adapter | L1 epistemic state mutate | Sovereign L1 — atmosphere, studio intent, portal pointer, cube adapter delta |
 | `mutate_l2` | User-signed ticket; frozen-DAG transport adapter | L2 transport mutate | Presence sync, broadcast fan-out, chunk delivery — **no new truth** |
-| `system_reconcile` | `system:rec_reconciler` only | Graph + ticket lifecycle | REC core: merge, expire, quota, rewards, closeout |
+| `system_reconcile` | `system:rec_reconciler` only | **TraceGraph + ticket lifecycle summaries; proposals only** | REC core: merge, expire, quota **summary**, reward **proposal**, closeout — **no CubeState commit** |
 
 ### 3.1 Class comparison (partial order)
 
@@ -174,20 +262,22 @@ read_only  <  suggest  <  mutate_l1  ≈  mutate_l2  <  system_reconcile (domain
 - MUST NOT create L0 identity or reinterpret L1 meaning  
 - Typical: broadcast topic emit, presence projection sync  
 
-### 3.4 `system_reconcile` rules (REC)
+### 3.4 `system_reconcile` rules (REC) — Graph Accountant
 
 Runs **only** during REC core windows (`06:44` / `18:44` local; `19:44` configurable alias).
 
-| Operation | Class | User trigger? |
-|-----------|-------|----------------|
-| `traceGraph` merge / dedupe | `system_reconcile` | No |
-| Ticket expiration + archive | `system_reconcile` | No |
-| Quota reconciliation | `system_reconcile` | No |
-| Reward settlement | `system_reconcile` | No |
-| Epoch closeout | `system_reconcile` | No |
-| Journey `discoveries` finalize | `system_reconcile` | No (reads burst-layer facts) |
+| Operation | Output type | CubeState write? |
+|-----------|-------------|------------------|
+| `traceGraph` merge / dedupe | Graph edge update | No |
+| Ticket expiration + archive | Lifecycle summary | No |
+| Quota reconciliation | `{ remaining, nextEpochReset }` summary | **No** — does not write `quota` field |
+| Reward settlement | `proposedMutation` / `rewardDelta` | **No** — Admission commits |
+| Epoch closeout | Summary + archived edges | No |
+| Journey `discoveries` finalize | Proposal list for admission | No |
 
 **Actor:** `actorId: "system:rec_reconciler"` — not impersonatable by user tickets.
+
+**SC-01 enforcement:** any reconcile path that targets `CubeState` directly → validator `reject` (`system_reconcile_cube_write_forbidden`).
 
 ---
 
@@ -268,7 +358,8 @@ ISSUE ──▶ ACTIVE ──▶ CONSUMED | EXPIRED ──▶ ARCHIVED
 - [ ] Invariant 4: expiresAt present; expiry path tested  
 - [ ] Invariant 5: no self-authority expansion; admission on new scope  
 - [ ] `mutate_l1` does not touch frozen v562–v570 subgraph  
-- [ ] `system_reconcile` only in REC core + reconciler actor  
+- [ ] Invariant SC-01: `system_reconcile` never writes CubeState directly  
+- [ ] Invariant SC-02: CubeState commit only via signed ticket, frozen DAG, or admission  
 - [ ] No import from ticket module into frozen phase chain  
 
 ---
@@ -283,6 +374,10 @@ ISSUE ──▶ ACTIVE ──▶ CONSUMED | EXPIRED ──▶ ARCHIVED
 | Admission | `closedUserAdmissionEngineV0.js` |
 | Event envelope + epochId | `sovereign-network-event-envelope-v0.schema.json` |
 | CubeState adapter (read path) | `spiralReservoirCubeStateAdapterV0.js` |
+| Transition intent | `apps/client/src/rhizoh/ticket/ticketTransitionIntentV0.js` |
+| Security validator | `apps/client/src/rhizoh/ticket/ticketSecurityValidatorV0.js` |
+| Mutation record emitter | `apps/client/src/rhizoh/ticket/mutationRecordEmitterV0.js` |
+| Ticket kernel facade | `apps/client/src/rhizoh/ticket/ticketKernelFacadeV0.js` |
 
 ---
 
@@ -291,3 +386,4 @@ ISSUE ──▶ ACTIVE ──▶ CONSUMED | EXPIRED ──▶ ARCHIVED
 | Date | Change |
 |------|--------|
 | 2026-06-19 | v1.0 — five constitutional invariants; executionClass expanded; lifecycle + escalation ban |
+| 2026-06-19 | v1.1 — SC-01/SC-02: SYSTEM_RECONCILE = Graph Accountant; CubeState admission-only |

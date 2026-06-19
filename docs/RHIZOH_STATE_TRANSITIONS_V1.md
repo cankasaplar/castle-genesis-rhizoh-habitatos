@@ -66,7 +66,7 @@ Prism Projection          ← leaflet_semantic invite chain
 | 4. Recipient signs accept | Burst | `mutate_l1` | User (recipient) |
 | 5. Admission evaluate | Burst | — | Admission Engine |
 | 6. Graph node extend | Burst | `mutate_l1` | On `admit` only |
-| 7. REC finalize journey | Core | `system_reconcile` | `system:rec_reconciler` |
+| 7. REC finalize journey | Core | `system_reconcile` (proposal) → Admission | Admission commits discoveries |
 
 ### Reject cases
 
@@ -123,7 +123,7 @@ CubeState Update          ← adapter delta (measurement only)
 | 3. Bind arena node | Burst | `mutate_l1` | Frozen-DAG arena adapter |
 | 4. Stream UGL events | Burst | `read_only` | Arena engine |
 | 5. Discovery unlock hint | Burst | `read_only` | Discovery engine |
-| 6. REC reconcile match | Core | `system_reconcile` | REC reconciler |
+| 6. REC reconcile match | Core | `system_reconcile` (proposal only) | REC → Admission for CubeState |
 
 ### Post-match discovery (example)
 

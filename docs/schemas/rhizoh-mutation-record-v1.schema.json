@@ -63,9 +63,14 @@
       "minLength": 1,
       "maxLength": 256
     },
-    "issuedAt": {
+    "decision": {
       "type": "string",
-      "format": "date-time"
+      "enum": ["accepted", "rejected", "expired", "quota_denied"]
+    },
+    "validatorVersion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32
     },
     "transitionId": {
       "type": "string",
@@ -74,9 +79,14 @@
         "arena_enter",
         "ghost_attach",
         "flight_depart",
-        "corporate_admission"
+        "corporate_admission",
+        "system_reconcile"
       ],
       "description": "Named transition from RHIZOH_STATE_TRANSITIONS_V1."
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time"
     }
   }
 }

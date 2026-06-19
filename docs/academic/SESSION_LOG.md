@@ -108,14 +108,15 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 - `docs/RHIZOH_SECURITY_BOUNDARY_V1.md`
 - `docs/RHIZOH_TICKET_NETWORK_SCHEMA_V1.md`
 - `docs/RHIZOH_STATE_TRANSITIONS_V1.md`
-- `docs/schemas/rhizoh-ticket-packet-v1.schema.json`
-- `docs/schemas/rhizoh-ticket-message-v1.schema.json`
-- `docs/schemas/rhizoh-mutation-record-v1.schema.json`
+- `apps/client/src/rhizoh/ticket/ticketTransitionIntentV0.js`
+- `apps/client/src/rhizoh/ticket/ticketSecurityValidatorV0.js`
+- `apps/client/src/rhizoh/ticket/mutationRecordEmitterV0.js`
+- `apps/client/src/rhizoh/ticket/ticketKernelFacadeV0.js`
 
 - **Habitat:** Academic / product architecture
 - **Katılımcılar:** Principal, **Cursor Agent (Castle)**
 - **SPECFLOW:** RESEARCH-ONLY · FUTURE-PROOF-ONLY
-- **Karar özeti:** Security first; suggest→mutate promotion forbidden without signature/DAG/reconcile; no ticket self-authority expansion.
+- **Karar özeti:** SC-01/SC-02: SYSTEM_RECONCILE = Graph Accountant; CubeState admission-only. Implementasyon: TicketTransitionIntent → validator → mutation emitter → facade.
 - **Frozen core:** dokunulmadı
 
 ### 2026-06-12 — World · Space map pins + cohort allowlist (gün kapanışı)

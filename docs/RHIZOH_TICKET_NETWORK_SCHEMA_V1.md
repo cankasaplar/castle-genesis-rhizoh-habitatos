@@ -3,7 +3,7 @@
 **SPECFLOW:** `RESEARCH-ONLY` · `FUTURE-PROOF-ONLY` — **spec / UX unification layer**; frozen execution core (**v562–v570**) değiştirilmez. Ticket katmanı mevcut alt sistemlerin **kullanıcıya görünen tek dili**dir; yeni execution motoru değildir.
 
 **Status:** DRAFT v1.1 — built on Security Boundary v1  
-**Prerequisite (read first):** [`RHIZOH_SECURITY_BOUNDARY_V1.md`](RHIZOH_SECURITY_BOUNDARY_V1.md)  
+**Prerequisite (read first):** [`RHIZOH_SECURITY_BOUNDARY_V1.md`](RHIZOH_SECURITY_BOUNDARY_V1.md) — SC-01: `system_reconcile` = Graph Accountant; CubeState commit = Admission only  
 **State catalog:** [`RHIZOH_STATE_TRANSITIONS_V1.md`](RHIZOH_STATE_TRANSITIONS_V1.md)  
 **JSON Schema:** [`schemas/rhizoh-ticket-packet-v1.schema.json`](schemas/rhizoh-ticket-packet-v1.schema.json) · [`schemas/rhizoh-ticket-message-v1.schema.json`](schemas/rhizoh-ticket-message-v1.schema.json) · [`schemas/rhizoh-mutation-record-v1.schema.json`](schemas/rhizoh-mutation-record-v1.schema.json)
 
