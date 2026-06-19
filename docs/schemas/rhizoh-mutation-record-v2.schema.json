@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://castle.system/schemas/rhizoh-mutation-record-v2.schema.json",
+  "title": "RhizohMutationRecordV2",
+  "description": "RESEARCH-ONLY v2: justified state transition audit with Mutation Reason Code Ontology.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "mutationId",
+    "ticketId",
+    "intentId",
+    "status",
+    "actor",
+    "epoch",
+    "trace",
+    "metrics",
+    "issuedAt"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 2 },
+    "mutationId": { "type": "string", "minLength": 8, "maxLength": 256 },
+    "ticketId": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "intentId": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "status": {
+      "type": "string",
+      "enum": ["accepted", "rejected", "expired", "quota_denied"]
+    },
+    "reason": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary", "category", "code", "message"],
+      "properties": {
+        "primary": { "type": "string", "minLength": 3, "maxLength": 128 },
+        "category": {
+          "type": "string",
+          "enum": ["SC", "REC", "QUOTA", "SIG", "INTENT", "SYS", "ADMIT"]
+        },
+        "code": { "type": "string", "minLength": 2, "maxLength": 32 },
+        "message": { "type": "string", "minLength": 1, "maxLength": 512 }
+      }
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["primary", "category", "code", "message"],
+        "properties": {
+          "primary": { "type": "string" },
+          "category": { "type": "string" },
+          "code": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actorId", "type"],
+      "properties": {
+        "actorId": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "type": { "type": "string", "enum": ["user", "system", "agent"] }
+      }
+    },
+    "epoch": { "type": "string", "minLength": 4, "maxLength": 256 },
+    "trace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["traceGraphLink"],
+      "properties": {
+        "traceGraphLink": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "cubeId": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "prism": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "transitionId": { "type": "string", "minLength": 1, "maxLength": 64 }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["validatorVersion"],
+      "properties": {
+        "latencyMs": { "type": "number", "minimum": 0 },
+        "validatorVersion": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "reconcileVersion": { "type": "string", "minLength": 1, "maxLength": 32 }
+      }
+    },
+    "issuedAt": { "type": "string", "format": "date-time" },
+    "interpretationOnly": { "type": "boolean", "const": true },
+    "nonExecutive": { "type": "boolean", "const": true }
+  }
+}

@@ -20,6 +20,10 @@ import {
   TICKET_EPOCH_WINDOW_V0,
   TRANSITION_REQUIRED_CLASS_V0
 } from "./ticketTransitionIntentV0.js";
+import {
+  mapLegacyReasonsToOntologyV1,
+  pickPrimaryReasonV1
+} from "./mutationReasonCodeOntologyV1.js";
 
 /**
  * @typedef {Object} TicketPacketLikeV0
@@ -242,12 +246,16 @@ function isCapabilitySubsetV0(child, parent) {
  * @param {{ mutationClass?: string }} [extra]
  */
 function buildValidationResultV0(valid, reasons, executionClass, decision, extra = {}) {
+  const reasonOntology = mapLegacyReasonsToOntologyV1(reasons);
+  const primaryReason = pickPrimaryReasonV1(reasons, decision);
   return Object.freeze({
     interpretationOnly: true,
     nonExecutive: true,
     validatorVersion: TICKET_SECURITY_VALIDATOR_VERSION_V0,
     valid,
     reasons: Object.freeze([...reasons]),
+    reasonOntology: Object.freeze(reasonOntology),
+    primaryReason,
     mutationClass: extra.mutationClass ?? (valid ? "allowed" : "denied"),
     executionClass,
     decision,

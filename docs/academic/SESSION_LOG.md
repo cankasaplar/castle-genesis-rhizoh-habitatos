@@ -103,9 +103,12 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 - Ticket Tombstone Layer + REC Deferred Intent Queue implemented.
 - Audit chain: ticketId → intentId → mutationId.
 - Epistemic OS chain: Identity → Ticket → Intent → Validator → Admission → CubeState → Prism.
+- Mutation Reason Code Ontology V1 (SC/REC/QUOTA/SIG/INTENT/SYS/ADMIT); MutationRecord v2 wire shape.
 
 **Linked Artifacts:**
-- `docs/RHIZOH_REALITY_TRANSITION_ENGINE_V1.md`
+- `docs/RHIZOH_MUTATION_REASON_CODE_ONTOLOGY_V1.md`
+- `docs/schemas/rhizoh-mutation-record-v2.schema.json`
+- `apps/client/src/rhizoh/ticket/mutationReasonCodeOntologyV1.js`
 - `docs/RHIZOH_SECURITY_BOUNDARY_V1.md` (SC-03)
 - `apps/client/src/rhizoh/ticket/ticketTransitionIntentV1.js`
 - `apps/client/src/rhizoh/ticket/ticketTombstoneLayerV0.js`
