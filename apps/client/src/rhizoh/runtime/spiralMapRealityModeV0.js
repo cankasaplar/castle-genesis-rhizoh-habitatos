@@ -96,6 +96,29 @@ export function listRealityModeRowsV0() {
   ]);
 }
 
+const SPIRAL_MAP_LAYER_KEYS_V0 = Object.freeze([
+  SPIRAL_MAP_LAYER_V0.EXPLORER,
+  SPIRAL_MAP_LAYER_V0.CASTLE,
+  SPIRAL_MAP_LAYER_V0.ECONOMY,
+  SPIRAL_MAP_LAYER_V0.SEASONAL
+]);
+
+/**
+ * Layer flags must match the preset — stale realityMode labels are ignored.
+ * @param {string} modeId
+ * @param {object} filterState
+ */
+export function spiralMapFilterMatchesRealityPresetV0(modeId, filterState) {
+  const preset = REALITY_MODE_PRESETS_V0[String(modeId || "").trim()];
+  if (!preset || !filterState) return false;
+  for (const key of SPIRAL_MAP_LAYER_KEYS_V0) {
+    if (filterState[key] !== preset[key]) return false;
+  }
+  if (filterState.includeDormant !== preset.includeDormant) return false;
+  if (filterState.fullWorldMesh !== preset.fullWorldMesh) return false;
+  return true;
+}
+
 /**
  * @param {object} [filterState]
  * @returns {string}
@@ -103,7 +126,9 @@ export function listRealityModeRowsV0() {
 export function readSpiralMapRealityModeV0(filterState) {
   const filter = filterState || readSpiralMapLayerFilterStateV0();
   const mode = String(filter.realityMode || "").trim();
-  if (mode && REALITY_MODE_PRESETS_V0[mode]) return mode;
+  if (mode && REALITY_MODE_PRESETS_V0[mode] && spiralMapFilterMatchesRealityPresetV0(mode, filter)) {
+    return mode;
+  }
   if (filter.fullWorldMesh === true) return SPIRAL_MAP_REALITY_MODE_V0.FULL_WORLD;
   if (filter.castle === true && filter.explorer !== true && filter.economy !== true) {
     return SPIRAL_MAP_REALITY_MODE_V0.CASTLE;
@@ -215,11 +240,11 @@ export function ensureSpiralMapRealityModeHydratedV0() {
 
   const persistedMode = readPersistedSpiralMapRealityModeIdV0();
   if (persistedMode) {
-    const current = readSpiralMapRealityModeV0();
-    if (current !== persistedMode) {
+    const filter = readSpiralMapLayerFilterStateV0();
+    if (!spiralMapFilterMatchesRealityPresetV0(persistedMode, filter)) {
       return applySpiralMapRealityModeV0(persistedMode);
     }
-    return readSpiralMapLayerFilterStateV0();
+    return filter;
   }
 
   try {

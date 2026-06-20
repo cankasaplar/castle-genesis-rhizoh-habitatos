@@ -5,12 +5,17 @@ import {
   SPIRAL_MAP_LAYER_FILTER_EVENT_V0,
   writeSpiralMapLayerFilterStateV0
 } from "../spiralMapLayerFilterStateV0.js";
+import {
+  SPIRAL_MAP_REALITY_MODE_LS_KEY_V0,
+  SPIRAL_MAP_REALITY_MODE_V0
+} from "../spiralMapRealityModeV0.js";
 import { SPIRAL_MAP_LAYER_V0 } from "../spatialDistributionLayerV0.js";
 
 describe("spiralMapLayerFilterStateV0", () => {
   beforeEach(() => {
     if (typeof localStorage !== "undefined") {
       localStorage.removeItem("rhizoh.spiral_map_layer_filter.v0");
+      localStorage.removeItem(SPIRAL_MAP_REALITY_MODE_LS_KEY_V0);
     }
   });
 
@@ -27,6 +32,9 @@ describe("spiralMapLayerFilterStateV0", () => {
     expect(state[SPIRAL_MAP_LAYER_V0.CASTLE]).toBe(true);
     expect(state[SPIRAL_MAP_LAYER_V0.EXPLORER]).toBe(false);
     expect(state.includeDormant).toBe(true);
+    expect(localStorage.getItem(SPIRAL_MAP_REALITY_MODE_LS_KEY_V0)).toBe(
+      SPIRAL_MAP_REALITY_MODE_V0.CASTLE
+    );
   });
 
   it("writeSpiralMapLayerFilterStateV0 dispatches filter event", () => {

@@ -350,6 +350,15 @@ export function inspectRhizohMapPinOwnerV0() {
   return Object.freeze({
     realityMode: readSpiralMapRealityModeV0(filterState),
     persistedRealityMode: readPersistedSpiralMapRealityModeIdV0(),
+    filter: Object.freeze({
+      explorer: filterState.explorer === true,
+      castle: filterState.castle === true,
+      economy: filterState.economy === true,
+      seasonal: filterState.seasonal === true,
+      includeDormant: filterState.includeDormant === true,
+      fullWorldMesh: filterState.fullWorldMesh === true,
+      realityModeLabel: filterState.realityMode || null
+    }),
     storageKeys: Object.freeze({
       realityMode: SPIRAL_MAP_REALITY_MODE_LS_KEY_V0,
       layerFilter: "rhizoh.spiral_map_layer_filter.v0"
