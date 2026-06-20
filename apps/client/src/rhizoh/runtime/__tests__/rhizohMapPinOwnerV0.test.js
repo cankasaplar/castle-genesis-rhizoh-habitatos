@@ -3,11 +3,13 @@ import {
   RHIZOH_CESIUM_SESSION_PIN_OWNER_V0,
   filterPinsBySpiralMapLayerV0,
   filterSovereignPinsForSpiralMapViewV0,
+  isExplorerOnlyAlwaysVisiblePinV0,
   readWorldSpaceSessionMapPinRowsV0,
   resolvePinSpiralLayerV0,
   resolveRhizohMapPinSubstrateV0,
   getRhizohMapPinOwnerSnapshotV0
 } from "../rhizohMapPinOwnerV0.js";
+import { ORIGIN_HOME_SERENCEBEY_PIN_ID_V0 } from "../worldMapOriginHomePinV0.js";
 import { SPIRAL_MAP_LAYER_V0 } from "../spatialDistributionLayerV0.js";
 
 vi.mock("../rhizohLayerContextV0.js", async (importOriginal) => {
@@ -68,10 +70,11 @@ describe("rhizohMapPinOwnerV0", () => {
     expect(filtered.some((p) => p.id === "p2")).toBe(false);
   });
 
-  it("filterSovereignPinsForSpiralMapViewV0 keeps only my_castle in explorer-only mode", () => {
+  it("filterSovereignPinsForSpiralMapViewV0 keeps my_castle and origin_home in explorer-only mode", () => {
     const sovereign = [
       { id: "ghost", type: "ghost", lat: 41, lon: 29 },
-      { id: "my_castle", type: "castle", lat: 41.01, lon: 29.01 }
+      { id: "my_castle", type: "castle", lat: 41.01, lon: 29.01 },
+      { id: ORIGIN_HOME_SERENCEBEY_PIN_ID_V0, type: "origin_home", lat: 41.0422, lon: 29.0089 }
     ];
     const filtered = filterSovereignPinsForSpiralMapViewV0(sovereign, {
       explorer: true,
@@ -80,8 +83,49 @@ describe("rhizohMapPinOwnerV0", () => {
       seasonal: false,
       includeDormant: false
     });
-    expect(filtered).toHaveLength(1);
-    expect(filtered[0].id).toBe("my_castle");
+    expect(filtered).toHaveLength(2);
+    expect(filtered.some((p) => p.id === "my_castle")).toBe(true);
+    expect(filtered.some((p) => p.id === ORIGIN_HOME_SERENCEBEY_PIN_ID_V0)).toBe(true);
+  });
+
+  it("filterPinsBySpiralMapLayerV0 keeps live match pins in explorer-only mode", () => {
+    const pins = [
+      { id: "live_match:1", type: "broadcast", lat: 41.1, lon: 29.0 },
+      { id: "ghost", type: "ghost", lat: 41, lon: 29 },
+      { id: "p1", lat: 41.05, lon: 29.01, spiralLayer: SPIRAL_MAP_LAYER_V0.EXPLORER }
+    ];
+    const filtered = filterPinsBySpiralMapLayerV0(pins, {
+      explorer: true,
+      castle: false,
+      economy: false,
+      seasonal: false,
+      includeDormant: false
+    });
+    expect(filtered.some((p) => p.id === "live_match:1")).toBe(true);
+    expect(filtered.some((p) => p.id === "ghost")).toBe(false);
+    expect(filtered.some((p) => p.id === "p1")).toBe(true);
+  });
+
+  it("readWorldSpaceSessionMapPinRowsV0 always includes origin_home Serencebey pin", () => {
+    const rows = readWorldSpaceSessionMapPinRowsV0({
+      spiralLayerFilter: {
+        explorer: true,
+        castle: false,
+        economy: false,
+        seasonal: false,
+        includeDormant: false
+      }
+    });
+    expect(rows.some((r) => r.id === ORIGIN_HOME_SERENCEBEY_PIN_ID_V0)).toBe(true);
+  });
+
+  it("isExplorerOnlyAlwaysVisiblePinV0 covers castle, origin home, and live match", () => {
+    expect(isExplorerOnlyAlwaysVisiblePinV0({ id: "my_castle" })).toBe(true);
+    expect(
+      isExplorerOnlyAlwaysVisiblePinV0({ id: ORIGIN_HOME_SERENCEBEY_PIN_ID_V0, type: "origin_home" })
+    ).toBe(true);
+    expect(isExplorerOnlyAlwaysVisiblePinV0({ id: "live_match:x", type: "broadcast" })).toBe(true);
+    expect(isExplorerOnlyAlwaysVisiblePinV0({ id: "ghost", type: "ghost" })).toBe(false);
   });
 
   it("resolvePinSpiralLayerV0 derives layer from towerClass", () => {

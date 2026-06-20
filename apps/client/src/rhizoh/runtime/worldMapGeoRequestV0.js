@@ -9,6 +9,27 @@ import { publishWorldMapObservationOriginV0 } from "./worldMapBootstrapGeoV0.js"
 export const WORLD_MAP_GEO_REQUEST_EVENT_V0 = "rhizoh:world-map-geo-request-v0";
 
 /**
+ * Re-project explorer seeds after origin change (mobile/desktop GPS or map pick).
+ */
+export function scheduleExplorerOriginRefreshV0() {
+  if (typeof window === "undefined") return;
+  void (async () => {
+    try {
+      if (typeof window.__rhizoh?.epochMergeAndAssimilate === "function") {
+        await window.__rhizoh.epochMergeAndAssimilate();
+      }
+      window.dispatchEvent(
+        new CustomEvent("rhizoh:prism-cube-map-pins-v0", {
+          detail: Object.freeze({ source: "explorer_origin_refresh" })
+        })
+      );
+    } catch {
+      /* noop */
+    }
+  })();
+}
+
+/**
  * Persist map-tap origin — same downstream path as GPS (nexus geo + observation origin + epoch merge hook).
  * @param {number} lat
  * @param {number} lon
@@ -38,6 +59,7 @@ export function persistWorldMapPickOriginV0(lat, lon, opts = {}) {
         detail: Object.freeze({ ok: true, lat: Number(lat), lon: Number(lon), source })
       })
     );
+    scheduleExplorerOriginRefreshV0();
   } catch {
     return Object.freeze({ ok: false });
   }
@@ -102,6 +124,7 @@ export function requestWorldMapGeoV0(opts = {}) {
               detail: Object.freeze({ ok: true, lat, lon, source })
             })
           );
+          scheduleExplorerOriginRefreshV0();
         } catch {
           /* noop */
         }
