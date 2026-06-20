@@ -154,13 +154,20 @@ import { startSportsLiveInjectionV0 } from "./rhizoh/runtime/worldMapSportsLiveI
 import {
   SHADOW_CASTLE_REACTION_EVENT_V0,
   emitCastleVisitEchoShadowEventV0,
+  flyToShadowPeerCastleV0,
   startShadowDataPlaneLoopV0
 } from "./rhizoh/runtime/shadowDataPlaneLoopV0.js";
 import {
   bindShadowCastleReactionPeerV0,
+  bindShadowCastleSimPeerV0,
   clearShadowCastleReactionPeerV0,
   publishShadowCastlePeerRegistryV0
 } from "./rhizoh/runtime/shadowCastlePeerRegistryV0.js";
+import {
+  publishShadowCastleInboxDevtoolsV0,
+  startShadowCastleInboxV0
+} from "./rhizoh/runtime/shadowCastleInboxV0.js";
+import { RhizohCastleShadowInboxV0 } from "./components/RhizohCastleShadowInboxV0.jsx";
 
 function resolveSpiralLayerFromHaloFocusV0(layerFocus) {
   const focus = Number(layerFocus);
@@ -351,9 +358,10 @@ export default function AppRhizohWorldSpaceV0() {
   useEffect(() => {
     publishShadowCastlePeerRegistryV0({
       remoteCastles,
-      boundPeer: c2cPeer
+      remoteCastlesVisible: remoteCastlesVisibleV0,
+      ...(c2cPeer != null ? { boundPeer: c2cPeer } : {})
     });
-  }, [remoteCastles, c2cPeer]);
+  }, [remoteCastles, remoteCastlesVisibleV0, c2cPeer]);
 
   useEffect(() => {
     runDomainGateForPathV0("/world/space", { userId: castleAuth?.user?.uid || null });
@@ -397,6 +405,8 @@ export default function AppRhizohWorldSpaceV0() {
     const stopCityMapLegalGate = startCityMapLegalCountdownMediaGateV0({ uiLocale });
     const stopSportsLiveInjection = startSportsLiveInjectionV0({ locale: uiLocale, intervalMs: 90_000 });
     const stopShadowDataPlane = startShadowDataPlaneLoopV0();
+    const stopShadowInbox = startShadowCastleInboxV0();
+    publishShadowCastleInboxDevtoolsV0();
 
     const onShadowReaction = (ev) => {
       const toast = ev?.detail?.reaction?.toast;
@@ -544,6 +554,7 @@ export default function AppRhizohWorldSpaceV0() {
       stopCityMapLegalGate?.();
       stopSportsLiveInjection?.();
       stopShadowDataPlane?.();
+      stopShadowInbox?.();
       window.removeEventListener(SHADOW_CASTLE_REACTION_EVENT_V0, onShadowReaction);
       window.removeEventListener("castle:open-init-gate-v0", onOpenCastleGate);
       window.removeEventListener("castle:open-anchor-offer-v0", onOpenCastleGate);
@@ -1007,25 +1018,64 @@ export default function AppRhizohWorldSpaceV0() {
         </div>
       ) : null}
 
-      {remoteCastles.length && !castleAuth.needsAuthGate && !spiralImmersionActive ? (
-        <div className="pointer-events-none fixed left-4 top-28 z-[26]">
-          <button
-            type="button"
-            onClick={() => writeRemoteCastlesVisibleV0(!remoteCastlesVisibleV0)}
-            className={`pointer-events-auto rounded-xl border px-3 py-2 text-[10px] font-semibold uppercase tracking-wider backdrop-blur-md ${
-              remoteCastlesVisibleV0
-                ? "border-gray-400/50 bg-gray-500/20 text-gray-100"
-                : "border-white/15 bg-black/70 text-white/55 hover:text-white"
-            }`}
-          >
-            {uiLocale === "tr"
-              ? remoteCastlesVisibleV0
-                ? `${remoteCastles.length} peer kale gizle`
-                : `${remoteCastles.length} peer kale göster`
-              : remoteCastlesVisibleV0
-                ? `Hide ${remoteCastles.length} peer castles`
-                : `Show ${remoteCastles.length} peer castles`}
-          </button>
+      {!castleAuth.needsAuthGate && !spiralImmersionActive && !v11MediaTube ? (
+        <div className="pointer-events-none fixed left-4 top-28 z-[26] flex max-w-[15rem] flex-col gap-2">
+          <div className="pointer-events-auto rounded-xl border border-white/15 bg-black/80 px-3 py-2 backdrop-blur-md">
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-white/45">
+              {uiLocale === "tr" ? "Peer kaleler" : "Peer castles"}
+            </p>
+            <p className="mt-1 text-[10px] normal-case text-white/70">
+              {remoteCastles.length
+                ? uiLocale === "tr"
+                  ? `${remoteCastles.length} çevrimiçi — haritada gri pin`
+                  : `${remoteCastles.length} online — grey pins on map`
+                : uiLocale === "tr"
+                  ? "0 çevrimiçi — sim hedefi aktif"
+                  : "0 online — sim target active"}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {remoteCastles.length ? (
+                <button
+                  type="button"
+                  onClick={() => writeRemoteCastlesVisibleV0(!remoteCastlesVisibleV0)}
+                  className={`rounded-lg border px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider ${
+                    remoteCastlesVisibleV0
+                      ? "border-gray-400/50 bg-gray-500/20 text-gray-100"
+                      : "border-white/15 bg-black/60 text-white/60 hover:text-white"
+                  }`}
+                >
+                  {uiLocale === "tr"
+                    ? remoteCastlesVisibleV0
+                      ? "Gizle"
+                      : "Göster"
+                    : remoteCastlesVisibleV0
+                      ? "Hide"
+                      : "Show"}
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => flyToShadowPeerCastleV0(13)}
+                    className="rounded-lg border border-sky-400/40 bg-sky-500/15 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider text-sky-100 hover:bg-sky-500/25"
+                  >
+                    {uiLocale === "tr" ? "Sim pin" : "Sim pin"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      bindShadowCastleSimPeerV0();
+                      flyToShadowPeerCastleV0(13);
+                    }}
+                    className="rounded-lg border border-emerald-400/35 bg-emerald-500/10 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider text-emerald-100 hover:bg-emerald-500/20"
+                  >
+                    {uiLocale === "tr" ? "Sim bağla" : "Bind sim"}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+          <RhizohCastleShadowInboxV0 uiLocale={uiLocale} compact className="pointer-events-auto self-start" />
         </div>
       ) : null}
 

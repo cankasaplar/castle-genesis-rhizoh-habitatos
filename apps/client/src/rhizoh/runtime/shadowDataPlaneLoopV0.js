@@ -25,6 +25,7 @@ import {
   uninstallShadowChessUglBridgeV0
 } from "./shadowChessUglBridgeV0.js";
 import {
+  bindShadowCastleSimPeerV0,
   getShadowCastlePeerRegistrySnapshotV0,
   resolveShadowReactionTargetV0,
   shouldShowShadowPeerSimPinV0
@@ -68,7 +69,10 @@ function syncShadowDataPlanePhaseV0() {
     return shadowDataPlanePhaseV0;
   }
   const registry = getShadowCastlePeerRegistrySnapshotV0();
-  if (registry.boundPeer || (registry.remoteCount > 0 && !registry.reactionTarget?.isSim)) {
+  const realPeerActive =
+    Boolean(registry.boundPeer?.uid) ||
+    (registry.remoteCount > 0 && registry.remoteCastlesVisible && registry.reactionTarget?.isSim === false);
+  if (realPeerActive) {
     shadowDataPlanePhaseV0 = SHADOW_DATA_PLANE_PHASE_V0.B_SOFT_REAL;
   } else {
     shadowDataPlanePhaseV0 = SHADOW_DATA_PLANE_PHASE_V0.B_SOFT;
@@ -464,6 +468,7 @@ export function publishShadowDataPlaneDevtoolsV0() {
   window.__rhizoh.flyToShadowPeerCastleV0 = flyToShadowPeerCastleV0;
   window.__rhizoh.flyToShadowReactionTargetV0 = flyToShadowReactionTargetV0;
   window.__rhizoh.emitCastleVisitEchoShadowEventV0 = emitCastleVisitEchoShadowEventV0;
+  window.__rhizoh.bindShadowCastleSimPeerV0 = bindShadowCastleSimPeerV0;
   window.__rhizoh.inspectShadowDataPlaneV0 = inspectShadowDataPlaneV0;
   return inspectShadowDataPlaneV0();
 }

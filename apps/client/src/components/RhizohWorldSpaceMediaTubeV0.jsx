@@ -19,6 +19,7 @@ import {
 import { WorldSpaceMediaDataTickerV0 } from "./WorldSpaceMediaDataTickerV0.jsx";
 import { RhizohMediaStageWithOctoV0 } from "./RhizohMediaOctoCompanionOverlayV0.jsx";
 import { RhizohOctoEightCameraLabV0 } from "./RhizohOctoEightCameraLabV0.jsx";
+import { RhizohCastleShadowInboxV0 } from "./RhizohCastleShadowInboxV0.jsx";
 import {
   OCTO_YUVA_EIGHT_CAMERA_LENSES_V1,
   dismissOctoLabToWorldMapV1
@@ -460,13 +461,16 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
               ) : null}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={octoLabMode ? onDismissOctoLab : onClose}
-            className="rounded-xl border border-white/15 px-3 py-2 text-[10px] text-white/70 hover:text-white"
-          >
-            <X size={14} className="inline" /> {tr ? "Kapat" : "Close"}
-          </button>
+          <div className="flex items-center gap-2">
+            <RhizohCastleShadowInboxV0 uiLocale={uiLocale} compact panelPlacement="dropdown" />
+            <button
+              type="button"
+              onClick={octoLabMode ? onDismissOctoLab : onClose}
+              className="rounded-xl border border-white/15 px-3 py-2 text-[10px] text-white/70 hover:text-white"
+            >
+              <X size={14} className="inline" /> {tr ? "Kapat" : "Close"}
+            </button>
+          </div>
         </div>
 
         <div
