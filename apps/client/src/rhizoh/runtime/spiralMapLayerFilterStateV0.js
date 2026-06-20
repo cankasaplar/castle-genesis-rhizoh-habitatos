@@ -88,8 +88,9 @@ export function readSpiralMapLayerFilterStateV0() {
 
 /**
  * @param {Partial<typeof DEFAULT_STATE_V0>} patch
+ * @param {{ replace?: boolean }} [opts]
  */
-export function writeSpiralMapLayerFilterStateV0(patch) {
+export function writeSpiralMapLayerFilterStateV0(patch, opts = {}) {
   const prev = readSpiralMapLayerFilterStateV0();
   /** @type {Record<string, boolean>} */
   const sanitizedPatch = {};
@@ -103,13 +104,21 @@ export function writeSpiralMapLayerFilterStateV0(patch) {
       continue;
     }
     if (key === "realityMode") {
+      if (value === null) {
+        sanitizedPatch.realityMode = null;
+        continue;
+      }
       sanitizedPatch.realityMode = String(value || "").trim() || undefined;
       continue;
     }
     if (!isKnownSpiralLayerV0(key)) continue;
     sanitizedPatch[key] = value === true;
   }
-  const next = normalizeSpiralMapLayerFilterStateV0({ ...prev, ...sanitizedPatch });
+  const merged = opts.replace === true ? sanitizedPatch : { ...prev, ...sanitizedPatch };
+  if (!opts.replace && sanitizedPatch.realityMode === null) {
+    merged.realityMode = undefined;
+  }
+  const next = normalizeSpiralMapLayerFilterStateV0(merged);
   if (typeof localStorage !== "undefined") {
     try {
       localStorage.setItem(STORAGE_KEY_V0, JSON.stringify(next));
@@ -127,6 +136,12 @@ export function writeSpiralMapLayerFilterStateV0(patch) {
   return next;
 }
 
+const REALITY_MODE_FOR_LAYER_FOCUS_V0 = Object.freeze({
+  [SPIRAL_MAP_LAYER_V0.EXPLORER]: SPIRAL_MAP_LAYER_V0.EXPLORER,
+  [SPIRAL_MAP_LAYER_V0.CASTLE]: SPIRAL_MAP_LAYER_V0.CASTLE,
+  [SPIRAL_MAP_LAYER_V0.ECONOMY]: SPIRAL_MAP_LAYER_V0.ECONOMY
+});
+
 /**
  * Single-layer focus — e.g. Explorer Map full-screen mode.
  * @param {string} layerId
@@ -134,12 +149,15 @@ export function writeSpiralMapLayerFilterStateV0(patch) {
 export function focusSpiralMapLayerV0(layerId) {
   const id = String(layerId || "").trim();
   if (!isKnownSpiralLayerV0(id)) return readSpiralMapLayerFilterStateV0();
-  /** @type {Record<string, boolean>} */
-  const patch = { includeDormant: id !== SPIRAL_MAP_LAYER_V0.EXPLORER };
+  /** @type {Record<string, boolean | string>} */
+  const patch = {
+    includeDormant: id !== SPIRAL_MAP_LAYER_V0.EXPLORER,
+    realityMode: REALITY_MODE_FOR_LAYER_FOCUS_V0[id] || undefined
+  };
   for (const key of SPIRAL_MAP_LAYER_FILTER_KEYS_V0) {
     patch[key] = key === id;
   }
-  return writeSpiralMapLayerFilterStateV0(patch);
+  return writeSpiralMapLayerFilterStateV0(patch, { replace: true });
 }
 
 /**

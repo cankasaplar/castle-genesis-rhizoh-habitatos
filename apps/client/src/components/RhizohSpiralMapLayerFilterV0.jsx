@@ -54,7 +54,12 @@ export const RhizohSpiralMapLayerFilterV0 = memo(function RhizohSpiralMapLayerFi
 
   const toggle = useCallback(
     (key) => {
-      setState(writeSpiralMapLayerFilterStateV0({ [key]: !state[key] }));
+      setState(
+        writeSpiralMapLayerFilterStateV0({
+          [key]: !state[key],
+          realityMode: null
+        })
+      );
     },
     [state]
   );

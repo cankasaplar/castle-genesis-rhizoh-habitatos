@@ -39,4 +39,41 @@ describe("spiralMapLayerFilterStateV0", () => {
     window.removeEventListener(SPIRAL_MAP_LAYER_FILTER_EVENT_V0, handler);
     expect(seen?.economy).toBe(true);
   });
+
+  it("writeSpiralMapLayerFilterStateV0 replace clears stale realityMode from previous preset", () => {
+    writeSpiralMapLayerFilterStateV0(
+      {
+        explorer: true,
+        castle: false,
+        economy: false,
+        seasonal: false,
+        includeDormant: false,
+        fullWorldMesh: false,
+        realityMode: "explorer"
+      },
+      { replace: true }
+    );
+    const castle = writeSpiralMapLayerFilterStateV0(
+      {
+        explorer: false,
+        castle: true,
+        economy: false,
+        seasonal: false,
+        includeDormant: true,
+        fullWorldMesh: false,
+        realityMode: "castle"
+      },
+      { replace: true }
+    );
+    expect(castle.realityMode).toBe("castle");
+    expect(castle.explorer).toBe(false);
+    expect(readSpiralMapLayerFilterStateV0().realityMode).toBe("castle");
+  });
+
+  it("focusSpiralMapLayerV0 sets realityMode for castle focus", () => {
+    const state = focusSpiralMapLayerV0(SPIRAL_MAP_LAYER_V0.CASTLE);
+    expect(state.castle).toBe(true);
+    expect(state.explorer).toBe(false);
+    expect(state.realityMode).toBe("castle");
+  });
 });
