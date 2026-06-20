@@ -98,6 +98,27 @@ POST /rhizoh/authority/epoch/merge
 
 Partitions keyed `${epochId}:${height}` — conflicts **preserved**, not overridden.
 
+### Graph metrics (Phase 3 — continuous, not binary)
+
+| Field | Meaning |
+|-------|---------|
+| `partitionCoherence` | `0..1` — graph-level coherence (namespace fragmentation penalized) |
+| `crossEpochIntegrity` | `0..1` — seal agreement at height across epochs (−0.09 namespace split) |
+| `samePartitionAligned` | Binary count — same `${epochId}:${height}` both sides |
+| `crossEpochCoherentPartitions` | Partial partitions bridged by matching seal at height |
+| `alignedPartitions` | **Deprecated** — use `partitionCoherence` |
+
+Prod example (same seal, different epochs):
+
+```
+crossEpochIntegrity: 0.91
+partitionCoherence: 0.83
+samePartitionAligned: 0
+status: cross_epoch_coherent (not "misaligned")
+```
+
+`graphModel: multi_partition_dag` · `realityPhase: phase_3_multi_epoch_partial_graph`
+
 ---
 
 ## 5. Soft drift semantics
