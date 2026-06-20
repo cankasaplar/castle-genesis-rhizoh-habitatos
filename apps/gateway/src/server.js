@@ -141,6 +141,7 @@ import {
   getAuthorityLedgerWitnessSnapshotV1,
   replayAuthorityLedgerWitnessChainV1
 } from "./authorityLedgerWitnessStoreV1.js";
+import { assimilateAuthorityEpochMergeV1 } from "./authorityEpochMergeStoreV1.js";
 import { buildRhizohExternalGroundTruthPayload } from "./rhizohExternalGroundTruthGateway.js";
 import { ingestRhizohExternalLossBatchHttp } from "./rhizohExternalLossIngestGateway.js";
 import {
@@ -876,7 +877,8 @@ const httpServer = createServer(async (req, res) => {
         seal: rhizohRuntime.routes.epistemicSeal,
         logsBatch: rhizohRuntime.routes.epistemicLogsBatch,
         authorityLedgerBatch: rhizohRuntime.routes.authorityLedgerBatch,
-        authorityLedgerReplay: rhizohRuntime.routes.authorityLedgerReplay
+        authorityLedgerReplay: rhizohRuntime.routes.authorityLedgerReplay,
+        authorityEpochMerge: rhizohRuntime.routes.authorityEpochMerge
       },
       hasGatewayToken: Boolean(REQUIRED_GATEWAY_TOKEN),
       gatewayTokenLen: REQUIRED_GATEWAY_TOKEN ? REQUIRED_GATEWAY_TOKEN.length : 0
@@ -3554,6 +3556,36 @@ const httpServer = createServer(async (req, res) => {
       });
     } catch (e) {
       sendJson(res, 400, { ok: false, error: String(e?.message || e || "authority_ledger_replay_failed") });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && pathname === rhizohRuntime.routes.authorityEpochMerge) {
+    try {
+      const auth = await resolveEpistemicIngestActor(req);
+      if (!auth.ok) {
+        sendJson(res, 401, { ok: false, error: auth.reason || "auth_required" });
+        return;
+      }
+      const ip = getHttpClientIp(req);
+      const rlKey = `uid:${auth.uid || ip}`;
+      if (!checkHttpRateLimit(`authority_epoch_merge:${rlKey}`, RL_EPISTEMIC_LOG_PER_MIN, 60_000)) {
+        sendJson(res, 429, { ok: false, error: "rate_limit_exceeded" });
+        return;
+      }
+      const body = await readHttpJson(req, 256 * 1024);
+      const merged = assimilateAuthorityEpochMergeV1(auth.uid, body);
+      if (!merged.ok) {
+        sendJson(res, 400, merged);
+        return;
+      }
+      sendJson(res, 200, {
+        ok: true,
+        mergeEvent: merged.mergeEvent,
+        recentMerges: merged.recentMerges
+      });
+    } catch (e) {
+      sendJson(res, 400, { ok: false, error: String(e?.message || e || "authority_epoch_merge_failed") });
     }
     return;
   }
