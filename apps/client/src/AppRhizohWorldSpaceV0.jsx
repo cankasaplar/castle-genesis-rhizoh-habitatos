@@ -874,6 +874,12 @@ export default function AppRhizohWorldSpaceV0() {
         [data-rhizoh-world-space-map-host] {
           transition: opacity 0.85s ease-in-out, filter 0.85s ease-in-out;
         }
+        [data-rhizoh-world-domain-shell][data-rhizoh-world-domain="space"] {
+          pointer-events: none !important;
+        }
+        [data-rhizoh-world-domain-shell][data-rhizoh-world-domain="space"] [data-rhizoh-world-domain-interactive] {
+          pointer-events: auto !important;
+        }
         .rhizoh-map-camera-pulse-v0 {
           animation: rhizoh-map-camera-pulse-keyframes 0.52s ease-out;
         }
@@ -980,12 +986,8 @@ export default function AppRhizohWorldSpaceV0() {
 
       {!spiralImmersionActive ? (
         <div className="pointer-events-none fixed inset-x-0 top-16 z-[27] flex flex-col items-center gap-2 px-4">
-          <div className="pointer-events-auto w-full max-w-xl">
-            <RhizohCityMapLegalCountdownStripV0 uiLocale={uiLocale} />
-          </div>
-          <div className="pointer-events-auto w-full max-w-md">
-            <RhizohMapTransitionApproachStripV0 uiLocale={uiLocale} />
-          </div>
+          <RhizohCityMapLegalCountdownStripV0 uiLocale={uiLocale} />
+          <RhizohMapTransitionApproachStripV0 uiLocale={uiLocale} />
         </div>
       ) : null}
 

@@ -98,13 +98,18 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
 
   return (
     <div
-      className={`fixed inset-0 z-[20] flex min-h-[100dvh] flex-col text-white ${
-        isSpace ? "pointer-events-none bg-transparent" : "bg-[#010103]"
+      className={`fixed inset-0 z-[20] text-white ${
+        isSpace
+          ? "pointer-events-none bg-transparent"
+          : "pointer-events-auto flex min-h-[100dvh] flex-col bg-[#010103]"
       }`}
       data-rhizoh-world-domain-shell="1"
       data-rhizoh-world-domain={domain}
     >
-      <header className="pointer-events-auto relative z-[1] shrink-0 border-b border-white/10 bg-[#030711]/95 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
+      <header
+        className="pointer-events-auto relative z-[1] shrink-0 border-b border-white/10 bg-[#030711]/95 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]"
+        data-rhizoh-world-domain-interactive="1"
+      >
         <div className="mx-auto flex max-w-5xl items-start gap-2">
           <button
             type="button"
@@ -164,10 +169,19 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
         </div>
       </header>
 
-      <main className="relative z-[1] min-h-0 flex-1 overflow-hidden pointer-events-none">
+      <main
+        className={
+          isSpace
+            ? "pointer-events-none absolute inset-0 overflow-visible"
+            : "relative z-[1] min-h-0 flex-1 overflow-hidden"
+        }
+      >
         {isSpace ? (
           <>
-            <div className="pointer-events-none absolute left-3 top-2 z-[3] flex max-h-[min(40vh,22rem)] w-[min(260px,52vw)] flex-col gap-1.5 overflow-y-auto sm:left-4 sm:top-3">
+            <div
+              className="pointer-events-none absolute left-3 top-2 z-[3] flex max-h-[min(40vh,22rem)] w-[min(260px,52vw)] flex-col gap-1.5 overflow-y-auto sm:left-4 sm:top-3"
+              data-rhizoh-world-domain-interactive="1"
+            >
               <RhizohWorldClaimAnchorChipV0
                 active={isSpace}
                 uiLocale={locale}
@@ -188,7 +202,10 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
                 className="pointer-events-auto"
               />
             </div>
-            <div className="pointer-events-auto absolute right-3 top-3 z-[3] flex max-w-[min(220px,44vw)] flex-col items-end gap-2 sm:right-4 sm:top-4">
+            <div
+              className="pointer-events-auto absolute right-3 top-3 z-[3] flex max-w-[min(220px,44vw)] flex-col items-end gap-2 sm:right-4 sm:top-4"
+              data-rhizoh-world-domain-interactive="1"
+            >
               <RhizohWorldMapControlsV0 active={spatialEngineActive} uiLocale={locale} />
               <RhizohWorldAtmosphereChipV0 active={isSpace} uiLocale={locale} />
               {wheelPack.nodes.length && !domainCalmV0 ? (
@@ -224,6 +241,7 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
             <div
               className="pointer-events-auto absolute inset-x-0 z-[2] flex justify-center px-3"
               style={{ bottom: mapStripBottomCssV0 }}
+              data-rhizoh-world-domain-interactive="1"
             >
               <div className="w-full max-w-3xl rounded-2xl border border-cyan-400/20 bg-[#030711]/90 px-2.5 py-2 backdrop-blur-xl">
                 <RhizohWorldRealityModeSwitcherV0 uiLocale={locale} className="mb-2 w-full" />

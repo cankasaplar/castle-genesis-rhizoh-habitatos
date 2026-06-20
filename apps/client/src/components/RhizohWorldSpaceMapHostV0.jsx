@@ -642,7 +642,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
 
   return (
     <div
-      className="absolute inset-0 overflow-hidden bg-[radial-gradient(circle_at_center,rgba(14,116,144,0.18),rgba(8,14,28,0.52)_72%)] transition-opacity duration-700 ease-in-out"
+      className="pointer-events-none absolute inset-0 overflow-hidden bg-[radial-gradient(circle_at_center,rgba(14,116,144,0.18),rgba(8,14,28,0.52)_72%)] transition-opacity duration-700 ease-in-out"
       data-rhizoh-v11-core-map-layer="1"
       data-rhizoh-v11-leaflet-ready={leafletReady ? "1" : "0"}
       aria-label="Rhizoh Primary Spatial Surface V11"
@@ -758,7 +758,7 @@ export const RhizohWorldSpaceMapHostV0 = memo(function RhizohWorldSpaceMapHostV0
 }) {
   return (
     <div
-      className="pointer-events-none fixed inset-0 z-[11]"
+      className="pointer-events-auto fixed inset-0 z-[11]"
       data-rhizoh-world-space-map-host="1"
       data-rhizoh-world-space-map-active={active ? "1" : "0"}
       data-rhizoh-world-space-render-mode={renderMode}
