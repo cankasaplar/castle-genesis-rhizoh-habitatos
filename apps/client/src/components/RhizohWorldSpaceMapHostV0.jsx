@@ -78,6 +78,11 @@ import {
   RHIZOH_LIVE_MATCH_PINS_EVENT_V0
 } from "../rhizoh/runtime/worldMapLiveMatchPinsV0.js";
 import {
+  buildShadowPeerCastleSimNodeV0,
+  readShadowCastlePinPulseActiveV0,
+  subscribeShadowCastlePinPulseV0
+} from "../rhizoh/runtime/shadowDataPlaneLoopV0.js";
+import {
   listCastlePresenceV0,
   mergeRemoteCastlesWithNetworkPresenceV0,
   subscribeCastlePresenceV0
@@ -249,6 +254,9 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
   const [liveMatchPins, setLiveMatchPins] = useState(() => getLiveMatchMapPinsV0());
   const [prismCubePins, setPrismCubePins] = useState(() => getPrismCubeMapPinRowsV0());
   const [spiralLayerFilter, setSpiralLayerFilter] = useState(() => readSpiralMapLayerFilterStateV0());
+  const [shadowPinPulseTick, setShadowPinPulseTick] = useState(0);
+
+  useEffect(() => subscribeShadowCastlePinPulseV0(() => setShadowPinPulseTick((n) => n + 1)), []);
 
   const recenterMapToObservationOriginV0 = useCallback((opts = {}) => {
     const map = mapRef.current;
@@ -333,6 +341,14 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
     () => (remoteCastlesVisible ? buildRemoteCastleMapNodesV0(mergedRemoteCastles) : []),
     [mergedRemoteCastles, remoteCastlesVisible]
   );
+  const shadowPeerNode = useMemo(() => {
+    void shadowPinPulseTick;
+    const node = buildShadowPeerCastleSimNodeV0();
+    return Object.freeze({
+      ...node,
+      shadowPulseActive: readShadowCastlePinPulseActiveV0(node.id)
+    });
+  }, [shadowPinPulseTick]);
   const nodeById = useRef(new Map(displayNodes.map((n) => [n.id, n])));
   const [leafletReady, setLeafletReady] = useState(false);
   const [spiralCalmVisual, setSpiralCalmVisual] = useState(() => isSpiralCountdownCalmVisualV0());
@@ -504,10 +520,14 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
       }));
       const hasUserCastle = displayNodes.some((n) => n.id === "my_castle");
       const extraLocal = hasUserCastle ? [] : localNodes;
-      const allNodes = [...displayNodes, ...extraLocal, ...remoteNodes];
+      const allNodes = [...displayNodes, ...extraLocal, shadowPeerNode, ...remoteNodes];
       for (const node of allNodes) {
+        const renderNode =
+          node.shadowPulseActive || readShadowCastlePinPulseActiveV0(node.id)
+            ? Object.freeze({ ...node, shadowPulseActive: true })
+            : node;
         const marker = L.marker([node.lat, node.lon], {
-          icon: createLeafletNodeIconV0(L, node),
+          icon: createLeafletNodeIconV0(L, renderNode),
           keyboard: false,
           title: node.name || node.label,
           zIndexOffset:
@@ -597,7 +617,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
     } catch {
       /* noop */
     }
-  }, [leafletReady, localAnchors, displayNodes, remoteNodes, userCastleGeo, spiralLayerFilter]);
+  }, [leafletReady, localAnchors, displayNodes, remoteNodes, shadowPeerNode, userCastleGeo, spiralLayerFilter]);
 
   useEffect(() => {
     const L = typeof window !== "undefined" ? window.L : null;
