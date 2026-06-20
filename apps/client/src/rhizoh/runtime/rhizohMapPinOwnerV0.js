@@ -16,6 +16,25 @@ import {
   readSpiralMapLayerFilterStateV0
 } from "./spiralMapLayerFilterStateV0.js";
 import { resolveSpiralMapLayerV0 } from "./spatialDistributionLayerV0.js";
+import {
+  buildOriginHomeSerencebeyPinV0,
+  isOriginHomeSerencebeyPinV0
+} from "./worldMapOriginHomePinV0.js";
+
+/**
+ * Pins that stay visible in explorer-only SpiralMMO filter (spec + product).
+ * @param {object} pin
+ * @returns {boolean}
+ */
+export function isExplorerOnlyAlwaysVisiblePinV0(pin) {
+  if (!pin || typeof pin !== "object") return false;
+  const id = String(pin.id || "");
+  const type = String(pin.type || "");
+  if (id === "my_castle" || type === "my_castle") return true;
+  if (isOriginHomeSerencebeyPinV0(pin)) return true;
+  if (type === "broadcast" || id.startsWith("live_match:")) return true;
+  return false;
+}
 
 /**
  * @param {object} pin
@@ -51,7 +70,12 @@ export function filterSovereignPinsForSpiralMapViewV0(sovereign, filterState) {
     return sovereign;
   }
   return Object.freeze(
-    sovereign.filter((pin) => pin.id === "my_castle" || pin.type === "my_castle")
+    sovereign.filter(
+      (pin) =>
+        pin.id === "my_castle" ||
+        pin.type === "my_castle" ||
+        isOriginHomeSerencebeyPinV0(pin)
+    )
   );
 }
 
@@ -66,7 +90,7 @@ export function filterPinsBySpiralMapLayerV0(pins, filterState) {
       const layer = resolvePinSpiralLayerV0(pin);
       if (!layer) {
         if (isExplorerOnlySpiralFilterV0(filter)) {
-          return pin.id === "my_castle" || pin.type === "my_castle";
+          return isExplorerOnlyAlwaysVisiblePinV0(pin);
         }
         return true;
       }
@@ -161,8 +185,9 @@ export function resolveRhizohMapPinSubstrateV0(ctx = {}) {
 export function readWorldSpaceSessionMapPinRowsV0(opts = {}) {
   const userCastle = opts.userCastle ?? resolveUserCastleGeoForMapViewV0();
   const filterState = opts.spiralLayerFilter ?? readSpiralMapLayerFilterStateV0();
+  const originHome = buildOriginHomeSerencebeyPinV0();
   const sovereign = filterSovereignPinsForSpiralMapViewV0(
-    listSovereignWorldMapNodesForViewV0({ userCastle }),
+    [originHome, ...listSovereignWorldMapNodesForViewV0({ userCastle })],
     filterState
   );
   const liveMatch = opts.liveMatchPins ?? getLiveMatchMapPinsV0();

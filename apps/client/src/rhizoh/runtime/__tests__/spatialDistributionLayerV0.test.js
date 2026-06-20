@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   computeDistributionOffsetV0,
+  computeExplorerSeedSpreadOffsetV0,
+  countUniqueMapCoordinatesV0,
   distributeMapPinV0,
   distributeSpatialPinsV0,
   resetSpatialDistributionForTestV0,
@@ -24,6 +26,16 @@ describe("spatialDistributionLayerV0", () => {
     );
     expect(resolveSpiralMapLayerV0(TOWER_CLASS_V0.CHESS)).toBe("explorer");
     expect(resolveSpiralMapLayerV0(TOWER_CLASS_V0.MEDIA)).toBe("economy");
+  });
+
+  it("computeExplorerSeedSpreadOffsetV0 yields unique offsets per seed slot", () => {
+    const offsets = [0, 1, 2, 3].map((slot) => computeExplorerSeedSpreadOffsetV0(slot, 0));
+    const pins = offsets.map((o, i) => ({
+      lat: 41.04 + o.dLat,
+      lon: 29.01 + o.dLon,
+      id: `seed-${i}`
+    }));
+    expect(countUniqueMapCoordinatesV0(pins)).toBe(4);
   });
 
   it("computeDistributionOffsetV0 separates colliding pins via golden angle", () => {

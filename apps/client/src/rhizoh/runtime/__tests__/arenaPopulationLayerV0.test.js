@@ -16,7 +16,7 @@ import {
   resetArenaBindingLayerForTestV0,
 } from "../arenaBindingLayerV0.js";
 import { resetCesiumWorldCommitForTestV0 } from "../cesiumWorldCommitV0.js";
-import { TOWER_CLASS_V0 } from "../spatialDistributionLayerV0.js";
+import { TOWER_CLASS_V0, countUniqueMapCoordinatesV0 } from "../spatialDistributionLayerV0.js";
 
 describe("arenaPopulationLayerV0", () => {
   beforeEach(() => {
@@ -75,6 +75,11 @@ describe("arenaPopulationLayerV0", () => {
     const signalNames = result.signals.map((s) => s.signal);
     expect(signalNames).toContain("arena.population.v11_seeded");
     expect(signalNames).toContain("arena.population.complete");
+
+    const explorerActive = explorer.filter(
+      (p) => p.populationStatus === ARENA_POPULATION_STATUS_V0.ACTIVE
+    );
+    expect(countUniqueMapCoordinatesV0(explorerActive)).toBeGreaterThanOrEqual(4);
   });
 
   it("populateArenaWorldV0 rejects missing spatial distribution", () => {

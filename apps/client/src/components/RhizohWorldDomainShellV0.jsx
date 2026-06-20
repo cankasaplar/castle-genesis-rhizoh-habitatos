@@ -413,11 +413,11 @@ function WorldStartCardV0({ activeTool, active, cesiumReady, uiLocale, worldData
         <p className="mt-1 text-[9px] leading-relaxed text-white/50">
           {activeCastle
             ? tr
-              ? "Konum bağlı — katmanlar altta."
-              : "Location linked — layers below."
+              ? "Konum bağlı — HOME CASTLE Serencebey'de kalıcı; Explorer senin noktandan."
+              : "Location linked — HOME CASTLE stays at Serencebey; Explorer starts at you."
             : tr
-              ? "GPS veya harita tıklaması ile başla."
-              : "Start with GPS or a map tap."}
+              ? "GPS veya harita tıklaması ile başla. HOME CASTLE her zaman Serencebey'de."
+              : "Start with GPS or map tap. HOME CASTLE is always at Serencebey."}
         </p>
       ) : (
         <>

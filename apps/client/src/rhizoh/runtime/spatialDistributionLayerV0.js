@@ -43,6 +43,9 @@ const DISTRIBUTION_RING_DEGREE_V0 = 0.002;
 const GOLDEN_ANGLE_RAD_V0 = (137.508 * Math.PI) / 180;
 const LOGICAL_GRID_SCALE_V0 = 0.0012;
 
+/** V11 explorer seed slots — minimum separation target (~280m at 41°N). */
+export const EXPLORER_SEED_MIN_UNIQUE_COUNT_V0 = 4;
+
 /** @type {object[]} */
 const spatialDistributionSignalsV0 = [];
 
@@ -184,6 +187,38 @@ export function computeDistributionOffsetV0(logicalPosition, index, collisionInd
     collisionIndex,
     index
   });
+}
+
+/**
+ * Deterministic V11 seed spread — unique offset per slot (explorer / castle / economy bands).
+ * @param {number} seedSlot
+ * @param {number} [layerBand] — 0 explorer · 1 castle dormant · 2 economy dormant
+ */
+export function computeExplorerSeedSpreadOffsetV0(seedSlot, layerBand = 0) {
+  const slot = Math.max(0, Number(seedSlot) || 0);
+  const band = Math.max(0, Number(layerBand) || 0);
+  const logical = Object.freeze({
+    x: (slot % 4) + 1,
+    y: Math.floor(slot / 4) + 1 + band * 2,
+    z: band
+  });
+  return computeDistributionOffsetV0(logical, slot + 1, slot + 1);
+}
+
+/**
+ * @param {readonly object[]} pins
+ * @param {number} [precision]
+ */
+export function countUniqueMapCoordinatesV0(pins, precision = 5) {
+  const f = 10 ** precision;
+  return new Set(
+    (pins || []).map((p) => {
+      const lat = Number(p?.lat);
+      const lon = Number(p?.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return "invalid";
+      return `${Math.round(lat * f)}:${Math.round(lon * f)}`;
+    })
+  ).size;
 }
 
 /**

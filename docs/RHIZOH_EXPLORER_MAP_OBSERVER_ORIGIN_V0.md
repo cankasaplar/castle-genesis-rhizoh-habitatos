@@ -48,9 +48,21 @@ Beşiktaş fallback (last resort)
 ## User flow
 
 1. Open `/world/space`
-2. Tap **Konum seç** (grant GPS)
-3. Map flies to your coordinates; explorer seeds appear in a tight cluster nearby
-4. Optional: `await window.__rhizoh.epochMergeAndAssimilate()` in DevTools to verify
+2. **HOME CASTLE** (Serencebey) is always visible — immutable origin seed
+3. Tap **Konumumu kullan** or **Haritadan seç** (GPS / map pick)
+4. **MY CASTLE** persists at your coordinates; Explorer seeds cluster there
+5. Live sports match pins remain visible in explorer-only filter
+6. Optional: `await window.__rhizoh.epochMergeAndAssimilate()` in DevTools to verify
+
+---
+
+## Pin model (v0.1)
+
+| Pin | Location | Persistence |
+|-----|----------|-------------|
+| `origin_home_serencebey` | Serencebey 41.0422 · 29.0089 | Always |
+| `my_castle` | User GPS / map pick | Continuity + nexus geo |
+| Explorer seeds | Observer origin offsets | Re-project on epoch merge |
 
 ---
 

@@ -254,6 +254,8 @@ const SVG_BY_TYPE_V0 = Object.freeze({
   portal:
     '<circle cx="12" cy="12" r="10" stroke-dasharray="2 4"/><path d="M12 8a4 4 0 1 0 4 4"/><circle cx="12" cy="12" r="2"/>',
   castle: '<circle cx="12" cy="12" r="10"/>',
+  origin_home:
+    '<path d="M3 21h18"/><path d="M5 21V9l7-4 7 4v12"/><path d="M9 21v-6h6v6"/><path d="M12 3v2"/>',
   remote_castle:
     '<path d="M3 21h18"/><path d="M5 21V9l7-4 7 4v12"/><path d="M9 21v-6h6v6"/><circle cx="12" cy="11" r="1.5" fill="currentColor" stroke="none"/>'
 });

@@ -16,6 +16,7 @@ import { setPrismCubeMapPinsV0 } from "./cesiumWorldCommitV0.js";
 import { resolveObservationOriginV0 } from "./spatialSlotResolverV0.js";
 import {
   computeDistributionOffsetV0,
+  computeExplorerSeedSpreadOffsetV0,
   resolveSpiralMapLayerV0,
   resolveTowerClassV0,
   SPATIAL_DISTRIBUTION_PHASE_V0,
@@ -185,9 +186,10 @@ function buildSeedPinsForLayerV0(
   populationStatus,
   indexOffset
 ) {
+  const layerBand = Math.floor(indexOffset / 10);
   return seedDefs.map((seed, i) => {
-    const index = indexOffset + i;
-    const offset = computeDistributionOffsetV0({ x: index, y: 0, z: 0 }, index, index);
+    const slot = indexOffset + i;
+    const offset = computeExplorerSeedSpreadOffsetV0(slot, layerBand);
     return buildArenaPopulationPinV0({
       towerClass: seed.towerClass,
       label: seed.label,
