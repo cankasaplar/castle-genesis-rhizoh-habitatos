@@ -534,8 +534,8 @@ export function bindArenasToPlacedCubesV0(opts = {}) {
     realityPhase: ARENA_BINDING_PHASE_V0.PHASE_5_ARENA_IDENTITY_KERNEL,
     priorPhase: SPATIAL_ALLOCATION_PHASE_V0.PHASE_4_2_LOGICAL_PLACEMENT,
     deferred: Object.freeze({
-      worldPosition: true,
-      spatialSlotResolver: true,
+      worldPosition: false,
+      spatialSlotResolver: false,
       prismCubeCommit: true,
       mediaLedgerization: true,
       workerConsensus: true,
