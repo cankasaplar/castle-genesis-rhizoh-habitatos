@@ -139,7 +139,7 @@ export function buildCommittedSpatialObjectV0(resolvedCube) {
     observerRelative: worldPosition?.observerRelative === true,
     mapPinEligible: worldPosition != null,
     eventAnchor: resolvedCube.spatialSlot?.eventAnchor || null,
-    cesiumCommitDeferred: true,
+    cesiumCommitDeferred: false,
     interpretationOnly: true,
     nonExecutive: true
   });
@@ -258,7 +258,7 @@ export function commitPrismCubesV0(opts = {}) {
     realityPhase: PRISM_CUBE_COMMIT_PHASE_V0.PHASE_5_2_SPATIAL_OBJECT_COMMIT,
     priorPhase: SPATIAL_SLOT_RESOLVER_PHASE_V0.PHASE_5_1_OBSERVER_RELATIVE_PROJECTION,
     deferred: Object.freeze({
-      cesiumWorldCommit: true,
+      cesiumWorldCommit: false,
       mediaLedgerization: true,
       workerConsensus: true
     }),

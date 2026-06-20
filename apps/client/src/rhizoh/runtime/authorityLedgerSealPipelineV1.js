@@ -14,6 +14,7 @@ import { ensureSpatialAllocationLayerV0 } from "./spatialAllocationLayerV0.js";
 import { ensureArenaBindingLayerV0 } from "./arenaBindingLayerV0.js";
 import { ensureSpatialSlotResolverV0 } from "./spatialSlotResolverV0.js";
 import { ensurePrismCubeCommitV0 } from "./prismCubeCommitV0.js";
+import { ensureCesiumWorldCommitV0 } from "./cesiumWorldCommitV0.js";
 import { ensureWorkerAuthorityReplayAlignmentV1 } from "./workerAuthorityReplayAlignmentV1.js";
 import {
   getAuthorityEpochSnapshotV1,
@@ -376,6 +377,7 @@ export function ensureAuthorityLedgerSealPipelineV1() {
   ensureArenaBindingLayerV0();
   ensureSpatialSlotResolverV0();
   ensurePrismCubeCommitV0();
+  ensureCesiumWorldCommitV0();
 
   return window.__rhizoh.authorityLedger;
 }
