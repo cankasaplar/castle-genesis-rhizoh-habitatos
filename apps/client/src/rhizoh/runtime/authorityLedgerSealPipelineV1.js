@@ -9,6 +9,11 @@
 import { ensureAuthorityGatewayPersistenceBridgeV1 } from "./authorityGatewayPersistenceBridgeV1.js";
 import { ensureWorkerAuthorityReplayAlignmentV1 } from "./workerAuthorityReplayAlignmentV1.js";
 import {
+  getAuthorityEpochSnapshotV1,
+  mintAuthorityEpochIdV1,
+  resetAuthorityEpochForTestV1
+} from "./authorityEpochBoundaryV1.js";
+import {
   ADMISSION_VERDICT_V1,
   getAdmissionArbitrationSnapshotV1
 } from "./admissionArbitrationLayerV1.js";
@@ -160,6 +165,7 @@ export function sealAuthorityLedgerEntryV1(input) {
     entryId: `auth_ledger_${ledgerHeightV1}`,
     height: ledgerHeightV1,
     stage: AUTHORITY_CHAIN_STAGE_V1.LEDGER_SEAL,
+    epoch: getAuthorityEpochSnapshotV1(),
     ...body,
     seal: Object.freeze({
       prevSealHash,
@@ -294,6 +300,7 @@ export function getAuthorityLedgerSnapshotV1() {
   return Object.freeze({
     schema: `${AUTHORITY_LEDGER_SCHEMA_V1}.snapshot`,
     ledgerHeight: ledgerHeightV1,
+    epoch: getAuthorityEpochSnapshotV1(),
     lastSeal: lastSealV1,
     sealChainHead: sealChainHeadV1,
     lastPipeline: lastPipelineV1,
@@ -332,6 +339,8 @@ export function ensureAuthorityLedgerSealPipelineV1() {
   if (typeof window === "undefined") return null;
   window.__rhizoh = window.__rhizoh || {};
 
+  mintAuthorityEpochIdV1();
+
   if (!window.__rhizoh.authorityLedger) {
     window.__rhizoh.authorityLedger = () => getAuthorityLedgerSnapshotV1();
   }
@@ -359,6 +368,7 @@ export function ensureAuthorityLedgerSealPipelineV1() {
 
 /** @internal vitest */
 export function resetAuthorityLedgerForTestV1() {
+  resetAuthorityEpochForTestV1();
   ledgerEntriesV1.length = 0;
   ledgerHeightV1 = 0;
   sealChainHeadV1 = WAL_HASH_CHAIN_GENESIS_V0;

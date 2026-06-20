@@ -37,10 +37,12 @@ describe("workerAuthorityReplayAlignmentV1", () => {
     const result = workerAuthorityReplayAlignmentV1({
       ledger: {
         ledgerHeight: 1,
+        epoch: { epochId: "hepoch_same" },
         sealChainHead: clientReplay.sealHead,
         replay: clientReplay
       },
       gatewayWitness: {
+        epochId: "hepoch_same",
         chainHeight: 1,
         chainHead: clientReplay.sealHead,
         replay: {
@@ -60,14 +62,16 @@ describe("workerAuthorityReplayAlignmentV1", () => {
     expect(result.question).toBe("where_can_same_state_be_computed");
   });
 
-  it("detects seal_mismatch with hard_divergence", () => {
+  it("detects seal_mismatch with hard_divergence within same epoch", () => {
     const result = workerAuthorityReplayAlignmentV1({
       ledger: {
         ledgerHeight: 1,
+        epoch: { epochId: "hepoch_same" },
         sealChainHead: "h11111111",
         replay: { ok: true, height: 1, sealHead: "h11111111", trace: [] }
       },
       gatewayWitness: {
+        epochId: "hepoch_same",
         chainHeight: 1,
         chainHead: "h22222222",
         replay: { ok: true, height: 1, sealHead: "h22222222", trace: [] }
@@ -81,10 +85,20 @@ describe("workerAuthorityReplayAlignmentV1", () => {
     expect(result.sourceOfTruth).toBe(SOURCE_OF_TRUTH_V1.CLIENT);
   });
 
-  it("detects height_desync as soft_drift when gateway lags", () => {
+  it("detects height_desync as soft_drift when gateway lags within same epoch", () => {
     const result = workerAuthorityReplayAlignmentV1({
-      ledger: { ledgerHeight: 2, sealChainHead: "habc", replay: { ok: true, trace: [] } },
-      gatewayWitness: { chainHeight: 1, chainHead: "habc", replay: { ok: true, trace: [] } },
+      ledger: {
+        ledgerHeight: 2,
+        epoch: { epochId: "hepoch_same" },
+        sealChainHead: "habc",
+        replay: { ok: true, trace: [] }
+      },
+      gatewayWitness: {
+        epochId: "hepoch_same",
+        chainHeight: 1,
+        chainHead: "habc",
+        replay: { ok: true, trace: [] }
+      },
       workerReplay: { available: false }
     });
 
@@ -94,25 +108,32 @@ describe("workerAuthorityReplayAlignmentV1", () => {
     expect(result.sourceOfTruth).toBe(SOURCE_OF_TRUTH_V1.CLIENT);
   });
 
-  it("detects missing_entry when gateway height is zero", () => {
+  it("classifies epoch mismatch as session_resync not hard_divergence", () => {
     const result = workerAuthorityReplayAlignmentV1({
       ledger: {
         ledgerHeight: 1,
-        sealChainHead: "h999",
+        epoch: { epochId: "hepoch_new" },
+        sealChainHead: "hnewseal1",
+        replay: { ok: true, height: 1, sealHead: "hnewseal1", trace: [{ height: 1, actual: "hnewseal1" }] }
+      },
+      gatewayWitness: {
+        epochId: "hepoch_old",
+        chainHeight: 1,
+        chainHead: "holdseal1",
         replay: {
           ok: true,
           height: 1,
-          sealHead: "h999",
-          trace: [{ height: 1, actual: "h999" }]
+          sealHead: "holdseal1",
+          trace: [{ height: 1, clientSealHash: "holdseal1" }]
         }
       },
-      gatewayWitness: { chainHeight: 0, chainHead: "", replay: { ok: true, trace: [] } },
       workerReplay: { available: false }
     });
 
     expect(result.aligned).toBe(false);
-    expect(result.divergenceType).toBe(DIVERGENCE_TYPE_V1.MISSING_ENTRY);
+    expect(result.divergenceType).toBe(DIVERGENCE_TYPE_V1.SESSION_RESYNC);
     expect(result.severity).toBe(ALIGNMENT_SEVERITY_V1.SOFT_DRIFT);
+    expect(result.sameTimeline).toBe(false);
   });
 
   it("hold verdict history does not block alignment check", () => {
@@ -128,8 +149,14 @@ describe("workerAuthorityReplayAlignmentV1", () => {
     const replay = replayAuthorityLedgerV1();
 
     const result = workerAuthorityReplayAlignmentV1({
-      ledger: { ledgerHeight: 1, sealChainHead: pipeline.sealHash, replay },
+      ledger: {
+        ledgerHeight: 1,
+        epoch: pipeline.sealedEntry.epoch,
+        sealChainHead: pipeline.sealHash,
+        replay
+      },
       gatewayWitness: {
+        epochId: pipeline.sealedEntry.epoch?.epochId,
         chainHeight: 1,
         chainHead: pipeline.sealHash,
         replay: {

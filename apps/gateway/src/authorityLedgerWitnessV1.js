@@ -10,6 +10,7 @@ export const AUTHORITY_LEDGER_WITNESS_SCHEMA_V1 = "castle.rhizoh.authority_ledge
  *   entryId: string,
  *   clientSealHash: string,
  *   prevClientSealHash: string,
+ *   epochId?: string,
  *   witnessedAt: number
  * }} body
  */
@@ -17,6 +18,7 @@ export function canonicalAuthorityLedgerWitnessStringV1(body) {
   const payload = {
     schemaVersion: AUTHORITY_LEDGER_WITNESS_SCHEMA_V1,
     subjectId: String(body.subjectId || ""),
+    epochId: String(body.epochId || "epoch_unknown"),
     height: Number(body.height) || 0,
     entryId: String(body.entryId || ""),
     clientSealHash: String(body.clientSealHash || ""),

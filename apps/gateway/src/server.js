@@ -3542,8 +3542,10 @@ const httpServer = createServer(async (req, res) => {
         sendJson(res, 401, { ok: false, error: auth.reason || "auth_required" });
         return;
       }
-      const snapshot = getAuthorityLedgerWitnessSnapshotV1(auth.uid);
-      const replay = replayAuthorityLedgerWitnessChainV1(auth.uid);
+      const replayUrl = new URL(String(req.url || ""), "http://localhost");
+      const epochId = String(replayUrl.searchParams.get("epochId") || "").trim() || undefined;
+      const snapshot = getAuthorityLedgerWitnessSnapshotV1(auth.uid, epochId);
+      const replay = replayAuthorityLedgerWitnessChainV1(auth.uid, epochId);
       sendJson(res, 200, {
         ok: true,
         snapshot,
