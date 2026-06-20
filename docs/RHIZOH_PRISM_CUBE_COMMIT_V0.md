@@ -10,7 +10,7 @@
 
 ## SSOT sentence
 
-> **Resolved prism cubes become committed spatial objects — actionSurface opens; Cesium sink still deferred.**
+> **Resolved prism cubes become committed spatial objects — actionSurface opens; world sink wired via cesiumWorldCommit.**
 
 ---
 
@@ -88,7 +88,7 @@ Boot: `boot.prism_cube_commit · armed spatial_object`
 
 | Item | Status |
 |------|--------|
-| Cesium world commit | Next |
+| Cesium world commit | ✔ [`RHIZOH_CESIUM_WORLD_COMMIT_V0.md`](RHIZOH_CESIUM_WORLD_COMMIT_V0.md) |
 | Media ledgerization | Phase 1 gate |
 | Worker consensus | Data-plane READY required |
 

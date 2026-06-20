@@ -9,6 +9,7 @@ import { resolveRhizohWorldSpaceCesiumActiveV0 } from "./rhizohLayerContextV0.js
 import { isRhizohWorldSpaceMapStageV0 } from "./rhizohWorldSurfacePolicyV0.js";
 import { listSovereignWorldMapNodesForViewV0 } from "./sovereignWorldMapNodesV0.js";
 import { getLiveMatchMapPinsV0 } from "./worldMapLiveMatchPinsV0.js";
+import { getPrismCubeMapPinRowsV0 } from "./cesiumWorldCommitV0.js";
 import { resolveUserCastleGeoForMapViewV0 } from "./worldMapBootstrapGeoV0.js";
 
 export const RHIZOH_MAP_PIN_OWNER_SCHEMA_V0 = "castle.rhizoh.map_pin_owner.v0";
@@ -48,7 +49,8 @@ export function readWorldSpaceSessionMapPinRowsV0(opts = {}) {
   const userCastle = opts.userCastle ?? resolveUserCastleGeoForMapViewV0();
   const sovereign = listSovereignWorldMapNodesForViewV0({ userCastle });
   const liveMatch = opts.liveMatchPins ?? getLiveMatchMapPinsV0();
-  return Object.freeze([...sovereign, ...liveMatch]);
+  const prismCubes = opts.prismCubePins ?? getPrismCubeMapPinRowsV0();
+  return Object.freeze([...sovereign, ...liveMatch, ...prismCubes]);
 }
 
 export function getRhizohMapPinOwnerSnapshotV0(ctx = {}) {

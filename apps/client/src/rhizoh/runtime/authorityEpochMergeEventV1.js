@@ -40,6 +40,10 @@ import {
   setLastPrismCubeCommitV0
 } from "./prismCubeCommitV0.js";
 import {
+  commitPrismCubesToWorldV0,
+  setLastCesiumWorldCommitV0
+} from "./cesiumWorldCommitV0.js";
+import {
   fetchGatewayAuthorityWitnessReplayV1,
   runAuthorityReplayAlignmentV1,
   workerAuthorityReplayAlignmentV1
@@ -276,6 +280,9 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
   const prismCubeCommit = commitPrismCubesV0({ spatialSlotResolver });
   setLastPrismCubeCommitV0(prismCubeCommit);
 
+  const cesiumWorldCommit = commitPrismCubesToWorldV0({ prismCubeCommit });
+  setLastCesiumWorldCommitV0(cesiumWorldCommit);
+
   return Object.freeze({
     ok: true,
     mergeEvent,
@@ -286,6 +293,7 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
     arenaBinding,
     spatialSlotResolver,
     prismCubeCommit,
+    cesiumWorldCommit,
     payload,
     alignment,
     output: mergeEvent?.output || null,

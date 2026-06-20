@@ -43,7 +43,7 @@ describe("prismCubeCommitV0", () => {
     expect(obj.status).toBe("committed");
     expect(obj.mapPinEligible).toBe(true);
     expect(obj.observerRelative).toBe(true);
-    expect(obj.cesiumCommitDeferred).toBe(true);
+    expect(obj.cesiumCommitDeferred).toBe(false);
   });
 
   it("buildCommittedActionSurfaceV0 opens authority affordances", () => {
