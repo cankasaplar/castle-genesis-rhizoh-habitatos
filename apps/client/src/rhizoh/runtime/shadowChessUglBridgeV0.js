@@ -8,7 +8,6 @@
 import { RHIZOH_UGL_EVENT_V0, RHIZOH_UGL_GAME_TYPE_V0 } from "./rhizohUglSchemaV0.js";
 import {
   emitShadowCastleEventV0,
-  PEER_CASTLE_SIM_ID_V0,
   SHADOW_CASTLE_EVENT_TYPE_V0
 } from "./shadowCastleEventBusV0.js";
 
@@ -42,7 +41,7 @@ export function bridgeUglEventToShadowCastleV0(uglEvent) {
   return Object.freeze({
     type,
     fromCastleId: "my_castle",
-    toCastleId: PEER_CASTLE_SIM_ID_V0,
+    toCastleId: null,
     payload: Object.freeze({
       gameType: RHIZOH_UGL_GAME_TYPE_V0.CHESS,
       matchId,

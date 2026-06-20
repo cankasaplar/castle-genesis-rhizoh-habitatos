@@ -130,9 +130,27 @@ window.__rhizoh.inspectShadowDataPlaneV0?.();
 
 **Flow:**
 
-```text
-Chess arena / cluster move
-  → UGL compile (rhizohUglBootV0)
-  → shadowChessUglBridgeV0
-  → shadow bus → interpret → peer pin pulse + toast
+## 9. Phase B+ — real Castle-to-Castle reaction
+
+Aligns with [`SESSION_GRAPH_V1.md`](SESSION_GRAPH_V1.md) · [`MULTI_CASTLE_SOCIAL_EVENT_ARCHITECTURE_V1.md`](MULTI_CASTLE_SOCIAL_EVENT_ARCHITECTURE_V1.md).
+
+| Piece | Role |
+|-------|------|
+| `shadowCastlePeerRegistryV0.js` | Remote `active_castles` + bound C2C peer → reaction target |
+| `shadowCastleSessionGraphV0.js` | Local `SessionEdge` read-model (`visit`, `invite`, …) |
+| Target priority | bound peer → nearest remote → sim fallback |
+
+**User flow:**
+
+1. Toggle **peer kale göster** (or click remote pin)
+2. Click **remote_castle_*** pin → `SessionEdge(visit)` + `castle.visit.echo.v0`
+3. Chess / demo reactions pulse **that** pin (not sim)
+
+**DevTools:**
+
+```javascript
+window.__rhizoh.inspectShadowDataPlaneV0().phase           // "B_soft_real" when peer bound
+window.__rhizoh.inspectShadowDataPlaneV0().reactionTarget // { pinId, isSim, uid, ... }
+window.__rhizoh.flyToShadowReactionTargetV0(13);
+window.__rhizoh.demoChessShadowMoveV0({ san: "e4" });     // hits bound/nearest real peer
 ```
