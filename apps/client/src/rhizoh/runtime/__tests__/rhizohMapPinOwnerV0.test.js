@@ -6,6 +6,7 @@ import {
   getRhizohMapPinOwnerSnapshotV0,
   installRhizohMapPinOwnerAutoRefreshV0,
   isExplorerOnlyAlwaysVisiblePinV0,
+  isPinVisibleForSpiralMapFilterV0,
   readWorldSpaceSessionMapPinRowsV0,
   resolvePinSpiralLayerV0,
   resolveRhizohMapPinSubstrateV0,
@@ -195,5 +196,32 @@ describe("rhizohMapPinOwnerV0", () => {
     expect(breakdown.sovereign).toBe(2);
     expect(breakdown.explorer).toBe(1);
     expect(breakdown.castle).toBe(1);
+  });
+
+  it("isPinVisibleForSpiralMapFilterV0 hides castle-layer pins in explorer reality", () => {
+    const authority = {
+      id: "prism_cube:cube-a",
+      spiralLayer: SPIRAL_MAP_LAYER_V0.CASTLE,
+      towerClass: "AUTHORITY_EPISTEMIC",
+      populationStatus: "active"
+    };
+    const filter = {
+      explorer: true,
+      castle: false,
+      economy: false,
+      seasonal: false,
+      includeDormant: false,
+      realityMode: "explorer"
+    };
+    expect(isPinVisibleForSpiralMapFilterV0(authority, filter)).toBe(false);
+    expect(
+      isPinVisibleForSpiralMapFilterV0(authority, {
+        ...filter,
+        explorer: false,
+        castle: true,
+        includeDormant: true,
+        realityMode: "castle"
+      })
+    ).toBe(true);
   });
 });
