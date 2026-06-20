@@ -99,6 +99,7 @@ export async function mountCastleApplicationV0(ctx) {
   bootLog?.ok?.("boot.cesium_world_commit", "armed world_sink");
   bootLog?.ok?.("boot.spatial_distribution", "armed pin_spread");
   bootLog?.ok?.("boot.arena_population", "armed v11_layer_seeds");
+  bootLog?.ok?.("boot.explorer_map_ui", "armed spiral_layer_filter");
 
   const observability = startProdWorldObservabilityBridgeV0();
   if (observability.started) {

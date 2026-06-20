@@ -18,6 +18,7 @@ import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
 import { RhizohWorldMapControlsV0 } from "./RhizohWorldMapControlsV0.jsx";
 import { RhizohWorldClaimAnchorChipV0 } from "./RhizohWorldClaimAnchorChipV0.jsx";
 import { RhizohWorldMarkerLayerFilterV0 } from "./RhizohWorldMarkerLayerFilterV0.jsx";
+import { RhizohSpiralMapLayerFilterV0 } from "./RhizohSpiralMapLayerFilterV0.jsx";
 import { RhizohWorldAtmosphereChipV0 } from "./RhizohWorldAtmosphereChipV0.jsx";
 import { RhizohWorldSportsNewsStripV0 } from "./RhizohWorldSportsNewsStripV0.jsx";
 import { resolveRhizohWorldSpaceMapStripBottomCssV0 } from "../rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
@@ -238,8 +239,19 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
                   ) : null}
                 </div>
                 {mapLayersOpen ? (
-                  <div className="mt-1.5 space-y-1 border-t border-white/8 pt-1.5">
-                    <RhizohWorldMarkerLayerFilterV0 uiLocale={locale} />
+                  <div className="mt-1.5 space-y-2 border-t border-white/8 pt-1.5">
+                    <div>
+                      <p className="mb-1 text-[8px] font-semibold uppercase tracking-wider text-cyan-200/70">
+                        {tr ? "SpiralMMO katmanları" : "SpiralMMO layers"}
+                      </p>
+                      <RhizohSpiralMapLayerFilterV0 uiLocale={locale} />
+                    </div>
+                    <div>
+                      <p className="mb-1 text-[8px] font-semibold uppercase tracking-wider text-white/40">
+                        {tr ? "Marker filtreleri" : "Marker filters"}
+                      </p>
+                      <RhizohWorldMarkerLayerFilterV0 uiLocale={locale} />
+                    </div>
                   </div>
                 ) : null}
               </div>

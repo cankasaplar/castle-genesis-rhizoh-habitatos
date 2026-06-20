@@ -34,6 +34,14 @@ import {
   publishRhizohMapPinOwnerRegistryV0,
   readWorldSpaceSessionMapPinRowsV0
 } from "../rhizoh/runtime/rhizohMapPinOwnerV0.js";
+import {
+  getPrismCubeMapPinRowsV0,
+  PRISM_CUBE_MAP_PIN_EVENT_V0
+} from "../rhizoh/runtime/cesiumWorldCommitV0.js";
+import {
+  readSpiralMapLayerFilterStateV0,
+  subscribeSpiralMapLayerFilterStateV0
+} from "../rhizoh/runtime/spiralMapLayerFilterStateV0.js";
 import { isSpiralCountdownCalmVisualV0 } from "../rhizoh/runtime/worldDomainCalmModeV0.js";
 import { RHIZOH_MAP_COMMAND_EVENT_V0 } from "../rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
 import { RhizohCatchUpCascadeOverlayV0 } from "./RhizohCatchUpCascadeOverlayV0.jsx";
@@ -198,6 +206,8 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
     [remoteCastles, presenceCountV0]
   );
   const [liveMatchPins, setLiveMatchPins] = useState(() => getLiveMatchMapPinsV0());
+  const [prismCubePins, setPrismCubePins] = useState(() => getPrismCubeMapPinRowsV0());
+  const [spiralLayerFilter, setSpiralLayerFilter] = useState(() => readSpiralMapLayerFilterStateV0());
 
   useEffect(() => {
     const onPins = (ev) => setLiveMatchPins(ev?.detail?.pins || getLiveMatchMapPinsV0());
@@ -205,9 +215,29 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
     return () => window.removeEventListener(RHIZOH_LIVE_MATCH_PINS_EVENT_V0, onPins);
   }, []);
 
+  useEffect(() => {
+    const refreshPrismPins = () => setPrismCubePins(getPrismCubeMapPinRowsV0());
+    window.addEventListener(PRISM_CUBE_MAP_PIN_EVENT_V0, refreshPrismPins);
+    window.addEventListener("rhizoh:arena-population-v0", refreshPrismPins);
+    return () => {
+      window.removeEventListener(PRISM_CUBE_MAP_PIN_EVENT_V0, refreshPrismPins);
+      window.removeEventListener("rhizoh:arena-population-v0", refreshPrismPins);
+    };
+  }, []);
+
+  useEffect(() => subscribeSpiralMapLayerFilterStateV0(() => {
+    setSpiralLayerFilter(readSpiralMapLayerFilterStateV0());
+  }), []);
+
   const displayNodes = useMemo(
-    () => readWorldSpaceSessionMapPinRowsV0({ userCastle: userCastleGeo, liveMatchPins }),
-    [userCastleGeo, liveMatchPins]
+    () =>
+      readWorldSpaceSessionMapPinRowsV0({
+        userCastle: userCastleGeo,
+        liveMatchPins,
+        prismCubePins,
+        spiralLayerFilter
+      }),
+    [userCastleGeo, liveMatchPins, prismCubePins, spiralLayerFilter]
   );
   const remoteNodes = useMemo(
     () => (remoteCastlesVisible ? buildRemoteCastleMapNodesV0(mergedRemoteCastles) : []),

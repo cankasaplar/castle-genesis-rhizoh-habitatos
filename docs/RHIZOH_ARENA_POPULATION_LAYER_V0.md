@@ -87,6 +87,8 @@ Boot: `boot.arena_population · armed v11_layer_seeds`
 - Chess auto-ingest on move stream
 - Worker consensus
 
+**Next:** [`RHIZOH_EXPLORER_MAP_UI_V0.md`](RHIZOH_EXPLORER_MAP_UI_V0.md)
+
 ---
 
 ## Module

@@ -11,6 +11,65 @@ import { listSovereignWorldMapNodesForViewV0 } from "./sovereignWorldMapNodesV0.
 import { getLiveMatchMapPinsV0 } from "./worldMapLiveMatchPinsV0.js";
 import { getPrismCubeMapPinRowsV0 } from "./cesiumWorldCommitV0.js";
 import { resolveUserCastleGeoForMapViewV0 } from "./worldMapBootstrapGeoV0.js";
+import { getArenaPopulationPinsV0 } from "./arenaPopulationLayerV0.js";
+import {
+  readSpiralMapLayerFilterStateV0
+} from "./spiralMapLayerFilterStateV0.js";
+import { resolveSpiralMapLayerV0 } from "./spatialDistributionLayerV0.js";
+
+/**
+ * @param {object} pin
+ * @returns {string | null}
+ */
+export function resolvePinSpiralLayerV0(pin) {
+  if (!pin || typeof pin !== "object") return null;
+  if (pin.spiralLayer) return String(pin.spiralLayer);
+  if (pin.towerClass) return resolveSpiralMapLayerV0(pin.towerClass);
+  return null;
+}
+
+/**
+ * Sovereign / portal / live-match pins without spiralLayer stay visible.
+ * @param {readonly object[]} pins
+ * @param {object} [filterState]
+ */
+export function filterPinsBySpiralMapLayerV0(pins, filterState) {
+  const filter = filterState || readSpiralMapLayerFilterStateV0();
+  return Object.freeze(
+    pins.filter((pin) => {
+      const layer = resolvePinSpiralLayerV0(pin);
+      if (!layer) return true;
+      if (filter[layer] !== true) return false;
+      if (pin.populationStatus === "dormant" && filter.includeDormant !== true) {
+        return false;
+      }
+      return true;
+    })
+  );
+}
+
+/**
+ * Merge dormant arena population pins when castle/economy layers are enabled.
+ * @param {readonly object[]} prismPins
+ * @param {object} filterState
+ */
+function mergeArenaPopulationPinRowsV0(prismPins, filterState) {
+  const populationPins = getArenaPopulationPinsV0();
+  if (!populationPins.length) return prismPins;
+
+  const showDormant =
+    filterState.includeDormant === true ||
+    filterState.castle === true ||
+    filterState.economy === true;
+
+  if (!showDormant) return prismPins;
+
+  const existingIds = new Set(prismPins.map((p) => p.id));
+  const dormant = populationPins.filter(
+    (p) => p.populationStatus === "dormant" && !existingIds.has(p.id)
+  );
+  return [...prismPins, ...dormant];
+}
 
 export const RHIZOH_MAP_PIN_OWNER_SCHEMA_V0 = "castle.rhizoh.map_pin_owner.v0";
 
@@ -43,14 +102,24 @@ export function resolveRhizohMapPinSubstrateV0(ctx = {}) {
 
 /**
  * Unified session pin rows for Leaflet rendering (Cesium reads same sources via anchor sync).
- * @param {{ userCastle?: object | null, liveMatchPins?: object[] }} [opts]
+ * @param {{
+ *   userCastle?: object | null,
+ *   liveMatchPins?: object[],
+ *   prismCubePins?: object[],
+ *   spiralLayerFilter?: object,
+ *   applySpiralFilter?: boolean
+ * }} [opts]
  */
 export function readWorldSpaceSessionMapPinRowsV0(opts = {}) {
   const userCastle = opts.userCastle ?? resolveUserCastleGeoForMapViewV0();
   const sovereign = listSovereignWorldMapNodesForViewV0({ userCastle });
   const liveMatch = opts.liveMatchPins ?? getLiveMatchMapPinsV0();
-  const prismCubes = opts.prismCubePins ?? getPrismCubeMapPinRowsV0();
-  return Object.freeze([...sovereign, ...liveMatch, ...prismCubes]);
+  const filterState = opts.spiralLayerFilter ?? readSpiralMapLayerFilterStateV0();
+  let prismCubes = opts.prismCubePins ?? getPrismCubeMapPinRowsV0();
+  prismCubes = mergeArenaPopulationPinRowsV0(prismCubes, filterState);
+  const rows = Object.freeze([...sovereign, ...liveMatch, ...prismCubes]);
+  if (opts.applySpiralFilter === false) return rows;
+  return filterPinsBySpiralMapLayerV0(rows, filterState);
 }
 
 export function getRhizohMapPinOwnerSnapshotV0(ctx = {}) {

@@ -8,6 +8,8 @@ import {
   cycleRhizohWorldSpaceLeafletMapToolV0,
   readRhizohWorldMapToolV0
 } from "./rhizohWorldMapToolV0.js";
+import { focusSpiralMapLayerV0 } from "./spiralMapLayerFilterStateV0.js";
+import { SPIRAL_MAP_LAYER_V0 } from "./spatialDistributionLayerV0.js";
 
 /**
  * @param {{ id?: string, seedIntent?: string } | null | undefined} node
@@ -39,6 +41,18 @@ export function handleWorldSpaceCapWheelNodeV0(node) {
   }
   if (id === "fog") {
     dispatchLocalCommandHandlerV0("map_zoom_out", { traceId: `world-wheel-${Date.now()}` });
+    return;
+  }
+  if (id === "explore") {
+    focusSpiralMapLayerV0(SPIRAL_MAP_LAYER_V0.EXPLORER);
+    return;
+  }
+  if (id === "learn" || id === "build") {
+    focusSpiralMapLayerV0(SPIRAL_MAP_LAYER_V0.CASTLE);
+    return;
+  }
+  if (id === "swarm") {
+    focusSpiralMapLayerV0(SPIRAL_MAP_LAYER_V0.ECONOMY);
     return;
   }
   if (id === "archive") {
