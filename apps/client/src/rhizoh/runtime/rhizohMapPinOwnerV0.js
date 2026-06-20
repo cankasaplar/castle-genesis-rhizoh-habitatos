@@ -11,7 +11,7 @@ import { listSovereignWorldMapNodesForViewV0 } from "./sovereignWorldMapNodesV0.
 import { getLiveMatchMapPinsV0 } from "./worldMapLiveMatchPinsV0.js";
 import { getPrismCubeMapPinRowsV0, PRISM_CUBE_MAP_PIN_EVENT_V0 } from "./cesiumWorldCommitV0.js";
 import { resolveUserCastleGeoForMapViewV0 } from "./worldMapBootstrapGeoV0.js";
-import { getArenaPopulationPinsV0 } from "./arenaPopulationLayerV0.js";
+import { getArenaPopulationPinsV0, getArenaPopulationByLayerV0 } from "./arenaPopulationLayerV0.js";
 import {
   readSpiralMapLayerFilterStateV0
 } from "./spiralMapLayerFilterStateV0.js";
@@ -20,7 +20,8 @@ import {
   buildOriginHomeSerencebeyPinV0,
   isOriginHomeSerencebeyPinV0
 } from "./worldMapOriginHomePinV0.js";
-import { isFullWorldRealityModeV0, isCastleRealityModeV0, readSpiralMapRealityModeV0 } from "./spiralMapRealityModeV0.js";
+import { isFullWorldRealityModeV0, isCastleRealityModeV0, readSpiralMapRealityModeV0, readPersistedSpiralMapRealityModeIdV0, SPIRAL_MAP_REALITY_MODE_LS_KEY_V0, SPIRAL_MAP_REALITY_MODE_EVENT_V0 } from "./spiralMapRealityModeV0.js";
+import { SPIRAL_MAP_LAYER_FILTER_EVENT_V0 } from "./spiralMapLayerFilterStateV0.js";
 import {
   annotateCastleIdentityPinsV0,
   readCastleMemoryMapPinRowsV0
@@ -100,27 +101,52 @@ export function filterSovereignPinsForSpiralMapViewV0(sovereign, filterState) {
 }
 
 /**
+ * @param {object} pin
+ * @param {object} [filterState]
+ * @returns {boolean}
+ */
+export function isPinVisibleForSpiralMapFilterV0(pin, filterState) {
+  const filter = filterState || readSpiralMapLayerFilterStateV0();
+  const layer = resolvePinSpiralLayerV0(pin);
+  if (!layer) {
+    if (isExplorerOnlySpiralFilterV0(filter)) {
+      return isExplorerOnlyAlwaysVisiblePinV0(pin);
+    }
+    return true;
+  }
+  if (filter[layer] !== true) return false;
+  if (pin.populationStatus === "dormant" && filter.includeDormant !== true) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * @param {object} pin
+ * @param {object} filterState
+ * @returns {string | null}
+ */
+export function resolvePinFilterRejectReasonV0(pin, filterState) {
+  if (isPinVisibleForSpiralMapFilterV0(pin, filterState)) return null;
+  const layer = resolvePinSpiralLayerV0(pin);
+  if (layer && filterState[layer] !== true) {
+    return `layer_off:${layer}`;
+  }
+  if (layer && pin.populationStatus === "dormant" && filterState.includeDormant !== true) {
+    return "dormant_hidden";
+  }
+  if (!layer && isExplorerOnlySpiralFilterV0(filterState)) {
+    return "explorer_only_sovereign";
+  }
+  return "filtered";
+}
+/**
  * @param {readonly object[]} pins
  * @param {object} [filterState]
  */
 export function filterPinsBySpiralMapLayerV0(pins, filterState) {
   const filter = filterState || readSpiralMapLayerFilterStateV0();
-  return Object.freeze(
-    pins.filter((pin) => {
-      const layer = resolvePinSpiralLayerV0(pin);
-      if (!layer) {
-        if (isExplorerOnlySpiralFilterV0(filter)) {
-          return isExplorerOnlyAlwaysVisiblePinV0(pin);
-        }
-        return true;
-      }
-      if (filter[layer] !== true) return false;
-      if (pin.populationStatus === "dormant" && filter.includeDormant !== true) {
-        return false;
-      }
-      return true;
-    })
-  );
+  return Object.freeze(pins.filter((pin) => isPinVisibleForSpiralMapFilterV0(pin, filter)));
 }
 
 /**
@@ -149,18 +175,22 @@ function mergeArenaPopulationPinRowsV0(prismPins, filterState) {
   const populationPins = getArenaPopulationPinsV0();
   if (!populationPins.length) return prismPins;
 
-  const showDormant =
-    filterState.includeDormant === true ||
-    filterState.castle === true ||
-    filterState.economy === true;
-
-  if (!showDormant) return prismPins;
-
   const existingIds = new Set(prismPins.map((p) => p.id));
-  const dormant = populationPins.filter(
-    (p) => p.populationStatus === "dormant" && !existingIds.has(p.id)
-  );
-  return [...prismPins, ...dormant];
+  const merged = populationPins.filter((pin) => {
+    if (existingIds.has(pin.id)) return false;
+    const layer = resolvePinSpiralLayerV0(pin);
+    if (!layer || filterState[layer] !== true) return false;
+    if (pin.populationStatus === "dormant") {
+      return (
+        filterState.includeDormant === true ||
+        filterState.castle === true ||
+        filterState.economy === true
+      );
+    }
+    return true;
+  });
+  if (!merged.length) return prismPins;
+  return [...prismPins, ...merged];
 }
 
 export const RHIZOH_MAP_PIN_OWNER_SCHEMA_V0 = "castle.rhizoh.map_pin_owner.v0";
@@ -265,6 +295,32 @@ export function summarizeSessionPinBreakdownV0(rows) {
   return Object.freeze(byLayer);
 }
 
+/**
+ * @param {object} [arenaByLayer]
+ */
+export function summarizeArenaPopulationBreakdownV0(arenaByLayer) {
+  if (!arenaByLayer || typeof arenaByLayer !== "object") {
+    return Object.freeze({
+      explorer: 0,
+      castle: 0,
+      economy: 0,
+      seasonal: 0,
+      total: 0
+    });
+  }
+  const explorer = arenaByLayer.explorer?.length ?? 0;
+  const castle = arenaByLayer.castle?.length ?? 0;
+  const economy = arenaByLayer.economy?.length ?? 0;
+  const seasonal = arenaByLayer.seasonal?.length ?? 0;
+  return Object.freeze({
+    explorer,
+    castle,
+    economy,
+    seasonal,
+    total: explorer + castle + economy + seasonal
+  });
+}
+
 export function getRhizohMapPinOwnerSnapshotV0(ctx = {}) {
   const substrate = resolveRhizohMapPinSubstrateV0(ctx);
   const filterState = readSpiralMapLayerFilterStateV0();
@@ -286,18 +342,35 @@ export function getRhizohMapPinOwnerSnapshotV0(ctx = {}) {
  */
 export function inspectRhizohMapPinOwnerV0() {
   const filterState = readSpiralMapLayerFilterStateV0();
-  const rows = readWorldSpaceSessionMapPinRowsV0();
+  const allRows = readWorldSpaceSessionMapPinRowsV0({ applySpiralFilter: false });
+  const visibleRows = filterPinsBySpiralMapLayerV0(allRows, filterState);
+  const arenaByLayer = getArenaPopulationByLayerV0();
+  const prismCount = getPrismCubeMapPinRowsV0().length;
+
   return Object.freeze({
     realityMode: readSpiralMapRealityModeV0(filterState),
-    count: rows.length,
-    breakdown: summarizeSessionPinBreakdownV0(rows),
+    persistedRealityMode: readPersistedSpiralMapRealityModeIdV0(),
+    storageKeys: Object.freeze({
+      realityMode: SPIRAL_MAP_REALITY_MODE_LS_KEY_V0,
+      layerFilter: "rhizoh.spiral_map_layer_filter.v0"
+    }),
+    count: visibleRows.length,
+    populationMergedCount: allRows.length,
+    prismCubePinCount: prismCount,
+    breakdown: summarizeSessionPinBreakdownV0(visibleRows),
+    populationBreakdown: summarizeSessionPinBreakdownV0(allRows),
+    arenaPopulation: summarizeArenaPopulationBreakdownV0(arenaByLayer),
     pins: Object.freeze(
-      rows.map((pin) =>
+      allRows.map((pin) =>
         Object.freeze({
           id: pin.id,
           label: pin.label || pin.name || null,
-          layer: resolvePinSpiralLayerV0(pin) || null,
-          status: pin.populationStatus || null,
+          type: pin.type || pin.pinType || null,
+          towerClass: pin.towerClass || null,
+          spiralLayer: resolvePinSpiralLayerV0(pin) || null,
+          dormant: pin.populationStatus === "dormant",
+          visible: isPinVisibleForSpiralMapFilterV0(pin, filterState),
+          filterReason: resolvePinFilterRejectReasonV0(pin, filterState),
           castleIdentityPair: pin.castleIdentityPair === true
         })
       )
@@ -336,9 +409,13 @@ export function installRhizohMapPinOwnerAutoRefreshV0(ctx = {}) {
 
   window.addEventListener("rhizoh:arena-population-v0", refresh);
   window.addEventListener(PRISM_CUBE_MAP_PIN_EVENT_V0, refresh);
+  window.addEventListener(SPIRAL_MAP_REALITY_MODE_EVENT_V0, refresh);
+  window.addEventListener(SPIRAL_MAP_LAYER_FILTER_EVENT_V0, refresh);
   return () => {
     window.removeEventListener("rhizoh:arena-population-v0", refresh);
     window.removeEventListener(PRISM_CUBE_MAP_PIN_EVENT_V0, refresh);
+    window.removeEventListener(SPIRAL_MAP_REALITY_MODE_EVENT_V0, refresh);
+    window.removeEventListener(SPIRAL_MAP_LAYER_FILTER_EVENT_V0, refresh);
     mapPinOwnerAutoRefreshInstalledV0 = false;
   };
 }

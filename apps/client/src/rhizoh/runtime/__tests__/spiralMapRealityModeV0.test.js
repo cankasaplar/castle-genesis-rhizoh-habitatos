@@ -5,6 +5,7 @@ import {
   ensureSpiralMapRealityModeHydratedV0,
   readSpiralMapRealityModeV0,
   SPIRAL_MAP_REALITY_MODE_EVENT_V0,
+  SPIRAL_MAP_REALITY_MODE_LS_KEY_V0,
   SPIRAL_MAP_REALITY_MODE_V0
 } from "../spiralMapRealityModeV0.js";
 import { SPIRAL_MAP_LAYER_V0 } from "../spatialDistributionLayerV0.js";
@@ -13,6 +14,7 @@ describe("spiralMapRealityModeV0", () => {
   beforeEach(() => {
     if (typeof localStorage !== "undefined") {
       localStorage.removeItem("rhizoh.spiral_map_layer_filter.v0");
+      localStorage.removeItem(SPIRAL_MAP_REALITY_MODE_LS_KEY_V0);
       localStorage.removeItem("rhizoh.world.map_marker_layers.v0");
     }
   });
@@ -64,9 +66,31 @@ describe("spiralMapRealityModeV0", () => {
     expect(next.realityMode).toBe(SPIRAL_MAP_REALITY_MODE_V0.CASTLE);
     expect(next.explorer).toBe(false);
     expect(readSpiralMapRealityModeV0()).toBe(SPIRAL_MAP_REALITY_MODE_V0.CASTLE);
+    expect(localStorage.getItem(SPIRAL_MAP_REALITY_MODE_LS_KEY_V0)).toBe(
+      SPIRAL_MAP_REALITY_MODE_V0.CASTLE
+    );
     expect(JSON.parse(localStorage.getItem("rhizoh.spiral_map_layer_filter.v0")).realityMode).toBe(
       SPIRAL_MAP_REALITY_MODE_V0.CASTLE
     );
+  });
+
+  it("ensureSpiralMapRealityModeHydratedV0 restores persisted castle after filter drift", () => {
+    localStorage.setItem(SPIRAL_MAP_REALITY_MODE_LS_KEY_V0, SPIRAL_MAP_REALITY_MODE_V0.CASTLE);
+    localStorage.setItem(
+      "rhizoh.spiral_map_layer_filter.v0",
+      JSON.stringify({
+        explorer: true,
+        castle: false,
+        economy: false,
+        seasonal: false,
+        includeDormant: false,
+        realityMode: SPIRAL_MAP_REALITY_MODE_V0.EXPLORER
+      })
+    );
+    const state = ensureSpiralMapRealityModeHydratedV0();
+    expect(readSpiralMapRealityModeV0(state)).toBe(SPIRAL_MAP_REALITY_MODE_V0.CASTLE);
+    expect(state.castle).toBe(true);
+    expect(state.explorer).toBe(false);
   });
 
   it("ensureSpiralMapRealityModeHydratedV0 repairs empty object storage", () => {

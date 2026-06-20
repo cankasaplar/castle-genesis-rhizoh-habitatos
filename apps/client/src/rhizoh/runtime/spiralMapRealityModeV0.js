@@ -20,6 +20,8 @@ export const SPIRAL_MAP_REALITY_MODE_V0 = Object.freeze({
 
 export const SPIRAL_MAP_REALITY_MODE_EVENT_V0 = "rhizoh:spiral-map-reality-mode-v0";
 export const CASTLE_IDENTITY_MODE_EVENT_V0 = "rhizoh:castle-identity-mode-v0";
+/** Dedicated SSOT — survives legacy layer-filter merges; user/DevTools probe target. */
+export const SPIRAL_MAP_REALITY_MODE_LS_KEY_V0 = "rhizoh.spiral_map_reality_mode.v0";
 
 /** @type {Record<string, object>} */
 const REALITY_MODE_PRESETS_V0 = Object.freeze({
@@ -137,6 +139,7 @@ export function applySpiralMapRealityModeV0(modeId) {
   const mode = String(modeId || SPIRAL_MAP_REALITY_MODE_V0.EXPLORER).trim();
   const preset = REALITY_MODE_PRESETS_V0[mode] || REALITY_MODE_PRESETS_V0[SPIRAL_MAP_REALITY_MODE_V0.EXPLORER];
   const next = writeSpiralMapLayerFilterStateV0({ ...preset }, { replace: true });
+  writePersistedSpiralMapRealityModeIdV0(readSpiralMapRealityModeV0(next));
 
   if (mode === SPIRAL_MAP_REALITY_MODE_V0.CASTLE) {
     writeWorldMapMarkerLayerStateV0({
@@ -166,6 +169,33 @@ export function applySpiralMapRealityModeV0(modeId) {
 
 const STORAGE_KEY_SPIRAL_FILTER_V0 = "rhizoh.spiral_map_layer_filter.v0";
 
+/**
+ * @returns {string | null}
+ */
+export function readPersistedSpiralMapRealityModeIdV0() {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = String(localStorage.getItem(SPIRAL_MAP_REALITY_MODE_LS_KEY_V0) || "").trim();
+    return REALITY_MODE_PRESETS_V0[raw] ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {string} modeId
+ */
+function writePersistedSpiralMapRealityModeIdV0(modeId) {
+  if (typeof localStorage === "undefined") return;
+  try {
+    const mode = String(modeId || "").trim();
+    if (!REALITY_MODE_PRESETS_V0[mode]) return;
+    localStorage.setItem(SPIRAL_MAP_REALITY_MODE_LS_KEY_V0, mode);
+  } catch {
+    /* noop */
+  }
+}
+
 function spiralMapFilterStorageNeedsHydrateV0(raw) {
   if (!raw || raw === "{}" || raw === "null") return true;
   try {
@@ -182,11 +212,23 @@ function spiralMapFilterStorageNeedsHydrateV0(raw) {
  */
 export function ensureSpiralMapRealityModeHydratedV0() {
   if (typeof localStorage === "undefined") return readSpiralMapLayerFilterStateV0();
+
+  const persistedMode = readPersistedSpiralMapRealityModeIdV0();
+  if (persistedMode) {
+    const current = readSpiralMapRealityModeV0();
+    if (current !== persistedMode) {
+      return applySpiralMapRealityModeV0(persistedMode);
+    }
+    return readSpiralMapLayerFilterStateV0();
+  }
+
   try {
     const raw = localStorage.getItem(STORAGE_KEY_SPIRAL_FILTER_V0);
     if (spiralMapFilterStorageNeedsHydrateV0(raw)) {
       return applySpiralMapRealityModeV0(SPIRAL_MAP_REALITY_MODE_V0.EXPLORER);
     }
+    const inferred = readSpiralMapRealityModeV0();
+    writePersistedSpiralMapRealityModeIdV0(inferred);
   } catch {
     return applySpiralMapRealityModeV0(SPIRAL_MAP_REALITY_MODE_V0.EXPLORER);
   }
@@ -208,6 +250,7 @@ export function publishSpiralMapRealityDevtoolsV0() {
     });
   };
   window.__rhizoh.readSpiralMapRealityModeV0 = readSpiralMapRealityModeV0;
+  window.__rhizoh.readPersistedSpiralMapRealityModeIdV0 = readPersistedSpiralMapRealityModeIdV0;
   window.__rhizoh.readSpiralMapLayerFilterStateV0 = readSpiralMapLayerFilterStateV0;
   window.__rhizoh.ensureSpiralMapRealityModeHydratedV0 = ensureSpiralMapRealityModeHydratedV0;
 }
