@@ -466,7 +466,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
               uiLocale={uiLocale}
               compact
               panelPlacement="portal"
-              onItemAction={() => onClose?.()}
+              onCloseMediaTube={onClose}
             />
             <button
               type="button"

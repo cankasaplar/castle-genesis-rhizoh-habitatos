@@ -1019,29 +1019,26 @@ export default function AppRhizohWorldSpaceV0() {
       ) : null}
 
       {!castleAuth.needsAuthGate && !spiralImmersionActive && !v11MediaTube ? (
-        <div
-          className="pointer-events-none fixed left-4 z-[30] max-w-[15rem]"
-          style={{ bottom: "calc(10.5rem + env(safe-area-inset-bottom, 0px))" }}
-        >
-          <div className="pointer-events-auto rounded-xl border border-white/15 bg-black/88 p-3 shadow-lg backdrop-blur-md">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <p className="text-[9px] font-semibold uppercase tracking-wider text-white/45">
-                  {uiLocale === "tr" ? "Peer kaleler" : "Peer castles"}
-                </p>
-                <p className="mt-1 text-[10px] normal-case leading-snug text-white/70">
-                  {remoteCastles.length
-                    ? uiLocale === "tr"
-                      ? `${remoteCastles.length} çevrimiçi — gri pin`
-                      : `${remoteCastles.length} online — grey pin`
-                    : uiLocale === "tr"
-                      ? "0 çevrimiçi — sim hedefi"
-                      : "0 online — sim target"}
-                </p>
-              </div>
-              <RhizohCastleShadowInboxV0 uiLocale={uiLocale} compact panelPlacement="dropdown" />
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1.5">
+        <>
+          <RhizohCastleShadowInboxV0 uiLocale={uiLocale} compact anchor="top-right" panelPlacement="portal" />
+          <div
+            className="pointer-events-none fixed left-4 z-[30] max-w-[15rem]"
+            style={{ bottom: "calc(10.5rem + env(safe-area-inset-bottom, 0px))" }}
+          >
+            <div className="pointer-events-auto rounded-xl border border-white/15 bg-black/88 p-3 shadow-lg backdrop-blur-md">
+              <p className="text-[9px] font-semibold uppercase tracking-wider text-white/45">
+                {uiLocale === "tr" ? "Peer kaleler" : "Peer castles"}
+              </p>
+              <p className="mt-1 text-[10px] normal-case leading-snug text-white/70">
+                {remoteCastles.length
+                  ? uiLocale === "tr"
+                    ? `${remoteCastles.length} çevrimiçi — gri pin`
+                    : `${remoteCastles.length} online — grey pin`
+                  : uiLocale === "tr"
+                    ? "0 çevrimiçi — sim hedefi"
+                    : "0 online — sim target"}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
               {remoteCastles.length ? (
                 <button
                   type="button"
@@ -1084,6 +1081,7 @@ export default function AppRhizohWorldSpaceV0() {
             </div>
           </div>
         </div>
+        </>
       ) : null}
 
       {c2cPeer && !v11MediaTube ? (

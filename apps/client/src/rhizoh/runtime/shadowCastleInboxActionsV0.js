@@ -1,0 +1,73 @@
+/**
+ * Shadow castle inbox item actions — fly to pin or open chess arena.
+ * RESEARCH-ONLY · interpretive routing only.
+ */
+
+import { CHESS_GAME_MODE_V0 } from "./chessArenaEngineV0.js";
+import { RHIZOH_OPEN_CHESS_ARENA_EVENT_V1 } from "./symbyoMapIntentBridgeV0.js";
+import { flyToShadowReactionTargetV0 } from "./shadowDataPlaneLoopV0.js";
+import { readBoundShadowCastlePeerV0 } from "./shadowCastlePeerRegistryV0.js";
+
+export const SHADOW_INBOX_ACTION_V0 = Object.freeze({
+  FLY_TO_PIN: "fly_to_pin",
+  OPEN_CHESS_ARENA: "open_chess_arena"
+});
+
+/**
+ * @param {object} item
+ */
+export function resolveShadowInboxItemActionV0(item) {
+  const kind = String(item?.kind || "").toLowerCase();
+  const eventType = String(item?.eventType || "").toLowerCase();
+  if (kind === "chess" || eventType.startsWith("chess.")) {
+    return SHADOW_INBOX_ACTION_V0.OPEN_CHESS_ARENA;
+  }
+  return SHADOW_INBOX_ACTION_V0.FLY_TO_PIN;
+}
+
+/**
+ * @param {object} item
+ * @param {{ uiLocale?: string, closeMediaTube?: () => void }} [opts]
+ */
+export function runShadowInboxItemActionV0(item, opts = {}) {
+  const tr = opts.uiLocale === "tr";
+  const action = resolveShadowInboxItemActionV0(item);
+
+  if (action === SHADOW_INBOX_ACTION_V0.OPEN_CHESS_ARENA) {
+    opts.closeMediaTube?.();
+    const bound = readBoundShadowCastlePeerV0();
+    const peerCastle =
+      item?.isRealPeer && bound?.uid
+        ? Object.freeze({
+            uid: bound.uid,
+            displayName: bound.displayName || bound.uid.slice(0, 8),
+            gatewayClientId: bound.gatewayClientId || null
+          })
+        : null;
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent(RHIZOH_OPEN_CHESS_ARENA_EVENT_V1, {
+          detail: Object.freeze({
+            source: "shadow_castle_inbox",
+            node: Object.freeze({
+              id: "chess_arena",
+              type: "zone",
+              label: "CHESS",
+              name: tr ? "Kale Satranç Arenası" : "Castle Chess Arena",
+              color: "#22d3ee"
+            }),
+            peerCastle,
+            initialMode: CHESS_GAME_MODE_V0.BLITZ,
+            autoPlay: true,
+            shadowInboxItem: item
+          })
+        })
+      );
+    }
+    return Object.freeze({ ok: true, action });
+  }
+
+  flyToShadowReactionTargetV0(13, { pinId: item?.pinId || null });
+  return Object.freeze({ ok: true, action });
+}
