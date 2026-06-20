@@ -35,6 +35,11 @@ import {
   getShadowSessionGraphSnapshotV0,
   SESSION_EDGE_KIND_V0
 } from "./shadowCastleSessionGraphV0.js";
+import {
+  getShadowCastleInboxSnapshotV0,
+  ignoreAllShadowCastleInboxItemsV0,
+  ignoreShadowCastleInboxItemV0
+} from "./shadowCastleInboxV0.js";
 
 export const SHADOW_DATA_PLANE_SCHEMA_V0 = "castle.rhizoh.shadow_data_plane.v0";
 export const SHADOW_CASTLE_REACTION_EVENT_V0 = "rhizoh:shadow-castle-reaction-v0";
@@ -498,6 +503,9 @@ export function publishShadowDataPlaneDevtoolsV0() {
   window.__rhizoh.bindShadowCastleSimPeerV0 = bindShadowCastleSimPeerV0;
   window.__rhizoh.handleShadowSimPeerPinClickV0 = handleShadowSimPeerPinClickV0;
   window.__rhizoh.inspectShadowDataPlaneV0 = inspectShadowDataPlaneV0;
+  window.__rhizoh.shadowCastleInbox = getShadowCastleInboxSnapshotV0;
+  window.__rhizoh.ignoreShadowCastleInboxItemV0 = ignoreShadowCastleInboxItemV0;
+  window.__rhizoh.ignoreAllShadowCastleInboxItemsV0 = ignoreAllShadowCastleInboxItemsV0;
   return inspectShadowDataPlaneV0();
 }
 

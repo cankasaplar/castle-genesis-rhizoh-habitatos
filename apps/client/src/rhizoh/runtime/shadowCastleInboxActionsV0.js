@@ -5,7 +5,7 @@
 
 import { CHESS_GAME_MODE_V0 } from "./chessArenaEngineV0.js";
 import { RHIZOH_OPEN_CHESS_ARENA_EVENT_V1 } from "./symbyoMapIntentBridgeV0.js";
-import { flyToShadowReactionTargetV0 } from "./shadowDataPlaneLoopV0.js";
+import { flyToInboxItemPinV0 } from "./shadowCastleInboxFlyV0.js";
 import { readBoundShadowCastlePeerV0 } from "./shadowCastlePeerRegistryV0.js";
 
 export const SHADOW_INBOX_ACTION_V0 = Object.freeze({
@@ -68,6 +68,6 @@ export function runShadowInboxItemActionV0(item, opts = {}) {
     return Object.freeze({ ok: true, action });
   }
 
-  flyToShadowReactionTargetV0(13, { pinId: item?.pinId || null });
+  flyToInboxItemPinV0(item, { zoom: 14 });
   return Object.freeze({ ok: true, action });
 }

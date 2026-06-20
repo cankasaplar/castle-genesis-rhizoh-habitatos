@@ -1038,7 +1038,7 @@ export default function AppRhizohWorldSpaceV0() {
                     ? "0 çevrimiçi — sim hedefi"
                     : "0 online — sim target"}
               </p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-2 flex flex-wrap gap-2">
               {remoteCastles.length ? (
                 <button
                   type="button"
