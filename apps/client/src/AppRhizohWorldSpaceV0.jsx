@@ -138,6 +138,19 @@ import { runSpiralImmersionEnterStagedV0 } from "./rhizoh/runtime/worldMapMeanin
 import { RhizohMapTransitionApproachStripV0 } from "./components/RhizohMapTransitionApproachStripV0.jsx";
 import { loadRhizohExperienceSessionContextV0 } from "./rhizoh/experience/rhizohExperienceSessionContextV0.js";
 import { loadRhizohProductSession } from "./rhizoh/product/rhizohProductSessionPersistenceV1.js";
+import {
+  applySpiralMapLayerFromQueryV0,
+  focusSpiralMapLayerV0
+} from "./rhizoh/runtime/spiralMapLayerFilterStateV0.js";
+import { SPIRAL_MAP_LAYER_V0 } from "./rhizoh/runtime/spatialDistributionLayerV0.js";
+
+function resolveSpiralLayerFromHaloFocusV0(layerFocus) {
+  const focus = Number(layerFocus);
+  if (focus === 13) return SPIRAL_MAP_LAYER_V0.EXPLORER;
+  if (focus === 10 || focus === 11) return SPIRAL_MAP_LAYER_V0.CASTLE;
+  if (focus === 6) return SPIRAL_MAP_LAYER_V0.ECONOMY;
+  return null;
+}
 
 export default function AppRhizohWorldSpaceV0() {
   const navigate = useNavigate();
@@ -229,6 +242,19 @@ export default function AppRhizohWorldSpaceV0() {
   useEffect(() => {
     writeRhizohWorldDrawerDomainV0(worldDrawerDomainV0);
   }, [worldDrawerDomainV0]);
+
+  useEffect(() => {
+    applySpiralMapLayerFromQueryV0(location.search);
+  }, [location.search]);
+
+  const onSpiralMapLayerFocusV0 = useCallback((layerFocus) => {
+    if (typeof layerFocus === "string") {
+      focusSpiralMapLayerV0(layerFocus);
+      return;
+    }
+    const spiral = resolveSpiralLayerFromHaloFocusV0(layerFocus);
+    if (spiral) focusSpiralMapLayerV0(spiral);
+  }, []);
 
   const openPostCastleMediaTubeV0 = useCallback(
     (source = "castle_init") => {
@@ -793,7 +819,7 @@ export default function AppRhizohWorldSpaceV0() {
         onModeSelect={() => navigate("/world/modes")}
         onCapNodeIntent={handleWorldSpaceCapWheelNodeV0}
         onSeedIntent={onLibrarySeedIntentV0}
-        onFocusLayer={() => {}}
+        onFocusLayer={onSpiralMapLayerFocusV0}
       />
 
       <RhizohConversationDockShellV0
