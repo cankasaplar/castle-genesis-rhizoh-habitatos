@@ -14,6 +14,7 @@ export const SHADOW_CASTLE_PEER_REGISTRY_EVENT_V0 = "rhizoh:shadow-castle-peer-r
 let remoteCastlesV0 = [];
 /** @type {object | null} */
 let boundPeerV0 = null;
+let remoteCastlesVisibleV0 = false;
 
 /**
  * @param {string} uid
@@ -62,6 +63,9 @@ export function publishShadowCastlePeerRegistryV0(row = {}) {
   if (Array.isArray(row.remoteCastles)) {
     remoteCastlesV0 = row.remoteCastles.map((r) => Object.freeze({ ...r }));
   }
+  if (row.remoteCastlesVisible !== undefined) {
+    remoteCastlesVisibleV0 = row.remoteCastlesVisible === true;
+  }
   if (row.boundPeer !== undefined) {
     boundPeerV0 = row.boundPeer ? Object.freeze({ ...row.boundPeer }) : null;
   }
@@ -93,6 +97,24 @@ export function bindShadowCastleReactionPeerV0(peerDetail) {
 export function clearShadowCastleReactionPeerV0() {
   boundPeerV0 = null;
   notifyRegistryListenersV0();
+}
+
+/**
+ * Bind sim peer as explicit reaction target (solo / no Firestore peers).
+ */
+export function bindShadowCastleSimPeerV0() {
+  boundPeerV0 = Object.freeze({
+    uid: null,
+    pinId: PEER_CASTLE_SIM_ID_V0,
+    lat: PEER_CASTLE_SIM_COORDS_V0.lat,
+    lon: PEER_CASTLE_SIM_COORDS_V0.lon,
+    displayName: "Peer Castle · Istanbul Sim",
+    isSim: true,
+    boundAtMs: Date.now(),
+    source: "sim_peer_bind"
+  });
+  notifyRegistryListenersV0();
+  return boundPeerV0;
 }
 
 export function readBoundShadowCastlePeerV0() {
@@ -136,6 +158,18 @@ export function resolveShadowReactionTargetV0(opts = {}) {
     }
   }
 
+  if (!opts.preferSim && boundPeerV0?.isSim) {
+    return Object.freeze({
+      pinId: PEER_CASTLE_SIM_ID_V0,
+      uid: null,
+      lat: PEER_CASTLE_SIM_COORDS_V0.lat,
+      lon: PEER_CASTLE_SIM_COORDS_V0.lon,
+      displayName: boundPeerV0.displayName || "Peer Castle · Istanbul Sim",
+      isSim: true,
+      source: "bound_sim_peer"
+    });
+  }
+
   if (!opts.preferSim && boundPeerV0?.uid) {
     return Object.freeze({
       pinId: boundPeerV0.pinId,
@@ -148,7 +182,7 @@ export function resolveShadowReactionTargetV0(opts = {}) {
     });
   }
 
-  if (!opts.preferSim && remoteCastlesV0.length) {
+  if (!opts.preferSim && remoteCastlesVisibleV0 && remoteCastlesV0.length) {
     const origin = resolveUserCastleGeoForMapViewV0();
     const candidates = remoteCastlesV0.filter(
       (r) => Number.isFinite(Number(r.lat)) && Number.isFinite(Number(r.lon))
@@ -183,7 +217,7 @@ export function resolveShadowReactionTargetV0(opts = {}) {
 
 export function shouldShowShadowPeerSimPinV0() {
   if (boundPeerV0?.uid) return false;
-  if (remoteCastlesV0.length > 0) return false;
+  if (remoteCastlesV0.length > 0 && remoteCastlesVisibleV0) return false;
   return true;
 }
 
@@ -191,6 +225,7 @@ export function getShadowCastlePeerRegistrySnapshotV0() {
   return Object.freeze({
     schema: `${SHADOW_CASTLE_PEER_REGISTRY_SCHEMA_V0}.snapshot`,
     remoteCount: remoteCastlesV0.length,
+    remoteCastlesVisible: remoteCastlesVisibleV0,
     boundPeer: boundPeerV0,
     reactionTarget: resolveShadowReactionTargetV0(),
     showSimPin: shouldShowShadowPeerSimPinV0(),
@@ -202,4 +237,5 @@ export function getShadowCastlePeerRegistrySnapshotV0() {
 export function __resetShadowCastlePeerRegistryForTestV0() {
   remoteCastlesV0 = [];
   boundPeerV0 = null;
+  remoteCastlesVisibleV0 = false;
 }
