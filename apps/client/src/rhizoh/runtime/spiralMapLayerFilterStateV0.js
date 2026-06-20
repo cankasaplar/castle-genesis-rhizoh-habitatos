@@ -24,6 +24,25 @@ const DEFAULT_STATE_V0 = Object.freeze({
   includeDormant: false
 });
 
+/** Session SSOT — survives localStorage write failures and read-after-write drift. */
+/** @type {ReturnType<typeof normalizeSpiralMapLayerFilterStateV0> | null} */
+let spiralMapLayerFilterSessionV0 = null;
+
+function readSpiralMapLayerFilterFromStorageV0() {
+  if (typeof localStorage === "undefined") return DEFAULT_STATE_V0;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_V0);
+    return normalizeSpiralMapLayerFilterStateV0(raw ? JSON.parse(raw) : {});
+  } catch {
+    return DEFAULT_STATE_V0;
+  }
+}
+
+/** Test-only — clear session cache between cases. */
+export function resetSpiralMapLayerFilterSessionForTestsV0() {
+  spiralMapLayerFilterSessionV0 = null;
+}
+
 export const SPIRAL_MAP_LAYER_FILTER_POLICY_V0 = Object.freeze({
   [SPIRAL_MAP_LAYER_V0.EXPLORER]: Object.freeze({
     tr: "Explorer",
@@ -77,13 +96,9 @@ function normalizeSpiralMapLayerFilterStateV0(raw = {}) {
  * @returns {typeof DEFAULT_STATE_V0}
  */
 export function readSpiralMapLayerFilterStateV0() {
-  if (typeof localStorage === "undefined") return DEFAULT_STATE_V0;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_V0);
-    return normalizeSpiralMapLayerFilterStateV0(raw ? JSON.parse(raw) : {});
-  } catch {
-    return DEFAULT_STATE_V0;
-  }
+  if (spiralMapLayerFilterSessionV0) return spiralMapLayerFilterSessionV0;
+  spiralMapLayerFilterSessionV0 = readSpiralMapLayerFilterFromStorageV0();
+  return spiralMapLayerFilterSessionV0;
 }
 
 /**
@@ -119,11 +134,12 @@ export function writeSpiralMapLayerFilterStateV0(patch, opts = {}) {
     merged.realityMode = undefined;
   }
   const next = normalizeSpiralMapLayerFilterStateV0(merged);
+  spiralMapLayerFilterSessionV0 = next;
   if (typeof localStorage !== "undefined") {
     try {
       localStorage.setItem(STORAGE_KEY_V0, JSON.stringify(next));
     } catch {
-      /* noop */
+      /* noop — session cache remains authoritative for this tab */
     }
   }
   if (typeof window !== "undefined") {
@@ -196,7 +212,10 @@ export function subscribeSpiralMapLayerFilterStateV0(onChange) {
   if (typeof window === "undefined" || typeof onChange !== "function") return () => {};
   const handler = () => onChange();
   const storageHandler = (e) => {
-    if (e.key === STORAGE_KEY_V0 || e.key === null) handler();
+    if (e.key === STORAGE_KEY_V0 || e.key === null) {
+      spiralMapLayerFilterSessionV0 = null;
+      handler();
+    }
   };
   window.addEventListener(SPIRAL_MAP_LAYER_FILTER_EVENT_V0, handler);
   window.addEventListener("storage", storageHandler);

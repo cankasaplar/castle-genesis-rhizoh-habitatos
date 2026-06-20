@@ -9,9 +9,11 @@ import {
   SPIRAL_MAP_REALITY_MODE_V0
 } from "../spiralMapRealityModeV0.js";
 import { SPIRAL_MAP_LAYER_V0 } from "../spatialDistributionLayerV0.js";
+import { resetSpiralMapLayerFilterSessionForTestsV0 } from "../spiralMapLayerFilterStateV0.js";
 
 describe("spiralMapRealityModeV0", () => {
   beforeEach(() => {
+    resetSpiralMapLayerFilterSessionForTestsV0();
     if (typeof localStorage !== "undefined") {
       localStorage.removeItem("rhizoh.spiral_map_layer_filter.v0");
       localStorage.removeItem(SPIRAL_MAP_REALITY_MODE_LS_KEY_V0);

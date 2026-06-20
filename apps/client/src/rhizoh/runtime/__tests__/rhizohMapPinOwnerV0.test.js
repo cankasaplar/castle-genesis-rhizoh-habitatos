@@ -185,6 +185,15 @@ describe("rhizohMapPinOwnerV0", () => {
     stop();
   });
 
+  it("installRhizohMapPinOwnerAutoRefreshV0 publishes reality mode DevTools with apply", () => {
+    installRhizohMapPinOwnerAutoRefreshV0({ pathname: "/world/space" });
+    expect(typeof window.__rhizoh?.applySpiralMapRealityModeV0).toBe("function");
+    const out = window.__rhizoh.applySpiralMapRealityModeV0("castle");
+    expect(out.ok).toBe(true);
+    expect(out.mode).toBe("castle");
+    expect(out.readBack.castle).toBe(true);
+  });
+
   it("summarizeSessionPinBreakdownV0 splits sovereign vs explorer seeds", () => {
     const rows = [
       { id: "origin_home_serencebey", type: "origin_home" },

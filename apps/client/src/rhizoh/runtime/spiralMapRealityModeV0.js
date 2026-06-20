@@ -267,11 +267,19 @@ export function publishSpiralMapRealityDevtoolsV0() {
   if (typeof window === "undefined") return;
   window.__rhizoh = window.__rhizoh || {};
   window.__rhizoh.applySpiralMapRealityModeV0 = (modeId) => {
-    const state = applySpiralMapRealityModeV0(modeId);
+    const requested = String(modeId || SPIRAL_MAP_REALITY_MODE_V0.EXPLORER).trim();
+    const state = applySpiralMapRealityModeV0(requested);
+    const readBack = readSpiralMapLayerFilterStateV0();
+    const mode = readSpiralMapRealityModeV0(state);
+    const presetOk = spiralMapFilterMatchesRealityPresetV0(requested, state);
     return Object.freeze({
-      ok: true,
-      mode: readSpiralMapRealityModeV0(state),
-      state
+      ok: presetOk,
+      requested,
+      mode,
+      state,
+      readBack,
+      persistedRealityMode: readPersistedSpiralMapRealityModeIdV0(),
+      storageKey: SPIRAL_MAP_REALITY_MODE_LS_KEY_V0
     });
   };
   window.__rhizoh.readSpiralMapRealityModeV0 = readSpiralMapRealityModeV0;
