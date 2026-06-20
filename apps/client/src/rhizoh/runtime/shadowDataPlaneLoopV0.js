@@ -403,8 +403,11 @@ export function demoChessShadowMoveV0(opts = {}) {
   });
 }
 
-export function flyToShadowReactionTargetV0(zoom = 13) {
-  const target = resolveShadowReactionTargetV0();
+export function flyToShadowReactionTargetV0(zoom = 13, opts = {}) {
+  const pinId = String(opts.pinId || "").trim();
+  const target = pinId
+    ? resolveShadowReactionTargetV0({ toCastleId: pinId })
+    : resolveShadowReactionTargetV0();
   if (typeof window === "undefined" || !Number.isFinite(target.lat) || !Number.isFinite(target.lon)) {
     return false;
   }
@@ -417,6 +420,30 @@ export function flyToShadowReactionTargetV0(zoom = 13) {
   } catch {
     return false;
   }
+}
+
+/**
+ * Sim peer map pin click — bind reaction target + visit echo (no Firestore uid).
+ * @param {object} [node]
+ */
+export function handleShadowSimPeerPinClickV0(node = {}) {
+  bindShadowCastleSimPeerV0();
+  const event = emitShadowCastleEventV0({
+    type: SHADOW_CASTLE_EVENT_TYPE_V0.CASTLE_VISIT_ECHO,
+    fromCastleId: "my_castle",
+    toCastleId: PEER_CASTLE_SIM_ID_V0,
+    payload: Object.freeze({
+      displayName: String(node.name || node.label || "Peer Castle · Istanbul Sim"),
+      lat: Number(node.lat) || PEER_CASTLE_SIM_COORDS_V0.lat,
+      lon: Number(node.lon) || PEER_CASTLE_SIM_COORDS_V0.lon,
+      isSim: true
+    }),
+    source: "sim_peer_pin_click"
+  });
+  if (!loopStartedV0) {
+    processShadowCastleEventV0(event);
+  }
+  return Object.freeze({ ok: true, bound: true, event });
 }
 
 export function flyToShadowPeerCastleV0(zoom = 13) {
@@ -469,6 +496,7 @@ export function publishShadowDataPlaneDevtoolsV0() {
   window.__rhizoh.flyToShadowReactionTargetV0 = flyToShadowReactionTargetV0;
   window.__rhizoh.emitCastleVisitEchoShadowEventV0 = emitCastleVisitEchoShadowEventV0;
   window.__rhizoh.bindShadowCastleSimPeerV0 = bindShadowCastleSimPeerV0;
+  window.__rhizoh.handleShadowSimPeerPinClickV0 = handleShadowSimPeerPinClickV0;
   window.__rhizoh.inspectShadowDataPlaneV0 = inspectShadowDataPlaneV0;
   return inspectShadowDataPlaneV0();
 }

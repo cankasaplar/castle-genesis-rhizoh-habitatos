@@ -1019,26 +1019,34 @@ export default function AppRhizohWorldSpaceV0() {
       ) : null}
 
       {!castleAuth.needsAuthGate && !spiralImmersionActive && !v11MediaTube ? (
-        <div className="pointer-events-none fixed left-4 top-28 z-[26] flex max-w-[15rem] flex-col gap-2">
-          <div className="pointer-events-auto rounded-xl border border-white/15 bg-black/80 px-3 py-2 backdrop-blur-md">
-            <p className="text-[9px] font-semibold uppercase tracking-wider text-white/45">
-              {uiLocale === "tr" ? "Peer kaleler" : "Peer castles"}
-            </p>
-            <p className="mt-1 text-[10px] normal-case text-white/70">
-              {remoteCastles.length
-                ? uiLocale === "tr"
-                  ? `${remoteCastles.length} çevrimiçi — haritada gri pin`
-                  : `${remoteCastles.length} online — grey pins on map`
-                : uiLocale === "tr"
-                  ? "0 çevrimiçi — sim hedefi aktif"
-                  : "0 online — sim target active"}
-            </p>
+        <div
+          className="pointer-events-none fixed left-4 z-[30] max-w-[15rem]"
+          style={{ bottom: "calc(10.5rem + env(safe-area-inset-bottom, 0px))" }}
+        >
+          <div className="pointer-events-auto rounded-xl border border-white/15 bg-black/88 p-3 shadow-lg backdrop-blur-md">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[9px] font-semibold uppercase tracking-wider text-white/45">
+                  {uiLocale === "tr" ? "Peer kaleler" : "Peer castles"}
+                </p>
+                <p className="mt-1 text-[10px] normal-case leading-snug text-white/70">
+                  {remoteCastles.length
+                    ? uiLocale === "tr"
+                      ? `${remoteCastles.length} çevrimiçi — gri pin`
+                      : `${remoteCastles.length} online — grey pin`
+                    : uiLocale === "tr"
+                      ? "0 çevrimiçi — sim hedefi"
+                      : "0 online — sim target"}
+                </p>
+              </div>
+              <RhizohCastleShadowInboxV0 uiLocale={uiLocale} compact panelPlacement="dropdown" />
+            </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {remoteCastles.length ? (
                 <button
                   type="button"
                   onClick={() => writeRemoteCastlesVisibleV0(!remoteCastlesVisibleV0)}
-                  className={`rounded-lg border px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider ${
+                  className={`min-h-[2rem] touch-manipulation rounded-lg border px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider ${
                     remoteCastlesVisibleV0
                       ? "border-gray-400/50 bg-gray-500/20 text-gray-100"
                       : "border-white/15 bg-black/60 text-white/60 hover:text-white"
@@ -1046,18 +1054,18 @@ export default function AppRhizohWorldSpaceV0() {
                 >
                   {uiLocale === "tr"
                     ? remoteCastlesVisibleV0
-                      ? "Gizle"
-                      : "Göster"
+                      ? "Pinleri gizle"
+                      : "Pinleri göster"
                     : remoteCastlesVisibleV0
-                      ? "Hide"
-                      : "Show"}
+                      ? "Hide pins"
+                      : "Show pins"}
                 </button>
               ) : (
                 <>
                   <button
                     type="button"
                     onClick={() => flyToShadowPeerCastleV0(13)}
-                    className="rounded-lg border border-sky-400/40 bg-sky-500/15 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider text-sky-100 hover:bg-sky-500/25"
+                    className="min-h-[2rem] touch-manipulation rounded-lg border border-sky-400/40 bg-sky-500/15 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider text-sky-100 hover:bg-sky-500/25"
                   >
                     {uiLocale === "tr" ? "Sim pin" : "Sim pin"}
                   </button>
@@ -1067,7 +1075,7 @@ export default function AppRhizohWorldSpaceV0() {
                       bindShadowCastleSimPeerV0();
                       flyToShadowPeerCastleV0(13);
                     }}
-                    className="rounded-lg border border-emerald-400/35 bg-emerald-500/10 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider text-emerald-100 hover:bg-emerald-500/20"
+                    className="min-h-[2rem] touch-manipulation rounded-lg border border-emerald-400/35 bg-emerald-500/10 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider text-emerald-100 hover:bg-emerald-500/20"
                   >
                     {uiLocale === "tr" ? "Sim bağla" : "Bind sim"}
                   </button>
@@ -1075,7 +1083,6 @@ export default function AppRhizohWorldSpaceV0() {
               )}
             </div>
           </div>
-          <RhizohCastleShadowInboxV0 uiLocale={uiLocale} compact className="pointer-events-auto self-start" />
         </div>
       ) : null}
 
