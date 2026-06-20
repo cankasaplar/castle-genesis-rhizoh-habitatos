@@ -67,7 +67,7 @@ export function emitShadowCastleEventFromUglV0(uglEvent) {
 /**
  * @param {object} [opts]
  */
-export function demoChessShadowMoveV0(opts = {}) {
+export function demoChessShadowMoveEmitV0(opts = {}) {
   const uglEvent = Object.freeze({
     schema: "castle.rhizoh.ugl_event.v0",
     meta: Object.freeze({
