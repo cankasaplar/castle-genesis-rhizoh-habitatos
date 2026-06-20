@@ -344,6 +344,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
   const shadowPeerNode = useMemo(() => {
     void shadowPinPulseTick;
     const node = buildShadowPeerCastleSimNodeV0();
+    if (!node) return null;
     return Object.freeze({
       ...node,
       shadowPulseActive: readShadowCastlePinPulseActiveV0(node.id)
@@ -520,7 +521,12 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
       }));
       const hasUserCastle = displayNodes.some((n) => n.id === "my_castle");
       const extraLocal = hasUserCastle ? [] : localNodes;
-      const allNodes = [...displayNodes, ...extraLocal, shadowPeerNode, ...remoteNodes];
+      const allNodes = [
+        ...displayNodes,
+        ...extraLocal,
+        ...(shadowPeerNode ? [shadowPeerNode] : []),
+        ...remoteNodes
+      ];
       for (const node of allNodes) {
         const renderNode =
           node.shadowPulseActive || readShadowCastlePinPulseActiveV0(node.id)

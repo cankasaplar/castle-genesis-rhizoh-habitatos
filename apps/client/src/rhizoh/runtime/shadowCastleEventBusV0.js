@@ -13,10 +13,16 @@ export const SHADOW_CASTLE_EVENT_TYPE_V0 = Object.freeze({
   ATMOSPHERE_SHIFT: "atmosphere.shift.v0",
   CASTLE_ECHO: "castle.echo.v0",
   CHESS_MOVE: "chess.move.v0",
-  CHESS_GAME_END: "chess.game_end.v0"
+  CHESS_GAME_END: "chess.game_end.v0",
+  CASTLE_VISIT_ECHO: "castle.visit.echo.v0",
+  CASTLE_INVITE_EDGE: "castle.invite.edge.v0"
 });
 
 export const PEER_CASTLE_SIM_ID_V0 = "peer_castle_sim_istanbul";
+export const PEER_CASTLE_SIM_COORDS_V0 = Object.freeze({
+  lat: 41.0488,
+  lon: 29.0245
+});
 
 const MAX_EVENTS_V0 = 128;
 let logicalSeqV0 = 0;

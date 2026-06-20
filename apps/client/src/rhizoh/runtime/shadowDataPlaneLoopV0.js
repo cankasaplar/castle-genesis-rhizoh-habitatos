@@ -8,6 +8,7 @@ import {
   SHADOW_CASTLE_BUS_EVENT_V0,
   SHADOW_CASTLE_EVENT_TYPE_V0,
   PEER_CASTLE_SIM_ID_V0,
+  PEER_CASTLE_SIM_COORDS_V0,
   emitShadowCastleEventV0,
   getShadowCastleEventBusSnapshotV0,
   readShadowCastleEventRingV0
@@ -23,6 +24,16 @@ import {
   installShadowChessUglBridgeV0,
   uninstallShadowChessUglBridgeV0
 } from "./shadowChessUglBridgeV0.js";
+import {
+  getShadowCastlePeerRegistrySnapshotV0,
+  resolveShadowReactionTargetV0,
+  shouldShowShadowPeerSimPinV0
+} from "./shadowCastlePeerRegistryV0.js";
+import {
+  addSessionEdgeV0,
+  getShadowSessionGraphSnapshotV0,
+  SESSION_EDGE_KIND_V0
+} from "./shadowCastleSessionGraphV0.js";
 
 export const SHADOW_DATA_PLANE_SCHEMA_V0 = "castle.rhizoh.shadow_data_plane.v0";
 export const SHADOW_CASTLE_REACTION_EVENT_V0 = "rhizoh:shadow-castle-reaction-v0";
@@ -32,14 +43,11 @@ export const SHADOW_DEFAULT_PIN_PULSE_DURATION_MS_V0 = 5000;
 
 export const SHADOW_DATA_PLANE_PHASE_V0 = Object.freeze({
   A_SHADOW: "A_shadow",
-  B_SOFT: "B_soft"
+  B_SOFT: "B_soft",
+  B_SOFT_REAL: "B_soft_real"
 });
 
-export { PEER_CASTLE_SIM_ID_V0 };
-export const PEER_CASTLE_SIM_COORDS_V0 = Object.freeze({
-  lat: 41.0488,
-  lon: 29.0245
-});
+export { PEER_CASTLE_SIM_ID_V0, PEER_CASTLE_SIM_COORDS_V0 };
 
 /** @type {Map<string, { untilMs: number, sourceEventId: string }>} */
 const activePinPulsesV0 = new Map();
@@ -53,6 +61,20 @@ let busListenerV0 = null;
 let pulsePruneTimerV0 = null;
 let loopStartedV0 = false;
 let shadowDataPlanePhaseV0 = SHADOW_DATA_PLANE_PHASE_V0.A_SHADOW;
+
+function syncShadowDataPlanePhaseV0() {
+  if (!loopStartedV0) {
+    shadowDataPlanePhaseV0 = SHADOW_DATA_PLANE_PHASE_V0.A_SHADOW;
+    return shadowDataPlanePhaseV0;
+  }
+  const registry = getShadowCastlePeerRegistrySnapshotV0();
+  if (registry.boundPeer || (registry.remoteCount > 0 && !registry.reactionTarget?.isSim)) {
+    shadowDataPlanePhaseV0 = SHADOW_DATA_PLANE_PHASE_V0.B_SOFT_REAL;
+  } else {
+    shadowDataPlanePhaseV0 = SHADOW_DATA_PLANE_PHASE_V0.B_SOFT;
+  }
+  return shadowDataPlanePhaseV0;
+}
 /** @type {(() => void) | null} */
 let stopChessBridgeV0 = null;
 
@@ -129,6 +151,7 @@ export function applyShadowCastlePinPulseV0(row = {}) {
  * Sim peer castle pin for Phase A demo (always visible on /world/space when loop booted).
  */
 export function buildShadowPeerCastleSimNodeV0() {
+  if (!shouldShowShadowPeerSimPinV0()) return null;
   return Object.freeze({
     id: PEER_CASTLE_SIM_ID_V0,
     name: "Peer Castle · Istanbul Sim",
@@ -177,6 +200,14 @@ export function interpretShadowCastleEventV0(event) {
     meaning = scalar >= 0.55 ? "chess_game_win_tone" : "chess_game_close";
     reactionKind = "chess_end_echo";
     atmosphere = "resolved";
+  } else if (type === SHADOW_CASTLE_EVENT_TYPE_V0.CASTLE_VISIT_ECHO) {
+    meaning = "castle_visit_open";
+    reactionKind = "visit_echo";
+    atmosphere = "linked";
+  } else if (type === SHADOW_CASTLE_EVENT_TYPE_V0.CASTLE_INVITE_EDGE) {
+    meaning = "castle_invite_pending";
+    reactionKind = "invite_echo";
+    atmosphere = "awaiting";
   }
 
   return Object.freeze({
@@ -201,10 +232,11 @@ export function interpretShadowCastleEventV0(event) {
  * @param {object} event
  */
 export function projectShadowCastleReactionV0(interpreted, event) {
-  const toCastleId = String(
-    event?.toCastleId || PEER_CASTLE_SIM_ID_V0
-  );
-  const pinId = toCastleId.startsWith("remote_castle_") ? toCastleId : toCastleId;
+  const target = resolveShadowReactionTargetV0({
+    toCastleId: event?.toCastleId,
+    preferSim: event?.meta?.preferSim === true
+  });
+  const pinId = target.pinId;
   const eventType = String(event?.type || "");
   const pulseDurationMs = eventType.startsWith("chess.")
     ? SHADOW_CHESS_PIN_PULSE_DURATION_MS_V0
@@ -216,23 +248,28 @@ export function projectShadowCastleReactionV0(interpreted, event) {
   });
 
   const isChess = eventType.startsWith("chess.");
-  const san = String(event?.payload?.san || "").trim();
+  const peerLabel = target.displayName || (target.isSim ? "Peer Sim" : "Peer Castle");
   const toastTr = isChess
-    ? san
-      ? `Satranç → Peer: ${san}`
-      : `Satranç hamlesi → Peer Kale`
-    : `Peer Kale tepki: ${interpreted.meaning}`;
+    ? event?.payload?.san
+      ? `${peerLabel} ← Satranç: ${event.payload.san}`
+      : `${peerLabel} ← satranç hamlesi`
+    : eventType === SHADOW_CASTLE_EVENT_TYPE_V0.CASTLE_VISIT_ECHO
+      ? `${peerLabel} · ziyaret bağlantısı`
+      : `${peerLabel} tepki: ${interpreted.meaning}`;
   const toastEn = isChess
-    ? san
-      ? `Chess → Peer: ${san}`
-      : `Chess move → Peer Castle`
-    : `Peer Castle reaction: ${interpreted.meaning}`;
+    ? event?.payload?.san
+      ? `${peerLabel} ← Chess: ${event.payload.san}`
+      : `${peerLabel} ← chess move`
+    : eventType === SHADOW_CASTLE_EVENT_TYPE_V0.CASTLE_VISIT_ECHO
+      ? `${peerLabel} · visit link`
+      : `${peerLabel} reaction: ${interpreted.meaning}`;
 
   return Object.freeze({
     schema: `${SHADOW_DATA_PLANE_SCHEMA_V0}.reaction`,
     eventId: event?.eventId || null,
     fromCastleId: String(event?.fromCastleId || ORIGIN_HOME_SERENCEBEY_PIN_ID_V0),
-    toCastleId,
+    toCastleId: pinId,
+    target: Object.freeze({ ...target }),
     meaning: interpreted.meaning,
     reactionKind: interpreted.reactionKind,
     atmosphere: interpreted.atmosphere,
@@ -262,6 +299,7 @@ export function processShadowCastleEventV0(event) {
   });
   reactionTraceV0.unshift(trace);
   if (reactionTraceV0.length > 32) reactionTraceV0.length = 32;
+  syncShadowDataPlanePhaseV0();
   if (typeof globalThis !== "undefined" && globalThis.dispatchEvent) {
     globalThis.dispatchEvent(new CustomEvent(SHADOW_CASTLE_REACTION_EVENT_V0, { detail: trace }));
   }
@@ -287,6 +325,8 @@ export function inspectShadowDataPlaneV0() {
       ? Object.freeze({
           meaning: lastTrace.interpreted?.meaning || null,
           pinId: lastPulsePinId,
+          target: lastTrace.reaction?.target || null,
+          isRealPeer: lastTrace.reaction?.target?.isSim === false,
           pulseRemainingMs,
           pulseActive: pulseRemainingMs > 0,
           toast: lastTrace.reaction?.toast || null
@@ -298,6 +338,9 @@ export function inspectShadowDataPlaneV0() {
         Object.freeze({ pinId, untilMs: row.untilMs, sourceEventId: row.sourceEventId })
       )
     ),
+    peerRegistry: getShadowCastlePeerRegistrySnapshotV0(),
+    sessionGraph: getShadowSessionGraphSnapshotV0(),
+    reactionTarget: resolveShadowReactionTargetV0(),
     peerSim: buildShadowPeerCastleSimNodeV0(),
     readOnly: true,
     realityMutationPermitted: false,
@@ -313,7 +356,7 @@ export function demoCastleToCastleEventLoopV0(opts = {}) {
   const event = emitShadowCastleEventV0({
     type: SHADOW_CASTLE_EVENT_TYPE_V0.RESOURCE_DISCOVERED,
     fromCastleId: String(opts.fromCastleId || ORIGIN_HOME_SERENCEBEY_PIN_ID_V0),
-    toCastleId: String(opts.toCastleId || PEER_CASTLE_SIM_ID_V0),
+    toCastleId: opts.toCastleId != null ? String(opts.toCastleId) : null,
     payload: Object.freeze({
       resourceId: String(opts.resourceId || "crystal_alpha"),
       scalar: Number.isFinite(Number(opts.scalar)) ? Number(opts.scalar) : 0.82
@@ -344,16 +387,8 @@ export function demoChessShadowMoveV0(opts = {}) {
     processShadowCastleEventV0(event);
   }
   const inspect = inspectShadowDataPlaneV0();
-  if (opts.flyToPeer !== false && typeof window !== "undefined") {
-    try {
-      window.__rhizoh?.v11LeafletMap?.flyTo(
-        [PEER_CASTLE_SIM_COORDS_V0.lat, PEER_CASTLE_SIM_COORDS_V0.lon],
-        13,
-        { animate: true, duration: 1.2 }
-      );
-    } catch {
-      /* noop */
-    }
+  if (opts.flyToPeer !== false) {
+    flyToShadowReactionTargetV0(13);
   }
   return Object.freeze({
     ok: true,
@@ -364,18 +399,53 @@ export function demoChessShadowMoveV0(opts = {}) {
   });
 }
 
-export function flyToShadowPeerCastleV0(zoom = 13) {
-  if (typeof window === "undefined") return false;
+export function flyToShadowReactionTargetV0(zoom = 13) {
+  const target = resolveShadowReactionTargetV0();
+  if (typeof window === "undefined" || !Number.isFinite(target.lat) || !Number.isFinite(target.lon)) {
+    return false;
+  }
   try {
-    window.__rhizoh?.v11LeafletMap?.flyTo(
-      [PEER_CASTLE_SIM_COORDS_V0.lat, PEER_CASTLE_SIM_COORDS_V0.lon],
-      zoom,
-      { animate: true, duration: 1.2 }
-    );
+    window.__rhizoh?.v11LeafletMap?.flyTo([target.lat, target.lon], zoom, {
+      animate: true,
+      duration: 1.2
+    });
     return true;
   } catch {
     return false;
   }
+}
+
+export function flyToShadowPeerCastleV0(zoom = 13) {
+  return flyToShadowReactionTargetV0(zoom);
+}
+
+/**
+ * Remote castle click → session edge + visit echo on shadow bus.
+ * @param {object} peerDetail
+ */
+export function emitCastleVisitEchoShadowEventV0(peerDetail) {
+  const uid = String(peerDetail?.uid || "").trim();
+  if (!uid) return null;
+  addSessionEdgeV0({
+    fromCastleId: "my_castle",
+    toUid: uid,
+    edgeKind: SESSION_EDGE_KIND_V0.VISIT
+  });
+  const event = emitShadowCastleEventV0({
+    type: SHADOW_CASTLE_EVENT_TYPE_V0.CASTLE_VISIT_ECHO,
+    fromCastleId: "my_castle",
+    toCastleId: `remote_castle_${uid}`,
+    payload: Object.freeze({
+      displayName: peerDetail.displayName || null,
+      lat: Number(peerDetail.lat),
+      lon: Number(peerDetail.lon)
+    }),
+    source: "castle_visit_click"
+  });
+  if (!loopStartedV0) {
+    processShadowCastleEventV0(event);
+  }
+  return event;
 }
 
 export function publishShadowDataPlaneDevtoolsV0() {
@@ -392,6 +462,8 @@ export function publishShadowDataPlaneDevtoolsV0() {
   window.__rhizoh.demoCastleToCastleEventLoopV0 = demoCastleToCastleEventLoopV0;
   window.__rhizoh.demoChessShadowMoveV0 = demoChessShadowMoveV0;
   window.__rhizoh.flyToShadowPeerCastleV0 = flyToShadowPeerCastleV0;
+  window.__rhizoh.flyToShadowReactionTargetV0 = flyToShadowReactionTargetV0;
+  window.__rhizoh.emitCastleVisitEchoShadowEventV0 = emitCastleVisitEchoShadowEventV0;
   window.__rhizoh.inspectShadowDataPlaneV0 = inspectShadowDataPlaneV0;
   return inspectShadowDataPlaneV0();
 }
@@ -405,7 +477,7 @@ export function startShadowDataPlaneLoopV0(opts = {}) {
     return stopShadowDataPlaneLoopV0;
   }
   loopStartedV0 = true;
-  shadowDataPlanePhaseV0 = SHADOW_DATA_PLANE_PHASE_V0.B_SOFT;
+  syncShadowDataPlanePhaseV0();
 
   ensureRhizohUglV0();
   stopChessBridgeV0 = installShadowChessUglBridgeV0();

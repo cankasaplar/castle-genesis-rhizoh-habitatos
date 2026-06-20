@@ -153,8 +153,14 @@ import { SPIRAL_MAP_LAYER_V0 } from "./rhizoh/runtime/spatialDistributionLayerV0
 import { startSportsLiveInjectionV0 } from "./rhizoh/runtime/worldMapSportsLiveInjectionV0.js";
 import {
   SHADOW_CASTLE_REACTION_EVENT_V0,
+  emitCastleVisitEchoShadowEventV0,
   startShadowDataPlaneLoopV0
 } from "./rhizoh/runtime/shadowDataPlaneLoopV0.js";
+import {
+  bindShadowCastleReactionPeerV0,
+  clearShadowCastleReactionPeerV0,
+  publishShadowCastlePeerRegistryV0
+} from "./rhizoh/runtime/shadowCastlePeerRegistryV0.js";
 
 function resolveSpiralLayerFromHaloFocusV0(layerFocus) {
   const focus = Number(layerFocus);
@@ -332,12 +338,22 @@ export default function AppRhizohWorldSpaceV0() {
     const onRemoteCastle = (ev) => {
       const detail = ev?.detail;
       if (!detail?.uid) return;
+      writeRemoteCastlesVisibleV0(true);
+      bindShadowCastleReactionPeerV0(detail);
+      emitCastleVisitEchoShadowEventV0(detail);
       setC2cPeer(Object.freeze({ ...detail }));
       setV11NodePanel(null);
     };
     window.addEventListener(RHIZOH_REMOTE_CASTLE_CLICK_EVENT_V1, onRemoteCastle);
     return () => window.removeEventListener(RHIZOH_REMOTE_CASTLE_CLICK_EVENT_V1, onRemoteCastle);
   }, []);
+
+  useEffect(() => {
+    publishShadowCastlePeerRegistryV0({
+      remoteCastles,
+      boundPeer: c2cPeer
+    });
+  }, [remoteCastles, c2cPeer]);
 
   useEffect(() => {
     runDomainGateForPathV0("/world/space", { userId: castleAuth?.user?.uid || null });
@@ -1019,7 +1035,10 @@ export default function AppRhizohWorldSpaceV0() {
           userId={castleAuth?.user?.uid || ""}
           uiLocale={uiLocale}
           recordBridgePeer={recordBridgePeer}
-          onClose={() => setC2cPeer(null)}
+          onClose={() => {
+            setC2cPeer(null);
+            clearShadowCastleReactionPeerV0();
+          }}
         />
       ) : null}
 

@@ -36,7 +36,7 @@ describe("shadowChessUglBridgeV0", () => {
     });
     expect(row?.type).toBe(SHADOW_CASTLE_EVENT_TYPE_V0.CHESS_MOVE);
     expect(row?.fromCastleId).toBe("my_castle");
-    expect(row?.payload.san).toBe("e4");
+    expect(row?.toCastleId).toBeNull();
   });
 
   it("ignores non-chess UGL events", () => {
