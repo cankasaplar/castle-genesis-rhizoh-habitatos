@@ -77,6 +77,8 @@ Boot: `boot.cesium_world_commit · armed world_sink`
 | `deferredCount > 0` | Sink not ready — retries on `CASTLE_CESIUM_COMMAND_READY` |
 | `mapPinCount > 0` | Pins always registered for Leaflet fallback |
 
+**Next:** [`RHIZOH_SPATIAL_DISTRIBUTION_LAYER_V0.md`](RHIZOH_SPATIAL_DISTRIBUTION_LAYER_V0.md) — pin spread + tower registry.
+
 ---
 
 ## Module

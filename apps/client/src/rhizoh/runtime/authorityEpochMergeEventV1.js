@@ -44,6 +44,10 @@ import {
   setLastCesiumWorldCommitV0
 } from "./cesiumWorldCommitV0.js";
 import {
+  distributeSpatialPinsV0,
+  setLastSpatialDistributionV0
+} from "./spatialDistributionLayerV0.js";
+import {
   fetchGatewayAuthorityWitnessReplayV1,
   runAuthorityReplayAlignmentV1,
   workerAuthorityReplayAlignmentV1
@@ -283,6 +287,9 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
   const cesiumWorldCommit = commitPrismCubesToWorldV0({ prismCubeCommit });
   setLastCesiumWorldCommitV0(cesiumWorldCommit);
 
+  const spatialDistribution = distributeSpatialPinsV0({ cesiumWorldCommit, prismCubeCommit });
+  setLastSpatialDistributionV0(spatialDistribution);
+
   return Object.freeze({
     ok: true,
     mergeEvent,
@@ -294,6 +301,7 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
     spatialSlotResolver,
     prismCubeCommit,
     cesiumWorldCommit,
+    spatialDistribution,
     payload,
     alignment,
     output: mergeEvent?.output || null,
