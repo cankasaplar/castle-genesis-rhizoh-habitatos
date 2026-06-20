@@ -42,6 +42,13 @@ describe("shadowCastleInboxV0", () => {
     expect(getShadowCastleInboxSnapshotV0().items.length).toBe(1);
   });
 
+  it("getShadowCastleInboxSnapshotV0 is referentially stable for useSyncExternalStore", () => {
+    appendShadowCastleInboxItemV0({ bodyTr: "a" });
+    const a = getShadowCastleInboxSnapshotV0();
+    const b = getShadowCastleInboxSnapshotV0();
+    expect(a).toBe(b);
+  });
+
   it("startShadowCastleInboxV0 listens for shadow reactions", () => {
     startShadowCastleInboxV0();
     window.dispatchEvent(

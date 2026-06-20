@@ -15,6 +15,22 @@ const MAX_INBOX_V0 = 48;
 let sessionRowsV0 = [];
 /** @type {Set<(snap: object) => void>} */
 const listenersV0 = new Set();
+/** @type {object | null} */
+let cachedSnapshotV0 = null;
+/** @type {string} */
+let cachedSnapshotKeyV0 = "";
+
+function invalidateInboxSnapshotCacheV0() {
+  cachedSnapshotV0 = null;
+  cachedSnapshotKeyV0 = "";
+}
+
+function buildInboxSnapshotKeyV0(items) {
+  if (!items.length) return "0:0";
+  const unread = items.filter((r) => !r.read).length;
+  const ids = items.map((r) => `${r.id}:${r.read ? 1 : 0}`).join("|");
+  return `${items.length}:${unread}:${ids}`;
+}
 
 function readPersistedInboxV0() {
   if (typeof localStorage === "undefined") return [];
@@ -37,6 +53,7 @@ function writePersistedInboxV0(rows) {
 }
 
 function notifyInboxListenersV0() {
+  invalidateInboxSnapshotCacheV0();
   const snap = getShadowCastleInboxSnapshotV0();
   for (const fn of listenersV0) {
     try {
@@ -123,12 +140,18 @@ export function markShadowCastleInboxReadV0() {
 
 export function getShadowCastleInboxSnapshotV0() {
   const items = listShadowCastleInboxItemsV0(MAX_INBOX_V0);
-  return Object.freeze({
+  const key = buildInboxSnapshotKeyV0(items);
+  if (cachedSnapshotV0 && cachedSnapshotKeyV0 === key) {
+    return cachedSnapshotV0;
+  }
+  cachedSnapshotKeyV0 = key;
+  cachedSnapshotV0 = Object.freeze({
     schema: `${SHADOW_CASTLE_INBOX_SCHEMA_V0}.snapshot`,
     items,
     unreadCount: items.filter((r) => !r.read).length,
     atMs: Date.now()
   });
+  return cachedSnapshotV0;
 }
 
 /**
@@ -174,6 +197,7 @@ export function __resetShadowCastleInboxForTestV0() {
   stopShadowCastleInboxV0();
   sessionRowsV0 = [];
   listenersV0.clear();
+  invalidateInboxSnapshotCacheV0();
   if (typeof localStorage !== "undefined") {
     try {
       localStorage.removeItem(SHADOW_CASTLE_INBOX_LS_KEY_V0);
