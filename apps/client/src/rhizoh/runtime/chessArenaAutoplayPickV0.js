@@ -83,7 +83,7 @@ export async function pickArenaAutoplayMoveV0(input) {
   const deadline = Date.now() + maxWaitMs;
 
   while (Date.now() < deadline) {
-    if (shouldDeferArenaEngineWorkV0()) {
+    if (!isChessArenaWorkspaceOpenV0() && shouldDeferArenaEngineWorkV0()) {
       await delayMsV0(DEFER_POLL_MS_V0);
       continue;
     }

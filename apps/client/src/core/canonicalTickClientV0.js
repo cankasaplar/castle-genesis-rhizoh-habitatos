@@ -23,6 +23,10 @@ import { readCodexStateV0 } from "./ReplayEngineV0.js";
 import { canPersistUserTopologyN12V0 } from "../pwa/rhizohPwaPermissionsN12V0.js";
 import { logCastleLifecycleV0 } from "../rhizoh/runtime/rhizohProductionLogNamespacesV0.js";
 import { enterReplayModeV0, exitReplayModeV0 } from "../rhizoh/runtime/temporalBridgeV0.js";
+import {
+  isChessArenaWorkspaceOpenV0,
+  isChessClusterArenaOpenV0
+} from "../rhizoh/runtime/chessEngineContentionGateV0.js";
 
 export const RHIZOH_CANONICAL_TICK_SCHEMA_V0 = "castle.rhizoh.canonical_tick_client.v0";
 export const RHIZOH_CANONICAL_TICK_EVENT_V0 = "rhizoh:canonical-tick-v0";
@@ -32,6 +36,11 @@ let pollTimerV0 = 0;
 let catchUpRunningV0 = false;
 /** @type {number | null} */
 let lastTickV0 = null;
+
+function shouldDeferCanonicalCatchUpV0() {
+  if (typeof window === "undefined") return false;
+  return isChessArenaWorkspaceOpenV0() || isChessClusterArenaOpenV0();
+}
 
 /**
  * @returns {Promise<object | null>}
@@ -84,6 +93,9 @@ export async function runCanonicalCatchUpV0(authority) {
   if (!canPersistUserTopologyN12V0() || catchUpRunningV0) {
     return Object.freeze({ ok: false, reason: catchUpRunningV0 ? "catch_up_in_progress" : "n12_denied" });
   }
+  if (shouldDeferCanonicalCatchUpV0()) {
+    return Object.freeze({ ok: false, reason: "chess_surface_active" });
+  }
   catchUpRunningV0 = true;
   enterReplayModeV0("canonical_catch_up");
   try {
@@ -133,6 +145,7 @@ export async function runCanonicalCatchUpV0(authority) {
 async function pollCanonicalTickV0() {
   if (!canPersistUserTopologyN12V0()) return;
   if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+  if (shouldDeferCanonicalCatchUpV0()) return;
 
   const authority = (await fetchCanonicalAuthorityV0()) || readLocalShadowAuthorityV0();
   const tick = Number(authority.tick);
