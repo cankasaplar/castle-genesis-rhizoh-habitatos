@@ -758,7 +758,7 @@ export const RhizohWorldSpaceMapHostV0 = memo(function RhizohWorldSpaceMapHostV0
 }) {
   return (
     <div
-      className="pointer-events-auto fixed inset-0 z-[11]"
+      className="pointer-events-none fixed inset-0 z-[11]"
       data-rhizoh-world-space-map-host="1"
       data-rhizoh-world-space-map-active={active ? "1" : "0"}
       data-rhizoh-world-space-render-mode={renderMode}

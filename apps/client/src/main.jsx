@@ -53,9 +53,16 @@ if (!import.meta.env.DEV) {
   void registerRhizohServiceWorkerV0().then((out) => {
     bootLog.ok("boot.pwa_shell", out.ok ? "service worker registered" : `skipped: ${out.reason || "unknown"}`);
   });
-  void initRhizohSimulationPersistenceV0().then((out) => {
-    bootLog.ok("boot.sim_persistence", out.mode || out.reason || "ok");
-  });
+  const runSimPersistenceBootV0 = () => {
+    void initRhizohSimulationPersistenceV0().then((out) => {
+      bootLog.ok("boot.sim_persistence", out.mode || out.reason || "ok");
+    });
+  };
+  if (typeof requestIdleCallback !== "undefined") {
+    requestIdleCallback(runSimPersistenceBootV0, { timeout: 4000 });
+  } else {
+    setTimeout(runSimPersistenceBootV0, 400);
+  }
 } else {
   bootLog.ok("boot.pwa_shell", "dev: service worker skipped");
   bootLog.ok("boot.sim_persistence", "dev: event replay optional");

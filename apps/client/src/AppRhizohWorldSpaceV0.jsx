@@ -845,7 +845,7 @@ export default function AppRhizohWorldSpaceV0() {
   return (
     <div
       ref={appRootRef}
-      className="fixed inset-0 overflow-hidden bg-[#010103] text-white"
+      className="fixed inset-0 overflow-hidden bg-[#010103] text-white pointer-events-none"
       data-rhizoh-world-space-app="1"
       data-rhizoh-spiral-immersion={spiralImmersionActive ? "1" : "0"}
       data-cesium-active={cesiumLayerActiveV0 ? "1" : "0"}
@@ -874,11 +874,16 @@ export default function AppRhizohWorldSpaceV0() {
         [data-rhizoh-world-space-map-host] {
           transition: opacity 0.85s ease-in-out, filter 0.85s ease-in-out;
         }
-        [data-rhizoh-world-domain-shell][data-rhizoh-world-domain="space"] {
-          pointer-events: none !important;
+        [data-rhizoh-world-space-app] [data-rhizoh-v11-leaflet-host],
+        [data-rhizoh-world-space-app] [data-rhizoh-world-space-chrome],
+        [data-rhizoh-world-space-app] [data-rhizoh-world-domain-interactive],
+        [data-rhizoh-world-space-app] nav[aria-label*="Rhizoh"],
+        [data-rhizoh-world-space-app] [data-rhizoh-conversation-dock-shell] > div {
+          pointer-events: auto;
+          touch-action: manipulation;
         }
-        [data-rhizoh-world-domain-shell][data-rhizoh-world-domain="space"] [data-rhizoh-world-domain-interactive] {
-          pointer-events: auto !important;
+        [data-rhizoh-v11-leaflet-host] .leaflet-control-zoom {
+          display: none !important;
         }
         .rhizoh-map-camera-pulse-v0 {
           animation: rhizoh-map-camera-pulse-keyframes 0.52s ease-out;
@@ -993,7 +998,7 @@ export default function AppRhizohWorldSpaceV0() {
 
       {showGeoChip && !spiralImmersionActive ? (
         <div className="pointer-events-none fixed inset-x-0 top-16 z-[25] flex justify-center px-4">
-          <div className="pointer-events-auto flex max-w-md flex-col items-center gap-1 rounded-xl border border-cyan-500/35 bg-black/80 px-3 py-2 text-center backdrop-blur-md">
+          <div className="pointer-events-auto flex max-w-md flex-col items-center gap-1 rounded-xl border border-cyan-500/35 bg-black/80 px-3 py-2 text-center backdrop-blur-md" data-rhizoh-world-space-chrome="1">
             <p className="text-[10px] text-cyan-100/90 normal-case">
               {uiLocale === "tr"
                 ? `Harita ${bootstrapPlaceLabelV0} bağlantısında açıldı. Konumunu paylaşırsan kamerayı oraya taşırız.`
@@ -1022,9 +1027,10 @@ export default function AppRhizohWorldSpaceV0() {
 
       {!castleAuth.needsAuthGate && !spiralImmersionActive && !v11MediaTube ? (
         <>
-          <RhizohCastleShadowInboxV0 uiLocale={uiLocale} compact anchor="top-right" panelPlacement="portal" />
+          <RhizohCastleShadowInboxV0 uiLocale={uiLocale} compact anchor="bottom-right" panelPlacement="portal" />
           <div
             className="pointer-events-none fixed left-4 z-[30] max-w-[15rem]"
+            data-rhizoh-world-space-chrome="1"
             style={{ bottom: "calc(10.5rem + env(safe-area-inset-bottom, 0px))" }}
           >
             <div className="pointer-events-auto rounded-xl border border-white/15 bg-black/88 p-3 shadow-lg backdrop-blur-md">
