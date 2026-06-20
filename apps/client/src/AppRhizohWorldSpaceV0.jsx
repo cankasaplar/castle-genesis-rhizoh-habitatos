@@ -141,8 +141,14 @@ import { loadRhizohExperienceSessionContextV0 } from "./rhizoh/experience/rhizoh
 import { loadRhizohProductSession } from "./rhizoh/product/rhizohProductSessionPersistenceV1.js";
 import {
   applySpiralMapLayerFromQueryV0,
-  focusSpiralMapLayerV0
+  focusSpiralMapLayerV0,
+  SPIRAL_MAP_LAYER_FILTER_EVENT_V0
 } from "./rhizoh/runtime/spiralMapLayerFilterStateV0.js";
+import {
+  ensureSpiralMapRealityModeHydratedV0,
+  publishSpiralMapRealityDevtoolsV0,
+  SPIRAL_MAP_REALITY_MODE_EVENT_V0
+} from "./rhizoh/runtime/spiralMapRealityModeV0.js";
 import { SPIRAL_MAP_LAYER_V0 } from "./rhizoh/runtime/spatialDistributionLayerV0.js";
 import { startSportsLiveInjectionV0 } from "./rhizoh/runtime/worldMapSportsLiveInjectionV0.js";
 
@@ -242,6 +248,23 @@ export default function AppRhizohWorldSpaceV0() {
   }, [location.pathname, worldDrawerDomainV0, worldMapToolV0, mapSurfaceActive, cesiumLayerActiveV0]);
 
   useEffect(() => {
+    const refreshPins = () => {
+      publishRhizohMapPinOwnerRegistryV0({
+        pathname: location.pathname || "/world/space",
+        worldDomain: worldDrawerDomainV0,
+        mapTool: worldMapToolV0,
+        mapSurfaceActive
+      });
+    };
+    window.addEventListener(SPIRAL_MAP_LAYER_FILTER_EVENT_V0, refreshPins);
+    window.addEventListener(SPIRAL_MAP_REALITY_MODE_EVENT_V0, refreshPins);
+    return () => {
+      window.removeEventListener(SPIRAL_MAP_LAYER_FILTER_EVENT_V0, refreshPins);
+      window.removeEventListener(SPIRAL_MAP_REALITY_MODE_EVENT_V0, refreshPins);
+    };
+  }, [location.pathname, worldDrawerDomainV0, worldMapToolV0, mapSurfaceActive]);
+
+  useEffect(() => {
     writeRhizohWorldDrawerDomainV0(worldDrawerDomainV0);
   }, [worldDrawerDomainV0]);
 
@@ -318,6 +341,8 @@ export default function AppRhizohWorldSpaceV0() {
   useEffect(() => {
     writeRhizohWorldDrawerDomainV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE);
     publishRhizohSpatialModeV0();
+    ensureSpiralMapRealityModeHydratedV0();
+    publishSpiralMapRealityDevtoolsV0();
     configureSpatialRealityInfraV0({
       gatewayPhase: gateway.phase,
       mapSurfaceActive: true,
