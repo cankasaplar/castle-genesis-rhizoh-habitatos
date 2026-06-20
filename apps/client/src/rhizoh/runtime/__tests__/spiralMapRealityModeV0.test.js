@@ -57,4 +57,11 @@ describe("spiralMapRealityModeV0", () => {
     expect(localStorage.getItem("rhizoh.spiral_map_layer_filter.v0")).toBeTruthy();
     expect(readSpiralMapRealityModeV0()).toBe(SPIRAL_MAP_REALITY_MODE_V0.EXPLORER);
   });
+
+  it("ensureSpiralMapRealityModeHydratedV0 repairs empty object storage", () => {
+    localStorage.setItem("rhizoh.spiral_map_layer_filter.v0", "{}");
+    const state = ensureSpiralMapRealityModeHydratedV0();
+    expect(state.realityMode).toBe(SPIRAL_MAP_REALITY_MODE_V0.EXPLORER);
+    expect(JSON.parse(localStorage.getItem("rhizoh.spiral_map_layer_filter.v0")).explorer).toBe(true);
+  });
 });

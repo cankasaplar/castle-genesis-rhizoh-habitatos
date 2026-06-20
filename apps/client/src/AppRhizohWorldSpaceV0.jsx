@@ -38,7 +38,7 @@ import {
 } from "./rhizoh/runtime/rhizohUiLayoutResolverV0.js";
 import { navigateRhizohProductSurfaceV0 } from "./rhizoh/product/rhizohProductTopologyV0.js";
 import { publishRhizohSpatialModeV0 } from "./rhizoh/runtime/rhizohSpatialModeV0.js";
-import { publishRhizohMapPinOwnerRegistryV0 } from "./rhizoh/runtime/rhizohMapPinOwnerV0.js";
+import { publishRhizohMapPinOwnerRegistryV0, installRhizohMapPinOwnerAutoRefreshV0 } from "./rhizoh/runtime/rhizohMapPinOwnerV0.js";
 import {
   configureSpatialRealityInfraV0,
   clearSpatialRealityInfraV0
@@ -356,7 +356,16 @@ export default function AppRhizohWorldSpaceV0() {
     );
     writeRhizohWorldMapToolV0(nextTool);
 
-    return () => clearSpatialRealityInfraV0();
+    const stopMapPinOwnerAutoRefresh = installRhizohMapPinOwnerAutoRefreshV0({
+      pathname: "/world/space",
+      worldDomain: RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE,
+      mapSurfaceActive: true
+    });
+
+    return () => {
+      stopMapPinOwnerAutoRefresh?.();
+      clearSpatialRealityInfraV0();
+    };
   }, []);
 
   useEffect(() => {

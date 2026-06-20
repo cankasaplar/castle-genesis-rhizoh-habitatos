@@ -51,6 +51,7 @@ import {
   populateArenaWorldV0,
   setLastArenaPopulationV0
 } from "./arenaPopulationLayerV0.js";
+import { publishRhizohMapPinOwnerRegistryV0 } from "./rhizohMapPinOwnerV0.js";
 import {
   fetchGatewayAuthorityWitnessReplayV1,
   runAuthorityReplayAlignmentV1,
@@ -68,6 +69,14 @@ export const MERGE_STRATEGY_V1 = Object.freeze({
 let lastMergeEventV1 = null;
 /** @type {object | null} */
 let lastCrossEpochReplayV1 = null;
+
+function refreshMapPinOwnerAfterEpochPipelineV0() {
+  if (typeof window === "undefined") return;
+  publishRhizohMapPinOwnerRegistryV0({
+    pathname: window.location.pathname || "/world/space",
+    mapSurfaceActive: true
+  });
+}
 
 /**
  * @param {{
@@ -213,6 +222,7 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
   }
 
   if (payload.sourceEpoch === payload.targetEpoch && alignment.aligned) {
+    refreshMapPinOwnerAfterEpochPipelineV0();
     return Object.freeze({
       ok: true,
       mode: "noop_same_timeline",
@@ -296,6 +306,7 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
 
   const arenaPopulation = populateArenaWorldV0({ spatialDistribution });
   setLastArenaPopulationV0(arenaPopulation);
+  refreshMapPinOwnerAfterEpochPipelineV0();
 
   return Object.freeze({
     ok: true,
