@@ -119,7 +119,10 @@ window.__rhizoh.emitShadowCastleEventV0?.({
 
 ```javascript
 // Simulated chess move → peer pulse (no board required)
-window.__rhizoh.demoChessShadowMoveV0?.({ san: "Nf3", reward: 0.6 });
+const demo = window.__rhizoh.demoChessShadowMoveV0?.({ san: "Nf3", reward: 0.6 });
+// demo.pulseRemainingMs > 0 → pulse still active
+// demo.inspect.lastReaction.pulseActive → true while glowing
+window.__rhizoh.flyToShadowPeerCastleV0?.(13);
 
 // Live path: play in Satranç arena — UGL events auto-bridge when loop running
 window.__rhizoh.inspectShadowDataPlaneV0?.();

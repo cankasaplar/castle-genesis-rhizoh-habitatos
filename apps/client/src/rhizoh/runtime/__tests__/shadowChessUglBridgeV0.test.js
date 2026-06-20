@@ -7,12 +7,13 @@ import {
 import {
   __resetShadowChessUglBridgeForTestV0,
   bridgeUglEventToShadowCastleV0,
-  demoChessShadowMoveV0,
+  demoChessShadowMoveEmitV0,
   emitShadowCastleEventFromUglV0,
   installShadowChessUglBridgeV0
 } from "../shadowChessUglBridgeV0.js";
 import {
   __resetShadowDataPlaneLoopForTestV0,
+  demoChessShadowMoveV0,
   inspectShadowDataPlaneV0,
   startShadowDataPlaneLoopV0,
   stopShadowDataPlaneLoopV0
@@ -45,10 +46,20 @@ describe("shadowChessUglBridgeV0", () => {
     expect(row).toBeNull();
   });
 
-  it("demoChessShadowMoveV0 emits chess.move on shadow bus", () => {
-    const event = demoChessShadowMoveV0({ san: "Bb5" });
+  it("demoChessShadowMoveEmitV0 emits chess.move on shadow bus", () => {
+    const event = demoChessShadowMoveEmitV0({ san: "Bb5" });
     expect(event?.type).toBe(SHADOW_CASTLE_EVENT_TYPE_V0.CHESS_MOVE);
     expect(readShadowCastleEventRingV0(4)).toHaveLength(1);
+  });
+
+  it("demoChessShadowMoveV0 returns trace and pulseRemainingMs when loop active", () => {
+    startShadowDataPlaneLoopV0();
+    const out = demoChessShadowMoveV0({ san: "Qh5", flyToPeer: false });
+    stopShadowDataPlaneLoopV0();
+    expect(out.ok).toBe(true);
+    expect(out.trace?.interpreted?.meaning).toContain("chess");
+    expect(out.pulseRemainingMs).toBeGreaterThan(0);
+    expect(out.inspect.lastReaction?.pulseActive).toBe(true);
   });
 
   it("installShadowChessUglBridgeV0 forwards UGL events when loop active", () => {

@@ -17,7 +17,8 @@ import { resolveDomainDescriptorV0 } from "./rhizohDomainFabricV0.js";
 import { RHIZOH_UGL_GAME_TYPE_V0 } from "./rhizohUglSchemaV0.js";
 import { ensureRhizohUglV0 } from "./rhizohUglBootV0.js";
 import {
-  demoChessShadowMoveV0,
+  demoChessShadowMoveEmitV0,
+  emitShadowCastleEventFromUglV0,
   getShadowChessUglBridgeSnapshotV0,
   installShadowChessUglBridgeV0,
   uninstallShadowChessUglBridgeV0
@@ -26,6 +27,8 @@ import {
 export const SHADOW_DATA_PLANE_SCHEMA_V0 = "castle.rhizoh.shadow_data_plane.v0";
 export const SHADOW_CASTLE_REACTION_EVENT_V0 = "rhizoh:shadow-castle-reaction-v0";
 export const SHADOW_CASTLE_PIN_PULSE_EVENT_V0 = "rhizoh:shadow-castle-pin-pulse-v0";
+export const SHADOW_CHESS_PIN_PULSE_DURATION_MS_V0 = 8000;
+export const SHADOW_DEFAULT_PIN_PULSE_DURATION_MS_V0 = 5000;
 
 export const SHADOW_DATA_PLANE_PHASE_V0 = Object.freeze({
   A_SHADOW: "A_shadow",
@@ -73,6 +76,13 @@ function pruneExpiredPinPulsesV0() {
     }
   }
   if (changed) notifyPinPulseListenersV0();
+}
+
+export function readShadowCastlePulseRemainingMsV0(pinId) {
+  pruneExpiredPinPulsesV0();
+  const row = activePinPulsesV0.get(String(pinId || ""));
+  if (!row) return 0;
+  return Math.max(0, row.untilMs - Date.now());
 }
 
 /**
@@ -196,10 +206,13 @@ export function projectShadowCastleReactionV0(interpreted, event) {
   );
   const pinId = toCastleId.startsWith("remote_castle_") ? toCastleId : toCastleId;
   const eventType = String(event?.type || "");
+  const pulseDurationMs = eventType.startsWith("chess.")
+    ? SHADOW_CHESS_PIN_PULSE_DURATION_MS_V0
+    : SHADOW_DEFAULT_PIN_PULSE_DURATION_MS_V0;
   const pulse = applyShadowCastlePinPulseV0({
     pinId,
     sourceEventId: String(event?.eventId || "shadow"),
-    durationMs: eventType.startsWith("chess.") ? 3200 : 5000
+    durationMs: pulseDurationMs
   });
 
   const isChess = eventType.startsWith("chess.");
@@ -259,6 +272,10 @@ export function inspectShadowDataPlaneV0() {
   pruneExpiredPinPulsesV0();
   const ring = readShadowCastleEventRingV0(16);
   const lastTrace = reactionTraceV0[0] || null;
+  const lastPulsePinId = lastTrace?.reaction?.mapPinPulse?.pinId || null;
+  const pulseRemainingMs = lastPulsePinId
+    ? readShadowCastlePulseRemainingMsV0(lastPulsePinId)
+    : 0;
   return Object.freeze({
     schema: `${SHADOW_DATA_PLANE_SCHEMA_V0}.inspect`,
     phase: shadowDataPlanePhaseV0,
@@ -266,6 +283,15 @@ export function inspectShadowDataPlaneV0() {
     chessBridge: getShadowChessUglBridgeSnapshotV0(),
     bus: getShadowCastleEventBusSnapshotV0(),
     lastTrace,
+    lastReaction: lastTrace
+      ? Object.freeze({
+          meaning: lastTrace.interpreted?.meaning || null,
+          pinId: lastPulsePinId,
+          pulseRemainingMs,
+          pulseActive: pulseRemainingMs > 0,
+          toast: lastTrace.reaction?.toast || null
+        })
+      : null,
     recentTraces: Object.freeze(reactionTraceV0.slice(0, 4)),
     activePinPulses: Object.freeze(
       [...activePinPulsesV0.entries()].map(([pinId, row]) =>
@@ -305,6 +331,53 @@ export function demoCastleToCastleEventLoopV0(opts = {}) {
   });
 }
 
+/**
+ * Demo chess move with full trace + inspect (DevTools SSOT).
+ * @param {object} [opts]
+ */
+export function demoChessShadowMoveV0(opts = {}) {
+  const event = demoChessShadowMoveEmitV0(opts);
+  if (!event) {
+    return Object.freeze({ ok: false, reason: "emit_failed" });
+  }
+  if (!loopStartedV0) {
+    processShadowCastleEventV0(event);
+  }
+  const inspect = inspectShadowDataPlaneV0();
+  if (opts.flyToPeer !== false && typeof window !== "undefined") {
+    try {
+      window.__rhizoh?.v11LeafletMap?.flyTo(
+        [PEER_CASTLE_SIM_COORDS_V0.lat, PEER_CASTLE_SIM_COORDS_V0.lon],
+        13,
+        { animate: true, duration: 1.2 }
+      );
+    } catch {
+      /* noop */
+    }
+  }
+  return Object.freeze({
+    ok: true,
+    event,
+    trace: inspect.lastTrace,
+    pulseRemainingMs: inspect.lastReaction?.pulseRemainingMs ?? 0,
+    inspect
+  });
+}
+
+export function flyToShadowPeerCastleV0(zoom = 13) {
+  if (typeof window === "undefined") return false;
+  try {
+    window.__rhizoh?.v11LeafletMap?.flyTo(
+      [PEER_CASTLE_SIM_COORDS_V0.lat, PEER_CASTLE_SIM_COORDS_V0.lon],
+      zoom,
+      { animate: true, duration: 1.2 }
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function publishShadowDataPlaneDevtoolsV0() {
   if (typeof window === "undefined") return null;
   window.__rhizoh = window.__rhizoh || {};
@@ -318,6 +391,7 @@ export function publishShadowDataPlaneDevtoolsV0() {
   };
   window.__rhizoh.demoCastleToCastleEventLoopV0 = demoCastleToCastleEventLoopV0;
   window.__rhizoh.demoChessShadowMoveV0 = demoChessShadowMoveV0;
+  window.__rhizoh.flyToShadowPeerCastleV0 = flyToShadowPeerCastleV0;
   window.__rhizoh.inspectShadowDataPlaneV0 = inspectShadowDataPlaneV0;
   return inspectShadowDataPlaneV0();
 }
