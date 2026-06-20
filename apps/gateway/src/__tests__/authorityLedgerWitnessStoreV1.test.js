@@ -72,13 +72,27 @@ test("witnesses chained entries in order", () => {
 test("quarantines height regression without silent repair", () => {
   resetAuthorityLedgerWitnessStoreForTestV1();
   const e1 = buildSealedEntryV1(1, AUTHORITY_WAL_HASH_GENESIS_V1);
-  persistAuthorityLedgerWitnessBatchV1("subj-c", [e1], SECRET);
-  const bad = buildSealedEntryV1(1, AUTHORITY_WAL_HASH_GENESIS_V1);
-  const r = persistAuthorityLedgerWitnessBatchV1("subj-c", [bad], SECRET);
+  const r1 = persistAuthorityLedgerWitnessBatchV1("subj-c", [e1], SECRET);
+  const e2 = buildSealedEntryV1(2, r1.chainHead);
+  persistAuthorityLedgerWitnessBatchV1("subj-c", [e2], SECRET);
+  const skipped = buildSealedEntryV1(4, e2.seal.sealHash);
+  const r = persistAuthorityLedgerWitnessBatchV1("subj-c", [skipped], SECRET);
   assert.equal(r.witnessed, 0);
   assert.equal(r.quarantined, 1);
   assert.equal(r.results[0]?.status, "quarantined");
   assert.equal(r.results[0]?.code, "height_regression");
+});
+
+test("quarantines partition seal conflict at same epoch height", () => {
+  resetAuthorityLedgerWitnessStoreForTestV1();
+  const e1 = buildSealedEntryV1(1, AUTHORITY_WAL_HASH_GENESIS_V1);
+  persistAuthorityLedgerWitnessBatchV1("subj-part", [e1], SECRET);
+  const conflicting = buildSealedEntryV1(1, AUTHORITY_WAL_HASH_GENESIS_V1);
+  conflicting.seal.sealHash = "hconflict00";
+  const r = persistAuthorityLedgerWitnessBatchV1("subj-part", [conflicting], SECRET);
+  assert.equal(r.witnessed, 0);
+  assert.equal(r.quarantined, 1);
+  assert.equal(r.results[0]?.code, "partition_seal_conflict");
 });
 
 test("quarantines seal hash mismatch", () => {
@@ -104,7 +118,17 @@ test("replay verifies witnessed seal chain", () => {
   assert.equal(replay.sealHead, e2.seal.sealHash);
 });
 
-test("separate epoch chains allow height=1 restarts", () => {
+test("idempotent partition witness accepts duplicate seal", () => {
+  resetAuthorityLedgerWitnessStoreForTestV1();
+  const e1 = buildSealedEntryV1(1, AUTHORITY_WAL_HASH_GENESIS_V1, "hold", "hepoch_idem");
+  const r1 = persistAuthorityLedgerWitnessBatchV1("subj-idem", [e1], SECRET);
+  assert.equal(r1.witnessed, 1);
+  const r2 = persistAuthorityLedgerWitnessBatchV1("subj-idem", [e1], SECRET);
+  assert.equal(r2.witnessed, 1);
+  assert.equal(r2.results[0]?.idempotent, true);
+});
+
+test("per-epoch partition allows height=1 across different epochs", () => {
   resetAuthorityLedgerWitnessStoreForTestV1();
   const e1 = buildSealedEntryV1(1, AUTHORITY_WAL_HASH_GENESIS_V1, "hold", "hepoch_a");
   const r1 = persistAuthorityLedgerWitnessBatchV1("subj-epoch", [e1], SECRET);

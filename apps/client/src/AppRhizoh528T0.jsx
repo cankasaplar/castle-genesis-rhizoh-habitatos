@@ -12737,6 +12737,9 @@ export default function AppRhizoh528() {
         void import("./rhizoh/epistemic/epistemicLedgerStreamV529.js").then((m) => {
           m.onEpistemicTelemetryGatewayAttachV1("gateway_connected");
         });
+        void import("./rhizoh/runtime/authorityGatewayPersistenceBridgeV1.js").then((m) => {
+          m.onAuthorityGatewayConnectV1("gateway_connected");
+        });
       }
 
       if (logEvent.level === "ok") {

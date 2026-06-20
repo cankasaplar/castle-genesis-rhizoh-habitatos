@@ -52,6 +52,8 @@ workerAuthorityReplayAlignmentV1({
 | `divergenceType` | `none` \| `session_resync` \| `seal_mismatch` \| `height_desync` \| `entry_hash_drift` \| `missing_entry` |
 | `severity` | `none` \| `soft_drift` \| `hard_divergence` |
 | `sourceOfTruth` | `client` \| `gateway` \| `worker` \| `undetermined` |
+| `witnessPropagation` | `complete` \| `incomplete` \| `epoch_boundary` \| `unknown` |
+| `sameTimeline` | `true` when client + gateway share `epochId` |
 
 ---
 
@@ -61,11 +63,15 @@ workerAuthorityReplayAlignmentV1({
 |------|------------------------|
 | `session_resync` | Epoch boundary — expected cross-boot drift |
 | `height_desync` | Transport lag / ordering drift (same epoch) |
-| `missing_entry` | Witness not yet received |
+| `missing_entry` | Witness not yet received — **incomplete witness propagation** when `sameTimeline: true` |
 | `seal_mismatch` | Hard divergence — quarantine path |
 | `entry_hash_drift` | Per-height hash chain differs |
 
 **Policy:** mismatch → quarantine → block mutation → human investigation (no silent repair).
+
+When `divergenceType: missing_entry` + `sameTimeline: true` + `severity: soft_drift` + `sourceOfTruth: client`:
+
+> Reality exists locally but gateway has not yet witnessed this epoch partition — **not** authority divergence, consensus break, or hash bug.
 
 ---
 
@@ -85,9 +91,8 @@ Boot: `boot.authority_replay_alignment · armed deterministic-only`
 | PR | Module |
 |----|--------|
 | **#222** | `workerAuthorityReplayAlignmentV1` (this) |
-| #223 | divergence classifier + layer attribution |
-| **Epoch boundary** | ✔ [`RHIZOH_AUTHORITY_EPOCH_BOUNDARY_V1.md`](RHIZOH_AUTHORITY_EPOCH_BOUNDARY_V1.md) |
-| #224 | distributed consensus shadow (optional) |
+| **#223** | epoch boundary — `session_resync` vs `hard_divergence` |
+| **#224** | gateway entry guarantee + partition enforcement |
 
 ---
 
@@ -97,5 +102,5 @@ Boot: `boot.authority_replay_alignment · armed deterministic-only`
 |-------|--------|
 | L3h Gateway witness persistence | ✔ |
 | L3i **Worker authority replay alignment** | ✔ this module |
-| L3j Divergence classifier | ❌ #223 |
-| L3k Distributed consensus shadow | ❌ #224 |
+| L3j Gateway entry guarantee | ✔ #224 |
+| L3k Distributed consensus shadow | ❌ data-plane READY |

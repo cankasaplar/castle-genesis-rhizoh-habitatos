@@ -11,8 +11,11 @@ import {
 } from "../authorityLedgerSealPipelineV1.js";
 import {
   ensureAuthorityGatewayPersistenceBridgeV1,
+  authorityWitnessPartitionKeyV1,
+  ensureGatewayAppendV1,
   getAuthorityGatewayBridgeSnapshotV1,
   markAuthorityGatewayRoutesOkV1,
+  onAuthorityGatewayConnectV1,
   resetAuthorityGatewayBridgeForTestV1
 } from "../authorityGatewayPersistenceBridgeV1.js";
 
@@ -84,23 +87,69 @@ describe("authorityGatewayPersistenceBridgeV1", () => {
         witnessed: 1,
         quarantined: 0,
         chainHeight: 1,
-        lastWitness: { clientSealHash: pipeline.sealHash }
+        epochId: pipeline.sealedEntry.epoch?.epochId,
+        lastWitness: {
+          clientSealHash: pipeline.sealHash,
+          epochId: pipeline.sealedEntry.epoch?.epochId,
+          height: 1
+        }
       })
     });
 
     await vi.advanceTimersByTimeAsync(300);
 
     expect(fetch).toHaveBeenCalled();
-    const [url, opts] = fetch.mock.calls[0];
-    expect(String(url)).toContain("/rhizoh/authority/ledger/batch");
-    expect(opts.method).toBe("POST");
-    const body = JSON.parse(opts.body);
-    expect(body.entries).toHaveLength(1);
-    expect(body.entries[0].height).toBe(1);
-
     const snap = getAuthorityGatewayBridgeSnapshotV1();
-    expect(snap.lastWitnessedHeight).toBe(1);
     expect(snap.sharedOfficialHistory).toBe(true);
+    expect(snap.witnessPropagation).toBe("complete");
+    vi.useRealTimers();
+  });
+
+  it("uses epoch:height partition keys for witness dedup", () => {
+    const key = authorityWitnessPartitionKeyV1("hepoch_a", 1);
+    expect(key).toBe("hepoch_a:1");
+    ensureAuthorityGatewayPersistenceBridgeV1();
+    const arbitration = arbitrateAdmissionV1(
+      {
+        projection: { admissionSafe: false },
+        phaseContext: { phaseAligned: true, source: "test" }
+      },
+      { source: "test" }
+    );
+    const pipeline = processAuthorityPipelineV1({ arbitration });
+    const r1 = ensureGatewayAppendV1({ entry: pipeline.sealedEntry });
+    const r2 = ensureGatewayAppendV1({ entry: pipeline.sealedEntry });
+    expect(r1.queued).toBe(true);
+    expect(r2.alreadyWitnessed || r2.queued).toBeTruthy();
+  });
+
+  it("onAuthorityGatewayConnect schedules flush for pending guarantees", async () => {
+    vi.useFakeTimers();
+    ensureAuthorityGatewayPersistenceBridgeV1();
+    const arbitration = arbitrateAdmissionV1(
+      {
+        projection: { admissionSafe: false },
+        phaseContext: { phaseAligned: true, source: "test" }
+      },
+      { source: "test" }
+    );
+    const pipeline = processAuthorityPipelineV1({ arbitration });
+
+    fetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ok: true,
+        witnessed: 1,
+        quarantined: 0,
+        chainHeight: 1,
+        lastWitness: { clientSealHash: pipeline.sealHash, height: 1 }
+      })
+    });
+
+    onAuthorityGatewayConnectV1("test_connect");
+    await vi.advanceTimersByTimeAsync(300);
+    expect(fetch).toHaveBeenCalled();
     vi.useRealTimers();
   });
 

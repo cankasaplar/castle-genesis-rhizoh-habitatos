@@ -328,12 +328,22 @@ export function workerAuthorityReplayAlignmentV1(opts = {}) {
 
   const aligned = divergenceType === DIVERGENCE_TYPE_V1.NONE;
 
+  const witnessPropagation =
+    divergenceType === DIVERGENCE_TYPE_V1.MISSING_ENTRY && sameTimeline === true
+      ? "incomplete"
+      : aligned
+        ? "complete"
+        : divergenceType === DIVERGENCE_TYPE_V1.SESSION_RESYNC
+          ? "epoch_boundary"
+          : "unknown";
+
   return Object.freeze({
     schema: `${WORKER_AUTHORITY_REPLAY_ALIGNMENT_SCHEMA_V1}.result`,
     aligned,
     divergenceType,
     severity,
     sourceOfTruth,
+    witnessPropagation,
     replayMode,
     compare: Object.freeze([...compare]),
     layers: Object.freeze({
@@ -360,6 +370,10 @@ export function workerAuthorityReplayAlignmentV1(opts = {}) {
     }),
     signals: Object.freeze(signals),
     sameTimeline: sameTimeline ?? (hasClient && hasGateway ? true : null),
+    note:
+      divergenceType === DIVERGENCE_TYPE_V1.MISSING_ENTRY && sameTimeline === true
+        ? "incomplete witness propagation — not authority divergence"
+        : undefined,
     question: "where_can_same_state_be_computed",
     interpretationOnly: true,
     nonExecutive: true,
