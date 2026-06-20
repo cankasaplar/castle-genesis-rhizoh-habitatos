@@ -136,7 +136,7 @@ export function isFullWorldRealityModeV0(filterState) {
 export function applySpiralMapRealityModeV0(modeId) {
   const mode = String(modeId || SPIRAL_MAP_REALITY_MODE_V0.EXPLORER).trim();
   const preset = REALITY_MODE_PRESETS_V0[mode] || REALITY_MODE_PRESETS_V0[SPIRAL_MAP_REALITY_MODE_V0.EXPLORER];
-  const next = writeSpiralMapLayerFilterStateV0({ ...preset });
+  const next = writeSpiralMapLayerFilterStateV0({ ...preset }, { replace: true });
 
   if (mode === SPIRAL_MAP_REALITY_MODE_V0.CASTLE) {
     writeWorldMapMarkerLayerStateV0({
@@ -199,7 +199,15 @@ export function ensureSpiralMapRealityModeHydratedV0() {
 export function publishSpiralMapRealityDevtoolsV0() {
   if (typeof window === "undefined") return;
   window.__rhizoh = window.__rhizoh || {};
-  window.__rhizoh.applySpiralMapRealityModeV0 = applySpiralMapRealityModeV0;
+  window.__rhizoh.applySpiralMapRealityModeV0 = (modeId) => {
+    const state = applySpiralMapRealityModeV0(modeId);
+    return Object.freeze({
+      ok: true,
+      mode: readSpiralMapRealityModeV0(state),
+      state
+    });
+  };
   window.__rhizoh.readSpiralMapRealityModeV0 = readSpiralMapRealityModeV0;
+  window.__rhizoh.readSpiralMapLayerFilterStateV0 = readSpiralMapLayerFilterStateV0;
   window.__rhizoh.ensureSpiralMapRealityModeHydratedV0 = ensureSpiralMapRealityModeHydratedV0;
 }
