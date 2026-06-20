@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import { Inbox, X } from "lucide-react";
 import {
   getShadowCastleInboxSnapshotV0,
+  ignoreAllShadowCastleInboxItemsV0,
+  ignoreShadowCastleInboxItemV0,
   markShadowCastleInboxReadV0,
   subscribeShadowCastleInboxV0
 } from "../rhizoh/runtime/shadowCastleInboxV0.js";
@@ -54,6 +56,8 @@ export const RhizohCastleShadowInboxV0 = memo(function RhizohCastleShadowInboxV0
       items={snap.items}
       onClose={() => setOpen(false)}
       onSelectItem={onSelectItem}
+      onIgnoreItem={(id) => ignoreShadowCastleInboxItemV0(id)}
+      onIgnoreAll={() => ignoreAllShadowCastleInboxItemsV0()}
       placement={usePortal ? "portal" : panelPlacement}
       anchor={anchor}
     />
@@ -107,7 +111,7 @@ export const RhizohCastleShadowInboxV0 = memo(function RhizohCastleShadowInboxV0
   );
 });
 
-function InboxPanelV0({ tr, items, onClose, onSelectItem, placement = "dropdown", anchor = "inline" }) {
+function InboxPanelV0({ tr, items, onClose, onSelectItem, onIgnoreItem, onIgnoreAll, placement = "dropdown", anchor = "inline" }) {
   const panelClass =
     placement === "portal" && anchor === "top-right"
       ? "pointer-events-auto fixed right-4 top-[7.25rem] z-[420] w-[min(100vw-2rem,22rem)] rounded-2xl border border-sky-400/35 bg-black/95 p-3 shadow-2xl backdrop-blur-md sm:right-5 sm:top-[7.5rem]"
@@ -123,14 +127,25 @@ function InboxPanelV0({ tr, items, onClose, onSelectItem, placement = "dropdown"
         <p className="text-[9px] font-black uppercase tracking-[0.2em] text-sky-300/80">
           {tr ? "Kale · anlam aktarımı" : "Castle · meaning transfer"}
         </p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="touch-manipulation rounded p-1 text-white/50 hover:text-white"
-          aria-label={tr ? "Kapat" : "Close"}
-        >
-          <X size={14} />
-        </button>
+        <div className="flex items-center gap-1">
+          {items?.length ? (
+            <button
+              type="button"
+              onClick={onIgnoreAll}
+              className="touch-manipulation rounded px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-white/40 hover:text-amber-200"
+            >
+              {tr ? "Tümünü yoksay" : "Ignore all"}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onClose}
+            className="touch-manipulation rounded p-1 text-white/50 hover:text-white"
+            aria-label={tr ? "Kapat" : "Close"}
+          >
+            <X size={14} />
+          </button>
+        </div>
       </div>
       <div className="max-h-64 space-y-2 overflow-y-auto overscroll-contain">
         {!items?.length ? (
@@ -142,32 +157,56 @@ function InboxPanelV0({ tr, items, onClose, onSelectItem, placement = "dropdown"
         ) : (
           items.map((item) => {
             const isChess = resolveShadowInboxItemActionV0(item) === SHADOW_INBOX_ACTION_V0.OPEN_CHESS_ARENA;
+            const isTower = String(item.nodeType || "").includes("tower") || String(item.pinId || "").includes("_tower");
             return (
-              <button
+              <div
                 key={item.id}
-                type="button"
-                onClick={() => onSelectItem(item)}
-                className="pointer-events-auto w-full touch-manipulation rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-left hover:bg-white/10 active:bg-white/15"
+                className="flex items-stretch gap-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10"
               >
-                <p className="text-[10px] font-bold text-white/90">{tr ? item.titleTr : item.titleEn}</p>
-                <p className="text-[10px] text-white/60">{tr ? item.bodyTr : item.bodyEn}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  {isChess ? (
-                    <p className="text-[8px] font-semibold uppercase tracking-wider text-cyan-300/90">
-                      {tr ? "Arena'da oyna →" : "Play in arena →"}
-                    </p>
-                  ) : null}
-                  {item.isRealPeer ? (
-                    <p className="text-[8px] uppercase tracking-wider text-emerald-400/80">
-                      {tr ? "Gerçek peer" : "Real peer"}
-                    </p>
-                  ) : (
-                    <p className="text-[8px] uppercase tracking-wider text-amber-400/70">
-                      {tr ? "Sim hedef" : "Sim target"}
-                    </p>
-                  )}
-                </div>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => onSelectItem(item)}
+                  className="pointer-events-auto min-w-0 flex-1 touch-manipulation px-2.5 py-2 text-left"
+                >
+                  <p className="text-[10px] font-bold text-white/90">{tr ? item.titleTr : item.titleEn}</p>
+                  <p className="text-[10px] text-white/60">{tr ? item.bodyTr : item.bodyEn}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    {isChess ? (
+                      <p className="text-[8px] font-semibold uppercase tracking-wider text-cyan-300/90">
+                        {tr ? "Arena'da oyna →" : "Play in arena →"}
+                      </p>
+                    ) : isTower ? (
+                      <p className="text-[8px] font-semibold uppercase tracking-wider text-violet-300/90">
+                        {tr ? "Kule pin → uç" : "Tower pin → fly"}
+                      </p>
+                    ) : (
+                      <p className="text-[8px] font-semibold uppercase tracking-wider text-sky-300/80">
+                        {tr ? "Pin'e uç →" : "Fly to pin →"}
+                      </p>
+                    )}
+                    {item.isRealPeer ? (
+                      <p className="text-[8px] uppercase tracking-wider text-emerald-400/80">
+                        {tr ? "Gerçek peer" : "Real peer"}
+                      </p>
+                    ) : (
+                      <p className="text-[8px] uppercase tracking-wider text-amber-400/70">
+                        {tr ? "Sim hedef" : "Sim target"}
+                      </p>
+                    )}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    onIgnoreItem(item.id);
+                  }}
+                  className="pointer-events-auto shrink-0 touch-manipulation border-l border-white/10 px-2 text-[8px] font-semibold uppercase tracking-wider text-white/35 hover:bg-white/10 hover:text-amber-200"
+                  aria-label={tr ? "Yoksay" : "Ignore"}
+                >
+                  {tr ? "Yoksay" : "Ignore"}
+                </button>
+              </div>
             );
           })
         )}
