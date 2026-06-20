@@ -144,6 +144,7 @@ import {
   focusSpiralMapLayerV0
 } from "./rhizoh/runtime/spiralMapLayerFilterStateV0.js";
 import { SPIRAL_MAP_LAYER_V0 } from "./rhizoh/runtime/spatialDistributionLayerV0.js";
+import { startSportsLiveInjectionV0 } from "./rhizoh/runtime/worldMapSportsLiveInjectionV0.js";
 
 function resolveSpiralLayerFromHaloFocusV0(layerFocus) {
   const focus = Number(layerFocus);
@@ -339,6 +340,7 @@ export default function AppRhizohWorldSpaceV0() {
     const stopYoutubeLab = startYoutubeLabOctoBridgeV1();
     const stopLegalPendingLoop = startRhizohLegalPendingWaitLoopV0();
     const stopCityMapLegalGate = startCityMapLegalCountdownMediaGateV0({ uiLocale });
+    const stopSportsLiveInjection = startSportsLiveInjectionV0({ locale: uiLocale, intervalMs: 90_000 });
 
     const onOpenCastleGate = () => setCastleInitGateOpen(true);
     window.addEventListener("castle:open-init-gate-v0", onOpenCastleGate);
@@ -475,6 +477,7 @@ export default function AppRhizohWorldSpaceV0() {
       stopYoutubeLab?.();
       stopLegalPendingLoop?.();
       stopCityMapLegalGate?.();
+      stopSportsLiveInjection?.();
       window.removeEventListener("castle:open-init-gate-v0", onOpenCastleGate);
       window.removeEventListener("castle:open-anchor-offer-v0", onOpenCastleGate);
       window.removeEventListener(RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1, onSovereignWarp);

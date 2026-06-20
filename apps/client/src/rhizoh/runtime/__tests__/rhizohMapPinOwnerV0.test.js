@@ -132,4 +132,42 @@ describe("rhizohMapPinOwnerV0", () => {
     expect(resolvePinSpiralLayerV0({ towerClass: "CHESS" })).toBe(SPIRAL_MAP_LAYER_V0.EXPLORER);
     expect(resolvePinSpiralLayerV0({ towerClass: "MEDIA" })).toBe(SPIRAL_MAP_LAYER_V0.ECONOMY);
   });
+
+  it("filterSovereignPinsForSpiralMapViewV0 keeps castle pair only in castle reality mode", () => {
+    const sovereign = [
+      { id: "ghost", type: "ghost", lat: 41, lon: 29 },
+      { id: "my_castle", type: "castle", lat: 41.01, lon: 29.01 },
+      { id: ORIGIN_HOME_SERENCEBEY_PIN_ID_V0, type: "origin_home", lat: 41.0422, lon: 29.0089 },
+      { id: "rhizoh_portal", type: "portal", lat: 41.02, lon: 29.02 }
+    ];
+    const filtered = filterSovereignPinsForSpiralMapViewV0(sovereign, {
+      explorer: false,
+      castle: true,
+      economy: false,
+      seasonal: false,
+      includeDormant: true,
+      realityMode: "castle"
+    });
+    expect(filtered.some((p) => p.id === "ghost")).toBe(false);
+    expect(filtered.some((p) => p.id === "my_castle")).toBe(true);
+    expect(filtered.some((p) => p.id === ORIGIN_HOME_SERENCEBEY_PIN_ID_V0)).toBe(true);
+    expect(filtered.some((p) => p.id === "rhizoh_portal")).toBe(true);
+  });
+
+  it("filterSovereignPinsForSpiralMapViewV0 returns full sovereign mesh in full world mode", () => {
+    const sovereign = [
+      { id: "ghost", type: "ghost", lat: 41, lon: 29 },
+      { id: "my_castle", type: "castle", lat: 41.01, lon: 29.01 }
+    ];
+    const filtered = filterSovereignPinsForSpiralMapViewV0(sovereign, {
+      explorer: true,
+      castle: true,
+      economy: true,
+      seasonal: false,
+      includeDormant: true,
+      fullWorldMesh: true,
+      realityMode: "full_world"
+    });
+    expect(filtered).toHaveLength(2);
+  });
 });

@@ -19,6 +19,7 @@ import { RhizohWorldMapControlsV0 } from "./RhizohWorldMapControlsV0.jsx";
 import { RhizohWorldClaimAnchorChipV0 } from "./RhizohWorldClaimAnchorChipV0.jsx";
 import { RhizohWorldMarkerLayerFilterV0 } from "./RhizohWorldMarkerLayerFilterV0.jsx";
 import { RhizohSpiralMapLayerFilterV0 } from "./RhizohSpiralMapLayerFilterV0.jsx";
+import { RhizohWorldRealityModeSwitcherV0 } from "./RhizohWorldRealityModeSwitcherV0.jsx";
 import { RhizohWorldAtmosphereChipV0 } from "./RhizohWorldAtmosphereChipV0.jsx";
 import { RhizohWorldSportsNewsStripV0 } from "./RhizohWorldSportsNewsStripV0.jsx";
 import { resolveRhizohWorldSpaceMapStripBottomCssV0 } from "../rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
@@ -225,6 +226,7 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
               style={{ bottom: mapStripBottomCssV0 }}
             >
               <div className="w-full max-w-3xl rounded-2xl border border-cyan-400/20 bg-[#030711]/90 px-2.5 py-2 backdrop-blur-xl">
+                <RhizohWorldRealityModeSwitcherV0 uiLocale={locale} className="mb-2 w-full" />
                 <RhizohWorldMapToolStripV0
                   activeTool={activeMapTool}
                   uiLocale={locale}

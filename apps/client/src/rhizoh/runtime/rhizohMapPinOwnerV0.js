@@ -20,6 +20,11 @@ import {
   buildOriginHomeSerencebeyPinV0,
   isOriginHomeSerencebeyPinV0
 } from "./worldMapOriginHomePinV0.js";
+import { isFullWorldRealityModeV0, isCastleRealityModeV0 } from "./spiralMapRealityModeV0.js";
+import {
+  annotateCastleIdentityPinsV0,
+  readCastleMemoryMapPinRowsV0
+} from "./worldMapCastleIdentityV0.js";
 
 /**
  * Pins that stay visible in explorer-only SpiralMMO filter (spec + product).
@@ -66,6 +71,21 @@ export function isExplorerOnlySpiralFilterV0(filterState) {
  * @param {object} filterState
  */
 export function filterSovereignPinsForSpiralMapViewV0(sovereign, filterState) {
+  if (isFullWorldRealityModeV0(filterState)) {
+    return sovereign;
+  }
+  if (isCastleRealityModeV0(filterState)) {
+    return Object.freeze(
+      sovereign.filter(
+        (pin) =>
+          pin.id === "my_castle" ||
+          pin.type === "my_castle" ||
+          isOriginHomeSerencebeyPinV0(pin) ||
+          pin.id === "rhizoh_portal" ||
+          pin.type === "portal"
+      )
+    );
+  }
   if (!isExplorerOnlySpiralFilterV0(filterState)) {
     return sovereign;
   }
@@ -186,14 +206,17 @@ export function readWorldSpaceSessionMapPinRowsV0(opts = {}) {
   const userCastle = opts.userCastle ?? resolveUserCastleGeoForMapViewV0();
   const filterState = opts.spiralLayerFilter ?? readSpiralMapLayerFilterStateV0();
   const originHome = buildOriginHomeSerencebeyPinV0();
-  const sovereign = filterSovereignPinsForSpiralMapViewV0(
-    [originHome, ...listSovereignWorldMapNodesForViewV0({ userCastle })],
-    filterState
+  const sovereign = annotateCastleIdentityPinsV0(
+    filterSovereignPinsForSpiralMapViewV0(
+      [originHome, ...listSovereignWorldMapNodesForViewV0({ userCastle })],
+      filterState
+    )
   );
   const liveMatch = opts.liveMatchPins ?? getLiveMatchMapPinsV0();
+  const memoryPins = readCastleMemoryMapPinRowsV0(filterState);
   let prismCubes = opts.prismCubePins ?? getPrismCubeMapPinRowsV0();
   prismCubes = mergeArenaPopulationPinRowsV0(prismCubes, filterState);
-  const rows = Object.freeze([...sovereign, ...liveMatch, ...prismCubes]);
+  const rows = Object.freeze([...sovereign, ...liveMatch, ...memoryPins, ...prismCubes]);
   if (opts.applySpiralFilter === false) return rows;
   return filterPinsBySpiralMapLayerV0(rows, filterState);
 }

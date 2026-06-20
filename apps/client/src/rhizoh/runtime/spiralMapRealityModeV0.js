@@ -1,0 +1,165 @@
+/**
+ * SpiralMMO Reality Mode — Explorer / Castle / Economy / Full World presets.
+ * RESEARCH-ONLY
+ */
+
+import { SPIRAL_MAP_LAYER_V0 } from "./spatialDistributionLayerV0.js";
+import {
+  readSpiralMapLayerFilterStateV0,
+  SPIRAL_MAP_LAYER_FILTER_EVENT_V0,
+  writeSpiralMapLayerFilterStateV0
+} from "./spiralMapLayerFilterStateV0.js";
+import { writeWorldMapMarkerLayerStateV0 } from "./worldMapMarkerLayerStateV0.js";
+
+export const SPIRAL_MAP_REALITY_MODE_V0 = Object.freeze({
+  EXPLORER: "explorer",
+  CASTLE: "castle",
+  ECONOMY: "economy",
+  FULL_WORLD: "full_world"
+});
+
+export const SPIRAL_MAP_REALITY_MODE_EVENT_V0 = "rhizoh:spiral-map-reality-mode-v0";
+export const CASTLE_IDENTITY_MODE_EVENT_V0 = "rhizoh:castle-identity-mode-v0";
+
+/** @type {Record<string, object>} */
+const REALITY_MODE_PRESETS_V0 = Object.freeze({
+  [SPIRAL_MAP_REALITY_MODE_V0.EXPLORER]: Object.freeze({
+    [SPIRAL_MAP_LAYER_V0.EXPLORER]: true,
+    [SPIRAL_MAP_LAYER_V0.CASTLE]: false,
+    [SPIRAL_MAP_LAYER_V0.ECONOMY]: false,
+    [SPIRAL_MAP_LAYER_V0.SEASONAL]: false,
+    includeDormant: false,
+    fullWorldMesh: false,
+    realityMode: SPIRAL_MAP_REALITY_MODE_V0.EXPLORER
+  }),
+  [SPIRAL_MAP_REALITY_MODE_V0.CASTLE]: Object.freeze({
+    [SPIRAL_MAP_LAYER_V0.EXPLORER]: false,
+    [SPIRAL_MAP_LAYER_V0.CASTLE]: true,
+    [SPIRAL_MAP_LAYER_V0.ECONOMY]: false,
+    [SPIRAL_MAP_LAYER_V0.SEASONAL]: false,
+    includeDormant: true,
+    fullWorldMesh: false,
+    realityMode: SPIRAL_MAP_REALITY_MODE_V0.CASTLE
+  }),
+  [SPIRAL_MAP_REALITY_MODE_V0.ECONOMY]: Object.freeze({
+    [SPIRAL_MAP_LAYER_V0.EXPLORER]: false,
+    [SPIRAL_MAP_LAYER_V0.CASTLE]: false,
+    [SPIRAL_MAP_LAYER_V0.ECONOMY]: true,
+    [SPIRAL_MAP_LAYER_V0.SEASONAL]: false,
+    includeDormant: true,
+    fullWorldMesh: false,
+    realityMode: SPIRAL_MAP_REALITY_MODE_V0.ECONOMY
+  }),
+  [SPIRAL_MAP_REALITY_MODE_V0.FULL_WORLD]: Object.freeze({
+    [SPIRAL_MAP_LAYER_V0.EXPLORER]: true,
+    [SPIRAL_MAP_LAYER_V0.CASTLE]: true,
+    [SPIRAL_MAP_LAYER_V0.ECONOMY]: true,
+    [SPIRAL_MAP_LAYER_V0.SEASONAL]: false,
+    includeDormant: true,
+    fullWorldMesh: true,
+    realityMode: SPIRAL_MAP_REALITY_MODE_V0.FULL_WORLD
+  })
+});
+
+export function listRealityModeRowsV0() {
+  return Object.freeze([
+    Object.freeze({
+      id: SPIRAL_MAP_REALITY_MODE_V0.EXPLORER,
+      tr: "Explorer",
+      en: "Explorer",
+      hintTr: "Keşif · seed ghost pinleri",
+      hintEn: "Discovery · seed ghosts"
+    }),
+    Object.freeze({
+      id: SPIRAL_MAP_REALITY_MODE_V0.CASTLE,
+      tr: "Castle",
+      en: "Castle",
+      hintTr: "Kimlik · HOME + MY CASTLE · memory",
+      hintEn: "Identity · HOME + MY CASTLE · memory"
+    }),
+    Object.freeze({
+      id: SPIRAL_MAP_REALITY_MODE_V0.ECONOMY,
+      tr: "Economy",
+      en: "Economy",
+      hintTr: "Ürün · media · shop",
+      hintEn: "Product · media · shop"
+    }),
+    Object.freeze({
+      id: SPIRAL_MAP_REALITY_MODE_V0.FULL_WORLD,
+      tr: "Full World",
+      en: "Full World",
+      hintTr: "Debug — tüm sovereign mesh",
+      hintEn: "Debug — full sovereign mesh"
+    })
+  ]);
+}
+
+/**
+ * @param {object} [filterState]
+ * @returns {string}
+ */
+export function readSpiralMapRealityModeV0(filterState) {
+  const filter = filterState || readSpiralMapLayerFilterStateV0();
+  const mode = String(filter.realityMode || "").trim();
+  if (mode && REALITY_MODE_PRESETS_V0[mode]) return mode;
+  if (filter.fullWorldMesh === true) return SPIRAL_MAP_REALITY_MODE_V0.FULL_WORLD;
+  if (filter.castle === true && filter.explorer !== true && filter.economy !== true) {
+    return SPIRAL_MAP_REALITY_MODE_V0.CASTLE;
+  }
+  if (filter.economy === true && filter.explorer !== true && filter.castle !== true) {
+    return SPIRAL_MAP_REALITY_MODE_V0.ECONOMY;
+  }
+  return SPIRAL_MAP_REALITY_MODE_V0.EXPLORER;
+}
+
+/**
+ * @param {object} [filterState]
+ */
+export function isCastleRealityModeV0(filterState) {
+  return readSpiralMapRealityModeV0(filterState) === SPIRAL_MAP_REALITY_MODE_V0.CASTLE;
+}
+
+/**
+ * @param {object} [filterState]
+ */
+export function isFullWorldRealityModeV0(filterState) {
+  const filter = filterState || readSpiralMapLayerFilterStateV0();
+  return (
+    filter.fullWorldMesh === true ||
+    readSpiralMapRealityModeV0(filter) === SPIRAL_MAP_REALITY_MODE_V0.FULL_WORLD
+  );
+}
+
+/**
+ * @param {string} modeId
+ */
+export function applySpiralMapRealityModeV0(modeId) {
+  const mode = String(modeId || SPIRAL_MAP_REALITY_MODE_V0.EXPLORER).trim();
+  const preset = REALITY_MODE_PRESETS_V0[mode] || REALITY_MODE_PRESETS_V0[SPIRAL_MAP_REALITY_MODE_V0.EXPLORER];
+  const next = writeSpiralMapLayerFilterStateV0({ ...preset });
+
+  if (mode === SPIRAL_MAP_REALITY_MODE_V0.CASTLE) {
+    writeWorldMapMarkerLayerStateV0({
+      memoryBeacons: true,
+      userCastle: true,
+      systemAnchors: true
+    });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent(CASTLE_IDENTITY_MODE_EVENT_V0, {
+          detail: Object.freeze({ active: true, atMs: Date.now() })
+        })
+      );
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(SPIRAL_MAP_REALITY_MODE_EVENT_V0, {
+        detail: Object.freeze({ mode: readSpiralMapRealityModeV0(next), state: next })
+      })
+    );
+  }
+
+  return next;
+}

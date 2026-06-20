@@ -50,6 +50,12 @@ import {
   readSpiralMapLayerFilterStateV0,
   subscribeSpiralMapLayerFilterStateV0
 } from "../rhizoh/runtime/spiralMapLayerFilterStateV0.js";
+import {
+  CASTLE_IDENTITY_MODE_EVENT_V0,
+  SPIRAL_MAP_REALITY_MODE_EVENT_V0,
+  SPIRAL_MAP_REALITY_MODE_V0
+} from "../rhizoh/runtime/spiralMapRealityModeV0.js";
+import { resolveCastleIdentityViewportNodesV0 } from "../rhizoh/runtime/worldMapCastleIdentityV0.js";
 import { isSpiralCountdownCalmVisualV0 } from "../rhizoh/runtime/worldDomainCalmModeV0.js";
 import { RHIZOH_MAP_COMMAND_EVENT_V0 } from "../rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
 import { RhizohCatchUpCascadeOverlayV0 } from "./RhizohCatchUpCascadeOverlayV0.jsx";
@@ -260,6 +266,24 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
     }
   }, [userCastleGeo]);
 
+  const fitCastleIdentityViewportV0 = useCallback(() => {
+    const L = typeof window !== "undefined" ? window.L : null;
+    const map = mapRef.current;
+    if (!L?.latLngBounds || !map) return;
+    const nodes = resolveCastleIdentityViewportNodesV0();
+    if (nodes.length >= 2) {
+      const bounds = L.latLngBounds(nodes.map((n) => [n.lat, n.lon]));
+      map.fitBounds(bounds, {
+        paddingTopLeft: [28, 88],
+        paddingBottomRight: [28, 120],
+        maxZoom: 13,
+        animate: true
+      });
+    } else if (nodes.length === 1) {
+      map.flyTo([nodes[0].lat, nodes[0].lon], 14, { animate: true, duration: 1.2 });
+    }
+  }, []);
+
   useEffect(() => {
     const onPins = (ev) => setLiveMatchPins(ev?.detail?.pins || getLiveMatchMapPinsV0());
     window.addEventListener(RHIZOH_LIVE_MATCH_PINS_EVENT_V0, onPins);
@@ -279,6 +303,21 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
   useEffect(() => subscribeSpiralMapLayerFilterStateV0(() => {
     setSpiralLayerFilter(readSpiralMapLayerFilterStateV0());
   }), []);
+
+  useEffect(() => {
+    const onCastleIdentity = () => fitCastleIdentityViewportV0();
+    const onRealityMode = (ev) => {
+      if (ev?.detail?.mode === SPIRAL_MAP_REALITY_MODE_V0.CASTLE) {
+        fitCastleIdentityViewportV0();
+      }
+    };
+    window.addEventListener(CASTLE_IDENTITY_MODE_EVENT_V0, onCastleIdentity);
+    window.addEventListener(SPIRAL_MAP_REALITY_MODE_EVENT_V0, onRealityMode);
+    return () => {
+      window.removeEventListener(CASTLE_IDENTITY_MODE_EVENT_V0, onCastleIdentity);
+      window.removeEventListener(SPIRAL_MAP_REALITY_MODE_EVENT_V0, onRealityMode);
+    };
+  }, [fitCastleIdentityViewportV0]);
 
   const displayNodes = useMemo(
     () =>
@@ -474,7 +513,9 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
           zIndexOffset:
             node.id === "my_castle"
               ? 900
-              : node.type === "remote_castle"
+              : node.type === "memory_beacon"
+                ? 350
+                : node.type === "remote_castle"
                 ? 100
                 : node.type === "spiralmmo"
                   ? 320
