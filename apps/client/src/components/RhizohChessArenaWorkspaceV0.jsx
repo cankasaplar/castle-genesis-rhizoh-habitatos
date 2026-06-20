@@ -738,6 +738,10 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
 
   const resetGame = useCallback(
     (nextMode = mode) => {
+      aiAutoLoopGenRef.current += 1;
+      aiMoveMutexRef.current = false;
+      setAiBusy(false);
+      setThinkingActorV0(null);
       const g = createChessArenaGameV0({ mode: nextMode });
       setGame(g);
       setMode(nextMode);
@@ -760,6 +764,13 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       setArenaFallbackMode(false);
       setGameEpoch((n) => n + 1);
       flagHandledRef.current = false;
+      if (
+        nextMode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH ||
+        nextMode === CHESS_GAME_MODE_V0.AI_AI
+      ) {
+        releaseBroadcastForArenaPlayV0();
+        setArenaPhase("playing");
+      }
     },
     [mode, tr]
   );
