@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   focusSpiralMapLayerV0,
   readSpiralMapLayerFilterStateV0,
+  resetSpiralMapLayerFilterSessionForTestsV0,
   SPIRAL_MAP_LAYER_FILTER_EVENT_V0,
   writeSpiralMapLayerFilterStateV0
 } from "../spiralMapLayerFilterStateV0.js";
@@ -13,6 +14,7 @@ import { SPIRAL_MAP_LAYER_V0 } from "../spatialDistributionLayerV0.js";
 
 describe("spiralMapLayerFilterStateV0", () => {
   beforeEach(() => {
+    resetSpiralMapLayerFilterSessionForTestsV0();
     if (typeof localStorage !== "undefined") {
       localStorage.removeItem("rhizoh.spiral_map_layer_filter.v0");
       localStorage.removeItem(SPIRAL_MAP_REALITY_MODE_LS_KEY_V0);
@@ -83,5 +85,34 @@ describe("spiralMapLayerFilterStateV0", () => {
     expect(state.castle).toBe(true);
     expect(state.explorer).toBe(false);
     expect(state.realityMode).toBe("castle");
+  });
+
+  it("readSpiralMapLayerFilterStateV0 uses session cache when localStorage write fails", () => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function setItem(key) {
+      if (key === "rhizoh.spiral_map_layer_filter.v0") {
+        throw new Error("quota_exceeded");
+      }
+      return original.apply(this, arguments);
+    };
+    try {
+      writeSpiralMapLayerFilterStateV0(
+        {
+          explorer: false,
+          castle: true,
+          economy: false,
+          seasonal: false,
+          includeDormant: true,
+          realityMode: "castle"
+        },
+        { replace: true }
+      );
+      const readBack = readSpiralMapLayerFilterStateV0();
+      expect(readBack.castle).toBe(true);
+      expect(readBack.explorer).toBe(false);
+      expect(readBack.includeDormant).toBe(true);
+    } finally {
+      Storage.prototype.setItem = original;
+    }
   });
 });

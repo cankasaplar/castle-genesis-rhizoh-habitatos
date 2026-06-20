@@ -26,6 +26,7 @@ import {
   annotateCastleIdentityPinsV0,
   readCastleMemoryMapPinRowsV0
 } from "./worldMapCastleIdentityV0.js";
+import { publishSpiralMapRealityDevtoolsV0 } from "./spiralMapRealityModeV0.js";
 
 /**
  * Pins that stay visible in explorer-only SpiralMMO filter (spec + product).
@@ -412,6 +413,7 @@ export function installRhizohMapPinOwnerAutoRefreshV0(ctx = {}) {
   window.__rhizoh = window.__rhizoh || {};
   window.__rhizoh.refreshMapPinOwner = refresh;
   window.__rhizoh.inspectMapPinOwner = inspectRhizohMapPinOwnerV0;
+  publishSpiralMapRealityDevtoolsV0();
 
   if (mapPinOwnerAutoRefreshInstalledV0) return () => {};
   mapPinOwnerAutoRefreshInstalledV0 = true;
