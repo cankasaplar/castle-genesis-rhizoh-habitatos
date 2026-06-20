@@ -14,6 +14,8 @@ import {
   emitV11MapIntentV0,
   SYMBYO_MAP_INTERACTION_V0
 } from "./symbyoMapIntentBridgeV0.js";
+import { PEER_CASTLE_SIM_ID_V0 } from "./shadowCastleEventBusV0.js";
+import { handleShadowSimPeerPinClickV0 } from "./shadowDataPlaneLoopV0.js";
 
 export const RHIZOH_MAP_EVENT_PIN_SCHEMA_V0 = "rhizoh.map_event_pin_dispatch.v0";
 export const RHIZOH_MAP_EVENT_PIN_EVENT_V0 = "rhizoh:map-event-pin-v0";
@@ -33,6 +35,10 @@ export function dispatchV11MapEventPinV0(node, interaction = "click", map = null
   const pinId = String(node.id || "");
 
   if (type === "remote_castle") {
+    if (node.shadowPeerSim || pinId === PEER_CASTLE_SIM_ID_V0) {
+      handleShadowSimPeerPinClickV0(node);
+      return Object.freeze({ ok: true, route: "shadow_sim_peer" });
+    }
     dispatchRemoteCastleClickV0(node);
     return Object.freeze({ ok: true, route: "remote_castle" });
   }

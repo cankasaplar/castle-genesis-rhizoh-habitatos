@@ -15,7 +15,8 @@ import {
   SHADOW_CASTLE_PIN_PULSE_EVENT_V0,
   SHADOW_CASTLE_REACTION_EVENT_V0,
   startShadowDataPlaneLoopV0,
-  stopShadowDataPlaneLoopV0
+  stopShadowDataPlaneLoopV0,
+  handleShadowSimPeerPinClickV0
 } from "../shadowDataPlaneLoopV0.js";
 
 describe("shadowDataPlaneLoopV0", () => {
@@ -92,5 +93,19 @@ describe("shadowDataPlaneLoopV0", () => {
     stopShadowDataPlaneLoopV0();
     expect(snap.phase).toBe("B_soft");
     expect(snap.chessBridge.installed).toBe(true);
+  });
+
+  it("handleShadowSimPeerPinClickV0 binds sim peer and emits visit echo", () => {
+    startShadowDataPlaneLoopV0();
+    const out = handleShadowSimPeerPinClickV0({
+      id: PEER_CASTLE_SIM_ID_V0,
+      name: "Peer Castle · Istanbul Sim",
+      lat: 41.0488,
+      lon: 29.0245
+    });
+    expect(out.ok).toBe(true);
+    const snap = inspectShadowDataPlaneV0();
+    expect(snap.peerRegistry.boundPeer?.isSim).toBe(true);
+    stopShadowDataPlaneLoopV0();
   });
 });

@@ -410,7 +410,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
         }
       >
         <div
-          className={`flex items-center justify-between border-b border-purple-500/30 pb-3 ${
+          className={`relative z-50 flex shrink-0 items-center justify-between gap-3 border-b border-purple-500/30 pb-3 ${
             octoLabMode ? "px-4 pt-3" : "mb-4 pb-4"
           }`}
         >
@@ -461,12 +461,17 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
               ) : null}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <RhizohCastleShadowInboxV0 uiLocale={uiLocale} compact panelPlacement="dropdown" />
+          <div className="relative z-[60] flex shrink-0 items-center gap-2">
+            <RhizohCastleShadowInboxV0
+              uiLocale={uiLocale}
+              compact
+              panelPlacement="portal"
+              onItemAction={() => onClose?.()}
+            />
             <button
               type="button"
               onClick={octoLabMode ? onDismissOctoLab : onClose}
-              className="rounded-xl border border-white/15 px-3 py-2 text-[10px] text-white/70 hover:text-white"
+              className="min-h-[2.5rem] touch-manipulation rounded-xl border border-white/15 px-3 py-2 text-[10px] text-white/70 hover:text-white"
             >
               <X size={14} className="inline" /> {tr ? "Kapat" : "Close"}
             </button>
@@ -474,7 +479,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
         </div>
 
         <div
-          className={`flex min-h-0 flex-1 flex-col gap-4 overflow-hidden sm:flex-row ${
+          className={`relative z-10 flex min-h-0 flex-1 flex-col gap-4 overflow-hidden sm:flex-row ${
             octoLabMode ? "px-4 pb-4" : ""
           }`}
         >
