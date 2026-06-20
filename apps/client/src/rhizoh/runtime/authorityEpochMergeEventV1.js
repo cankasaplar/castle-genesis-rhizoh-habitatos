@@ -28,6 +28,10 @@ import {
   setLastSpatialAllocationV0
 } from "./spatialAllocationLayerV0.js";
 import {
+  bindArenasToPlacedCubesV0,
+  setLastArenaBindingV0
+} from "./arenaBindingLayerV0.js";
+import {
   fetchGatewayAuthorityWitnessReplayV1,
   runAuthorityReplayAlignmentV1,
   workerAuthorityReplayAlignmentV1
@@ -255,6 +259,9 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
   const spatialAllocation = allocateSpatialSlotsV0({ prismCubes });
   setLastSpatialAllocationV0(spatialAllocation);
 
+  const arenaBinding = bindArenasToPlacedCubesV0({ spatialAllocation, mergeEvent });
+  setLastArenaBindingV0(arenaBinding);
+
   return Object.freeze({
     ok: true,
     mergeEvent,
@@ -262,6 +269,7 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
     semanticField,
     prismCubes,
     spatialAllocation,
+    arenaBinding,
     payload,
     alignment,
     output: mergeEvent?.output || null,

@@ -11,6 +11,7 @@ import { ensureAuthorityEpochMergeEventV1 } from "./authorityEpochMergeEventV1.j
 import { ensureUnifiedSemanticRealityFieldV1 } from "./unifiedSemanticRealityFieldV1.js";
 import { ensurePrismCubeEngineV0 } from "./prismCubeEngineV0.js";
 import { ensureSpatialAllocationLayerV0 } from "./spatialAllocationLayerV0.js";
+import { ensureArenaBindingLayerV0 } from "./arenaBindingLayerV0.js";
 import { ensureWorkerAuthorityReplayAlignmentV1 } from "./workerAuthorityReplayAlignmentV1.js";
 import {
   getAuthorityEpochSnapshotV1,
@@ -370,6 +371,7 @@ export function ensureAuthorityLedgerSealPipelineV1() {
   ensureUnifiedSemanticRealityFieldV1();
   ensurePrismCubeEngineV0();
   ensureSpatialAllocationLayerV0();
+  ensureArenaBindingLayerV0();
 
   return window.__rhizoh.authorityLedger;
 }

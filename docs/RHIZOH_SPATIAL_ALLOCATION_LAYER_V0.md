@@ -96,5 +96,6 @@ Boot: `boot.spatial_allocation · armed logical_placement`
 |-------|--------|
 | L4b Prism cube v0 | ✔ #228 |
 | L4c **Spatial allocation v0** | ✔ this module |
-| L4d Arena binding | ❌ next |
-| L5 Media ledgerization | ❌ Phase 1 signal gate |
+| L5a Arena binding v0 | ✔ [`RHIZOH_ARENA_BINDING_LAYER_V0.md`](RHIZOH_ARENA_BINDING_LAYER_V0.md) |
+| L5b Spatial slot resolver | ❌ next |
+| L6 Media ledgerization | ❌ Phase 1 signal gate |
