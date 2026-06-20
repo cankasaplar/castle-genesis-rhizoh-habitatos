@@ -1,102 +1,94 @@
 # Rhizoh Arena Binding Layer v0
 
-**SPECFLOW:** `RESEARCH-ONLY` · `FUTURE-PROOF-ONLY`
+**SPECFLOW:** `RESEARCH-ONLY` · **Issue:** #230
 
-**Prerequisites:** [`RHIZOH_SPATIAL_ALLOCATION_LAYER_V0.md`](RHIZOH_SPATIAL_ALLOCATION_LAYER_V0.md)
+Prism cubes become **arena-aware persistent entities**. Chess, sports, and media share one identity ontology — `ArenaEvent` (unified) instead of separate silos.
 
-**Code:** `apps/client/src/rhizoh/runtime/arenaBindingLayerV0.js`
+## Before / After
 
----
+| Before #230 | After #230 |
+|-------------|------------|
+| Cube → semantic unit | Cube → entity carrier |
+| Arena → nonexistent | Arena → identity convergence layer |
+| Entity → fragmented | Entity → `ArenaEntityKernel` + aliases |
+| Event → domain-specific | Event → cross-domain signal |
 
-## 0. SSOT sentence
+## ArenaEntityKernel
 
-> **Meaning exists in cubes; Arena Binding assigns who continues across chess / sports / media / authority — `entity_id` kernel, not world coordinates yet.**
-
-Closes the ontological gap: *information + structure without cross-arena identity*.
-
----
-
-## 1. Pipeline position
-
-```
-Spatial Allocation (logical grid)
-        ↓
-Arena Binding Layer v0   ← this module
-        ↓
-Spatial Slot Resolver (world_position) — next
-        ↓
-Prism Cube Commit
-```
-
----
-
-## 2. Shared identity kernel
-
-```javascript
-entityId = foldWalSegmentHash(genesis, {
-  sealRef, partitionKey, mergedEpochId, clientSeed
-})
-```
-
-| Arena | v0 coverage | Event grammar |
-|-------|-------------|---------------|
-| authority_epistemic | `bound_epistemic` | `arena.authority.seal.v1` |
-| chess | `inference_only` | `arena.chess.move.v1` |
-| sports | `event_ingest` | `arena.sports.delta.v1` |
-| media | `ui_stub` | `arena.media.frame.v1` |
-
-Chess / sports / media register into kernel via `registerArenaEntityContinuityV0` — prep only.
-
----
-
-## 3. Cube binding output
-
-```javascript
-arenaBinding: {
-  status: "bound",
-  arenaId: "arena.authority_epistemic",
-  entityId,
-  eventGrammar: "arena.authority.seal.v1",
-  crossArenaContinuity: { chess: null, sports: null, media: null }
+```ts
+interface ArenaEntityKernel {
+  entityId: string;
+  persistentHash: string;
+  epochOrigin: string;
+  aliases: { chess?: string; sports?: string; media?: string };
+  semanticClass: string;
+  status: "created" | "bound" | "drifting" | "quarantined";
+  lastSeenAt: number;
 }
 ```
 
-`worldPosition` remains `null` — Spatial Slot Resolver is next.
+## ArenaEventV0
 
----
-
-## 4. DevTools
-
-```javascript
-const m = await window.__rhizoh.epochMergeAndAssimilate()
-m.arenaBinding.boundCubes[0].entityId
-m.arenaBinding.boundCubes[0].arenaBinding.status  // "bound"
-m.arenaBinding.arenaRegistry.chess.consensus      // false
-
-window.__rhizoh.bindArenasToCubes({ spatialAllocation })
-window.__rhizoh.registerArenaEntity({ entityId, arenaType: "chess", localId: "match_1" })
-window.__rhizoh.arenaEntityId({ sealRef, partitionKey })
+```ts
+interface ArenaEventV0 {
+  eventId: string;
+  arenaType: "chess" | "sports" | "media";
+  entity: ArenaEntityKernel;
+  payload: { move?: string; scoreDelta?: unknown; frameTimestamp?: number; mediaRef?: string };
+  epochId: string;
+  sealRef: string;
+  timestamp: number;
+}
 ```
 
-Boot: `boot.arena_binding · armed identity_kernel`
+## Binding engine
 
----
+- `bindArenaEntityV0(event)` — registry keyed by `persistentHash`; merges `aliases` across arenas; sets `status: bound` on cross-arena link.
+- `resolveCrossArenaIdentityV0(entityId)` — resolve by `entityId` or any alias.
+- `bindArenasToPlacedCubesV0(spatialAllocation, ctx)` — boot pipeline step after spatial allocation.
 
-## 5. Deferred
+## Critical invariant
 
-- `world_position` (Spatial Slot Resolver)
-- Prism Cube Commit (spatial object)
-- Chess historical consensus
-- Media ledgerization
-- Worker physics validation
+**No arena event without entity binding.** Chess/sports/media ingest stubs all route through `bindArenaEntityV0`.
 
----
+## Integration stubs
 
-## 6. Maturity
+| Arena | Function | Status |
+|-------|----------|--------|
+| Chess | `ingestChessMoveArenaEventV0(move, entityId)` | Active stub |
+| Sports | `ingestSportsArenaEventV0(eventData, entityId)` | Active stub |
+| Media | `ingestMediaFrameArenaEventV0(frame)` | Locked — `MEDIA_LEDGERIZATION_LOCKED_PHASE_1` |
 
-| Level | Status |
-|-------|--------|
-| L4c Spatial allocation | ✔ #229 |
-| L5a **Arena binding v0** | ✔ this module |
-| L5b Spatial slot resolver | ❌ next |
-| L5c Prism cube commit | ❌ |
+## Spatial bridge (placeholder)
+
+`buildSpatialBindingV0` — `worldPosition: null` until Spatial Slot Resolver (#231).
+
+## Boot signals
+
+After merge + assimilate:
+
+- `arena.binding.entity_resolved`
+- `arena.cross_identity.linked`
+- `entity.status = bound`
+- `cross_arena_aliases = active`
+
+## DevTools
+
+```javascript
+const m = await window.__rhizoh.epochMergeAndAssimilate();
+m.arenaBinding.boundCubes[0].entityKernel;
+m.arenaBinding.signals;
+window.__rhizoh.arenaBindingSignals();
+window.__rhizoh.bindArenaEntity({ ... });
+window.__rhizoh.resolveArenaIdentity("arena_entity_...");
+```
+
+## Pipeline position
+
+```
+… → spatialAllocation → arenaBinding → (next: world physics / spatial slot resolver)
+```
+
+## Module
+
+`apps/client/src/rhizoh/runtime/arenaBindingLayerV0.js`
