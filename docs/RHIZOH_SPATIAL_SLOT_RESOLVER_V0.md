@@ -1,4 +1,4 @@
-# Rhizoh Spatial Slot Resolver v0
+# Rhizoh Spatial Slot Resolver v0.1
 
 **SPECFLOW:** `RESEARCH-ONLY`
 
@@ -10,38 +10,58 @@
 
 ## SSOT sentence
 
-> **Arena-bound cubes gain world coordinates — logical grid projects to WGS84 epistemic space; Cesium commit deferred.**
+> **Arena-bound cubes gain observer-relative world coordinates — logical grid projects from the user's observation origin, not a global Istanbul calibration root.**
 
 ---
 
-## Before / After
+## Before / After (v0 → v0.1)
 
-| Before | After |
-|--------|-------|
-| `worldPosition: null` | WGS84 projection from calibration root |
-| `eventAnchor: null` | entity + slot + world anchor |
-| `actionSurface: null` | `armed` (commit deferred) |
-| Identity without place | Entity-first + world place |
+| v0 | v0.1 |
+|----|------|
+| Sarıyer calibration root for all users | **Observation origin per observer** |
+| Same world pin for everyone | Chess/sports entity pin at **your** location |
+| — | Live sports **events** pin to **venue** when team name known |
 
 ---
 
-## Pipeline position
+## Three origins (do not conflate)
+
+| Origin | Role | Used for arena pins? |
+|--------|------|----------------------|
+| **Calibration root** (Sarıyer) | Atmosphere / projection factory seed | Metadata only — **not** pin placement |
+| **Observation origin** | Where this observer sees the world | **Yes** — chess, authority, sports entity |
+| **HOME_BASE** | Castle identity (profile) | Feeds observation origin when set |
+
+Observation origin resolves via `resolveWorldMapBootstrapGeoV0()`:
+
+1. `__CASTLE_NEXUS_GEO__` (device/session)
+2. User castle anchor
+3. Serencebey seed
+4. Beşiktaş fallback
+
+---
+
+## Arena projection policy
+
+| Arena type | Origin |
+|------------|--------|
+| `authority_epistemic` | Observation origin |
+| `chess` | Observation origin (local arena pin) |
+| `sports` (entity) | Observation origin |
+| `sports` (live event + team name) | Venue anchor (`resolveSportVenueAnchorV0`) |
+| `media` | Locked — `MEDIA_LEDGERIZATION_LOCKED_PHASE_1` |
+
+---
+
+## Projection formula
 
 ```
-… → spatialAllocation → arenaBinding → spatialSlotResolver → (next: prism cube commit)
+worldPosition.lat = observationOrigin.lat + logical.y * 0.0008
+worldPosition.lon = observationOrigin.lon + logical.x * 0.0008
+worldPosition.alt = 120 + logical.z * 40
 ```
 
----
-
-## Projection model
-
-| Input | Output |
-|-------|--------|
-| `logicalPosition: { x, y, z }` | `worldPosition: { lat, lon, alt }` |
-| `coordinateSpace: logical_epistemic_grid` | `wgs84_epistemic_projection` |
-| Origin | `anchor_sariyer_stability` (calibration root — not user HOME_BASE) |
-
-Scale constants align with `spatialWorldAdapterV0` vec projection (`0.0008°` per grid unit, `40m` per z).
+Scale aligns with `spatialWorldAdapterV0`.
 
 ---
 
@@ -51,8 +71,10 @@ Scale constants align with `spatialWorldAdapterV0` vec projection (`0.0008°` pe
 {
   lat, lon, alt,
   coordinateSpace: "wgs84_epistemic_projection",
-  originAnchorId: "anchor_sariyer_stability",
-  resolverMethod: "logical_grid_calibration_root_v0",
+  observationOrigin: { lat, lon, source, policy, arenaType },
+  calibrationOriginId: "anchor_sariyer_stability",  // metadata only
+  resolverMethod: "logical_grid_observation_origin_v0.1",
+  observerRelative: true,
   logicalSource: { x, y, z }
 }
 ```
@@ -63,6 +85,7 @@ Scale constants align with `spatialWorldAdapterV0` vec projection (`0.0008°` pe
 
 - `spatial.slot.world_resolved`
 - `spatial.binding.world_position_set`
+- `spatial.observer_origin.active`
 
 ---
 
@@ -70,15 +93,21 @@ Scale constants align with `spatialWorldAdapterV0` vec projection (`0.0008°` pe
 
 ```javascript
 const m = await window.__rhizoh.epochMergeAndAssimilate()
+m.spatialSlotResolver.observationOrigin
 m.spatialSlotResolver.resolvedCubes[0].spatialSlot.worldPosition
-m.spatialSlotResolver.signals
 
-window.__rhizoh.resolveSpatialSlots({ arenaBinding: m.arenaBinding })
+window.__rhizoh.resolveObservationOrigin()
+window.__rhizoh.resolveArenaProjectionOrigin("chess")
 window.__rhizoh.resolveLogicalToWorld({ x: 1, y: 2, z: 0 })
-window.__rhizoh.spatialSlotResolverSignals()
 ```
 
 Boot: `boot.spatial_slot_resolver · armed world_projection`
+
+---
+
+## Multi-user model
+
+Each observer resolves pins from **their** observation origin. Same entity ID (arena binding) can continuity-link across arenas; **world position is observer-relative projection**, not a single global Istanbul center.
 
 ---
 
