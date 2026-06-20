@@ -93,6 +93,7 @@ Boot: `boot.authority_replay_alignment · armed deterministic-only`
 | **#222** | `workerAuthorityReplayAlignmentV1` (this) |
 | **#223** | epoch boundary — `session_resync` vs `hard_divergence` |
 | **#224** | gateway entry guarantee + partition enforcement |
+| **#225** | epoch merge event + cross-epoch replay |
 
 ---
 

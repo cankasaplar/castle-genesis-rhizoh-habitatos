@@ -65,4 +65,5 @@ Chain key: `subjectId::epochId`
 |-------|--------|
 | L3i Replay alignment | ✔ |
 | L3j **Epoch boundary primitive** | ✔ this module |
-| L3k Divergence classifier | ❌ #223 |
+| L3l Epoch merge event | ✔ [`RHIZOH_EPOCH_MERGE_EVENT_V1.md`](RHIZOH_EPOCH_MERGE_EVENT_V1.md) |
+| L3k Divergence classifier | ❌ #225 |
