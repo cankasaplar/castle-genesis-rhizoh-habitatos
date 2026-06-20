@@ -158,6 +158,18 @@ function isBenignExternalResourceError(event) {
   return false;
 }
 
+/** Cross-origin script errors and empty error events — not actionable app faults. */
+function isOpaqueWindowErrorEvent(event) {
+  if (!event) return false;
+  const resourceUrl = benignScriptOrLinkResourceUrl(event);
+  if (resourceUrl) return false;
+  const message = String(event.message || "");
+  const filename = String(event.filename || "");
+  const hasErrorObject = Boolean(event.error);
+  if (hasErrorObject || message || filename) return false;
+  return true;
+}
+
 /** @param {unknown} errOrMsg @param {Record<string, unknown>} [extra] */
 export function isCastleBenignDomErrorV0(errOrMsg, extra = {}) {
   const msg = errOrMsg instanceof Error ? String(errOrMsg.message || "") : String(errOrMsg || "");
@@ -243,6 +255,7 @@ export function installGlobalCrashTelemetry() {
     "error",
     (event) => {
       if (isBenignExternalResourceError(event)) return;
+      if (isOpaqueWindowErrorEvent(event)) return;
       const resourceHint = benignScriptOrLinkResourceUrl(event) || event.filename || "";
       const err = event.error;
       if (

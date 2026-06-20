@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   RHIZOH_CESIUM_SESSION_PIN_OWNER_V0,
   filterPinsBySpiralMapLayerV0,
+  filterSovereignPinsForSpiralMapViewV0,
   readWorldSpaceSessionMapPinRowsV0,
   resolvePinSpiralLayerV0,
   resolveRhizohMapPinSubstrateV0,
@@ -35,7 +36,16 @@ describe("rhizohMapPinOwnerV0", () => {
   });
 
   it("returns sovereign + live match pin rows", () => {
-    const rows = readWorldSpaceSessionMapPinRowsV0({ liveMatchPins: [{ id: "live_1", lat: 1, lon: 2 }] });
+    const rows = readWorldSpaceSessionMapPinRowsV0({
+      liveMatchPins: [{ id: "live_1", lat: 1, lon: 2 }],
+      spiralLayerFilter: {
+        explorer: true,
+        castle: true,
+        economy: true,
+        seasonal: true,
+        includeDormant: false
+      }
+    });
     expect(rows.some((r) => r.id === "live_1")).toBe(true);
     expect(rows.length).toBeGreaterThan(1);
   });
@@ -53,9 +63,25 @@ describe("rhizohMapPinOwnerV0", () => {
       seasonal: false,
       includeDormant: false
     });
-    expect(filtered.some((p) => p.id === "sovereign")).toBe(true);
+    expect(filtered.some((p) => p.id === "sovereign")).toBe(false);
     expect(filtered.some((p) => p.id === "p1")).toBe(true);
     expect(filtered.some((p) => p.id === "p2")).toBe(false);
+  });
+
+  it("filterSovereignPinsForSpiralMapViewV0 keeps only my_castle in explorer-only mode", () => {
+    const sovereign = [
+      { id: "ghost", type: "ghost", lat: 41, lon: 29 },
+      { id: "my_castle", type: "castle", lat: 41.01, lon: 29.01 }
+    ];
+    const filtered = filterSovereignPinsForSpiralMapViewV0(sovereign, {
+      explorer: true,
+      castle: false,
+      economy: false,
+      seasonal: false,
+      includeDormant: false
+    });
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].id).toBe("my_castle");
   });
 
   it("resolvePinSpiralLayerV0 derives layer from towerClass", () => {

@@ -3,6 +3,8 @@
  */
 
 import { applyRhizohWorldMapToolV0 } from "./rhizohWorldMapToolV0.js";
+import { persistWorldSpaceCastleAnchorV0 } from "./castleWorldSpaceContinuityV0.js";
+import { publishWorldMapObservationOriginV0 } from "./worldMapBootstrapGeoV0.js";
 
 export const WORLD_MAP_GEO_REQUEST_EVENT_V0 = "rhizoh:world-map-geo-request-v0";
 
@@ -50,6 +52,7 @@ export function requestWorldMapGeoV0(opts = {}) {
             source
           });
           window.__CASTLE_CLIENT_CASTLE_STATE__ = "ACTIVE";
+          persistWorldSpaceCastleAnchorV0(lat, lon, { source });
         } catch {
           /* noop */
         }
@@ -57,6 +60,7 @@ export function requestWorldMapGeoV0(opts = {}) {
           void applyRhizohWorldMapToolV0("city_map", { source: `${source}_after_geo` });
         }
         try {
+          publishWorldMapObservationOriginV0();
           window.dispatchEvent(
             new CustomEvent(WORLD_MAP_GEO_REQUEST_EVENT_V0, {
               detail: Object.freeze({ ok: true, lat, lon, source })

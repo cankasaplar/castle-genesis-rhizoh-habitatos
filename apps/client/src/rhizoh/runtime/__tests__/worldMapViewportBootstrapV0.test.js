@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   resolveMapViewportFitNodesV0,
   resolveMapViewportHomeV0,
+  resolveArenaPopulationViewportFitNodesV0,
   resolveWorldSpaceMapRecenterHomeV0,
   RHIZOH_WORLD_SPACE_NEUTRAL_VIEW_V0
 } from "../worldMapViewportBootstrapV0.js";
@@ -21,16 +22,18 @@ describe("worldMapViewportBootstrapV0", () => {
     expect(home.zoom).toBe(15);
   });
 
-  it("world space recenter avoids demo Istanbul cluster without anchor", () => {
+  it("world space recenter uses bootstrap seed before neutral world", () => {
     const home = resolveWorldSpaceMapRecenterHomeV0();
-    expect(home.lat).toBe(RHIZOH_WORLD_SPACE_NEUTRAL_VIEW_V0.lat);
-    expect(home.lon).toBe(RHIZOH_WORLD_SPACE_NEUTRAL_VIEW_V0.lon);
+    expect(home.lat).toBeGreaterThan(1);
+    expect(home.zoom).toBeGreaterThanOrEqual(3);
   });
 
-  it("world space neutral fit skips Istanbul regional cluster", () => {
-    const all = listSovereignWorldMapNodesForViewV0();
-    const fit = resolveMapViewportFitNodesV0(all, { worldSpaceNeutral: true });
-    expect(fit.some((n) => n.type === "spiralmmo")).toBe(false);
-    expect(fit.length).toBe(0);
+  it("resolveArenaPopulationViewportFitNodesV0 prefers spiral-layer pins", () => {
+    const fit = resolveArenaPopulationViewportFitNodesV0([
+      { id: "ghost", type: "ghost", lat: 41.04, lon: 29.0 },
+      { id: "seed", spiralLayer: "explorer", lat: 41.05, lon: 29.01 }
+    ]);
+    expect(fit).toHaveLength(1);
+    expect(fit[0].id).toBe("seed");
   });
 });

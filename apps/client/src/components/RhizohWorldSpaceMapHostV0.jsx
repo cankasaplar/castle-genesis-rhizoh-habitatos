@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import CesiumRealMapLayer from "../castleFlight/CesiumRealMapLayer.jsx";
 import { RHIZOH_SPATIAL_RENDER_MODE_V0 } from "../rhizoh/runtime/spatialBootGateV0.js";
 import {
@@ -17,7 +17,9 @@ import {
 import { createCastleWorldAnchorV0 } from "../castleFlight/castleWorldAnchorV0.js";
 import {
   readCastleNexusGeoV0,
-  resolveUserCastleGeoForMapViewV0
+  resolveUserCastleGeoForMapViewV0,
+  resolveWorldMapBootstrapGeoV0,
+  WORLD_MAP_OBSERVATION_ORIGIN_EVENT_V0
 } from "../rhizoh/runtime/worldMapBootstrapGeoV0.js";
 
 import { dispatchV11MapEventPinV0 } from "../rhizoh/runtime/mapEventPinDispatchV0.js";
@@ -28,8 +30,11 @@ import {
   scheduleMapPinHoverDwellV0
 } from "../rhizoh/runtime/worldMapMeaningfulTransitionV0.js";
 import {
-  resolveMapViewportFitNodesV0
+  resolveMapViewportFitNodesV0,
+  resolveArenaPopulationViewportFitNodesV0,
+  resolveWorldSpaceMapRecenterHomeV0
 } from "../rhizoh/runtime/worldMapViewportBootstrapV0.js";
+import { WORLD_MAP_GEO_REQUEST_EVENT_V0 } from "../rhizoh/runtime/worldMapGeoRequestV0.js";
 import {
   publishRhizohMapPinOwnerRegistryV0,
   readWorldSpaceSessionMapPinRowsV0
@@ -209,6 +214,22 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
   const [prismCubePins, setPrismCubePins] = useState(() => getPrismCubeMapPinRowsV0());
   const [spiralLayerFilter, setSpiralLayerFilter] = useState(() => readSpiralMapLayerFilterStateV0());
 
+  const recenterMapToObservationOriginV0 = useCallback((opts = {}) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const anchor = resolveWorldMapBootstrapGeoV0();
+    const zoom = Number(opts.zoom) || (userCastleGeo ? 15 : 14);
+    try {
+      if (opts.animate === false) {
+        map.setView([anchor.lat, anchor.lon], zoom, { animate: false });
+      } else {
+        map.flyTo([anchor.lat, anchor.lon], zoom, { animate: true, duration: 1.6 });
+      }
+    } catch {
+      /* noop */
+    }
+  }, [userCastleGeo]);
+
   useEffect(() => {
     const onPins = (ev) => setLiveMatchPins(ev?.detail?.pins || getLiveMatchMapPinsV0());
     window.addEventListener(RHIZOH_LIVE_MATCH_PINS_EVENT_V0, onPins);
@@ -271,12 +292,8 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
           minZoom: 2,
           maxZoom: 18
         });
-        const nexus = readCastleNexusGeoV0();
-        if (nexus) {
-          map.setView([nexus.lat, nexus.lon], 15);
-        } else {
-          map.setView([20, 0], 3);
-        }
+        const home = resolveWorldSpaceMapRecenterHomeV0();
+        map.setView([home.lat, home.lon], home.zoom || 14);
         tileLayerRef.current = L.tileLayer(leafletTileUrlForToolV0(activeMapTool), {
           maxZoom: 18
         }).addTo(map);
@@ -321,14 +338,31 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
 
   useEffect(() => {
     const onAnchor = () => setLocalAnchors(readLocalGhostCastleAnchorsV0());
-    const onCastle = () => setUserCastleGeo(resolveUserCastleGeoForMapViewV0());
+    const onCastle = () => {
+      setUserCastleGeo(resolveUserCastleGeoForMapViewV0());
+      boundsFittedRef.current = false;
+      recenterMapToObservationOriginV0({ animate: true });
+    };
+    const onGeo = () => {
+      setUserCastleGeo(resolveUserCastleGeoForMapViewV0());
+      boundsFittedRef.current = false;
+      recenterMapToObservationOriginV0({ animate: true });
+    };
+    const onObservationOrigin = () => {
+      boundsFittedRef.current = false;
+      recenterMapToObservationOriginV0({ animate: true });
+    };
     window.addEventListener(LOCAL_GHOST_CASTLE_EVENT_V0, onAnchor);
     window.addEventListener("castle:castle-create-v0", onCastle);
+    window.addEventListener(WORLD_MAP_GEO_REQUEST_EVENT_V0, onGeo);
+    window.addEventListener(WORLD_MAP_OBSERVATION_ORIGIN_EVENT_V0, onObservationOrigin);
     return () => {
       window.removeEventListener(LOCAL_GHOST_CASTLE_EVENT_V0, onAnchor);
       window.removeEventListener("castle:castle-create-v0", onCastle);
+      window.removeEventListener(WORLD_MAP_GEO_REQUEST_EVENT_V0, onGeo);
+      window.removeEventListener(WORLD_MAP_OBSERVATION_ORIGIN_EVENT_V0, onObservationOrigin);
     };
-  }, []);
+  }, [recenterMapToObservationOriginV0]);
 
   useEffect(() => {
     if (!leafletReady) return undefined;
@@ -456,10 +490,16 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
       }
 
       if (!boundsFittedRef.current && allNodes.length) {
-        const fitNodes = resolveMapViewportFitNodesV0(allNodes, {
-          worldSpaceNeutral: true,
-          userCastle: userCastleGeo
+        const arenaFit = resolveArenaPopulationViewportFitNodesV0(allNodes, {
+          spiralLayerFilter
         });
+        const fitNodes =
+          arenaFit.length >= 1
+            ? arenaFit
+            : resolveMapViewportFitNodesV0(allNodes, {
+                worldSpaceNeutral: true,
+                userCastle: userCastleGeo
+              });
         if (fitNodes.length >= 2) {
           const bounds = L.latLngBounds(fitNodes.map((n) => [n.lat, n.lon]));
           mapRef.current.fitBounds(bounds, {
@@ -468,8 +508,14 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
             maxZoom: userCastleGeo ? 15 : 14,
             animate: false
           });
+        } else if (fitNodes.length === 1) {
+          const node = fitNodes[0];
+          mapRef.current.setView([node.lat, node.lon], userCastleGeo ? 15 : 14, { animate: false });
         } else if (userCastleGeo) {
           mapRef.current.setView([userCastleGeo.lat, userCastleGeo.lon], 15, { animate: false });
+        } else {
+          const anchor = resolveWorldMapBootstrapGeoV0();
+          mapRef.current.setView([anchor.lat, anchor.lon], 14, { animate: false });
         }
         boundsFittedRef.current = true;
       }
@@ -480,7 +526,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
     } catch {
       /* noop */
     }
-  }, [leafletReady, localAnchors, displayNodes, remoteNodes, userCastleGeo]);
+  }, [leafletReady, localAnchors, displayNodes, remoteNodes, userCastleGeo, spiralLayerFilter]);
 
   useEffect(() => {
     const L = typeof window !== "undefined" ? window.L : null;

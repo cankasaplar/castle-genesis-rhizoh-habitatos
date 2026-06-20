@@ -4,8 +4,10 @@
 
 import { SOVEREIGN_MAP_DEFAULT_HOME_V0 } from "./sovereignWorldMapNodesV0.js";
 import {
-  resolveUserCastleGeoForMapViewV0
+  resolveUserCastleGeoForMapViewV0,
+  resolveWorldMapBootstrapGeoV0
 } from "./worldMapBootstrapGeoV0.js";
+import { resolvePinSpiralLayerV0 } from "./rhizohMapPinOwnerV0.js";
 
 /** Neutral world view when World · Space has no user anchor. */
 export const RHIZOH_WORLD_SPACE_NEUTRAL_VIEW_V0 = Object.freeze({
@@ -68,5 +70,23 @@ export function resolveWorldSpaceMapRecenterHomeV0() {
   if (castle && Number.isFinite(castle.lat) && Number.isFinite(castle.lon)) {
     return Object.freeze({ lat: castle.lat, lon: castle.lon, zoom: 15 });
   }
+  const bootstrap = resolveWorldMapBootstrapGeoV0();
+  if (bootstrap?.source && bootstrap.source !== "besiktas_fallback") {
+    return Object.freeze({ lat: bootstrap.lat, lon: bootstrap.lon, zoom: 14 });
+  }
   return RHIZOH_WORLD_SPACE_NEUTRAL_VIEW_V0;
+}
+
+/**
+ * Fit arena / prism population pins around observation origin (not global sovereign mesh).
+ * @param {readonly object[]} nodes
+ * @param {{ spiralLayerFilter?: object }} [opts]
+ */
+export function resolveArenaPopulationViewportFitNodesV0(nodes = [], opts = {}) {
+  const populationPins = nodes.filter((n) => resolvePinSpiralLayerV0(n));
+  if (populationPins.length >= 1) {
+    return Object.freeze(populationPins);
+  }
+  const anchor = resolveWorldMapBootstrapGeoV0();
+  return Object.freeze([{ lat: anchor.lat, lon: anchor.lon }]);
 }

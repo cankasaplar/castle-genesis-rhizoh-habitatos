@@ -49,7 +49,8 @@ import { handleWorldSpaceCapWheelNodeV0 } from "./rhizoh/runtime/rhizohWorldSpac
 import {
   readCastleNexusGeoV0,
   resolveUserCastleGeoForMapViewV0,
-  resolveWorldMapBootstrapGeoV0
+  resolveWorldMapBootstrapGeoV0,
+  publishWorldMapObservationOriginV0
 } from "./rhizoh/runtime/worldMapBootstrapGeoV0.js";
 import {
   queryWorldMapGeoPermissionV0,
@@ -569,14 +570,38 @@ export default function AppRhizohWorldSpaceV0() {
     void queryWorldMapGeoPermissionV0().then((state) => {
       if (!cancelled) setGeoPrompt(state);
     });
-    const onGeo = () => {
+    const onGeo = async () => {
       setGeoPrompt("granted");
       setGeoError("");
+      try {
+        if (typeof window !== "undefined" && window.__rhizoh?.epochMergeAndAssimilate) {
+          await window.__rhizoh.epochMergeAndAssimilate();
+        }
+        publishWorldMapObservationOriginV0();
+      } catch {
+        /* noop */
+      }
     };
     window.addEventListener(WORLD_MAP_GEO_REQUEST_EVENT_V0, onGeo);
     return () => {
       cancelled = true;
       window.removeEventListener(WORLD_MAP_GEO_REQUEST_EVENT_V0, onGeo);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        if (typeof window === "undefined" || !window.__rhizoh?.epochMergeAndAssimilate) return;
+        await window.__rhizoh.epochMergeAndAssimilate();
+        if (!cancelled) publishWorldMapObservationOriginV0();
+      } catch {
+        /* noop */
+      }
+    })();
+    return () => {
+      cancelled = true;
     };
   }, []);
 
