@@ -2,6 +2,8 @@
  * Claim-local-anchor interaction mode — map pick only when explicitly armed.
  */
 
+import { applyRhizohWorldMapToolV0 } from "./rhizohWorldMapToolV0.js";
+
 export const WORLD_MAP_CLAIM_MODE_EVENT_V0 = "rhizoh:world-map-claim-mode-v0";
 
 /**
@@ -28,4 +30,16 @@ export function writeWorldMapClaimModeV0(enabled) {
     /* noop */
   }
   return window.__RHIZOH_MAP_CLAIM_MODE__ === true;
+}
+
+/**
+ * Arm map-click anchor pick — city map + claim mode.
+ */
+export function armWorldMapLocationPickV0() {
+  writeWorldMapClaimModeV0(true);
+  void applyRhizohWorldMapToolV0("city_map", {
+    leafletOnly: true,
+    source: "world_map_location_pick"
+  });
+  return true;
 }
