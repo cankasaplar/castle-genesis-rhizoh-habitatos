@@ -65,6 +65,11 @@ function normalizeSpiralMapLayerFilterStateV0(raw = {}) {
       parsed[key] === undefined ? DEFAULT_STATE_V0[key] === true : parsed[key] === true;
   }
   next.includeDormant = parsed.includeDormant === true;
+  next.fullWorldMesh = parsed.fullWorldMesh === true;
+  next.realityMode =
+    typeof parsed.realityMode === "string" && parsed.realityMode.trim()
+      ? String(parsed.realityMode).trim()
+      : undefined;
   return Object.freeze(next);
 }
 
@@ -91,6 +96,14 @@ export function writeSpiralMapLayerFilterStateV0(patch) {
   for (const [key, value] of Object.entries(patch || {})) {
     if (key === "includeDormant") {
       sanitizedPatch.includeDormant = value === true;
+      continue;
+    }
+    if (key === "fullWorldMesh") {
+      sanitizedPatch.fullWorldMesh = value === true;
+      continue;
+    }
+    if (key === "realityMode") {
+      sanitizedPatch.realityMode = String(value || "").trim() || undefined;
       continue;
     }
     if (!isKnownSpiralLayerV0(key)) continue;
