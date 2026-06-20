@@ -11,8 +11,12 @@ export const SHADOW_CASTLE_BUS_EVENT_V0 = "rhizoh:shadow-castle-bus-v0";
 export const SHADOW_CASTLE_EVENT_TYPE_V0 = Object.freeze({
   RESOURCE_DISCOVERED: "resource.discovered.v0",
   ATMOSPHERE_SHIFT: "atmosphere.shift.v0",
-  CASTLE_ECHO: "castle.echo.v0"
+  CASTLE_ECHO: "castle.echo.v0",
+  CHESS_MOVE: "chess.move.v0",
+  CHESS_GAME_END: "chess.game_end.v0"
 });
+
+export const PEER_CASTLE_SIM_ID_V0 = "peer_castle_sim_istanbul";
 
 const MAX_EVENTS_V0 = 128;
 let logicalSeqV0 = 0;

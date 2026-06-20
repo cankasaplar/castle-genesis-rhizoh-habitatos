@@ -85,4 +85,12 @@ describe("shadowDataPlaneLoopV0", () => {
     expect(snap.phase).toBe("A_shadow");
     expect(snap.peerSim.id).toBe(PEER_CASTLE_SIM_ID_V0);
   });
+
+  it("startShadowDataPlaneLoopV0 upgrades to B_soft with chess bridge", () => {
+    startShadowDataPlaneLoopV0();
+    const snap = inspectShadowDataPlaneV0();
+    stopShadowDataPlaneLoopV0();
+    expect(snap.phase).toBe("B_soft");
+    expect(snap.chessBridge.installed).toBe(true);
+  });
 });
