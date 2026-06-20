@@ -3,7 +3,7 @@
  * Map renderer reads this; orchestrator maps types → workspace / media / info.
  */
 
-import { resolveInitialWorldSpaceMediaChannelIdV0, resolveWorldSpaceMediaChannelForMapNodeV0 } from "./worldSpaceMediaChannelsV0.js";
+import { resolveInitialWorldSpaceMediaChannelIdV0, resolveWorldSpaceMediaChannelForMapNodeV0, RHIZOH_LEARNING_CHANNEL_ID_V0 } from "./worldSpaceMediaChannelsV0.js";
 import { presenceColorForStateV0 } from "./castlePresenceRegistryV0.js";
 import {
   RHIZOH_V11_MAP_INTENT_EVENT_V0,
@@ -857,4 +857,30 @@ export function dispatchOpenMediaTubeV0(payload = {}) {
       })
     })
   );
+}
+
+/**
+ * Open World · Space media tube on Rhizoh Learning Channel (8-camera live cluster).
+ * @param {{ node?: object, title?: string, source?: string }} [payload]
+ */
+export function dispatchOpenRhizohLearningChannelV0(payload = {}) {
+  const chessNode =
+    payload.node ||
+    SOVEREIGN_CORE_NODES_V0.find((n) => n.id === "chess_arena") ||
+    Object.freeze({
+      id: "chess_arena",
+      type: "zone",
+      label: "CHESS",
+      name: "Rhizoh Chess Arena",
+      color: "#10b981"
+    });
+  const tr = payload.tr !== false;
+  dispatchOpenMediaTubeV0({
+    node: chessNode,
+    title:
+      payload.title ||
+      (tr ? "Rhizoh Öğrenme Kanalı" : "Rhizoh Learning Channel"),
+    source: payload.source || "rhizoh_learning_channel",
+    initialChannelId: RHIZOH_LEARNING_CHANNEL_ID_V0
+  });
 }

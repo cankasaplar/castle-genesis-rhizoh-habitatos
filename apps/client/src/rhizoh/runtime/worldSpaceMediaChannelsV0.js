@@ -10,7 +10,7 @@ export const CASTLE_GENESIS_SHORT_EMBED_SLIDE_V0 =
 export const CASTLE_GENESIS_CHESS_EMBED_SLIDE_V0 =
   "/ops/youtube-test/castle-genesis-chess-embed-slide.svg";
 
-/** @typedef {'youtube'|'local'|'castle_genesis_live'} WorldSpaceMediaChannelTypeV0 */
+/** @typedef {'youtube'|'local'|'castle_genesis_live'|'chess_cluster_live'} WorldSpaceMediaChannelTypeV0 */
 
 /**
  * @param {string} videoId
@@ -88,6 +88,22 @@ function freezeHoldingChannelV0(row) {
   return Object.freeze(row);
 }
 
+export const RHIZOH_LEARNING_CHANNEL_ID_V0 = "rhizoh_learning";
+
+/**
+ * Live 8-camera chess cluster — embedded in World · Space media tube (not YouTube).
+ */
+export function buildRhizohLearningChannelV0() {
+  return Object.freeze({
+    id: RHIZOH_LEARNING_CHANNEL_ID_V0,
+    titleTr: "Rhizoh Öğrenme Kanalı",
+    titleEn: "Rhizoh Learning Channel",
+    type: "chess_cluster_live",
+    badgeTr: "Canlı · 8 kamera · Stockfish",
+    badgeEn: "Live · 8 cameras · Stockfish"
+  });
+}
+
 /**
  * @returns {ReadonlyArray<object>}
  */
@@ -124,7 +140,7 @@ export function listWorldSpaceMediaChannelsV0() {
         badgeEn: "Official channel"
       });
 
-  const rows = [castleGenesisPrimary];
+  const rows = [castleGenesisPrimary, buildRhizohLearningChannelV0()];
 
   if (castleLiveEmbed) {
     rows.push(
@@ -257,7 +273,7 @@ export function resolveInitialWorldSpaceMediaChannelIdV0(source) {
   const s = String(source || "");
   if (s.startsWith("castle_init")) return "castle_genesis";
   if (s.includes("my_castle") || s.includes("map:node:castle")) return "castle_genesis";
-  if (s.includes("chess") || s.includes("map:node:chess")) return "castle_chess";
+  if (s.includes("chess") || s.includes("map:node:chess") || s.includes("learning")) return RHIZOH_LEARNING_CHANNEL_ID_V0;
   if (s.includes("radio") || s.includes("map:node:radio")) return "lofi";
   if (s.includes("event") || s.includes("map:node:event")) return "nasa";
   if (s.startsWith("map:node:")) {
@@ -276,7 +292,9 @@ export function resolveInitialWorldSpaceMediaChannelIdV0(source) {
 export function resolveWorldSpaceMediaChannelForMapNodeV0(node) {
   const id = String(node?.id || "").trim().toLowerCase();
   if (id === "my_castle" || id === "castle") return "castle_genesis";
-  if (id === "chess" || id === "arena") return "castle_chess";
+  if (id === "chess" || id === "arena" || id === "chess_arena" || id.includes("chess")) {
+    return RHIZOH_LEARNING_CHANNEL_ID_V0;
+  }
   if (id === "event") return "nasa";
   if (id === "radio") return "lofi";
   const type = String(node?.type || "").trim().toLowerCase();
