@@ -180,7 +180,6 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
           <>
             <div
               className="pointer-events-none absolute left-3 top-2 z-[3] flex max-h-[min(40vh,22rem)] w-[min(260px,52vw)] flex-col gap-1.5 overflow-y-auto sm:left-4 sm:top-3"
-              data-rhizoh-world-domain-interactive="1"
             >
               <RhizohWorldClaimAnchorChipV0
                 active={isSpace}

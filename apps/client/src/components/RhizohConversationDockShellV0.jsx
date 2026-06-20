@@ -36,7 +36,7 @@ export const RhizohConversationDockShellV0 = memo(function RhizohConversationDoc
       data-rhizoh-t0-chat-dock={isWorldSpace ? undefined : "1"}
       data-rhizoh-world-space-voice-dock={isWorldSpace ? "1" : undefined}
     >
-      <div className="pointer-events-auto w-full max-w-3xl">{children}</div>
+      <div className="pointer-events-auto w-full max-w-3xl" data-rhizoh-world-space-chrome="1">{children}</div>
     </div>
   );
 });

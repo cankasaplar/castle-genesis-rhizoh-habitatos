@@ -85,9 +85,25 @@ export const RhizohCastleShadowInboxV0 = memo(function RhizohCastleShadowInboxV0
     </button>
   );
 
+  if (compact && anchor === "bottom-right") {
+    return (
+      <div
+        className={`pointer-events-none fixed right-4 z-[45] ${className}`}
+        style={{ bottom: "calc(10.5rem + env(safe-area-inset-bottom, 0px))" }}
+        data-rhizoh-world-space-chrome="1"
+      >
+        {inboxButton}
+        {usePortal && typeof document !== "undefined" ? createPortal(panel, document.body) : panel}
+      </div>
+    );
+  }
+
   if (compact && anchor === "top-right") {
     return (
-      <div className={`pointer-events-none fixed right-3 top-[4.5rem] z-[45] sm:right-4 sm:top-[4.75rem] ${className}`}>
+      <div
+        className={`pointer-events-none fixed right-4 top-[8.75rem] z-[45] sm:top-[9rem] ${className}`}
+        data-rhizoh-world-space-chrome="1"
+      >
         {inboxButton}
         {usePortal && typeof document !== "undefined" ? createPortal(panel, document.body) : panel}
       </div>
@@ -113,9 +129,11 @@ export const RhizohCastleShadowInboxV0 = memo(function RhizohCastleShadowInboxV0
 
 function InboxPanelV0({ tr, items, onClose, onSelectItem, onIgnoreItem, onIgnoreAll, placement = "dropdown", anchor = "inline" }) {
   const panelClass =
-    placement === "portal" && anchor === "top-right"
-      ? "pointer-events-auto fixed right-3 top-[7.75rem] z-[420] w-[min(100vw-2rem,22rem)] rounded-2xl border-2 border-sky-400/70 bg-[#030711] p-3 shadow-[0_12px_40px_rgba(0,0,0,0.9)] sm:right-4 sm:top-[8rem]"
-      : placement === "portal"
+    placement === "portal" && anchor === "bottom-right"
+      ? "pointer-events-auto fixed right-4 bottom-[calc(11.5rem+env(safe-area-inset-bottom,0px))] z-[420] w-[min(100vw-2rem,22rem)] rounded-2xl border-2 border-sky-400/70 bg-[#030711] p-3 shadow-[0_12px_40px_rgba(0,0,0,0.9)]"
+      : placement === "portal" && anchor === "top-right"
+        ? "pointer-events-auto fixed right-4 top-[8.75rem] z-[420] w-[min(100vw-2rem,22rem)] rounded-2xl border-2 border-sky-400/70 bg-[#030711] p-3 shadow-[0_12px_40px_rgba(0,0,0,0.9)] sm:top-[9rem]"
+        : placement === "portal"
         ? "pointer-events-auto fixed right-4 top-20 z-[420] w-[min(100vw-2rem,20rem)] rounded-2xl border border-sky-400/30 bg-black/95 p-3 shadow-2xl backdrop-blur-md"
         : placement === "dropdown"
           ? "pointer-events-auto absolute right-0 top-full z-[420] mt-2 w-[min(100vw-2rem,20rem)] rounded-2xl border border-sky-400/30 bg-black/95 p-3 shadow-2xl backdrop-blur-md"

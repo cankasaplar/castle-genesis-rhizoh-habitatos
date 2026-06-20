@@ -19,6 +19,7 @@ import {
 import { WorldSpaceMediaDataTickerV0 } from "./WorldSpaceMediaDataTickerV0.jsx";
 import { RhizohMediaStageWithOctoV0 } from "./RhizohMediaOctoCompanionOverlayV0.jsx";
 import { RhizohOctoEightCameraLabV0 } from "./RhizohOctoEightCameraLabV0.jsx";
+import { RhizohChessClusterArenaV0 } from "./RhizohChessClusterArenaV0.jsx";
 import { RhizohCastleShadowInboxV0 } from "./RhizohCastleShadowInboxV0.jsx";
 import {
   OCTO_YUVA_EIGHT_CAMERA_LENSES_V1,
@@ -94,6 +95,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     const src = String(detail?.source || "").trim().toLowerCase();
     return nid === "radio" || src.includes("radio") || src.includes("map:node:radio");
   }, [detail?.node?.id, detail?.source]);
+  const learningChannelActive = activeChannel.type === "chess_cluster_live";
   const legalGateMode = Boolean(detail?.legalGate);
   const legalCountdownMs = Number(detail?.countdownRemainingMs) || 0;
 
@@ -452,6 +454,13 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                   {tr ? "protesto" : "protest"}
                 </p>
               ) : null}
+              {learningChannelActive ? (
+                <p className="mt-1 max-w-md text-[10px] font-normal normal-case leading-relaxed text-cyan-200/85">
+                  {tr
+                    ? "Rhizoh Öğrenme Kanalı — canlı 8 kamera cluster, Rhizoh vs Stockfish ve öğrenme şeridi. Sol menüden Castle Genesis veya diğer kanallara geçebilirsin."
+                    : "Rhizoh Learning Channel — live 8-camera cluster, Rhizoh vs Stockfish, and learning strip. Switch channels for Castle Genesis or other feeds."}
+                </p>
+              ) : null}
               {isQuantumRadioEntry ? (
                 <p className="mt-1 max-w-md text-[10px] font-normal normal-case leading-relaxed text-violet-200/85">
                   {tr
@@ -637,6 +646,13 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                   </div>
                 </div>
               </RhizohMediaStageWithOctoV0>
+            ) : activeChannel.type === "chess_cluster_live" ? (
+              <RhizohChessClusterArenaV0
+                open
+                embedMode
+                uiLocale={uiLocale}
+                onClose={onClose}
+              />
             ) : activeChannel.type === "local" ? (
               <div className="relative flex min-h-0 flex-1 flex-col">
                 <RhizohMediaStageWithOctoV0 className="flex min-h-0 flex-1 flex-col" mediaStream={localPreviewStream}>

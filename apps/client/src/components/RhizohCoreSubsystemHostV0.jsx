@@ -9,7 +9,8 @@ import {
   ensureRhizohLearningCoreBootV0
 } from "../rhizoh/runtime/rhizohCoreSubsystemBootV0.js";
 import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
-import { shouldRhizohCoreHostOwnChessArenaV0 } from "../rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
+import { shouldRhizohCoreHostOwnChessArenaV0, isRhizohWorldSpaceMapStageV0 } from "../rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
+import { dispatchOpenRhizohLearningChannelV0 } from "../rhizoh/runtime/sovereignWorldMapNodesV0.js";
 
 /**
  * Core subsystem host — chess + cluster + learning; legal/world independent.
@@ -18,9 +19,9 @@ export function RhizohCoreSubsystemHostV0({ userId = "" } = {}) {
   const [chessArena, setChessArena] = useState(null);
   const [clusterOpen, setClusterOpen] = useState(false);
   const uiLocale = readUiLocaleV0();
-  const coreHostOwnsChessArenaV0 = shouldRhizohCoreHostOwnChessArenaV0({
-    pathname: typeof window !== "undefined" ? window.location.pathname : ""
-  });
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+  const coreHostOwnsChessArenaV0 = shouldRhizohCoreHostOwnChessArenaV0({ pathname });
+  const worldSpaceMapStage = isRhizohWorldSpaceMapStageV0({ pathname });
 
   useEffect(() => {
     ensureRhizohCoreSubsystemsBootV0({ userId });
@@ -38,7 +39,13 @@ export function RhizohCoreSubsystemHostV0({ userId = "" } = {}) {
       setClusterOpen(false);
       setChessArena(detail);
     };
-    const onClusterArena = () => {
+    const onClusterArena = (ev) => {
+      if (isRhizohWorldSpaceMapStageV0({ pathname: window.location.pathname })) {
+        dispatchOpenRhizohLearningChannelV0({
+          source: ev?.detail?.source || "cluster_arena"
+        });
+        return;
+      }
       setChessArena(null);
       setClusterOpen(true);
     };
@@ -66,11 +73,13 @@ export function RhizohCoreSubsystemHostV0({ userId = "" } = {}) {
           uiLocale={uiLocale}
         />
       ) : null}
-      <RhizohChessClusterArenaV0
-        open={clusterOpen}
-        onClose={() => setClusterOpen(false)}
-        uiLocale={uiLocale}
-      />
+      {worldSpaceMapStage ? null : (
+        <RhizohChessClusterArenaV0
+          open={clusterOpen}
+          onClose={() => setClusterOpen(false)}
+          uiLocale={uiLocale}
+        />
+      )}
     </>
   );
 }

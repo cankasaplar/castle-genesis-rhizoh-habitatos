@@ -102,24 +102,36 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
   const learning = ensureRhizohLearningCoreBootV0(opts.userId);
   const worldGate = publishRhizohWorldNamespaceGateV0();
   let cluster = Object.freeze({ ok: false, pendingEnginePrewarm: true });
-  void prewarmChessStockfishEngineV0().finally(() => {
-    const engineStatus = getChessStockfishEngineStatusV0();
-    cluster = startChessGameClusterV0({ minIntervalMs: 900, timeControlId: "cluster_sim_45_0" });
-    publishRhizohChessManagerV0("engine_prewarm_done");
-    if (typeof window !== "undefined") {
-      window.__CASTLE_BOOT_LOG__?.ok?.(
-        "boot.chess_cluster",
-        `engine=${engineStatus} minIntervalMs=900`
-      );
+  const startChessClusterAfterPrewarmV0 = () => {
+    void prewarmChessStockfishEngineV0().finally(() => {
+      const engineStatus = getChessStockfishEngineStatusV0();
+      cluster = startChessGameClusterV0({ minIntervalMs: 900, timeControlId: "cluster_sim_45_0" });
+      publishRhizohChessManagerV0("engine_prewarm_done");
+      if (typeof window !== "undefined") {
+        window.__CASTLE_BOOT_LOG__?.ok?.(
+          "boot.chess_cluster",
+          `engine=${engineStatus} minIntervalMs=900`
+        );
+      }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, {
+            detail: window.__rhizoh?.chessStockfishEngine || { reason: "engine_prewarm_done" }
+          })
+        );
+      }
+    });
+  };
+  const onWorldSpaceRouteV0 = pathname.includes("/world/space");
+  if (onWorldSpaceRouteV0) {
+    if (typeof requestIdleCallback !== "undefined") {
+      requestIdleCallback(startChessClusterAfterPrewarmV0, { timeout: 6000 });
+    } else {
+      setTimeout(startChessClusterAfterPrewarmV0, 2500);
     }
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(
-        new CustomEvent(CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0, {
-          detail: window.__rhizoh?.chessStockfishEngine || { reason: "engine_prewarm_done" }
-        })
-      );
-    }
-  });
+  } else {
+    startChessClusterAfterPrewarmV0();
+  }
   const chessManager = publishRhizohChessManagerV0("core_boot");
   const chessGameRouter = publishChessGameRouterV0("core_boot");
 

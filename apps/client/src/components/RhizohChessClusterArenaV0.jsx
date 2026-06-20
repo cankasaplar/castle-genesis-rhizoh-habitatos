@@ -395,7 +395,8 @@ function FeaturedMatchBroadcastV0({
 export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0({
   open,
   onClose,
-  uiLocale = "en"
+  uiLocale = "en",
+  embedMode = false
 }) {
   const tr = uiLocale === "tr";
   const { boardColors, pieceBold, pieceStyleId } = useChessArenaDisplaySettingsV0();
@@ -538,10 +539,17 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
             ? "heuristic"
             : "heuristic";
 
-  return (
-    <div className="fixed inset-0 z-[340] flex items-center justify-center bg-black/90 p-1 backdrop-blur-sm sm:p-3">
-      <div className="flex max-h-[98vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-xl border border-white/15 bg-[#0a0f14] shadow-2xl">
-        <header className="flex shrink-0 items-center justify-between border-b border-white/10 px-3 py-2 sm:px-4 sm:py-3">
+  const shellClass = embedMode
+    ? "flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl border border-white/10 bg-[#0a0f14]"
+    : "flex max-h-[98vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-xl border border-white/15 bg-[#0a0f14] shadow-2xl";
+
+  const panel = (
+    <div className={shellClass}>
+        <header
+          className={`flex shrink-0 items-center justify-between border-b border-white/10 ${
+            embedMode ? "px-2 py-1.5 sm:px-3 sm:py-2" : "px-3 py-2 sm:px-4 sm:py-3"
+          }`}
+        >
           <div>
             <h2 className="text-sm font-semibold text-white sm:text-base">
               {heroCopy.title}
@@ -586,13 +594,15 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
                 {heroCopy.ctaGrid}
               </button>
             </div>
-            <button
-              type="button"
-              className="rounded-md border border-white/20 px-3 py-1 text-xs text-white/80 hover:bg-white/10"
-              onClick={onClose}
-            >
-              {tr ? "Kapat" : "Close"}
-            </button>
+            {!embedMode ? (
+              <button
+                type="button"
+                className="rounded-md border border-white/20 px-3 py-1 text-xs text-white/80 hover:bg-white/10"
+                onClick={onClose}
+              >
+                {tr ? "Kapat" : "Close"}
+              </button>
+            ) : null}
           </div>
         </header>
 
@@ -701,7 +711,14 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
             </div>
           )}
         </div>
-      </div>
+    </div>
+  );
+
+  if (embedMode) return panel;
+
+  return (
+    <div className="fixed inset-0 z-[340] flex items-center justify-center bg-black/90 p-1 backdrop-blur-sm sm:p-3">
+      {panel}
     </div>
   );
 });

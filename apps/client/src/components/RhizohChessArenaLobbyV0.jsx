@@ -9,6 +9,8 @@ import {
 } from "../rhizoh/runtime/chessArenaLobbyV0.js";
 import { formatChessOutcomeLabelV0 } from "../rhizoh/runtime/chessArenaEngineV0.js";
 import { RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0 } from "../rhizoh/runtime/chessGameClusterV0.js";
+import { dispatchOpenRhizohLearningChannelV0 } from "../rhizoh/runtime/sovereignWorldMapNodesV0.js";
+import { isRhizohWorldSpaceMapStageV0 } from "../rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
 import {
   listChessOpponentPresetsV0,
   listChessTimeControlsV0,
@@ -172,6 +174,14 @@ export const RhizohChessArenaLobbyV0 = memo(function RhizohChessArenaLobbyV0({
 
   const openCluster = () => {
     startChessLearningMeasurementV0();
+    if (
+      isRhizohWorldSpaceMapStageV0({
+        pathname: typeof window !== "undefined" ? window.location.pathname : ""
+      })
+    ) {
+      dispatchOpenRhizohLearningChannelV0({ source: "chess_lobby", tr });
+      return;
+    }
     window.dispatchEvent(new CustomEvent(RHIZOH_OPEN_CHESS_CLUSTER_ARENA_EVENT_V0));
   };
 
