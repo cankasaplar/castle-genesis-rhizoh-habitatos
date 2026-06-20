@@ -139,4 +139,5 @@ status: cross_epoch_coherent (not "misaligned")
 | L3k Gateway entry guarantee | ✔ #224 |
 | L3l **Epoch merge event** | ✔ this module |
 | L3m Cross-epoch deterministic replay | ✔ skeleton |
+| L4a Unified semantic reality field | ✔ [`RHIZOH_UNIFIED_SEMANTIC_REALITY_FIELD_V1.md`](RHIZOH_UNIFIED_SEMANTIC_REALITY_FIELD_V1.md) |
 | L3n Full distributed consensus shadow | ❌ data-plane READY |

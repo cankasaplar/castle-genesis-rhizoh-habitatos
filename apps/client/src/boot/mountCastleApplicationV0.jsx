@@ -90,6 +90,7 @@ export async function mountCastleApplicationV0(ctx) {
     epochSnap?.epochId ? `epoch=${String(epochSnap.epochId).slice(0, 10)}` : "not_minted"
   );
   bootLog?.ok?.("boot.authority_epoch_merge", "armed causal_assimilation");
+  bootLog?.ok?.("boot.semantic_reality_field", "armed phase_4 projection");
 
   const observability = startProdWorldObservabilityBridgeV0();
   if (observability.started) {

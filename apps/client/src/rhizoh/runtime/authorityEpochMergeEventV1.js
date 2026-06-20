@@ -8,12 +8,17 @@
 import { getRhizohGatewayHealthBase } from "../useRhizohGatewayMonitor.js";
 import { buildEpistemicTransportHeadersV0 } from "../epistemic/epistemicLedgerStreamV529.js";
 import { getAuthorityEpochSnapshotV1 } from "./authorityEpochBoundaryV1.js";
+import { getLastSemanticRealityFieldV1 } from "./unifiedSemanticRealityFieldV1.js";
 import { getAuthorityGatewayBridgeSnapshotV1 } from "./authorityGatewayPersistenceBridgeV1.js";
 import {
   getAuthorityLedgerSnapshotV1,
   replayAuthorityLedgerV1
 } from "./authorityLedgerSealPipelineV1.js";
 import { crossEpochDeterministicReplayV1 } from "./crossEpochDeterministicReplayV1.js";
+import {
+  projectUnifiedSemanticRealityFieldV1,
+  setLastSemanticRealityFieldV1
+} from "./unifiedSemanticRealityFieldV1.js";
 import {
   fetchGatewayAuthorityWitnessReplayV1,
   runAuthorityReplayAlignmentV1,
@@ -229,10 +234,18 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
     mergeEvent
   });
 
+  const semanticField = projectUnifiedSemanticRealityFieldV1({
+    crossEpochReplay: lastCrossEpochReplayV1,
+    mergeEvent,
+    alignment
+  });
+  setLastSemanticRealityFieldV1(semanticField);
+
   return Object.freeze({
     ok: true,
     mergeEvent,
     crossEpochReplay: lastCrossEpochReplayV1,
+    semanticField,
     payload,
     alignment,
     output: mergeEvent?.output || null,
@@ -247,6 +260,7 @@ export function getLastEpochMergeSnapshotV1() {
     schema: `${EPOCH_MERGE_EVENT_SCHEMA_V1}.snapshot`,
     lastMergeEvent: lastMergeEventV1,
     lastCrossEpochReplay: lastCrossEpochReplayV1,
+    lastSemanticField: getLastSemanticRealityFieldV1(),
     currentEpoch: getAuthorityEpochSnapshotV1(),
     interpretationOnly: true,
     nonExecutive: true,
