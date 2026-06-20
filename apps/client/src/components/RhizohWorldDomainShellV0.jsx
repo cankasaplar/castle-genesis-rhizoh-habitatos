@@ -34,7 +34,11 @@ import {
   formatRhizohMapBrainActionLabelV1,
   recordRhizohMapBrainFeedbackV1
 } from "../rhizoh/runtime/rhizohMapBrainV1.js";
-import { armWorldMapLocationPickV0 } from "../rhizoh/runtime/worldMapClaimModeV0.js";
+import {
+  armWorldMapLocationPickV0,
+  readWorldMapClaimModeV0,
+  WORLD_MAP_CLAIM_MODE_EVENT_V0
+} from "../rhizoh/runtime/worldMapClaimModeV0.js";
 
 const DOMAIN_TABS_V0 = Object.freeze([
   { id: RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE, labelTr: "Mekân", labelEn: "Space" },
@@ -177,7 +181,11 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
                 onSelect={onSelectMapTool}
                 onRequestGeo={onRequestGeo}
               />
-              <RhizohWorldSportsNewsStripV0 active={spatialEngineActive && !domainCalmV0} uiLocale={locale} />
+              <RhizohWorldSportsNewsStripV0
+                active={spatialEngineActive && !domainCalmV0}
+                uiLocale={locale}
+                className="pointer-events-auto"
+              />
             </div>
             <div className="pointer-events-auto absolute right-3 top-3 z-[3] flex max-w-[min(220px,44vw)] flex-col items-end gap-2 sm:right-4 sm:top-4">
               <RhizohWorldMapControlsV0 active={spatialEngineActive} uiLocale={locale} />
@@ -291,6 +299,7 @@ function WorldStartCardV0({ activeTool, active, cesiumReady, uiLocale, worldData
   const tr = (uiLocale || readUiLocaleV0()) === "tr";
   const [expanded, setExpanded] = useState(false);
   const [geoBusy, setGeoBusy] = useState(false);
+  const [claimArmed, setClaimArmed] = useState(() => readWorldMapClaimModeV0());
   const feedReady = worldData?.feed && worldData.feed !== "unavailable";
   const activeCastle = readCastleNexusGeoV0() || readUserCastleAnchorGeoV0();
   const memoryPins = readActiveSpatialMemoryMapPinsV1();
@@ -319,6 +328,16 @@ function WorldStartCardV0({ activeTool, active, cesiumReady, uiLocale, worldData
     }
   }, [mapBrainActionSignature]);
 
+  useEffect(() => {
+    const onClaimMode = (e) => {
+      const armed = !!e.detail?.enabled;
+      setClaimArmed(armed);
+      if (armed) setExpanded(false);
+    };
+    window.addEventListener(WORLD_MAP_CLAIM_MODE_EVENT_V0, onClaimMode);
+    return () => window.removeEventListener(WORLD_MAP_CLAIM_MODE_EVENT_V0, onClaimMode);
+  }, []);
+
   const executeBrainAction = (action) => {
     if (!action) return;
     void executeRhizohMapBrainActionV1(action, {
@@ -344,10 +363,10 @@ function WorldStartCardV0({ activeTool, active, cesiumReady, uiLocale, worldData
 
   return (
     <section
-      className="pointer-events-auto w-fit max-w-[min(260px,52vw)] rounded-2xl border border-cyan-400/20 bg-[#030711]/90 p-2.5 text-white shadow-lg backdrop-blur-md normal-case"
+      className="pointer-events-none w-fit max-w-[min(260px,52vw)] rounded-2xl border border-cyan-400/20 bg-[#030711]/90 p-2.5 text-white shadow-lg backdrop-blur-md normal-case"
       data-rhizoh-world-start-card="1"
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="pointer-events-auto flex items-start justify-between gap-2">
         <p className="text-[8px] font-black uppercase tracking-[0.2em] text-cyan-200/80">
           {tr ? "Dünya başlangıcı" : "World start"}
         </p>
@@ -360,8 +379,13 @@ function WorldStartCardV0({ activeTool, active, cesiumReady, uiLocale, worldData
         </button>
       </div>
       <p className="mt-1 text-[11px] font-semibold text-white/92">{tr ? "Neredeyim?" : "Where am I?"}</p>
+      {claimArmed ? (
+        <p className="pointer-events-none mt-1 text-[9px] font-semibold text-purple-200/90">
+          {tr ? "Haritaya tıkla — seçim modu açık" : "Tap the map — pick mode on"}
+        </p>
+      ) : null}
       {!activeCastle ? (
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="pointer-events-auto mt-2 flex flex-wrap gap-1.5">
           <button
             type="button"
             disabled={geoBusy || !onRequestGeo}
@@ -406,7 +430,7 @@ function WorldStartCardV0({ activeTool, active, cesiumReady, uiLocale, worldData
                 ? "V11 map is open. Pick street, satellite, or anchor from the bottom strip."
                 : "The map is preparing."}
           </p>
-          <div className="mt-2 grid gap-1.5">
+          <div className="pointer-events-auto mt-2 grid gap-1.5">
             {mapBrain.actions.map((action) => {
               const selected = action.mapTool && activeTool === action.mapTool;
               return (

@@ -9,6 +9,42 @@ import { publishWorldMapObservationOriginV0 } from "./worldMapBootstrapGeoV0.js"
 export const WORLD_MAP_GEO_REQUEST_EVENT_V0 = "rhizoh:world-map-geo-request-v0";
 
 /**
+ * Persist map-tap origin — same downstream path as GPS (nexus geo + observation origin + epoch merge hook).
+ * @param {number} lat
+ * @param {number} lon
+ * @param {{ source?: string }} [opts]
+ * @returns {{ ok: boolean, lat?: number, lon?: number, source?: string }}
+ */
+export function persistWorldMapPickOriginV0(lat, lon, opts = {}) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return Object.freeze({ ok: false });
+  }
+  const source = String(opts.source || "map_pick");
+  if (typeof window === "undefined") {
+    return Object.freeze({ ok: false });
+  }
+  try {
+    window.__CASTLE_NEXUS_GEO__ = Object.freeze({
+      mode: "geo",
+      lat: Number(lat),
+      lon: Number(lon),
+      source
+    });
+    window.__CASTLE_CLIENT_CASTLE_STATE__ = "ACTIVE";
+    persistWorldSpaceCastleAnchorV0(Number(lat), Number(lon), { source });
+    publishWorldMapObservationOriginV0();
+    window.dispatchEvent(
+      new CustomEvent(WORLD_MAP_GEO_REQUEST_EVENT_V0, {
+        detail: Object.freeze({ ok: true, lat: Number(lat), lon: Number(lon), source })
+      })
+    );
+  } catch {
+    return Object.freeze({ ok: false });
+  }
+  return Object.freeze({ ok: true, lat: Number(lat), lon: Number(lon), source });
+}
+
+/**
  * @returns {"granted"|"denied"|"prompt"|"unsupported"|"unknown"}
  */
 export async function queryWorldMapGeoPermissionV0() {
