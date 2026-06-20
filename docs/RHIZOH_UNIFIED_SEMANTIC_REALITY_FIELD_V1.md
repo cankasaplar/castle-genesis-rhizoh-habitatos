@@ -89,4 +89,6 @@ Boot: `boot.semantic_reality_field · armed phase_4 projection`
 | L3l Epoch merge | ✔ #225 |
 | L3m Cross-epoch graph metrics | ✔ #226 |
 | L4a **Unified semantic reality field** | ✔ this module (skeleton) |
-| L4b Semantic field persistence / worker slot | ❌ data-plane READY |
+| L4b **Prism cube engine v0** | ✔ [`RHIZOH_PRISM_CUBE_ENGINE_V0.md`](RHIZOH_PRISM_CUBE_ENGINE_V0.md) |
+| L4c Action surface + spatial slot | ❌ deferred |
+| L4d Semantic field persistence / worker slot | ❌ data-plane READY |
