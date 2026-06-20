@@ -20,6 +20,10 @@ import {
   setLastSemanticRealityFieldV1
 } from "./unifiedSemanticRealityFieldV1.js";
 import {
+  generatePrismCubesFromSemanticFieldV0,
+  setLastPrismCubeEngineResultV0
+} from "./prismCubeEngineV0.js";
+import {
   fetchGatewayAuthorityWitnessReplayV1,
   runAuthorityReplayAlignmentV1,
   workerAuthorityReplayAlignmentV1
@@ -241,11 +245,15 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
   });
   setLastSemanticRealityFieldV1(semanticField);
 
+  const prismCubes = generatePrismCubesFromSemanticFieldV0({ semanticField, mergeEvent });
+  setLastPrismCubeEngineResultV0(prismCubes);
+
   return Object.freeze({
     ok: true,
     mergeEvent,
     crossEpochReplay: lastCrossEpochReplayV1,
     semanticField,
+    prismCubes,
     payload,
     alignment,
     output: mergeEvent?.output || null,
