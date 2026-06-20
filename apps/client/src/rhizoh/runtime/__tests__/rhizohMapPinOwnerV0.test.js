@@ -8,7 +8,8 @@ import {
   isExplorerOnlyAlwaysVisiblePinV0,
   readWorldSpaceSessionMapPinRowsV0,
   resolvePinSpiralLayerV0,
-  resolveRhizohMapPinSubstrateV0
+  resolveRhizohMapPinSubstrateV0,
+  summarizeSessionPinBreakdownV0
 } from "../rhizohMapPinOwnerV0.js";
 import { PRISM_CUBE_MAP_PIN_EVENT_V0 } from "../cesiumWorldCommitV0.js";
 import { ORIGIN_HOME_SERENCEBEY_PIN_ID_V0 } from "../worldMapOriginHomePinV0.js";
@@ -181,5 +182,18 @@ describe("rhizohMapPinOwnerV0", () => {
     expect(typeof after).toBe("number");
     expect(after).toBeGreaterThanOrEqual(before);
     stop();
+  });
+
+  it("summarizeSessionPinBreakdownV0 splits sovereign vs explorer seeds", () => {
+    const rows = [
+      { id: "origin_home_serencebey", type: "origin_home" },
+      { id: "my_castle", type: "castle" },
+      { id: "seed1", spiralLayer: SPIRAL_MAP_LAYER_V0.EXPLORER, populationStatus: "active" },
+      { id: "seed2", spiralLayer: SPIRAL_MAP_LAYER_V0.CASTLE, populationStatus: "dormant" }
+    ];
+    const breakdown = summarizeSessionPinBreakdownV0(rows);
+    expect(breakdown.sovereign).toBe(2);
+    expect(breakdown.explorer).toBe(1);
+    expect(breakdown.castle).toBe(1);
   });
 });

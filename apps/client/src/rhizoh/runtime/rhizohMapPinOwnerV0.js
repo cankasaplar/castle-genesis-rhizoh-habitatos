@@ -20,7 +20,7 @@ import {
   buildOriginHomeSerencebeyPinV0,
   isOriginHomeSerencebeyPinV0
 } from "./worldMapOriginHomePinV0.js";
-import { isFullWorldRealityModeV0, isCastleRealityModeV0 } from "./spiralMapRealityModeV0.js";
+import { isFullWorldRealityModeV0, isCastleRealityModeV0, readSpiralMapRealityModeV0 } from "./spiralMapRealityModeV0.js";
 import {
   annotateCastleIdentityPinsV0,
   readCastleMemoryMapPinRowsV0
@@ -221,16 +221,87 @@ export function readWorldSpaceSessionMapPinRowsV0(opts = {}) {
   return filterPinsBySpiralMapLayerV0(rows, filterState);
 }
 
+/**
+ * @param {readonly object[]} rows
+ */
+export function summarizeSessionPinBreakdownV0(rows) {
+  /** @type {Record<string, number>} */
+  const byLayer = {
+    sovereign: 0,
+    explorer: 0,
+    castle: 0,
+    economy: 0,
+    seasonal: 0,
+    liveMatch: 0,
+    memory: 0,
+    other: 0
+  };
+  for (const pin of rows) {
+    if (pin?.id?.startsWith?.("live_match:") || pin?.type === "broadcast") {
+      byLayer.liveMatch += 1;
+      continue;
+    }
+    if (pin?.type === "memory_beacon" || pin?.pinType === "memory_beacon") {
+      byLayer.memory += 1;
+      continue;
+    }
+    const layer = resolvePinSpiralLayerV0(pin);
+    if (layer && byLayer[layer] !== undefined) {
+      byLayer[layer] += 1;
+      continue;
+    }
+    if (
+      pin?.id === "my_castle" ||
+      pin?.type === "my_castle" ||
+      isOriginHomeSerencebeyPinV0(pin) ||
+      pin?.id === "rhizoh_portal" ||
+      pin?.type === "portal"
+    ) {
+      byLayer.sovereign += 1;
+      continue;
+    }
+    byLayer.other += 1;
+  }
+  return Object.freeze(byLayer);
+}
+
 export function getRhizohMapPinOwnerSnapshotV0(ctx = {}) {
   const substrate = resolveRhizohMapPinSubstrateV0(ctx);
+  const filterState = readSpiralMapLayerFilterStateV0();
   const rows = readWorldSpaceSessionMapPinRowsV0();
   return Object.freeze({
     schema: RHIZOH_MAP_PIN_OWNER_SCHEMA_V0,
     cesiumSessionOwner: RHIZOH_CESIUM_SESSION_PIN_OWNER_V0,
     leafletRenderer: RHIZOH_LEAFLET_PIN_RENDERER_V0,
     substrate,
+    realityMode: readSpiralMapRealityModeV0(filterState),
     sessionPinCount: rows.length,
+    sessionPinBreakdown: summarizeSessionPinBreakdownV0(rows),
     atMs: Date.now()
+  });
+}
+
+/**
+ * DevTools — pin composition, not just count.
+ */
+export function inspectRhizohMapPinOwnerV0() {
+  const filterState = readSpiralMapLayerFilterStateV0();
+  const rows = readWorldSpaceSessionMapPinRowsV0();
+  return Object.freeze({
+    realityMode: readSpiralMapRealityModeV0(filterState),
+    count: rows.length,
+    breakdown: summarizeSessionPinBreakdownV0(rows),
+    pins: Object.freeze(
+      rows.map((pin) =>
+        Object.freeze({
+          id: pin.id,
+          label: pin.label || pin.name || null,
+          layer: resolvePinSpiralLayerV0(pin) || null,
+          status: pin.populationStatus || null,
+          castleIdentityPair: pin.castleIdentityPair === true
+        })
+      )
+    )
   });
 }
 
@@ -258,6 +329,7 @@ export function installRhizohMapPinOwnerAutoRefreshV0(ctx = {}) {
   const refresh = () => publishRhizohMapPinOwnerRegistryV0(ctx);
   window.__rhizoh = window.__rhizoh || {};
   window.__rhizoh.refreshMapPinOwner = refresh;
+  window.__rhizoh.inspectMapPinOwner = inspectRhizohMapPinOwnerV0;
 
   if (mapPinOwnerAutoRefreshInstalledV0) return () => {};
   mapPinOwnerAutoRefreshInstalledV0 = true;
