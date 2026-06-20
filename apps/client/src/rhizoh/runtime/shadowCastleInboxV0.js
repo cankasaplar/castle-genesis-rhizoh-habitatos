@@ -81,6 +81,8 @@ export function appendShadowCastleInboxItemV0(row = {}) {
     bodyEn: String(row.bodyEn || row.body || ""),
     pinId: row.pinId ? String(row.pinId) : null,
     isRealPeer: row.isRealPeer === true,
+    eventType: row.eventType ? String(row.eventType) : null,
+    san: row.san ? String(row.san) : null,
     read: false,
     atMs: Number(row.atMs) || Date.now()
   });
@@ -110,6 +112,8 @@ export function appendShadowReactionToInboxV0(trace) {
     bodyEn: toast.en || reaction.meaning || "",
     pinId: reaction.target?.pinId || reaction.toCastleId || null,
     isRealPeer: reaction.target?.isSim === false,
+    eventType: String(event?.type || ""),
+    san: event?.payload?.san ? String(event.payload.san) : null,
     atMs: trace.atMs || Date.now()
   });
 }
