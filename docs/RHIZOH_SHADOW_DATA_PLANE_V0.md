@@ -102,4 +102,34 @@ window.__rhizoh.emitShadowCastleEventV0?.({
 
 | Date | Change |
 |------|--------|
+| 2026-06-19 | v0.1 — Phase B soft: UGL chess → shadow bus bridge (`shadowChessUglBridgeV0.js`) |
 | 2026-06-19 | v0.0 — Phase A shadow bus + castle event loop + peer sim pin |
+
+---
+
+## 8. Phase B (soft) — chess on bus
+
+| Piece | Role |
+|-------|------|
+| `shadowChessUglBridgeV0.js` | Listens `rhizoh:ugl-event-v0` → emits `chess.move.v0` / `chess.game_end.v0` |
+| `ensureRhizohUglV0()` | Booted with shadow loop on `/world/space` |
+| `phase` | `inspectShadowDataPlaneV0().phase === "B_soft"` |
+
+**DevTools:**
+
+```javascript
+// Simulated chess move → peer pulse (no board required)
+window.__rhizoh.demoChessShadowMoveV0?.({ san: "Nf3", reward: 0.6 });
+
+// Live path: play in Satranç arena — UGL events auto-bridge when loop running
+window.__rhizoh.inspectShadowDataPlaneV0?.();
+```
+
+**Flow:**
+
+```text
+Chess arena / cluster move
+  → UGL compile (rhizohUglBootV0)
+  → shadowChessUglBridgeV0
+  → shadow bus → interpret → peer pin pulse + toast
+```
