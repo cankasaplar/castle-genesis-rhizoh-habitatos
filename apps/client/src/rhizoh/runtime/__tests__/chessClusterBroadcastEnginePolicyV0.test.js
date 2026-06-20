@@ -8,13 +8,13 @@ import {
   shouldTickChessClusterSlotClockV0,
   shouldUseStockfishForClusterSlotV0
 } from "../chessClusterBroadcastEnginePolicyV0.js";
-import { publishChessClusterArenaOpenV0 } from "../chessEngineContentionGateV0.js";
+import { publishChessClusterBroadcastActiveV0 } from "../chessEngineContentionGateV0.js";
 import { CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 } from "../chessLearningMonitorV0.js";
 
 describe("chessClusterBroadcastEnginePolicyV0", () => {
   beforeEach(() => {
     window.__rhizoh = {};
-    publishChessClusterArenaOpenV0(false);
+    publishChessClusterBroadcastActiveV0(false);
   });
 
   it("uses Stockfish for all slots when broadcast UI is closed", () => {
@@ -25,7 +25,7 @@ describe("chessClusterBroadcastEnginePolicyV0", () => {
   });
 
   it("uses Stockfish only for featured slot when 8-camera UI is open", () => {
-    publishChessClusterArenaOpenV0(true);
+    publishChessClusterBroadcastActiveV0(true);
     expect(isChessClusterBroadcastModeV0()).toBe(true);
     expect(shouldUseStockfishForClusterSlotV0(CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0)).toBe(true);
     expect(shouldUseStockfishForClusterSlotV0(1)).toBe(false);
@@ -33,7 +33,7 @@ describe("chessClusterBroadcastEnginePolicyV0", () => {
   });
 
   it("snapshot reports broadcast grid heuristic policy", () => {
-    publishChessClusterArenaOpenV0(true);
+    publishChessClusterBroadcastActiveV0(true);
     const snap = getChessClusterBroadcastEnginePolicySnapshotV0();
     expect(snap.broadcastMode).toBe(true);
     expect(snap.featuredSlotId).toBe(CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0);
@@ -42,14 +42,14 @@ describe("chessClusterBroadcastEnginePolicyV0", () => {
   });
 
   it("orders featured slot first during broadcast ticks", () => {
-    publishChessClusterArenaOpenV0(true);
+    publishChessClusterBroadcastActiveV0(true);
     expect(resolveChessClusterTickSlotOrderV0(5, 8)[0]).toBe(0);
-    publishChessClusterArenaOpenV0(false);
+    publishChessClusterBroadcastActiveV0(false);
     expect(resolveChessClusterTickSlotOrderV0(5, 8)[0]).toBe(5);
   });
 
   it("holds max-ply reset for featured slot below broadcast min ply", () => {
-    publishChessClusterArenaOpenV0(true);
+    publishChessClusterBroadcastActiveV0(true);
     const slot = { slotId: 0, ply: 4 };
     expect(shouldFinalizeClusterBroadcastEndV0(slot, "draw", "max_ply_cap")).toBe(false);
     expect(shouldFinalizeClusterBroadcastEndV0({ slotId: 0, ply: 20 }, "draw", "max_ply_cap")).toBe(
@@ -59,7 +59,7 @@ describe("chessClusterBroadcastEnginePolicyV0", () => {
   });
 
   it("holds timeout reset for grid slot below min ply during broadcast", () => {
-    publishChessClusterArenaOpenV0(true);
+    publishChessClusterBroadcastActiveV0(true);
     expect(shouldFinalizeClusterBroadcastEndV0({ slotId: 1, ply: 2 }, "white_wins", "timeout")).toBe(
       false
     );
@@ -69,7 +69,7 @@ describe("chessClusterBroadcastEnginePolicyV0", () => {
   });
 
   it("never ends featured LIVE slot on timeout during broadcast", () => {
-    publishChessClusterArenaOpenV0(true);
+    publishChessClusterBroadcastActiveV0(true);
     expect(
       shouldFinalizeClusterBroadcastEndV0({ slotId: 0, ply: 40 }, "white_wins", "timeout")
     ).toBe(false);
@@ -79,20 +79,20 @@ describe("chessClusterBroadcastEnginePolicyV0", () => {
   });
 
   it("ticks clock only for featured slot during broadcast", () => {
-    publishChessClusterArenaOpenV0(true);
+    publishChessClusterBroadcastActiveV0(true);
     expect(shouldTickChessClusterSlotClockV0({ slotId: 0 })).toBe(true);
     expect(shouldTickChessClusterSlotClockV0({ slotId: 3 })).toBe(false);
-    publishChessClusterArenaOpenV0(false);
+    publishChessClusterBroadcastActiveV0(false);
     expect(shouldTickChessClusterSlotClockV0({ slotId: 3 })).toBe(true);
   });
 
   it("rotates B-roll slot 1–7 each broadcast tick with featured slot 0", () => {
-    publishChessClusterArenaOpenV0(true);
+    publishChessClusterBroadcastActiveV0(true);
     expect(resolveChessClusterBroadcastTickPlanV0(0)).toEqual([0, 1]);
     expect(resolveChessClusterBroadcastTickPlanV0(1)).toEqual([0, 2]);
     expect(resolveChessClusterBroadcastTickPlanV0(6)).toEqual([0, 7]);
     expect(resolveChessClusterBroadcastTickPlanV0(7)).toEqual([0, 1]);
-    publishChessClusterArenaOpenV0(false);
+    publishChessClusterBroadcastActiveV0(false);
     expect(resolveChessClusterBroadcastTickPlanV0(3)).toBeNull();
   });
 });

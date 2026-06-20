@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createChessArenaGameV0 } from "../chessArenaEngineV0.js";
 import { pickChessClusterMoveV0 } from "../chessClusterMovePickerV0.js";
-import { publishChessClusterArenaOpenV0 } from "../chessEngineContentionGateV0.js";
+import { publishChessClusterBroadcastActiveV0 } from "../chessEngineContentionGateV0.js";
 import { CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 } from "../chessLearningMonitorV0.js";
 
 vi.mock("../chessStockfishEngineV0.js", async (importOriginal) => {
@@ -33,12 +33,12 @@ function armContendedClusterV0() {
 describe("chessClusterMovePickerV0", () => {
   beforeEach(() => {
     window.__rhizoh = {};
-    publishChessClusterArenaOpenV0(false);
+    publishChessClusterBroadcastActiveV0(false);
   });
 
   it("never downgrades featured slot #0 to contention fast heuristic", async () => {
     armContendedClusterV0();
-    publishChessClusterArenaOpenV0(true);
+    publishChessClusterBroadcastActiveV0(true);
 
     const game = createChessArenaGameV0();
     game.tryMove("e4");
@@ -57,7 +57,7 @@ describe("chessClusterMovePickerV0", () => {
 
   it("may use contention fast heuristic for non-featured slots during broadcast", async () => {
     armContendedClusterV0();
-    publishChessClusterArenaOpenV0(true);
+    publishChessClusterBroadcastActiveV0(true);
 
     const game = createChessArenaGameV0();
     const slot = Object.freeze({ slotId: 3, ply: 0, matchId: "cluster_3_test" });
