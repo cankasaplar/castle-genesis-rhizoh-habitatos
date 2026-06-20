@@ -9,7 +9,7 @@ import { getWorldMapLiveFeedSnapshotV0 } from "../rhizoh/runtime/worldMapLiveFee
 import { readActiveSpatialMemoryMapPinsV1 } from "../rhizoh/runtime/rhizohSpatialMemoryAnchorV1.js";
 import { readCastleSocialAvSessionV0 } from "../castleSocial/castleSocialAvSessionV0.js";
 import { getRhizohWorldMapToolSnapshotV0 } from "../rhizoh/runtime/rhizohWorldMapToolV0.js";
-import { buildRhizohMapBrainActionsV1 } from "../rhizoh/runtime/rhizohMapBrainV1.js";
+import { buildRhizohMapBrainActionsV1, executeRhizohMapBrainActionV1 } from "../rhizoh/runtime/rhizohMapBrainV1.js";
 import { buildRhizohLiveContextEnvelopeV2,
   formatRhizohLiveContextActionLabelV2
 } from "../rhizoh/runtime/rhizohLiveContextEngineV2.js";
@@ -21,7 +21,9 @@ import { RhizohAskRhizohSourceBadgeV0 } from "./RhizohAskRhizohSourceBadgeV0.jsx
 export const RhizohWorldSpaceVoiceDockV0 = memo(function RhizohWorldSpaceVoiceDockV0({
   firebaseUser,
   uiLocale,
-  className = ""
+  className = "",
+  onRequestGeo,
+  onSelectMapTool
 }) {
   const locale = uiLocale || readUiLocaleV0();
   const tr = locale === "tr";
@@ -172,12 +174,16 @@ export const RhizohWorldSpaceVoiceDockV0 = memo(function RhizohWorldSpaceVoiceDo
       {suggestedActions?.length ? (
         <div className="flex flex-wrap gap-1.5 px-3 pb-2">
           {suggestedActions.slice(0, 3).map((action) => (
-            <span
+            <button
               key={action.id}
-              className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-2 py-0.5 text-[8px] text-cyan-100/75"
+              type="button"
+              onClick={() =>
+                void executeRhizohMapBrainActionV1(action, { onRequestGeo, onSelectMapTool })
+              }
+              className="rounded-full border border-cyan-400/35 bg-cyan-500/15 px-2 py-0.5 text-[8px] font-semibold text-cyan-100/90 hover:bg-cyan-500/25"
             >
               {formatRhizohLiveContextActionLabelV2(action, tr ? "tr" : "en")}
-            </span>
+            </button>
           ))}
         </div>
       ) : null}

@@ -117,4 +117,22 @@ describe("rhizohMapBrainV1", () => {
     expect(brain.actions.some((action) => action.command === "cesium_op")).toBe(false);
     expect(brain.actions.some((action) => action.command === "set_map_tool")).toBe(true);
   });
+
+  it("suggests city_map anchor pick when no castle is active", () => {
+    const brain = buildRhizohMapBrainActionsV1({
+      mapState: {
+        active: true,
+        activeMapTool: "city_map",
+        hasActiveCastle: false,
+        hasUserLocation: false
+      }
+    });
+
+    expect(brain.actions).toContainEqual(
+      expect.objectContaining({
+        id: "choose_anchor_place",
+        mapTool: "city_map"
+      })
+    );
+  });
 });

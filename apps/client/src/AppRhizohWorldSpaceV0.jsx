@@ -49,7 +49,8 @@ import { handleWorldSpaceCapWheelNodeV0 } from "./rhizoh/runtime/rhizohWorldSpac
 import {
   readCastleNexusGeoV0,
   resolveUserCastleGeoForMapViewV0,
-  resolveWorldMapBootstrapGeoV0
+  resolveWorldMapBootstrapGeoV0,
+  publishWorldMapObservationOriginV0
 } from "./rhizoh/runtime/worldMapBootstrapGeoV0.js";
 import {
   queryWorldMapGeoPermissionV0,
@@ -569,14 +570,38 @@ export default function AppRhizohWorldSpaceV0() {
     void queryWorldMapGeoPermissionV0().then((state) => {
       if (!cancelled) setGeoPrompt(state);
     });
-    const onGeo = () => {
+    const onGeo = async () => {
       setGeoPrompt("granted");
       setGeoError("");
+      try {
+        if (typeof window !== "undefined" && window.__rhizoh?.epochMergeAndAssimilate) {
+          await window.__rhizoh.epochMergeAndAssimilate();
+        }
+        publishWorldMapObservationOriginV0();
+      } catch {
+        /* noop */
+      }
     };
     window.addEventListener(WORLD_MAP_GEO_REQUEST_EVENT_V0, onGeo);
     return () => {
       cancelled = true;
       window.removeEventListener(WORLD_MAP_GEO_REQUEST_EVENT_V0, onGeo);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        if (typeof window === "undefined" || !window.__rhizoh?.epochMergeAndAssimilate) return;
+        await window.__rhizoh.epochMergeAndAssimilate();
+        if (!cancelled) publishWorldMapObservationOriginV0();
+      } catch {
+        /* noop */
+      }
+    })();
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -594,7 +619,7 @@ export default function AppRhizohWorldSpaceV0() {
     setGeoPrompt(next);
   }, []);
 
-  const showGeoChip = !readCastleNexusGeoV0() && geoPrompt !== "granted";
+  const showGeoChip = false;
   const castleInitOwner = castleAuth?.user?.uid || "GUEST";
 
   useEffect(() => {
@@ -820,6 +845,7 @@ export default function AppRhizohWorldSpaceV0() {
         onCapNodeIntent={handleWorldSpaceCapWheelNodeV0}
         onSeedIntent={onLibrarySeedIntentV0}
         onFocusLayer={onSpiralMapLayerFocusV0}
+        onRequestGeo={onRequestGeoV0}
       />
 
       <RhizohConversationDockShellV0
@@ -827,7 +853,12 @@ export default function AppRhizohWorldSpaceV0() {
         drawerOpen={Boolean(openSurfaceDrawerIdV0)}
         publish
       >
-        <RhizohWorldSpaceVoiceDockV0 firebaseUser={castleAuth?.user} uiLocale={uiLocale} />
+        <RhizohWorldSpaceVoiceDockV0
+          firebaseUser={castleAuth?.user}
+          uiLocale={uiLocale}
+          onRequestGeo={onRequestGeoV0}
+          onSelectMapTool={(toolId) => onApplyWorldMapToolV0(toolId, "WORLD_VOICE_DOCK")}
+        />
       </RhizohConversationDockShellV0>
 
       <UnifiedProductShellBar
@@ -868,7 +899,7 @@ export default function AppRhizohWorldSpaceV0() {
       ) : null}
 
       {showGeoChip && !spiralImmersionActive ? (
-        <div className="pointer-events-none fixed inset-x-0 top-16 z-[26] flex justify-center px-4">
+        <div className="pointer-events-none fixed inset-x-0 top-16 z-[25] flex justify-center px-4">
           <div className="pointer-events-auto flex max-w-md flex-col items-center gap-1 rounded-xl border border-cyan-500/35 bg-black/80 px-3 py-2 text-center backdrop-blur-md">
             <p className="text-[10px] text-cyan-100/90 normal-case">
               {uiLocale === "tr"

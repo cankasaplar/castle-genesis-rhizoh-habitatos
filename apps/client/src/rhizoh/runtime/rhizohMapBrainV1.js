@@ -287,7 +287,7 @@ export function buildRhizohMapBrainActionsV1(input = {}) {
       labelTr: "Başlangıç konumu seç",
       labelEn: "Choose start place",
       command: COMMANDS_V1.MAP_TOOL,
-      mapTool: "anchor_map",
+      mapTool: "city_map",
       confidence: hasLocation ? 0.68 : 0.82,
       reason: "no_active_castle_anchor"
     });
@@ -340,4 +340,58 @@ export function buildRhizohMapBrainActionsV1(input = {}) {
 
 export function formatRhizohMapBrainActionLabelV1(action, locale = "tr") {
   return String(locale) === "tr" ? action?.labelTr || "" : action?.labelEn || "";
+}
+
+/**
+ * Execute a ranked map-brain action via existing routers.
+ * @param {object} action
+ * @param {{ onSelectMapTool?: (tool: string) => void, onRequestGeo?: () => Promise<unknown> }} [deps]
+ */
+export async function executeRhizohMapBrainActionV1(action, deps = {}) {
+  if (!action?.id) return Object.freeze({ ok: false, error: "action_required" });
+
+  recordRhizohMapBrainFeedbackV1({ actionId: action.id, kind: "selected" });
+
+  if (action.id === "choose_anchor_place") {
+    const { armWorldMapLocationPickV0 } = await import("./worldMapClaimModeV0.js");
+    armWorldMapLocationPickV0();
+    deps.onSelectMapTool?.("city_map");
+    recordRhizohMapBrainFeedbackV1({ actionId: action.id, kind: "result", ok: true });
+    return Object.freeze({ ok: true, mode: "claim_armed" });
+  }
+
+  if (action.id === "use_my_location" && deps.onRequestGeo) {
+    const result = await deps.onRequestGeo();
+    recordRhizohMapBrainFeedbackV1({
+      actionId: action.id,
+      kind: "result",
+      ok: result?.ok !== false
+    });
+    return Object.freeze({ ok: result?.ok !== false, mode: "geo_request" });
+  }
+
+  if (action.command === COMMANDS_V1.MAP_TOOL && action.mapTool) {
+    deps.onSelectMapTool?.(action.mapTool);
+    recordRhizohMapBrainFeedbackV1({ actionId: action.id, kind: "result", ok: true });
+    return Object.freeze({ ok: true, mode: "map_tool", mapTool: action.mapTool });
+  }
+
+  if (action.command === COMMANDS_V1.CESIUM_OP && action.op) {
+    const { routeCesiumCommandV0 } = await import("../../castleFlight/cesiumCommandRouterV0.js");
+    const result = routeCesiumCommandV0({
+      op: action.op,
+      source: "rhizoh_map_brain_v1",
+      canonical: `map_brain:${action.id}`,
+      meta: Object.freeze({ reason: action.reason })
+    });
+    recordRhizohMapBrainFeedbackV1({
+      actionId: action.id,
+      kind: "result",
+      ok: result?.ok !== false
+    });
+    return Object.freeze({ ok: result?.ok !== false, mode: "cesium_op", op: action.op });
+  }
+
+  recordRhizohMapBrainFeedbackV1({ actionId: action.id, kind: "result", ok: false });
+  return Object.freeze({ ok: false, error: "unsupported_action" });
 }

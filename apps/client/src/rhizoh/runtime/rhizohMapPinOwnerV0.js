@@ -29,7 +29,33 @@ export function resolvePinSpiralLayerV0(pin) {
 }
 
 /**
- * Sovereign / portal / live-match pins without spiralLayer stay visible.
+ * V11 Explorer first-live: hide legacy sovereign mesh when only explorer layer is active.
+ * @param {object} filterState
+ */
+export function isExplorerOnlySpiralFilterV0(filterState) {
+  const filter = filterState || readSpiralMapLayerFilterStateV0();
+  return (
+    filter.explorer === true &&
+    filter.castle !== true &&
+    filter.economy !== true &&
+    filter.seasonal !== true
+  );
+}
+
+/**
+ * @param {readonly object[]} sovereign
+ * @param {object} filterState
+ */
+export function filterSovereignPinsForSpiralMapViewV0(sovereign, filterState) {
+  if (!isExplorerOnlySpiralFilterV0(filterState)) {
+    return sovereign;
+  }
+  return Object.freeze(
+    sovereign.filter((pin) => pin.id === "my_castle" || pin.type === "my_castle")
+  );
+}
+
+/**
  * @param {readonly object[]} pins
  * @param {object} [filterState]
  */
@@ -38,11 +64,33 @@ export function filterPinsBySpiralMapLayerV0(pins, filterState) {
   return Object.freeze(
     pins.filter((pin) => {
       const layer = resolvePinSpiralLayerV0(pin);
-      if (!layer) return true;
+      if (!layer) {
+        if (isExplorerOnlySpiralFilterV0(filter)) {
+          return pin.id === "my_castle" || pin.type === "my_castle";
+        }
+        return true;
+      }
       if (filter[layer] !== true) return false;
       if (pin.populationStatus === "dormant" && filter.includeDormant !== true) {
         return false;
       }
+      return true;
+    })
+  );
+}
+
+/**
+ * @param {readonly object[]} pins
+ * @param {object} [filterState]
+ */
+export function listArenaPopulationMapPinsV0(pins, filterState) {
+  const filter = filterState || readSpiralMapLayerFilterStateV0();
+  return Object.freeze(
+    pins.filter((pin) => {
+      const layer = resolvePinSpiralLayerV0(pin);
+      if (!layer) return false;
+      if (filter[layer] !== true) return false;
+      if (pin.populationStatus === "dormant" && filter.includeDormant !== true) return false;
       return true;
     })
   );
@@ -112,9 +160,12 @@ export function resolveRhizohMapPinSubstrateV0(ctx = {}) {
  */
 export function readWorldSpaceSessionMapPinRowsV0(opts = {}) {
   const userCastle = opts.userCastle ?? resolveUserCastleGeoForMapViewV0();
-  const sovereign = listSovereignWorldMapNodesForViewV0({ userCastle });
-  const liveMatch = opts.liveMatchPins ?? getLiveMatchMapPinsV0();
   const filterState = opts.spiralLayerFilter ?? readSpiralMapLayerFilterStateV0();
+  const sovereign = filterSovereignPinsForSpiralMapViewV0(
+    listSovereignWorldMapNodesForViewV0({ userCastle }),
+    filterState
+  );
+  const liveMatch = opts.liveMatchPins ?? getLiveMatchMapPinsV0();
   let prismCubes = opts.prismCubePins ?? getPrismCubeMapPinRowsV0();
   prismCubes = mergeArenaPopulationPinRowsV0(prismCubes, filterState);
   const rows = Object.freeze([...sovereign, ...liveMatch, ...prismCubes]);

@@ -101,3 +101,20 @@ export function resolveWorldMapBootstrapGeoV0() {
     source: "besiktas_fallback"
   });
 }
+
+export const WORLD_MAP_OBSERVATION_ORIGIN_EVENT_V0 = "rhizoh:world-map-observation-origin-v0";
+
+/**
+ * Publish observation anchor for map recenter + arena population projection.
+ */
+export function publishWorldMapObservationOriginV0() {
+  const anchor = resolveWorldMapBootstrapGeoV0();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(WORLD_MAP_OBSERVATION_ORIGIN_EVENT_V0, {
+        detail: Object.freeze({ ...anchor })
+      })
+    );
+  }
+  return anchor;
+}

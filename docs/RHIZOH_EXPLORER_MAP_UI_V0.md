@@ -78,3 +78,9 @@ Boot: `boot.explorer_map_ui · armed spiral_layer_filter`
 | Filter UI | `RhizohSpiralMapLayerFilterV0.jsx` |
 | Leaflet host | `RhizohWorldSpaceMapHostV0.jsx` |
 | Shell | `RhizohWorldDomainShellV0.jsx` · `AppRhizohWorldSpaceV0.jsx` |
+
+---
+
+## Observer origin
+
+Pins anchor to GPS / continuity hydrate — not the global sovereign mesh. See [`RHIZOH_EXPLORER_MAP_OBSERVER_ORIGIN_V0.md`](RHIZOH_EXPLORER_MAP_OBSERVER_ORIGIN_V0.md).
