@@ -69,8 +69,8 @@ export const RhizohCastleShadowInboxV0 = memo(function RhizohCastleShadowInboxV0
       onClick={() => setOpen((v) => !v)}
       className={
         anchor === "top-right"
-          ? "pointer-events-auto relative inline-flex min-h-[2.75rem] touch-manipulation items-center gap-2 rounded-xl border border-sky-400/45 bg-black/88 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-sky-50 shadow-lg backdrop-blur-md hover:bg-sky-950/50"
-          : "pointer-events-auto relative inline-flex min-h-[2rem] min-w-[2rem] touch-manipulation items-center gap-1.5 rounded-lg border border-sky-400/35 bg-black/75 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-sky-100 backdrop-blur-md hover:bg-sky-950/60"
+          ? "pointer-events-auto relative inline-flex min-h-[2.75rem] touch-manipulation items-center gap-2 rounded-xl border-2 border-sky-400 bg-[#030711] px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-[0_4px_24px_rgba(0,0,0,0.82),0_0_0_1px_rgba(56,189,248,0.45)] ring-1 ring-white/15 hover:border-sky-300 hover:bg-[#0b1220]"
+          : "pointer-events-auto relative inline-flex min-h-[2rem] min-w-[2rem] touch-manipulation items-center gap-1.5 rounded-lg border border-sky-400/70 bg-[#030711] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-white shadow-md hover:border-sky-300 hover:bg-[#0b1220]"
       }
       aria-label={tr ? "Kale gelen kutusu" : "Castle inbox"}
       aria-expanded={open}
@@ -87,7 +87,7 @@ export const RhizohCastleShadowInboxV0 = memo(function RhizohCastleShadowInboxV0
 
   if (compact && anchor === "top-right") {
     return (
-      <div className={`pointer-events-none fixed right-4 top-16 z-[32] sm:right-5 sm:top-[4.25rem] ${className}`}>
+      <div className={`pointer-events-none fixed right-3 top-[4.5rem] z-[45] sm:right-4 sm:top-[4.75rem] ${className}`}>
         {inboxButton}
         {usePortal && typeof document !== "undefined" ? createPortal(panel, document.body) : panel}
       </div>
@@ -114,7 +114,7 @@ export const RhizohCastleShadowInboxV0 = memo(function RhizohCastleShadowInboxV0
 function InboxPanelV0({ tr, items, onClose, onSelectItem, onIgnoreItem, onIgnoreAll, placement = "dropdown", anchor = "inline" }) {
   const panelClass =
     placement === "portal" && anchor === "top-right"
-      ? "pointer-events-auto fixed right-4 top-[7.25rem] z-[420] w-[min(100vw-2rem,22rem)] rounded-2xl border border-sky-400/35 bg-black/95 p-3 shadow-2xl backdrop-blur-md sm:right-5 sm:top-[7.5rem]"
+      ? "pointer-events-auto fixed right-3 top-[7.75rem] z-[420] w-[min(100vw-2rem,22rem)] rounded-2xl border-2 border-sky-400/70 bg-[#030711] p-3 shadow-[0_12px_40px_rgba(0,0,0,0.9)] sm:right-4 sm:top-[8rem]"
       : placement === "portal"
         ? "pointer-events-auto fixed right-4 top-20 z-[420] w-[min(100vw-2rem,20rem)] rounded-2xl border border-sky-400/30 bg-black/95 p-3 shadow-2xl backdrop-blur-md"
         : placement === "dropdown"
