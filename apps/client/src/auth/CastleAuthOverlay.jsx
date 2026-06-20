@@ -106,8 +106,8 @@ export function CastleAuthOverlay({ auth }) {
   if (!firebaseConfigured) return null;
   if (!authResolved) {
     return (
-      <div className="absolute inset-0 z-[5900] flex items-center justify-center bg-[#010103]/80 pointer-events-auto">
-        <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
+      <div className="pointer-events-none absolute inset-0 z-[5900] flex items-center justify-center bg-[#010103]/40">
+        <Loader2 className="pointer-events-none w-12 h-12 text-cyan-400 animate-spin" />
       </div>
     );
   }

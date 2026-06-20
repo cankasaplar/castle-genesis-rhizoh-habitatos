@@ -30,15 +30,23 @@ export const RhizohN12PersistenceGateV0 = memo(function RhizohN12PersistenceGate
 
   if (!visible) return null;
 
+  const dismissN12 = () => {
+    setVisible(false);
+    if (typeof window !== "undefined") {
+      window.__rhizoh = window.__rhizoh || {};
+      window.__rhizoh.n12GateDismissedV0 = true;
+    }
+  };
+
   return (
     <div
-      className="pointer-events-auto absolute inset-0 z-[200] flex items-center justify-center bg-[rgba(20,20,19,0.88)] backdrop-blur-sm"
+      className="pointer-events-none absolute inset-0 z-[200] flex items-center justify-center"
       data-rhizoh-n12-gate="1"
       role="dialog"
-      aria-modal="true"
+      aria-modal="false"
       aria-labelledby="rhizoh-n12-gate-title"
     >
-      <div className="mx-4 max-w-md rounded-xl bg-[#faf9f5] p-8 text-center shadow-2xl">
+      <div className="pointer-events-auto mx-4 max-w-md rounded-xl bg-[#faf9f5] p-8 text-center shadow-2xl">
         <h2 id="rhizoh-n12-gate-title" className="mb-2 font-serif text-xl font-medium text-[#141413]">
           N12 Persistence Gate
         </h2>
@@ -53,6 +61,14 @@ export const RhizohN12PersistenceGateV0 = memo(function RhizohN12PersistenceGate
           disabled={authorizing}
         >
           {authorizing ? "AUTHORIZING…" : "AUTHORIZE MEMORY"}
+        </button>
+        <button
+          type="button"
+          className="mt-3 text-xs font-medium text-[#8a8778] underline-offset-2 hover:text-[#5c5a52] hover:underline"
+          onClick={dismissN12}
+          disabled={authorizing}
+        >
+          Later — keep exploring
         </button>
       </div>
     </div>
