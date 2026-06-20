@@ -357,8 +357,11 @@ export function sovereignNodeIconHtmlV0(node) {
   const spin = type === "portal" ? "animation:spin 8s linear infinite;" : "";
   const dormant = node?.populationStatus === "dormant";
   const opacity = dormant ? "0.42" : "1";
+  const pulse = node?.shadowPulseActive
+    ? `box-shadow:0 0 0 3px ${color}88, 0 0 22px ${color};animation:rhizoh-shadow-pulse 1.1s ease-in-out infinite;`
+    : `box-shadow:0 0 15px ${color}`;
   return `<div data-rhizoh-sovereign-node="${node.id}" style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto;opacity:${opacity}">
-    <div style="background:${color}22;border:1px solid ${color};border-radius:50%;padding:8px;box-shadow:0 0 15px ${color}">
+    <div style="background:${color}22;border:1px solid ${color};border-radius:50%;padding:8px;${pulse}">
       <svg style="${spin}" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2">${svg}</svg>
     </div>
     <div style="color:${color};font-size:9px;font-weight:900;margin-top:4px;text-shadow:0 0 5px black;font-family:monospace">${label}</div>

@@ -151,6 +151,10 @@ import {
 } from "./rhizoh/runtime/spiralMapRealityModeV0.js";
 import { SPIRAL_MAP_LAYER_V0 } from "./rhizoh/runtime/spatialDistributionLayerV0.js";
 import { startSportsLiveInjectionV0 } from "./rhizoh/runtime/worldMapSportsLiveInjectionV0.js";
+import {
+  SHADOW_CASTLE_REACTION_EVENT_V0,
+  startShadowDataPlaneLoopV0
+} from "./rhizoh/runtime/shadowDataPlaneLoopV0.js";
 
 function resolveSpiralLayerFromHaloFocusV0(layerFocus) {
   const focus = Number(layerFocus);
@@ -186,6 +190,7 @@ export default function AppRhizohWorldSpaceV0() {
   const [castleInitGateOpen, setCastleInitGateOpen] = useState(false);
   const [c2cPeer, setC2cPeer] = useState(null);
   const [spiralImmersionActive, setSpiralImmersionActive] = useState(false);
+  const [shadowReactionToast, setShadowReactionToast] = useState(null);
   const preSpiralMapToolRef = useRef(null);
   const experienceSessionCtxV0 = useMemo(() => loadRhizohExperienceSessionContextV0(), []);
   const productSessionV0 = useMemo(() => loadRhizohProductSession(), []);
@@ -375,6 +380,16 @@ export default function AppRhizohWorldSpaceV0() {
     const stopLegalPendingLoop = startRhizohLegalPendingWaitLoopV0();
     const stopCityMapLegalGate = startCityMapLegalCountdownMediaGateV0({ uiLocale });
     const stopSportsLiveInjection = startSportsLiveInjectionV0({ locale: uiLocale, intervalMs: 90_000 });
+    const stopShadowDataPlane = startShadowDataPlaneLoopV0();
+
+    const onShadowReaction = (ev) => {
+      const toast = ev?.detail?.reaction?.toast;
+      if (!toast) return;
+      const message = uiLocale === "tr" ? toast.tr : toast.en;
+      setShadowReactionToast(Object.freeze({ message, atMs: Date.now() }));
+      window.setTimeout(() => setShadowReactionToast(null), 5200);
+    };
+    window.addEventListener(SHADOW_CASTLE_REACTION_EVENT_V0, onShadowReaction);
 
     const onOpenCastleGate = () => setCastleInitGateOpen(true);
     window.addEventListener("castle:open-init-gate-v0", onOpenCastleGate);
@@ -512,6 +527,8 @@ export default function AppRhizohWorldSpaceV0() {
       stopLegalPendingLoop?.();
       stopCityMapLegalGate?.();
       stopSportsLiveInjection?.();
+      stopShadowDataPlane?.();
+      window.removeEventListener(SHADOW_CASTLE_REACTION_EVENT_V0, onShadowReaction);
       window.removeEventListener("castle:open-init-gate-v0", onOpenCastleGate);
       window.removeEventListener("castle:open-anchor-offer-v0", onOpenCastleGate);
       window.removeEventListener(RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1, onSovereignWarp);
@@ -838,6 +855,10 @@ export default function AppRhizohWorldSpaceV0() {
           35% { box-shadow: inset 0 0 0 3px rgba(34, 211, 238, 0.55); filter: brightness(1.08); }
           100% { box-shadow: inset 0 0 0 0 rgba(34, 211, 238, 0); filter: brightness(1); }
         }
+        @keyframes rhizoh-shadow-pulse {
+          0%, 100% { filter: brightness(1); transform: scale(1); }
+          50% { filter: brightness(1.35); transform: scale(1.06); }
+        }
         [data-rhizoh-spiral-immersion="1"] [data-rhizoh-world-space-map-host] {
           opacity: 1;
           filter: none;
@@ -852,6 +873,12 @@ export default function AppRhizohWorldSpaceV0() {
         remoteCastlesVisible={remoteCastlesVisibleV0}
         uiLocale={uiLocale}
       />
+
+      {shadowReactionToast ? (
+        <div className="pointer-events-none fixed bottom-24 left-1/2 z-[420] max-w-sm -translate-x-1/2 rounded-xl border border-sky-400/45 bg-sky-950/90 px-4 py-2.5 text-center font-mono text-[11px] font-semibold text-sky-100 shadow-lg backdrop-blur-md">
+          {shadowReactionToast.message}
+        </div>
+      ) : null}
 
       {spiralImmersionActive ? (
         <button
