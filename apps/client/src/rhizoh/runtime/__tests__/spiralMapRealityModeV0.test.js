@@ -93,6 +93,26 @@ describe("spiralMapRealityModeV0", () => {
     expect(state.explorer).toBe(false);
   });
 
+  it("ensureSpiralMapRealityModeHydratedV0 repairs stale castle label with explorer layer flags", () => {
+    localStorage.setItem(SPIRAL_MAP_REALITY_MODE_LS_KEY_V0, SPIRAL_MAP_REALITY_MODE_V0.CASTLE);
+    localStorage.setItem(
+      "rhizoh.spiral_map_layer_filter.v0",
+      JSON.stringify({
+        explorer: true,
+        castle: false,
+        economy: false,
+        seasonal: false,
+        includeDormant: false,
+        realityMode: SPIRAL_MAP_REALITY_MODE_V0.CASTLE
+      })
+    );
+    expect(readSpiralMapRealityModeV0()).toBe(SPIRAL_MAP_REALITY_MODE_V0.EXPLORER);
+    const state = ensureSpiralMapRealityModeHydratedV0();
+    expect(readSpiralMapRealityModeV0(state)).toBe(SPIRAL_MAP_REALITY_MODE_V0.CASTLE);
+    expect(state.castle).toBe(true);
+    expect(state.includeDormant).toBe(true);
+  });
+
   it("ensureSpiralMapRealityModeHydratedV0 repairs empty object storage", () => {
     localStorage.setItem("rhizoh.spiral_map_layer_filter.v0", "{}");
     const state = ensureSpiralMapRealityModeHydratedV0();

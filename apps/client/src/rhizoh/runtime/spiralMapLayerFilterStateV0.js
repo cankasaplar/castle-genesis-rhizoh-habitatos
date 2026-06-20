@@ -142,6 +142,19 @@ const REALITY_MODE_FOR_LAYER_FOCUS_V0 = Object.freeze({
   [SPIRAL_MAP_LAYER_V0.ECONOMY]: SPIRAL_MAP_LAYER_V0.ECONOMY
 });
 
+/** Keep in sync with spiralMapRealityModeV0 SPIRAL_MAP_REALITY_MODE_LS_KEY_V0 */
+const SPIRAL_MAP_REALITY_MODE_LS_KEY_V0 = "rhizoh.spiral_map_reality_mode.v0";
+
+function syncPersistedRealityModeFromLayerFocusV0(layerId) {
+  const modeId = REALITY_MODE_FOR_LAYER_FOCUS_V0[layerId];
+  if (!modeId || typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(SPIRAL_MAP_REALITY_MODE_LS_KEY_V0, modeId);
+  } catch {
+    /* noop */
+  }
+}
+
 /**
  * Single-layer focus — e.g. Explorer Map full-screen mode.
  * @param {string} layerId
@@ -157,7 +170,9 @@ export function focusSpiralMapLayerV0(layerId) {
   for (const key of SPIRAL_MAP_LAYER_FILTER_KEYS_V0) {
     patch[key] = key === id;
   }
-  return writeSpiralMapLayerFilterStateV0(patch, { replace: true });
+  const next = writeSpiralMapLayerFilterStateV0(patch, { replace: true });
+  syncPersistedRealityModeFromLayerFocusV0(id);
+  return next;
 }
 
 /**
