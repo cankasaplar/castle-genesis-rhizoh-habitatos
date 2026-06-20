@@ -57,7 +57,7 @@ export function publishChessArenaWorkspaceOpenV0(open) {
     open: Boolean(open),
     atMs: Date.now()
   });
-  if (open && !wasOpen) {
+  if (open) {
     releaseBroadcastForArenaPlayV0();
   }
 }

@@ -5,14 +5,16 @@ import {
   ARENA_AUTOPLAY_MOVE_PICK_CAP_MS_V0,
   pickArenaAutoplayMoveV0
 } from "../chessArenaAutoplayPickV0.js";
-import { shouldDeferArenaEngineWorkV0 } from "../chessEngineContentionGateV0.js";
+import { shouldDeferArenaEngineWorkV0, isChessArenaWorkspaceOpenV0 } from "../chessEngineContentionGateV0.js";
 import {
   getChessTeacherStatusV0,
   pickChessArenaMoveViaTeacherV0
 } from "../chessTeacherInterfaceV0.js";
 
 vi.mock("../chessEngineContentionGateV0.js", () => ({
-  shouldDeferArenaEngineWorkV0: vi.fn(() => false)
+  shouldDeferArenaEngineWorkV0: vi.fn(() => false),
+  isChessArenaWorkspaceOpenV0: vi.fn(() => false),
+  prioritizeArenaEngineForMoveV0: vi.fn(() => false)
 }));
 
 vi.mock("../chessTeacherInterfaceV0.js", async (importOriginal) => {
@@ -30,6 +32,7 @@ vi.mock("../chessTeacherInterfaceV0.js", async (importOriginal) => {
 describe("chessArenaAutoplayPickV0", () => {
   beforeEach(() => {
     vi.mocked(shouldDeferArenaEngineWorkV0).mockReturnValue(false);
+    vi.mocked(isChessArenaWorkspaceOpenV0).mockReturnValue(false);
     vi.mocked(getChessTeacherStatusV0).mockReturnValue("stockfish_wasm");
     vi.mocked(pickChessArenaMoveViaTeacherV0).mockResolvedValue({
       move: "e4",
@@ -113,6 +116,29 @@ describe("chessArenaAutoplayPickV0", () => {
 
     expect(pick.move).toBe("e4");
     expect(shouldDeferArenaEngineWorkV0).toHaveBeenCalled();
+
+    vi.useRealTimers();
+  });
+
+  it("skips cluster defer wait while arena workspace is open", async () => {
+    vi.useFakeTimers();
+    vi.mocked(isChessArenaWorkspaceOpenV0).mockReturnValue(true);
+    vi.mocked(shouldDeferArenaEngineWorkV0).mockReturnValue(true);
+    vi.mocked(shouldDeferArenaEngineWorkV0).mockClear();
+
+    const game = createChessArenaGameV0({ mode: CHESS_GAME_MODE_V0.AI_AI });
+    const pickPromise = pickArenaAutoplayMoveV0({
+      game,
+      rhizohTurnNow: false,
+      teacherOnline: true,
+      activeMode: CHESS_GAME_MODE_V0.AI_AI
+    });
+
+    await vi.advanceTimersByTimeAsync(ARENA_AUTOPLAY_MOVE_PICK_CAP_MS_V0);
+    const pick = await pickPromise;
+
+    expect(pick.move).toBe("e4");
+    expect(shouldDeferArenaEngineWorkV0).not.toHaveBeenCalled();
 
     vi.useRealTimers();
   });

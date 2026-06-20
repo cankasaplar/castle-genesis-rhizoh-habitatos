@@ -24,6 +24,7 @@ import { CHESS_STOCKFISH_PRESET_V0 } from "../rhizoh/runtime/chessStockfishPrese
 import {
   shouldDeferArenaPrewarmV0,
   shouldDeferArenaEngineWorkV0,
+  isChessArenaWorkspaceOpenV0,
   publishChessArenaWorkspaceOpenV0,
   releaseBroadcastForArenaPlayV0,
   RHIZOH_CLOSE_CHESS_CLUSTER_ARENA_EVENT_V0
@@ -737,7 +738,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   ]);
 
   const resetGame = useCallback(
-    (nextMode = mode) => {
+    (nextMode = mode, opts = {}) => {
       const g = createChessArenaGameV0({ mode: nextMode });
       setGame(g);
       setMode(nextMode);
@@ -754,7 +755,9 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
       setBlackClockMs(clocks.black);
       setStatus(tr ? "Yeni oyun." : "New game.");
       setLastMoveHighlightV0(null);
-      setRhizohArenaColorV0("w");
+      if (!opts.preserveRhizohColor) {
+        setRhizohArenaColorV0("w");
+      }
       setClockStartedV0(false);
       setForcedOutcomeV0(null);
       setArenaFallbackMode(false);
@@ -777,13 +780,15 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           setPolicyMode(pm);
         }
       }
-      resetGame(nextMode);
+      releaseBroadcastForArenaPlayV0();
+      let preserveRhizohColor = false;
       if (nextMode === CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH) {
         const color = rhizohMatchCountV0 % 2 === 0 ? "w" : "b";
         setRhizohArenaColorV0(color);
         setRhizohMatchCountV0((n) => n + 1);
+        preserveRhizohColor = true;
       }
-      releaseBroadcastForArenaPlayV0();
+      resetGame(nextMode, { preserveRhizohColor });
       setArenaPhase("playing");
       setStatus(tr ? "Maç hazır — iyi şanslar." : "Match ready — good luck.");
     },
@@ -1004,6 +1009,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     aiAutoLoopGenRef.current = loopGen;
 
     void (async () => {
+      releaseBroadcastForArenaPlayV0();
       let teacherOnline = getChessTeacherStatusV0() === "stockfish_wasm";
       setStatus(
         teacherOnline
@@ -1026,7 +1032,8 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           teacherOnline = true;
           setStatus(tr ? "Stockfish hazır — güçlü mod aktif" : "Stockfish ready — strong mode on");
         }
-        const deferArenaEngine = shouldDeferArenaEngineWorkV0();
+        const deferArenaEngine =
+          !isChessArenaWorkspaceOpenV0() && shouldDeferArenaEngineWorkV0();
         if (deferArenaEngine) {
           await new Promise((resolve) => window.setTimeout(resolve, 2000));
           if (!alive || loopGen !== aiAutoLoopGenRef.current || gameRef.current.isGameOver()) break;
@@ -1083,6 +1090,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
         const aiMoverColor = gameRef.current.turn() === "w" ? "b" : "w";
         applyClockIncrementV0(aiMoverColor);
         setTick((n) => n + 1);
+        setGame(gameRef.current);
         if (aiResult.move?.from && aiResult.move?.to) {
           setLastMoveHighlightV0(
             Object.freeze({ from: aiResult.move.from, to: aiResult.move.to })
