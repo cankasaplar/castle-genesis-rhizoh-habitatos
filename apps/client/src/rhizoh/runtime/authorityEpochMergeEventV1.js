@@ -48,6 +48,10 @@ import {
   setLastSpatialDistributionV0
 } from "./spatialDistributionLayerV0.js";
 import {
+  populateArenaWorldV0,
+  setLastArenaPopulationV0
+} from "./arenaPopulationLayerV0.js";
+import {
   fetchGatewayAuthorityWitnessReplayV1,
   runAuthorityReplayAlignmentV1,
   workerAuthorityReplayAlignmentV1
@@ -290,6 +294,9 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
   const spatialDistribution = distributeSpatialPinsV0({ cesiumWorldCommit, prismCubeCommit });
   setLastSpatialDistributionV0(spatialDistribution);
 
+  const arenaPopulation = populateArenaWorldV0({ spatialDistribution });
+  setLastArenaPopulationV0(arenaPopulation);
+
   return Object.freeze({
     ok: true,
     mergeEvent,
@@ -302,6 +309,7 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
     prismCubeCommit,
     cesiumWorldCommit,
     spatialDistribution,
+    arenaPopulation,
     payload,
     alignment,
     output: mergeEvent?.output || null,

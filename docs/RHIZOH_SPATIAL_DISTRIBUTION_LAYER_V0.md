@@ -27,8 +27,10 @@
 ## Pipeline position
 
 ```
-… → cesiumWorldCommit → spatialDistribution → (SpiralMMO layers / arena diversity)
+… → cesiumWorldCommit → spatialDistribution → arenaPopulation → (Explorer Map UI / seasonal)
 ```
+
+**Next:** [`RHIZOH_ARENA_POPULATION_LAYER_V0.md`](RHIZOH_ARENA_POPULATION_LAYER_V0.md)
 
 ---
 
