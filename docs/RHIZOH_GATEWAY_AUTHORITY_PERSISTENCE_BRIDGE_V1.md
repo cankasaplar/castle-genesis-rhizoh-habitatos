@@ -21,13 +21,15 @@ History = decisions, not successful mutations.
 ```
 listen: rhizoh:authority-seal-v1
         ↓
-shadow buffer
+ensureGatewayAppend({ epochId, height, sealHash })   ← entry guarantee
         ↓
-batch flush
+shadow buffer (pre-connect) · flush queue (post-connect)
+        ↓
+onAuthorityGatewayConnect → drain shadow + pending guarantees
         ↓
 POST /rhizoh/authority/ledger/batch
         ↓
-gateway witness seal (HMAC)
+gateway witness seal (HMAC) — partition key `${epochId}:${height}`
         ↓
 genesis surface counters (ledger height + last seal)
 ```
@@ -46,6 +48,8 @@ genesis surface counters (ledger height + last seal)
 | Client seal | Content hash chain (`foldWalSegmentHashV0`) |
 | Gateway seal | HMAC witness over canonical witness payload |
 | Mismatch | Quarantine — **no silent repair** |
+| Partition key | `${epochId}:${height}` — idempotent re-witness if same `sealHash` |
+| Entry guarantee | Every `rhizoh:authority-seal-v1` → `ensureGatewayAppend` + retry (800ms × 6) |
 | Mutation | Remains blocked (phase gate) |
 
 ---
@@ -65,6 +69,7 @@ Gateway does not replace client chain; it countersigns witnessed entries.
 ```javascript
 window.__rhizoh.authorityGatewayBridge()      // bridge snapshot + diagnosis
 window.__rhizoh.flushAuthorityGatewayBridge() // manual shadow flush
+window.__rhizoh.ensureGatewayAppend({ entry }) // manual guarantee retry
 ```
 
 Boot log: `boot.authority_gateway_bridge · armed shadow=N shared=false|true`

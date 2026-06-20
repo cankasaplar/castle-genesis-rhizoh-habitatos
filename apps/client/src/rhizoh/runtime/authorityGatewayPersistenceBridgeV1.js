@@ -1,6 +1,6 @@
 /**
  * Authority Gateway Persistence Bridge v1 — transport + witness only.
- * listen: rhizoh:authority-seal-v1 → shadow buffer → batch flush → gateway append → gateway witness seal
+ * listen: rhizoh:authority-seal-v1 → ensureGatewayAppend → batch flush → gateway witness seal
  * NO fusion · NO REC · NO projection · NO arbitration
  * RESEARCH-ONLY
  * @see docs/RHIZOH_GATEWAY_AUTHORITY_PERSISTENCE_BRIDGE_V1.md
@@ -10,6 +10,7 @@ import { getCastleFlightConfig } from "../../castleFlight/castleFlightConfig.js"
 import { getOrCreateCastleDevUid, getRhizohGatewayHealthBase } from "../useRhizohGatewayMonitor.js";
 import { buildEpistemicTransportHeadersV0 } from "../epistemic/epistemicLedgerStreamV529.js";
 import { onEpistemicTelemetryGatewayAttachV1 } from "../epistemic/epistemicLedgerStreamV529.js";
+import { readEpochIdFromAuthorityEntryV1 } from "./authorityEpochBoundaryV1.js";
 import {
   AUTHORITY_LEDGER_SCHEMA_V1,
   AUTHORITY_SEAL_EVENT_V1
@@ -24,6 +25,11 @@ let warnedAuthority404V1 = false;
 
 const SHADOW_QUEUE_V1 = [];
 const FLUSH_QUEUE_V1 = [];
+/** @type {Set<string>} */
+const witnessedPartitionKeysV1 = new Set();
+/** @type {Map<string, { entry: object, idToken: string, attempts: number }>} */
+const pendingGuaranteesV1 = new Map();
+
 let flushTimerV1 = 0;
 let inFlightV1 = false;
 let lastWitnessedHeightV1 = 0;
@@ -31,7 +37,17 @@ let lastGatewayWitnessV1 = null;
 let bridgeWiredV1 = false;
 
 const WINDOW_MS_V1 = 240;
+const GUARANTEE_RETRY_MS_V1 = 800;
+const GUARANTEE_MAX_ATTEMPTS_V1 = 6;
 const ROUTE_PATH_V1 = "/rhizoh/authority/ledger/batch";
+
+/**
+ * @param {string} epochId
+ * @param {number} height
+ */
+export function authorityWitnessPartitionKeyV1(epochId, height) {
+  return `${String(epochId || "epoch_unknown")}:${Number(height) || 0}`;
+}
 
 function publishBridgeStateV1(status, detail = {}) {
   if (typeof window === "undefined") return;
@@ -41,6 +57,7 @@ function publishBridgeStateV1(status, detail = {}) {
       lastStatus: status,
       shadowCount: SHADOW_QUEUE_V1.length,
       flushPending: FLUSH_QUEUE_V1.length,
+      pendingGuarantees: pendingGuaranteesV1.size,
       lastWitnessedHeight: lastWitnessedHeightV1,
       routesReachable: authorityRoutesReachableV1,
       at: Date.now(),
@@ -96,28 +113,74 @@ function canRemoteTransmitV1(idToken = "") {
 }
 
 /**
- * @param {object} entry sealed authority ledger entry
- * @param {string} [idToken]
+ * @param {object} entry
  */
-export function enqueueAuthorityLedgerWitnessV1(entry, idToken = "") {
-  if (!entry || typeof entry !== "object") return;
-  const height = Number(entry.height);
-  if (!Number.isFinite(height) || height < 1) return;
-  if (height <= lastWitnessedHeightV1) return;
+function readAppendCoordsV1(entry) {
+  const epochId = readEpochIdFromAuthorityEntryV1(entry) || "epoch_unknown";
+  const height = Number(entry?.height);
+  const sealHash = String(entry?.seal?.sealHash || "");
+  return { epochId, height, sealHash, partitionKey: authorityWitnessPartitionKeyV1(epochId, height) };
+}
 
-  const tok = String(idToken || "").trim();
+/**
+ * Gateway entry guarantee — every authority seal must attempt witness append.
+ * @param {{ entry: object, epochId?: string, height?: number, sealHash?: string, idToken?: string }} opts
+ */
+export function ensureGatewayAppendV1(opts) {
+  const entry = opts?.entry;
+  if (!entry || typeof entry !== "object") {
+    return Object.freeze({ ok: false, error: "entry_required", interpretationOnly: true });
+  }
+
+  const coords = readAppendCoordsV1(entry);
+  if (!Number.isFinite(coords.height) || coords.height < 1) {
+    return Object.freeze({ ok: false, error: "invalid_height", interpretationOnly: true });
+  }
+
+  if (witnessedPartitionKeysV1.has(coords.partitionKey)) {
+    return Object.freeze({
+      ok: true,
+      alreadyWitnessed: true,
+      partitionKey: coords.partitionKey,
+      interpretationOnly: true
+    });
+  }
+
+  const tok = String(opts.idToken || "").trim();
   const row = { entry, idToken: tok };
+  pendingGuaranteesV1.set(coords.partitionKey, { entry, idToken: tok, attempts: 0 });
 
   if (!canRemoteTransmitV1(tok)) {
     SHADOW_QUEUE_V1.push(row);
     if (SHADOW_QUEUE_V1.length > 128) SHADOW_QUEUE_V1.splice(0, SHADOW_QUEUE_V1.length - 128);
-    publishBridgeStateV1("buffering");
-    return;
+    publishBridgeStateV1("buffering", { partitionKey: coords.partitionKey });
+    return Object.freeze({
+      ok: true,
+      queued: true,
+      mode: "shadow",
+      partitionKey: coords.partitionKey,
+      interpretationOnly: true
+    });
   }
 
   FLUSH_QUEUE_V1.push(row);
   if (FLUSH_QUEUE_V1.length > 128) FLUSH_QUEUE_V1.splice(0, FLUSH_QUEUE_V1.length - 128);
   scheduleFlushV1();
+  return Object.freeze({
+    ok: true,
+    queued: true,
+    mode: "flush",
+    partitionKey: coords.partitionKey,
+    interpretationOnly: true
+  });
+}
+
+/**
+ * @param {object} entry sealed authority ledger entry
+ * @param {string} [idToken]
+ */
+export function enqueueAuthorityLedgerWitnessV1(entry, idToken = "") {
+  return ensureGatewayAppendV1({ entry, idToken });
 }
 
 async function postAuthorityBatchV1(entries, idToken) {
@@ -151,6 +214,40 @@ async function postAuthorityBatchV1(entries, idToken) {
   }
 }
 
+function markWitnessedFromResponseV1(entries, body) {
+  const witnessed = Number(body?.witnessed || 0);
+  if (witnessed <= 0) return;
+
+  for (const entry of entries) {
+    const { partitionKey, height, epochId } = readAppendCoordsV1(entry);
+    witnessedPartitionKeysV1.add(partitionKey);
+    pendingGuaranteesV1.delete(partitionKey);
+    if (height > lastWitnessedHeightV1) {
+      lastWitnessedHeightV1 = height;
+    }
+    if (body?.lastWitness?.epochId === epochId || body?.epochId === epochId) {
+      lastGatewayWitnessV1 = body.lastWitness;
+    }
+  }
+  if (body?.lastWitness) {
+    lastGatewayWitnessV1 = body.lastWitness;
+  }
+}
+
+function scheduleGuaranteeRetryV1() {
+  if (typeof window === "undefined") return;
+  if (!pendingGuaranteesV1.size) return;
+  if (!canRemoteTransmitV1("")) return;
+  window.setTimeout(() => {
+    for (const [key, row] of pendingGuaranteesV1.entries()) {
+      if (row.attempts >= GUARANTEE_MAX_ATTEMPTS_V1) continue;
+      row.attempts += 1;
+      FLUSH_QUEUE_V1.push({ entry: row.entry, idToken: row.idToken });
+    }
+    scheduleFlushV1();
+  }, GUARANTEE_RETRY_MS_V1);
+}
+
 async function flushNowV1() {
   if (inFlightV1) return;
   const pending = FLUSH_QUEUE_V1.splice(0, 40);
@@ -173,21 +270,21 @@ async function flushNowV1() {
     if (r.skipRetry) return;
     for (const row of pending.slice(-20)) FLUSH_QUEUE_V1.unshift(row);
     scheduleFlushV1();
+    scheduleGuaranteeRetryV1();
     return;
   }
 
+  markWitnessedFromResponseV1(entries, r.body);
+
   const witnessed = Number(r.body?.witnessed || 0);
   const chainHeight = Number(r.body?.chainHeight || 0);
-  if (chainHeight > lastWitnessedHeightV1) {
-    lastWitnessedHeightV1 = chainHeight;
-  }
-  lastGatewayWitnessV1 = r.body?.lastWitness || null;
 
   publishBridgeStateV1("ok", {
     witnessed,
     quarantined: Number(r.body?.quarantined || 0),
     chainHeight,
-    lastWitness: lastGatewayWitnessV1
+    lastWitness: lastGatewayWitnessV1,
+    witnessPropagation: witnessed > 0 ? "complete" : "incomplete"
   });
   dispatchBridgeEventV1({
     schema: `${AUTHORITY_GATEWAY_BRIDGE_SCHEMA_V1}.flush`,
@@ -196,6 +293,7 @@ async function flushNowV1() {
     lastWitness: lastGatewayWitnessV1
   });
 
+  if (pendingGuaranteesV1.size) scheduleGuaranteeRetryV1();
   if (FLUSH_QUEUE_V1.length || SHADOW_QUEUE_V1.length) scheduleFlushV1();
 }
 
@@ -218,10 +316,25 @@ export function flushAuthorityGatewayShadowBufferV1() {
   return drained;
 }
 
+/**
+ * Called when Rhizoh gateway becomes reachable (boot connect hook).
+ * @param {string} [reason]
+ */
+export function onAuthorityGatewayConnectV1(reason = "gateway_connected") {
+  onEpistemicTelemetryGatewayAttachV1(reason);
+  const drained = flushAuthorityGatewayShadowBufferV1();
+  for (const row of pendingGuaranteesV1.values()) {
+    FLUSH_QUEUE_V1.push({ entry: row.entry, idToken: row.idToken });
+  }
+  scheduleFlushV1();
+  publishBridgeStateV1("gateway_connected", { drainedCount: drained, reason });
+  return Object.freeze({ drainedCount: drained, pendingGuarantees: pendingGuaranteesV1.size });
+}
+
 function onAuthoritySealV1(ev) {
   const entry = ev?.detail;
   if (!entry || String(entry.schema || "") !== `${AUTHORITY_LEDGER_SCHEMA_V1}.entry`) return;
-  enqueueAuthorityLedgerWitnessV1(entry);
+  ensureGatewayAppendV1({ entry });
 }
 
 export function getAuthorityGatewayBridgeSnapshotV1() {
@@ -231,12 +344,20 @@ export function getAuthorityGatewayBridgeSnapshotV1() {
     routesReachable: authorityRoutesReachableV1,
     shadowCount: SHADOW_QUEUE_V1.length,
     flushPending: FLUSH_QUEUE_V1.length,
+    pendingGuarantees: pendingGuaranteesV1.size,
     lastWitnessedHeight: lastWitnessedHeightV1,
     lastGatewayWitness: lastGatewayWitnessV1,
-    sharedOfficialHistory: lastWitnessedHeightV1 > 0,
+    sharedOfficialHistory: witnessedPartitionKeysV1.size > 0,
+    witnessPropagation:
+      pendingGuaranteesV1.size > 0
+        ? "incomplete"
+        : witnessedPartitionKeysV1.size > 0
+          ? "complete"
+          : "none",
     diagnosis: Object.freeze({
-      localOnly: lastWitnessedHeightV1 === 0 && SHADOW_QUEUE_V1.length > 0,
-      gatewayWitnessActive: lastWitnessedHeightV1 > 0,
+      localOnly: witnessedPartitionKeysV1.size === 0 && SHADOW_QUEUE_V1.length > 0,
+      gatewayWitnessActive: witnessedPartitionKeysV1.size > 0,
+      incompleteWitnessPropagation: pendingGuaranteesV1.size > 0,
       holdHistoryTransport: true,
       fusionOnBridge: false,
       arbitrationOnBridge: false
@@ -262,12 +383,13 @@ export function ensureAuthorityGatewayPersistenceBridgeV1() {
   if (!window.__rhizoh.authorityGatewayBridge) {
     window.__rhizoh.authorityGatewayBridge = () => getAuthorityGatewayBridgeSnapshotV1();
   }
+  if (!window.__rhizoh.ensureGatewayAppend) {
+    window.__rhizoh.ensureGatewayAppend = (opts) => ensureGatewayAppendV1(opts);
+  }
   if (!window.__rhizoh.flushAuthorityGatewayBridge) {
     window.__rhizoh.flushAuthorityGatewayBridge = () => {
-      const attach = onEpistemicTelemetryGatewayAttachV1("authority_bridge_flush");
-      const drained = flushAuthorityGatewayShadowBufferV1();
-      scheduleFlushV1();
-      return Object.freeze({ ...attach, drainedCount: drained });
+      const attach = onAuthorityGatewayConnectV1("authority_bridge_flush");
+      return attach;
     };
   }
 
@@ -285,6 +407,8 @@ export function resetAuthorityGatewayBridgeForTestV1() {
   warnedAuthority404V1 = false;
   SHADOW_QUEUE_V1.length = 0;
   FLUSH_QUEUE_V1.length = 0;
+  witnessedPartitionKeysV1.clear();
+  pendingGuaranteesV1.clear();
   flushTimerV1 = 0;
   inFlightV1 = false;
   lastWitnessedHeightV1 = 0;

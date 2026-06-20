@@ -12,6 +12,8 @@ import {
 const epochChainsV1 = new Map();
 /** @type {Map<string, string>} */
 const subjectLatestEpochV1 = new Map();
+/** @type {Map<string, string>} */
+const witnessPartitionIndexV1 = new Map();
 
 const WITNESS_RING_MAX_V1 = 256;
 let totalWitnessedEntriesV1 = 0;
@@ -25,12 +27,17 @@ function readEntryEpochIdV1(entry) {
   return String(entry?.epoch?.epochId || entry?.epochId || "epoch_unknown").trim() || "epoch_unknown";
 }
 
+function epochChainKeyV1(subjectId, epochId) {
+  return `${String(subjectId || "unknown")}::${String(epochId || "epoch_unknown")}`;
+}
+
 /**
  * @param {string} subjectId
  * @param {string} epochId
+ * @param {number} height
  */
-function epochChainKeyV1(subjectId, epochId) {
-  return `${String(subjectId || "unknown")}::${String(epochId || "epoch_unknown")}`;
+function epochPartitionKeyV1(subjectId, epochId, height) {
+  return `${epochChainKeyV1(subjectId, epochId)}:${Number(height) || 0}`;
 }
 
 /**
@@ -86,9 +93,41 @@ export function persistAuthorityLedgerWitnessBatchV1(subjectId, entries, witness
 
   for (const entry of sorted) {
     const epochId = readEntryEpochIdV1(entry);
+    const entryHeight = Number(entry?.height);
+    const partitionKey = epochPartitionKeyV1(subjectId, epochId, entryHeight);
+    const existingSeal = witnessPartitionIndexV1.get(partitionKey);
+    if (existingSeal) {
+      const incomingSeal = String(entry?.seal?.sealHash || "");
+      if (incomingSeal && incomingSeal === existingSeal) {
+        witnessed += 1;
+        results.push(
+          Object.freeze({
+            status: "witnessed",
+            idempotent: true,
+            epochId,
+            height: entryHeight,
+            partitionKey,
+            interpretationOnly: true
+          })
+        );
+        continue;
+      }
+      quarantined += 1;
+      results.push(
+        Object.freeze({
+          status: "quarantined",
+          code: "partition_seal_conflict",
+          epochId,
+          height: entryHeight,
+          partitionKey,
+          interpretationOnly: true
+        })
+      );
+      continue;
+    }
+
     const chain = getOrCreateEpochChainV1(subjectId, epochId);
     const expectedHeight = chain.height + 1;
-    const entryHeight = Number(entry?.height);
     if (entryHeight !== expectedHeight) {
       quarantined += 1;
       results.push(
@@ -175,6 +214,8 @@ export function persistAuthorityLedgerWitnessBatchV1(subjectId, entries, witness
       epochId,
       witnessedAt
     };
+
+    witnessPartitionIndexV1.set(partitionKey, sealCheck.sealHash);
 
     results.push(witnessedEntry);
   }
@@ -299,6 +340,7 @@ export function replayAuthorityLedgerWitnessChainV1(subjectId, epochId) {
 export function resetAuthorityLedgerWitnessStoreForTestV1() {
   epochChainsV1.clear();
   subjectLatestEpochV1.clear();
+  witnessPartitionIndexV1.clear();
   totalWitnessedEntriesV1 = 0;
   lastWitnessV1 = null;
 }

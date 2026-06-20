@@ -108,6 +108,35 @@ describe("workerAuthorityReplayAlignmentV1", () => {
     expect(result.sourceOfTruth).toBe(SOURCE_OF_TRUTH_V1.CLIENT);
   });
 
+  it("classifies same-epoch missing_entry as incomplete witness propagation", () => {
+    const result = workerAuthorityReplayAlignmentV1({
+      ledger: {
+        ledgerHeight: 1,
+        epoch: { epochId: "hepoch_same" },
+        sealChainHead: "h999",
+        replay: {
+          ok: true,
+          height: 1,
+          sealHead: "h999",
+          trace: [{ height: 1, actual: "h999" }]
+        }
+      },
+      gatewayWitness: {
+        epochId: "hepoch_same",
+        chainHeight: 0,
+        chainHead: "",
+        replay: { ok: true, trace: [] }
+      },
+      workerReplay: { available: false }
+    });
+
+    expect(result.divergenceType).toBe(DIVERGENCE_TYPE_V1.MISSING_ENTRY);
+    expect(result.severity).toBe(ALIGNMENT_SEVERITY_V1.SOFT_DRIFT);
+    expect(result.sourceOfTruth).toBe(SOURCE_OF_TRUTH_V1.CLIENT);
+    expect(result.witnessPropagation).toBe("incomplete");
+    expect(result.note).toContain("incomplete witness propagation");
+  });
+
   it("classifies epoch mismatch as session_resync not hard_divergence", () => {
     const result = workerAuthorityReplayAlignmentV1({
       ledger: {
