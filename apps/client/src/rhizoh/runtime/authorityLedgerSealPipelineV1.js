@@ -8,6 +8,7 @@
 
 import { ensureAuthorityGatewayPersistenceBridgeV1 } from "./authorityGatewayPersistenceBridgeV1.js";
 import { ensureAuthorityEpochMergeEventV1 } from "./authorityEpochMergeEventV1.js";
+import { ensureUnifiedSemanticRealityFieldV1 } from "./unifiedSemanticRealityFieldV1.js";
 import { ensureWorkerAuthorityReplayAlignmentV1 } from "./workerAuthorityReplayAlignmentV1.js";
 import {
   getAuthorityEpochSnapshotV1,
@@ -364,6 +365,7 @@ export function ensureAuthorityLedgerSealPipelineV1() {
   ensureAuthorityGatewayPersistenceBridgeV1();
   ensureWorkerAuthorityReplayAlignmentV1();
   ensureAuthorityEpochMergeEventV1();
+  ensureUnifiedSemanticRealityFieldV1();
 
   return window.__rhizoh.authorityLedger;
 }
