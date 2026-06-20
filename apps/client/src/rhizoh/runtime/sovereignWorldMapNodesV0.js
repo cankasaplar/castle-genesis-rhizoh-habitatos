@@ -4,6 +4,7 @@
  */
 
 import { resolveInitialWorldSpaceMediaChannelIdV0, resolveWorldSpaceMediaChannelForMapNodeV0, RHIZOH_LEARNING_CHANNEL_ID_V0 } from "./worldSpaceMediaChannelsV0.js";
+import { publishChessClusterBroadcastActiveV0 } from "./chessEngineContentionGateV0.js";
 import { presenceColorForStateV0 } from "./castlePresenceRegistryV0.js";
 import {
   RHIZOH_V11_MAP_INTENT_EVENT_V0,
@@ -864,6 +865,7 @@ export function dispatchOpenMediaTubeV0(payload = {}) {
  * @param {{ node?: object, title?: string, source?: string }} [payload]
  */
 export function dispatchOpenRhizohLearningChannelV0(payload = {}) {
+  publishChessClusterBroadcastActiveV0(true);
   const chessNode =
     payload.node ||
     SOVEREIGN_CORE_NODES_V0.find((n) => n.id === "chess_arena") ||

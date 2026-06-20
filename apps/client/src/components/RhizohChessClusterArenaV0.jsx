@@ -8,7 +8,10 @@ import {
   isChessGameClusterRunningV0
 } from "../rhizoh/runtime/chessGameClusterV0.js";
 import { readChessCivilizationV0 } from "../rhizoh/runtime/chessCivilizationV0.js";
-import { publishChessClusterArenaOpenV0 } from "../rhizoh/runtime/chessEngineContentionGateV0.js";
+import {
+  publishChessClusterArenaUiOpenV0,
+  publishChessClusterBroadcastActiveV0
+} from "../rhizoh/runtime/chessEngineContentionGateV0.js";
 import { resolveChessClusterTimeControlV0 } from "../rhizoh/runtime/chessClusterSimulationPolicyV0.js";
 import {
   CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0,
@@ -449,9 +452,16 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
   };
 
   useEffect(() => {
-    publishChessClusterArenaOpenV0(Boolean(open));
-    return () => publishChessClusterArenaOpenV0(false);
-  }, [open]);
+    if (!open) return undefined;
+    publishChessClusterArenaUiOpenV0(true);
+    publishChessClusterBroadcastActiveV0(true);
+    return () => {
+      publishChessClusterArenaUiOpenV0(false);
+      if (!embedMode) {
+        publishChessClusterBroadcastActiveV0(false);
+      }
+    };
+  }, [open, embedMode]);
 
   useEffect(() => {
     if (!open) return undefined;

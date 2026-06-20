@@ -3,8 +3,11 @@ import {
   getChessEngineContentionSnapshotV0,
   isChessArenaWorkspaceOpenV0,
   isChessClusterArenaOpenV0,
+  isChessClusterBroadcastActiveV0,
   publishChessArenaWorkspaceOpenV0,
   publishChessClusterArenaOpenV0,
+  publishChessClusterArenaUiOpenV0,
+  publishChessClusterBroadcastActiveV0,
   releaseBroadcastForArenaPlayV0,
   resolveChessMoveTimeoutBufferMsV0,
   shouldDeferArenaEngineWorkV0,
@@ -41,15 +44,25 @@ describe("chessEngineContentionGateV0", () => {
     expect(isChessClusterArenaOpenV0()).toBe(false);
   });
 
-  it("shouldDeferArenaEngineWorkV0 when cluster arena open even without lock", () => {
+  it("shouldDeferArenaEngineWorkV0 when cluster broadcast is active even without lock", () => {
     window.__rhizoh.chessGameCluster = { running: true };
-    publishChessClusterArenaOpenV0(true);
+    publishChessClusterBroadcastActiveV0(true);
+    expect(shouldDeferArenaEngineWorkV0()).toBe(true);
+  });
+
+  it("keeps broadcast engine policy when learning channel UI is dismissed", () => {
+    window.__rhizoh.chessGameCluster = { running: true };
+    publishChessClusterBroadcastActiveV0(true);
+    publishChessClusterArenaUiOpenV0(true);
+    publishChessClusterArenaUiOpenV0(false);
+    expect(isChessClusterArenaOpenV0()).toBe(false);
+    expect(isChessClusterBroadcastActiveV0()).toBe(true);
     expect(shouldDeferArenaEngineWorkV0()).toBe(true);
   });
 
   it("shouldDeferArenaEngineWorkV0 false when map arena workspace is playing", () => {
     window.__rhizoh.chessGameCluster = { running: true };
-    publishChessClusterArenaOpenV0(true);
+    publishChessClusterBroadcastActiveV0(true);
     publishChessArenaWorkspaceOpenV0(true);
     expect(shouldDeferArenaEngineWorkV0()).toBe(false);
     publishChessArenaWorkspaceOpenV0(false);
@@ -97,16 +110,20 @@ describe("chessEngineContentionGateV0", () => {
 
   it("pauses cluster ticks when map arena workspace is open (even if broadcast UI was open)", () => {
     publishChessArenaWorkspaceOpenV0(true);
-    publishChessClusterArenaOpenV0(true);
+    publishChessClusterBroadcastActiveV0(true);
+    publishChessClusterArenaUiOpenV0(true);
     expect(shouldPauseClusterTickForArenaV0()).toBe(true);
     publishChessArenaWorkspaceOpenV0(false);
-    publishChessClusterArenaOpenV0(false);
+    publishChessClusterBroadcastActiveV0(false);
+    publishChessClusterArenaUiOpenV0(false);
   });
 
-  it("releaseBroadcastForArenaPlayV0 clears cluster arena registry", () => {
-    publishChessClusterArenaOpenV0(true);
+  it("releaseBroadcastForArenaPlayV0 clears cluster arena UI and broadcast registry", () => {
+    publishChessClusterBroadcastActiveV0(true);
+    publishChessClusterArenaUiOpenV0(true);
     releaseBroadcastForArenaPlayV0();
     expect(isChessClusterArenaOpenV0()).toBe(false);
+    expect(isChessClusterBroadcastActiveV0()).toBe(false);
   });
 
   it("getChessEngineContentionSnapshotV0 includes arenaWorkspaceOpen", () => {

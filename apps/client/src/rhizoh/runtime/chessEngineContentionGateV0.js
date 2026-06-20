@@ -10,9 +10,27 @@ export const CHESS_CLUSTER_ARENA_REGISTRY_SCHEMA_V0 = "castle.rhizoh.chess_clust
 export const CHESS_ARENA_WORKSPACE_REGISTRY_SCHEMA_V0 = "castle.rhizoh.chess_arena_workspace.v0";
 export const RHIZOH_CLOSE_CHESS_CLUSTER_ARENA_EVENT_V0 = "RHIZOH_CLOSE_CHESS_CLUSTER_ARENA";
 
+function readClusterArenaRegistryV0() {
+  if (typeof window === "undefined") return null;
+  return window.__rhizoh?.chessClusterArena || null;
+}
+
+function writeClusterArenaRegistryV0(patch = {}) {
+  if (typeof window === "undefined") return;
+  const prev = readClusterArenaRegistryV0() || {};
+  window.__rhizoh = window.__rhizoh || {};
+  window.__rhizoh.chessClusterArena = Object.freeze({
+    schema: CHESS_CLUSTER_ARENA_REGISTRY_SCHEMA_V0,
+    uiOpen: patch.uiOpen ?? prev.uiOpen ?? false,
+    broadcastActive: patch.broadcastActive ?? prev.broadcastActive ?? false,
+    atMs: Date.now()
+  });
+}
+
 /** Close 8-camera broadcast + free the single engine for map arena play. */
 export function releaseBroadcastForArenaPlayV0() {
-  publishChessClusterArenaOpenV0(false);
+  publishChessClusterArenaUiOpenV0(false);
+  publishChessClusterBroadcastActiveV0(false);
   cancelPendingClusterEngineTasksV0();
   void import("./chessStockfishEngineV0.js").then((mod) => {
     mod.abortChessStockfishInFlightSearchV0?.();
@@ -55,19 +73,28 @@ export function shouldPauseClusterTickForArenaV0() {
 }
 
 /** @param {boolean} open */
+export function publishChessClusterArenaUiOpenV0(open) {
+  writeClusterArenaRegistryV0({ uiOpen: Boolean(open) });
+}
+
+/** Keep cluster broadcast engine policy on while learning channel UI is dismissed. */
+export function publishChessClusterBroadcastActiveV0(active) {
+  writeClusterArenaRegistryV0({ broadcastActive: Boolean(active) });
+}
+
+/** UI visibility only — does not stop background broadcast ticks. */
 export function publishChessClusterArenaOpenV0(open) {
-  if (typeof window === "undefined") return;
-  window.__rhizoh = window.__rhizoh || {};
-  window.__rhizoh.chessClusterArena = Object.freeze({
-    schema: CHESS_CLUSTER_ARENA_REGISTRY_SCHEMA_V0,
-    open: Boolean(open),
-    atMs: Date.now()
-  });
+  publishChessClusterArenaUiOpenV0(open);
 }
 
 export function isChessClusterArenaOpenV0() {
   if (typeof window === "undefined") return false;
-  return Boolean(window.__rhizoh?.chessClusterArena?.open);
+  return Boolean(readClusterArenaRegistryV0()?.uiOpen);
+}
+
+export function isChessClusterBroadcastActiveV0() {
+  if (typeof window === "undefined") return false;
+  return Boolean(readClusterArenaRegistryV0()?.broadcastActive);
 }
 
 export function getChessEngineContentionSnapshotV0() {
@@ -88,6 +115,7 @@ export function getChessEngineContentionSnapshotV0() {
   const scheduler = window.__rhizoh?.chessScheduler;
   const clusterRunning = Boolean(cluster?.running);
   const clusterArenaOpen = isChessClusterArenaOpenV0();
+  const clusterBroadcastActive = isChessClusterBroadcastActiveV0();
   const arenaWorkspaceOpen = isChessArenaWorkspaceOpenV0();
   const chessLock = Boolean(scheduler?.chessLock);
   const queuePending = Number(queue?.pendingCount) || 0;
@@ -97,6 +125,7 @@ export function getChessEngineContentionSnapshotV0() {
     schema: CHESS_ENGINE_CONTENTION_GATE_SCHEMA_V0,
     clusterRunning,
     clusterArenaOpen,
+    clusterBroadcastActive,
     arenaWorkspaceOpen,
     chessLock,
     queuePending,
@@ -123,7 +152,7 @@ export function shouldDeferArenaEngineWorkV0() {
   if (isChessArenaWorkspaceOpenV0()) return false;
   const snap = getChessEngineContentionSnapshotV0();
   if (!snap.clusterRunning) return false;
-  return snap.clusterArenaOpen;
+  return snap.clusterBroadcastActive;
 }
 
 /** Block map chess arena only while 8-camera observation UI is open. */

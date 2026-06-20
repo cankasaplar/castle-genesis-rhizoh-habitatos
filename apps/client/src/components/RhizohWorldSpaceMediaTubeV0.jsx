@@ -21,6 +21,7 @@ import { RhizohMediaStageWithOctoV0 } from "./RhizohMediaOctoCompanionOverlayV0.
 import { RhizohOctoEightCameraLabV0 } from "./RhizohOctoEightCameraLabV0.jsx";
 import { RhizohChessClusterArenaV0 } from "./RhizohChessClusterArenaV0.jsx";
 import { RhizohCastleShadowInboxV0 } from "./RhizohCastleShadowInboxV0.jsx";
+import { publishChessClusterBroadcastActiveV0 } from "../rhizoh/runtime/chessEngineContentionGateV0.js";
 import {
   OCTO_YUVA_EIGHT_CAMERA_LENSES_V1,
   dismissOctoLabToWorldMapV1
@@ -123,6 +124,9 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     setActiveChannel(resolveWorldSpaceMediaChannelV0(initialChannelId));
     setNasaFallback(false);
     setYoutubeMuted(true);
+    if (resolveWorldSpaceMediaChannelV0(initialChannelId).type === "chess_cluster_live") {
+      publishChessClusterBroadcastActiveV0(true);
+    }
   }, [initialChannelId]);
 
   useEffect(() => {
@@ -172,6 +176,9 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     setNasaFallback(false);
     setYoutubeMuted(true);
     setActiveChannel(channel);
+    if (channel.type === "chess_cluster_live") {
+      publishChessClusterBroadcastActiveV0(true);
+    }
     if (channel.type !== "local") {
       setLocalPreviewStream(null);
       return;

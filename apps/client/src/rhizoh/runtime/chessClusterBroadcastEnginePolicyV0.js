@@ -4,7 +4,7 @@
  */
 
 import { CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 } from "./chessLearningMonitorV0.js";
-import { isChessClusterArenaOpenV0 } from "./chessEngineContentionGateV0.js";
+import { isChessClusterBroadcastActiveV0 } from "./chessEngineContentionGateV0.js";
 
 export const CHESS_CLUSTER_BROADCAST_ENGINE_POLICY_SCHEMA_V0 =
   "castle.rhizoh.chess_cluster_broadcast_engine_policy.v0";
@@ -20,7 +20,7 @@ export const CHESS_CLUSTER_BROADCAST_MOVES_PER_TICK_V0 = 2;
 
 /** Featured slot uses WASM; background grid slots use fast heuristic during 8-camera UI. */
 export function isChessClusterBroadcastModeV0() {
-  return isChessClusterArenaOpenV0();
+  return isChessClusterBroadcastActiveV0();
 }
 
 /**
