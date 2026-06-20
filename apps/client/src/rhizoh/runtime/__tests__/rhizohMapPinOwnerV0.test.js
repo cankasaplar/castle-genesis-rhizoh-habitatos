@@ -3,12 +3,14 @@ import {
   RHIZOH_CESIUM_SESSION_PIN_OWNER_V0,
   filterPinsBySpiralMapLayerV0,
   filterSovereignPinsForSpiralMapViewV0,
+  getRhizohMapPinOwnerSnapshotV0,
+  installRhizohMapPinOwnerAutoRefreshV0,
   isExplorerOnlyAlwaysVisiblePinV0,
   readWorldSpaceSessionMapPinRowsV0,
   resolvePinSpiralLayerV0,
-  resolveRhizohMapPinSubstrateV0,
-  getRhizohMapPinOwnerSnapshotV0
+  resolveRhizohMapPinSubstrateV0
 } from "../rhizohMapPinOwnerV0.js";
+import { PRISM_CUBE_MAP_PIN_EVENT_V0 } from "../cesiumWorldCommitV0.js";
 import { ORIGIN_HOME_SERENCEBEY_PIN_ID_V0 } from "../worldMapOriginHomePinV0.js";
 import { SPIRAL_MAP_LAYER_V0 } from "../spatialDistributionLayerV0.js";
 
@@ -169,5 +171,15 @@ describe("rhizohMapPinOwnerV0", () => {
       realityMode: "full_world"
     });
     expect(filtered).toHaveLength(2);
+  });
+
+  it("installRhizohMapPinOwnerAutoRefreshV0 republishes on prism pin event", () => {
+    const stop = installRhizohMapPinOwnerAutoRefreshV0({ pathname: "/world/space" });
+    const before = getRhizohMapPinOwnerSnapshotV0({ pathname: "/world/space" }).sessionPinCount;
+    window.dispatchEvent(new CustomEvent(PRISM_CUBE_MAP_PIN_EVENT_V0, { detail: {} }));
+    const after = window.__rhizoh?.mapPinOwner?.sessionPinCount;
+    expect(typeof after).toBe("number");
+    expect(after).toBeGreaterThanOrEqual(before);
+    stop();
   });
 });

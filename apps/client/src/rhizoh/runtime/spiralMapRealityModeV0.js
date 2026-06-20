@@ -164,14 +164,27 @@ export function applySpiralMapRealityModeV0(modeId) {
   return next;
 }
 
+const STORAGE_KEY_SPIRAL_FILTER_V0 = "rhizoh.spiral_map_layer_filter.v0";
+
+function spiralMapFilterStorageNeedsHydrateV0(raw) {
+  if (!raw || raw === "{}" || raw === "null") return true;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return true;
+    return parsed.explorer === undefined && parsed.realityMode === undefined;
+  } catch {
+    return true;
+  }
+}
+
 /**
  * Persist default explorer filter when localStorage is empty (first visit).
  */
 export function ensureSpiralMapRealityModeHydratedV0() {
   if (typeof localStorage === "undefined") return readSpiralMapLayerFilterStateV0();
   try {
-    const raw = localStorage.getItem("rhizoh.spiral_map_layer_filter.v0");
-    if (!raw) {
+    const raw = localStorage.getItem(STORAGE_KEY_SPIRAL_FILTER_V0);
+    if (spiralMapFilterStorageNeedsHydrateV0(raw)) {
       return applySpiralMapRealityModeV0(SPIRAL_MAP_REALITY_MODE_V0.EXPLORER);
     }
   } catch {

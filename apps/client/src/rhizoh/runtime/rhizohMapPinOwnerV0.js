@@ -9,7 +9,7 @@ import { resolveRhizohWorldSpaceCesiumActiveV0 } from "./rhizohLayerContextV0.js
 import { isRhizohWorldSpaceMapStageV0 } from "./rhizohWorldSurfacePolicyV0.js";
 import { listSovereignWorldMapNodesForViewV0 } from "./sovereignWorldMapNodesV0.js";
 import { getLiveMatchMapPinsV0 } from "./worldMapLiveMatchPinsV0.js";
-import { getPrismCubeMapPinRowsV0 } from "./cesiumWorldCommitV0.js";
+import { getPrismCubeMapPinRowsV0, PRISM_CUBE_MAP_PIN_EVENT_V0 } from "./cesiumWorldCommitV0.js";
 import { resolveUserCastleGeoForMapViewV0 } from "./worldMapBootstrapGeoV0.js";
 import { getArenaPopulationPinsV0 } from "./arenaPopulationLayerV0.js";
 import {
@@ -239,4 +239,34 @@ export function publishRhizohMapPinOwnerRegistryV0(ctx = {}) {
   window.__rhizoh = window.__rhizoh || {};
   window.__rhizoh.mapPinOwner = getRhizohMapPinOwnerSnapshotV0(ctx);
   return window.__rhizoh.mapPinOwner;
+}
+
+/** @alias */
+export function refreshRhizohMapPinOwnerRegistryV0(ctx = {}) {
+  return publishRhizohMapPinOwnerRegistryV0(ctx);
+}
+
+let mapPinOwnerAutoRefreshInstalledV0 = false;
+
+/**
+ * Keep window.__rhizoh.mapPinOwner in sync after arena population / prism pin commits.
+ * @param {object} [ctx]
+ * @returns {() => void}
+ */
+export function installRhizohMapPinOwnerAutoRefreshV0(ctx = {}) {
+  if (typeof window === "undefined") return () => {};
+  const refresh = () => publishRhizohMapPinOwnerRegistryV0(ctx);
+  window.__rhizoh = window.__rhizoh || {};
+  window.__rhizoh.refreshMapPinOwner = refresh;
+
+  if (mapPinOwnerAutoRefreshInstalledV0) return () => {};
+  mapPinOwnerAutoRefreshInstalledV0 = true;
+
+  window.addEventListener("rhizoh:arena-population-v0", refresh);
+  window.addEventListener(PRISM_CUBE_MAP_PIN_EVENT_V0, refresh);
+  return () => {
+    window.removeEventListener("rhizoh:arena-population-v0", refresh);
+    window.removeEventListener(PRISM_CUBE_MAP_PIN_EVENT_V0, refresh);
+    mapPinOwnerAutoRefreshInstalledV0 = false;
+  };
 }
