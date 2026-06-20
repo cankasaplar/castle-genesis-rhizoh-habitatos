@@ -23,7 +23,9 @@ Prism Cube Engine v0
     ↓
 Spatial Allocation Layer v0   ← this module
     ↓
-Arena Binding (next)
+Arena Binding
+    ↓
+Spatial Slot Resolver v0
     ↓
 Media Ledgerization
     ↓
@@ -97,5 +99,5 @@ Boot: `boot.spatial_allocation · armed logical_placement`
 | L4b Prism cube v0 | ✔ #228 |
 | L4c **Spatial allocation v0** | ✔ this module |
 | L5a Arena binding v0 | ✔ [`RHIZOH_ARENA_BINDING_LAYER_V0.md`](RHIZOH_ARENA_BINDING_LAYER_V0.md) |
-| L5b Spatial slot resolver | ❌ next |
+| L5b Spatial slot resolver | ✔ [`RHIZOH_SPATIAL_SLOT_RESOLVER_V0.md`](RHIZOH_SPATIAL_SLOT_RESOLVER_V0.md) |
 | L6 Media ledgerization | ❌ Phase 1 signal gate |

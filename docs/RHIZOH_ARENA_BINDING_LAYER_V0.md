@@ -61,7 +61,7 @@ interface ArenaEventV0 {
 
 ## Spatial bridge (placeholder)
 
-`buildSpatialBindingV0` — `worldPosition: null` until Spatial Slot Resolver (#231).
+`buildSpatialBindingV0` — initial `worldPosition: null`; filled by [`RHIZOH_SPATIAL_SLOT_RESOLVER_V0.md`](RHIZOH_SPATIAL_SLOT_RESOLVER_V0.md).
 
 ## Boot signals
 
@@ -86,7 +86,7 @@ window.__rhizoh.resolveArenaIdentity("arena_entity_...");
 ## Pipeline position
 
 ```
-… → spatialAllocation → arenaBinding → (next: world physics / spatial slot resolver)
+… → spatialAllocation → arenaBinding → spatialSlotResolver → (next: prism cube commit)
 ```
 
 ## Module

@@ -32,6 +32,10 @@ import {
   setLastArenaBindingV0
 } from "./arenaBindingLayerV0.js";
 import {
+  resolveSpatialSlotsV0,
+  setLastSpatialSlotResolverV0
+} from "./spatialSlotResolverV0.js";
+import {
   fetchGatewayAuthorityWitnessReplayV1,
   runAuthorityReplayAlignmentV1,
   workerAuthorityReplayAlignmentV1
@@ -262,6 +266,9 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
   const arenaBinding = bindArenasToPlacedCubesV0({ spatialAllocation, mergeEvent });
   setLastArenaBindingV0(arenaBinding);
 
+  const spatialSlotResolver = resolveSpatialSlotsV0({ arenaBinding });
+  setLastSpatialSlotResolverV0(spatialSlotResolver);
+
   return Object.freeze({
     ok: true,
     mergeEvent,
@@ -270,6 +277,7 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
     prismCubes,
     spatialAllocation,
     arenaBinding,
+    spatialSlotResolver,
     payload,
     alignment,
     output: mergeEvent?.output || null,

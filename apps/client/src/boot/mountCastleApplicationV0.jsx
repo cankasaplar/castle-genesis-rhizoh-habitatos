@@ -94,6 +94,7 @@ export async function mountCastleApplicationV0(ctx) {
   bootLog?.ok?.("boot.prism_cube_engine", "armed bounded_units compression");
   bootLog?.ok?.("boot.spatial_allocation", "armed logical_placement");
   bootLog?.ok?.("boot.arena_binding", "armed identity_kernel");
+  bootLog?.ok?.("boot.spatial_slot_resolver", "armed world_projection");
 
   const observability = startProdWorldObservabilityBridgeV0();
   if (observability.started) {
