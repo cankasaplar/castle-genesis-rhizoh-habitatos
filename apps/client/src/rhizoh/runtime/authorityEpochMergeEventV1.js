@@ -36,6 +36,10 @@ import {
   setLastSpatialSlotResolverV0
 } from "./spatialSlotResolverV0.js";
 import {
+  commitPrismCubesV0,
+  setLastPrismCubeCommitV0
+} from "./prismCubeCommitV0.js";
+import {
   fetchGatewayAuthorityWitnessReplayV1,
   runAuthorityReplayAlignmentV1,
   workerAuthorityReplayAlignmentV1
@@ -269,6 +273,9 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
   const spatialSlotResolver = resolveSpatialSlotsV0({ arenaBinding });
   setLastSpatialSlotResolverV0(spatialSlotResolver);
 
+  const prismCubeCommit = commitPrismCubesV0({ spatialSlotResolver });
+  setLastPrismCubeCommitV0(prismCubeCommit);
+
   return Object.freeze({
     ok: true,
     mergeEvent,
@@ -278,6 +285,7 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
     spatialAllocation,
     arenaBinding,
     spatialSlotResolver,
+    prismCubeCommit,
     payload,
     alignment,
     output: mergeEvent?.output || null,
