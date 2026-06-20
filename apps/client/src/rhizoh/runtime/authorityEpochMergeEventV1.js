@@ -24,6 +24,10 @@ import {
   setLastPrismCubeEngineResultV0
 } from "./prismCubeEngineV0.js";
 import {
+  allocateSpatialSlotsV0,
+  setLastSpatialAllocationV0
+} from "./spatialAllocationLayerV0.js";
+import {
   fetchGatewayAuthorityWitnessReplayV1,
   runAuthorityReplayAlignmentV1,
   workerAuthorityReplayAlignmentV1
@@ -248,12 +252,16 @@ export async function epochMergeAndAssimilateV1(opts = {}) {
   const prismCubes = generatePrismCubesFromSemanticFieldV0({ semanticField, mergeEvent });
   setLastPrismCubeEngineResultV0(prismCubes);
 
+  const spatialAllocation = allocateSpatialSlotsV0({ prismCubes });
+  setLastSpatialAllocationV0(spatialAllocation);
+
   return Object.freeze({
     ok: true,
     mergeEvent,
     crossEpochReplay: lastCrossEpochReplayV1,
     semanticField,
     prismCubes,
+    spatialAllocation,
     payload,
     alignment,
     output: mergeEvent?.output || null,
