@@ -391,7 +391,7 @@ export function resolveSpatialSlotsV0(opts = {}) {
     realityPhase: SPATIAL_SLOT_RESOLVER_PHASE_V0.PHASE_5_1_OBSERVER_RELATIVE_PROJECTION,
     priorPhase: ARENA_BINDING_PHASE_V0.PHASE_5_ARENA_IDENTITY_KERNEL,
     deferred: Object.freeze({
-      prismCubeCommit: true,
+      prismCubeCommit: false,
       cesiumWorldCommit: true,
       mediaLedgerization: true,
       workerConsensus: true

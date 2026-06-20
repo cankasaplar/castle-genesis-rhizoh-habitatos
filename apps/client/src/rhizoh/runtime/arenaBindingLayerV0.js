@@ -536,7 +536,7 @@ export function bindArenasToPlacedCubesV0(opts = {}) {
     deferred: Object.freeze({
       worldPosition: false,
       spatialSlotResolver: false,
-      prismCubeCommit: true,
+      prismCubeCommit: false,
       mediaLedgerization: true,
       workerConsensus: true,
       chessHistoricalConsensus: true

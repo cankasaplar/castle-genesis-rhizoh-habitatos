@@ -86,7 +86,7 @@ window.__rhizoh.resolveArenaIdentity("arena_entity_...");
 ## Pipeline position
 
 ```
-… → spatialAllocation → arenaBinding → spatialSlotResolver → (next: prism cube commit)
+… → spatialSlotResolver → prismCubeCommit → (next: Cesium world commit)
 ```
 
 ## Module

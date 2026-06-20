@@ -115,8 +115,8 @@ Each observer resolves pins from **their** observation origin. Same entity ID (a
 
 | Item | Status |
 |------|--------|
-| Prism cube commit | Next |
-| Cesium world commit | Deferred |
+| Prism cube commit | ✔ [`RHIZOH_PRISM_CUBE_COMMIT_V0.md`](RHIZOH_PRISM_CUBE_COMMIT_V0.md) |
+| Cesium world commit | ❌ next |
 | Media ledgerization | Phase 1 gate |
 | Worker consensus | Data-plane READY required |
 
