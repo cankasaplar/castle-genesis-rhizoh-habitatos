@@ -101,6 +101,7 @@ Boot: `boot.prism_cube_engine · armed bounded_units compression`
 |-------|-------|
 | 4 | semantic field (stabilize) |
 | **4.1** | **prism cubes (compress + bound)** |
-| 4.2 | action surface + spatial slot |
-| 5 | arena binding + media ledgerization |
+| **4.2** | **spatial allocation (logical placement)** — [`RHIZOH_SPATIAL_ALLOCATION_LAYER_V0.md`](RHIZOH_SPATIAL_ALLOCATION_LAYER_V0.md) |
+| 4.3 | arena binding |
+| 5 | media ledgerization |
 | 5.1 | worker physics validation |

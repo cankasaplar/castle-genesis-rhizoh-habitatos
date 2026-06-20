@@ -50,21 +50,24 @@ function buildAdjacencyGraphV0(cubes) {
       const a = cubes[i];
       const b = cubes[j];
 
-      if (a.epochBoundary.epochId !== b.epochBoundary.epochId && a.height === b.height) {
+      const aHeight = Number(a.temporalBoundary?.height) || 0;
+      const bHeight = Number(b.temporalBoundary?.height) || 0;
+
+      if (a.epochBoundary.epochId !== b.epochBoundary.epochId && aHeight === bHeight) {
         if (a.payload.sealRef && a.payload.sealRef === b.payload.sealRef) {
           edges.push(
             Object.freeze({
               from: a.cubeId,
               to: b.cubeId,
               linkType: PRISM_CUBE_LINK_TYPE_V0.CROSS_EPOCH_BRIDGE,
-              height: a.height,
+              height: aHeight,
               sealRef: a.payload.sealRef
             })
           );
         }
       }
 
-      if (a.epochBoundary.epochId === b.epochBoundary.epochId && a.height !== b.height) {
+      if (a.epochBoundary.epochId === b.epochBoundary.epochId && aHeight !== bHeight) {
         edges.push(
           Object.freeze({
             from: a.cubeId,
@@ -187,8 +190,7 @@ export function generatePrismCubesFromSemanticFieldV0(opts = {}) {
     mode: "semantic_compression_bounded_units",
     deferred: Object.freeze({
       actionSurface: true,
-      spatialSlot: true,
-      arenaBinding: true,
+      arenaIdentityKernel: true,
       mediaLedgerization: true,
       workerConsensus: true
     }),

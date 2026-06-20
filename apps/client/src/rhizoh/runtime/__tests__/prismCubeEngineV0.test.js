@@ -56,7 +56,7 @@ describe("prismCubeEngineV0", () => {
         (e) => e.linkType === PRISM_CUBE_LINK_TYPE_V0.CROSS_EPOCH_BRIDGE
       )
     ).toBe(true);
-    expect(result.deferred.spatialSlot).toBe(true);
+    expect(result.deferred.arenaIdentityKernel).toBe(true);
     expect(result.mode).toBe("semantic_compression_bounded_units");
   });
 
