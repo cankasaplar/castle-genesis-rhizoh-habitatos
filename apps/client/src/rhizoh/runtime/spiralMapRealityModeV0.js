@@ -163,3 +163,30 @@ export function applySpiralMapRealityModeV0(modeId) {
 
   return next;
 }
+
+/**
+ * Persist default explorer filter when localStorage is empty (first visit).
+ */
+export function ensureSpiralMapRealityModeHydratedV0() {
+  if (typeof localStorage === "undefined") return readSpiralMapLayerFilterStateV0();
+  try {
+    const raw = localStorage.getItem("rhizoh.spiral_map_layer_filter.v0");
+    if (!raw) {
+      return applySpiralMapRealityModeV0(SPIRAL_MAP_REALITY_MODE_V0.EXPLORER);
+    }
+  } catch {
+    return applySpiralMapRealityModeV0(SPIRAL_MAP_REALITY_MODE_V0.EXPLORER);
+  }
+  return readSpiralMapLayerFilterStateV0();
+}
+
+/**
+ * DevTools helpers for /world/space reality slice verification.
+ */
+export function publishSpiralMapRealityDevtoolsV0() {
+  if (typeof window === "undefined") return;
+  window.__rhizoh = window.__rhizoh || {};
+  window.__rhizoh.applySpiralMapRealityModeV0 = applySpiralMapRealityModeV0;
+  window.__rhizoh.readSpiralMapRealityModeV0 = readSpiralMapRealityModeV0;
+  window.__rhizoh.ensureSpiralMapRealityModeHydratedV0 = ensureSpiralMapRealityModeHydratedV0;
+}

@@ -49,6 +49,7 @@ export const RhizohWorldRealityModeSwitcherV0 = memo(function RhizohWorldReality
             <button
               key={row.id}
               type="button"
+              data-rhizoh-reality-mode={row.id}
               title={tr ? row.hintTr : row.hintEn}
               onClick={() => selectMode(row.id)}
               className={`rounded-lg border px-2 py-0.5 text-[8px] font-semibold uppercase tracking-wide transition ${

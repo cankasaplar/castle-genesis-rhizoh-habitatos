@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   applySpiralMapRealityModeV0,
   CASTLE_IDENTITY_MODE_EVENT_V0,
+  ensureSpiralMapRealityModeHydratedV0,
   readSpiralMapRealityModeV0,
   SPIRAL_MAP_REALITY_MODE_EVENT_V0,
   SPIRAL_MAP_REALITY_MODE_V0
@@ -48,5 +49,12 @@ describe("spiralMapRealityModeV0", () => {
     expect(realityHandler).toHaveBeenCalled();
     expect(castleHandler).toHaveBeenCalled();
     expect(realityHandler.mock.calls[0][0].detail.mode).toBe(SPIRAL_MAP_REALITY_MODE_V0.CASTLE);
+  });
+
+  it("ensureSpiralMapRealityModeHydratedV0 persists explorer default when storage empty", () => {
+    const state = ensureSpiralMapRealityModeHydratedV0();
+    expect(state[SPIRAL_MAP_LAYER_V0.EXPLORER]).toBe(true);
+    expect(localStorage.getItem("rhizoh.spiral_map_layer_filter.v0")).toBeTruthy();
+    expect(readSpiralMapRealityModeV0()).toBe(SPIRAL_MAP_REALITY_MODE_V0.EXPLORER);
   });
 });
