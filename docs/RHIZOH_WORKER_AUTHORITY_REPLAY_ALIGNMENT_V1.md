@@ -49,7 +49,7 @@ workerAuthorityReplayAlignmentV1({
 | Field | Values |
 |-------|--------|
 | `aligned` | boolean |
-| `divergenceType` | `none` \| `seal_mismatch` \| `height_desync` \| `entry_hash_drift` \| `missing_entry` |
+| `divergenceType` | `none` \| `session_resync` \| `seal_mismatch` \| `height_desync` \| `entry_hash_drift` \| `missing_entry` |
 | `severity` | `none` \| `soft_drift` \| `hard_divergence` |
 | `sourceOfTruth` | `client` \| `gateway` \| `worker` \| `undetermined` |
 
@@ -59,7 +59,8 @@ workerAuthorityReplayAlignmentV1({
 
 | Type | Meaning (not "error") |
 |------|------------------------|
-| `height_desync` | Transport lag / ordering drift |
+| `session_resync` | Epoch boundary — expected cross-boot drift |
+| `height_desync` | Transport lag / ordering drift (same epoch) |
 | `missing_entry` | Witness not yet received |
 | `seal_mismatch` | Hard divergence — quarantine path |
 | `entry_hash_drift` | Per-height hash chain differs |
@@ -85,6 +86,7 @@ Boot: `boot.authority_replay_alignment · armed deterministic-only`
 |----|--------|
 | **#222** | `workerAuthorityReplayAlignmentV1` (this) |
 | #223 | divergence classifier + layer attribution |
+| **Epoch boundary** | ✔ [`RHIZOH_AUTHORITY_EPOCH_BOUNDARY_V1.md`](RHIZOH_AUTHORITY_EPOCH_BOUNDARY_V1.md) |
 | #224 | distributed consensus shadow (optional) |
 
 ---

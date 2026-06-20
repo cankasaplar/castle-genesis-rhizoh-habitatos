@@ -8,29 +8,63 @@ import {
   AUTHORITY_LEDGER_WITNESS_SCHEMA_V1
 } from "./authorityLedgerWitnessV1.js";
 
-/** @type {Map<string, { chainHead: string, height: number, entries: object[] }>} */
-const subjectChainsV1 = new Map();
+/** @type {Map<string, { epochId: string, chainHead: string, height: number, entries: object[] }>} */
+const epochChainsV1 = new Map();
+/** @type {Map<string, string>} */
+const subjectLatestEpochV1 = new Map();
 
 const WITNESS_RING_MAX_V1 = 256;
 let totalWitnessedEntriesV1 = 0;
-/** @type {{ clientSealHash: string, gatewayWitnessHash: string, height: number, witnessedAt: number } | null} */
+/** @type {{ clientSealHash: string, gatewayWitnessHash: string, height: number, epochId: string, witnessedAt: number } | null} */
 let lastWitnessV1 = null;
 
 /**
- * @param {string} subjectId
+ * @param {object} entry
  */
-function getOrCreateSubjectChainV1(subjectId) {
-  const key = String(subjectId || "unknown");
-  let chain = subjectChainsV1.get(key);
+function readEntryEpochIdV1(entry) {
+  return String(entry?.epoch?.epochId || entry?.epochId || "epoch_unknown").trim() || "epoch_unknown";
+}
+
+/**
+ * @param {string} subjectId
+ * @param {string} epochId
+ */
+function epochChainKeyV1(subjectId, epochId) {
+  return `${String(subjectId || "unknown")}::${String(epochId || "epoch_unknown")}`;
+}
+
+/**
+ * @param {string} subjectId
+ * @param {string} epochId
+ */
+function getOrCreateEpochChainV1(subjectId, epochId) {
+  const key = epochChainKeyV1(subjectId, epochId);
+  let chain = epochChainsV1.get(key);
   if (!chain) {
-    chain = { chainHead: AUTHORITY_WAL_HASH_GENESIS_V1, height: 0, entries: [] };
-    subjectChainsV1.set(key, chain);
+    chain = {
+      epochId: String(epochId),
+      chainHead: AUTHORITY_WAL_HASH_GENESIS_V1,
+      height: 0,
+      entries: []
+    };
+    epochChainsV1.set(key, chain);
   }
   return chain;
 }
 
 /**
- * Append-only witness — hold verdicts included; no silent repair on mismatch.
+ * @param {string} subjectId
+ * @param {string} [epochId]
+ */
+function resolveEpochChainForSubjectV1(subjectId, epochId) {
+  const sid = String(subjectId || "unknown");
+  const eid = epochId || subjectLatestEpochV1.get(sid) || null;
+  if (!eid) return null;
+  return epochChainsV1.get(epochChainKeyV1(sid, eid)) || null;
+}
+
+/**
+ * Append-only witness — hold verdicts included; per-epoch chains (no cross-epoch height regression).
  * @param {string} subjectId
  * @param {object[]} entries sealed client authority ledger entries
  * @param {string} witnessSecret
@@ -41,14 +75,18 @@ export function persistAuthorityLedgerWitnessBatchV1(subjectId, entries, witness
     return { ok: true, witnessed: 0, quarantined: 0, mode: "skip", results: [] };
   }
 
-  const chain = getOrCreateSubjectChainV1(subjectId);
   const results = [];
   let witnessed = 0;
   let quarantined = 0;
+  let lastChainHead = AUTHORITY_WAL_HASH_GENESIS_V1;
+  let lastChainHeight = 0;
+  let lastEpochId = null;
 
   const sorted = [...rows].sort((a, b) => Number(a?.height || 0) - Number(b?.height || 0));
 
   for (const entry of sorted) {
+    const epochId = readEntryEpochIdV1(entry);
+    const chain = getOrCreateEpochChainV1(subjectId, epochId);
     const expectedHeight = chain.height + 1;
     const entryHeight = Number(entry?.height);
     if (entryHeight !== expectedHeight) {
@@ -57,6 +95,7 @@ export function persistAuthorityLedgerWitnessBatchV1(subjectId, entries, witness
         Object.freeze({
           status: "quarantined",
           code: "height_regression",
+          epochId,
           height: entryHeight,
           expectedHeight,
           interpretationOnly: true
@@ -73,6 +112,7 @@ export function persistAuthorityLedgerWitnessBatchV1(subjectId, entries, witness
           status: "quarantined",
           code: sealCheck.code || "seal_invalid",
           reason: sealCheck.reason || "witness_rejected",
+          epochId,
           height: entryHeight,
           interpretationOnly: true
         })
@@ -83,6 +123,7 @@ export function persistAuthorityLedgerWitnessBatchV1(subjectId, entries, witness
     const witnessedAt = Date.now();
     const witnessBody = {
       subjectId: String(subjectId || "unknown"),
+      epochId,
       height: entryHeight,
       entryId: String(entry.entryId || `auth_ledger_${entryHeight}`),
       clientSealHash: sealCheck.sealHash,
@@ -95,12 +136,17 @@ export function persistAuthorityLedgerWitnessBatchV1(subjectId, entries, witness
 
     chain.height = entryHeight;
     chain.chainHead = sealCheck.sealHash;
+    subjectLatestEpochV1.set(String(subjectId || "unknown"), epochId);
     totalWitnessedEntriesV1 += 1;
     witnessed += 1;
+    lastChainHead = chain.chainHead;
+    lastChainHeight = chain.height;
+    lastEpochId = epochId;
 
     const witnessedEntry = Object.freeze({
       schema: `${AUTHORITY_LEDGER_WITNESS_SCHEMA_V1}.record`,
       status: "witnessed",
+      epochId,
       height: entryHeight,
       entryId: witnessBody.entryId,
       clientSealHash: sealCheck.sealHash,
@@ -126,6 +172,7 @@ export function persistAuthorityLedgerWitnessBatchV1(subjectId, entries, witness
       clientSealHash: sealCheck.sealHash,
       gatewayWitnessHash,
       height: entryHeight,
+      epochId,
       witnessedAt
     };
 
@@ -137,20 +184,28 @@ export function persistAuthorityLedgerWitnessBatchV1(subjectId, entries, witness
     witnessed,
     quarantined,
     mode: "witness_append_only",
-    chainHead: chain.chainHead,
-    chainHeight: chain.height,
+    epochId: lastEpochId,
+    chainHead: lastChainHead,
+    chainHeight: lastChainHeight,
     totalWitnessedEntries: totalWitnessedEntriesV1,
     lastWitness: lastWitnessV1,
     results
   });
 }
 
-export function getAuthorityLedgerWitnessSnapshotV1(subjectId) {
-  const chain = subjectId ? subjectChainsV1.get(String(subjectId)) : null;
+/**
+ * @param {string} subjectId
+ * @param {string} [epochId]
+ */
+export function getAuthorityLedgerWitnessSnapshotV1(subjectId, epochId) {
+  const sid = subjectId ? String(subjectId) : null;
+  const activeEpochId = epochId || (sid ? subjectLatestEpochV1.get(sid) : null) || null;
+  const chain = sid ? resolveEpochChainForSubjectV1(sid, activeEpochId || undefined) : null;
   return Object.freeze({
     schema: `${AUTHORITY_LEDGER_WITNESS_SCHEMA_V1}.snapshot`,
     totalWitnessedEntries: totalWitnessedEntriesV1,
     lastWitness: lastWitnessV1,
+    activeEpochId,
     subjectHeight: chain?.height ?? 0,
     subjectChainHead: chain?.chainHead ?? AUTHORITY_WAL_HASH_GENESIS_V1,
     recentWitnessed: Object.freeze((chain?.entries || []).slice(0, 8)),
@@ -164,17 +219,17 @@ export function getAuthorityLedgerWitnessTotalV1() {
 }
 
 /**
- * Deterministic gateway-side replay of witnessed client seal chain.
- * Witness link verification only — no admission/fusion reinterpretation.
  * @param {string} subjectId
+ * @param {string} [epochId]
  */
-export function replayAuthorityLedgerWitnessChainV1(subjectId) {
-  const chain = subjectId ? subjectChainsV1.get(String(subjectId)) : null;
+export function replayAuthorityLedgerWitnessChainV1(subjectId, epochId) {
+  const chain = resolveEpochChainForSubjectV1(subjectId, epochId);
 
   if (!chain || chain.height === 0) {
     return Object.freeze({
       schema: `${AUTHORITY_LEDGER_WITNESS_SCHEMA_V1}.replay`,
       ok: true,
+      epochId: epochId || chain?.epochId || null,
       height: 0,
       sealHead: AUTHORITY_WAL_HASH_GENESIS_V1,
       entriesReplayed: 0,
@@ -199,6 +254,7 @@ export function replayAuthorityLedgerWitnessChainV1(subjectId) {
     trace.push(
       Object.freeze({
         height,
+        epochId: row.epochId || chain.epochId,
         ok,
         expectedPrev: head,
         actualPrev: prev,
@@ -210,6 +266,7 @@ export function replayAuthorityLedgerWitnessChainV1(subjectId) {
         schema: `${AUTHORITY_LEDGER_WITNESS_SCHEMA_V1}.replay`,
         ok: false,
         reason: "witness_chain_break",
+        epochId: chain.epochId,
         height,
         sealHead: head,
         entriesReplayed: trace.length,
@@ -226,6 +283,7 @@ export function replayAuthorityLedgerWitnessChainV1(subjectId) {
   return Object.freeze({
     schema: `${AUTHORITY_LEDGER_WITNESS_SCHEMA_V1}.replay`,
     ok: true,
+    epochId: chain.epochId,
     height: chain.height,
     sealHead: head,
     entriesReplayed: chronological.length,
@@ -239,7 +297,8 @@ export function replayAuthorityLedgerWitnessChainV1(subjectId) {
 
 /** @internal node:test */
 export function resetAuthorityLedgerWitnessStoreForTestV1() {
-  subjectChainsV1.clear();
+  epochChainsV1.clear();
+  subjectLatestEpochV1.clear();
   totalWitnessedEntriesV1 = 0;
   lastWitnessV1 = null;
 }

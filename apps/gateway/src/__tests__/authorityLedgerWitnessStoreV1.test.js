@@ -12,7 +12,7 @@ import {
 
 const SECRET = "test_witness_secret_16b";
 
-function buildSealedEntryV1(height, prevHash, verdict = "hold") {
+function buildSealedEntryV1(height, prevHash, verdict = "hold", epochId = "hepoch_test") {
   const admissionRequest = {
     verdict,
     inferenceEligible: false,
@@ -42,6 +42,7 @@ function buildSealedEntryV1(height, prevHash, verdict = "hold") {
     humanAttestation: null,
     authorityDecision,
     realityMutation,
+    epoch: { epochId, bootAtMs: 1 },
     seal: { prevSealHash: prevHash, sealHash, sealedAtMs: Date.now() }
   };
 }
@@ -101,4 +102,20 @@ test("replay verifies witnessed seal chain", () => {
   assert.equal(replay.height, 2);
   assert.equal(replay.entriesReplayed, 2);
   assert.equal(replay.sealHead, e2.seal.sealHash);
+});
+
+test("separate epoch chains allow height=1 restarts", () => {
+  resetAuthorityLedgerWitnessStoreForTestV1();
+  const e1 = buildSealedEntryV1(1, AUTHORITY_WAL_HASH_GENESIS_V1, "hold", "hepoch_a");
+  const r1 = persistAuthorityLedgerWitnessBatchV1("subj-epoch", [e1], SECRET);
+  assert.equal(r1.witnessed, 1);
+  assert.equal(r1.epochId, "hepoch_a");
+  const e2 = buildSealedEntryV1(1, AUTHORITY_WAL_HASH_GENESIS_V1, "hold", "hepoch_b");
+  const r2 = persistAuthorityLedgerWitnessBatchV1("subj-epoch", [e2], SECRET);
+  assert.equal(r2.witnessed, 1);
+  assert.equal(r2.chainHeight, 1);
+  assert.equal(r2.epochId, "hepoch_b");
+  const replayB = replayAuthorityLedgerWitnessChainV1("subj-epoch", "hepoch_b");
+  assert.equal(replayB.ok, true);
+  assert.equal(replayB.height, 1);
 });

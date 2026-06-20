@@ -23,6 +23,7 @@ export const REPLAY_MODE_V1 = Object.freeze({
 
 export const DIVERGENCE_TYPE_V1 = Object.freeze({
   NONE: "none",
+  SESSION_RESYNC: "session_resync",
   SEAL_MISMATCH: "seal_mismatch",
   HEIGHT_DESYNC: "height_desync",
   ENTRY_HASH_DRIFT: "entry_hash_drift",
@@ -52,6 +53,7 @@ function normalizeClientLedgerV1(ledger) {
   const snap = ledger || {};
   const replay = snap.replay || null;
   return Object.freeze({
+    epochId: String(snap.epoch?.epochId || snap.epochId || "").trim() || null,
     height: Number(snap.ledgerHeight ?? snap.height ?? replay?.height ?? 0),
     sealHead: String(
       snap.sealChainHead ?? snap.sealHead ?? snap.lastSeal?.sealHash ?? replay?.sealHead ?? ""
@@ -69,6 +71,9 @@ function normalizeGatewayWitnessV1(gatewayWitness) {
   const gw = gatewayWitness || {};
   const replay = gw.replay || gw.gatewayReplay || null;
   return Object.freeze({
+    epochId: String(
+      gw.epochId ?? gw.activeEpochId ?? gw.lastWitness?.epochId ?? replay?.epochId ?? ""
+    ).trim() || null,
     height: Number(
       gw.chainHeight ??
         gw.subjectHeight ??
@@ -191,6 +196,56 @@ export function workerAuthorityReplayAlignmentV1(opts = {}) {
     signals.push("missing_client_ledger");
   }
 
+  const sameTimeline =
+    !client.epochId || !gateway.epochId ? null : client.epochId === gateway.epochId;
+
+  if (hasClient && hasGateway && client.epochId && gateway.epochId && !sameTimeline) {
+    return Object.freeze({
+      schema: `${WORKER_AUTHORITY_REPLAY_ALIGNMENT_SCHEMA_V1}.result`,
+      aligned: false,
+      divergenceType: DIVERGENCE_TYPE_V1.SESSION_RESYNC,
+      severity: ALIGNMENT_SEVERITY_V1.SOFT_DRIFT,
+      sourceOfTruth: SOURCE_OF_TRUTH_V1.UNDETERMINED,
+      replayMode,
+      compare: Object.freeze([...compare]),
+      sameTimeline: false,
+      epoch: Object.freeze({
+        client: client.epochId,
+        gateway: gateway.epochId
+      }),
+      layers: Object.freeze({
+        client: Object.freeze({
+          present: hasClient,
+          height: client.height,
+          sealHead: client.sealHead || null,
+          epochId: client.epochId,
+          replayOk: client.replayOk
+        }),
+        gateway: Object.freeze({
+          present: hasGateway,
+          height: gateway.height,
+          sealHead: gateway.sealHead || null,
+          epochId: gateway.epochId,
+          replayOk: gateway.replayOk
+        }),
+        worker: Object.freeze({
+          available: worker.available,
+          height: worker.height,
+          sealHead: worker.sealHead,
+          divergenceTotal: worker.divergenceTotal
+        })
+      }),
+      signals: Object.freeze([
+        `session_resync:client_epoch=${client.epochId},gateway_epoch=${gateway.epochId}`
+      ]),
+      note: "epoch boundary — hash drift expected; not authority divergence",
+      question: "where_can_same_state_be_computed",
+      interpretationOnly: true,
+      nonExecutive: true,
+      atMs: Date.now()
+    });
+  }
+
   if (compare.includes("height") && hasClient && hasGateway && client.height !== gateway.height) {
     divergenceType = DIVERGENCE_TYPE_V1.HEIGHT_DESYNC;
     severity = ALIGNMENT_SEVERITY_V1.SOFT_DRIFT;
@@ -211,6 +266,7 @@ export function workerAuthorityReplayAlignmentV1(opts = {}) {
     compare.includes("sealHead") &&
     hasClient &&
     hasGateway &&
+    sameTimeline !== false &&
     client.sealHead &&
     gateway.sealHead &&
     client.sealHead !== gateway.sealHead
@@ -227,7 +283,7 @@ export function workerAuthorityReplayAlignmentV1(opts = {}) {
     }
   }
 
-  if (compare.includes("entryHashChain") && hasClient && hasGateway) {
+  if (compare.includes("entryHashChain") && hasClient && hasGateway && sameTimeline !== false) {
     const clientTrace = client.replay?.trace || [];
     const gatewayTrace =
       gateway.replay?.trace ||
@@ -285,12 +341,14 @@ export function workerAuthorityReplayAlignmentV1(opts = {}) {
         present: hasClient,
         height: client.height,
         sealHead: client.sealHead || null,
+        epochId: client.epochId,
         replayOk: client.replayOk
       }),
       gateway: Object.freeze({
         present: hasGateway,
         height: gateway.height,
         sealHead: gateway.sealHead || null,
+        epochId: gateway.epochId,
         replayOk: gateway.replayOk
       }),
       worker: Object.freeze({
@@ -301,6 +359,7 @@ export function workerAuthorityReplayAlignmentV1(opts = {}) {
       })
     }),
     signals: Object.freeze(signals),
+    sameTimeline: sameTimeline ?? (hasClient && hasGateway ? true : null),
     question: "where_can_same_state_be_computed",
     interpretationOnly: true,
     nonExecutive: true,
@@ -312,11 +371,12 @@ export function workerAuthorityReplayAlignmentV1(opts = {}) {
  * Fetch gateway authority witness replay (GET).
  * @param {string} [idToken]
  */
-export async function fetchGatewayAuthorityWitnessReplayV1(idToken = "") {
+export async function fetchGatewayAuthorityWitnessReplayV1(idToken = "", epochId = "") {
   const base = getRhizohGatewayHealthBase();
   if (!base) return { ok: false, error: "no_gateway_base" };
+  const qs = epochId ? `?epochId=${encodeURIComponent(String(epochId))}` : "";
   try {
-    const res = await fetch(`${String(base).replace(/\/+$/, "")}${GATEWAY_REPLAY_PATH_V1}`, {
+    const res = await fetch(`${String(base).replace(/\/+$/, "")}${GATEWAY_REPLAY_PATH_V1}${qs}`, {
       method: "GET",
       headers: buildEpistemicTransportHeadersV0(idToken),
       ...(typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function"
@@ -346,16 +406,22 @@ export async function runAuthorityReplayAlignmentV1(opts = {}) {
   let gatewayWitness = Object.freeze({
     chainHeight: bridge.lastWitnessedHeight,
     chainHead: bridge.lastGatewayWitness?.clientSealHash || null,
+    epochId: ledger.epoch?.epochId || null,
     lastWitness: bridge.lastGatewayWitness
   });
 
   if (opts.fetchRemote !== false) {
-    const remote = await fetchGatewayAuthorityWitnessReplayV1(opts.idToken || "");
+    const remote = await fetchGatewayAuthorityWitnessReplayV1(
+      opts.idToken || "",
+      ledger.epoch?.epochId || ""
+    );
     if (remote.ok) {
       gatewayWitness = Object.freeze({
         ...gatewayWitness,
+        activeEpochId: remote.snapshot?.activeEpochId,
         subjectHeight: remote.snapshot?.subjectHeight,
         subjectChainHead: remote.snapshot?.subjectChainHead,
+        epochId: remote.snapshot?.activeEpochId || remote.replay?.epochId || gatewayWitness.epochId,
         recentWitnessed: remote.snapshot?.recentWitnessed,
         replay: remote.replay,
         remoteFetched: true

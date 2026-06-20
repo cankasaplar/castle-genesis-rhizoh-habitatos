@@ -83,6 +83,12 @@ export async function mountCastleApplicationV0(ctx) {
       : "not_armed"
   );
   bootLog?.ok?.("boot.authority_replay_alignment", "armed deterministic-only");
+  const epochSnap =
+    typeof window !== "undefined" ? window.__rhizoh?.authorityLedger?.()?.epoch : null;
+  bootLog?.ok?.(
+    "boot.authority_epoch",
+    epochSnap?.epochId ? `epoch=${String(epochSnap.epochId).slice(0, 10)}` : "not_minted"
+  );
 
   const observability = startProdWorldObservabilityBridgeV0();
   if (observability.started) {
