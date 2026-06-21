@@ -40,10 +40,25 @@ const artifact = {
       measurementOnly: true,
       influencesCausalGraph: false,
       influencesNarrative: false
+    },
+    meaningLedger: {
+      isGraph: false,
+      assertsStructure: false,
+      learns: false,
+      influencesCausalGraph: false,
+      authorityPolicy: { causal: "hard", semantic: "soft", identity: "none" },
+      bridgeAxioms: [
+        "causal_invariance",
+        "non_agentic_closure",
+        "bidirectional_non_entanglement",
+        "temporal_continuity_dominance"
+      ]
     }
   },
   browserProof: "window.__rhizoh.epistemicSeparationProof.build()",
-  invitationStudy: "window.__rhizoh.invitationStudy.export()"
+  invitationStudy: "window.__rhizoh.invitationStudy.export()",
+  meaningLedger: "window.__rhizoh.meaningLedger.snapshot()",
+  narrativeBridge: "window.__rhizoh.narrativeBridge.propose({ locale: 'en' })"
 };
 
 const outPath = join(outDir, "epistemic_separation_proof_v0.json");

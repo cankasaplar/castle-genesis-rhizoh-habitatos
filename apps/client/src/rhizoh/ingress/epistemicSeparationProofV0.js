@@ -10,6 +10,8 @@ import { evaluateEpistemicReturnFieldV0 } from "./epistemicReturnFieldV0.js";
 import { projectObserverLensV0 } from "./observerEpistemicLensV0.js";
 import { resolveNarrativeFromObserverTraceV0 } from "./narrativeProjectionEngineV0.js";
 import { buildNarrativePlaneV0 } from "./narrativePlaneProjectionV0.js";
+import { getMeaningResonanceLedgerSnapshotV0 } from "./meaningResonanceLedgerV0.js";
+import { NARRATIVE_BRIDGE_AXIOMS_V0 } from "./narrativeBridgeValidationV0.js";
 
 export const EPISTEMIC_SEPARATION_PROOF_SCHEMA_V0 = "castle.rhizoh.epistemic_separation_proof.v0";
 
@@ -30,6 +32,7 @@ export function buildEpistemicSeparationProofV0(opts = {}) {
   const lens = projectObserverLensV0();
   const narrativeResolve = resolveNarrativeFromObserverTraceV0({ locale });
   const narrativeBuild = buildNarrativePlaneV0({ locale });
+  const meaningLedger = getMeaningResonanceLedgerSnapshotV0();
 
   const traceEntry = observerTrace?.entries?.[observerTrace.entries.length - 1];
 
@@ -49,6 +52,16 @@ export function buildEpistemicSeparationProofV0(opts = {}) {
         semanticCoupling: narrativeBuild?.semanticCoupling === false,
         epistemicResonance: narrativeBuild?.epistemicResonance === false,
         bidirectionalInfluence: narrativeBuild?.bidirectionalInfluence === false
+      }),
+      meaningLedger: Object.freeze({
+        plane: meaningLedger.plane,
+        recordCount: meaningLedger.count ?? 0,
+        assertsStructure: false,
+        isGraph: false,
+        learns: false,
+        influencesCausalGraph: false,
+        authorityPolicy: meaningLedger.authorityPolicy,
+        bridgeAxioms: NARRATIVE_BRIDGE_AXIOMS_V0
       })
     }),
     evidence: Object.freeze({
@@ -79,7 +92,8 @@ export function buildEpistemicSeparationProofV0(opts = {}) {
       narrativeBuild?.semanticCoupling === false &&
       narrativeBuild?.epistemicResonance === false &&
       returnField.memory === false &&
-      lens.isVertex === false,
+      lens.isVertex === false &&
+      meaningLedger.interpretationOnly === true,
     interpretationOnly: true,
     readOnly: true
   });

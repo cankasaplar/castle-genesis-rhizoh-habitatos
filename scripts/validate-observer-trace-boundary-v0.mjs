@@ -22,7 +22,10 @@ const HOOK_FILES = [
   "invitationStudyExportV0.js",
   "narrativeProjectionEngineV0.js",
   "observerEpistemicLensV0.js",
-  "narrativePlaneProjectionV0.js"
+  "narrativePlaneProjectionV0.js",
+  "meaningResonanceLedgerV0.js",
+  "narrativeBridgeValidationV0.js",
+  "narrativeBridgeV0.js"
 ];
 
 const FORBIDDEN_IN_HOOK = [
@@ -63,6 +66,26 @@ if (!readFileSync(join(HOOK_DIR, "epistemicResonanceFieldV0.js"), "utf8").includ
 
 if (!readFileSync(join(HOOK_DIR, "epistemicResonanceFieldV0.js"), "utf8").includes("influencesNarrative: false")) {
   console.error("observer-trace-boundary: epistemicResonanceField must not influence narrative");
+  failed = true;
+}
+
+const ledgerText = readFileSync(join(HOOK_DIR, "meaningResonanceLedgerV0.js"), "utf8");
+if (!ledgerText.includes("assertsStructure: false") || !ledgerText.includes("learns: false")) {
+  console.error("observer-trace-boundary: meaningResonanceLedger must not assert structure or learn");
+  failed = true;
+}
+if (!ledgerText.includes("influencesCausalGraph: false")) {
+  console.error("observer-trace-boundary: meaningResonanceLedger must not influence causal graph");
+  failed = true;
+}
+
+const bridgeText = readFileSync(join(HOOK_DIR, "narrativeBridgeV0.js"), "utf8");
+if (bridgeText.includes("appendIdentityEventV0") || bridgeText.includes("publishCausalMapLayerV0")) {
+  console.error("observer-trace-boundary: narrativeBridge must not write causal/identity sinks");
+  failed = true;
+}
+if (!bridgeText.includes("meaningEmergesAgencyNever: true")) {
+  console.error("observer-trace-boundary: narrativeBridge must declare meaningEmergesAgencyNever");
   failed = true;
 }
 
