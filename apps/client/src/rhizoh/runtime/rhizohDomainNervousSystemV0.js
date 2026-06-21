@@ -22,6 +22,8 @@ import {
   runLiveConsistencyAuditV0,
   getLiveConsistencyAuditSnapshotV0
 } from "./rhizohLiveConsistencyAuditV0.js";
+import { mountEpistemicAuditBundleConsoleV0 } from "./epistemicAuditBundleV0.js";
+import { mountEpistemicIdentityContinuityConsoleV0 } from "./epistemicIdentityContinuityV0.js";
 import { mountFullSystemReportConsoleV0 } from "./rhizohFullSystemReportV0.js";
 import { mountPersonaLoopSchedulerV0 } from "./rhizohPersonaLoopSchedulerV0.js";
 import { mountRhizohPulseLoopV1 } from "./rhizohPulseLoopV1.js";
@@ -126,6 +128,8 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
     window.__RHIZOH_REPLAY_TENSOR__ = replayTensorIntentV0;
     window.__RHIZOH_RUN_MAP_AUDIT__ = runLiveConsistencyAuditV0;
     mountFullSystemReportConsoleV0();
+    mountEpistemicAuditBundleConsoleV0();
+    mountEpistemicIdentityContinuityConsoleV0();
     ensureVoiceAdapterRegistered();
     resolveGatewayTransportV0();
     mountPersonaLoopSchedulerV0();

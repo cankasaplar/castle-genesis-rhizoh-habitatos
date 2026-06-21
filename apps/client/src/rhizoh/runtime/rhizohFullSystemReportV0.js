@@ -429,7 +429,10 @@ function collectEpistemicSubstrateV0() {
       "__rhizoh.gatewayTransport",
       "__rhizoh.worldLayerStatus",
       "__rhizoh.spatialRendererRegistry",
-      "__rhizoh.integrityTiers"
+      "__rhizoh.integrityTiers",
+      "await __rhizoh.epistemicAuditBundle.run()",
+      "__rhizoh.epistemicIdentity.evaluate()",
+      "__rhizoh.epistemicIdentity.global()"
     ])
   });
 }
