@@ -30,11 +30,33 @@ Plane D is **not** a graph, learning loop, or truth source. It is a **resonance 
 ## Pipeline
 
 ```
-observerTrace
-  → narrativeProjection (Plane C)
-  → narrativeBridge.propose (weak relation ONLY)
+observerTrace (passive, user/wire only)
+  → narrativeProjection (Plane C, stateless)
+  → narrativeBridge.propose (single consume pass — NEVER observe)
   → bridgeValidateV0 (four axioms)
-  → meaningLedger.record (NOT graph.append)
+  → meaningLedger.record (write-passive, no feedback)
+```
+
+## Invocation asymmetry (Epistemic Echo Loop prevention)
+
+**Rule:** `narrativeBridge.propose()` and `meaningLedger.record()` consume existing observations only. They must never call `observe()` or amplify attention.
+
+| Safe | Danger |
+|------|--------|
+| Passive map/chess observation | Repeated `observe()` seeding loops |
+| Single-pass bridge on existing batch | Bridge → ledger → bridge cycle |
+| Ledger snapshot (read) | Synthetic salience injection |
+
+Guard module: `epistemicInvocationGuardV0.js` — `runEpistemicConsumeOnlyPassV0()` blocks `observe()` during bridge/ledger writes.
+
+**Do not** use console seeding loops in production or paper demos:
+
+```javascript
+// ❌ synthetic bias — forbidden
+for (let i = 0; i < 4; i++) window.__rhizoh.observe({ ... });
+
+// ✔ consume existing passive trace only
+window.__rhizoh.narrativeBridge.propose({ locale: "en" });
 ```
 
 ---

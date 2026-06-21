@@ -7,82 +7,102 @@ import { getObserverTraceSnapshotV0 } from "./observerReadOnlyHookV0.js";
 import { resolveNarrativeFromObserverTraceV0 } from "./narrativeProjectionEngineV0.js";
 import { bridgeValidateV0, BRIDGE_VALIDATION_THRESHOLDS_V0 } from "./narrativeBridgeValidationV0.js";
 import { recordMeaningResonanceV0 } from "./meaningResonanceLedgerV0.js";
+import {
+  runEpistemicConsumeOnlyPassV0,
+  detectEpistemicEchoLoopV0
+} from "./epistemicInvocationGuardV0.js";
 
 export const NARRATIVE_BRIDGE_SCHEMA_V0 = "castle.rhizoh.narrative_bridge.v0";
 
 /**
- * @param {{ from?: string, to?: string, strength?: number, locale?: string, mapEvent?: object, chessEvent?: object }} [opts]
+ * @param {{ from?: string, to?: string, strength?: number, locale?: string, mapEvent?: object, chessEvent?: object, observationBatch?: object[] }} [opts]
  */
 export function proposeNarrativeBridgeV0(opts = {}) {
-  const observerTrace = getObserverTraceSnapshotV0();
-  const entries = observerTrace?.entries || [];
-  const narrative = resolveNarrativeFromObserverTraceV0({ locale: opts.locale, observerTrace });
+  const observerTrace = opts.observationBatch
+    ? Object.freeze({ entries: Object.freeze(opts.observationBatch), count: opts.observationBatch.length })
+    : getObserverTraceSnapshotV0();
+  const observerCountBefore = observerTrace?.count ?? observerTrace?.entries?.length ?? 0;
 
-  const mapEvent =
-    opts.mapEvent ||
-    [...entries].reverse().find((e) => String(e.type || "").includes("map") || e.meta?.surface === "map") ||
-    null;
-  const chessEvent =
-    opts.chessEvent ||
-    [...entries].reverse().find((e) => String(e.type || "").includes("chess") || e.meta?.surface === "chess") ||
-    null;
+  return runEpistemicConsumeOnlyPassV0(() => {
+    const entries = observerTrace?.entries || [];
+    const narrative = resolveNarrativeFromObserverTraceV0({ locale: opts.locale, observerTrace });
 
-  const primary = narrative.primaryFocus;
-  const narrativeEdge = Object.freeze({
-    from: opts.from || (mapEvent ? `map:${mapEvent.target}` : "map"),
-    to: opts.to || (chessEvent ? `chess:${chessEvent.target}` : primary?.entityId || "narrative"),
-    strength: Math.min(
-      BRIDGE_VALIDATION_THRESHOLDS_V0.MAX_WEAK_RELATION_STRENGTH,
-      Number(opts.strength ?? primary?.salience ?? 0.15) || 0.15
-    ),
-    description: primary?.description || "co-occurrence observation",
-    title: primary?.title || "resonance_candidate",
-    influencesCausalGraph: false,
-    influencesMap: false,
-    influencesChess: false,
-    writesToCausalMap: false
-  });
+    const mapEvent =
+      opts.mapEvent ||
+      [...entries].reverse().find((e) => String(e.type || "").includes("map") || e.meta?.surface === "map") ||
+      null;
+    const chessEvent =
+      opts.chessEvent ||
+      [...entries].reverse().find((e) => String(e.type || "").includes("chess") || e.meta?.surface === "chess") ||
+      null;
 
-  const validation = bridgeValidateV0({
-    mapEvent,
-    chessEvent,
-    narrativeEdge,
-    observerEntries: entries
-  });
+    const primary = narrative.primaryFocus;
+    const narrativeEdge = Object.freeze({
+      from: opts.from || (mapEvent ? `map:${mapEvent.target}` : "map"),
+      to: opts.to || (chessEvent ? `chess:${chessEvent.target}` : primary?.entityId || "narrative"),
+      strength: Math.min(
+        BRIDGE_VALIDATION_THRESHOLDS_V0.MAX_WEAK_RELATION_STRENGTH,
+        Number(opts.strength ?? primary?.salience ?? 0.15) || 0.15
+      ),
+      description: primary?.description || "co-occurrence observation",
+      title: primary?.title || "resonance_candidate",
+      influencesCausalGraph: false,
+      influencesMap: false,
+      influencesChess: false,
+      writesToCausalMap: false
+    });
 
-  if (!validation.passed) {
+    const validation = bridgeValidateV0({
+      mapEvent,
+      chessEvent,
+      narrativeEdge,
+      observerEntries: entries
+    });
+
+    const afterTrace = getObserverTraceSnapshotV0();
+    const echoGuard = detectEpistemicEchoLoopV0({
+      observerCountBefore,
+      observerCountAfter: afterTrace?.count ?? 0
+    });
+
+    if (!validation.passed) {
+      return Object.freeze({
+        schema: NARRATIVE_BRIDGE_SCHEMA_V0,
+        status: "rejected",
+        validation,
+        narrativeEdge,
+        ledgerRecord: null,
+        echoGuard,
+        invocationAsymmetry: echoGuard.invocationAsymmetryHolds,
+        interpretationOnly: true
+      });
+    }
+
+    const ledgerRecord = recordMeaningResonanceV0({
+      mapSignal: mapEvent ? Object.freeze({ type: mapEvent.type, target: mapEvent.target }) : null,
+      chessSignal: chessEvent ? Object.freeze({ type: chessEvent.type, target: chessEvent.target }) : null,
+      narrativeRelation: Object.freeze({
+        from: narrativeEdge.from,
+        to: narrativeEdge.to,
+        strength: validation.metrics.cappedStrength
+      }),
+      temporalContinuity: validation.metrics.continuity,
+      patternStability: validation.metrics.invariance,
+      epistemicWeight: validation.metrics.cappedStrength
+    });
+
     return Object.freeze({
       schema: NARRATIVE_BRIDGE_SCHEMA_V0,
-      status: "rejected",
+      status: "recorded",
       validation,
       narrativeEdge,
-      ledgerRecord: null,
-      interpretationOnly: true
+      ledgerRecord,
+      echoGuard,
+      invocationAsymmetry: echoGuard.invocationAsymmetryHolds,
+      interpretationOnly: true,
+      meaningEmergesAgencyNever: true
     });
-  }
-
-  const ledgerRecord = recordMeaningResonanceV0({
-    mapSignal: mapEvent ? Object.freeze({ type: mapEvent.type, target: mapEvent.target }) : null,
-    chessSignal: chessEvent ? Object.freeze({ type: chessEvent.type, target: chessEvent.target }) : null,
-    narrativeRelation: Object.freeze({
-      from: narrativeEdge.from,
-      to: narrativeEdge.to,
-      strength: validation.metrics.cappedStrength
-    }),
-    temporalContinuity: validation.metrics.continuity,
-    patternStability: validation.metrics.invariance,
-    epistemicWeight: validation.metrics.cappedStrength
-  });
-
-  return Object.freeze({
-    schema: NARRATIVE_BRIDGE_SCHEMA_V0,
-    status: "recorded",
-    validation,
-    narrativeEdge,
-    ledgerRecord,
-    interpretationOnly: true,
-    meaningEmergesAgencyNever: true
-  });
+  }, observerCountBefore);
 }
 
 export function mountNarrativeBridgeConsoleV0() {

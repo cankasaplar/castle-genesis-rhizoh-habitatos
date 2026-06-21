@@ -4,6 +4,12 @@
  * @see docs/RHIZOH_READ_ONLY_HOOK_V0.md
  */
 
+import {
+  isEpistemicConsumeOnlyPassV0,
+  runEpistemicConsumeOnlyPassV0,
+  detectEpistemicEchoLoopV0
+} from "./epistemicInvocationGuardV0.js";
+
 export const OBSERVER_PLANE_V0 = Object.freeze({
   CAUSAL: "causal_plane_immutable",
   OBSERVATION: "observation_plane_shadow",
@@ -32,6 +38,19 @@ const MAX_ENTRIES_V0 = 256;
  * @param {{ focus?: number, surface?: string, meta?: Record<string, unknown> }} [event.meta]
  */
 export function observeV0(event) {
+  if (isEpistemicConsumeOnlyPassV0()) {
+    return Object.freeze({
+      schema: OBSERVER_TRACE_ENTRY_SCHEMA_V0,
+      rejected: true,
+      reason: "invocation_asymmetry",
+      plane: OBSERVER_PLANE_V0.OBSERVATION,
+      interpretationOnly: true,
+      influencesCausalGraph: false,
+      influencesIdentity: false,
+      isAgenticInput: false
+    });
+  }
+
   const type = String(event?.type || "unknown").slice(0, 64);
   const target = String(event?.target || "").slice(0, 128);
   const intensity = Math.min(1, Math.max(0, Number(event?.meta?.focus ?? 0.1) || 0.1));
@@ -124,6 +143,52 @@ export function clearObserverTraceForTestV0() {
   } catch {
     /* noop */
   }
+}
+
+/**
+ * Test-only — inject trace rows with explicit timestamps (no synthetic observe loop).
+ * @param {readonly object[]} rows
+ */
+export function injectObserverTraceEntriesForTestV0(rows) {
+  const base = Date.now() - 180_000;
+  const entries = (rows || []).map((row, i) =>
+    Object.freeze({
+      schema: OBSERVER_TRACE_ENTRY_SCHEMA_V0,
+      ts: row.ts ?? base + i * 30_000,
+      type: String(row.type || "unknown").slice(0, 64),
+      target: String(row.target || "").slice(0, 128),
+      intensity: Math.min(1, Math.max(0, Number(row.intensity ?? row.meta?.focus ?? 0.1) || 0.1)),
+      plane: OBSERVER_PLANE_V0.OBSERVATION,
+      meta: row.meta ?? null,
+      excludedFrom: OBSERVER_TRACE_EXCLUDED_SINKS_V0,
+      interpretationOnly: true,
+      readOnly: true,
+      influencesExecution: false,
+      influencesIdentity: false,
+      influencesCausalGraph: false,
+      isAgenticInput: false,
+      testInjected: true
+    })
+  );
+  const next = Object.freeze({
+    schema: "castle.rhizoh.observer_trace.v0",
+    plane: OBSERVER_PLANE_V0.OBSERVATION,
+    entries: Object.freeze(entries),
+    count: entries.length,
+    excludedFrom: OBSERVER_TRACE_EXCLUDED_SINKS_V0,
+    interpretationOnly: true,
+    isMemory: false,
+    isIdentity: false
+  });
+  try {
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem(TRACE_STORAGE_KEY_V0, JSON.stringify(next));
+    }
+  } catch {
+    /* noop */
+  }
+  syncObserverTraceWindowV0(next);
+  return next;
 }
 
 function syncObserverTraceWindowV0(row) {
