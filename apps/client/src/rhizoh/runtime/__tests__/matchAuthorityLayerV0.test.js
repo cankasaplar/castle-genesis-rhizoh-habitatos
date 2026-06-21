@@ -14,6 +14,7 @@ import {
   createMatchSessionV0,
   MATCH_SESSION_STATE_V0
 } from "../matchSessionLifecycleV0.js";
+import { MATCH_KERNEL_STATE_V0 } from "../matchAuthorityKernelV0.js";
 
 describe("matchAuthorityLayerV0", () => {
   beforeEach(() => {
@@ -31,14 +32,23 @@ describe("matchAuthorityLayerV0", () => {
 
   it("proposes shadow moves without committing authoritative lane", () => {
     const session = createMatchSessionV0({ initialState: MATCH_SESSION_STATE_V0.SESSION_ACTIVE });
-    const out = applyMatchMoveV0({ san: "e4", playerId: "user_a" });
+    const out = applyMatchMoveV0({ san: "e4", playerId: "user_a", autoCommitShadow: false });
 
+    expect(out.pending).toBe(true);
     expect(out.shadowOnly).toBe(true);
-    expect(out.pendingCommit).toBe(true);
-    expect(out.committed).toBe(false);
     expect(out.session.shadow.moveCount).toBe(1);
     expect(out.session.committed.moveCount).toBe(0);
-    expect(out.authority.effectiveAuthority).toBe("PENDING_SERVER_ACK");
+    expect(out.kernelState).toBe(MATCH_KERNEL_STATE_V0.PENDING_MOVE);
+  });
+
+  it("commits through kernel when autoCommitShadow enabled", () => {
+    createMatchSessionV0({ initialState: MATCH_SESSION_STATE_V0.SESSION_ACTIVE });
+    const committed = applyMatchMoveV0({ san: "e4", playerId: "user_a" });
+
+    expect(committed.ok).toBe(true);
+    expect(committed.committed).toBe(true);
+    expect(committed.session.authority.effectiveAuthority).toBe("SERVER");
+    expect(committed.session.committed.moveCount).toBe(1);
   });
 
   it("commits server lane and flips effective authority to SERVER", () => {

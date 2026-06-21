@@ -12,6 +12,11 @@ import {
   proposeShadowMatchMoveV0,
   reconcileMatchAuthorityV0
 } from "./matchAuthorityLayerV0.js";
+import {
+  MATCH_KERNEL_SCHEMA_V0,
+  MATCH_KERNEL_STATE_V0,
+  processKernelProposeMoveV0
+} from "./matchAuthorityKernelV0.js";
 
 export const MATCH_SESSION_SCHEMA_V0 = "castle.rhizoh.match_session.v1";
 
@@ -138,6 +143,13 @@ export function createMatchSessionV0(input = {}) {
       moveCount: 0,
       createdAtMs: now,
       authority: buildMatchAuthorityContractV0({ serverBound: false }),
+      kernel: Object.freeze({
+        schema: MATCH_KERNEL_SCHEMA_V0,
+        state: MATCH_KERNEL_STATE_V0.ACTIVE,
+        shadowRehearsal: true,
+        transport: "local_shadow",
+        interpretationOnly: true
+      }),
       serverAuthoritative: false,
       shadowRehearsal: true,
       interpretationOnly: true
@@ -189,8 +201,8 @@ export function transitionMatchSessionV0(nextState, opts = {}) {
 }
 
 /**
- * Routes through authority layer — shadow propose only until server commit.
- * @param {{ san: string, playerId: string }} move
+ * Routes through authority kernel — propose → validate → commit log → committed lane.
+ * @param {{ san: string, playerId: string, autoCommitShadow?: boolean }} move
  */
 export function applyMatchMoveV0(move) {
   const current = readSessionRowV0();
@@ -198,20 +210,18 @@ export function applyMatchMoveV0(move) {
     return Object.freeze({ ok: false, reason: "session_not_active" });
   }
 
-  const proposed = proposeShadowMatchMoveV0(current, move);
-  if (!proposed.ok) return proposed;
-
-  writeSessionRowV0(proposed.session);
-  syncSessionWindowV0(proposed.session);
-  return Object.freeze({
-    ok: true,
-    accepted: true,
-    shadowOnly: true,
-    pendingCommit: true,
-    committed: false,
-    session: proposed.session,
-    authority: proposed.authority
+  const result = processKernelProposeMoveV0(current, {
+    san: move.san,
+    playerId: move.playerId,
+    clientSeq: move.clientSeq,
+    autoCommitShadow: move.autoCommitShadow !== false
   });
+
+  if (result.session) {
+    persistActiveMatchSessionV0(result.session);
+  }
+
+  return result;
 }
 
 /**
@@ -285,6 +295,7 @@ function syncSessionWindowV0(row) {
     move: applyMatchMoveV0,
     commit: commitMatchMoveV0,
     reconcile: reconcileMatchSessionV0,
+    persist: persistActiveMatchSessionV0,
     authorityStatus: getMatchSessionAuthorityStatusV0,
     clear: clearMatchSessionForTestV0,
     states: MATCH_SESSION_STATE_V0
