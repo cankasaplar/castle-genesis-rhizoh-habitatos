@@ -48,6 +48,10 @@ import { mountBehavioralInfluenceConsoleV0 } from "../ingress/behavioralInfluenc
 import { mountCrossTowerBiasCouplerConsoleV0 } from "../ingress/crossTowerBiasCouplerV0.js";
 import { mountRhizohKnowledgeGatewayConsoleV0 } from "../ingress/rhizohKnowledgeGatewayV0.js";
 import { mountMeaningResonanceSignificanceConsoleV0 } from "../ingress/meaningResonanceSignificanceV0.js";
+import { mountMatchmakingBeaconRegistryConsoleV0 } from "../runtime/matchmakingBeaconRegistryV0.js";
+import { mountMatchmakingEngineConsoleV0 } from "../runtime/matchmakingEngineV0.js";
+import { mountMatchSessionLifecycleConsoleV0 } from "../runtime/matchSessionLifecycleV0.js";
+import { mountMatchmakingCodexBridgeConsoleV0 } from "../runtime/matchmakingCodexBridgeV0.js";
 import { mountFullSystemReportConsoleV0 } from "./rhizohFullSystemReportV0.js";
 import { mountPersonaLoopSchedulerV0 } from "./rhizohPersonaLoopSchedulerV0.js";
 import { mountRhizohPulseLoopV1 } from "./rhizohPulseLoopV1.js";
@@ -176,6 +180,10 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
     mountCrossTowerBiasCouplerConsoleV0();
     mountRhizohKnowledgeGatewayConsoleV0();
     mountMeaningResonanceSignificanceConsoleV0();
+    mountMatchmakingBeaconRegistryConsoleV0();
+    mountMatchmakingEngineConsoleV0();
+    mountMatchSessionLifecycleConsoleV0();
+    mountMatchmakingCodexBridgeConsoleV0();
     ensureVoiceAdapterRegistered();
     resolveGatewayTransportV0();
     mountPersonaLoopSchedulerV0();

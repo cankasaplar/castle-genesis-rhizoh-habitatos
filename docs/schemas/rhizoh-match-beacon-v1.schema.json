@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "castle.rhizoh.match_beacon.v1",
+  "title": "Rhizoh Match Beacon v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "beaconId", "userId", "mode", "timeControlMs", "createdAtMs", "expiresAtMs"],
+  "properties": {
+    "schema": { "const": "castle.rhizoh.match_beacon.v1" },
+    "beaconId": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "userId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "mode": { "type": "string", "enum": ["KINETIC", "ASYNC"] },
+    "timeControlMs": { "type": "integer", "minimum": 1000 },
+    "ratingRange": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "integer", "minimum": 0, "maximum": 4000 }
+    },
+    "entropyTag": { "type": "number", "minimum": 0, "maximum": 1 },
+    "createdAtMs": { "type": "integer", "minimum": 0 },
+    "expiresAtMs": { "type": "integer", "minimum": 0 },
+    "interpretationOnly": { "const": true },
+    "serverAuthoritative": { "type": "boolean" }
+  }
+}

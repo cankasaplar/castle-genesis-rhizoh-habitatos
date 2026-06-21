@@ -28,6 +28,29 @@ Pipeline özeti: Live conversation → observation extraction → **SESSION_LOG*
 
 ---
 
+### 2026-06-19 — Matchmaking Core Spec v1 (P0 backbone)
+
+**Summary:**
+- Established server-authoritative matchmaking architecture: beacon registry → compatibility engine → session lifecycle → CODEX snapshot
+- WebSocket protocol constants (`MATCH_*`) reserved in `packages/protocol`
+- Shadow rehearsal modules for client dev; production gateway handler deferred until data-plane READY
+- Daily/async DB schema documented as P1 follow-on; Three.js explicitly last
+- Sediment Weight Kernel outlined as P2 (after match sessions produce behavioral evidence)
+
+**Linked Artifacts:**
+- `docs/RHIZOH_MATCHMAKING_CORE_SPEC_V1.md`
+- `docs/RHIZOH_DAILY_MATCH_SCHEMA_V1.md`
+- `docs/RHIZOH_SEDIMENT_WEIGHT_KERNEL_V1.md`
+- `apps/client/src/rhizoh/runtime/matchmaking*V0.js`
+
+- **Habitat:** Academic / product spine
+- **Katılımcılar:** Founder + Cursor Agent
+- **SPECFLOW:** RESEARCH-ONLY · FUTURE-PROOF-ONLY
+- **Hedef:** Real-time game network backbone before visual layer
+- **Frozen core:** dokunulmadı
+
+---
+
 ## Şablon (kopyala-yapıştır)
 
 ```markdown
