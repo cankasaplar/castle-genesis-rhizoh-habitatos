@@ -8,6 +8,7 @@ import { getObserverTraceSnapshotV0 } from "./observerReadOnlyHookV0.js";
 import { buildEpistemicSeparationProofV0 } from "./epistemicSeparationProofV0.js";
 import { evaluateEpistemicReturnFieldV0 } from "./epistemicReturnFieldV0.js";
 import { readObserverInviteContextV0 } from "./observerInviteLandingV0.js";
+import { exportJsonSafeV0 } from "./exportJsonSafeV0.js";
 
 export const INVITATION_STUDY_RECORD_SCHEMA_V0 = "castle.rhizoh.invitation_study_record.v0";
 
@@ -77,13 +78,11 @@ export function buildInvitationStudyRecordV0(opts = {}) {
 /**
  * @param {{ locale?: string }} [opts]
  */
-export function exportInvitationStudyRecordV0(opts = {}) {
+export async function exportInvitationStudyRecordV0(opts = {}) {
   const record = buildInvitationStudyRecordV0(opts);
   const json = JSON.stringify(record, null, 2);
-  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-    return navigator.clipboard.writeText(json).then(() => ({ ok: true, record, method: "clipboard" }));
-  }
-  return Promise.resolve({ ok: true, record, method: "json", json });
+  const out = await exportJsonSafeV0(json, `rhizoh-invitation-study-${record.recordId}.json`);
+  return { ...out, record, json };
 }
 
 export function mountInvitationStudyExportConsoleV0() {
