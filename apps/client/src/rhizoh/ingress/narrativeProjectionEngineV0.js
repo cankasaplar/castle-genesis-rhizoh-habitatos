@@ -11,6 +11,7 @@ import {
   lookupSurfaceSemanticV0,
   normalizePinTargetIdV0
 } from "./epistemicPinSemanticRegistryV0.js";
+import { buildTemporalSedimentHintsV0 } from "./attentionSedimentationBufferV0.js";
 
 export const NARRATIVE_PROJECTION_ENGINE_SCHEMA_V0 =
   "castle.rhizoh.narrative_projection_engine.v0";
@@ -92,12 +93,14 @@ export function resolveNarrativeFromObserverTraceV0(opts = {}) {
 
   const groundedNarratives = [...byEntity.values()].sort((a, b) => b.salience - a.salience);
   const primaryFocus = groundedNarratives[0] ?? null;
+  const temporalSediment = buildTemporalSedimentHintsV0({ locale });
 
   return Object.freeze({
     schema: NARRATIVE_PROJECTION_ENGINE_SCHEMA_V0,
     plane: OBSERVER_PLANE_V0.NARRATIVE,
     groundedNarratives: Object.freeze(groundedNarratives),
     primaryFocus,
+    temporalSediment,
     entityCount: groundedNarratives.length,
     semanticCoupling: false,
     epistemicResonance: false,

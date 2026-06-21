@@ -11,8 +11,15 @@
 | Causal graph | What happened? | **HARD** |
 | Narrative plane (C) | What does it project as? | Read-only, ephemeral |
 | Meaning ledger (D) | What meanings co-occurred? | **SOFT** — trace only |
+| Attention sediment (shadow-D) | What attention patterns settled? | **SOFT** — frequency only |
 
 **Tagline:** *Meaning emerges, but agency never does.*
+
+Plane D has two sub-layers:
+- **shadow-D** (`attentionSedimentationBufferV0`) — frequency sediment from passive trace
+- **D-ledger** (`meaningResonanceLedgerV0`) — bridge-validated co-occurrence events
+
+See [`RHIZOH_ATTENTION_SEDIMENTATION_V0.md`](RHIZOH_ATTENTION_SEDIMENTATION_V0.md).
 
 Plane D is **not** a graph, learning loop, or truth source. It is a **resonance ledger** — it records co-occurrence events that passed the narrative bridge validation gate.
 
