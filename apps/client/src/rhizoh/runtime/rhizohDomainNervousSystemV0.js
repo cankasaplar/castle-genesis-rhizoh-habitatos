@@ -42,6 +42,7 @@ import { mountFounderCohortAggregateConsoleV0 } from "../ingress/founderCohortAg
 import { mountMeaningResonanceLedgerConsoleV0 } from "../ingress/meaningResonanceLedgerV0.js";
 import { mountNarrativeBridgeConsoleV0 } from "../ingress/narrativeBridgeV0.js";
 import { mountEpistemicInvocationGuardConsoleV0 } from "../ingress/epistemicInvocationGuardV0.js";
+import { mountAttentionSedimentationConsoleV0 } from "../ingress/attentionSedimentationBufferV0.js";
 import { mountFullSystemReportConsoleV0 } from "./rhizohFullSystemReportV0.js";
 import { mountPersonaLoopSchedulerV0 } from "./rhizohPersonaLoopSchedulerV0.js";
 import { mountRhizohPulseLoopV1 } from "./rhizohPulseLoopV1.js";
@@ -164,6 +165,7 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
     mountMeaningResonanceLedgerConsoleV0();
     mountNarrativeBridgeConsoleV0();
     mountEpistemicInvocationGuardConsoleV0();
+    mountAttentionSedimentationConsoleV0();
     ensureVoiceAdapterRegistered();
     resolveGatewayTransportV0();
     mountPersonaLoopSchedulerV0();

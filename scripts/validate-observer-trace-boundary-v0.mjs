@@ -26,7 +26,8 @@ const HOOK_FILES = [
   "meaningResonanceLedgerV0.js",
   "narrativeBridgeValidationV0.js",
   "narrativeBridgeV0.js",
-  "epistemicInvocationGuardV0.js"
+  "epistemicInvocationGuardV0.js",
+  "attentionSedimentationBufferV0.js"
 ];
 
 const FORBIDDEN_IN_HOOK = [
@@ -98,6 +99,12 @@ if (!guardText.includes("bridge_and_ledger_consume_only_never_observe")) {
 
 if (!readFileSync(join(HOOK_DIR, "observerReadOnlyHookV0.js"), "utf8").includes("invocation_asymmetry")) {
   console.error("observer-trace-boundary: observe must block invocation_asymmetry during consume-only pass");
+  failed = true;
+}
+
+const sedimentText = readFileSync(join(HOOK_DIR, "attentionSedimentationBufferV0.js"), "utf8");
+if (!sedimentText.includes("influencesNarrativeSelection: false") || !sedimentText.includes("learns: false")) {
+  console.error("observer-trace-boundary: attention sediment must not learn or bias narrative selection");
   failed = true;
 }
 

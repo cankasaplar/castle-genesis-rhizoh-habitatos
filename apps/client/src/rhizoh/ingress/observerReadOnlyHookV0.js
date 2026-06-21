@@ -14,7 +14,8 @@ export const OBSERVER_PLANE_V0 = Object.freeze({
   CAUSAL: "causal_plane_immutable",
   OBSERVATION: "observation_plane_shadow",
   NARRATIVE: "narrative_plane_derived",
-  MEANING_LEDGER: "meaning_resonance_ledger_non_authoritative"
+  MEANING_LEDGER: "meaning_resonance_ledger_non_authoritative",
+  ATTENTION_SEDIMENT: "attention_sediment_shadow_d_non_causal"
 });
 
 export const OBSERVER_TRACE_ENTRY_SCHEMA_V0 = "castle.rhizoh.observer_trace_entry.v0";
