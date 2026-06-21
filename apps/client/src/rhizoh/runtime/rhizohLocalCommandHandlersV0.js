@@ -51,8 +51,10 @@ function navigateLocalCommandRouteV0(pathname) {
 /** Shared castle-init side effect — registry, grammar, and LLM directive paths. */
 export function openCastleInitGateFromLocalCommandV0(source = "local_command") {
   if (typeof window === "undefined") return;
-  void import("../ingress/visitorEpistemicTraceV0.js")
-    .then((m) => m.recordVisitorSurfaceV0("castle"))
+  void import("../ingress/observerReadOnlyHookV0.js")
+    .then((m) =>
+      m.observeV0({ type: "castle_init_gate", target: String(source || "local_command"), meta: { surface: "castle", focus: 0.4 } })
+    )
     .catch(() => {});
   navigateLocalCommandRouteV0("/world/space");
   void import("./rhizohWorldDrawerDomainV0.js")
