@@ -266,6 +266,14 @@ Sediment weight kernel (cross-session reinforcement) is a **separate track**: [`
 
 ## 13. DevTools (shadow rehearsal)
 
+After boot you should see: `boot.matchmaking_console · shadow rehearsal armed`
+
+Verify mount:
+
+```javascript
+window.__rhizoh?.matchmakingConsole?.mounted === true
+```
+
 ```javascript
 window.__rhizoh.matchmaking.emitBeacon({
   userId: "user_a",
