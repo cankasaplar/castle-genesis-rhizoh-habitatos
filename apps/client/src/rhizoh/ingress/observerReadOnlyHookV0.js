@@ -16,6 +16,7 @@ export const OBSERVER_PLANE_V0 = Object.freeze({
   NARRATIVE: "narrative_plane_derived",
   MEANING_LEDGER: "meaning_resonance_ledger_non_authoritative",
   ATTENTION_SEDIMENT: "attention_sediment_shadow_d_non_causal",
+  BEHAVIOR_SEDIMENT: "behavior_sediment_plane_e_non_causal",
   BEHAVIORAL_INFLUENCE: "behavioral_influence_soft_policy_v0"
 });
 

@@ -1,4 +1,4 @@
-# Rhizoh Four-Tower Model v0
+# Rhizoh Tower Model v0 (4 + Behavior)
 
 **Status:** DRAFT · `RESEARCH-ONLY`
 
@@ -10,8 +10,17 @@
 |-------|----------|------|
 | **Chess** | Very strong | Truth anchor — deterministic, never biased |
 | **Map** | Strong | Attention field — spatial observation |
+| **Behavior** | Emerging | Behavior sediment — visits · dwell · return rate |
 | **Narrative** | Working | Meaning renderer — interpretation labels |
 | **Meaning Resonance** | Emerging | Significance explainer — *why important over time* |
+
+---
+
+## Pipeline
+
+```
+Authority → Behavior → Attention → Meaning → Narrative → Knowledge Gateway
+```
 
 ---
 
@@ -28,13 +37,15 @@
 
 ```
 Authority: WPRL Sports Arena exists.
-Meaning: Observers repeatedly return to this arena.
-Narrative: This arena appears to function as a recurring attention anchor.
+Meaning: 67% of visitors returned; average dwell reached 4× other nodes.
+Narrative: This node becomes more visible because visitors keep returning.
 ```
 
 This is **not learning** — it is **explanation of observed behavior**.
 
-Evidence sources: `attentionSediment` + `behavioralBiasLayer` + `meaningLedger` (read-only).
+Evidence sources: `behaviorSediment` + `attentionSediment` + `behavioralBiasLayer` + `meaningLedger` (read-only).
+
+Honest zeros when behavioral sediment is insufficient — no hallucinated importance.
 
 ---
 
@@ -52,5 +63,6 @@ ChatGPT / Claude / Gemini / custom models
 
 ## Related
 
+- [`RHIZOH_BEHAVIOR_SEDIMENT_V0.md`](RHIZOH_BEHAVIOR_SEDIMENT_V0.md)
 - [`RHIZOH_KNOWLEDGE_GATEWAY_V0.md`](RHIZOH_KNOWLEDGE_GATEWAY_V0.md)
 - [`RHIZOH_MEANING_RESONANCE_SIGNIFICANCE_V0.md`](RHIZOH_MEANING_RESONANCE_SIGNIFICANCE_V0.md)
