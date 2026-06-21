@@ -25,7 +25,8 @@ const HOOK_FILES = [
   "narrativePlaneProjectionV0.js",
   "meaningResonanceLedgerV0.js",
   "narrativeBridgeValidationV0.js",
-  "narrativeBridgeV0.js"
+  "narrativeBridgeV0.js",
+  "epistemicInvocationGuardV0.js"
 ];
 
 const FORBIDDEN_IN_HOOK = [
@@ -86,6 +87,17 @@ if (bridgeText.includes("appendIdentityEventV0") || bridgeText.includes("publish
 }
 if (!bridgeText.includes("meaningEmergesAgencyNever: true")) {
   console.error("observer-trace-boundary: narrativeBridge must declare meaningEmergesAgencyNever");
+  failed = true;
+}
+
+const guardText = readFileSync(join(HOOK_DIR, "epistemicInvocationGuardV0.js"), "utf8");
+if (!guardText.includes("bridge_and_ledger_consume_only_never_observe")) {
+  console.error("observer-trace-boundary: epistemicInvocationGuard must enforce consume-only rule");
+  failed = true;
+}
+
+if (!readFileSync(join(HOOK_DIR, "observerReadOnlyHookV0.js"), "utf8").includes("invocation_asymmetry")) {
+  console.error("observer-trace-boundary: observe must block invocation_asymmetry during consume-only pass");
   failed = true;
 }
 

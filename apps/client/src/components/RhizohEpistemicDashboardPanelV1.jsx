@@ -38,8 +38,8 @@ export function RhizohEpistemicDashboardPanelV1({ defaultOpen = false }) {
 
   return (
     <div
-      className="pointer-events-auto fixed right-3 z-[28] max-w-[17rem] rounded-xl border border-cyan-400/25 bg-black/90 shadow-lg backdrop-blur-md"
-      style={{ top: "calc(5.5rem + env(safe-area-inset-top, 0px))" }}
+      className="pointer-events-auto fixed left-4 z-[24] max-w-[17rem] rounded-xl border border-cyan-400/25 bg-black/90 shadow-lg backdrop-blur-md"
+      style={{ top: "calc(12.5rem + env(safe-area-inset-top, 0px))" }}
       data-rhizoh-epistemic-dashboard-v1="1"
     >
       <button
@@ -53,7 +53,7 @@ export function RhizohEpistemicDashboardPanelV1({ defaultOpen = false }) {
         <span className="text-[10px] text-white/50">{open ? "−" : "+"}</span>
       </button>
       {open ? (
-        <div className="space-y-2 border-t border-white/10 px-3 py-2 text-[9px] normal-case text-white/75">
+        <div className="max-h-[min(38vh,16rem)] space-y-2 overflow-y-auto border-t border-white/10 px-3 py-2 text-[9px] normal-case text-white/75">
           <section>
             <p className="mb-1 font-semibold uppercase tracking-wider text-white/45">
               {tr ? "1 · Sistem kimliği" : "1 · System identity"}

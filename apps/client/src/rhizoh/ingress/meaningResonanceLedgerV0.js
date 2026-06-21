@@ -67,6 +67,7 @@ export function recordMeaningResonanceV0(recordInput) {
     patternStability: recordInput?.patternStability ?? 0,
     epistemicWeight: baseWeight,
     epistemicWeightDecay: computeEpistemicWeightDecayV0(recordedAtMs, baseWeight),
+    writePassiveOnly: true,
     assertsStructure: false,
     isTruth: false,
     learns: false,

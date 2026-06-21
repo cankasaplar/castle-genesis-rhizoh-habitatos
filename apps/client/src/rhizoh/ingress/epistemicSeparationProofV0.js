@@ -12,6 +12,7 @@ import { resolveNarrativeFromObserverTraceV0 } from "./narrativeProjectionEngine
 import { buildNarrativePlaneV0 } from "./narrativePlaneProjectionV0.js";
 import { getMeaningResonanceLedgerSnapshotV0 } from "./meaningResonanceLedgerV0.js";
 import { NARRATIVE_BRIDGE_AXIOMS_V0 } from "./narrativeBridgeValidationV0.js";
+import { buildEpistemicInvocationGuardSnapshotV0 } from "./epistemicInvocationGuardV0.js";
 
 export const EPISTEMIC_SEPARATION_PROOF_SCHEMA_V0 = "castle.rhizoh.epistemic_separation_proof.v0";
 
@@ -33,6 +34,10 @@ export function buildEpistemicSeparationProofV0(opts = {}) {
   const narrativeResolve = resolveNarrativeFromObserverTraceV0({ locale });
   const narrativeBuild = buildNarrativePlaneV0({ locale });
   const meaningLedger = getMeaningResonanceLedgerSnapshotV0();
+  const invocationGuard = buildEpistemicInvocationGuardSnapshotV0({
+    observerTraceCount: observerTrace?.count ?? 0,
+    ledgerCount: meaningLedger.count ?? 0
+  });
 
   const traceEntry = observerTrace?.entries?.[observerTrace.entries.length - 1];
 
@@ -62,6 +67,11 @@ export function buildEpistemicSeparationProofV0(opts = {}) {
         influencesCausalGraph: false,
         authorityPolicy: meaningLedger.authorityPolicy,
         bridgeAxioms: NARRATIVE_BRIDGE_AXIOMS_V0
+      }),
+      invocationGuard: Object.freeze({
+        rule: invocationGuard.rule,
+        consumeOnlyPassActive: invocationGuard.consumeOnlyPassActive === false,
+        echoLoopPrevention: true
       })
     }),
     evidence: Object.freeze({
