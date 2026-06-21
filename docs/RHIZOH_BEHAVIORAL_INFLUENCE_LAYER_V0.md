@@ -1,6 +1,10 @@
-# Rhizoh Behavioral Influence Layer v0
+# Rhizoh Behavioral Bias Layer v0
 
 **Status:** DRAFT · `RESEARCH-ONLY` · PATH B habitat threshold
+
+> **Bias ≠ Learning** — Bias bends behavior (scoring shift). Learning rewrites state. This layer does the former only.
+
+Also exposed as `window.__rhizoh.behavioralBiasLayer` (alias).
 
 ---
 
@@ -33,11 +37,13 @@ Sediment **detects**. Behavioral layer **modulates**. Causal/Chess engine **unch
 ## Soft influence formula
 
 ```
-behaviorWeight = f(frequency, salienceDecay, clusterDensity, chessAnchor, crossLensBoost)
-finalAttentionScore = baseSalience × mapWeight × chessAnchor × behaviorWeight
+bias(t) = Σ (sediment_event × decay(t))   // scalar offset, capped
+finalScore = baseSignal × mapWeight × chessAnchor × (1 + bias(t))
 ```
 
-Capped at `MAX_BEHAVIOR_WEIGHT_V0` (1.35).
+`behaviorWeight = 1 + bias(t)` · capped at `MAX_BEHAVIOR_WEIGHT_V0` (1.35).
+
+Bias never decides alone — it is only a multiplier.
 
 ---
 

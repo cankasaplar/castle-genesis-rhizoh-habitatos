@@ -28,7 +28,8 @@ const HOOK_FILES = [
   "narrativeBridgeV0.js",
   "epistemicInvocationGuardV0.js",
   "attentionSedimentationBufferV0.js",
-  "behavioralInfluenceLayerV0.js"
+  "behavioralInfluenceLayerV0.js",
+  "crossTowerBiasCouplerV0.js"
 ];
 
 const FORBIDDEN_IN_HOOK = [
@@ -116,6 +117,12 @@ if (!influenceText.includes("influencesCausalGraph: false") || !influenceText.in
 }
 if (!influenceText.includes("influencesChessEngine: false") || influenceText.includes("observeV0(")) {
   console.error("observer-trace-boundary: behavioral influence must not touch chess engine or observe");
+  failed = true;
+}
+
+const couplerText = readFileSync(join(HOOK_DIR, "crossTowerBiasCouplerV0.js"), "utf8");
+if (!couplerText.includes("biasNotLearning: true") || !couplerText.includes("isLearning: false")) {
+  console.error("observer-trace-boundary: cross-tower coupler must declare bias-not-learning");
   failed = true;
 }
 

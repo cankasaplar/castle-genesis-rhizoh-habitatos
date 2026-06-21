@@ -207,10 +207,19 @@ export function resolveBehavioralInfluenceV0(opts = {}) {
 export function mountBehavioralInfluenceConsoleV0() {
   if (typeof window === "undefined") return;
   window.__rhizoh = window.__rhizoh || {};
-  window.__rhizoh.behavioralInfluence = Object.freeze({
+  const api = Object.freeze({
     resolve: resolveBehavioralInfluenceV0,
     applyToNarratives: applyBehavioralInfluenceToNarrativesV0,
     mapWeights: buildMapAttentionWeightsV0,
-    computeWeight: computeBehaviorWeightV0
+    computeWeight: computeBehaviorWeightV0,
+    computeBiasScalar: computeBiasScalarFromWeightV0
   });
+  window.__rhizoh.behavioralInfluence = api;
+  /** Alias — Bias ≠ Learning (habitat-safe terminology). */
+  window.__rhizoh.behavioralBiasLayer = api;
+}
+
+/** @param {number} behaviorWeight */
+function computeBiasScalarFromWeightV0(behaviorWeight) {
+  return Math.round(Math.max(0, (behaviorWeight || 1) - 1) * 1000) / 1000;
 }
