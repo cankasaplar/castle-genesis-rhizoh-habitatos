@@ -93,8 +93,14 @@ Co-observational epistemic field: Rhizoh + observer jointly constitute the **int
 | Meaning layer | Ontology translation (3 coordinate systems) |
 | Why am I here | Ontological gate assertion |
 | `visitorEpistemicTraceV0` | Echo trace — not memory |
+| `epistemicSeparationProofV0` | Paper evidence bundle — observation ≠ execution |
+| `narrativeProjectionEngineV0` | Observer trace → semantic lookup → read-only narrative |
+| `epistemicResonanceFieldV0` | **Measurement only** — resonance coefficient without system modulation |
+| `invitationStudyExportV0` | Anonymized cohort record export |
 | Frozen v562–v570 | Immutable execution subgraph |
 | Legal hold | `mutation_access: false` |
+
+**Separation proof (enforced):** `npm run academic:export-separation-proof-v0` · `ops:validate-observer-trace-boundary-v0`
 
 ---
 
@@ -105,8 +111,10 @@ Prototype evidence (pre-cohort N):
 - Stable `epi_id_*` under audit bundle repro
 - Reproducible causal graph summaries
 - Observer echo trace: `coherence_alignment`, `return_vector`
+- Narrative decoupled from causal truth (`semanticCoupling: false`)
+- Resonance measured without coupling (`measurementOnly: true`)
 
-**Invitation study metrics** (see `RHIZOH_INVITATION_STUDY_V0.md`): first-session duration, return rate, surface coverage — anonymized.
+**Invitation study metrics** (see `RHIZOH_INVITATION_STUDY_V0.md`): `window.__rhizoh.invitationStudy.export()` — anonymized.
 
 ---
 
@@ -136,4 +144,4 @@ Prototype evidence (pre-cohort N):
 
 ---
 
-*Export:* `npm run academic:export-preprint-v0`
+*Export:* `npm run academic:export-paper` · `npm run academic:export-separation-proof-v0`

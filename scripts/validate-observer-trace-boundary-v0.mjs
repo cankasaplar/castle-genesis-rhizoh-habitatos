@@ -15,6 +15,10 @@ const HOOK_FILES = [
   "visitorEpistemicFingerprintV0.js",
   "epistemicReturnFieldV0.js",
   "epistemicPinSemanticRegistryV0.js",
+  "epistemicResonanceFieldV0.js",
+  "epistemicSeparationProofV0.js",
+  "founderCohortAggregateV0.js",
+  "invitationStudyExportV0.js",
   "narrativeProjectionEngineV0.js",
   "observerEpistemicLensV0.js",
   "narrativePlaneProjectionV0.js"
@@ -48,6 +52,16 @@ if (!readFileSync(join(HOOK_DIR, "observerReadOnlyHookV0.js"), "utf8").includes(
 
 if (!readFileSync(join(HOOK_DIR, "epistemicReturnFieldV0.js"), "utf8").includes("memory: false")) {
   console.error("observer-trace-boundary: epistemicReturnField must declare memory: false");
+  failed = true;
+}
+
+if (!readFileSync(join(HOOK_DIR, "epistemicResonanceFieldV0.js"), "utf8").includes("measurementOnly: true")) {
+  console.error("observer-trace-boundary: epistemicResonanceField must declare measurementOnly: true");
+  failed = true;
+}
+
+if (!readFileSync(join(HOOK_DIR, "epistemicResonanceFieldV0.js"), "utf8").includes("influencesNarrative: false")) {
+  console.error("observer-trace-boundary: epistemicResonanceField must not influence narrative");
   failed = true;
 }
 

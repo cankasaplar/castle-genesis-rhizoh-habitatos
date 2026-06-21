@@ -4,6 +4,7 @@ import { isCastleLayerRenderableV1, publishCastleLayerAuditV1 } from "../castle/
 import { RhizohGatewayBanner } from "./RhizohGatewayBanner.jsx";
 import { RhizohTrustUpdateStrip } from "./RhizohTrustUpdateStrip.jsx";
 import { RhizohCohortInspectStrip } from "./RhizohCohortInspectStrip.jsx";
+import { RhizohFounderCohortAggregatePanelV0 } from "./RhizohFounderCohortAggregatePanelV0.jsx";
 import { RhizohWorldContinuityStrip } from "./RhizohWorldContinuityStrip.jsx";
 import { RhizohConversationContinuityStripV1 } from "./RhizohConversationContinuityStripV1.jsx";
 import { RhizohInputThoughtGlowV0 } from "./RhizohInputThoughtGlowV0.jsx";
@@ -585,6 +586,7 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
         {advancedOpen && isCastleLayerRenderableV1("debug_overlay_panels", { advancedOpen }) ? (
           <>
             <RhizohCohortInspectStrip />
+            <RhizohFounderCohortAggregatePanelV0 />
             <RhizohWorldContinuityStrip gatewayPhase={gatewayUx?.phase} />
           </>
         ) : null}

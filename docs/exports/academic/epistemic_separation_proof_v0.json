@@ -1,0 +1,31 @@
+{
+  "schema": "castle.rhizoh.epistemic_separation_proof_export.v0",
+  "exportedAtMs": 1782061807405,
+  "boundaryValidation": "validate-observer-trace-boundary-v0: OK",
+  "paperSpine": [
+    "Narrative generation is decoupled from causal truth",
+    "Observer does not induce system state change, only projection bias",
+    "Rhizoh is a non-agentic epistemic system in which observer traces generate only read-only narrative projections without causal or learning feedback into the system graph"
+  ],
+  "enforcedBoundaries": {
+    "observerTraceExcludedFrom": [
+      "learning_loops",
+      "identity_updates",
+      "causal_compression",
+      "identity_event_log",
+      "wal_seal_chain"
+    ],
+    "narrativeFlags": {
+      "semanticCoupling": false,
+      "epistemicResonanceInNarrativePlane": false,
+      "bidirectionalInfluence": false
+    },
+    "resonanceField": {
+      "measurementOnly": true,
+      "influencesCausalGraph": false,
+      "influencesNarrative": false
+    }
+  },
+  "browserProof": "window.__rhizoh.epistemicSeparationProof.build()",
+  "invitationStudy": "window.__rhizoh.invitationStudy.export()"
+}
