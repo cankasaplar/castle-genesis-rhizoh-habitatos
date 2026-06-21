@@ -15,7 +15,9 @@ const REQUIRED = Object.freeze([
   ".well-known/rhizoh-causal-snapshot.json",
   "rhizoh/system-overview.md",
   "rhizoh/protocol-v0.md",
-  "rhizoh/identity-manifest-v0.md"
+  "rhizoh/identity-manifest-v0.md",
+  "rhizoh/epistemic-identity-spec.md",
+  "rhizoh/honest-baseline-charter-v1.md"
 ]);
 
 const IDENTITY_REQUIRED_KEYS = [

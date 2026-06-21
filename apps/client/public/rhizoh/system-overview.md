@@ -119,6 +119,8 @@ Academic and collaboration habitat: `docs/SPRINT_HABITAT_ACADEMIC.md`
 |-----|-----|
 | Rhizoh Protocol v0 | https://rhizoh.com/rhizoh/protocol-v0.md |
 | Identity Manifest spec | https://rhizoh.com/rhizoh/identity-manifest-v0.md |
+| Epistemic Identity spec | https://rhizoh.com/rhizoh/epistemic-identity-spec.md |
+| Honest Baseline (abridged) | https://rhizoh.com/rhizoh/honest-baseline-charter-v1.md |
 | Public identity JSON | https://rhizoh.com/.well-known/rhizoh-identity.json |
 
 ---

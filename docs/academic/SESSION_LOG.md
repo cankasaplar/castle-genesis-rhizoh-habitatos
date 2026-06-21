@@ -112,6 +112,27 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 - **SPECFLOW:** RESEARCH-ONLY
 - **Frozen core:** dokunulmadı
 
+### 2026-06-21 — Academic research artifact layer (preprint + specs)
+
+**Summary:**
+- `RHIZOH_EPISTEMIC_IDENTITY_SPEC.md` — generation, continuity, drift, compression; Phase 1 projection vs evolution boundary.
+- `RHIZOH_INVITATION_STUDY_V0.md` — anonymized cohort metrics spec (explorers / researchers / signal).
+- `docs/academic/RHIZOH_RESEARCH_PREPRINT_V1.md` — architecture preprint draft (arXiv-ready markdown).
+- `docs/academic/RESEARCH_ARTIFACT_ROADMAP_V0.md` — completed vs next artifacts.
+- Public mirrors: `epistemic-identity-spec.md`, `honest-baseline-charter-v1.md` on rhizoh.com/rhizoh/.
+- `npm run academic:export-preprint-v0` (pandoc → PDF).
+
+**Karar özeti:** Öncelik yeni özellik değil — dış dünyaya anlatılabilir araştırma katmanı. `eventPipelineWired: false` bilinçli Phase 1 sınırı olarak yayınlanır.
+
+**Linked Artifacts:**
+- `docs/RHIZOH_EPISTEMIC_IDENTITY_SPEC.md`
+- `docs/RHIZOH_INVITATION_STUDY_V0.md`
+- `docs/academic/RHIZOH_RESEARCH_PREPRINT_V1.md`
+
+- **Habitat:** Academic
+- **SPECFLOW:** RESEARCH-ONLY
+- **Frozen core:** dokunulmadı
+
 ### 2026-06-19 — Epistemic identity capture (Faz A) + Identity Manifest Phase 1
 
 **Summary:**
