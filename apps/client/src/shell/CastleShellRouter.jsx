@@ -10,6 +10,8 @@ import { TemporalSemanticEngineExampleV0 } from "../rhizoh/experience/examples/T
 import { RhizohThinkingEngineExampleV0 } from "../rhizoh/experience/examples/RhizohThinkingEngineExampleV0.jsx";
 import { StudioLiveRoomV1 } from "../studio/StudioLiveRoomV1.jsx";
 import { FoxConversationLabPageV1 } from "../studio/FoxConversationLabPageV1.jsx";
+import { RhizohObserverInviteLandingPageV0 } from "../components/RhizohObserverInviteLandingPageV0.jsx";
+import { RhizohInviteSearchRedirectV0 } from "../components/RhizohInviteSearchRedirectV0.jsx";
 
 const AppRhizohWorldSpaceV0 = lazy(() => import("../AppRhizohWorldSpaceV0.jsx"));
 
@@ -37,7 +39,9 @@ const STUDIO_LIVE_ROUTE_ENABLED_V0 =
 export function CastleShellRouter() {
   return (
     <BrowserRouter>
+      <RhizohInviteSearchRedirectV0 />
       <Routes>
+        <Route path="/invite" element={<RhizohObserverInviteLandingPageV0 />} />
         <Route path="/world" element={<Navigate to="/world/space" replace />} />
         <Route path="/world/space" element={worldSpaceRouteV0} />
         <Route path="/world/social" element={worldSpaceRouteV0} />

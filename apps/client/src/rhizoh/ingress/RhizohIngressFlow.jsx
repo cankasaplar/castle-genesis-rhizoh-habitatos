@@ -18,6 +18,10 @@ import { recordCohortObservationV0 } from "./cohortObservationLogV0.js";
 import { startProdWorldObservabilityBridgeV0 } from "../runtime/rhizohProdWorldObservabilityBridgeV0.js";
 import { publishIngressRouteV0 } from "../runtime/spatialSinkRoutePolicyV0.js";
 import { RhizohCoreSubsystemHostV0 } from "../../components/RhizohCoreSubsystemHostV0.jsx";
+import {
+  isObserverInvitePathV0,
+  subscribeObserverInviteProceedV0
+} from "./observerInviteLandingV0.js";
 
 const INGRESS_OVERLAY_STYLE_V0 = Object.freeze({
   position: "fixed",
@@ -32,8 +36,19 @@ const INGRESS_OVERLAY_STYLE_V0 = Object.freeze({
  * Core shell always mounted; ingress is an overlay (not a global kill switch).
  */
 export function RhizohIngressFlow() {
-  const [phase, setPhase] = useState(() => normalizeIngressPhaseV0(deriveIngressPhaseV0()));
+  const [phase, setPhase] = useState(() => {
+    if (typeof window !== "undefined" && isObserverInvitePathV0(window.location.pathname)) {
+      return INGRESS_ROUTE_V0.APP;
+    }
+    return normalizeIngressPhaseV0(deriveIngressPhaseV0());
+  });
   const [errorKind, setErrorKind] = useState("unknown");
+
+  useEffect(() => {
+    return subscribeObserverInviteProceedV0(() => {
+      setPhase(normalizeIngressPhaseV0(deriveIngressPhaseV0()));
+    });
+  }, []);
 
   useEffect(() => {
     publishIngressRouteV0(phase, { source: "ingress.flow" });
@@ -79,7 +94,9 @@ export function RhizohIngressFlow() {
     }
   }, [mountApp]);
 
-  const showIngressOverlay = phase !== INGRESS_ROUTE_V0.APP;
+  const onInvitePath =
+    typeof window !== "undefined" && isObserverInvitePathV0(window.location.pathname);
+  const showIngressOverlay = phase !== INGRESS_ROUTE_V0.APP && !onInvitePath;
 
   const ingressOverlay = (() => {
     if (phase === INGRESS_ROUTE_V0.LANGUAGE || phase === INGRESS_ROUTE_V0.LEGAL_PREAMBLE) {
