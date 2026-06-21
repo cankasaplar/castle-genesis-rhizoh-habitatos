@@ -8,7 +8,7 @@ import {
   readRhizohNeonCountdownDeadlineMsV0,
   resolveRhizohNeonCountdownRemainingMsV0
 } from "./rhizohNeonCountdownV0.js";
-import { applyRhizohWorldMapToolV0 } from "./rhizohWorldMapToolV0.js";
+import { applyRhizohWorldMapToolV0, readRhizohWorldMapToolV0 } from "./rhizohWorldMapToolV0.js";
 import { RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1 } from "./sovereignWorldMapNodesV0.js";
 import { CASTLE_MEDIA_EVENT_STATE_V0 } from "./castleArchiveMediaMetaV0.js";
 import { isRhizohLegalPendingHoldV0 } from "./rhizohLegalPendingWaitLoopV0.js";
@@ -46,10 +46,18 @@ export function readCityMapLegalGateSnapshotV0() {
 export function primeCityMapLegalCountdownSurfaceV0(opts = {}) {
   if (typeof window === "undefined") return false;
   const snap = readCityMapLegalGateSnapshotV0();
-  void applyRhizohWorldMapToolV0("city_map", {
-    leafletOnly: true,
-    source: opts.source || "CITY_MAP_LEGAL_GATE"
-  });
+  // Legal hold only — never clobber explicit satellite/streets selection after gate clears.
+  if (snap.legalHold) {
+    void applyRhizohWorldMapToolV0("city_map", {
+      leafletOnly: true,
+      source: opts.source || "CITY_MAP_LEGAL_GATE"
+    });
+  } else if (opts.forceCityMap === true && readRhizohWorldMapToolV0() === "globe") {
+    void applyRhizohWorldMapToolV0("city_map", {
+      leafletOnly: true,
+      source: opts.source || "CITY_MAP_LEGAL_GATE"
+    });
+  }
 
   if (snap.legalHold || opts.forceMedia) {
     try {

@@ -278,6 +278,13 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
                       <p className="mb-1 text-[8px] font-semibold uppercase tracking-wider text-cyan-200/70">
                         {tr ? "SpiralMMO katmanları" : "SpiralMMO layers"}
                       </p>
+                      {String(activeMapTool || "") === "satellite" ? (
+                        <p className="mb-1.5 text-[8px] normal-case leading-snug text-cyan-100/65">
+                          {tr
+                            ? "Uydu katmanında kıta SpiralMMO pinleri her zaman görünür."
+                            : "Satellite layer always shows continent SpiralMMO pins."}
+                        </p>
+                      ) : null}
                       <RhizohSpiralMapLayerFilterV0 uiLocale={locale} />
                     </div>
                     <div>

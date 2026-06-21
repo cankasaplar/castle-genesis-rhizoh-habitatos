@@ -10,6 +10,11 @@ describe("worldDomainCalmModeV0", () => {
     expect(resolveWorldEntryMapToolV0("city_map", false)).toBe("city_map");
   });
 
+  it("resolveWorldEntryMapToolV0 preserves explicit satellite selection", () => {
+    expect(resolveWorldEntryMapToolV0("satellite", false)).toBe("satellite");
+    expect(resolveWorldEntryMapToolV0("streets", false)).toBe("streets");
+  });
+
   it("isSpiralCountdownCalmVisualV0 true while countdown active", () => {
     resetRhizohNeonCountdownDeadlineV0(Date.now());
     expect(isSpiralCountdownCalmVisualV0()).toBe(true);
