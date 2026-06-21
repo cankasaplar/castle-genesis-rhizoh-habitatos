@@ -95,6 +95,26 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 
 ## Günlük
 
+### 2026-06-19 — Epistemic identity capture (Faz A) + Identity Manifest Phase 1
+
+**Summary:**
+- Prod console: `await window.__rhizoh.epistemicAuditBundle.run()` → first `epi_id_*` captured.
+- **Capture:** `epi_id_b1db96a3` · `rootDigest=hb1db96a3` · `ledgerIdentityHash=h135247c0` · `tickGraphDigest=h3ea3ee83` · `fingerprintChainLength=1` · `reproConsistent=true`.
+- Architectural decision: Phase 1 = **read-only projection** (`causalMap` → `identityManifest.project()`); Phase 2 = controlled event pipeline activation (deferred).
+- `identityManifestProjectionV0.js` — no `appendIdentityEventV0`; world/chess not routed to identity SSOT.
+
+**Linked Artifacts:**
+- `docs/RHIZOH_IDENTITY_MANIFEST_V0.md`
+- `apps/client/src/rhizoh/runtime/identityManifestProjectionV0.js`
+- `docs/RHIZOH_EPISTEMIC_IDENTITY_CONTINUITY_V0.1.md`
+- PR #271 (epistemic console mount at boot)
+
+- **Habitat:** Academic + World · Space observation
+- **Katılımcılar:** Founder + Cursor Agent
+- **SPECFLOW:** RESEARCH-ONLY
+- **Karar özeti:** Rhizoh “oynuyor ve kaydediyor” ama “kim oynadığını” henüz event SSOT’a yazmıyor — bu bug değil; Phase 1 yorum katmanı ile kapatılıyor.
+- **Frozen core:** dokunulmadı
+
 ### 2026-06-19 — Causal Navigation Runtime (CNR) + Cognitive UX scaffold
 
 **Summary:**

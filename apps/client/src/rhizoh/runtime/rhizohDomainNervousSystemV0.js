@@ -24,6 +24,7 @@ import {
 } from "./rhizohLiveConsistencyAuditV0.js";
 import { mountEpistemicAuditBundleConsoleV0 } from "./epistemicAuditBundleV0.js";
 import { mountEpistemicIdentityContinuityConsoleV0 } from "./epistemicIdentityContinuityV0.js";
+import { mountIdentityManifestConsoleV0 } from "./identityManifestProjectionV0.js";
 import { mountFullSystemReportConsoleV0 } from "./rhizohFullSystemReportV0.js";
 import { mountPersonaLoopSchedulerV0 } from "./rhizohPersonaLoopSchedulerV0.js";
 import { mountRhizohPulseLoopV1 } from "./rhizohPulseLoopV1.js";
@@ -130,6 +131,7 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
     mountFullSystemReportConsoleV0();
     mountEpistemicAuditBundleConsoleV0();
     mountEpistemicIdentityContinuityConsoleV0();
+    mountIdentityManifestConsoleV0();
     ensureVoiceAdapterRegistered();
     resolveGatewayTransportV0();
     mountPersonaLoopSchedulerV0();

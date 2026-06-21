@@ -14,6 +14,7 @@ import {
 } from "../rhizoh/runtime/rhizohWorldReplayV0.js";
 import { readProductionLiveMonitorV0 } from "../rhizoh/runtime/rhizohProductionDeploymentRunbookV0.js";
 import { emitProductBindingActionV0 } from "../rhizoh/runtime/rhizohProductBindingV0.js";
+import { RhizohIdentityManifestPanelV0 } from "./RhizohIdentityManifestPanelV0.jsx";
 
 /**
  * @param {{ section: "reality" | "bindings" | "timeline" }} props
@@ -50,7 +51,12 @@ export const RhizohObservableRealityPanelV0 = memo(function RhizohObservableReal
   return (
     <div className="space-y-3" data-rhizoh-observable-reality={section}>
       {showReplayBanner ? <ReplayBanner onExit={bump} /> : null}
-      {section === "reality" ? <LiveMonitorBlock tick={tick} /> : null}
+      {section === "reality" ? (
+        <>
+          <LiveMonitorBlock tick={tick} />
+          <RhizohIdentityManifestPanelV0 tick={tick} />
+        </>
+      ) : null}
       {section === "bindings" ? <BindingFeedBlock tick={tick} /> : null}
       {section === "timeline" ? (
         <TimelineBlock
