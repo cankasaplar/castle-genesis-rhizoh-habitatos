@@ -12,6 +12,7 @@ import {
   normalizePinTargetIdV0
 } from "./epistemicPinSemanticRegistryV0.js";
 import { buildTemporalSedimentHintsV0 } from "./attentionSedimentationBufferV0.js";
+import { applyBehavioralInfluenceToNarrativesV0 } from "./behavioralInfluenceLayerV0.js";
 
 export const NARRATIVE_PROJECTION_ENGINE_SCHEMA_V0 =
   "castle.rhizoh.narrative_projection_engine.v0";
@@ -74,7 +75,7 @@ function resolveEntryNarrativeV0(entry, opts = {}) {
 
 /**
  * Pipeline: observerTrace → attention → semantic lookup → narrative projection.
- * @param {{ observerTrace?: object, locale?: string }} [opts]
+ * @param {{ observerTrace?: object, locale?: string, behavioralInfluence?: boolean }} [opts]
  */
 export function resolveNarrativeFromObserverTraceV0(opts = {}) {
   const trace = opts.observerTrace ?? getObserverTraceSnapshotV0();
@@ -91,9 +92,19 @@ export function resolveNarrativeFromObserverTraceV0(opts = {}) {
     }
   }
 
-  const groundedNarratives = [...byEntity.values()].sort((a, b) => b.salience - a.salience);
+  const baseNarratives = [...byEntity.values()];
+  const influence = applyBehavioralInfluenceToNarrativesV0(baseNarratives, {
+    locale,
+    observerEntries: entries,
+    enabled: opts.behavioralInfluence !== false
+  });
+
+  const groundedNarratives = influence.ranked;
   const primaryFocus = groundedNarratives[0] ?? null;
-  const temporalSediment = buildTemporalSedimentHintsV0({ locale });
+  const temporalSediment =
+    influence.influenced && influence.temporalSediment?.available
+      ? influence.temporalSediment
+      : buildTemporalSedimentHintsV0({ locale });
 
   return Object.freeze({
     schema: NARRATIVE_PROJECTION_ENGINE_SCHEMA_V0,
@@ -101,6 +112,13 @@ export function resolveNarrativeFromObserverTraceV0(opts = {}) {
     groundedNarratives: Object.freeze(groundedNarratives),
     primaryFocus,
     temporalSediment,
+    behavioralInfluence: Object.freeze({
+      active: influence.influenced === true,
+      influencesSelection: influence.influencesSelection === true,
+      crossLens: influence.crossLens ?? null,
+      softInfluenceOnly: true,
+      influencesCausalGraph: false
+    }),
     entityCount: groundedNarratives.length,
     semanticCoupling: false,
     epistemicResonance: false,

@@ -27,7 +27,8 @@ const HOOK_FILES = [
   "narrativeBridgeValidationV0.js",
   "narrativeBridgeV0.js",
   "epistemicInvocationGuardV0.js",
-  "attentionSedimentationBufferV0.js"
+  "attentionSedimentationBufferV0.js",
+  "behavioralInfluenceLayerV0.js"
 ];
 
 const FORBIDDEN_IN_HOOK = [
@@ -105,6 +106,16 @@ if (!readFileSync(join(HOOK_DIR, "observerReadOnlyHookV0.js"), "utf8").includes(
 const sedimentText = readFileSync(join(HOOK_DIR, "attentionSedimentationBufferV0.js"), "utf8");
 if (!sedimentText.includes("influencesNarrativeSelection: false") || !sedimentText.includes("learns: false")) {
   console.error("observer-trace-boundary: attention sediment must not learn or bias narrative selection");
+  failed = true;
+}
+
+const influenceText = readFileSync(join(HOOK_DIR, "behavioralInfluenceLayerV0.js"), "utf8");
+if (!influenceText.includes("influencesCausalGraph: false") || !influenceText.includes("softInfluenceOnly: true")) {
+  console.error("observer-trace-boundary: behavioral influence must be soft-only, no causal write");
+  failed = true;
+}
+if (!influenceText.includes("influencesChessEngine: false") || influenceText.includes("observeV0(")) {
+  console.error("observer-trace-boundary: behavioral influence must not touch chess engine or observe");
   failed = true;
 }
 
