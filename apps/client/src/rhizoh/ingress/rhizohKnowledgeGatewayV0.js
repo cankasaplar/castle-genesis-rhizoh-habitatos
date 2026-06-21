@@ -13,6 +13,11 @@ import { coupleCrossTowerBiasV0 } from "./crossTowerBiasCouplerV0.js";
 import { buildEpistemicSeparationProofV0 } from "./epistemicSeparationProofV0.js";
 import { getObserverTraceSnapshotV0 } from "./observerReadOnlyHookV0.js";
 import { runEpistemicConsumeOnlyPassV0 } from "./epistemicInvocationGuardV0.js";
+import {
+  isSignificanceQueryV0,
+  resolveMeaningResonanceSignificanceV0,
+  FOUR_TOWER_STATUS_V0
+} from "./meaningResonanceSignificanceV0.js";
 
 export const KNOWLEDGE_GATEWAY_SCHEMA_V0 = "castle.rhizoh.knowledge_gateway.v0";
 export const KNOWLEDGE_ANSWER_SCHEMA_V0 = "castle.rhizoh.knowledge_answer.v0";
@@ -141,6 +146,8 @@ export function askRhizohKnowledgeGatewayV0(opts = {}) {
   const question = String(opts.question || "").trim();
   const entityId = resolveKnowledgeEntityIdV0(question, opts.entityId);
   const semantic = entityId ? lookupPinSemanticV0(entityId, { locale }) : null;
+  const queryMode =
+    opts.queryMode === "significance" || isSignificanceQueryV0(question) ? "significance" : "definition";
 
   return runEpistemicConsumeOnlyPassV0(() => {
     const authority = readAuthorityLayerV0();
@@ -154,15 +161,30 @@ export function askRhizohKnowledgeGatewayV0(opts = {}) {
     const meaningResonance = computeMeaningResonanceLevelV0(meaningLedger, entityId);
     const authorityStatus = semantic?.grounded !== false && entityId ? "verified_node" : "unregistered";
 
+    const significance =
+      entityId && queryMode === "significance"
+        ? resolveMeaningResonanceSignificanceV0({ entityId, locale, sediment, meaningLedger })
+        : null;
+
     const answerText = entityId
-      ? buildKnowledgeAnswerTextV0({
-          entityId,
-          semantic,
-          locale,
-          meaningResonance,
-          coupled,
-          sediment
-        })
+      ? queryMode === "significance" && significance
+        ? [
+            `Authority: ${significance.significance.authority}`,
+            `Meaning: ${significance.significance.meaning}`,
+            `Narrative: ${significance.significance.narrative}`,
+            "",
+            locale === "tr"
+              ? "Bu öğrenme değil — gözlenen davranışın açıklanmasıdır."
+              : "This is not learning — it is an explanation of observed behavior."
+          ].join("\n")
+        : buildKnowledgeAnswerTextV0({
+            entityId,
+            semantic,
+            locale,
+            meaningResonance,
+            coupled,
+            sediment
+          })
       : locale === "tr"
         ? "Varlık tanımlanamadı. entityId veya daha net bir soru verin (ör. WPRL Sports Arena)."
         : "Entity not resolved. Provide entityId or a clearer question (e.g. WPRL Sports Arena).";
@@ -173,11 +195,16 @@ export function askRhizohKnowledgeGatewayV0(opts = {}) {
       queriedAtMs: Date.now(),
       question: question || null,
       entityId: entityId || null,
+      queryMode,
+      towers: FOUR_TOWER_STATUS_V0,
+      significance,
       answer: Object.freeze({
         text: answerText,
         authorityStatus,
         narrativeStatus: narrative.entityCount > 0 ? "active" : "sparse",
         meaningResonance,
+        significanceScore: significance?.significanceScore ?? null,
+        explainsObservedBehavior: significance?.explainsObservedBehavior === true,
         habitatBiasOnly: true,
         badBiasBlocked: true
       }),
@@ -192,8 +219,10 @@ export function askRhizohKnowledgeGatewayV0(opts = {}) {
           layer: KNOWLEDGE_LAYER_AUTHORITY_V0.MEANING_LEDGER.label,
           authorityRank: 2,
           recordCount: meaningLedger.count ?? 0,
+          tower: FOUR_TOWER_STATUS_V0.MEANING_RESONANCE.role,
           interpretationOnly: true,
-          learns: false
+          learns: false,
+          explainsObservedBehavior: significance?.explainsObservedBehavior === true
         }),
         narrative: Object.freeze({
           layer: KNOWLEDGE_LAYER_AUTHORITY_V0.NARRATIVE.label,
@@ -218,6 +247,7 @@ export function askRhizohKnowledgeGatewayV0(opts = {}) {
       queriableByExternalLlm: true,
       provenance: Object.freeze([
         "authority_ledger_read_only",
+        "meaning_resonance_significance",
         "meaning_ledger_interpretation",
         "narrative_renderer",
         "attention_sediment_bias_not_truth"
@@ -236,8 +266,10 @@ export function mountRhizohKnowledgeGatewayConsoleV0() {
   window.__rhizoh = window.__rhizoh || {};
   window.__rhizoh.knowledgeGateway = Object.freeze({
     ask: askRhizohKnowledgeGatewayV0,
+    askWhy: (opts = {}) => askRhizohKnowledgeGatewayV0({ ...opts, queryMode: "significance" }),
     resolveEntity: resolveKnowledgeEntityIdV0,
     exportJson: exportKnowledgeAnswerJsonV0,
-    layerAuthority: KNOWLEDGE_LAYER_AUTHORITY_V0
+    layerAuthority: KNOWLEDGE_LAYER_AUTHORITY_V0,
+    towers: FOUR_TOWER_STATUS_V0
   });
 }

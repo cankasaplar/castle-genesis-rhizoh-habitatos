@@ -30,7 +30,8 @@ const HOOK_FILES = [
   "attentionSedimentationBufferV0.js",
   "behavioralInfluenceLayerV0.js",
   "crossTowerBiasCouplerV0.js",
-  "rhizohKnowledgeGatewayV0.js"
+  "rhizohKnowledgeGatewayV0.js",
+  "meaningResonanceSignificanceV0.js"
 ];
 
 const FORBIDDEN_IN_HOOK = [
@@ -130,6 +131,12 @@ if (!couplerText.includes("biasNotLearning: true") || !couplerText.includes("isL
 const gatewayText = readFileSync(join(HOOK_DIR, "rhizohKnowledgeGatewayV0.js"), "utf8");
 if (!gatewayText.includes("exposed: false") || !gatewayText.includes("badBiasBlocked: true")) {
   console.error("observer-trace-boundary: knowledge gateway must not expose raw trace or allow bad bias");
+  failed = true;
+}
+
+const significanceText = readFileSync(join(HOOK_DIR, "meaningResonanceSignificanceV0.js"), "utf8");
+if (!significanceText.includes("isLearning: false") || !significanceText.includes("explainsObservedBehavior: true")) {
+  console.error("observer-trace-boundary: meaning significance must explain behavior without learning");
   failed = true;
 }
 

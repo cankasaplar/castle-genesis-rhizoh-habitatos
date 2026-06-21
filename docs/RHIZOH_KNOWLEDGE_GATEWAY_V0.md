@@ -56,14 +56,16 @@ Answer (+ provenance)
 ## Browser API
 
 ```javascript
+// What is it?
 window.__rhizoh.knowledgeGateway.ask({
   question: "What is WPRL Sports Arena?",
   locale: "en"
 });
 
-window.__rhizoh.knowledgeGateway.exportJson({
-  question: "Rhizoh'da WPRL Sports Arena nedir?",
-  locale: "tr"
+// Why is it important? (fourth tower)
+window.__rhizoh.knowledgeGateway.askWhy({
+  question: "Why is WPRL Sports Arena important?",
+  locale: "en"
 });
 ```
 
