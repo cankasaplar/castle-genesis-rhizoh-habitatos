@@ -16,6 +16,7 @@ import {
   writeUiLocaleV0
 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
 import { runDomainGateForPathV0 } from "../rhizoh/runtime/rhizohDomainNervousSystemV0.js";
+import { requestEarlyWorldMapGeoBootstrapV0 } from "../rhizoh/runtime/worldMapEarlyGeoBootstrapV0.js";
 
 const cardStyle = {
   border: "1px solid rgba(148,163,184,0.22)",
@@ -96,8 +97,11 @@ export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInv
   }, [invite, tr]);
 
   const onEnter = useCallback(() => {
-    if (invite) persistObserverInviteContextV0(invite);
+    if (invite) {
+      persistObserverInviteContextV0({ ...invite, perceptionMode: lens.mode });
+    }
     dispatchObserverInviteProceedV0({ invite, target: "/", perceptionMode: lens.mode });
+    void requestEarlyWorldMapGeoBootstrapV0({ source: "invite_landing_cta" });
     navigate("/");
   }, [invite, lens.mode, navigate]);
 

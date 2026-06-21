@@ -93,6 +93,20 @@ export function persistWorldSpaceCastleAnchorV0(lat, lon, opts = {}) {
  * @param {{ readClientContinuity?: () => object }} [opts]
  * @returns {boolean} hydrated
  */
+/**
+ * @param {{ readClientContinuity?: () => object }} [opts]
+ * @returns {boolean}
+ */
+export function hasPersistedWorldSpaceCastleV0(opts = {}) {
+  if (typeof window === "undefined") return false;
+  const disk = readDiskV0(opts);
+  const cs = disk?.meta?.castleState;
+  if (cs?.phase === "PURGED") return false;
+  const lat = Number(cs?.anchorLat ?? disk?.meta?.ghostPet?.castleLat);
+  const lon = Number(cs?.anchorLon ?? disk?.meta?.ghostPet?.castleLon);
+  return Number.isFinite(lat) && Number.isFinite(lon);
+}
+
 export function hydrateWorldSpaceCastleAnchorV0(opts = {}) {
   if (typeof window === "undefined") return false;
   if (window.__CASTLE_NEXUS_GEO__?.lat != null && window.__CASTLE_NEXUS_GEO__?.lon != null) {

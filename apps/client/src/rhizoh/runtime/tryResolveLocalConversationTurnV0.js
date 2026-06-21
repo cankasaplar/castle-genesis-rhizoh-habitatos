@@ -27,6 +27,7 @@ import {
   commitFinalUserVisibleLanguageV0,
   LANGUAGE_COMMIT_LOCK_KEY_V0
 } from "./rhizohFinalLanguageCommitV0.js";
+import { tryResolveObserverInviteOnboardingV0 } from "../ingress/observerInviteOnboardingV0.js";
 
 function commitLocalConversationReplyV0(text, source) {
   return commitFinalUserVisibleLanguageV0(String(text || "").trim(), {
@@ -48,6 +49,23 @@ export function tryResolveLocalConversationTurnV0(text, opts = {}) {
   if (!raw) return null;
 
   const localeTr = resolveOutputLanguageCodeV0() === "tr";
+
+  const inviteOnboarding = tryResolveObserverInviteOnboardingV0(raw, {
+    traceId: opts.traceId,
+    source: opts.source || "conversation_dock"
+  });
+  if (inviteOnboarding?.reply) {
+    return Object.freeze({
+      schema: RHIZOH_LOCAL_CONVERSATION_TURN_SCHEMA_V0,
+      ok: true,
+      reply: commitLocalConversationReplyV0(inviteOnboarding.reply, inviteOnboarding.source),
+      source: inviteOnboarding.source,
+      llmBypass: true,
+      kind: "observer_invite_onboarding",
+      perceptionMode: inviteOnboarding.perceptionMode
+    });
+  }
+
   const mediaOpen = tryOpenSovereignMediaTubeFromTextV0(raw, {
     source: opts.source || "conversation_dock",
     tr: localeTr
