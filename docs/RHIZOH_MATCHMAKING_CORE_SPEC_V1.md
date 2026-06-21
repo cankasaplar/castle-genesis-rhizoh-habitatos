@@ -7,10 +7,32 @@
 **Schemas:** [`schemas/rhizoh-match-beacon-v1.schema.json`](schemas/rhizoh-match-beacon-v1.schema.json) · [`schemas/rhizoh-match-session-v1.schema.json`](schemas/rhizoh-match-session-v1.schema.json) · [`schemas/rhizoh-matchmaking-ws-envelope-v1.schema.json`](schemas/rhizoh-matchmaking-ws-envelope-v1.schema.json)
 
 **Code (shadow rehearsal):**
+- `apps/client/src/rhizoh/runtime/matchmakingRuntimeSurfaceV0.js` — API ≠ engine contract boundary
+- `apps/client/src/rhizoh/runtime/matchmakingConsoleV0.js` — facade publisher
 - `apps/client/src/rhizoh/runtime/matchmakingBeaconRegistryV0.js`
 - `apps/client/src/rhizoh/runtime/matchmakingEngineV0.js`
 - `apps/client/src/rhizoh/runtime/matchSessionLifecycleV0.js`
 - `apps/client/src/rhizoh/runtime/matchmakingCodexBridgeV0.js`
+
+---
+
+## 0.1 Contract boundary (API ≠ engine)
+
+Shadow rehearsal exposes DevTools/console access without collapsing layers:
+
+```text
+window.__rhizoh.matchmaking          → frozen read-only facade (delegates only)
+window.__rhizoh.runtimeSurface.matchmaking → mutable engine mount (sub-modules)
+sessionStorage commit / beacon rows  → append-oriented truth during rehearsal
+```
+
+| Layer | Mutable? | Role |
+|-------|----------|------|
+| `window.__rhizoh.matchmaking` | **No** (`Object.freeze` facade) | Console API · blocks property injection |
+| `runtimeSurface.matchmaking` | Yes | Engine bags (`emitBeacon`, `session`, `kernel`, …) |
+| Event log / registry rows | Append + rebuild | Deterministic replay · drift detection |
+
+**Freeze is not the security model** — reconciliation + append-only commit log is. Freeze on the facade only prevents `window` reassignment and documents that **API ≠ engine**.
 
 ---
 

@@ -6,6 +6,7 @@
 
 import { emitCodexBusV0 } from "../../core/CodexBusV0.js";
 import { MATCH_SESSION_STATE_V0 } from "./matchSessionLifecycleV0.js";
+import { ensureMatchmakingEngineSurfaceV0 } from "./matchmakingRuntimeSurfaceV0.js";
 
 export const MATCH_CODEX_SNAPSHOT_SCHEMA_V0 = "castle.rhizoh.match_codex_snapshot.v0";
 export const MATCH_FINISHED_CODEX_EVENT_V0 = "match_finished_event";
@@ -49,10 +50,9 @@ export function publishMatchFinishedToCodexV0(session) {
 }
 
 export function mountMatchmakingCodexBridgeConsoleV0() {
-  if (typeof window === "undefined") return;
-  window.__rhizoh = window.__rhizoh || {};
-  window.__rhizoh.matchmaking = window.__rhizoh.matchmaking || {};
-  window.__rhizoh.matchmaking.codex = Object.freeze({
+  const engine = ensureMatchmakingEngineSurfaceV0();
+  if (!engine) return;
+  engine.codex = Object.freeze({
     snapshot: buildMatchCodexSnapshotV0,
     publishFinished: publishMatchFinishedToCodexV0
   });

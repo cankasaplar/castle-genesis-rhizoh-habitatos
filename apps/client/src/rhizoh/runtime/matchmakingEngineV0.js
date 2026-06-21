@@ -9,6 +9,7 @@ import {
   MATCH_MODE_V0
 } from "./matchmakingBeaconRegistryV0.js";
 import { createMatchSessionV0, MATCH_SESSION_STATE_V0 } from "./matchSessionLifecycleV0.js";
+import { ensureMatchmakingEngineSurfaceV0 } from "./matchmakingRuntimeSurfaceV0.js";
 
 export const MATCHMAKING_ENGINE_SCHEMA_V0 = "castle.rhizoh.matchmaking_engine.v0";
 
@@ -171,9 +172,8 @@ export function tryMatchFromBeaconsV0(opts = {}) {
 }
 
 export function mountMatchmakingEngineConsoleV0() {
-  if (typeof window === "undefined") return;
-  window.__rhizoh = window.__rhizoh || {};
-  window.__rhizoh.matchmaking = window.__rhizoh.matchmaking || {};
-  window.__rhizoh.matchmaking.tryMatch = tryMatchFromBeaconsV0;
-  window.__rhizoh.matchmaking.scorePair = scoreBeaconPairV0;
+  const engine = ensureMatchmakingEngineSurfaceV0();
+  if (!engine) return;
+  engine.tryMatch = tryMatchFromBeaconsV0;
+  engine.scorePair = scoreBeaconPairV0;
 }

@@ -17,6 +17,7 @@ import {
   MATCH_KERNEL_STATE_V0,
   processKernelProposeMoveV0
 } from "./matchAuthorityKernelV0.js";
+import { ensureMatchmakingEngineSurfaceV0 } from "./matchmakingRuntimeSurfaceV0.js";
 
 export const MATCH_SESSION_SCHEMA_V0 = "castle.rhizoh.match_session.v1";
 
@@ -83,7 +84,6 @@ function writeSessionRowV0(row) {
 
 export function persistActiveMatchSessionV0(session) {
   writeSessionRowV0(session);
-  syncSessionWindowV0(session);
   return session;
 }
 
@@ -157,7 +157,6 @@ export function createMatchSessionV0(input = {}) {
   );
 
   writeSessionRowV0(session);
-  syncSessionWindowV0(session);
   return session;
 }
 
@@ -196,7 +195,6 @@ export function transitionMatchSessionV0(nextState, opts = {}) {
   );
 
   writeSessionRowV0(next);
-  syncSessionWindowV0(next);
   return Object.freeze({ ok: true, session: next });
 }
 
@@ -284,11 +282,10 @@ export function clearMatchSessionForTestV0() {
   }
 }
 
-function syncSessionWindowV0(row) {
-  if (typeof window === "undefined") return;
-  window.__rhizoh = window.__rhizoh || {};
-  window.__rhizoh.matchmaking = window.__rhizoh.matchmaking || {};
-  window.__rhizoh.matchmaking.session = Object.freeze({
+function mountSessionEngineV0() {
+  const engine = ensureMatchmakingEngineSurfaceV0();
+  if (!engine) return;
+  engine.session = Object.freeze({
     get: getActiveMatchSessionV0,
     create: createMatchSessionV0,
     transition: transitionMatchSessionV0,
@@ -304,5 +301,5 @@ function syncSessionWindowV0(row) {
 
 export function mountMatchSessionLifecycleConsoleV0() {
   if (typeof window === "undefined") return;
-  syncSessionWindowV0(getActiveMatchSessionV0());
+  mountSessionEngineV0();
 }

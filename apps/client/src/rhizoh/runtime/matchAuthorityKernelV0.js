@@ -12,6 +12,7 @@ import {
   reconcileMatchAuthorityV0
 } from "./matchAuthorityLayerV0.js";
 import { validateMatchMoveV0 } from "./matchStockfishValidatorBridgeV0.js";
+import { ensureMatchmakingEngineSurfaceV0 } from "./matchmakingRuntimeSurfaceV0.js";
 
 export const MATCH_KERNEL_SCHEMA_V0 = "castle.rhizoh.match_authority_kernel.v0";
 export const MATCH_EVENT_SCHEMA_V0 = "castle.rhizoh.match_event.v1";
@@ -390,39 +391,38 @@ export function clearMatchCommitLogForTestV0() {
 }
 
 export function mountMatchAuthorityKernelConsoleV0() {
-  if (typeof window === "undefined") return;
-  window.__rhizoh = window.__rhizoh || {};
-  window.__rhizoh.matchmaking = window.__rhizoh.matchmaking || {};
-  window.__rhizoh.matchmaking.kernel = Object.freeze({
+  const engine = ensureMatchmakingEngineSurfaceV0();
+  if (!engine) return;
+  engine.kernel = Object.freeze({
     states: MATCH_KERNEL_STATE_V0,
     events: MATCH_EVENT_TYPE_V0,
     proposeMove: (move) => {
-      const raw = window.__rhizoh?.matchmaking?.session?.get?.();
+      const raw = engine.session?.get?.();
       if (!raw?.active) return Object.freeze({ ok: false, reason: "no_active_session" });
       const out = processKernelProposeMoveV0(raw, move);
-      if (out.session) window.__rhizoh?.matchmaking?.session?.persist?.(out.session);
+      if (out.session) engine.session?.persist?.(out.session);
       return out;
     },
     commit: (commit) => {
-      const raw = window.__rhizoh?.matchmaking?.session?.get?.();
+      const raw = engine.session?.get?.();
       if (!raw?.active) return Object.freeze({ ok: false, reason: "no_active_session" });
       const out = processKernelCommitMoveV0(raw, commit);
-      if (out.session) window.__rhizoh?.matchmaking?.session?.persist?.(out.session);
+      if (out.session) engine.session?.persist?.(out.session);
       return out;
     },
     reconcile: (opts) => {
-      const raw = window.__rhizoh?.matchmaking?.session?.get?.();
+      const raw = engine.session?.get?.();
       if (!raw?.active) return Object.freeze({ ok: false, reason: "no_active_session" });
       const out = processKernelReconcileV0(raw, opts);
-      if (out.session) window.__rhizoh?.matchmaking?.session?.persist?.(out.session);
+      if (out.session) engine.session?.persist?.(out.session);
       return out;
     },
     status: () => {
-      const raw = window.__rhizoh?.matchmaking?.session?.get?.();
+      const raw = engine.session?.get?.();
       return getMatchKernelStatusV0(raw?.active ? raw : {});
     },
     drift: () => {
-      const raw = window.__rhizoh?.matchmaking?.session?.get?.();
+      const raw = engine.session?.get?.();
       return computeMatchDriftScoreV0(raw?.active ? raw : {});
     },
     commitLog: (sessionId) => getMatchCommitLogV0(sessionId),
