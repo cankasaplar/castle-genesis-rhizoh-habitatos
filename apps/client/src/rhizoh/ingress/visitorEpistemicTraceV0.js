@@ -5,6 +5,11 @@
  */
 
 import { readObserverInviteContextV0 } from "./observerInviteLandingV0.js";
+import { getObserverTraceSnapshotV0 } from "./observerReadOnlyHookV0.js";
+import {
+  buildVisitorEpistemicFingerprintV0,
+  inferSurfaceFromObserverEventV0
+} from "./visitorEpistemicFingerprintV0.js";
 
 export const VISITOR_EPISTEMIC_TRACE_SCHEMA_V0 = "castle.rhizoh.visitor_epistemic_trace.v0";
 
@@ -123,6 +128,27 @@ function computeReturnVectorV0(sessions, coherence, engagement) {
   return RETURN_VECTOR_V0.NONE;
 }
 
+function reconstructPathFromObserverTraceV0(prevPath = []) {
+  const entries = getObserverTraceSnapshotV0()?.entries || [];
+  const path = [...prevPath];
+  for (const entry of entries) {
+    const surface = inferSurfaceFromObserverEventV0(entry);
+    if (!surface) continue;
+    if (path[path.length - 1] !== surface) {
+      path.push(surface);
+    }
+  }
+  return path;
+}
+
+function reconstructVisitCountsFromPathV0(path, prevCounts = {}) {
+  const visitCounts = { ...prevCounts };
+  for (const surface of path) {
+    visitCounts[surface] = (visitCounts[surface] || 0) + 1;
+  }
+  return visitCounts;
+}
+
 function computeReturnProbabilityV0(path, engagement) {
   if (path.includes("map") && path.includes("chat")) {
     return Math.round(Math.min(0.92, 0.45 + engagement * 0.4) * 100) / 100;
@@ -139,6 +165,14 @@ function buildTraceSnapshotV0(path, visitCounts, invite) {
   const engagement = computeEngagementVectorV0(path, visitCounts);
   const coherence_alignment = computeCoherenceAlignmentV0(visited_surfaces);
   const return_vector = computeReturnVectorV0(sessions, coherence_alignment, engagement);
+  const fingerprint = buildVisitorEpistemicFingerprintV0({
+    visitor: {
+      path,
+      visited_surfaces,
+      sessions,
+      return_probability: computeReturnProbabilityV0(path, engagement)
+    }
+  });
 
   return Object.freeze({
     schema: VISITOR_EPISTEMIC_TRACE_SCHEMA_V0,
@@ -154,6 +188,7 @@ function buildTraceSnapshotV0(path, visitCounts, invite) {
     return_probability: computeReturnProbabilityV0(path, engagement),
     coherence_alignment,
     return_vector,
+    epistemic_fingerprint: fingerprint,
     updatedAtMs: Date.now(),
     interpretationOnly: true,
     readOnly: true,
@@ -189,15 +224,48 @@ export function recordVisitorSurfaceV0(surface) {
 export function getVisitorEpistemicTraceV0() {
   const row = readTraceRowV0();
   if (row) {
+    const mergedPath =
+      row.path?.length > 0 ? row.path : reconstructPathFromObserverTraceV0(row.path || []);
+    const visitCounts =
+      row.visitCounts && Object.keys(row.visitCounts).length > 0
+        ? row.visitCounts
+        : reconstructVisitCountsFromPathV0(mergedPath);
+    const enriched =
+      mergedPath !== row.path
+        ? buildTraceSnapshotV0(mergedPath, visitCounts, readObserverInviteContextV0())
+        : row;
     return Object.freeze({
-      ...row,
+      ...enriched,
       interpretationOnly: true,
       isMemory: false,
       isIdentity: false,
       isEchoTrace: true
     });
   }
+
+  const observerPath = reconstructPathFromObserverTraceV0();
+  if (observerPath.length > 0) {
+    const invite = readObserverInviteContextV0();
+    const visitCounts = reconstructVisitCountsFromPathV0(observerPath);
+    const trace = buildTraceSnapshotV0(observerPath, visitCounts, invite);
+    return Object.freeze({
+      ...trace,
+      interpretationOnly: true,
+      isMemory: false,
+      isIdentity: false,
+      isEchoTrace: true
+    });
+  }
+
   const echo = readEchoRowV0();
+  const fingerprint = buildVisitorEpistemicFingerprintV0({
+    visitor: {
+      path: [],
+      visited_surfaces: echo?.visited_surfaces ?? [],
+      sessions: echo?.sessions ?? 0,
+      return_probability: 0
+    }
+  });
   return Object.freeze({
     schema: VISITOR_EPISTEMIC_TRACE_SCHEMA_V0,
     visitor_id: "anon",
@@ -205,10 +273,15 @@ export function getVisitorEpistemicTraceV0() {
     sessions: echo?.sessions ?? 0,
     path: Object.freeze([]),
     visited_surfaces: Object.freeze(echo?.visited_surfaces ?? []),
-    engagement_vector: 0,
-    return_probability: 0,
-    coherence_alignment: 0,
+    engagement_vector: fingerprint.attention_pattern
+      ? Math.round(
+          Object.values(fingerprint.attention_pattern).reduce((a, b) => a + b, 0) * 100
+        ) / 100
+      : 0,
+    return_probability: fingerprint.return_likelihood ?? 0,
+    coherence_alignment: computeCoherenceAlignmentV0(echo?.visited_surfaces ?? []),
     return_vector: RETURN_VECTOR_V0.NONE,
+    epistemic_fingerprint: fingerprint,
     interpretationOnly: true,
     readOnly: true,
     isMemory: false,
