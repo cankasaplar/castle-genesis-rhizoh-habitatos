@@ -19,7 +19,9 @@ Plane D has two sub-layers:
 - **shadow-D** (`attentionSedimentationBufferV0`) — frequency sediment from passive trace
 - **D-ledger** (`meaningResonanceLedgerV0`) — bridge-validated co-occurrence events
 
-See [`RHIZOH_ATTENTION_SEDIMENTATION_V0.md`](RHIZOH_ATTENTION_SEDIMENTATION_V0.md).
+Sediment **detects** repetition. **Behavioral influence layer** applies soft ranking bias.
+
+See [`RHIZOH_BEHAVIORAL_INFLUENCE_LAYER_V0.md`](RHIZOH_BEHAVIORAL_INFLUENCE_LAYER_V0.md).
 
 Plane D is **not** a graph, learning loop, or truth source. It is a **resonance ledger** — it records co-occurrence events that passed the narrative bridge validation gate.
 
