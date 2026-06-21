@@ -433,7 +433,8 @@ function collectEpistemicSubstrateV0() {
       "await __rhizoh.epistemicAuditBundle.run()",
       "__rhizoh.epistemicIdentity.evaluate()",
       "__rhizoh.epistemicIdentity.global()",
-      "__rhizoh.identityManifest.project()"
+      "__rhizoh.identityManifest.project()",
+      "__rhizoh.inviteOps.generate({ role: 'investor' })"
     ])
   });
 }

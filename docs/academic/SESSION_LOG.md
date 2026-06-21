@@ -95,6 +95,23 @@ Runtime boot attestation kaydı için şablon ([`BOOT_ARTIFACT_PROTOCOL.md`](../
 
 ## Günlük
 
+### 2026-06-19 — Observer invite landing (Sprint 1)
+
+**Summary:**
+- `/invite` route — branded landing for invitees/investors (read-only).
+- Bundle: invite context + `epi_id` viewer + causal snapshot timeline.
+- `inviteOps.generate()` / `copyUrl()` / `mailDraft()` — founder console API.
+- Legacy `?cohort=review&reviewer=…` redirects to `/invite`.
+- CTA → `/world/space` + legal gate on proceed.
+
+**Linked Artifacts:**
+- `docs/RHIZOH_OBSERVER_INVITE_LANDING_V0.md`
+- `apps/client/src/rhizoh/ingress/observerInviteLandingV0.js`
+- `apps/client/src/components/RhizohObserverInviteLandingPageV0.jsx`
+
+- **SPECFLOW:** RESEARCH-ONLY
+- **Frozen core:** dokunulmadı
+
 ### 2026-06-19 — Epistemic identity capture (Faz A) + Identity Manifest Phase 1
 
 **Summary:**
