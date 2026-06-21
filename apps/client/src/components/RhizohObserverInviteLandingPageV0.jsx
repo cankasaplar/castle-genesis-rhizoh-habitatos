@@ -9,6 +9,11 @@ import {
   persistObserverInviteContextV0
 } from "../rhizoh/ingress/observerInviteLandingV0.js";
 import { resolveInvitePerceptionLensV0 } from "../rhizoh/ingress/observerInvitePerceptionLensV0.js";
+import {
+  getMeaningLayerSurfacesV0,
+  getWhyAmIHerePanelV0
+} from "../rhizoh/ingress/observerInviteMeaningLayerV0.js";
+import { recordVisitorSurfaceV0 } from "../rhizoh/ingress/visitorEpistemicTraceV0.js";
 import { INGRESS_SURFACE_V0 } from "../rhizoh/ingress/ingressFlowStylesV0.js";
 import {
   readUiLocaleV0,
@@ -80,6 +85,8 @@ export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInv
   );
   const copy = lens.copy;
   const panels = lens.panels;
+  const whyHere = useMemo(() => getWhyAmIHerePanelV0(tr ? "tr" : "en"), [tr]);
+  const meaningLayer = useMemo(() => getMeaningLayerSurfacesV0(tr ? "tr" : "en"), [tr]);
 
   useEffect(() => {
     if (invite) persistObserverInviteContextV0(invite);
@@ -100,6 +107,7 @@ export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInv
     if (invite) {
       persistObserverInviteContextV0({ ...invite, perceptionMode: lens.mode });
     }
+    recordVisitorSurfaceV0("invite");
     dispatchObserverInviteProceedV0({ invite, target: "/", perceptionMode: lens.mode });
     void requestEarlyWorldMapGeoBootstrapV0({ source: "invite_landing_cta" });
     navigate("/");
@@ -139,6 +147,28 @@ export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInv
 
       <p style={INGRESS_SURFACE_V0.kicker}>{copy.kicker}</p>
       <h1 style={INGRESS_SURFACE_V0.title}>{copy.title}</h1>
+
+      <div style={{ ...expectationBannerStyle, borderColor: "rgba(167,139,250,0.4)" }}>
+        <p style={{ fontSize: 11, letterSpacing: "0.12em", opacity: 0.75, margin: "0 0 8px" }}>
+          {whyHere.title.toUpperCase()}
+        </p>
+        <p style={{ fontSize: 15, lineHeight: 1.55, margin: "0 0 8px", fontWeight: 500 }}>{whyHere.body}</p>
+        <p style={{ fontSize: 11, opacity: 0.55, margin: 0 }}>{whyHere.footnote}</p>
+      </div>
+
+      <div style={cardStyle}>
+        <p style={{ fontSize: 11, letterSpacing: "0.12em", opacity: 0.65, margin: "0 0 10px" }}>
+          {meaningLayer.title.toUpperCase()}
+        </p>
+        {meaningLayer.surfaces.map((surface) => (
+          <div key={surface.id} style={{ marginBottom: 12 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, margin: "0 0 4px" }}>
+              {surface.label} — <span style={{ opacity: 0.75, fontWeight: 500 }}>{surface.role}</span>
+            </p>
+            <p style={{ fontSize: 12, lineHeight: 1.55, margin: 0, opacity: 0.85 }}>{surface.description}</p>
+          </div>
+        ))}
+      </div>
 
       {panels.showExpectationBanner ? (
         <div style={expectationBannerStyle}>

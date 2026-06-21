@@ -33,6 +33,7 @@ import {
 import { RHIZOH_WORLD_DRAWER_DOMAIN_V0, writeRhizohWorldDrawerDomainV0 } from "./rhizoh/runtime/rhizohWorldDrawerDomainV0.js";
 import { resolveWorldDomainFromPathV0 } from "./rhizoh/runtime/rhizohWorldDomainRoutesV0.js";
 import { shouldObserverInviteLandHomeV0 } from "./rhizoh/ingress/observerInviteLandingV0.js";
+import { recordVisitorSurfaceV0 } from "./rhizoh/ingress/visitorEpistemicTraceV0.js";
 import { RHIZOH_MAP_OVERLAY_PANEL_CLASS_V0 } from "./rhizoh/runtime/rhizohWorldMapPanelSurfaceV0.js";
 import {
   resolveRhizohUiLayoutV0,
@@ -522,6 +523,7 @@ export default function AppRhizohWorldSpaceV0() {
     const onChessArena = (ev) => {
       const detail = ev?.detail;
       if (!detail?.node) return;
+      recordVisitorSurfaceV0("chess");
       clearMapTransitionBusyV0("chess_arena_open");
       releaseBroadcastForArenaPlayV0();
       window.dispatchEvent(new CustomEvent(RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0));
