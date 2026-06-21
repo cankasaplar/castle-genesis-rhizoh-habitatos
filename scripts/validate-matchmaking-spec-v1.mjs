@@ -15,18 +15,24 @@ const protocol = join(root, "packages/protocol/src/index.js");
 
 const REQUIRED_DOCS = [
   "RHIZOH_MATCHMAKING_CORE_SPEC_V1.md",
+  "RHIZOH_MATCH_AUTHORITY_LAYER_V1.md",
+  "RHIZOH_MATCH_AUTHORITY_KERNEL_V1.md",
   "RHIZOH_DAILY_MATCH_SCHEMA_V1.md",
   "RHIZOH_SEDIMENT_WEIGHT_KERNEL_V1.md"
 ];
 
 const REQUIRED_SCHEMAS = [
   "rhizoh-match-beacon-v1.schema.json",
+  "rhizoh-match-event-v1.schema.json",
   "rhizoh-match-session-v1.schema.json",
   "rhizoh-matchmaking-ws-envelope-v1.schema.json"
 ];
 
 const RUNTIME_FILES = [
   "matchmakingConsoleV0.js",
+  "matchAuthorityLayerV0.js",
+  "matchAuthorityKernelV0.js",
+  "matchStockfishValidatorBridgeV0.js",
   "matchmakingBeaconRegistryV0.js",
   "matchmakingEngineV0.js",
   "matchSessionLifecycleV0.js",
@@ -94,6 +100,28 @@ if (!codexText.includes("influencesExecution: false") || !codexText.includes("ma
 const protocolText = readFileSync(protocol, "utf8");
 if (!protocolText.includes("MATCH_BEACON_EMIT") || !protocolText.includes("MATCH_FINISHED")) {
   console.error("matchmaking-spec-v1: protocol must declare MATCH_* WS messages");
+  failed = true;
+}
+
+const authorityText = readFileSync(join(runtime, "matchAuthorityLayerV0.js"), "utf8");
+if (!authorityText.includes("SERVER_PRIMARY") || !authorityText.includes("commitRequired: true")) {
+  console.error("matchmaking-spec-v1: authority layer must declare SERVER_PRIMARY + commitRequired");
+  failed = true;
+}
+
+const kernelText = readFileSync(join(runtime, "matchAuthorityKernelV0.js"), "utf8");
+if (!kernelText.includes("MATCH_KERNEL_STATE_V0") || !kernelText.includes("ProposeMove")) {
+  console.error("matchmaking-spec-v1: kernel must define SM states and ProposeMove events");
+  failed = true;
+}
+if (!kernelText.includes("appendOnly: true")) {
+  console.error("matchmaking-spec-v1: kernel commit log must be append-only");
+  failed = true;
+}
+
+const validatorText = readFileSync(join(runtime, "matchStockfishValidatorBridgeV0.js"), "utf8");
+if (!validatorText.includes("influencesAuthority: false")) {
+  console.error("matchmaking-spec-v1: validator must not influence authority");
   failed = true;
 }
 

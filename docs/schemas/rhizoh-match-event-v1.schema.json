@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "castle.rhizoh.match_event.v1",
+  "title": "Rhizoh Match Event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "type", "sessionId", "seq", "atMs"],
+  "properties": {
+    "schema": { "const": "castle.rhizoh.match_event.v1" },
+    "type": {
+      "type": "string",
+      "enum": ["ProposeMove", "CommitMove", "RejectMove", "ReconcileState", "DriftDetected"]
+    },
+    "sessionId": { "type": "string" },
+    "seq": { "type": "integer", "minimum": 1 },
+    "clientSeq": { "type": "integer", "minimum": 0 },
+    "san": { "type": "string" },
+    "playerId": { "type": "string" },
+    "fen": { "type": "string" },
+    "turn": { "type": "string", "enum": ["white", "black"] },
+    "reason": { "type": "string" },
+    "driftScore": { "type": "number", "minimum": 0, "maximum": 1 },
+    "kernelState": { "type": "string" },
+    "atMs": { "type": "integer", "minimum": 0 },
+    "shadowRehearsal": { "type": "boolean" }
+  }
+}

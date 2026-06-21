@@ -4,6 +4,19 @@
  */
 
 import { MATCH_MODE_V0 } from "./matchmakingBeaconRegistryV0.js";
+import {
+  applyServerMatchCommitV0,
+  attachAuthorityToSessionV0,
+  buildMatchAuthorityContractV0,
+  getMatchAuthorityStatusV0,
+  proposeShadowMatchMoveV0,
+  reconcileMatchAuthorityV0
+} from "./matchAuthorityLayerV0.js";
+import {
+  MATCH_KERNEL_SCHEMA_V0,
+  MATCH_KERNEL_STATE_V0,
+  processKernelProposeMoveV0
+} from "./matchAuthorityKernelV0.js";
 
 export const MATCH_SESSION_SCHEMA_V0 = "castle.rhizoh.match_session.v1";
 
@@ -68,6 +81,12 @@ function writeSessionRowV0(row) {
   }
 }
 
+export function persistActiveMatchSessionV0(session) {
+  writeSessionRowV0(session);
+  syncSessionWindowV0(session);
+  return session;
+}
+
 function createSessionIdV0() {
   return `match_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -108,24 +127,34 @@ export function createMatchSessionV0(input = {}) {
   }
 
   const state = input.initialState || MATCH_SESSION_STATE_V0.MATCH_FOUND;
-  const session = Object.freeze({
-    schema: MATCH_SESSION_SCHEMA_V0,
-    sessionId: createSessionIdV0(),
-    mode,
-    state,
-    players: Object.freeze(players),
-    turn: "white",
-    fen: STARTING_FEN_V0,
-    lastMoveAtMs: now,
-    deadlineAtMs: mode === MATCH_MODE_V0.ASYNC ? now + timeControlMs : undefined,
-    timeControlMs,
-    opponentKind: input.opponentKind === "ai_stockfish" ? "ai_stockfish" : "human",
-    moveCount: 0,
-    createdAtMs: now,
-    serverAuthoritative: false,
-    shadowRehearsal: true,
-    interpretationOnly: true
-  });
+  const session = attachAuthorityToSessionV0(
+    Object.freeze({
+      schema: MATCH_SESSION_SCHEMA_V0,
+      sessionId: createSessionIdV0(),
+      mode,
+      state,
+      players: Object.freeze(players),
+      turn: "white",
+      fen: STARTING_FEN_V0,
+      lastMoveAtMs: now,
+      deadlineAtMs: mode === MATCH_MODE_V0.ASYNC ? now + timeControlMs : undefined,
+      timeControlMs,
+      opponentKind: input.opponentKind === "ai_stockfish" ? "ai_stockfish" : "human",
+      moveCount: 0,
+      createdAtMs: now,
+      authority: buildMatchAuthorityContractV0({ serverBound: false }),
+      kernel: Object.freeze({
+        schema: MATCH_KERNEL_SCHEMA_V0,
+        state: MATCH_KERNEL_STATE_V0.ACTIVE,
+        shadowRehearsal: true,
+        transport: "local_shadow",
+        interpretationOnly: true
+      }),
+      serverAuthoritative: false,
+      shadowRehearsal: true,
+      interpretationOnly: true
+    })
+  );
 
   writeSessionRowV0(session);
   syncSessionWindowV0(session);
@@ -152,17 +181,19 @@ export function transitionMatchSessionV0(nextState, opts = {}) {
   }
 
   const now = Date.now();
-  const next = Object.freeze({
-    ...current,
-    state: nextState,
-    lastMoveAtMs: now,
-    finishedAtMs: nextState === MATCH_SESSION_STATE_V0.SESSION_FINISHED ? now : current.finishedAtMs,
-    result: opts.result ?? current.result,
-    deadlineAtMs:
-      nextState === MATCH_SESSION_STATE_V0.SESSION_ACTIVE && current.mode === MATCH_MODE_V0.ASYNC
-        ? now + (current.timeControlMs || 86_400_000)
-        : current.deadlineAtMs
-  });
+  const next = attachAuthorityToSessionV0(
+    Object.freeze({
+      ...current,
+      state: nextState,
+      lastMoveAtMs: now,
+      finishedAtMs: nextState === MATCH_SESSION_STATE_V0.SESSION_FINISHED ? now : current.finishedAtMs,
+      result: opts.result ?? current.result,
+      deadlineAtMs:
+        nextState === MATCH_SESSION_STATE_V0.SESSION_ACTIVE && current.mode === MATCH_MODE_V0.ASYNC
+          ? now + (current.timeControlMs || 86_400_000)
+          : current.deadlineAtMs
+    })
+  );
 
   writeSessionRowV0(next);
   syncSessionWindowV0(next);
@@ -170,7 +201,8 @@ export function transitionMatchSessionV0(nextState, opts = {}) {
 }
 
 /**
- * @param {{ san: string, playerId: string }} move
+ * Routes through authority kernel — propose → validate → commit log → committed lane.
+ * @param {{ san: string, playerId: string, autoCommitShadow?: boolean }} move
  */
 export function applyMatchMoveV0(move) {
   const current = readSessionRowV0();
@@ -178,27 +210,55 @@ export function applyMatchMoveV0(move) {
     return Object.freeze({ ok: false, reason: "session_not_active" });
   }
 
-  const san = String(move?.san || "").trim();
-  const playerId = String(move?.playerId || "");
-  if (!san || !playerId) {
-    return Object.freeze({ ok: false, reason: "invalid_move" });
-  }
-
-  const now = Date.now();
-  const nextTurn = current.turn === "white" ? "black" : "white";
-  const next = Object.freeze({
-    ...current,
-    turn: nextTurn,
-    moveCount: (current.moveCount || 0) + 1,
-    lastMoveAtMs: now,
-    deadlineAtMs: current.mode === MATCH_MODE_V0.ASYNC ? now + (current.timeControlMs || 86_400_000) : current.deadlineAtMs,
-    lastSan: san,
-    lastPlayerId: playerId
+  const result = processKernelProposeMoveV0(current, {
+    san: move.san,
+    playerId: move.playerId,
+    clientSeq: move.clientSeq,
+    autoCommitShadow: move.autoCommitShadow !== false
   });
 
-  writeSessionRowV0(next);
-  syncSessionWindowV0(next);
-  return Object.freeze({ ok: true, session: next, accepted: true });
+  if (result.session) {
+    persistActiveMatchSessionV0(result.session);
+  }
+
+  return result;
+}
+
+/**
+ * Server commit lane — authoritative state update (gateway MATCH_MOVE_ACK path).
+ * @param {{ san: string, playerId: string, serverSeq?: number, fen?: string, turn?: string }} commit
+ */
+export function commitMatchMoveV0(commit) {
+  const current = readSessionRowV0();
+  if (!current) {
+    return Object.freeze({ ok: false, reason: "no_active_session" });
+  }
+  const result = applyServerMatchCommitV0(current, commit);
+  if (!result.ok) return result;
+  persistActiveMatchSessionV0(result.session);
+  return Object.freeze({ ...result, committed: true });
+}
+
+/**
+ * @param {{ serverState: object }} opts
+ */
+export function reconcileMatchSessionV0(opts = {}) {
+  const current = readSessionRowV0();
+  if (!current) {
+    return Object.freeze({ ok: false, reason: "no_active_session" });
+  }
+  const result = reconcileMatchAuthorityV0(current, opts);
+  if (!result.ok) return result;
+  persistActiveMatchSessionV0(result.session);
+  return result;
+}
+
+export function getMatchSessionAuthorityStatusV0() {
+  const row = readSessionRowV0();
+  if (!row) {
+    return getMatchAuthorityStatusV0({});
+  }
+  return getMatchAuthorityStatusV0(row);
 }
 
 export function getActiveMatchSessionV0() {
@@ -211,7 +271,7 @@ export function getActiveMatchSessionV0() {
       interpretationOnly: true
     });
   }
-  return Object.freeze({ ...row, active: true, interpretationOnly: true });
+  return Object.freeze({ ...attachAuthorityToSessionV0(row), active: true, interpretationOnly: true });
 }
 
 export function clearMatchSessionForTestV0() {
@@ -233,6 +293,10 @@ function syncSessionWindowV0(row) {
     create: createMatchSessionV0,
     transition: transitionMatchSessionV0,
     move: applyMatchMoveV0,
+    commit: commitMatchMoveV0,
+    reconcile: reconcileMatchSessionV0,
+    persist: persistActiveMatchSessionV0,
+    authorityStatus: getMatchSessionAuthorityStatusV0,
     clear: clearMatchSessionForTestV0,
     states: MATCH_SESSION_STATE_V0
   });

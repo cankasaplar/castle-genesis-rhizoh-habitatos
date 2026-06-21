@@ -8,6 +8,9 @@ import { mountMatchmakingBeaconRegistryConsoleV0 } from "./matchmakingBeaconRegi
 import { mountMatchmakingEngineConsoleV0 } from "./matchmakingEngineV0.js";
 import { mountMatchSessionLifecycleConsoleV0 } from "./matchSessionLifecycleV0.js";
 import { mountMatchmakingCodexBridgeConsoleV0 } from "./matchmakingCodexBridgeV0.js";
+import { mountMatchAuthorityConsoleV0 } from "./matchAuthorityLayerV0.js";
+import { mountMatchAuthorityKernelConsoleV0 } from "./matchAuthorityKernelV0.js";
+import { mountMatchStockfishValidatorConsoleV0 } from "./matchStockfishValidatorBridgeV0.js";
 
 export const MATCHMAKING_CONSOLE_SCHEMA_V0 = "castle.rhizoh.matchmaking_console.v0";
 
@@ -32,12 +35,16 @@ export function mountMatchmakingConsoleV0() {
   mountMatchmakingEngineConsoleV0();
   mountMatchSessionLifecycleConsoleV0();
   mountMatchmakingCodexBridgeConsoleV0();
+  mountMatchAuthorityConsoleV0();
+  mountMatchAuthorityKernelConsoleV0();
+  mountMatchStockfishValidatorConsoleV0();
 
   window.__rhizoh.matchmaking = Object.freeze({
     ...window.__rhizoh.matchmaking,
     schema: MATCHMAKING_CONSOLE_SCHEMA_V0,
     shadowRehearsal: true,
     serverAuthoritative: false,
+    authorityMode: "SERVER_PRIMARY",
     interpretationOnly: true,
     mounted: true
   });
@@ -49,7 +56,9 @@ export function mountMatchmakingConsoleV0() {
     shadowRehearsal: true,
     hasEmitBeacon: typeof window.__rhizoh.matchmaking.emitBeacon === "function",
     hasTryMatch: typeof window.__rhizoh.matchmaking.tryMatch === "function",
-    hasSession: typeof window.__rhizoh.matchmaking.session?.get === "function"
+    hasSession: typeof window.__rhizoh.matchmaking.session?.get === "function",
+    hasAuthority: typeof window.__rhizoh.matchmaking.authority?.status === "function",
+    hasKernel: typeof window.__rhizoh.matchmaking.kernel?.proposeMove === "function"
   });
 
   if (!mountedV0) {
