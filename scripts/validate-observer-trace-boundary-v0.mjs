@@ -29,7 +29,8 @@ const HOOK_FILES = [
   "epistemicInvocationGuardV0.js",
   "attentionSedimentationBufferV0.js",
   "behavioralInfluenceLayerV0.js",
-  "crossTowerBiasCouplerV0.js"
+  "crossTowerBiasCouplerV0.js",
+  "rhizohKnowledgeGatewayV0.js"
 ];
 
 const FORBIDDEN_IN_HOOK = [
@@ -123,6 +124,12 @@ if (!influenceText.includes("influencesChessEngine: false") || influenceText.inc
 const couplerText = readFileSync(join(HOOK_DIR, "crossTowerBiasCouplerV0.js"), "utf8");
 if (!couplerText.includes("biasNotLearning: true") || !couplerText.includes("isLearning: false")) {
   console.error("observer-trace-boundary: cross-tower coupler must declare bias-not-learning");
+  failed = true;
+}
+
+const gatewayText = readFileSync(join(HOOK_DIR, "rhizohKnowledgeGatewayV0.js"), "utf8");
+if (!gatewayText.includes("exposed: false") || !gatewayText.includes("badBiasBlocked: true")) {
+  console.error("observer-trace-boundary: knowledge gateway must not expose raw trace or allow bad bias");
   failed = true;
 }
 

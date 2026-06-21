@@ -45,6 +45,7 @@ import { mountEpistemicInvocationGuardConsoleV0 } from "../ingress/epistemicInvo
 import { mountAttentionSedimentationConsoleV0 } from "../ingress/attentionSedimentationBufferV0.js";
 import { mountBehavioralInfluenceConsoleV0 } from "../ingress/behavioralInfluenceLayerV0.js";
 import { mountCrossTowerBiasCouplerConsoleV0 } from "../ingress/crossTowerBiasCouplerV0.js";
+import { mountRhizohKnowledgeGatewayConsoleV0 } from "../ingress/rhizohKnowledgeGatewayV0.js";
 import { mountFullSystemReportConsoleV0 } from "./rhizohFullSystemReportV0.js";
 import { mountPersonaLoopSchedulerV0 } from "./rhizohPersonaLoopSchedulerV0.js";
 import { mountRhizohPulseLoopV1 } from "./rhizohPulseLoopV1.js";
@@ -170,6 +171,7 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
     mountAttentionSedimentationConsoleV0();
     mountBehavioralInfluenceConsoleV0();
     mountCrossTowerBiasCouplerConsoleV0();
+    mountRhizohKnowledgeGatewayConsoleV0();
     ensureVoiceAdapterRegistered();
     resolveGatewayTransportV0();
     mountPersonaLoopSchedulerV0();

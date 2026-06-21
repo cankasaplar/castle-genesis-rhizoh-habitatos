@@ -82,6 +82,20 @@ const STATIC_PIN_SEMANTICS_V0 = Object.freeze({
       role: "İsteğe bağlı kişisel düğüm",
       description: "Kimlik stabilizasyon arayüzü — isteğe bağlı; nedensel yazma yetkisi vermez."
     })
+  }),
+  wprl_sports_arena: Object.freeze({
+    en: Object.freeze({
+      title: "WPRL Sports Arena",
+      role: "Sports observation node",
+      description:
+        "Istanbul sports observation hub — live games, map projection, observer-density field. Reality layer: SPORTS_REALITY. Coordinates: 41.0151° N, 28.9795° E."
+    }),
+    tr: Object.freeze({
+      title: "WPRL Sports Arena",
+      role: "Spor gözlem düğümü",
+      description:
+        "İstanbul spor gözlem merkezi — canlı oyunlar, harita projeksiyonu, gözlem yoğunluğu alanı. Gerçeklik katmanı: SPORTS_REALITY. Koordinat: 41.0151° K, 28.9795° D."
+    })
   })
 });
 
