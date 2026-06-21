@@ -4,8 +4,10 @@
  * @see docs/RHIZOH_OBSERVER_NODE_SPEC.md
  */
 
+import { evaluateEpistemicReturnFieldV0 } from "./epistemicReturnFieldV0.js";
 import { getVisitorEpistemicTraceV0 } from "./visitorEpistemicTraceV0.js";
 import { getObserverTraceSnapshotV0 } from "./observerReadOnlyHookV0.js";
+import { buildVisitorEpistemicFingerprintV0 } from "./visitorEpistemicFingerprintV0.js";
 
 export const OBSERVER_EPISTEMIC_LENS_SCHEMA_V0 = "castle.rhizoh.observer_epistemic_lens.v0";
 
@@ -19,6 +21,8 @@ export function projectObserverLensV0(causalMap, opts = {}) {
   const edges = map?.edges || map?.causalMapRaw?.edges || [];
   const echo = getVisitorEpistemicTraceV0();
   const trace = getObserverTraceSnapshotV0();
+  const fingerprint = buildVisitorEpistemicFingerprintV0({ visitor: echo, observerTrace: trace });
+  const returnField = evaluateEpistemicReturnFieldV0(echo);
 
   const perceptionMode = opts.perceptionMode || echo?.perceptionMode || "explorer";
 
@@ -44,7 +48,16 @@ export function projectObserverLensV0(causalMap, opts = {}) {
     observerEcho: Object.freeze({
       visited_surfaces: echo?.visited_surfaces ?? [],
       coherence_alignment: echo?.coherence_alignment ?? 0,
-      return_vector: echo?.return_vector ?? "none"
+      return_vector: echo?.return_vector ?? "none",
+      engagement_vector: echo?.engagement_vector ?? 0,
+      return_probability: echo?.return_probability ?? 0
+    }),
+    epistemicFingerprint: fingerprint,
+    returnField: Object.freeze({
+      familiarity: returnField.familiarity,
+      recognition: returnField.recognition,
+      memory: false,
+      continuity: returnField.continuity
     }),
     traceEntryCount: trace?.count ?? 0,
     interpretationOnly: true,

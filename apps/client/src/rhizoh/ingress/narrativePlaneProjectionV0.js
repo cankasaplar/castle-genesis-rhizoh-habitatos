@@ -3,6 +3,7 @@
  * Never writes causal or observation SSOT.
  */
 
+import { evaluateEpistemicReturnFieldV0 } from "./epistemicReturnFieldV0.js";
 import { projectObserverLensV0 } from "./observerEpistemicLensV0.js";
 import { getVisitorEpistemicTraceV0 } from "./visitorEpistemicTraceV0.js";
 import { OBSERVER_PLANE_V0 } from "./observerReadOnlyHookV0.js";
@@ -14,17 +15,25 @@ export const NARRATIVE_PLANE_SCHEMA_V0 = "castle.rhizoh.narrative_plane.v0";
  */
 export function buildNarrativePlaneV0(opts = {}) {
   const tr = opts.locale === "tr";
-  const lens = projectObserverLensV0(opts.causalMap);
   const echo = getVisitorEpistemicTraceV0();
+  const returnField = evaluateEpistemicReturnFieldV0(echo);
+  const lens = projectObserverLensV0(opts.causalMap);
   const depth = echo?.coherence_alignment ?? 0;
   const stable = (lens.causalSummary?.nodeCount ?? 0) > 0;
+  const familiar = returnField.familiarity >= 0.22;
+
+  const youAreHere = familiar
+    ? tr
+      ? "Tekrarlayan bir epistemik örüntüsün — davranış şekli tanınıyor, kimlik değil."
+      : "You are a recurring epistemic pattern — behavior shape recognized, not identity."
+    : tr
+      ? "Anonim gözlemcisin — sistem etkileşimi görür, süreklilik henüz istatistiksel değil."
+      : "You are an anonymous observer — system sees interaction, continuity not yet statistical.";
 
   return Object.freeze({
     schema: NARRATIVE_PLANE_SCHEMA_V0,
     plane: OBSERVER_PLANE_V0.NARRATIVE,
-    youAreHere: tr
-      ? "Salt okunur epistemik alanı gözlemliyorsun — ajan değilsin."
-      : "You are observing a read-only epistemic field — you are not an agent.",
+    youAreHere,
     systemStability: stable
       ? tr
         ? "Sistem kararlı — nedensel graf aktif."
@@ -37,6 +46,11 @@ export function buildNarrativePlaneV0(opts = {}) {
       ? `Harita keşif derinliği: ${depth.toFixed(2)}`
       : `Map exploration depth: ${depth.toFixed(2)}`,
     returnVector: echo?.return_vector ?? "none",
+    epistemicFamiliarity: returnField.familiarity,
+    recognition: returnField.recognition,
+    continuity: returnField.continuity,
+    memory: false,
+    observerPosture: familiar ? "recurring_epistemic_pattern" : "anonymous_observer",
     derivedOnly: true,
     interpretationOnly: true,
     influencesExecution: false

@@ -21,6 +21,14 @@ Record **anonymous observation path** for invitation study — what surfaces wer
   "return_vector": "weak_identity_resonance",
   "engagement_vector": 0.43,
   "return_probability": 0.61,
+  "epistemic_fingerprint": {
+    "session_signature": "eps_…",
+    "attention_pattern": { "map": 0.4, "chess": 0.35, "castle": 0, "media": 0, "chat": 0.25 },
+    "return_likelihood": 0.58,
+    "stability_index": 0.41,
+    "isMemory": false,
+    "reconstructionOnly": true
+  },
   "isMemory": false,
   "isIdentity": false,
   "isEchoTrace": true
@@ -43,5 +51,6 @@ window.__rhizoh.visitorTrace.record("map")
 ## Related
 
 - [`RHIZOH_RETURN_BEHAVIOR_TRACE_V0.md`](RHIZOH_RETURN_BEHAVIOR_TRACE_V0.md)
+- [`RHIZOH_EPISTEMIC_RETURN_FIELD_V0.md`](RHIZOH_EPISTEMIC_RETURN_FIELD_V0.md)
 - [`RHIZOH_OBSERVER_NODE_SPEC.md`](RHIZOH_OBSERVER_NODE_SPEC.md)
 - Runtime: `apps/client/src/rhizoh/ingress/visitorEpistemicTraceV0.js`

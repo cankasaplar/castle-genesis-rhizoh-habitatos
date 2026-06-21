@@ -12,6 +12,8 @@ const HOOK_DIR = join(root, "apps/client/src/rhizoh/ingress");
 const HOOK_FILES = [
   "observerReadOnlyHookV0.js",
   "visitorEpistemicTraceV0.js",
+  "visitorEpistemicFingerprintV0.js",
+  "epistemicReturnFieldV0.js",
   "observerEpistemicLensV0.js",
   "narrativePlaneProjectionV0.js"
 ];
@@ -39,6 +41,11 @@ for (const file of HOOK_FILES) {
 
 if (!readFileSync(join(HOOK_DIR, "observerReadOnlyHookV0.js"), "utf8").includes("influencesCausalGraph: false")) {
   console.error("observer-trace-boundary: missing influencesCausalGraph guard in observerReadOnlyHookV0.js");
+  failed = true;
+}
+
+if (!readFileSync(join(HOOK_DIR, "epistemicReturnFieldV0.js"), "utf8").includes("memory: false")) {
+  console.error("observer-trace-boundary: epistemicReturnField must declare memory: false");
   failed = true;
 }
 

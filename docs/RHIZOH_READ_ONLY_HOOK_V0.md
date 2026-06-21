@@ -110,7 +110,9 @@ If observer trace becomes training/adaptation input → system becomes agent →
 |--------|-------|
 | `observerReadOnlyHookV0.js` | B |
 | `visitorEpistemicTraceV0.js` | B (echo) |
-| `observerEpistemicLensV0.js` | B→read A |
+| `observerEpistemicLensV0.js` | B→read A (+ fingerprint + return field) |
+| `epistemicReturnFieldV0.js` | B (statistical familiarity) |
+| `visitorEpistemicFingerprintV0.js` | B (reconstruction) |
 | `narrativePlaneProjectionV0.js` | C |
 
 ---
