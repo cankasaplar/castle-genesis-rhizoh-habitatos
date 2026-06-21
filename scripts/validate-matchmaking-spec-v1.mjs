@@ -26,6 +26,7 @@ const REQUIRED_SCHEMAS = [
 ];
 
 const RUNTIME_FILES = [
+  "matchmakingConsoleV0.js",
   "matchmakingBeaconRegistryV0.js",
   "matchmakingEngineV0.js",
   "matchSessionLifecycleV0.js",
