@@ -50,15 +50,16 @@ export function generateObserverInviteV0(opts = {}) {
   } else {
     const stressClassTarget =
       opts.stressClassTarget || ROLE_TO_STRESS_V0[role] || EPISTEMIC_STRESS_CLASS_V0.SYSTEMS_ENGINEER;
+    const seed = opts.seed ?? Date.now() % 100000;
     payload = generateInvitePayloadV0({
       cohortId: opts.cohortId || "observer",
       stressClassTarget,
-      seed: opts.seed ?? Date.now() % 100000
+      seed
     });
     inviteUrl = buildObserverInviteUrlV0({
       cohortId: opts.cohortId,
       stressClassTarget,
-      seed: opts.seed,
+      seed,
       role
     });
   }
