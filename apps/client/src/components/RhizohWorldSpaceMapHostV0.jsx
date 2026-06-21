@@ -35,6 +35,7 @@ import {
 import {
   resolveMapViewportFitNodesV0,
   resolveArenaPopulationViewportFitNodesV0,
+  resolveSatelliteSpiralViewportFitNodesV0,
   resolveWorldSpaceMapRecenterHomeV0
 } from "../rhizoh/runtime/worldMapViewportBootstrapV0.js";
 import {
@@ -635,22 +636,25 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
 
     const fitViewportOnceV0 = (allNodes) => {
       if (boundsFittedRef.current || !allNodes.length || !mapRef.current) return;
-      const arenaFit = resolveArenaPopulationViewportFitNodesV0(allNodes, {
-        spiralLayerFilter
-      });
-      const fitNodes =
-        arenaFit.length >= 1
-          ? arenaFit
-          : resolveMapViewportFitNodesV0(allNodes, {
-              worldSpaceNeutral: true,
-              userCastle: userCastleGeo
+      const fitNodes = isSatelliteMapToolV0
+        ? resolveSatelliteSpiralViewportFitNodesV0(allNodes)
+        : (() => {
+            const arenaFit = resolveArenaPopulationViewportFitNodesV0(allNodes, {
+              spiralLayerFilter
             });
+            return arenaFit.length >= 1
+              ? arenaFit
+              : resolveMapViewportFitNodesV0(allNodes, {
+                  worldSpaceNeutral: true,
+                  userCastle: userCastleGeo
+                });
+          })();
       if (fitNodes.length >= 2) {
         const bounds = L.latLngBounds(fitNodes.map((n) => [n.lat, n.lon]));
         mapRef.current.fitBounds(bounds, {
           paddingTopLeft: [28, 88],
           paddingBottomRight: [28, 32],
-          maxZoom: userCastleGeo ? 15 : 14,
+          maxZoom: isSatelliteMapToolV0 ? 4 : userCastleGeo ? 15 : 14,
           animate: false
         });
       } else if (fitNodes.length === 1) {
@@ -678,13 +682,15 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
         color: "#22c55e"
       }));
       const hasUserCastle = displayNodes.some((n) => n.id === "my_castle");
-      const extraLocal = hasUserCastle ? [] : localNodes;
-      const allNodes = [
-        ...displayNodes,
-        ...extraLocal,
-        ...(shadowPeerNode ? [shadowPeerNode] : []),
-        ...remoteNodes
-      ];
+      const extraLocal = isSatelliteMapToolV0 || hasUserCastle ? [] : localNodes;
+      const allNodes = isSatelliteMapToolV0
+        ? [...displayNodes]
+        : [
+            ...displayNodes,
+            ...extraLocal,
+            ...(shadowPeerNode ? [shadowPeerNode] : []),
+            ...remoteNodes
+          ];
 
       let cursor = 0;
       const pumpMarkersV0 = () => {
@@ -711,7 +717,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
       cancelled = true;
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [leafletReady, localAnchors, displayNodes, remoteNodes, shadowPeerNode, userCastleGeo, spiralLayerFilter]);
+  }, [leafletReady, localAnchors, displayNodes, remoteNodes, shadowPeerNode, userCastleGeo, spiralLayerFilter, activeMapTool]);
 
   useEffect(() => {
     const L = typeof window !== "undefined" ? window.L : null;
