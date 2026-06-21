@@ -644,15 +644,21 @@ export default function AppRhizohWorldSpaceV0() {
         closeProductSurfaceDrawerV0();
       });
     };
-    const exitImmersion = () => {
+    const exitImmersion = (ev) => {
       setSpiralImmersionActive(false);
       setV11NodePanel(null);
+      const requestedRaw = ev?.detail?.requestedMapTool;
+      const requested =
+        requestedRaw != null && String(requestedRaw).trim() !== ""
+          ? normalizeRhizohWorldSpaceLeafletToolV0(requestedRaw)
+          : null;
       const restore = preSpiralMapToolRef.current;
       const nextTool =
-        restore && restore !== "satellite" && restore !== "globe" ? restore : "city_map";
+        requested ??
+        (restore && restore !== "satellite" && restore !== "globe" ? restore : "city_map");
       void applyRhizohWorldMapToolV0(nextTool, {
         leafletOnly: true,
-        source: "SPIRAL_MMO_EXIT"
+        source: String(ev?.detail?.source || "SPIRAL_MMO_EXIT")
       });
       preSpiralMapToolRef.current = null;
     };
@@ -842,10 +848,16 @@ export default function AppRhizohWorldSpaceV0() {
   }, [castleInitOwner, applySpatialCastleAnchorDsl, openPostCastleMediaTubeV0]);
 
   const onApplyWorldMapToolV0 = useCallback((mapTool, source = "WORLD_DOMAIN_MAP_STRIP") => {
+    const tool = normalizeRhizohWorldSpaceLeafletToolV0(mapTool);
     if (spiralImmersionActive) {
-      window.dispatchEvent(new CustomEvent(RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0));
+      window.dispatchEvent(
+        new CustomEvent(RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0, {
+          detail: Object.freeze({ requestedMapTool: tool, source })
+        })
+      );
+      return;
     }
-    void applyRhizohWorldMapToolV0(mapTool, {
+    void applyRhizohWorldMapToolV0(tool, {
       leafletOnly: true,
       source
     });

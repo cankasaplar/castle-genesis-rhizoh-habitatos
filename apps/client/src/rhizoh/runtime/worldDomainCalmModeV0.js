@@ -51,6 +51,7 @@ export function shouldSuppressWorldDomainChromeV0(nowMs = Date.now()) {
  */
 export function resolveWorldEntryMapToolV0(savedTool, hasNexusGeo) {
   const id = String(savedTool || "");
+  if (id === "satellite" || id === "streets") return id;
   if (isWorldLegalCalmModeV0()) return "streets";
   if (!hasNexusGeo || id === "globe") return "city_map";
   return id || "city_map";

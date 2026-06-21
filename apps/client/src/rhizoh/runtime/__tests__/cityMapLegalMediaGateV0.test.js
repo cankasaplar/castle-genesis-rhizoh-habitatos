@@ -14,6 +14,7 @@ import {
   resetCityMapLegalGateForTestsV0
 } from "../cityMapLegalCountdownMediaGateV0.js";
 import { RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1 } from "../sovereignWorldMapNodesV0.js";
+import { writeRhizohWorldMapToolV0, readRhizohWorldMapToolV0 } from "../rhizohWorldMapToolV0.js";
 
 vi.mock("../../ingress/ingress_router.js", () => ({
   hasLegalAccessAckV0: () => false,
@@ -101,5 +102,23 @@ describe("cityMapLegalCountdownMediaGateV0", () => {
     expect(mediaEvents).toHaveLength(1);
     expect(mediaEvents[0].legalGate).toBe(true);
     expect(mediaEvents[0].initialChannelId).toBe("castle_genesis");
+  });
+
+  it("does not override satellite map tool when legal hold is cleared", async () => {
+    vi.resetModules();
+    vi.doMock("../../ingress/ingress_router.js", () => ({
+      hasLegalAccessAckV0: () => true,
+      resolveIngressRouteV0: () =>
+        Object.freeze({
+          route: "app",
+          required: false,
+          acked: true
+        })
+    }));
+    const gate = await import("../cityMapLegalCountdownMediaGateV0.js");
+    writeRhizohWorldMapToolV0("satellite");
+    gate.primeCityMapLegalCountdownSurfaceV0({ uiLocale: "en" });
+    expect(readRhizohWorldMapToolV0()).toBe("satellite");
+    vi.doUnmock("../../ingress/ingress_router.js");
   });
 });
