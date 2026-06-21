@@ -55,6 +55,7 @@
     "ops:production-deploy-pipeline-v0": "node scripts/production-deploy-pipeline-v0.mjs",
     "ops:materialize-world-artifacts-v0": "node scripts/materialize-world-artifacts-v0.mjs",
     "ops:verify-world-artifacts-v0": "node scripts/verify-world-artifacts-v0.mjs",
+    "ops:validate-public-identity-v0": "node scripts/validate-public-identity-v0.mjs",
     "ops:bootstrap-world-v0": "node scripts/bootstrap-world-v0.mjs",
     "ops:post-deploy-monitor-v0": "node scripts/post-deploy-monitor-v0.mjs --compressed",
     "ops:deploy-world-v0": "node scripts/deploy-world-v0.mjs --dry-run",

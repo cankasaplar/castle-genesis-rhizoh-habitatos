@@ -1,0 +1,21 @@
+{
+  "schema": "castle.rhizoh.public_causal_snapshot.v0",
+  "publishedAt": "2026-06-19",
+  "canonicalUrl": "https://rhizoh.com/.well-known/rhizoh-causal-snapshot.json",
+  "summary": {
+    "nodes": 72,
+    "edges": 48,
+    "compression": true,
+    "truth_loss": 0,
+    "identity_hash": "h9d347606"
+  },
+  "projection": {
+    "phase": "read_only_v0",
+    "fullRawPublished": false,
+    "liveSource": "causalMap layer (ECG) → identityManifest.project()"
+  },
+  "note": "Published aggregate only. Full causalMapRaw is not exposed. Live node and edge counts may differ at runtime.",
+  "bootstrapReference": true,
+  "interpretationOnly": true,
+  "nonExecutive": true
+}
