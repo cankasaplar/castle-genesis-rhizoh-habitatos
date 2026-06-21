@@ -27,6 +27,7 @@ import {
   isChessArenaWorkspaceOpenV0,
   isChessClusterArenaOpenV0
 } from "../rhizoh/runtime/chessEngineContentionGateV0.js";
+import { isMapTransitionBusyV0 } from "../rhizoh/runtime/worldMapMeaningfulTransitionV0.js";
 
 export const RHIZOH_CANONICAL_TICK_SCHEMA_V0 = "castle.rhizoh.canonical_tick_client.v0";
 export const RHIZOH_CANONICAL_TICK_EVENT_V0 = "rhizoh:canonical-tick-v0";
@@ -39,6 +40,7 @@ let lastTickV0 = null;
 
 function shouldDeferCanonicalCatchUpV0() {
   if (typeof window === "undefined") return false;
+  if (isMapTransitionBusyV0()) return true;
   return isChessArenaWorkspaceOpenV0() || isChessClusterArenaOpenV0();
 }
 
@@ -168,15 +170,23 @@ export function startCanonicalTickClientV0() {
   if (startedV0 || typeof window === "undefined") return;
   startedV0 = true;
 
+  const bootPoll = () => {
+    void pollCanonicalTickV0();
+    pollTimerV0 = window.setInterval(() => {
+      void pollCanonicalTickV0();
+    }, 5000);
+  };
+
   const onOnline = () => {
     void pollCanonicalTickV0();
   };
   window.addEventListener("online", onOnline);
-  void pollCanonicalTickV0();
 
-  pollTimerV0 = window.setInterval(() => {
-    void pollCanonicalTickV0();
-  }, 5000);
+  if (typeof requestIdleCallback !== "undefined") {
+    requestIdleCallback(bootPoll, { timeout: 4500 });
+  } else {
+    window.setTimeout(bootPoll, 1200);
+  }
 
   if (typeof window !== "undefined") {
     window.__rhizoh = window.__rhizoh || {};

@@ -399,14 +399,38 @@ export default function AppRhizohWorldSpaceV0() {
 
   useEffect(() => {
     attachRhizohMapExecutionOrchestratorV1();
-    startCanonicalTickClientV0();
-    const stopYoutubeLab = startYoutubeLabOctoBridgeV1();
-    const stopLegalPendingLoop = startRhizohLegalPendingWaitLoopV0();
-    const stopCityMapLegalGate = startCityMapLegalCountdownMediaGateV0({ uiLocale });
-    const stopSportsLiveInjection = startSportsLiveInjectionV0({ locale: uiLocale, intervalMs: 90_000 });
-    const stopShadowDataPlane = startShadowDataPlaneLoopV0();
-    const stopShadowInbox = startShadowCastleInboxV0();
-    publishShadowCastleInboxDevtoolsV0();
+    installWorldSpaceMapCommandFacadeV0();
+
+    let cancelled = false;
+    /** @type {(() => void) | null} */
+    let stopYoutubeLab = null;
+    /** @type {(() => void) | null} */
+    let stopLegalPendingLoop = null;
+    /** @type {(() => void) | null} */
+    let stopCityMapLegalGate = null;
+    /** @type {(() => void) | null} */
+    let stopSportsLiveInjection = null;
+    /** @type {(() => void) | null} */
+    let stopShadowDataPlane = null;
+    /** @type {(() => void) | null} */
+    let stopShadowInbox = null;
+
+    const startDeferredWorldSpaceLoopsV0 = () => {
+      if (cancelled) return;
+      startCanonicalTickClientV0();
+      stopYoutubeLab = startYoutubeLabOctoBridgeV1();
+      stopLegalPendingLoop = startRhizohLegalPendingWaitLoopV0();
+      stopCityMapLegalGate = startCityMapLegalCountdownMediaGateV0({ uiLocale });
+      stopSportsLiveInjection = startSportsLiveInjectionV0({ locale: uiLocale, intervalMs: 90_000 });
+      stopShadowDataPlane = startShadowDataPlaneLoopV0();
+      stopShadowInbox = startShadowCastleInboxV0();
+      publishShadowCastleInboxDevtoolsV0();
+    };
+
+    const deferredBootHandle =
+      typeof requestIdleCallback !== "undefined"
+        ? requestIdleCallback(startDeferredWorldSpaceLoopsV0, { timeout: 3200 })
+        : window.setTimeout(startDeferredWorldSpaceLoopsV0, 700);
 
     const onShadowReaction = (ev) => {
       const toast = ev?.detail?.reaction?.toast;
@@ -420,8 +444,6 @@ export default function AppRhizohWorldSpaceV0() {
     const onOpenCastleGate = () => setCastleInitGateOpen(true);
     window.addEventListener("castle:open-init-gate-v0", onOpenCastleGate);
     window.addEventListener("castle:open-anchor-offer-v0", onOpenCastleGate);
-
-    installWorldSpaceMapCommandFacadeV0();
 
     const onSovereignWarp = (ev) => {
       const detail = ev?.detail;
@@ -549,6 +571,12 @@ export default function AppRhizohWorldSpaceV0() {
     window.addEventListener(RHIZOH_SHOW_INFO_EVENT_V1, onInfo);
     window.addEventListener(CASTLE_ARCHIVE_OPEN_MEDIA_EVENT_V0, onArchiveMedia);
     return () => {
+      cancelled = true;
+      if (typeof requestIdleCallback !== "undefined" && typeof cancelIdleCallback !== "undefined") {
+        cancelIdleCallback(deferredBootHandle);
+      } else {
+        window.clearTimeout(deferredBootHandle);
+      }
       stopYoutubeLab?.();
       stopLegalPendingLoop?.();
       stopCityMapLegalGate?.();

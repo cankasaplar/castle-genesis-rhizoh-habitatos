@@ -48,6 +48,7 @@ export const RHIZOH_SPIRAL_MMO_CONTINENT_PINS_V0 = Object.freeze(
       shortLabel: meta.label,
       type: "spiralmmo",
       continent,
+      spiralLayer: "explorer",
       lat: coords.lat,
       lon: coords.lon,
       color: "#ffcc00",

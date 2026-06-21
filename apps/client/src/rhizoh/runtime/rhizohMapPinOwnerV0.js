@@ -40,6 +40,23 @@ export function isExplorerOnlyAlwaysVisiblePinV0(pin) {
   if (id === "my_castle" || type === "my_castle") return true;
   if (isOriginHomeSerencebeyPinV0(pin)) return true;
   if (type === "broadcast" || id.startsWith("live_match:")) return true;
+  if (type === "spiralmmo" || type === "tower" || type === "portal") return true;
+  if (["ghost", "zone", "vault", "agent", "hub"].includes(type)) return true;
+  return false;
+}
+
+/**
+ * Sovereign mesh pins visible on V11 Explorer (towers · SpiralMMO · core zones).
+ * @param {object} pin
+ * @returns {boolean}
+ */
+export function isExplorerOnlySovereignMeshPinV0(pin) {
+  if (!pin || typeof pin !== "object") return false;
+  const type = String(pin.type || "");
+  if (type === "spiralmmo" || type === "tower" || type === "portal") return true;
+  if (["ghost", "zone", "vault", "agent", "hub"].includes(type)) {
+    return String(pin.id || "") !== "my_castle";
+  }
   return false;
 }
 
@@ -96,7 +113,8 @@ export function filterSovereignPinsForSpiralMapViewV0(sovereign, filterState) {
       (pin) =>
         pin.id === "my_castle" ||
         pin.type === "my_castle" ||
-        isOriginHomeSerencebeyPinV0(pin)
+        isOriginHomeSerencebeyPinV0(pin) ||
+        isExplorerOnlySovereignMeshPinV0(pin)
     )
   );
 }
