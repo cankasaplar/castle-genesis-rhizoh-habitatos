@@ -65,7 +65,6 @@ import {
   SPIRAL_MAP_REALITY_MODE_V0
 } from "../rhizoh/runtime/spiralMapRealityModeV0.js";
 import { resolveCastleIdentityViewportNodesV0 } from "../rhizoh/runtime/worldMapCastleIdentityV0.js";
-import { isSpiralCountdownCalmVisualV0 } from "../rhizoh/runtime/worldDomainCalmModeV0.js";
 import { RHIZOH_MAP_COMMAND_EVENT_V0 } from "../rhizoh/runtime/rhizohLocalCommandHandlersV0.js";
 import { RhizohCatchUpCascadeOverlayV0 } from "./RhizohCatchUpCascadeOverlayV0.jsx";
 import { RhizohSpiralMMOMapAwakeningOverlayV0 } from "./RhizohSpiralMMOMapAwakeningOverlayV0.jsx";
