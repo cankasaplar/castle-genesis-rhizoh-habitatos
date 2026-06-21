@@ -4,6 +4,8 @@
  * This is an interpretation envelope for conversation, not an execution source.
  */
 
+import { buildObserverInviteLlmContextPatchV0 } from "../ingress/observerInviteOnboardingV0.js";
+
 export const RHIZOH_LIVE_CONTEXT_ENGINE_SCHEMA_V2 = "rhizoh.live_context_engine.v2";
 
 export const RHIZOH_CONTEXT_PRIORITY_V2 = Object.freeze({
@@ -160,6 +162,10 @@ export function buildRhizohLiveContextEnvelopeV2(input = {}) {
   const memory = normalizeMemoryV2(input.memory || {});
   const liveInjection = buildLiveInjectionV2(intent, liveWorld, spatial);
   const suggestedActions = normalizeSuggestedActionsV2(input.suggestedActions || []);
+  const observerInvite =
+    input.observerInvite && typeof input.observerInvite === "object"
+      ? input.observerInvite
+      : buildObserverInviteLlmContextPatchV0();
 
   return Object.freeze({
     schema: RHIZOH_LIVE_CONTEXT_ENGINE_SCHEMA_V2,
@@ -169,7 +175,8 @@ export function buildRhizohLiveContextEnvelopeV2(input = {}) {
       spatial,
       memory,
       liveWorld,
-      activeSession: input.activeSession || null
+      activeSession: input.activeSession || null,
+      observerInvite
     }),
     liveInjection,
     suggestedActions,

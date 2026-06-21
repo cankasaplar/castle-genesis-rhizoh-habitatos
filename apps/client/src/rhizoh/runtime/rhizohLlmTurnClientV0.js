@@ -25,6 +25,7 @@ import {
   resolveTeacherSourceFromProviderV0
 } from "./rhizohPolicyRouterV0.js";
 import { ingestTeacherExchangeV0 } from "./rhizohTeacherIngestV0.js";
+import { buildObserverInviteLlmContextPatchV0 } from "../ingress/observerInviteOnboardingV0.js";
 
 export const RHIZOH_LLM_TURN_CLIENT_SCHEMA_V0 = "castle.rhizoh.llm_turn_client.v0";
 
@@ -119,6 +120,11 @@ export async function postRhizohLlmTurnV0(input = {}) {
   if (fastPatch) {
     runtime.rhizohFastSpeech = fastPatch;
     runtime.scheduling = fastPatch.scheduling;
+  }
+
+  const invitePatch = buildObserverInviteLlmContextPatchV0();
+  if (invitePatch) {
+    runtime.observerInvite = invitePatch;
   }
 
   const langBundle = buildRhizohLanguagePropagationBundleV0();
