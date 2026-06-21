@@ -1,33 +1,37 @@
 # Rhizoh Visitor Epistemic Trace v0
 
 **Status:** DRAFT · `RESEARCH-ONLY`  
-**Spine:** Trace ≠ memory · Observation ≠ Execution
+**Spine:** Echo trace ≠ memory ≠ identity · Validated observer node
 
 ## Purpose
 
-Record **anonymous session path** for invited observers — what surfaces they touched (invite, chat, map, chess, castle) — without writing to identity event log or WAL.
+Record **anonymous observation path** for invitation study — what surfaces were visited, cross-session return, coherence with the three epistemic coordinates.
 
-This is **not** user memory. It is an interpretation-only engagement trace for invitation study (`RHIZOH_INVITATION_STUDY_V0.md`).
+**Not** user memory. **Not** `epi_id`. **Not** WAL.
 
 ## Output shape
 
 ```json
 {
-  "schema": "castle.rhizoh.visitor_epistemic_trace.v0",
-  "visitor_session": "anonymous",
+  "visitor_id": "anon",
+  "sessions": 2,
+  "visited_surfaces": ["map", "chess"],
   "path": ["invite", "chat", "map", "chess"],
+  "coherence_alignment": 0.71,
+  "return_vector": "weak_identity_resonance",
   "engagement_vector": 0.43,
   "return_probability": 0.61,
-  "interpretationOnly": true,
-  "isMemory": false
+  "isMemory": false,
+  "isIdentity": false,
+  "isEchoTrace": true
 }
 ```
 
 | Field | Meaning |
 |-------|---------|
-| `engagement_vector` | Heuristic 0–1 from path diversity + visit depth |
-| `return_probability` | Heuristic 0–1 — **not** a production ML model |
-| `cohortId` | From opaque invite token when present |
+| `coherence_alignment` | Fraction of {map, chess, castle} visited (0–1) |
+| `return_vector` | `none` · `weak_identity_resonance` · `moderate_co_observation` · `strong_return_echo` |
+| `sessions` | Cross-browser-tab echo count (localStorage) |
 
 ## Console API
 
@@ -36,16 +40,8 @@ window.__rhizoh.visitorTrace.snapshot()
 window.__rhizoh.visitorTrace.record("map")
 ```
 
-## Wiring (automatic)
-
-- Invite proceed → `chat`
-- Map camera feedback → `map`
-- Chess arena open → `chess`
-- Castle init gate → `castle`
-- `/world` path → `map`
-
 ## Related
 
-- [`RHIZOH_MEANING_LAYER_V0.md`](RHIZOH_MEANING_LAYER_V0.md)
-- [`RHIZOH_INVITATION_STUDY_V0.md`](RHIZOH_INVITATION_STUDY_V0.md)
+- [`RHIZOH_RETURN_BEHAVIOR_TRACE_V0.md`](RHIZOH_RETURN_BEHAVIOR_TRACE_V0.md)
+- [`RHIZOH_OBSERVER_NODE_SPEC.md`](RHIZOH_OBSERVER_NODE_SPEC.md)
 - Runtime: `apps/client/src/rhizoh/ingress/visitorEpistemicTraceV0.js`

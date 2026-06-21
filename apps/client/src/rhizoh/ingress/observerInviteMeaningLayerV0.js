@@ -1,6 +1,6 @@
 /**
- * Meaning layer v0 — why surfaces exist (map / chess / castle).
- * Interpretation-only copy for invite landing + onboarding.
+ * Ontology translation layer v0 — three epistemic coordinate systems (not features).
+ * Contract injection at invite ingress. @see docs/RHIZOH_MEANING_LAYER_V0.md
  */
 
 export const OBSERVER_INVITE_MEANING_LAYER_SCHEMA_V0 = "castle.rhizoh.observer_invite_meaning_layer.v0";
@@ -9,56 +9,67 @@ const WHY_AM_I_HERE_V0 = Object.freeze({
   tr: Object.freeze({
     title: "Neden buradasın?",
     body:
-      "Salt okunur bir epistemik sistemi gözlemliyorsun. Bu bir oyun hesabı veya sosyal ağ değil — execution yetkisi yok; yorum ve keşif var.",
+      "Bir ajanla etkileşmiyorsun. Varlığınla tutarlılık kazanan nedensel bir sistemi gözlemliyorsun — salt okunur; execution yetkisi yok.",
+    axiom:
+      "Gözlemci olarak graph'a dahilsin; ajan değilsin. Yorumlayabilirsin; mühürleyemezsin.",
     footnote: "Observation ≠ Execution"
   }),
   en: Object.freeze({
     title: "Why am I here?",
     body:
-      "You are observing a read-only epistemic system. This is not a game account or social feed — no execution authority; observation and exploration only.",
+      "You are not interacting with an agent. You are observing a causal system that becomes coherent through your presence — read-only; no execution authority.",
+    axiom:
+      "You are in the graph as an observer node, not an agent. You may interpret; you may not seal.",
     footnote: "Observation ≠ Execution"
   })
 });
 
+/** Three epistemic coordinate systems — ontology translation, not feature list. */
 const SURFACE_MEANINGS_V0 = Object.freeze({
   tr: Object.freeze([
     Object.freeze({
       id: "map",
       label: "Harita",
-      role: "Mekânsal biliş katmanı",
-      description: "Dünyanın topolojisi, pinler ve koordinatlar — nerede olduğunu ve neyin nerede olduğunu görürsün."
+      role: "Mekânsal nedensellik projeksiyon katmanı",
+      description:
+        "Uzay topolojisi ve pinler — olayların nerede bağlandığını gösteren koordinat sistemi."
     }),
     Object.freeze({
       id: "chess",
       label: "Satranç / Arena",
-      role: "Akıl yürütme yüzeyi",
-      description: "Taktik motor ve hamle zinciri — sistemde nedensel kararların somut bir yüzeyi."
+      role: "Zamansal akıl yürütme yüzeyi",
+      description:
+        "Karar baskısı simülatörü — hamle zinciri üzerinden nedensel baskının zaman içinde nasıl göründüğü."
     }),
     Object.freeze({
       id: "castle",
       label: "Kale",
-      role: "Anlatı çıpası",
-      description: "İsteğe bağlı kişisel düğüm — hikâye ve süreklilik için bir anchor; zorunlu değil."
+      role: "Anlatı tutarlılığı çıpası",
+      description:
+        "Kimlik stabilizasyon arayüzü — isteğe bağlı kişisel düğüm; zorunlu değil."
     })
   ]),
   en: Object.freeze([
     Object.freeze({
       id: "map",
       label: "Map",
-      role: "Spatial cognition layer",
-      description: "World topology, pins, and coordinates — where things are and how space is organized."
+      role: "Spatial causality projection layer",
+      description:
+        "Space topology and pins — the coordinate system for where events bind in the world."
     }),
     Object.freeze({
       id: "chess",
       label: "Chess / Arena",
-      role: "Reasoning surface",
-      description: "Tactical engine and move chains — a concrete face of causal decision-making in the system."
+      role: "Temporal reasoning surface",
+      description:
+        "Decision-pressure simulator — how causal pressure appears over time through move chains."
     }),
     Object.freeze({
       id: "castle",
       label: "Castle",
-      role: "Narrative anchor",
-      description: "Optional personal node — an anchor for story and continuity; not required."
+      role: "Narrative coherence anchor",
+      description:
+        "Identity stabilization UI — optional personal node; not required."
     })
   ])
 });
@@ -71,10 +82,11 @@ export function getWhyAmIHerePanelV0(locale = "en") {
   const copy = WHY_AM_I_HERE_V0[tr ? "tr" : "en"];
   return Object.freeze({
     schema: OBSERVER_INVITE_MEANING_LAYER_SCHEMA_V0,
-    kind: "why_am_i_here",
+    kind: "ontological_gate_assertion",
     ...copy,
     interpretationOnly: true,
-    readOnly: true
+    readOnly: true,
+    isContractInjection: true
   });
 }
 
@@ -85,8 +97,8 @@ export function getMeaningLayerSurfacesV0(locale = "en") {
   const tr = locale === "tr";
   return Object.freeze({
     schema: OBSERVER_INVITE_MEANING_LAYER_SCHEMA_V0,
-    kind: "surface_meanings",
-    title: tr ? "Bu yüzeyler ne anlama geliyor?" : "What these surfaces mean",
+    kind: "ontology_translation_layer",
+    title: tr ? "Üç epistemik koordinat sistemi" : "Three epistemic coordinate systems",
     surfaces: SURFACE_MEANINGS_V0[tr ? "tr" : "en"],
     interpretationOnly: true,
     readOnly: true

@@ -153,6 +153,9 @@ export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInv
           {whyHere.title.toUpperCase()}
         </p>
         <p style={{ fontSize: 15, lineHeight: 1.55, margin: "0 0 8px", fontWeight: 500 }}>{whyHere.body}</p>
+        <p style={{ fontSize: 13, lineHeight: 1.5, margin: "0 0 8px", opacity: 0.85, fontStyle: "italic" }}>
+          {whyHere.axiom}
+        </p>
         <p style={{ fontSize: 11, opacity: 0.55, margin: 0 }}>{whyHere.footnote}</p>
       </div>
 

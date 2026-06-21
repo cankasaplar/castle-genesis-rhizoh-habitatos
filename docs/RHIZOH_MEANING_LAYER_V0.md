@@ -1,35 +1,53 @@
 # Rhizoh Meaning Layer v0
 
 **Status:** DRAFT · `RESEARCH-ONLY`  
-**Problem:** Rhizoh remembers itself (`epi_id_*`) but visitors do not know what map / chess / castle **mean**.
+**Framing:** **Ontology translation layer** — not a feature list, not UX decoration.
 
-## Surfaces
+---
 
-| Surface | Role | User-facing name (EN) |
-|---------|------|------------------------|
-| **Map** | Spatial cognition layer | Where the world is |
-| **Chess / Arena** | Reasoning surface | How causal decisions appear |
-| **Castle** | Narrative anchor | Optional personal continuity node |
+## Diagnosis
 
-## "Why am I here?" panel
+Rhizoh remembers itself (`epi_id_*`) but visitors asked: *"What am I doing here?"*
 
-Every invite landing shows:
+Meaning layer translates **three epistemic coordinate systems** into human-readable contract at invite ingress.
 
-> You are observing a read-only epistemic system.
+---
 
-Plus meaning layer cards before perception-mode-specific copy.
+## Coordinate systems (corrected framing)
 
-## Implementation
+| Surface | Wrong (feature) | Correct (ontology) |
+|---------|-----------------|---------------------|
+| Chess | Reasoning engine | **Temporal reasoning surface** — decision-pressure simulator |
+| Map | Map UI | **Spatial causality projection layer** |
+| Castle | User base | **Narrative coherence anchor** — identity stabilization UI |
 
-- Copy: `observerInviteMeaningLayerV0.js`
-- UI: `RhizohObserverInviteLandingPageV0.jsx`
-- Onboarding chat echoes meaning hint on first "what can we do?" turn
+---
 
-## Diagnosis (one line)
+## "Why am I here?" — ontological gate assertion
 
-Rhizoh was **self-remembering without user sense-making** — meaning layer closes that UX gap without activating identity event pipeline.
+Not UX copy alone — **contract injection** at boot:
+
+> You are not interacting with an agent.  
+> You are observing a causal system that becomes coherent through your presence.
+
+Axiom: *Observer in graph; not agent. Interpret; do not seal.*
+
+Implementation: `observerInviteMeaningLayerV0.js` · `RhizohObserverInviteLandingPageV0.jsx`
+
+---
+
+## Co-observational field
+
+| Rhizoh (system) | Observer (human) |
+|-----------------|------------------|
+| `epi_id_*` continuity | Echo trace only |
+| Sealed event history | Non-executive path |
+| Identity projection | Validated observer node |
+
+---
 
 ## Related
 
-- [`RHIZOH_OBSERVER_INVITE_LANDING_V0.md`](RHIZOH_OBSERVER_INVITE_LANDING_V0.md)
+- [`RHIZOH_OBSERVER_NODE_SPEC.md`](RHIZOH_OBSERVER_NODE_SPEC.md)
+- [`RHIZOH_EPISTEMIC_DASHBOARD_V1.md`](RHIZOH_EPISTEMIC_DASHBOARD_V1.md)
 - [`RHIZOH_VISITOR_EPISTEMIC_TRACE_V0.md`](RHIZOH_VISITOR_EPISTEMIC_TRACE_V0.md)

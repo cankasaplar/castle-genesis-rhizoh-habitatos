@@ -27,4 +27,14 @@ describe("visitorEpistemicTraceV0", () => {
     recordVisitorSurfaceV0("map");
     expect(getVisitorEpistemicTraceV0().path).toEqual(["map"]);
   });
+
+  it("records echo trace fields", () => {
+    recordVisitorSurfaceV0("map");
+    recordVisitorSurfaceV0("chess");
+    const t = getVisitorEpistemicTraceV0();
+    expect(t.isEchoTrace).toBe(true);
+    expect(t.coherence_alignment).toBeGreaterThan(0);
+    expect(t.return_vector).toBeTruthy();
+    expect(t.visited_surfaces).toContain("map");
+  });
 });
