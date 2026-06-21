@@ -28,6 +28,7 @@ import {
   isChessClusterArenaOpenV0
 } from "../rhizoh/runtime/chessEngineContentionGateV0.js";
 import { isMapTransitionBusyV0 } from "../rhizoh/runtime/worldMapMeaningfulTransitionV0.js";
+import { isWorldSpaceMapBootingV0 } from "../rhizoh/runtime/worldSpaceMapBootGateV0.js";
 
 export const RHIZOH_CANONICAL_TICK_SCHEMA_V0 = "castle.rhizoh.canonical_tick_client.v0";
 export const RHIZOH_CANONICAL_TICK_EVENT_V0 = "rhizoh:canonical-tick-v0";
@@ -41,6 +42,7 @@ let lastTickV0 = null;
 function shouldDeferCanonicalCatchUpV0() {
   if (typeof window === "undefined") return false;
   if (isMapTransitionBusyV0()) return true;
+  if (isWorldSpaceMapBootingV0()) return true;
   return isChessArenaWorkspaceOpenV0() || isChessClusterArenaOpenV0();
 }
 

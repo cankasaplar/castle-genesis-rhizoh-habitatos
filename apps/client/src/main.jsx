@@ -46,6 +46,7 @@ import { mountCastleApplicationV0 } from "./boot/mountCastleApplicationV0.jsx";
 import { registerRhizohServiceWorkerV0 } from "./pwa/registerRhizohServiceWorkerV0.js";
 import { initRhizohPwaSyncManagerV0 } from "./pwa/rhizohPwaSyncManagerV0.js";
 import { initRhizohSimulationPersistenceV0 } from "./core/initRhizohSimulationPersistenceV0.js";
+import { isRhizohWorldSpacePathV0 } from "./rhizoh/runtime/worldSpaceMapBootGateV0.js";
 
 const appEl = document.getElementById("app");
 if (!import.meta.env.DEV) {
@@ -58,10 +59,11 @@ if (!import.meta.env.DEV) {
       bootLog.ok("boot.sim_persistence", out.mode || out.reason || "ok");
     });
   };
+  const simPersistenceDelayMsV0 = isRhizohWorldSpacePathV0() ? 12_000 : 4000;
   if (typeof requestIdleCallback !== "undefined") {
-    requestIdleCallback(runSimPersistenceBootV0, { timeout: 4000 });
+    requestIdleCallback(runSimPersistenceBootV0, { timeout: simPersistenceDelayMsV0 });
   } else {
-    setTimeout(runSimPersistenceBootV0, 400);
+    setTimeout(runSimPersistenceBootV0, isRhizohWorldSpacePathV0() ? 2500 : 400);
   }
 } else {
   bootLog.ok("boot.pwa_shell", "dev: service worker skipped");

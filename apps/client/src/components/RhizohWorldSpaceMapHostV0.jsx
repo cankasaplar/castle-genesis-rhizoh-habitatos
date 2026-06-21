@@ -22,6 +22,9 @@ import {
   WORLD_MAP_OBSERVATION_ORIGIN_EVENT_V0
 } from "../rhizoh/runtime/worldMapBootstrapGeoV0.js";
 
+import {
+  publishV11LeafletReadyV0
+} from "../rhizoh/runtime/worldSpaceMapBootGateV0.js";
 import { dispatchV11MapEventPinV0 } from "../rhizoh/runtime/mapEventPinDispatchV0.js";
 import {
   cancelMapPinHoverDwellV0,
@@ -90,6 +93,27 @@ import {
 
 function readPresenceCountSnapshotV0() {
   return listCastlePresenceV0().length;
+}
+
+const LEAFLET_MARKER_BATCH_SIZE_V0 = 10;
+
+function scheduleMapInitV0(fn) {
+  if (typeof window === "undefined") {
+    fn();
+    return;
+  }
+  const run = () => {
+    if (typeof requestIdleCallback !== "undefined") {
+      requestIdleCallback(fn, { timeout: 1800 });
+    } else {
+      window.setTimeout(fn, 120);
+    }
+  };
+  if (typeof requestAnimationFrame !== "undefined") {
+    requestAnimationFrame(run);
+  } else {
+    run();
+  }
 }
 
 function projectV11CoreMapGeoV0(lat, lon) {
@@ -366,48 +390,52 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
     let map = null;
     void loadLeafletV0().then((L) => {
       if (cancelled || !L || !hostRef.current || mapRef.current) return;
-      try {
-        map = L.map(hostRef.current, {
-          zoomControl: true,
-          attributionControl: false,
-          worldCopyJump: true,
-          preferCanvas: true,
-          scrollWheelZoom: true,
-          doubleClickZoom: true,
-          touchZoom: true,
-          minZoom: 2,
-          maxZoom: 18
-        });
-        const home = resolveWorldSpaceMapRecenterHomeV0();
-        map.setView([home.lat, home.lon], home.zoom || 14);
-        tileLayerRef.current = L.tileLayer(leafletTileUrlForToolV0(activeMapTool), {
-          maxZoom: 18
-        }).addTo(map);
-        map.on("click", (ev) => handleV11MapClickForClaimV0(ev));
-        const onMapDismissPreview = () => emitV11MapClearPreviewV0();
-        map.on("movestart", onMapDismissPreview);
-        map.on("zoomstart", onMapDismissPreview);
-        map.on("dragstart", onMapDismissPreview);
-        markerLayerRef.current = L.layerGroup().addTo(map);
-        graphLayerRef.current = L.layerGroup().addTo(map);
-        mapRef.current = map;
+      scheduleMapInitV0(() => {
+        if (cancelled || !hostRef.current || mapRef.current) return;
         try {
-          window.__rhizoh = window.__rhizoh || {};
-          window.__rhizoh.v11LeafletMap = map;
-        } catch {
-          /* noop */
-        }
-        setLeafletReady(true);
-        setTimeout(() => {
+          map = L.map(hostRef.current, {
+            zoomControl: true,
+            attributionControl: false,
+            worldCopyJump: true,
+            preferCanvas: true,
+            scrollWheelZoom: true,
+            doubleClickZoom: true,
+            touchZoom: true,
+            minZoom: 2,
+            maxZoom: 18
+          });
+          const home = resolveWorldSpaceMapRecenterHomeV0();
+          map.setView([home.lat, home.lon], home.zoom || 14);
+          tileLayerRef.current = L.tileLayer(leafletTileUrlForToolV0(activeMapTool), {
+            maxZoom: 18
+          }).addTo(map);
+          map.on("click", (ev) => handleV11MapClickForClaimV0(ev));
+          const onMapDismissPreview = () => emitV11MapClearPreviewV0();
+          map.on("movestart", onMapDismissPreview);
+          map.on("zoomstart", onMapDismissPreview);
+          map.on("dragstart", onMapDismissPreview);
+          markerLayerRef.current = L.layerGroup().addTo(map);
+          graphLayerRef.current = L.layerGroup().addTo(map);
+          mapRef.current = map;
           try {
-            map.invalidateSize();
+            window.__rhizoh = window.__rhizoh || {};
+            window.__rhizoh.v11LeafletMap = map;
           } catch {
             /* noop */
           }
-        }, 80);
-      } catch {
-        setLeafletReady(false);
-      }
+          setLeafletReady(true);
+          publishV11LeafletReadyV0({ pinCount: displayNodes.length });
+          setTimeout(() => {
+            try {
+              map.invalidateSize();
+            } catch {
+              /* noop */
+            }
+          }, 80);
+        } catch {
+          setLeafletReady(false);
+        }
+      });
     });
     return () => {
       cancelled = true;
@@ -506,7 +534,101 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
 
   useEffect(() => {
     const L = typeof window !== "undefined" ? window.L : null;
-    if (!L?.marker || !mapRef.current || !leafletReady) return;
+    if (!L?.marker || !mapRef.current || !leafletReady) return undefined;
+    let cancelled = false;
+    let rafId = 0;
+
+    const addMarkerForNodeV0 = (node) => {
+      const renderNode =
+        node.shadowPulseActive || readShadowCastlePinPulseActiveV0(node.id)
+          ? Object.freeze({ ...node, shadowPulseActive: true })
+          : node;
+      const marker = L.marker([node.lat, node.lon], {
+        icon: createLeafletNodeIconV0(L, renderNode),
+        keyboard: false,
+        title: node.name || node.label,
+        zIndexOffset:
+          node.id === "my_castle"
+            ? 900
+            : node.type === "memory_beacon"
+              ? 350
+              : node.type === "remote_castle"
+                ? 100
+                : node.type === "spiralmmo"
+                  ? 320
+                  : node.type === "tower"
+                    ? 400
+                    : 200
+      }).addTo(markerLayerRef.current);
+      marker.on("click", (ev) => {
+        try {
+          ev?.originalEvent?.stopPropagation?.();
+        } catch {
+          /* noop */
+        }
+        if (isMapTransitionBusyV0()) return;
+        const map = mapRef.current;
+        if (node.type === "remote_castle") {
+          dispatchV11MapEventPinV0(node, "click", map);
+          return;
+        }
+        if (node.type === "spiralmmo") {
+          dispatchV11MapEventPinV0(node, "click", map);
+          return;
+        }
+        runMapPinApproachThenV0(map, node, {}, () =>
+          dispatchV11MapEventPinV0(node, "click", map)
+        );
+      });
+      marker.on("mouseover", () => {
+        if (node.type === "spiralmmo") return;
+        scheduleMapPinHoverDwellV0(
+          node,
+          (n) => dispatchV11MapEventPinV0(n, "hover", mapRef.current),
+          () => emitV11MapClearPreviewV0()
+        );
+      });
+      marker.on("mouseout", () => {
+        cancelMapPinHoverDwellV0(() => emitV11MapClearPreviewV0());
+      });
+      if (node.id === "rhizoh_portal") {
+        portalMarkerRef.current = marker;
+        writeSovereignPortalCoordsV0(node.lat, node.lon);
+      }
+    };
+
+    const fitViewportOnceV0 = (allNodes) => {
+      if (boundsFittedRef.current || !allNodes.length || !mapRef.current) return;
+      const arenaFit = resolveArenaPopulationViewportFitNodesV0(allNodes, {
+        spiralLayerFilter
+      });
+      const fitNodes =
+        arenaFit.length >= 1
+          ? arenaFit
+          : resolveMapViewportFitNodesV0(allNodes, {
+              worldSpaceNeutral: true,
+              userCastle: userCastleGeo
+            });
+      if (fitNodes.length >= 2) {
+        const bounds = L.latLngBounds(fitNodes.map((n) => [n.lat, n.lon]));
+        mapRef.current.fitBounds(bounds, {
+          paddingTopLeft: [28, 88],
+          paddingBottomRight: [28, 32],
+          maxZoom: userCastleGeo ? 15 : 14,
+          animate: false
+        });
+      } else if (fitNodes.length === 1) {
+        const node = fitNodes[0];
+        mapRef.current.setView([node.lat, node.lon], userCastleGeo ? 15 : 14, { animate: false });
+      } else if (userCastleGeo) {
+        mapRef.current.setView([userCastleGeo.lat, userCastleGeo.lon], 15, { animate: false });
+      } else {
+        const anchor = resolveWorldMapBootstrapGeoV0();
+        mapRef.current.setView([anchor.lat, anchor.lon], 14, { animate: false });
+      }
+      boundsFittedRef.current = true;
+    };
+
     try {
       nodeById.current = new Map(displayNodes.map((n) => [n.id, n]));
       markerLayerRef.current?.clearLayers?.();
@@ -527,102 +649,32 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
         ...(shadowPeerNode ? [shadowPeerNode] : []),
         ...remoteNodes
       ];
-      for (const node of allNodes) {
-        const renderNode =
-          node.shadowPulseActive || readShadowCastlePinPulseActiveV0(node.id)
-            ? Object.freeze({ ...node, shadowPulseActive: true })
-            : node;
-        const marker = L.marker([node.lat, node.lon], {
-          icon: createLeafletNodeIconV0(L, renderNode),
-          keyboard: false,
-          title: node.name || node.label,
-          zIndexOffset:
-            node.id === "my_castle"
-              ? 900
-              : node.type === "memory_beacon"
-                ? 350
-                : node.type === "remote_castle"
-                ? 100
-                : node.type === "spiralmmo"
-                  ? 320
-                  : node.type === "tower"
-                    ? 400
-                    : 200
-        }).addTo(markerLayerRef.current);
-        marker.on("click", (ev) => {
-          try {
-            ev?.originalEvent?.stopPropagation?.();
-          } catch {
-            /* noop */
-          }
-          if (isMapTransitionBusyV0()) return;
-          const map = mapRef.current;
-          if (node.type === "remote_castle") {
-            dispatchV11MapEventPinV0(node, "click", map);
-            return;
-          }
-          if (node.type === "spiralmmo") {
-            dispatchV11MapEventPinV0(node, "click", map);
-            return;
-          }
-          runMapPinApproachThenV0(map, node, {}, () =>
-            dispatchV11MapEventPinV0(node, "click", map)
-          );
-        });
-        marker.on("mouseover", () => {
-          if (node.type === "spiralmmo") return;
-          scheduleMapPinHoverDwellV0(
-            node,
-            (n) => dispatchV11MapEventPinV0(n, "hover", mapRef.current),
-            () => emitV11MapClearPreviewV0()
-          );
-        });
-        marker.on("mouseout", () => {
-          cancelMapPinHoverDwellV0(() => emitV11MapClearPreviewV0());
-        });
-        if (node.id === "rhizoh_portal") {
-          portalMarkerRef.current = marker;
-          writeSovereignPortalCoordsV0(node.lat, node.lon);
-        }
-      }
 
-      if (!boundsFittedRef.current && allNodes.length) {
-        const arenaFit = resolveArenaPopulationViewportFitNodesV0(allNodes, {
-          spiralLayerFilter
-        });
-        const fitNodes =
-          arenaFit.length >= 1
-            ? arenaFit
-            : resolveMapViewportFitNodesV0(allNodes, {
-                worldSpaceNeutral: true,
-                userCastle: userCastleGeo
-              });
-        if (fitNodes.length >= 2) {
-          const bounds = L.latLngBounds(fitNodes.map((n) => [n.lat, n.lon]));
-          mapRef.current.fitBounds(bounds, {
-            paddingTopLeft: [28, 88],
-            paddingBottomRight: [28, 32],
-            maxZoom: userCastleGeo ? 15 : 14,
-            animate: false
-          });
-        } else if (fitNodes.length === 1) {
-          const node = fitNodes[0];
-          mapRef.current.setView([node.lat, node.lon], userCastleGeo ? 15 : 14, { animate: false });
-        } else if (userCastleGeo) {
-          mapRef.current.setView([userCastleGeo.lat, userCastleGeo.lon], 15, { animate: false });
-        } else {
-          const anchor = resolveWorldMapBootstrapGeoV0();
-          mapRef.current.setView([anchor.lat, anchor.lon], 14, { animate: false });
+      let cursor = 0;
+      const pumpMarkersV0 = () => {
+        if (cancelled) return;
+        const end = Math.min(cursor + LEAFLET_MARKER_BATCH_SIZE_V0, allNodes.length);
+        for (let i = cursor; i < end; i += 1) {
+          addMarkerForNodeV0(allNodes[i]);
         }
-        boundsFittedRef.current = true;
-      }
-
-      graphLayerRef.current?.clearLayers?.();
-      if (!graphLayerRef.current) graphLayerRef.current = L.layerGroup().addTo(mapRef.current);
-      /* Route polylines removed — dimensional collapse uses gate arcs only (no static mesh). */
+        cursor = end;
+        if (cursor < allNodes.length) {
+          rafId = requestAnimationFrame(pumpMarkersV0);
+          return;
+        }
+        fitViewportOnceV0(allNodes);
+        graphLayerRef.current?.clearLayers?.();
+        if (!graphLayerRef.current) graphLayerRef.current = L.layerGroup().addTo(mapRef.current);
+      };
+      rafId = requestAnimationFrame(pumpMarkersV0);
     } catch {
       /* noop */
     }
+
+    return () => {
+      cancelled = true;
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, [leafletReady, localAnchors, displayNodes, remoteNodes, shadowPeerNode, userCastleGeo, spiralLayerFilter]);
 
   useEffect(() => {
@@ -670,38 +722,13 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
       {!spiralCalmVisual ? <RhizohN12PersistenceGateV0 /> : null}
       {!spiralCalmVisual ? <RhizohCodexEventStreamV0 /> : null}
       <RhizohOfflineVoidOverlayV0 />
-      {!leafletReady ? displayNodes.map((node) => {
-        const pos = projectV11CoreMapGeoV0(node.lat, node.lon);
-        return (
-          <div
-            key={node.id}
-            role="button"
-            tabIndex={0}
-            className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer"
-            style={{ ...pos, color: node.color }}
-            data-rhizoh-v11-node={node.id}
-            data-rhizoh-v11-node-type={node.type}
-            onClick={() => {
-              dispatchV11MapEventPinV0(node, "tap");
-            }}
-            onMouseEnter={() => dispatchV11MapEventPinV0(node, "hover")}
-            onKeyDown={(ev) => {
-              if (ev.key === "Enter" || ev.key === " ") {
-                ev.preventDefault();
-                dispatchV11MapEventPinV0(node, "click");
-              }
-            }}
-          >
-            <div
-              className="h-3 w-3 rounded-full border bg-black shadow-[0_0_18px_currentColor]"
-              style={{ borderColor: node.color }}
-            />
-            <div className="mt-1 whitespace-nowrap rounded bg-black/55 px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider">
-              {node.label}
-            </div>
+      {!leafletReady ? (
+        <div className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center">
+          <div className="rounded-2xl border border-cyan-400/20 bg-black/55 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan-100/80">
+            V11 · {uiLocale === "tr" ? "harita yükleniyor" : "loading map"}
           </div>
-        );
-      }) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

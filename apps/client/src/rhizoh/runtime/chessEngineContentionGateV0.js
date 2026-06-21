@@ -4,6 +4,7 @@
  */
 
 import { CHESS_ENGINE_TASK_KIND_V0, cancelPendingClusterEngineTasksV0, getChessEngineQueueSnapshotV0 } from "./chessEngineTaskQueueV0.js";
+import { isWorldSpaceMapBootingV0 } from "./worldSpaceMapBootGateV0.js";
 
 export const CHESS_ENGINE_CONTENTION_GATE_SCHEMA_V0 = "castle.rhizoh.chess_engine_contention_gate.v0";
 export const CHESS_CLUSTER_ARENA_REGISTRY_SCHEMA_V0 = "castle.rhizoh.chess_cluster_arena.v0";
@@ -67,8 +68,9 @@ export function isChessArenaWorkspaceOpenV0() {
   return Boolean(window.__rhizoh?.chessArenaWorkspace?.open);
 }
 
-/** Pause background cluster ticks while map arena match is active. */
+/** Pause background cluster ticks while map arena match is active or V11 map is still booting. */
 export function shouldPauseClusterTickForArenaV0() {
+  if (isWorldSpaceMapBootingV0()) return true;
   return isChessArenaWorkspaceOpenV0();
 }
 
