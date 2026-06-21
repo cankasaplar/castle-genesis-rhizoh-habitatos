@@ -4,6 +4,8 @@
  * @see docs/RHIZOH_MATCH_AUTHORITY_LAYER_V1.md
  */
 
+import { ensureMatchmakingEngineSurfaceV0 } from "./matchmakingRuntimeSurfaceV0.js";
+
 export const MATCH_AUTHORITY_SCHEMA_V0 = "castle.rhizoh.match_authority.v1";
 
 export const MATCH_AUTHORITY_MODE_V0 = Object.freeze({
@@ -242,14 +244,13 @@ export function reconcileMatchAuthorityV0(session, opts = {}) {
 }
 
 export function mountMatchAuthorityConsoleV0() {
-  if (typeof window === "undefined") return;
-  window.__rhizoh = window.__rhizoh || {};
-  window.__rhizoh.matchmaking = window.__rhizoh.matchmaking || {};
-  window.__rhizoh.matchmaking.authority = Object.freeze({
+  const engine = ensureMatchmakingEngineSurfaceV0();
+  if (!engine) return;
+  engine.authority = Object.freeze({
     contract: buildMatchAuthorityContractV0,
-    status: () => window.__rhizoh?.matchmaking?.session?.authorityStatus?.() ?? getMatchAuthorityStatusV0({}),
-    proposeMove: (move) => window.__rhizoh?.matchmaking?.session?.move?.(move),
-    commit: (commit) => window.__rhizoh?.matchmaking?.session?.commit?.(commit),
-    reconcile: (opts) => window.__rhizoh?.matchmaking?.session?.reconcile?.(opts)
+    status: () => engine.session?.authorityStatus?.() ?? getMatchAuthorityStatusV0({}),
+    proposeMove: (move) => engine.session?.move?.(move),
+    commit: (commit) => engine.session?.commit?.(commit),
+    reconcile: (opts) => engine.session?.reconcile?.(opts)
   });
 }

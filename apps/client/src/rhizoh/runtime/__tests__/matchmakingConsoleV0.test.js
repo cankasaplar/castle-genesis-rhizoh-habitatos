@@ -5,11 +5,13 @@ import {
 } from "../matchmakingConsoleV0.js";
 import { clearMatchBeaconRegistryForTestV0 } from "../matchmakingBeaconRegistryV0.js";
 import { clearMatchSessionForTestV0 } from "../matchSessionLifecycleV0.js";
+import { resetMatchmakingRuntimeSurfaceForTestV0 } from "../matchmakingRuntimeSurfaceV0.js";
 
 describe("matchmakingConsoleV0", () => {
   beforeEach(() => {
     clearMatchBeaconRegistryForTestV0();
     clearMatchSessionForTestV0();
+    resetMatchmakingRuntimeSurfaceForTestV0();
     window.__rhizoh = {};
   });
 
@@ -26,7 +28,16 @@ describe("matchmakingConsoleV0", () => {
     mountMatchmakingConsoleV0();
     expect(() => mountMatchmakingConsoleV0()).not.toThrow();
     expect(isMatchmakingConsoleMountedV0()).toBe(true);
-    expect(Object.isFrozen(window.__rhizoh.matchmaking)).toBe(false);
+    expect(Object.isFrozen(window.__rhizoh.matchmaking)).toBe(true);
+    expect(window.__rhizoh.runtimeSurface?.matchmaking).toBeTruthy();
+    expect(Object.isFrozen(window.__rhizoh.runtimeSurface.matchmaking)).toBe(false);
+  });
+
+  it("blocks facade property injection after mount", () => {
+    mountMatchmakingConsoleV0();
+    expect(() => {
+      window.__rhizoh.matchmaking.emitBeacon = () => {};
+    }).toThrow();
   });
 
   it("allows emitBeacon after mount without read-only property errors", () => {

@@ -4,6 +4,8 @@
  * @see docs/RHIZOH_MATCHMAKING_CORE_SPEC_V1.md
  */
 
+import { ensureMatchmakingEngineSurfaceV0 } from "./matchmakingRuntimeSurfaceV0.js";
+
 export const MATCH_BEACON_SCHEMA_V0 = "castle.rhizoh.match_beacon.v1";
 export const MATCH_MODE_V0 = Object.freeze({
   KINETIC: "KINETIC",
@@ -107,7 +109,6 @@ export function emitMatchBeaconV0(input = {}) {
   });
 
   writeRegistryRowV0(next);
-  syncBeaconWindowV0(next);
 
   return Object.freeze({ ok: true, beacon, registry: next });
 }
@@ -123,7 +124,6 @@ export function cancelMatchBeaconV0(beaconId) {
   const beacons = (row.beacons || []).filter((b) => b.beaconId !== id);
   const next = Object.freeze({ ...row, beacons: Object.freeze(beacons), count: beacons.length });
   writeRegistryRowV0(next);
-  syncBeaconWindowV0(next);
   return Object.freeze({ ok: true, cancelled: id, registry: next });
 }
 
@@ -163,12 +163,11 @@ export function clearMatchBeaconRegistryForTestV0() {
   }
 }
 
-function syncBeaconWindowV0(row) {
-  if (typeof window === "undefined") return;
-  window.__rhizoh = window.__rhizoh || {};
-  window.__rhizoh.matchmaking = window.__rhizoh.matchmaking || {};
-  window.__rhizoh.matchmaking.emitBeacon = emitMatchBeaconV0;
-  window.__rhizoh.matchmaking.registry = Object.freeze({
+function mountBeaconEngineV0() {
+  const engine = ensureMatchmakingEngineSurfaceV0();
+  if (!engine) return;
+  engine.emitBeacon = emitMatchBeaconV0;
+  engine.registry = Object.freeze({
     emit: emitMatchBeaconV0,
     cancel: cancelMatchBeaconV0,
     snapshot: getMatchBeaconRegistrySnapshotV0,
@@ -179,5 +178,5 @@ function syncBeaconWindowV0(row) {
 
 export function mountMatchmakingBeaconRegistryConsoleV0() {
   if (typeof window === "undefined") return;
-  syncBeaconWindowV0(getMatchBeaconRegistrySnapshotV0());
+  mountBeaconEngineV0();
 }

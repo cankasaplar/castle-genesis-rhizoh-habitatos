@@ -29,6 +29,7 @@ const REQUIRED_SCHEMAS = [
 ];
 
 const RUNTIME_FILES = [
+  "matchmakingRuntimeSurfaceV0.js",
   "matchmakingConsoleV0.js",
   "matchAuthorityLayerV0.js",
   "matchAuthorityKernelV0.js",
@@ -122,6 +123,18 @@ if (!kernelText.includes("appendOnly: true")) {
 const validatorText = readFileSync(join(runtime, "matchStockfishValidatorBridgeV0.js"), "utf8");
 if (!validatorText.includes("influencesAuthority: false")) {
   console.error("matchmaking-spec-v1: validator must not influence authority");
+  failed = true;
+}
+
+const surfaceText = readFileSync(join(runtime, "matchmakingRuntimeSurfaceV0.js"), "utf8");
+if (!surfaceText.includes("contractBoundary") || !surfaceText.includes("runtimeSurface")) {
+  console.error("matchmaking-spec-v1: runtime surface must separate API facade from engine");
+  failed = true;
+}
+
+const consoleText = readFileSync(join(runtime, "matchmakingConsoleV0.js"), "utf8");
+if (!consoleText.includes("publishMatchmakingApiFacadeV0")) {
+  console.error("matchmaking-spec-v1: console mount must publish frozen API facade");
   failed = true;
 }
 

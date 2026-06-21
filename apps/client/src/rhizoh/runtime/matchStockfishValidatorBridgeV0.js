@@ -6,6 +6,7 @@
  */
 
 import { createChessArenaGameV0 } from "./chessArenaEngineV0.js";
+import { ensureMatchmakingEngineSurfaceV0 } from "./matchmakingRuntimeSurfaceV0.js";
 
 export const MATCH_VALIDATOR_SCHEMA_V0 = "castle.rhizoh.match_validator_result.v1";
 
@@ -68,10 +69,9 @@ export function validateMatchMoveV0(input = {}) {
 }
 
 export function mountMatchStockfishValidatorConsoleV0() {
-  if (typeof window === "undefined") return;
-  window.__rhizoh = window.__rhizoh || {};
-  window.__rhizoh.matchmaking = window.__rhizoh.matchmaking || {};
-  window.__rhizoh.matchmaking.validator = Object.freeze({
+  const engine = ensureMatchmakingEngineSurfaceV0();
+  if (!engine) return;
+  engine.validator = Object.freeze({
     validate: validateMatchMoveV0,
     engine: "chess.js",
     shadowRehearsal: true,

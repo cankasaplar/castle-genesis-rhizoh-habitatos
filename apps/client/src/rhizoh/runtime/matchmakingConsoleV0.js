@@ -1,6 +1,8 @@
 /**
  * Matchmaking console mount — single entry for shadow rehearsal DevTools.
  * Mounted from core subsystem boot (chess spine) so legal ingress routes have API access.
+ * Contract: window.__rhizoh.matchmaking = frozen facade · runtimeSurface.matchmaking = engine.
+ * interpretationOnly: true — shadow rehearsal; no server authority until data-plane READY.
  * @see docs/RHIZOH_MATCHMAKING_CORE_SPEC_V1.md
  */
 
@@ -11,6 +13,10 @@ import { mountMatchmakingCodexBridgeConsoleV0 } from "./matchmakingCodexBridgeV0
 import { mountMatchAuthorityConsoleV0 } from "./matchAuthorityLayerV0.js";
 import { mountMatchAuthorityKernelConsoleV0 } from "./matchAuthorityKernelV0.js";
 import { mountMatchStockfishValidatorConsoleV0 } from "./matchStockfishValidatorBridgeV0.js";
+import {
+  ensureMatchmakingEngineSurfaceV0,
+  publishMatchmakingApiFacadeV0
+} from "./matchmakingRuntimeSurfaceV0.js";
 
 export const MATCHMAKING_CONSOLE_SCHEMA_V0 = "castle.rhizoh.matchmaking_console.v0";
 
@@ -37,7 +43,7 @@ function buildMatchmakingConsoleSnapV0() {
 
 /**
  * Idempotent — safe to call from core boot and nervous system.
- * Parent `window.__rhizoh.matchmaking` stays mutable; nested API bags are frozen per module.
+ * Engine mounts to runtimeSurface; window API is a frozen facade rebuilt each pass.
  */
 export function mountMatchmakingConsoleV0() {
   if (typeof window === "undefined") {
@@ -45,13 +51,14 @@ export function mountMatchmakingConsoleV0() {
   }
 
   window.__rhizoh = window.__rhizoh || {};
-  window.__rhizoh.matchmaking = window.__rhizoh.matchmaking || {};
+  const engine = ensureMatchmakingEngineSurfaceV0();
 
   if (
     isMatchmakingConsoleMountedV0() &&
     window.__rhizoh.matchmaking.schema === MATCHMAKING_CONSOLE_SCHEMA_V0 &&
     window.__rhizoh.matchmaking.mounted === true
   ) {
+    publishMatchmakingApiFacadeV0(engine, { consoleSchema: MATCHMAKING_CONSOLE_SCHEMA_V0 });
     const snap = buildMatchmakingConsoleSnapV0();
     window.__rhizoh.matchmakingConsole = snap;
     return snap;
@@ -65,14 +72,7 @@ export function mountMatchmakingConsoleV0() {
   mountMatchAuthorityKernelConsoleV0();
   mountMatchStockfishValidatorConsoleV0();
 
-  Object.assign(window.__rhizoh.matchmaking, {
-    schema: MATCHMAKING_CONSOLE_SCHEMA_V0,
-    shadowRehearsal: true,
-    serverAuthoritative: false,
-    authorityMode: "SERVER_PRIMARY",
-    interpretationOnly: true,
-    mounted: true
-  });
+  publishMatchmakingApiFacadeV0(engine, { consoleSchema: MATCHMAKING_CONSOLE_SCHEMA_V0 });
 
   const snap = buildMatchmakingConsoleSnapV0();
 
