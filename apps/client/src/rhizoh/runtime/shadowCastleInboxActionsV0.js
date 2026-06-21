@@ -58,7 +58,7 @@ export function runShadowInboxItemActionV0(item, opts = {}) {
               color: "#22d3ee"
             }),
             peerCastle,
-            initialMode: CHESS_GAME_MODE_V0.BLITZ,
+            initialMode: CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH,
             autoPlay: true,
             shadowInboxItem: item
           })

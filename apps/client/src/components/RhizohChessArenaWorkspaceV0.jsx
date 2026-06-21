@@ -1209,7 +1209,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[330] flex items-center justify-center bg-black/80 p-2 backdrop-blur-sm sm:p-3">
+    <div className="fixed inset-0 z-[450] flex items-center justify-center bg-black/80 p-2 backdrop-blur-sm sm:p-3">
       <div className="flex max-h-[96vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-emerald-400/35 bg-[#050a08] shadow-2xl">
         <header className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 px-4 py-3">
           <div>

@@ -84,6 +84,15 @@ export function isMapTransitionBusyV0() {
   return transitionBusy;
 }
 
+/** Force-clear transition lock (chess arena · inbox handoff). */
+export function clearMapTransitionBusyV0(reason = "manual_clear") {
+  clearTransitionSafetyTimerV0();
+  if (!transitionBusy) return false;
+  transitionBusy = false;
+  publishMapTransitionPhaseV0("idle", { forced: true, reason });
+  return true;
+}
+
 /**
  * Fly Leaflet map toward node, dwell, then run commit callback.
  * @param {object} map — Leaflet map instance

@@ -385,15 +385,21 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
         userCastle: userCastleGeo,
         liveMatchPins,
         prismCubePins,
-        spiralLayerFilter
+        spiralLayerFilter,
+        activeMapTool
       }),
-    [userCastleGeo, liveMatchPins, prismCubePins, spiralLayerFilter]
+    [userCastleGeo, liveMatchPins, prismCubePins, spiralLayerFilter, activeMapTool]
   );
+  const isSatelliteMapToolV0 = String(activeMapTool || "city_map") === "satellite";
   const remoteNodes = useMemo(
-    () => (remoteCastlesVisible ? buildRemoteCastleMapNodesV0(mergedRemoteCastles) : []),
-    [mergedRemoteCastles, remoteCastlesVisible]
+    () =>
+      isSatelliteMapToolV0 || !remoteCastlesVisible
+        ? []
+        : buildRemoteCastleMapNodesV0(mergedRemoteCastles),
+    [mergedRemoteCastles, remoteCastlesVisible, isSatelliteMapToolV0]
   );
   const shadowPeerNode = useMemo(() => {
+    if (isSatelliteMapToolV0) return null;
     void shadowPinPulseTick;
     const node = buildShadowPeerCastleSimNodeV0();
     if (!node) return null;
@@ -401,10 +407,14 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
       ...node,
       shadowPulseActive: readShadowCastlePinPulseActiveV0(node.id)
     });
-  }, [shadowPinPulseTick]);
+  }, [shadowPinPulseTick, isSatelliteMapToolV0]);
   const nodeById = useRef(new Map(displayNodes.map((n) => [n.id, n])));
   const [leafletReady, setLeafletReady] = useState(false);
   const [spiralCalmVisual, setSpiralCalmVisual] = useState(() => isSpiralCountdownCalmVisualV0());
+
+  useEffect(() => {
+    boundsFittedRef.current = false;
+  }, [activeMapTool]);
 
   useEffect(() => {
     const tick = () => setSpiralCalmVisual(isSpiralCountdownCalmVisualV0());

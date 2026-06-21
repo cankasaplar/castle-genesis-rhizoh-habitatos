@@ -27,6 +27,7 @@ import {
   readCastleMemoryMapPinRowsV0
 } from "./worldMapCastleIdentityV0.js";
 import { publishSpiralMapRealityDevtoolsV0 } from "./spiralMapRealityModeV0.js";
+import { filterPinsForWorldMapToolV0 } from "./worldMapToolPinFilterV0.js";
 
 /**
  * Pins that stay visible in explorer-only SpiralMMO filter (spec + product).
@@ -249,7 +250,8 @@ export function resolveRhizohMapPinSubstrateV0(ctx = {}) {
  *   liveMatchPins?: object[],
  *   prismCubePins?: object[],
  *   spiralLayerFilter?: object,
- *   applySpiralFilter?: boolean
+ *   applySpiralFilter?: boolean,
+ *   activeMapTool?: string
  * }} [opts]
  */
 export function readWorldSpaceSessionMapPinRowsV0(opts = {}) {
@@ -266,9 +268,14 @@ export function readWorldSpaceSessionMapPinRowsV0(opts = {}) {
   const memoryPins = readCastleMemoryMapPinRowsV0(filterState);
   let prismCubes = opts.prismCubePins ?? getPrismCubeMapPinRowsV0();
   prismCubes = mergeArenaPopulationPinRowsV0(prismCubes, filterState);
-  const rows = Object.freeze([...sovereign, ...liveMatch, ...memoryPins, ...prismCubes]);
-  if (opts.applySpiralFilter === false) return rows;
-  return filterPinsBySpiralMapLayerV0(rows, filterState);
+  let rows = Object.freeze([...sovereign, ...liveMatch, ...memoryPins, ...prismCubes]);
+  if (opts.applySpiralFilter !== false) {
+    rows = filterPinsBySpiralMapLayerV0(rows, filterState);
+  }
+  if (opts.activeMapTool) {
+    rows = filterPinsForWorldMapToolV0(rows, opts.activeMapTool);
+  }
+  return rows;
 }
 
 /**
