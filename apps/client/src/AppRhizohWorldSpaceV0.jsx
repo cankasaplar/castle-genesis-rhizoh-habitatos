@@ -33,6 +33,7 @@ import {
 import { RHIZOH_WORLD_DRAWER_DOMAIN_V0, writeRhizohWorldDrawerDomainV0 } from "./rhizoh/runtime/rhizohWorldDrawerDomainV0.js";
 import { resolveWorldDomainFromPathV0 } from "./rhizoh/runtime/rhizohWorldDomainRoutesV0.js";
 import { shouldObserverInviteLandHomeV0 } from "./rhizoh/ingress/observerInviteLandingV0.js";
+import { RHIZOH_MAP_OVERLAY_PANEL_CLASS_V0 } from "./rhizoh/runtime/rhizohWorldMapPanelSurfaceV0.js";
 import {
   resolveRhizohUiLayoutV0,
   RHIZOH_UI_SURFACE_V0
@@ -1316,8 +1317,8 @@ export default function AppRhizohWorldSpaceV0() {
             />
           ) : (
             <div
-              className="pointer-events-auto w-full max-w-xs rounded-2xl border bg-black/85 p-3 text-white shadow-2xl backdrop-blur-md"
-              style={{ borderColor: `${v11NodePanel.nodeView.color}55` }}
+              className={`pointer-events-auto w-full max-w-xs p-3 ${RHIZOH_MAP_OVERLAY_PANEL_CLASS_V0}`}
+              style={{ borderColor: `${v11NodePanel.nodeView.color}66` }}
               data-rhizoh-v11-node-panel="1"
               onMouseLeave={() => setV11NodePanel(null)}
             >
@@ -1329,7 +1330,7 @@ export default function AppRhizohWorldSpaceV0() {
                   <h2 className="mt-1 text-sm font-black" style={{ color: v11NodePanel.nodeView.color }}>
                     {v11NodePanel.nodeView.label}
                   </h2>
-                  <p className="mt-1 text-[10px] text-white/55">
+                  <p className="mt-1 text-[10px] text-white/75">
                     {v11NodePanel.nodeView.type} · {v11NodePanel.normalizedDecision?.decision || "LOAD_WORLD_NODE"}
                   </p>
                 </div>
@@ -1341,7 +1342,7 @@ export default function AppRhizohWorldSpaceV0() {
                   ×
                 </button>
               </div>
-              <p className="mt-3 text-[10px] leading-relaxed text-white/65">
+              <p className="mt-3 text-[10px] leading-relaxed text-white/82">
                 {uiLocale === "tr"
                   ? "Harita niyeti üretildi; yürütme kararı orkestratörde kalır."
                   : "Map intent emitted; execution remains with the orchestrator."}

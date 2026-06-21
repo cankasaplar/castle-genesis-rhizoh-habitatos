@@ -6,6 +6,7 @@ import {
 } from "../castleSocial/castleC2cWebRtcTransportV0.js";
 import { readCastleSocialAvSessionV0 } from "../castleSocial/castleSocialAvSessionV0.js";
 import { CASTLE_C2C_STATE_EVENT_V0 } from "../castleSocial/castleC2cWebRtcTransportV0.js";
+import { RHIZOH_MAP_OVERLAY_PANEL_CLASS_V0 } from "../rhizoh/runtime/rhizohWorldMapPanelSurfaceV0.js";
 
 /**
  * C2C A/V panel — gateway WebRTC signaling + castleSocialAvSessionV0 lifecycle.
@@ -83,7 +84,7 @@ export const RhizohWorldSpaceC2cPanelV0 = memo(function RhizohWorldSpaceC2cPanel
 
   return (
     <div
-      className="pointer-events-auto fixed bottom-28 right-4 z-[28] w-[min(100vw-2rem,22rem)] rounded-2xl border border-gray-500/40 bg-black/90 p-3 shadow-2xl backdrop-blur-md"
+      className={`pointer-events-auto fixed bottom-28 right-4 z-[28] w-[min(100vw-2rem,22rem)] border-cyan-400/30 p-3 ${RHIZOH_MAP_OVERLAY_PANEL_CLASS_V0}`}
       data-rhizoh-world-space-c2c-panel="1"
     >
       <div className="mb-2 flex items-start justify-between gap-2">

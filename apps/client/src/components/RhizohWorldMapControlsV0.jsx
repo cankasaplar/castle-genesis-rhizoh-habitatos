@@ -39,7 +39,7 @@ export const RhizohWorldMapControlsV0 = memo(function RhizohWorldMapControlsV0({
 
   return (
     <div
-      className={`pointer-events-auto flex flex-col gap-1.5 rounded-2xl border border-cyan-400/25 bg-[#030711]/88 p-1.5 shadow-lg backdrop-blur-md ${className}`}
+      className={`pointer-events-auto flex flex-col gap-1.5 rounded-2xl border border-cyan-400/30 bg-[#050812] p-1.5 shadow-lg ${className}`}
       data-rhizoh-world-map-controls="1"
       aria-label={tr ? "Harita kontrolleri" : "Map controls"}
     >

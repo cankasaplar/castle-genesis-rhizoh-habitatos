@@ -20,6 +20,10 @@ import {
   sealFer1MemoryVaultV0,
   unsealFer1MemoryVaultV0
 } from "../rhizoh/runtime/fer1MemoryVaultV0.js";
+import {
+  RHIZOH_MAP_OVERLAY_PANEL_CLASS_V0,
+  RHIZOH_MAP_OVERLAY_PANEL_INSET_CLASS_V0
+} from "../rhizoh/runtime/rhizohWorldMapPanelSurfaceV0.js";
 
 function subscribeIdentity(cb) {
   if (typeof window === "undefined") return () => {};
@@ -116,7 +120,7 @@ export const RhizohCastleLivingMemoryPanelV0 = memo(function RhizohCastleLivingM
   return (
     <div className="pointer-events-none fixed inset-x-0 top-24 z-[29] flex justify-center px-4">
       <div
-        className="pointer-events-auto w-full max-w-lg rounded-2xl border border-cyan-400/30 bg-black/88 p-4 text-white shadow-2xl backdrop-blur-md"
+        className={`pointer-events-auto w-full max-w-lg border-cyan-400/35 p-4 ${RHIZOH_MAP_OVERLAY_PANEL_CLASS_V0}`}
         data-rhizoh-living-memory="1"
       >
         <div className="flex items-start justify-between gap-3">
@@ -128,7 +132,7 @@ export const RhizohCastleLivingMemoryPanelV0 = memo(function RhizohCastleLivingM
               {identity?.founder || (tr ? "Kale" : "Castle")}
             </h2>
             {identity?.motto ? (
-              <p className="mt-1 text-[10px] italic text-white/50">"{identity.motto}"</p>
+              <p className="mt-1 text-[10px] italic text-white/72">"{identity.motto}"</p>
             ) : null}
           </div>
           <button
@@ -150,7 +154,7 @@ export const RhizohCastleLivingMemoryPanelV0 = memo(function RhizohCastleLivingM
             ].map(([label, value]) => (
               <div
                 key={label}
-                className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-2 text-center"
+                className={`px-2 py-2 text-center ${RHIZOH_MAP_OVERLAY_PANEL_INSET_CLASS_V0}`}
               >
                 <p className="text-[8px] uppercase tracking-wider text-white/40">{label}</p>
                 <p className="text-sm font-black text-cyan-200">{value ?? 0}</p>
@@ -228,11 +232,11 @@ export const RhizohCastleLivingMemoryPanelV0 = memo(function RhizohCastleLivingM
               chronicle.map((row) => (
                 <div
                   key={row.id}
-                  className="rounded-lg border border-white/8 bg-white/[0.02] px-2 py-1.5"
+                  className={`px-2 py-1.5 ${RHIZOH_MAP_OVERLAY_PANEL_INSET_CLASS_V0}`}
                 >
                   <p className="text-[9px] text-white/35">{row.date}</p>
                   <p className="text-[11px] font-bold text-white/85">{row.title}</p>
-                  {row.body ? <p className="text-[10px] text-white/50">{row.body}</p> : null}
+                  {row.body ? <p className="text-[10px] text-white/75">{row.body}</p> : null}
                 </div>
               ))
             )}

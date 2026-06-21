@@ -1,4 +1,5 @@
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { RHIZOH_MAP_OVERLAY_PANEL_CLASS_V0 } from "../rhizoh/runtime/rhizohWorldMapPanelSurfaceV0.js";
 import { useNavigate } from "react-router-dom";
 import { RhizohWorldMapToolStripV0 } from "../rhizoh/runtime/RhizohWorldMapToolStripV0.jsx";
 import { RhizohWorldSocialPanelV0 } from "./RhizohWorldSocialPanelV0.jsx";
@@ -242,7 +243,7 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
               style={{ bottom: mapStripBottomCssV0 }}
               data-rhizoh-world-domain-interactive="1"
             >
-              <div className="w-full max-w-3xl rounded-2xl border border-cyan-400/20 bg-[#030711]/90 px-2.5 py-2 backdrop-blur-xl">
+              <div className="w-full max-w-3xl rounded-2xl border border-cyan-400/25 bg-[#050812] px-2.5 py-2 shadow-lg">
                 <RhizohWorldRealityModeSwitcherV0 uiLocale={locale} className="mb-2 w-full" />
                 <RhizohWorldMapToolStripV0
                   activeTool={activeMapTool}
@@ -389,7 +390,7 @@ function WorldStartCardV0({ activeTool, active, cesiumReady, uiLocale, worldData
 
   return (
     <section
-      className="pointer-events-none w-fit max-w-[min(260px,52vw)] rounded-2xl border border-cyan-400/20 bg-[#030711]/90 p-2.5 text-white shadow-lg backdrop-blur-md normal-case"
+      className={`pointer-events-none w-fit max-w-[min(260px,52vw)] border-cyan-400/25 p-2.5 normal-case ${RHIZOH_MAP_OVERLAY_PANEL_CLASS_V0}`}
       data-rhizoh-world-start-card="1"
     >
       <div className="pointer-events-auto flex items-start justify-between gap-2">
