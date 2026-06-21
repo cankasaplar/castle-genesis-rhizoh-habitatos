@@ -96,6 +96,8 @@ Co-observational epistemic field: Rhizoh + observer jointly constitute the **int
 | `epistemicSeparationProofV0` | Paper evidence bundle — observation ≠ execution |
 | `narrativeProjectionEngineV0` | Observer trace → semantic lookup → read-only narrative |
 | `epistemicResonanceFieldV0` | **Measurement only** — resonance coefficient without system modulation |
+| `meaningResonanceLedgerV0` | Plane D — co-occurrence ledger (NOT graph, NOT learning) |
+| `narrativeBridgeV0` | Weak causal proposal → four-axiom gate → ledger record |
 | `invitationStudyExportV0` | Anonymized cohort record export |
 | Frozen v562–v570 | Immutable execution subgraph |
 | Legal hold | `mutation_access: false` |
@@ -113,6 +115,7 @@ Prototype evidence (pre-cohort N):
 - Observer echo trace: `coherence_alignment`, `return_vector`
 - Narrative decoupled from causal truth (`semanticCoupling: false`)
 - Resonance measured without coupling (`measurementOnly: true`)
+- Meaning ledger records interpretation trace only (`learns: false`, `influencesCausalGraph: false`)
 
 **Invitation study metrics** (see `RHIZOH_INVITATION_STUDY_V0.md`): `window.__rhizoh.invitationStudy.export()` — anonymized.
 

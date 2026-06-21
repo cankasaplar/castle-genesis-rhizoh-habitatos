@@ -6,6 +6,8 @@ describe("epistemicSeparationProofV0", () => {
     const proof = buildEpistemicSeparationProofV0({ locale: "en" });
     expect(proof.paperSpine.length).toBeGreaterThan(0);
     expect(proof.planes.causal.mutableByObserver).toBe(false);
+    expect(proof.planes.meaningLedger.learns).toBe(false);
+    expect(proof.planes.meaningLedger.influencesCausalGraph).toBe(false);
     expect(proof.evidence.lens.isVertex).toBe(true);
     expect(proof.interpretationOnly).toBe(true);
   });
