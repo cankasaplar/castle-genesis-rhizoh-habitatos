@@ -15,6 +15,7 @@ describe("inviteOpsV0", () => {
     const inv = generateObserverInviteV0({ role: "investor", cohortId: "demo", seed: 99 });
     expect(inv.inviteUrl).toContain("/invite");
     expect(inv.inviteToken).toMatch(/^rhizoh_inv_/);
+    expect(inv.inviteUrl).toContain(inv.inviteToken);
     expect(inv.role).toBe("investor");
   });
 
