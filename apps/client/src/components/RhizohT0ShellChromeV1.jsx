@@ -11,7 +11,9 @@ import { OctoConversationStageV1 } from "../studio/OctoConversationStageV1.jsx";
 import { isFoxAnchorSpeciesV0, resolveConversationAnchorSpeciesIdV0 } from "../studio/conversationAnchorSpeciesV0.js";
 import {
   resolveChatStatusLineV0,
-  resolveChatPlaceholderV0
+  resolveChatPlaceholderV0,
+  resolveChatReplyPreparingCopyV0,
+  resolveDismissButtonCopyV0
 } from "../rhizoh/runtime/rhizohProductCopyI18nV0.js";
 import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
 import { isRhizohT0FirstMatchIdentityV0 } from "../rhizoh/runtime/rhizohT0FirstMatchIdentityV0.js";
@@ -89,6 +91,9 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
   const octoMountId = unifiedDock ? "t0_shell_unified_dock" : "t0_shell_default";
   const showAlignmentStrip = shouldShowPerceptionAlignmentObservationStripV0();
   const locale = uiLocale || readUiLocaleV0();
+  const tr = locale === "tr";
+  const replyPreparingCopy = resolveChatReplyPreparingCopyV0(locale);
+  const dismissCopy = resolveDismissButtonCopyV0(locale);
   const t0FirstMatch = isRhizohT0FirstMatchIdentityV0();
   const anchorSpeciesId = resolveConversationAnchorSpeciesIdV0();
   const foxAnchor = isFoxAnchorSpeciesV0(anchorSpeciesId);
@@ -264,7 +269,7 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
               <p className="mt-1 text-white/85">{inlineError.detail}</p>
               {onDismissError ? (
                 <button type="button" className="mt-2 text-[9px] text-white/70 underline" onClick={onDismissError}>
-                  Kapat
+                  {dismissCopy}
                 </button>
               ) : null}
             </div>
@@ -283,7 +288,7 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
                     {mainHudReply.text.length > 400 ? "…" : ""}
                   </>
                 ) : (
-                  <span className="text-cyan-200/70 italic">Yanıt hazırlanıyor…</span>
+                  <span className="text-cyan-200/70 italic">{replyPreparingCopy}</span>
                 )}
                 {onDismissReply && mainHudReply?.text ? (
                   <button
@@ -291,7 +296,7 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
                     className="mt-1 block text-[9px] text-white/55 underline"
                     onClick={onDismissReply}
                   >
-                    Kapat
+                    {dismissCopy}
                   </button>
                 ) : null}
               </div>
@@ -459,7 +464,7 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
             <p className="mt-1 text-white/85">{inlineError.detail}</p>
             {onDismissError ? (
               <button type="button" className="mt-2 text-[9px] text-white/70 underline" onClick={onDismissError}>
-                Kapat
+                {dismissCopy}
               </button>
             ) : null}
           </div>
@@ -478,11 +483,11 @@ export const RhizohT0ShellChromeV1 = memo(function RhizohT0ShellChromeV1({
                   {mainHudReply.text.length > 400 ? "…" : ""}
                 </>
               ) : (
-                <span className="text-cyan-200/70 italic">Yanıt hazırlanıyor…</span>
+                <span className="text-cyan-200/70 italic">{replyPreparingCopy}</span>
               )}
               {onDismissReply && mainHudReply?.text ? (
                 <button type="button" className="mt-1 block text-[9px] text-white/55 underline" onClick={onDismissReply}>
-                  Kapat
+                  {dismissCopy}
                 </button>
               ) : null}
             </div>

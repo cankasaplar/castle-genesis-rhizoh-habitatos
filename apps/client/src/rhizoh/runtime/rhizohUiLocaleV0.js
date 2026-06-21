@@ -131,6 +131,8 @@ export function hasUiLocaleBeenPickedV0() {
  */
 export function writeUiLocaleV0(code) {
   const locale = normalizeUiLocaleV0(code);
+  const previous = readUiLocaleV0();
+  const unchanged = previous === locale;
   try {
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(STORAGE_KEY_V0, locale);
@@ -144,11 +146,13 @@ export function writeUiLocaleV0(code) {
     document.documentElement.lang = resolveRhizohBcp47V0(locale).split("-")[0];
   }
   if (typeof window !== "undefined") {
-    window.dispatchEvent(
-      new CustomEvent(RHIZOH_UI_LOCALE_CHANGE_EVENT_V0, {
-        detail: Object.freeze({ locale })
-      })
-    );
+    if (!unchanged) {
+      window.dispatchEvent(
+        new CustomEvent(RHIZOH_UI_LOCALE_CHANGE_EVENT_V0, {
+          detail: Object.freeze({ locale })
+        })
+      );
+    }
     bootstrapCastleLanguageRuntimeV0();
   }
   return locale;
@@ -221,6 +225,10 @@ export function applyUiLocaleFromLocationSearchV0() {
     const q = new URLSearchParams(window.location.search);
     const raw = q.get("locale") || q.get("uiLocale") || q.get("lang");
     if (!raw) return null;
+    const normalized = normalizeUiLocaleV0(raw);
+    if (normalizeUiLocaleV0(readUiLocaleV0()) === normalized) {
+      return normalized;
+    }
     const locale = writeUiLocaleV0(raw);
     writeRhizohSpeechProfileV0({ mode: RHIZOH_SPEECH_MODE_V0.MIRROR_UI });
     return locale;

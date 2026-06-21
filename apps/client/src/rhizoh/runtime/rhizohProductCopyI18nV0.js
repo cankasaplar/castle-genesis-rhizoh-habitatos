@@ -218,6 +218,14 @@ export function resolveChatPlaceholderV0(locale) {
   return resolveUiCopyLocaleV0(locale) === "tr" ? "Rhizoh'a yaz…" : "Message Rhizoh…";
 }
 
+export function resolveChatReplyPreparingCopyV0(locale) {
+  return resolveUiCopyLocaleV0(locale) === "tr" ? "Yanıt hazırlanıyor…" : "Preparing reply…";
+}
+
+export function resolveDismissButtonCopyV0(locale) {
+  return resolveUiCopyLocaleV0(locale) === "tr" ? "Kapat" : "Close";
+}
+
 export function formatPlainSurfaceOpenV0(surfaceId, locale) {
   if (resolveUiCopyLocaleV0(locale) === "tr") return formatPlainSurfaceOpenTrV0(surfaceId);
   const map = Object.freeze({

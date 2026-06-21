@@ -30,6 +30,7 @@ const LENS_COPY_V0 = Object.freeze({
       sectionExpectation: "BEKLENTİ",
       sectionActivities: "BURADA NE YAPACAKSIN?",
       perceptionModeLabel: "Algı modu",
+      perceptionModeName: "keşif",
       activities: Object.freeze(["Haritada gez", "Kule / arena keşfi", "Yeniden oynatma izle", "Basit hikaye akışı"])
     }),
     en: Object.freeze({
@@ -43,6 +44,7 @@ const LENS_COPY_V0 = Object.freeze({
       sectionExpectation: "EXPECTATION",
       sectionActivities: "WHAT WILL YOU DO HERE?",
       perceptionModeLabel: "Perception mode",
+      perceptionModeName: "explorer",
       activities: Object.freeze(["Walk the map", "Discover towers / arenas", "Watch replay", "Simple story flow"])
     })
   }),
@@ -60,6 +62,7 @@ const LENS_COPY_V0 = Object.freeze({
       sectionEpistemicSubject: "EPİSTEMİK ÖZNE (Salt okunur)",
       sectionCausalTimeline: "NEDENSEL ANLIK ZAMAN ÇİZELGESİ",
       perceptionModeLabel: "Algı modu",
+      perceptionModeName: "araştırma",
       activities: Object.freeze([
         "Nedensel graf",
         "Olay günlüğü / yeniden oynatma",
@@ -80,6 +83,7 @@ const LENS_COPY_V0 = Object.freeze({
       sectionEpistemicSubject: "EPISTEMIC SUBJECT (READ ONLY)",
       sectionCausalTimeline: "CAUSAL SNAPSHOT TIMELINE",
       perceptionModeLabel: "Perception mode",
+      perceptionModeName: "research",
       activities: Object.freeze([
         "Causal graph",
         "Event log / replay",
@@ -102,6 +106,7 @@ const LENS_COPY_V0 = Object.freeze({
       sectionInfrastructure: "ALTYAPI SİNYALİ",
       sectionEpistemicSubject: "EPİSTEMİK ÖZNE (Salt okunur)",
       perceptionModeLabel: "Algı modu",
+      perceptionModeName: "sinyal",
       infrastructureReplay: "Olay kaynaklı yeniden oynatma aktif · kabul bekliyor · yalnızca gözlemci",
       eventNodesLabel: "olay düğümü",
       causalEdgesLabel: "nedensel kenar",
@@ -125,6 +130,7 @@ const LENS_COPY_V0 = Object.freeze({
       sectionInfrastructure: "INFRASTRUCTURE SIGNAL",
       sectionEpistemicSubject: "EPISTEMIC SUBJECT (READ ONLY)",
       perceptionModeLabel: "Perception mode",
+      perceptionModeName: "signal",
       infrastructureReplay: "Event-sourced replay active · admission hold · observer-only",
       eventNodesLabel: "event nodes",
       causalEdgesLabel: "causal edges",
