@@ -14,6 +14,8 @@ const HOOK_FILES = [
   "visitorEpistemicTraceV0.js",
   "visitorEpistemicFingerprintV0.js",
   "epistemicReturnFieldV0.js",
+  "epistemicPinSemanticRegistryV0.js",
+  "narrativeProjectionEngineV0.js",
   "observerEpistemicLensV0.js",
   "narrativePlaneProjectionV0.js"
 ];
