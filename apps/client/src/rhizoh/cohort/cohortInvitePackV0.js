@@ -5,6 +5,11 @@
 
 import { captureWorldObservationSnapshotV0, buildSessionReplayInspectUrlV0 } from "../runtime/worldObservationObservabilityV0.js";
 import { getWorldObservationIngressQueueSnapshotV0 } from "../runtime/worldObservationIngressQueueV0.js";
+import {
+  buildObserverInviteUrlV0,
+  reviewerIdToInviteSeedV0
+} from "../ingress/observerInviteLandingV0.js";
+import { EPISTEMIC_STRESS_CLASS_V0 } from "../ingress/closedUserAdmissionEngineV0.js";
 
 export const COHORT_INVITE_PACK_SCHEMA_V0 = "castle.rhizoh.cohort_invite_pack.v0";
 
@@ -44,21 +49,19 @@ export const FRIDAY_PROMPT_SCRIPT_V0 = Object.freeze([
   })
 ]);
 
-function pageOrigin() {
-  if (typeof window === "undefined") return "https://rhizoh.com";
-  return String(window.location?.origin || "https://rhizoh.com").replace(/\/+$/, "");
-}
-
 /**
- * @param {{ reviewerId?: string, cohort?: string }} [opts]
+ * @param {{ reviewerId?: string, cohort?: string, lang?: string }} [opts]
  */
 export function buildCohortInviteUrlV0(opts = {}) {
   const reviewer = String(opts.reviewerId || COHORT_DEFAULT_REVIEWER_ID_V0).trim().toLowerCase();
   const cohort = String(opts.cohort || "review").trim();
-  const u = new URL("/", pageOrigin());
-  u.searchParams.set("cohort", cohort);
-  u.searchParams.set("reviewer", reviewer);
-  return u.toString();
+  const seed = reviewerIdToInviteSeedV0(reviewer);
+  return buildObserverInviteUrlV0({
+    cohortId: cohort,
+    stressClassTarget: EPISTEMIC_STRESS_CLASS_V0.HUMAN_EXPLORER,
+    seed,
+    lang: opts.lang
+  });
 }
 
 function resolveReplayBand() {

@@ -15,6 +15,7 @@ import {
 } from "../cityMapLegalCountdownMediaGateV0.js";
 import { RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1 } from "../sovereignWorldMapNodesV0.js";
 import { writeRhizohWorldMapToolV0, readRhizohWorldMapToolV0 } from "../rhizohWorldMapToolV0.js";
+import { markObserverInviteSkipAutoMediaV0 } from "../../ingress/observerInviteLandingV0.js";
 
 vi.mock("../../ingress/ingress_router.js", () => ({
   hasLegalAccessAckV0: () => false,
@@ -102,6 +103,14 @@ describe("cityMapLegalCountdownMediaGateV0", () => {
     expect(mediaEvents).toHaveLength(1);
     expect(mediaEvents[0].legalGate).toBe(true);
     expect(mediaEvents[0].initialChannelId).toBe("castle_genesis");
+  });
+
+  it("skips auto media tube when observer invite proceed flagged", () => {
+    markObserverInviteSkipAutoMediaV0();
+    const mediaEvents = [];
+    window.addEventListener(RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1, (ev) => mediaEvents.push(ev.detail));
+    expect(primeCityMapLegalCountdownSurfaceV0({ uiLocale: "en" })).toBe(true);
+    expect(mediaEvents).toHaveLength(0);
   });
 
   it("does not override satellite map tool when legal hold is cleared", async () => {

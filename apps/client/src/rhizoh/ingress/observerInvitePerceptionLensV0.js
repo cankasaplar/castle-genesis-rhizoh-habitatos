@@ -23,10 +23,14 @@ const LENS_COPY_V0 = Object.freeze({
       kicker: "Keşif modu",
       title: "Rhizoh dünyasını keşfet",
       expectation:
-        "Bu bir kullanım uygulaması değil — gözlemleyip keşfedeceğin bir sistem. Haritada gez, kuleleri gör, replay izle.",
+        "Bu bir kullanım uygulaması değil — gözlemleyip keşfedeceğin bir sistem. Haritada gez, kuleleri gör, yeniden oynatmayı izle.",
       lead: "Deneyim odaklı soyutlama: ne yapacağını bilmen yeterli; teknik detay arka planda.",
       cta: "Dünyaya gir ve keşfet",
-      activities: Object.freeze(["Haritada gez", "Kule / arena keşfi", "Replay izle", "Basit hikaye akışı"])
+      sectionInvite: "DAVET",
+      sectionExpectation: "BEKLENTİ",
+      sectionActivities: "BURADA NE YAPACAKSIN?",
+      perceptionModeLabel: "Algı modu",
+      activities: Object.freeze(["Haritada gez", "Kule / arena keşfi", "Yeniden oynatma izle", "Basit hikaye akışı"])
     }),
     en: Object.freeze({
       kicker: "Explorer mode",
@@ -35,6 +39,10 @@ const LENS_COPY_V0 = Object.freeze({
         "This is not an app to consume — it is a system to observe and explore. Walk the map, discover towers, watch replay.",
       lead: "Experience-first abstraction: you only need to know what to do; technical detail stays in the background.",
       cta: "Enter the world and explore",
+      sectionInvite: "INVITE",
+      sectionExpectation: "EXPECTATION",
+      sectionActivities: "WHAT WILL YOU DO HERE?",
+      perceptionModeLabel: "Perception mode",
       activities: Object.freeze(["Walk the map", "Discover towers / arenas", "Watch replay", "Simple story flow"])
     })
   }),
@@ -43,13 +51,19 @@ const LENS_COPY_V0 = Object.freeze({
       kicker: "Araştırma modu",
       title: "Rhizoh epistemik modelleme ortamı",
       expectation:
-        "Bu bir epistemik modelleme ve gözlem ortamıdır — causal graph, event sourcing ve identity projection inceleyebilirsin.",
+        "Bu bir epistemik modelleme ve gözlem ortamıdır — nedensel graf, olay kaynağı ve kimlik projeksiyonunu inceleyebilirsin.",
       lead: "Whitepaper arayüzü: sistem nasıl çalışıyor sorusuna yanıt.",
       cta: "Gözlem alanına gir",
+      sectionInvite: "DAVET",
+      sectionExpectation: "BEKLENTİ",
+      sectionActivities: "BURADA NE YAPACAKSIN?",
+      sectionEpistemicSubject: "EPİSTEMİK ÖZNE (Salt okunur)",
+      sectionCausalTimeline: "NEDENSEL ANLIK ZAMAN ÇİZELGESİ",
+      perceptionModeLabel: "Algı modu",
       activities: Object.freeze([
-        "Causal graph",
-        "Event log / replay",
-        "Identity projection (epi_id)",
+        "Nedensel graf",
+        "Olay günlüğü / yeniden oynatma",
+        "Kimlik projeksiyonu (epi_id)",
         "Sistem tutarlılığı"
       ])
     }),
@@ -60,6 +74,12 @@ const LENS_COPY_V0 = Object.freeze({
         "This is an epistemic modeling and observation environment — inspect causal graph, event sourcing, and identity projection.",
       lead: "Whitepaper interface: answers how the system works.",
       cta: "Enter observation area",
+      sectionInvite: "INVITE",
+      sectionExpectation: "EXPECTATION",
+      sectionActivities: "WHAT WILL YOU DO HERE?",
+      sectionEpistemicSubject: "EPISTEMIC SUBJECT (READ ONLY)",
+      sectionCausalTimeline: "CAUSAL SNAPSHOT TIMELINE",
+      perceptionModeLabel: "Perception mode",
       activities: Object.freeze([
         "Causal graph",
         "Event log / replay",
@@ -73,13 +93,22 @@ const LENS_COPY_V0 = Object.freeze({
       kicker: "Sinyal modu",
       title: "Rhizoh altyapı gözlemi",
       expectation:
-        "Bu bir startup demosu değil — ölçeklenebilir simulation / event altyapısının kontrollü kanıtı.",
-      lead: "Altyapı merceği: throughput, mimari netliği, pipeline stabilitesi.",
+        "Bu bir startup demosu değil — ölçeklenebilir simülasyon / olay altyapısının kontrollü kanıtı.",
+      lead: "Altyapı merceği: verim, mimari netliği, hat stabilitesi.",
       cta: "Altyapı gözlemine gir",
+      sectionInvite: "DAVET",
+      sectionExpectation: "BEKLENTİ",
+      sectionActivities: "BURADA NE YAPACAKSIN?",
+      sectionInfrastructure: "ALTYAPI SİNYALİ",
+      sectionEpistemicSubject: "EPİSTEMİK ÖZNE (Salt okunur)",
+      perceptionModeLabel: "Algı modu",
+      infrastructureReplay: "Olay kaynaklı yeniden oynatma aktif · kabul bekliyor · yalnızca gözlemci",
+      eventNodesLabel: "olay düğümü",
+      causalEdgesLabel: "nedensel kenar",
       activities: Object.freeze([
-        "Event throughput",
+        "Olay verimi",
         "Mimari netlik",
-        "Pipeline stabilitesi",
+        "Hat stabilitesi",
         "Ölçeklenebilirlik sinyali"
       ])
     }),
@@ -90,6 +119,15 @@ const LENS_COPY_V0 = Object.freeze({
         "This is not a startup demo — controlled evidence of scalable simulation / event infrastructure.",
       lead: "Infrastructure lens: throughput, architecture clarity, pipeline stability.",
       cta: "Enter infrastructure observation",
+      sectionInvite: "INVITE",
+      sectionExpectation: "EXPECTATION",
+      sectionActivities: "WHAT WILL YOU DO HERE?",
+      sectionInfrastructure: "INFRASTRUCTURE SIGNAL",
+      sectionEpistemicSubject: "EPISTEMIC SUBJECT (READ ONLY)",
+      perceptionModeLabel: "Perception mode",
+      infrastructureReplay: "Event-sourced replay active · admission hold · observer-only",
+      eventNodesLabel: "event nodes",
+      causalEdgesLabel: "causal edges",
       activities: Object.freeze([
         "Event throughput",
         "Architecture clarity",

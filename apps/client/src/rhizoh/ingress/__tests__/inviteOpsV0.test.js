@@ -16,7 +16,16 @@ describe("inviteOpsV0", () => {
     expect(inv.inviteUrl).toContain("/invite");
     expect(inv.inviteToken).toMatch(/^rhizoh_inv_/);
     expect(inv.inviteUrl).toContain(inv.inviteToken);
+    expect(inv.inviteUrl).not.toContain("role=");
     expect(inv.role).toBe("investor");
+  });
+
+  it("generates opaque token URL for reviewer slot", () => {
+    const inv = generateObserverInviteV0({ reviewerId: "friday" });
+    expect(inv.inviteUrl).toContain("/invite?invite=rhizoh_inv_");
+    expect(inv.inviteUrl).not.toContain("reviewer=");
+    expect(inv.inviteUrl).not.toContain("friday");
+    expect(inv.role).toBe("reviewer");
   });
 
   it("formats bilingual mail draft", () => {
