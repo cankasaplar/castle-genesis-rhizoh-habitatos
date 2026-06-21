@@ -21,4 +21,22 @@ describe("matchmakingConsoleV0", () => {
     expect(typeof window.__rhizoh.matchmaking.tryMatch).toBe("function");
     expect(typeof window.__rhizoh.matchmaking.session.get).toBe("function");
   });
+
+  it("survives double mount from core boot and nervous system", () => {
+    mountMatchmakingConsoleV0();
+    expect(() => mountMatchmakingConsoleV0()).not.toThrow();
+    expect(isMatchmakingConsoleMountedV0()).toBe(true);
+    expect(Object.isFrozen(window.__rhizoh.matchmaking)).toBe(false);
+  });
+
+  it("allows emitBeacon after mount without read-only property errors", () => {
+    mountMatchmakingConsoleV0();
+    const out = window.__rhizoh.matchmaking.emitBeacon({
+      userId: "user_test_a",
+      mode: "KINETIC",
+      timeControlMs: 180000
+    });
+    expect(out.ok).toBe(true);
+    expect(typeof window.__rhizoh.matchmaking.emitBeacon).toBe("function");
+  });
 });
