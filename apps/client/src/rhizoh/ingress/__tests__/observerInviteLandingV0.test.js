@@ -10,7 +10,8 @@ import {
   readObserverInviteContextV0,
   isObserverInvitePathV0,
   reviewerIdToInviteSeedV0,
-  shouldObserverInviteSkipAutoMediaV0
+  shouldObserverInviteSkipAutoMediaV0,
+  shouldObserverInviteLandHomeV0
 } from "../observerInviteLandingV0.js";
 import { clearEpistemicIdentityContinuityForTestV0 } from "../../runtime/epistemicIdentityContinuityV0.js";
 import { clearIdentityManifestProjectionForTestV0 } from "../../runtime/identityManifestProjectionV0.js";
@@ -69,8 +70,9 @@ describe("observerInviteLandingV0", () => {
   });
 
   it("marks skip-auto-media on proceed dispatch", () => {
-    dispatchObserverInviteProceedV0({ target: "/world/space" });
+    dispatchObserverInviteProceedV0({ target: "/" });
     expect(shouldObserverInviteSkipAutoMediaV0()).toBe(true);
+    expect(shouldObserverInviteLandHomeV0()).toBe(true);
   });
 
   it("builds causal timeline sorted by atMs", () => {

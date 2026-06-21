@@ -32,6 +32,7 @@ import {
 } from "./rhizoh/runtime/rhizohLayerContextV0.js";
 import { RHIZOH_WORLD_DRAWER_DOMAIN_V0, writeRhizohWorldDrawerDomainV0 } from "./rhizoh/runtime/rhizohWorldDrawerDomainV0.js";
 import { resolveWorldDomainFromPathV0 } from "./rhizoh/runtime/rhizohWorldDomainRoutesV0.js";
+import { shouldObserverInviteLandHomeV0 } from "./rhizoh/ingress/observerInviteLandingV0.js";
 import {
   resolveRhizohUiLayoutV0,
   RHIZOH_UI_SURFACE_V0
@@ -209,6 +210,11 @@ export default function AppRhizohWorldSpaceV0() {
   const preSpiralMapToolRef = useRef(null);
   const experienceSessionCtxV0 = useMemo(() => loadRhizohExperienceSessionContextV0(), []);
   const productSessionV0 = useMemo(() => loadRhizohProductSession(), []);
+
+  useEffect(() => {
+    if (!shouldObserverInviteLandHomeV0()) return;
+    navigate("/", { replace: true });
+  }, [navigate]);
 
   const worldMapToolV0 = useSyncExternalStore(
     subscribeRhizohWorldMapToolV0,

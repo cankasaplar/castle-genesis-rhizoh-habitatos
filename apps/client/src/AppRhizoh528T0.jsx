@@ -121,6 +121,7 @@ import {
   shouldRhizohT0ShowGlobeHomeOverlayV0,
   shouldUseApexProceduralRealMapV0
 } from "./rhizoh/runtime/rhizohWorldSurfacePolicyV0.js";
+import { clearObserverInviteLandHomeV0 } from "./rhizoh/ingress/observerInviteLandingV0.js";
 import {
   resolveActiveWorldDomainV0,
   resolveRhizohLayerModeV0,
@@ -8589,6 +8590,7 @@ export default function AppRhizoh528() {
         pathname: location.pathname,
         resolveWorldTargetPath: () => resolveWorldDomainPathV0(RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE),
         onWorldSelect: ({ targetPath }) => {
+          clearObserverInviteLandHomeV0();
           if (isRhizohWorldDomainPathV0(location.pathname)) {
             uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "world" });
             if (location.pathname !== targetPath) {

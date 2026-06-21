@@ -18,6 +18,7 @@ export const OBSERVER_INVITE_LANDING_SCHEMA_V0 = "castle.rhizoh.observer_invite_
 
 const SESSION_KEY_V0 = "rhizoh_observer_invite_context_v0.1";
 export const OBSERVER_INVITE_SKIP_MEDIA_KEY_V0 = "rhizoh_observer_invite_skip_media_v0";
+export const OBSERVER_INVITE_LAND_HOME_KEY_V0 = "rhizoh_observer_invite_land_home_v0";
 const PROCEED_EVENT_V0 = "rhizoh:invite-proceed-v0";
 
 /** Invite landing supports TR + EN only (product cohort). */
@@ -273,9 +274,38 @@ export function isObserverInvitePathV0(pathname) {
   return p === "/invite" || p.startsWith("/invite/");
 }
 
+export function markObserverInviteLandHomeV0() {
+  if (typeof sessionStorage === "undefined") return false;
+  try {
+    sessionStorage.setItem(OBSERVER_INVITE_LAND_HOME_KEY_V0, "1");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function shouldObserverInviteLandHomeV0() {
+  if (typeof sessionStorage === "undefined") return false;
+  try {
+    return sessionStorage.getItem(OBSERVER_INVITE_LAND_HOME_KEY_V0) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function clearObserverInviteLandHomeV0() {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    sessionStorage.removeItem(OBSERVER_INVITE_LAND_HOME_KEY_V0);
+  } catch {
+    /* noop */
+  }
+}
+
 export function dispatchObserverInviteProceedV0(detail = {}) {
   if (typeof window === "undefined") return;
   markObserverInviteSkipAutoMediaV0();
+  markObserverInviteLandHomeV0();
   window.dispatchEvent(
     new CustomEvent(PROCEED_EVENT_V0, {
       detail: Object.freeze({ ...detail, atMs: Date.now(), skipAutoMedia: true })

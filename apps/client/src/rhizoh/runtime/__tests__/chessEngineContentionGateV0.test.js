@@ -29,6 +29,14 @@ describe("chessEngineContentionGateV0", () => {
     expect(shouldDeferArenaEngineWorkV0()).toBe(false);
   });
 
+  it("shouldDeferArenaPrewarmV0 false when map arena workspace is open", () => {
+    window.__rhizoh.chessGameCluster = { running: true };
+    window.__rhizoh.chessScheduler = { chessLock: true };
+    publishChessArenaWorkspaceOpenV0(true);
+    expect(shouldDeferArenaPrewarmV0()).toBe(false);
+    publishChessArenaWorkspaceOpenV0(false);
+  });
+
   it("allows map chess arena while cluster runs in background", () => {
     window.__rhizoh.chessGameCluster = { running: true };
     window.__rhizoh.chessScheduler = { chessLock: true };

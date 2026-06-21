@@ -3,7 +3,12 @@
  * RESEARCH-ONLY
  */
 
-import { CHESS_ENGINE_TASK_KIND_V0, cancelPendingClusterEngineTasksV0, getChessEngineQueueSnapshotV0 } from "./chessEngineTaskQueueV0.js";
+import {
+  CHESS_ENGINE_TASK_KIND_V0,
+  CHESS_ENGINE_TASK_PRIORITY_V0,
+  cancelPendingNonArenaChessEngineTasksV0,
+  getChessEngineQueueSnapshotV0
+} from "./chessEngineTaskQueueV0.js";
 import { isWorldSpaceMapBootingV0 } from "./worldSpaceMapBootGateV0.js";
 
 export const CHESS_ENGINE_CONTENTION_GATE_SCHEMA_V0 = "castle.rhizoh.chess_engine_contention_gate.v0";
@@ -32,7 +37,7 @@ function writeClusterArenaRegistryV0(patch = {}) {
 export function releaseBroadcastForArenaPlayV0() {
   publishChessClusterArenaUiOpenV0(false);
   publishChessClusterBroadcastActiveV0(false);
-  cancelPendingClusterEngineTasksV0();
+  cancelPendingNonArenaChessEngineTasksV0();
   void import("./chessStockfishEngineV0.js").then((mod) => {
     mod.abortChessStockfishInFlightSearchV0?.();
   });
@@ -143,6 +148,7 @@ export function isChessEngineContendedV0() {
 
 /** Defer arena WASM warmup while cluster holds the single pipeline (background only). */
 export function shouldDeferArenaPrewarmV0() {
+  if (isChessArenaWorkspaceOpenV0()) return false;
   const snap = getChessEngineContentionSnapshotV0();
   return snap.clusterRunning && (snap.chessLock || snap.queuePending > 0);
 }

@@ -14,7 +14,7 @@ import {
   resetChessTeacherV0,
   CHESS_TEACHER_STATUS_EVENT_V0
 } from "../rhizoh/runtime/chessTeacherInterfaceV0.js";
-import { getStockfishArenaMoveV0 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
+import { getStockfishArenaMoveV0, awaitChessStockfishEngineReadyV0 } from "../rhizoh/runtime/chessStockfishEngineV0.js";
 import {
   CHESS_ENGINE_TASK_KIND_V0,
   CHESS_ENGINE_TASK_PRIORITY_V0
@@ -26,6 +26,7 @@ import {
   shouldDeferArenaEngineWorkV0,
   isChessArenaWorkspaceOpenV0,
   publishChessArenaWorkspaceOpenV0,
+  prioritizeArenaEngineForMoveV0,
   releaseBroadcastForArenaPlayV0,
   RHIZOH_CLOSE_CHESS_CLUSTER_ARENA_EVENT_V0
 } from "../rhizoh/runtime/chessEngineContentionGateV0.js";
@@ -359,17 +360,18 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     refreshEngineStatusV0();
     const runWarmup = () => {
       if (shouldDeferArenaPrewarmV0()) {
-        setTimeout(runWarmup, 3000);
+        setTimeout(runWarmup, 800);
         return;
       }
+      prioritizeArenaEngineForMoveV0();
       void getStockfishArenaMoveV0("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", {
         ...CHESS_STOCKFISH_PRESET_V0.WARMUP,
-        queuePriority: CHESS_ENGINE_TASK_PRIORITY_V0.BACKGROUND,
+        queuePriority: CHESS_ENGINE_TASK_PRIORITY_V0.ARENA_MATCH,
         queueKind: CHESS_ENGINE_TASK_KIND_V0.PREWARM,
         queueLabel: "arena_warmup"
       }).finally(refreshEngineStatusV0);
     };
-    runWarmup();
+    void awaitChessStockfishEngineReadyV0().finally(runWarmup);
   }, [refreshEngineStatusV0]);
 
   useEffect(() => {
@@ -391,17 +393,21 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     window.addEventListener(CHESS_TEACHER_STATUS_EVENT_V0, onEngineStatus);
     const runWarmup = () => {
       if (shouldDeferArenaPrewarmV0()) {
-        setTimeout(runWarmup, 3000);
+        setTimeout(runWarmup, 800);
         return;
       }
+      prioritizeArenaEngineForMoveV0();
       void getStockfishArenaMoveV0("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", {
         ...CHESS_STOCKFISH_PRESET_V0.WARMUP,
-        queuePriority: CHESS_ENGINE_TASK_PRIORITY_V0.BACKGROUND,
+        queuePriority: CHESS_ENGINE_TASK_PRIORITY_V0.ARENA_MATCH,
         queueKind: CHESS_ENGINE_TASK_KIND_V0.PREWARM,
         queueLabel: "arena_warmup"
       }).finally(refreshEngineStatusV0);
     };
-    runWarmup();
+    void awaitChessStockfishEngineReadyV0().finally(() => {
+      runWarmup();
+      refreshEngineStatusV0();
+    });
     return () => window.removeEventListener(CHESS_TEACHER_STATUS_EVENT_V0, onEngineStatus);
   }, [open, refreshEngineStatusV0]);
 
