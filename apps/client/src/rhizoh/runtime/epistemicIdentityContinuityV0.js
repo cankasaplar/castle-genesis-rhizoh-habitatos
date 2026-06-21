@@ -327,6 +327,15 @@ export function clearEpistemicIdentityContinuityForTestV0() {
   syncEpistemicIdentityContinuityWindowV0(null);
 }
 
+let epistemicIdentityConsoleMountedV0 = false;
+
+/** Mount console API before first evaluate (browser only). */
+export function mountEpistemicIdentityContinuityConsoleV0() {
+  if (typeof window === "undefined" || epistemicIdentityConsoleMountedV0) return;
+  epistemicIdentityConsoleMountedV0 = true;
+  syncEpistemicIdentityContinuityWindowV0(null);
+}
+
 function syncEpistemicIdentityContinuityWindowV0(report) {
   if (typeof window === "undefined") return;
   if (!window.__rhizoh) window.__rhizoh = {};

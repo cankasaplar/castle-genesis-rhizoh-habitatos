@@ -11,6 +11,7 @@ import {
   evaluateEpistemicIdentityContinuityV0,
   getGlobalEpistemicIdentityV0,
   IDENTITY_CONTINUITY_VERDICT_V0,
+  mountEpistemicIdentityContinuityConsoleV0,
   recordBundleFingerprintEvolutionV0
 } from "../epistemicIdentityContinuityV0.js";
 import { clearEpistemicAuditBundleForTestV0 } from "../epistemicAuditBundleV0.js";
@@ -106,5 +107,13 @@ describe("epistemicIdentityContinuityV0", () => {
     });
     const report = evaluateEpistemicIdentityContinuityV0();
     expect(report.fingerprintEvolution.chainLength).toBeGreaterThanOrEqual(1);
+  });
+
+  it("mounts console API before first evaluate", () => {
+    clearEpistemicIdentityContinuityForTestV0();
+    mountEpistemicIdentityContinuityConsoleV0();
+    expect(typeof window.__rhizoh?.epistemicIdentity?.evaluate).toBe("function");
+    expect(typeof window.__rhizoh?.epistemicIdentity?.global).toBe("function");
+    expect(window.__rhizoh.epistemicIdentity.last()).toBeNull();
   });
 });

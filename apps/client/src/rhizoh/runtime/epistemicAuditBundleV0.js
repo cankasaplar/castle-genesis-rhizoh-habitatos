@@ -301,6 +301,15 @@ function sanitizeTickSnapshotV0(tick) {
   };
 }
 
+let epistemicAuditBundleConsoleMountedV0 = false;
+
+/** Mount console API before first run (browser only). */
+export function mountEpistemicAuditBundleConsoleV0() {
+  if (typeof window === "undefined" || epistemicAuditBundleConsoleMountedV0) return;
+  epistemicAuditBundleConsoleMountedV0 = true;
+  syncEpistemicAuditBundleWindowV0(null);
+}
+
 function syncEpistemicAuditBundleWindowV0(bundle) {
   if (typeof window === "undefined") return;
   if (!window.__rhizoh) window.__rhizoh = {};

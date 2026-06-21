@@ -3,6 +3,7 @@ import {
   clearEpistemicAuditBundleForTestV0,
   exportEpistemicAuditBundleJsonV0,
   formatGoLiveSection6EvidenceMarkdownV0,
+  mountEpistemicAuditBundleConsoleV0,
   runEpistemicAuditBundleV0,
   EPISTEMIC_AUDIT_BUNDLE_SCHEMA_V0
 } from "../epistemicAuditBundleV0.js";
@@ -74,5 +75,12 @@ describe("epistemicAuditBundleV0 (Go-Live §6 atom)", () => {
     expect(bundle.simulation).toBeNull();
     expect(bundle.gateHints.simulationLawOk).toBeNull();
     expect(bundle.tick.correlationId).toBe(bundle.correlationId);
+  });
+
+  it("mounts console API before first run", () => {
+    clearEpistemicAuditBundleForTestV0();
+    mountEpistemicAuditBundleConsoleV0();
+    expect(typeof window.__rhizoh?.epistemicAuditBundle?.run).toBe("function");
+    expect(window.__rhizoh.epistemicAuditBundle.last()).toBeNull();
   });
 });
