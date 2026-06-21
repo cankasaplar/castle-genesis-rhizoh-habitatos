@@ -136,7 +136,8 @@ import { startRhizohLegalPendingWaitLoopV0 } from "./rhizoh/runtime/rhizohLegalP
 import { startCityMapLegalCountdownMediaGateV0 } from "./rhizoh/runtime/cityMapLegalCountdownMediaGateV0.js";
 import { RhizohCityMapLegalCountdownStripV0 } from "./components/RhizohCityMapLegalCountdownStripV0.jsx";
 import { resolveWorldEntryMapToolV0, isWorldDomainCalmModeV0 } from "./rhizoh/runtime/worldDomainCalmModeV0.js";
-import { runSpiralImmersionEnterStagedV0 } from "./rhizoh/runtime/worldMapMeaningfulTransitionV0.js";
+import { runSpiralImmersionEnterStagedV0, clearMapTransitionBusyV0 } from "./rhizoh/runtime/worldMapMeaningfulTransitionV0.js";
+import { releaseBroadcastForArenaPlayV0 } from "./rhizoh/runtime/chessEngineContentionGateV0.js";
 import { RhizohMapTransitionApproachStripV0 } from "./components/RhizohMapTransitionApproachStripV0.jsx";
 import { loadRhizohExperienceSessionContextV0 } from "./rhizoh/experience/rhizohExperienceSessionContextV0.js";
 import { loadRhizohProductSession } from "./rhizoh/product/rhizohProductSessionPersistenceV1.js";
@@ -512,6 +513,9 @@ export default function AppRhizohWorldSpaceV0() {
     const onChessArena = (ev) => {
       const detail = ev?.detail;
       if (!detail?.node) return;
+      clearMapTransitionBusyV0("chess_arena_open");
+      releaseBroadcastForArenaPlayV0();
+      window.dispatchEvent(new CustomEvent(RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0));
       setV11ChessArena(detail);
       setV11Library(null);
       setV11Workspace(null);
@@ -1187,7 +1191,10 @@ export default function AppRhizohWorldSpaceV0() {
           peerCastle={v11ChessArena.peerCastle || null}
           initialMode={v11ChessArena.initialMode || null}
           autoPlay={Boolean(v11ChessArena.autoPlay)}
-          onClose={() => setV11ChessArena(null)}
+          onClose={() => {
+            clearMapTransitionBusyV0("chess_arena_close");
+            setV11ChessArena(null);
+          }}
           uiLocale={uiLocale}
         />
       ) : null}

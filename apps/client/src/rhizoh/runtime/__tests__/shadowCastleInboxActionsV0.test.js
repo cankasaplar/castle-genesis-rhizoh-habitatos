@@ -33,7 +33,7 @@ describe("shadowCastleInboxActionsV0", () => {
       { uiLocale: "tr" }
     );
     expect(out.action).toBe(SHADOW_INBOX_ACTION_V0.OPEN_CHESS_ARENA);
-    expect(events[0]?.initialMode).toBe(CHESS_GAME_MODE_V0.BLITZ);
+    expect(events[0]?.initialMode).toBe(CHESS_GAME_MODE_V0.RHIZOH_STOCKFISH);
     expect(events[0]?.autoPlay).toBe(true);
     expect(events[0]?.node?.id).toBe("chess_arena");
   });
