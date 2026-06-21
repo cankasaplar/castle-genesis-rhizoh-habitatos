@@ -41,9 +41,13 @@ Narrative must be **separable from code** — via public manifests, protocol doc
 
 ## Next three artifacts (recommended order)
 
-1. **Invitation study dataset** — collect N≥15 anonymized sessions per `RHIZOH_INVITATION_STUDY_V0.md`
-2. **Causal continuity short paper** — RQ: same subject across sessions
-3. **Position paper:** *Separating Observation from Execution in Persistent AI Worlds*
+1. **Observer node spec** — `RHIZOH_OBSERVER_NODE_SPEC.md` ✓
+2. **Epistemic dashboard v1** — `RHIZOH_EPISTEMIC_DASHBOARD_V1.md` (spec) ✓
+3. **Return behavior trace** — `RHIZOH_RETURN_BEHAVIOR_TRACE_V0.md` ✓
+
+**Paper title (v1.1):** *Non-Agentic Identity Continuity in Interactive Causal Graph Systems*
+
+**Novelty claim:** Identity emerges without agency, only via causal continuity constraints.
 
 ---
 

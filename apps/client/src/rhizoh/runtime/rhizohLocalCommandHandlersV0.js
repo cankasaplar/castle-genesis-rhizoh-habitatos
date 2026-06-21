@@ -51,6 +51,9 @@ function navigateLocalCommandRouteV0(pathname) {
 /** Shared castle-init side effect — registry, grammar, and LLM directive paths. */
 export function openCastleInitGateFromLocalCommandV0(source = "local_command") {
   if (typeof window === "undefined") return;
+  void import("../ingress/visitorEpistemicTraceV0.js")
+    .then((m) => m.recordVisitorSurfaceV0("castle"))
+    .catch(() => {});
   navigateLocalCommandRouteV0("/world/space");
   void import("./rhizohWorldDrawerDomainV0.js")
     .then((m) => m.writeRhizohWorldDrawerDomainV0(m.RHIZOH_WORLD_DRAWER_DOMAIN_V0.SPACE))

@@ -139,11 +139,14 @@ export function tryResolveObserverInviteOnboardingV0(message, opts = {}) {
   }
 
   const intro = tr ? "Tanıştık." : "Good to meet you.";
+  const meaningHint = tr
+    ? "Üç epistemik koordinat: harita = mekânsal nedensellik; satranç = zamansal akıl yürütme; kale = anlatı tutarlılığı çıpası (isteğe bağlı)."
+    : "Three epistemic coordinates: map = spatial causality; chess = temporal reasoning; castle = narrative coherence anchor (optional).";
   const body = buildModeBodyV0(ctx.perceptionMode, tr, ctx.hasCastle, ctx.hasUserGeo);
 
   return Object.freeze({
     schema: OBSERVER_INVITE_ONBOARDING_SCHEMA_V0,
-    reply: `${intro} ${body}`,
+    reply: `${intro} ${meaningHint} ${body}`,
     source: "observer_invite_onboarding",
     llmBypass: true,
     perceptionMode: ctx.perceptionMode,

@@ -26,6 +26,7 @@ import { mountEpistemicAuditBundleConsoleV0 } from "./epistemicAuditBundleV0.js"
 import { mountEpistemicIdentityContinuityConsoleV0 } from "./epistemicIdentityContinuityV0.js";
 import { mountIdentityManifestConsoleV0 } from "./identityManifestProjectionV0.js";
 import { mountInviteOpsConsoleV0 } from "../ingress/inviteOpsV0.js";
+import { installVisitorEpistemicTraceWireV0 } from "../ingress/visitorEpistemicTraceV0.js";
 import { mountFullSystemReportConsoleV0 } from "./rhizohFullSystemReportV0.js";
 import { mountPersonaLoopSchedulerV0 } from "./rhizohPersonaLoopSchedulerV0.js";
 import { mountRhizohPulseLoopV1 } from "./rhizohPulseLoopV1.js";
@@ -134,6 +135,7 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
     mountEpistemicIdentityContinuityConsoleV0();
     mountIdentityManifestConsoleV0();
     mountInviteOpsConsoleV0();
+    installVisitorEpistemicTraceWireV0();
     ensureVoiceAdapterRegistered();
     resolveGatewayTransportV0();
     mountPersonaLoopSchedulerV0();
