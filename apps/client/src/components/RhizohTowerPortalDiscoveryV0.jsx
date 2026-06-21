@@ -10,6 +10,10 @@ import { readCastleNexusGeoV0 } from "../rhizoh/runtime/worldMapBootstrapGeoV0.j
 import { RHIZOH_REMOTE_CASTLE_CLICK_EVENT_V1, RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1 } from "../rhizoh/runtime/sovereignWorldMapNodesV0.js";
 import { sendCastleSyncPingV0 } from "../castleSocial/castleC2cRealtimeBusV0.js";
 import { RHIZOH_OPEN_CHESS_ARENA_EVENT_V1 } from "../rhizoh/runtime/symbyoMapIntentBridgeV0.js";
+import {
+  RHIZOH_MAP_OVERLAY_PANEL_CLASS_V0,
+  RHIZOH_MAP_OVERLAY_PANEL_INSET_CLASS_V0
+} from "../rhizoh/runtime/rhizohWorldMapPanelSurfaceV0.js";
 
 function subscribePresence(cb) {
   if (typeof window === "undefined") return () => {};
@@ -124,18 +128,18 @@ export const RhizohTowerPortalDiscoveryV0 = memo(function RhizohTowerPortalDisco
   return (
     <div className="pointer-events-none fixed inset-x-0 top-24 z-[28] flex justify-center px-4">
       <div
-        className="pointer-events-auto w-full max-w-md rounded-2xl border border-purple-400/35 bg-black/88 p-4 text-white shadow-2xl backdrop-blur-md"
+        className={`pointer-events-auto w-full max-w-md border-purple-400/45 p-4 ${RHIZOH_MAP_OVERLAY_PANEL_CLASS_V0}`}
         data-rhizoh-tower-portal="1"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[9px] font-black uppercase tracking-[0.22em] text-purple-300/70">
+            <p className="text-[9px] font-black uppercase tracking-[0.22em] text-purple-200/90">
               {tr ? "Rhizoh Kulesi · Portal" : "Rhizoh Tower · Portal"}
             </p>
-            <h2 className="mt-1 text-sm font-black text-purple-200">
+            <h2 className="mt-1 text-sm font-black text-purple-50">
               {tr ? "Yakındaki Kaleler" : "Nearby Castles"}
             </h2>
-            <p className="mt-1 text-[10px] text-white/50">
+            <p className="mt-1 text-[10px] text-white/78">
               {tr
                 ? "Ağda görünen kaleler — katıl, izle, mesajlaş veya meydan oku."
                 : "Castles visible on the network — join, observe, message, or challenge."}
@@ -152,7 +156,7 @@ export const RhizohTowerPortalDiscoveryV0 = memo(function RhizohTowerPortalDisco
 
         <div className="mt-4 max-h-[50vh] space-y-2 overflow-y-auto">
           {nearby.length === 0 ? (
-            <p className="rounded-xl border border-white/10 bg-white/5 px-3 py-4 text-center text-[11px] text-white/55">
+            <p className={`px-3 py-4 text-center text-[11px] ${RHIZOH_MAP_OVERLAY_PANEL_INSET_CLASS_V0}`}>
               {tr
                 ? "Henüz yakında kale yok. Gateway relay açıkken başka kaleler PEER_JOIN ile görünür."
                 : "No nearby castles yet. When gateway relay is live, other castles appear via PEER_JOIN."}
@@ -164,7 +168,7 @@ export const RhizohTowerPortalDiscoveryV0 = memo(function RhizohTowerPortalDisco
               return (
                 <div
                   key={row.castleId}
-                  className="rounded-xl border border-white/10 bg-white/[0.03] p-3"
+                  className={`border-purple-400/20 p-3 ${RHIZOH_MAP_OVERLAY_PANEL_INSET_CLASS_V0}`}
                   data-castle-id={row.castleId}
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -225,7 +229,7 @@ export const RhizohTowerPortalDiscoveryV0 = memo(function RhizohTowerPortalDisco
           )}
         </div>
 
-        <p className="mt-3 flex items-center gap-1 text-[9px] text-white/35">
+        <p className="mt-3 flex items-center gap-1 text-[9px] text-white/55">
           <Radio className="h-3 w-3" />
           {tr
             ? `${nearby.length} kale · gateway PEER_DISCOVER`

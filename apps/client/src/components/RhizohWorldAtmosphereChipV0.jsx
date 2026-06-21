@@ -47,7 +47,7 @@ export const RhizohWorldAtmosphereChipV0 = memo(function RhizohWorldAtmosphereCh
 
   return (
     <div
-      className={`rounded-xl border border-cyan-400/25 bg-[#030711]/92 px-2.5 py-1.5 text-[9px] leading-snug text-white/85 backdrop-blur-md ${className}`}
+      className={`rounded-xl border border-cyan-400/30 bg-[#050812] px-2.5 py-1.5 text-[9px] leading-snug text-white/90 ${className}`}
       data-rhizoh-world-atmosphere-chip="1"
       aria-live="polite"
     >

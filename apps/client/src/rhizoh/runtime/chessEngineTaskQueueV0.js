@@ -67,6 +67,36 @@ function insertTaskSortedV0(row) {
   else queueV0.splice(idx, 0, row);
 }
 
+/** Drop cluster + background tasks so arena play can own the single engine. */
+export function cancelPendingNonArenaChessEngineTasksV0() {
+  cancelPendingClusterEngineTasksV0();
+  const next = [];
+  for (const task of queueV0) {
+    if (
+      task.priority === CHESS_ENGINE_TASK_PRIORITY_V0.BACKGROUND ||
+      task.priority === CHESS_ENGINE_TASK_PRIORITY_V0.CLUSTER_MOVE
+    ) {
+      task.resolve(null);
+      continue;
+    }
+    next.push(task);
+  }
+  queueV0 = next;
+  if (
+    activeTaskV0 &&
+    (activeTaskV0.priority === CHESS_ENGINE_TASK_PRIORITY_V0.BACKGROUND ||
+      activeTaskV0.priority === CHESS_ENGINE_TASK_PRIORITY_V0.CLUSTER_MOVE)
+  ) {
+    preemptCountV0 += 1;
+    try {
+      activeTaskV0.onPreempt?.();
+    } catch {
+      /* noop */
+    }
+  }
+  publishChessEngineQueueRegistryV0();
+}
+
 /** Drop pending cluster tasks so arena play can own the single engine. */
 export function cancelPendingClusterEngineTasksV0() {
   const next = [];

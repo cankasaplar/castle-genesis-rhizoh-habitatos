@@ -4,6 +4,7 @@ import {
   CHESS_ENGINE_TASK_KIND_V0,
   __resetChessEngineTaskQueueForTestV0,
   cancelPendingClusterEngineTasksV0,
+  cancelPendingNonArenaChessEngineTasksV0,
   enqueueChessEngineTaskV0,
   getChessEngineQueueSnapshotV0
 } from "../chessEngineTaskQueueV0.js";
@@ -156,6 +157,31 @@ describe("chessClusterEngineSchedulerV0 queue snapshot", () => {
     expect(snap.queuePending).toBe(0);
     expect(snap.queuePendingByPriority).toBeTruthy();
     expect(snap.preemptCount).toBe(0);
+  });
+
+  it("cancelPendingNonArenaChessEngineTasksV0 clears background backlog", async () => {
+    let release = null;
+    const blocker = enqueueChessEngineTaskV0({
+      priority: CHESS_ENGINE_TASK_PRIORITY_V0.CLUSTER_MOVE,
+      kind: CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE,
+      label: "cluster_blocker",
+      run: () =>
+        new Promise((resolve) => {
+          release = resolve;
+        })
+    });
+    const bg = enqueueChessEngineTaskV0({
+      priority: CHESS_ENGINE_TASK_PRIORITY_V0.BACKGROUND,
+      kind: CHESS_ENGINE_TASK_KIND_V0.PREWARM,
+      label: "bg_cancel",
+      run: async () => "bg"
+    });
+    await Promise.resolve();
+    cancelPendingNonArenaChessEngineTasksV0();
+    expect(await bg).toBe(null);
+    release?.("done");
+    await blocker;
+    expect(getChessEngineQueueSnapshotV0().pendingByPriority.background).toBe(0);
   });
 
   it("cancelPendingClusterEngineTasksV0 resolves queued cluster work", async () => {

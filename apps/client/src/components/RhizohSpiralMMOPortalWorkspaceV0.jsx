@@ -1,4 +1,5 @@
 import React, { memo } from "react";
+import { RHIZOH_MAP_OVERLAY_PANEL_CLASS_V0 } from "../rhizoh/runtime/rhizohWorldMapPanelSurfaceV0.js";
 
 /**
  * SpiralMMO pin preview — no on-map countdown (timer runs in overlay data only).
@@ -16,7 +17,7 @@ export const RhizohSpiralMMOPortalWorkspaceV0 = memo(function RhizohSpiralMMOPor
 
   return (
     <div
-      className="pointer-events-auto w-full max-w-sm rounded-xl border border-cyan-500/35 bg-black/90 px-3 py-2 text-white shadow-2xl backdrop-blur-md"
+      className={`pointer-events-auto w-full max-w-sm border-cyan-500/40 px-3 py-2 ${RHIZOH_MAP_OVERLAY_PANEL_CLASS_V0}`}
       data-rhizoh-spiral-mmo-portal="1"
     >
       <div className="flex items-start justify-between gap-3">
