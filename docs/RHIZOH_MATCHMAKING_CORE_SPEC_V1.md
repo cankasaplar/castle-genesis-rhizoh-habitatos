@@ -54,6 +54,17 @@ replay(log) → deterministic rebuild (no live object mutation)
 
 **Code:** `matchmakingTruthKernelV0.js` · `matchSessionStateMachineV0.js`
 
+Beacon + session + kernel events share one truth log (`BeaconEmit`, `SessionCreate`, `ProposeMove`, …).  
+`runtimeSurface.matchmaking` is **frozen after publish** — not a mutable object graph.
+
+Post-deploy single-reality check:
+
+```javascript
+Object.isFrozen(window.__rhizoh.runtimeSurface.matchmaking)  // true
+window.__rhizoh.matchmaking.singleRealitySource               // "truth_log_v0"
+window.__rhizoh.matchmaking.truthKernel.replay()              // rebuild from log
+```
+
 ---
 
 ## 0. SSOT sentence

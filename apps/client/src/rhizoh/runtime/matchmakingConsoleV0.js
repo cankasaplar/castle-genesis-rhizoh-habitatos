@@ -15,11 +15,42 @@ import { mountMatchAuthorityKernelConsoleV0 } from "./matchAuthorityKernelV0.js"
 import { mountMatchStockfishValidatorConsoleV0 } from "./matchStockfishValidatorBridgeV0.js";
 import {
   beginMatchmakingEngineMountV0,
+  isMatchmakingEngineSurfaceSealedV0,
   publishMatchmakingApiFacadeV0,
   publishMatchmakingEngineSurfaceV0,
   getMatchmakingEngineSurfaceV0
 } from "./matchmakingRuntimeSurfaceV0.js";
-import { mountMatchmakingTruthKernelConsoleV0 } from "./matchmakingTruthKernelV0.js";
+import {
+  mountMatchmakingTruthKernelConsoleV0,
+  dispatchMatchmakingTruthEventV0,
+  getMatchmakingTruthSnapshotV0,
+  MATCH_TRUTH_EVENT_V0
+} from "./matchmakingTruthKernelV0.js";
+import {
+  clearMatchBeaconRegistryForTestV0,
+  getMatchBeaconRegistrySnapshotV0,
+  listActiveBeaconsV0
+} from "./matchmakingBeaconRegistryV0.js";
+
+function wireMatchmakingBeaconTruthDispatchV0(engineBag) {
+  engineBag.emitBeacon = (input) =>
+    dispatchMatchmakingTruthEventV0({
+      type: MATCH_TRUTH_EVENT_V0.BEACON_EMIT,
+      payload: input
+    });
+  engineBag.registry = Object.freeze({
+    emit: engineBag.emitBeacon,
+    cancel: (beaconId) =>
+      dispatchMatchmakingTruthEventV0({
+        type: MATCH_TRUTH_EVENT_V0.BEACON_CANCEL,
+        payload: { beaconId }
+      }),
+    snapshot: () =>
+      getMatchmakingTruthSnapshotV0().beaconRegistry ?? getMatchBeaconRegistrySnapshotV0(),
+    list: listActiveBeaconsV0,
+    clear: clearMatchBeaconRegistryForTestV0
+  });
+}
 
 export const MATCHMAKING_CONSOLE_SCHEMA_V0 = "castle.rhizoh.matchmaking_console.v0";
 
@@ -42,7 +73,9 @@ function buildMatchmakingConsoleSnapV0() {
     hasAuthority: typeof window.__rhizoh.matchmaking.authority?.status === "function",
     hasKernel: typeof window.__rhizoh.matchmaking.kernel?.proposeMove === "function",
     hasTruthKernel: typeof window.__rhizoh.matchmaking.truthKernel?.dispatch === "function",
-    truthModel: window.__rhizoh.matchmaking.truthModel ?? null
+    truthModel: window.__rhizoh.matchmaking.truthModel ?? null,
+    engineSealed: isMatchmakingEngineSurfaceSealedV0(),
+    singleRealitySource: window.__rhizoh.matchmaking.singleRealitySource ?? null
   });
 }
 
@@ -56,21 +89,21 @@ export function mountMatchmakingConsoleV0() {
   }
 
   window.__rhizoh = window.__rhizoh || {};
-  const engineBag = beginMatchmakingEngineMountV0();
 
   if (
     isMatchmakingConsoleMountedV0() &&
     window.__rhizoh.matchmaking.schema === MATCHMAKING_CONSOLE_SCHEMA_V0 &&
-    window.__rhizoh.matchmaking.mounted === true
+    isMatchmakingEngineSurfaceSealedV0()
   ) {
-    const existing = getMatchmakingEngineSurfaceV0();
-    if (existing) {
-      publishMatchmakingApiFacadeV0(existing, { consoleSchema: MATCHMAKING_CONSOLE_SCHEMA_V0 });
-    }
+    publishMatchmakingApiFacadeV0(getMatchmakingEngineSurfaceV0(), {
+      consoleSchema: MATCHMAKING_CONSOLE_SCHEMA_V0
+    });
     const snap = buildMatchmakingConsoleSnapV0();
     window.__rhizoh.matchmakingConsole = snap;
     return snap;
   }
+
+  const engineBag = beginMatchmakingEngineMountV0();
 
   mountMatchmakingBeaconRegistryConsoleV0();
   mountMatchmakingEngineConsoleV0();
@@ -81,6 +114,7 @@ export function mountMatchmakingConsoleV0() {
   mountMatchStockfishValidatorConsoleV0();
 
   const truthKernel = mountMatchmakingTruthKernelConsoleV0();
+  wireMatchmakingBeaconTruthDispatchV0(engineBag);
   const engine = publishMatchmakingEngineSurfaceV0(engineBag, truthKernel);
   publishMatchmakingApiFacadeV0(engine, { consoleSchema: MATCHMAKING_CONSOLE_SCHEMA_V0 });
 
@@ -89,6 +123,10 @@ export function mountMatchmakingConsoleV0() {
   if (!mountedV0) {
     mountedV0 = true;
     window.__CASTLE_BOOT_LOG__?.ok?.("boot.matchmaking_console", "shadow rehearsal armed");
+    window.__CASTLE_BOOT_LOG__?.ok?.(
+      "boot.matchmaking_truth_kernel",
+      "event_sourced_reducer · single_event_stream"
+    );
   }
 
   window.__rhizoh.matchmakingConsole = snap;

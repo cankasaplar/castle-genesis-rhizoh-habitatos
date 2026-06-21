@@ -5,7 +5,7 @@
  * @see docs/RHIZOH_MATCHMAKING_CORE_SPEC_V1.md
  */
 
-import { MATCH_MODE_V0 } from "./matchmakingBeaconRegistryV0.js";
+import { MATCH_MODE_V0, applyBeaconCancelToRegistryV0, applyBeaconEmitToRegistryV0 } from "./matchmakingBeaconRegistryV0.js";
 import { attachAuthorityToSessionV0, buildMatchAuthorityContractV0 } from "./matchAuthorityLayerV0.js";
 import {
   MATCH_KERNEL_SCHEMA_V0,
@@ -25,6 +25,8 @@ export const MATCH_TRUTH_LOG_SCHEMA_V0 = "castle.rhizoh.matchmaking_truth_log.v0
 export const MATCH_TRUTH_MODEL_V0 = "event_sourced_reducer_v0";
 
 export const MATCH_TRUTH_EVENT_V0 = Object.freeze({
+  BEACON_EMIT: "BeaconEmit",
+  BEACON_CANCEL: "BeaconCancel",
   SESSION_CREATE: "SessionCreate",
   SESSION_TRANSITION: "SessionTransition",
   PROPOSE_MOVE: "ProposeMove",
@@ -35,6 +37,7 @@ export const MATCH_TRUTH_EVENT_V0 = Object.freeze({
 const TRUTH_LOG_STORAGE_KEY_V0 = "rhizoh.matchmaking.truth_log.v0";
 const TRUTH_PROJECTION_STORAGE_KEY_V0 = "rhizoh.matchmaking.truth_projection.v0";
 const SESSION_STORAGE_KEY_V0 = "rhizoh.matchmaking.active_session.v0";
+const BEACON_REGISTRY_STORAGE_KEY_V0 = "rhizoh.matchmaking.beacon_registry.v0";
 const MAX_TRUTH_LOG_ENTRIES_V0 = 512;
 const STARTING_FEN_V0 = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -42,6 +45,7 @@ export const INITIAL_MATCH_TRUTH_STATE_V0 = Object.freeze({
   schema: MATCH_TRUTH_SCHEMA_V0,
   truthModel: MATCH_TRUTH_MODEL_V0,
   activeSession: null,
+  beaconRegistry: null,
   kernelState: MATCH_KERNEL_STATE_V0.ACTIVE,
   logSeq: 0,
   shadowRehearsal: true,
@@ -86,6 +90,9 @@ function writeTruthProjectionV0(state) {
         sessionStorage.setItem(SESSION_STORAGE_KEY_V0, JSON.stringify(state.activeSession));
       } else {
         sessionStorage.removeItem(SESSION_STORAGE_KEY_V0);
+      }
+      if (state?.beaconRegistry) {
+        sessionStorage.setItem(BEACON_REGISTRY_STORAGE_KEY_V0, JSON.stringify(state.beaconRegistry));
       }
     }
   } catch {
@@ -167,6 +174,24 @@ export function reduceMatchmakingTruthV0(state, event, opts = {}) {
   const kernelOpts = skipKernelLog ? { skipLog: true } : {};
 
   switch (event.type) {
+    case MATCH_TRUTH_EVENT_V0.BEACON_EMIT: {
+      const applied = applyBeaconEmitToRegistryV0(base.beaconRegistry, event.payload || {});
+      return Object.freeze({
+        ...base,
+        beaconRegistry: applied.registry ?? base.beaconRegistry,
+        logSeq: event.seq ?? base.logSeq,
+        __effect: applied
+      });
+    }
+    case MATCH_TRUTH_EVENT_V0.BEACON_CANCEL: {
+      const applied = applyBeaconCancelToRegistryV0(base.beaconRegistry, event.payload?.beaconId);
+      return Object.freeze({
+        ...base,
+        beaconRegistry: applied.registry ?? base.beaconRegistry,
+        logSeq: event.seq ?? base.logSeq,
+        __effect: applied
+      });
+    }
     case MATCH_TRUTH_EVENT_V0.SESSION_CREATE: {
       const session = buildSessionFromCreatePayloadV0(event.payload || {});
       return Object.freeze({
@@ -367,6 +392,7 @@ export function clearMatchmakingTruthForTestV0() {
       sessionStorage.removeItem(TRUTH_LOG_STORAGE_KEY_V0);
       sessionStorage.removeItem(TRUTH_PROJECTION_STORAGE_KEY_V0);
       sessionStorage.removeItem(SESSION_STORAGE_KEY_V0);
+      sessionStorage.removeItem(BEACON_REGISTRY_STORAGE_KEY_V0);
     }
   } catch {
     /* noop */

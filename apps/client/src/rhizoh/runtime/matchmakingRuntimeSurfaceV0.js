@@ -11,6 +11,7 @@ export const MATCHMAKING_RUNTIME_SURFACE_SCHEMA_V0 =
   "castle.rhizoh.matchmaking_runtime_surface.v0";
 
 export const MATCHMAKING_API_FACADE_SCHEMA_V0 = "castle.rhizoh.matchmaking_api_facade.v0";
+export const MATCHMAKING_SINGLE_REALITY_SOURCE_V0 = "truth_log_v0";
 
 /** @type {Record<string, unknown> | null} */
 let engineMountBagV0 = null;
@@ -32,7 +33,20 @@ export function clearMatchmakingEngineMountBagV0() {
 }
 
 /**
- * During mount: mutable bag. After publish: frozen engine on runtimeSurface.
+ * Published engine must be frozen with truth reducer armed (single event stream).
+ */
+export function isMatchmakingEngineSurfaceSealedV0() {
+  const engine = getMatchmakingEngineSurfaceV0();
+  return (
+    engine != null &&
+    Object.isFrozen(engine) &&
+    engine.truthModel === MATCHMAKING_TRUTH_MODEL_V0 &&
+    typeof engine.truthKernel?.dispatch === "function"
+  );
+}
+
+/**
+ * During mount only: mutable bag. After publish: frozen engine on runtimeSurface.
  * @returns {Record<string, unknown> | null}
  */
 export function ensureMatchmakingEngineSurfaceV0() {
@@ -54,6 +68,8 @@ export function publishMatchmakingEngineSurfaceV0(engineBag, truthKernel) {
     truthKernel,
     truthModel: MATCHMAKING_TRUTH_MODEL_V0,
     executionModel: MATCHMAKING_TRUTH_MODEL_V0,
+    singleRealitySource: MATCHMAKING_SINGLE_REALITY_SOURCE_V0,
+    realityModel: "single_event_stream",
     interpretationOnly: true,
     shadowRehearsal: true
   });
@@ -95,7 +111,9 @@ export function buildMatchmakingApiFacadeV0(engine, meta = {}) {
     validator: e.validator ?? null,
     truthKernel: e.truthKernel ?? null,
     truthModel: e.truthModel ?? null,
-    executionModel: e.executionModel ?? null
+    executionModel: e.executionModel ?? null,
+    singleRealitySource: e.singleRealitySource ?? MATCHMAKING_SINGLE_REALITY_SOURCE_V0,
+    realityModel: e.realityModel ?? "single_event_stream"
   });
 }
 

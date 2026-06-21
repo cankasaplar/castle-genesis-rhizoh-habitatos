@@ -62,9 +62,11 @@ function checkEmitRateLimitV0(userId) {
 }
 
 /**
- * @param {{ userId: string, mode?: string, timeControlMs?: number, ratingRange?: [number, number], entropyTag?: number }} input
+ * Pure beacon emit — no storage writes (truth reducer path).
+ * @param {object|null} registryRow
+ * @param {object} input
  */
-export function emitMatchBeaconV0(input = {}) {
+export function applyBeaconEmitToRegistryV0(registryRow, input = {}) {
   const userId = String(input.userId || "").trim();
   if (!userId) {
     return Object.freeze({ ok: false, reason: "missing_user_id", interpretationOnly: true });
@@ -94,12 +96,11 @@ export function emitMatchBeaconV0(input = {}) {
     serverAuthoritative: false
   });
 
-  const row = readRegistryRowV0();
-  const beacons = [...(row?.beacons || []).filter((b) => b.expiresAtMs > now && b.userId !== userId), beacon].slice(
+  const beacons = [...(registryRow?.beacons || []).filter((b) => b.expiresAtMs > now && b.userId !== userId), beacon].slice(
     -MAX_BEACONS_V0
   );
 
-  const next = Object.freeze({
+  const registry = Object.freeze({
     schema: "castle.rhizoh.matchmaking_beacon_registry.v0",
     beacons: Object.freeze(beacons),
     count: beacons.length,
@@ -108,23 +109,41 @@ export function emitMatchBeaconV0(input = {}) {
     interpretationOnly: true
   });
 
-  writeRegistryRowV0(next);
+  return Object.freeze({ ok: true, beacon, registry, interpretationOnly: true });
+}
 
-  return Object.freeze({ ok: true, beacon, registry: next });
+/**
+ * Pure beacon cancel — no storage writes.
+ * @param {object|null} registryRow
+ * @param {string} beaconId
+ */
+export function applyBeaconCancelToRegistryV0(registryRow, beaconId) {
+  const id = String(beaconId || "");
+  if (!registryRow) return Object.freeze({ ok: false, reason: "empty_registry" });
+
+  const beacons = (registryRow.beacons || []).filter((b) => b.beaconId !== id);
+  const registry = Object.freeze({ ...registryRow, beacons: Object.freeze(beacons), count: beacons.length });
+  return Object.freeze({ ok: true, cancelled: id, registry });
+}
+
+/**
+ * @param {{ userId: string, mode?: string, timeControlMs?: number, ratingRange?: [number, number], entropyTag?: number }} input
+ */
+export function emitMatchBeaconV0(input = {}) {
+  const applied = applyBeaconEmitToRegistryV0(readRegistryRowV0(), input);
+  if (!applied.ok) return applied;
+  writeRegistryRowV0(applied.registry);
+  return Object.freeze({ ok: true, beacon: applied.beacon, registry: applied.registry });
 }
 
 /**
  * @param {string} beaconId
  */
 export function cancelMatchBeaconV0(beaconId) {
-  const id = String(beaconId || "");
-  const row = readRegistryRowV0();
-  if (!row) return Object.freeze({ ok: false, reason: "empty_registry" });
-
-  const beacons = (row.beacons || []).filter((b) => b.beaconId !== id);
-  const next = Object.freeze({ ...row, beacons: Object.freeze(beacons), count: beacons.length });
-  writeRegistryRowV0(next);
-  return Object.freeze({ ok: true, cancelled: id, registry: next });
+  const applied = applyBeaconCancelToRegistryV0(readRegistryRowV0(), beaconId);
+  if (!applied.ok) return applied;
+  writeRegistryRowV0(applied.registry);
+  return Object.freeze({ ok: true, cancelled: applied.cancelled, registry: applied.registry });
 }
 
 export function getMatchBeaconRegistrySnapshotV0() {
