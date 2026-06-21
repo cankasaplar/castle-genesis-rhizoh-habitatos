@@ -432,7 +432,8 @@ function collectEpistemicSubstrateV0() {
       "__rhizoh.integrityTiers",
       "await __rhizoh.epistemicAuditBundle.run()",
       "__rhizoh.epistemicIdentity.evaluate()",
-      "__rhizoh.epistemicIdentity.global()"
+      "__rhizoh.epistemicIdentity.global()",
+      "__rhizoh.identityManifest.project()"
     ])
   });
 }
