@@ -4,9 +4,13 @@
 
 import {
   buildObserverInviteUrlV0,
-  OBSERVER_INVITE_ROLE_V0,
   parseObserverInviteTokenV0
 } from "./observerInviteLandingV0.js";
+import { OBSERVER_INVITE_ROLE_V0 } from "./observerInviteRolesV0.js";
+import {
+  getInviteExpectationFramingV0,
+  resolveInvitePerceptionLensV0
+} from "./observerInvitePerceptionLensV0.js";
 import {
   EPISTEMIC_STRESS_CLASS_V0,
   generateInvitePayloadV0
@@ -33,8 +37,10 @@ const ROLE_TO_STRESS_V0 = Object.freeze({
  * }} [opts]
  */
 export function generateObserverInviteV0(opts = {}) {
-  const role = String(opts.role || OBSERVER_INVITE_ROLE_V0.OBSERVER).toLowerCase();
   const reviewerId = opts.reviewerId ? String(opts.reviewerId).trim().toLowerCase() : null;
+  const role = String(
+    opts.role || (reviewerId ? OBSERVER_INVITE_ROLE_V0.REVIEWER : OBSERVER_INVITE_ROLE_V0.OBSERVER)
+  ).toLowerCase();
 
   let inviteUrl;
   let payload = null;
@@ -81,11 +87,21 @@ export function generateObserverInviteV0(opts = {}) {
 export function formatObserverInviteMailDraftV0(invite, opts = {}) {
   const tr = opts.locale === "tr";
   const name = opts.observerName || (tr ? "Gözlemci" : "Observer");
-  const subject = tr ? "Rhizoh — kontrollü gözlem daveti" : "Rhizoh — controlled observation invite";
+  const lens = resolveInvitePerceptionLensV0(invite.role, tr ? "tr" : "en");
+  const expectation = lens.copy.expectation;
+
+  const subjectByMode = Object.freeze({
+    explorer: tr ? "Rhizoh — keşif daveti" : "Rhizoh — exploration invite",
+    research: tr ? "Rhizoh — araştırma gözlemi" : "Rhizoh — research observation",
+    signal: tr ? "Rhizoh — altyapı gözlemi" : "Rhizoh — infrastructure observation"
+  });
+  const subject = subjectByMode[lens.mode] || (tr ? "Rhizoh — kontrollü gözlem daveti" : "Rhizoh — controlled observation invite");
 
   const bodyTr = `Merhaba ${name},
 
-Rhizoh kontrollü gözlem deneyine davetlisiniz. Bu bağlantı yalnızca okuma ve gözlem içindir; execution yetkisi vermez.
+${expectation}
+
+Bu bağlantı yalnızca okuma ve gözlem içindir; execution yetkisi vermez.
 
 Davet bağlantısı:
 ${invite.inviteUrl}
@@ -95,7 +111,9 @@ Observation ≠ Execution
 
   const bodyEn = `Hello ${name},
 
-You are invited to a controlled Rhizoh observation session. This link is read-only observation — no execution authority.
+${expectation}
+
+This link is read-only observation — no execution authority.
 
 Invite link:
 ${invite.inviteUrl}
@@ -110,6 +128,8 @@ Observation ≠ Execution
     bodyTr,
     bodyEn,
     inviteUrl: invite.inviteUrl,
+    perceptionMode: lens.mode,
+    expectationFraming: expectation,
     fromChannel: "observe@rhizoh.com",
     interpretationOnly: true
   });

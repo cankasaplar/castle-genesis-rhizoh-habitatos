@@ -34,6 +34,12 @@ Mail send script (ops): `scripts/send-cohort-observer-invite.ps1`
 - No `appendIdentityEventV0` from invite flow
 - Observation ≠ Execution
 
+| `observer` | Explorer — map, towers, replay (no raw epi_id panel) |
+| `reviewer` | Research — causal timeline + epi_id |
+| `investor` | Signal — infrastructure summary, no raw timeline |
+
+**Expectation framing** (mail + landing banner): role-specific one-liner filters wrong audience.
+
 ## Related
 
 - [`RHIZOH_IDENTITY_MANIFEST_V0.md`](RHIZOH_IDENTITY_MANIFEST_V0.md)

@@ -23,6 +23,8 @@ describe("inviteOpsV0", () => {
     const draft = formatObserverInviteMailDraftV0(inv, { observerName: "Test", locale: "en" });
     expect(draft.subject).toContain("Rhizoh");
     expect(draft.body).toContain(inv.inviteUrl);
+    expect(draft.expectationFraming).toBeTruthy();
+    expect(draft.perceptionMode).toBe("research");
     expect(draft.fromChannel).toBe("observe@rhizoh.com");
   });
 

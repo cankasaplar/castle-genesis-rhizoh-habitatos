@@ -9,14 +9,12 @@ import {
 } from "./closedUserAdmissionEngineV0.js";
 import { buildCausalMapLayerV0 } from "../runtime/rhizohCausalMapLayerV0.js";
 import { projectIdentityManifestV0 } from "../runtime/identityManifestProjectionV0.js";
+import { resolveInvitePerceptionLensV0 } from "./observerInvitePerceptionLensV0.js";
+import { OBSERVER_INVITE_ROLE_V0 } from "./observerInviteRolesV0.js";
+
+export { OBSERVER_INVITE_ROLE_V0 };
 
 export const OBSERVER_INVITE_LANDING_SCHEMA_V0 = "castle.rhizoh.observer_invite_landing.v0";
-
-export const OBSERVER_INVITE_ROLE_V0 = Object.freeze({
-  OBSERVER: "observer",
-  REVIEWER: "reviewer",
-  INVESTOR: "investor"
-});
 
 const SESSION_KEY_V0 = "rhizoh_observer_invite_context_v0.1";
 const PROCEED_EVENT_V0 = "rhizoh:invite-proceed-v0";
@@ -199,11 +197,14 @@ export function buildObserverInviteLandingBundleV0(invite) {
   const causalMap = buildCausalMapLayerV0();
   const manifest = projectIdentityManifestV0({ causalMap });
   const causalTimeline = buildCausalSnapshotTimelineV0(causalMap);
+  const role = invite?.role || "observer";
+  const perceptionLens = resolveInvitePerceptionLensV0(role);
 
   return Object.freeze({
     schema: OBSERVER_INVITE_LANDING_SCHEMA_V0,
     projectedAtMs: Date.now(),
     invite: invite ?? readObserverInviteContextV0(),
+    perceptionLens,
     manifest,
     causalTimeline,
     constitutionalSpine: "Observation ≠ Execution",
