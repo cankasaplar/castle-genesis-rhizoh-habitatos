@@ -89,11 +89,29 @@ export function buildSpiralMMOWhirlpoolPathV0(cx, cy, opts = {}) {
   return parts.join("");
 }
 
+/** Bootstrap observation window — Bosphorus entry (visible on V11 Istanbul zoom). */
+export const RHIZOH_SPIRAL_MMO_BOOTSTRAP_PIN_V0 = Object.freeze({
+  id: "spiralmmo_bootstrap",
+  name: "SpiralMMO · Bosphorus Gate",
+  label: "SPIRAL",
+  shortLabel: "BS",
+  type: "spiralmmo",
+  continent: "bootstrap",
+  spiralLayer: "explorer",
+  lat: 41.0434,
+  lon: 29.0092,
+  color: "#ffcc00",
+  owner: "SpiralMMO",
+  description: "Bootstrap gate · tap for SpiralMMO awakening",
+  descriptionTr: "Bootstrap kapı · SpiralMMO uyanışı için dokun",
+  capabilities: Object.freeze([])
+});
+
 /**
  * @returns {ReadonlyArray<object>}
  */
 export function listSpiralMMOContinentMapPinsV0() {
-  return RHIZOH_SPIRAL_MMO_CONTINENT_PINS_V0;
+  return Object.freeze([RHIZOH_SPIRAL_MMO_BOOTSTRAP_PIN_V0, ...RHIZOH_SPIRAL_MMO_CONTINENT_PINS_V0]);
 }
 
 /**

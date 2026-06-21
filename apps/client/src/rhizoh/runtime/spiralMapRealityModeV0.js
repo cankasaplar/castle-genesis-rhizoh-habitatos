@@ -35,7 +35,7 @@ const REALITY_MODE_PRESETS_V0 = Object.freeze({
     realityMode: SPIRAL_MAP_REALITY_MODE_V0.EXPLORER
   }),
   [SPIRAL_MAP_REALITY_MODE_V0.CASTLE]: Object.freeze({
-    [SPIRAL_MAP_LAYER_V0.EXPLORER]: false,
+    [SPIRAL_MAP_LAYER_V0.EXPLORER]: true,
     [SPIRAL_MAP_LAYER_V0.CASTLE]: true,
     [SPIRAL_MAP_LAYER_V0.ECONOMY]: false,
     [SPIRAL_MAP_LAYER_V0.SEASONAL]: false,
@@ -241,6 +241,12 @@ export function ensureSpiralMapRealityModeHydratedV0() {
   const persistedMode = readPersistedSpiralMapRealityModeIdV0();
   if (persistedMode) {
     const filter = readSpiralMapLayerFilterStateV0();
+    if (
+      persistedMode === SPIRAL_MAP_REALITY_MODE_V0.CASTLE &&
+      filter.explorer !== true
+    ) {
+      return applySpiralMapRealityModeV0(SPIRAL_MAP_REALITY_MODE_V0.CASTLE);
+    }
     if (!spiralMapFilterMatchesRealityPresetV0(persistedMode, filter)) {
       return applySpiralMapRealityModeV0(persistedMode);
     }

@@ -149,22 +149,24 @@ describe("rhizohMapPinOwnerV0", () => {
     expect(resolvePinSpiralLayerV0({ towerClass: "MEDIA" })).toBe(SPIRAL_MAP_LAYER_V0.ECONOMY);
   });
 
-  it("filterSovereignPinsForSpiralMapViewV0 keeps castle pair only in castle reality mode", () => {
+  it("filterSovereignPinsForSpiralMapViewV0 keeps castle pair and explorer mesh in castle reality mode", () => {
     const sovereign = [
       { id: "ghost", type: "ghost", lat: 41, lon: 29 },
       { id: "my_castle", type: "castle", lat: 41.01, lon: 29.01 },
       { id: ORIGIN_HOME_SERENCEBEY_PIN_ID_V0, type: "origin_home", lat: 41.0422, lon: 29.0089 },
-      { id: "rhizoh_portal", type: "portal", lat: 41.02, lon: 29.02 }
+      { id: "rhizoh_portal", type: "portal", lat: 41.02, lon: 29.02 },
+      { id: "spiralmmo_bootstrap", type: "spiralmmo", lat: 41.0434, lon: 29.0092 }
     ];
     const filtered = filterSovereignPinsForSpiralMapViewV0(sovereign, {
-      explorer: false,
+      explorer: true,
       castle: true,
       economy: false,
       seasonal: false,
       includeDormant: true,
       realityMode: "castle"
     });
-    expect(filtered.some((p) => p.id === "ghost")).toBe(false);
+    expect(filtered.some((p) => p.id === "ghost")).toBe(true);
+    expect(filtered.some((p) => p.id === "spiralmmo_bootstrap")).toBe(true);
     expect(filtered.some((p) => p.id === "my_castle")).toBe(true);
     expect(filtered.some((p) => p.id === ORIGIN_HOME_SERENCEBEY_PIN_ID_V0)).toBe(true);
     expect(filtered.some((p) => p.id === "rhizoh_portal")).toBe(true);
