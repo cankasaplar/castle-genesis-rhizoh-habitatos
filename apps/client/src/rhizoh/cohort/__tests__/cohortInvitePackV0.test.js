@@ -7,10 +7,11 @@ import {
 } from "../cohortInvitePackV0.js";
 import { getFridayPromptRunnerStateV0, resetFridayPromptRunnerV0 } from "../cohortFridayPromptRunnerV0.js";
 
-test("cohort invite URL encodes reviewer slot", () => {
+test("cohort invite URL encodes reviewer slot without exposing name", () => {
   const url = buildCohortInviteUrlV0({ reviewerId: "friday", cohort: "review" });
-  assert.match(url, /cohort=review/);
-  assert.match(url, /reviewer=friday/);
+  assert.match(url, /\/invite\?invite=rhizoh_inv_/);
+  assert.doesNotMatch(url, /reviewer=/);
+  assert.doesNotMatch(url, /friday/);
 });
 
 test("Friday script has three ordered steps", () => {

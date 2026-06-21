@@ -3,12 +3,18 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   buildObserverInviteLandingBundleV0,
   dispatchObserverInviteProceedV0,
+  normalizeObserverInviteLangV0,
+  OBSERVER_INVITE_LANDING_LOCALES_V0,
   parseObserverInviteFromSearchV0,
   persistObserverInviteContextV0
 } from "../rhizoh/ingress/observerInviteLandingV0.js";
 import { resolveInvitePerceptionLensV0 } from "../rhizoh/ingress/observerInvitePerceptionLensV0.js";
 import { INGRESS_SURFACE_V0 } from "../rhizoh/ingress/ingressFlowStylesV0.js";
-import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
+import {
+  readUiLocaleV0,
+  subscribeUiLocaleV0,
+  writeUiLocaleV0
+} from "../rhizoh/runtime/rhizohUiLocaleV0.js";
 import { runDomainGateForPathV0 } from "../rhizoh/runtime/rhizohDomainNervousSystemV0.js";
 
 const cardStyle = {
@@ -25,16 +31,43 @@ const expectationBannerStyle = {
   background: "rgba(8,47,73,0.45)"
 };
 
+const MODE_LABELS_V0 = Object.freeze({
+  explorer: Object.freeze({ tr: "keşif", en: "explorer" }),
+  research: Object.freeze({ tr: "araştırma", en: "research" }),
+  signal: Object.freeze({ tr: "sinyal", en: "signal" })
+});
+
 export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInviteLandingPageV0() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const locale = readUiLocaleV0();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [locale, setLocale] = useState(() => readUiLocaleV0());
   const tr = locale === "tr";
   const [bundle, setBundle] = useState(null);
 
   const invite = useMemo(
     () => parseObserverInviteFromSearchV0(searchParams),
     [searchParams]
+  );
+
+  useEffect(() => subscribeUiLocaleV0(() => setLocale(readUiLocaleV0())), []);
+
+  useEffect(() => {
+    const fromUrl = normalizeObserverInviteLangV0(searchParams.get("lang"));
+    if (fromUrl && fromUrl !== readUiLocaleV0()) {
+      writeUiLocaleV0(fromUrl);
+      setLocale(fromUrl);
+    }
+  }, [searchParams]);
+
+  const onPickLocale = useCallback(
+    (code) => {
+      const next = writeUiLocaleV0(code);
+      setLocale(next);
+      const params = new URLSearchParams(searchParams);
+      params.set("lang", next);
+      setSearchParams(params, { replace: true });
+    },
+    [searchParams, setSearchParams]
   );
 
   const role = invite?.role || "observer";
@@ -44,6 +77,7 @@ export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInv
   );
   const copy = lens.copy;
   const panels = lens.panels;
+  const modeLabel = MODE_LABELS_V0[lens.mode]?.[tr ? "tr" : "en"] || lens.mode;
 
   useEffect(() => {
     if (invite) persistObserverInviteContextV0(invite);
@@ -68,17 +102,43 @@ export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInv
 
   const manifest = bundle?.manifest;
   const timeline = bundle?.causalTimeline?.timeline || [];
-  const subjectId = manifest?.subjectId || "unbound";
+  const subjectId = manifest?.subjectId || (tr ? "bağlı değil" : "unbound");
 
   return (
     <div style={INGRESS_SURFACE_V0.page} data-rhizoh-observer-invite-landing="1" data-perception-mode={lens.mode}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+        {OBSERVER_INVITE_LANDING_LOCALES_V0.map((code) => {
+          const active = locale === code;
+          return (
+            <button
+              key={code}
+              type="button"
+              onClick={() => onPickLocale(code)}
+              style={{
+                ...INGRESS_SURFACE_V0.primaryBtn(active),
+                background: active ? "#38bdf8" : "rgba(15,23,42,0.85)",
+                color: active ? "#041018" : "#e2e8f0",
+                border: active ? "none" : "1px solid #334155",
+                padding: "8px 14px",
+                fontSize: 12,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em"
+              }}
+              aria-pressed={active}
+            >
+              {code === "tr" ? "Türkçe" : "English"}
+            </button>
+          );
+        })}
+      </div>
+
       <p style={INGRESS_SURFACE_V0.kicker}>{copy.kicker}</p>
       <h1 style={INGRESS_SURFACE_V0.title}>{copy.title}</h1>
 
       {panels.showExpectationBanner ? (
         <div style={expectationBannerStyle}>
           <p style={{ fontSize: 11, letterSpacing: "0.12em", opacity: 0.7, margin: "0 0 8px" }}>
-            {tr ? "BEKLENTİ" : "EXPECTATION"}
+            {copy.sectionExpectation}
           </p>
           <p style={{ fontSize: 15, lineHeight: 1.55, margin: 0, fontWeight: 500 }}>{copy.expectation}</p>
         </div>
@@ -89,20 +149,19 @@ export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInv
       {invite ? (
         <div style={cardStyle}>
           <p style={{ fontSize: 11, letterSpacing: "0.1em", opacity: 0.7, margin: "0 0 8px" }}>
-            INVITE · {invite.inviteToken?.slice(0, 32)}
+            {copy.sectionInvite} · {invite.inviteToken?.slice(0, 32)}
             {invite.inviteToken?.length > 32 ? "…" : ""}
           </p>
           <p style={{ fontSize: 13, margin: 0, opacity: 0.9 }}>
-            {tr ? "Algı modu" : "Perception mode"}: <strong>{lens.mode}</strong>
-            {invite.legacyCohort ? ` · reviewer:${invite.reviewerId || invite.inviteToken}` : ""}
+            {copy.perceptionModeLabel}: <strong>{modeLabel}</strong>
           </p>
         </div>
       ) : (
         <div style={cardStyle}>
           <p style={{ margin: 0, fontSize: 14, opacity: 0.85 }}>
             {tr
-              ? "Davet token'ı bulunamadı. Kaptan size özel bir bağlantı göndermeli."
-              : "No invite token found. You need a personal link from the host."}
+              ? "Davet kodu bulunamadı. Kaptan size özel bir bağlantı göndermeli."
+              : "No invite code found. You need a personal link from the host."}
           </p>
         </div>
       )}
@@ -110,7 +169,7 @@ export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInv
       {panels.showActivities ? (
         <div style={cardStyle}>
           <p style={{ fontSize: 11, letterSpacing: "0.12em", opacity: 0.65, margin: "0 0 10px" }}>
-            {tr ? "BURADA NE YAPACAKSIN?" : "WHAT WILL YOU DO HERE?"}
+            {copy.sectionActivities}
           </p>
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.7, opacity: 0.9 }}>
             {copy.activities.map((item) => (
@@ -123,24 +182,20 @@ export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInv
       {panels.showInfrastructureSummary ? (
         <div style={cardStyle}>
           <p style={{ fontSize: 11, letterSpacing: "0.12em", opacity: 0.65, margin: "0 0 8px" }}>
-            INFRASTRUCTURE SIGNAL
+            {copy.sectionInfrastructure}
           </p>
           <p style={{ fontSize: 13, margin: "0 0 6px" }}>
-            {bundle?.causalTimeline?.nodeCount ?? 0} {tr ? "olay düğümü" : "event nodes"} ·{" "}
-            {bundle?.causalTimeline?.edgeCount ?? 0} {tr ? "nedensel kenar" : "causal edges"}
+            {bundle?.causalTimeline?.nodeCount ?? 0} {copy.eventNodesLabel} ·{" "}
+            {bundle?.causalTimeline?.edgeCount ?? 0} {copy.causalEdgesLabel}
           </p>
-          <p style={{ fontSize: 12, opacity: 0.7, margin: 0 }}>
-            {tr
-              ? "Event-sourced replay aktif · admission hold · observer-only"
-              : "Event-sourced replay active · admission hold · observer-only"}
-          </p>
+          <p style={{ fontSize: 12, opacity: 0.7, margin: 0 }}>{copy.infrastructureReplay}</p>
         </div>
       ) : null}
 
       {panels.showEpistemicSubject ? (
         <div style={cardStyle}>
           <p style={{ fontSize: 11, letterSpacing: "0.12em", opacity: 0.65, margin: "0 0 8px" }}>
-            EPISTEMIC SUBJECT (READ ONLY)
+            {copy.sectionEpistemicSubject}
           </p>
           <p style={{ fontSize: 18, fontWeight: 600, margin: "0 0 8px", fontFamily: "monospace" }}>
             {subjectId}
@@ -152,7 +207,7 @@ export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInv
             </p>
           ) : (
             <p style={{ fontSize: 12, opacity: 0.6, margin: 0 }}>
-              {tr ? "Audit bundle henüz çalıştırılmadı." : "Audit bundle not run yet."}
+              {tr ? "Denetim paketi henüz çalıştırılmadı." : "Audit bundle not run yet."}
             </p>
           )}
         </div>
@@ -161,7 +216,7 @@ export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInv
       {panels.showCausalTimeline ? (
         <div style={cardStyle}>
           <p style={{ fontSize: 11, letterSpacing: "0.12em", opacity: 0.65, margin: "0 0 8px" }}>
-            CAUSAL SNAPSHOT TIMELINE
+            {copy.sectionCausalTimeline}
           </p>
           <div style={{ maxHeight: 220, overflowY: "auto", fontSize: 11, fontFamily: "monospace" }}>
             {timeline.length ? (

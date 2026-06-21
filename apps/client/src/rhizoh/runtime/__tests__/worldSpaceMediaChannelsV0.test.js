@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   buildYoutubeEmbedUrlV0,
+  buildYoutubeLiveChannelEmbedUrlV0,
   CASTLE_GENESIS_LIVE_PAGE_V0,
   getWorldSpaceMediaChannelPackSnapshotV0,
   listWorldSpaceMediaChannelsV0,
+  NASA_ISS_EARTH_VIDEO_ID_V0,
+  NASA_TV_YOUTUBE_CHANNEL_ID_V0,
   resolveInitialWorldSpaceMediaChannelIdV0,
   resolveWorldSpaceMediaChannelForMapNodeV0,
   resolveWorldSpaceMediaChannelV0,
@@ -11,12 +14,12 @@ import {
 } from "../worldSpaceMediaChannelsV0.js";
 
 describe("worldSpaceMediaChannelsV0", () => {
-  it("lists castle genesis, learning channel, chess placeholder, nasa, lofi, local", () => {
+  it("lists castle genesis, learning channel, nasa, lofi, local (no empty chess VOD)", () => {
     const rows = listWorldSpaceMediaChannelsV0();
     const ids = rows.map((r) => r.id);
     expect(ids[0]).toBe("castle_genesis");
     expect(ids).toContain(RHIZOH_LEARNING_CHANNEL_ID_V0);
-    expect(ids).toContain("castle_chess");
+    expect(ids).not.toContain("castle_chess");
     expect(ids).toContain("nasa");
     expect(ids).toContain("lofi");
     expect(ids).toContain("local");
@@ -62,23 +65,22 @@ describe("worldSpaceMediaChannelsV0", () => {
     expect(ch.livePageUrl || ch.url).toContain("CastleGenesis");
   });
 
-  it("nasa channel has iss fallback", () => {
+  it("nasa channel uses live NASA TV embed with ISS fallback", () => {
     const ch = resolveWorldSpaceMediaChannelV0("nasa");
-    expect(ch.url).toContain("iYmvCUonukw");
-    expect(ch.fallbackUrl).toContain("21X5lGlDOfg");
+    expect(ch.url).toContain(NASA_TV_YOUTUBE_CHANNEL_ID_V0);
+    expect(ch.fallbackUrl).toContain(NASA_ISS_EARTH_VIDEO_ID_V0);
+  });
+
+  it("builds youtube live channel embed with controls", () => {
+    const url = buildYoutubeLiveChannelEmbedUrlV0("abc", { controls: true });
+    expect(url).toContain("live_stream?channel=abc");
+    expect(url).toContain("controls=1");
   });
 
   it("learning channel is chess_cluster_live type", () => {
     const ch = resolveWorldSpaceMediaChannelV0(RHIZOH_LEARNING_CHANNEL_ID_V0);
     expect(ch.type).toBe("chess_cluster_live");
     expect(ch.titleTr).toContain("Öğrenme");
-  });
-
-  it("castle chess uses holding slide when no env video id", () => {
-    const ch = resolveWorldSpaceMediaChannelV0("castle_chess");
-    if (ch.type === "castle_genesis_live") {
-      expect(ch.holdingSlide).toContain("chess");
-    }
   });
 
   it("channel pack snapshot exposes env keys", () => {

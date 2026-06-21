@@ -2,11 +2,15 @@ import { describe, expect, it, beforeEach } from "vitest";
 import {
   buildCausalSnapshotTimelineV0,
   buildObserverInviteUrlV0,
+  clearObserverInviteSkipAutoMediaV0,
+  dispatchObserverInviteProceedV0,
   parseObserverInviteFromSearchV0,
   parseObserverInviteTokenV0,
   persistObserverInviteContextV0,
   readObserverInviteContextV0,
-  isObserverInvitePathV0
+  isObserverInvitePathV0,
+  reviewerIdToInviteSeedV0,
+  shouldObserverInviteSkipAutoMediaV0
 } from "../observerInviteLandingV0.js";
 import { clearEpistemicIdentityContinuityForTestV0 } from "../../runtime/epistemicIdentityContinuityV0.js";
 import { clearIdentityManifestProjectionForTestV0 } from "../../runtime/identityManifestProjectionV0.js";
@@ -21,6 +25,7 @@ describe("observerInviteLandingV0", () => {
     clearIdentityManifestProjectionForTestV0();
     __resetIdentityEventLogForTestV0();
     __resetIdentityLifecycleForTestV0();
+    clearObserverInviteSkipAutoMediaV0();
     sessionStorage.clear();
   });
 
@@ -38,16 +43,34 @@ describe("observerInviteLandingV0", () => {
     expect(ctx?.role).toBe("reviewer");
   });
 
-  it("builds /invite URL with invite param", () => {
+  it("builds /invite URL with invite param only (no role)", () => {
     const url = buildObserverInviteUrlV0({ cohortId: "demo", seed: 7 });
     expect(url).toContain("/invite");
     expect(url).toContain("invite=rhizoh_inv_");
+    expect(url).not.toContain("role=");
+    expect(url).not.toContain("reviewer=");
+  });
+
+  it("builds opaque reviewer URL via deterministic seed", () => {
+    const seed = reviewerIdToInviteSeedV0("friday");
+    const url = buildObserverInviteUrlV0({
+      cohortId: "review",
+      stressClassTarget: "human_explorer",
+      seed
+    });
+    expect(url).toContain("invite=rhizoh_inv_review_human_explorer_");
+    expect(url).not.toContain("friday");
   });
 
   it("persists invite context in sessionStorage", () => {
     const ctx = parseObserverInviteTokenV0("rhizoh_inv_test_human_explorer_1");
     expect(persistObserverInviteContextV0(ctx)).toBe(true);
     expect(readObserverInviteContextV0()?.inviteToken).toBe(ctx.inviteToken);
+  });
+
+  it("marks skip-auto-media on proceed dispatch", () => {
+    dispatchObserverInviteProceedV0({ target: "/world/space" });
+    expect(shouldObserverInviteSkipAutoMediaV0()).toBe(true);
   });
 
   it("builds causal timeline sorted by atMs", () => {

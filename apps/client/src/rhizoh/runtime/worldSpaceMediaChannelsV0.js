@@ -10,6 +10,12 @@ export const CASTLE_GENESIS_SHORT_EMBED_SLIDE_V0 =
 export const CASTLE_GENESIS_CHESS_EMBED_SLIDE_V0 =
   "/ops/youtube-test/castle-genesis-chess-embed-slide.svg";
 
+/** NASA TV official YouTube channel — live embed primary. */
+export const NASA_TV_YOUTUBE_CHANNEL_ID_V0 = "UCSI0uARq_cDIn6keDeXzqJg";
+/** ISS Earth view — fallback when main NASA feed unavailable. */
+export const NASA_ISS_EARTH_VIDEO_ID_V0 = "iYmvCUonukw";
+export const NASA_ISS_EARTH_FALLBACK_VIDEO_ID_V0 = "21X5lGlDOfg";
+
 /** @typedef {'youtube'|'local'|'castle_genesis_live'|'chess_cluster_live'} WorldSpaceMediaChannelTypeV0 */
 
 /**
@@ -42,7 +48,8 @@ export function buildYoutubeLiveChannelEmbedUrlV0(channelId, opts = {}) {
   const id = String(channelId || "").trim();
   if (!id) return "";
   const mute = opts.mute !== false ? "1" : "0";
-  return `https://www.youtube-nocookie.com/embed/live_stream?channel=${encodeURIComponent(id)}&autoplay=1&mute=${mute}&controls=1&rel=0`;
+  const controls = opts.controls === true ? "1" : "0";
+  return `https://www.youtube-nocookie.com/embed/live_stream?channel=${encodeURIComponent(id)}&autoplay=1&mute=${mute}&controls=${controls}&rel=0`;
 }
 
 function readEnvV0(key) {
@@ -171,20 +178,6 @@ export function listWorldSpaceMediaChannelsV0() {
         badgeEn: "Cluster B-roll"
       })
     );
-  } else {
-    rows.push(
-      freezeHoldingChannelV0({
-        id: "castle_chess",
-        titleTr: "Satranç yayını · 8 kamera",
-        titleEn: "Chess broadcast · 8 cameras",
-        type: "castle_genesis_live",
-        url: CASTLE_GENESIS_LIVE_PAGE_V0,
-        livePageUrl: CASTLE_GENESIS_LIVE_PAGE_V0,
-        holdingSlide: CASTLE_GENESIS_CHESS_EMBED_SLIDE_V0,
-        badgeTr: "VOD yakında",
-        badgeEn: "VOD soon"
-      })
-    );
   }
 
   if (architectureVideoId) {
@@ -225,13 +218,16 @@ export function listWorldSpaceMediaChannelsV0() {
   }
 
   rows.push(
-    Object.freeze({
+    freezeYoutubeChannelV0({
       id: "nasa",
       titleTr: "NASA TV · ISS Dünya",
       titleEn: "NASA TV · ISS Earth View",
       type: "youtube",
-      url: buildYoutubeEmbedUrlV0("iYmvCUonukw", { controls: true }),
-      fallbackUrl: buildYoutubeEmbedUrlV0("21X5lGlDOfg", { controls: true }),
+      url: buildYoutubeLiveChannelEmbedUrlV0(NASA_TV_YOUTUBE_CHANNEL_ID_V0, { controls: true }),
+      fallbackUrl: buildYoutubeEmbedUrlV0(NASA_ISS_EARTH_VIDEO_ID_V0, { controls: true }),
+      secondaryFallbackUrl: buildYoutubeEmbedUrlV0(NASA_ISS_EARTH_FALLBACK_VIDEO_ID_V0, {
+        controls: true
+      }),
       badgeTr: "Canlı uzay",
       badgeEn: "Live space"
     }),

@@ -4,7 +4,7 @@
 
 import {
   buildObserverInviteUrlV0,
-  parseObserverInviteTokenV0
+  reviewerIdToInviteSeedV0
 } from "./observerInviteLandingV0.js";
 import { OBSERVER_INVITE_ROLE_V0 } from "./observerInviteRolesV0.js";
 import {
@@ -45,28 +45,26 @@ export function generateObserverInviteV0(opts = {}) {
   let inviteUrl;
   let payload = null;
 
-  if (reviewerId) {
-    inviteUrl = buildObserverInviteUrlV0({ reviewerId, role });
-  } else {
-    const stressClassTarget =
-      opts.stressClassTarget || ROLE_TO_STRESS_V0[role] || EPISTEMIC_STRESS_CLASS_V0.SYSTEMS_ENGINEER;
-    const seed = opts.seed ?? Date.now() % 100000;
-    payload = generateInvitePayloadV0({
-      cohortId: opts.cohortId || "observer",
-      stressClassTarget,
-      seed
-    });
-    inviteUrl = buildObserverInviteUrlV0({
-      cohortId: opts.cohortId,
-      stressClassTarget,
-      seed,
-      role
-    });
-  }
+  const stressClassTarget =
+    opts.stressClassTarget ||
+    ROLE_TO_STRESS_V0[role] ||
+    EPISTEMIC_STRESS_CLASS_V0.SYSTEMS_ENGINEER;
+  const seed = reviewerId
+    ? reviewerIdToInviteSeedV0(reviewerId)
+    : opts.seed ?? Date.now() % 100000;
+  const cohortId = reviewerId ? "review" : opts.cohortId || "observer";
 
-  const token =
-    payload?.inviteToken ||
-    parseObserverInviteTokenV0(new URL(inviteUrl).searchParams.get("invite") || reviewerId)?.inviteToken;
+  payload = generateInvitePayloadV0({
+    cohortId,
+    stressClassTarget: reviewerId ? EPISTEMIC_STRESS_CLASS_V0.HUMAN_EXPLORER : stressClassTarget,
+    seed
+  });
+  inviteUrl = buildObserverInviteUrlV0({
+    inviteToken: payload.inviteToken,
+    lang: opts.lang
+  });
+
+  const token = payload.inviteToken;
 
   return Object.freeze({
     schema: INVITE_OPS_SCHEMA_V0,

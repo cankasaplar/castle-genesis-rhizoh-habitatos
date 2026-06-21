@@ -638,8 +638,8 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                     </p>
                     <p className="max-w-md text-[10px] leading-relaxed text-white/75 normal-case">
                       {tr
-                        ? "Kısa Honest Baseline klip yüklenene kadar bu kart gösterilir. Uzun manifesto VOD veya sim profil (Nisa vb.) anlatımı embed varsayılanı değildir — VITE_CASTLE_GENESIS_YOUTUBE_SHORT_VIDEO_ID ayarla."
-                        : "Holding card until short Honest Baseline clip is configured. Long manifesto VOD or sim-profile narration (Nisa, etc.) is not the embed default — set VITE_CASTLE_GENESIS_YOUTUBE_SHORT_VIDEO_ID."}
+                        ? "Yayın hazırlanıyor. Resmi YouTube kanalından izleyebilirsiniz."
+                        : "Broadcast is preparing. You can watch on the official YouTube channel."}
                     </p>
                   </div>
                   <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 p-4 pt-28">

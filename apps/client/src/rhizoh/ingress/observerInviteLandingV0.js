@@ -17,7 +17,11 @@ export { OBSERVER_INVITE_ROLE_V0 };
 export const OBSERVER_INVITE_LANDING_SCHEMA_V0 = "castle.rhizoh.observer_invite_landing.v0";
 
 const SESSION_KEY_V0 = "rhizoh_observer_invite_context_v0.1";
+export const OBSERVER_INVITE_SKIP_MEDIA_KEY_V0 = "rhizoh_observer_invite_skip_media_v0";
 const PROCEED_EVENT_V0 = "rhizoh:invite-proceed-v0";
+
+/** Invite landing supports TR + EN only (product cohort). */
+export const OBSERVER_INVITE_LANDING_LOCALES_V0 = Object.freeze(["en", "tr"]);
 
 function pageOrigin() {
   if (typeof window === "undefined") return "https://rhizoh.com";
@@ -81,6 +85,15 @@ export function parseObserverInviteTokenV0(token) {
 }
 
 /**
+ * @param {string} [code]
+ * @returns {"en"|"tr"|null}
+ */
+export function normalizeObserverInviteLangV0(code) {
+  const c = String(code || "").toLowerCase().slice(0, 2);
+  return OBSERVER_INVITE_LANDING_LOCALES_V0.includes(c) ? c : null;
+}
+
+/**
  * @param {URLSearchParams | string} input
  */
 export function parseObserverInviteFromSearchV0(input) {
@@ -89,7 +102,7 @@ export function parseObserverInviteFromSearchV0(input) {
       ? input
       : new URLSearchParams(String(input || "").replace(/^\?/, ""));
 
-  const token = String(params.get("invite") || params.get("token") || "").trim();
+  const token = String(params.get("invite") || params.get("token") || params.get("k") || "").trim();
   if (token) return parseObserverInviteTokenV0(token);
 
   const cohort = String(params.get("cohort") || "").trim();
@@ -102,31 +115,70 @@ export function parseObserverInviteFromSearchV0(input) {
 }
 
 /**
+ * Deterministic seed for legacy reviewer ids (opaque URL generation).
+ * @param {string} reviewerId
+ */
+export function reviewerIdToInviteSeedV0(reviewerId) {
+  const raw = String(reviewerId || "").trim().toLowerCase();
+  if (!raw) return 42;
+  let h = 0;
+  for (let i = 0; i < raw.length; i += 1) {
+    h = (h * 31 + raw.charCodeAt(i)) % 100000;
+  }
+  return h || 42;
+}
+
+/**
  * @param {{
  *   cohortId?: string,
  *   stressClassTarget?: string,
  *   seed?: number,
- *   reviewerId?: string,
- *   role?: string
+ *   inviteToken?: string,
+ *   lang?: string
  * }} [opts]
  */
 export function buildObserverInviteUrlV0(opts = {}) {
-  if (opts.reviewerId) {
-    const u = new URL("/invite", pageOrigin());
-    u.searchParams.set("cohort", "review");
-    u.searchParams.set("reviewer", String(opts.reviewerId).trim().toLowerCase());
-    return u.toString();
-  }
-
-  const payload = generateInvitePayloadV0({
-    cohortId: opts.cohortId || "observer",
-    stressClassTarget: opts.stressClassTarget || EPISTEMIC_STRESS_CLASS_V0.SYSTEMS_ENGINEER,
-    seed: opts.seed ?? Date.now() % 100000
-  });
+  const payload =
+    opts.inviteToken != null
+      ? Object.freeze({ inviteToken: String(opts.inviteToken).trim() })
+      : generateInvitePayloadV0({
+          cohortId: opts.cohortId || "observer",
+          stressClassTarget: opts.stressClassTarget || EPISTEMIC_STRESS_CLASS_V0.SYSTEMS_ENGINEER,
+          seed: opts.seed ?? Date.now() % 100000
+        });
   const u = new URL("/invite", pageOrigin());
   u.searchParams.set("invite", payload.inviteToken);
-  if (opts.role) u.searchParams.set("role", String(opts.role));
+  const lang = normalizeObserverInviteLangV0(opts.lang);
+  if (lang) u.searchParams.set("lang", lang);
   return u.toString();
+}
+
+export function markObserverInviteSkipAutoMediaV0() {
+  if (typeof sessionStorage === "undefined") return false;
+  try {
+    sessionStorage.setItem(OBSERVER_INVITE_SKIP_MEDIA_KEY_V0, "1");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function shouldObserverInviteSkipAutoMediaV0() {
+  if (typeof sessionStorage === "undefined") return false;
+  try {
+    return sessionStorage.getItem(OBSERVER_INVITE_SKIP_MEDIA_KEY_V0) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function clearObserverInviteSkipAutoMediaV0() {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    sessionStorage.removeItem(OBSERVER_INVITE_SKIP_MEDIA_KEY_V0);
+  } catch {
+    /* noop */
+  }
 }
 
 /**
@@ -221,9 +273,10 @@ export function isObserverInvitePathV0(pathname) {
 
 export function dispatchObserverInviteProceedV0(detail = {}) {
   if (typeof window === "undefined") return;
+  markObserverInviteSkipAutoMediaV0();
   window.dispatchEvent(
     new CustomEvent(PROCEED_EVENT_V0, {
-      detail: Object.freeze({ ...detail, atMs: Date.now() })
+      detail: Object.freeze({ ...detail, atMs: Date.now(), skipAutoMedia: true })
     })
   );
 }

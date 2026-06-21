@@ -5,6 +5,10 @@
 
 import { resolveIngressRouteV0, hasLegalAccessAckV0 } from "../ingress/ingress_router.js";
 import {
+  clearObserverInviteSkipAutoMediaV0,
+  shouldObserverInviteSkipAutoMediaV0
+} from "../ingress/observerInviteLandingV0.js";
+import {
   readRhizohNeonCountdownDeadlineMsV0,
   resolveRhizohNeonCountdownRemainingMsV0
 } from "./rhizohNeonCountdownV0.js";
@@ -60,30 +64,35 @@ export function primeCityMapLegalCountdownSurfaceV0(opts = {}) {
   }
 
   if (snap.legalHold || opts.forceMedia) {
-    try {
-      window.dispatchEvent(
-        new CustomEvent(RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1, {
-          detail: Object.freeze({
-            source: "city_map_legal_countdown",
-            initialChannelId: "castle_genesis",
-            title: opts.title || "Castle Genesis · Legal Hold",
-            legalGate: true,
-            countdownRemainingMs: snap.countdownRemainingMs,
-            node: Object.freeze({
-              id: "event",
-              type: "broadcast",
-              label: "CASTLE TV",
-              color: "#ef4444",
-              description:
-                opts.uiLocale === "tr"
-                  ? "Yasal onay bekleniyor — Castle Genesis yayını ve topluluk verisi"
-                  : "Legal approval pending — Castle Genesis broadcast + community data"
+    const skipAutoMedia = shouldObserverInviteSkipAutoMediaV0();
+    if (skipAutoMedia) {
+      clearObserverInviteSkipAutoMediaV0();
+    } else {
+      try {
+        window.dispatchEvent(
+          new CustomEvent(RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1, {
+            detail: Object.freeze({
+              source: "city_map_legal_countdown",
+              initialChannelId: "castle_genesis",
+              title: opts.title || "Castle Genesis · Legal Hold",
+              legalGate: true,
+              countdownRemainingMs: snap.countdownRemainingMs,
+              node: Object.freeze({
+                id: "event",
+                type: "broadcast",
+                label: "CASTLE TV",
+                color: "#ef4444",
+                description:
+                  opts.uiLocale === "tr"
+                    ? "Yasal onay bekleniyor — Castle Genesis yayını ve topluluk verisi"
+                    : "Legal approval pending — Castle Genesis broadcast + community data"
+              })
             })
           })
-        })
-      );
-    } catch {
-      return false;
+        );
+      } catch {
+        return false;
+      }
     }
   }
 
