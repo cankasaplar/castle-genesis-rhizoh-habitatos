@@ -63,7 +63,8 @@ export const CastleInitiationGateV0 = memo(function CastleInitiationGateV0({
 
   return (
     <div
-      className="fixed inset-0 z-[320] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[450] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      data-rhizoh-v11-surface-modal="1"
       role="dialog"
       aria-labelledby="castle-init-title"
       data-rhizoh-castle-init-gate="1"

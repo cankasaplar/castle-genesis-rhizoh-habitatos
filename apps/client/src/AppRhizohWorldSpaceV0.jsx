@@ -672,6 +672,54 @@ export default function AppRhizohWorldSpaceV0() {
   }, []);
 
   useEffect(() => {
+    const onModalEscapeV0 = (ev) => {
+      if (ev.key !== "Escape") return;
+      if (v11ChessArena) {
+        clearMapTransitionBusyV0("modal_escape");
+        setV11ChessArena(null);
+        ev.preventDefault();
+        return;
+      }
+      if (v11Library) {
+        clearMapTransitionBusyV0("modal_escape");
+        setV11Library(null);
+        ev.preventDefault();
+        return;
+      }
+      if (v11Workspace) {
+        clearMapTransitionBusyV0("modal_escape");
+        setV11Workspace(null);
+        ev.preventDefault();
+        return;
+      }
+      if (v11MediaTube) {
+        setV11MediaTube(null);
+        ev.preventDefault();
+        return;
+      }
+      if (v11TowerPortal) {
+        clearMapTransitionBusyV0("modal_escape");
+        setV11TowerPortal(null);
+        ev.preventDefault();
+        return;
+      }
+      if (v11LivingMemory) {
+        setV11LivingMemory(false);
+        ev.preventDefault();
+      }
+    };
+    window.addEventListener("keydown", onModalEscapeV0, true);
+    return () => window.removeEventListener("keydown", onModalEscapeV0, true);
+  }, [
+    v11ChessArena,
+    v11Library,
+    v11Workspace,
+    v11MediaTube,
+    v11TowerPortal,
+    v11LivingMemory
+  ]);
+
+  useEffect(() => {
     configureSpatialRealityInfraV0({
       gatewayPhase: gateway.phase,
       mapSurfaceActive: true,
@@ -926,6 +974,7 @@ export default function AppRhizohWorldSpaceV0() {
         [data-rhizoh-world-space-app] [data-rhizoh-v11-leaflet-host],
         [data-rhizoh-world-space-app] [data-rhizoh-world-space-chrome],
         [data-rhizoh-world-space-app] [data-rhizoh-world-domain-interactive],
+        [data-rhizoh-world-space-app] [data-rhizoh-v11-surface-modal],
         [data-rhizoh-world-space-app] nav[aria-label*="Rhizoh"],
         [data-rhizoh-world-space-app] [data-rhizoh-conversation-dock-shell] > div {
           pointer-events: auto;

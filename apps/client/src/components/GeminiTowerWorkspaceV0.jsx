@@ -483,7 +483,8 @@ export const GeminiTowerWorkspaceV0 = memo(function GeminiTowerWorkspaceV0({ ope
 
   return (
     <div
-      className="fixed inset-0 z-[320] flex flex-col"
+      className="fixed inset-0 z-[450] flex flex-col"
+      data-rhizoh-v11-surface-modal="1"
       style={{ background: C.background, color: C.text }}
       data-rhizoh-gemini-tower-workspace="1"
       role="dialog"

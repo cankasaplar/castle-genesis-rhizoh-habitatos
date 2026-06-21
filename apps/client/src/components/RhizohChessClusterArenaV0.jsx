@@ -727,7 +727,10 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
   if (embedMode) return panel;
 
   return (
-    <div className="fixed inset-0 z-[340] flex items-center justify-center bg-black/90 p-1 backdrop-blur-sm sm:p-3">
+    <div
+      className="fixed inset-0 z-[450] flex items-center justify-center bg-black/90 p-1 backdrop-blur-sm sm:p-3"
+      data-rhizoh-v11-surface-modal="1"
+    >
       {panel}
     </div>
   );
