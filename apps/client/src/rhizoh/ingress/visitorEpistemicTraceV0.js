@@ -256,17 +256,15 @@ export function installVisitorEpistemicTraceWireV0() {
   mountVisitorEpistemicTraceConsoleV0();
   touchSessionCountV0();
 
-  window.addEventListener("rhizoh:invite-proceed-v0", () => {
-    recordVisitorSurfaceV0("chat");
-  });
-
-  window.addEventListener("rhizoh:map-camera-feedback-v0", () => {
-    recordVisitorSurfaceV0("map");
-  });
-
   const maybeMapFromPath = () => {
     const p = String(window.location?.pathname || "");
-    if (p.includes("/world")) recordVisitorSurfaceV0("map");
+    if (p.includes("/world")) {
+      void import("./observerReadOnlyHookV0.js")
+        .then((m) =>
+          m.observeV0({ type: "world_path", target: p, meta: { surface: "map", focus: 0.25 } })
+        )
+        .catch(() => {});
+    }
   };
   window.addEventListener("popstate", maybeMapFromPath);
   maybeMapFromPath();

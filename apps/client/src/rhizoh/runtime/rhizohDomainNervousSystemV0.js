@@ -27,6 +27,12 @@ import { mountEpistemicIdentityContinuityConsoleV0 } from "./epistemicIdentityCo
 import { mountIdentityManifestConsoleV0 } from "./identityManifestProjectionV0.js";
 import { mountInviteOpsConsoleV0 } from "../ingress/inviteOpsV0.js";
 import { installVisitorEpistemicTraceWireV0 } from "../ingress/visitorEpistemicTraceV0.js";
+import {
+  installObserverReadOnlyHookWireV0,
+  mountObserverReadOnlyHookV0
+} from "../ingress/observerReadOnlyHookV0.js";
+import { mountObserverEpistemicLensConsoleV0 } from "../ingress/observerEpistemicLensV0.js";
+import { mountNarrativePlaneConsoleV0 } from "../ingress/narrativePlaneProjectionV0.js";
 import { mountFullSystemReportConsoleV0 } from "./rhizohFullSystemReportV0.js";
 import { mountPersonaLoopSchedulerV0 } from "./rhizohPersonaLoopSchedulerV0.js";
 import { mountRhizohPulseLoopV1 } from "./rhizohPulseLoopV1.js";
@@ -135,7 +141,11 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
     mountEpistemicIdentityContinuityConsoleV0();
     mountIdentityManifestConsoleV0();
     mountInviteOpsConsoleV0();
+    mountObserverReadOnlyHookV0();
+    installObserverReadOnlyHookWireV0();
     installVisitorEpistemicTraceWireV0();
+    mountObserverEpistemicLensConsoleV0();
+    mountNarrativePlaneConsoleV0();
     ensureVoiceAdapterRegistered();
     resolveGatewayTransportV0();
     mountPersonaLoopSchedulerV0();
