@@ -30,6 +30,8 @@ const REQUIRED_SCHEMAS = [
 
 const RUNTIME_FILES = [
   "matchmakingRuntimeSurfaceV0.js",
+  "matchmakingTruthKernelV0.js",
+  "matchSessionStateMachineV0.js",
   "matchmakingConsoleV0.js",
   "matchAuthorityLayerV0.js",
   "matchAuthorityKernelV0.js",
@@ -135,6 +137,16 @@ if (!surfaceText.includes("contractBoundary") || !surfaceText.includes("runtimeS
 const consoleText = readFileSync(join(runtime, "matchmakingConsoleV0.js"), "utf8");
 if (!consoleText.includes("publishMatchmakingApiFacadeV0")) {
   console.error("matchmaking-spec-v1: console mount must publish frozen API facade");
+  failed = true;
+}
+
+const truthText = readFileSync(join(runtime, "matchmakingTruthKernelV0.js"), "utf8");
+if (!truthText.includes("reduceMatchmakingTruthV0") || !truthText.includes("dispatchMatchmakingTruthEventV0")) {
+  console.error("matchmaking-spec-v1: truth kernel must define reducer + dispatch");
+  failed = true;
+}
+if (!truthText.includes("appendOnly: true")) {
+  console.error("matchmaking-spec-v1: truth log must be append-only");
   failed = true;
 }
 

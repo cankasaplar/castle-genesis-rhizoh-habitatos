@@ -14,9 +14,12 @@ import { mountMatchAuthorityConsoleV0 } from "./matchAuthorityLayerV0.js";
 import { mountMatchAuthorityKernelConsoleV0 } from "./matchAuthorityKernelV0.js";
 import { mountMatchStockfishValidatorConsoleV0 } from "./matchStockfishValidatorBridgeV0.js";
 import {
-  ensureMatchmakingEngineSurfaceV0,
-  publishMatchmakingApiFacadeV0
+  beginMatchmakingEngineMountV0,
+  publishMatchmakingApiFacadeV0,
+  publishMatchmakingEngineSurfaceV0,
+  getMatchmakingEngineSurfaceV0
 } from "./matchmakingRuntimeSurfaceV0.js";
+import { mountMatchmakingTruthKernelConsoleV0 } from "./matchmakingTruthKernelV0.js";
 
 export const MATCHMAKING_CONSOLE_SCHEMA_V0 = "castle.rhizoh.matchmaking_console.v0";
 
@@ -37,7 +40,9 @@ function buildMatchmakingConsoleSnapV0() {
     hasTryMatch: typeof window.__rhizoh.matchmaking.tryMatch === "function",
     hasSession: typeof window.__rhizoh.matchmaking.session?.get === "function",
     hasAuthority: typeof window.__rhizoh.matchmaking.authority?.status === "function",
-    hasKernel: typeof window.__rhizoh.matchmaking.kernel?.proposeMove === "function"
+    hasKernel: typeof window.__rhizoh.matchmaking.kernel?.proposeMove === "function",
+    hasTruthKernel: typeof window.__rhizoh.matchmaking.truthKernel?.dispatch === "function",
+    truthModel: window.__rhizoh.matchmaking.truthModel ?? null
   });
 }
 
@@ -51,14 +56,17 @@ export function mountMatchmakingConsoleV0() {
   }
 
   window.__rhizoh = window.__rhizoh || {};
-  const engine = ensureMatchmakingEngineSurfaceV0();
+  const engineBag = beginMatchmakingEngineMountV0();
 
   if (
     isMatchmakingConsoleMountedV0() &&
     window.__rhizoh.matchmaking.schema === MATCHMAKING_CONSOLE_SCHEMA_V0 &&
     window.__rhizoh.matchmaking.mounted === true
   ) {
-    publishMatchmakingApiFacadeV0(engine, { consoleSchema: MATCHMAKING_CONSOLE_SCHEMA_V0 });
+    const existing = getMatchmakingEngineSurfaceV0();
+    if (existing) {
+      publishMatchmakingApiFacadeV0(existing, { consoleSchema: MATCHMAKING_CONSOLE_SCHEMA_V0 });
+    }
     const snap = buildMatchmakingConsoleSnapV0();
     window.__rhizoh.matchmakingConsole = snap;
     return snap;
@@ -72,6 +80,8 @@ export function mountMatchmakingConsoleV0() {
   mountMatchAuthorityKernelConsoleV0();
   mountMatchStockfishValidatorConsoleV0();
 
+  const truthKernel = mountMatchmakingTruthKernelConsoleV0();
+  const engine = publishMatchmakingEngineSurfaceV0(engineBag, truthKernel);
   publishMatchmakingApiFacadeV0(engine, { consoleSchema: MATCHMAKING_CONSOLE_SCHEMA_V0 });
 
   const snap = buildMatchmakingConsoleSnapV0();

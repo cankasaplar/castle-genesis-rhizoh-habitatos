@@ -29,8 +29,9 @@ describe("matchmakingConsoleV0", () => {
     expect(() => mountMatchmakingConsoleV0()).not.toThrow();
     expect(isMatchmakingConsoleMountedV0()).toBe(true);
     expect(Object.isFrozen(window.__rhizoh.matchmaking)).toBe(true);
-    expect(window.__rhizoh.runtimeSurface?.matchmaking).toBeTruthy();
-    expect(Object.isFrozen(window.__rhizoh.runtimeSurface.matchmaking)).toBe(false);
+    expect(Object.isFrozen(window.__rhizoh.runtimeSurface.matchmaking)).toBe(true);
+    expect(window.__rhizoh.matchmaking.truthModel).toBe("event_sourced_reducer_v0");
+    expect(typeof window.__rhizoh.matchmaking.truthKernel?.dispatch).toBe("function");
   });
 
   it("blocks facade property injection after mount", () => {
