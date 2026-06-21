@@ -17,6 +17,7 @@ const HOOK_FILES = [
   "epistemicPinSemanticRegistryV0.js",
   "epistemicResonanceFieldV0.js",
   "epistemicSeparationProofV0.js",
+  "exportJsonSafeV0.js",
   "founderCohortAggregateV0.js",
   "invitationStudyExportV0.js",
   "narrativeProjectionEngineV0.js",

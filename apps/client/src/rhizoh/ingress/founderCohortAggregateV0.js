@@ -4,6 +4,7 @@
  */
 
 import { buildInvitationStudyRecordV0 } from "./invitationStudyExportV0.js";
+import { exportJsonSafeV0 } from "./exportJsonSafeV0.js";
 import { buildEpistemicSeparationProofV0 } from "./epistemicSeparationProofV0.js";
 import { measureEpistemicResonanceFieldV0 } from "./epistemicResonanceFieldV0.js";
 import { getVisitorEpistemicTraceV0 } from "./visitorEpistemicTraceV0.js";
@@ -99,25 +100,8 @@ export function buildFounderCohortAggregateV0(opts = {}) {
 export async function exportFounderCohortAggregateV0(opts = {}) {
   const aggregate = buildFounderCohortAggregateV0(opts);
   const json = JSON.stringify(aggregate, null, 2);
-  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(json);
-      return { ok: true, method: "clipboard", aggregate };
-    } catch {
-      /* fall through */
-    }
-  }
-  if (typeof document !== "undefined") {
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `rhizoh-founder-cohort-${aggregate.exportedAtMs}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    return { ok: true, method: "download", aggregate };
-  }
-  return { ok: false, aggregate };
+  const out = await exportJsonSafeV0(json, `rhizoh-founder-cohort-${aggregate.exportedAtMs}.json`);
+  return { ...out, aggregate };
 }
 
 export function mountFounderCohortAggregateConsoleV0() {
