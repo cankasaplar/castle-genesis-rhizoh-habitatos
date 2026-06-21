@@ -277,7 +277,8 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     };
     return (
       <div
-        className="pointer-events-auto fixed inset-0 z-[315] flex flex-col bg-[#050505]/96 backdrop-blur-3xl"
+        className="pointer-events-auto fixed inset-0 z-[450] flex flex-col bg-[#050505]/96 backdrop-blur-3xl"
+        data-rhizoh-v11-surface-modal="1"
         data-rhizoh-world-space-media-tube="1"
         data-media-source={detail.source || "archive"}
       >
@@ -395,9 +396,10 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     <div
       className={
         octoLabMode
-          ? "pointer-events-none fixed inset-0 z-[315] flex flex-col justify-end bg-black/35 backdrop-blur-[2px]"
-          : "pointer-events-auto fixed inset-0 z-[315] flex flex-col bg-[#050505]/96 backdrop-blur-3xl"
+          ? "pointer-events-none fixed inset-0 z-[450] flex flex-col justify-end bg-black/35 backdrop-blur-[2px]"
+          : "pointer-events-auto fixed inset-0 z-[450] flex flex-col bg-[#050505]/96 backdrop-blur-3xl"
       }
+      data-rhizoh-v11-surface-modal="1"
       data-rhizoh-world-space-media-tube="1"
       data-media-source={detail.source || "unknown"}
       data-active-channel={activeChannel.id}
