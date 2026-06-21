@@ -24,9 +24,36 @@ export const SPIRAL_IMMERSION_ENTER_DELAY_MS_V0 = 1100;
 /** Hover preview dwell — avoids accidental preview on quick pass */
 export const MAP_PIN_HOVER_DWELL_MS_V0 = 750;
 
+/** Safety release if flyTo/dwell chain stalls (Leaflet miss · tab background). */
+export const MAP_TRANSITION_BUSY_SAFETY_MS_V0 = 12_000;
+
 let transitionBusy = false;
 let hoverTimer = null;
 let hoverTargetId = null;
+/** @type {number | null} */
+let transitionSafetyTimer = null;
+
+function clearTransitionSafetyTimerV0() {
+  if (transitionSafetyTimer != null && typeof window !== "undefined") {
+    window.clearTimeout(transitionSafetyTimer);
+    transitionSafetyTimer = null;
+  }
+}
+
+function armTransitionSafetyTimerV0(flyMs, dwellMs) {
+  clearTransitionSafetyTimerV0();
+  if (typeof window === "undefined") return;
+  const safetyMs = Math.min(
+    MAP_TRANSITION_BUSY_SAFETY_MS_V0,
+    Math.max(4000, flyMs + dwellMs + 1500)
+  );
+  transitionSafetyTimer = window.setTimeout(() => {
+    transitionSafetyTimer = null;
+    if (!transitionBusy) return;
+    transitionBusy = false;
+    publishMapTransitionPhaseV0("idle", { forced: true, reason: "transition_safety_timeout" });
+  }, safetyMs);
+}
 
 /**
  * @param {string} phase
@@ -90,6 +117,7 @@ export function runMapPinApproachThenV0(map, node, opts = {}, onCommit) {
   );
 
   transitionBusy = true;
+  armTransitionSafetyTimerV0(flyMs, dwellMs);
   publishMapTransitionPhaseV0("approach", {
     nodeId: node.id,
     nodeType: node.type,
@@ -115,6 +143,7 @@ export function runMapPinApproachThenV0(map, node, opts = {}, onCommit) {
       try {
         onCommit?.();
       } finally {
+        clearTransitionSafetyTimerV0();
         transitionBusy = false;
         publishMapTransitionPhaseV0("idle");
       }
@@ -194,6 +223,7 @@ export function runSpiralImmersionEnterStagedV0(enterImmersion) {
 }
 
 export function resetWorldMapTransitionForTestsV0() {
+  clearTransitionSafetyTimerV0();
   transitionBusy = false;
   if (hoverTimer && typeof window !== "undefined") {
     clearTimeout(hoverTimer);

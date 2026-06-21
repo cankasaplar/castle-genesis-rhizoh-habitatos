@@ -58,7 +58,8 @@ describe("rhizohMapPinOwnerV0", () => {
 
   it("filterPinsBySpiralMapLayerV0 hides non-explorer prism pins by default", () => {
     const pins = [
-      { id: "sovereign", lat: 1, lon: 2, type: "hub" },
+      { id: "legacy_castle_seed", lat: 1, lon: 2, type: "castle" },
+      { id: "spiralmmo_europe", lat: 1, lon: 2, type: "spiralmmo" },
       { id: "p1", lat: 1, lon: 2, spiralLayer: SPIRAL_MAP_LAYER_V0.EXPLORER },
       { id: "p2", lat: 1, lon: 2, spiralLayer: SPIRAL_MAP_LAYER_V0.CASTLE }
     ];
@@ -69,16 +70,20 @@ describe("rhizohMapPinOwnerV0", () => {
       seasonal: false,
       includeDormant: false
     });
-    expect(filtered.some((p) => p.id === "sovereign")).toBe(false);
+    expect(filtered.some((p) => p.id === "legacy_castle_seed")).toBe(false);
+    expect(filtered.some((p) => p.id === "spiralmmo_europe")).toBe(true);
     expect(filtered.some((p) => p.id === "p1")).toBe(true);
     expect(filtered.some((p) => p.id === "p2")).toBe(false);
   });
 
-  it("filterSovereignPinsForSpiralMapViewV0 keeps my_castle and origin_home in explorer-only mode", () => {
+  it("filterSovereignPinsForSpiralMapViewV0 keeps sovereign mesh on V11 explorer-only mode", () => {
     const sovereign = [
       { id: "ghost", type: "ghost", lat: 41, lon: 29 },
+      { id: "spiralmmo_europe", type: "spiralmmo", lat: 50, lon: 15 },
+      { id: "tower_chess", type: "tower", lat: 41.02, lon: 29.02 },
       { id: "my_castle", type: "castle", lat: 41.01, lon: 29.01 },
-      { id: ORIGIN_HOME_SERENCEBEY_PIN_ID_V0, type: "origin_home", lat: 41.0422, lon: 29.0089 }
+      { id: ORIGIN_HOME_SERENCEBEY_PIN_ID_V0, type: "origin_home", lat: 41.0422, lon: 29.0089 },
+      { id: "remote_peer", type: "remote_castle", lat: 41.03, lon: 29.03 }
     ];
     const filtered = filterSovereignPinsForSpiralMapViewV0(sovereign, {
       explorer: true,
@@ -87,9 +92,13 @@ describe("rhizohMapPinOwnerV0", () => {
       seasonal: false,
       includeDormant: false
     });
-    expect(filtered).toHaveLength(2);
+    expect(filtered).toHaveLength(5);
     expect(filtered.some((p) => p.id === "my_castle")).toBe(true);
     expect(filtered.some((p) => p.id === ORIGIN_HOME_SERENCEBEY_PIN_ID_V0)).toBe(true);
+    expect(filtered.some((p) => p.id === "ghost")).toBe(true);
+    expect(filtered.some((p) => p.id === "spiralmmo_europe")).toBe(true);
+    expect(filtered.some((p) => p.id === "tower_chess")).toBe(true);
+    expect(filtered.some((p) => p.id === "remote_peer")).toBe(false);
   });
 
   it("filterPinsBySpiralMapLayerV0 keeps live match pins in explorer-only mode", () => {
@@ -106,7 +115,7 @@ describe("rhizohMapPinOwnerV0", () => {
       includeDormant: false
     });
     expect(filtered.some((p) => p.id === "live_match:1")).toBe(true);
-    expect(filtered.some((p) => p.id === "ghost")).toBe(false);
+    expect(filtered.some((p) => p.id === "ghost")).toBe(true);
     expect(filtered.some((p) => p.id === "p1")).toBe(true);
   });
 
@@ -123,13 +132,16 @@ describe("rhizohMapPinOwnerV0", () => {
     expect(rows.some((r) => r.id === ORIGIN_HOME_SERENCEBEY_PIN_ID_V0)).toBe(true);
   });
 
-  it("isExplorerOnlyAlwaysVisiblePinV0 covers castle, origin home, and live match", () => {
+  it("isExplorerOnlyAlwaysVisiblePinV0 covers castle, sovereign mesh, and live match", () => {
     expect(isExplorerOnlyAlwaysVisiblePinV0({ id: "my_castle" })).toBe(true);
     expect(
       isExplorerOnlyAlwaysVisiblePinV0({ id: ORIGIN_HOME_SERENCEBEY_PIN_ID_V0, type: "origin_home" })
     ).toBe(true);
     expect(isExplorerOnlyAlwaysVisiblePinV0({ id: "live_match:x", type: "broadcast" })).toBe(true);
-    expect(isExplorerOnlyAlwaysVisiblePinV0({ id: "ghost", type: "ghost" })).toBe(false);
+    expect(isExplorerOnlyAlwaysVisiblePinV0({ id: "ghost", type: "ghost" })).toBe(true);
+    expect(isExplorerOnlyAlwaysVisiblePinV0({ id: "spiralmmo_europe", type: "spiralmmo" })).toBe(true);
+    expect(isExplorerOnlyAlwaysVisiblePinV0({ id: "tower_chess", type: "tower" })).toBe(true);
+    expect(isExplorerOnlyAlwaysVisiblePinV0({ id: "remote_peer", type: "remote_castle" })).toBe(false);
   });
 
   it("resolvePinSpiralLayerV0 derives layer from towerClass", () => {
