@@ -31,16 +31,17 @@ const expectationBannerStyle = {
   background: "rgba(8,47,73,0.45)"
 };
 
-const MODE_LABELS_V0 = Object.freeze({
-  explorer: Object.freeze({ tr: "keşif", en: "explorer" }),
-  research: Object.freeze({ tr: "araştırma", en: "research" }),
-  signal: Object.freeze({ tr: "sinyal", en: "signal" })
-});
+function readInviteLandingLocaleV0(searchParams) {
+  const fromUrl = normalizeObserverInviteLangV0(searchParams.get("lang"));
+  if (fromUrl) return fromUrl;
+  const stored = readUiLocaleV0();
+  return OBSERVER_INVITE_LANDING_LOCALES_V0.includes(stored) ? stored : "en";
+}
 
 export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInviteLandingPageV0() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [locale, setLocale] = useState(() => readUiLocaleV0());
+  const [locale, setLocale] = useState(() => readInviteLandingLocaleV0(searchParams));
   const tr = locale === "tr";
   const [bundle, setBundle] = useState(null);
 
@@ -49,14 +50,15 @@ export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInv
     [searchParams]
   );
 
-  useEffect(() => subscribeUiLocaleV0(() => setLocale(readUiLocaleV0())), []);
+  useEffect(() => subscribeUiLocaleV0(() => setLocale(readInviteLandingLocaleV0(searchParams))), [searchParams]);
 
   useEffect(() => {
     const fromUrl = normalizeObserverInviteLangV0(searchParams.get("lang"));
-    if (fromUrl && fromUrl !== readUiLocaleV0()) {
+    if (!fromUrl) return;
+    if (fromUrl !== readUiLocaleV0()) {
       writeUiLocaleV0(fromUrl);
-      setLocale(fromUrl);
     }
+    setLocale(fromUrl);
   }, [searchParams]);
 
   const onPickLocale = useCallback(
@@ -72,12 +74,11 @@ export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInv
 
   const role = invite?.role || "observer";
   const lens = useMemo(
-    () => bundle?.perceptionLens || resolveInvitePerceptionLensV0(role, tr ? "tr" : "en"),
-    [bundle?.perceptionLens, role, tr]
+    () => resolveInvitePerceptionLensV0(role, tr ? "tr" : "en"),
+    [role, tr]
   );
   const copy = lens.copy;
   const panels = lens.panels;
-  const modeLabel = MODE_LABELS_V0[lens.mode]?.[tr ? "tr" : "en"] || lens.mode;
 
   useEffect(() => {
     if (invite) persistObserverInviteContextV0(invite);
@@ -86,18 +87,18 @@ export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInv
     } catch {
       /* nervous system optional on first paint */
     }
-    const next = buildObserverInviteLandingBundleV0(invite);
+    const next = buildObserverInviteLandingBundleV0(invite, tr ? "tr" : "en");
     setBundle(next);
     if (typeof window !== "undefined") {
       window.__rhizoh = window.__rhizoh || {};
       window.__rhizoh.invitePerceptionLens = next.perceptionLens;
     }
-  }, [invite]);
+  }, [invite, tr]);
 
   const onEnter = useCallback(() => {
     if (invite) persistObserverInviteContextV0(invite);
-    dispatchObserverInviteProceedV0({ invite, target: "/world/space", perceptionMode: lens.mode });
-    navigate("/world/space");
+    dispatchObserverInviteProceedV0({ invite, target: "/", perceptionMode: lens.mode });
+    navigate("/");
   }, [invite, lens.mode, navigate]);
 
   const manifest = bundle?.manifest;
@@ -153,7 +154,7 @@ export const RhizohObserverInviteLandingPageV0 = memo(function RhizohObserverInv
             {invite.inviteToken?.length > 32 ? "…" : ""}
           </p>
           <p style={{ fontSize: 13, margin: 0, opacity: 0.9 }}>
-            {copy.perceptionModeLabel}: <strong>{modeLabel}</strong>
+            {copy.perceptionModeLabel}: <strong>{copy.perceptionModeName}</strong>
           </p>
         </div>
       ) : (

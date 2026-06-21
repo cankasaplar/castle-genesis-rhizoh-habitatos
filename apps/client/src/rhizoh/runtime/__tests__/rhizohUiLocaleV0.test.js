@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import {
+  applyUiLocaleFromLocationSearchV0,
   clearUiLocalePickedForTestV0,
   isLanguagePickerRequiredForIngressV0,
   normalizeUiLocaleV0,
@@ -44,6 +45,15 @@ describe("rhizohUiLocaleV0", () => {
     } finally {
       import.meta.env.VITE_RHIZOH_DEFAULT_LOCALE = orig;
     }
+  });
+
+  it("applyUiLocaleFromLocationSearch returns early when URL lang matches storage", () => {
+    writeUiLocaleV0("en");
+    const prev = `${window.location.pathname}${window.location.search}`;
+    window.history.replaceState({}, "", "/invite?lang=en");
+    expect(applyUiLocaleFromLocationSearchV0()).toBe("en");
+    expect(readUiLocaleV0()).toBe("en");
+    window.history.replaceState({}, "", prev || "/");
   });
 
   it("readUiLocale prefers explicit env default over navigator when unpicked", () => {

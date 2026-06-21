@@ -244,13 +244,15 @@ export function buildCausalSnapshotTimelineV0(causalMap, limit = 24) {
 /**
  * Full observer landing bundle — invite + manifest + causal timeline.
  * @param {ReturnType<typeof parseObserverInviteTokenV0>} [invite]
+ * @param {string} [locale]
  */
-export function buildObserverInviteLandingBundleV0(invite) {
+export function buildObserverInviteLandingBundleV0(invite, locale = "en") {
   const causalMap = buildCausalMapLayerV0();
   const manifest = projectIdentityManifestV0({ causalMap });
   const causalTimeline = buildCausalSnapshotTimelineV0(causalMap);
   const role = invite?.role || "observer";
-  const perceptionLens = resolveInvitePerceptionLensV0(role);
+  const loc = normalizeObserverInviteLangV0(locale) || "en";
+  const perceptionLens = resolveInvitePerceptionLensV0(role, loc);
 
   return Object.freeze({
     schema: OBSERVER_INVITE_LANDING_SCHEMA_V0,
