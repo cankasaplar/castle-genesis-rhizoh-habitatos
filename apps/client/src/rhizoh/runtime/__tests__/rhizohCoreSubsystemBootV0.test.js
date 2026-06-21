@@ -55,4 +55,11 @@ describe("rhizohCoreSubsystemBootV0", () => {
     ensureRhizohCoreSubsystemsBootV0();
     expect(runDomainGateForPathV0).toHaveBeenCalledTimes(1);
   });
+
+  it("mounts matchmaking console during core boot", () => {
+    ensureRhizohCoreSubsystemsBootV0();
+    expect(typeof window.__rhizoh?.matchmaking?.emitBeacon).toBe("function");
+    expect(typeof window.__rhizoh?.matchmaking?.tryMatch).toBe("function");
+    expect(window.__rhizoh?.matchmakingConsole?.mounted).toBe(true);
+  });
 });
