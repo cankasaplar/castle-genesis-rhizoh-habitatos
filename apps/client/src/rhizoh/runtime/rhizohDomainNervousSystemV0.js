@@ -64,6 +64,11 @@ function ensureSpatialExecutionTickV0() {
   startSpatialExecutionTickV0();
 }
 
+/** World · Space — start 50ms spatial tick after map is interactive. */
+export function startRhizohSpatialExecutionTickV0() {
+  ensureSpatialExecutionTickV0();
+}
+
 /**
  * Bootstrap domain gate from pathname — call on every route sync.
  * @param {string} pathname

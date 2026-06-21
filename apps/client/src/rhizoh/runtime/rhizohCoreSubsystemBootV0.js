@@ -32,6 +32,11 @@ import { ensureChessBroadcastOpponentMatrixDevToolsV0 } from "./chessBroadcastOp
 import { ensureRhizohCausalGraphDevToolsV0 } from "./runtimeEventGraphBridgeV0.js";
 import { ensureContinuityKernelDevToolsV0 } from "./rhizohContinuityKernelV0.js";
 import { pruneRhizohLocalStorageOnBootV0 } from "./rhizohLocalStorageSafeV0.js";
+import {
+  isRhizohWorldSpacePathV0,
+  isV11LeafletMapReadyV0,
+  runAfterV11LeafletReadyV0
+} from "./worldSpaceMapBootGateV0.js";
 
 export const RHIZOH_CORE_SUBSYSTEM_BOOT_SCHEMA_V0 = "castle.rhizoh.core_subsystem_boot.v0";
 
@@ -40,6 +45,7 @@ const GUEST_SESSION_KEY_V0 = "rhizoh_guest_session_v0";
 let coreBootedV0 = false;
 /** @type {(() => void) | null} */
 let stopLegalWaitLoopV0 = null;
+let chessClusterBootArmedV0 = false;
 
 /**
  * Stable guest id for learning seed before Firebase auth.
@@ -102,7 +108,9 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
   const learning = ensureRhizohLearningCoreBootV0(opts.userId);
   const worldGate = publishRhizohWorldNamespaceGateV0();
   let cluster = Object.freeze({ ok: false, pendingEnginePrewarm: true });
+
   const startChessClusterAfterPrewarmV0 = () => {
+    chessClusterBootArmedV0 = true;
     void prewarmChessStockfishEngineV0().finally(() => {
       const engineStatus = getChessStockfishEngineStatusV0();
       cluster = startChessGameClusterV0({ minIntervalMs: 900, timeControlId: "cluster_sim_45_0" });
@@ -122,15 +130,33 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
       }
     });
   };
-  const onWorldSpaceRouteV0 = pathname.includes("/world/space");
-  if (onWorldSpaceRouteV0) {
-    if (typeof requestIdleCallback !== "undefined") {
-      requestIdleCallback(startChessClusterAfterPrewarmV0, { timeout: 6000 });
+
+  if (!chessClusterBootArmedV0) {
+    const deferForMapV0 = isRhizohWorldSpacePathV0() && !isV11LeafletMapReadyV0();
+    if (deferForMapV0) {
+      runAfterV11LeafletReadyV0(
+        () => {
+          if (typeof requestIdleCallback !== "undefined") {
+            requestIdleCallback(startChessClusterAfterPrewarmV0, { timeout: 8000 });
+          } else {
+            window.setTimeout(startChessClusterAfterPrewarmV0, 2000);
+          }
+        },
+        { timeoutMs: 18_000 }
+      );
+    } else if (isRhizohWorldSpacePathV0) {
+      if (typeof requestIdleCallback !== "undefined") {
+        requestIdleCallback(startChessClusterAfterPrewarmV0, { timeout: 8000 });
+      } else {
+        window.setTimeout(startChessClusterAfterPrewarmV0, 2500);
+      }
     } else {
-      setTimeout(startChessClusterAfterPrewarmV0, 2500);
+      if (typeof requestIdleCallback !== "undefined") {
+        requestIdleCallback(startChessClusterAfterPrewarmV0, { timeout: 6000 });
+      } else {
+        window.setTimeout(startChessClusterAfterPrewarmV0, 1200);
+      }
     }
-  } else {
-    startChessClusterAfterPrewarmV0();
   }
   const chessManager = publishRhizohChessManagerV0("core_boot");
   const chessGameRouter = publishChessGameRouterV0("core_boot");
@@ -156,6 +182,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
 /** @internal vitest */
 export function resetRhizohCoreSubsystemBootForTestV0() {
   coreBootedV0 = false;
+  chessClusterBootArmedV0 = false;
   if (stopLegalWaitLoopV0) {
     stopLegalWaitLoopV0();
     stopLegalWaitLoopV0 = null;

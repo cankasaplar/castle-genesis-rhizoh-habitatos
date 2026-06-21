@@ -59,7 +59,7 @@ import {
 } from "./rhizoh/runtime/worldMapGeoRequestV0.js";
 import { useCastleActiveCastles } from "./firebase/useCastleActiveCastles.js";
 import { isWorldLayerEnabled } from "./rhizoh/runtime/castleWorldLayerGateV0.js";
-import { runDomainGateForPathV0 } from "./rhizoh/runtime/rhizohDomainNervousSystemV0.js";
+import { runDomainGateForPathV0, startRhizohSpatialExecutionTickV0 } from "./rhizoh/runtime/rhizohDomainNervousSystemV0.js";
 import { RhizohAtmospherePresenceBridge } from "./rhizoh/runtime/RhizohAtmospherePresenceBridge.jsx";
 import { evaluateSpatialBootGateV0 } from "./rhizoh/runtime/spatialBootGateV0.js";
 import { attachRhizohMapExecutionOrchestratorV1 } from "./rhizoh/runtime/rhizohMapExecutionOrchestratorV1.js";
@@ -130,6 +130,7 @@ import {
   RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0
 } from "./rhizoh/runtime/spiralMMOAwakeningCycleV0.js";
 import { startCanonicalTickClientV0 } from "./core/canonicalTickClientV0.js";
+import { runAfterV11LeafletReadyV0 } from "./rhizoh/runtime/worldSpaceMapBootGateV0.js";
 import { startYoutubeLabOctoBridgeV1, RHIZOH_OCTO_LAB_DISMISS_EVENT_V1 } from "./rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
 import { startRhizohLegalPendingWaitLoopV0 } from "./rhizoh/runtime/rhizohLegalPendingWaitLoopV0.js";
 import { startCityMapLegalCountdownMediaGateV0 } from "./rhizoh/runtime/cityMapLegalCountdownMediaGateV0.js";
@@ -364,7 +365,10 @@ export default function AppRhizohWorldSpaceV0() {
   }, [remoteCastles, remoteCastlesVisibleV0, c2cPeer]);
 
   useEffect(() => {
-    runDomainGateForPathV0("/world/space", { userId: castleAuth?.user?.uid || null });
+    runDomainGateForPathV0("/world/space", {
+      userId: castleAuth?.user?.uid || null,
+      coreOnly: true
+    });
   }, [castleAuth?.user?.uid]);
 
   useEffect(() => {
@@ -395,6 +399,12 @@ export default function AppRhizohWorldSpaceV0() {
       stopMapPinOwnerAutoRefresh?.();
       clearSpatialRealityInfraV0();
     };
+  }, []);
+
+  useEffect(() => {
+    return runAfterV11LeafletReadyV0(() => {
+      startRhizohSpatialExecutionTickV0();
+    });
   }, []);
 
   useEffect(() => {
@@ -700,17 +710,20 @@ export default function AppRhizohWorldSpaceV0() {
 
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
-      try {
-        if (typeof window === "undefined" || !window.__rhizoh?.epochMergeAndAssimilate) return;
-        await window.__rhizoh.epochMergeAndAssimilate();
-        if (!cancelled) publishWorldMapObservationOriginV0();
-      } catch {
-        /* noop */
-      }
-    })();
+    const stopEpochDefer = runAfterV11LeafletReadyV0(() => {
+      void (async () => {
+        try {
+          if (typeof window === "undefined" || !window.__rhizoh?.epochMergeAndAssimilate) return;
+          await window.__rhizoh.epochMergeAndAssimilate();
+          if (!cancelled) publishWorldMapObservationOriginV0();
+        } catch {
+          /* noop */
+        }
+      })();
+    });
     return () => {
       cancelled = true;
+      stopEpochDefer?.();
     };
   }, []);
 
