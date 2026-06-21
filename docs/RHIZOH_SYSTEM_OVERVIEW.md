@@ -118,6 +118,9 @@ Academic and collaboration habitat: `docs/SPRINT_HABITAT_ACADEMIC.md`
 | Doc | Purpose |
 |-----|---------|
 | [RHIZOH_PROTOCOL_V0.md](./RHIZOH_PROTOCOL_V0.md) | Protocol principles |
+| [RHIZOH_EPISTEMIC_IDENTITY_SPEC.md](./RHIZOH_EPISTEMIC_IDENTITY_SPEC.md) | Epistemic identity specification |
+| [RHIZOH_INVITATION_STUDY_V0.md](./RHIZOH_INVITATION_STUDY_V0.md) | Invitation research dataset |
+| [academic/RHIZOH_RESEARCH_PREPRINT_V1.md](./academic/RHIZOH_RESEARCH_PREPRINT_V1.md) | Architecture preprint draft |
 | [RHIZOH_IDENTITY_MANIFEST_V0.md](./RHIZOH_IDENTITY_MANIFEST_V0.md) | Identity projection spec |
 | [RHIZOH_HONEST_BASELINE_CHARTER_V1.md](./RHIZOH_HONEST_BASELINE_CHARTER_V1.md) | Constitutional culture |
 | [RHIZOH_PHASE_GATE_OPERATING_MODE_V1.0.md](./RHIZOH_PHASE_GATE_OPERATING_MODE_V1.0.md) | Ops truth (activation) |

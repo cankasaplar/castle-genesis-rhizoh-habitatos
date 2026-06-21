@@ -43,7 +43,10 @@
   "documentation": {
     "systemOverview": "https://rhizoh.com/rhizoh/system-overview.md",
     "protocol": "https://rhizoh.com/rhizoh/protocol-v0.md",
-    "identityManifestSpec": "https://rhizoh.com/rhizoh/identity-manifest-v0.md"
+    "identityManifestSpec": "https://rhizoh.com/rhizoh/identity-manifest-v0.md",
+    "epistemicIdentitySpec": "https://rhizoh.com/rhizoh/epistemic-identity-spec.md",
+    "honestBaselineCharter": "https://rhizoh.com/rhizoh/honest-baseline-charter-v1.md",
+    "researchPreprint": "https://github.com/cankasaplar/castle-genesis-rhizoh-habitatos/blob/main/docs/academic/RHIZOH_RESEARCH_PREPRINT_V1.md"
   },
   "relatedArtifacts": {
     "causalSnapshot": "https://rhizoh.com/.well-known/rhizoh-causal-snapshot.json"
