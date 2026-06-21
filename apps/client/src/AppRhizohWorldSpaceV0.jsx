@@ -173,6 +173,8 @@ import {
   startShadowCastleInboxV0
 } from "./rhizoh/runtime/shadowCastleInboxV0.js";
 import { RhizohCastleShadowInboxV0 } from "./components/RhizohCastleShadowInboxV0.jsx";
+import { RhizohEpistemicDashboardPanelV1 } from "./components/RhizohEpistemicDashboardPanelV1.jsx";
+import { RhizohFounderCohortAggregatePanelV0 } from "./components/RhizohFounderCohortAggregatePanelV0.jsx";
 
 function resolveSpiralLayerFromHaloFocusV0(layerFocus) {
   const focus = Number(layerFocus);
@@ -371,6 +373,9 @@ export default function AppRhizohWorldSpaceV0() {
       remoteCastlesVisible: remoteCastlesVisibleV0,
       ...(c2cPeer != null ? { boundPeer: c2cPeer } : {})
     });
+    if (typeof window !== "undefined" && window.__rhizoh) {
+      window.__rhizoh.__remoteCastlesCount = remoteCastles?.length ?? 0;
+    }
   }, [remoteCastles, remoteCastlesVisibleV0, c2cPeer]);
 
   useEffect(() => {
@@ -1152,6 +1157,8 @@ export default function AppRhizohWorldSpaceV0() {
 
       {!castleAuth.needsAuthGate && !spiralImmersionActive && !v11MediaTube ? (
         <>
+          <RhizohEpistemicDashboardPanelV1 />
+          <RhizohFounderCohortAggregatePanelV0 remoteCastleCount={remoteCastles.length} />
           <RhizohCastleShadowInboxV0 uiLocale={uiLocale} compact anchor="bottom-right" panelPlacement="portal" />
           <div
             className="pointer-events-none fixed left-4 z-[30] max-w-[15rem]"

@@ -35,6 +35,10 @@ import { mountObserverEpistemicLensConsoleV0 } from "../ingress/observerEpistemi
 import { mountEpistemicReturnFieldConsoleV0 } from "../ingress/epistemicReturnFieldV0.js";
 import { mountNarrativeProjectionEngineConsoleV0 } from "../ingress/narrativeProjectionEngineV0.js";
 import { mountNarrativePlaneConsoleV0 } from "../ingress/narrativePlaneProjectionV0.js";
+import { mountEpistemicSeparationProofConsoleV0 } from "../ingress/epistemicSeparationProofV0.js";
+import { mountInvitationStudyExportConsoleV0 } from "../ingress/invitationStudyExportV0.js";
+import { mountEpistemicResonanceFieldConsoleV0 } from "../ingress/epistemicResonanceFieldV0.js";
+import { mountFounderCohortAggregateConsoleV0 } from "../ingress/founderCohortAggregateV0.js";
 import { mountFullSystemReportConsoleV0 } from "./rhizohFullSystemReportV0.js";
 import { mountPersonaLoopSchedulerV0 } from "./rhizohPersonaLoopSchedulerV0.js";
 import { mountRhizohPulseLoopV1 } from "./rhizohPulseLoopV1.js";
@@ -150,6 +154,10 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
     mountEpistemicReturnFieldConsoleV0();
     mountNarrativeProjectionEngineConsoleV0();
     mountNarrativePlaneConsoleV0();
+    mountEpistemicSeparationProofConsoleV0();
+    mountInvitationStudyExportConsoleV0();
+    mountEpistemicResonanceFieldConsoleV0();
+    mountFounderCohortAggregateConsoleV0();
     ensureVoiceAdapterRegistered();
     resolveGatewayTransportV0();
     mountPersonaLoopSchedulerV0();
