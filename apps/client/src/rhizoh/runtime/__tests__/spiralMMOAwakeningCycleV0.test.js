@@ -75,13 +75,13 @@ describe("spiralMMOAwakeningCycleV0", () => {
     expect(resolveSpiralMMOTriggerIndexFromPinIdV0("unknown")).toBe(0);
   });
 
-  it("preserves 6:44 session countdown across spiral entries", () => {
+  it("resets countdown to full 6:44 on each spiral click awakening", () => {
     const t0 = 1_700_000_000_000;
     resetRhizohNeonCountdownDeadlineV0(t0);
     const first = buildSpiralMMOAwakeningLaunchPlanV0(1, t0 + 5_000, { commit: false });
     const second = buildSpiralMMOAwakeningLaunchPlanV0(3, t0 + 90_000, { commit: false });
-    expect(first.deadlineMs).toBe(t0 + 404_000);
-    expect(second.deadlineMs).toBe(first.deadlineMs);
+    expect(first.deadlineMs).toBe(t0 + 5_000 + 404_000);
+    expect(second.deadlineMs).toBe(t0 + 90_000 + 404_000);
   });
 
   it("resets countdown only when session resets at collapse", () => {

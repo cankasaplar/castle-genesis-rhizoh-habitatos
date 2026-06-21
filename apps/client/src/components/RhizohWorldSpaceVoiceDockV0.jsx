@@ -14,6 +14,7 @@ import { buildRhizohLiveContextEnvelopeV2,
   formatRhizohLiveContextActionLabelV2
 } from "../rhizoh/runtime/rhizohLiveContextEngineV2.js";
 import { RhizohAskRhizohSourceBadgeV0 } from "./RhizohAskRhizohSourceBadgeV0.jsx";
+import { RhizohWorldLayerQuickChipV0 } from "./RhizohWorldLayerQuickChipV0.jsx";
 
 /**
  * Map-stage voice dock — mic + text only. No fox / Octo / cube stage.
@@ -22,6 +23,7 @@ export const RhizohWorldSpaceVoiceDockV0 = memo(function RhizohWorldSpaceVoiceDo
   firebaseUser,
   uiLocale,
   className = "",
+  activeMapTool = "city_map",
   onRequestGeo,
   onSelectMapTool
 }) {
@@ -169,6 +171,16 @@ export const RhizohWorldSpaceVoiceDockV0 = memo(function RhizohWorldSpaceVoiceDo
           {dock.busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </button>
       </div>
+
+      {onSelectMapTool ? (
+        <div className="border-t border-white/8 px-3 py-2">
+          <RhizohWorldLayerQuickChipV0
+            activeTool={activeMapTool}
+            onSelect={onSelectMapTool}
+            uiLocale={locale}
+          />
+        </div>
+      ) : null}
 
       <p className="px-3 pb-2 text-[9px] text-cyan-200/65 normal-case">{statusLine}</p>
       {suggestedActions?.length ? (

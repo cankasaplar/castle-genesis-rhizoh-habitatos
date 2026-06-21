@@ -151,7 +151,8 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg border border-white/15 px-2 py-1 text-[9px] uppercase tracking-wide text-white/60 hover:text-white"
+          className="relative z-10 shrink-0 touch-manipulation rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-wide text-white/75 hover:border-cyan-400/40 hover:text-white"
+          data-rhizoh-product-drawer-close="1"
         >
           {chrome.close}
         </button>

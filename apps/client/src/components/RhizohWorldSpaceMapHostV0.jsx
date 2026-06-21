@@ -10,6 +10,7 @@ import {
   writeWorldMapClaimModeV0,
   WORLD_MAP_CLAIM_MODE_EVENT_V0
 } from "../rhizoh/runtime/worldMapClaimModeV0.js";
+import { isSpiralCountdownCalmVisualV0 } from "../rhizoh/runtime/worldDomainCalmModeV0.js";
 import {
   LOCAL_GHOST_CASTLE_EVENT_V0,
   readLocalGhostCastleAnchorsV0
@@ -218,6 +219,7 @@ function handleV11MapClickForClaimV0(ev) {
 function RhizohWorldMapClaimPickBannerV0({ uiLocale = "en" }) {
   const tr = String(uiLocale).toLowerCase().startsWith("tr");
   const [armed, setArmed] = useState(() => readWorldMapClaimModeV0());
+  const [calmCountdown, setCalmCountdown] = useState(() => isSpiralCountdownCalmVisualV0());
 
   useEffect(() => {
     const onMode = (e) => setArmed(!!e.detail?.enabled);
@@ -225,11 +227,18 @@ function RhizohWorldMapClaimPickBannerV0({ uiLocale = "en" }) {
     return () => window.removeEventListener(WORLD_MAP_CLAIM_MODE_EVENT_V0, onMode);
   }, []);
 
-  if (!armed) return null;
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setCalmCountdown(isSpiralCountdownCalmVisualV0());
+    }, 500);
+    return () => window.clearInterval(id);
+  }, []);
+
+  if (!armed || calmCountdown) return null;
 
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 top-20 z-[5] flex justify-center px-4"
+      className="pointer-events-none absolute inset-x-0 top-24 z-[5] flex justify-center px-4 sm:top-28"
       data-rhizoh-world-map-claim-banner="1"
     >
       <p className="rounded-xl border border-purple-400/55 bg-purple-950/90 px-4 py-2 text-center text-[11px] font-semibold text-purple-100 shadow-lg backdrop-blur-md normal-case">

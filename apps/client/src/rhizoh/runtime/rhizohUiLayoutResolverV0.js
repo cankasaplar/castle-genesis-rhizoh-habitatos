@@ -43,7 +43,7 @@ export const RHIZOH_UI_Z_INDEX_V0 = Object.freeze({
   MAP_OVERLAY: 26,
   NODE_PANEL: 27,
   C2C_PANEL: 28,
-  PRODUCT_DRAWER: 58,
+  PRODUCT_DRAWER: 70,
   CONTINUITY_RAIL: 58,
   PRODUCT_SHELL_BAR: 61,
   /** T0 chat dock + World · Space voice dock — above product shell bar */
