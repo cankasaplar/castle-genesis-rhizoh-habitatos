@@ -29,9 +29,12 @@ import { dispatchV11MapEventPinV0 } from "../rhizoh/runtime/mapEventPinDispatchV
 import {
   cancelMapPinHoverDwellV0,
   isMapTransitionBusyV0,
-  runMapPinApproachThenV0,
   scheduleMapPinHoverDwellV0
 } from "../rhizoh/runtime/worldMapMeaningfulTransitionV0.js";
+import {
+  runMapPinClickInteractionV0,
+  shouldMapPinDispatchImmediatelyV0
+} from "../rhizoh/runtime/mapPinInteractionPolicyV0.js";
 import {
   resolveMapViewportFitNodesV0,
   resolveArenaPopulationViewportFitNodesV0,
@@ -603,19 +606,8 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
         } catch {
           /* noop */
         }
-        if (isMapTransitionBusyV0()) return;
-        const map = mapRef.current;
-        if (node.type === "remote_castle") {
-          dispatchV11MapEventPinV0(node, "click", map);
-          return;
-        }
-        if (node.type === "spiralmmo") {
-          dispatchV11MapEventPinV0(node, "click", map);
-          return;
-        }
-        runMapPinApproachThenV0(map, node, {}, () =>
-          dispatchV11MapEventPinV0(node, "click", map)
-        );
+        if (isMapTransitionBusyV0() && !shouldMapPinDispatchImmediatelyV0(node)) return;
+        runMapPinClickInteractionV0(mapRef.current, node);
       });
       marker.on("mouseover", () => {
         if (node.type === "spiralmmo") return;

@@ -18,10 +18,12 @@ import {
 import { shouldDeferMapChessArenaOpenV0 } from "./chessEngineContentionGateV0.js";
 
 let orchestratorAttachedV1 = false;
+let lastOrchestratorHandledKeyV1 = "";
+let lastOrchestratorHandledAtV1 = 0;
 
 /**
  * Map intent → workspace / castle execution (V11 primary surface).
- * Listens on rhizoh:v11-map-intent-v0 (window + document).
+ * Listens on rhizoh:v11-map-intent-v0 (window).
  */
 export function attachRhizohMapExecutionOrchestratorV1() {
   if (typeof window === "undefined" || orchestratorAttachedV1) return;
@@ -33,6 +35,14 @@ export function attachRhizohMapExecutionOrchestratorV1() {
     const node = detail?.nodeView;
     if (!decision || !node) return;
     if (detail?.intent?.intent !== SYMBYO_MAP_INTENT_TYPE_V0.ENTER_NODE) return;
+
+    const dedupeKey = `${String(node.id || "")}:${decision}`;
+    const now = Date.now();
+    if (dedupeKey === lastOrchestratorHandledKeyV1 && now - lastOrchestratorHandledAtV1 < 100) {
+      return;
+    }
+    lastOrchestratorHandledKeyV1 = dedupeKey;
+    lastOrchestratorHandledAtV1 = now;
 
     const runtime = resolveEntityRuntimeV1(node);
 
@@ -122,9 +132,10 @@ export function attachRhizohMapExecutionOrchestratorV1() {
   };
 
   window.addEventListener(RHIZOH_V11_MAP_INTENT_EVENT_V0, onMapIntent);
-  document.addEventListener(RHIZOH_V11_MAP_INTENT_EVENT_V0, onMapIntent);
 }
 
 export function resetRhizohMapExecutionOrchestratorForTestV1() {
   orchestratorAttachedV1 = false;
+  lastOrchestratorHandledKeyV1 = "";
+  lastOrchestratorHandledAtV1 = 0;
 }
