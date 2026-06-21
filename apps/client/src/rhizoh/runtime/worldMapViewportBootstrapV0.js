@@ -32,6 +32,21 @@ export function resolveMapViewportFitNodesV0(nodes = [], opts = {}) {
     Number.isFinite(Number(userCastle.lat)) &&
     Number.isFinite(Number(userCastle.lon))
   ) {
+    const anchorLat = Number(userCastle.lat);
+    const anchorLon = Number(userCastle.lon);
+    const regional = nodes.filter((n) => {
+      const lat = Number(n.lat);
+      const lon = Number(n.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+      if (n.id === "my_castle" || n.type === "my_castle") return true;
+      if (n.id === "rhizoh_portal" || n.type === "portal") return true;
+      if (String(n.type || "") === "spiralmmo" && n.continent === "bootstrap") return true;
+      return (
+        Math.abs(lat - anchorLat) <= VIEWPORT_LAT_RADIUS_V0 &&
+        Math.abs(lon - anchorLon) <= VIEWPORT_LON_RADIUS_V0
+      );
+    });
+    if (regional.length >= 2) return Object.freeze(regional);
     return Object.freeze([userCastle]);
   }
   if (opts.worldSpaceNeutral) {

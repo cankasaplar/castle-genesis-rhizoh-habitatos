@@ -30,6 +30,7 @@ const CONTINENT_COORDS_V0 = Object.freeze({
 
 /** Neon yellow-orange family (kanagawa-wave-cube.svg edgeGlow). */
 const CONTINENT_ACCENT_V0 = Object.freeze({
+  bootstrap: "#ffcc00",
   africa: "#ffcc00",
   antarctica: "#ffe566",
   asia: "#ffb347",
@@ -65,6 +66,7 @@ export function resolveSpiralMMOCubePeriodSecV0(speedRatio) {
 export function resolveSpiralMMOContinentIdV0(continentOrNodeId) {
   const raw = String(continentOrNodeId || "").trim();
   const id = raw.startsWith("spiralmmo_") ? raw.slice("spiralmmo_".length) : raw;
+  if (id === "bootstrap") return "bootstrap";
   return SPIRAL_MMO_CONTINENT_IDS_LOCAL_V0.includes(id) ? id : "europe";
 }
 

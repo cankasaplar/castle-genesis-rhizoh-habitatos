@@ -101,7 +101,8 @@ export function filterSovereignPinsForSpiralMapViewV0(sovereign, filterState) {
           pin.type === "my_castle" ||
           isOriginHomeSerencebeyPinV0(pin) ||
           pin.id === "rhizoh_portal" ||
-          pin.type === "portal"
+          pin.type === "portal" ||
+          isExplorerOnlySovereignMeshPinV0(pin)
       )
     );
   }

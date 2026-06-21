@@ -28,7 +28,7 @@ describe("spiralMapRealityModeV0", () => {
   it("applySpiralMapRealityModeV0 sets castle layer preset", () => {
     const next = applySpiralMapRealityModeV0(SPIRAL_MAP_REALITY_MODE_V0.CASTLE);
     expect(next[SPIRAL_MAP_LAYER_V0.CASTLE]).toBe(true);
-    expect(next[SPIRAL_MAP_LAYER_V0.EXPLORER]).toBe(false);
+    expect(next[SPIRAL_MAP_LAYER_V0.EXPLORER]).toBe(true);
     expect(next.includeDormant).toBe(true);
     expect(readSpiralMapRealityModeV0(next)).toBe(SPIRAL_MAP_REALITY_MODE_V0.CASTLE);
   });
@@ -66,7 +66,7 @@ describe("spiralMapRealityModeV0", () => {
     applySpiralMapRealityModeV0(SPIRAL_MAP_REALITY_MODE_V0.EXPLORER);
     const next = applySpiralMapRealityModeV0(SPIRAL_MAP_REALITY_MODE_V0.CASTLE);
     expect(next.realityMode).toBe(SPIRAL_MAP_REALITY_MODE_V0.CASTLE);
-    expect(next.explorer).toBe(false);
+    expect(next.explorer).toBe(true);
     expect(readSpiralMapRealityModeV0()).toBe(SPIRAL_MAP_REALITY_MODE_V0.CASTLE);
     expect(localStorage.getItem(SPIRAL_MAP_REALITY_MODE_LS_KEY_V0)).toBe(
       SPIRAL_MAP_REALITY_MODE_V0.CASTLE
@@ -92,7 +92,7 @@ describe("spiralMapRealityModeV0", () => {
     const state = ensureSpiralMapRealityModeHydratedV0();
     expect(readSpiralMapRealityModeV0(state)).toBe(SPIRAL_MAP_REALITY_MODE_V0.CASTLE);
     expect(state.castle).toBe(true);
-    expect(state.explorer).toBe(false);
+    expect(state.explorer).toBe(true);
   });
 
   it("ensureSpiralMapRealityModeHydratedV0 repairs stale castle label with explorer layer flags", () => {

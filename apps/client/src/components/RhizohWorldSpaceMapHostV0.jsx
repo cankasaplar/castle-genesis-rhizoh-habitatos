@@ -53,6 +53,7 @@ import {
   readSpiralMapLayerFilterStateV0,
   subscribeSpiralMapLayerFilterStateV0
 } from "../rhizoh/runtime/spiralMapLayerFilterStateV0.js";
+import { RHIZOH_WORLD_MAP_TOOL_CHANGE_EVENT_V0 } from "../rhizoh/runtime/rhizohWorldMapToolV0.js";
 import {
   CASTLE_IDENTITY_MODE_EVENT_V0,
   SPIRAL_MAP_REALITY_MODE_EVENT_V0,
@@ -248,12 +249,39 @@ function leafletTilePaneFilterCssV0(activeMapTool) {
 function leafletTileUrlForToolV0(activeMapTool) {
   const tool = String(activeMapTool || "city_map");
   if (tool === "satellite") {
-    return "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+    return "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
   }
   if (tool === "streets") {
     return "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
   }
   return "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+}
+
+function swapV11LeafletTileLayerV0(map, L, activeMapTool, tileLayerRef) {
+  if (!map || !L?.tileLayer) return null;
+  const url = leafletTileUrlForToolV0(activeMapTool);
+  try {
+    if (tileLayerRef.current) {
+      map.removeLayer(tileLayerRef.current);
+      tileLayerRef.current = null;
+    }
+  } catch {
+    /* noop */
+  }
+  const layer = L.tileLayer(url, {
+    maxZoom: 19,
+    crossOrigin: true,
+    updateWhenIdle: false,
+    keepBuffer: 2
+  });
+  layer.addTo(map);
+  try {
+    layer.bringToFront?.();
+    map.invalidateSize({ pan: false });
+  } catch {
+    /* noop */
+  }
+  return layer;
 }
 
 function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], remoteCastlesVisible = false, uiLocale = "en" }) {
@@ -406,9 +434,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
           });
           const home = resolveWorldSpaceMapRecenterHomeV0();
           map.setView([home.lat, home.lon], home.zoom || 14);
-          tileLayerRef.current = L.tileLayer(leafletTileUrlForToolV0(activeMapTool), {
-            maxZoom: 18
-          }).addTo(map);
+          tileLayerRef.current = swapV11LeafletTileLayerV0(map, L, activeMapTool, tileLayerRef);
           map.on("click", (ev) => handleV11MapClickForClaimV0(ev));
           const onMapDismissPreview = () => emitV11MapClearPreviewV0();
           map.on("movestart", onMapDismissPreview);
@@ -679,17 +705,20 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
 
   useEffect(() => {
     const L = typeof window !== "undefined" ? window.L : null;
-    if (!L?.tileLayer || !mapRef.current || !leafletReady) return;
-    try {
-      if (tileLayerRef.current) {
-        mapRef.current.removeLayer(tileLayerRef.current);
-      }
-      tileLayerRef.current = L.tileLayer(leafletTileUrlForToolV0(activeMapTool), {
-        maxZoom: 18
-      }).addTo(mapRef.current);
-    } catch {
-      /* noop */
-    }
+    if (!L?.tileLayer || !mapRef.current || !leafletReady) return undefined;
+    tileLayerRef.current = swapV11LeafletTileLayerV0(
+      mapRef.current,
+      L,
+      activeMapTool,
+      tileLayerRef
+    );
+    const onToolChange = (ev) => {
+      const tool = String(ev?.detail?.tool || activeMapTool);
+      if (!mapRef.current) return;
+      tileLayerRef.current = swapV11LeafletTileLayerV0(mapRef.current, L, tool, tileLayerRef);
+    };
+    window.addEventListener(RHIZOH_WORLD_MAP_TOOL_CHANGE_EVENT_V0, onToolChange);
+    return () => window.removeEventListener(RHIZOH_WORLD_MAP_TOOL_CHANGE_EVENT_V0, onToolChange);
   }, [activeMapTool, leafletReady]);
 
   return (
