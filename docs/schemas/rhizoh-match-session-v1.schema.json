@@ -46,7 +46,23 @@
     "result": { "type": "string" },
     "createdAtMs": { "type": "integer", "minimum": 0 },
     "finishedAtMs": { "type": "integer", "minimum": 0 },
-    "serverAuthoritative": { "const": true },
+    "authority": {
+      "type": "object",
+      "required": ["mode", "commitRequired", "reconciliation", "effectiveAuthority"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["SERVER_PRIMARY", "SHADOW_ONLY"] },
+        "commitRequired": { "type": "boolean" },
+        "reconciliation": { "type": "string", "enum": ["diff-merge", "server-wins"] },
+        "effectiveAuthority": { "type": "string", "enum": ["SERVER", "SHADOW_CLIENT", "PENDING_SERVER_ACK"] },
+        "serverAuthoritative": { "type": "boolean" },
+        "shadowRehearsal": { "type": "boolean" }
+      }
+    },
+    "committed": { "type": "object" },
+    "shadow": { "type": "object" },
+    "pendingMoves": { "type": "array" },
+    "serverAuthoritative": { "type": "boolean" },
+    "shadowRehearsal": { "type": "boolean" },
     "interpretationOnly": { "type": "boolean" }
   }
 }
