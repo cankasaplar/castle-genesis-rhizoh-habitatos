@@ -842,11 +842,14 @@ export default function AppRhizohWorldSpaceV0() {
   }, [castleInitOwner, applySpatialCastleAnchorDsl, openPostCastleMediaTubeV0]);
 
   const onApplyWorldMapToolV0 = useCallback((mapTool, source = "WORLD_DOMAIN_MAP_STRIP") => {
+    if (spiralImmersionActive) {
+      window.dispatchEvent(new CustomEvent(RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0));
+    }
     void applyRhizohWorldMapToolV0(mapTool, {
       leafletOnly: true,
       source
     });
-  }, []);
+  }, [spiralImmersionActive]);
 
   const appRootRef = useRef(null);
 
@@ -975,6 +978,8 @@ export default function AppRhizohWorldSpaceV0() {
         [data-rhizoh-world-space-app] [data-rhizoh-world-space-chrome],
         [data-rhizoh-world-space-app] [data-rhizoh-world-domain-interactive],
         [data-rhizoh-world-space-app] [data-rhizoh-v11-surface-modal],
+        [data-rhizoh-world-space-app] [data-rhizoh-product-drawer],
+        [data-rhizoh-world-space-app] [data-rhizoh-world-layer-quick-chip],
         [data-rhizoh-world-space-app] nav[aria-label*="Rhizoh"],
         [data-rhizoh-world-space-app] [data-rhizoh-conversation-dock-shell] > div {
           pointer-events: auto;
@@ -1019,7 +1024,7 @@ export default function AppRhizohWorldSpaceV0() {
       {spiralImmersionActive ? (
         <button
           type="button"
-          className="pointer-events-auto fixed left-4 top-20 z-[400] rounded-lg border border-cyan-400/40 bg-black/85 px-4 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-cyan-100 shadow-lg touch-manipulation backdrop-blur-sm"
+          className="pointer-events-auto fixed left-4 top-[4.75rem] z-[400] rounded-lg border border-cyan-400/40 bg-black/85 px-4 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-cyan-100 shadow-lg touch-manipulation backdrop-blur-sm sm:top-20"
           data-rhizoh-spiral-immersion-exit="1"
           onClick={() => {
             window.dispatchEvent(new CustomEvent(RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0));
@@ -1056,6 +1061,7 @@ export default function AppRhizohWorldSpaceV0() {
         <RhizohWorldSpaceVoiceDockV0
           firebaseUser={castleAuth?.user}
           uiLocale={uiLocale}
+          activeMapTool={worldMapToolV0}
           onRequestGeo={onRequestGeoV0}
           onSelectMapTool={(toolId) => onApplyWorldMapToolV0(toolId, "WORLD_VOICE_DOCK")}
         />

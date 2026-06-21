@@ -144,7 +144,11 @@ export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Dat
     launches.push(Object.freeze(launch));
   };
 
-  if (opts.resetSession) {
+  const resetCountdown =
+    opts.resetSession === true ||
+    (String(opts.mode || "click") === "click" && opts.resetSession !== false);
+
+  if (opts.resetSession === true) {
     resetSpiralMMOSessionCubeAccumV0();
   }
 
@@ -157,12 +161,12 @@ export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Dat
     addLaunch
   });
 
-  const deadlineMs = resolveRhizohNeonCountdownDeadlineForAwakeningV0(nowMs, Boolean(opts.resetSession));
+  const deadlineMs = resolveRhizohNeonCountdownDeadlineForAwakeningV0(nowMs, resetCountdown);
 
   const plan = Object.freeze({
     schema: "rhizoh.spiral_mmo_awakening_plan.v0",
     buildRev: RHIZOH_SPIRAL_MMO_BUILD_REV_V0,
-    sessionReset: Boolean(opts.resetSession),
+    sessionReset: resetCountdown,
     triggerPinIndex: effectiveIndex,
     requestedPinIndex: requestedIndex,
     triggerPinId: triggerPin?.id || "",
@@ -193,7 +197,11 @@ export function buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs = Dat
  * @param {number} [nowMs]
  */
 export function dispatchSpiralMMOAwakeningV0(triggerPinIndex, nowMs = Date.now()) {
-  const plan = buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs, { mode: "click", commit: true });
+  const plan = buildSpiralMMOAwakeningLaunchPlanV0(triggerPinIndex, nowMs, {
+    mode: "click",
+    commit: true,
+    resetSession: true
+  });
   const pins = listSpiralMMOContinentMapPinsV0();
   const triggerPin = pins[plan.triggerPinIndex];
   const previousPin =

@@ -57,11 +57,11 @@ export function resolveRhizohNeonCountdownRemainingMsV0(deadlineMs, nowMs = Date
 }
 
 /**
- * Awakening plan deadline — never extends an active session back toward full 6:44.
+ * Awakening plan deadline — each awakening starts a fresh 6:44 window.
  * @param {number} [nowMs]
  * @param {boolean} [resetSession]
  */
-export function resolveRhizohNeonCountdownDeadlineForAwakeningV0(nowMs = Date.now(), resetSession = false) {
+export function resolveRhizohNeonCountdownDeadlineForAwakeningV0(nowMs = Date.now(), resetSession = true) {
   if (resetSession) return resetRhizohNeonCountdownDeadlineV0(nowMs);
   return readRhizohNeonCountdownDeadlineMsV0(nowMs);
 }

@@ -89,11 +89,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
 
   const spawnLaunches = useCallback((plan) => {
     planRef.current = plan;
-    if (plan?.sessionReset) {
-      setDeadlineMs(plan.deadlineMs);
-    } else {
-      setDeadlineMs(readRhizohNeonCountdownDeadlineMsV0());
-    }
+    setDeadlineMs(plan?.deadlineMs ?? readRhizohNeonCountdownDeadlineMsV0());
     setCollapsing(false);
     const host = hostRef.current;
     if (!host || !plan?.launches?.length) return;
@@ -264,7 +260,7 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
         buildSpiralMMOAwakeningLaunchPlanV0(idx, Date.now(), {
           mode: "click",
           commit: false,
-          resetSession: false
+          resetSession: true
         })
       );
     };
@@ -349,11 +345,11 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
 
       {calmVisual && scene && !complete ? (
         <div
-          className="pointer-events-none absolute inset-x-0 top-[12%] z-[30] flex justify-center"
+          className="pointer-events-none absolute inset-x-0 top-[22%] z-[30] flex justify-center px-16 sm:top-[18%] sm:px-24"
           data-rhizoh-spiral-calm-timer="1"
         >
           <div
-            className="rounded-2xl border border-cyan-400/25 bg-black/40 px-4 py-2 font-mono text-2xl font-bold tracking-[0.2em] text-cyan-100/90 tabular-nums shadow-lg backdrop-blur-sm"
+            className="rounded-2xl border border-cyan-400/25 bg-black/55 px-4 py-2 font-mono text-2xl font-bold tracking-[0.2em] text-cyan-100/90 tabular-nums shadow-lg backdrop-blur-sm"
             style={{ textShadow: "0 0 18px rgba(34,211,238,0.35)" }}
           >
             {formatRhizohNeonCountdownMsV0(remainingMs)}
