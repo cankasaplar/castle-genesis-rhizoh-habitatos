@@ -64,6 +64,7 @@ window.__rhizoh.observe({
 });
 
 window.__rhizoh.observerTrace.snapshot();
+window.__rhizoh.narrativePlane.resolve({ locale: "en" });
 window.__rhizoh.narrativePlane.build({ locale: "en" });
 ```
 

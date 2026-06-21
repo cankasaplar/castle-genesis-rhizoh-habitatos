@@ -7,6 +7,9 @@ import { evaluateEpistemicReturnFieldV0 } from "./epistemicReturnFieldV0.js";
 import { projectObserverLensV0 } from "./observerEpistemicLensV0.js";
 import { getVisitorEpistemicTraceV0 } from "./visitorEpistemicTraceV0.js";
 import { OBSERVER_PLANE_V0 } from "./observerReadOnlyHookV0.js";
+import { resolveNarrativeFromObserverTraceV0 } from "./narrativeProjectionEngineV0.js";
+
+export { resolveNarrativeFromObserverTraceV0 };
 
 export const NARRATIVE_PLANE_SCHEMA_V0 = "castle.rhizoh.narrative_plane.v0";
 
@@ -17,10 +20,12 @@ export function buildNarrativePlaneV0(opts = {}) {
   const tr = opts.locale === "tr";
   const echo = getVisitorEpistemicTraceV0();
   const returnField = evaluateEpistemicReturnFieldV0(echo);
+  const projection = resolveNarrativeFromObserverTraceV0({ locale: opts.locale });
   const lens = projectObserverLensV0(opts.causalMap);
   const depth = echo?.coherence_alignment ?? 0;
   const stable = (lens.causalSummary?.nodeCount ?? 0) > 0;
-  const familiar = returnField.familiarity >= 0.22;
+  const familiar = returnField.recognition !== "none";
+  const primary = projection.primaryFocus;
 
   const youAreHere = familiar
     ? tr
@@ -45,6 +50,20 @@ export function buildNarrativePlaneV0(opts = {}) {
     mapExplorationLabel: tr
       ? `Harita keşif derinliği: ${depth.toFixed(2)}`
       : `Map exploration depth: ${depth.toFixed(2)}`,
+    entityNarrative: primary
+      ? Object.freeze({
+          entityId: primary.entityId,
+          title: primary.title,
+          description: primary.description,
+          salience: primary.salience,
+          grounded: primary.grounded,
+          registryHit: primary.registryHit
+        })
+      : null,
+    groundedNarratives: projection.groundedNarratives,
+    semanticCoupling: false,
+    epistemicResonance: false,
+    bidirectionalInfluence: false,
     returnVector: echo?.return_vector ?? "none",
     epistemicFamiliarity: returnField.familiarity,
     recognition: returnField.recognition,
@@ -61,6 +80,7 @@ export function mountNarrativePlaneConsoleV0() {
   if (typeof window === "undefined") return;
   window.__rhizoh = window.__rhizoh || {};
   window.__rhizoh.narrativePlane = Object.freeze({
-    build: buildNarrativePlaneV0
+    build: buildNarrativePlaneV0,
+    resolve: resolveNarrativeFromObserverTraceV0
   });
 }

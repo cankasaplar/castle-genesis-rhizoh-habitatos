@@ -33,6 +33,7 @@ import {
 } from "../ingress/observerReadOnlyHookV0.js";
 import { mountObserverEpistemicLensConsoleV0 } from "../ingress/observerEpistemicLensV0.js";
 import { mountEpistemicReturnFieldConsoleV0 } from "../ingress/epistemicReturnFieldV0.js";
+import { mountNarrativeProjectionEngineConsoleV0 } from "../ingress/narrativeProjectionEngineV0.js";
 import { mountNarrativePlaneConsoleV0 } from "../ingress/narrativePlaneProjectionV0.js";
 import { mountFullSystemReportConsoleV0 } from "./rhizohFullSystemReportV0.js";
 import { mountPersonaLoopSchedulerV0 } from "./rhizohPersonaLoopSchedulerV0.js";
@@ -147,6 +148,7 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
     installVisitorEpistemicTraceWireV0();
     mountObserverEpistemicLensConsoleV0();
     mountEpistemicReturnFieldConsoleV0();
+    mountNarrativeProjectionEngineConsoleV0();
     mountNarrativePlaneConsoleV0();
     ensureVoiceAdapterRegistered();
     resolveGatewayTransportV0();

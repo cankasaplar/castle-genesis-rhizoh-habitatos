@@ -153,7 +153,7 @@ export function evaluateEpistemicReturnFieldV0(visitor) {
     familiarity,
     recognition,
     memory: false,
-    continuity: familiarity > 0 ? "statistical" : "none",
+    continuity: recognition !== "none" ? "statistical" : "none",
     fingerprint,
     returnLikelihood: fingerprint.return_likelihood,
     stabilityIndex: fingerprint.stability_index,

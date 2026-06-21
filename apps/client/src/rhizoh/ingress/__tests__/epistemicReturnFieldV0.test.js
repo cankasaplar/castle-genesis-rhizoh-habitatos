@@ -22,7 +22,7 @@ describe("epistemicReturnFieldV0", () => {
 
     const result = evaluateEpistemicReturnFieldV0();
     expect(result.memory).toBe(false);
-    expect(result.continuity).toBe("statistical");
+    expect(result.continuity).toBe("none");
     expect(result.fingerprint.isMemory).toBe(false);
   });
 
