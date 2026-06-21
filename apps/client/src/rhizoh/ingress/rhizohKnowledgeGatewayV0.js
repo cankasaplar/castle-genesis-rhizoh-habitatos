@@ -8,6 +8,7 @@
 import { lookupPinSemanticV0, normalizePinTargetIdV0 } from "./epistemicPinSemanticRegistryV0.js";
 import { getMeaningResonanceLedgerSnapshotV0 } from "./meaningResonanceLedgerV0.js";
 import { getAttentionSedimentSnapshotV0 } from "./attentionSedimentationBufferV0.js";
+import { getBehaviorSedimentSnapshotV0 } from "./behaviorSedimentBufferV0.js";
 import { resolveNarrativeFromObserverTraceV0 } from "./narrativeProjectionEngineV0.js";
 import { coupleCrossTowerBiasV0 } from "./crossTowerBiasCouplerV0.js";
 import { buildEpistemicSeparationProofV0 } from "./epistemicSeparationProofV0.js";
@@ -24,8 +25,9 @@ export const KNOWLEDGE_ANSWER_SCHEMA_V0 = "castle.rhizoh.knowledge_answer.v0";
 
 export const KNOWLEDGE_LAYER_AUTHORITY_V0 = Object.freeze({
   AUTHORITY_LEDGER: Object.freeze({ rank: 1, label: "authority", userFacing: true }),
-  MEANING_LEDGER: Object.freeze({ rank: 2, label: "interpretation", userFacing: true }),
-  NARRATIVE: Object.freeze({ rank: 3, label: "narration", userFacing: true }),
+  BEHAVIOR_SEDIMENT: Object.freeze({ rank: 2, label: "behavior", userFacing: true }),
+  MEANING_LEDGER: Object.freeze({ rank: 3, label: "interpretation", userFacing: true }),
+  NARRATIVE: Object.freeze({ rank: 4, label: "narration", userFacing: true }),
   OBSERVER_TRACE: Object.freeze({ rank: 0, label: "raw_trace", userFacing: false })
 });
 
@@ -151,6 +153,7 @@ export function askRhizohKnowledgeGatewayV0(opts = {}) {
 
   return runEpistemicConsumeOnlyPassV0(() => {
     const authority = readAuthorityLayerV0();
+    const behaviorSediment = getBehaviorSedimentSnapshotV0();
     const meaningLedger = getMeaningResonanceLedgerSnapshotV0();
     const sediment = getAttentionSedimentSnapshotV0();
     const narrative = resolveNarrativeFromObserverTraceV0({ locale, behavioralInfluence: true });
@@ -163,7 +166,13 @@ export function askRhizohKnowledgeGatewayV0(opts = {}) {
 
     const significance =
       entityId && queryMode === "significance"
-        ? resolveMeaningResonanceSignificanceV0({ entityId, locale, sediment, meaningLedger })
+        ? resolveMeaningResonanceSignificanceV0({
+            entityId,
+            locale,
+            sediment,
+            behaviorSediment,
+            meaningLedger
+          })
         : null;
 
     const answerText = entityId
@@ -217,16 +226,26 @@ export function askRhizohKnowledgeGatewayV0(opts = {}) {
         }),
         meaning: Object.freeze({
           layer: KNOWLEDGE_LAYER_AUTHORITY_V0.MEANING_LEDGER.label,
-          authorityRank: 2,
+          authorityRank: KNOWLEDGE_LAYER_AUTHORITY_V0.MEANING_LEDGER.rank,
           recordCount: meaningLedger.count ?? 0,
           tower: FOUR_TOWER_STATUS_V0.MEANING_RESONANCE.role,
           interpretationOnly: true,
           learns: false,
           explainsObservedBehavior: significance?.explainsObservedBehavior === true
         }),
+        behavior: Object.freeze({
+          layer: KNOWLEDGE_LAYER_AUTHORITY_V0.BEHAVIOR_SEDIMENT.label,
+          authorityRank: KNOWLEDGE_LAYER_AUTHORITY_V0.BEHAVIOR_SEDIMENT.rank,
+          entityCount: behaviorSediment.entityCount ?? 0,
+          tower: FOUR_TOWER_STATUS_V0.BEHAVIOR.role,
+          behaviorBias: true,
+          truthBias: false,
+          interpretationOnly: true,
+          learns: false
+        }),
         narrative: Object.freeze({
           layer: KNOWLEDGE_LAYER_AUTHORITY_V0.NARRATIVE.label,
-          authorityRank: 3,
+          authorityRank: KNOWLEDGE_LAYER_AUTHORITY_V0.NARRATIVE.rank,
           entityCount: narrative.entityCount,
           influencesSelection: narrative.temporalSediment?.influencesSelection === true,
           interpretationOnly: true,
@@ -241,12 +260,15 @@ export function askRhizohKnowledgeGatewayV0(opts = {}) {
       coupling: Object.freeze({
         meaningStability: coupled.meaningStability ?? 0,
         couplingStrength: coupled.couplingStrength ?? 0,
-        biasNotLearning: coupled.biasNotLearning === true
+        biasNotLearning: coupled.biasNotLearning === true,
+        behaviorBias: coupled.behaviorBias === true,
+        truthBias: coupled.truthBias === false
       }),
       separationHolds: separation.separationHolds === true,
       queriableByExternalLlm: true,
       provenance: Object.freeze([
         "authority_ledger_read_only",
+        "behavior_sediment_plane_e",
         "meaning_resonance_significance",
         "meaning_ledger_interpretation",
         "narrative_renderer",

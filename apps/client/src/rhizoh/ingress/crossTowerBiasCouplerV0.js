@@ -103,6 +103,8 @@ export function coupleCrossTowerBiasV0(opts = {}) {
       influencesChessEngine: false,
       softInfluenceOnly: true,
       biasNotLearning: true,
+      behaviorBias: true,
+      truthBias: false,
       excludedFrom: OBSERVER_TRACE_EXCLUDED_SINKS_V0,
       interpretationOnly: true
     });

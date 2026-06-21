@@ -5,6 +5,11 @@
  */
 
 import { getAttentionSedimentSnapshotV0 } from "./attentionSedimentationBufferV0.js";
+import {
+  computeBehaviorEvidenceStrengthV0,
+  getBehaviorSedimentSnapshotV0,
+  lookupBehaviorRecordV0
+} from "./behaviorSedimentBufferV0.js";
 import { getMeaningResonanceLedgerSnapshotV0 } from "./meaningResonanceLedgerV0.js";
 import { lookupPinSemanticV0 } from "./epistemicPinSemanticRegistryV0.js";
 import { coupleCrossTowerBiasV0 } from "./crossTowerBiasCouplerV0.js";
@@ -18,7 +23,8 @@ export const FOUR_TOWER_STATUS_V0 = Object.freeze({
   CHESS: Object.freeze({ id: "chess", strength: "very_strong", role: "truth_anchor" }),
   MAP: Object.freeze({ id: "map", strength: "strong", role: "attention_field" }),
   NARRATIVE: Object.freeze({ id: "narrative", strength: "working", role: "meaning_renderer" }),
-  MEANING_RESONANCE: Object.freeze({ id: "meaning_resonance", strength: "emerging", role: "significance_explainer" })
+  MEANING_RESONANCE: Object.freeze({ id: "meaning_resonance", strength: "emerging", role: "significance_explainer" }),
+  BEHAVIOR: Object.freeze({ id: "behavior", strength: "emerging", role: "behavior_sediment" })
 });
 
 /**
@@ -50,17 +56,20 @@ function countMeaningHitsV0(entityId, meaningLedger) {
 }
 
 /**
- * @param {{ entityId: string, locale?: string, sediment?: object, meaningLedger?: object }} [opts]
+ * @param {{ entityId: string, locale?: string, sediment?: object, behaviorSediment?: object, meaningLedger?: object }} [opts]
  */
 export function resolveMeaningResonanceSignificanceV0(opts = {}) {
   const locale = opts.locale ?? "en";
   const tr = locale === "tr";
   const entityId = String(opts.entityId || "");
   const sediment = opts.sediment ?? getAttentionSedimentSnapshotV0();
+  const behaviorSediment = opts.behaviorSediment ?? getBehaviorSedimentSnapshotV0();
   const meaningLedger = opts.meaningLedger ?? getMeaningResonanceLedgerSnapshotV0();
   const semantic = entityId ? lookupPinSemanticV0(entityId, { locale }) : null;
   const strata = sediment?.strata || [];
   const stratum = findEntityStratumV0(entityId, strata);
+  const behavior = computeBehaviorEvidenceStrengthV0(entityId, behaviorSediment);
+  const behaviorRecord = lookupBehaviorRecordV0(entityId, behaviorSediment);
   const coupled = coupleCrossTowerBiasV0({ locale, sediment });
   const mapWeights = buildMapAttentionWeightsV0({ sediment });
   const mapPin = mapWeights.pins?.find((p) => entityId.includes(p.target) || p.target.includes(entityId));
@@ -68,14 +77,20 @@ export function resolveMeaningResonanceSignificanceV0(opts = {}) {
   const repeatReturn = (stratum?.frequency ?? 0) >= 2;
   const temporalSpan = (stratum?.temporalSpanMs ?? 0) > 0;
   const meaningHits = countMeaningHitsV0(entityId, meaningLedger);
+  const behaviorReturn = (behavior.returnRate ?? 0) >= 0.25;
+  const behaviorDwell = (behavior.avgDwellTime ?? 0) > 0;
+  const behaviorVisits = (behavior.visits ?? 0) >= 2;
+
   const significanceScore = Math.round(
     Math.min(
       1,
-      (repeatReturn ? 0.35 : 0) +
-        (temporalSpan ? 0.2 : 0) +
-        Math.min(0.25, (stratum?.frequency ?? 0) / 8) +
-        Math.min(0.15, meaningHits / 5) +
-        (coupled.couplingStrength ?? 0) * 0.15
+      (behaviorVisits ? 0.3 : 0) +
+        (behaviorReturn ? 0.25 : 0) +
+        (behaviorDwell ? Math.min(0.2, (behavior.dwellRatio ?? 0) / 10) : 0) +
+        (repeatReturn ? 0.1 : 0) +
+        (temporalSpan ? 0.05 : 0) +
+        Math.min(0.1, meaningHits / 5) +
+        (coupled.couplingStrength ?? 0) * 0.1
     ) * 1000
   ) / 1000;
 
@@ -86,7 +101,18 @@ export function resolveMeaningResonanceSignificanceV0(opts = {}) {
     : `${title} exists as a verified node in habitat records.`;
 
   let meaningLine;
-  if (repeatReturn && temporalSpan) {
+  if (behavior.available && behavior.sufficientForSignificance) {
+    const returnPct = Math.round((behavior.returnRate ?? 0) * 100);
+    const dwellMin = Math.round((behavior.avgDwellTime ?? 0) / 60000);
+    const dwellMult = Math.round((behavior.dwellRatio ?? 1) * 10) / 10;
+    meaningLine = tr
+      ? `Son dönemde ziyaretçilerin %${returnPct}'i tekrar dönmüş; ortalama kalış süresi diğer düğümlerin ${dwellMult} katına ulaşmıştır (${behavior.visits} ziyaret, ~${dwellMin} dk).`
+      : `Over the recent period, ${returnPct}% of visitors returned; average dwell reached ${dwellMult}× other nodes (${behavior.visits} visits, ~${dwellMin} min).`;
+  } else if (behavior.available && behavior.visits >= 1) {
+    meaningLine = tr
+      ? `Erken davranışsal izler var (${behavior.visits} ziyaret) — henüz güçlü önem kanıtı birikmedi.`
+      : `Early behavioral traces present (${behavior.visits} visit(s)) — insufficient evidence for a strong importance claim.`;
+  } else if (repeatReturn && temporalSpan) {
     meaningLine = tr
       ? `Gözlemciler bu arenaya zaman içinde tekrar tekrar dönmüştür (${stratum.frequency}×, ${Math.round((stratum.temporalSpanMs || 0) / 60000)} dk aralık).`
       : `Observers repeatedly return to this arena over time (${stratum.frequency}×, ~${Math.round((stratum.temporalSpanMs || 0) / 60000)} min span).`;
@@ -100,23 +126,23 @@ export function resolveMeaningResonanceSignificanceV0(opts = {}) {
       : `Weak co-occurrence traces recorded in the meaning ledger (${meaningHits} records).`;
   } else {
     meaningLine = tr
-      ? "Henüz tekrar eden dönüş paterni gözlenmedi — önem iddiası üretilmez."
-      : "No repeating return pattern observed yet — no importance claim is produced.";
+      ? "Henüz yeterli davranışsal sediment birikmedi — önem iddiası üretilmez."
+      : "Insufficient behavioral sediment accumulated — no importance claim is produced.";
   }
 
   let narrativeLine;
   if (significanceScore >= 0.35) {
     narrativeLine = tr
-      ? "Bu arena, tekrar eden bir dikkat çıpası olarak işlev görüyor gibi görünür (yorum — hakikat iddiası değil)."
-      : "This arena appears to function as a recurring attention anchor (interpretation — not a truth claim).";
+      ? "Bu düğüm, tekrar eden davranışsal izler nedeniyle daha görünür hale geliyor (yorum — hakikat iddiası değil)."
+      : "This node becomes more visible because visitors keep returning (interpretation — not a truth claim).";
   } else if (significanceScore > 0) {
     narrativeLine = tr
-      ? "Erken dikkat sinyalleri var; henüz güçlü bir önem paterni oluşmadı."
-      : "Early attention signals present; no strong importance pattern yet.";
+      ? "Erken davranış veya dikkat sinyalleri var; henüz güçlü bir önem paterni oluşmadı."
+      : "Early behavior or attention signals present; no strong importance pattern yet.";
   } else {
     narrativeLine = tr
-      ? "Önem açıklaması için yeterli sediment birikmedi."
-      : "Insufficient sediment accumulated for an importance explanation.";
+      ? "Önem açıklaması için yeterli davranışsal sediment birikmedi."
+      : "Insufficient behavioral sediment accumulated for an importance explanation.";
   }
 
   return Object.freeze({
@@ -132,13 +158,30 @@ export function resolveMeaningResonanceSignificanceV0(opts = {}) {
       narrative: narrativeLine
     }),
     evidence: Object.freeze({
+      behaviorVisits: behavior.visits ?? 0,
+      behaviorAvgDwellMs: behavior.avgDwellTime ?? 0,
+      behaviorReturnRate: behavior.returnRate ?? 0,
+      behaviorSessionDepth: behavior.sessionDepth ?? 0,
+      behaviorDwellRatio: behavior.dwellRatio ?? 0,
+      behaviorSufficient: behavior.sufficientForSignificance === true,
       sedimentFrequency: stratum?.frequency ?? 0,
       temporalSpanMs: stratum?.temporalSpanMs ?? 0,
       meaningLedgerHits: meaningHits,
       mapVisibilityWeight: mapPin?.visibilityWeight ?? 1,
       couplingStrength: coupled.couplingStrength ?? 0,
-      meaningStability: coupled.meaningStability ?? 0
+      meaningStability: coupled.meaningStability ?? 0,
+      behaviorRecord: behaviorRecord
+        ? Object.freeze({
+            entity: behaviorRecord.entity,
+            visits: behaviorRecord.visits,
+            avgDwellTime: behaviorRecord.avgDwellTime,
+            returnRate: behaviorRecord.returnRate,
+            sessionDepth: behaviorRecord.sessionDepth
+          })
+        : null
     }),
+    behaviorBias: true,
+    truthBias: false,
     isLearning: false,
     explainsObservedBehavior: true,
     influencesCausalGraph: false,

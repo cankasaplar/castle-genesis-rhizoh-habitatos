@@ -9,7 +9,8 @@
 Answer **"Why is it important?"** from habitat records — not founder opinion.
 
 Combines:
-- `attentionSediment` — repeat return patterns
+- `behaviorSediment` — visits · dwell · return rate (primary significance evidence)
+- `attentionSediment` — repeat attention patterns
 - `behavioralBiasLayer` — visibility weight
 - `meaningLedger` — co-occurrence traces
 - `crossTowerBiasCoupler` — Map↔Narrative stability
@@ -19,6 +20,7 @@ Combines:
 ## API
 
 ```javascript
+window.__rhizoh.behaviorSediment.refresh();
 window.__rhizoh.attentionSediment.refresh();
 
 window.__rhizoh.knowledgeGateway.askWhy({
@@ -38,6 +40,8 @@ window.__rhizoh.meaningResonanceSignificance.resolve({
 ## Locked constraints
 
 - `isLearning: false`
+- `behaviorBias: true`
+- `truthBias: false`
 - `explainsObservedBehavior: true`
 - `influencesCausalGraph: false`
 - `habitatBiasOnly: true`
@@ -46,4 +50,5 @@ window.__rhizoh.meaningResonanceSignificance.resolve({
 
 ## Related
 
+- [`RHIZOH_BEHAVIOR_SEDIMENT_V0.md`](RHIZOH_BEHAVIOR_SEDIMENT_V0.md)
 - [`RHIZOH_FOUR_TOWER_MODEL_V0.md`](RHIZOH_FOUR_TOWER_MODEL_V0.md)

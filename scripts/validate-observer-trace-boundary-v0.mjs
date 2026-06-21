@@ -28,6 +28,7 @@ const HOOK_FILES = [
   "narrativeBridgeV0.js",
   "epistemicInvocationGuardV0.js",
   "attentionSedimentationBufferV0.js",
+  "behaviorSedimentBufferV0.js",
   "behavioralInfluenceLayerV0.js",
   "crossTowerBiasCouplerV0.js",
   "rhizohKnowledgeGatewayV0.js",
@@ -112,6 +113,16 @@ if (!sedimentText.includes("influencesNarrativeSelection: false") || !sedimentTe
   failed = true;
 }
 
+const behaviorSedimentText = readFileSync(join(HOOK_DIR, "behaviorSedimentBufferV0.js"), "utf8");
+if (!behaviorSedimentText.includes("behaviorBias: true") || !behaviorSedimentText.includes("truthBias: false")) {
+  console.error("observer-trace-boundary: behavior sediment must declare behaviorBias and truthBias");
+  failed = true;
+}
+if (!behaviorSedimentText.includes("learns: false") || !behaviorSedimentText.includes("influencesAuthority: false")) {
+  console.error("observer-trace-boundary: behavior sediment must not learn or influence authority");
+  failed = true;
+}
+
 const influenceText = readFileSync(join(HOOK_DIR, "behavioralInfluenceLayerV0.js"), "utf8");
 if (!influenceText.includes("influencesCausalGraph: false") || !influenceText.includes("softInfluenceOnly: true")) {
   console.error("observer-trace-boundary: behavioral influence must be soft-only, no causal write");
@@ -125,6 +136,10 @@ if (!influenceText.includes("influencesChessEngine: false") || influenceText.inc
 const couplerText = readFileSync(join(HOOK_DIR, "crossTowerBiasCouplerV0.js"), "utf8");
 if (!couplerText.includes("biasNotLearning: true") || !couplerText.includes("isLearning: false")) {
   console.error("observer-trace-boundary: cross-tower coupler must declare bias-not-learning");
+  failed = true;
+}
+if (!couplerText.includes("behaviorBias: true") || !couplerText.includes("truthBias: false")) {
+  console.error("observer-trace-boundary: cross-tower coupler must declare behaviorBias/truthBias");
   failed = true;
 }
 
