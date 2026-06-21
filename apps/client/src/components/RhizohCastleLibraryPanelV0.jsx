@@ -151,7 +151,7 @@ export const RhizohCastleLibraryPanelV0 = memo(function RhizohCastleLibraryPanel
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[330] flex items-center justify-center bg-black/80 p-3 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[450] flex items-center justify-center bg-black/80 p-3 backdrop-blur-sm">
       <div className="flex h-[min(92vh,720px)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-amber-400/35 bg-[#0a0a0f] shadow-2xl">
         <header className="flex items-start justify-between gap-3 border-b border-white/10 px-4 py-3">
           <div>

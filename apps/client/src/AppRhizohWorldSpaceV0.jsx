@@ -474,6 +474,7 @@ export default function AppRhizohWorldSpaceV0() {
     const onWorkspace = (ev) => {
       const detail = ev?.detail;
       if (!detail?.node) return;
+      clearMapTransitionBusyV0("workspace_open");
       const nodeType = String(detail.node.type || "");
       if (nodeType === "tower") {
         setV11Workspace(detail);
@@ -504,6 +505,7 @@ export default function AppRhizohWorldSpaceV0() {
     const onLibrary = (ev) => {
       const detail = ev?.detail;
       if (!detail?.node) return;
+      clearMapTransitionBusyV0("library_open");
       setV11Library(detail);
       setV11ChessArena(null);
       setV11Workspace(null);
@@ -526,6 +528,7 @@ export default function AppRhizohWorldSpaceV0() {
     const onTowerPortal = (ev) => {
       const detail = ev?.detail;
       if (!detail?.node) return;
+      clearMapTransitionBusyV0("tower_portal_open");
       setV11TowerPortal(detail);
       setV11Library(null);
       setV11Workspace(null);
@@ -558,6 +561,7 @@ export default function AppRhizohWorldSpaceV0() {
     const onMediaTube = (ev) => {
       const detail = ev?.detail;
       if (!detail) return;
+      clearMapTransitionBusyV0("media_tube_open");
       setV11MediaTube(detail);
       setV11Workspace(null);
       setV11NodePanel(null);
@@ -1161,7 +1165,10 @@ export default function AppRhizohWorldSpaceV0() {
       {v11Workspace && !v11MediaTube && !v11Library && !v11ChessArena ? (
         <RhizohV11TowerWorkspaceHostV0
           workspaceDetail={v11Workspace}
-          onClose={() => setV11Workspace(null)}
+          onClose={() => {
+            clearMapTransitionBusyV0("workspace_close");
+            setV11Workspace(null);
+          }}
           uiLocale={uiLocale}
         />
       ) : null}
@@ -1170,7 +1177,10 @@ export default function AppRhizohWorldSpaceV0() {
         <RhizohCastleLibraryPanelV0
           open
           node={v11Library.node}
-          onClose={() => setV11Library(null)}
+          onClose={() => {
+            clearMapTransitionBusyV0("library_close");
+            setV11Library(null);
+          }}
           onOpenLivingMemory={() => setV11LivingMemory(true)}
           uiLocale={uiLocale}
         />
@@ -1204,7 +1214,10 @@ export default function AppRhizohWorldSpaceV0() {
           open
           node={v11TowerPortal.node}
           userId={castleAuth?.user?.uid || ""}
-          onClose={() => setV11TowerPortal(null)}
+          onClose={() => {
+            clearMapTransitionBusyV0("tower_portal_close");
+            setV11TowerPortal(null);
+          }}
           uiLocale={uiLocale}
         />
       ) : null}

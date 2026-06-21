@@ -234,11 +234,6 @@ export function emitV11MapIntentV0(node, interaction, map = null) {
           detail
         })
       );
-      document.dispatchEvent(
-        new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, {
-          detail
-        })
-      );
     } catch {
       /* noop */
     }

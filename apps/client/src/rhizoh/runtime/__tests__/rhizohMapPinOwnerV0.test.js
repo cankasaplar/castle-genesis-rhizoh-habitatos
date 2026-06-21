@@ -132,6 +132,14 @@ describe("rhizohMapPinOwnerV0", () => {
     expect(rows.some((r) => r.id === ORIGIN_HOME_SERENCEBEY_PIN_ID_V0)).toBe(true);
   });
 
+  it("readWorldSpaceSessionMapPinRowsV0 satellite returns spiral pins only", () => {
+    const rows = readWorldSpaceSessionMapPinRowsV0({ activeMapTool: "satellite" });
+    expect(rows.length).toBeGreaterThanOrEqual(8);
+    expect(rows.every((r) => r.type === "spiralmmo")).toBe(true);
+    expect(rows.some((r) => r.id === "spiralmmo_bootstrap")).toBe(true);
+    expect(rows.some((r) => r.id === "my_castle")).toBe(false);
+  });
+
   it("isExplorerOnlyAlwaysVisiblePinV0 covers castle, sovereign mesh, and live match", () => {
     expect(isExplorerOnlyAlwaysVisiblePinV0({ id: "my_castle" })).toBe(true);
     expect(

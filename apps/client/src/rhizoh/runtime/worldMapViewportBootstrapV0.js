@@ -3,6 +3,7 @@
  */
 
 import { SOVEREIGN_MAP_DEFAULT_HOME_V0 } from "./sovereignWorldMapNodesV0.js";
+import { listSpiralMMOContinentMapPinsV0 } from "./spiralMMOContinentPinsV0.js";
 import {
   resolveUserCastleGeoForMapViewV0,
   resolveWorldMapBootstrapGeoV0
@@ -15,6 +16,16 @@ export const RHIZOH_WORLD_SPACE_NEUTRAL_VIEW_V0 = Object.freeze({
   lon: 0,
   zoom: 3
 });
+
+/**
+ * World-wide fit for uydu — all SpiralMMO continent anchors.
+ * @param {readonly object[]} nodes
+ */
+export function resolveSatelliteSpiralViewportFitNodesV0(nodes = []) {
+  const spirals = nodes.filter((n) => String(n?.type || "") === "spiralmmo");
+  if (spirals.length >= 2) return Object.freeze(spirals);
+  return listSpiralMMOContinentMapPinsV0();
+}
 
 const VIEWPORT_LAT_RADIUS_V0 = 6;
 const VIEWPORT_LON_RADIUS_V0 = 10;

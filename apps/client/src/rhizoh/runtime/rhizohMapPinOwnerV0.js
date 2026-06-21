@@ -27,7 +27,11 @@ import {
   readCastleMemoryMapPinRowsV0
 } from "./worldMapCastleIdentityV0.js";
 import { publishSpiralMapRealityDevtoolsV0 } from "./spiralMapRealityModeV0.js";
-import { filterPinsForWorldMapToolV0 } from "./worldMapToolPinFilterV0.js";
+import {
+  filterPinsForWorldMapToolV0,
+  isSatelliteWorldMapToolV0,
+  listSatelliteSpiralMapPinsV0
+} from "./worldMapToolPinFilterV0.js";
 
 /**
  * Pins that stay visible in explorer-only SpiralMMO filter (spec + product).
@@ -255,6 +259,9 @@ export function resolveRhizohMapPinSubstrateV0(ctx = {}) {
  * }} [opts]
  */
 export function readWorldSpaceSessionMapPinRowsV0(opts = {}) {
+  if (isSatelliteWorldMapToolV0(opts.activeMapTool)) {
+    return listSatelliteSpiralMapPinsV0();
+  }
   const userCastle = opts.userCastle ?? resolveUserCastleGeoForMapViewV0();
   const filterState = opts.spiralLayerFilter ?? readSpiralMapLayerFilterStateV0();
   const originHome = buildOriginHomeSerencebeyPinV0();

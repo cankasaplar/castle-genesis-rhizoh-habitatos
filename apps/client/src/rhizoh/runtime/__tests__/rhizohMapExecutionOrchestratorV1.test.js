@@ -47,4 +47,25 @@ describe("rhizohMapExecutionOrchestratorV1", () => {
     expect(opened[0].initialChannelId).toBe("nasa");
     expect(opened[0].source).toBe("map:node:event");
   });
+
+  it("dedupes duplicate map intent within 100ms", () => {
+    const opened = [];
+    window.addEventListener(RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1, () => {
+      opened.push(1);
+    });
+    attachRhizohMapExecutionOrchestratorV1();
+
+    const routed = routeSymbyoMapInteractionToOrchestratorV0({
+      interaction: SYMBYO_MAP_INTERACTION_V0.CLICK,
+      node: { id: "event", label: "EVENT", type: "zone", color: "#fff" }
+    });
+    const detail = {
+      ...routed,
+      nodeView: { id: "event", label: "EVENT", type: "zone", color: "#fff" }
+    };
+    window.dispatchEvent(new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, { detail }));
+    window.dispatchEvent(new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, { detail }));
+
+    expect(opened.length).toBe(1);
+  });
 });

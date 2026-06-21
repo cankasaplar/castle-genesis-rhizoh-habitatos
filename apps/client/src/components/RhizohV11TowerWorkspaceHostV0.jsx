@@ -53,7 +53,7 @@ export const RhizohV11TowerWorkspaceHostV0 = memo(function RhizohV11TowerWorkspa
 
   return (
     <div
-      className="fixed inset-0 z-[320] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[450] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
       data-rhizoh-v11-generic-workspace="1"
     >
       <div

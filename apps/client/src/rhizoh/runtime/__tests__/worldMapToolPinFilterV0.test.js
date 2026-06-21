@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   filterPinsForWorldMapToolV0,
-  isSpiralMMOMapPinV0
+  isSatelliteWorldMapToolV0,
+  isSpiralMMOMapPinV0,
+  listSatelliteSpiralMapPinsV0
 } from "../worldMapToolPinFilterV0.js";
 
 describe("worldMapToolPinFilterV0", () => {
@@ -17,15 +19,21 @@ describe("worldMapToolPinFilterV0", () => {
     expect(isSpiralMMOMapPinV0({ type: "ghost" })).toBe(false);
   });
 
+  it("listSatelliteSpiralMapPinsV0 returns bootstrap + continents", () => {
+    const spirals = listSatelliteSpiralMapPinsV0();
+    expect(spirals.length).toBeGreaterThanOrEqual(8);
+    expect(spirals.every((p) => p.type === "spiralmmo")).toBe(true);
+  });
+
   it("filterPinsForWorldMapToolV0 hides spiral pins on V11 city map", () => {
     const filtered = filterPinsForWorldMapToolV0(pins, "city_map");
     expect(filtered.some((p) => p.type === "spiralmmo")).toBe(false);
     expect(filtered.some((p) => p.id === "ghost")).toBe(true);
   });
 
-  it("filterPinsForWorldMapToolV0 keeps only spiral pins on satellite", () => {
+  it("filterPinsForWorldMapToolV0 returns authoritative spiral set on satellite", () => {
     const filtered = filterPinsForWorldMapToolV0(pins, "satellite");
-    expect(filtered).toHaveLength(2);
-    expect(filtered.every((p) => p.type === "spiralmmo")).toBe(true);
+    expect(filtered).toEqual(listSatelliteSpiralMapPinsV0());
+    expect(isSatelliteWorldMapToolV0("satellite")).toBe(true);
   });
 });

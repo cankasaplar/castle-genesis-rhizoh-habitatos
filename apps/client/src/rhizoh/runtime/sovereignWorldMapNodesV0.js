@@ -725,7 +725,6 @@ export function dispatchSovereignMapNodeEnterV0(node, source = "voice_nav") {
     })
   });
   window.dispatchEvent(new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, { detail }));
-  document.dispatchEvent(new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, { detail }));
   return true;
 }
 
