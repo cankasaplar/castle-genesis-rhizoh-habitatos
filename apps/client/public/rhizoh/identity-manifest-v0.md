@@ -50,8 +50,6 @@ Boot mount: `mountIdentityManifestConsoleV0()` in domain nervous system.
 
 ## Public surface (LLM + external readers)
 
-Static bootstrap declaration (not live runtime):
-
 | Artifact | URL |
 |----------|-----|
 | Public identity JSON | https://rhizoh.com/.well-known/rhizoh-identity.json |
@@ -59,9 +57,7 @@ Static bootstrap declaration (not live runtime):
 | System overview | https://rhizoh.com/rhizoh/system-overview.md |
 | Protocol v0 | https://rhizoh.com/rhizoh/protocol-v0.md |
 
-Live `epi_id_*` may differ per audit run; public JSON carries **bootstrap reference** only. Runtime truth: `identityManifest.project()`.
-
-Validate after edit: `npm run ops:validate-public-identity-v0`
+Live `epi_id_*` may differ per audit run; public JSON carries **bootstrap reference** only.
 
 ## Related
 

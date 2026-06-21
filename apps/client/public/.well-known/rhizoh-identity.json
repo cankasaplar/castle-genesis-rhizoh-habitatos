@@ -1,0 +1,54 @@
+{
+  "schema": "castle.rhizoh.public_identity_manifest.v0",
+  "publishedAt": "2026-06-19",
+  "canonicalUrl": "https://rhizoh.com/.well-known/rhizoh-identity.json",
+  "name": "Rhizoh",
+  "version": "0.1",
+  "type": "Persistent AI World",
+  "tagline": "Continuity protocol — observation without execution authority",
+  "constitutional_anchor": "Observation ≠ Execution",
+  "identity": {
+    "handleFormat": "epi_id_<12hex>",
+    "bootstrapReference": {
+      "epistemicIdentityId": "epi_id_b1db96a3",
+      "rootDigest": "hb1db96a3",
+      "ledgerIdentityHash": "h135247c0",
+      "tickGraphDigest": "h3ea3ee83",
+      "fingerprintChainLength": 1,
+      "reproConsistent": true,
+      "captureNote": "First documented audit-bundle capture; observability handle only — not ontological SSOT."
+    },
+    "continuityVerdict": "read_only_projection",
+    "epistemicVerdict": "same_subject",
+    "interpretationOnly": true,
+    "runtimeProjection": "window.__rhizoh.identityManifest.project()"
+  },
+  "capabilities": [
+    "causal_graph",
+    "world_topology",
+    "observer_layer",
+    "epistemic_identity",
+    "event_sourced_persistence",
+    "authority_ledger",
+    "controlled_observer_invites"
+  ],
+  "status": {
+    "phase": "legal_hold",
+    "activation": "readiness_checklist",
+    "data_plane": "off",
+    "mutation_access": false,
+    "public_launch": false,
+    "observer_access": "invite_only"
+  },
+  "documentation": {
+    "systemOverview": "https://rhizoh.com/rhizoh/system-overview.md",
+    "protocol": "https://rhizoh.com/rhizoh/protocol-v0.md",
+    "identityManifestSpec": "https://rhizoh.com/rhizoh/identity-manifest-v0.md"
+  },
+  "relatedArtifacts": {
+    "causalSnapshot": "https://rhizoh.com/.well-known/rhizoh-causal-snapshot.json"
+  },
+  "interpretationOnly": true,
+  "nonExecutive": true,
+  "influencesExecution": false
+}

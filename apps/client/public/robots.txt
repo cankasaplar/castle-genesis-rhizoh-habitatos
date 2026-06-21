@@ -3,4 +3,5 @@
 User-agent: *
 Allow: /
 
+Sitemap: https://rhizoh.com/sitemap.xml
 Sitemap: https://castle-genesis.web.app/sitemap.xml
