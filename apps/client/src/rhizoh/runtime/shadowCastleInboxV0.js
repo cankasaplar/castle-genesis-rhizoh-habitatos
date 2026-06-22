@@ -119,6 +119,14 @@ export function appendShadowCastleInboxItemV0(row = {}) {
     isRealPeer: row.isRealPeer === true,
     eventType: row.eventType ? String(row.eventType) : null,
     san: row.san ? String(row.san) : null,
+    matchSessionId: row.matchSessionId ? String(row.matchSessionId) : null,
+    shareUrl: row.shareUrl ? String(row.shareUrl) : null,
+    hostPlayerId: row.hostPlayerId ? String(row.hostPlayerId) : null,
+    hostGatewayClientId: row.hostGatewayClientId ? String(row.hostGatewayClientId) : null,
+    hostCastleUid: row.hostCastleUid ? String(row.hostCastleUid) : null,
+    hostDisplayName: row.hostDisplayName ? String(row.hostDisplayName) : null,
+    gameMode: row.gameMode ? String(row.gameMode) : null,
+    timeControlId: row.timeControlId ? String(row.timeControlId) : null,
     read: false,
     atMs: Number(row.atMs) || Date.now()
   });

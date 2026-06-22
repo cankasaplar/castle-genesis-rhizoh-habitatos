@@ -389,11 +389,22 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   }, [open]);
 
   useEffect(() => {
+    if (!open || !isChessRealitySyncActiveV0()) return;
+    if (mode === CHESS_GAME_MODE_V0.HUMAN_HUMAN) return;
+    setMode(CHESS_GAME_MODE_V0.HUMAN_HUMAN);
+    setGame(createChessGameFromTruthProjectionV0({ mode: CHESS_GAME_MODE_V0.HUMAN_HUMAN }));
+    setArenaPhase("playing");
+  }, [open, mode]);
+
+  useEffect(() => {
     if (!open) return;
     return subscribeChessRealitySyncV0((detail) => {
       const fen = detail?.projection?.fen;
       if (!fen) return;
-      setGame(createChessGameFromTruthProjectionV0({ mode: resolvedInitialMode || mode }));
+      const renderMode = isChessRealitySyncActiveV0()
+        ? CHESS_GAME_MODE_V0.HUMAN_HUMAN
+        : resolvedInitialMode || mode;
+      setGame(createChessGameFromTruthProjectionV0({ mode: renderMode }));
       setTick((n) => n + 1);
       setStatus(
         detail?.source === "match_state"

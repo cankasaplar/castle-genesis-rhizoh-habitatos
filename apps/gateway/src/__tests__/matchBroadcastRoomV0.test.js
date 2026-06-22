@@ -5,6 +5,7 @@ import {
   clearMatchBroadcastRoomsForTestV0,
   fanOutMatchSessionV0,
   getMatchSessionPresenceV0,
+  handleMatchCastleInviteV0,
   handleMatchSessionJoinV0,
   joinMatchBroadcastRoomV0
 } from "../rhizoh/matchBroadcastRoomV0.js";
@@ -88,4 +89,31 @@ test("commit broadcasts ack and state to session room", () => {
   assert.ok(sentB.some((m) => m.type === WS_MESSAGE.MATCH_STATE));
   assert.equal(out.broadcast?.ack?.delivered, 1);
   assert.equal(out.broadcast?.state?.delivered, 1);
+});
+
+test("castle invite fan-out skips sender and honors target client", () => {
+  const sent = [];
+  const host = { clientId: "host", readyState: 1, send: () => {} };
+  const peer = { clientId: "peer", readyState: 1, send: (r) => sent.push(JSON.parse(r)) };
+  const other = { clientId: "other", readyState: 1, send: () => {} };
+  const wss = { clients: new Set([host, peer, other]) };
+
+  const out = handleMatchCastleInviteV0(
+    host,
+    {
+      type: WS_MESSAGE.MATCH_CASTLE_INVITE,
+      sessionId: "m_invite_1",
+      payload: {
+        sessionId: "m_invite_1",
+        hostPlayerId: "host_user",
+        targetGatewayClientId: "peer"
+      }
+    },
+    wss
+  );
+
+  assert.equal(out.ok, true);
+  assert.equal(out.delivered, 1);
+  assert.equal(sent[0]?.type, WS_MESSAGE.MATCH_CASTLE_INVITE);
+  assert.equal(sent[0]?.payload?.fromGatewayClientId, "host");
 });

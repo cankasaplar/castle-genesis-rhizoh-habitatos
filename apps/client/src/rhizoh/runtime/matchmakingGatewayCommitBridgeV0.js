@@ -5,6 +5,7 @@
  */
 
 import { WS_MESSAGE } from "@castle/protocol";
+import { ingestMatchCastleInviteFromGatewayV0 } from "./matchCastleInboxBridgeV0.js";
 import {
   dispatchMatchmakingTruthEventV0,
   MATCH_TRUTH_EVENT_V0
@@ -70,6 +71,12 @@ export function bindMatchGatewayCommitListenerV0(ws) {
       const msg = JSON.parse(String(evt.data || ""));
       if (msg?.type === WS_MESSAGE.MATCH_MOVE_ACK) {
         applyGatewayMatchMoveAckV0({ sessionId: msg.sessionId, ...(msg.payload || {}) });
+      }
+      if (msg?.type === WS_MESSAGE.MATCH_CASTLE_INVITE) {
+        ingestMatchCastleInviteFromGatewayV0({
+          ...(msg.payload || {}),
+          fromGatewayClientId: msg.payload?.fromGatewayClientId || null
+        });
       }
     } catch {
       /* noop */
