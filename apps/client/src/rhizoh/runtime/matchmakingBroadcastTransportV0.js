@@ -8,7 +8,17 @@
 import { WS_MESSAGE, createEnvelope } from "@castle/protocol";
 import { applyGatewayMatchMoveAckV0 } from "./matchmakingGatewayCommitBridgeV0.js";
 import { applyRemoteMatchWorldStateV0 } from "./matchmakingWorldProjectionV0.js";
-import { dispatchMatchmakingTruthEventV0, MATCH_TRUTH_EVENT_V0 } from "./matchmakingTruthKernelV0.js";
+import {
+  dispatchMatchmakingTruthEventV0,
+  getMatchmakingTruthSnapshotV0,
+  MATCH_TRUTH_EVENT_V0
+} from "./matchmakingTruthKernelV0.js";
+import { MATCH_SESSION_STATE_V0 } from "./matchSessionLifecycleV0.js";
+import {
+  ensureMatchGatewayWsV0,
+  getMatchGatewayWsStatusV0,
+  getMatchGatewayWsV0
+} from "./matchmakingGatewayWsV0.js";
 
 export const MATCH_BROADCAST_TRANSPORT_SCHEMA_V0 =
   "castle.rhizoh.match_broadcast_transport.v0";
@@ -121,6 +131,162 @@ export function sendMatchMoveProposalV0(ws, input = {}) {
   return Object.freeze({ ok: true, sent: true, preview: true });
 }
 
+function resolveBroadcastSessionIdV0(input = {}) {
+  const explicit = String(input.sessionId || "").trim();
+  if (explicit) return explicit;
+  const snap = getMatchmakingTruthSnapshotV0();
+  return String(snap.activeSession?.sessionId || "").trim();
+}
+
+function ensureBroadcastSessionV0(input = {}) {
+  let sessionId = resolveBroadcastSessionIdV0(input);
+  if (sessionId) {
+    return Object.freeze({ ok: true, sessionId, created: false });
+  }
+  const playerId = String(input.playerId || "broadcast_console_user");
+  const created = dispatchMatchmakingTruthEventV0({
+    type: MATCH_TRUTH_EVENT_V0.SESSION_CREATE,
+    payload: {
+      initialState: MATCH_SESSION_STATE_V0.SESSION_ACTIVE,
+      players: [{ userId: playerId, color: "white" }]
+    }
+  });
+  sessionId = String(created.session?.sessionId || "").trim();
+  return Object.freeze({
+    ok: created.ok === true && Boolean(sessionId),
+    sessionId,
+    created: true,
+    sessionStep: created
+  });
+}
+
+/**
+ * Console helper — connect gateway WS if needed, join session room.
+ * @param {{ sessionId?: string, role?: string, playerId?: string, traceId?: string }} [input]
+ */
+export async function joinMatchBroadcastSessionV0(input = {}) {
+  const session = ensureBroadcastSessionV0(input);
+  if (!session.ok) {
+    return Object.freeze({ ok: false, reason: "session_unavailable", session, interpretationOnly: true });
+  }
+  const ws = await ensureMatchGatewayWsV0();
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    return Object.freeze({
+      ok: false,
+      reason: "ws_not_open",
+      wsStatus: getMatchGatewayWsStatusV0(),
+      sessionId: session.sessionId,
+      interpretationOnly: true
+    });
+  }
+  const join = sendMatchSessionJoinV0(ws, {
+    sessionId: session.sessionId,
+    role: input.role,
+    playerId: input.playerId,
+    traceId: input.traceId
+  });
+  return Object.freeze({
+    ...join,
+    sessionId: session.sessionId,
+    ws,
+    sessionCreated: session.created === true,
+    interpretationOnly: true,
+    shadowRehearsal: true
+  });
+}
+
+/**
+ * Console helper — connect + propose move (no manual `ws` variable).
+ * @param {{ sessionId?: string, san: string, playerId?: string, traceId?: string }} input
+ */
+export async function proposeMatchBroadcastMoveV0(input = {}) {
+  const session = ensureBroadcastSessionV0(input);
+  if (!session.ok) {
+    return Object.freeze({ ok: false, reason: "session_unavailable", session, interpretationOnly: true });
+  }
+  const ws = await ensureMatchGatewayWsV0();
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    return Object.freeze({
+      ok: false,
+      reason: "ws_not_open",
+      wsStatus: getMatchGatewayWsStatusV0(),
+      sessionId: session.sessionId,
+      interpretationOnly: true
+    });
+  }
+  const playerId = String(input.playerId || "broadcast_console_user");
+  const propose = sendMatchMoveProposalV0(ws, {
+    sessionId: session.sessionId,
+    san: input.san,
+    playerId,
+    traceId: input.traceId
+  });
+  return Object.freeze({
+    ...propose,
+    sessionId: session.sessionId,
+    ws,
+    interpretationOnly: true,
+    shadowRehearsal: true
+  });
+}
+
+/**
+ * One-shot console rehearsal: connect · join · bind listeners.
+ * @param {{
+ *   sessionId?: string,
+ *   role?: string,
+ *   playerId?: string,
+ *   san?: string,
+ *   onPresence?: (p: object) => void,
+ *   onState?: (s: object) => void,
+ *   onAck?: (a: object) => void,
+ *   proposeFirstMove?: boolean
+ * }} [input]
+ */
+export async function quickStartMatchBroadcastV0(input = {}) {
+  const joined = await joinMatchBroadcastSessionV0(input);
+  if (!joined.ok) return joined;
+
+  const unbind = bindMatchBroadcastTransportV0({
+    ws: joined.ws,
+    sessionId: joined.sessionId,
+    role: input.role,
+    playerId: input.playerId,
+    onPresence: input.onPresence,
+    onState: input.onState,
+    onAck: input.onAck
+  });
+
+  let propose = null;
+  if (input.proposeFirstMove === true || input.san) {
+    propose = await proposeMatchBroadcastMoveV0({
+      sessionId: joined.sessionId,
+      san: input.san || "e4",
+      playerId: input.playerId
+    });
+  }
+
+  if (typeof console !== "undefined" && console.info) {
+    console.info("[MATCH_BROADCAST_QUICK_START]", {
+      sessionId: joined.sessionId,
+      wsOpen: joined.ws?.readyState === WebSocket.OPEN,
+      proposeSent: propose?.sent === true,
+      interpretationOnly: true
+    });
+  }
+
+  return Object.freeze({
+    ok: true,
+    sessionId: joined.sessionId,
+    ws: joined.ws,
+    unbind,
+    joined,
+    propose,
+    interpretationOnly: true,
+    shadowRehearsal: true
+  });
+}
+
 export function mountMatchBroadcastTransportConsoleV0() {
   if (typeof window === "undefined") return;
   window.__rhizoh = window.__rhizoh || {};
@@ -130,6 +296,14 @@ export function mountMatchBroadcastTransportConsoleV0() {
     join: sendMatchSessionJoinV0,
     propose: sendMatchMoveProposalV0,
     bind: bindMatchBroadcastTransportV0,
+    getWs: getMatchGatewayWsV0,
+    wsStatus: getMatchGatewayWsStatusV0,
+    connect: ensureMatchGatewayWsV0,
+    joinSession: joinMatchBroadcastSessionV0,
+    proposeMove: proposeMatchBroadcastMoveV0,
+    quickStart: quickStartMatchBroadcastV0,
+    consoleHint:
+      "await window.__rhizoh.matchBroadcast.quickStart({ playerId: 'you', proposeFirstMove: true })",
     interpretationOnly: true,
     shadowRehearsal: true
   });

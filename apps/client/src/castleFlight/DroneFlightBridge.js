@@ -91,16 +91,27 @@ export class DroneFlightBridge {
         } catch {
           /* ignore */
         }
+        import("../rhizoh/runtime/matchmakingGatewayWsV0.js")
+          .then((m) => m.registerMatchGatewayWsV0(null))
+          .catch(() => {});
         this.gatewayWs = null;
       }
       const q = token ? `?token=${encodeURIComponent(token)}` : "";
       this.gatewayWs = new WebSocket(`${gatewayUrl}${q}`);
+      this.gatewayWs.addEventListener("open", () => {
+        import("../rhizoh/runtime/matchmakingGatewayWsV0.js")
+          .then((m) => m.registerMatchGatewayWsV0(this.gatewayWs, { source: "drone_bridge" }))
+          .catch(() => {});
+      });
       this.gatewayWs.onerror = () => {
         import("../rhizoh/runtime/rhizohGatewayTransportFallbackV0.js")
           .then((m) => m.noteGatewayWsUpgradeFailedV0("gateway_ws_error"))
           .catch(() => {});
       };
       this.gatewayWs.onclose = (ev) => {
+        import("../rhizoh/runtime/matchmakingGatewayWsV0.js")
+          .then((m) => m.registerMatchGatewayWsV0(null))
+          .catch(() => {});
         if (!ev.wasClean) {
           import("../rhizoh/runtime/rhizohGatewayTransportFallbackV0.js")
             .then((m) => m.noteGatewayWsUpgradeFailedV0("gateway_ws_close"))
@@ -198,6 +209,9 @@ export class DroneFlightBridge {
       } catch {
         /* ignore */
       }
+      import("../rhizoh/runtime/matchmakingGatewayWsV0.js")
+        .then((m) => m.registerMatchGatewayWsV0(null))
+        .catch(() => {});
       this.gatewayWs = null;
     }
     while (this.root.children.length) {
