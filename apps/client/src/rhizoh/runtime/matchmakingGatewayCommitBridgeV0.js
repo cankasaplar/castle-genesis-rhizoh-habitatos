@@ -15,11 +15,6 @@ import { MATCH_TRUTH_PROVENANCE_V0 } from "./matchmakingSingleWriterPolicyV0.js"
 export const MATCH_GATEWAY_COMMIT_BRIDGE_SCHEMA_V0 =
   "castle.rhizoh.match_gateway_commit_bridge.v0";
 
-function isMatchRealitySyncTransportActiveV0() {
-  if (typeof window === "undefined") return false;
-  return window.__rhizoh?.matchSessionSync?.active === true;
-}
-
 /**
  * Apply gateway MATCH_MOVE_ACK as the only authoritative commit path.
  * @param {object} ack
@@ -75,11 +70,6 @@ export function bindMatchGatewayCommitListenerV0(ws) {
   const handler = (evt) => {
     try {
       const msg = JSON.parse(String(evt.data || ""));
-      if (msg?.type === WS_MESSAGE.MATCH_MOVE_ACK) {
-        if (!isMatchRealitySyncTransportActiveV0()) {
-          applyGatewayMatchMoveAckV0({ sessionId: msg.sessionId, ...(msg.payload || {}) });
-        }
-      }
       if (msg?.type === WS_MESSAGE.MATCH_CASTLE_INVITE) {
         ingestMatchCastleInviteFromGatewayV0({
           ...(msg.payload || {}),

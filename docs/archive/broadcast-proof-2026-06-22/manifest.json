@@ -1,0 +1,38 @@
+{
+  "schema": "castle.rhizoh.broadcast_proof_archive.v1",
+  "archived_at_utc": "2026-06-22T20:12:15Z",
+  "session_id": "c2c_host_peer_mqpgxzg0",
+  "proof_mode": true,
+  "environment": {
+    "client_host": "https://rhizoh.com",
+    "gateway": "castle-genesis-rhizoh-habitatos.onrender.com",
+    "host_bundle": "index-DNdkvg1u.js",
+    "guest_bundle": "index-B6S3iZjP.js",
+    "mixed_bundle_warning": true
+  },
+  "media": {
+    "file_name": "2026-06-22 20-12-15.mp4",
+    "relative_path": "media/2026-06-22 20-12-15.mp4",
+    "source": "founder_desktop_screen_recording",
+    "ingest_status": "pending_copy_to_repo"
+  },
+  "observation_panel_capture": {
+    "in_sync": "yes",
+    "drift": "none",
+    "commit_seq_aligned": true,
+    "projection_seq_aligned": true
+  },
+  "engineering_prs": [
+    { "number": 313, "title": "late-join snapshot + honest proof IDLE" },
+    { "number": 314, "title": "match full sync round 1", "merged": true },
+    { "number": null, "title": "match full sync round 2 (ACK fan-out removal)", "note": "commit 9317bee — deploy pending" }
+  ],
+  "hypothesis_shift": {
+    "previous": "DRIFT_DETECTED may indicate primary reconciliation failure",
+    "current": "Under nominal load, drift lane is secondary; visual proof shows sync + no drift on panel",
+    "caveat": "gateway.uncertain correlates with drift spikes; causality not established"
+  },
+  "next_engineering": "RHIZOH_BROADCAST_BOUNDARY_FAILURE_TEST_V1.md",
+  "interpretation_only": true,
+  "non_executive": true
+}

@@ -26,6 +26,14 @@ import { recordBroadcastVisibilityV1 } from "./rhizohObservationStateV1.js";
 export const MATCH_BROADCAST_TRANSPORT_SCHEMA_V0 =
   "castle.rhizoh.match_broadcast_transport.v0";
 
+/** @type {Map<string, number>} */
+const lastTransportServerSeqV0 = new Map();
+
+/** @internal vitest */
+export function resetMatchBroadcastTransportDedupeForTestV0() {
+  lastTransportServerSeqV0.clear();
+}
+
 /** Re-export roles for client (avoid deep gateway import in prod bundle — duplicate const) */
 export const MATCH_BROADCAST_ROLE_V0 = Object.freeze({
   PLAYER: "player",
@@ -80,11 +88,19 @@ export function bindMatchBroadcastTransportV0(opts) {
         return;
       }
       if (msg.type === WS_MESSAGE.MATCH_STATE) {
+        const payload = msg.payload || {};
+        const remoteSeq = Number(payload.serverSeq) || 0;
+        const dedupeKey = `${sessionId}:${remoteSeq}`;
+        if (remoteSeq > 0 && lastTransportServerSeqV0.get(dedupeKey) === remoteSeq) {
+          return;
+        }
+        if (remoteSeq > 0) {
+          lastTransportServerSeqV0.set(dedupeKey, remoteSeq);
+        }
         const projected = applyRemoteMatchWorldStateV0(
-          { sessionId, ...(msg.payload || {}) },
+          { sessionId, ...payload },
           { origin: "broadcast_transport" }
         );
-        const payload = msg.payload || {};
         recordBroadcastVisibilityV1({
           commitSeq: payload.serverSeq,
           broadcastSeq: payload.serverSeq,
