@@ -59,9 +59,10 @@ describe("matchmakingTruthAuthorityObservabilityV0", () => {
       prevState: {}
     });
     expect(chain.chain.map((c) => c.phase)).toEqual([
-      MATCH_TRUTH_CHAIN_PHASE_V0.EVENT_APPENDED,
-      MATCH_TRUTH_CHAIN_PHASE_V0.EVENT_COMMITTED,
-      MATCH_TRUTH_CHAIN_PHASE_V0.STATE_REDUCED
+      MATCH_TRUTH_CHAIN_PHASE_V0.TRUTH_LOG_APPEND,
+      MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_APPENDED,
+      MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_COMMITTED,
+      MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_STATE_REDUCED
     ]);
     expect(console.info).toHaveBeenCalledWith(
       expect.stringContaining("[MATCH_TRUTH_CHAIN] MATCH_EVENT_COMMITTED seq=1")

@@ -77,9 +77,13 @@ MATCH_STATE_REDUCED seq=N
 MATCH_STATE_RECONCILED seq=N  (on reconcile)
 ```
 
-`serverAuthoritative: true` and `truthOrigin: gateway_ack` appear only after gateway READY + server ack — not during shadow rehearsal.
+dispatch(event) → TRUTH_LOG_APPEND → MATCH_EVENT_APPENDED → … → replay()
 
-**Code:** `matchmakingTruthAuthorityObservabilityV0.js`
+Manual console verification (not auto-boot):
+
+```javascript
+await window.__rhizoh.matchmaking.verifyProduction({ reset: true })
+```
 
 ---
 

@@ -9,7 +9,7 @@ import {
   buildMatchAuthorityContractV0,
   MATCH_AUTHORITY_MODE_V0
 } from "./matchAuthorityLayerV0.js";
-import { MATCH_DRIFT_THRESHOLD_V0 } from "./matchAuthorityKernelV0.js";
+import { MATCH_DRIFT_THRESHOLD_V0, computeMatchDriftScoreV0 } from "./matchAuthorityKernelV0.js";
 
 const TRUTH_DISPATCH_EVENT_V0 = Object.freeze({
   PROPOSE_MOVE: "ProposeMove",
@@ -21,9 +21,14 @@ export const MATCH_TRUTH_AUTHORITY_OBS_SCHEMA_V0 =
   "castle.rhizoh.match_truth_authority_obs.v0";
 
 export const MATCH_TRUTH_CHAIN_PHASE_V0 = Object.freeze({
-  EVENT_APPENDED: "MATCH_EVENT_APPENDED",
-  EVENT_COMMITTED: "MATCH_EVENT_COMMITTED",
-  STATE_REDUCED: "MATCH_STATE_REDUCED",
+  TRUTH_LOG_APPEND: "TRUTH_LOG_APPEND",
+  MATCH_EVENT_APPENDED: "MATCH_EVENT_APPENDED",
+  MATCH_EVENT_COMMITTED: "MATCH_EVENT_COMMITTED",
+  MATCH_STATE_REDUCED: "MATCH_STATE_REDUCED",
+  RECONCILIATION_APPLIED: "RECONCILIATION_APPLIED",
+  DRIFT_DETECTED: "DRIFT_DETECTED",
+  DRIFT_RESOLVED: "DRIFT_RESOLVED",
+  /** @deprecated use RECONCILIATION_APPLIED */
   STATE_RECONCILED: "MATCH_STATE_RECONCILED"
 });
 
@@ -111,7 +116,7 @@ export function emitMatchTruthAuthorityBootObservabilityV0() {
 
 /**
  * @param {string} phase
- * @param {{ seq: number, type?: string, sessionId?: string | null, commitAuthority?: string, truthOrigin?: string }} detail
+ * @param {{ seq: number, type?: string, sessionId?: string | null, commitAuthority?: string, truthOrigin?: string, driftScore?: number, classification?: string }} detail
  */
 export function emitMatchTruthDispatchChainV0(phase, detail = {}) {
   const seq = Number(detail.seq) || 0;
@@ -119,7 +124,10 @@ export function emitMatchTruthDispatchChainV0(phase, detail = {}) {
   const session = detail.sessionId ? ` session=${detail.sessionId}` : "";
   const commitAuthority = detail.commitAuthority ? ` commitAuthority=${detail.commitAuthority}` : "";
   const truthOrigin = detail.truthOrigin ? ` truthOrigin=${detail.truthOrigin}` : "";
-  const line = `${phase} seq=${seq}${type}${session}${commitAuthority}${truthOrigin}`;
+  const drift =
+    Number.isFinite(detail.driftScore) ? ` driftScore=${detail.driftScore}` : "";
+  const classification = detail.classification ? ` classification=${detail.classification}` : "";
+  const line = `${phase} seq=${seq}${type}${session}${commitAuthority}${truthOrigin}${drift}${classification}`;
 
   if (typeof console !== "undefined" && console.info) {
     console.info(`[MATCH_TRUTH_CHAIN] ${line}`);
@@ -142,14 +150,24 @@ export function emitMatchTruthDispatchChainV0(phase, detail = {}) {
  * @param {{ logEntry: object, effect: object | null, nextState: object, prevState: object }} ctx
  */
 export function emitMatchTruthDispatchChainForEventV0(ctx) {
-  const { logEntry, effect, nextState } = ctx;
+  const { logEntry, effect, nextState, prevState } = ctx;
   const auth = getMatchTruthAuthoritySnapshotV0({ session: nextState?.activeSession });
   const seq = logEntry?.seq ?? 0;
   const type = logEntry?.type ?? null;
   const sessionId = logEntry?.sessionId ?? null;
   const base = { seq, type, sessionId, commitAuthority: auth.commitAuthority, truthOrigin: auth.truthOrigin };
 
-  const chain = [emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.EVENT_APPENDED, base)];
+  const prevDrift = prevState?.activeSession
+    ? computeMatchDriftScoreV0(prevState.activeSession)
+    : null;
+  const nextDrift = nextState?.activeSession
+    ? computeMatchDriftScoreV0(nextState.activeSession)
+    : effect?.drift ?? null;
+
+  const chain = [
+    emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.TRUTH_LOG_APPEND, base),
+    emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_APPENDED, base)
+  ];
 
   const committed =
     type === TRUTH_DISPATCH_EVENT_V0.COMMIT_MOVE ||
@@ -157,13 +175,39 @@ export function emitMatchTruthDispatchChainForEventV0(ctx) {
     (type === TRUTH_DISPATCH_EVENT_V0.PROPOSE_MOVE && effect?.committed === true);
 
   if (committed) {
-    chain.push(emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.EVENT_COMMITTED, base));
+    chain.push(emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_COMMITTED, base));
   }
 
-  chain.push(emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.STATE_REDUCED, base));
+  chain.push(emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_STATE_REDUCED, base));
+
+  const driftScore = nextDrift?.driftScore ?? 0;
+  const driftDetected =
+    driftScore >= MATCH_DRIFT_THRESHOLD_V0.PATTERN ||
+    effect?.drift?.classification === "conflict" ||
+    effect?.drift?.classification === "fork";
+  if (driftDetected) {
+    chain.push(
+      emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.DRIFT_DETECTED, {
+        ...base,
+        driftScore,
+        classification: nextDrift?.classification ?? "pattern"
+      })
+    );
+  }
 
   if (type === TRUTH_DISPATCH_EVENT_V0.RECONCILE_STATE && effect?.ok === true) {
-    chain.push(emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.STATE_RECONCILED, base));
+    chain.push(emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.RECONCILIATION_APPLIED, base));
+    const hadDrift = (prevDrift?.driftScore ?? 0) >= MATCH_DRIFT_THRESHOLD_V0.NOISE;
+    const resolved = (nextDrift?.driftScore ?? 0) < MATCH_DRIFT_THRESHOLD_V0.NOISE;
+    if (hadDrift && resolved) {
+      chain.push(
+        emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.DRIFT_RESOLVED, {
+          ...base,
+          driftScore: nextDrift?.driftScore ?? 0,
+          classification: nextDrift?.classification ?? "noise"
+        })
+      );
+    }
   }
 
   return Object.freeze({
@@ -172,6 +216,7 @@ export function emitMatchTruthDispatchChainForEventV0(ctx) {
     type,
     chain,
     authority: auth,
+    drift: nextDrift,
     interpretationOnly: true
   });
 }
