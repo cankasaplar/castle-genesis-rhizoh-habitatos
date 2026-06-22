@@ -35,6 +35,8 @@ const RUNTIME_FILES = [
   "matchmakingTruthAuthorityBoundaryV0.js",
   "matchmakingSingleWriterPolicyV0.js",
   "matchmakingGatewayCommitBridgeV0.js",
+  "matchmakingBroadcastTransportV0.js",
+  "matchmakingWorldProjectionV0.js",
   "matchSessionStateMachineV0.js",
   "matchmakingConsoleV0.js",
   "matchAuthorityLayerV0.js",
@@ -107,6 +109,10 @@ if (!codexText.includes("influencesExecution: false") || !codexText.includes("ma
 const protocolText = readFileSync(protocol, "utf8");
 if (!protocolText.includes("MATCH_BEACON_EMIT") || !protocolText.includes("MATCH_FINISHED")) {
   console.error("matchmaking-spec-v1: protocol must declare MATCH_* WS messages");
+  failed = true;
+}
+if (!protocolText.includes("MATCH_SESSION_JOIN") || !protocolText.includes("MATCH_SESSION_PRESENCE")) {
+  console.error("matchmaking-spec-v1: protocol must declare MATCH_SESSION_JOIN + PRESENCE");
   failed = true;
 }
 

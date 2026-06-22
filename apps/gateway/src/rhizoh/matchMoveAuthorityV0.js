@@ -6,6 +6,11 @@
 
 import { Chess } from "chess.js";
 import { WS_MESSAGE, createEnvelope } from "@castle/protocol";
+import {
+  fanOutMatchSessionV0,
+  getMatchSessionPresenceV0,
+  leaveMatchBroadcastRoomV0
+} from "./matchBroadcastRoomV0.js";
 
 export const MATCH_MOVE_AUTHORITY_SCHEMA_V0 = "castle.rhizoh.match_move_authority.v0";
 
@@ -130,16 +135,37 @@ export function handleMatchMoveAuthorityV0(socket, message, wss) {
   ackEnvelope.sessionId = sessionId;
   ackEnvelope.traceId = message.traceId || `match_ack_${serverSeq}`;
 
+  const stateEnvelope = createEnvelope(WS_MESSAGE.MATCH_STATE, {
+    schema: MATCH_MOVE_AUTHORITY_SCHEMA_V0,
+    sessionId,
+    fen: validation.fen,
+    turn: validation.turn,
+    moveCount: nextSession.moveCount,
+    serverSeq,
+    lastSan: validation.san,
+    commitAuthority: "server",
+    truthOrigin: "gateway_ack",
+    broadcast: true,
+    presenceCount: getMatchSessionPresenceV0(sessionId).count,
+    interpretationOnly: true
+  });
+  stateEnvelope.sessionId = sessionId;
+  stateEnvelope.traceId = ackEnvelope.traceId;
+
   socket.send(JSON.stringify(ackEnvelope));
+  socket.send(JSON.stringify(stateEnvelope));
 
-  for (const client of wss.clients) {
-    if (client.readyState === 1 && client !== socket) {
-      client.send(JSON.stringify(ackEnvelope));
-    }
-  }
+  const fanAck = fanOutMatchSessionV0(sessionId, ackEnvelope, { exceptSocket: socket });
+  const fanState = fanOutMatchSessionV0(sessionId, stateEnvelope, { exceptSocket: socket });
 
-  return Object.freeze({ ok: true, ack: ackPayload });
+  return Object.freeze({
+    ok: true,
+    ack: ackPayload,
+    broadcast: Object.freeze({ ack: fanAck, state: fanState })
+  });
 }
+
+export { leaveMatchBroadcastRoomV0 };
 
 /** @internal vitest */
 export function clearMatchMoveAuthoritySessionsForTestV0() {

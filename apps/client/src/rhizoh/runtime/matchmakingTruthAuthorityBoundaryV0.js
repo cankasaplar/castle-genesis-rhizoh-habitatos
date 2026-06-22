@@ -33,8 +33,8 @@ const AUTHORITATIVE_COMMIT_PHASES_V0 = Object.freeze([
 ]);
 
 const LIVE_GATEWAY_GAPS_V0 = Object.freeze([
-  "live_gateway_ws_transport",
-  "broadcast_to_all_clients"
+  "live_ws_e2e_integration_test",
+  "guaranteed_delivery_ack"
 ]);
 
 function chainPhases(step) {
