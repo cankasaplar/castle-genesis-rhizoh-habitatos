@@ -41,7 +41,7 @@ Session: `c2c_host_peer_mqpgxzg0`
 - Idempotent gateway `serverSeq`
 - Single commit path via `MATCH_STATE` when reality sync active
 
-**Follow-up PR:** duplicate ACK path removal + optimistic preview (round 2 on branch `cursor/broadcast-phase-closure-8f5d`).
+**Follow-up PR:** duplicate ACK path removal (merged #315); gateway consolidation (#316).
 
 ## Founder action
 

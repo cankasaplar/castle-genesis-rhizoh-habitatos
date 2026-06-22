@@ -5,12 +5,20 @@
  */
 
 import { Chess } from "chess.js";
-import { WS_MESSAGE, createEnvelope } from "@castle/protocol";
+import {
+  WS_MESSAGE,
+  createEnvelope,
+  createGatewayBroadcastMetaV0,
+  createGatewayEventEnvelopeV0,
+  GATEWAY_EVENT_SOURCE_V0,
+  attachGatewayEventMetaV0
+} from "@castle/protocol";
 import {
   fanOutMatchSessionV0,
   getMatchSessionPresenceV0,
   leaveMatchBroadcastRoomV0
 } from "./matchBroadcastRoomV0.js";
+import { getMatchBroadcastHealthV0, recordMatchBroadcastStatsV0 } from "./matchAckAggregatorV0.js";
 
 export const MATCH_MOVE_AUTHORITY_SCHEMA_V0 = "castle.rhizoh.match_move_authority.v0";
 
@@ -119,6 +127,15 @@ export function handleMatchMoveAuthorityV0(socket, message, wss) {
   serverSessionsV0.set(sessionId, nextSession);
 
   const presenceCount = getMatchSessionPresenceV0(sessionId).count;
+  const priorHealth = getMatchBroadcastHealthV0(sessionId, serverSeq - 1);
+  const broadcastMeta = createGatewayBroadcastMetaV0({
+    commitSeq: serverSeq,
+    broadcastSeq: serverSeq,
+    recipientCount: presenceCount,
+    delivered: 0,
+    ackCount: priorHealth.broadcast.ackCount
+  });
+
   const ackPayload = Object.freeze({
     schema: MATCH_MOVE_AUTHORITY_SCHEMA_V0,
     sessionId,
@@ -131,9 +148,19 @@ export function handleMatchMoveAuthorityV0(socket, message, wss) {
     commitAuthority: "server",
     truthOrigin: "gateway_ack",
     validationSource: "authority_gateway",
-    broadcast: Object.freeze({
-      recipientCount: presenceCount,
-      delivered: 0
+    broadcast: broadcastMeta,
+    gatewayEvent: createGatewayEventEnvelopeV0({
+      sessionId,
+      worldId: sessionId,
+      source: GATEWAY_EVENT_SOURCE_V0.CHESS,
+      type: "MOVE_COMMITTED",
+      seq: serverSeq,
+      payload: {
+        san: validation.san,
+        playerId: validation.playerId,
+        fen: validation.fen
+      },
+      delivery: broadcastMeta
     }),
     interpretationOnly: true
   });
@@ -142,7 +169,7 @@ export function handleMatchMoveAuthorityV0(socket, message, wss) {
   ackEnvelope.sessionId = sessionId;
   ackEnvelope.traceId = message.traceId || `match_ack_${serverSeq}`;
 
-  const stateEnvelope = createEnvelope(WS_MESSAGE.MATCH_STATE, {
+  const statePayload = {
     schema: MATCH_MOVE_AUTHORITY_SCHEMA_V0,
     sessionId,
     fen: validation.fen,
@@ -152,29 +179,88 @@ export function handleMatchMoveAuthorityV0(socket, message, wss) {
     lastSan: validation.san,
     commitAuthority: "server",
     truthOrigin: "gateway_ack",
-    broadcast: true,
-    presenceCount,
+    broadcast: broadcastMeta,
+    gatewayEvent: createGatewayEventEnvelopeV0({
+      sessionId,
+      worldId: sessionId,
+      source: GATEWAY_EVENT_SOURCE_V0.CHESS,
+      type: "MATCH_STATE",
+      seq: serverSeq,
+      payload: { fen: validation.fen, turn: validation.turn, lastSan: validation.san },
+      delivery: broadcastMeta
+    }),
     interpretationOnly: true
-  });
+  };
+  const stateEnvelope = attachGatewayEventMetaV0(
+    createEnvelope(WS_MESSAGE.MATCH_STATE, statePayload),
+    statePayload.gatewayEvent
+  );
   stateEnvelope.sessionId = sessionId;
   stateEnvelope.traceId = ackEnvelope.traceId;
 
+  const fanState = fanOutMatchSessionV0(sessionId, stateEnvelope, { exceptSocket: socket });
+  const totalDelivered = fanState.delivered + 1;
+  const finalBroadcast = createGatewayBroadcastMetaV0({
+    commitSeq: serverSeq,
+    broadcastSeq: serverSeq,
+    recipientCount: presenceCount,
+    delivered: totalDelivered,
+    ackCount: 0
+  });
+
+  recordMatchBroadcastStatsV0(sessionId, {
+    commitSeq: serverSeq,
+    recipientCount: presenceCount,
+    delivered: totalDelivered
+  });
+
   if (stateEnvelope.payload && typeof stateEnvelope.payload === "object") {
+    stateEnvelope.payload.broadcast = finalBroadcast;
     stateEnvelope.payload.recipientCount = presenceCount;
+    stateEnvelope.payload.delivered = totalDelivered;
+    stateEnvelope.payload.gatewayEvent = createGatewayEventEnvelopeV0({
+      sessionId,
+      worldId: sessionId,
+      source: GATEWAY_EVENT_SOURCE_V0.CHESS,
+      type: "MATCH_STATE",
+      seq: serverSeq,
+      payload: { fen: validation.fen, turn: validation.turn, lastSan: validation.san },
+      delivery: finalBroadcast
+    });
   }
 
-  socket.send(JSON.stringify(ackEnvelope));
-  socket.send(JSON.stringify(stateEnvelope));
+  const finalAckPayload = Object.freeze({
+    ...ackPayload,
+    broadcast: finalBroadcast,
+    gatewayEvent: createGatewayEventEnvelopeV0({
+      sessionId,
+      worldId: sessionId,
+      source: GATEWAY_EVENT_SOURCE_V0.CHESS,
+      type: "MOVE_COMMITTED",
+      seq: serverSeq,
+      payload: {
+        san: validation.san,
+        playerId: validation.playerId,
+        fen: validation.fen
+      },
+      delivery: finalBroadcast
+    })
+  });
+  const finalAckEnvelope = createEnvelope(WS_MESSAGE.MATCH_MOVE_ACK, finalAckPayload);
+  finalAckEnvelope.sessionId = sessionId;
+  finalAckEnvelope.traceId = ackEnvelope.traceId;
 
-  const fanState = fanOutMatchSessionV0(sessionId, stateEnvelope, { exceptSocket: socket });
+  socket.send(JSON.stringify(finalAckEnvelope));
+  socket.send(JSON.stringify(stateEnvelope));
 
   return Object.freeze({
     ok: true,
-    ack: ackPayload,
+    ack: finalAckPayload,
     broadcast: Object.freeze({
       state: fanState,
       recipientCount: presenceCount,
-      delivered: fanState.delivered + 1
+      delivered: totalDelivered,
+      meta: finalBroadcast
     })
   });
 }

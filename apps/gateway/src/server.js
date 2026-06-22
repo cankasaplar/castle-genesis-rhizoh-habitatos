@@ -29,6 +29,12 @@ import { queryOpenData } from "./openData.js";
 import { verifyClientToken } from "./auth.js";
 import { handleMatchMoveAuthorityV0, leaveMatchBroadcastRoomV0, sendMatchSessionSnapshotOnJoinV0 } from "./rhizoh/matchMoveAuthorityV0.js";
 import { handleMatchSessionJoinV0, handleMatchCastleInviteV0 } from "./rhizoh/matchBroadcastRoomV0.js";
+import { handleMatchStateAppliedV0 } from "./rhizoh/matchAckAggregatorV0.js";
+import {
+  listUnifiedGatewayPresenceV0,
+  registerGatewayServiceNodeV0,
+  unregisterGatewayServiceNodesByClientV0
+} from "./rhizoh/gatewayPresenceRegistryV0.js";
 import { queryRhizohLlm } from "./rhizohLlmGateway.js";
 import { rhizohGatewayTurn } from "./rhizohGatewayTurn.js";
 import {
@@ -1663,10 +1669,16 @@ const httpServer = createServer(async (req, res) => {
     try {
       const u = new URL(req.url, "http://localhost");
       const roomKey = String(u.searchParams.get("room") || "world_space_c2c_v0").slice(0, 64);
+      const sessionId = String(u.searchParams.get("sessionId") || "").trim();
+      const unified = listUnifiedGatewayPresenceV0({ roomKey, sessionId: sessionId || undefined });
       sendJson(res, 200, {
         ok: true,
         roomKey,
-        presence: listCastleNetworkPresenceV0(roomKey)
+        sessionId: sessionId || null,
+        presence: unified,
+        castlePeers: unified.castlePeers,
+        matchMembers: unified.matchMembers,
+        services: unified.services
       });
     } catch (error) {
       sendJson(res, 500, { ok: false, error: error?.message || "presence_failed" });
@@ -4166,6 +4178,11 @@ wss.on("connection", async (socket, req) => {
       return;
     }
 
+    if (parsed.type === WS_MESSAGE.MATCH_STATE_APPLIED) {
+      handleMatchStateAppliedV0(socket, parsed, wss);
+      return;
+    }
+
     if (parsed.type === WS_MESSAGE.COMMAND) {
       const result = orchestrator.applyCommand(parsed.payload);
       socket.send(JSON.stringify(createEnvelope(WS_MESSAGE.COMMAND_RESULT, result)));
@@ -4276,10 +4293,32 @@ wss.on("connection", async (socket, req) => {
 
     if (parsed.type === WS_MESSAGE.BROADCAST_REGISTER) {
       const role = String(parsed.payload?.role || "");
+      const serviceKind = String(parsed.payload?.kind || parsed.payload?.serviceKind || "").trim();
+      const serviceId = String(parsed.payload?.serviceId || role || socket.clientId || "").trim();
+      if (serviceKind && serviceId) {
+        registerGatewayServiceNodeV0({
+          kind: serviceKind,
+          serviceId,
+          gatewayClientId: socket.clientId,
+          state: String(parsed.payload?.state || "ONLINE"),
+          meta: parsed.payload?.meta
+        });
+      }
       if (role === "GENESIS_BROADCAST_AGENT") {
         broadcasterClientId = socket.clientId;
         socket.send(JSON.stringify(createEnvelope(WS_MESSAGE.COMMAND_RESULT, { ok: true, registered: role })));
         broadcastState();
+      } else if (serviceKind) {
+        socket.send(
+          JSON.stringify(
+            createEnvelope(WS_MESSAGE.COMMAND_RESULT, {
+              ok: true,
+              registered: serviceKind,
+              serviceId,
+              interpretationOnly: true
+            })
+          )
+        );
       }
       return;
     }
@@ -4337,6 +4376,7 @@ wss.on("connection", async (socket, req) => {
   socket.on("close", () => {
     if (socket.clientId === broadcasterClientId) broadcasterClientId = null;
     leaveMatchBroadcastRoomV0(socket);
+    unregisterGatewayServiceNodesByClientV0(socket.clientId);
     clientStats.delete(socket.clientId);
     rhizohVoiceLiveSessions.delete(socket);
     spiralState.activeByClient.delete(socket.clientId);

@@ -5,6 +5,7 @@
  */
 
 import { WS_MESSAGE, createEnvelope } from "@castle/protocol";
+import { getMatchBroadcastHealthV0 } from "./matchAckAggregatorV0.js";
 
 export const MATCH_BROADCAST_ROOM_SCHEMA_V0 = "castle.rhizoh.match_broadcast_room.v0";
 
@@ -159,11 +160,13 @@ export function handleMatchSessionJoinV0(socket, message, wss) {
   }
 
   const presence = getMatchSessionPresenceV0(joined.sessionId);
+  const health = getMatchBroadcastHealthV0(joined.sessionId);
   const presenceEnvelope = createEnvelope(WS_MESSAGE.MATCH_SESSION_PRESENCE, {
     schema: MATCH_BROADCAST_ROOM_SCHEMA_V0,
     sessionId: joined.sessionId,
     members: presence.members,
     count: presence.count,
+    broadcastHealth: health.broadcast,
     interpretationOnly: true
   });
   presenceEnvelope.sessionId = joined.sessionId;
