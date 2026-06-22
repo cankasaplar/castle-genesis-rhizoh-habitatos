@@ -11,7 +11,7 @@ import {
 } from "@castle/protocol";
 import { registerGatewayServiceV0 } from "./gatewayServiceRegistrationV0.js";
 import { getCastleFlightConfig } from "../../castleFlight/castleFlightConfig.js";
-import { getOrCreateCastleDevUid, getRhizohApiBase } from "../useRhizohGatewayMonitor.js";
+import { getOrCreateCastleDevUid, getRhizohApiBase, getRhizohGatewayHealthBase } from "../useRhizohGatewayMonitor.js";
 import { getMatchSessionSyncSnapshotV0 } from "./matchSessionSyncBridgeV0.js";
 import { getMatchmakingTruthSnapshotV0 } from "./matchmakingTruthKernelV0.js";
 import { recordVoiceObservationV1, isVoiceGatewayCitizenshipRegisteredV0 } from "./rhizohObservationStateV1.js";
@@ -200,7 +200,9 @@ export function resetVoiceGatewayCitizenshipClientForTestV0() {
  * @param {{ room?: string, sessionId?: string }} [opts]
  */
 export async function fetchGatewayPresenceV0(opts = {}) {
-  const base = String(getRhizohApiBase() || "").trim().replace(/\/+$/, "");
+  const proxyBase = String(getRhizohGatewayHealthBase() || "").trim().replace(/\/+$/, "");
+  const directBase = String(getRhizohApiBase() || "").trim().replace(/\/+$/, "");
+  const base = proxyBase || directBase;
   if (!base) {
     return Object.freeze({ ok: false, error: "no_gateway_base" });
   }
@@ -218,16 +220,28 @@ export async function fetchGatewayPresenceV0(opts = {}) {
   if (opts.sessionId) url.searchParams.set("sessionId", String(opts.sessionId));
 
   const res = await fetch(url.toString(), { headers, credentials: "include" });
+  const text = await res.text();
   let json = null;
   try {
-    json = await res.json();
+    json = text ? JSON.parse(text) : null;
   } catch {
     json = null;
   }
+  if (!json || typeof json !== "object") {
+    return Object.freeze({
+      ok: false,
+      status: res.status,
+      error: "invalid_json",
+      bodyPreview: text.slice(0, 120),
+      viaProxy: Boolean(proxyBase),
+      interpretationOnly: true
+    });
+  }
   return Object.freeze({
-    ok: res.ok,
+    ok: res.ok && json.ok !== false,
     status: res.status,
-    ...(json && typeof json === "object" ? json : { error: "invalid_json" }),
+    ...json,
+    viaProxy: Boolean(proxyBase),
     interpretationOnly: true
   });
 }
