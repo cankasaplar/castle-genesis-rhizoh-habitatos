@@ -2,12 +2,13 @@ import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
   emitMatchTruthAuthorityBootObservabilityV0,
   emitMatchTruthDispatchChainForEventV0,
+  emitMatchTruthPreviewChainForEventV0,
   getMatchTruthAuthoritySnapshotV0,
-  MATCH_PROPOSAL_AUTHORITY_V0,
+  MATCH_CLIENT_AUTHORITY_V0,
+  MATCH_EFFECTIVE_COMMIT_WRITER_V0,
   MATCH_TRUTH_CHAIN_PHASE_V0,
   resetMatchTruthAuthorityObservabilityForTestV0
 } from "../matchmakingTruthAuthorityObservabilityV0.js";
-import { MATCH_COMMIT_AUTHORITY_POLICY_V0 } from "../matchmakingSingleWriterPolicyV0.js";
 import { MATCH_TRUTH_EVENT_V0 } from "../matchmakingTruthKernelV0.js";
 
 describe("matchmakingTruthAuthorityObservabilityV0", () => {
@@ -19,65 +20,57 @@ describe("matchmakingTruthAuthorityObservabilityV0", () => {
     vi.spyOn(console, "info").mockImplementation(() => {});
   });
 
-  it("declares honest shadow authority until gateway ready", () => {
+  it("client never presents as commit authority — effectiveCommitWriter is SSOT", () => {
     const snap = getMatchTruthAuthoritySnapshotV0();
-    expect(snap.authorityMode).toBe("SERVER_PRIMARY");
-    expect(snap.serverAuthoritative).toBe(false);
-    expect(snap.commitAuthority).toBe(MATCH_COMMIT_AUTHORITY_POLICY_V0.SERVER_PRIMARY);
-    expect(snap.effectiveCommitWriter).toBe("client_shadow");
-    expect(snap.proposalAuthority).toBe(MATCH_PROPOSAL_AUTHORITY_V0.CLIENT_SHADOW);
-    expect(snap.effectiveAuthority).toBe("SHADOW_CLIENT");
+    expect(snap.clientIsCommitAuthority).toBe(false);
+    expect(snap.commitAuthority).toBeNull();
+    expect(snap.effectiveCommitWriter).toBe(MATCH_EFFECTIVE_COMMIT_WRITER_V0.PENDING_SERVER);
+    expect(snap.proposalAuthority).toBe(MATCH_CLIENT_AUTHORITY_V0.PROPOSAL);
+    expect(snap.previewAuthority).toBe(MATCH_CLIENT_AUTHORITY_V0.PREVIEW);
+    expect(snap.simulationAuthority).toBe(MATCH_CLIENT_AUTHORITY_V0.SIMULATION);
   });
 
-  it("emits boot authority observability once", () => {
-    const a = emitMatchTruthAuthorityBootObservabilityV0();
-    const b = emitMatchTruthAuthorityBootObservabilityV0();
-    expect(a.ok).toBe(true);
-    expect(b.skipped).toBe(true);
+  it("derives commitAuthority only after gateway finalization", () => {
+    const snap = getMatchTruthAuthoritySnapshotV0({ gatewayReady: true });
+    expect(snap.commitAuthority).toBe("server");
+    expect(snap.effectiveCommitWriter).toBe(MATCH_EFFECTIVE_COMMIT_WRITER_V0.SERVER);
+    expect(snap.serverAuthoritative).toBe(true);
+  });
+
+  it("emits boot with effectiveCommitWriter not client commitAuthority", () => {
+    emitMatchTruthAuthorityBootObservabilityV0();
     expect(window.__CASTLE_BOOT_LOG__.ok).toHaveBeenCalledWith(
-      "boot.match_authority",
-      "authority=server_primary"
+      "boot.truth_commit_bridge",
+      expect.stringContaining("effectiveCommitWriter=pending_server")
     );
     expect(window.__CASTLE_BOOT_LOG__.ok).toHaveBeenCalledWith(
       "boot.truth_commit_bridge",
-      expect.stringContaining("mode=append_only")
-    );
-    expect(window.__CASTLE_BOOT_LOG__.ok).toHaveBeenCalledWith(
-      "boot.reconciliation",
-      "shadow_vs_truth enabled · strategy=diff-merge"
-    );
-    expect(window.__CASTLE_BOOT_LOG__.ok).toHaveBeenCalledWith(
-      "boot.drift_detector",
-      expect.stringContaining("noise=0.1")
+      expect.stringContaining("clientRole=reality_simulator")
     );
   });
 
-  it("emits dispatch chain on commit move", () => {
-    const chain = emitMatchTruthDispatchChainForEventV0({
+  it("preview chain omits commitAuthority", () => {
+    const chain = emitMatchTruthPreviewChainForEventV0({
       logEntry: { seq: 1, type: MATCH_TRUTH_EVENT_V0.PROPOSE_MOVE, sessionId: "m1" },
-      effect: { ok: true, committed: true, validated: true, validationSource: "chess.js_local" },
+      effect: { ok: true, validated: true, validationSource: "chess.js_local" },
       nextState: { activeSession: { sessionId: "m1" } },
       prevState: {}
     });
-    expect(chain.chain.map((c) => c.phase)).toEqual([
-      MATCH_TRUTH_CHAIN_PHASE_V0.TRUTH_LOG_APPEND,
-      MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_APPENDED,
-      MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_VALIDATED,
-      MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_COMMITTED,
-      MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_STATE_REDUCED
-    ]);
-    expect(console.info).toHaveBeenCalledWith(
-      expect.stringContaining("[MATCH_TRUTH_CHAIN] MATCH_EVENT_COMMITTED seq=1")
-    );
+    expect(chain.chain.map((c) => c.phase)).toContain(MATCH_TRUTH_CHAIN_PHASE_V0.TRUTH_LOG_PREVIEW);
+    expect(chain.chain.every((c) => c.commitAuthority == null)).toBe(true);
   });
 
-  it("emits rejected phase on failed validation", () => {
+  it("authoritative chain includes derived commitAuthority after server ack", () => {
     const chain = emitMatchTruthDispatchChainForEventV0({
-      logEntry: { seq: 2, type: MATCH_TRUTH_EVENT_V0.PROPOSE_MOVE, sessionId: "m1" },
-      effect: { ok: false, rejected: true, validated: false },
+      logEntry: { seq: 1, type: MATCH_TRUTH_EVENT_V0.COMMIT_MOVE, sessionId: "m1" },
+      effect: { ok: true, committed: true, validationSource: "authority_gateway" },
       nextState: { activeSession: { sessionId: "m1" } },
-      prevState: {}
+      prevState: {},
+      gatewayReady: true
     });
-    expect(chain.chain.map((c) => c.phase)).toContain(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_REJECTED);
+    expect(chain.chain.map((c) => c.phase)).toContain(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_COMMITTED);
+    expect(console.info).toHaveBeenCalledWith(
+      expect.stringContaining("commitAuthority=server")
+    );
   });
 });

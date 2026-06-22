@@ -86,10 +86,15 @@ Authority split (honest today vs target):
 
 | Field | Shadow (today) | Server-bound (PR-2) |
 |-------|----------------|---------------------|
-| `proposalAuthority` | `client_shadow` | `client_shadow` |
-| `commitAuthority` | `client_shadow` | `server` / `gateway` |
+| `proposalAuthority` | `client_shadow` | — |
+| `previewAuthority` | `client_preview` | — |
+| `simulationAuthority` | `client_simulation` | — |
+| `commitAuthority` | **never** (null) | `server` (derived only) |
+| `effectiveCommitWriter` | SSOT: `pending_server` → `server` | — |
 | `validationSource` | `chess.js_local` | `authority_gateway` |
 | `truthOrigin` | `truth_log_v0` | `gateway_ack` |
+
+**Rhizoh identity:** Client = Reality Simulator · Server = Reality Finalizer. Client asla commit authority gibi görünmez.
 
 See [`RHIZOH_MATCH_COMMIT_AUTHORITY_ROADMAP_V1.md`](RHIZOH_MATCH_COMMIT_AUTHORITY_ROADMAP_V1.md).
 
