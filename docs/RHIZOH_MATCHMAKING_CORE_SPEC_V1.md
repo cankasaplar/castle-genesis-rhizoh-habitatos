@@ -71,18 +71,25 @@ Boot declares **contract** vs **effective** authority without faking gateway rea
 Runtime dispatch chain (console):
 
 ```text
+TRUTH_LOG_APPEND seq=N
 MATCH_EVENT_APPENDED seq=N
 MATCH_EVENT_COMMITTED seq=N   (on commit paths)
 MATCH_STATE_REDUCED seq=N
-MATCH_STATE_RECONCILED seq=N  (on reconcile)
+RECONCILIATION_APPLIED seq=N  (on reconcile)
+DRIFT_DETECTED seq=N          (when drift crosses threshold)
+DRIFT_RESOLVED seq=N          (after successful reconcile)
 ```
 
 dispatch(event) → TRUTH_LOG_APPEND → MATCH_EVENT_APPENDED → … → replay()
 
-Manual console verification (not auto-boot):
+**Observation vs production:** boot mounts truth kernel but does not append events. Until a beacon, session move, or manual verify runs, `truthStatus().mode === "observation"` and `logCount === 0`.
 
 ```javascript
+window.__rhizoh.matchmaking.truthStatus()
+// { mode: "observation", logCount: 0, hasCommittedMove: false, ... }
+
 await window.__rhizoh.matchmaking.verifyProduction({ reset: true })
+// → TRUTH_LOG_APPEND … MATCH_EVENT_COMMITTED … [MATCH_TRUTH_VERIFY] { ok: true }
 ```
 
 ---

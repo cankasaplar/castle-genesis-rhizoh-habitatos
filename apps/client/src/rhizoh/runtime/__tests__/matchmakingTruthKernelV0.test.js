@@ -3,6 +3,7 @@ import {
   clearMatchmakingTruthForTestV0,
   dispatchMatchmakingTruthEventV0,
   getMatchmakingTruthLogV0,
+  getMatchmakingTruthProductionStatusV0,
   MATCH_TRUTH_EVENT_V0,
   reduceMatchmakingTruthV0,
   replayMatchmakingTruthV0,
@@ -45,5 +46,13 @@ describe("matchmakingTruthKernelV0", () => {
     expect(out.ok).toBe(true);
     expect(getMatchmakingTruthLogV0().appendOnly).toBe(true);
     expect(replayMatchmakingTruthV0().activeSession?.committed?.moveCount).toBe(1);
+  });
+
+  it("productionStatus reports observation before any dispatch", () => {
+    const status = getMatchmakingTruthProductionStatusV0();
+    expect(status.mode).toBe("observation");
+    expect(status.logCount).toBe(0);
+    expect(status.hasCommittedMove).toBe(false);
+    expect(status.awake).toBe(true);
   });
 });

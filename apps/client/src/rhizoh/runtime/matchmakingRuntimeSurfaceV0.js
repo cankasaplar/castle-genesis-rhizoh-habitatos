@@ -106,7 +106,6 @@ export function buildMatchmakingApiFacadeV0(engine, meta = {}) {
     registry: e.registry ?? null,
     session: e.session ?? null,
     codex: e.codex ?? null,
-    authority: e.authority ?? null,
     kernel: e.kernel ?? null,
     validator: e.validator ?? null,
     truthKernel: e.truthKernel ?? null,
@@ -114,7 +113,14 @@ export function buildMatchmakingApiFacadeV0(engine, meta = {}) {
     executionModel: e.executionModel ?? null,
     singleRealitySource: e.singleRealitySource ?? MATCHMAKING_SINGLE_REALITY_SOURCE_V0,
     realityModel: e.realityModel ?? "single_event_stream",
-    authority: () => e.truthKernel?.authority?.() ?? null,
+    authority: Object.freeze({
+      status: () => e.authority?.status?.() ?? null,
+      proposeMove: (move) => e.authority?.proposeMove?.(move),
+      commit: (commit) => e.authority?.commit?.(commit),
+      reconcile: (opts) => e.authority?.reconcile?.(opts),
+      snapshot: () => e.truthKernel?.authority?.() ?? null
+    }),
+    truthStatus: () => e.truthKernel?.productionStatus?.() ?? null,
     verifyProduction: (opts) => e.truthKernel?.verifyProduction?.(opts) ?? null
   });
 }

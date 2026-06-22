@@ -417,6 +417,41 @@ export function clearMatchmakingTruthForTestV0() {
 }
 
 /**
+ * Read-only production probe — answers "awake but producing?" without dispatching events.
+ */
+export function getMatchmakingTruthProductionStatusV0() {
+  const log = getMatchmakingTruthLogV0();
+  const snap = getMatchmakingTruthSnapshotV0();
+  const last = log.entries.length > 0 ? log.entries[log.entries.length - 1] : null;
+  const moveCount = snap.activeSession?.committed?.moveCount ?? 0;
+  const eventTypes = log.entries.map((e) => e.type);
+  const hasCommittedMove = eventTypes.some(
+    (t) => t === MATCH_TRUTH_EVENT_V0.COMMIT_MOVE || t === MATCH_TRUTH_EVENT_V0.PROPOSE_MOVE
+  );
+
+  return Object.freeze({
+    schema: MATCH_TRUTH_SCHEMA_V0,
+    mode: log.count > 0 ? "producing" : "observation",
+    awake: true,
+    logCount: log.count,
+    appendOnly: log.appendOnly,
+    hasActiveSession: Boolean(snap.activeSession),
+    committedMoveCount: moveCount,
+    hasCommittedMove,
+    lastEventType: last?.type ?? null,
+    lastSeq: last?.seq ?? 0,
+    truthModel: MATCH_TRUTH_MODEL_V0,
+    singleRealitySource: "truth_log_v0",
+    shadowRehearsal: true,
+    deterministicReplayOk:
+      log.count === 0 ||
+      replayMatchmakingTruthV0().logSeq === log.count,
+    verifyHint: "await window.__rhizoh.matchmaking.verifyProduction({ reset: true })",
+    interpretationOnly: true
+  });
+}
+
+/**
  * Manual production-flow verification — dispatches real events and checks replay.
  * Not run at boot; call from console when validating event production.
  * @param {{ reset?: boolean, playerId?: string }} [opts]
@@ -498,6 +533,7 @@ export function mountMatchmakingTruthKernelConsoleV0() {
     log: getMatchmakingTruthLogV0,
     reduce: reduceMatchmakingTruthV0,
     authority: getMatchTruthAuthoritySnapshotV0,
+    productionStatus: getMatchmakingTruthProductionStatusV0,
     verifyProduction: runMatchmakingTruthProductionVerifyV0,
     clear: clearMatchmakingTruthForTestV0,
     interpretationOnly: true,
