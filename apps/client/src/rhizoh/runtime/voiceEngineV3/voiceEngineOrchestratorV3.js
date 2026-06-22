@@ -319,7 +319,8 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         recordedMs,
         bytes,
         warmProbe,
-        sampleCount: levelSampleCount
+        sampleCount: levelSampleCount,
+        voiceGatewaySessionActive: Boolean(liveVoiceSessionV0?.ok)
       };
       let preSttSpeechProbability = null;
 

@@ -17,11 +17,26 @@ describe("rhizohVoicePreSttInputSanitizationGateV0", () => {
       recordedMs: 2500,
       bytes: 90000,
       warmProbe: { avgWarmScore: 0.7, minWarmScore: 0.65 },
-      sampleCount: 6
+      sampleCount: 6,
+      voiceGatewaySessionActive: false
     });
     expect(v.pass).toBe(false);
     expect(v.action).toBe(PRE_STT_GATE_ACTION_V0.DROP);
     expect(v.reason).toBe("pre_stt_low_energy");
+  });
+
+  it("allow_if_session_active bypasses low energy for live gateway voice session", () => {
+    const v = evaluatePreSttInputSanitizationV0({
+      maxRms: 0.002,
+      recordedMs: 6776,
+      bytes: 42415,
+      warmProbe: { avgWarmScore: 0.3, minWarmScore: 0.3 },
+      sampleCount: 2,
+      voiceGatewaySessionActive: true
+    });
+    expect(v.pass).toBe(true);
+    expect(v.reason).toBe("allow_if_session_active");
+    expect(v.gatewaySessionBypass).toBe(true);
   });
 
   it("drops when speech probability below 0.6", () => {

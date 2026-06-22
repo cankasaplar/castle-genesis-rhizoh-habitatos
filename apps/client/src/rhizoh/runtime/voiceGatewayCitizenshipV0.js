@@ -10,6 +10,8 @@ import {
   GATEWAY_EVENT_SOURCE_V0
 } from "@castle/protocol";
 import { registerGatewayServiceV0 } from "./gatewayServiceRegistrationV0.js";
+import { getCastleFlightConfig } from "../../castleFlight/castleFlightConfig.js";
+import { getOrCreateCastleDevUid, getRhizohApiBase } from "../useRhizohGatewayMonitor.js";
 import { getMatchSessionSyncSnapshotV0 } from "./matchSessionSyncBridgeV0.js";
 import { getMatchmakingTruthSnapshotV0 } from "./matchmakingTruthKernelV0.js";
 import { recordVoiceObservationV1 } from "./rhizohObservationStateV1.js";
@@ -172,6 +174,43 @@ export function resetVoiceGatewayCitizenshipClientForTestV0() {
   voiceClientConnectionIdV0 = null;
 }
 
+/**
+ * Authenticated presence read via app gateway base (not raw render.com — CORS + token).
+ * @param {{ room?: string, sessionId?: string }} [opts]
+ */
+export async function fetchGatewayPresenceV0(opts = {}) {
+  const base = String(getRhizohApiBase() || "").trim().replace(/\/+$/, "");
+  if (!base) {
+    return Object.freeze({ ok: false, error: "no_gateway_base" });
+  }
+  const cfg = getCastleFlightConfig();
+  /** @type {Record<string, string>} */
+  const headers = {
+    Accept: "application/json",
+    "X-Castle-Dev-Uid": getOrCreateCastleDevUid()
+  };
+  const gt = String(cfg.gatewayToken || "").trim();
+  if (gt) headers["X-Castle-Gateway-Token"] = gt;
+
+  const url = new URL(`${base}/rhizoh/network/presence`);
+  if (opts.room) url.searchParams.set("room", String(opts.room));
+  if (opts.sessionId) url.searchParams.set("sessionId", String(opts.sessionId));
+
+  const res = await fetch(url.toString(), { headers, credentials: "include" });
+  let json = null;
+  try {
+    json = await res.json();
+  } catch {
+    json = null;
+  }
+  return Object.freeze({
+    ok: res.ok,
+    status: res.status,
+    ...(json && typeof json === "object" ? json : { error: "invalid_json" }),
+    interpretationOnly: true
+  });
+}
+
 export function mountVoiceGatewayCitizenshipConsoleV0() {
   if (typeof window === "undefined") return;
   window.__rhizoh = window.__rhizoh || {};
@@ -181,6 +220,8 @@ export function mountVoiceGatewayCitizenshipConsoleV0() {
     register: registerVoiceGatewayCitizenV0,
     stateApplied: sendVoiceStateAppliedV0,
     ingest: ingestVoiceGatewayMessageV0,
+    fetchPresence: fetchGatewayPresenceV0,
+    consoleHint: "await window.__rhizoh.voiceGateway.fetchPresence()",
     interpretationOnly: true
   });
 }
