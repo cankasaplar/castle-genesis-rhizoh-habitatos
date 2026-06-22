@@ -113,7 +113,8 @@ export function buildMatchmakingApiFacadeV0(engine, meta = {}) {
     truthModel: e.truthModel ?? null,
     executionModel: e.executionModel ?? null,
     singleRealitySource: e.singleRealitySource ?? MATCHMAKING_SINGLE_REALITY_SOURCE_V0,
-    realityModel: e.realityModel ?? "single_event_stream"
+    realityModel: e.realityModel ?? "single_event_stream",
+    authority: () => e.truthKernel?.authority?.() ?? null
   });
 }
 

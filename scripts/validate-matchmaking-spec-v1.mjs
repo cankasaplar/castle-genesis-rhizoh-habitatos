@@ -31,6 +31,7 @@ const REQUIRED_SCHEMAS = [
 const RUNTIME_FILES = [
   "matchmakingRuntimeSurfaceV0.js",
   "matchmakingTruthKernelV0.js",
+  "matchmakingTruthAuthorityObservabilityV0.js",
   "matchSessionStateMachineV0.js",
   "matchmakingConsoleV0.js",
   "matchAuthorityLayerV0.js",

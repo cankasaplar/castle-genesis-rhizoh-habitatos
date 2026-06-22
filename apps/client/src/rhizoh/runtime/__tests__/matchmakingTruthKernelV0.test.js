@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
   clearMatchmakingTruthForTestV0,
   dispatchMatchmakingTruthEventV0,
@@ -44,6 +44,7 @@ describe("matchmakingTruthKernelV0", () => {
       type: MATCH_TRUTH_EVENT_V0.SESSION_CREATE,
       payload: { initialState: MATCH_SESSION_STATE_V0.SESSION_ACTIVE }
     });
+    vi.spyOn(console, "info").mockImplementation(() => {});
     dispatchMatchmakingTruthEventV0({
       type: MATCH_TRUTH_EVENT_V0.PROPOSE_MOVE,
       payload: { san: "e4", playerId: "user_a" }
@@ -51,5 +52,8 @@ describe("matchmakingTruthKernelV0", () => {
     const replayed = replayMatchmakingTruthV0();
     expect(replayed.activeSession?.committed?.moveCount).toBe(1);
     expect(replayed.logSeq).toBeGreaterThan(0);
+    expect(console.info).toHaveBeenCalledWith(
+      expect.stringContaining("[MATCH_TRUTH_CHAIN] MATCH_EVENT_COMMITTED")
+    );
   });
 });

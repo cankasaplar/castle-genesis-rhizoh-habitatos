@@ -57,7 +57,31 @@ replay(log) → deterministic rebuild (no live object mutation)
 Beacon + session + kernel events share one truth log (`BeaconEmit`, `SessionCreate`, `ProposeMove`, …).  
 `runtimeSurface.matchmaking` is **frozen after publish** — not a mutable object graph.
 
-Post-deploy single-reality check:
+## 0.3 Truth authority observability (honest)
+
+Boot declares **contract** vs **effective** authority without faking gateway readiness:
+
+| Boot phase | Meaning |
+|------------|---------|
+| `boot.match_authority` | `authority=server_primary` (contract) |
+| `boot.truth_commit_bridge` | `mode=append_only · commitAuthority=client_shadow` until gateway |
+| `boot.reconciliation` | `shadow_vs_truth enabled` |
+| `boot.drift_detector` | noise / pattern / conflict thresholds |
+
+Runtime dispatch chain (console):
+
+```text
+MATCH_EVENT_APPENDED seq=N
+MATCH_EVENT_COMMITTED seq=N   (on commit paths)
+MATCH_STATE_REDUCED seq=N
+MATCH_STATE_RECONCILED seq=N  (on reconcile)
+```
+
+`serverAuthoritative: true` and `truthOrigin: gateway_ack` appear only after gateway READY + server ack — not during shadow rehearsal.
+
+**Code:** `matchmakingTruthAuthorityObservabilityV0.js`
+
+---
 
 ```javascript
 Object.isFrozen(window.__rhizoh.runtimeSurface.matchmaking)  // true

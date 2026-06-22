@@ -15,6 +15,11 @@ import {
   processKernelReconcileV0
 } from "./matchAuthorityKernelV0.js";
 import {
+  emitMatchTruthAuthorityBootObservabilityV0,
+  emitMatchTruthDispatchChainForEventV0,
+  getMatchTruthAuthoritySnapshotV0
+} from "./matchmakingTruthAuthorityObservabilityV0.js";
+import {
   isLegalSessionTransitionV0,
   MATCH_SESSION_SCHEMA_V0,
   MATCH_SESSION_STATE_V0
@@ -373,6 +378,15 @@ export function dispatchMatchmakingTruthEventV0(event) {
   const next = stripTruthEffectV0(reduced);
   writeTruthProjectionV0(next);
 
+  const chain = emitMatchTruthDispatchChainForEventV0({
+    logEntry,
+    effect,
+    nextState: next,
+    prevState: prev
+  });
+
+  const authority = getMatchTruthAuthoritySnapshotV0({ session: next.activeSession });
+
   return Object.freeze({
     ok: effect?.ok !== false,
     event: logEntry,
@@ -380,6 +394,8 @@ export function dispatchMatchmakingTruthEventV0(event) {
     session: next.activeSession,
     kernelState: next.kernelState,
     truthModel: MATCH_TRUTH_MODEL_V0,
+    authority,
+    truthChain: chain,
     interpretationOnly: true,
     ...(effect || {})
   });
@@ -400,6 +416,7 @@ export function clearMatchmakingTruthForTestV0() {
 }
 
 export function mountMatchmakingTruthKernelConsoleV0() {
+  emitMatchTruthAuthorityBootObservabilityV0();
   return Object.freeze({
     schema: MATCH_TRUTH_SCHEMA_V0,
     truthModel: MATCH_TRUTH_MODEL_V0,
@@ -409,6 +426,7 @@ export function mountMatchmakingTruthKernelConsoleV0() {
     replay: replayMatchmakingTruthV0,
     log: getMatchmakingTruthLogV0,
     reduce: reduceMatchmakingTruthV0,
+    authority: getMatchTruthAuthoritySnapshotV0,
     clear: clearMatchmakingTruthForTestV0,
     interpretationOnly: true,
     shadowRehearsal: true
