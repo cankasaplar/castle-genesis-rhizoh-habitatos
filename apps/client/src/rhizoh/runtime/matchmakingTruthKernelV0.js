@@ -25,6 +25,10 @@ import {
   getMatchTruthAuthoritySnapshotV0,
   MATCH_TRUTH_CHAIN_PHASE_V0
 } from "./matchmakingTruthAuthorityObservabilityV0.js";
+import {
+  runMatchmakingAuthorityBoundaryVerifyV0,
+  runMatchmakingDriftInjectionVerifyV0
+} from "./matchmakingTruthAuthorityBoundaryV0.js";
 
 export const MATCH_TRUTH_SCHEMA_V0 = "castle.rhizoh.matchmaking_truth.v0";
 export const MATCH_TRUTH_LOG_SCHEMA_V0 = "castle.rhizoh.matchmaking_truth_log.v0";
@@ -493,6 +497,7 @@ export function runMatchmakingTruthProductionVerifyV0(opts = {}) {
     eventsProduced > 0 &&
     moveCount >= 1 &&
     chainPhases.includes(MATCH_TRUTH_CHAIN_PHASE_V0.TRUTH_LOG_APPEND) &&
+    chainPhases.includes(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_VALIDATED) &&
     chainPhases.includes(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_COMMITTED);
 
   if (typeof console !== "undefined" && console.info) {
@@ -535,6 +540,8 @@ export function mountMatchmakingTruthKernelConsoleV0() {
     authority: getMatchTruthAuthoritySnapshotV0,
     productionStatus: getMatchmakingTruthProductionStatusV0,
     verifyProduction: runMatchmakingTruthProductionVerifyV0,
+    verifyAuthorityBoundary: runMatchmakingAuthorityBoundaryVerifyV0,
+    verifyDriftInjection: runMatchmakingDriftInjectionVerifyV0,
     clear: clearMatchmakingTruthForTestV0,
     interpretationOnly: true,
     shadowRehearsal: true
