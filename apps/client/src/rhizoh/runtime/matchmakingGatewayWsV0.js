@@ -222,6 +222,49 @@ export async function ensureMatchGatewayWsV0() {
   return connectPromise;
 }
 
+function sleepMsV0(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+/**
+ * Wait until gateway WS is open (reuse drone bridge or dedicated socket).
+ * @param {{ timeoutMs?: number, pollMs?: number }} [opts]
+ */
+export async function waitForMatchGatewayWsOpenV0(opts = {}) {
+  const timeoutMs = Math.max(500, Number(opts.timeoutMs) || 15_000);
+  const pollMs = Math.max(50, Number(opts.pollMs) || 200);
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeoutMs) {
+    const ws = await ensureMatchGatewayWsV0();
+    if (ws?.readyState === WebSocket.OPEN) {
+      return Object.freeze({
+        ok: true,
+        ws,
+        waitedMs: Date.now() - startedAt,
+        wsStatus: getMatchGatewayWsStatusV0(),
+        interpretationOnly: true,
+        shadowRehearsal: true
+      });
+    }
+    await sleepMsV0(pollMs);
+  }
+
+  const ws = getMatchGatewayWsV0();
+  const open = ws?.readyState === WebSocket.OPEN;
+  return Object.freeze({
+    ok: open,
+    ws: open ? ws : null,
+    reason: open ? null : ws ? "ws_not_open" : "ws_unavailable",
+    waitedMs: Date.now() - startedAt,
+    wsStatus: getMatchGatewayWsStatusV0(),
+    interpretationOnly: true,
+    shadowRehearsal: true
+  });
+}
+
 /** @internal vitest */
 export function resetMatchGatewayWsForTestV0() {
   if (commitUnbind) {

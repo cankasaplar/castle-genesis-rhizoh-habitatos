@@ -89,6 +89,10 @@ await window.__rhizoh.matchSessionSyncApi.start({
 // Share link
 window.__rhizoh.matchSessionSyncApi.buildShareUrl({ sessionId: "…" })
 
+// Reality probe (truth + sync + gateway WS)
+window.__rhizoh.matchmaking.realityStatus()
+window.__rhizoh.matchSessionSyncApi.realityStatus()
+
 // Verify projection chain (no live WS required)
 await window.__rhizoh.matchmaking.verifyBroadcastE2e({ reset: true })
 ```
@@ -107,7 +111,11 @@ await window.__rhizoh.matchmaking.verifyBroadcastE2e({ reset: true })
 4. Tab B: board updates from `MATCH_STATE` projection
 5. Both:
    ```javascript
-   window.__rhizoh.matchmaking.truthStatus().activeSession.committed.fen
+   window.__rhizoh.matchmaking.realityStatus().fen
+   // or
+   window.__rhizoh.matchSessionSync?.projection?.fen
+   // starting position (before any server commit):
+   window.__rhizoh.matchmaking.truthStatus().activeSession?.committed?.fen
    ```
    → **same FEN**
 

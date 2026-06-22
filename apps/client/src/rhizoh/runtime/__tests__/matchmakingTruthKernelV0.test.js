@@ -4,6 +4,7 @@ import {
   dispatchMatchmakingTruthEventV0,
   getMatchmakingTruthLogV0,
   getMatchmakingTruthProductionStatusV0,
+  summarizeActiveMatchSessionForProbeV0,
   MATCH_TRUTH_EVENT_V0,
   reduceMatchmakingTruthV0,
   replayMatchmakingTruthV0,
@@ -53,7 +54,21 @@ describe("matchmakingTruthKernelV0", () => {
     expect(status.mode).toBe("observation");
     expect(status.logCount).toBe(0);
     expect(status.hasCommittedMove).toBe(false);
+    expect(status.activeSession).toBeNull();
+    expect(status.fen).toBeNull();
     expect(status.awake).toBe(true);
+  });
+
+  it("productionStatus exposes activeSession committed fen after session create", () => {
+    dispatchMatchmakingTruthEventV0({
+      type: MATCH_TRUTH_EVENT_V0.SESSION_CREATE,
+      payload: { initialState: MATCH_SESSION_STATE_V0.SESSION_ACTIVE }
+    });
+    const status = getMatchmakingTruthProductionStatusV0();
+    expect(status.hasActiveSession).toBe(true);
+    expect(status.activeSession?.committed?.fen).toContain("rnbqkbnr");
+    expect(status.fen).toContain("rnbqkbnr");
+    expect(summarizeActiveMatchSessionForProbeV0().sessionId).toBeTruthy();
   });
 
   it("blocks client commit without gateway provenance", () => {

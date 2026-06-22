@@ -33,6 +33,7 @@ import { ensureRhizohCausalGraphDevToolsV0 } from "./runtimeEventGraphBridgeV0.j
 import { ensureContinuityKernelDevToolsV0 } from "./rhizohContinuityKernelV0.js";
 import { mountMatchmakingConsoleV0 } from "./matchmakingConsoleV0.js";
 import { autoStartMatchSessionSyncFromLocationV0 } from "./matchSessionSyncBridgeV0.js";
+import { parseMatchSessionFromLocationV0 } from "./matchIngressSessionRouterV0.js";
 import { pruneRhizohLocalStorageOnBootV0 } from "./rhizohLocalStorageSafeV0.js";
 import {
   isRhizohWorldSpacePathV0,
@@ -105,7 +106,13 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureContinuityKernelDevToolsV0();
     runDomainGateForPathV0(pathname, { coreOnly: true });
     mountMatchmakingConsoleV0();
-    void autoStartMatchSessionSyncFromLocationV0();
+    const matchRoute = parseMatchSessionFromLocationV0();
+    if (matchRoute?.sessionId) {
+      void autoStartMatchSessionSyncFromLocationV0({
+        waitForGateway: true,
+        gatewayTimeoutMs: 20_000
+      });
+    }
     stopLegalWaitLoopV0 = startRhizohLegalPendingWaitLoopV0({ bootDelayMs: 2_500 });
   }
 
