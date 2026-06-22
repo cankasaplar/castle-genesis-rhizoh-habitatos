@@ -8,6 +8,7 @@ import { WS_MESSAGE } from "@castle/protocol";
 import { ingestMatchCastleInviteFromGatewayV0 } from "./matchCastleInboxBridgeV0.js";
 import {
   dispatchMatchmakingTruthEventV0,
+  getMatchmakingTruthSnapshotV0,
   MATCH_TRUTH_EVENT_V0
 } from "./matchmakingTruthKernelV0.js";
 import { MATCH_TRUTH_PROVENANCE_V0 } from "./matchmakingSingleWriterPolicyV0.js";
@@ -23,6 +24,22 @@ export function applyGatewayMatchMoveAckV0(ack = {}) {
   const sessionId = String(ack.sessionId || "").trim();
   if (!sessionId) {
     return Object.freeze({ ok: false, reason: "missing_session_id", interpretationOnly: true });
+  }
+
+  const incomingSeq = Number(ack.serverSeq) || 0;
+  if (incomingSeq > 0) {
+    const snap = getMatchmakingTruthSnapshotV0();
+    const localSeq = snap.activeSession?.committed?.serverSeq ?? 0;
+    if (snap.activeSession?.sessionId === sessionId && incomingSeq <= localSeq) {
+      return Object.freeze({
+        ok: true,
+        skipped: true,
+        reason: "duplicate_server_seq",
+        localSeq,
+        incomingSeq,
+        interpretationOnly: true
+      });
+    }
   }
 
   return dispatchMatchmakingTruthEventV0({
@@ -62,6 +79,7 @@ export function simulateGatewayMatchMoveAckV0(input = {}) {
 
 /**
  * Register inbound gateway ack listener on an open WebSocket (if present).
+ * Match room ACK/STATE are handled by bindMatchBroadcastTransportV0 only — avoids double commit.
  * @param {WebSocket | null | undefined} ws
  */
 export function bindMatchGatewayCommitListenerV0(ws) {
@@ -69,9 +87,6 @@ export function bindMatchGatewayCommitListenerV0(ws) {
   const handler = (evt) => {
     try {
       const msg = JSON.parse(String(evt.data || ""));
-      if (msg?.type === WS_MESSAGE.MATCH_MOVE_ACK) {
-        applyGatewayMatchMoveAckV0({ sessionId: msg.sessionId, ...(msg.payload || {}) });
-      }
       if (msg?.type === WS_MESSAGE.MATCH_CASTLE_INVITE) {
         ingestMatchCastleInviteFromGatewayV0({
           ...(msg.payload || {}),
