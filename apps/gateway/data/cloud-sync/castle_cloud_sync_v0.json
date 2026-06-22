@@ -1,0 +1,28 @@
+{
+  "fer1-vault-user": {
+    "entities": [],
+    "events": [],
+    "ghostMemory": [],
+    "codex": [],
+    "castleIdentity": null,
+    "chronicle": [],
+    "knowledge": [],
+    "openingBook": [],
+    "chessCivilization": null,
+    "mediaCivilization": null,
+    "fer1EncryptedVault": {
+      "schema": "rhizoh.fer1_memory_vault.v0",
+      "sealedAt": "2026-06-13T12:00:00.000Z",
+      "bucketCount": 6,
+      "populatedBuckets": 2,
+      "crypto": {
+        "schema": "rhizoh.fer1_vault_crypto.v0",
+        "ciphertextB64": "abc",
+        "saltB64": "s",
+        "ivB64": "i"
+      },
+      "syncedAt": "2026-06-22T14:29:41.333Z"
+    },
+    "updatedAt": "2026-06-22T14:29:41.333Z"
+  }
+}

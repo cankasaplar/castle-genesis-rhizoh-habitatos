@@ -25,6 +25,11 @@ describe("rhizohObservationStateV1", () => {
     expect(state.interpretationOnly).toBe(true);
   });
 
+  it("projectionConsistency false when no fen committed", () => {
+    const state = buildRhizohObservationStateV1();
+    expect(state.sync.projectionConsistency).toBe(false);
+  });
+
   it("upgrades instrumentation tier when broadcast visibility recorded", () => {
     recordBroadcastVisibilityV1({
       presence: { count: 2 },

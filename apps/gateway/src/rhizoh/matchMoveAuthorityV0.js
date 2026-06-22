@@ -167,6 +167,57 @@ export function handleMatchMoveAuthorityV0(socket, message, wss) {
 
 export { leaveMatchBroadcastRoomV0 };
 
+/**
+ * Late-join snapshot — send authoritative server session state to one socket.
+ * @param {import("ws").WebSocket} socket
+ * @param {string} sessionId
+ */
+export function sendMatchSessionSnapshotOnJoinV0(socket, sessionId) {
+  const id = String(sessionId || "").trim();
+  const session = serverSessionsV0.get(id);
+  if (!socket || socket.readyState !== 1 || !session || session.serverSeq <= 0) {
+    return Object.freeze({ ok: false, skipped: true, reason: "no_snapshot" });
+  }
+
+  const stateEnvelope = createEnvelope(WS_MESSAGE.MATCH_STATE, {
+    schema: MATCH_MOVE_AUTHORITY_SCHEMA_V0,
+    sessionId: id,
+    fen: session.fen,
+    turn: session.turn,
+    moveCount: session.moveCount,
+    serverSeq: session.serverSeq,
+    commitAuthority: "server",
+    truthOrigin: "gateway_snapshot_on_join",
+    snapshot: true,
+    interpretationOnly: true
+  });
+  stateEnvelope.sessionId = id;
+  stateEnvelope.traceId = `match_snapshot_join_${session.serverSeq}`;
+
+  socket.send(JSON.stringify(stateEnvelope));
+  return Object.freeze({
+    ok: true,
+    sessionId: id,
+    serverSeq: session.serverSeq,
+    interpretationOnly: true
+  });
+}
+
+/** @internal vitest */
+export function seedMatchMoveAuthoritySessionForTestV0(sessionId, patch = {}) {
+  const id = String(sessionId || "").trim();
+  serverSessionsV0.set(
+    id,
+    Object.freeze({
+      sessionId: id,
+      fen: patch.fen || STARTING_FEN_V0,
+      turn: patch.turn || "white",
+      moveCount: patch.moveCount ?? 1,
+      serverSeq: patch.serverSeq ?? 1
+    })
+  );
+}
+
 /** @internal vitest */
 export function clearMatchMoveAuthoritySessionsForTestV0() {
   serverSessionsV0.clear();
