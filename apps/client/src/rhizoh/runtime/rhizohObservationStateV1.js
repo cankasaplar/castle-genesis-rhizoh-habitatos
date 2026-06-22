@@ -17,11 +17,12 @@ export const INSTRUMENTATION_TIER_V1 = Object.freeze({
   BROADCAST_FULL: "broadcast_full"
 });
 
-/** @type {{ lastPresence: object | null, lastBroadcast: object | null, localAckCount: number, driftEvents: number, commitEvents: number, lastGatewayServerSeq: number, lastGatewayFenHash: string | null }} */
+/** @type {{ lastPresence: object | null, lastBroadcast: object | null, localAckCount: number, gatewayAckCount: number | null, driftEvents: number, commitEvents: number, lastGatewayServerSeq: number, lastGatewayFenHash: string | null }} */
 const broadcastVisStoreV1 = {
   lastPresence: null,
   lastBroadcast: null,
   localAckCount: 0,
+  gatewayAckCount: null,
   driftEvents: 0,
   commitEvents: 0,
   lastGatewayServerSeq: 0,
@@ -107,6 +108,9 @@ export function recordBroadcastVisibilityV1(patch = {}) {
   if (patch.localAck) {
     broadcastVisStoreV1.localAckCount += 1;
   }
+  if (typeof patch.gatewayAckCount === "number") {
+    broadcastVisStoreV1.gatewayAckCount = patch.gatewayAckCount;
+  }
   notifyObservationSubscribersV1();
 }
 
@@ -115,6 +119,7 @@ export function resetBroadcastVisibilityForTestV1() {
   broadcastVisStoreV1.lastPresence = null;
   broadcastVisStoreV1.lastBroadcast = null;
   broadcastVisStoreV1.localAckCount = 0;
+  broadcastVisStoreV1.gatewayAckCount = null;
   broadcastVisStoreV1.driftEvents = 0;
   broadcastVisStoreV1.commitEvents = 0;
   broadcastVisStoreV1.lastGatewayServerSeq = 0;
@@ -157,7 +162,10 @@ export function buildRhizohObservationStateV1(opts = {}) {
     broadcastVisStoreV1.lastPresence?.count ??
     (ws.open ? 1 : 0);
   const delivered = broadcastVisStoreV1.lastBroadcast?.delivered ?? (ws.open ? 1 : 0);
-  const ackCount = broadcastVisStoreV1.localAckCount;
+  const ackCount =
+    typeof broadcastVisStoreV1.gatewayAckCount === "number"
+      ? broadcastVisStoreV1.gatewayAckCount
+      : broadcastVisStoreV1.localAckCount;
   const ackRate =
     recipientCount > 0 ? Math.min(1, ackCount / recipientCount) : null;
 

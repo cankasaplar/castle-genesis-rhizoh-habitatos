@@ -26,6 +26,53 @@ import { recordBroadcastVisibilityV1 } from "./rhizohObservationStateV1.js";
 export const MATCH_BROADCAST_TRANSPORT_SCHEMA_V0 =
   "castle.rhizoh.match_broadcast_transport.v0";
 
+/** @type {string | null} */
+let broadcastClientConnectionIdV0 = null;
+
+function resolveBroadcastClientConnectionIdV0() {
+  if (broadcastClientConnectionIdV0) return broadcastClientConnectionIdV0;
+  if (typeof window !== "undefined") {
+    const key = "rhizoh.broadcast.clientConnectionId";
+    const existing = window.sessionStorage?.getItem(key);
+    if (existing) {
+      broadcastClientConnectionIdV0 = existing;
+      return existing;
+    }
+    const created = `bcc_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    window.sessionStorage?.setItem(key, created);
+    broadcastClientConnectionIdV0 = created;
+    return created;
+  }
+  broadcastClientConnectionIdV0 = `bcc_node_${Date.now()}`;
+  return broadcastClientConnectionIdV0;
+}
+
+/**
+ * Send MATCH_STATE_APPLIED after local projection apply.
+ * @param {WebSocket} ws
+ * @param {{ sessionId: string, commitSeq: number, projectionVersion?: number }} input
+ */
+export function sendMatchStateAppliedV0(ws, input = {}) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    return Object.freeze({ ok: false, reason: "ws_not_open" });
+  }
+  const sessionId = String(input.sessionId || "").trim();
+  const commitSeq = Math.max(0, Number(input.commitSeq) || 0);
+  if (!sessionId || commitSeq <= 0) {
+    return Object.freeze({ ok: false, reason: "missing_session_or_commit" });
+  }
+  const envelope = createEnvelope(WS_MESSAGE.MATCH_STATE_APPLIED, {
+    sessionId,
+    commitSeq,
+    projectionVersion: input.projectionVersion ?? commitSeq,
+    clientConnectionId: resolveBroadcastClientConnectionIdV0(),
+    interpretationOnly: true
+  });
+  envelope.sessionId = sessionId;
+  ws.send(JSON.stringify(envelope));
+  return Object.freeze({ ok: true, sent: true, commitSeq });
+}
+
 /** @type {Map<string, number>} */
 const lastTransportServerSeqV0 = new Map();
 
@@ -70,11 +117,13 @@ export function bindMatchBroadcastTransportV0(opts) {
         return;
       }
       if (msg.type === WS_MESSAGE.MATCH_MOVE_ACK) {
+        const broadcast = msg.payload?.broadcast || {};
         recordBroadcastVisibilityV1({
           commitSeq: msg.payload?.serverSeq,
-          broadcastSeq: msg.payload?.serverSeq,
-          recipientCount: msg.payload?.broadcast?.recipientCount ?? msg.payload?.recipientCount,
-          delivered: msg.payload?.broadcast?.delivered
+          broadcastSeq: broadcast.broadcastSeq ?? msg.payload?.serverSeq,
+          recipientCount: broadcast.recipientCount ?? msg.payload?.recipientCount,
+          delivered: broadcast.delivered,
+          gatewayAckCount: broadcast.ackCount
         });
         opts.onAck?.({ envelope: msg });
         return;
@@ -87,8 +136,21 @@ export function bindMatchBroadcastTransportV0(opts) {
         opts.onInvite?.({ envelope: msg });
         return;
       }
+      if (msg.type === WS_MESSAGE.MATCH_BROADCAST_HEALTH) {
+        const broadcast = msg.payload?.broadcast || msg.payload || {};
+        recordBroadcastVisibilityV1({
+          commitSeq: broadcast.commitSeq,
+          broadcastSeq: broadcast.broadcastSeq ?? broadcast.commitSeq,
+          recipientCount: broadcast.recipientCount,
+          delivered: broadcast.delivered,
+          gatewayAckCount: broadcast.ackCount
+        });
+        opts.onHealth?.({ envelope: msg });
+        return;
+      }
       if (msg.type === WS_MESSAGE.MATCH_STATE) {
         const payload = msg.payload || {};
+        const broadcast = payload.broadcast || {};
         const remoteSeq = Number(payload.serverSeq) || 0;
         const dedupeKey = `${sessionId}:${remoteSeq}`;
         if (remoteSeq > 0 && lastTransportServerSeqV0.get(dedupeKey) === remoteSeq) {
@@ -101,14 +163,23 @@ export function bindMatchBroadcastTransportV0(opts) {
           { sessionId, ...payload },
           { origin: "broadcast_transport" }
         );
+        const applied = projected.ok === true && !projected.skipped;
+        if (applied && remoteSeq > 0) {
+          sendMatchStateAppliedV0(ws, {
+            sessionId,
+            commitSeq: remoteSeq,
+            projectionVersion: remoteSeq
+          });
+        }
         recordBroadcastVisibilityV1({
           commitSeq: payload.serverSeq,
-          broadcastSeq: payload.serverSeq,
-          recipientCount: payload.recipientCount ?? payload.presenceCount,
-          delivered: payload.recipientCount ?? payload.presenceCount,
+          broadcastSeq: broadcast.broadcastSeq ?? payload.serverSeq,
+          recipientCount: broadcast.recipientCount ?? payload.recipientCount ?? payload.presenceCount,
+          delivered: broadcast.delivered ?? payload.delivered,
           gatewayServerSeq: payload.serverSeq,
           gatewayFen: payload.fen,
-          localAck: projected.ok === true && !projected.skipped
+          gatewayAckCount: broadcast.ackCount,
+          localAck: applied
         });
         opts.onState?.({ envelope: msg, projected });
       }
@@ -134,6 +205,7 @@ export function sendMatchSessionJoinV0(ws, input = {}) {
     sessionId: input.sessionId,
     role: input.role || MATCH_BROADCAST_ROLE_V0.PLAYER,
     playerId: input.playerId ?? null,
+    clientConnectionId: resolveBroadcastClientConnectionIdV0(),
     interpretationOnly: true
   });
   envelope.sessionId = input.sessionId;
@@ -352,6 +424,7 @@ export function mountMatchBroadcastTransportConsoleV0() {
     roles: MATCH_BROADCAST_ROLE_V0,
     join: sendMatchSessionJoinV0,
     propose: sendMatchMoveProposalV0,
+    stateApplied: sendMatchStateAppliedV0,
     bind: bindMatchBroadcastTransportV0,
     getWs: getMatchGatewayWsV0,
     wsStatus: getMatchGatewayWsStatusV0,

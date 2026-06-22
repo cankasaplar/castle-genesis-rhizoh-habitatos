@@ -53,6 +53,10 @@ export const WS_MESSAGE = {
   MATCH_STATE: "MATCH_STATE",
   MATCH_MOVE: "MATCH_MOVE",
   MATCH_MOVE_ACK: "MATCH_MOVE_ACK",
+  /** Client → gateway: projection applied after MATCH_STATE (P0.5 ACK aggregation). */
+  MATCH_STATE_APPLIED: "MATCH_STATE_APPLIED",
+  /** Gateway → room: broadcast health after ACK aggregation. */
+  MATCH_BROADCAST_HEALTH: "MATCH_BROADCAST_HEALTH",
   MATCH_FINISHED: "MATCH_FINISHED",
   MATCH_ERROR: "MATCH_ERROR",
   ERROR: "ERROR"
@@ -253,3 +257,12 @@ export function quantize2(value) {
 export function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
+
+export {
+  GATEWAY_EVENT_ENVELOPE_SCHEMA_V0,
+  GATEWAY_EVENT_SOURCE_V0,
+  GATEWAY_DELIVERY_STATE_V0,
+  createGatewayEventEnvelopeV0,
+  createGatewayBroadcastMetaV0,
+  attachGatewayEventMetaV0
+} from "./gatewayEventEnvelopeV0.js";
