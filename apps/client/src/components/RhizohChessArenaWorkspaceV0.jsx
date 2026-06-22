@@ -870,6 +870,10 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
           setStatus(tr ? `Geçersiz hamle: ${move}` : `Illegal move: ${move}`);
           return false;
         }
+        if (out.previewFen) {
+          setGame(createChessArenaGameV0({ mode: CHESS_GAME_MODE_V0.HUMAN_HUMAN, fen: out.previewFen }));
+          setTick((n) => n + 1);
+        }
         setStatus(
           tr
             ? `Önerildi: ${out.validatedSan} (sunucu onayı bekleniyor)`

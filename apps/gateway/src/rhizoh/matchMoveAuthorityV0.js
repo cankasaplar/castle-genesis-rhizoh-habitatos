@@ -166,14 +166,12 @@ export function handleMatchMoveAuthorityV0(socket, message, wss) {
   socket.send(JSON.stringify(ackEnvelope));
   socket.send(JSON.stringify(stateEnvelope));
 
-  const fanAck = fanOutMatchSessionV0(sessionId, ackEnvelope, { exceptSocket: socket });
   const fanState = fanOutMatchSessionV0(sessionId, stateEnvelope, { exceptSocket: socket });
 
   return Object.freeze({
     ok: true,
     ack: ackPayload,
     broadcast: Object.freeze({
-      ack: fanAck,
       state: fanState,
       recipientCount: presenceCount,
       delivered: fanState.delivered + 1
