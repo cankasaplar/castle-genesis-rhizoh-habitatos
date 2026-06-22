@@ -24,3 +24,22 @@ test("wrapVoiceGatewayEnvelope attaches gatewayEvent and world bind", async () =
   assert.equal(wrapped.envelope.payload.boundMatchSessionId, "match_y");
   assert.ok(wrapped.envelope.payload.gatewayEvent);
 });
+
+test("mountVoiceGatewayCitizenshipConsoleV0 exposes fetchPresence", async () => {
+  const mod = await import("../voiceGatewayCitizenshipV0.js");
+  mod.resetVoiceGatewayCitizenshipClientForTestV0();
+  globalThis.window = /** @type {any} */ ({ __rhizoh: { voiceGateway: { schema: "old" } } });
+  mod.mountVoiceGatewayCitizenshipConsoleV0();
+  assert.equal(typeof globalThis.window.__rhizoh.voiceGateway.fetchPresence, "function");
+  assert.equal(typeof globalThis.window.__rhizoh.voiceGateway.sessionActive, "function");
+  delete globalThis.window;
+});
+
+test("markVoiceGatewayLiveSessionReadyV0 latches tab session", async () => {
+  const mod = await import("../voiceGatewayCitizenshipV0.js");
+  mod.resetVoiceGatewayCitizenshipClientForTestV0();
+  assert.equal(mod.isVoiceGatewayLiveSessionReadyV0(), false);
+  mod.markVoiceGatewayLiveSessionReadyV0();
+  assert.equal(mod.isVoiceGatewayLiveSessionReadyV0(), true);
+  assert.equal(mod.isVoiceGatewaySessionActiveV0(), true);
+});

@@ -17,6 +17,7 @@ import { emitVoiceEngineTelemetryV3 } from "./voiceEngineTelemetryV3.js";
 import { recordVoiceImmutableEventV0 } from "./voiceImmutableEventTimelineV0.js";
 import {
   ingestVoiceGatewayMessageV0,
+  markVoiceGatewayLiveSessionReadyV0,
   registerVoiceGatewayCitizenV0,
   resolveVoiceWorldContextV0,
   sendVoiceStateAppliedV0,
@@ -343,5 +344,6 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
   });
 
   emitVoiceEngineTelemetryV3("LIVE_WS_READY", { sessionId, path });
+  markVoiceGatewayLiveSessionReadyV0();
   return api;
 }
