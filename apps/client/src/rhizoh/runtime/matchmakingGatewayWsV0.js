@@ -9,6 +9,7 @@ import { getCastleFlightConfig } from "../../castleFlight/castleFlightConfig.js"
 import { bindMatchGatewayCommitListenerV0 } from "./matchmakingGatewayCommitBridgeV0.js";
 
 export const MATCH_GATEWAY_WS_SCHEMA_V0 = "castle.rhizoh.match_gateway_ws.v0";
+export const MATCH_GATEWAY_WS_CLOSED_EVENT_V0 = "rhizoh:match-gateway-ws-closed-v0";
 
 const WS_SOURCE_V0 = Object.freeze({
   REGISTERED: "registered",
@@ -199,7 +200,12 @@ function openDedicatedMatchGatewayWsV0() {
 
     dedicatedWs.addEventListener("open", onOpen);
     dedicatedWs.addEventListener("error", onFail);
-    dedicatedWs.addEventListener("close", onFail);
+    dedicatedWs.addEventListener("close", () => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent(MATCH_GATEWAY_WS_CLOSED_EVENT_V0));
+      }
+      onFail();
+    });
   });
 }
 

@@ -49,4 +49,23 @@ describe("matchmakingWorldProjectionV0", () => {
     });
     expect(again.skipped).toBe(true);
   });
+
+  it("reconciles join snapshot without san when serverSeq advances", () => {
+    const created = dispatchMatchmakingTruthEventV0({
+      type: MATCH_TRUTH_EVENT_V0.SESSION_CREATE,
+      payload: { initialState: MATCH_SESSION_STATE_V0.SESSION_ACTIVE }
+    });
+    const sessionId = created.session.sessionId;
+    const out = applyRemoteMatchWorldStateV0({
+      sessionId,
+      fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+      turn: "black",
+      moveCount: 1,
+      serverSeq: 1,
+      snapshot: true
+    });
+    expect(out.ok).toBe(true);
+    expect(out.reconciled).toBe(true);
+    expect(out.projection.activeSession?.committed?.serverSeq).toBe(1);
+  });
 });

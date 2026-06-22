@@ -526,6 +526,7 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   useEffect(() => {
     if (!open) return undefined;
     const onC2c = (ev) => {
+      if (isChessRealitySyncActiveV0()) return;
       const detail = ev?.detail;
       if (detail?.type !== CASTLE_C2C_MESSAGE_TYPE_V0.CHESS_MOVE || !detail?.payload?.move) return;
       if (c2cMatch && detail.payload.matchId && detail.payload.matchId !== c2cMatch.matchId) return;

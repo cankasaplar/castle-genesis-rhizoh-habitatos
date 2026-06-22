@@ -16,7 +16,7 @@ import {
   parseMatchSessionFromLocationV0,
   publishMatchIngressRouteV0
 } from "./matchIngressSessionRouterV0.js";
-import { getMatchGatewayWsStatusV0 } from "./matchmakingGatewayWsV0.js";
+import { getMatchGatewayWsStatusV0, MATCH_GATEWAY_WS_CLOSED_EVENT_V0 } from "./matchmakingGatewayWsV0.js";
 import {
   dispatchMatchmakingTruthEventV0,
   getMatchmakingTruthProductionStatusV0,
@@ -29,12 +29,14 @@ export const MATCH_SESSION_SYNC_BRIDGE_SCHEMA_V0 =
 
 export const MATCH_REALITY_SYNC_STATE_EVENT_V0 = "rhizoh:match-reality-sync-state-v0";
 
-/** @type {{ active: boolean, sessionId: string | null, unbind: (() => void) | null, lastProjection: object | null }} */
+/** @type {{ active: boolean, sessionId: string | null, unbind: (() => void) | null, lastProjection: object | null, lastJoinInput: object | null, reconnectUnbind: (() => void) | null }} */
 let bridgeState = {
   active: false,
   sessionId: null,
   unbind: null,
-  lastProjection: null
+  lastProjection: null,
+  lastJoinInput: null,
+  reconnectUnbind: null
 };
 
 function emitRealitySyncState(projection, extra = {}) {
@@ -97,7 +99,23 @@ export async function startMatchSessionSyncV0(input = {}) {
     return Object.freeze({ ok: false, reason: "missing_session_id", interpretationOnly: true });
   }
 
-  stopMatchSessionSyncV0();
+  const joinInput = Object.freeze({
+    ...input,
+    sessionId,
+    playerId,
+    role: input.role || "player"
+  });
+
+  if (bridgeState.unbind) {
+    try {
+      bridgeState.unbind();
+    } catch {
+      /* noop */
+    }
+  }
+  bridgeState.active = false;
+  bridgeState.unbind = null;
+  bridgeState.sessionId = null;
 
   ensureTruthSessionForSyncV0(sessionId, playerId);
 
@@ -139,8 +157,12 @@ export async function startMatchSessionSyncV0(input = {}) {
     active: true,
     sessionId,
     unbind,
-    lastProjection: projectMatchTruthToUiV0()
+    lastProjection: projectMatchTruthToUiV0(),
+    lastJoinInput: joinInput,
+    reconnectUnbind: bridgeState.reconnectUnbind
   };
+
+  ensureMatchSyncReconnectListenerV0();
 
   const out = Object.freeze({
     ok: true,
@@ -195,10 +217,41 @@ export function stopMatchSessionSyncV0() {
       /* noop */
     }
   }
-  bridgeState = { active: false, sessionId: null, unbind: null, lastProjection: null };
+  bridgeState = {
+    active: false,
+    sessionId: null,
+    unbind: null,
+    lastProjection: null,
+    lastJoinInput: null,
+    reconnectUnbind: bridgeState.reconnectUnbind
+  };
   if (typeof window !== "undefined" && window.__rhizoh?.matchSessionSync) {
     delete window.__rhizoh.matchSessionSync;
   }
+}
+
+async function rejoinMatchSessionSyncV0() {
+  const input = bridgeState.lastJoinInput;
+  if (!input?.sessionId) return;
+  await startMatchSessionSyncV0({
+    ...input,
+    sendInvite: false,
+    openArena: false,
+    waitForGateway: true,
+    gatewayTimeoutMs: 20_000
+  });
+}
+
+function ensureMatchSyncReconnectListenerV0() {
+  if (typeof window === "undefined" || bridgeState.reconnectUnbind) return;
+  const onWsClosed = () => {
+    if (!bridgeState.active || !bridgeState.lastJoinInput?.sessionId) return;
+    void rejoinMatchSessionSyncV0();
+  };
+  window.addEventListener(MATCH_GATEWAY_WS_CLOSED_EVENT_V0, onWsClosed);
+  bridgeState.reconnectUnbind = () => {
+    window.removeEventListener(MATCH_GATEWAY_WS_CLOSED_EVENT_V0, onWsClosed);
+  };
 }
 
 export function isMatchRealitySyncActiveV0() {
@@ -308,5 +361,13 @@ export function mountMatchSessionSyncBridgeConsoleV0() {
 
 /** @internal vitest */
 export function resetMatchSessionSyncBridgeForTestV0() {
+  if (bridgeState.reconnectUnbind) {
+    try {
+      bridgeState.reconnectUnbind();
+    } catch {
+      /* noop */
+    }
+  }
   stopMatchSessionSyncV0();
+  bridgeState.reconnectUnbind = null;
 }

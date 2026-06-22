@@ -16,7 +16,7 @@ export const MATCH_MOVE_AUTHORITY_SCHEMA_V0 = "castle.rhizoh.match_move_authorit
 
 const STARTING_FEN_V0 = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-/** @type {Map<string, { sessionId: string, fen: string, turn: string, moveCount: number, serverSeq: number }>} */
+/** @type {Map<string, { sessionId: string, fen: string, turn: string, moveCount: number, serverSeq: number, lastSan: string | null }>} */
 const serverSessionsV0 = new Map();
 
 function getOrCreateServerSessionV0(sessionId) {
@@ -30,7 +30,8 @@ function getOrCreateServerSessionV0(sessionId) {
         fen: STARTING_FEN_V0,
         turn: "white",
         moveCount: 0,
-        serverSeq: 0
+        serverSeq: 0,
+        lastSan: null
       })
     );
   }
@@ -112,10 +113,12 @@ export function handleMatchMoveAuthorityV0(socket, message, wss) {
     fen: validation.fen,
     turn: validation.turn,
     moveCount: session.moveCount + 1,
-    serverSeq
+    serverSeq,
+    lastSan: validation.san
   });
   serverSessionsV0.set(sessionId, nextSession);
 
+  const presenceCount = getMatchSessionPresenceV0(sessionId).count;
   const ackPayload = Object.freeze({
     schema: MATCH_MOVE_AUTHORITY_SCHEMA_V0,
     sessionId,
@@ -128,6 +131,10 @@ export function handleMatchMoveAuthorityV0(socket, message, wss) {
     commitAuthority: "server",
     truthOrigin: "gateway_ack",
     validationSource: "authority_gateway",
+    broadcast: Object.freeze({
+      recipientCount: presenceCount,
+      delivered: 0
+    }),
     interpretationOnly: true
   });
 
@@ -146,11 +153,15 @@ export function handleMatchMoveAuthorityV0(socket, message, wss) {
     commitAuthority: "server",
     truthOrigin: "gateway_ack",
     broadcast: true,
-    presenceCount: getMatchSessionPresenceV0(sessionId).count,
+    presenceCount,
     interpretationOnly: true
   });
   stateEnvelope.sessionId = sessionId;
   stateEnvelope.traceId = ackEnvelope.traceId;
+
+  if (stateEnvelope.payload && typeof stateEnvelope.payload === "object") {
+    stateEnvelope.payload.recipientCount = presenceCount;
+  }
 
   socket.send(JSON.stringify(ackEnvelope));
   socket.send(JSON.stringify(stateEnvelope));
@@ -161,7 +172,12 @@ export function handleMatchMoveAuthorityV0(socket, message, wss) {
   return Object.freeze({
     ok: true,
     ack: ackPayload,
-    broadcast: Object.freeze({ ack: fanAck, state: fanState })
+    broadcast: Object.freeze({
+      ack: fanAck,
+      state: fanState,
+      recipientCount: presenceCount,
+      delivered: fanState.delivered + 1
+    })
   });
 }
 
@@ -186,6 +202,7 @@ export function sendMatchSessionSnapshotOnJoinV0(socket, sessionId) {
     turn: session.turn,
     moveCount: session.moveCount,
     serverSeq: session.serverSeq,
+    lastSan: session.lastSan || null,
     commitAuthority: "server",
     truthOrigin: "gateway_snapshot_on_join",
     snapshot: true,
@@ -213,7 +230,8 @@ export function seedMatchMoveAuthoritySessionForTestV0(sessionId, patch = {}) {
       fen: patch.fen || STARTING_FEN_V0,
       turn: patch.turn || "white",
       moveCount: patch.moveCount ?? 1,
-      serverSeq: patch.serverSeq ?? 1
+      serverSeq: patch.serverSeq ?? 1,
+      lastSan: patch.lastSan ?? "e4"
     })
   );
 }

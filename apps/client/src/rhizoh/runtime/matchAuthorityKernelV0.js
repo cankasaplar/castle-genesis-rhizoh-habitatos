@@ -289,18 +289,32 @@ export function processKernelCommitMoveV0(session, commit, opts = {}) {
   const s = attachAuthorityToSessionV0(session);
   const kernelState = s.kernel?.state || MATCH_KERNEL_STATE_V0.PENDING_MOVE;
 
+  const incomingSeq = Number(commit.serverSeq) || 0;
+  const localSeq = s.committed?.serverSeq ?? 0;
+  if (incomingSeq > 0 && incomingSeq <= localSeq) {
+    return Object.freeze({
+      ok: true,
+      skipped: true,
+      reason: "already_committed",
+      session: s,
+      kernelState: s.kernel?.state || MATCH_KERNEL_STATE_V0.ACTIVE,
+      interpretationOnly: true
+    });
+  }
+
   if (!isLegalKernelTransitionV0(kernelState, MATCH_KERNEL_STATE_V0.COMMITTING) && kernelState !== MATCH_KERNEL_STATE_V0.ACTIVE) {
     return Object.freeze({ ok: false, reason: "illegal_kernel_transition", kernelState });
   }
 
   const committing = withKernelStateV0(s, MATCH_KERNEL_STATE_V0.COMMITTING);
-  const serverSeq = (s.committed?.serverSeq ?? 0) + 1;
+  const serverSeq = incomingSeq > 0 ? incomingSeq : localSeq + 1;
   const committed = applyServerMatchCommitV0(committing, {
     san: commit.san,
     playerId: commit.playerId,
     fen: commit.fen,
     turn: commit.turn,
-    serverSeq
+    serverSeq,
+    moveCount: commit.moveCount
   });
 
   if (!committed.ok) return committed;
