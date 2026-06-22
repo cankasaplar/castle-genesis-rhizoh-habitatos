@@ -14,15 +14,16 @@ describe("matchmakingTruthAuthorityBoundaryV0", () => {
     vi.spyOn(console, "info").mockImplementation(() => {});
   });
 
-  it("verifyAuthorityBoundary reports SERVER_BOUND with simulated gateway", () => {
+  it("verifyAuthorityBoundary reports SERVER_BOUND with derived server commit", () => {
     const out = runMatchmakingAuthorityBoundaryVerifyV0({ reset: true });
     expect(out.ok).toBe(true);
     expect(out.stage).toBe("SERVER_BOUND");
+    expect(out.clientIsCommitAuthority).toBe(false);
     expect(out.proposalAuthority).toBe("client_shadow");
-    expect(out.commitAuthority).toBe("server_primary");
+    expect(out.previewAuthority).toBe("client_preview");
+    expect(out.effectiveCommitWriter).toBe("server");
+    expect(out.commitAuthority).toBe("server");
     expect(out.serverAuthoritative).toBe(true);
-    expect(out.previewChainOk).toBe(true);
-    expect(out.authoritativeChainOk).toBe(true);
   });
 
   it("verifyDriftInjection detects drift and reconciles", () => {

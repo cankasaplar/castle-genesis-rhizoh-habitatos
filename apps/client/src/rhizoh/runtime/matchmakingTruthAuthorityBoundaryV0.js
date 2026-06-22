@@ -17,9 +17,10 @@ import {
   getMatchTruthAuthoritySnapshotV0,
   MATCH_TRUTH_CHAIN_PHASE_V0,
   MATCH_TRUTH_ORIGIN_V0,
-  MATCH_VALIDATION_SOURCE_V0
+  MATCH_VALIDATION_SOURCE_V0,
+  MATCH_EFFECTIVE_COMMIT_WRITER_V0
 } from "./matchmakingTruthAuthorityObservabilityV0.js";
-import { MATCH_COMMIT_AUTHORITY_POLICY_V0 } from "./matchmakingSingleWriterPolicyV0.js";
+import { MATCH_SERVER_COMMIT_AUTHORITY_V0 } from "./matchmakingSingleWriterPolicyV0.js";
 
 export const MATCH_AUTHORITY_BOUNDARY_SCHEMA_V0 =
   "castle.rhizoh.match_authority_boundary_verify.v0";
@@ -82,8 +83,11 @@ export function runMatchmakingAuthorityBoundaryVerifyV0(opts = {}) {
     previewOk &&
     authoritativeOk &&
     rejectionOk &&
-    auth.commitAuthority === MATCH_COMMIT_AUTHORITY_POLICY_V0.SERVER_PRIMARY &&
+    auth.clientIsCommitAuthority === false &&
     auth.proposalAuthority === "client_shadow" &&
+    auth.previewAuthority === "client_preview" &&
+    auth.effectiveCommitWriter === MATCH_EFFECTIVE_COMMIT_WRITER_V0.SERVER &&
+    auth.commitAuthority === MATCH_SERVER_COMMIT_AUTHORITY_V0.SERVER &&
     gatewayReady === true;
 
   const result = Object.freeze({
@@ -91,8 +95,11 @@ export function runMatchmakingAuthorityBoundaryVerifyV0(opts = {}) {
     ok: singleWriterOk,
     stage: gatewayReady ? "SERVER_BOUND" : "PARTIAL",
     proposalAuthority: auth.proposalAuthority,
-    commitAuthority: auth.commitAuthority,
+    previewAuthority: auth.previewAuthority,
+    simulationAuthority: auth.simulationAuthority,
+    clientIsCommitAuthority: false,
     effectiveCommitWriter: auth.effectiveCommitWriter,
+    commitAuthority: auth.commitAuthority,
     validationSource: gatewayReady
       ? MATCH_VALIDATION_SOURCE_V0.AUTHORITY_GATEWAY
       : MATCH_VALIDATION_SOURCE_V0.CHESS_JS_LOCAL,

@@ -22,9 +22,10 @@
 
 | Field | Policy (always) | Effective (until live gateway) |
 |-------|-----------------|--------------------------------|
-| `commitAuthority` | `server_primary` | — |
-| `effectiveCommitWriter` | — | `client_shadow` → `server` after ack |
-| `proposalAuthority` | `client_shadow` | — |
+| `commitAuthority` | **never** (null) | `server` (derived only) |
+| `effectiveCommitWriter` | SSOT: `pending_server` → `server` | — |
+
+**Rhizoh identity:** Client = Reality Simulator · Server = Reality Finalizer
 
 Client `COMMIT_MOVE` without `provenance=gateway_ack` → `single_writer_violation`.
 
