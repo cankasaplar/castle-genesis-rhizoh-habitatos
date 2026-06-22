@@ -6,6 +6,8 @@
 
 **Status:** Outline for PDF/Notion → future `https://rhizoh.com/manifesto` (domain pending)
 
+**arXiv-ready draft (v0.1):** [`academic/RHIZOH_DISTRIBUTED_REALITY_CONSTRUCTION_PAPER_V0.1.md`](academic/RHIZOH_DISTRIBUTED_REALITY_CONSTRUCTION_PAPER_V0.1.md) · product gate: [`academic/RHIZOH_PRODUCTIZATION_PHASE_GATE_V0.1.md`](academic/RHIZOH_PRODUCTIZATION_PHASE_GATE_V0.1.md)
+
 ---
 
 ## Academic risk warning (read first)
