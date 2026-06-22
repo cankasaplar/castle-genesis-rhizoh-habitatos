@@ -56,6 +56,7 @@ sessionId = opts.sessionId || boundMatchSessionId || live_*
 
 ```javascript
 window.__rhizoh.voiceGateway.resolveContext()
+window.__rhizoh.voiceGateway.sessionActive()  // true after first LIVE_WS_READY
 window.__rhizoh.observationState.snapshot().voice
 await window.__rhizoh.voiceGateway.fetchPresence()
 ```

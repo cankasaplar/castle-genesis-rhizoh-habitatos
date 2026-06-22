@@ -52,6 +52,19 @@ describe("rhizohVoicePreSttInputSanitizationGateV0", () => {
     expect(v.reason).toBe("allow_if_session_active");
   });
 
+  it("allow_if_session_active bypasses after prior LIVE_WS_READY (tab session latch)", () => {
+    const v = evaluatePreSttInputSanitizationV0({
+      maxRms: 0.0018,
+      recordedMs: 5844,
+      bytes: 73705,
+      warmProbe: { avgWarmScore: 0.3, minWarmScore: 0.3 },
+      sampleCount: 2,
+      voiceGatewaySessionActive: true
+    });
+    expect(v.pass).toBe(true);
+    expect(v.reason).toBe("allow_if_session_active");
+  });
+
   it("drops when speech probability below 0.6", () => {
     const v = evaluatePreSttInputSanitizationV0({
       maxRms: 0.013,

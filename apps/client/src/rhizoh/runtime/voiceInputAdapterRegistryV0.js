@@ -8,6 +8,7 @@
  */
 
 import { isVoiceEngineV3EnabledV0 } from "./voiceEngineV3/isVoiceEngineV3EnabledV0.js";
+import { mountVoiceGatewayCitizenshipConsoleV0 } from "./voiceGatewayCitizenshipV0.js";
 import { getVoiceOutputAdapterSnapshotV0 } from "./rhizohVoiceOutputAdapterChainV0.js";
 
 export const VOICE_INPUT_ADAPTER_SCHEMA = "castle.voice_input_adapter_registry.v0";
@@ -186,6 +187,7 @@ export function ensureVoiceAdapterRegistered() {
     lastRegisteredModeV0 = mode;
     completeHydrationProbe();
     const snap = publishDebugTruth();
+    mountVoiceGatewayCitizenshipConsoleV0();
     resolveReadyWaiters(snap);
     console.info("[VOICE_ADAPTER] engine v3 (Chrome STT deprecated as primary)", snap);
     return snap;

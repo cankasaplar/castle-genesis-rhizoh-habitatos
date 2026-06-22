@@ -106,6 +106,7 @@ export function mountMatchmakingConsoleV0() {
     publishMatchmakingApiFacadeV0(getMatchmakingEngineSurfaceV0(), {
       consoleSchema: MATCHMAKING_CONSOLE_SCHEMA_V0
     });
+    mountVoiceGatewayCitizenshipConsoleV0();
     const snap = buildMatchmakingConsoleSnapV0();
     window.__rhizoh.matchmakingConsole = snap;
     return snap;

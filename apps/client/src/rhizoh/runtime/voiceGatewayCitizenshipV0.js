@@ -21,6 +21,23 @@ export const VOICE_GATEWAY_CITIZENSHIP_CLIENT_SCHEMA_V0 =
 
 /** @type {string | null} */
 let voiceClientConnectionIdV0 = null;
+/** Tab session — set after first successful LIVE_WS_READY (persists across turns). */
+let voiceGatewayLiveSessionReadyV0 = false;
+
+export function markVoiceGatewayLiveSessionReadyV0() {
+  voiceGatewayLiveSessionReadyV0 = true;
+}
+
+export function isVoiceGatewayLiveSessionReadyV0() {
+  return voiceGatewayLiveSessionReadyV0 === true;
+}
+
+/** Live WS this turn, citizenship registered, or prior LIVE_WS_READY this tab. */
+export function isVoiceGatewaySessionActiveV0() {
+  return (
+    isVoiceGatewayCitizenshipRegisteredV0() === true || isVoiceGatewayLiveSessionReadyV0() === true
+  );
+}
 
 function resolveVoiceClientConnectionIdV0() {
   if (voiceClientConnectionIdV0) return voiceClientConnectionIdV0;
@@ -114,6 +131,7 @@ export async function registerVoiceGatewayCitizenV0(ws, ctx = {}) {
       worldId: ctx.worldId || sessionId,
       boundMatchSessionId: ctx.boundMatchSessionId || null
     });
+    markVoiceGatewayLiveSessionReadyV0();
   }
   return reg;
 }
@@ -174,6 +192,7 @@ export { isVoiceGatewayCitizenshipRegisteredV0 };
 
 export function resetVoiceGatewayCitizenshipClientForTestV0() {
   voiceClientConnectionIdV0 = null;
+  voiceGatewayLiveSessionReadyV0 = false;
 }
 
 /**
@@ -216,14 +235,20 @@ export async function fetchGatewayPresenceV0(opts = {}) {
 export function mountVoiceGatewayCitizenshipConsoleV0() {
   if (typeof window === "undefined") return;
   window.__rhizoh = window.__rhizoh || {};
-  window.__rhizoh.voiceGateway = Object.freeze({
+  const facade = Object.freeze({
     schema: VOICE_GATEWAY_CITIZENSHIP_CLIENT_SCHEMA_V0,
     resolveContext: resolveVoiceWorldContextV0,
     register: registerVoiceGatewayCitizenV0,
     stateApplied: sendVoiceStateAppliedV0,
     ingest: ingestVoiceGatewayMessageV0,
     fetchPresence: fetchGatewayPresenceV0,
+    sessionActive: isVoiceGatewaySessionActiveV0,
     consoleHint: "await window.__rhizoh.voiceGateway.fetchPresence()",
     interpretationOnly: true
   });
+  const prev = window.__rhizoh.voiceGateway;
+  if (prev && typeof prev.fetchPresence === "function" && prev.schema === VOICE_GATEWAY_CITIZENSHIP_CLIENT_SCHEMA_V0) {
+    return;
+  }
+  window.__rhizoh.voiceGateway = facade;
 }
