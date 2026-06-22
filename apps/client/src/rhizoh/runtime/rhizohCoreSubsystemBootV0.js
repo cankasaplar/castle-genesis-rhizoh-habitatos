@@ -32,6 +32,7 @@ import { ensureChessBroadcastOpponentMatrixDevToolsV0 } from "./chessBroadcastOp
 import { ensureRhizohCausalGraphDevToolsV0 } from "./runtimeEventGraphBridgeV0.js";
 import { ensureContinuityKernelDevToolsV0 } from "./rhizohContinuityKernelV0.js";
 import { mountMatchmakingConsoleV0 } from "./matchmakingConsoleV0.js";
+import { autoStartMatchSessionSyncFromLocationV0 } from "./matchSessionSyncBridgeV0.js";
 import { pruneRhizohLocalStorageOnBootV0 } from "./rhizohLocalStorageSafeV0.js";
 import {
   isRhizohWorldSpacePathV0,
@@ -104,6 +105,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureContinuityKernelDevToolsV0();
     runDomainGateForPathV0(pathname, { coreOnly: true });
     mountMatchmakingConsoleV0();
+    void autoStartMatchSessionSyncFromLocationV0();
     stopLegalWaitLoopV0 = startRhizohLegalPendingWaitLoopV0({ bootDelayMs: 2_500 });
   }
 

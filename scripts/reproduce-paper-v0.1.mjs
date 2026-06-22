@@ -11,6 +11,7 @@
  *   await window.__rhizoh.matchmaking.verifyProduction({ reset: true })
  *   await window.__rhizoh.matchmaking.verifyAuthorityBoundary({ reset: true })
  *   await window.__rhizoh.matchmaking.verifyDriftInjection({ reset: true })
+ *   await window.__rhizoh.matchmaking.verifyBroadcastE2e({ reset: true })
  */
 
 import { spawnSync } from "node:child_process";
@@ -39,6 +40,11 @@ if (!ciOnly) {
     cmd: "npm",
     args: ["run", "test", "-w", "apps/client", "--", "--run", "src/rhizoh/runtime/__tests__/matchmakingTruthAuthorityBoundaryV0.test.js"]
   });
+  steps.push({
+    name: "client-broadcast-e2e-verify",
+    cmd: "npm",
+    args: ["run", "test", "-w", "apps/client", "--", "--run", "src/rhizoh/runtime/__tests__/matchmakingBroadcastE2eVerifyV0.test.js"]
+  });
 }
 
 console.log("[reproduce-paper-v0.1] Rhizoh preprint reproducibility harness");
@@ -64,6 +70,7 @@ console.log("Browser harness (manual — requires running client):");
 console.log("  await window.__rhizoh.matchmaking.verifyProduction({ reset: true })");
 console.log("  await window.__rhizoh.matchmaking.verifyAuthorityBoundary({ reset: true })");
 console.log("  await window.__rhizoh.matchmaking.verifyDriftInjection({ reset: true })");
+console.log("  await window.__rhizoh.matchmaking.verifyBroadcastE2e({ reset: true })");
 console.log("  window.__rhizoh.matchmaking.truthStatus()");
 console.log("");
 console.log("Expected: ok=true, clientIsCommitAuthority=false, produced === replayed");

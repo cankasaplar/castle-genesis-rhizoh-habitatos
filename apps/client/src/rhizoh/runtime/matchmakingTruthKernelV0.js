@@ -37,6 +37,7 @@ import {
   runMatchmakingAuthorityBoundaryVerifyV0,
   runMatchmakingDriftInjectionVerifyV0
 } from "./matchmakingTruthAuthorityBoundaryV0.js";
+import { runMatchBroadcastE2eVerifyV0 } from "./matchmakingBroadcastE2eVerifyV0.js";
 
 export const MATCH_TRUTH_SCHEMA_V0 = "castle.rhizoh.matchmaking_truth.v0";
 export const MATCH_TRUTH_LOG_SCHEMA_V0 = "castle.rhizoh.matchmaking_truth_log.v0";
@@ -154,7 +155,7 @@ export function buildSessionFromCreatePayloadV0(input = {}) {
   return attachAuthorityToSessionV0(
     Object.freeze({
       schema: MATCH_SESSION_SCHEMA_V0,
-      sessionId: createSessionIdV0(),
+      sessionId: String(input.sessionId || "").trim() || createSessionIdV0(),
       mode,
       state,
       players: Object.freeze(players),
@@ -722,6 +723,7 @@ export function mountMatchmakingTruthKernelConsoleV0() {
     verifyProduction: runMatchmakingTruthProductionVerifyV0,
     verifyAuthorityBoundary: runMatchmakingAuthorityBoundaryVerifyV0,
     verifyDriftInjection: runMatchmakingDriftInjectionVerifyV0,
+    verifyBroadcastE2e: runMatchBroadcastE2eVerifyV0,
     clear: clearMatchmakingTruthForTestV0,
     interpretationOnly: true,
     shadowRehearsal: true
