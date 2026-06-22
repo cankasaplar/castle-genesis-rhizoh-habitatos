@@ -35,7 +35,8 @@
 | Company dashboard | Spec only (`RHIZOH_COMPANY_DASHBOARD_SPEC_V1.md`) |
 | Phase 1 real signal | READY/HOLD not signed |
 | Preprint PDF export | ✔ public static path; regenerate via `academic:export-preprint` |
-| Reality Binding demo video | Runbook only — [`RHIZOH_REALITY_BINDING_DEMO_RUNBOOK_V0.md`](RHIZOH_REALITY_BINDING_DEMO_RUNBOOK_V0.md) |
+| **Observation proof layer** | `?proof=1` panel · `observationState.snapshot()` · tier `broadcast_partial` |
+| Reality Binding demo video | Runbook + proof overlay — [`RHIZOH_REALITY_BINDING_DEMO_RUNBOOK_V0.md`](RHIZOH_REALITY_BINDING_DEMO_RUNBOOK_V0.md) |
 | Founder Circle billing (Stripe) | Manual onboarding only |
 
 ---

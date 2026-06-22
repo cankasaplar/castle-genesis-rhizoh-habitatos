@@ -27,6 +27,7 @@ import { mountEpistemicIdentityContinuityConsoleV0 } from "./epistemicIdentityCo
 import { mountIdentityManifestConsoleV0 } from "./identityManifestProjectionV0.js";
 import { mountInviteOpsConsoleV0 } from "../ingress/inviteOpsV0.js";
 import { mountFounderCircleConsoleV0 } from "../ingress/founderCircleInterestV0.js";
+import { mountRhizohObservationStateConsoleV1 } from "./rhizohObservationStateV1.js";
 import { installVisitorEpistemicTraceWireV0 } from "../ingress/visitorEpistemicTraceV0.js";
 import {
   installObserverReadOnlyHookWireV0,
@@ -159,6 +160,7 @@ export function runDomainGateForPathV0(pathname, ctx = {}) {
     mountIdentityManifestConsoleV0();
     mountInviteOpsConsoleV0();
     mountFounderCircleConsoleV0();
+    mountRhizohObservationStateConsoleV1();
     mountObserverReadOnlyHookV0();
     installObserverReadOnlyHookWireV0();
     installVisitorEpistemicTraceWireV0();

@@ -57,6 +57,8 @@ Force local preview divergence (advanced) or narrate existing `DRIFT_DETECTED` l
 
 ### 5. Closing frame
 
+Show proof panel (`?proof=1`) with `projectionConsistency: yes` and `delivered: 2/2` — not console-only.
+
 Show growing event log + one-liner: *Observation ≠ Execution · gateway owns commit.*
 
 ---

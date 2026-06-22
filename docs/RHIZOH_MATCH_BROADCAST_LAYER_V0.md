@@ -111,6 +111,8 @@ window.__rhizoh.matchBroadcast.propose(ws, { sessionId, san: "e4", playerId })
 - Guaranteed delivery / CRDT merge
 - Media timeline events
 
+**Observation layer (P0.1):** [`RHIZOH_PRODUCTION_OBSERVATION_LAYER_V1.md`](RHIZOH_PRODUCTION_OBSERVATION_LAYER_V1.md) · closure [`RHIZOH_BROADCAST_LAYER_CLOSURE_SPEC_V1.md`](RHIZOH_BROADCAST_LAYER_CLOSURE_SPEC_V1.md) · `?proof=1` overlay
+
 ---
 
 *RESEARCH-ONLY — no frozen `phase*.js` changes.*
