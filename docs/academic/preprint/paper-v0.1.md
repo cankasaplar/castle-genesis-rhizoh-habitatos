@@ -172,6 +172,16 @@ The system **tolerates** divergence in simulation, then **arbitrates** — it do
 
 ---
 
+
+![Rhizoh architecture](figures/architecture.png)
+
+*Figure 1. Client simulator, gateway finalizer, observability split.*
+
+![Authority state machine](figures/authority-state-machine.png)
+
+*Figure 2. Formal transition model: preview, propose, validate, commit, reconcile, reduce.*
+
+
 ## 5. Architecture
 
 ### 5.1 End-to-end diagram (current prototype)
