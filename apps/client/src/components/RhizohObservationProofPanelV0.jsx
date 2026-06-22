@@ -76,7 +76,7 @@ export const RhizohObservationProofPanelV0 = memo(function RhizohObservationProo
       : String(state.broadcast.delivered);
 
   const idle = !state.sessionId && !state.reality?.syncActive;
-  const catchUp = state.sync?.catchUpLag === "awaiting_snapshot";
+  const catchUp = state.sync?.catchUpLag === "awaiting_snapshot" || state.sync?.catchUpLag === "awaiting_gateway_seq";
   const syncLabel = idle
     ? "— (start session)"
     : catchUp

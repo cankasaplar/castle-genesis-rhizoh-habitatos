@@ -62,15 +62,13 @@ export function bindMatchBroadcastTransportV0(opts) {
         return;
       }
       if (msg.type === WS_MESSAGE.MATCH_MOVE_ACK) {
-        const ack = applyGatewayMatchMoveAckV0({ sessionId, ...(msg.payload || {}) });
         recordBroadcastVisibilityV1({
           commitSeq: msg.payload?.serverSeq,
           broadcastSeq: msg.payload?.serverSeq,
-          recipientCount: msg.payload?.broadcast?.recipientCount,
-          delivered: msg.payload?.broadcast?.delivered,
-          localAck: true
+          recipientCount: msg.payload?.broadcast?.recipientCount ?? msg.payload?.recipientCount,
+          delivered: msg.payload?.broadcast?.delivered
         });
-        opts.onAck?.({ envelope: msg, ack });
+        opts.onAck?.({ envelope: msg });
         return;
       }
       if (msg.type === WS_MESSAGE.MATCH_CASTLE_INVITE) {
@@ -86,9 +84,15 @@ export function bindMatchBroadcastTransportV0(opts) {
           { sessionId, ...(msg.payload || {}) },
           { origin: "broadcast_transport" }
         );
+        const payload = msg.payload || {};
         recordBroadcastVisibilityV1({
-          commitSeq: msg.payload?.serverSeq,
-          localAck: true
+          commitSeq: payload.serverSeq,
+          broadcastSeq: payload.serverSeq,
+          recipientCount: payload.recipientCount ?? payload.presenceCount,
+          delivered: payload.recipientCount ?? payload.presenceCount,
+          gatewayServerSeq: payload.serverSeq,
+          gatewayFen: payload.fen,
+          localAck: projected.ok === true && !projected.skipped
         });
         opts.onState?.({ envelope: msg, projected });
       }

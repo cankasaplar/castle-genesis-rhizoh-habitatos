@@ -165,17 +165,32 @@ export function proposeShadowMatchMoveV0(session, move) {
 export function applyServerMatchCommitV0(session, commit) {
   const s = attachAuthorityToSessionV0(session);
   const san = String(commit?.san || "").trim();
+  const incomingSeq = Number(commit.serverSeq) || 0;
+  const localSeq = s.committed?.serverSeq ?? 0;
+  if (incomingSeq > 0 && incomingSeq <= localSeq) {
+    return Object.freeze({
+      ok: true,
+      skipped: true,
+      reason: "already_committed",
+      session: s
+    });
+  }
+
   if (!san) {
     return Object.freeze({ ok: false, reason: "invalid_commit" });
   }
 
-  const serverSeq = Math.max(1, Number(commit.serverSeq) || (s.committed.serverSeq ?? 0) + 1);
+  const serverSeq = incomingSeq > 0 ? incomingSeq : localSeq + 1;
   const turn = commit.turn === "black" ? "black" : commit.turn === "white" ? "white" : s.committed.turn === "white" ? "black" : "white";
+  const moveCount =
+    typeof commit.moveCount === "number" && commit.moveCount >= 0
+      ? commit.moveCount
+      : (s.committed.moveCount ?? 0) + 1;
 
   const committed = Object.freeze({
     fen: commit.fen || s.committed.fen,
     turn,
-    moveCount: (s.committed.moveCount ?? 0) + 1,
+    moveCount,
     lastSan: san,
     serverSeq
   });

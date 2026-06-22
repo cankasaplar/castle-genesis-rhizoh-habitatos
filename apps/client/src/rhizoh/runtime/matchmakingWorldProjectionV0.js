@@ -6,7 +6,11 @@
  */
 
 import { applyGatewayMatchMoveAckV0 } from "./matchmakingGatewayCommitBridgeV0.js";
-import { getMatchmakingTruthSnapshotV0 } from "./matchmakingTruthKernelV0.js";
+import {
+  dispatchMatchmakingTruthEventV0,
+  getMatchmakingTruthSnapshotV0,
+  MATCH_TRUTH_EVENT_V0
+} from "./matchmakingTruthKernelV0.js";
 
 export const MATCH_WORLD_PROJECTION_SCHEMA_V0 = "castle.rhizoh.match_world_projection.v0";
 
@@ -47,14 +51,40 @@ export function applyRemoteMatchWorldStateV0(remoteState = {}, opts = {}) {
     });
   }
 
+  const san = String(remoteState.lastSan || remoteState.san || "").trim();
+  if (remoteState.snapshot === true && remoteState.fen && !san) {
+    const reconciled = dispatchMatchmakingTruthEventV0({
+      type: MATCH_TRUTH_EVENT_V0.RECONCILE_STATE,
+      sessionId,
+      payload: {
+        serverState: {
+          fen: remoteState.fen,
+          turn: remoteState.turn,
+          moveCount: remoteState.moveCount,
+          serverSeq: remoteSeq
+        }
+      }
+    });
+    return Object.freeze({
+      schema: MATCH_WORLD_PROJECTION_SCHEMA_V0,
+      ok: reconciled.ok === true,
+      reconciled: true,
+      origin: opts.origin || "broadcast_snapshot",
+      remoteState,
+      projection: getMatchmakingTruthSnapshotV0(),
+      interpretationOnly: true
+    });
+  }
+
   const ack = applyGatewayMatchMoveAckV0({
     sessionId,
-    san: remoteState.lastSan || remoteState.san,
+    san: san || remoteState.san,
     playerId: remoteState.playerId || "broadcast_observer",
     fen: remoteState.fen,
     turn: remoteState.turn,
     serverSeq: remoteState.serverSeq,
-    validationSource: "authority_gateway",
+    moveCount: remoteState.moveCount,
+    validationSource: remoteState.validationSource || "authority_gateway",
     commitAuthority: "server"
   });
 

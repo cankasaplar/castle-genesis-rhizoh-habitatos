@@ -17,13 +17,15 @@ export const INSTRUMENTATION_TIER_V1 = Object.freeze({
   BROADCAST_FULL: "broadcast_full"
 });
 
-/** @type {{ lastPresence: object | null, lastBroadcast: object | null, localAckCount: number, driftEvents: number, commitEvents: number }} */
+/** @type {{ lastPresence: object | null, lastBroadcast: object | null, localAckCount: number, driftEvents: number, commitEvents: number, lastGatewayServerSeq: number, lastGatewayFenHash: string | null }} */
 const broadcastVisStoreV1 = {
   lastPresence: null,
   lastBroadcast: null,
   localAckCount: 0,
   driftEvents: 0,
-  commitEvents: 0
+  commitEvents: 0,
+  lastGatewayServerSeq: 0,
+  lastGatewayFenHash: null
 };
 
 const subscribersV1 = new Set();
@@ -78,6 +80,12 @@ export function recordBroadcastVisibilityV1(patch = {}) {
         0
     };
   }
+  if (typeof patch.gatewayServerSeq === "number" && patch.gatewayServerSeq > 0) {
+    broadcastVisStoreV1.lastGatewayServerSeq = patch.gatewayServerSeq;
+  }
+  if (patch.gatewayFen) {
+    broadcastVisStoreV1.lastGatewayFenHash = fnv1aHashV0(patch.gatewayFen);
+  }
   if (typeof patch.delivered === "number" || typeof patch.recipientCount === "number") {
     broadcastVisStoreV1.lastBroadcast = {
       ...(broadcastVisStoreV1.lastBroadcast || {}),
@@ -109,6 +117,8 @@ export function resetBroadcastVisibilityForTestV1() {
   broadcastVisStoreV1.localAckCount = 0;
   broadcastVisStoreV1.driftEvents = 0;
   broadcastVisStoreV1.commitEvents = 0;
+  broadcastVisStoreV1.lastGatewayServerSeq = 0;
+  broadcastVisStoreV1.lastGatewayFenHash = null;
 }
 
 function notifyObservationSubscribersV1() {
@@ -153,9 +163,15 @@ export function buildRhizohObservationStateV1(opts = {}) {
 
   const committedFen = truthSnap?.activeSession?.committed?.fen;
   const syncActive = isMatchRealitySyncActiveV0();
+  const gatewaySeq = broadcastVisStoreV1.lastGatewayServerSeq ?? 0;
+  const localFenHash = fen ? fnv1aHashV0(fen) : null;
+  const gatewayFenHash = broadcastVisStoreV1.lastGatewayFenHash;
   const projectionConsistency = (() => {
     if (!fen) return false;
+    if (syncActive && gatewaySeq > 0 && commitSeq < gatewaySeq) return false;
+    if (syncActive && gatewayFenHash && localFenHash && gatewayFenHash !== localFenHash) return false;
     if (committedFen) return fnv1aHashV0(fen) === fnv1aHashV0(committedFen);
+    if (syncActive && commitSeq === 0 && gatewaySeq === 0) return true;
     if (syncActive && commitSeq === 0) return false;
     return commitSeq > 0;
   })();
@@ -199,7 +215,12 @@ export function buildRhizohObservationStateV1(opts = {}) {
       driftDetected,
       lastSyncMs: syncSnap.atMs || Date.now(),
       driftRate,
-      catchUpLag: syncActive && commitSeq === 0 && eventSeq > 0 ? "awaiting_snapshot" : null
+      catchUpLag:
+        syncActive && gatewaySeq > 0 && commitSeq < gatewaySeq
+          ? "awaiting_gateway_seq"
+          : syncActive && commitSeq === 0 && eventSeq > 0
+            ? "awaiting_snapshot"
+            : null
     }),
     reality: Object.freeze({
       clientsInSync: recipientCount > 0 && projectionConsistency ? Math.min(recipientCount, 2) : ws.open ? 1 : 0,

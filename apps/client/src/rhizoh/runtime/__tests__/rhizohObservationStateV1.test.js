@@ -44,4 +44,13 @@ describe("rhizohObservationStateV1", () => {
     expect(state.truth.commitSeq).toBe(3);
     expect(state.reality.instrumentationTier).toBe("broadcast_full");
   });
+
+  it("projectionConsistency false when gateway seq ahead of local commit", () => {
+    recordBroadcastVisibilityV1({
+      gatewayServerSeq: 2,
+      gatewayFen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
+    });
+    const state = buildRhizohObservationStateV1();
+    expect(state.sync.projectionConsistency).toBe(false);
+  });
 });
