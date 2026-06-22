@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520" role="img" aria-label="Rhizoh distributed reality architecture">
+  <defs>
+    <marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#1e293b"/>
+    </marker>
+    <style>
+      .region { fill:#f1f5f9; stroke:#64748b; stroke-width:1.5; rx:12; }
+      .node { fill:#ffffff; stroke:#0f172a; stroke-width:1.5; rx:8; }
+      .dash { stroke-dasharray:6 4; stroke:#94a3b8; fill:none; marker-end:url(#a); }
+      .edge { stroke:#1e293b; stroke-width:1.5; fill:none; marker-end:url(#a); }
+      .h { font: 700 14px Arial, sans-serif; fill:#0f172a; }
+      .t { font: 12px Arial, sans-serif; fill:#334155; }
+      .cap { font: 700 13px Arial, sans-serif; fill:#0f172a; }
+    </style>
+  </defs>
+  <text x="24" y="28" class="h">Rhizoh v0.1 - Event-sourced authority arbitration</text>
+  <rect x="24" y="48" width="280" height="420" class="region"/>
+  <text x="44" y="76" class="cap">Client - Reality Simulator</text>
+  <rect x="44" y="92" width="240" height="44" class="node"/><text x="164" y="118" text-anchor="middle" class="t">Ingress / HUD / Match UI</text>
+  <rect x="44" y="148" width="240" height="44" class="node"/><text x="164" y="174" text-anchor="middle" class="t">Prediction lane - TRUTH_LOG_PREVIEW</text>
+  <rect x="44" y="204" width="240" height="44" class="node"/><text x="164" y="230" text-anchor="middle" class="t">proposalAuthority - client_shadow</text>
+  <rect x="44" y="260" width="240" height="56" class="node"/><text x="164" y="286" text-anchor="middle" class="t">Truth Kernel</text><text x="164" y="304" text-anchor="middle" class="t">reducer + replay()</text>
+  <rect x="44" y="328" width="240" height="44" class="node"/><text x="164" y="354" text-anchor="middle" class="t">Drift detector + reconciliation</text>
+  <rect x="44" y="384" width="240" height="44" class="node"/><text x="164" y="410" text-anchor="middle" class="t">verifyProduction / verifyDriftInjection</text>
+  <rect x="340" y="48" width="280" height="420" class="region"/>
+  <text x="360" y="76" class="cap">Gateway - Reality Finalizer</text>
+  <rect x="360" y="120" width="240" height="44" class="node"/><text x="480" y="146" text-anchor="middle" class="t">MATCH_MOVE / MATCH_MOVE_ACK</text>
+  <rect x="360" y="180" width="240" height="44" class="node"/><text x="480" y="206" text-anchor="middle" class="t">Validate (rules / authority_gateway)</text>
+  <rect x="360" y="240" width="240" height="44" class="node"/><text x="480" y="266" text-anchor="middle" class="t">Server session state - sole commit writer</text>
+  <rect x="360" y="300" width="240" height="44" class="node"/><text x="480" y="326" text-anchor="middle" class="t">Session room fan-out (P0)</text>
+  <rect x="360" y="360" width="240" height="44" class="node"/><text x="480" y="386" text-anchor="middle" class="t">MATCH_STATE broadcast</text>
+  <rect x="656" y="48" width="280" height="420" class="region"/>
+  <text x="676" y="76" class="cap">Observability (non-executive)</text>
+  <rect x="676" y="120" width="240" height="44" class="node"/><text x="796" y="146" text-anchor="middle" class="t">MATCH_TRUTH_CHAIN phases</text>
+  <rect x="676" y="180" width="240" height="44" class="node"/><text x="796" y="206" text-anchor="middle" class="t">DRIFT_DETECTED / RECONCILIATION</text>
+  <rect x="676" y="240" width="240" height="44" class="node"/><text x="796" y="266" text-anchor="middle" class="t">CASTLE_BOOT audit trail</text>
+  <rect x="676" y="300" width="240" height="56" class="node"/><text x="796" y="326" text-anchor="middle" class="t">Frozen core v562-v570</text><text x="796" y="344" text-anchor="middle" class="t">CI hash-locked floor</text>
+  <line x1="284" y1="114" x2="358" y2="142" class="edge"/>
+  <line x1="358" y1="262" x2="284" y2="288" class="edge"/>
+  <line x1="600" y1="142" x2="674" y2="142" class="edge"/>
+  <line x1="284" y1="350" x2="674" y2="262" class="edge"/>
+  <line x1="600" y1="322" x2="284" y2="114" class="dash"/>
+  <text x="430" y="470" class="t">Dashed: broadcast fan-out gap until network completion (Phase A)</text>
+</svg>

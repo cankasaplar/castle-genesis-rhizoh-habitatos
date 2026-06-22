@@ -1,0 +1,162 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Rhizoh Paper v0.1</title>
+<style>
+body{font-family:Georgia,serif;max-width:820px;margin:2rem auto;line-height:1.55;color:#111}
+h1{font-size:1.6rem} h2{font-size:1.25rem;margin-top:1.6rem} h3{font-size:1.05rem}
+code,pre{font-family:ui-monospace,monospace;font-size:0.9em}
+pre{background:#f4f4f5;padding:0.75rem;overflow:auto;border-radius:6px}
+table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:0.92rem}
+td,th{border:1px solid #ccc;padding:0.35rem 0.5rem}
+img{max-width:100%;height:auto;margin:1rem 0}
+</style></head><body><p><h1>Rhizoh: Event-Sourced Multi-Agent Epistemic Simulation for Distributed Reality Construction</h1></p><p><strong>Tag:</strong> <code>RESEARCH-ONLY</code>  
+<strong>Status:</strong> arXiv-ready draft v0.1 (outline + abstract + architecture + measured results)  
+<strong>Parent:</strong> [<code>OUTREACH_ACADEMIC_PAPER_PACK_V0.1.md</code>](../OUTREACH_ACADEMIC_PAPER_PACK_V0.1.md) · [<code>RHIZOH_HONEST_BASELINE_CHARTER_V1.md</code>](../RHIZOH_HONEST_BASELINE_CHARTER_V1.md)</p><p><strong>Authors:</strong> [Founder] · Rhizoh Habitat (Castle / Rhizoh continuity protocol)  
+<strong>Keywords:</strong> event sourcing, distributed systems, authority arbitration, reconciliation, observer-centric architecture, multiplayer consistency</p><p>---</p><p><h2>Final title (v0.1)</h2></p><p><strong>Primary (distributed systems framing):</strong></p><p>> <strong>Rhizoh: Event-Sourced Authority Arbitration for Reconciliation-Based Distributed Reality Construction</strong></p><p><strong>Subtitle (epistemic simulation layer):</strong></p><p>> *A Multi-Stage Proposal–Preview–Commit Model with Observer-Centric Nodes and Append-Only Truth Logs*</p><p><strong>Avoid as sole title:</strong> metaphor-only phrases (“reality machine”, “epistemic OS”) without operational anchors — reviewers classify as speculative.</p><p>---</p><p><h2>Abstract</h2></p><p>Modern real-time multiplayer systems typically enforce a <strong>single centralized truth</strong> through server-authoritative state and client-side prediction, treating divergence as a bug to be hidden. We describe <strong>Rhizoh</strong>, a prototype <strong>event-sourced reality construction layer</strong> that makes divergence <strong>first-class</strong>: clients operate as <strong>reality simulators</strong> (proposal, preview, and local simulation lanes) while a gateway <strong>finalizes</strong> authoritative state through a <strong>single-writer commit rule</strong>. Authoritative mutations append only to <code>truth_log_v0</code>; client proposals append to a separate <strong>prediction lane</strong> (<code>TRUTH_LOG_PREVIEW</code>) and cannot commit without gateway acknowledgment (<code>provenance=gateway_ack</code>).</p><p>The system implements a <strong>multi-stage authority arbitration model</strong> with explicit observability phases (<code>MATCH_EVENT_APPENDED</code>, <code>MATCH_EVENT_VALIDATED</code>, <code>MATCH_EVENT_COMMITTED</code>, <code>MATCH_STATE_REDUCED</code>) and a <strong>drift–reconciliation engine</strong> that classifies shadow vs. committed divergence (<code>DRIFT_DETECTED</code>, <code>RECONCILIATION_APPLIED</code>, <code>DRIFT_RESOLVED</code>) instead of silently overwriting candidate states. Users are modeled as <strong>observer nodes</strong> in an epistemic stack: interpretation layers may influence understanding but do not hold execution authority over sealed subgraphs (v562–v570).</p><p>We report <strong>reproducible harness measurements</strong> from the running prototype: deterministic replay equivalence (<code>produced state === replayed state</code>), successful single-writer boundary verification (<code>effectiveCommitWriter: server</code>, <code>commitAuthority: server</code> derived post-ack), and controlled drift injection with reconciliation recovery. We explicitly document <strong>product gaps</strong>: live WebSocket fan-out (<code>broadcast_to_all_clients</code>), world/tower routing segmentation, media-as-event-stream, and life-OS scheduling remain future layers — the current artifact is approximately <strong>70% execution engine / 30% product surface</strong>.</p><p><strong>Contribution:</strong> (1) a testable <strong>proposal–preview–commit</strong> authority split with derived commit metadata; (2) an append-only <strong>truth kernel</strong> with reconciliation-tolerant simulation lanes; (3) operational verification hooks suitable for distributed-systems evaluation. <strong>Not claimed:</strong> solved consensus, production-grade C2C mesh, or general-purpose daily-life OS readiness.</p><p>---</p><p><h2>1. Introduction</h2></p><p><h3>1.1 Problem</h3></p><p>Classical multiplayer architectures optimize for <strong>one truth, fast prediction, hidden rollback</strong>. This works for games but encodes an implicit assumption: *reality is centralized and immediately enforced*. Agentic and multi-device systems increasingly require:</p><p><ul><li>Multiple <strong>candidate realities</strong> (devices, AI shadows, rehearsal lanes)</li>
+<li><strong>Auditable</strong> transitions between candidates and authoritative state</li>
+<li><strong>Observer-safe</strong> interpretation layers that cannot mutate sealed execution</li>
+</ul>
+Rhizoh asks: *what if we engineer for reconciliation rather than pretending divergence never exists?*</p><p><h3>1.2 Contribution (falsifiable)</h3></p><p><table><tr><td>Claim</td><td>Evidence hook</td></tr>
+</table></p><p><table><tr><td>Event-sourced authoritative truth</td><td><code>truth_log_v0</code>, <code>replay()</code> determinism</td></tr>
+<tr><td>Client never presents as commit authority</td><td><code>commitAuthority: null</code> on client; <code>clientIsCommitAuthority: false</code></td></tr>
+<tr><td>Server single-writer finalization</td><td><code>MATCH_MOVE_ACK</code> → <code>TRUTH_LOG_APPEND</code></td></tr>
+<tr><td>Drift is measurable and recoverable</td><td><code>verifyDriftInjection()</code>, reconciliation phases</td></tr>
+<tr><td>Observation ≠ execution</td><td>Frozen core + membrane CI; interpreter agents non-executive</td></tr>
+</table></p><p><h3>1.3 Non-claims</h3></p><p><ul><li>Not a replacement for Raft/PBFT consensus</li>
+<li>Not proof of “multi-truth” in the philosophical sense — <strong>one authoritative log</strong> after arbitration</li>
+<li>Not daily-life OS, calendar sync, or media timeline integration (documented gaps)</li>
+</ul>
+---</p><p><h2>2. Related work</h2></p><p>Rhizoh sits at the intersection of <strong>event-sourced systems</strong>, <strong>multiplayer authority models</strong>, and <strong>reconciliation-based consistency</strong> — not as a replacement for consensus protocols or CRDT merge algorithms, but as an <strong>explicit arbitration layer</strong> that makes candidate vs. authoritative state legible.</p><p><h3>2.1 Event sourcing and logs as truth</h3></p><p>Event sourcing treats an append-only log as the system of record; projections are derived and replayable [Young, 2010; Fowler, 2014]. Rhizoh's <code>truth_log_v0</code> follows this pattern: <code>dispatch → TRUTH_LOG_APPEND → reduce → projection</code>, with <code>verifyProduction()</code> proving <code>replay(truth_log) === projection</code>. Helland [2007] and Kleppmann [2017] emphasize immutability and log-centric reconciliation at scale — Rhizoh applies this locally with an explicit <strong>prediction lane</strong> (<code>TRUTH_LOG_PREVIEW</code>) that never masquerades as authoritative.</p><p><h3>2.2 Operational transformation and CRDTs</h3></p><p>OT [Ellis & Gibbs, 1999; Bernstein & Goodman, 1996] and CRDTs [Shapiro et al., 2011] solve <strong>automatic convergence</strong> under concurrent edits. Rhizoh <strong>does not</strong> claim always-merge semantics. Instead, the gateway <strong>validates and rejects</strong> illegal transitions (<code>MATCH_EVENT_REJECTED</code>); drift is <strong>classified</strong> (<code>noise | pattern | conflict | fork</code>) and <strong>reconciled</strong> through server arbitration rather than silent merge. This is closer to <strong>optimistic replication with explicit finalization</strong> than to OT/CRDT text editing.</p><p><h3>2.3 Game server authority and rollback netcode</h3></p><p>Commercial multiplayer systems use <strong>authoritative servers</strong> with client prediction and rollback [Gabriel, 2015]. GGPO-style rollback [Berkelaar, 2001] hides divergence for responsiveness. Rhizoh inverts the visibility model: <strong>preview is explicit</strong>, rollback is <strong>logged</strong> (<code>DRIFT_DETECTED</code>, <code>RECONCILIATION_APPLIED</code>), and the client <strong>never</strong> holds <code>commitAuthority</code>. The contribution is <strong>forensic legibility</strong>, not lower input latency.</p><p><h3>2.4 Distributed consistency (positioning, not equivalence)</h3></p><p>Byzantine fault tolerance [Lamport et al., 1982] and wide-area consistency trade-offs [Ford et al., 2010; Glendenning et al., 2011] address <strong>multi-replica agreement</strong>. Rhizoh maintains <strong>one authoritative log</strong> after gateway finalization — a <strong>single-writer rule</strong> (<code>effectiveCommitWriter: server</code>), not multi-leader consensus. We document this boundary to prevent category error in review.</p><p><h3>2.5 Summary positioning</h3></p><p><table><tr><td>Area</td><td>Prior art</td><td>Rhizoh difference</td></tr>
+</table></p><p><table><tr><td>Event sourcing</td><td>Append-only log + projections</td><td>Separate prediction lane; derived commit metadata</td></tr>
+<tr><td>OT / CRDT</td><td>Automatic merge</td><td>Validate/reject + reconcile; no silent merge</td></tr>
+<tr><td>Game authority</td><td>Hidden prediction/rollback</td><td>Explicit <code>MATCH_TRUTH_CHAIN</code> phases</td></tr>
+<tr><td>Consensus</td><td>Multi-replica agreement</td><td>Single-writer finalization after proposal</td></tr>
+</table></p><p><strong>References:</strong> see <code>docs/academic/references.bib</code> and preprint bibliography.</p><p>---</p><p><h2>3. Formal authority state machine</h2></p><p>Figure 2 (see preprint <code>figures/authority-state-machine.png</code>) defines the <strong>transition model</strong>:</p><p>``<code>text
+PREVIEW (TRUTH_LOG_PREVIEW)
+  → PROPOSE (client_shadow, MATCH_MOVE transport)
+  → VALIDATE (gateway rules)
+      ├─ reject → MATCH_EVENT_REJECTED (terminal)
+      └─ accept → COMMIT (TRUTH_LOG_APPEND, gateway_ack only)
+            → RECONCILE (if shadow ≠ committed)
+            → REDUCE (MATCH_STATE_REDUCED, projection snapshot)
+</code>`<code></p><p><strong>Invariants:</strong></p><p>1. </code>commitAuthority<code> on client is always </code>null<code>.
+2. Only </code>provenance=gateway_ack<code> may append to authoritative </code>truth_log_v0<code>.
+3. </code>replay(truth_log) === reduce(state)<code> (harness-verified).</p><p>---</p><p><h2>4. System model</h2></p><p><h3>4.1 Event-sourced reality layer</h3></p><p></code>`<code>text
+truth_log_v0 (authoritative, append-only)
+  → dispatch(event)
+  → TRUTH_LOG_APPEND
+  → reduce(state, event)
+  → projection snapshot</p><p>prediction_log_v0 (client simulation)
+  → TRUTH_LOG_PREVIEW
+  → shadow lane update only
+</code>`<code></p><p><strong>Invariant:</strong> </code>replay(truth_log) === projection<code> (verified by </code>verifyProduction()<code>).</p><p><h3>4.2 Authority model (three client lanes + one server writer)</h3></p><p><table><tr><td>Role</td><td>Authority field</td><td>Meaning</td></tr>
+</table></p><p><table><tr><td>Client</td><td></code>proposalAuthority<code></td><td></code>client_shadow<code> — intent emission</td></tr>
+<tr><td>Client</td><td></code>previewAuthority<code></td><td></code>client_preview<code> — prediction lane</td></tr>
+<tr><td>Client</td><td></code>simulationAuthority<code></td><td></code>client_simulation<code> — local rehearsal</td></tr>
+<tr><td>Client</td><td></code>commitAuthority<code></td><td><strong>always </code>null<code></strong> — never real commit</td></tr>
+<tr><td>SSOT</td><td></code>effectiveCommitWriter<code></td><td></code>pending_server<code> → </code>server<code></td></tr>
+<tr><td>Server</td><td></code>commitAuthority<code></td><td><strong>derived</strong> </code>server<code> only after </code>gateway_ack<code></td></tr>
+</table></p><p><strong>Identity contract:</strong> Client = Reality Simulator · Server = Reality Finalizer.</p><p><h3>4.3 Drift and reconciliation</h3></p><p>When shadow and committed lanes diverge:</p><p></code>`<code>text
+DRIFT_DETECTED (classification: noise | pattern | conflict | fork)
+  → RECONCILE_STATE (optional)
+  → RECONCILIATION_APPLIED
+  → DRIFT_RESOLVED (when score < noise threshold)
+</code>`<code></p><p>The system <strong>tolerates</strong> divergence in simulation, then <strong>arbitrates</strong> — it does not deny that clients produced alternate candidates.</p><p><h3>4.4 Observer node model</h3></p><p><ul><li><strong>User</strong> = observer node + proposal emitter, not sole truth holder</li>
+<li><strong>AI / shadow agents</strong> = simulation lane producers (</code>interpretationOnly: true<code>)</li>
+<li><strong>Gateway</strong> = validation + commit finalization (</code>validationSource: authority_gateway<code>)</li>
+</ul>
+---</p><p>
+![Rhizoh architecture](figures/architecture.png)</p><p>*Figure 1. Client simulator, gateway finalizer, observability split.*</p><p>![Authority state machine](figures/authority-state-machine.png)</p><p>*Figure 2. Formal transition model: preview, propose, validate, commit, reconcile, reduce.*</p><p>
+<h2>5. Architecture</h2></p><p><h3>5.1 End-to-end diagram (current prototype)</h3></p><p></code>`<code>mermaid
+flowchart TB
+  subgraph client [Client — Reality Simulator]
+    UI[Ingress / HUD / Chess UI]
+    PRE[Prediction lane · TRUTH_LOG_PREVIEW]
+    PROP[proposalAuthority · client_shadow]
+    SIM[simulationAuthority · client_simulation]
+    TK[Truth Kernel · reducer + replay]
+  end</p><p>  subgraph gateway [Gateway — Reality Finalizer]
+    WS[MATCH_MOVE / MATCH_MOVE_ACK]
+    VAL[Validate · chess.js / authority_gateway]
+    SRV[Server session state · sole commit writer]
+  end</p><p>  subgraph obs [Observability — non-executive]
+    CHAIN[MATCH_TRUTH_CHAIN phases]
+    DRIFT[Drift detector + reconciliation]
+    VERIFY[verifyProduction · verifyAuthorityBoundary · verifyDriftInjection]
+  end</p><p>  subgraph frozen [Frozen execution subgraph]
+    CORE[v562–v570 phase chain · CI hash-locked]
+  end</p><p>  UI --> PROP
+  PROP --> PRE
+  PRE --> TK
+  UI -->|MATCH_MOVE| WS
+  WS --> VAL --> SRV
+  SRV -->|MATCH_MOVE_ACK| TK
+  TK -->|TRUTH_LOG_APPEND authoritative| TK
+  TK --> CHAIN
+  TK --> DRIFT
+  VERIFY -.-> TK
+  CORE -.->|floor only| TK
+  SRV -.->|broadcast gap| UI
+</code>`<code></p><p><strong>Dashed gap:</strong> </code>broadcast_to_all_clients<code> — commit finalizes locally; <strong>fan-out guarantee not yet productized</strong>.</p><p><h3>5.2 C2C (Castle-to-Castle) maturity</h3></p><p><table><tr><td>Layer</td><td>Status</td></tr>
+</table></p><p><table><tr><td>Session-based real-time game</td><td>✓ prototype</td></tr>
+<tr><td>Server-authoritative commit</td><td>✓ (</code>singleWriterRule<code>)</td></tr>
+<tr><td>WebSocket gateway ack</td><td>✓ handler exists</td></tr>
+<tr><td>Replay determinism</td><td>✓ harness-verified</td></tr>
+<tr><td>Shadow simulation layer</td><td>✓</td></tr>
+<tr><td><strong>Live broadcast fan-out</strong></td><td>◐ missing (</code>phasesMissingUntilLive<code>)</td></tr>
+<tr><td><strong>World / tower routing</strong></td><td>✗ not implemented</td></tr>
+<tr><td><strong>Presence role model</strong> (player / observer / AI node)</td><td>◐ partial</td></tr>
+</table></p><p><h3>5.3 Product layer gaps (honest)</h3></p><p><table><tr><td>Subsystem</td><td>Today</td><td>Target</td></tr>
+</table></p><p><table><tr><td>Media / YouTube</td><td>UI embed playback</td><td></code>video_play<code> / </code>seek<code> / </code>pause<code> as truth events</td></tr>
+<tr><td>Scheduler</td><td>Game/simulation tasks</td><td>Game + learning + real-life + AI delegation</td></tr>
+<tr><td>Daily OS</td><td>Not safe for general daily use</td><td>Life-OS scheduler v2 + external world sync</td></tr>
+</table></p><p><strong>Productization order (do not reorder):</strong></p><p>1. <strong>Broadcast layer</strong> — </code>live_gateway_ws_transport<code>, multi-client sync, fan-out  
+2. <strong>World router</strong> — tower isolation, session mesh, identity routing  
+3. <strong>Scheduler v2</strong> — real-world tasks, AI assistant layer  
+4. <strong>Media → event system</strong> — playback as state machine on truth log  </p><p>---</p><p><h2>6. Implementation evidence</h2></p><p><h3>6.1 Verification harnesses (reproducible)</h3></p><p>Single entry point:</p><p></code>`<code>bash
+npm run academic:reproduce-paper
+</code>`<code></p><p>Browser (running client):</p><p></code>`<code>javascript
+await window.__rhizoh.matchmaking.verifyProduction({ reset: true })
+await window.__rhizoh.matchmaking.verifyAuthorityBoundary({ reset: true })
+await window.__rhizoh.matchmaking.verifyDriftInjection({ reset: true })
+</code>`<code></p><p>See </code>REPRODUCIBILITY.md<code> at repository root.</p><p><h3>6.2 Sample measured outcomes (lab harness)</h3></p><p><table><tr><td>Metric</td><td>Observed</td></tr>
+</table></p><p><table><tr><td>Replay equivalence</td><td></code>moveCount === replayMoveCount<code></td></tr>
+<tr><td>Single-writer boundary</td><td></code>clientIsCommitAuthority: false<code>, </code>effectiveCommitWriter: server<code></td></tr>
+<tr><td>Preview vs authoritative split</td><td></code>TRUTH_LOG_PREVIEW<code> + </code>TRUTH_LOG_APPEND<code></td></tr>
+<tr><td>Drift injection recovery</td><td></code>driftDetected: true<code> → </code>reconciliationApplied: true<code></td></tr>
+<tr><td>Illegal move rejection</td><td></code>MATCH_EVENT_REJECTED<code></td></tr>
+</table></p><p><h3>6.3 Log vocabulary (audit trail)</h3></p><p></code>`<code>text
+TRUTH_LOG_PREVIEW | TRUTH_LOG_APPEND
+MATCH_EVENT_APPENDED | MATCH_EVENT_VALIDATED | MATCH_EVENT_REJECTED
+MATCH_EVENT_COMMITTED | MATCH_STATE_REDUCED
+DRIFT_DETECTED | RECONCILIATION_APPLIED | DRIFT_RESOLVED
+</code>`<code></p><p>---</p><p><h2>7. Discussion</h2></p><p><h3>7.1 Reconciliation vs. enforcement</h3></p><p>Rhizoh does <strong>not</strong> claim multiple concurrent authoritative truths. It maintains <strong>multiple candidate realities</strong> in simulation lanes and <strong>reconciles</strong> them into one append-only authoritative log through server arbitration. This is closer to <strong>optimistic replication with explicit arbitration</strong> than to CRDT-style always-merge.</p><p><h3>7.2 Why logs matter for science</h3></p><p>The </code>MATCH_TRUTH_CHAIN<code> vocabulary turns epistemic transitions into <strong>inspectable events</strong> — suitable for distributed-systems forensics, not only UX debugging.</p><p><h3>7.3 Limitations</h3></p><p><ul><li>Broadcast not production-guaranteed</li>
+<li>No cross-tower isolation proof</li>
+<li>Media and scheduler not event-sourced</li>
+<li>Phase gate: data-plane READY required for live deployment claims</li>
+</ul>
+---</p><p><h2>8. Conclusion</h2></p><p>Rhizoh is best classified as an <strong>epistemic simulation and reality-finalization layer</strong> — not merely a game engine or a generic multiplayer framework. Its engineering center of gravity is <strong>event-sourced authority arbitration</strong> with <strong>observer-centric</strong> client nodes and <strong>reconciliation-aware</strong> drift handling.</p><p>The prototype demonstrates that <strong>wrong production is not the failure mode</strong>; <strong>unreconciled divergence</strong> is — and the system is built to detect and repair that class of failure.</p><p><strong>Next engineering phase:</strong> network completion (broadcast fan-out), not feature sprawl.  
+<strong>Next academic phase:</strong> formalize arbitration as a state machine; publish harness datasets from </code>verify*<code> exports.</p><p>---</p><p><h2>Appendix A — Mapping to codebase (reviewer audit)</h2></p><p><table><tr><td>Paper concept</td><td>Code / doc anchor</td></tr>
+</table></p><p><table><tr><td>Truth kernel</td><td></code>matchmakingTruthKernelV0.js<code></td></tr>
+<tr><td>Single-writer policy</td><td></code>matchmakingSingleWriterPolicyV0.js<code></td></tr>
+<tr><td>Authority observability</td><td></code>matchmakingTruthAuthorityObservabilityV0.js<code></td></tr>
+<tr><td>Gateway commit</td><td></code>apps/gateway/src/rhizoh/matchMoveAuthorityV0.js<code></td></tr>
+<tr><td>Roadmap / gaps</td><td></code>RHIZOH_MATCH_COMMIT_AUTHORITY_ROADMAP_V1.md<code></td></tr>
+<tr><td>Frozen core</td><td>v562–v570, </code>STABILIZATION_GRAPH.md<code></td></tr>
+</table></p><p>---</p><p><h2>Appendix B — Preprint release (v0.1)</h2></p><p><table><tr><td>Artifact</td><td>Path</td></tr>
+</table></p><p><table><tr><td>Paper (source)</td><td></code>docs/academic/RHIZOH_DISTRIBUTED_REALITY_CONSTRUCTION_PAPER_V0.1.md<code></td></tr>
+<tr><td>PDF export</td><td></code>docs/academic/preprint/paper-v0.1.pdf<code></td></tr>
+<tr><td>Figures</td><td></code>docs/academic/figures/architecture.png<code></td></tr>
+<tr><td>Reproducibility</td><td></code>REPRODUCIBILITY.md<code></td></tr>
+<tr><td>Release tag</td><td></code>v0.1-preprint<code></td></tr>
+</table></p><p><h2>Appendix C — arXiv checklist (v0.1 → v0.2)</h2></p><p><ul><li>[x] Related work with citation set (12 refs in </code>references.bib<code>)</li>
+<li>[x] Formal state machine diagram</li>
+<li>[x] Single reproducibility script (</code>npm run academic:reproduce-paper<code>)</li>
+<li>[x] Preprint PDF export script</li>
+<li>[ ] Author affiliations + ORCID</li>
+<li>[ ] Latency / fan-out measurements post-broadcast layer</li>
+<li>[ ] Threat model (fork injection, gateway impersonation)</li>
+<li>[ ] Reproducibility bundle export (</code>runEpistemicAuditBundleV0` cross-link)</li>
+<li>[ ] Figure 1 PDF (architecture diagram export)</li>
+<li>[ ] Strip habitat-internal persona names from any public PDF</li>
+</ul>
+---</p><p>*Draft v0.1 — RESEARCH-ONLY. Does not extend execution authority. Claims bind to harness output, not marketing narrative.*
+</p></body></html>

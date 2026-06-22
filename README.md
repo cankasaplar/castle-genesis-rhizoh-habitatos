@@ -1,6 +1,20 @@
 # Castle System - Production Architecture Skeleton
 
-## Rhizoh × Castle — medeniyet çekirdeği vs kişisel düğüm
+## Academic preprint (v0.1)
+
+**Rhizoh: Event-Sourced Authority Arbitration for Reconciliation-Based Distributed Reality Construction**
+
+| Artifact | Link |
+|----------|------|
+| Paper (source) | [`docs/academic/RHIZOH_DISTRIBUTED_REALITY_CONSTRUCTION_PAPER_V0.1.md`](docs/academic/RHIZOH_DISTRIBUTED_REALITY_CONSTRUCTION_PAPER_V0.1.md) |
+| Preprint index | [`docs/academic/README.md`](docs/academic/README.md) |
+| PDF | `npm run academic:export-preprint` → `docs/academic/preprint/paper-v0.1.pdf` |
+| Reproduce | [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) · `npm run academic:reproduce-paper` |
+| Network roadmap | [`docs/RHIZOH_NETWORK_COMPLETION_ROADMAP_V1.md`](docs/RHIZOH_NETWORK_COMPLETION_ROADMAP_V1.md) |
+
+**Tag:** `RESEARCH-ONLY` — harness-verified prototype; not a product launch claim.
+
+---
 
 - **Rhizoh = Protocol Civilization** (paylaşılan protokol, chronicle, şahitlik, uzun ufuk).  
 - **Castle = Personal Reality Node (PRN)** (bireyin kendi hafıza alanı, ritüel, düğüm).  

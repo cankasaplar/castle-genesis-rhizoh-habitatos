@@ -43,6 +43,8 @@
     "legal:export-pack-pdf": "node scripts/export-legal-pack-pdf.mjs",
     "legal:go-live-cohort-sim": "node scripts/run-go-live-cohort-simulation.mjs",
     "academic:export-paper": "node scripts/export-academic-paper-v0.mjs",
+    "academic:export-preprint": "node scripts/export-paper-preprint-v0.1.mjs",
+    "academic:reproduce-paper": "node scripts/reproduce-paper-v0.1.mjs",
     "academic:export-separation-proof-v0": "node scripts/export-epistemic-separation-proof-v0.mjs",
     "ops:genesis-ingress-load-sim": "node scripts/genesis-ingress-social-load-sim.mjs",
     "ops:send-cohort-observer-invite": "powershell -File scripts/send-cohort-observer-invite.ps1",
@@ -151,5 +153,8 @@
     "stabilization:load-test": "node scripts/rhizoh-load-test.mjs",
     "stabilization:distributed-check": "node scripts/rhizoh-distributed-consistency-check.mjs",
     "continuity:probe-report": "node scripts/continuity-probe-report.mjs"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2"
   }
 }
