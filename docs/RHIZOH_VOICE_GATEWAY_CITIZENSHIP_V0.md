@@ -61,7 +61,7 @@ window.__rhizoh.observationState.snapshot().voice
 await window.__rhizoh.voiceGateway.fetchPresence()
 ```
 
-Do **not** fetch `onrender.com` directly from `rhizoh.com` — use `fetchPresence()` (app gateway base + token + CORS credentials).
+Do **not** fetch `onrender.com` or bare `rhizoh.com/rhizoh/...` directly — Firebase SPA rewrites non-API paths to `index.html`. Use `fetchPresence()` (routes via `/api/gatewayProxy/rhizoh/network/presence` on prod).
 
 ---
 
