@@ -6,6 +6,12 @@ import {
   createCastleToCastleChessMatchV0,
   formatChessOutcomeLabelV0
 } from "../rhizoh/runtime/chessArenaEngineV0.js";
+import {
+  createChessGameFromTruthProjectionV0,
+  isChessRealitySyncActiveV0,
+  proposeChessRealityMoveV0,
+  subscribeChessRealitySyncV0
+} from "../rhizoh/runtime/chessRealitySyncAdapterV0.js";
 import { pickArenaAutoplayMoveV0 } from "../rhizoh/runtime/chessArenaAutoplayPickV0.js";
 import {
   getChessTeacherStatusV0,
@@ -381,6 +387,21 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
     }
     return () => publishChessArenaWorkspaceOpenV0(false);
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    return subscribeChessRealitySyncV0((detail) => {
+      const fen = detail?.projection?.fen;
+      if (!fen) return;
+      setGame(createChessGameFromTruthProjectionV0({ mode: resolvedInitialMode || mode }));
+      setTick((n) => n + 1);
+      setStatus(
+        detail?.source === "match_state"
+          ? `sync · ${detail.projection.lastSan || "state"} · seq ${detail.projection.serverSeq}`
+          : "reality sync active"
+      );
+    });
+  }, [open, mode, resolvedInitialMode]);
 
   useEffect(() => {
     if (!open) return;
@@ -827,6 +848,24 @@ export const RhizohChessArenaWorkspaceV0 = memo(function RhizohChessArenaWorkspa
   const applyMove = useCallback(
     async (move) => {
       if (forcedOutcomeV0 || outcome || flagHandledRef.current) return false;
+
+      if (isChessRealitySyncActiveV0()) {
+        const out = await proposeChessRealityMoveV0({
+          move,
+          playerId: arenaSession?.playerId || "chess_reality_player"
+        });
+        if (!out.ok) {
+          setStatus(tr ? `Geçersiz hamle: ${move}` : `Illegal move: ${move}`);
+          return false;
+        }
+        setStatus(
+          tr
+            ? `Önerildi: ${out.validatedSan} (sunucu onayı bekleniyor)`
+            : `Proposed: ${out.validatedSan} (awaiting server commit)`
+        );
+        return true;
+      }
+
       const moverColor = game.turn();
       const fenBefore = game.fen();
       const result = game.tryMove(move);

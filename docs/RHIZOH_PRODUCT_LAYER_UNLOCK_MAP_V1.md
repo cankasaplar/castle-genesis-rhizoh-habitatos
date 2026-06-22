@@ -300,16 +300,9 @@ flowchart TB
 
 ## Next PR recommendation (single focus)
 
-**Title:** `P0: verifyBroadcastE2e + chess arena truth wire-up`
+See **[`RHIZOH_P0_REALITY_SYNC_IMPLEMENTATION_BLUEPRINT_V1.md`](RHIZOH_P0_REALITY_SYNC_IMPLEMENTATION_BLUEPRINT_V1.md)** — implemented in P0 branch.
 
-**Scope:**
-
-1. `verifyBroadcastE2eV0` test (gateway room + two clients)  
-2. `matchSessionSyncBridgeV0.js` — glue broadcast → world projection  
-3. Minimal chess wire: one move path through `proposeMove` + snapshot render  
-4. `/#match/:id` ingress hook  
-
-**Out of scope:** Go, sports, scheduler, media, community.
+**Out of scope:** Go validator, sports, scheduler, media, community (until live two-tab proof).
 
 ---
 
