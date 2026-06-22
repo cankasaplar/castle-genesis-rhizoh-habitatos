@@ -8449,11 +8449,7 @@ export default function AppRhizoh528() {
     }
 
     if (matchPath({ path: "/academy", end: true }, pathname)) {
-      uiStore.dispatch({ type: "SET_PRODUCT_SURFACE", payload: "profile" });
-      setDrawerStudioTab("chat");
-      uiStore.dispatch({ type: "SET_LAYER_FOCUS", payload: 11 });
-      void setRealityMode("GLOBE", { source: "ROUTE_ACADEMY" });
-      runDomainGateForPathV0(pathname, { userId: gateUserId });
+      navigate("/academy/observe", { replace: true });
       return;
     }
 

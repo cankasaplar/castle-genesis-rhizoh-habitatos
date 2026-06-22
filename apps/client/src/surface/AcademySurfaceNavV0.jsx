@@ -6,7 +6,7 @@ const linkCls =
 
 /**
  * Product Academy nav — research (own threads) separate from genesis ops surfaces.
- * @param {{ active: "research" | "observe" | "docs" }} props
+ * @param {{ active: "home" | "research" | "observe" | "docs" }} props
  */
 export function AcademySurfaceNavV0({ active }) {
   const pill = (key) =>
@@ -19,6 +19,9 @@ export function AcademySurfaceNavV0({ active }) {
       className="flex flex-wrap items-center gap-1 rounded-lg border border-white/[0.08] bg-black/25 px-2 py-1.5"
       aria-label="Academy"
     >
+      <Link to="/academy" className={`${linkCls} ${pill("home")}`}>
+        Home
+      </Link>
       <Link to="/academy/research" className={`${linkCls} ${pill("research")}`}>
         Research
       </Link>

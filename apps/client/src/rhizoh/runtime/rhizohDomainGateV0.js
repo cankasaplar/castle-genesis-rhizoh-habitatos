@@ -23,6 +23,7 @@ const OBSERVER_EXACT_PATHS_V0 = Object.freeze(["/settings", "/observer/settings"
 
 /** Longest-prefix-first — avoids `/academy` swallowing `/academy/research`. */
 const OBSERVER_PATH_PREFIXES_V0 = [
+  "/founder-circle",
   "/academy/research",
   "/academy/observe",
   "/genesis/observe",

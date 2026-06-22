@@ -11,6 +11,8 @@ import { RhizohThinkingEngineExampleV0 } from "../rhizoh/experience/examples/Rhi
 import { StudioLiveRoomV1 } from "../studio/StudioLiveRoomV1.jsx";
 import { FoxConversationLabPageV1 } from "../studio/FoxConversationLabPageV1.jsx";
 import { RhizohObserverInviteLandingPageV0 } from "../components/RhizohObserverInviteLandingPageV0.jsx";
+import { RhizohAcademyLandingPageV0 } from "../components/RhizohAcademyLandingPageV0.jsx";
+import { RhizohFounderCirclePageV0 } from "../components/RhizohFounderCirclePageV0.jsx";
 import { RhizohInviteSearchRedirectV0 } from "../components/RhizohInviteSearchRedirectV0.jsx";
 
 const AppRhizohWorldSpaceV0 = lazy(() => import("../AppRhizohWorldSpaceV0.jsx"));
@@ -42,6 +44,7 @@ export function CastleShellRouter() {
       <RhizohInviteSearchRedirectV0 />
       <Routes>
         <Route path="/invite" element={<RhizohObserverInviteLandingPageV0 />} />
+        <Route path="/founder-circle" element={<RhizohFounderCirclePageV0 />} />
         <Route path="/world" element={<Navigate to="/world/space" replace />} />
         <Route path="/world/space" element={worldSpaceRouteV0} />
         <Route path="/world/social" element={worldSpaceRouteV0} />
@@ -54,6 +57,7 @@ export function CastleShellRouter() {
         {/* Product entry: same observability surface as Hub, stable URL for Academy → Observe */}
         <Route path="/academy/observe" element={<GenesisObservabilityHubPage />} />
         <Route path="/academy/research" element={<AcademicObservatoryPageV0 />} />
+        <Route path="/academy" element={<RhizohAcademyLandingPageV0 />} />
         <Route path="/genesis/portal" element={<GenesisPortalPage />} />
         <Route path="/continuity" element={<Navigate to="/genesis/hub" replace />} />
         <Route
@@ -83,7 +87,6 @@ export function CastleShellRouter() {
         <Route path="/map" element={<AppRhizoh528 />} />
         <Route path="/settings" element={<AppRhizoh528 />} />
         <Route path="/observer/settings" element={<AppRhizoh528 />} />
-        <Route path="/academy" element={<AppRhizoh528 />} />
         <Route path="*" element={<AppRhizoh528 />} />
       </Routes>
     </BrowserRouter>
