@@ -15,6 +15,13 @@ import {
 import { getCastleFlightConfig } from "../../../castleFlight/castleFlightConfig.js";
 import { emitVoiceEngineTelemetryV3 } from "./voiceEngineTelemetryV3.js";
 import { recordVoiceImmutableEventV0 } from "./voiceImmutableEventTimelineV0.js";
+import {
+  ingestVoiceGatewayMessageV0,
+  registerVoiceGatewayCitizenV0,
+  resolveVoiceWorldContextV0,
+  sendVoiceStateAppliedV0,
+  wrapVoiceGatewayEnvelopeV0
+} from "../voiceGatewayCitizenshipV0.js";
 
 export const RHIZOH_GEMINI_LIVE_VOICE_TRANSPORT_SCHEMA_V0 =
   "castle.rhizoh.voice.gemini_live_gateway_lane.v0";
@@ -96,7 +103,15 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
     return { ok: false, error: "gateway_ws_open_failed" };
   }
 
-  const sessionId = String(opts.sessionId || `live_${Date.now().toString(36)}`);
+  const worldCtx = resolveVoiceWorldContextV0({
+    sessionId: opts.sessionId,
+    voiceSessionId: opts.voiceSessionId,
+    boundMatchSessionId: opts.boundMatchSessionId,
+    worldId: opts.worldId
+  });
+  const sessionId = worldCtx.sessionId;
+
+  await registerVoiceGatewayCitizenV0(ws, worldCtx);
   const mimeType = String(opts.mimeType || "audio/webm");
   const languageCode = String(opts.languageCode || "tr-TR");
   const path = String(opts.path || "both");
@@ -126,8 +141,14 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
     const onMessage = (ev) => {
       const msg = safeJsonParse(String(ev.data || ""));
       if (!msg?.type) return;
-      if (msg.type === WS_MESSAGE.RHIZOH_VOICE_LIVE_FINAL) {
-        finish(msg.payload || { ok: false, error: "live_final_empty" });
+      ingestVoiceGatewayMessageV0(msg);
+      if (msg.type === WS_MESSAGE.RHIZOH_VOICE_LIVE_FINAL || msg.type === WS_MESSAGE.VOICE_TRANSCRIPT_COMMITTED) {
+        const payload = msg.payload || {};
+        const seq = Number(payload.voiceCommitSeq ?? payload.gatewayEvent?.seq) || 0;
+        if (seq > 0) {
+          sendVoiceStateAppliedV0(ws, { sessionId, commitSeq: seq, voiceCommitSeq: seq });
+        }
+        finish(payload.ok === false ? payload : (payload.ok ? payload : { ok: false, error: "live_final_empty" }));
       }
       if (msg.type === WS_MESSAGE.RHIZOH_VOICE_LIVE_ERROR) {
         failedReason = String(msg.payload?.error || "gateway_ws_live_error");
@@ -149,18 +170,19 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
   });
 
   try {
-    ws.send(
-      JSON.stringify(
-        createEnvelope(WS_MESSAGE.RHIZOH_VOICE_LIVE_START, {
-          schema: RHIZOH_GEMINI_LIVE_VOICE_TRANSPORT_SCHEMA_V0,
-          sessionId,
-          traceId: opts.traceId || "",
-          languageCode,
-          mimeType,
-          path
-        })
-      )
+    const startWrap = wrapVoiceGatewayEnvelopeV0(
+      WS_MESSAGE.RHIZOH_VOICE_LIVE_START,
+      {
+        schema: RHIZOH_GEMINI_LIVE_VOICE_TRANSPORT_SCHEMA_V0,
+        sessionId,
+        traceId: opts.traceId || "",
+        languageCode,
+        mimeType,
+        path
+      },
+      { ...worldCtx, eventType: "VOICE_SESSION_START", seq: 0 }
     );
+    ws.send(JSON.stringify(startWrap.envelope));
   } catch (e) {
     failedReason = "live_start_send_failed";
     settleFinalV0({ ok: false, error: failedReason, detail: String(e?.message || e) });
@@ -203,11 +225,12 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
               mimeType,
               chunkIndex: index
             });
-            ws.send(
-              JSON.stringify(
-                createEnvelope(WS_MESSAGE.RHIZOH_VOICE_LIVE_CHUNK, payload)
-              )
+            const chunkWrap = wrapVoiceGatewayEnvelopeV0(
+              WS_MESSAGE.RHIZOH_VOICE_LIVE_CHUNK,
+              payload,
+              { ...worldCtx, eventType: "VOICE_CHUNK", seq: index }
             );
+            ws.send(JSON.stringify(chunkWrap.envelope));
             recordVoiceImmutableEventV0({
               type: "VOICE_LIVE_CHUNK_SENT",
               sessionId,
@@ -263,18 +286,19 @@ export async function createGeminiLiveVoiceSessionV0(opts = {}) {
         return { ok: false, error: "gateway_ws_closed" };
       }
       try {
-        ws.send(
-          JSON.stringify(
-            createEnvelope(WS_MESSAGE.RHIZOH_VOICE_LIVE_STOP, {
-              sessionId,
-              traceId: stopOpts.traceId || opts.traceId || "",
-              languageCode: stopOpts.languageCode || languageCode,
-              mimeType: stopOpts.mimeType || mimeType,
-              path: stopOpts.path || path,
-              lastChunkIndex: chunkCount
-            })
-          )
+        const stopWrap = wrapVoiceGatewayEnvelopeV0(
+          WS_MESSAGE.RHIZOH_VOICE_LIVE_STOP,
+          {
+            sessionId,
+            traceId: stopOpts.traceId || opts.traceId || "",
+            languageCode: stopOpts.languageCode || languageCode,
+            mimeType: stopOpts.mimeType || mimeType,
+            path: stopOpts.path || path,
+            lastChunkIndex: chunkCount
+          },
+          { ...worldCtx, eventType: "VOICE_STOP", seq: chunkCount }
         );
+        ws.send(JSON.stringify(stopWrap.envelope));
         recordVoiceImmutableEventV0({
           type: "VOICE_LIVE_STOP_SENT",
           sessionId,

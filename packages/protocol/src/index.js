@@ -57,6 +57,12 @@ export const WS_MESSAGE = {
   MATCH_STATE_APPLIED: "MATCH_STATE_APPLIED",
   /** Gateway → room: broadcast health after ACK aggregation. */
   MATCH_BROADCAST_HEALTH: "MATCH_BROADCAST_HEALTH",
+  /** Voice citizenship — client applied transcript commit. */
+  VOICE_STATE_APPLIED: "VOICE_STATE_APPLIED",
+  /** Voice citizenship — gateway transcript committed with envelope meta. */
+  VOICE_TRANSCRIPT_COMMITTED: "VOICE_TRANSCRIPT_COMMITTED",
+  /** Voice citizenship — ACK aggregation health. */
+  VOICE_BROADCAST_HEALTH: "VOICE_BROADCAST_HEALTH",
   MATCH_FINISHED: "MATCH_FINISHED",
   MATCH_ERROR: "MATCH_ERROR",
   ERROR: "ERROR"

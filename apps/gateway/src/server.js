@@ -35,6 +35,13 @@ import {
   registerGatewayServiceNodeV0,
   unregisterGatewayServiceNodesByClientV0
 } from "./rhizoh/gatewayPresenceRegistryV0.js";
+import {
+  enrichVoiceLivePayloadV0,
+  handleVoiceStateAppliedV0,
+  registerVoiceGatewayCitizenV0,
+  resolveVoiceWorldContextV0,
+  sendVoiceTranscriptCommittedV0,
+} from "./rhizoh/voiceGatewayCitizenshipV0.js";
 import { queryRhizohLlm } from "./rhizohLlmGateway.js";
 import { rhizohGatewayTurn } from "./rhizohGatewayTurn.js";
 import {
@@ -3668,9 +3675,12 @@ function decodeRhizohVoiceLiveChunkV0(payload = {}) {
 
 function handleRhizohVoiceLiveStartV0(socket, payload = {}) {
   const p = payload && typeof payload === "object" ? payload : {};
-  const sessionId = String(p.sessionId || `live_${Date.now().toString(36)}`).slice(0, 96);
-  rhizohVoiceLiveSessions.set(socket, {
+  const ctx = resolveVoiceWorldContextV0(p);
+  const sessionId = String(ctx.sessionId).slice(0, 96);
+  const session = {
     sessionId,
+    worldId: ctx.worldId,
+    boundMatchSessionId: ctx.boundMatchSessionId,
     traceId: String(p.traceId || "").slice(0, 128),
     mimeType: String(p.mimeType || "audio/webm").slice(0, 80),
     languageCode: String(p.languageCode || "tr-TR").slice(0, 32),
@@ -3682,13 +3692,24 @@ function handleRhizohVoiceLiveStartV0(socket, payload = {}) {
     eventSeq: 0,
     events: [],
     startedAtMs: Date.now()
-  });
-  appendRhizohVoiceLiveEventV0(rhizohVoiceLiveSessions.get(socket), "VOICE_LIVE_SESSION_STARTED", `${sessionId}:live_session`);
-  sendRhizohVoiceLiveEnvelopeV0(socket, WS_MESSAGE.RHIZOH_VOICE_LIVE_START, {
-    ok: true,
+  };
+  rhizohVoiceLiveSessions.set(socket, session);
+  registerVoiceGatewayCitizenV0(socket, {
     sessionId,
-    schema: "castle.rhizoh.voice_live.gateway_lane.v0"
+    worldId: ctx.worldId,
+    boundMatchSessionId: ctx.boundMatchSessionId,
+    traceId: session.traceId
   });
+  appendRhizohVoiceLiveEventV0(session, "VOICE_LIVE_SESSION_STARTED", `${sessionId}:live_session`);
+  sendRhizohVoiceLiveEnvelopeV0(
+    socket,
+    WS_MESSAGE.RHIZOH_VOICE_LIVE_START,
+    enrichVoiceLivePayloadV0(session, "VOICE_SESSION_START", {
+      ok: true,
+      sessionId,
+      schema: "castle.rhizoh.voice_live.gateway_lane.v0"
+    })
+  );
 }
 
 function handleRhizohVoiceLiveChunkV0(socket, payload = {}) {
@@ -4182,6 +4203,12 @@ wss.on("connection", async (socket, req) => {
       handleMatchStateAppliedV0(socket, parsed, wss);
       return;
     }
+
+    if (parsed.type === WS_MESSAGE.VOICE_STATE_APPLIED) {
+      handleVoiceStateAppliedV0(socket, parsed);
+      return;
+    }
+
 
     if (parsed.type === WS_MESSAGE.COMMAND) {
       const result = orchestrator.applyCommand(parsed.payload);
