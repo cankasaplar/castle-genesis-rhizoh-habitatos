@@ -17,7 +17,11 @@ import {
   publishMatchIngressRouteV0
 } from "./matchIngressSessionRouterV0.js";
 import { getMatchGatewayWsStatusV0 } from "./matchmakingGatewayWsV0.js";
-import { dispatchMatchmakingTruthEventV0, MATCH_TRUTH_EVENT_V0 } from "./matchmakingTruthKernelV0.js";
+import {
+  dispatchMatchmakingTruthEventV0,
+  getMatchmakingTruthProductionStatusV0,
+  MATCH_TRUTH_EVENT_V0
+} from "./matchmakingTruthKernelV0.js";
 import { MATCH_SESSION_STATE_V0 } from "./matchSessionLifecycleV0.js";
 
 export const MATCH_SESSION_SYNC_BRIDGE_SCHEMA_V0 =
@@ -84,7 +88,7 @@ function ensureTruthSessionForSyncV0(sessionId, playerId) {
 
 /**
  * Start reality sync for a match session.
- * @param {{ sessionId: string, role?: string, playerId?: string }} input
+ * @param {{ sessionId: string, role?: string, playerId?: string, waitForGateway?: boolean, gatewayTimeoutMs?: number }} input
  */
 export async function startMatchSessionSyncV0(input = {}) {
   const sessionId = String(input.sessionId || "").trim();
@@ -100,7 +104,10 @@ export async function startMatchSessionSyncV0(input = {}) {
   const joined = await joinMatchBroadcastSessionV0({
     sessionId,
     role: input.role || "player",
-    playerId
+    playerId,
+    waitForGateway: input.waitForGateway,
+    gatewayTimeoutMs: input.gatewayTimeoutMs,
+    gatewayPollMs: input.gatewayPollMs
   });
 
   if (!joined.ok || !joined.ws) {
@@ -152,6 +159,9 @@ export async function startMatchSessionSyncV0(input = {}) {
       ok: true,
       sessionId,
       shareUrl: out.shareUrl,
+      wsOpen: joined.ws?.readyState === WebSocket.OPEN,
+      gatewayWaitMs: joined.gatewayWait?.waitedMs ?? 0,
+      fen: bridgeState.lastProjection?.fen ?? null,
       interpretationOnly: true
     });
   }
@@ -183,15 +193,51 @@ export function getMatchSessionSyncSnapshotV0() {
     active: bridgeState.active,
     sessionId: bridgeState.sessionId,
     projection: bridgeState.lastProjection || projectMatchTruthToUiV0(),
+    wsStatus: getMatchGatewayWsStatusV0(),
     interpretationOnly: true,
     shadowRehearsal: true
   });
 }
 
 /**
- * Auto-start from /match/:id or ?match= URL.
+ * Combined reality probe — truth snapshot + sync bridge + gateway WS.
  */
-export async function autoStartMatchSessionSyncFromLocationV0() {
+export function getMatchRealityStatusV0() {
+  const sync = getMatchSessionSyncSnapshotV0();
+  const truth = getMatchmakingTruthProductionStatusV0();
+  const projection = sync.projection?.ok ? sync.projection : projectMatchTruthToUiV0();
+  const ws = sync.wsStatus || getMatchGatewayWsStatusV0();
+  const fen = String(projection.fen || truth.fen || truth.activeSession?.fen || "").trim() || null;
+
+  return Object.freeze({
+    schema: MATCH_SESSION_SYNC_BRIDGE_SCHEMA_V0,
+    syncActive: sync.active,
+    sessionId: sync.sessionId || truth.activeSession?.sessionId || null,
+    fen,
+    turn: projection.turn || truth.activeSession?.turn || null,
+    moveCount: projection.moveCount ?? truth.activeSession?.moveCount ?? 0,
+    serverSeq: projection.serverSeq ?? truth.activeSession?.committed?.serverSeq ?? 0,
+    wsOpen: ws.open === true,
+    joined: sync.active === true && ws.open === true,
+    activeSession: truth.activeSession,
+    projection,
+    wsStatus: ws,
+    probes: Object.freeze({
+      fen: "window.__rhizoh.matchmaking.realityStatus().fen",
+      projectionFen: "window.__rhizoh.matchSessionSync?.projection?.fen",
+      truthCommittedFen: "window.__rhizoh.matchmaking.truthStatus().activeSession?.committed?.fen"
+    }),
+    interpretationOnly: true,
+    shadowRehearsal: true,
+    atMs: Date.now()
+  });
+}
+
+/**
+ * Auto-start from /match/:id or ?match= URL.
+ * @param {{ waitForGateway?: boolean, gatewayTimeoutMs?: number }} [opts]
+ */
+export async function autoStartMatchSessionSyncFromLocationV0(opts = {}) {
   const parsed = parseMatchSessionFromLocationV0();
   publishMatchIngressRouteV0(parsed);
   if (!parsed?.sessionId) {
@@ -207,7 +253,10 @@ export async function autoStartMatchSessionSyncFromLocationV0() {
   return startMatchSessionSyncV0({
     sessionId: parsed.sessionId,
     role: parsed.role,
-    playerId: parsed.playerId
+    playerId: parsed.playerId,
+    waitForGateway: opts.waitForGateway,
+    gatewayTimeoutMs: opts.gatewayTimeoutMs,
+    gatewayPollMs: opts.gatewayPollMs
   });
 }
 
@@ -220,6 +269,7 @@ export function mountMatchSessionSyncBridgeConsoleV0() {
     stop: stopMatchSessionSyncV0,
     autoStartFromLocation: autoStartMatchSessionSyncFromLocationV0,
     snapshot: getMatchSessionSyncSnapshotV0,
+    realityStatus: getMatchRealityStatusV0,
     isActive: isMatchRealitySyncActiveV0,
     parseLocation: parseMatchSessionFromLocationV0,
     buildShareUrl: buildMatchSessionShareUrlV0,

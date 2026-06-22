@@ -5,6 +5,8 @@
  * @see docs/RHIZOH_MATCHMAKING_CORE_SPEC_V1.md
  */
 
+import { getMatchRealityStatusV0 } from "./matchSessionSyncBridgeV0.js";
+
 export const MATCHMAKING_TRUTH_MODEL_V0 = "event_sourced_reducer_v0";
 
 export const MATCHMAKING_RUNTIME_SURFACE_SCHEMA_V0 =
@@ -121,6 +123,7 @@ export function buildMatchmakingApiFacadeV0(engine, meta = {}) {
       snapshot: () => e.truthKernel?.authority?.() ?? null
     }),
     truthStatus: () => e.truthKernel?.productionStatus?.() ?? null,
+    realityStatus: () => getMatchRealityStatusV0(),
     verifyProduction: (opts) => e.truthKernel?.verifyProduction?.(opts) ?? null,
     verifyAuthorityBoundary: (opts) => e.truthKernel?.verifyAuthorityBoundary?.(opts) ?? null,
     verifyDriftInjection: (opts) => e.truthKernel?.verifyDriftInjection?.(opts) ?? null,

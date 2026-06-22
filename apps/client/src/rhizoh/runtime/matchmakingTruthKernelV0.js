@@ -580,11 +580,39 @@ export function clearMatchmakingTruthForTestV0() {
 /**
  * Read-only production probe — answers "awake but producing?" without dispatching events.
  */
+export function summarizeActiveMatchSessionForProbeV0(snap = getMatchmakingTruthSnapshotV0()) {
+  const raw = snap?.activeSession ?? null;
+  if (!raw) return null;
+  const session = attachAuthorityToSessionV0(raw);
+  const fen = String(session.committed?.fen || session.fen || STARTING_FEN_V0).trim();
+  return Object.freeze({
+    sessionId: session.sessionId,
+    state: session.state,
+    fen,
+    turn: session.committed?.turn || session.turn || "white",
+    moveCount: session.committed?.moveCount ?? session.moveCount ?? 0,
+    serverSeq: session.committed?.serverSeq ?? 0,
+    committed: Object.freeze({
+      fen: session.committed?.fen ?? fen,
+      turn: session.committed?.turn ?? session.turn ?? "white",
+      moveCount: session.committed?.moveCount ?? 0,
+      serverSeq: session.committed?.serverSeq ?? 0,
+      lastSan: session.committed?.lastSan ?? null
+    }),
+    serverAuthoritative: session.authority?.serverAuthoritative === true,
+    shadowRehearsal: session.shadowRehearsal !== false
+  });
+}
+
+/**
+ * Read-only production probe — answers "awake but producing?" without dispatching events.
+ */
 export function getMatchmakingTruthProductionStatusV0() {
   const log = getMatchmakingTruthLogV0();
   const snap = getMatchmakingTruthSnapshotV0();
   const last = log.entries.length > 0 ? log.entries[log.entries.length - 1] : null;
-  const moveCount = snap.activeSession?.committed?.moveCount ?? 0;
+  const activeSession = summarizeActiveMatchSessionForProbeV0(snap);
+  const moveCount = activeSession?.committed?.moveCount ?? 0;
   const eventTypes = log.entries.map((e) => e.type);
   const hasCommittedMove = eventTypes.some((t) => t === MATCH_TRUTH_EVENT_V0.COMMIT_MOVE);
 
@@ -594,7 +622,9 @@ export function getMatchmakingTruthProductionStatusV0() {
     awake: true,
     logCount: log.count,
     appendOnly: log.appendOnly,
-    hasActiveSession: Boolean(snap.activeSession),
+    hasActiveSession: Boolean(activeSession),
+    activeSession,
+    fen: activeSession?.fen ?? null,
     committedMoveCount: moveCount,
     hasCommittedMove,
     lastEventType: last?.type ?? null,
@@ -606,6 +636,8 @@ export function getMatchmakingTruthProductionStatusV0() {
       log.count === 0 ||
       replayMatchmakingTruthV0().logSeq === log.count,
     verifyHint: "await window.__rhizoh.matchmaking.verifyProduction({ reset: true })",
+    probeHint:
+      "fen: window.__rhizoh.matchmaking.realityStatus().fen · projection: window.__rhizoh.matchSessionSync?.projection?.fen",
     interpretationOnly: true
   });
 }

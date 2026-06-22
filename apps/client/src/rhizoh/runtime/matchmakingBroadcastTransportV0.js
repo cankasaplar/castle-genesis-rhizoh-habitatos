@@ -17,7 +17,8 @@ import { MATCH_SESSION_STATE_V0 } from "./matchSessionLifecycleV0.js";
 import {
   ensureMatchGatewayWsV0,
   getMatchGatewayWsStatusV0,
-  getMatchGatewayWsV0
+  getMatchGatewayWsV0,
+  waitForMatchGatewayWsOpenV0
 } from "./matchmakingGatewayWsV0.js";
 
 export const MATCH_BROADCAST_TRANSPORT_SCHEMA_V0 =
@@ -169,12 +170,25 @@ export async function joinMatchBroadcastSessionV0(input = {}) {
   if (!session.ok) {
     return Object.freeze({ ok: false, reason: "session_unavailable", session, interpretationOnly: true });
   }
-  const ws = await ensureMatchGatewayWsV0();
+  const gatewayWait =
+    input.waitForGateway === false
+      ? Object.freeze({
+          ok: Boolean((await ensureMatchGatewayWsV0())?.readyState === WebSocket.OPEN),
+          ws: await ensureMatchGatewayWsV0(),
+          reason: "ws_not_open",
+          waitedMs: 0
+        })
+      : await waitForMatchGatewayWsOpenV0({
+          timeoutMs: input.gatewayTimeoutMs,
+          pollMs: input.gatewayPollMs
+        });
+  const ws = gatewayWait.ws;
   if (!ws || ws.readyState !== WebSocket.OPEN) {
     return Object.freeze({
       ok: false,
-      reason: "ws_not_open",
+      reason: gatewayWait.reason || "ws_not_open",
       wsStatus: getMatchGatewayWsStatusV0(),
+      gatewayWait,
       sessionId: session.sessionId,
       interpretationOnly: true
     });
@@ -189,6 +203,7 @@ export async function joinMatchBroadcastSessionV0(input = {}) {
     ...join,
     sessionId: session.sessionId,
     ws,
+    gatewayWait,
     sessionCreated: session.created === true,
     interpretationOnly: true,
     shadowRehearsal: true
