@@ -11,7 +11,9 @@ import {
 } from "../rhizoh/matchBroadcastRoomV0.js";
 import {
   clearMatchMoveAuthoritySessionsForTestV0,
-  handleMatchMoveAuthorityV0
+  handleMatchMoveAuthorityV0,
+  seedMatchMoveAuthoritySessionForTestV0,
+  sendMatchSessionSnapshotOnJoinV0
 } from "../rhizoh/matchMoveAuthorityV0.js";
 
 test("session join builds presence roster", () => {
@@ -89,6 +91,38 @@ test("commit broadcasts ack and state to session room", () => {
   assert.ok(sentB.some((m) => m.type === WS_MESSAGE.MATCH_STATE));
   assert.equal(out.broadcast?.ack?.delivered, 1);
   assert.equal(out.broadcast?.state?.delivered, 1);
+});
+
+test("late join receives server snapshot when session has commits", () => {
+  clearMatchBroadcastRoomsForTestV0();
+  clearMatchMoveAuthoritySessionsForTestV0();
+  seedMatchMoveAuthoritySessionForTestV0("m_late", {
+    serverSeq: 2,
+    moveCount: 2,
+    fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+    turn: "black"
+  });
+
+  const sent = [];
+  const socket = { clientId: "late", readyState: 1, send: (r) => sent.push(JSON.parse(r)) };
+  const wss = { clients: new Set([socket]) };
+
+  handleMatchSessionJoinV0(
+    socket,
+    {
+      type: WS_MESSAGE.MATCH_SESSION_JOIN,
+      sessionId: "m_late",
+      payload: { role: "player", playerId: "guest" }
+    },
+    wss
+  );
+
+  const snap = sendMatchSessionSnapshotOnJoinV0(socket, "m_late");
+  assert.equal(snap.ok, true);
+  assert.equal(snap.serverSeq, 2);
+  const stateMsg = sent.find((m) => m.type === WS_MESSAGE.MATCH_STATE && m.payload?.snapshot);
+  assert.ok(stateMsg);
+  assert.equal(stateMsg.payload.serverSeq, 2);
 });
 
 test("castle invite fan-out skips sender and honors target client", () => {

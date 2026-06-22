@@ -76,12 +76,15 @@ export const RhizohObservationProofPanelV0 = memo(function RhizohObservationProo
       : String(state.broadcast.delivered);
 
   const idle = !state.sessionId && !state.reality?.syncActive;
+  const catchUp = state.sync?.catchUpLag === "awaiting_snapshot";
   const syncLabel = idle
     ? "— (start session)"
-    : state.sync.projectionConsistency
-      ? "yes"
-      : "no";
-  const syncOk = idle ? undefined : state.sync.projectionConsistency;
+    : catchUp
+      ? "catching up…"
+      : state.sync.projectionConsistency
+        ? "yes"
+        : "no";
+  const syncOk = idle ? undefined : catchUp ? false : state.sync.projectionConsistency;
 
   return (
     <aside
