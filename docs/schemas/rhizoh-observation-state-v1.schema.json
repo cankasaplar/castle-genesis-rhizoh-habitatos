@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "castle.rhizoh.observation_state.v1",
+  "title": "Rhizoh Observation State v1",
+  "description": "UI state contract for Production Observation Layer — proof visibility, not execution authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "sessionId",
+    "truth",
+    "broadcast",
+    "sync",
+    "reality",
+    "interpretationOnly"
+  ],
+  "properties": {
+    "schema": { "const": "castle.rhizoh.observation_state.v1" },
+    "atMs": { "type": "integer", "minimum": 0 },
+    "sessionId": { "type": ["string", "null"], "maxLength": 128 },
+    "truth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commitSeq", "eventSeq", "projectionVersion"],
+      "properties": {
+        "commitSeq": { "type": "integer", "minimum": 0 },
+        "eventSeq": { "type": "integer", "minimum": 0 },
+        "projectionVersion": { "type": "integer", "minimum": 0 },
+        "fen": { "type": ["string", "null"], "maxLength": 128 },
+        "serverSeq": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "v1 alias exposed for debugging; equals commitSeq when gateway authoritative"
+        }
+      }
+    },
+    "broadcast": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["broadcastSeq", "recipientCount", "delivered", "ackCount"],
+      "properties": {
+        "broadcastSeq": { "type": "integer", "minimum": 0 },
+        "recipientCount": { "type": "integer", "minimum": 0 },
+        "delivered": { "type": "integer", "minimum": 0 },
+        "ackCount": { "type": "integer", "minimum": 0 },
+        "ackRate": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+      }
+    },
+    "sync": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectionConsistency", "driftDetected", "lastSyncMs"],
+      "properties": {
+        "projectionConsistency": { "type": "boolean" },
+        "driftDetected": { "type": "boolean" },
+        "lastSyncMs": { "type": "integer", "minimum": 0 },
+        "driftRate": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "reality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["clientsInSync", "sharedStateHash", "instrumentationTier"],
+      "properties": {
+        "clientsInSync": { "type": "integer", "minimum": 0 },
+        "sharedStateHash": { "type": ["string", "null"], "maxLength": 128 },
+        "instrumentationTier": {
+          "type": "string",
+          "enum": ["truth_only", "broadcast_partial", "broadcast_full"]
+        }
+      }
+    },
+    "narrative": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "type": "string", "enum": ["proof", "demo", "hidden"] },
+        "label": { "type": "string", "maxLength": 256 }
+      }
+    },
+    "interpretationOnly": { "const": true },
+    "nonExecutive": { "const": true }
+  }
+}

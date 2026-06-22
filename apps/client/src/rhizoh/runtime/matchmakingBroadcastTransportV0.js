@@ -20,6 +20,8 @@ import {
   getMatchGatewayWsV0,
   waitForMatchGatewayWsOpenV0
 } from "./matchmakingGatewayWsV0.js";
+import { applyRemoteMatchWorldStateV0 } from "./matchmakingWorldProjectionV0.js";
+import { recordBroadcastVisibilityV1 } from "./rhizohObservationStateV1.js";
 
 export const MATCH_BROADCAST_TRANSPORT_SCHEMA_V0 =
   "castle.rhizoh.match_broadcast_transport.v0";
@@ -55,11 +57,19 @@ export function bindMatchBroadcastTransportV0(opts) {
       if (msg.sessionId && msg.sessionId !== sessionId) return;
 
       if (msg.type === WS_MESSAGE.MATCH_SESSION_PRESENCE) {
+        recordBroadcastVisibilityV1({ presence: msg.payload });
         opts.onPresence?.(msg.payload);
         return;
       }
       if (msg.type === WS_MESSAGE.MATCH_MOVE_ACK) {
         const ack = applyGatewayMatchMoveAckV0({ sessionId, ...(msg.payload || {}) });
+        recordBroadcastVisibilityV1({
+          commitSeq: msg.payload?.serverSeq,
+          broadcastSeq: msg.payload?.serverSeq,
+          recipientCount: msg.payload?.broadcast?.recipientCount,
+          delivered: msg.payload?.broadcast?.delivered,
+          localAck: true
+        });
         opts.onAck?.({ envelope: msg, ack });
         return;
       }
@@ -76,6 +86,10 @@ export function bindMatchBroadcastTransportV0(opts) {
           { sessionId, ...(msg.payload || {}) },
           { origin: "broadcast_transport" }
         );
+        recordBroadcastVisibilityV1({
+          commitSeq: msg.payload?.serverSeq,
+          localAck: true
+        });
         opts.onState?.({ envelope: msg, projected });
       }
     } catch {

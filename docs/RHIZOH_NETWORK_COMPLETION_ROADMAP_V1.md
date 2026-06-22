@@ -23,7 +23,8 @@ Do not expand sport plugins, media timelines, or community layers before Phase A
 | Shadow / preview / drift | ✓ |
 | Session broadcast room (gateway) | ✓ scaffold |
 | Client broadcast transport | ✓ scaffold |
-| **Live e2e multi-tab sync** | ◐ in progress |
+| **Live e2e multi-tab sync** | ◐ in progress — proof UI `?proof=1` |
+| **Observation proof layer** | ◐ scaffold — [`RHIZOH_PRODUCTION_OBSERVATION_LAYER_V1.md`](RHIZOH_PRODUCTION_OBSERVATION_LAYER_V1.md) |
 | World router | ✗ spec only |
 | Matchmaking product UX | ✗ shadow rehearsal |
 
