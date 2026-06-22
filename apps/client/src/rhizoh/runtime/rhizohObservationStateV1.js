@@ -145,6 +145,11 @@ export function recordVoiceObservationV1(patch = {}) {
   notifyObservationSubscribersV1();
 }
 
+/** True after gateway voice citizenship registration succeeded this tab session. */
+export function isVoiceGatewayCitizenshipRegisteredV0() {
+  return voiceVisStoreV1.registered === true;
+}
+
 /** @internal vitest */
 export function resetBroadcastVisibilityForTestV1() {
   broadcastVisStoreV1.lastPresence = null;

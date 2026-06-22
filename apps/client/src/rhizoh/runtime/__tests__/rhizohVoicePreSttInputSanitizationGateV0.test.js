@@ -39,6 +39,19 @@ describe("rhizohVoicePreSttInputSanitizationGateV0", () => {
     expect(v.gatewaySessionBypass).toBe(true);
   });
 
+  it("allow_if_session_active bypasses when citizenship registered (not only live WS chunk)", () => {
+    const v = evaluatePreSttInputSanitizationV0({
+      maxRms: 0.003,
+      recordedMs: 3200,
+      bytes: 52000,
+      warmProbe: { avgWarmScore: 0.4, minWarmScore: 0.35 },
+      sampleCount: 3,
+      voiceGatewaySessionActive: true
+    });
+    expect(v.pass).toBe(true);
+    expect(v.reason).toBe("allow_if_session_active");
+  });
+
   it("drops when speech probability below 0.6", () => {
     const v = evaluatePreSttInputSanitizationV0({
       maxRms: 0.013,
@@ -126,7 +139,7 @@ describe("rhizohVoicePreSttInputSanitizationGateV0", () => {
 
   it("proceeds on borderline RMS when warm probe is healthy", () => {
     const v = evaluatePreSttInputSanitizationV0({
-      maxRms: 0.0104,
+      maxRms: 0.0075,
       recordedMs: 9473,
       bytes: 123575,
       warmProbe: { avgWarmScore: 0.88, minWarmScore: 0.78 },

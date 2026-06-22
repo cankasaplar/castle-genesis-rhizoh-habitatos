@@ -49,7 +49,7 @@ export function estimatePreSttSpeechProbabilityV0(input = {}) {
   const avgWarm = Number(input.warmProbe?.avgWarmScore);
   const minWarm = Number(input.warmProbe?.minWarmScore);
 
-  const energyScore = clamp01((maxRms - 0.008) / (0.055 - 0.008));
+  const energyScore = clamp01((maxRms - 0.005) / (0.055 - 0.005));
   const durationScore = clamp01(recordedMs / 2800);
   const payloadScore = clamp01(bytes / 80000);
   const warmScore = Number.isFinite(avgWarm) ? clamp01(avgWarm) : 0.48;
@@ -99,7 +99,7 @@ export const PRE_STT_SILENT_CAPTURE_MIN_BYTES_V0 = 96_000;
 export const PRE_STT_SILENT_CAPTURE_MIN_MS_V0 = 6000;
 
 /** Borderline mic energy — proceed when warm probe proves live signal (prod log ~0.0104). */
-export const PRE_STT_BORDERLINE_RMS_MIN_V0 = 0.0095;
+export const PRE_STT_BORDERLINE_RMS_MIN_V0 = 0.007;
 export const PRE_STT_BORDERLINE_WARM_MIN_V0 = 0.72;
 export const PRE_STT_BORDERLINE_MIN_SAMPLES_V0 = 4;
 export const PRE_STT_BORDERLINE_MIN_MS_V0 = 1200;

@@ -4,7 +4,7 @@
 
 export const VOICE_AUDIO_LEVEL_V3_SCHEMA = "castle.rhizoh.voice_audio_level.v3";
 /** Normalized RMS floor — below this Whisper often hallucinates on TR audio. */
-export const VOICE_MIN_SPEECH_RMS_V3 = 0.012;
+export const VOICE_MIN_SPEECH_RMS_V3 = 0.008;
 
 /**
  * @param {MediaStream} stream

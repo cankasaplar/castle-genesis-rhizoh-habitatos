@@ -6,8 +6,10 @@
 import {
   isPhantomSystemPromptUtteranceV3,
   sanitizeVoiceTranscriptForDispatchV3,
-  VOICE_TRANSCRIPT_SUSPICIOUS_CONF_V3
+  VOICE_TRANSCRIPT_SUSPICIOUS_CONF_V3,
+  isConversationalTurkishUtteranceV3
 } from "./voiceEngineV3/voiceTranscriptSanityV3.js";
+import { VOICE_MIN_SPEECH_RMS_V3 } from "./voiceEngineV3/voiceAudioLevelV3.js";
 import {
   classifyVoiceDirectedSpeechBandV0,
   VOICE_DIRECTED_SPEECH_BAND
@@ -25,6 +27,7 @@ import { isSubstantivePlanningUtteranceV1 } from "./rhizohCanonicalIntentV1.js";
 import { evaluateAlertRecallRescueV0 } from "./rhizohVoiceOperatingModeV0.js";
 import { notePartialTranscriptForEmergencyV0 } from "./rhizohEmergencySignalLayerV0.js";
 import { probeStoryContinuationIntentV0 } from "./rhizohContinuityRecallIntentV0.js";
+import { isVoiceSttDispatchGatewayBypassV0 } from "./rhizohVoiceIngestGateFlagsV0.js";
 
 /** Known micro-intent phrases may execute below interaction threshold (not hallucinations). */
 const REFLEX_PRECHECK_VOICE_CONF_FLOOR_V0 = 0.45;
@@ -181,6 +184,40 @@ function allowUnknownBandMicroReflexV0(text, band) {
 const DIRECT_LISTEN_UNKNOWN_MIN_RECORD_MS_V0 = 2200;
 const DIRECT_LISTEN_QUESTION_MIN_RECORD_MS_V0 = 1800;
 const DIRECT_LISTEN_UNKNOWN_MIN_CHARS_V0 = 8;
+const WHISPER_DEFAULT_CONF_CONVERSATIONAL_MIN_MS_V0 = 900;
+
+/**
+ * @param {string} text
+ * @param {number | undefined} recordedMs
+ * @param {{ confidence?: number, voiceGatewaySessionActive?: boolean, source?: string }} relaxMeta
+ */
+function shouldPassWhisperDefaultConfExecutionV0(text, recordedMs, relaxMeta = {}) {
+  const conf = Number(relaxMeta.confidence);
+  if (!Number.isFinite(conf) || conf < 0.48) return false;
+
+  if (
+    relaxMeta.voiceGatewaySessionActive === true &&
+    isVoiceSttDispatchGatewayBypassV0() &&
+    text.length >= 4
+  ) {
+    return true;
+  }
+
+  const ms = Number(recordedMs);
+  if (isConversationalTurkishUtteranceV3(text)) {
+    if (Number.isFinite(ms) && ms >= WHISPER_DEFAULT_CONF_CONVERSATIONAL_MIN_MS_V0) return true;
+  }
+
+  const hit = probeFastPrecheckMatchV0(text);
+  if (
+    hit &&
+    ["hearing_check", "presence_query", "chat_invite", "wellbeing"].includes(String(hit.intent || ""))
+  ) {
+    return true;
+  }
+
+  return false;
+}
 
 /**
  * @param {string} text
@@ -274,7 +311,8 @@ function rejectNonDirectedVoiceBandV0(observation, text, relaxMeta = {}) {
  *   silent?: boolean,
  *   junk?: boolean,
  *   checkRepeat?: boolean,
- *   band?: string
+ *   band?: string,
+ *   voiceGatewaySessionActive?: boolean
  * }} [meta]
  */
 export function routeVoiceTranscriptConfidenceV0(meta = {}) {
@@ -331,14 +369,22 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
   const maxRms = Number(meta.maxRms);
   const recordedMs = Number(meta.recordedMs);
 
-  if (Number.isFinite(maxRms) && maxRms > 0 && maxRms < 0.012) {
-    return finalizeRouteV0({
-      executionAccepted: false,
-      observationForward: false,
-      reason: "audio_silent",
-      source,
-      maxRms
-    });
+  if (Number.isFinite(maxRms) && maxRms > 0 && maxRms < VOICE_MIN_SPEECH_RMS_V3) {
+    const quietGatewayBypass =
+      meta.voiceGatewaySessionActive === true &&
+      isVoiceSttDispatchGatewayBypassV0() &&
+      maxRms > 0 &&
+      Number.isFinite(recordedMs) &&
+      recordedMs >= 1200;
+    if (!quietGatewayBypass) {
+      return finalizeRouteV0({
+        executionAccepted: false,
+        observationForward: false,
+        reason: "audio_silent",
+        source,
+        maxRms
+      });
+    }
   }
 
   const observation =
@@ -431,13 +477,17 @@ export function routeVoiceTranscriptConfidenceV0(meta = {}) {
     }
 
     const observationPassThrough =
-      (text.length >= 6 &&
+      EXECUTION_OBSERVATION_PASS_REASONS_V0.has(reason) &&
+      ((text.length >= 6 &&
         Number.isFinite(confNum) &&
         confNum >= 0.48 &&
-        EXECUTION_OBSERVATION_PASS_REASONS_V0.has(reason) &&
         observation.band === VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE) ||
-      (EXECUTION_OBSERVATION_PASS_REASONS_V0.has(reason) &&
         shouldRelaxUnknownBandForDirectListenV0(text, recordedMs, classifiedForRelax, {
+          source
+        }) ||
+        shouldPassWhisperDefaultConfExecutionV0(text, recordedMs, {
+          confidence: confNum,
+          voiceGatewaySessionActive: meta.voiceGatewaySessionActive,
           source
         }));
 

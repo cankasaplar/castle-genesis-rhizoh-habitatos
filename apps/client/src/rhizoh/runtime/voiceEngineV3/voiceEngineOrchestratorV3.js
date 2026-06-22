@@ -10,8 +10,9 @@ import {
   PRE_STT_GATE_ACTION_V0,
   publishPreSttSanitizationDebugV0
 } from "../rhizohVoicePreSttInputSanitizationGateV0.js";
-import { isVoicePreSttGateEnabledV0 } from "../rhizohVoiceIngestGateFlagsV0.js";
+import { isVoicePreSttGateEnabledV0, isVoicePreSttGatewaySessionBypassV0 } from "../rhizohVoiceIngestGateFlagsV0.js";
 import { hasVoiceCaptureSpeechEnergyV3 } from "./voiceAudioLevelV3.js";
+import { isVoiceGatewayCitizenshipRegisteredV0 } from "../voiceGatewayCitizenshipV0.js";
 import { publishPostSttOriginFilterDebugV0 } from "../rhizohVoicePostSttSemanticOriginFilterV0.js";
 import { queryRhizohVoiceTranscribeResilientV3 } from "./voiceTranscribeTransportV3.js";
 import { resolveVoiceTranscriptV3 } from "./voiceTranscriptMergerV3.js";
@@ -320,7 +321,8 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         bytes,
         warmProbe,
         sampleCount: levelSampleCount,
-        voiceGatewaySessionActive: Boolean(liveVoiceSessionV0?.ok)
+        voiceGatewaySessionActive:
+          Boolean(liveVoiceSessionV0?.ok) || isVoiceGatewayCitizenshipRegisteredV0()
       };
       let preSttSpeechProbability = null;
 
@@ -379,6 +381,13 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
           };
         }
       } else if (!hasVoiceCaptureSpeechEnergyV3(maxRms)) {
+        const quietGatewayBypass =
+          isVoicePreSttGatewaySessionBypassV0() &&
+          isVoiceGatewayCitizenshipRegisteredV0() &&
+          Number.isFinite(maxRms) &&
+          maxRms > 0 &&
+          recordedMs >= 1200;
+        if (!quietGatewayBypass) {
         closeLiveVoiceSessionV0("audio_silent");
         busy = false;
         setSessionState(VOICE_ENGINE_STATE_V3.IDLE);
@@ -391,6 +400,7 @@ export function createVoiceEngineOrchestratorV3(opts = {}) {
         emitVoiceEngineTelemetryV3("TRANSCRIBE_SKIP", { reason: "audio_silent", recordedMs, bytes, maxRms });
         opts.onError?.({ code: "audio_silent", detail: String(maxRms) });
         return { ok: false, error: "audio_silent", maxRms, recordedMs };
+        }
       }
 
       if (activeGen !== generation) {
