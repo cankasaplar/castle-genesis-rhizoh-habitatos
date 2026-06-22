@@ -13,14 +13,34 @@
 | 2 | Frozen API Surface | ✓ |
 | 3 | Truth Kernel (`truth_log_v0`) | ✓ |
 | 4 | Event-Sourced Replay (`produced === replayed`) | ✓ |
-| 5 | Server Authority | ◐ partial (`commitAuthority=client_shadow`) |
+| 5 | Server Authority (single-writer rule) | ✓ simulated · ◐ live WS |
 | 6 | Distributed Consensus | ✗ |
 
 **SSOT sentence today:**
 
-> Rhizoh is a **deterministic truth kernel** in **shadow rehearsal** — not yet a **single-authority distributed reality machine**.
+> Rhizoh enforces **single-writer rule**: client = `TRUTH_LOG_PREVIEW` + proposal only · server = sole `TRUTH_LOG_APPEND` commit writer via `MATCH_MOVE_ACK`.
 
-Declared contract: `SERVER_PRIMARY`. Effective commit owner: `client_shadow` until gateway READY.
+| Field | Policy (always) | Effective (until live gateway) |
+|-------|-----------------|--------------------------------|
+| `commitAuthority` | `server_primary` | — |
+| `effectiveCommitWriter` | — | `client_shadow` → `server` after ack |
+| `proposalAuthority` | `client_shadow` | — |
+
+Client `COMMIT_MOVE` without `provenance=gateway_ack` → `single_writer_violation`.
+
+---
+
+## 0.1 Pipeline (target)
+
+```text
+Client → ProposeMove → TRUTH_LOG_PREVIEW (prediction lane)
+       → MATCH_MOVE (gateway WS)
+Server → validate (authority_gateway)
+       → commit (sole writer)
+       → MATCH_MOVE_ACK → TRUTH_LOG_APPEND → reduce → broadcast
+```
+
+**Anti-pattern removed:** Client → Commit → Log → Reconcile → Fix
 
 ---
 

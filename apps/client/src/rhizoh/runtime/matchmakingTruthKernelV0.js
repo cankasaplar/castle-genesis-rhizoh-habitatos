@@ -22,9 +22,17 @@ import {
 import {
   emitMatchTruthAuthorityBootObservabilityV0,
   emitMatchTruthDispatchChainForEventV0,
+  emitMatchTruthPreviewChainForEventV0,
   getMatchTruthAuthoritySnapshotV0,
   MATCH_TRUTH_CHAIN_PHASE_V0
 } from "./matchmakingTruthAuthorityObservabilityV0.js";
+import {
+  canAppendAuthoritativeCommitV0,
+  MATCH_TRUTH_LOG_LANE_V0,
+  MATCH_TRUTH_PROVENANCE_V0,
+  getMatchSingleWriterPolicyV0
+} from "./matchmakingSingleWriterPolicyV0.js";
+import { simulateGatewayMatchMoveAckV0 } from "./matchmakingGatewayCommitBridgeV0.js";
 import {
   runMatchmakingAuthorityBoundaryVerifyV0,
   runMatchmakingDriftInjectionVerifyV0
@@ -45,6 +53,7 @@ export const MATCH_TRUTH_EVENT_V0 = Object.freeze({
 });
 
 const TRUTH_LOG_STORAGE_KEY_V0 = "rhizoh.matchmaking.truth_log.v0";
+const PREDICTION_LOG_STORAGE_KEY_V0 = "rhizoh.matchmaking.prediction_log.v0";
 const TRUTH_PROJECTION_STORAGE_KEY_V0 = "rhizoh.matchmaking.truth_projection.v0";
 const SESSION_STORAGE_KEY_V0 = "rhizoh.matchmaking.active_session.v0";
 const BEACON_REGISTRY_STORAGE_KEY_V0 = "rhizoh.matchmaking.beacon_registry.v0";
@@ -288,7 +297,9 @@ export function reduceMatchmakingTruthV0(state, event, opts = {}) {
  */
 export function getMatchmakingTruthLogV0(sessionId) {
   const row = readTruthLogRowV0();
-  const entries = (row?.entries || []).filter((e) => !sessionId || e.sessionId === sessionId);
+  const entries = (row?.entries || [])
+    .filter((e) => e.lane !== MATCH_TRUTH_LOG_LANE_V0.PREVIEW)
+    .filter((e) => !sessionId || e.sessionId === sessionId);
   return Object.freeze({
     schema: MATCH_TRUTH_LOG_SCHEMA_V0,
     sessionId: sessionId || null,
@@ -296,8 +307,69 @@ export function getMatchmakingTruthLogV0(sessionId) {
     count: entries.length,
     appendOnly: true,
     truthModel: MATCH_TRUTH_MODEL_V0,
+    singleWriterRule: true,
     interpretationOnly: true
   });
+}
+
+function readPredictionLogRowV0() {
+  if (typeof sessionStorage === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(PREDICTION_LOG_STORAGE_KEY_V0);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writePredictionLogRowV0(row) {
+  try {
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem(PREDICTION_LOG_STORAGE_KEY_V0, JSON.stringify(row));
+    }
+  } catch {
+    /* noop */
+  }
+}
+
+export function getMatchmakingPredictionLogV0(sessionId) {
+  const row = readPredictionLogRowV0();
+  const entries = (row?.entries || []).filter((e) => !sessionId || e.sessionId === sessionId);
+  return Object.freeze({
+    schema: MATCH_TRUTH_LOG_SCHEMA_V0,
+    lane: MATCH_TRUTH_LOG_LANE_V0.PREVIEW,
+    sessionId: sessionId || null,
+    entries: Object.freeze(entries),
+    count: entries.length,
+    appendOnly: true,
+    interpretationOnly: true
+  });
+}
+
+function appendPredictionLogEventV0(event) {
+  const row = readPredictionLogRowV0();
+  const prev = row?.entries || [];
+  const nextSeq = prev.length > 0 ? Math.max(...prev.map((e) => e.seq)) + 1 : 1;
+  const entry = Object.freeze({
+    schema: MATCH_TRUTH_LOG_SCHEMA_V0,
+    lane: MATCH_TRUTH_LOG_LANE_V0.PREVIEW,
+    provenance: MATCH_TRUTH_PROVENANCE_V0.CLIENT_PREVIEW,
+    ...event,
+    seq: event.seq ?? nextSeq,
+    atMs: event.atMs ?? Date.now(),
+    sessionId: event.sessionId ?? event.payload?.sessionId ?? null
+  });
+  const entries = Object.freeze([...prev, entry].slice(-MAX_TRUTH_LOG_ENTRIES_V0));
+  writePredictionLogRowV0(
+    Object.freeze({
+      schema: MATCH_TRUTH_LOG_SCHEMA_V0,
+      lane: MATCH_TRUTH_LOG_LANE_V0.PREVIEW,
+      entries,
+      count: entries.length,
+      appendOnly: true
+    })
+  );
+  return entry;
 }
 
 function appendTruthLogEventV0(event) {
@@ -306,6 +378,7 @@ function appendTruthLogEventV0(event) {
   const nextSeq = prev.length > 0 ? Math.max(...prev.map((e) => e.seq)) + 1 : 1;
   const entry = Object.freeze({
     schema: MATCH_TRUTH_LOG_SCHEMA_V0,
+    lane: MATCH_TRUTH_LOG_LANE_V0.AUTHORITATIVE,
     ...event,
     seq: event.seq ?? nextSeq,
     atMs: event.atMs ?? Date.now(),
@@ -356,13 +429,86 @@ export function getMatchmakingTruthSnapshotV0() {
 }
 
 /**
- * Single writer — append event, reduce, persist projection.
+ * Client proposal — prediction log + shadow lane only (no authoritative commit).
  * @param {{ type: string, payload?: object, sessionId?: string }} event
+ */
+function dispatchMatchmakingProposalV0(event) {
+  const type = MATCH_TRUTH_EVENT_V0.PROPOSE_MOVE;
+  const prev = getMatchmakingTruthSnapshotV0();
+  const sessionId =
+    event.sessionId ||
+    event.payload?.sessionId ||
+    prev.activeSession?.sessionId ||
+    null;
+
+  const previewEntry = appendPredictionLogEventV0({
+    type,
+    payload: {
+      ...(event.payload || {}),
+      autoCommitShadow: false,
+      provenance: MATCH_TRUTH_PROVENANCE_V0.CLIENT_PREVIEW
+    },
+    sessionId
+  });
+
+  const reduced = reduceMatchmakingTruthV0(prev, previewEntry, { skipKernelLog: false });
+  const effect = reduced.__effect || null;
+  const next = stripTruthEffectV0(reduced);
+  writeTruthProjectionV0(next);
+
+  const chain = emitMatchTruthPreviewChainForEventV0({
+    logEntry: previewEntry,
+    effect,
+    nextState: next,
+    prevState: prev
+  });
+
+  const authority = getMatchTruthAuthoritySnapshotV0({ session: next.activeSession });
+
+  return Object.freeze({
+    ok: effect?.ok !== false,
+    preview: true,
+    event: previewEntry,
+    state: next,
+    session: next.activeSession,
+    kernelState: next.kernelState,
+    truthModel: MATCH_TRUTH_MODEL_V0,
+    authority,
+    truthChain: chain,
+    singleWriterRule: true,
+    interpretationOnly: true,
+    ...(effect || {})
+  });
+}
+
+/**
+ * Single writer — authoritative log for server commits; proposals use prediction lane.
+ * @param {{ type: string, payload?: object, sessionId?: string, provenance?: string, gatewayReady?: boolean }} event
  */
 export function dispatchMatchmakingTruthEventV0(event) {
   const type = String(event?.type || "");
   if (!Object.values(MATCH_TRUTH_EVENT_V0).includes(type)) {
     return Object.freeze({ ok: false, reason: "unknown_truth_event", type, interpretationOnly: true });
+  }
+
+  if (type === MATCH_TRUTH_EVENT_V0.PROPOSE_MOVE) {
+    return dispatchMatchmakingProposalV0(event);
+  }
+
+  const provenance = event.provenance || event.payload?.provenance || null;
+  const gatewayReady = event.gatewayReady === true || provenance === MATCH_TRUTH_PROVENANCE_V0.GATEWAY_ACK;
+
+  if (
+    type === MATCH_TRUTH_EVENT_V0.COMMIT_MOVE &&
+    !canAppendAuthoritativeCommitV0({ type, provenance })
+  ) {
+    return Object.freeze({
+      ok: false,
+      reason: "single_writer_violation",
+      requiredProvenance: MATCH_TRUTH_PROVENANCE_V0.GATEWAY_ACK,
+      singleWriterRule: true,
+      interpretationOnly: true
+    });
   }
 
   const prev = getMatchmakingTruthSnapshotV0();
@@ -374,8 +520,12 @@ export function dispatchMatchmakingTruthEventV0(event) {
 
   const logEntry = appendTruthLogEventV0({
     type,
-    payload: event.payload || {},
-    sessionId
+    payload: {
+      ...(event.payload || {}),
+      provenance: provenance || event.payload?.provenance || null
+    },
+    sessionId,
+    provenance
   });
 
   const reduced = reduceMatchmakingTruthV0(prev, logEntry, { skipKernelLog: false });
@@ -387,10 +537,14 @@ export function dispatchMatchmakingTruthEventV0(event) {
     logEntry,
     effect,
     nextState: next,
-    prevState: prev
+    prevState: prev,
+    gatewayReady
   });
 
-  const authority = getMatchTruthAuthoritySnapshotV0({ session: next.activeSession });
+  const authority = getMatchTruthAuthoritySnapshotV0({
+    session: next.activeSession,
+    gatewayReady
+  });
 
   return Object.freeze({
     ok: effect?.ok !== false,
@@ -401,6 +555,7 @@ export function dispatchMatchmakingTruthEventV0(event) {
     truthModel: MATCH_TRUTH_MODEL_V0,
     authority,
     truthChain: chain,
+    singleWriterPolicy: getMatchSingleWriterPolicyV0({ gatewayReady }),
     interpretationOnly: true,
     ...(effect || {})
   });
@@ -411,6 +566,7 @@ export function clearMatchmakingTruthForTestV0() {
   try {
     if (typeof sessionStorage !== "undefined") {
       sessionStorage.removeItem(TRUTH_LOG_STORAGE_KEY_V0);
+      sessionStorage.removeItem(PREDICTION_LOG_STORAGE_KEY_V0);
       sessionStorage.removeItem(TRUTH_PROJECTION_STORAGE_KEY_V0);
       sessionStorage.removeItem(SESSION_STORAGE_KEY_V0);
       sessionStorage.removeItem(BEACON_REGISTRY_STORAGE_KEY_V0);
@@ -429,9 +585,7 @@ export function getMatchmakingTruthProductionStatusV0() {
   const last = log.entries.length > 0 ? log.entries[log.entries.length - 1] : null;
   const moveCount = snap.activeSession?.committed?.moveCount ?? 0;
   const eventTypes = log.entries.map((e) => e.type);
-  const hasCommittedMove = eventTypes.some(
-    (t) => t === MATCH_TRUTH_EVENT_V0.COMMIT_MOVE || t === MATCH_TRUTH_EVENT_V0.PROPOSE_MOVE
-  );
+  const hasCommittedMove = eventTypes.some((t) => t === MATCH_TRUTH_EVENT_V0.COMMIT_MOVE);
 
   return Object.freeze({
     schema: MATCH_TRUTH_SCHEMA_V0,
@@ -466,6 +620,7 @@ export function runMatchmakingTruthProductionVerifyV0(opts = {}) {
   }
 
   const logBefore = getMatchmakingTruthLogV0().count;
+  const predictionBefore = getMatchmakingPredictionLogV0().count;
   const snapBefore = getMatchmakingTruthSnapshotV0();
   const playerId = String(opts.playerId || "truth_verify_user");
 
@@ -480,34 +635,54 @@ export function runMatchmakingTruthProductionVerifyV0(opts = {}) {
     }
   }
 
-  const moveStep = dispatchMatchmakingTruthEventV0({
+  const sessionId = sessionStep?.session?.sessionId ?? snapBefore.activeSession?.sessionId;
+
+  const proposeStep = dispatchMatchmakingTruthEventV0({
     type: MATCH_TRUTH_EVENT_V0.PROPOSE_MOVE,
-    sessionId: sessionStep?.session?.sessionId ?? snapBefore.activeSession?.sessionId,
-    payload: { san: "e4", playerId, autoCommitShadow: true }
+    sessionId,
+    payload: { san: "e4", playerId, autoCommitShadow: false }
+  });
+
+  const commitStep = simulateGatewayMatchMoveAckV0({
+    sessionId,
+    san: "e4",
+    playerId,
+    fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+    turn: "black",
+    serverSeq: 1
   });
 
   const logAfter = getMatchmakingTruthLogV0();
+  const predictionAfter = getMatchmakingPredictionLogV0();
   const replayed = replayMatchmakingTruthV0();
   const eventsProduced = logAfter.count - logBefore;
+  const previewsProduced = predictionAfter.count - predictionBefore;
   const moveCount = replayed.activeSession?.committed?.moveCount ?? 0;
-  const chainPhases = (moveStep.truthChain?.chain || []).map((c) => c.phase);
+  const chainPhases = (commitStep.truthChain?.chain || []).map((c) => c.phase);
+  const proposePhases = (proposeStep.truthChain?.chain || []).map((c) => c.phase);
 
   const ok =
-    moveStep.ok === true &&
-    eventsProduced > 0 &&
+    proposeStep.ok === true &&
+    commitStep.ok === true &&
+    previewsProduced >= 1 &&
+    eventsProduced >= 1 &&
     moveCount >= 1 &&
+    proposePhases.includes(MATCH_TRUTH_CHAIN_PHASE_V0.TRUTH_LOG_PREVIEW) &&
     chainPhases.includes(MATCH_TRUTH_CHAIN_PHASE_V0.TRUTH_LOG_APPEND) &&
-    chainPhases.includes(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_VALIDATED) &&
-    chainPhases.includes(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_COMMITTED);
+    chainPhases.includes(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_COMMITTED) &&
+    commitStep.authority?.serverAuthoritative === true;
 
   if (typeof console !== "undefined" && console.info) {
     console.info("[MATCH_TRUTH_VERIFY]", {
       ok,
       eventsProduced,
+      previewsProduced,
       moveCount,
       logCount: logAfter.count,
+      proposePhases,
       chainPhases,
       replayMoveCount: replayed.activeSession?.committed?.moveCount,
+      serverAuthoritative: commitStep.authority?.serverAuthoritative,
       interpretationOnly: true
     });
   }
@@ -515,14 +690,19 @@ export function runMatchmakingTruthProductionVerifyV0(opts = {}) {
   return Object.freeze({
     ok,
     eventsProduced,
+    previewsProduced,
     moveCount,
     sessionStep,
-    moveStep,
+    proposeStep,
+    commitStep,
     log: logAfter,
+    predictionLog: predictionAfter,
     replayed,
     chainPhases,
+    proposePhases,
     interpretationOnly: true,
-    shadowRehearsal: true
+    shadowRehearsal: true,
+    singleWriterRule: true
   });
 }
 

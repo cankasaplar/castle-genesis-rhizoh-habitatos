@@ -55,4 +55,17 @@ describe("matchmakingTruthKernelV0", () => {
     expect(status.hasCommittedMove).toBe(false);
     expect(status.awake).toBe(true);
   });
+
+  it("blocks client commit without gateway provenance", () => {
+    dispatchMatchmakingTruthEventV0({
+      type: MATCH_TRUTH_EVENT_V0.SESSION_CREATE,
+      payload: { initialState: MATCH_SESSION_STATE_V0.SESSION_ACTIVE }
+    });
+    const blocked = dispatchMatchmakingTruthEventV0({
+      type: MATCH_TRUTH_EVENT_V0.COMMIT_MOVE,
+      payload: { san: "e4", playerId: "user" }
+    });
+    expect(blocked.ok).toBe(false);
+    expect(blocked.reason).toBe("single_writer_violation");
+  });
 });

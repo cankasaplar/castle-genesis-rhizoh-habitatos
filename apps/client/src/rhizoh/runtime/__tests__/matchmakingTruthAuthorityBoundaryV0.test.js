@@ -14,15 +14,15 @@ describe("matchmakingTruthAuthorityBoundaryV0", () => {
     vi.spyOn(console, "info").mockImplementation(() => {});
   });
 
-  it("verifyAuthorityBoundary reports PARTIAL shadow chain", () => {
+  it("verifyAuthorityBoundary reports SERVER_BOUND with simulated gateway", () => {
     const out = runMatchmakingAuthorityBoundaryVerifyV0({ reset: true });
     expect(out.ok).toBe(true);
-    expect(out.stage).toBe("PARTIAL");
+    expect(out.stage).toBe("SERVER_BOUND");
     expect(out.proposalAuthority).toBe("client_shadow");
-    expect(out.commitAuthority).toBe("client_shadow");
-    expect(out.serverAuthoritative).toBe(false);
-    expect(out.phasesObserved).toContain(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_VALIDATED);
-    expect(out.phasesMissingUntilServer.length).toBeGreaterThan(0);
+    expect(out.commitAuthority).toBe("server_primary");
+    expect(out.serverAuthoritative).toBe(true);
+    expect(out.previewChainOk).toBe(true);
+    expect(out.authoritativeChainOk).toBe(true);
   });
 
   it("verifyDriftInjection detects drift and reconciles", () => {

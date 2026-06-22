@@ -33,6 +33,8 @@ const RUNTIME_FILES = [
   "matchmakingTruthKernelV0.js",
   "matchmakingTruthAuthorityObservabilityV0.js",
   "matchmakingTruthAuthorityBoundaryV0.js",
+  "matchmakingSingleWriterPolicyV0.js",
+  "matchmakingGatewayCommitBridgeV0.js",
   "matchSessionStateMachineV0.js",
   "matchmakingConsoleV0.js",
   "matchAuthorityLayerV0.js",

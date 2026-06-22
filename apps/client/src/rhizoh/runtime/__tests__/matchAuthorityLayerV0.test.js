@@ -10,10 +10,11 @@ import {
 import {
   applyMatchMoveV0,
   clearMatchSessionForTestV0,
-  commitMatchMoveV0,
   createMatchSessionV0,
   MATCH_SESSION_STATE_V0
 } from "../matchSessionLifecycleV0.js";
+import { simulateGatewayMatchMoveAckV0 } from "../matchmakingGatewayCommitBridgeV0.js";
+import { validateMatchMoveV0 } from "../matchStockfishValidatorBridgeV0.js";
 import { MATCH_KERNEL_STATE_V0 } from "../matchAuthorityKernelV0.js";
 
 describe("matchAuthorityLayerV0", () => {
@@ -41,22 +42,39 @@ describe("matchAuthorityLayerV0", () => {
     expect(out.kernelState).toBe(MATCH_KERNEL_STATE_V0.PENDING_MOVE);
   });
 
-  it("commits through kernel when autoCommitShadow enabled", () => {
-    createMatchSessionV0({ initialState: MATCH_SESSION_STATE_V0.SESSION_ACTIVE });
-    const committed = applyMatchMoveV0({ san: "e4", playerId: "user_a" });
+  it("commits only through gateway ack after client proposal", () => {
+    const session = createMatchSessionV0({ initialState: MATCH_SESSION_STATE_V0.SESSION_ACTIVE });
+    const proposed = applyMatchMoveV0({ san: "e4", playerId: "user_a" });
 
-    expect(committed.ok).toBe(true);
-    expect(committed.committed).toBe(true);
-    expect(committed.session.authority.effectiveAuthority).toBe("SERVER");
-    expect(committed.session.committed.moveCount).toBe(1);
-  });
+    expect(proposed.pending).toBe(true);
+    expect(proposed.preview).toBe(true);
+    expect(proposed.session.committed.moveCount).toBe(0);
 
-  it("commits server lane and flips effective authority to SERVER", () => {
-    createMatchSessionV0({ initialState: MATCH_SESSION_STATE_V0.SESSION_ACTIVE });
-    const committed = commitMatchMoveV0({
+    const validation = validateMatchMoveV0({
+      fen: proposed.session.committed.fen,
+      san: "e4",
+      expectedTurn: "white"
+    });
+    const committed = simulateGatewayMatchMoveAckV0({
+      sessionId: session.sessionId,
       san: "e4",
       playerId: "user_a",
-      serverSeq: 1,
+      fen: validation.fen,
+      turn: validation.turn
+    });
+
+    expect(committed.ok).toBe(true);
+    expect(committed.session.authority.effectiveAuthority).toBe("SERVER");
+    expect(committed.session.committed.moveCount).toBe(1);
+    expect(committed.authority.serverAuthoritative).toBe(true);
+  });
+
+  it("commits server lane via gateway provenance helper", () => {
+    const session = createMatchSessionV0({ initialState: MATCH_SESSION_STATE_V0.SESSION_ACTIVE });
+    const committed = simulateGatewayMatchMoveAckV0({
+      sessionId: session.sessionId,
+      san: "e4",
+      playerId: "user_a",
       fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
       turn: "black"
     });
