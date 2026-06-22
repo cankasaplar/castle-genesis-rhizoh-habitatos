@@ -108,7 +108,10 @@ export function createHttpCorsPolicy(env = process.env) {
     const allow = accessControlAllowOriginValue(req);
     if (allow) {
       res.setHeader("Access-Control-Allow-Origin", allow);
-      if (allow !== "*") res.setHeader("Vary", "Origin");
+      if (allow !== "*") {
+        res.setHeader("Vary", "Origin");
+        res.setHeader("Access-Control-Allow-Credentials", "true");
+      }
     }
     res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", HTTP_CORS_ALLOW_HEADERS_V1);

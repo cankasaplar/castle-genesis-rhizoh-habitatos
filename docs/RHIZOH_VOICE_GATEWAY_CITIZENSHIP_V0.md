@@ -57,7 +57,10 @@ sessionId = opts.sessionId || boundMatchSessionId || live_*
 ```javascript
 window.__rhizoh.voiceGateway.resolveContext()
 window.__rhizoh.observationState.snapshot().voice
+await window.__rhizoh.voiceGateway.fetchPresence()
 ```
+
+Do **not** fetch `onrender.com` directly from `rhizoh.com` — use `fetchPresence()` (app gateway base + token + CORS credentials).
 
 ---
 

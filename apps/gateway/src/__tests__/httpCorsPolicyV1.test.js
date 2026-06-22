@@ -96,6 +96,20 @@ test("applyHttpCorsHeaders sets ACAO for OPTIONS path", () => {
   const res = { setHeader: (k, v) => { headers[k] = v; } };
   policy.applyHttpCorsHeaders({ headers: { origin: "https://rhizoh.com" } }, res);
   assert.equal(headers["Access-Control-Allow-Origin"], "https://rhizoh.com");
+  assert.equal(headers["Access-Control-Allow-Credentials"], "true");
   assert.equal(headers["Access-Control-Max-Age"], "86400");
   assert.match(headers["Access-Control-Allow-Headers"], /X-Castle-Gateway-Token/);
+});
+
+test("wildcard ACAO does not set credentials header", () => {
+  const policy = createHttpCorsPolicy({
+    NODE_ENV: "production",
+    CASTLE_HTTP_CORS_ORIGIN: "*"
+  });
+  /** @type {Record<string, string>} */
+  const headers = {};
+  const res = { setHeader: (k, v) => { headers[k] = v; } };
+  policy.applyHttpCorsHeaders({ headers: { origin: "https://rhizoh.com" } }, res);
+  assert.equal(headers["Access-Control-Allow-Origin"], "*");
+  assert.equal(headers["Access-Control-Allow-Credentials"], undefined);
 });

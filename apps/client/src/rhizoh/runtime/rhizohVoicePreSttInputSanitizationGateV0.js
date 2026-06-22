@@ -5,6 +5,7 @@
  */
 
 import { VOICE_MIN_SPEECH_RMS_V3 } from "./voiceEngineV3/voiceAudioLevelV3.js";
+import { isVoicePreSttGatewaySessionBypassV0 } from "./rhizohVoiceIngestGateFlagsV0.js";
 
 export const RHIZOH_VOICE_PRE_STT_SANITIZATION_SCHEMA_V0 =
   "castle.rhizoh.voice_pre_stt_input_sanitization.v0";
@@ -168,6 +169,18 @@ export function evaluatePreSttInputSanitizationV0(input = {}) {
   });
 
   if (!Number.isFinite(energy) || energy < VOICE_MIN_SPEECH_RMS_V3) {
+    if (
+      input.voiceGatewaySessionActive === true &&
+      isVoicePreSttGatewaySessionBypassV0()
+    ) {
+      return Object.freeze({
+        ...base,
+        pass: true,
+        action: PRE_STT_GATE_ACTION_V0.PROCEED,
+        reason: "allow_if_session_active",
+        gatewaySessionBypass: true
+      });
+    }
     if (isPreSttBorderlineWarmProceedV0(input, energy)) {
       return Object.freeze({
         ...base,

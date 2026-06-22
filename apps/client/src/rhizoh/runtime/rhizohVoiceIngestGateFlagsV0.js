@@ -19,6 +19,14 @@ export function isVoicePreSttGateEnabledV0() {
   return readEnvFlagV0("VITE_RHIZOH_VOICE_PRE_STT_GATE", true);
 }
 
+/**
+ * Debug/proof bypass — allow low-energy clips when gateway voice session is live.
+ * Default ON; set VITE_RHIZOH_VOICE_GATE_BYPASS_PRE_STT=0 to disable.
+ */
+export function isVoicePreSttGatewaySessionBypassV0() {
+  return readEnvFlagV0("VITE_RHIZOH_VOICE_GATE_BYPASS_PRE_STT", true);
+}
+
 /** Phase B canary — post-STT origin filter. Default OFF until explicitly enabled. */
 export function isVoicePostSttOriginFilterEnabledV0() {
   if (!isVoiceEngineV3EnabledV0()) return false;
@@ -28,6 +36,7 @@ export function isVoicePostSttOriginFilterEnabledV0() {
 export function readVoiceIngestGateRolloutV0() {
   return Object.freeze({
     preSttGate: isVoicePreSttGateEnabledV0(),
+    preSttGatewaySessionBypass: isVoicePreSttGatewaySessionBypassV0(),
     postSttOrigin: isVoicePostSttOriginFilterEnabledV0(),
     originRetry: isVoiceOriginRetryEnabledV0(),
     voiceV3: isVoiceEngineV3EnabledV0()
