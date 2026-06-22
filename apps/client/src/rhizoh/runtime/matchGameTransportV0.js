@@ -5,6 +5,7 @@
  */
 
 import { proposeMatchBroadcastMoveV0 } from "./matchmakingBroadcastTransportV0.js";
+import { getMatchGatewayWsStatusV0 } from "./matchmakingGatewayWsV0.js";
 import { MATCH_GAME_TYPE_V0 } from "./matchTruthUiProjectionV0.js";
 
 export const MATCH_GAME_TRANSPORT_SCHEMA_V0 = "castle.rhizoh.match_game_transport.v0";
@@ -35,6 +36,16 @@ export async function proposeMatchGameMoveV0(input = {}) {
       interpretationOnly: true,
       shadowRehearsal: true,
       transportReady: true
+    });
+  }
+
+  const ws = getMatchGatewayWsStatusV0();
+  if (!ws.open) {
+    return Object.freeze({
+      ok: false,
+      reason: "ws_not_open",
+      interpretationOnly: true,
+      shadowRehearsal: true
     });
   }
 

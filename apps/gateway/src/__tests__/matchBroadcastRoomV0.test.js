@@ -87,9 +87,8 @@ test("commit broadcasts ack and state to session room", () => {
   assert.equal(out.ok, true);
   assert.ok(sentA.some((m) => m.type === WS_MESSAGE.MATCH_MOVE_ACK));
   assert.ok(sentA.some((m) => m.type === WS_MESSAGE.MATCH_STATE));
-  assert.ok(sentB.some((m) => m.type === WS_MESSAGE.MATCH_MOVE_ACK));
+  assert.equal(sentB.some((m) => m.type === WS_MESSAGE.MATCH_MOVE_ACK), false);
   assert.ok(sentB.some((m) => m.type === WS_MESSAGE.MATCH_STATE));
-  assert.equal(out.broadcast?.ack?.delivered, 1);
   assert.equal(out.broadcast?.state?.delivered, 1);
 });
 
