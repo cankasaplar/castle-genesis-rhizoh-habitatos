@@ -152,8 +152,13 @@ export function buildRhizohObservationStateV1(opts = {}) {
     recipientCount > 0 ? Math.min(1, ackCount / recipientCount) : null;
 
   const committedFen = truthSnap?.activeSession?.committed?.fen;
-  const projectionConsistency =
-    Boolean(fen && committedFen) ? fnv1aHashV0(fen) === fnv1aHashV0(committedFen) : Boolean(fen);
+  const syncActive = isMatchRealitySyncActiveV0();
+  const projectionConsistency = (() => {
+    if (!fen) return false;
+    if (committedFen) return fnv1aHashV0(fen) === fnv1aHashV0(committedFen);
+    if (syncActive && commitSeq === 0) return false;
+    return commitSeq > 0;
+  })();
 
   const driftDetected = Boolean(truthSnap?.activeSession?.drift?.detected);
   const driftRate =
@@ -193,7 +198,8 @@ export function buildRhizohObservationStateV1(opts = {}) {
       projectionConsistency,
       driftDetected,
       lastSyncMs: syncSnap.atMs || Date.now(),
-      driftRate
+      driftRate,
+      catchUpLag: syncActive && commitSeq === 0 && eventSeq > 0 ? "awaiting_snapshot" : null
     }),
     reality: Object.freeze({
       clientsInSync: recipientCount > 0 && projectionConsistency ? Math.min(recipientCount, 2) : ws.open ? 1 : 0,

@@ -27,7 +27,7 @@ import {
 } from "@castle/protocol";
 import { queryOpenData } from "./openData.js";
 import { verifyClientToken } from "./auth.js";
-import { handleMatchMoveAuthorityV0, leaveMatchBroadcastRoomV0 } from "./rhizoh/matchMoveAuthorityV0.js";
+import { handleMatchMoveAuthorityV0, leaveMatchBroadcastRoomV0, sendMatchSessionSnapshotOnJoinV0 } from "./rhizoh/matchMoveAuthorityV0.js";
 import { handleMatchSessionJoinV0, handleMatchCastleInviteV0 } from "./rhizoh/matchBroadcastRoomV0.js";
 import { queryRhizohLlm } from "./rhizohLlmGateway.js";
 import { rhizohGatewayTurn } from "./rhizohGatewayTurn.js";
@@ -4148,7 +4148,11 @@ wss.on("connection", async (socket, req) => {
     }
 
     if (parsed.type === WS_MESSAGE.MATCH_SESSION_JOIN) {
-      handleMatchSessionJoinV0(socket, parsed, wss);
+      const joined = handleMatchSessionJoinV0(socket, parsed, wss);
+      const sessionId = String(parsed.sessionId || parsed.payload?.sessionId || "").trim();
+      if (joined?.ok && sessionId) {
+        sendMatchSessionSnapshotOnJoinV0(socket, sessionId);
+      }
       return;
     }
 

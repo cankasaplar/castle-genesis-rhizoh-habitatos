@@ -75,6 +75,17 @@ export const RhizohObservationProofPanelV0 = memo(function RhizohObservationProo
       ? `${state.broadcast.delivered}/${state.broadcast.recipientCount}`
       : String(state.broadcast.delivered);
 
+  const idle = !state.sessionId && !state.reality?.syncActive;
+  const catchUp = state.sync?.catchUpLag === "awaiting_snapshot";
+  const syncLabel = idle
+    ? "— (start session)"
+    : catchUp
+      ? "catching up…"
+      : state.sync.projectionConsistency
+        ? "yes"
+        : "no";
+  const syncOk = idle ? undefined : catchUp ? false : state.sync.projectionConsistency;
+
   return (
     <aside
       style={panelStyle}
@@ -84,6 +95,12 @@ export const RhizohObservationProofPanelV0 = memo(function RhizohObservationProo
       <div style={{ fontSize: 10, letterSpacing: "0.08em", opacity: 0.7, marginBottom: 6 }}>
         OBSERVATION PROOF · {state.narrative?.label}
       </div>
+      {idle ? (
+        <div style={{ fontSize: 10, color: "#7dd3fc", marginBottom: 8, lineHeight: 1.5 }}>
+          IDLE · gateway wsOpen={state.reality?.wsOpen ? "yes" : "no"} · run challengePeer() to
+          start proof
+        </div>
+      ) : null}
       <MetricRow label="sessionId" value={state.sessionId || "—"} />
       <MetricRow label="commitSeq" value={state.truth.commitSeq} />
       <MetricRow label="eventSeq" value={state.truth.eventSeq} />
@@ -98,8 +115,8 @@ export const RhizohObservationProofPanelV0 = memo(function RhizohObservationProo
       <MetricRow label="ack" value={ackLabel} />
       <MetricRow
         label="in sync"
-        value={state.sync.projectionConsistency ? "yes" : "no"}
-        ok={state.sync.projectionConsistency}
+        value={syncLabel}
+        ok={syncOk}
       />
       <MetricRow
         label="drift"
