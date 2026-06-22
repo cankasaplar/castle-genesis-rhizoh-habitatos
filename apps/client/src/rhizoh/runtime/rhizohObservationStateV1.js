@@ -29,6 +29,19 @@ const broadcastVisStoreV1 = {
   lastGatewayFenHash: null
 };
 
+/** @type {{ registered: boolean, sessionId: string | null, worldId: string | null, boundMatchSessionId: string | null, voiceCommitSeq: number, localAckCount: number, gatewayAckCount: number | null, transcriptCommitted: boolean, delivered: number }} */
+const voiceVisStoreV1 = {
+  registered: false,
+  sessionId: null,
+  worldId: null,
+  boundMatchSessionId: null,
+  voiceCommitSeq: 0,
+  localAckCount: 0,
+  gatewayAckCount: null,
+  transcriptCommitted: false,
+  delivered: 0
+};
+
 const subscribersV1 = new Set();
 
 function fnv1aHashV0(str) {
@@ -114,6 +127,24 @@ export function recordBroadcastVisibilityV1(patch = {}) {
   notifyObservationSubscribersV1();
 }
 
+
+/**
+ * Record voice gateway citizenship signals.
+ * @param {{ registered?: boolean, sessionId?: string, worldId?: string, boundMatchSessionId?: string | null, voiceCommitSeq?: number, localAck?: boolean, gatewayAckCount?: number, transcriptCommitted?: boolean, delivered?: number }} patch
+ */
+export function recordVoiceObservationV1(patch = {}) {
+  if (patch.registered === true) voiceVisStoreV1.registered = true;
+  if (patch.sessionId) voiceVisStoreV1.sessionId = patch.sessionId;
+  if (patch.worldId) voiceVisStoreV1.worldId = patch.worldId;
+  if (patch.boundMatchSessionId !== undefined) voiceVisStoreV1.boundMatchSessionId = patch.boundMatchSessionId;
+  if (typeof patch.voiceCommitSeq === "number") voiceVisStoreV1.voiceCommitSeq = patch.voiceCommitSeq;
+  if (patch.transcriptCommitted === true) voiceVisStoreV1.transcriptCommitted = true;
+  if (typeof patch.delivered === "number") voiceVisStoreV1.delivered = patch.delivered;
+  if (patch.localAck) voiceVisStoreV1.localAckCount += 1;
+  if (typeof patch.gatewayAckCount === "number") voiceVisStoreV1.gatewayAckCount = patch.gatewayAckCount;
+  notifyObservationSubscribersV1();
+}
+
 /** @internal vitest */
 export function resetBroadcastVisibilityForTestV1() {
   broadcastVisStoreV1.lastPresence = null;
@@ -124,6 +155,15 @@ export function resetBroadcastVisibilityForTestV1() {
   broadcastVisStoreV1.commitEvents = 0;
   broadcastVisStoreV1.lastGatewayServerSeq = 0;
   broadcastVisStoreV1.lastGatewayFenHash = null;
+  voiceVisStoreV1.registered = false;
+  voiceVisStoreV1.sessionId = null;
+  voiceVisStoreV1.worldId = null;
+  voiceVisStoreV1.boundMatchSessionId = null;
+  voiceVisStoreV1.voiceCommitSeq = 0;
+  voiceVisStoreV1.localAckCount = 0;
+  voiceVisStoreV1.gatewayAckCount = null;
+  voiceVisStoreV1.transcriptCommitted = false;
+  voiceVisStoreV1.delivered = 0;
 }
 
 function notifyObservationSubscribersV1() {
@@ -237,6 +277,20 @@ export function buildRhizohObservationStateV1(opts = {}) {
       wsOpen: Boolean(ws.open),
       syncActive: isMatchRealitySyncActiveV0()
     }),
+    voice: Object.freeze({
+      registered: voiceVisStoreV1.registered,
+      sessionId: voiceVisStoreV1.sessionId,
+      worldId: voiceVisStoreV1.worldId,
+      boundMatchSessionId: voiceVisStoreV1.boundMatchSessionId,
+      voiceCommitSeq: voiceVisStoreV1.voiceCommitSeq,
+      transcriptCommitted: voiceVisStoreV1.transcriptCommitted,
+      delivered: voiceVisStoreV1.delivered,
+      ackCount:
+        typeof voiceVisStoreV1.gatewayAckCount === "number"
+          ? voiceVisStoreV1.gatewayAckCount
+          : voiceVisStoreV1.localAckCount,
+      citizenship: voiceVisStoreV1.registered ? "registered" : "detached"
+    }),
     narrative: Object.freeze({
       mode: proofMode ? "proof" : "demo",
       label: proofMode
@@ -273,6 +327,7 @@ export function mountRhizohObservationStateConsoleV1() {
     snapshot: buildRhizohObservationStateV1,
     subscribe: subscribeRhizohObservationStateV1,
     recordBroadcast: recordBroadcastVisibilityV1,
+    recordVoice: recordVoiceObservationV1,
     isProofMode: isRhizohProofModeEnabledV1,
     interpretationOnly: true
   });
