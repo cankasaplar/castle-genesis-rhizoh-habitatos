@@ -6,6 +6,7 @@ import {
 import { clearMatchBeaconRegistryForTestV0 } from "../matchmakingBeaconRegistryV0.js";
 import { clearMatchSessionForTestV0 } from "../matchSessionLifecycleV0.js";
 import { resetMatchmakingRuntimeSurfaceForTestV0 } from "../matchmakingRuntimeSurfaceV0.js";
+import { MATCH_TRUTH_EVENT_V0, getMatchmakingTruthSnapshotV0 } from "../matchmakingTruthKernelV0.js";
 
 describe("matchmakingConsoleV0", () => {
   beforeEach(() => {
@@ -29,8 +30,9 @@ describe("matchmakingConsoleV0", () => {
     expect(() => mountMatchmakingConsoleV0()).not.toThrow();
     expect(isMatchmakingConsoleMountedV0()).toBe(true);
     expect(Object.isFrozen(window.__rhizoh.matchmaking)).toBe(true);
-    expect(window.__rhizoh.runtimeSurface?.matchmaking).toBeTruthy();
-    expect(Object.isFrozen(window.__rhizoh.runtimeSurface.matchmaking)).toBe(false);
+    expect(Object.isFrozen(window.__rhizoh.runtimeSurface.matchmaking)).toBe(true);
+    expect(window.__rhizoh.matchmaking.truthModel).toBe("event_sourced_reducer_v0");
+    expect(typeof window.__rhizoh.matchmaking.truthKernel?.dispatch).toBe("function");
   });
 
   it("blocks facade property injection after mount", () => {
@@ -40,14 +42,15 @@ describe("matchmakingConsoleV0", () => {
     }).toThrow();
   });
 
-  it("allows emitBeacon after mount without read-only property errors", () => {
+  it("routes beacon emit through truth log", () => {
     mountMatchmakingConsoleV0();
     const out = window.__rhizoh.matchmaking.emitBeacon({
-      userId: "user_test_a",
-      mode: "KINETIC",
-      timeControlMs: 180000
+      userId: "user_truth_beacon",
+      mode: "KINETIC"
     });
     expect(out.ok).toBe(true);
-    expect(typeof window.__rhizoh.matchmaking.emitBeacon).toBe("function");
+    const log = window.__rhizoh.matchmaking.truthKernel.log();
+    expect(log.entries.some((e) => e.type === MATCH_TRUTH_EVENT_V0.BEACON_EMIT)).toBe(true);
+    expect(getMatchmakingTruthSnapshotV0().beaconRegistry?.count).toBeGreaterThan(0);
   });
 });

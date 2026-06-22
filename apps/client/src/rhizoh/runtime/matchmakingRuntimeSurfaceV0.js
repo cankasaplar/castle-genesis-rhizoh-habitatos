@@ -1,30 +1,79 @@
 /**
  * Matchmaking runtime surface v0 — API ≠ engine contract boundary.
- * Engine lives on window.__rhizoh.runtimeSurface.matchmaking (mutable mount target).
- * window.__rhizoh.matchmaking is a frozen read-only facade delegating to engine.
+ * runtimeSurface.matchmaking = frozen engine projection (dispatch + snapshot APIs).
+ * window.__rhizoh.matchmaking = frozen read-only facade delegating to engine.
  * @see docs/RHIZOH_MATCHMAKING_CORE_SPEC_V1.md
  */
+
+export const MATCHMAKING_TRUTH_MODEL_V0 = "event_sourced_reducer_v0";
 
 export const MATCHMAKING_RUNTIME_SURFACE_SCHEMA_V0 =
   "castle.rhizoh.matchmaking_runtime_surface.v0";
 
 export const MATCHMAKING_API_FACADE_SCHEMA_V0 = "castle.rhizoh.matchmaking_api_facade.v0";
+export const MATCHMAKING_SINGLE_REALITY_SOURCE_V0 = "truth_log_v0";
+
+/** @type {Record<string, unknown> | null} */
+let engineMountBagV0 = null;
 
 /**
- * Mutable engine bag — sub-modules mount APIs here; never expose for reassignment on window.
+ * Begin mutable mount bag — sub-modules write here during console mount only.
+ */
+export function beginMatchmakingEngineMountV0() {
+  engineMountBagV0 = {
+    schema: MATCHMAKING_RUNTIME_SURFACE_SCHEMA_V0,
+    shadowRehearsal: true,
+    interpretationOnly: true
+  };
+  return engineMountBagV0;
+}
+
+export function clearMatchmakingEngineMountBagV0() {
+  engineMountBagV0 = null;
+}
+
+/**
+ * Published engine must be frozen with truth reducer armed (single event stream).
+ */
+export function isMatchmakingEngineSurfaceSealedV0() {
+  const engine = getMatchmakingEngineSurfaceV0();
+  return (
+    engine != null &&
+    Object.isFrozen(engine) &&
+    engine.truthModel === MATCHMAKING_TRUTH_MODEL_V0 &&
+    typeof engine.truthKernel?.dispatch === "function"
+  );
+}
+
+/**
+ * During mount only: mutable bag. After publish: frozen engine on runtimeSurface.
  * @returns {Record<string, unknown> | null}
  */
 export function ensureMatchmakingEngineSurfaceV0() {
+  if (engineMountBagV0) return engineMountBagV0;
+  return getMatchmakingEngineSurfaceV0();
+}
+
+/**
+ * Freeze engine projection on runtimeSurface after sub-module mount.
+ * @param {Record<string, unknown>} engineBag
+ * @param {Record<string, unknown>} truthKernel
+ */
+export function publishMatchmakingEngineSurfaceV0(engineBag, truthKernel) {
   if (typeof window === "undefined") return null;
   window.__rhizoh = window.__rhizoh || {};
   window.__rhizoh.runtimeSurface = window.__rhizoh.runtimeSurface || {};
-  if (!window.__rhizoh.runtimeSurface.matchmaking) {
-    window.__rhizoh.runtimeSurface.matchmaking = {
-      schema: MATCHMAKING_RUNTIME_SURFACE_SCHEMA_V0,
-      shadowRehearsal: true,
-      interpretationOnly: true
-    };
-  }
+  window.__rhizoh.runtimeSurface.matchmaking = Object.freeze({
+    ...engineBag,
+    truthKernel,
+    truthModel: MATCHMAKING_TRUTH_MODEL_V0,
+    executionModel: MATCHMAKING_TRUTH_MODEL_V0,
+    singleRealitySource: MATCHMAKING_SINGLE_REALITY_SOURCE_V0,
+    realityModel: "single_event_stream",
+    interpretationOnly: true,
+    shadowRehearsal: true
+  });
+  engineMountBagV0 = null;
   return window.__rhizoh.runtimeSurface.matchmaking;
 }
 
@@ -59,7 +108,12 @@ export function buildMatchmakingApiFacadeV0(engine, meta = {}) {
     codex: e.codex ?? null,
     authority: e.authority ?? null,
     kernel: e.kernel ?? null,
-    validator: e.validator ?? null
+    validator: e.validator ?? null,
+    truthKernel: e.truthKernel ?? null,
+    truthModel: e.truthModel ?? null,
+    executionModel: e.executionModel ?? null,
+    singleRealitySource: e.singleRealitySource ?? MATCHMAKING_SINGLE_REALITY_SOURCE_V0,
+    realityModel: e.realityModel ?? "single_event_stream"
   });
 }
 
@@ -77,6 +131,7 @@ export function publishMatchmakingApiFacadeV0(engine, meta = {}) {
 
 /** @internal vitest */
 export function resetMatchmakingRuntimeSurfaceForTestV0() {
+  engineMountBagV0 = null;
   if (typeof window === "undefined") return;
   if (window.__rhizoh?.runtimeSurface) {
     delete window.__rhizoh.runtimeSurface.matchmaking;

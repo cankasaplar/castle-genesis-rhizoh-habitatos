@@ -95,8 +95,18 @@ export function getMatchCommitLogV0(sessionId) {
 
 /**
  * @param {object} event
+ * @param {{ skipLog?: boolean }} [opts]
  */
-function appendCommitLogEventV0(event) {
+function appendCommitLogEventV0(event, opts = {}) {
+  if (opts.skipLog === true) {
+    return Object.freeze({
+      schema: MATCH_EVENT_SCHEMA_V0,
+      ...event,
+      seq: event.seq ?? null,
+      atMs: event.atMs ?? Date.now(),
+      synthetic: true
+    });
+  }
   const row = readCommitLogRowV0();
   const prev = row?.entries || [];
   const nextSeq = prev.length > 0 ? Math.max(...prev.map((e) => e.seq)) + 1 : 1;
@@ -174,8 +184,9 @@ function withKernelStateV0(session, kernelState, extra = {}) {
 /**
  * @param {object} session
  * @param {{ san: string, playerId: string, clientSeq?: number, autoCommitShadow?: boolean }} move
+ * @param {{ skipLog?: boolean }} [opts]
  */
-export function processKernelProposeMoveV0(session, move) {
+export function processKernelProposeMoveV0(session, move, opts = {}) {
   const s = attachAuthorityToSessionV0(session);
   const kernelState = s.kernel?.state || MATCH_KERNEL_STATE_V0.ACTIVE;
 
@@ -208,7 +219,7 @@ export function processKernelProposeMoveV0(session, move) {
     clientSeq: move.clientSeq ?? null,
     kernelState: MATCH_KERNEL_STATE_V0.PENDING_MOVE,
     shadowRehearsal: s.shadowRehearsal === true
-  });
+  }, opts);
 
   if (!validation.ok) {
     appendCommitLogEventV0({
@@ -219,7 +230,7 @@ export function processKernelProposeMoveV0(session, move) {
       reason: validation.reason,
       kernelState: MATCH_KERNEL_STATE_V0.ACTIVE,
       shadowRehearsal: s.shadowRehearsal === true
-    });
+    }, opts);
     return Object.freeze({
       ok: false,
       rejected: true,
@@ -256,14 +267,15 @@ export function processKernelProposeMoveV0(session, move) {
     fen: validation.fen,
     turn: validation.turn,
     fromProposal: true
-  });
+  }, opts);
 }
 
 /**
  * @param {object} session
  * @param {{ san: string, playerId: string, fen?: string, turn?: string, fromProposal?: boolean }} commit
+ * @param {{ skipLog?: boolean }} [opts]
  */
-export function processKernelCommitMoveV0(session, commit) {
+export function processKernelCommitMoveV0(session, commit, opts = {}) {
   const s = attachAuthorityToSessionV0(session);
   const kernelState = s.kernel?.state || MATCH_KERNEL_STATE_V0.PENDING_MOVE;
 
@@ -293,7 +305,7 @@ export function processKernelCommitMoveV0(session, commit) {
     seq: serverSeq,
     kernelState: MATCH_KERNEL_STATE_V0.ACTIVE,
     shadowRehearsal: s.shadowRehearsal === true
-  });
+  }, opts);
 
   const finalSession = withKernelStateV0(committed.session, MATCH_KERNEL_STATE_V0.ACTIVE, {
     pendingProposal: null
@@ -308,7 +320,7 @@ export function processKernelCommitMoveV0(session, commit) {
       reason: drift.classification,
       kernelState: MATCH_KERNEL_STATE_V0.ACTIVE,
       shadowRehearsal: s.shadowRehearsal === true
-    });
+    }, opts);
   }
 
   return Object.freeze({
@@ -332,8 +344,9 @@ export function processKernelCommitMoveV0(session, commit) {
 /**
  * @param {object} session
  * @param {{ serverState: object }} opts
+ * @param {{ skipLog?: boolean }} [kernelOpts]
  */
-export function processKernelReconcileV0(session, opts = {}) {
+export function processKernelReconcileV0(session, opts = {}, kernelOpts = {}) {
   const s = attachAuthorityToSessionV0(session);
   const reconciling = withKernelStateV0(s, MATCH_KERNEL_STATE_V0.RECONCILING);
   const result = reconcileMatchAuthorityV0(reconciling, opts);
@@ -349,7 +362,7 @@ export function processKernelReconcileV0(session, opts = {}) {
     turn: result.session.committed?.turn,
     kernelState: MATCH_KERNEL_STATE_V0.ACTIVE,
     shadowRehearsal: s.shadowRehearsal === true
-  });
+  }, kernelOpts);
 
   const finalSession = withKernelStateV0(result.session, MATCH_KERNEL_STATE_V0.ACTIVE);
   return Object.freeze({
@@ -396,27 +409,9 @@ export function mountMatchAuthorityKernelConsoleV0() {
   engine.kernel = Object.freeze({
     states: MATCH_KERNEL_STATE_V0,
     events: MATCH_EVENT_TYPE_V0,
-    proposeMove: (move) => {
-      const raw = engine.session?.get?.();
-      if (!raw?.active) return Object.freeze({ ok: false, reason: "no_active_session" });
-      const out = processKernelProposeMoveV0(raw, move);
-      if (out.session) engine.session?.persist?.(out.session);
-      return out;
-    },
-    commit: (commit) => {
-      const raw = engine.session?.get?.();
-      if (!raw?.active) return Object.freeze({ ok: false, reason: "no_active_session" });
-      const out = processKernelCommitMoveV0(raw, commit);
-      if (out.session) engine.session?.persist?.(out.session);
-      return out;
-    },
-    reconcile: (opts) => {
-      const raw = engine.session?.get?.();
-      if (!raw?.active) return Object.freeze({ ok: false, reason: "no_active_session" });
-      const out = processKernelReconcileV0(raw, opts);
-      if (out.session) engine.session?.persist?.(out.session);
-      return out;
-    },
+    proposeMove: (move) => engine.session?.move?.(move),
+    commit: (commit) => engine.session?.commit?.(commit),
+    reconcile: (opts) => engine.session?.reconcile?.(opts),
     status: () => {
       const raw = engine.session?.get?.();
       return getMatchKernelStatusV0(raw?.active ? raw : {});

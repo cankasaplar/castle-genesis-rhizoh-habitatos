@@ -36,6 +36,37 @@ sessionStorage commit / beacon rows  → append-oriented truth during rehearsal
 
 ---
 
+## 0.2 Truth kernel (event-sourced reducer)
+
+Session and kernel mutations route through a single writer:
+
+```text
+dispatch(event) → append truth log → reduce(state, event) → projection snapshot
+replay(log) → deterministic rebuild (no live object mutation)
+```
+
+| Surface | Frozen? | Role |
+|---------|---------|------|
+| `window.__rhizoh.matchmaking` | Yes | API facade |
+| `runtimeSurface.matchmaking` | Yes | Engine projection shell (`truthKernel`, `session`, …) |
+| Truth log (`truth_log.v0`) | Append-only | SSOT during shadow rehearsal |
+| Projection cache | Rebuildable | Derived snapshot; replay-safe |
+
+**Code:** `matchmakingTruthKernelV0.js` · `matchSessionStateMachineV0.js`
+
+Beacon + session + kernel events share one truth log (`BeaconEmit`, `SessionCreate`, `ProposeMove`, …).  
+`runtimeSurface.matchmaking` is **frozen after publish** — not a mutable object graph.
+
+Post-deploy single-reality check:
+
+```javascript
+Object.isFrozen(window.__rhizoh.runtimeSurface.matchmaking)  // true
+window.__rhizoh.matchmaking.singleRealitySource               // "truth_log_v0"
+window.__rhizoh.matchmaking.truthKernel.replay()              // rebuild from log
+```
+
+---
+
 ## 0. SSOT sentence
 
 > **Matchmaking is a server-authoritative state machine** — not a UI event.  
