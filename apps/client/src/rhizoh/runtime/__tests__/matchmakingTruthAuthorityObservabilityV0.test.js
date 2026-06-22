@@ -3,11 +3,11 @@ import {
   emitMatchTruthAuthorityBootObservabilityV0,
   emitMatchTruthDispatchChainForEventV0,
   getMatchTruthAuthoritySnapshotV0,
-  MATCH_COMMIT_AUTHORITY_V0,
+  MATCH_PROPOSAL_AUTHORITY_V0,
   MATCH_TRUTH_CHAIN_PHASE_V0,
-  MATCH_TRUTH_ORIGIN_V0,
   resetMatchTruthAuthorityObservabilityForTestV0
 } from "../matchmakingTruthAuthorityObservabilityV0.js";
+import { MATCH_COMMIT_AUTHORITY_POLICY_V0 } from "../matchmakingSingleWriterPolicyV0.js";
 import { MATCH_TRUTH_EVENT_V0 } from "../matchmakingTruthKernelV0.js";
 
 describe("matchmakingTruthAuthorityObservabilityV0", () => {
@@ -23,8 +23,9 @@ describe("matchmakingTruthAuthorityObservabilityV0", () => {
     const snap = getMatchTruthAuthoritySnapshotV0();
     expect(snap.authorityMode).toBe("SERVER_PRIMARY");
     expect(snap.serverAuthoritative).toBe(false);
-    expect(snap.commitAuthority).toBe(MATCH_COMMIT_AUTHORITY_V0.CLIENT_SHADOW);
-    expect(snap.truthOrigin).toBe(MATCH_TRUTH_ORIGIN_V0.TRUTH_LOG_V0);
+    expect(snap.commitAuthority).toBe(MATCH_COMMIT_AUTHORITY_POLICY_V0.SERVER_PRIMARY);
+    expect(snap.effectiveCommitWriter).toBe("client_shadow");
+    expect(snap.proposalAuthority).toBe(MATCH_PROPOSAL_AUTHORITY_V0.CLIENT_SHADOW);
     expect(snap.effectiveAuthority).toBe("SHADOW_CLIENT");
   });
 

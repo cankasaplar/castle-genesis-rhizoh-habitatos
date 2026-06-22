@@ -10,6 +10,10 @@ import {
   MATCH_AUTHORITY_MODE_V0
 } from "./matchAuthorityLayerV0.js";
 import { MATCH_DRIFT_THRESHOLD_V0, computeMatchDriftScoreV0 } from "./matchAuthorityKernelV0.js";
+import {
+  MATCH_COMMIT_AUTHORITY_POLICY_V0,
+  getMatchSingleWriterPolicyV0
+} from "./matchmakingSingleWriterPolicyV0.js";
 
 const TRUTH_DISPATCH_EVENT_V0 = Object.freeze({
   PROPOSE_MOVE: "ProposeMove",
@@ -22,6 +26,7 @@ export const MATCH_TRUTH_AUTHORITY_OBS_SCHEMA_V0 =
 
 export const MATCH_TRUTH_CHAIN_PHASE_V0 = Object.freeze({
   TRUTH_LOG_APPEND: "TRUTH_LOG_APPEND",
+  TRUTH_LOG_PREVIEW: "TRUTH_LOG_PREVIEW",
   MATCH_EVENT_APPENDED: "MATCH_EVENT_APPENDED",
   MATCH_EVENT_VALIDATED: "MATCH_EVENT_VALIDATED",
   MATCH_EVENT_REJECTED: "MATCH_EVENT_REJECTED",
@@ -68,21 +73,23 @@ export function getMatchTruthAuthoritySnapshotV0(ctx = {}) {
   const gatewayReady = ctx.gatewayReady === true;
   const contract = buildMatchAuthorityContractV0({ serverBound: gatewayReady });
   const laneAuthority = session?.authority?.effectiveAuthority ?? contract.effectiveAuthority;
+  const singleWriter = getMatchSingleWriterPolicyV0({ gatewayReady });
 
   return Object.freeze({
     schema: MATCH_TRUTH_AUTHORITY_OBS_SCHEMA_V0,
     authorityMode: MATCH_AUTHORITY_MODE_V0.SERVER_PRIMARY,
     serverAuthoritative: gatewayReady,
-    proposalAuthority: MATCH_PROPOSAL_AUTHORITY_V0.CLIENT_SHADOW,
-    commitAuthority: gatewayReady
-      ? MATCH_COMMIT_AUTHORITY_V0.SERVER
-      : MATCH_COMMIT_AUTHORITY_V0.CLIENT_SHADOW,
+    commitAuthority: MATCH_COMMIT_AUTHORITY_POLICY_V0.SERVER_PRIMARY,
+    effectiveCommitWriter: singleWriter.effectiveCommitWriter,
+    proposalAuthority: singleWriter.proposalAuthority,
     truthOrigin: gatewayReady
       ? MATCH_TRUTH_ORIGIN_V0.GATEWAY_ACK
       : MATCH_TRUTH_ORIGIN_V0.TRUTH_LOG_V0,
     validationSource: gatewayReady
       ? MATCH_VALIDATION_SOURCE_V0.AUTHORITY_GATEWAY
       : MATCH_VALIDATION_SOURCE_V0.CHESS_JS_LOCAL,
+    singleWriterRule: true,
+    forkRiskWhenClientCommits: !gatewayReady,
     effectiveAuthority: laneAuthority,
     commitRequired: contract.commitRequired,
     reconciliation: contract.reconciliation,
@@ -143,6 +150,9 @@ export function emitMatchTruthDispatchChainV0(phase, detail = {}) {
     ? ` proposalAuthority=${detail.proposalAuthority}`
     : "";
   const commitAuthority = detail.commitAuthority ? ` commitAuthority=${detail.commitAuthority}` : "";
+  const effectiveCommitWriter = detail.effectiveCommitWriter
+    ? ` effectiveCommitWriter=${detail.effectiveCommitWriter}`
+    : "";
   const truthOrigin = detail.truthOrigin ? ` truthOrigin=${detail.truthOrigin}` : "";
   const validationSource = detail.validationSource
     ? ` validationSource=${detail.validationSource}`
@@ -150,7 +160,7 @@ export function emitMatchTruthDispatchChainV0(phase, detail = {}) {
   const drift =
     Number.isFinite(detail.driftScore) ? ` driftScore=${detail.driftScore}` : "";
   const classification = detail.classification ? ` classification=${detail.classification}` : "";
-  const line = `${phase} seq=${seq}${type}${session}${proposalAuthority}${commitAuthority}${truthOrigin}${validationSource}${drift}${classification}`;
+  const line = `${phase} seq=${seq}${type}${session}${proposalAuthority}${commitAuthority}${effectiveCommitWriter}${truthOrigin}${validationSource}${drift}${classification}`;
 
   if (typeof console !== "undefined" && console.info) {
     console.info(`[MATCH_TRUTH_CHAIN] ${line}`);
@@ -170,11 +180,11 @@ export function emitMatchTruthDispatchChainV0(phase, detail = {}) {
 
 /**
  * Full dispatch chain after truth kernel write.
- * @param {{ logEntry: object, effect: object | null, nextState: object, prevState: object }} ctx
+ * @param {{ logEntry: object, effect: object | null, nextState: object, prevState: object, gatewayReady?: boolean }} ctx
  */
 export function emitMatchTruthDispatchChainForEventV0(ctx) {
-  const { logEntry, effect, nextState, prevState } = ctx;
-  const auth = getMatchTruthAuthoritySnapshotV0({ session: nextState?.activeSession });
+  const { logEntry, effect, nextState, prevState, gatewayReady = false } = ctx;
+  const auth = getMatchTruthAuthoritySnapshotV0({ session: nextState?.activeSession, gatewayReady });
   const seq = logEntry?.seq ?? 0;
   const type = logEntry?.type ?? null;
   const sessionId = logEntry?.sessionId ?? null;
@@ -184,6 +194,7 @@ export function emitMatchTruthDispatchChainForEventV0(ctx) {
     sessionId,
     proposalAuthority: auth.proposalAuthority,
     commitAuthority: auth.commitAuthority,
+    effectiveCommitWriter: auth.effectiveCommitWriter,
     truthOrigin: auth.truthOrigin,
     validationSource: effect?.validationSource ?? auth.validationSource
   };
@@ -261,6 +272,71 @@ export function emitMatchTruthDispatchChainForEventV0(ctx) {
     chain,
     authority: auth,
     drift: nextDrift,
+    interpretationOnly: true
+  });
+}
+
+/**
+ * Prediction-lane dispatch chain — client proposal only (not authoritative truth log).
+ * @param {{ logEntry: object, effect: object | null, nextState: object, prevState: object }} ctx
+ */
+export function emitMatchTruthPreviewChainForEventV0(ctx) {
+  const { logEntry, effect, nextState, prevState } = ctx;
+  const auth = getMatchTruthAuthoritySnapshotV0({ session: nextState?.activeSession, gatewayReady: false });
+  const seq = logEntry?.seq ?? 0;
+  const type = logEntry?.type ?? null;
+  const sessionId = logEntry?.sessionId ?? null;
+  const base = {
+    seq,
+    type,
+    sessionId,
+    proposalAuthority: auth.proposalAuthority,
+    commitAuthority: auth.commitAuthority,
+    effectiveCommitWriter: auth.effectiveCommitWriter,
+    truthOrigin: auth.truthOrigin,
+    validationSource: effect?.validationSource ?? auth.validationSource
+  };
+
+  const nextDrift = nextState?.activeSession
+    ? computeMatchDriftScoreV0(nextState.activeSession)
+    : effect?.drift ?? null;
+
+  const chain = [
+    emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.TRUTH_LOG_PREVIEW, base),
+    emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_APPENDED, base)
+  ];
+
+  if (effect?.validated === true) {
+    chain.push(
+      emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_VALIDATED, base)
+    );
+  }
+  if (effect?.rejected === true) {
+    chain.push(
+      emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_REJECTED, base)
+    );
+  }
+
+  chain.push(emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_STATE_REDUCED, base));
+
+  const driftScore = nextDrift?.driftScore ?? 0;
+  if (driftScore >= MATCH_DRIFT_THRESHOLD_V0.PATTERN) {
+    chain.push(
+      emitMatchTruthDispatchChainV0(MATCH_TRUTH_CHAIN_PHASE_V0.DRIFT_DETECTED, {
+        ...base,
+        driftScore,
+        classification: nextDrift?.classification ?? "pattern"
+      })
+    );
+  }
+
+  return Object.freeze({
+    schema: MATCH_TRUTH_AUTHORITY_OBS_SCHEMA_V0,
+    seq,
+    type,
+    chain,
+    authority: auth,
+    preview: true,
     interpretationOnly: true
   });
 }

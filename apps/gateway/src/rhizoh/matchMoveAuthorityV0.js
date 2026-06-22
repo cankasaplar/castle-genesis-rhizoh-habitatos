@@ -1,0 +1,152 @@
+/**
+ * Gateway match move authority v0 — sole server commit writer for match sessions.
+ * Client sends MATCH_MOVE (proposal) · server validates · MATCH_MOVE_ACK (authoritative commit).
+ * RESEARCH-ONLY until data-plane READY.
+ */
+
+import { Chess } from "chess.js";
+import { WS_MESSAGE, createEnvelope } from "@castle/protocol";
+
+export const MATCH_MOVE_AUTHORITY_SCHEMA_V0 = "castle.rhizoh.match_move_authority.v0";
+
+const STARTING_FEN_V0 = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+/** @type {Map<string, { sessionId: string, fen: string, turn: string, moveCount: number, serverSeq: number }>} */
+const serverSessionsV0 = new Map();
+
+function getOrCreateServerSessionV0(sessionId) {
+  const id = String(sessionId || "").trim();
+  if (!id) return null;
+  if (!serverSessionsV0.has(id)) {
+    serverSessionsV0.set(
+      id,
+      Object.freeze({
+        sessionId: id,
+        fen: STARTING_FEN_V0,
+        turn: "white",
+        moveCount: 0,
+        serverSeq: 0
+      })
+    );
+  }
+  return serverSessionsV0.get(id);
+}
+
+function validateServerMoveV0(session, payload) {
+  const san = String(payload?.san || "").trim();
+  const playerId = String(payload?.playerId || "").trim();
+  if (!san || !playerId) {
+    return { ok: false, reason: "missing_san_or_player" };
+  }
+
+  const game = new Chess(session.fen);
+  const currentTurn = game.turn() === "b" ? "black" : "white";
+  if (currentTurn !== session.turn) {
+    return { ok: false, reason: "wrong_turn" };
+  }
+
+  let result = null;
+  try {
+    result = game.move(san, { strict: false });
+  } catch {
+    return { ok: false, reason: "illegal_move" };
+  }
+  if (!result) {
+    return { ok: false, reason: "illegal_move" };
+  }
+
+  const nextTurn = game.turn() === "b" ? "black" : "white";
+  return {
+    ok: true,
+    san: result.san,
+    fen: game.fen(),
+    turn: nextTurn,
+    playerId
+  };
+}
+
+/**
+ * @param {import("ws").WebSocket} socket
+ * @param {{ type: string, sessionId?: string, traceId?: string, payload?: object }} message
+ * @param {import("ws").WebSocketServer} wss
+ */
+export function handleMatchMoveAuthorityV0(socket, message, wss) {
+  const sessionId = String(message.sessionId || message.payload?.sessionId || "").trim();
+  const session = getOrCreateServerSessionV0(sessionId);
+  if (!session) {
+    socket.send(
+      JSON.stringify(
+        createEnvelope(WS_MESSAGE.MATCH_ERROR, {
+          sessionId,
+          error: "missing_session_id",
+          interpretationOnly: true
+        })
+      )
+    );
+    return { ok: false, reason: "missing_session_id" };
+  }
+
+  const validation = validateServerMoveV0(session, message.payload || {});
+  if (!validation.ok) {
+    socket.send(
+      JSON.stringify(
+        createEnvelope(WS_MESSAGE.MATCH_ERROR, {
+          sessionId,
+          error: validation.reason,
+          san: message.payload?.san,
+          interpretationOnly: true
+        })
+      )
+    );
+    return { ok: false, reason: validation.reason };
+  }
+
+  const serverSeq = session.serverSeq + 1;
+  const nextSession = Object.freeze({
+    sessionId,
+    fen: validation.fen,
+    turn: validation.turn,
+    moveCount: session.moveCount + 1,
+    serverSeq
+  });
+  serverSessionsV0.set(sessionId, nextSession);
+
+  const ackPayload = Object.freeze({
+    schema: MATCH_MOVE_AUTHORITY_SCHEMA_V0,
+    sessionId,
+    san: validation.san,
+    playerId: validation.playerId,
+    fen: validation.fen,
+    turn: validation.turn,
+    serverSeq,
+    moveCount: nextSession.moveCount,
+    commitAuthority: "server",
+    truthOrigin: "gateway_ack",
+    validationSource: "authority_gateway",
+    interpretationOnly: true
+  });
+
+  const ackEnvelope = createEnvelope(WS_MESSAGE.MATCH_MOVE_ACK, ackPayload);
+  ackEnvelope.sessionId = sessionId;
+  ackEnvelope.traceId = message.traceId || `match_ack_${serverSeq}`;
+
+  socket.send(JSON.stringify(ackEnvelope));
+
+  for (const client of wss.clients) {
+    if (client.readyState === 1 && client !== socket) {
+      client.send(JSON.stringify(ackEnvelope));
+    }
+  }
+
+  return Object.freeze({ ok: true, ack: ackPayload });
+}
+
+/** @internal vitest */
+export function clearMatchMoveAuthoritySessionsForTestV0() {
+  serverSessionsV0.clear();
+}
+
+/** @internal vitest */
+export function getMatchMoveAuthoritySessionForTestV0(sessionId) {
+  return serverSessionsV0.get(sessionId) ?? null;
+}

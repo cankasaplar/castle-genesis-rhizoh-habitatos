@@ -27,7 +27,7 @@ import {
 } from "@castle/protocol";
 import { queryOpenData } from "./openData.js";
 import { verifyClientToken } from "./auth.js";
-import { runRhizohBrain } from "./rhizohBrain.js";
+import { handleMatchMoveAuthorityV0 } from "./rhizoh/matchMoveAuthorityV0.js";
 import { queryRhizohLlm } from "./rhizohLlmGateway.js";
 import { rhizohGatewayTurn } from "./rhizohGatewayTurn.js";
 import {
@@ -4143,6 +4143,11 @@ wss.on("connection", async (socket, req) => {
       }
       const result = orchestrator.applyCommand(canonical);
       socket.send(JSON.stringify(createEnvelope(WS_MESSAGE.COMMAND_RESULT, result)));
+      return;
+    }
+
+    if (parsed.type === WS_MESSAGE.MATCH_MOVE) {
+      handleMatchMoveAuthorityV0(socket, parsed, wss);
       return;
     }
 

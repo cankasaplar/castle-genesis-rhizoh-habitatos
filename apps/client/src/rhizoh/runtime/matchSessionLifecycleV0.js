@@ -11,6 +11,7 @@ import {
   MATCH_SESSION_STATE_V0
 } from "./matchSessionStateMachineV0.js";
 import { ensureMatchmakingEngineSurfaceV0 } from "./matchmakingRuntimeSurfaceV0.js";
+import { MATCH_TRUTH_PROVENANCE_V0 } from "./matchmakingSingleWriterPolicyV0.js";
 import {
   buildSessionFromCreatePayloadV0,
   clearMatchmakingTruthForTestV0,
@@ -112,7 +113,7 @@ export function applyMatchMoveV0(move) {
       san: move.san,
       playerId: move.playerId,
       clientSeq: move.clientSeq,
-      autoCommitShadow: move.autoCommitShadow !== false
+      autoCommitShadow: move.autoCommitShadow === true
     }
   });
 }
@@ -128,6 +129,8 @@ export function commitMatchMoveV0(commit) {
   return dispatchMatchmakingTruthEventV0({
     type: MATCH_TRUTH_EVENT_V0.COMMIT_MOVE,
     sessionId: current.sessionId,
+    provenance: commit.provenance || MATCH_TRUTH_PROVENANCE_V0.GATEWAY_ACK,
+    gatewayReady: (commit.provenance || MATCH_TRUTH_PROVENANCE_V0.GATEWAY_ACK) === MATCH_TRUTH_PROVENANCE_V0.GATEWAY_ACK,
     payload: commit
   });
 }
