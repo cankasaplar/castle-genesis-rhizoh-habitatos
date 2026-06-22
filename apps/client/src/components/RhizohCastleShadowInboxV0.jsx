@@ -42,11 +42,12 @@ export const RhizohCastleShadowInboxV0 = memo(function RhizohCastleShadowInboxV0
   const usePortal = panelPlacement === "portal" || anchor === "top-right";
 
   const onSelectItem = (item) => {
-    runShadowInboxItemActionV0(item, {
+    void runShadowInboxItemActionV0(item, {
       uiLocale,
       closeMediaTube: onCloseMediaTube
+    }).then((out) => {
+      onItemAction?.(item, out);
     });
-    onItemAction?.(item);
     setOpen(false);
   };
 
@@ -175,6 +176,8 @@ function InboxPanelV0({ tr, items, onClose, onSelectItem, onIgnoreItem, onIgnore
         ) : (
           items.map((item) => {
             const isChess = resolveShadowInboxItemActionV0(item) === SHADOW_INBOX_ACTION_V0.OPEN_CHESS_ARENA;
+            const isMatchInvite =
+              resolveShadowInboxItemActionV0(item) === SHADOW_INBOX_ACTION_V0.ACCEPT_MATCH_INVITE;
             const isTower = String(item.nodeType || "").includes("tower") || String(item.pinId || "").includes("_tower");
             return (
               <div
@@ -189,7 +192,11 @@ function InboxPanelV0({ tr, items, onClose, onSelectItem, onIgnoreItem, onIgnore
                   <p className="text-[10px] font-bold text-white/90">{tr ? item.titleTr : item.titleEn}</p>
                   <p className="text-[10px] text-white/60">{tr ? item.bodyTr : item.bodyEn}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
-                    {isChess ? (
+                    {isMatchInvite ? (
+                      <p className="text-[8px] font-semibold uppercase tracking-wider text-emerald-300/90">
+                        {tr ? "Maça katıl →" : "Join match →"}
+                      </p>
+                    ) : isChess ? (
                       <p className="text-[8px] font-semibold uppercase tracking-wider text-cyan-300/90">
                         {tr ? "Arena'da oyna →" : "Play in arena →"}
                       </p>

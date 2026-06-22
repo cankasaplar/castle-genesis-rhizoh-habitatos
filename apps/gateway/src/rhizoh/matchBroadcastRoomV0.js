@@ -174,6 +174,40 @@ export function handleMatchSessionJoinV0(socket, message, wss) {
   return Object.freeze({ ok: true, joined, presence });
 }
 
+/**
+ * Fan-out castle chess invite to connected gateway peers (inbox projection).
+ * @param {import('ws').WebSocket} socket
+ * @param {object} message
+ * @param {import('ws').WebSocketServer} wss
+ */
+export function handleMatchCastleInviteV0(socket, message, wss) {
+  const payload = message.payload || {};
+  const sessionId = String(payload.sessionId || message.sessionId || "").trim();
+  if (!sessionId) {
+    return Object.freeze({ ok: false, reason: "missing_session_id" });
+  }
+
+  const envelope = createEnvelope(WS_MESSAGE.MATCH_CASTLE_INVITE, {
+    ...payload,
+    sessionId,
+    fromGatewayClientId: socket.clientId ?? null,
+    interpretationOnly: true
+  });
+  envelope.sessionId = sessionId;
+  envelope.traceId = message.traceId || `match_invite_fanout_${Date.now()}`;
+
+  const targetGatewayClientId = String(payload.targetGatewayClientId || "").trim();
+  let delivered = 0;
+  for (const client of wss.clients) {
+    if (client === socket || client.readyState !== 1) continue;
+    if (targetGatewayClientId && client.clientId !== targetGatewayClientId) continue;
+    client.send(JSON.stringify(envelope));
+    delivered += 1;
+  }
+
+  return Object.freeze({ ok: true, delivered, sessionId, targeted: Boolean(targetGatewayClientId) });
+}
+
 /** @internal vitest */
 export function clearMatchBroadcastRoomsForTestV0() {
   sessionRoomsV0.clear();

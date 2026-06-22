@@ -166,6 +166,24 @@ export async function startMatchSessionSyncV0(input = {}) {
     });
   }
 
+  if (input.sendInvite !== false || input.openArena !== false) {
+    void import("./matchCastleInboxBridgeV0.js").then((m) =>
+      m.publishMatchCastleInviteAfterStartV0({
+        sessionId,
+        playerId,
+        shareUrl: out.shareUrl,
+        ws: joined.ws,
+        hostDisplayName: input.hostDisplayName,
+        hostCastleUid: input.hostCastleUid,
+        sendInvite: input.sendInvite,
+        openArena: input.openArena,
+        gameMode: input.gameMode,
+        timeControlId: input.timeControlId,
+        targetGatewayClientId: input.targetGatewayClientId
+      })
+    );
+  }
+
   return out;
 }
 
@@ -256,7 +274,9 @@ export async function autoStartMatchSessionSyncFromLocationV0(opts = {}) {
     playerId: parsed.playerId,
     waitForGateway: opts.waitForGateway,
     gatewayTimeoutMs: opts.gatewayTimeoutMs,
-    gatewayPollMs: opts.gatewayPollMs
+    gatewayPollMs: opts.gatewayPollMs,
+    openArena: opts.openArena !== false,
+    sendInvite: false
   });
 }
 
@@ -273,6 +293,10 @@ export function mountMatchSessionSyncBridgeConsoleV0() {
     isActive: isMatchRealitySyncActiveV0,
     parseLocation: parseMatchSessionFromLocationV0,
     buildShareUrl: buildMatchSessionShareUrlV0,
+    challengePeer: async (input) => {
+      const m = await import("./matchCastleInboxBridgeV0.js");
+      return m.challengeBoundPeerToChessMatchV0(input);
+    },
     events: Object.freeze({
       state: MATCH_REALITY_SYNC_STATE_EVENT_V0,
       join: MATCH_REALITY_SYNC_JOIN_EVENT_V0

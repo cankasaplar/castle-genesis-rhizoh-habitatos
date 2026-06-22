@@ -112,12 +112,20 @@ await window.__rhizoh.matchmaking.verifyBroadcastE2e({ reset: true })
 5. Both:
    ```javascript
    window.__rhizoh.matchmaking.realityStatus().fen
-   // or
-   window.__rhizoh.matchSessionSync?.projection?.fen
-   // starting position (before any server commit):
-   window.__rhizoh.matchmaking.truthStatus().activeSession?.committed?.fen
    ```
-   → **same FEN**
+
+### Inbox castle chess invite (P0+)
+
+**Host — challenge bound peer:**
+```javascript
+await window.__rhizoh.matchCastleInbox.challengePeer({ playerId: "a" })
+// or after manual start — invite auto-sent + arena opens (human_human)
+await window.__rhizoh.matchSessionSyncApi.start({ sessionId: "room_1", playerId: "a" })
+```
+
+**Guest — Inbox → “Maça katıl”** accepts invite: joins session + opens Human vs Human arena.
+
+Gateway message: `MATCH_CASTLE_INVITE` → shadow inbox `kind: match_invite`.
 
 ---
 

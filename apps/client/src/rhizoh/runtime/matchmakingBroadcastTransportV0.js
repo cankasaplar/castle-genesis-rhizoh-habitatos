@@ -7,7 +7,7 @@
 
 import { WS_MESSAGE, createEnvelope } from "@castle/protocol";
 import { applyGatewayMatchMoveAckV0 } from "./matchmakingGatewayCommitBridgeV0.js";
-import { applyRemoteMatchWorldStateV0 } from "./matchmakingWorldProjectionV0.js";
+import { ingestMatchCastleInviteFromGatewayV0 } from "./matchCastleInboxBridgeV0.js";
 import {
   dispatchMatchmakingTruthEventV0,
   getMatchmakingTruthSnapshotV0,
@@ -61,6 +61,14 @@ export function bindMatchBroadcastTransportV0(opts) {
       if (msg.type === WS_MESSAGE.MATCH_MOVE_ACK) {
         const ack = applyGatewayMatchMoveAckV0({ sessionId, ...(msg.payload || {}) });
         opts.onAck?.({ envelope: msg, ack });
+        return;
+      }
+      if (msg.type === WS_MESSAGE.MATCH_CASTLE_INVITE) {
+        ingestMatchCastleInviteFromGatewayV0({
+          ...(msg.payload || {}),
+          fromGatewayClientId: msg.payload?.fromGatewayClientId || null
+        });
+        opts.onInvite?.({ envelope: msg });
         return;
       }
       if (msg.type === WS_MESSAGE.MATCH_STATE) {

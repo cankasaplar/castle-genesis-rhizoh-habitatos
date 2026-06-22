@@ -25,6 +25,7 @@ import { mountMatchBroadcastTransportConsoleV0 } from "./matchmakingBroadcastTra
 import { mountMatchGameTransportConsoleV0 } from "./matchGameTransportV0.js";
 import { mountMatchSessionSyncBridgeConsoleV0 } from "./matchSessionSyncBridgeV0.js";
 import { mountMatchBroadcastE2eVerifyConsoleV0 } from "./matchmakingBroadcastE2eVerifyV0.js";
+import { mountMatchCastleInboxBridgeConsoleV0 } from "./matchCastleInboxBridgeV0.js";
 import {
   mountMatchmakingTruthKernelConsoleV0,
   dispatchMatchmakingTruthEventV0,
@@ -124,6 +125,7 @@ export function mountMatchmakingConsoleV0() {
   mountMatchGameTransportConsoleV0();
   mountMatchSessionSyncBridgeConsoleV0();
   mountMatchBroadcastE2eVerifyConsoleV0();
+  mountMatchCastleInboxBridgeConsoleV0();
   wireMatchmakingBeaconTruthDispatchV0(engineBag);
   const engine = publishMatchmakingEngineSurfaceV0(engineBag, truthKernel);
   publishMatchmakingApiFacadeV0(engine, { consoleSchema: MATCHMAKING_CONSOLE_SCHEMA_V0 });
