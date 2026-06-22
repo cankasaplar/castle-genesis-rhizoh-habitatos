@@ -19,6 +19,12 @@ import {
   MATCH_SESSION_SCHEMA_V0,
   MATCH_SESSION_STATE_V0
 } from "./matchSessionStateMachineV0.js";
+import {
+  emitMatchTruthAuthorityBootObservabilityV0,
+  emitMatchTruthDispatchChainForEventV0,
+  getMatchTruthAuthoritySnapshotV0,
+  MATCH_TRUTH_CHAIN_PHASE_V0
+} from "./matchmakingTruthAuthorityObservabilityV0.js";
 
 export const MATCH_TRUTH_SCHEMA_V0 = "castle.rhizoh.matchmaking_truth.v0";
 export const MATCH_TRUTH_LOG_SCHEMA_V0 = "castle.rhizoh.matchmaking_truth_log.v0";
@@ -373,6 +379,15 @@ export function dispatchMatchmakingTruthEventV0(event) {
   const next = stripTruthEffectV0(reduced);
   writeTruthProjectionV0(next);
 
+  const chain = emitMatchTruthDispatchChainForEventV0({
+    logEntry,
+    effect,
+    nextState: next,
+    prevState: prev
+  });
+
+  const authority = getMatchTruthAuthoritySnapshotV0({ session: next.activeSession });
+
   return Object.freeze({
     ok: effect?.ok !== false,
     event: logEntry,
@@ -380,6 +395,8 @@ export function dispatchMatchmakingTruthEventV0(event) {
     session: next.activeSession,
     kernelState: next.kernelState,
     truthModel: MATCH_TRUTH_MODEL_V0,
+    authority,
+    truthChain: chain,
     interpretationOnly: true,
     ...(effect || {})
   });
@@ -399,7 +416,113 @@ export function clearMatchmakingTruthForTestV0() {
   }
 }
 
+/**
+ * Read-only production probe — answers "awake but producing?" without dispatching events.
+ */
+export function getMatchmakingTruthProductionStatusV0() {
+  const log = getMatchmakingTruthLogV0();
+  const snap = getMatchmakingTruthSnapshotV0();
+  const last = log.entries.length > 0 ? log.entries[log.entries.length - 1] : null;
+  const moveCount = snap.activeSession?.committed?.moveCount ?? 0;
+  const eventTypes = log.entries.map((e) => e.type);
+  const hasCommittedMove = eventTypes.some(
+    (t) => t === MATCH_TRUTH_EVENT_V0.COMMIT_MOVE || t === MATCH_TRUTH_EVENT_V0.PROPOSE_MOVE
+  );
+
+  return Object.freeze({
+    schema: MATCH_TRUTH_SCHEMA_V0,
+    mode: log.count > 0 ? "producing" : "observation",
+    awake: true,
+    logCount: log.count,
+    appendOnly: log.appendOnly,
+    hasActiveSession: Boolean(snap.activeSession),
+    committedMoveCount: moveCount,
+    hasCommittedMove,
+    lastEventType: last?.type ?? null,
+    lastSeq: last?.seq ?? 0,
+    truthModel: MATCH_TRUTH_MODEL_V0,
+    singleRealitySource: "truth_log_v0",
+    shadowRehearsal: true,
+    deterministicReplayOk:
+      log.count === 0 ||
+      replayMatchmakingTruthV0().logSeq === log.count,
+    verifyHint: "await window.__rhizoh.matchmaking.verifyProduction({ reset: true })",
+    interpretationOnly: true
+  });
+}
+
+/**
+ * Manual production-flow verification — dispatches real events and checks replay.
+ * Not run at boot; call from console when validating event production.
+ * @param {{ reset?: boolean, playerId?: string }} [opts]
+ */
+export function runMatchmakingTruthProductionVerifyV0(opts = {}) {
+  if (opts.reset === true) {
+    clearMatchmakingTruthForTestV0();
+  }
+
+  const logBefore = getMatchmakingTruthLogV0().count;
+  const snapBefore = getMatchmakingTruthSnapshotV0();
+  const playerId = String(opts.playerId || "truth_verify_user");
+
+  let sessionStep = null;
+  if (!snapBefore.activeSession) {
+    sessionStep = dispatchMatchmakingTruthEventV0({
+      type: MATCH_TRUTH_EVENT_V0.SESSION_CREATE,
+      payload: { initialState: MATCH_SESSION_STATE_V0.SESSION_ACTIVE, players: [{ userId: playerId, color: "white" }] }
+    });
+    if (!sessionStep.ok) {
+      return Object.freeze({ ok: false, reason: "session_create_failed", sessionStep, interpretationOnly: true });
+    }
+  }
+
+  const moveStep = dispatchMatchmakingTruthEventV0({
+    type: MATCH_TRUTH_EVENT_V0.PROPOSE_MOVE,
+    sessionId: sessionStep?.session?.sessionId ?? snapBefore.activeSession?.sessionId,
+    payload: { san: "e4", playerId, autoCommitShadow: true }
+  });
+
+  const logAfter = getMatchmakingTruthLogV0();
+  const replayed = replayMatchmakingTruthV0();
+  const eventsProduced = logAfter.count - logBefore;
+  const moveCount = replayed.activeSession?.committed?.moveCount ?? 0;
+  const chainPhases = (moveStep.truthChain?.chain || []).map((c) => c.phase);
+
+  const ok =
+    moveStep.ok === true &&
+    eventsProduced > 0 &&
+    moveCount >= 1 &&
+    chainPhases.includes(MATCH_TRUTH_CHAIN_PHASE_V0.TRUTH_LOG_APPEND) &&
+    chainPhases.includes(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_COMMITTED);
+
+  if (typeof console !== "undefined" && console.info) {
+    console.info("[MATCH_TRUTH_VERIFY]", {
+      ok,
+      eventsProduced,
+      moveCount,
+      logCount: logAfter.count,
+      chainPhases,
+      replayMoveCount: replayed.activeSession?.committed?.moveCount,
+      interpretationOnly: true
+    });
+  }
+
+  return Object.freeze({
+    ok,
+    eventsProduced,
+    moveCount,
+    sessionStep,
+    moveStep,
+    log: logAfter,
+    replayed,
+    chainPhases,
+    interpretationOnly: true,
+    shadowRehearsal: true
+  });
+}
+
 export function mountMatchmakingTruthKernelConsoleV0() {
+  emitMatchTruthAuthorityBootObservabilityV0();
   return Object.freeze({
     schema: MATCH_TRUTH_SCHEMA_V0,
     truthModel: MATCH_TRUTH_MODEL_V0,
@@ -409,6 +532,9 @@ export function mountMatchmakingTruthKernelConsoleV0() {
     replay: replayMatchmakingTruthV0,
     log: getMatchmakingTruthLogV0,
     reduce: reduceMatchmakingTruthV0,
+    authority: getMatchTruthAuthoritySnapshotV0,
+    productionStatus: getMatchmakingTruthProductionStatusV0,
+    verifyProduction: runMatchmakingTruthProductionVerifyV0,
     clear: clearMatchmakingTruthForTestV0,
     interpretationOnly: true,
     shadowRehearsal: true

@@ -1,11 +1,13 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
   clearMatchmakingTruthForTestV0,
   dispatchMatchmakingTruthEventV0,
   getMatchmakingTruthLogV0,
+  getMatchmakingTruthProductionStatusV0,
   MATCH_TRUTH_EVENT_V0,
   reduceMatchmakingTruthV0,
   replayMatchmakingTruthV0,
+  runMatchmakingTruthProductionVerifyV0,
   INITIAL_MATCH_TRUTH_STATE_V0
 } from "../matchmakingTruthKernelV0.js";
 import { MATCH_SESSION_STATE_V0 } from "../matchSessionStateMachineV0.js";
@@ -39,17 +41,18 @@ describe("matchmakingTruthKernelV0", () => {
     expect(log.appendOnly).toBe(true);
   });
 
-  it("replay is deterministic from append-only log", () => {
-    dispatchMatchmakingTruthEventV0({
-      type: MATCH_TRUTH_EVENT_V0.SESSION_CREATE,
-      payload: { initialState: MATCH_SESSION_STATE_V0.SESSION_ACTIVE }
-    });
-    dispatchMatchmakingTruthEventV0({
-      type: MATCH_TRUTH_EVENT_V0.PROPOSE_MOVE,
-      payload: { san: "e4", playerId: "user_a" }
-    });
-    const replayed = replayMatchmakingTruthV0();
-    expect(replayed.activeSession?.committed?.moveCount).toBe(1);
-    expect(replayed.logSeq).toBeGreaterThan(0);
+  it("verifyProduction proves deterministic replay", () => {
+    const out = runMatchmakingTruthProductionVerifyV0({ reset: true });
+    expect(out.ok).toBe(true);
+    expect(getMatchmakingTruthLogV0().appendOnly).toBe(true);
+    expect(replayMatchmakingTruthV0().activeSession?.committed?.moveCount).toBe(1);
+  });
+
+  it("productionStatus reports observation before any dispatch", () => {
+    const status = getMatchmakingTruthProductionStatusV0();
+    expect(status.mode).toBe("observation");
+    expect(status.logCount).toBe(0);
+    expect(status.hasCommittedMove).toBe(false);
+    expect(status.awake).toBe(true);
   });
 });

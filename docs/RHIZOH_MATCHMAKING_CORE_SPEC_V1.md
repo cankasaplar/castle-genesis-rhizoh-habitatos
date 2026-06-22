@@ -57,7 +57,42 @@ replay(log) → deterministic rebuild (no live object mutation)
 Beacon + session + kernel events share one truth log (`BeaconEmit`, `SessionCreate`, `ProposeMove`, …).  
 `runtimeSurface.matchmaking` is **frozen after publish** — not a mutable object graph.
 
-Post-deploy single-reality check:
+## 0.3 Truth authority observability (honest)
+
+Boot declares **contract** vs **effective** authority without faking gateway readiness:
+
+| Boot phase | Meaning |
+|------------|---------|
+| `boot.match_authority` | `authority=server_primary` (contract) |
+| `boot.truth_commit_bridge` | `mode=append_only · commitAuthority=client_shadow` until gateway |
+| `boot.reconciliation` | `shadow_vs_truth enabled` |
+| `boot.drift_detector` | noise / pattern / conflict thresholds |
+
+Runtime dispatch chain (console):
+
+```text
+TRUTH_LOG_APPEND seq=N
+MATCH_EVENT_APPENDED seq=N
+MATCH_EVENT_COMMITTED seq=N   (on commit paths)
+MATCH_STATE_REDUCED seq=N
+RECONCILIATION_APPLIED seq=N  (on reconcile)
+DRIFT_DETECTED seq=N          (when drift crosses threshold)
+DRIFT_RESOLVED seq=N          (after successful reconcile)
+```
+
+dispatch(event) → TRUTH_LOG_APPEND → MATCH_EVENT_APPENDED → … → replay()
+
+**Observation vs production:** boot mounts truth kernel but does not append events. Until a beacon, session move, or manual verify runs, `truthStatus().mode === "observation"` and `logCount === 0`.
+
+```javascript
+window.__rhizoh.matchmaking.truthStatus()
+// { mode: "observation", logCount: 0, hasCommittedMove: false, ... }
+
+await window.__rhizoh.matchmaking.verifyProduction({ reset: true })
+// → TRUTH_LOG_APPEND … MATCH_EVENT_COMMITTED … [MATCH_TRUTH_VERIFY] { ok: true }
+```
+
+---
 
 ```javascript
 Object.isFrozen(window.__rhizoh.runtimeSurface.matchmaking)  // true
