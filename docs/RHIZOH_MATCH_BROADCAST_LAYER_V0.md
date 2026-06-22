@@ -66,11 +66,41 @@ Visibility = **session room membership** on gateway (`matchBroadcastRoomV0.js`).
 
 ## Console API
 
+**Do not pass a bare `ws` variable** — it is not a global. Use the helpers below (they reuse or open the gateway socket for you).
+
+### One-liner (recommended)
+
 ```javascript
+await window.__rhizoh.matchBroadcast.quickStart({
+  playerId: "you",
+  proposeFirstMove: true
+})
+```
+
+### Step by step
+
+```javascript
+await window.__rhizoh.matchBroadcast.connect()
+await window.__rhizoh.matchBroadcast.joinSession({ sessionId: "…", role: "player", playerId: "you" })
+await window.__rhizoh.matchBroadcast.proposeMove({ sessionId: "…", san: "e4", playerId: "you" })
+window.__rhizoh.matchBroadcast.bind({
+  ws: window.__rhizoh.matchBroadcast.getWs(),
+  sessionId: "…",
+  onState: (s) => console.log("[MATCH_STATE]", s),
+  onPresence: (p) => console.log("[PRESENCE]", p),
+  onAck: (a) => console.log("[ACK]", a)
+})
+```
+
+### Low-level (advanced — you supply an open `WebSocket`)
+
+```javascript
+const ws = window.__rhizoh.matchBroadcast.getWs()
 window.__rhizoh.matchBroadcast.join(ws, { sessionId, role: "player", playerId })
 window.__rhizoh.matchBroadcast.propose(ws, { sessionId, san: "e4", playerId })
-window.__rhizoh.matchBroadcast.bind({ ws, sessionId, onState, onPresence, onAck })
 ```
+
+`wsStatus()` and `window.__rhizoh.matchGatewayWs` expose connection readiness without opening DevTools globals in production.
 
 ---
 
