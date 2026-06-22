@@ -21,6 +21,7 @@ import {
   getMatchmakingEngineSurfaceV0
 } from "./matchmakingRuntimeSurfaceV0.js";
 import { mountMatchGatewayCommitBridgeConsoleV0 } from "./matchmakingGatewayCommitBridgeV0.js";
+import { mountMatchBroadcastTransportConsoleV0 } from "./matchmakingBroadcastTransportV0.js";
 import {
   mountMatchmakingTruthKernelConsoleV0,
   dispatchMatchmakingTruthEventV0,
@@ -116,6 +117,7 @@ export function mountMatchmakingConsoleV0() {
 
   const truthKernel = mountMatchmakingTruthKernelConsoleV0();
   mountMatchGatewayCommitBridgeConsoleV0();
+  mountMatchBroadcastTransportConsoleV0();
   wireMatchmakingBeaconTruthDispatchV0(engineBag);
   const engine = publishMatchmakingEngineSurfaceV0(engineBag, truthKernel);
   publishMatchmakingApiFacadeV0(engine, { consoleSchema: MATCHMAKING_CONSOLE_SCHEMA_V0 });

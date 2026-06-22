@@ -43,8 +43,11 @@
 ## Phase gate (do not reorder)
 
 ```text
-Phase A — Network completion (NOW)
-  broadcast layer · multi-client sync · fan-out guarantee
+Phase A — Network completion (IN PROGRESS)
+  ✓ session-scoped broadcast room (matchBroadcastRoomV0)
+  ✓ MATCH_STATE world projection fan-out
+  ✓ client transport scaffold (matchBroadcastTransportV0)
+  ◐ live WS e2e + guaranteed delivery
 
 Phase B — World router
   tower isolation · identity routing · mesh consistency

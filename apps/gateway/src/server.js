@@ -27,7 +27,8 @@ import {
 } from "@castle/protocol";
 import { queryOpenData } from "./openData.js";
 import { verifyClientToken } from "./auth.js";
-import { handleMatchMoveAuthorityV0 } from "./rhizoh/matchMoveAuthorityV0.js";
+import { handleMatchMoveAuthorityV0, leaveMatchBroadcastRoomV0 } from "./rhizoh/matchMoveAuthorityV0.js";
+import { handleMatchSessionJoinV0 } from "./rhizoh/matchBroadcastRoomV0.js";
 import { queryRhizohLlm } from "./rhizohLlmGateway.js";
 import { rhizohGatewayTurn } from "./rhizohGatewayTurn.js";
 import {
@@ -4146,6 +4147,11 @@ wss.on("connection", async (socket, req) => {
       return;
     }
 
+    if (parsed.type === WS_MESSAGE.MATCH_SESSION_JOIN) {
+      handleMatchSessionJoinV0(socket, parsed, wss);
+      return;
+    }
+
     if (parsed.type === WS_MESSAGE.MATCH_MOVE) {
       handleMatchMoveAuthorityV0(socket, parsed, wss);
       return;
@@ -4321,6 +4327,7 @@ wss.on("connection", async (socket, req) => {
 
   socket.on("close", () => {
     if (socket.clientId === broadcasterClientId) broadcasterClientId = null;
+    leaveMatchBroadcastRoomV0(socket);
     clientStats.delete(socket.clientId);
     rhizohVoiceLiveSessions.delete(socket);
     spiralState.activeByClient.delete(socket.clientId);
