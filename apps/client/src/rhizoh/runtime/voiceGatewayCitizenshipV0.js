@@ -14,7 +14,7 @@ import { getCastleFlightConfig } from "../../castleFlight/castleFlightConfig.js"
 import { getOrCreateCastleDevUid, getRhizohApiBase } from "../useRhizohGatewayMonitor.js";
 import { getMatchSessionSyncSnapshotV0 } from "./matchSessionSyncBridgeV0.js";
 import { getMatchmakingTruthSnapshotV0 } from "./matchmakingTruthKernelV0.js";
-import { recordVoiceObservationV1 } from "./rhizohObservationStateV1.js";
+import { recordVoiceObservationV1, isVoiceGatewayCitizenshipRegisteredV0 } from "./rhizohObservationStateV1.js";
 
 export const VOICE_GATEWAY_CITIZENSHIP_CLIENT_SCHEMA_V0 =
   "castle.rhizoh.voice_gateway_citizenship_client.v0";
@@ -169,6 +169,8 @@ export function ingestVoiceGatewayMessageV0(msg) {
     });
   }
 }
+
+export { isVoiceGatewayCitizenshipRegisteredV0 };
 
 export function resetVoiceGatewayCitizenshipClientForTestV0() {
   voiceClientConnectionIdV0 = null;

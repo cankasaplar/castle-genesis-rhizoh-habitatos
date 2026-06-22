@@ -433,6 +433,7 @@ import {
   routeVoiceTranscriptConfidenceV0,
   voiceConfidenceRouterLogDetailV0
 } from "./rhizoh/runtime/voiceTranscriptConfidenceRouterV0.js";
+import { isVoiceGatewayCitizenshipRegisteredV0 } from "./rhizoh/runtime/voiceGatewayCitizenshipV0.js";
 import { forwardVoiceTranscriptShadowV0 } from "./rhizoh/runtime/voiceTranscriptShadowForwardV0.js";
 import { speakShadowObservationAckV0 } from "./rhizoh/runtime/voiceShadowObservationAckV0.js";
 import { shouldSuppressShadowObservationAckV0 } from "./rhizoh/runtime/rhizohVoiceConversationAuthorityV0.js";
@@ -10215,7 +10216,8 @@ export default function AppRhizoh528() {
           source: voiceSource,
           band: witnessed?.observation?.band || String(bandIn || "").trim() || undefined,
           recordedMs: Number.isFinite(Number(recordedMsIn)) ? Number(recordedMsIn) : undefined,
-          checkRepeat: voiceSource !== "mic_v3" || !witnessCompleted
+          checkRepeat: voiceSource !== "mic_v3" || !witnessCompleted,
+          voiceGatewaySessionActive: isVoiceGatewayCitizenshipRegisteredV0()
         });
         if (!execRoute.executionAccepted) {
           const blockedPrecheck = runFastPrecheckFromTextV0(trimmed, {

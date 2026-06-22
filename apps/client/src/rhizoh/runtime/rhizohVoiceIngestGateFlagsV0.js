@@ -27,6 +27,14 @@ export function isVoicePreSttGatewaySessionBypassV0() {
   return readEnvFlagV0("VITE_RHIZOH_VOICE_GATE_BYPASS_PRE_STT", true);
 }
 
+/**
+ * Post-STT dispatch bypass — allow whisper_default_conf execution when gateway voice is live.
+ * Default ON; set VITE_RHIZOH_VOICE_GATE_BYPASS_STT_DISPATCH=0 to disable.
+ */
+export function isVoiceSttDispatchGatewayBypassV0() {
+  return readEnvFlagV0("VITE_RHIZOH_VOICE_GATE_BYPASS_STT_DISPATCH", true);
+}
+
 /** Phase B canary — post-STT origin filter. Default OFF until explicitly enabled. */
 export function isVoicePostSttOriginFilterEnabledV0() {
   if (!isVoiceEngineV3EnabledV0()) return false;
@@ -37,6 +45,7 @@ export function readVoiceIngestGateRolloutV0() {
   return Object.freeze({
     preSttGate: isVoicePreSttGateEnabledV0(),
     preSttGatewaySessionBypass: isVoicePreSttGatewaySessionBypassV0(),
+    sttDispatchGatewayBypass: isVoiceSttDispatchGatewayBypassV0(),
     postSttOrigin: isVoicePostSttOriginFilterEnabledV0(),
     originRetry: isVoiceOriginRetryEnabledV0(),
     voiceV3: isVoiceEngineV3EnabledV0()

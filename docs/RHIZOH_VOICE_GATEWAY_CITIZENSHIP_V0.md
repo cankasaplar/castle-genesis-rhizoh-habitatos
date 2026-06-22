@@ -64,6 +64,18 @@ Do **not** fetch `onrender.com` directly from `rhizoh.com` — use `fetchPresenc
 
 ---
 
+## P0 network admission (voice)
+
+| Root issue | Fix |
+|------------|-----|
+| `pre_stt_low_energy` at `maxRms ~0.002` | `VOICE_MIN_SPEECH_RMS_V3` 0.012→0.008; `allow_if_session_active` when gateway citizenship registered |
+| Presence CORS (`credentials: include` without ACA creds) | `httpCorsPolicyV1` sets `Access-Control-Allow-Credentials: true` for non-wildcard ACAO |
+| `STT_DISPATCH_BLOCKED` / `whisper_default_conf` | Gateway session + conversational TR bypass in `voiceTranscriptConfidenceRouterV0` |
+
+Env canaries: `VITE_RHIZOH_VOICE_GATE_BYPASS_PRE_STT`, `VITE_RHIZOH_VOICE_GATE_BYPASS_STT_DISPATCH` (default ON).
+
+---
+
 ## Not in v0
 
 - HTTP fallback path envelope (WS lane only)

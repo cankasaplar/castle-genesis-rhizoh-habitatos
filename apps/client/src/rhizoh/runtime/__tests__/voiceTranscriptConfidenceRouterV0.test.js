@@ -326,4 +326,48 @@ describe("voiceTranscriptConfidenceRouterV0", () => {
     expect(route.reason).toBe("whisper_default_conf");
     expect(route.observationPass).toBe(true);
   });
+
+  it("gateway session bypasses whisper_default_conf STT_DISPATCH on short hearing_check", () => {
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "Duyabiliyor musun?",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      recordedMs: 1200,
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+      voiceGatewaySessionActive: true
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(["whisper_default_conf", "reflex_precheck_bypass"].includes(route.reason)).toBe(true);
+  });
+
+  it("gateway session observation-passes whisper_default_conf on unknown band", () => {
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "Bugün hava nasıl görünüyor sence?",
+      confidence: 0.55,
+      strategy: "whisper_only",
+      source: "mic_v3",
+      recordedMs: 1500,
+      band: VOICE_DIRECTED_SPEECH_BAND.UNKNOWN,
+      voiceGatewaySessionActive: true
+    });
+    expect(route.executionAccepted).toBe(true);
+    expect(route.reason).toBe("whisper_default_conf");
+    expect(route.observationPass).toBe(true);
+  });
+
+  it("gateway session bypasses audio_silent for quiet mic capture", () => {
+    const route = routeVoiceTranscriptConfidenceV0({
+      text: "merhaba rhizoh",
+      confidence: 0.72,
+      strategy: "split_merged",
+      source: "mic_v3",
+      maxRms: 0.003,
+      recordedMs: 2400,
+      band: VOICE_DIRECTED_SPEECH_BAND.DIRECTED_CANDIDATE,
+      voiceGatewaySessionActive: true
+    });
+    expect(route.reason).not.toBe("audio_silent");
+    expect(route.executionAccepted).toBe(true);
+  });
 });
