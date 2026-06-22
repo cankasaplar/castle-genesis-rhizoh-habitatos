@@ -121,7 +121,9 @@ export function buildMatchmakingApiFacadeV0(engine, meta = {}) {
       snapshot: () => e.truthKernel?.authority?.() ?? null
     }),
     truthStatus: () => e.truthKernel?.productionStatus?.() ?? null,
-    verifyProduction: (opts) => e.truthKernel?.verifyProduction?.(opts) ?? null
+    verifyProduction: (opts) => e.truthKernel?.verifyProduction?.(opts) ?? null,
+    verifyAuthorityBoundary: (opts) => e.truthKernel?.verifyAuthorityBoundary?.(opts) ?? null,
+    verifyDriftInjection: (opts) => e.truthKernel?.verifyDriftInjection?.(opts) ?? null
   });
 }
 

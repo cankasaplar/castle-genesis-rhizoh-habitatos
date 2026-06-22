@@ -73,12 +73,25 @@ Runtime dispatch chain (console):
 ```text
 TRUTH_LOG_APPEND seq=N
 MATCH_EVENT_APPENDED seq=N
+MATCH_EVENT_VALIDATED seq=N   (chess.js_local · authority_gateway when READY)
+MATCH_EVENT_REJECTED seq=N    (on validation failure)
 MATCH_EVENT_COMMITTED seq=N   (on commit paths)
 MATCH_STATE_REDUCED seq=N
 RECONCILIATION_APPLIED seq=N  (on reconcile)
 DRIFT_DETECTED seq=N          (when drift crosses threshold)
 DRIFT_RESOLVED seq=N          (after successful reconcile)
 ```
+
+Authority split (honest today vs target):
+
+| Field | Shadow (today) | Server-bound (PR-2) |
+|-------|----------------|---------------------|
+| `proposalAuthority` | `client_shadow` | `client_shadow` |
+| `commitAuthority` | `client_shadow` | `server` / `gateway` |
+| `validationSource` | `chess.js_local` | `authority_gateway` |
+| `truthOrigin` | `truth_log_v0` | `gateway_ack` |
+
+See [`RHIZOH_MATCH_COMMIT_AUTHORITY_ROADMAP_V1.md`](RHIZOH_MATCH_COMMIT_AUTHORITY_ROADMAP_V1.md).
 
 dispatch(event) → TRUTH_LOG_APPEND → MATCH_EVENT_APPENDED → … → replay()
 
@@ -89,7 +102,13 @@ window.__rhizoh.matchmaking.truthStatus()
 // { mode: "observation", logCount: 0, hasCommittedMove: false, ... }
 
 await window.__rhizoh.matchmaking.verifyProduction({ reset: true })
-// → TRUTH_LOG_APPEND … MATCH_EVENT_COMMITTED … [MATCH_TRUTH_VERIFY] { ok: true }
+// → TRUTH_LOG_APPEND … MATCH_EVENT_VALIDATED … MATCH_EVENT_COMMITTED …
+
+await window.__rhizoh.matchmaking.verifyAuthorityBoundary({ reset: true })
+// → [MATCH_AUTHORITY_BOUNDARY] { stage: "PARTIAL", proposalAuthority: "client_shadow", ... }
+
+await window.__rhizoh.matchmaking.verifyDriftInjection({ reset: true })
+// → DRIFT_DETECTED … RECONCILIATION_APPLIED
 ```
 
 ---

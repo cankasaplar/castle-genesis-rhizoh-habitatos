@@ -234,6 +234,8 @@ export function processKernelProposeMoveV0(session, move, opts = {}) {
     return Object.freeze({
       ok: false,
       rejected: true,
+      validated: false,
+      validationSource: "chess.js_local",
       reason: validation.reason,
       event: proposeEvent,
       kernelState: MATCH_KERNEL_STATE_V0.ACTIVE,
@@ -253,6 +255,8 @@ export function processKernelProposeMoveV0(session, move, opts = {}) {
       ok: true,
       pending: true,
       shadowOnly: true,
+      validated: true,
+      validationSource: "chess.js_local",
       event: proposeEvent,
       session: nextSession,
       kernelState: MATCH_KERNEL_STATE_V0.PENDING_MOVE,
@@ -261,13 +265,19 @@ export function processKernelProposeMoveV0(session, move, opts = {}) {
     });
   }
 
-  return processKernelCommitMoveV0(nextSession, {
+  const commitResult = processKernelCommitMoveV0(nextSession, {
     san,
     playerId,
     fen: validation.fen,
     turn: validation.turn,
     fromProposal: true
   }, opts);
+
+  return Object.freeze({
+    ...commitResult,
+    validated: true,
+    validationSource: "chess.js_local"
+  });
 }
 
 /**

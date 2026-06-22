@@ -54,18 +54,29 @@ describe("matchmakingTruthAuthorityObservabilityV0", () => {
   it("emits dispatch chain on commit move", () => {
     const chain = emitMatchTruthDispatchChainForEventV0({
       logEntry: { seq: 1, type: MATCH_TRUTH_EVENT_V0.PROPOSE_MOVE, sessionId: "m1" },
-      effect: { ok: true, committed: true },
+      effect: { ok: true, committed: true, validated: true, validationSource: "chess.js_local" },
       nextState: { activeSession: { sessionId: "m1" } },
       prevState: {}
     });
     expect(chain.chain.map((c) => c.phase)).toEqual([
       MATCH_TRUTH_CHAIN_PHASE_V0.TRUTH_LOG_APPEND,
       MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_APPENDED,
+      MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_VALIDATED,
       MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_COMMITTED,
       MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_STATE_REDUCED
     ]);
     expect(console.info).toHaveBeenCalledWith(
       expect.stringContaining("[MATCH_TRUTH_CHAIN] MATCH_EVENT_COMMITTED seq=1")
     );
+  });
+
+  it("emits rejected phase on failed validation", () => {
+    const chain = emitMatchTruthDispatchChainForEventV0({
+      logEntry: { seq: 2, type: MATCH_TRUTH_EVENT_V0.PROPOSE_MOVE, sessionId: "m1" },
+      effect: { ok: false, rejected: true, validated: false },
+      nextState: { activeSession: { sessionId: "m1" } },
+      prevState: {}
+    });
+    expect(chain.chain.map((c) => c.phase)).toContain(MATCH_TRUTH_CHAIN_PHASE_V0.MATCH_EVENT_REJECTED);
   });
 });
