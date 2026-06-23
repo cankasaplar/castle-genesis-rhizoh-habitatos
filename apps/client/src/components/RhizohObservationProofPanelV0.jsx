@@ -44,8 +44,9 @@ function MetricRow({ label, value, ok }) {
 }
 
 /**
- * Proof Mode overlay — visible metrics for two-client observation demos.
- * Enable: ?proof=1 · VITE_RHIZOH_PROOF_MODE=1 · auto when reality sync active.
+ * Proof Mode overlay — opt-in via ?proof=1 or VITE_RHIZOH_PROOF_MODE=1 only.
+ * Not mounted globally; wire into a host when running two-client observation demos.
+ * @see docs/RHIZOH_PRODUCTION_OBSERVATION_LAYER_V1.md
  */
 export const RhizohObservationProofPanelV0 = memo(function RhizohObservationProofPanelV0() {
   const [state, setState] = useState(() => buildRhizohObservationStateV1());
@@ -59,11 +60,7 @@ export const RhizohObservationProofPanelV0 = memo(function RhizohObservationProo
     return () => window.clearInterval(id);
   }, []);
 
-  const proofQuery = isRhizohProofModeEnabledV1();
-  const show =
-    proofQuery || state.reality?.syncActive || state.reality?.instrumentationTier !== "truth_only";
-
-  if (!show) return null;
+  if (!isRhizohProofModeEnabledV1()) return null;
 
   const ackLabel =
     state.broadcast.recipientCount > 0
