@@ -11,6 +11,8 @@ import { CHESS_ENGINE_TASK_KIND_V0 } from "./chessEngineTaskQueueV0.js";
 import { isChessArenaWorkspaceOpenV0 } from "./chessEngineContentionGateV0.js";
 
 export const RHIZOH_UGL_LEARN_BUFFER_SCHEMA_V0 = "castle.rhizoh.ugl_learn_buffer.v0";
+/** Enrich handler returns this when throttled — row stays in buffer. */
+export const CHESS_LEARNING_ENRICH_RETRY_V0 = Symbol.for("castle.rhizoh.chess_learning_enrich_retry.v0");
 
 const MAX_BUFFER_V0 = 128;
 /** @type {object[]} */
@@ -18,6 +20,7 @@ let bufferRingV0 = [];
 let walWritesV0 = 0;
 let enrichAttemptsV0 = 0;
 let enrichSuccessV0 = 0;
+let enrichThrottleSkipsV0 = 0;
 let drainingV0 = false;
 /** @type {((row: object) => Promise<unknown>) | null} */
 let enrichHandlerV0 = null;
@@ -71,16 +74,20 @@ export async function drainUglLearnBufferV0() {
 
   drainingV0 = true;
   try {
-    while (bufferRingV0.length > 0 && isEngineIdleForLearnEnrichmentV0()) {
-      const row = bufferRingV0.pop();
-      if (!row) break;
-      enrichAttemptsV0 += 1;
-      try {
-        const out = await enrichHandlerV0(row);
-        if (out) enrichSuccessV0 += 1;
-      } catch {
-        /* noop */
+    // One row per drain tick — burst pops + throttle used to drop rows permanently.
+    const row = bufferRingV0.pop();
+    if (!row) return;
+    enrichAttemptsV0 += 1;
+    try {
+      const out = await enrichHandlerV0(row);
+      if (out === CHESS_LEARNING_ENRICH_RETRY_V0) {
+        bufferRingV0.push(row);
+        enrichThrottleSkipsV0 += 1;
+        return;
       }
+      if (out) enrichSuccessV0 += 1;
+    } catch {
+      bufferRingV0.push(row);
     }
   } finally {
     drainingV0 = false;
@@ -94,6 +101,7 @@ export function getUglLearnBufferSnapshotV0() {
     walWrites: walWritesV0,
     enrichAttempts: enrichAttemptsV0,
     enrichSuccess: enrichSuccessV0,
+    enrichThrottleSkips: enrichThrottleSkipsV0,
     engineIdle: isEngineIdleForLearnEnrichmentV0(),
     draining: drainingV0,
     handlerRegistered: Boolean(enrichHandlerV0),
@@ -108,6 +116,7 @@ export function __resetUglLearnBufferForTestV0() {
   walWritesV0 = 0;
   enrichAttemptsV0 = 0;
   enrichSuccessV0 = 0;
+  enrichThrottleSkipsV0 = 0;
   drainingV0 = false;
   enrichHandlerV0 = null;
 }
