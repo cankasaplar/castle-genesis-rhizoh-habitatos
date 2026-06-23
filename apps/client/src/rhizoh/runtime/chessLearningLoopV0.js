@@ -44,9 +44,11 @@ export async function runRhizohChessLearningLoopV0(opts = {}) {
   });
 
   const weightsBefore = readChessLearningWeightsV0();
-  const weightsAfter = isLearningActivationEnabledV0()
-    ? applyChessLearningCorrectionV0(regret)
-    : weightsBefore;
+  const clusterLearningPath = opts.policyMode === "cluster_observer";
+  const weightsAfter =
+    isLearningActivationEnabledV0() || (clusterLearningPath && isMemoryFormationEnabledV0())
+      ? applyChessLearningCorrectionV0(regret)
+      : weightsBefore;
   const liveMetrics = computeChessLiveMetricsV0({
     outcome: opts.outcome,
     regret,
@@ -96,7 +98,7 @@ export async function runRhizohChessLearningLoopV0(opts = {}) {
     liveMetrics,
     geometryObservation,
     policyEvolution,
-    learningGated: !isLearningActivationEnabledV0(),
+    learningGated: !isLearningActivationEnabledV0() && !(clusterLearningPath && isMemoryFormationEnabledV0()),
     memoryFormationGated: !isMemoryFormationEnabledV0(),
     learnedAt: new Date().toISOString()
   });

@@ -22,7 +22,7 @@ export const CHESS_CLUSTER_LEARNING_TRACE_SCHEMA_V0 =
   "castle.rhizoh.chess_cluster_learning_trace.v0";
 export const CHESS_CLUSTER_POLICY_DIFF_EVENT_V0 = "rhizoh:chess-cluster-policy-diff-v0";
 
-const MULTIPV_TRACE_THROTTLE_MS_V0 = 3600;
+const MULTIPV_TRACE_THROTTLE_MS_V0 = 1200;
 let lastMultiPvTraceAtMsV0 = 0;
 let handlerRegisteredV0 = false;
 

@@ -23,6 +23,10 @@ import { isChessEngineContendedV0 } from "./chessEngineContentionGateV0.js";
 import {
   shouldPreferClusterHeuristicUnderContentionV0
 } from "./chessEngineAdaptiveSliceV0.js";
+import {
+  applyTeacherLeagueToStockfishOptsV0,
+  resolveChessClusterTeacherLeagueRowV0
+} from "./chessClusterLearningThroughputV0.js";
 import { shouldUseStockfishForClusterSlotV0 } from "./chessClusterBroadcastEnginePolicyV0.js";
 import { CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 } from "./chessLearningMonitorV0.js";
 import {
@@ -96,7 +100,10 @@ export async function pickChessClusterMoveV0(slot, game) {
   const turn = game.turn();
   const agentId = turn === "w" ? mode.whiteAgent : mode.blackAgent;
   const policy = resolveChessClusterAgentPolicyV0(agentId);
-  const stockfishOpts = resolveChessClusterStockfishOptsV0(agentId);
+  const stockfishOpts = applyTeacherLeagueToStockfishOptsV0(
+    slot.slotId,
+    resolveChessClusterStockfishOptsV0(agentId)
+  );
   const stockfishReady = await resolveClusterStockfishReadyV0(mode);
   const fastHeuristic = maybeFastHeuristicClusterMoveV0(slot, game, mode, agentId, policy);
   if (fastHeuristic) return fastHeuristic;
@@ -135,9 +142,13 @@ export async function pickChessClusterMoveV0(slot, game) {
       return scheduleClusterEngineMoveV0(game, {
         useStockfish: stockfishReady,
         queueLabel: `cluster_slot_${slot.slotId}`,
-        ...(slot.slotId === 0 || mode.spectatorFeatured
-          ? resolveFeaturedSlotStockfishOptsV0()
-          : resolveChessClusterStockfishOptsV0(CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH))
+        ...applyTeacherLeagueToStockfishOptsV0(
+          slot.slotId,
+          slot.slotId === 0 || mode.spectatorFeatured
+            ? resolveFeaturedSlotStockfishOptsV0()
+            : resolveChessClusterStockfishOptsV0(CHESS_CLUSTER_AGENT_ID_V0.RHIZOH_STOCKFISH)
+        ),
+        teacherLeague: resolveChessClusterTeacherLeagueRowV0(slot.slotId).label
       });
     case "stockfish":
       return scheduleClusterEngineMoveV0(game, {

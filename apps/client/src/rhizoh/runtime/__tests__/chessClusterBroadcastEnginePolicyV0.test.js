@@ -48,11 +48,11 @@ describe("chessClusterBroadcastEnginePolicyV0", () => {
     expect(resolveChessClusterTickSlotOrderV0(5, 8)[0]).toBe(5);
   });
 
-  it("holds max-ply reset for featured slot below broadcast min ply", () => {
+  it("always finalizes max-ply cap during broadcast (learning throughput)", () => {
     publishChessClusterBroadcastActiveV0(true);
     const slot = { slotId: 0, ply: 4 };
-    expect(shouldFinalizeClusterBroadcastEndV0(slot, "draw", "max_ply_cap")).toBe(false);
-    expect(shouldFinalizeClusterBroadcastEndV0({ slotId: 0, ply: 20 }, "draw", "max_ply_cap")).toBe(
+    expect(shouldFinalizeClusterBroadcastEndV0(slot, "draw", "max_ply_cap")).toBe(true);
+    expect(shouldFinalizeClusterBroadcastEndV0({ slotId: 1, ply: 2 }, "draw", "max_ply_cap")).toBe(
       true
     );
     expect(shouldFinalizeClusterBroadcastEndV0(slot, "draw", "checkmate_or_draw")).toBe(true);
