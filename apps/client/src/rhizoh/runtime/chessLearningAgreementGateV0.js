@@ -4,6 +4,8 @@
  * RESEARCH-ONLY
  */
 
+import { normalizeChessEvalCpV0 } from "./chessEvalFusionV0.js";
+
 export const CHESS_LEARNING_AGREEMENT_GATE_SCHEMA_V0 =
   "castle.rhizoh.chess_learning_agreement_gate.v0";
 
@@ -16,6 +18,30 @@ export const CHESS_LEARNING_AGREEMENT_MIN_SOURCES_V0 = 2;
 let acceptedCountV0 = 0;
 let rejectedCountV0 = 0;
 let ambiguousCountV0 = 0;
+
+function resolveAgreementVarianceV0(fusion, ctx = {}) {
+  if (!fusion) return { variance: null, sourceCount: 0 };
+
+  if (ctx.truthAuthoritative === true) {
+    const values = [];
+    const stockfishNorm = normalizeChessEvalCpV0(fusion.stockfishCp);
+    const dbRate = Number(fusion.databaseWinrate);
+    const databaseNorm = Number.isFinite(dbRate) ? dbRate * 2 - 1 : null;
+    if (stockfishNorm != null) values.push(stockfishNorm);
+    if (databaseNorm != null) values.push(databaseNorm);
+    if (values.length >= 2) {
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      const variance =
+        values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
+      return { variance, sourceCount: values.length };
+    }
+  }
+
+  return {
+    variance: Number(fusion.variance) || 0,
+    sourceCount: Number(fusion.sourceCount) || 0
+  };
+}
 
 /**
  * @param {ReturnType<import('./chessEvalFusionV0.js').fuseChessEvalSourcesV0>} fusion
@@ -49,10 +75,10 @@ export function evaluateChessLearningAgreementGateV0(fusion, ctx = {}) {
     });
   }
 
-  const variance = Number(fusion.variance) || 0;
+  const { variance, sourceCount } = resolveAgreementVarianceV0(fusion, ctx);
   const ambiguous =
     variance > CHESS_LEARNING_AGREEMENT_VARIANCE_THRESHOLD_V0 ||
-    fusion.sourceCount < CHESS_LEARNING_AGREEMENT_MIN_SOURCES_V0;
+    sourceCount < CHESS_LEARNING_AGREEMENT_MIN_SOURCES_V0;
 
   if (ambiguous) {
     ambiguousCountV0 += 1;
@@ -63,7 +89,7 @@ export function evaluateChessLearningAgreementGateV0(fusion, ctx = {}) {
       learningEligible: false,
       ambiguous: true,
       reason:
-        fusion.sourceCount < CHESS_LEARNING_AGREEMENT_MIN_SOURCES_V0
+        sourceCount < CHESS_LEARNING_AGREEMENT_MIN_SOURCES_V0
           ? "insufficient_sources"
           : "high_variance",
       variance,
