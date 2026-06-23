@@ -3,6 +3,8 @@
  * Fix: stable contract for KernelGuard + backward compatibility export
  */
 
+import type { CompanionAgentArchetype, RhizohCompanionAgentState } from "../types/rskOntology";
+
 export type ProvenanceInput = {
   input: string;
 };
@@ -11,6 +13,18 @@ export type ProvenanceOutput = {
   source_chain: string[];
   trust_class: string;
   derivation_depth: number;
+};
+
+export type CompanionArchetypeDefinitionV1 = {
+  defaultOrbitState: RhizohCompanionAgentState;
+  meshColor: number;
+  meshEmissive: number;
+};
+
+const ARCHETYPE_DEFS: Record<CompanionAgentArchetype, CompanionArchetypeDefinitionV1> = {
+  rhizoh: { defaultOrbitState: "listening", meshColor: 0x44cc88, meshEmissive: 0x114433 },
+  atlas: { defaultOrbitState: "observing", meshColor: 0x4488cc, meshEmissive: 0x112244 },
+  ghost: { defaultOrbitState: "orbiting", meshColor: 0xaa66ff, meshEmissive: 0x331144 }
 };
 
 /**
@@ -75,21 +89,36 @@ export function isValidCompanionArchetypeV1(input: unknown): boolean {
   return typeof input === "string" &&
     (validArchetypes as readonly string[]).includes(input);
 }
-/**
- * Yeni eklenmesi gereken eksik fonksiyonlar
- */
+
 export function stableCompanionUidV1(archetype: string, ownerUid: string): string {
-  // Örnek bir hash veya ID üretme mantığı (burası senin projenin standartlarına göre değişebilir)
   return `${archetype}_${ownerUid}`;
 }
 
-export function getCompanionArchetypeDefinitionV1(archetype: string) {
-  // Kernel'in beklediği yapı
-  return { defaultOrbitState: "listening" };
+export function listCompanionArchetypeDefinitionsV1(): Array<
+  { archetype: CompanionAgentArchetype } & CompanionArchetypeDefinitionV1
+> {
+  return (Object.entries(ARCHETYPE_DEFS) as [CompanionAgentArchetype, CompanionArchetypeDefinitionV1][]).map(
+    ([archetype, def]) => ({ archetype, ...def })
+  );
 }
 
-export function resolveCompanionArchetypeFromInvokeV1(agentUid: string, intent?: string): string {
-  return agentUid.split('_')[0]; // Örnek mantık
+export function getCompanionArchetypeDefinitionV1(
+  archetype: string
+): CompanionArchetypeDefinitionV1 | null {
+  if (archetype === "rhizoh" || archetype === "atlas" || archetype === "ghost") {
+    return ARCHETYPE_DEFS[archetype];
+  }
+  return null;
+}
+
+export function resolveCompanionArchetypeFromInvokeV1(
+  agentUid: string,
+  _intent?: string
+): CompanionAgentArchetype | null {
+  const raw = agentUid.split("_")[0];
+  if (raw === "rhizoh" || raw === "atlas" || raw === "ghost") return raw;
+  if (agentUid === "rhizoh" || agentUid === "atlas" || agentUid === "ghost") return agentUid;
+  return null;
 }
 
 export function stubCompanionNarrativeOutputV1(archetype: string, intent?: string) {

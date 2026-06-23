@@ -8,9 +8,18 @@ import { isWalGeometryIngressEnabledV0 } from "../../rhizoh/runtime/walWorldAuth
 import { getStudioKernelState, setStudioKernelState } from "./internalStore";
 import { ingestPresenceMeshDelta } from "./presenceMeshIngestSlice";
 
+export type PresenceMeshWalIngressSidecarV0 = {
+  ok?: boolean;
+  skipped?: boolean;
+  reason?: string;
+  geometryAuthority?: {
+    walWroteEpochDirectly?: boolean;
+  };
+};
+
 export function ingestPresenceMeshDeltaMaybeWalV0(
   ev: PresenceMeshDeltaEvent
-): StudioResult<{ duplicate?: boolean }> & { wal?: unknown } {
+): StudioResult<{ duplicate?: boolean }> & { wal?: PresenceMeshWalIngressSidecarV0 } {
   if (!isWalGeometryIngressEnabledV0()) {
     return ingestPresenceMeshDelta(ev);
   }
@@ -21,5 +30,5 @@ export function ingestPresenceMeshDeltaMaybeWalV0(
   if (!causal?.ok) {
     return causal ?? { ok: false, error: "mesh_wal_causal_failed" };
   }
-  return { ...causal, wal: out.wal };
+  return { ...causal, wal: out.wal ?? undefined };
 }

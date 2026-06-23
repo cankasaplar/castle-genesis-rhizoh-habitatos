@@ -159,10 +159,12 @@ export function mergeGhostPetEmbodimentDriveIntoPresence(
     ...(Number.isFinite(Number(drive.spatialReadiness01))
       ? { spatialReadiness01: Number(drive.spatialReadiness01) }
       : {}),
-    ...(drive.attention && typeof drive.attention === "object" ? { attention: drive.attention } : {}),
+    ...(drive.attention && typeof drive.attention === "object"
+      ? { attention: drive.attention as Record<string, unknown> }
+      : {}),
     ...(typeof drive.locomotionHint === "string" && drive.locomotionHint ? { locomotionHint: drive.locomotionHint } : {}),
-    ...(drive.motionStyle && typeof drive.motionStyle === "object" ? { motionStyle: drive.motionStyle } : {}),
-    ...(drive.multiPetHint && typeof drive.multiPetHint === "object" ? { multiPetHint: drive.multiPetHint } : {})
+    ...(drive.motionStyle && typeof drive.motionStyle === "object" ? { motionStyle: drive.motionStyle as Record<string, unknown> } : {}),
+    ...(drive.multiPetHint && typeof drive.multiPetHint === "object" ? { multiPetHint: drive.multiPetHint as Record<string, unknown> } : {})
   };
   return {
     ...pres,
