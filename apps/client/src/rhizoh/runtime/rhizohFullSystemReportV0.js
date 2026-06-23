@@ -69,6 +69,7 @@ import { getCalendarEventAdapterSnapshotV0 } from "./calendarEventAdapterV0.js";
 import { buildCalendarShadowTimelineViewV0 } from "./calendarShadowTimelineV0.js";
 import { getMediaEventAdapterSnapshotV0 } from "./mediaEventAdapterV0.js";
 import { buildMediaShadowTimelineViewV0 } from "./mediaShadowTimelineV0.js";
+import { buildLifeShadowDayBranchComparisonV0 } from "./lifeShadowDayBranchesV0.js";
 import { getUserActivityAdapterSnapshotV0 } from "./userActivityEventAdapterV0.js";
 import {
   getCrossSpaceFusionLaneAuditV0,
@@ -597,6 +598,7 @@ function collectWorldBridgeDiagnosticV0() {
   const userActivity = getUserActivityAdapterSnapshotV0();
   const calendarShadow = buildCalendarShadowTimelineViewV0();
   const mediaShadow = buildMediaShadowTimelineViewV0();
+  const lifeShadowDayAb = buildLifeShadowDayBranchComparisonV0();
   const fusion = getCrossSpaceFusionSnapshotV0();
   const laneAudit = getCrossSpaceFusionLaneAuditV0();
   const laneContrib = fusion?.lastFusion?.epistemicUpdate?.laneContributions || null;
@@ -637,6 +639,13 @@ function collectWorldBridgeDiagnosticV0() {
       branches: mediaShadow.branches,
       consoleApi: "__rhizoh.mediaShadowTimeline()"
     }),
+    lifeShadowDayAb: Object.freeze({
+      dayA: lifeShadowDayAb.dayA.eventCount,
+      dayB: lifeShadowDayAb.dayB.eventCount,
+      dominantBranch: lifeShadowDayAb.comparison.dominantBranch,
+      dayAShare01: lifeShadowDayAb.comparison.dayAShare01,
+      consoleApi: "__rhizoh.lifeShadowDayBranches()"
+    }),
     laneIngest: Object.freeze({
       calendar: laneAudit.calendar.present,
       media: laneAudit.media.present,
@@ -657,7 +666,8 @@ function collectWorldBridgeDiagnosticV0() {
       ingestUserActivity: typeof rhizoh?.ingestUserActivity === "function",
       fuseCrossSpaceEpistemic: typeof rhizoh?.fuseCrossSpaceEpistemic === "function",
       calendarShadowTimeline: typeof rhizoh?.calendarShadowTimeline === "function",
-      mediaShadowTimeline: typeof rhizoh?.mediaShadowTimeline === "function"
+      mediaShadowTimeline: typeof rhizoh?.mediaShadowTimeline === "function",
+      lifeShadowDayBranches: typeof rhizoh?.lifeShadowDayBranches === "function"
     })
   });
 }
@@ -1063,8 +1073,9 @@ export function printFullSystemReportV0(report) {
     `    user activity: ${r.worldBridge?.userActivity?.recentCount ?? 0} events · space ${r.worldBridge?.userActivity?.spaceId ?? "—"} · api ${r.worldBridge?.surfaceBound?.ingestUserActivity ? "bound" : "off"}`,
     `    life shadow: ${r.worldBridge?.lifeShadow?.calendarEventCount ?? 0} entries · dayA ${r.worldBridge?.lifeShadow?.branches?.shadow_day_a ?? 0} · dayB ${r.worldBridge?.lifeShadow?.branches?.shadow_day_b ?? 0}`,
     `    media shadow: ${r.worldBridge?.mediaShadow?.eventCount ?? 0} entries · immersive ${r.worldBridge?.mediaShadow?.branches?.shadow_immersive ?? 0} · scattered ${r.worldBridge?.mediaShadow?.branches?.shadow_scattered ?? 0}`,
+    `    day A/B: dayA ${r.worldBridge?.lifeShadowDayAb?.dayA ?? 0} · dayB ${r.worldBridge?.lifeShadowDayAb?.dayB ?? 0} · dominant ${r.worldBridge?.lifeShadowDayAb?.dominantBranch ?? "—"}`,
     `    fusion lanes: cal ${r.worldBridge?.fusionLanes?.calendarPresent ? `on (${r.worldBridge.fusionLanes.calendarWeight})` : "off"} · media ${r.worldBridge?.fusionLanes?.mediaPresent ? `on (${r.worldBridge.fusionLanes.mediaWeight})` : "off"} · activity ${r.worldBridge?.fusionLanes?.userActivityPresent ? `on (${r.worldBridge.fusionLanes.userActivityWeight})` : "off"}`,
-    `    console: __rhizoh.ingestCalendarEvent() · __rhizoh.ingestMediaEvent() · __rhizoh.ingestUserActivity() · __rhizoh.calendarShadowTimeline() · __rhizoh.mediaShadowTimeline()`,
+    `    console: __rhizoh.ingestCalendarEvent() · __rhizoh.ingestMediaEvent() · __rhizoh.ingestUserActivity() · __rhizoh.lifeShadowDayBranches()`,
     "───────────────────────────────────────────",
     "  EPISTEMIC SUBSTRATE",
     `    turn sovereignty: ${r.epistemicSubstrate?.turnSovereignty?.sovereignReality ?? "none"} (${r.epistemicSubstrate?.turnSovereignty?.enforcement ?? "log_only"})`,
