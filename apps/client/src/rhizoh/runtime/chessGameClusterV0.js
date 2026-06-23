@@ -16,6 +16,11 @@ import {
 } from "./chessEngineBridgeV0.js";
 import { observeChessClusterMoveV0 } from "./chessClusterObserverV0.js";
 import { finalizeChessClusterGameV0 } from "./chessClusterLearningV0.js";
+import {
+  applyClusterOpeningSeedV0,
+  pickClusterOpeningSeedV0
+} from "./chessClusterOpeningDiversityV0.js";
+import { resolveChessClusterLearningMaxPlyV0 } from "./chessClusterLearningThroughputV0.js";
 import { getChessClusterMemoryGraphSnapshotV0 } from "./chessClusterMemoryGraphV0.js";
 import {
   applyChessClusterClockIncrementV0,
@@ -49,6 +54,8 @@ import {
   resolveChessClusterTimeControlV0,
   shouldEndChessClusterGameByPlyCapV0
 } from "./chessClusterSimulationPolicyV0.js";
+import { isChessClusterLearningThroughputModeV0 } from "./chessClusterLearningThroughputV0.js";
+import { getChessClusterLearningThroughputSnapshotV0 } from "./chessClusterLearningThroughputV0.js";
 import {
   CHESS_SCHEDULER_MIN_GAP_MS_V0,
   endChessSchedulerCallV0,
@@ -131,6 +138,9 @@ function resolveSlotTimeControlIdV0(slotId) {
 }
 
 function resolveSlotMaxPlyV0(slotId) {
+  if (isChessClusterLearningThroughputModeV0()) {
+    return resolveChessClusterLearningMaxPlyV0(slotId);
+  }
   return Number(slotId) === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0
     ? CHESS_CLUSTER_FEATURED_MAX_PLY_V0
     : clusterMaxPlyV0;
@@ -142,6 +152,8 @@ function createSlotV0(slotId, timeControlId = clusterTimeControlIdV0) {
   const clock = createChessClusterClockStateV0(slotTcId);
   const matchId = `cluster_${slotId}_${Date.now().toString(36)}`;
   const game = createChessArenaGameV0({ mode: CHESS_GAME_MODE_V0.AI_AI });
+  const openingSeed = pickClusterOpeningSeedV0(slotId);
+  const openingApplied = applyClusterOpeningSeedV0(game, openingSeed);
   let rhizohColor = "w";
   let whiteAgent = mode.whiteAgent;
   let blackAgent = mode.blackAgent;
@@ -167,13 +179,29 @@ function createSlotV0(slotId, timeControlId = clusterTimeControlIdV0) {
     whiteClockMs: clock.whiteClockMs,
     blackClockMs: clock.blackClockMs,
     incrementMs: clock.incrementMs,
-    moveHistory: [],
+    moveHistory: openingApplied.applied
+      ? openingApplied.moves.map((san, idx) =>
+          Object.freeze({
+            slotId,
+            matchId,
+            ply: idx + 1,
+            san,
+            uci: san,
+            color: idx % 2 === 0 ? "w" : "b",
+            fenBefore: "",
+            fenAfter: game.fen(),
+            engine: "opening_seed",
+            atMs: Date.now()
+          })
+        )
+      : [],
+    openingSeed: openingApplied,
     evalStream: [],
     attentionWeight: 1,
     status: "active",
     outcome: null,
     endReason: null,
-    ply: 0,
+    ply: openingApplied.applied || 0,
     lastMoveAtMs: Date.now(),
     criticalEvents: []
   };
@@ -197,6 +225,7 @@ function publishClusterRegistryV0(extra = {}) {
     slotCount: CHESS_CLUSTER_SLOT_COUNT_V0,
     engineScheduler: getChessClusterEngineSchedulerSnapshotV0(),
     sessionGamesEnded: sessionGamesEndedV0,
+    learningThroughput: getChessClusterLearningThroughputSnapshotV0(),
     lastGameEnd: lastGameEndV0 ? Object.freeze({ ...lastGameEndV0 }) : null,
     slots: slotsV0.map((s) => summarizeChessClusterSlotV0(s)),
     ...extra,
@@ -235,7 +264,14 @@ export function summarizeChessClusterSlotV0(slot) {
       const hist = slot.moveHistory[slot.moveHistory.length - 1];
       if (!hist) return null;
       return Object.freeze({ uci: hist.uci, san: hist.san });
-    })()
+    })(),
+    openingSeed: slot.openingSeed
+      ? Object.freeze({
+          name: slot.openingSeed.name,
+          bucket: slot.openingSeed.bucket,
+          applied: slot.openingSeed.applied
+        })
+      : null
   });
 }
 
@@ -361,7 +397,11 @@ function runClusterClockTickV0() {
  * @param {object} slot
  */
 async function advanceChessClusterSlotV0(slot) {
-  if (!slot || slot.status !== "active" || slot.game.isGameOver()) return null;
+  if (!slot || slot.status !== "active") return null;
+  if (slot.game.isGameOver()) {
+    endChessClusterSlotV0(slot, slot.game.outcome() || "draw", "checkmate_or_draw");
+    return null;
+  }
 
   const turn = slot.game.turn();
   const agentId = turn === "w" ? slot.whiteAgent : slot.blackAgent;

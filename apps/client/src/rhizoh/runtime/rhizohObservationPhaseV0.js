@@ -12,8 +12,8 @@ export const RHIZOH_OBSERVATION_PHASE_V0 = Object.freeze({
   LEARNING_ACTIVATION: "learning_activation"
 });
 
-/** Active phase — Phase 1 until UGE is validated in production. */
-let activePhaseV0 = RHIZOH_OBSERVATION_PHASE_V0.SILENT_OBSERVER;
+/** Active phase — memory formation default: counterfactual archive + cluster weight closure. */
+let activePhaseV0 = RHIZOH_OBSERVATION_PHASE_V0.MEMORY_FORMATION;
 
 export function readRhizohObservationPhaseV0() {
   return activePhaseV0;
@@ -40,5 +40,5 @@ export function setRhizohObservationPhaseForTestV0(phase) {
 }
 
 export function resetRhizohObservationPhaseForTestV0() {
-  activePhaseV0 = RHIZOH_OBSERVATION_PHASE_V0.SILENT_OBSERVER;
+  activePhaseV0 = RHIZOH_OBSERVATION_PHASE_V0.MEMORY_FORMATION;
 }

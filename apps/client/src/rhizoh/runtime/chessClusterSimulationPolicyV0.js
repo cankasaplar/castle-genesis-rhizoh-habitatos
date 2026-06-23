@@ -13,9 +13,9 @@ export const CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0 = "cluster_sim_45_0";
 /** Featured LIVE slot — long enough for middlegame + endgame study. */
 export const CHESS_CLUSTER_FEATURED_TIME_CONTROL_ID_V0 = "cluster_live_3_2";
 
-/** Force draw after this ply on B-roll boards. */
+/** Force draw after this ply on B-roll boards (cinematic / legacy). */
 export const CHESS_CLUSTER_MAX_PLY_V0 = 80;
-/** Featured LIVE may play deeper before sim cap. */
+/** Featured LIVE may play deeper before sim cap (cinematic / legacy). */
 export const CHESS_CLUSTER_FEATURED_MAX_PLY_V0 = 120;
 
 export const CHESS_CLUSTER_SIM_TIME_CONTROLS_V0 = Object.freeze({
@@ -81,7 +81,8 @@ export function resolveChessClusterBootOptsV0(opts = {}) {
   return Object.freeze({
     minIntervalMs: opts.minIntervalMs ?? 900,
     timeControlId: opts.timeControlId || CHESS_CLUSTER_DEFAULT_TIME_CONTROL_ID_V0,
-    maxPly: opts.maxPly ?? CHESS_CLUSTER_MAX_PLY_V0
+    maxPly: opts.maxPly ?? CHESS_CLUSTER_MAX_PLY_V0,
+    learningMaxPly: opts.learningMaxPly ?? null
   });
 }
 

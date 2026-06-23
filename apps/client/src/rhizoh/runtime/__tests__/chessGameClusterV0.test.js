@@ -124,7 +124,10 @@ describe("chessGameClusterV0", () => {
     expect(window.__rhizoh?.chessGameCluster?.sessionGamesEnded).toBe(1);
     const active = listChessClusterSlotsV0().filter((s) => s.status === "active").length;
     expect(active).toBe(CHESS_CLUSTER_SLOT_COUNT_V0);
-    expect(getChessClusterSlotV0(0)?.ply).toBe(0);
+    const resetSlot = getChessClusterSlotV0(0);
+    expect(resetSlot?.status).toBe("active");
+    expect(resetSlot?.ply).toBe(resetSlot?.openingSeed?.applied || 0);
+    expect(resetSlot?.moveCount).toBe(resetSlot?.ply);
     releaseFinalize?.();
     stopChessGameClusterV0();
   });
