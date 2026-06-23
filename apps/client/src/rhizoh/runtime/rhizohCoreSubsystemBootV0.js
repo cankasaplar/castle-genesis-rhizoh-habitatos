@@ -14,6 +14,7 @@ import {
   getChessStockfishEngineStatusV0,
   CHESS_STOCKFISH_ENGINE_STATUS_EVENT_V0
 } from "./chessStockfishEngineV0.js";
+import { prewarmChessLc0EngineV0 } from "./chessLc0UciBridgeV0.js";
 import { publishRhizohChessManagerV0, ensureRhizohChessManagerListenersV0 } from "./rhizohChessManagerV0.js";
 import { publishChessGameRouterV0 } from "./chessGameRouterV0.js";
 import { ensureShadowTraceLedgerDevToolsV0 } from "./rhizohShadowTraceLedgerDevToolsV0.js";
@@ -22,6 +23,7 @@ import { ensureHardSeparationDevToolsV0 } from "./rhizohHardSeparationLayerV0.js
 import { ensureRhizohChessLearningReportV0 } from "./rhizohChessLearningReportV0.js";
 import { ensureRhizohChessLearningCameraV0 } from "./rhizohChessLearningCameraV0.js";
 import { ensureChessLearningDebugV0 } from "./rhizohChessLearningDebugV0.js";
+import { ensureChessLc0UciBridgeDevToolsV0 } from "./chessLc0UciBridgeV0.js";
 import { ensureRhizohChessLifetimeReportV0 } from "./rhizohChessLifetimeReportV0.js";
 import { ensureChessHistoryBrainV0 } from "./chessHistoryBrainReportV0.js";
 import { ensureRhizohChessEvolutionCurveV0 } from "./rhizohChessEvolutionCurveV0.js";
@@ -102,6 +104,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureRhizohChessLearningReportV0();
     ensureRhizohChessLearningCameraV0();
     ensureChessLearningDebugV0();
+    ensureChessLc0UciBridgeDevToolsV0();
     ensureRhizohChessLifetimeReportV0();
     ensureChessHistoryBrainV0();
     ensureRhizohChessEvolutionCurveV0();
@@ -127,6 +130,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
   let cluster = Object.freeze({ ok: false, pendingEnginePrewarm: true });
 
   void prewarmChessStockfishEngineV0();
+  void prewarmChessLc0EngineV0();
 
   const startChessClusterAfterPrewarmV0 = () => {
     chessClusterBootArmedV0 = true;
