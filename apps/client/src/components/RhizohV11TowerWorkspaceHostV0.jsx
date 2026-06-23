@@ -3,6 +3,7 @@ import { useCastleAuth } from "../firebase/useCastleAuth.js";
 import { GeminiTowerWorkspaceV0 } from "./GeminiTowerWorkspaceV0.jsx";
 import { RhizohLlmTowerWorkspaceV0 } from "./RhizohLlmTowerWorkspaceV0.jsx";
 import { RhizohTowerLiveStatusBadgeV0 } from "./RhizohTowerLiveStatusBadgeV0.jsx";
+import { affirmActiveTowerGatewayCitizenV0 } from "../rhizoh/runtime/towerGatewayCitizenshipV0.js";
 
 /**
  * Routes V11 tower node clicks to the correct workspace surface.
@@ -35,6 +36,12 @@ export const RhizohV11TowerWorkspaceHostV0 = memo(function RhizohV11TowerWorkspa
   const node = workspaceDetail.node;
   const nodeId = String(node.id || "");
   const tr = uiLocale === "tr";
+
+  useEffect(() => {
+    if (!nodeId || (node.type !== "tower" && !nodeId.endsWith("_tower"))) return undefined;
+    void affirmActiveTowerGatewayCitizenV0(nodeId);
+    return undefined;
+  }, [nodeId, node.type]);
 
   if (nodeId === "gemini_tower") {
     return <GeminiTowerWorkspaceV0 open onClose={onClose} uiLocale={uiLocale} />;

@@ -42,6 +42,14 @@ const voiceVisStoreV1 = {
   delivered: 0
 };
 
+/** @type {{ registered: boolean, registeredCount: number, registeredTowerIds: string[], activeTowerId: string | null }} */
+const towerVisStoreV1 = {
+  registered: false,
+  registeredCount: 0,
+  registeredTowerIds: [],
+  activeTowerId: null
+};
+
 const subscribersV1 = new Set();
 
 function fnv1aHashV0(str) {
@@ -150,6 +158,50 @@ export function isVoiceGatewayCitizenshipRegisteredV0() {
   return voiceVisStoreV1.registered === true;
 }
 
+/**
+ * Record tower gateway citizenship signals.
+ * @param {{ registered?: boolean, towerId?: string, registeredCount?: number, registeredTowerIds?: string[], activeTowerId?: string | null }} patch
+ */
+export function recordTowerObservationV1(patch = {}) {
+  if (patch.registered === true) towerVisStoreV1.registered = true;
+  if (patch.registered === false) {
+    towerVisStoreV1.registered = false;
+    towerVisStoreV1.registeredCount = 0;
+    towerVisStoreV1.registeredTowerIds = [];
+  }
+  if (patch.towerId) {
+    const id = String(patch.towerId);
+    if (!towerVisStoreV1.registeredTowerIds.includes(id)) {
+      towerVisStoreV1.registeredTowerIds = [...towerVisStoreV1.registeredTowerIds, id];
+    }
+    towerVisStoreV1.registeredCount = towerVisStoreV1.registeredTowerIds.length;
+    towerVisStoreV1.registered = towerVisStoreV1.registeredTowerIds.length > 0;
+  }
+  if (Array.isArray(patch.registeredTowerIds)) {
+    towerVisStoreV1.registeredTowerIds = [...patch.registeredTowerIds];
+    towerVisStoreV1.registeredCount = towerVisStoreV1.registeredTowerIds.length;
+    towerVisStoreV1.registered = towerVisStoreV1.registeredTowerIds.length > 0;
+  }
+  if (typeof patch.registeredCount === "number") {
+    towerVisStoreV1.registeredCount = patch.registeredCount;
+  }
+  if (patch.activeTowerId !== undefined) {
+    towerVisStoreV1.activeTowerId = patch.activeTowerId ? String(patch.activeTowerId) : null;
+  }
+  notifyObservationSubscribersV1();
+}
+
+/** True when at least one LLM tower registered on gateway this tab. */
+export function isTowerGatewayCitizenshipRegisteredV0() {
+  return towerVisStoreV1.registered === true && towerVisStoreV1.registeredCount > 0;
+}
+
+function resolveTowerCitizenshipLabelV0() {
+  if (!towerVisStoreV1.registered || towerVisStoreV1.registeredCount <= 0) return "detached";
+  if (towerVisStoreV1.registeredCount >= 7) return "registered";
+  return "partial";
+}
+
 /** @internal vitest */
 export function resetBroadcastVisibilityForTestV1() {
   broadcastVisStoreV1.lastPresence = null;
@@ -169,6 +221,10 @@ export function resetBroadcastVisibilityForTestV1() {
   voiceVisStoreV1.gatewayAckCount = null;
   voiceVisStoreV1.transcriptCommitted = false;
   voiceVisStoreV1.delivered = 0;
+  towerVisStoreV1.registered = false;
+  towerVisStoreV1.registeredCount = 0;
+  towerVisStoreV1.registeredTowerIds = [];
+  towerVisStoreV1.activeTowerId = null;
 }
 
 function notifyObservationSubscribersV1() {
@@ -296,6 +352,13 @@ export function buildRhizohObservationStateV1(opts = {}) {
           : voiceVisStoreV1.localAckCount,
       citizenship: voiceVisStoreV1.registered ? "registered" : "detached"
     }),
+    towers: Object.freeze({
+      registered: towerVisStoreV1.registered,
+      registeredCount: towerVisStoreV1.registeredCount,
+      registeredTowerIds: Object.freeze([...towerVisStoreV1.registeredTowerIds]),
+      activeTowerId: towerVisStoreV1.activeTowerId,
+      citizenship: resolveTowerCitizenshipLabelV0()
+    }),
     narrative: Object.freeze({
       mode: proofMode ? "proof" : "demo",
       label: proofMode
@@ -333,6 +396,7 @@ export function mountRhizohObservationStateConsoleV1() {
     subscribe: subscribeRhizohObservationStateV1,
     recordBroadcast: recordBroadcastVisibilityV1,
     recordVoice: recordVoiceObservationV1,
+    recordTower: recordTowerObservationV1,
     isProofMode: isRhizohProofModeEnabledV1,
     interpretationOnly: true
   });
