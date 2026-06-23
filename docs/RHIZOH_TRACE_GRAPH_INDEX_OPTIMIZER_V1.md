@@ -168,6 +168,20 @@ See [`RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md`](RHIZOH_DRIFT_ANALYTICS_ENGINE_V1.md)
 
 ---
 
+## 7.1 Console mount (prod DevTools)
+
+Mounted from `matchmakingConsoleV0` boot:
+
+```js
+window.__rhizoh.traceGraphIndex.snapshot()
+window.__rhizoh.traceGraphIndex.runPipeline({ records: [...] })
+window.__rhizoh.traceGraphIndex.bootstrapFromLedger()
+```
+
+Full system report: `ticket graph: mounted · ingest N`
+
+---
+
 ## 8. Changelog
 
 | Date | Change |

@@ -23,6 +23,7 @@ describe("matchmakingConsoleV0", () => {
     expect(typeof window.__rhizoh.matchmaking.emitBeacon).toBe("function");
     expect(typeof window.__rhizoh.matchmaking.tryMatch).toBe("function");
     expect(typeof window.__rhizoh.matchmaking.session.get).toBe("function");
+    expect(typeof window.__rhizoh.traceGraphIndex?.snapshot).toBe("function");
   });
 
   it("survives double mount from core boot and nervous system", () => {
