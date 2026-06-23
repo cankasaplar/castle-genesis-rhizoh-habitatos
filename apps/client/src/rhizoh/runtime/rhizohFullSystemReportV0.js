@@ -65,6 +65,10 @@ import {
 } from "./rhizohNeonCountdownV0.js";
 import { readCityMapLegalGateSnapshotV0 } from "./cityMapLegalCountdownMediaGateV0.js";
 import { getLastGeneratedInviteV0 } from "../ingress/inviteOpsV0.js";
+import { getCalendarEventAdapterSnapshotV0 } from "./calendarEventAdapterV0.js";
+import { buildCalendarShadowTimelineViewV0 } from "./calendarShadowTimelineV0.js";
+import { getMediaEventAdapterSnapshotV0 } from "./mediaEventAdapterV0.js";
+import { getCrossSpaceFusionSnapshotV0 } from "./crossSpaceCausalFusionV0.js";
 
 export const RHIZOH_FULL_SYSTEM_REPORT_SCHEMA_V0 = "rhizoh.full_system_report.v0";
 
@@ -579,6 +583,56 @@ function collectEnvBlockersV0() {
 }
 
 /**
+ * World Bridge Layer 2 — calendar / media ingress + shadow timeline + fusion lanes.
+ * @returns {object}
+ */
+function collectWorldBridgeDiagnosticV0() {
+  const calendar = getCalendarEventAdapterSnapshotV0();
+  const media = getMediaEventAdapterSnapshotV0();
+  const calendarShadow = buildCalendarShadowTimelineViewV0();
+  const fusion = getCrossSpaceFusionSnapshotV0();
+  const laneContrib = fusion?.epistemicUpdate?.laneContributions || null;
+
+  const rhizoh = typeof window !== "undefined" ? window.__rhizoh : null;
+
+  return Object.freeze({
+    schema: "rhizoh.full_system_report.world_bridge.v0",
+    interpretationOnly: true,
+    nonExecutive: true,
+    calendar: Object.freeze({
+      spaceId: calendar.spaceId,
+      recentCount: calendar.recentCount,
+      lastEvent: calendar.recent[0]?.title || null,
+      ingressApi: "ingestCalendarEvent"
+    }),
+    media: Object.freeze({
+      spaceId: media.spaceId,
+      recentCount: media.recentCount,
+      lastEvent: media.recent[0]?.title || null,
+      ingressApi: "ingestMediaEvent"
+    }),
+    lifeShadow: Object.freeze({
+      calendarEventCount: calendarShadow.eventCount,
+      avgOutcomeScore01: calendarShadow.avgOutcomeScore01,
+      branches: calendarShadow.branches,
+      consoleApi: "__rhizoh.calendarShadowTimeline()"
+    }),
+    fusionLanes: Object.freeze({
+      calendarPresent: Boolean(laneContrib?.calendar?.present),
+      calendarWeight: laneContrib?.calendar?.weight ?? 0,
+      mediaPresent: Boolean(laneContrib?.media?.present),
+      mediaWeight: laneContrib?.media?.weight ?? 0,
+      lastFusionSeq: fusion?.fusionSeq ?? null
+    }),
+    surfaceBound: Object.freeze({
+      ingestCalendarEvent: typeof rhizoh?.ingestCalendarEvent === "function",
+      ingestMediaEvent: typeof rhizoh?.ingestMediaEvent === "function",
+      fuseCrossSpaceEpistemic: typeof rhizoh?.fuseCrossSpaceEpistemic === "function"
+    })
+  });
+}
+
+/**
  * Network surface — map pins, towers, gateway registration, invites (investor ops).
  * @returns {object}
  */
@@ -771,6 +825,7 @@ export function runFullSystemReportV0(opts = {}) {
   const worldLayerStatus = resolveWorldLayerActivationStatusV0();
   const rendererRegistry = getSpatialRendererRegistrySnapshotV0();
   const networkSurface = collectNetworkSurfaceDiagnosticV0();
+  const worldBridge = collectWorldBridgeDiagnosticV0();
 
   const integrityTiers = buildSystemIntegrityTiersV0({
     causalMap,
@@ -830,6 +885,7 @@ export function runFullSystemReportV0(opts = {}) {
     epistemicSubstrate: collectEpistemicSubstrateV0(),
     presenceRuntime,
     networkSurface,
+    worldBridge,
     evaluation: Object.freeze({
       structuralTruthPass: causalMap.truthLoss?.structuralPass !== false,
       structuralPass: integrityTiers.structuralPass,
@@ -970,6 +1026,13 @@ export function printFullSystemReportV0(report) {
     `    gateway services: voice ${r.networkSurface?.gatewayRegistration?.voiceGatewayMounted ? "mounted" : "off"} · tower ${r.networkSurface?.gatewayRegistration?.towerGatewayMounted ? "mounted" : "off"} · media ${r.networkSurface?.gatewayRegistration?.mediaGatewayMounted ? "mounted" : "off"} · registry ${r.networkSurface?.gatewayRegistration?.gatewayServiceMounted ? "mounted" : "off"}`,
     `    invite ops: ${r.networkSurface?.inviteOps?.lastGenerated?.role ? `last ${r.networkSurface.inviteOps.lastGenerated.role}` : "none generated this session"}`,
     `    ticket graph: ${r.networkSurface?.ticketGraph?.mounted ? `mounted · ingest ${r.networkSurface?.ticketGraph?.liveIngestCount ?? 0}` : "not mounted"}`,
+    "───────────────────────────────────────────",
+    "  WORLD BRIDGE (Layer 2)",
+    `    calendar: ${r.worldBridge?.calendar?.recentCount ?? 0} events · space ${r.worldBridge?.calendar?.spaceId ?? "—"} · api ${r.worldBridge?.surfaceBound?.ingestCalendarEvent ? "bound" : "off"}`,
+    `    media: ${r.worldBridge?.media?.recentCount ?? 0} events · space ${r.worldBridge?.media?.spaceId ?? "—"} · api ${r.worldBridge?.surfaceBound?.ingestMediaEvent ? "bound" : "off"}`,
+    `    life shadow: ${r.worldBridge?.lifeShadow?.calendarEventCount ?? 0} entries · avg outcome ${r.worldBridge?.lifeShadow?.avgOutcomeScore01 ?? "—"}`,
+    `    fusion lanes: calendar ${r.worldBridge?.fusionLanes?.calendarPresent ? `on (${r.worldBridge.fusionLanes.calendarWeight})` : "off"} · media ${r.worldBridge?.fusionLanes?.mediaPresent ? `on (${r.worldBridge.fusionLanes.mediaWeight})` : "off"}`,
+    `    console: __rhizoh.ingestCalendarEvent() · __rhizoh.ingestMediaEvent() · __rhizoh.calendarShadowTimeline()`,
     "───────────────────────────────────────────",
     "  EPISTEMIC SUBSTRATE",
     `    turn sovereignty: ${r.epistemicSubstrate?.turnSovereignty?.sovereignReality ?? "none"} (${r.epistemicSubstrate?.turnSovereignty?.enforcement ?? "log_only"})`,
