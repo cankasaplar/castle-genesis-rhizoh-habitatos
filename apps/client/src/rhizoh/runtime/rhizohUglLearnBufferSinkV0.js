@@ -14,7 +14,8 @@ export const RHIZOH_UGL_LEARN_BUFFER_SCHEMA_V0 = "castle.rhizoh.ugl_learn_buffer
 /** Enrich handler returns this when throttled — row stays in buffer. */
 export const CHESS_LEARNING_ENRICH_RETRY_V0 = Symbol.for("castle.rhizoh.chess_learning_enrich_retry.v0");
 
-const MAX_BUFFER_V0 = 128;
+export const CHESS_LEARN_BUFFER_MAX_V0 = 128;
+const MAX_BUFFER_V0 = CHESS_LEARN_BUFFER_MAX_V0;
 /** @type {object[]} */
 let bufferRingV0 = [];
 let walWritesV0 = 0;
@@ -36,6 +37,28 @@ function isEngineIdleForLearnEnrichmentV0() {
   if (queue.active?.kind === CHESS_ENGINE_TASK_KIND_V0.ARENA_MOVE) return false;
   // Cluster may run continuously — learn MultiPV interleaves via LEARNING_MEASURE priority.
   return true;
+}
+
+/**
+ * @param {number} [buffered]
+ */
+export function resolveLearnDrainBurstLimitV0(buffered = bufferRingV0.length) {
+  const n = Number(buffered) || 0;
+  if (n > 96) return 4;
+  if (n > 64) return 3;
+  if (n > 32) return 2;
+  return 1;
+}
+
+/**
+ * @param {number} [buffered]
+ */
+export function resolveLearnDrainIntervalMsV0(buffered = bufferRingV0.length) {
+  const n = Number(buffered) || 0;
+  if (n > 96) return 400;
+  if (n > 64) return 600;
+  if (n > 32) return 800;
+  return 1000;
 }
 
 /**
@@ -74,20 +97,29 @@ export async function drainUglLearnBufferV0() {
 
   drainingV0 = true;
   try {
-    // One row per drain tick — burst pops + throttle used to drop rows permanently.
-    const row = bufferRingV0.pop();
-    if (!row) return;
-    enrichAttemptsV0 += 1;
-    try {
-      const out = await enrichHandlerV0(row);
-      if (out === CHESS_LEARNING_ENRICH_RETRY_V0) {
+    const burstLimit = resolveLearnDrainBurstLimitV0(bufferRingV0.length);
+    let processed = 0;
+    while (
+      processed < burstLimit &&
+      bufferRingV0.length > 0 &&
+      isEngineIdleForLearnEnrichmentV0()
+    ) {
+      const row = bufferRingV0.pop();
+      if (!row) break;
+      enrichAttemptsV0 += 1;
+      try {
+        const out = await enrichHandlerV0(row);
+        if (out === CHESS_LEARNING_ENRICH_RETRY_V0) {
+          bufferRingV0.push(row);
+          enrichThrottleSkipsV0 += 1;
+          break;
+        }
+        if (out) enrichSuccessV0 += 1;
+        processed += 1;
+      } catch {
         bufferRingV0.push(row);
-        enrichThrottleSkipsV0 += 1;
-        return;
+        break;
       }
-      if (out) enrichSuccessV0 += 1;
-    } catch {
-      bufferRingV0.push(row);
     }
   } finally {
     drainingV0 = false;
@@ -102,6 +134,8 @@ export function getUglLearnBufferSnapshotV0() {
     enrichAttempts: enrichAttemptsV0,
     enrichSuccess: enrichSuccessV0,
     enrichThrottleSkips: enrichThrottleSkipsV0,
+    drainBurstLimit: resolveLearnDrainBurstLimitV0(bufferRingV0.length),
+    drainIntervalMs: resolveLearnDrainIntervalMsV0(bufferRingV0.length),
     engineIdle: isEngineIdleForLearnEnrichmentV0(),
     draining: drainingV0,
     handlerRegistered: Boolean(enrichHandlerV0),

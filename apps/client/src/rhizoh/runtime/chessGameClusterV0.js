@@ -22,7 +22,7 @@ import {
 } from "./chessClusterOpeningDiversityV0.js";
 import { resolveChessClusterLearningMaxPlyV0, shouldTickChessClusterClockForLearningV0 } from "./chessClusterLearningThroughputV0.js";
 import { getChessClusterMemoryGraphSnapshotV0 } from "./chessClusterMemoryGraphV0.js";
-import { drainUglLearnBufferV0 } from "./rhizohUglLearnBufferSinkV0.js";
+import { drainUglLearnBufferV0, resolveLearnDrainIntervalMsV0 } from "./rhizohUglLearnBufferSinkV0.js";
 import { maybeFlushChessLearningMiniBatchV0 } from "./chessLearningBatchV0.js";
 import {
   applyChessClusterClockIncrementV0,
@@ -32,6 +32,7 @@ import {
 } from "./chessClusterClockV0.js";
 import { ensureChessLearningMonitorListenersV0, CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 } from "./chessLearningMonitorV0.js";
 import { ensureRhizohChessLearningReportV0 } from "./rhizohChessLearningReportV0.js";
+import { ensureRhizohChessLearningCameraV0 } from "./rhizohChessLearningCameraV0.js";
 import { shouldPauseClusterTickForArenaV0 } from "./chessEngineContentionGateV0.js";
 import {
   CHESS_CLUSTER_BROADCAST_TICK_MIN_MS_V0,
@@ -88,7 +89,7 @@ let tickCountV0 = 0;
 let tickTimerV0 = null;
 /** @type {ReturnType<typeof setInterval> | null} */
 let clockTimerV0 = null;
-/** @type {ReturnType<typeof setInterval> | null} */
+/** @type {ReturnType<typeof setTimeout> | null} */
 let learnDrainTimerV0 = null;
 let roundRobinIndexV0 = 0;
 let busyV0 = false;
@@ -112,6 +113,30 @@ function ensureChessClusterSessionListenerV0() {
     if (!isChessClusterSimulationTimeControlIdV0(tcId)) return;
     applyChessClusterTimeControlV0(tcId);
   });
+}
+
+function scheduleLearnDrainTickV0() {
+  if (!runningV0) return;
+  if (learnDrainTimerV0) {
+    clearTimeout(learnDrainTimerV0);
+    learnDrainTimerV0 = null;
+  }
+  const delayMs = resolveLearnDrainIntervalMsV0();
+  learnDrainTimerV0 = setTimeout(() => {
+    learnDrainTimerV0 = null;
+    if (!runningV0) return;
+    void drainUglLearnBufferV0().finally(() => {
+      maybeFlushChessLearningMiniBatchV0();
+      scheduleLearnDrainTickV0();
+    });
+  }, delayMs);
+}
+
+function stopLearnDrainTickV0() {
+  if (learnDrainTimerV0) {
+    clearTimeout(learnDrainTimerV0);
+    learnDrainTimerV0 = null;
+  }
 }
 
 /**
@@ -585,6 +610,7 @@ export function startChessGameClusterV0(opts = {}) {
   ensureChessLearningMonitorListenersV0();
   ensureChessClusterSessionListenerV0();
   ensureRhizohChessLearningReportV0();
+  ensureRhizohChessLearningCameraV0();
 
   slotsV0 = Array.from({ length: CHESS_CLUSTER_SLOT_COUNT_V0 }, (_, i) =>
     createSlotV0(i, clusterTimeControlIdV0)
@@ -603,13 +629,9 @@ export function startChessGameClusterV0(opts = {}) {
     runClusterClockTickV0();
   }, 1000);
 
-  if (learnDrainTimerV0) clearInterval(learnDrainTimerV0);
-  learnDrainTimerV0 = setInterval(() => {
-    if (runningV0) {
-      void drainUglLearnBufferV0();
-      maybeFlushChessLearningMiniBatchV0();
-    }
-  }, 1000);
+  if (learnDrainTimerV0) clearTimeout(learnDrainTimerV0);
+  learnDrainTimerV0 = null;
+  scheduleLearnDrainTickV0();
 
   scheduleClusterTickV0();
   void runClusterTickV0({ testFast: testFastTickV0 });
@@ -649,10 +671,7 @@ export function stopChessGameClusterV0() {
     clearInterval(clockTimerV0);
     clockTimerV0 = null;
   }
-  if (learnDrainTimerV0) {
-    clearInterval(learnDrainTimerV0);
-    learnDrainTimerV0 = null;
-  }
+  stopLearnDrainTickV0();
   publishClusterRegistryV0({ stopped: true });
   return { ok: true, running: false };
 }
