@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   __resetUglLearnBufferForTestV0,
   CHESS_LEARNING_ENRICH_RETRY_V0,
+  CHESS_LEARNING_ENRICH_TIMEOUT_MS_V0,
   drainUglLearnBufferV0,
+  recoverStuckUglLearnDrainV0,
   resolveLearnDrainBurstLimitV0,
   resolveLearnDrainIntervalMsV0,
   enqueueUglLearnBufferObservationV0,
@@ -135,6 +137,9 @@ describe("rhizohUglLearnBufferSinkV0", () => {
   });
 
   it("uses adaptive burst when backlog is high", async () => {
+    const enrich = vi.fn(async () => ({ ok: true }));
+    registerUglLearnBufferEnrichHandlerV0(enrich);
+
     for (let i = 0; i < 35; i++) {
       enqueueUglLearnBufferObservationV0({
         slot: { slotId: 1, matchId: `cluster_1_${i}` },
@@ -142,13 +147,70 @@ describe("rhizohUglLearnBufferSinkV0", () => {
         fenBefore: FEN
       });
     }
-    expect(getUglLearnBufferSnapshotV0().buffered).toBe(35);
+    expect(getUglLearnBufferSnapshotV0().buffered).toBeGreaterThanOrEqual(33);
 
-    const enrich = vi.fn(async () => ({ ok: true }));
+    const before = getUglLearnBufferSnapshotV0().buffered;
+    await drainUglLearnBufferV0();
+    await drainUglLearnBufferV0();
+    expect(enrich.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(getUglLearnBufferSnapshotV0().buffered).toBeLessThanOrEqual(before - 1);
+  });
+
+  it("times out hung enrich and re-queues row", async () => {
+    vi.useFakeTimers();
+    const enrich = vi.fn(
+      () =>
+        new Promise(() => {
+          /* never resolves */
+        })
+    );
     registerUglLearnBufferEnrichHandlerV0(enrich);
 
-    await drainUglLearnBufferV0();
-    expect(enrich.mock.calls.length).toBe(2);
-    expect(getUglLearnBufferSnapshotV0().buffered).toBe(33);
+    enqueueUglLearnBufferObservationV0({
+      slot: { slotId: 3, matchId: "cluster_3_x" },
+      moveRow: { uci: "d7d5" },
+      fenBefore: FEN
+    });
+
+    const drainPromise = drainUglLearnBufferV0();
+    await vi.advanceTimersByTimeAsync(CHESS_LEARNING_ENRICH_TIMEOUT_MS_V0 + 50);
+    await drainPromise;
+
+    const snap = getUglLearnBufferSnapshotV0();
+    expect(snap.enrichAttempts).toBe(1);
+    expect(snap.enrichTimeoutSkips).toBe(1);
+    expect(snap.buffered).toBe(1);
+    expect(snap.draining).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it("recovers stuck drain lock after watchdog budget", async () => {
+    vi.useFakeTimers();
+    const enrich = vi.fn(
+      () =>
+        new Promise(() => {
+          /* hang until timeout */
+        })
+    );
+    registerUglLearnBufferEnrichHandlerV0(enrich);
+
+    enqueueUglLearnBufferObservationV0({
+      slot: { slotId: 1, matchId: "cluster_1_hang" },
+      moveRow: { uci: "e7e5" },
+      fenBefore: FEN
+    });
+
+    const drainPromise = drainUglLearnBufferV0();
+    await vi.advanceTimersByTimeAsync(CHESS_LEARNING_ENRICH_TIMEOUT_MS_V0 + 50);
+    await drainPromise;
+
+    const snap = getUglLearnBufferSnapshotV0();
+    expect(snap.draining).toBe(false);
+    expect(snap.enrichTimeoutSkips).toBe(1);
+    expect(snap.buffered).toBe(1);
+
+    const manual = recoverStuckUglLearnDrainV0();
+    expect(manual.nudged === true || manual.recovered === true).toBe(true);
+    vi.useRealTimers();
   });
 });

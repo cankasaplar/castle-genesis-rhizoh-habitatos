@@ -13,8 +13,17 @@ import { isChessArenaWorkspaceOpenV0 } from "./chessEngineContentionGateV0.js";
 export const RHIZOH_UGL_LEARN_BUFFER_SCHEMA_V0 = "castle.rhizoh.ugl_learn_buffer.v0";
 /** Enrich handler returns this when throttled — row stays in buffer. */
 export const CHESS_LEARNING_ENRICH_RETRY_V0 = Symbol.for("castle.rhizoh.chess_learning_enrich_retry.v0");
+/** Internal — enrich exceeded wall-clock budget; row re-queued. */
+export const CHESS_LEARNING_ENRICH_TIMEOUT_V0 = Symbol.for(
+  "castle.rhizoh.chess_learning_enrich_timeout.v0"
+);
 
 export const CHESS_LEARN_BUFFER_MAX_V0 = 128;
+/** MultiPV + queue wait — release drain lock if enrich hangs. */
+export const CHESS_LEARNING_ENRICH_TIMEOUT_MS_V0 = 14_000;
+/** Watchdog — force-release drain flag if still held past budget. */
+export const CHESS_LEARNING_DRAIN_STUCK_MS_V0 = 12_000;
+
 const MAX_BUFFER_V0 = CHESS_LEARN_BUFFER_MAX_V0;
 /** @type {object[]} */
 let bufferRingV0 = [];
@@ -22,7 +31,12 @@ let walWritesV0 = 0;
 let enrichAttemptsV0 = 0;
 let enrichSuccessV0 = 0;
 let enrichThrottleSkipsV0 = 0;
+let enrichTimeoutSkipsV0 = 0;
+let enrichDrainRecoveriesV0 = 0;
 let drainingV0 = false;
+let drainStartedAtMsV0 = 0;
+/** @type {Promise<void> | null} */
+let drainInFlightV0 = null;
 /** @type {((row: object) => Promise<unknown>) | null} */
 let enrichHandlerV0 = null;
 
@@ -91,38 +105,111 @@ export function enqueueUglLearnBufferObservationV0(obs) {
   return record;
 }
 
-export async function drainUglLearnBufferV0() {
-  if (drainingV0 || bufferRingV0.length === 0 || !enrichHandlerV0) return;
-  if (!isEngineIdleForLearnEnrichmentV0()) return;
-
-  drainingV0 = true;
+/**
+ * @param {(row: object) => Promise<unknown>} handler
+ * @param {object} row
+ * @param {number} [timeoutMs]
+ */
+async function runLearnEnrichWithTimeoutV0(
+  handler,
+  row,
+  timeoutMs = CHESS_LEARNING_ENRICH_TIMEOUT_MS_V0
+) {
+  let timer = null;
   try {
-    const burstLimit = resolveLearnDrainBurstLimitV0(bufferRingV0.length);
-    let processed = 0;
-    while (
-      processed < burstLimit &&
-      bufferRingV0.length > 0 &&
-      isEngineIdleForLearnEnrichmentV0()
-    ) {
-      const row = bufferRingV0.pop();
-      if (!row) break;
-      enrichAttemptsV0 += 1;
-      try {
-        const out = await enrichHandlerV0(row);
-        if (out === CHESS_LEARNING_ENRICH_RETRY_V0) {
+    return await Promise.race([
+      handler(row),
+      new Promise((resolve) => {
+        timer = setTimeout(() => resolve(CHESS_LEARNING_ENRICH_TIMEOUT_V0), timeoutMs);
+      })
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+/**
+ * Release a stuck drain lock (e.g. hung MultiPV await). Safe to call from scheduler.
+ * @param {number} [nowMs]
+ */
+export function maybeRecoverStuckLearnDrainV0(nowMs = Date.now()) {
+  if (!drainingV0) {
+    return Object.freeze({ recovered: false, reason: "not_draining", stuckMs: 0 });
+  }
+  const stuckMs = drainStartedAtMsV0 > 0 ? nowMs - drainStartedAtMsV0 : 0;
+  if (stuckMs < CHESS_LEARNING_DRAIN_STUCK_MS_V0) {
+    return Object.freeze({ recovered: false, reason: "within_budget", stuckMs });
+  }
+  drainingV0 = false;
+  drainStartedAtMsV0 = 0;
+  enrichDrainRecoveriesV0 += 1;
+  void drainUglLearnBufferV0();
+  return Object.freeze({ recovered: true, reason: "stuck_drain_released", stuckMs });
+}
+
+/** DevTools — force release drain lock and retry. */
+export function recoverStuckUglLearnDrainV0(nowMs = Date.now()) {
+  if (!drainingV0) {
+    void drainUglLearnBufferV0();
+    return Object.freeze({ recovered: false, reason: "not_draining", stuckMs: 0, nudged: true });
+  }
+  const stuckMs = drainStartedAtMsV0 > 0 ? nowMs - drainStartedAtMsV0 : 0;
+  drainingV0 = false;
+  drainStartedAtMsV0 = 0;
+  enrichDrainRecoveriesV0 += 1;
+  void drainUglLearnBufferV0();
+  return Object.freeze({ recovered: true, reason: "manual_release", stuckMs });
+}
+
+export async function drainUglLearnBufferV0() {
+  if (drainInFlightV0) return drainInFlightV0;
+
+  drainInFlightV0 = (async () => {
+    maybeRecoverStuckLearnDrainV0();
+    if (drainingV0 || bufferRingV0.length === 0 || !enrichHandlerV0) return;
+    if (!isEngineIdleForLearnEnrichmentV0()) return;
+
+    drainingV0 = true;
+    drainStartedAtMsV0 = Date.now();
+    try {
+      const burstLimit = resolveLearnDrainBurstLimitV0(bufferRingV0.length);
+      let processed = 0;
+      while (
+        processed < burstLimit &&
+        bufferRingV0.length > 0 &&
+        isEngineIdleForLearnEnrichmentV0()
+      ) {
+        const row = bufferRingV0.pop();
+        if (!row) break;
+        enrichAttemptsV0 += 1;
+        try {
+          const out = await runLearnEnrichWithTimeoutV0(enrichHandlerV0, row);
+          if (
+            out === CHESS_LEARNING_ENRICH_RETRY_V0 ||
+            out === CHESS_LEARNING_ENRICH_TIMEOUT_V0
+          ) {
+            bufferRingV0.push(row);
+            if (out === CHESS_LEARNING_ENRICH_TIMEOUT_V0) enrichTimeoutSkipsV0 += 1;
+            else enrichThrottleSkipsV0 += 1;
+            break;
+          }
+          if (out) enrichSuccessV0 += 1;
+          processed += 1;
+        } catch {
           bufferRingV0.push(row);
-          enrichThrottleSkipsV0 += 1;
           break;
         }
-        if (out) enrichSuccessV0 += 1;
-        processed += 1;
-      } catch {
-        bufferRingV0.push(row);
-        break;
       }
+    } finally {
+      drainingV0 = false;
+      drainStartedAtMsV0 = 0;
     }
+  })();
+
+  try {
+    await drainInFlightV0;
   } finally {
-    drainingV0 = false;
+    drainInFlightV0 = null;
   }
 }
 
@@ -134,10 +221,14 @@ export function getUglLearnBufferSnapshotV0() {
     enrichAttempts: enrichAttemptsV0,
     enrichSuccess: enrichSuccessV0,
     enrichThrottleSkips: enrichThrottleSkipsV0,
+    enrichTimeoutSkips: enrichTimeoutSkipsV0,
+    enrichDrainRecoveries: enrichDrainRecoveriesV0,
     drainBurstLimit: resolveLearnDrainBurstLimitV0(bufferRingV0.length),
     drainIntervalMs: resolveLearnDrainIntervalMsV0(bufferRingV0.length),
     engineIdle: isEngineIdleForLearnEnrichmentV0(),
     draining: drainingV0,
+    drainStuckMs:
+      drainingV0 && drainStartedAtMsV0 > 0 ? Math.max(0, Date.now() - drainStartedAtMsV0) : 0,
     handlerRegistered: Boolean(enrichHandlerV0),
     note: "WAL sink immediate; MultiPV enrichment when play pipeline idle",
     atMs: Date.now()
@@ -151,6 +242,10 @@ export function __resetUglLearnBufferForTestV0() {
   enrichAttemptsV0 = 0;
   enrichSuccessV0 = 0;
   enrichThrottleSkipsV0 = 0;
+  enrichTimeoutSkipsV0 = 0;
+  enrichDrainRecoveriesV0 = 0;
   drainingV0 = false;
+  drainStartedAtMsV0 = 0;
+  drainInFlightV0 = null;
   enrichHandlerV0 = null;
 }
