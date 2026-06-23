@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   __resetUglLearnBufferForTestV0,
+  CHESS_LEARNING_ENRICH_RETRY_V0,
   drainUglLearnBufferV0,
   enqueueUglLearnBufferObservationV0,
   getUglLearnBufferSnapshotV0,
@@ -98,5 +99,29 @@ describe("rhizohUglLearnBufferSinkV0", () => {
     await drainUglLearnBufferV0();
     expect(enrich).toHaveBeenCalledTimes(1);
     expect(getUglLearnBufferSnapshotV0().buffered).toBe(0);
+  });
+
+  it("re-queues row when enrich handler returns throttle retry", async () => {
+    const enrich = vi
+      .fn()
+      .mockResolvedValueOnce(CHESS_LEARNING_ENRICH_RETRY_V0)
+      .mockResolvedValueOnce({ ok: true });
+    registerUglLearnBufferEnrichHandlerV0(enrich);
+
+    enqueueUglLearnBufferObservationV0({
+      slot: { slotId: 2, matchId: "cluster_2_x" },
+      moveRow: { uci: "e7e5" },
+      fenBefore: FEN
+    });
+
+    await drainUglLearnBufferV0();
+    expect(getUglLearnBufferSnapshotV0().buffered).toBe(1);
+    expect(getUglLearnBufferSnapshotV0().enrichThrottleSkips).toBe(1);
+    expect(getUglLearnBufferSnapshotV0().enrichSuccess).toBe(0);
+
+    await drainUglLearnBufferV0();
+    expect(enrich).toHaveBeenCalledTimes(2);
+    expect(getUglLearnBufferSnapshotV0().buffered).toBe(0);
+    expect(getUglLearnBufferSnapshotV0().enrichSuccess).toBe(1);
   });
 });

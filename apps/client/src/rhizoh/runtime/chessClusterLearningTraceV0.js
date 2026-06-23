@@ -15,14 +15,15 @@ import { submitChessClusterTruthLearningSampleV0 } from "./chessClusterDriftData
 import {
   enqueueUglLearnBufferObservationV0,
   registerUglLearnBufferEnrichHandlerV0,
-  drainUglLearnBufferV0
+  drainUglLearnBufferV0,
+  CHESS_LEARNING_ENRICH_RETRY_V0
 } from "./rhizohUglLearnBufferSinkV0.js";
 
 export const CHESS_CLUSTER_LEARNING_TRACE_SCHEMA_V0 =
   "castle.rhizoh.chess_cluster_learning_trace.v0";
 export const CHESS_CLUSTER_POLICY_DIFF_EVENT_V0 = "rhizoh:chess-cluster-policy-diff-v0";
 
-const MULTIPV_TRACE_THROTTLE_MS_V0 = 1200;
+const MULTIPV_TRACE_THROTTLE_MS_V0 = 900;
 let lastMultiPvTraceAtMsV0 = 0;
 let handlerRegisteredV0 = false;
 
@@ -43,7 +44,9 @@ function ensureLearnBufferHandlerV0() {
 export async function traceChessClusterPolicyDiffFromBufferV0(slot, moveRow, fenBefore) {
   if (getChessStockfishEngineStatusV0() !== "stockfish_wasm") return null;
   const now = Date.now();
-  if (now - lastMultiPvTraceAtMsV0 < MULTIPV_TRACE_THROTTLE_MS_V0) return null;
+  if (now - lastMultiPvTraceAtMsV0 < MULTIPV_TRACE_THROTTLE_MS_V0) {
+    return CHESS_LEARNING_ENRICH_RETRY_V0;
+  }
   lastMultiPvTraceAtMsV0 = now;
 
   const mode = resolveChessClusterSlotModeV0(slot.slotId);

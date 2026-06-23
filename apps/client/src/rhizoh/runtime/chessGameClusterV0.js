@@ -609,7 +609,7 @@ export function startChessGameClusterV0(opts = {}) {
       void drainUglLearnBufferV0();
       maybeFlushChessLearningMiniBatchV0();
     }
-  }, 1500);
+  }, 1000);
 
   scheduleClusterTickV0();
   void runClusterTickV0({ testFast: testFastTickV0 });
