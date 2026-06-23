@@ -11,7 +11,7 @@ import {
   recordMediaObservationV1,
   resetBroadcastVisibilityForTestV1
 } from "../rhizohObservationStateV1.js";
-import { RHIZOH_WORLDSPORTS_CHANNEL_ID_V0 } from "../worldSpaceMediaChannelsV0.js";
+import { RHIZOH_WORLDSPORTS_CHANNEL_ID_V0, RHIZOH_WORLD_NEWS_CHANNEL_ID_V0 } from "../worldSpaceMediaChannelsV0.js";
 
 describe("mediaPlayerGatewayCitizenshipV0", () => {
   beforeEach(() => {
@@ -36,11 +36,12 @@ describe("mediaPlayerGatewayCitizenshipV0", () => {
     expect(typeof globalThis.window.__rhizoh.mediaGateway.listRegistered).toBe("function");
   });
 
-  it("listMediaGatewayCitizenChannelIdsV0 includes world_sports and full pack", () => {
+  it("listMediaGatewayCitizenChannelIdsV0 includes world_sports, world_news and full pack", () => {
     const ids = listMediaGatewayCitizenChannelIdsV0();
     expect(ids).toContain(RHIZOH_WORLDSPORTS_CHANNEL_ID_V0);
+    expect(ids).toContain(RHIZOH_WORLD_NEWS_CHANNEL_ID_V0);
     expect(ids).toContain("castle_genesis");
-    expect(ids).toHaveLength(10);
+    expect(ids).toHaveLength(11);
   });
 
   it("recordMediaObservationV1 surfaces media slice", () => {

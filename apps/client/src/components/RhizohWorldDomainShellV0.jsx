@@ -199,6 +199,13 @@ export const RhizohWorldDomainShellV0 = memo(function RhizohWorldDomainShellV0({
               <RhizohWorldSportsNewsStripV0
                 active={spatialEngineActive && !domainCalmV0}
                 uiLocale={locale}
+                mode="sports"
+                className="pointer-events-auto"
+              />
+              <RhizohWorldSportsNewsStripV0
+                active={spatialEngineActive && !domainCalmV0}
+                uiLocale={locale}
+                mode="news"
                 className="pointer-events-auto"
               />
             </div>

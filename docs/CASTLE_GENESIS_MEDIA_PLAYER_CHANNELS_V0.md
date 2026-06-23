@@ -16,12 +16,13 @@ Kaynak: `apps/client/src/rhizoh/runtime/worldSpaceMediaChannelsV0.js`
 
 | Kanal ID | Amaç | Env / fallback |
 |----------|------|----------------|
-| `castle_genesis` | Varsayılan · ~45s kısa veya canlı holding | `VITE_CASTLE_GENESIS_YOUTUBE_SHORT_VIDEO_ID` · yoksa holding slide |
-| `castle_genesis_live` | YouTube Live | `VITE_CASTLE_GENESIS_YOUTUBE_CHANNEL_ID` · yoksa holding slide |
+| `castle_genesis` | Varsayılan · ~45s kısa veya canlı | `VITE_CASTLE_GENESIS_YOUTUBE_SHORT_VIDEO_ID` · yoksa **YouTube Live** (`UC24Uv9xXfNkEVO0s7huGQFA`) |
+| `castle_genesis_live` | YouTube Live | `VITE_CASTLE_GENESIS_YOUTUBE_CHANNEL_ID` · prod default baked |
 | `castle_chess` | 8 kamera satranç B-roll | `VITE_CASTLE_GENESIS_YOUTUBE_CHESS_VIDEO_ID` · yoksa canlı cluster |
 | `castle_architecture` | Mimari özet (2. parça) | `VITE_CASTLE_GENESIS_YOUTUBE_ARCHITECTURE_VIDEO_ID` · yoksa holding slide |
 | `castle_manifesto_trim` | Uzun VOD’un ilk N saniyesi | `FULL_VIDEO_ID` + `FULL_EMBED_END_SEC` · yoksa holding slide |
-| `world_sports` | WorldSports — skor + haber | `world_sports_feed` veya `VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID` |
+| `world_sports` | WorldSports — canlı skor | `world_sports_feed` veya `VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID` |
+| `world_news` | World News — haber başlıkları | `world_news_feed` veya `VITE_RHIZOH_WORLDNEWS_YOUTUBE_VIDEO_ID` |
 | `nasa` | ISS / NASA TV | sabit embed |
 | `lofi` | Kuantum ambient | sabit embed |
 | `local` | Yerel kamera | capture |
@@ -74,7 +75,7 @@ VITE_CASTLE_GENESIS_YOUTUBE_FULL_EMBED_END_SEC=60
 
 - **World Space Media Tube** — sol “Kanallar” listesi otomatik genişler
 - **Octo 8-camera lab** — `lens_castle_chess` → `castle_chess` kanalı
-- **Harita pin** — `worldsports` → `world_sports` kanalı (Serencebey mesh)
+- **Harita pin** — `worldsports` → `world_sports` · `worldnews` → `world_news` (Serencebey mesh)
 
 ---
 

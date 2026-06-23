@@ -158,29 +158,60 @@ export function formatSportMatchChipV0(match, locale = "tr") {
  * @param {ReturnType<typeof normalizeWorldMapLiveFeedV0>} feed
  * @param {string} [locale]
  */
-export function buildWorldMapSportsNewsLinesV0(feed, locale = "tr") {
+export function buildWorldMapSportsLinesV0(feed, locale = "tr") {
   const tr = String(locale).toLowerCase().startsWith("tr");
   const sports = feed?.sports;
-  const news = feed?.news;
   const live = Array.isArray(sports?.live) ? sports.live : [];
   const upcoming = Array.isArray(sports?.upcoming) ? sports.upcoming : [];
   const sportChips = [...live, ...upcoming].slice(0, 8).map((m) => formatSportMatchChipV0(m, locale));
+
+  return Object.freeze({
+    sportChips,
+    hasSports: sportChips.length > 0,
+    sportsSource: String(sports?.source || "none"),
+    emptySportsLabel: tr ? "Spor verisi yükleniyor…" : "Loading sports…"
+  });
+}
+
+/**
+ * @param {ReturnType<typeof normalizeWorldMapLiveFeedV0>} feed
+ * @param {string} [locale]
+ */
+export function buildWorldMapNewsLinesV0(feed, locale = "tr") {
+  const tr = String(locale).toLowerCase().startsWith("tr");
+  const news = feed?.news;
   const headlines = Array.isArray(news?.headlines) ? news.headlines : [];
   const newsLine = headlines
-    .slice(0, 4)
+    .slice(0, 6)
     .map((h) => String(h?.title || "").trim())
     .filter(Boolean)
     .join(" · ");
 
   return Object.freeze({
-    sportChips,
     newsLine,
-    hasSports: sportChips.length > 0,
     hasNews: Boolean(newsLine),
-    sportsSource: String(sports?.source || "none"),
     newsProvider: String(news?.provider || "none"),
-    emptySportsLabel: tr ? "Spor verisi yükleniyor…" : "Loading sports…",
     emptyNewsLabel: tr ? "Haber akışı yükleniyor…" : "Loading headlines…"
+  });
+}
+
+/**
+ * @param {ReturnType<typeof normalizeWorldMapLiveFeedV0>} feed
+ * @param {string} [locale]
+ */
+export function buildWorldMapSportsNewsLinesV0(feed, locale = "tr") {
+  const sports = buildWorldMapSportsLinesV0(feed, locale);
+  const news = buildWorldMapNewsLinesV0(feed, locale);
+
+  return Object.freeze({
+    sportChips: sports.sportChips,
+    newsLine: news.newsLine,
+    hasSports: sports.hasSports,
+    hasNews: news.hasNews,
+    sportsSource: sports.sportsSource,
+    newsProvider: news.newsProvider,
+    emptySportsLabel: sports.emptySportsLabel,
+    emptyNewsLabel: news.emptyNewsLabel
   });
 }
 
