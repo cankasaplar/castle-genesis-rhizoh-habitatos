@@ -61,7 +61,8 @@ Citizenship labels:
 ## Not in v0
 
 - Per-tower ACK / `TOWER_STATE_APPLIED` wire (voice-style commit lane)
-- Media player citizenship (next PR)
 - HTTP presence filter by `kind=tower` (gateway read path exists; client uses generic presence)
+
+**Media player citizenship:** [`RHIZOH_MEDIA_PLAYER_GATEWAY_CITIZENSHIP_V0.md`](RHIZOH_MEDIA_PLAYER_GATEWAY_CITIZENSHIP_V0.md)
 
 *interpretationOnly: true · Observation ≠ Execution*

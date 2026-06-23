@@ -50,6 +50,15 @@ const towerVisStoreV1 = {
   activeTowerId: null
 };
 
+/** @type {{ registered: boolean, registeredCount: number, registeredChannelIds: string[], activeChannelId: string | null, expectedChannelCount: number }} */
+const mediaVisStoreV1 = {
+  registered: false,
+  registeredCount: 0,
+  registeredChannelIds: [],
+  activeChannelId: null,
+  expectedChannelCount: 0
+};
+
 const subscribersV1 = new Set();
 
 function fnv1aHashV0(str) {
@@ -202,6 +211,60 @@ function resolveTowerCitizenshipLabelV0() {
   return "partial";
 }
 
+/**
+ * Record media player gateway citizenship signals.
+ * @param {{ registered?: boolean, channelId?: string, registeredCount?: number, registeredChannelIds?: string[], activeChannelId?: string | null, expectedChannelCount?: number }} patch
+ */
+export function recordMediaObservationV1(patch = {}) {
+  if (patch.registered === true) mediaVisStoreV1.registered = true;
+  if (patch.registered === false) {
+    mediaVisStoreV1.registered = false;
+    mediaVisStoreV1.registeredCount = 0;
+    mediaVisStoreV1.registeredChannelIds = [];
+    mediaVisStoreV1.expectedChannelCount = 0;
+  }
+  if (patch.channelId) {
+    const id = String(patch.channelId);
+    if (!mediaVisStoreV1.registeredChannelIds.includes(id)) {
+      mediaVisStoreV1.registeredChannelIds = [...mediaVisStoreV1.registeredChannelIds, id];
+    }
+    mediaVisStoreV1.registeredCount = mediaVisStoreV1.registeredChannelIds.length;
+    mediaVisStoreV1.registered = mediaVisStoreV1.registeredChannelIds.length > 0;
+  }
+  if (Array.isArray(patch.registeredChannelIds)) {
+    mediaVisStoreV1.registeredChannelIds = [...patch.registeredChannelIds];
+    mediaVisStoreV1.registeredCount = mediaVisStoreV1.registeredChannelIds.length;
+    mediaVisStoreV1.registered = mediaVisStoreV1.registeredChannelIds.length > 0;
+  }
+  if (typeof patch.registeredCount === "number") {
+    mediaVisStoreV1.registeredCount = patch.registeredCount;
+  }
+  if (typeof patch.expectedChannelCount === "number") {
+    mediaVisStoreV1.expectedChannelCount = patch.expectedChannelCount;
+  }
+  if (patch.activeChannelId !== undefined) {
+    mediaVisStoreV1.activeChannelId = patch.activeChannelId ? String(patch.activeChannelId) : null;
+  }
+  notifyObservationSubscribersV1();
+}
+
+/** True when media tube channels registered on gateway this tab. */
+export function isMediaPlayerGatewayCitizenshipRegisteredV0() {
+  return mediaVisStoreV1.registered === true && mediaVisStoreV1.registeredCount > 0;
+}
+
+function resolveMediaCitizenshipLabelV0() {
+  if (!mediaVisStoreV1.registered || mediaVisStoreV1.registeredCount <= 0) return "detached";
+  if (
+    mediaVisStoreV1.expectedChannelCount > 0 &&
+    mediaVisStoreV1.registeredCount >= mediaVisStoreV1.expectedChannelCount
+  ) {
+    return "registered";
+  }
+  if (mediaVisStoreV1.registeredCount > 0) return "partial";
+  return "detached";
+}
+
 /** @internal vitest */
 export function resetBroadcastVisibilityForTestV1() {
   broadcastVisStoreV1.lastPresence = null;
@@ -225,6 +288,11 @@ export function resetBroadcastVisibilityForTestV1() {
   towerVisStoreV1.registeredCount = 0;
   towerVisStoreV1.registeredTowerIds = [];
   towerVisStoreV1.activeTowerId = null;
+  mediaVisStoreV1.registered = false;
+  mediaVisStoreV1.registeredCount = 0;
+  mediaVisStoreV1.registeredChannelIds = [];
+  mediaVisStoreV1.activeChannelId = null;
+  mediaVisStoreV1.expectedChannelCount = 0;
 }
 
 function notifyObservationSubscribersV1() {
@@ -359,6 +427,14 @@ export function buildRhizohObservationStateV1(opts = {}) {
       activeTowerId: towerVisStoreV1.activeTowerId,
       citizenship: resolveTowerCitizenshipLabelV0()
     }),
+    media: Object.freeze({
+      registered: mediaVisStoreV1.registered,
+      registeredCount: mediaVisStoreV1.registeredCount,
+      registeredChannelIds: Object.freeze([...mediaVisStoreV1.registeredChannelIds]),
+      activeChannelId: mediaVisStoreV1.activeChannelId,
+      expectedChannelCount: mediaVisStoreV1.expectedChannelCount,
+      citizenship: resolveMediaCitizenshipLabelV0()
+    }),
     narrative: Object.freeze({
       mode: proofMode ? "proof" : "demo",
       label: proofMode
@@ -397,6 +473,7 @@ export function mountRhizohObservationStateConsoleV1() {
     recordBroadcast: recordBroadcastVisibilityV1,
     recordVoice: recordVoiceObservationV1,
     recordTower: recordTowerObservationV1,
+    recordMedia: recordMediaObservationV1,
     isProofMode: isRhizohProofModeEnabledV1,
     interpretationOnly: true
   });

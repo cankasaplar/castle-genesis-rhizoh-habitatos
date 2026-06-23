@@ -80,7 +80,7 @@ Env canaries: `VITE_RHIZOH_VOICE_GATE_BYPASS_PRE_STT`, `VITE_RHIZOH_VOICE_GATE_B
 ## Not in v0
 
 - HTTP fallback path envelope (WS lane only)
-- Media player citizenship (separate PR — see [`RHIZOH_TOWER_GATEWAY_CITIZENSHIP_V0.md`](RHIZOH_TOWER_GATEWAY_CITIZENSHIP_V0.md) for towers)
+- Media player citizenship: [`RHIZOH_MEDIA_PLAYER_GATEWAY_CITIZENSHIP_V0.md`](RHIZOH_MEDIA_PLAYER_GATEWAY_CITIZENSHIP_V0.md) (separate PR — see towers doc)
 - Live two-client voice proof (manual — after deploy)
 
 *interpretationOnly: true · Observation ≠ Execution*

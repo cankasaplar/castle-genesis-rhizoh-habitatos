@@ -596,6 +596,8 @@ function collectNetworkSurfaceDiagnosticV0() {
     typeof window !== "undefined" ? window.__rhizoh?.voiceGateway ?? null : null;
   const towerGateway =
     typeof window !== "undefined" ? window.__rhizoh?.towerGateway ?? null : null;
+  const mediaGateway =
+    typeof window !== "undefined" ? window.__rhizoh?.mediaGateway ?? null : null;
   const traceGraph =
     typeof window !== "undefined" ? window.__rhizoh?.traceGraphIndex ?? null : null;
 
@@ -641,7 +643,13 @@ function collectNetworkSurfaceDiagnosticV0() {
       towerActiveId: observation.towers?.activeTowerId || null,
       towerGatewayMounted: Boolean(towerGateway?.ensure),
       towerSessionActive:
-        typeof towerGateway?.sessionActive === "function" ? towerGateway.sessionActive() : null
+        typeof towerGateway?.sessionActive === "function" ? towerGateway.sessionActive() : null,
+      mediaCitizenship: observation.media?.citizenship || "detached",
+      mediaRegisteredCount: observation.media?.registeredCount ?? 0,
+      mediaActiveChannelId: observation.media?.activeChannelId || null,
+      mediaGatewayMounted: Boolean(mediaGateway?.ensure),
+      mediaSessionActive:
+        typeof mediaGateway?.sessionActive === "function" ? mediaGateway.sessionActive() : null
     }),
     inviteOps: Object.freeze({
       lastGenerated: lastInvite
@@ -671,7 +679,9 @@ function collectNetworkSurfaceDiagnosticV0() {
       "__rhizoh.listLlmTowers()",
       "__rhizoh.fitAllLlmTowers()",
       "__rhizoh.towerGateway.ensure()",
-      "__rhizoh.towerGateway.listRegistered()"
+      "__rhizoh.towerGateway.listRegistered()",
+      "__rhizoh.mediaGateway.ensure()",
+      "__rhizoh.mediaGateway.listRegistered()"
     ])
   });
 }
@@ -931,8 +941,9 @@ export function printFullSystemReportV0(report) {
     `    spiral journey: countdown ${r.networkSurface?.spiralJourney?.countdownRemaining ?? "—"} · legalHold ${r.networkSurface?.spiralJourney?.legalHold ? "yes" : "no"} · ack ${r.networkSurface?.spiralJourney?.legalAcked ? "yes" : "no"}`,
     `    voice citizenship: ${r.networkSurface?.gatewayRegistration?.voiceCitizenship ?? "—"} · session ${r.networkSurface?.gatewayRegistration?.voiceSessionId ?? "—"}`,
     `    tower citizenship: ${r.networkSurface?.gatewayRegistration?.towerCitizenship ?? "—"} · registered ${r.networkSurface?.gatewayRegistration?.towerRegisteredCount ?? 0}/7 · active ${r.networkSurface?.gatewayRegistration?.towerActiveId ?? "—"}`,
+    `    media citizenship: ${r.networkSurface?.gatewayRegistration?.mediaCitizenship ?? "—"} · registered ${r.networkSurface?.gatewayRegistration?.mediaRegisteredCount ?? 0} · active ${r.networkSurface?.gatewayRegistration?.mediaActiveChannelId ?? "—"}`,
     `    broadcast: ack ${r.networkSurface?.gatewayRegistration?.broadcastAck ?? 0} · delivered ${r.networkSurface?.gatewayRegistration?.broadcastDelivered ?? 0}`,
-    `    gateway services: voice ${r.networkSurface?.gatewayRegistration?.voiceGatewayMounted ? "mounted" : "off"} · tower ${r.networkSurface?.gatewayRegistration?.towerGatewayMounted ? "mounted" : "off"} · registry ${r.networkSurface?.gatewayRegistration?.gatewayServiceMounted ? "mounted" : "off"}`,
+    `    gateway services: voice ${r.networkSurface?.gatewayRegistration?.voiceGatewayMounted ? "mounted" : "off"} · tower ${r.networkSurface?.gatewayRegistration?.towerGatewayMounted ? "mounted" : "off"} · media ${r.networkSurface?.gatewayRegistration?.mediaGatewayMounted ? "mounted" : "off"} · registry ${r.networkSurface?.gatewayRegistration?.gatewayServiceMounted ? "mounted" : "off"}`,
     `    invite ops: ${r.networkSurface?.inviteOps?.lastGenerated?.role ? `last ${r.networkSurface.inviteOps.lastGenerated.role}` : "none generated this session"}`,
     `    ticket graph: ${r.networkSurface?.ticketGraph?.mounted ? "mounted" : "not mounted"}`,
     "───────────────────────────────────────────",

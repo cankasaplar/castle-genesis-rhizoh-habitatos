@@ -31,6 +31,8 @@ import {
   labelCastleMediaFrequencyBandV0
 } from "../rhizoh/runtime/castleArchiveMediaMetaV0.js";
 import { RHIZOH_YOUTUBE_COMMUNITY_LAB_EVENT_V0 } from "../rhizoh/runtime/youtubeCommunityDataAdapterV0.js";
+import { affirmActiveMediaPlayerGatewayCitizenV0 } from "../rhizoh/runtime/mediaPlayerGatewayCitizenshipV0.js";
+import { RhizohWorldSportsNewsStripV0 } from "./RhizohWorldSportsNewsStripV0.jsx";
 
 function isCastleMediaSourceV0(source) {
   return String(source || "").startsWith("castle_init");
@@ -97,6 +99,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     return nid === "radio" || src.includes("radio") || src.includes("map:node:radio");
   }, [detail?.node?.id, detail?.source]);
   const learningChannelActive = activeChannel.type === "chess_cluster_live";
+  const worldSportsChannelActive = activeChannel.type === "world_sports_feed";
   const legalGateMode = Boolean(detail?.legalGate);
   const legalCountdownMs = Number(detail?.countdownRemainingMs) || 0;
 
@@ -121,12 +124,14 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
   }, [activeChannel, nasaFallback, youtubeMuted]);
 
   useEffect(() => {
-    setActiveChannel(resolveWorldSpaceMediaChannelV0(initialChannelId));
+    const channel = resolveWorldSpaceMediaChannelV0(initialChannelId);
+    setActiveChannel(channel);
     setNasaFallback(false);
     setYoutubeMuted(true);
-    if (resolveWorldSpaceMediaChannelV0(initialChannelId).type === "chess_cluster_live") {
+    if (channel.type === "chess_cluster_live") {
       publishChessClusterBroadcastActiveV0(true);
     }
+    void affirmActiveMediaPlayerGatewayCitizenV0(channel.id);
   }, [initialChannelId]);
 
   useEffect(() => {
@@ -179,6 +184,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     if (channel.type === "chess_cluster_live") {
       publishChessClusterBroadcastActiveV0(true);
     }
+    void affirmActiveMediaPlayerGatewayCitizenV0(channel.id);
     if (channel.type !== "local") {
       setLocalPreviewStream(null);
       return;
@@ -470,6 +476,13 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                     : "Rhizoh Learning Channel — live 8-camera cluster, Rhizoh vs Stockfish, and learning strip. Switch channels for Castle Genesis or other feeds."}
                 </p>
               ) : null}
+              {worldSportsChannelActive ? (
+                <p className="mt-1 max-w-md text-[10px] font-normal normal-case leading-relaxed text-emerald-200/85">
+                  {tr
+                    ? "WorldSports — gateway üzerinden canlı skorlar ve haber başlıkları. Harita pin'i sonraki adımda."
+                    : "WorldSports — live scores and headlines via gateway. Map pin comes in the next step."}
+                </p>
+              ) : null}
               {isQuantumRadioEntry ? (
                 <p className="mt-1 max-w-md text-[10px] font-normal normal-case leading-relaxed text-violet-200/85">
                   {tr
@@ -662,6 +675,20 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                 uiLocale={uiLocale}
                 onClose={onClose}
               />
+            ) : activeChannel.type === "world_sports_feed" ? (
+              <div className="relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:p-4">
+                <RhizohWorldSportsNewsStripV0 active uiLocale={uiLocale} className="shrink-0" />
+                <div className="flex min-h-[200px] flex-1 flex-col items-center justify-center rounded-2xl border border-emerald-500/25 bg-emerald-950/20 p-6 text-center">
+                  <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-300">
+                    WorldSports
+                  </p>
+                  <p className="mt-3 max-w-md text-[10px] leading-relaxed text-white/70 normal-case">
+                    {tr
+                      ? "Canlı skor ve haber akışı gateway world-feed üzerinden. İsteğe bağlı VOD için VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID."
+                      : "Live scores and headlines via gateway world-feed. Optional VOD via VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID."}
+                  </p>
+                </div>
+              </div>
             ) : activeChannel.type === "local" ? (
               <div className="relative flex min-h-0 flex-1 flex-col">
                 <RhizohMediaStageWithOctoV0 className="flex min-h-0 flex-1 flex-col" mediaStream={localPreviewStream}>
