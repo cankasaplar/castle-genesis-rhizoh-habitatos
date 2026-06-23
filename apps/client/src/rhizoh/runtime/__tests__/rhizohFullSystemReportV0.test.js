@@ -58,5 +58,6 @@ describe("rhizohFullSystemReportV0", () => {
     expect(text).toContain("OVERALL");
     expect(text).toContain("Core Integrity");
     expect(text).toContain("structural:");
+    expect(text).toContain("NETWORK SURFACE");
   });
 });

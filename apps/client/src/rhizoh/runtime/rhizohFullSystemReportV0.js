@@ -53,6 +53,16 @@ import { getTranscriptAcceptanceSnapshotV0 } from "./rhizohTranscriptAcceptanceL
 import { buildSystemIntegrityTiersV0 } from "./rhizohSystemIntegrityTiersV0.js";
 import { resolveWorldLayerActivationStatusV0 } from "./rhizohWorldLayerActivationStatusV0.js";
 import { getSpatialRendererRegistrySnapshotV0 } from "./rhizohSpatialSurfaceRendererRegistryV0.js";
+import { buildTowerRegistrySnapshotV0, getLastSpatialDistributionV0 } from "./spatialDistributionLayerV0.js";
+import { listSpiralMMOContinentMapPinsV0 } from "./spiralMMOContinentPinsV0.js";
+import { buildRhizohObservationStateV1 } from "./rhizohObservationStateV1.js";
+import {
+  formatRhizohNeonCountdownMsV0,
+  readRhizohNeonCountdownDeadlineMsV0,
+  resolveRhizohNeonCountdownRemainingMsV0
+} from "./rhizohNeonCountdownV0.js";
+import { readCityMapLegalGateSnapshotV0 } from "./cityMapLegalCountdownMediaGateV0.js";
+import { getLastGeneratedInviteV0 } from "../ingress/inviteOpsV0.js";
 
 export const RHIZOH_FULL_SYSTEM_REPORT_SCHEMA_V0 = "rhizoh.full_system_report.v0";
 
@@ -567,6 +577,92 @@ function collectEnvBlockersV0() {
 }
 
 /**
+ * Network surface — map pins, towers, gateway registration, invites (investor ops).
+ * @returns {object}
+ */
+function collectNetworkSurfaceDiagnosticV0() {
+  const spiralPins = listSpiralMMOContinentMapPinsV0();
+  const spatialDistribution = getLastSpatialDistributionV0();
+  const observation = buildRhizohObservationStateV1();
+  const cityGate = readCityMapLegalGateSnapshotV0();
+  const deadlineMs = readRhizohNeonCountdownDeadlineMsV0();
+  const spiralRemainingMs = resolveRhizohNeonCountdownRemainingMsV0(deadlineMs);
+  const lastInvite = getLastGeneratedInviteV0();
+
+  const gatewayService =
+    typeof window !== "undefined" ? window.__rhizoh?.gatewayService ?? null : null;
+  const voiceGateway =
+    typeof window !== "undefined" ? window.__rhizoh?.voiceGateway ?? null : null;
+  const traceGraph =
+    typeof window !== "undefined" ? window.__rhizoh?.traceGraphIndex ?? null : null;
+
+  const pinTypes = spiralPins.reduce((acc, pin) => {
+    const t = String(pin?.type || "unknown");
+    acc[t] = (acc[t] || 0) + 1;
+    return acc;
+  }, /** @type {Record<string, number>} */ ({}));
+
+  return Object.freeze({
+    mapPins: Object.freeze({
+      spiralContinent: spiralPins.length,
+      distributed: spatialDistribution?.distributedCount ?? 0,
+      uniqueCoords: spatialDistribution?.uniqueCoordinateCount ?? 0,
+      pinTypes: Object.freeze(pinTypes),
+      sampleIds: Object.freeze(spiralPins.slice(0, 5).map((p) => p?.id || p?.label || "—"))
+    }),
+    towers: buildTowerRegistrySnapshotV0(),
+    spiralJourney: Object.freeze({
+      countdownRemaining: formatRhizohNeonCountdownMsV0(spiralRemainingMs),
+      countdownRemainingMs: spiralRemainingMs,
+      countdownActive: spiralRemainingMs > 0,
+      legalHold: cityGate.legalHold === true,
+      legalAcked: cityGate.legalAcked === true,
+      ingressRoute: cityGate.ingressRoute || null,
+      mediaEventState: cityGate.eventState || null
+    }),
+    gatewayRegistration: Object.freeze({
+      voiceCitizenship: observation.voice?.citizenship || "detached",
+      voiceRegistered: observation.voice?.registered === true,
+      voiceSessionId: observation.voice?.sessionId || null,
+      voiceCommitSeq: observation.voice?.voiceCommitSeq ?? 0,
+      broadcastAck: observation.broadcast?.ackCount ?? 0,
+      broadcastDelivered: observation.broadcast?.delivered ?? 0,
+      sessionId: observation.sessionId || null,
+      gatewayServiceMounted: Boolean(gatewayService?.register),
+      voiceGatewayMounted: Boolean(voiceGateway?.fetchPresence),
+      voiceSessionActive:
+        typeof voiceGateway?.sessionActive === "function" ? voiceGateway.sessionActive() : null
+    }),
+    inviteOps: Object.freeze({
+      lastGenerated: lastInvite
+        ? Object.freeze({
+            role: lastInvite.role,
+            inviteUrl: lastInvite.inviteUrl,
+            generatedAtMs: lastInvite.generatedAtMs
+          })
+        : null,
+      generateApi: "__rhizoh.inviteOps.generate({ role: 'investor' })",
+      mailDraftApi: "__rhizoh.inviteOps.mailDraft({ role: 'investor', name: '...' })"
+    }),
+    ticketGraph: traceGraph
+      ? Object.freeze({
+          mounted: true,
+          note: "window.__rhizoh.traceGraphIndex — causal ticket mesh"
+        })
+      : Object.freeze({ mounted: false, note: "ticket graph console not mounted this session" }),
+    consoleApis: Object.freeze([
+      "__rhizoh.towerRegistry()",
+      "__rhizoh.observationState.snapshot()",
+      "__rhizoh.voiceGateway.fetchPresence()",
+      "__rhizoh.voiceGateway.sessionActive()",
+      "__rhizoh.inviteOps.generate({ role: 'investor' })",
+      "__rhizoh.distributeSpatialPins()",
+      "__rhizoh.spatialDistribution()"
+    ])
+  });
+}
+
+/**
  * @param {unknown} result
  */
 function compactResultV0(result) {
@@ -626,6 +722,7 @@ export function runFullSystemReportV0(opts = {}) {
 
   const worldLayerStatus = resolveWorldLayerActivationStatusV0();
   const rendererRegistry = getSpatialRendererRegistrySnapshotV0();
+  const networkSurface = collectNetworkSurfaceDiagnosticV0();
 
   const integrityTiers = buildSystemIntegrityTiersV0({
     causalMap,
@@ -684,6 +781,7 @@ export function runFullSystemReportV0(opts = {}) {
     websocket: collectWebsocketDiagnosticV0(),
     epistemicSubstrate: collectEpistemicSubstrateV0(),
     presenceRuntime,
+    networkSurface,
     evaluation: Object.freeze({
       structuralTruthPass: causalMap.truthLoss?.structuralPass !== false,
       structuralPass: integrityTiers.structuralPass,
@@ -809,6 +907,17 @@ export function printFullSystemReportV0(report) {
     `      last rejection: ${formatLastRejectionForensicsV0(r.presenceRuntime?.transcriptAcceptance?.lastRejection)}`,
     `      turn gap: ${r.presenceRuntime?.transcriptAcceptance?.turnGap ? "yes — heard but no accepted turn" : "no"}`,
     `      ledger tail: window.__rhizoh.transcriptAcceptance.tail (last 20 full records)`,
+    "───────────────────────────────────────────",
+    "  NETWORK SURFACE",
+    `    map pins: spiral ${r.networkSurface?.mapPins?.spiralContinent ?? 0} · distributed ${r.networkSurface?.mapPins?.distributed ?? 0} · unique coords ${r.networkSurface?.mapPins?.uniqueCoords ?? 0}`,
+    `    pin types: ${Object.entries(r.networkSurface?.mapPins?.pinTypes || {}).map(([k, v]) => `${k}:${v}`).join(", ") || "—"}`,
+    `    towers: explorer/castle/economy/seasonal layers registered (${Object.keys(r.networkSurface?.towers?.towerClasses || {}).length} classes)`,
+    `    spiral journey: countdown ${r.networkSurface?.spiralJourney?.countdownRemaining ?? "—"} · legalHold ${r.networkSurface?.spiralJourney?.legalHold ? "yes" : "no"} · ack ${r.networkSurface?.spiralJourney?.legalAcked ? "yes" : "no"}`,
+    `    voice citizenship: ${r.networkSurface?.gatewayRegistration?.voiceCitizenship ?? "—"} · session ${r.networkSurface?.gatewayRegistration?.voiceSessionId ?? "—"}`,
+    `    broadcast: ack ${r.networkSurface?.gatewayRegistration?.broadcastAck ?? 0} · delivered ${r.networkSurface?.gatewayRegistration?.broadcastDelivered ?? 0}`,
+    `    gateway services: voiceGateway ${r.networkSurface?.gatewayRegistration?.voiceGatewayMounted ? "mounted" : "off"} · gatewayService ${r.networkSurface?.gatewayRegistration?.gatewayServiceMounted ? "mounted" : "off"}`,
+    `    invite ops: ${r.networkSurface?.inviteOps?.lastGenerated?.role ? `last ${r.networkSurface.inviteOps.lastGenerated.role}` : "none generated this session"}`,
+    `    ticket graph: ${r.networkSurface?.ticketGraph?.mounted ? "mounted" : "not mounted"}`,
     "───────────────────────────────────────────",
     "  EPISTEMIC SUBSTRATE",
     `    turn sovereignty: ${r.epistemicSubstrate?.turnSovereignty?.sovereignReality ?? "none"} (${r.epistemicSubstrate?.turnSovereignty?.enforcement ?? "log_only"})`,
