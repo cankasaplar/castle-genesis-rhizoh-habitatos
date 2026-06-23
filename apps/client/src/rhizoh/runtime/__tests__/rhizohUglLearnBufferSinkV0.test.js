@@ -3,6 +3,8 @@ import {
   __resetUglLearnBufferForTestV0,
   CHESS_LEARNING_ENRICH_RETRY_V0,
   drainUglLearnBufferV0,
+  resolveLearnDrainBurstLimitV0,
+  resolveLearnDrainIntervalMsV0,
   enqueueUglLearnBufferObservationV0,
   getUglLearnBufferSnapshotV0,
   registerUglLearnBufferEnrichHandlerV0
@@ -123,5 +125,30 @@ describe("rhizohUglLearnBufferSinkV0", () => {
     expect(enrich).toHaveBeenCalledTimes(2);
     expect(getUglLearnBufferSnapshotV0().buffered).toBe(0);
     expect(getUglLearnBufferSnapshotV0().enrichSuccess).toBe(1);
+  });
+
+  it("resolves adaptive drain tuning from backlog depth", () => {
+    expect(resolveLearnDrainBurstLimitV0(10)).toBe(1);
+    expect(resolveLearnDrainBurstLimitV0(70)).toBe(3);
+    expect(resolveLearnDrainIntervalMsV0(10)).toBe(1000);
+    expect(resolveLearnDrainIntervalMsV0(70)).toBe(600);
+  });
+
+  it("uses adaptive burst when backlog is high", async () => {
+    for (let i = 0; i < 35; i++) {
+      enqueueUglLearnBufferObservationV0({
+        slot: { slotId: 1, matchId: `cluster_1_${i}` },
+        moveRow: { uci: "e7e5" },
+        fenBefore: FEN
+      });
+    }
+    expect(getUglLearnBufferSnapshotV0().buffered).toBe(35);
+
+    const enrich = vi.fn(async () => ({ ok: true }));
+    registerUglLearnBufferEnrichHandlerV0(enrich);
+
+    await drainUglLearnBufferV0();
+    expect(enrich.mock.calls.length).toBe(2);
+    expect(getUglLearnBufferSnapshotV0().buffered).toBe(33);
   });
 });

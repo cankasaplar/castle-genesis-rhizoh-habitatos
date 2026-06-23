@@ -16,6 +16,7 @@ import { CHESS_LEARNING_BATCH_EVENT_V0 } from "./chessLearningBatchV0.js";
 import { getChessLearningBatchOpeningFeedSnapshotV0 } from "./chessLearningBatchOpeningFeedV0.js";
 import { getChessFenClusterMemorySnapshotV0 } from "./chessFenClusterMemoryV0.js";
 import { getUglLearnBufferSnapshotV0 } from "./rhizohUglLearnBufferSinkV0.js";
+import { resolveChessLearnBacklogHealthV0 } from "./rhizohChessLearningCameraV0.js";
 
 export const RHIZOH_CHESS_PREDICTION_SCORE_EVENT_V0 = "rhizoh:chess-prediction-score-v0";
 
@@ -400,6 +401,7 @@ export function buildRhizohChessLearningReportV0() {
     previewPolicyChanges: previewPolicyChangesV0,
     batchFlushesSeen: Math.max(batchFlushesSeenV0, batchLearning.batchesFlushed),
     lastBatchFlush: lastBatchFlushV0,
+    backlogHealth: resolveChessLearnBacklogHealthV0(learnBuffer.buffered),
     memoryNodes: memory.nodeCount || 0,
     weightMatrixUpdated:
       memoryNodes.some((n) => n.kind === "policy_diff" || n.kind === "game_compression") ||
