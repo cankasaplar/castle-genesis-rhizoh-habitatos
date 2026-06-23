@@ -3,13 +3,9 @@
  */
 
 import { deriveSpiralMMOContinentCubeMotionV0 } from "./spiralMMOContinentCubeMotionV0.js";
+import { deriveSpiralMMOPinSixFortyFourMotionV0 } from "./spiralMMOPinCitizenshipV0.js";
 
 const GATE_ORDER_COLOR_V0 = "#00ccff";
-const GATE_RING_DEFS_V0 = Object.freeze([
-  { r: 42, speed: 1.0, dash: "28 52" },
-  { r: 28, speed: -1.6, dash: "18 34" },
-  { r: 14, speed: 2.4, dash: "10 20" }
-]);
 
 /**
  * @param {object} node
@@ -17,6 +13,7 @@ const GATE_RING_DEFS_V0 = Object.freeze([
  */
 export function spiralMMOClosedSpiralPinHtmlV0(node) {
   const motion = deriveSpiralMMOContinentCubeMotionV0(node);
+  const sixFortyFour = deriveSpiralMMOPinSixFortyFourMotionV0(node);
   const id = String(node?.id || `spiralmmo_${motion.continent}`);
   const size = 26;
   const cx = 50;
@@ -24,18 +21,17 @@ export function spiralMMOClosedSpiralPinHtmlV0(node) {
   const accent = GATE_ORDER_COLOR_V0;
   const chaosHint = motion.accent;
 
-  const ringSvg = GATE_RING_DEFS_V0.map((ring, idx) => {
-    const dur = `${2.2 + idx * 0.8}s`;
-    const from = ring.speed > 0 ? "0 50 50" : "360 50 50";
-    const to = ring.speed > 0 ? "360 50 50" : "0 50 50";
+  const ringSvg = sixFortyFour.ringDefs.map((ring) => {
+    const from = ring.speed > 0 ? `${sixFortyFour.phaseOffsetDeg} 50 50` : `${360 + sixFortyFour.phaseOffsetDeg} 50 50`;
+    const to = ring.speed > 0 ? `${360 + sixFortyFour.phaseOffsetDeg} 50 50` : `${sixFortyFour.phaseOffsetDeg} 50 50`;
     return `<circle cx="${cx}" cy="${cy}" r="${ring.r}" fill="none" stroke="${accent}" stroke-width="4" stroke-dasharray="${ring.dash}" opacity="0.88">
-      <animateTransform attributeName="transform" type="rotate" from="${from}" to="${to}" dur="${dur}" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="rotate" from="${from}" to="${to}" dur="${ring.dur}" repeatCount="indefinite"/>
     </circle>`;
   }).join("");
 
   const label = String(node?.shortLabel || motion.continent.slice(0, 2).toUpperCase());
 
-  return `<div data-rhizoh-spiral-mmo-pin="${id}" data-rhizoh-spiral-mmo-rev="dim-collapse-gate-v0" data-rhizoh-spiral-continent="${motion.continent}" style="width:${size}px;height:${size}px;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto">
+  return `<div data-rhizoh-spiral-mmo-pin="${id}" data-rhizoh-spiral-mmo-rev="dim-collapse-gate-v0" data-rhizoh-spiral-continent="${motion.continent}" data-rhizoh-spiral-644-cycle-sec="${sixFortyFour.cycleSec}" data-rhizoh-spiral-pin-ordinal="${sixFortyFour.ordinal}" style="width:${size}px;height:${size}px;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto">
     <div style="width:${size}px;height:${size}px;border-radius:50%;background:#030308;box-shadow:0 0 10px ${accent}66,0 0 6px ${chaosHint}44;display:flex;align-items:center;justify-content:center">
       <svg viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true" style="border-radius:50%">
         ${ringSvg}

@@ -3,6 +3,7 @@
  */
 
 import { deriveSpiralMMOContinentCubeMotionV0 } from "./spiralMMOContinentCubeMotionV0.js";
+import { deriveSpiralMMOPinSixFortyFourMotionV0 } from "./spiralMMOPinCitizenshipV0.js";
 
 const KANAGAWA_WAVE_PATHS_V0 = Object.freeze([
   "M0.08,0.82 C0.28,0.68 0.42,0.74 0.62,0.58 C0.76,0.46 0.86,0.52 0.98,0.36",
@@ -74,12 +75,16 @@ function miniSealSvgV0(accent) {
  */
 export function spiralMMOKanagawaPinCubeHtmlV0(node) {
   const motion = deriveSpiralMMOContinentCubeMotionV0(node);
+  const sixFortyFour = deriveSpiralMMOPinSixFortyFourMotionV0(node);
   ensureSpiralMMOKanagawaPinCubeStylesV0();
 
   const id = String(node?.id || `spiralmmo_${motion.continent}`);
   const safeKey = motion.continent.replace(/[^a-z0-9]/gi, "");
   const size = 26;
   const half = size / 2;
+  const periodSec = Number(
+    ((motion.periodSec + sixFortyFour.cycleSec) / 2).toFixed(2)
+  );
   const wave = miniWaveSvgV0(motion.accent, KANAGAWA_WAVE_PATHS_V0);
   const seal = miniSealSvgV0(motion.accent);
 
@@ -88,7 +93,7 @@ export function spiralMMOKanagawaPinCubeHtmlV0(node) {
 
   return `<div data-rhizoh-spiral-mmo-pin="${id}" data-rhizoh-spiral-mmo-rev="kanagawa-cube-v0" data-rhizoh-sovereign-node="${id}" data-rhizoh-spiral-continent="${motion.continent}" style="width:${size}px;height:${size}px;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto;filter:drop-shadow(0 0 6px ${motion.accent}) drop-shadow(0 0 14px ${motion.accent}44)">
     <div style="width:${size}px;height:${size}px;perspective:140px">
-      <div style="position:relative;width:${size}px;height:${size}px;transform-style:preserve-3d;animation:rhizohKanagawaCube${safeKey}V0 ${motion.periodSec}s linear infinite">
+      <div style="position:relative;width:${size}px;height:${size}px;transform-style:preserve-3d;animation:rhizohKanagawaCube${safeKey}V0 ${periodSec}s linear infinite">
         ${face(`translateZ(${half}px)`, wave)}
         ${face(`rotateY(180deg) translateZ(${half}px)`, seal)}
         ${face(`rotateY(90deg) translateZ(${half}px)`, `<span style="color:${motion.accent};font:bold 7px/1 monospace;text-shadow:0 0 4px ${motion.accent}">44</span>`)}

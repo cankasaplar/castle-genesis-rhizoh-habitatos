@@ -71,6 +71,7 @@ import { RhizohSpiralMMOMapAwakeningOverlayV0 } from "./RhizohSpiralMMOMapAwaken
 import { RhizohN12PersistenceGateV0 } from "./RhizohN12PersistenceGateV0.jsx";
 import { RhizohCodexEventStreamV0 } from "./RhizohCodexEventStreamV0.jsx";
 import { RhizohOfflineVoidOverlayV0 } from "./RhizohOfflineVoidOverlayV0.jsx";
+import { publishSpiralMMOPinCitizenshipRegistryV0 } from "../rhizoh/runtime/spiralMMOPinCitizenshipV0.js";
 
 export { RHIZOH_V11_MAP_INTENT_EVENT_V0, RHIZOH_V11_MAP_CLEAR_PREVIEW_EVENT_V0 };
 
@@ -433,6 +434,10 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
   useEffect(() => subscribeSpiralMapLayerFilterStateV0(() => {
     setSpiralLayerFilter(readSpiralMapLayerFilterStateV0());
   }), []);
+
+  useEffect(() => {
+    publishSpiralMMOPinCitizenshipRegistryV0();
+  }, []);
 
   useEffect(() => {
     const onCastleIdentity = () => fitCastleIdentityViewportV0();
