@@ -31,7 +31,8 @@ export const CROSS_SPACE_FUSION_EVENT_V0 = "rhizoh:cross-space-fusion-v0";
 export const FUSION_LANE_V0 = Object.freeze({
   CHESS_DRIFT: "chess_drift",
   SPORTS_ENTROPY: "sports_entropy",
-  CUX_PERCEPTION: "cux_perception"
+  CUX_PERCEPTION: "cux_perception",
+  CALENDAR_CONTINUITY: "calendar_continuity"
 });
 
 /** @type {object | null} */
@@ -40,6 +41,8 @@ let chessLaneV0 = null;
 let sportsLaneV0 = null;
 /** @type {object | null} */
 let cuxLaneV0 = null;
+/** @type {object | null} */
+let calendarLaneV0 = null;
 
 let fusionSeqV0 = 0;
 /** @type {object | null} */
@@ -173,6 +176,40 @@ export function ingestCuxPerceptionLaneV0(input = {}) {
 }
 
 /**
+ * Calendar continuity lane — maps to Fox continuity/novelty (no new axis).
+ * @param {{ eventId?: string, eventType?: string, foxSignals?: object, continuitySignal01?: number, source?: string }} input
+ */
+export function ingestCalendarContinuityLaneV0(input = {}) {
+  const fox = input.foxSignals || {};
+  const continuity01 = Math.max(
+    0,
+    Math.min(1, Number(input.continuitySignal01) || Number(fox.continuitySignal01) || 0.5)
+  );
+  const novelty01 = Math.max(0, Math.min(1, Number(fox.noveltySignal01) || 0.2));
+  const shares = normalizeSharesV0({
+    [MUTATION_REASON_CATEGORY_V1.SC]: continuity01 * 0.6,
+    [MUTATION_REASON_CATEGORY_V1.REC]: novelty01 * 0.5,
+    PERCEPTION: Number(fox.worldSignal01) || 0.15
+  });
+
+  calendarLaneV0 = Object.freeze({
+    lane: FUSION_LANE_V0.CALENDAR_CONTINUITY,
+    spaceId: "calendar.continuity.space",
+    eventId: input.eventId || null,
+    eventType: input.eventType || null,
+    foxSignals: Object.freeze({ ...fox }),
+    shares,
+    continuitySignal01: continuity01,
+    source: String(input.source || "calendar_ingress"),
+    atMs: Date.now(),
+    interpretationOnly: true,
+    nonExecutive: true
+  });
+
+  return calendarLaneV0;
+}
+
+/**
  * Hydrate sports lane from REC slice if not explicitly ingested.
  */
 function hydrateSportsLaneFromRecV0(recSnap) {
@@ -209,8 +246,17 @@ function buildLaneAuditV0() {
       present: Boolean(cuxLaneV0),
       raw: cuxLaneV0,
       spaceId: ARENA_SPACE_OVERLAY_V0
+    }),
+    calendar: Object.freeze({
+      present: Boolean(calendarLaneV0),
+      raw: calendarLaneV0,
+      spaceId: "calendar.continuity.space"
     })
   });
+}
+
+export function getCrossSpaceFusionLaneAuditV0() {
+  return buildLaneAuditV0();
 }
 
 /**
@@ -323,7 +369,8 @@ export function fuseCrossSpaceEpistemicV0(opts = {}) {
     lanes: Object.freeze({
       chess: chessLaneV0,
       sports: sportsLaneV0,
-      cux: cuxLaneV0
+      cux: cuxLaneV0,
+      calendar: calendarLaneV0
     }),
     laneAudit,
     guard,
@@ -355,7 +402,8 @@ export function getCrossSpaceFusionSnapshotV0() {
     lanes: Object.freeze({
       chess: chessLaneV0,
       sports: sportsLaneV0,
-      cux: cuxLaneV0
+      cux: cuxLaneV0,
+      calendar: calendarLaneV0
     }),
     recentFusions: Object.freeze(fusionLogV0.slice(0, 8)),
     diagnosis: Object.freeze({
@@ -454,6 +502,7 @@ export function resetCrossSpaceCausalFusionForTestV0() {
   chessLaneV0 = null;
   sportsLaneV0 = null;
   cuxLaneV0 = null;
+  calendarLaneV0 = null;
   fusionSeqV0 = 0;
   lastFusionV0 = null;
   fusionLogV0.length = 0;
