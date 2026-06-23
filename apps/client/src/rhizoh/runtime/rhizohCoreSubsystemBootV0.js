@@ -26,6 +26,7 @@ import { ensureChessLearningDebugV0 } from "./rhizohChessLearningDebugV0.js";
 import { ensureChessLc0UciBridgeDevToolsV0 } from "./chessLc0UciBridgeV0.js";
 import { ensureCalendarShadowTimelineDevToolsV0 } from "./calendarShadowTimelineV0.js";
 import { ensureMediaShadowTimelineDevToolsV0 } from "./mediaShadowTimelineV0.js";
+import { ensureLifeShadowDayBranchDevToolsV0 } from "./lifeShadowDayBranchesV0.js";
 import { ensureRhizohChessLifetimeReportV0 } from "./rhizohChessLifetimeReportV0.js";
 import { ensureChessHistoryBrainV0 } from "./chessHistoryBrainReportV0.js";
 import { ensureRhizohChessEvolutionCurveV0 } from "./rhizohChessEvolutionCurveV0.js";
@@ -109,6 +110,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureChessLc0UciBridgeDevToolsV0();
     ensureCalendarShadowTimelineDevToolsV0();
     ensureMediaShadowTimelineDevToolsV0();
+    ensureLifeShadowDayBranchDevToolsV0();
     ensureRhizohChessLifetimeReportV0();
     ensureChessHistoryBrainV0();
     ensureRhizohChessEvolutionCurveV0();
