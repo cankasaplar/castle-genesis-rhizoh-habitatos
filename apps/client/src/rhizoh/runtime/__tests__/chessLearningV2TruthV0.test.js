@@ -66,6 +66,30 @@ describe("chessLearningV2Truth", () => {
     expect(gate.ambiguous).toBe(true);
   });
 
+  it("accepts truth path using stockfish + DB when leela_stub inflates full variance", () => {
+    const fusion = Object.freeze({
+      schema: "castle.rhizoh.chess_eval_fusion.v0",
+      stockfishCp: 40,
+      databaseWinrate: 0.52,
+      leelaCp: -200,
+      variance: 0.62,
+      sourceCount: 3,
+      finalEval: 0.1,
+      sources: Object.freeze(["stockfish", "leela_stub", "database"])
+    });
+    const gatePreview = evaluateChessLearningAgreementGateV0(fusion, { drifted: true, matchedRank: 2 });
+    expect(gatePreview.learningEligible).toBe(false);
+    expect(gatePreview.reason).toBe("high_variance");
+
+    const gateTruth = evaluateChessLearningAgreementGateV0(fusion, {
+      truthAuthoritative: true,
+      drifted: true,
+      matchedRank: 2
+    });
+    expect(gateTruth.learningEligible).toBe(true);
+    expect(gateTruth.accepted).toBe(true);
+  });
+
   it("accepts low-variance fusion for batch enqueue", () => {
     const fusion = fuseChessEvalSourcesV0({ stockfishCp: 10, databaseWinrate: 0.52 });
     const gate = evaluateChessLearningAgreementGateV0(fusion, { drifted: true, matchedRank: 3 });

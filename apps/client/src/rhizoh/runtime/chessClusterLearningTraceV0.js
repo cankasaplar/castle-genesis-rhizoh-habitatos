@@ -12,7 +12,6 @@ import { writeChessClusterMemoryNodeV0 } from "./chessClusterMemoryGraphV0.js";
 import { resolveChessClusterSlotModeV0 } from "./chessClusterSlotModesV0.js";
 import { maybeEnqueueEpistemicCouncilV0 } from "./rhizohEpistemicCouncilV0.js";
 import { submitChessClusterTruthLearningSampleV0 } from "./chessClusterDriftDatasetV0.js";
-import { scheduleUglLearnTaskV0 } from "./rhizohUglMatchSchedulerV0.js";
 import {
   enqueueUglLearnBufferObservationV0,
   registerUglLearnBufferEnrichHandlerV0,
@@ -48,15 +47,15 @@ export async function traceChessClusterPolicyDiffFromBufferV0(slot, moveRow, fen
   lastMultiPvTraceAtMsV0 = now;
 
   const mode = resolveChessClusterSlotModeV0(slot.slotId);
-  const multi = await scheduleUglLearnTaskV0(
-    () =>
-      analyzeChessPositionMultiPvV0(fenBefore, {
-        multiPv: 6,
-        movetimeMs: 320,
-        depth: 10
-      }),
-    { label: `policy_diff_slot_${slot.slotId}`, force: true, fromDeferred: true }
-  );
+  // analyzeChessPositionMultiPvV0 already serializes via withChessStockfishEngineLockV0
+  // (LEARNING_MEASURE priority). Do NOT wrap in scheduleUglLearnTaskV0 — that double-enqueues
+  // and deadlocks while the outer task holds activeTaskV0.
+  const multi = await analyzeChessPositionMultiPvV0(fenBefore, {
+    multiPv: 6,
+    movetimeMs: 320,
+    depth: 10,
+    queueLabel: `policy_diff_slot_${slot.slotId}`
+  });
   if (!multi?.lines?.length) return null;
 
   const played = String(moveRow.uci || "");
