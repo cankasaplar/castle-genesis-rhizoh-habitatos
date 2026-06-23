@@ -4,6 +4,7 @@ import {
   CROSS_SPACE_FUSION_EVENT_V0,
   FUSION_LANE_V0,
   fuseCrossSpaceEpistemicV0,
+  ingestCalendarContinuityLaneV0,
   ingestChessDriftLaneV0,
   ingestCuxPerceptionLaneV0,
   ingestSportsEntropyLaneV0,
@@ -72,5 +73,19 @@ describe("crossSpaceCausalFusionV0", () => {
     const sports = ingestSportsEntropyLaneV0({ entropy01: 0.2 });
     expect(chess.lane).toBe(FUSION_LANE_V0.CHESS_DRIFT);
     expect(sports.lane).toBe(FUSION_LANE_V0.SPORTS_ENTROPY);
+  });
+
+  it("merges calendar continuity lane into fusedShares when present", () => {
+    ingestCalendarContinuityLaneV0({
+      eventId: "evt_team_sync",
+      eventType: "scheduled",
+      foxSignals: { continuitySignal01: 0.65, noveltySignal01: 0.2, worldSignal01: 0.25 }
+    });
+
+    const fusion = fuseCrossSpaceEpistemicV0();
+    expect(fusion.epistemicUpdate.laneContributions.calendar.present).toBe(true);
+    expect(fusion.epistemicUpdate.laneContributions.calendar.weight).toBe(0.1);
+    expect(fusion.epistemicUpdate.fusedShares.SC).toBeGreaterThan(0);
+    expect(fusion.epistemicUpdate.laneContributions.calendar.shares.SC).toBeGreaterThan(0);
   });
 });
