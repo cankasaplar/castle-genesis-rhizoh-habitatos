@@ -9,6 +9,7 @@ import { reconcileCrossSpaceRecV0 } from "./crossSpaceRecReconciliationV0.js";
 import { fuseCrossSpaceEpistemicV0 } from "./crossSpaceCausalFusionV0.js";
 import {
   ingestChessDriftLaneV0,
+  ingestCalendarContinuityLaneV0,
   ingestCuxPerceptionLaneV0,
   ingestSportsEntropyLaneV0
 } from "./crossSpaceCausalFusionV0.js";
@@ -36,7 +37,8 @@ export const PHASE_STATE_V0 = Object.freeze({
 export const INGESTION_LANE_V0 = Object.freeze({
   SPORTS: "sports",
   CHESS_DRIFT: "chess_drift",
-  CUX_PERCEPTION: "cux_perception"
+  CUX_PERCEPTION: "cux_perception",
+  CALENDAR: "calendar"
 });
 
 export const DEFAULT_PHASE_WINDOW_MS_V0 = 32;
@@ -139,6 +141,9 @@ export function flushPhaseIngestionWindowV0() {
       applied.push(entry.lane);
     } else if (entry.lane === INGESTION_LANE_V0.CUX_PERCEPTION) {
       ingestCuxPerceptionLaneV0(entry.payload);
+      applied.push(entry.lane);
+    } else if (entry.lane === INGESTION_LANE_V0.CALENDAR) {
+      ingestCalendarContinuityLaneV0(entry.payload);
       applied.push(entry.lane);
     }
   }
