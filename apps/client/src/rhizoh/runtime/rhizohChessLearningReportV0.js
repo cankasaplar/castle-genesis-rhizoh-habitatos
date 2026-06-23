@@ -13,6 +13,7 @@ import { listRhizohOpeningBookV0 } from "./rhizohOpeningBookV0.js";
 import { getChessLearningAgreementGateSnapshotV0 } from "./chessLearningAgreementGateV0.js";
 import { getChessLearningBatchSnapshotV0 } from "./chessLearningBatchV0.js";
 import { getChessFenClusterMemorySnapshotV0 } from "./chessFenClusterMemoryV0.js";
+import { getUglLearnBufferSnapshotV0 } from "./rhizohUglLearnBufferSinkV0.js";
 
 export const RHIZOH_CHESS_PREDICTION_SCORE_EVENT_V0 = "rhizoh:chess-prediction-score-v0";
 
@@ -315,6 +316,7 @@ export function buildRhizohChessLearningReportV0() {
   const agreementGate = getChessLearningAgreementGateSnapshotV0();
   const batchLearning = getChessLearningBatchSnapshotV0();
   const fenClusters = getChessFenClusterMemorySnapshotV0();
+  const learnBuffer = getUglLearnBufferSnapshotV0();
   const clusterThroughput =
     typeof window !== "undefined"
       ? window.__rhizoh?.chessGameCluster?.learningThroughput || null
@@ -375,6 +377,7 @@ export function buildRhizohChessLearningReportV0() {
       agreementGate,
       batchLearning,
       fenClusters,
+      learnBuffer,
       clocksDisabled: Boolean(clusterThroughput?.clocksDisabled),
       deferPerGameUpdates: true
     }),

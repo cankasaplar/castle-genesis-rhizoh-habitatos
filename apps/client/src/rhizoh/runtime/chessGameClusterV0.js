@@ -22,6 +22,7 @@ import {
 } from "./chessClusterOpeningDiversityV0.js";
 import { resolveChessClusterLearningMaxPlyV0, shouldTickChessClusterClockForLearningV0 } from "./chessClusterLearningThroughputV0.js";
 import { getChessClusterMemoryGraphSnapshotV0 } from "./chessClusterMemoryGraphV0.js";
+import { drainUglLearnBufferV0 } from "./rhizohUglLearnBufferSinkV0.js";
 import {
   applyChessClusterClockIncrementV0,
   createChessClusterClockStateV0,
@@ -86,6 +87,8 @@ let tickCountV0 = 0;
 let tickTimerV0 = null;
 /** @type {ReturnType<typeof setInterval> | null} */
 let clockTimerV0 = null;
+/** @type {ReturnType<typeof setInterval> | null} */
+let learnDrainTimerV0 = null;
 let roundRobinIndexV0 = 0;
 let busyV0 = false;
 let lastMoveWallMsV0 = 0;
@@ -551,6 +554,7 @@ async function runClusterTickV0(opts = {}) {
 
     publishClusterRegistryV0({ lastTick: snap });
     dispatchClusterEventV0(CHESS_CLUSTER_TICK_EVENT_V0, snap);
+    void drainUglLearnBufferV0();
   } finally {
     busyV0 = false;
     endChessSchedulerCallV0({
@@ -598,6 +602,11 @@ export function startChessGameClusterV0(opts = {}) {
     runClusterClockTickV0();
   }, 1000);
 
+  if (learnDrainTimerV0) clearInterval(learnDrainTimerV0);
+  learnDrainTimerV0 = setInterval(() => {
+    if (runningV0) void drainUglLearnBufferV0();
+  }, 1500);
+
   scheduleClusterTickV0();
   void runClusterTickV0({ testFast: testFastTickV0 });
   publishClusterRegistryV0({
@@ -635,6 +644,10 @@ export function stopChessGameClusterV0() {
   if (clockTimerV0) {
     clearInterval(clockTimerV0);
     clockTimerV0 = null;
+  }
+  if (learnDrainTimerV0) {
+    clearInterval(learnDrainTimerV0);
+    learnDrainTimerV0 = null;
   }
   publishClusterRegistryV0({ stopped: true });
   return { ok: true, running: false };

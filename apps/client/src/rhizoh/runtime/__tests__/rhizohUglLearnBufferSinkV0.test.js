@@ -78,7 +78,7 @@ describe("rhizohUglLearnBufferSinkV0", () => {
     expect(getUglLearnBufferSnapshotV0().engineIdle).toBe(false);
   });
 
-  it("skips enrich drain while play pipeline is busy", async () => {
+  it("drains enrich while cluster play is queued (learn interleaves)", async () => {
     const enrich = vi.fn(async () => ({ ok: true }));
     registerUglLearnBufferEnrichHandlerV0(enrich);
 
@@ -96,8 +96,7 @@ describe("rhizohUglLearnBufferSinkV0", () => {
     });
 
     await drainUglLearnBufferV0();
-    expect(enrich).not.toHaveBeenCalled();
-    expect(getUglLearnBufferSnapshotV0().buffered).toBe(1);
-    expect(getUglLearnBufferSnapshotV0().walWrites).toBe(1);
+    expect(enrich).toHaveBeenCalledTimes(1);
+    expect(getUglLearnBufferSnapshotV0().buffered).toBe(0);
   });
 });

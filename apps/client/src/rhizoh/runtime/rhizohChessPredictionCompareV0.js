@@ -4,6 +4,7 @@
  */
 
 import { recordRhizohPredictionScoreV0 } from "./rhizohChessLearningReportV0.js";
+import { submitChessClusterTruthLearningSampleV0 } from "./chessClusterDriftDatasetV0.js";
 import {
   analyzeChessPositionMultiPvV0,
   getChessStockfishEngineStatusV0
@@ -64,6 +65,25 @@ export async function compareRhizohMoveWithStockfishV0(fen, rhizohUci, meta = {}
     });
 
     recordRhizohPredictionScoreV0(row);
+
+    if (meta.slotId != null) {
+      submitChessClusterTruthLearningSampleV0(
+        { slotId: meta.slotId, matchId: meta.matchId, moveHistory: [], game: null },
+        {
+          ply: meta.ply ?? null,
+          uci: played,
+          san: meta.san || played,
+          fenBefore: position
+        },
+        {
+          engineBest,
+          matchedRank: rank,
+          stockfishCp: multi.lines[0]?.cp ?? null,
+          winningLine: multi.lines[0],
+          source: "rhizoh_prediction_compare"
+        }
+      );
+    }
 
     if (typeof window !== "undefined") {
       try {
