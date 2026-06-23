@@ -122,7 +122,7 @@ export async function pickChessClusterMoveV0(slot, game) {
     case "rhizoh_vs_stockfish":
       if (isRhizohClusterTurnV0(slot, turn)) {
         const fenBefore = game.fen();
-        const rhizohPick = await pickRhizohChessMoveV0(game);
+        const rhizohPick = await pickRhizohChessMoveV0(game, { clusterPlay: true });
         const uci = resolveChessLegalMoveUciV0(game, rhizohPick?.move);
         if (uci) {
           enqueueRhizohPredictionCompareV0(fenBefore, uci, {

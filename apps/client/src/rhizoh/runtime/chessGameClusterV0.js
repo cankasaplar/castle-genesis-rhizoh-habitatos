@@ -23,6 +23,7 @@ import {
 import { resolveChessClusterLearningMaxPlyV0, shouldTickChessClusterClockForLearningV0 } from "./chessClusterLearningThroughputV0.js";
 import { getChessClusterMemoryGraphSnapshotV0 } from "./chessClusterMemoryGraphV0.js";
 import { drainUglLearnBufferV0 } from "./rhizohUglLearnBufferSinkV0.js";
+import { maybeFlushChessLearningMiniBatchV0 } from "./chessLearningBatchV0.js";
 import {
   applyChessClusterClockIncrementV0,
   createChessClusterClockStateV0,
@@ -604,7 +605,10 @@ export function startChessGameClusterV0(opts = {}) {
 
   if (learnDrainTimerV0) clearInterval(learnDrainTimerV0);
   learnDrainTimerV0 = setInterval(() => {
-    if (runningV0) void drainUglLearnBufferV0();
+    if (runningV0) {
+      void drainUglLearnBufferV0();
+      maybeFlushChessLearningMiniBatchV0();
+    }
   }, 1500);
 
   scheduleClusterTickV0();

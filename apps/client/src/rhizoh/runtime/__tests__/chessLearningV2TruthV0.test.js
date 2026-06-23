@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   fuseChessEvalSourcesV0,
   normalizeChessEvalCpV0,
@@ -11,10 +11,13 @@ import {
 } from "../chessLearningAgreementGateV0.js";
 import {
   __resetChessLearningBatchForTestV0,
+  CHESS_LEARNING_BATCH_MINI_AGE_MS_V0,
+  CHESS_LEARNING_BATCH_MINI_SIZE_V0,
   CHESS_LEARNING_BATCH_SIZE_V0,
   enqueueChessLearningBatchSampleV0,
   flushChessLearningBatchV0,
-  getChessLearningBatchSnapshotV0
+  getChessLearningBatchSnapshotV0,
+  maybeFlushChessLearningMiniBatchV0
 } from "../chessLearningBatchV0.js";
 import {
   __resetChessFenClusterMemoryForTestV0,
@@ -105,6 +108,33 @@ describe("chessLearningV2Truth", () => {
     });
     expect(out.enqueued).toBe(true);
     expect(out.pending).toBe(1);
+  });
+
+  it("flushes mini batch of 16 after age threshold", () => {
+    vi.useFakeTimers();
+    const fusion = fuseChessEvalSourcesV0({ stockfishCp: 0, databaseWinrate: 0.5 });
+    const gate = evaluateChessLearningAgreementGateV0(fusion, { drifted: false, matchedRank: 1 });
+
+    for (let i = 0; i < CHESS_LEARNING_BATCH_MINI_SIZE_V0; i++) {
+      enqueueChessLearningBatchSampleV0({
+        position: `mini_fen_${i}`,
+        playedMove: "e2e4",
+        bestMove: "e2e4",
+        drifted: false,
+        gate,
+        fusion
+      });
+    }
+
+    expect(getChessLearningBatchSnapshotV0().pending).toBe(CHESS_LEARNING_BATCH_MINI_SIZE_V0);
+    expect(getChessLearningBatchSnapshotV0().batchesFlushed).toBe(0);
+
+    vi.advanceTimersByTime(CHESS_LEARNING_BATCH_MINI_AGE_MS_V0 + 1);
+    const flush = maybeFlushChessLearningMiniBatchV0();
+    expect(flush.flushed).toBe(true);
+    expect(flush.reason).toBe("batch_mini_16");
+    expect(getChessLearningBatchSnapshotV0().batchesFlushed).toBe(1);
+    vi.useRealTimers();
   });
 
   it("flushes batch of 32 into weight update", () => {
