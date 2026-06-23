@@ -83,9 +83,12 @@ import {
 } from "../rhizoh/runtime/sovereignWorldMapNodesV0.js";
 import {
   RHIZOH_LLM_TOWER_FIT_EVENT_V0,
+  RHIZOH_SPIRAL_SATELLITE_FIT_EVENT_V0,
   drawLlmTowerGraphPolylinesV0,
   mountLlmTowerMapConsoleV0,
-  resolveLlmTowerViewportFitNodesV0
+  resolveLlmTowerMarkerCoordsV0,
+  resolveLlmTowerViewportFitNodesV0,
+  resolveSpiralSatelliteViewportFitNodesV0
 } from "../rhizoh/runtime/llmTowerMapViewportV0.js";
 import {
   getLiveMatchMapPinsV0,
@@ -368,6 +371,38 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
     if (!L?.latLngBounds || !map) return false;
     const nodes = resolveLlmTowerViewportFitNodesV0({ includePortal: true });
     if (nodes.length < 2) return false;
+    const zoom = Math.min(4, Number(map.getZoom?.()) || 4);
+    const bounds = L.latLngBounds(
+      nodes.map((n) => {
+        const c = resolveLlmTowerMarkerCoordsV0(n, zoom);
+        return [c.lat, c.lon];
+      })
+    );
+    map.fitBounds(bounds, {
+      paddingTopLeft: [28, 88],
+      paddingBottomRight: [28, 32],
+      maxZoom: 4,
+      animate: true
+    });
+    const nodeById = new Map(
+      nodes.map((n) => {
+        const c = resolveLlmTowerMarkerCoordsV0(n, zoom);
+        return [String(n.id), { lat: c.lat, lon: c.lon }];
+      })
+    );
+    if (!graphLayerRef.current && map) {
+      graphLayerRef.current = L.layerGroup().addTo(map);
+    }
+    drawLlmTowerGraphPolylinesV0(L, graphLayerRef.current, nodeById);
+    return true;
+  }, []);
+
+  const fitSpiralSatelliteViewportV0 = useCallback(() => {
+    const L = typeof window !== "undefined" ? window.L : null;
+    const map = mapRef.current;
+    if (!L?.latLngBounds || !map) return false;
+    const nodes = resolveSpiralSatelliteViewportFitNodesV0();
+    if (nodes.length < 2) return false;
     const bounds = L.latLngBounds(nodes.map((n) => [n.lat, n.lon]));
     map.fitBounds(bounds, {
       paddingTopLeft: [28, 88],
@@ -375,11 +410,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
       maxZoom: 4,
       animate: true
     });
-    const nodeById = new Map(nodes.map((n) => [String(n.id), { lat: n.lat, lon: n.lon }]));
-    if (!graphLayerRef.current && map) {
-      graphLayerRef.current = L.layerGroup().addTo(map);
-    }
-    drawLlmTowerGraphPolylinesV0(L, graphLayerRef.current, nodeById);
+    graphLayerRef.current?.clearLayers?.();
     return true;
   }, []);
 
@@ -411,15 +442,18 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
       }
     };
     const onLlmTowerFit = () => fitAllLlmTowersViewportV0();
+    const onSpiralSatelliteFit = () => fitSpiralSatelliteViewportV0();
     window.addEventListener(CASTLE_IDENTITY_MODE_EVENT_V0, onCastleIdentity);
     window.addEventListener(SPIRAL_MAP_REALITY_MODE_EVENT_V0, onRealityMode);
     window.addEventListener(RHIZOH_LLM_TOWER_FIT_EVENT_V0, onLlmTowerFit);
+    window.addEventListener(RHIZOH_SPIRAL_SATELLITE_FIT_EVENT_V0, onSpiralSatelliteFit);
     return () => {
       window.removeEventListener(CASTLE_IDENTITY_MODE_EVENT_V0, onCastleIdentity);
       window.removeEventListener(SPIRAL_MAP_REALITY_MODE_EVENT_V0, onRealityMode);
       window.removeEventListener(RHIZOH_LLM_TOWER_FIT_EVENT_V0, onLlmTowerFit);
+      window.removeEventListener(RHIZOH_SPIRAL_SATELLITE_FIT_EVENT_V0, onSpiralSatelliteFit);
     };
-  }, [fitCastleIdentityViewportV0, fitAllLlmTowersViewportV0]);
+  }, [fitCastleIdentityViewportV0, fitAllLlmTowersViewportV0, fitSpiralSatelliteViewportV0]);
 
   const displayNodes = useMemo(
     () =>
@@ -453,10 +487,28 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
   const nodeById = useRef(new Map(displayNodes.map((n) => [n.id, n])));
   const [leafletReady, setLeafletReady] = useState(false);
   const [spiralCalmVisual, setSpiralCalmVisual] = useState(() => isSpiralCountdownCalmVisualV0());
+  const [markerZoomTick, setMarkerZoomTick] = useState(0);
 
   useEffect(() => {
     boundsFittedRef.current = false;
   }, [activeMapTool]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !leafletReady) return undefined;
+    const onZoom = () => setMarkerZoomTick((n) => n + 1);
+    map.on("zoomend", onZoom);
+    return () => {
+      map.off("zoomend", onZoom);
+    };
+  }, [leafletReady]);
+
+  useEffect(() => {
+    if (!leafletReady || !isSatelliteMapToolV0) return undefined;
+    boundsFittedRef.current = false;
+    const id = window.setTimeout(() => fitSpiralSatelliteViewportV0(), 160);
+    return () => window.clearTimeout(id);
+  }, [leafletReady, isSatelliteMapToolV0, displayNodes.length, fitSpiralSatelliteViewportV0]);
 
   useEffect(() => {
     const tick = () => setSpiralCalmVisual(isSpiralCountdownCalmVisualV0());
@@ -622,7 +674,9 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
         node.shadowPulseActive || readShadowCastlePinPulseActiveV0(node.id)
           ? Object.freeze({ ...node, shadowPulseActive: true })
           : node;
-      const marker = L.marker([node.lat, node.lon], {
+      const mapZoom = mapRef.current?.getZoom?.() ?? 14;
+      const coords = resolveLlmTowerMarkerCoordsV0(renderNode, mapZoom);
+      const marker = L.marker([coords.lat, coords.lon], {
         icon: createLeafletNodeIconV0(L, renderNode),
         keyboard: false,
         title: node.name || node.label,
@@ -748,7 +802,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
       cancelled = true;
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [leafletReady, localAnchors, displayNodes, remoteNodes, shadowPeerNode, userCastleGeo, spiralLayerFilter, activeMapTool]);
+  }, [leafletReady, localAnchors, displayNodes, remoteNodes, shadowPeerNode, userCastleGeo, spiralLayerFilter, activeMapTool, markerZoomTick]);
 
   useEffect(() => {
     const L = typeof window !== "undefined" ? window.L : null;

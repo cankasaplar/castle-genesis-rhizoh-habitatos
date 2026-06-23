@@ -132,6 +132,7 @@ import {
   RHIZOH_SPIRAL_MMO_AWAKENING_EVENT_V0,
   RHIZOH_SPIRAL_MMO_IMMERSION_END_EVENT_V0
 } from "./rhizoh/runtime/spiralMMOAwakeningCycleV0.js";
+import { requestFitSpiralSatelliteMapV0 } from "./rhizoh/runtime/llmTowerMapViewportV0.js";
 import { startCanonicalTickClientV0 } from "./core/canonicalTickClientV0.js";
 import { runAfterV11LeafletReadyV0 } from "./rhizoh/runtime/worldSpaceMapBootGateV0.js";
 import { startYoutubeLabOctoBridgeV1, RHIZOH_OCTO_LAB_DISMISS_EVENT_V1 } from "./rhizoh/runtime/octoYuvaMediaLabBridgeV1.js";
@@ -875,6 +876,9 @@ export default function AppRhizohWorldSpaceV0() {
       leafletOnly: true,
       source
     });
+    if (tool === "satellite") {
+      window.setTimeout(() => requestFitSpiralSatelliteMapV0(source), 180);
+    }
   }, [spiralImmersionActive]);
 
   const appRootRef = useRef(null);
