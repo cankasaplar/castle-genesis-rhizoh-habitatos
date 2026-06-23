@@ -12,6 +12,7 @@ import {
   ingestCalendarContinuityLaneV0,
   ingestCuxPerceptionLaneV0,
   ingestMediaTimelineLaneV0,
+  ingestUserActivityLaneV0,
   ingestSportsEntropyLaneV0
 } from "./crossSpaceCausalFusionV0.js";
 import { stabilizeCrossSpaceFusionV0 } from "./crossSpaceStabilizationLayerV0.js";
@@ -40,7 +41,8 @@ export const INGESTION_LANE_V0 = Object.freeze({
   CHESS_DRIFT: "chess_drift",
   CUX_PERCEPTION: "cux_perception",
   CALENDAR: "calendar",
-  MEDIA: "media"
+  MEDIA: "media",
+  USER_ACTIVITY: "user_activity"
 });
 
 export const DEFAULT_PHASE_WINDOW_MS_V0 = 32;
@@ -149,6 +151,9 @@ export function flushPhaseIngestionWindowV0() {
       applied.push(entry.lane);
     } else if (entry.lane === INGESTION_LANE_V0.MEDIA) {
       ingestMediaTimelineLaneV0(entry.payload);
+      applied.push(entry.lane);
+    } else if (entry.lane === INGESTION_LANE_V0.USER_ACTIVITY) {
+      ingestUserActivityLaneV0(entry.payload);
       applied.push(entry.lane);
     }
   }
