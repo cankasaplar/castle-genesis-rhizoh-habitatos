@@ -5,6 +5,7 @@ import {
   listSovereignWorldMapNodesForViewV0,
   parseSovereignVoiceWarpCommandV0,
   RHIZOH_SOVEREIGN_VOICE_WARP_EVENT_V1,
+  SOVEREIGN_CORE_NODES_V0,
   SOVEREIGN_TOWER_GRAPH_EDGES_V0,
   SOVEREIGN_TOWERS_V0,
   SOVEREIGN_WORLD_MAP_NODES_V0,
@@ -14,6 +15,7 @@ import {
   parseSovereignMapNodeVoiceCommandV0,
   writeSovereignPortalCoordsV0
 } from "../sovereignWorldMapNodesV0.js";
+import { resolveWorldSpaceMediaChannelForMapNodeV0 } from "../worldSpaceMediaChannelsV0.js";
 import {
   ORCHESTRATOR_ACTION_REGISTRY_V0,
   RHIZOH_V11_MAP_INTENT_EVENT_V0,
@@ -23,19 +25,24 @@ import {
 
 describe("sovereignWorldMapNodesV0", () => {
   it("includes core nodes, towers, and portal", () => {
-    expect(SOVEREIGN_WORLD_MAP_NODES_V0.length).toBeGreaterThanOrEqual(15);
+    expect(SOVEREIGN_WORLD_MAP_NODES_V0.length).toBeGreaterThanOrEqual(16);
     expect(SOVEREIGN_TOWERS_V0.length).toBe(7);
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "castle")).toBe(true);
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "event")).toBe(true);
+    expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "worldsports")).toBe(true);
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "gemini_tower")).toBe(true);
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "rhizoh_portal")).toBe(true);
   });
 
-  it("includes one SpiralMMO pin per continent on the world map view", () => {
+  it("includes SpiralMMO pins (bootstrap + continents) on the world map view", () => {
     const view = listSovereignWorldMapNodesForViewV0();
     const spiralPins = view.filter((n) => n.type === "spiralmmo");
-    expect(spiralPins).toHaveLength(7);
-    expect(spiralPins.map((n) => n.continent).sort()).toEqual(
+    expect(spiralPins).toHaveLength(8);
+    expect(spiralPins.some((n) => n.id === "spiralmmo_bootstrap")).toBe(true);
+    const continents = spiralPins
+      .map((n) => n.continent)
+      .filter((c) => c !== "bootstrap");
+    expect(continents.sort()).toEqual(
       ["africa", "antarctica", "asia", "europe", "north_america", "oceania", "south_america"].sort()
     );
   });
@@ -147,5 +154,23 @@ describe("sovereignWorldMapNodesV0", () => {
     expect(routed.normalizedDecision.decision).toBe(
       ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER
     );
+  });
+
+  it("includes worldsports pin in core sovereign nodes", () => {
+    const pin = SOVEREIGN_CORE_NODES_V0.find((n) => n.id === "worldsports");
+    expect(pin?.label).toBe("SPORTS");
+    expect(pin?.type).toBe("zone");
+  });
+
+  it("routes worldsports pin to world_sports media channel", () => {
+    const sportsNode = SOVEREIGN_CORE_NODES_V0.find((n) => n.id === "worldsports");
+    const routed = routeSymbyoMapInteractionToOrchestratorV0({
+      interaction: SYMBYO_MAP_INTERACTION_V0.CLICK,
+      node: sportsNode
+    });
+    expect(routed.normalizedDecision.decision).toBe(
+      ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER
+    );
+    expect(resolveWorldSpaceMediaChannelForMapNodeV0(sportsNode)).toBe("world_sports");
   });
 });

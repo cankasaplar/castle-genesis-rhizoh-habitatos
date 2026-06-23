@@ -35,6 +35,7 @@ const ENTITY_QUERY_ALIASES_V0 = Object.freeze([
   { pattern: /\bwprl\b|sports\s*arena|spor\s*aren/i, entityId: "wprl_sports_arena" },
   { pattern: /\bserencebey\b|origin\s*home/i, entityId: "origin_home_serencebey" },
   { pattern: /\bchess\b|satranç/i, entityId: "chess_arena" },
+  { pattern: /\bworldsports\b|world\s*sports|canlı\s*spor/i, entityId: "worldsports" },
   { pattern: /\bghost\b/i, entityId: "ghost" },
   { pattern: /\bgemini\b/i, entityId: "gemini_tower" }
 ]);

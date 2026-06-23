@@ -16,13 +16,17 @@ import {
 } from "../worldSpaceMediaChannelsV0.js";
 
 describe("worldSpaceMediaChannelsV0", () => {
-  it("lists castle genesis, learning channel, world sports, nasa, lofi, local (no empty chess VOD)", () => {
+  it("lists full media channel pack (10 rows) including optional holding fallbacks", () => {
     const rows = listWorldSpaceMediaChannelsV0();
     const ids = rows.map((r) => r.id);
+    expect(ids).toHaveLength(10);
     expect(ids[0]).toBe("castle_genesis");
     expect(ids).toContain(RHIZOH_LEARNING_CHANNEL_ID_V0);
     expect(ids).toContain(RHIZOH_WORLDSPORTS_CHANNEL_ID_V0);
-    expect(ids).not.toContain("castle_chess");
+    expect(ids).toContain("castle_genesis_live");
+    expect(ids).toContain("castle_chess");
+    expect(ids).toContain("castle_architecture");
+    expect(ids).toContain("castle_manifesto_trim");
     expect(ids).toContain("nasa");
     expect(ids).toContain("lofi");
     expect(ids).toContain("local");
@@ -46,6 +50,9 @@ describe("worldSpaceMediaChannelsV0", () => {
     expect(resolveInitialWorldSpaceMediaChannelIdV0("map:node:chess")).toBe(RHIZOH_LEARNING_CHANNEL_ID_V0);
     expect(resolveInitialWorldSpaceMediaChannelIdV0("map:node:chess_arena")).toBe(
       RHIZOH_LEARNING_CHANNEL_ID_V0
+    );
+    expect(resolveInitialWorldSpaceMediaChannelIdV0("map:node:worldsports")).toBe(
+      RHIZOH_WORLDSPORTS_CHANNEL_ID_V0
     );
   });
 
@@ -89,6 +96,12 @@ describe("worldSpaceMediaChannelsV0", () => {
     expect(ch.titleTr).toContain("Öğrenme");
   });
 
+  it("castle chess fallback uses live cluster when no VOD env", () => {
+    const ch = resolveWorldSpaceMediaChannelV0("castle_chess");
+    expect(ch.id).toBe("castle_chess");
+    expect(ch.type).toBe("chess_cluster_live");
+  });
+
   it("world sports channel defaults to world_sports_feed without env video", () => {
     const ch = buildRhizohWorldSportsChannelV0();
     expect(ch.id).toBe(RHIZOH_WORLDSPORTS_CHANNEL_ID_V0);
@@ -99,6 +112,7 @@ describe("worldSpaceMediaChannelsV0", () => {
   it("channel pack snapshot exposes env keys", () => {
     const snap = getWorldSpaceMediaChannelPackSnapshotV0();
     expect(snap).toHaveProperty("channelCount");
+    expect(snap.channelCount).toBe(10);
     expect(snap).toHaveProperty("fullEmbedEndSec");
   });
 });

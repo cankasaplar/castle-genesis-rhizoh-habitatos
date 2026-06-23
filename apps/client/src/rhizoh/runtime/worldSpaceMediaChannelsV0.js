@@ -181,73 +181,112 @@ export function listWorldSpaceMediaChannelsV0() {
 
   const rows = [castleGenesisPrimary, buildRhizohLearningChannelV0(), buildRhizohWorldSportsChannelV0()];
 
-  if (castleLiveEmbed) {
-    rows.push(
-      freezeYoutubeChannelV0({
-        id: "castle_genesis_live",
-        titleTr: "Castle Genesis · Canlı yayın",
-        titleEn: "Castle Genesis · Live stream",
-        type: "youtube",
-        url: castleLiveEmbed,
-        livePageUrl: CASTLE_GENESIS_LIVE_PAGE_V0,
-        badgeTr: "YouTube Live",
-        badgeEn: "YouTube Live"
-      })
-    );
-  }
+  rows.push(
+    castleLiveEmbed
+      ? freezeYoutubeChannelV0({
+          id: "castle_genesis_live",
+          titleTr: "Castle Genesis · Canlı yayın",
+          titleEn: "Castle Genesis · Live stream",
+          type: "youtube",
+          url: castleLiveEmbed,
+          livePageUrl: CASTLE_GENESIS_LIVE_PAGE_V0,
+          badgeTr: "YouTube Live",
+          badgeEn: "YouTube Live"
+        })
+      : freezeHoldingChannelV0({
+          id: "castle_genesis_live",
+          titleTr: "Castle Genesis · Canlı yayın",
+          titleEn: "Castle Genesis · Live stream",
+          type: "castle_genesis_live",
+          url: CASTLE_GENESIS_LIVE_PAGE_V0,
+          livePageUrl: CASTLE_GENESIS_LIVE_PAGE_V0,
+          holdingSlide: CASTLE_GENESIS_HOLDING_SLIDE_V0,
+          badgeTr: "YouTube Live",
+          badgeEn: "YouTube Live"
+        })
+  );
 
-  if (chessVideoId) {
-    rows.push(
-      freezeYoutubeChannelV0({
-        id: "castle_chess",
-        titleTr: "Satranç yayını · 8 kamera",
-        titleEn: "Chess broadcast · 8 cameras",
-        type: "youtube",
-        url: buildYoutubeEmbedUrlV0(chessVideoId, { controls: true }),
-        livePageUrl: CASTLE_GENESIS_LIVE_PAGE_V0,
-        videoId: chessVideoId,
-        badgeTr: "Cluster B-roll",
-        badgeEn: "Cluster B-roll"
-      })
-    );
-  }
+  rows.push(
+    chessVideoId
+      ? freezeYoutubeChannelV0({
+          id: "castle_chess",
+          titleTr: "Satranç yayını · 8 kamera",
+          titleEn: "Chess broadcast · 8 cameras",
+          type: "youtube",
+          url: buildYoutubeEmbedUrlV0(chessVideoId, { controls: true }),
+          livePageUrl: CASTLE_GENESIS_LIVE_PAGE_V0,
+          videoId: chessVideoId,
+          badgeTr: "Cluster B-roll",
+          badgeEn: "Cluster B-roll"
+        })
+      : Object.freeze({
+          id: "castle_chess",
+          titleTr: "Satranç yayını · 8 kamera",
+          titleEn: "Chess broadcast · 8 cameras",
+          type: "chess_cluster_live",
+          livePageUrl: CASTLE_GENESIS_LIVE_PAGE_V0,
+          holdingSlide: CASTLE_GENESIS_CHESS_EMBED_SLIDE_V0,
+          badgeTr: "Canlı cluster",
+          badgeEn: "Live cluster"
+        })
+  );
 
-  if (architectureVideoId) {
-    rows.push(
-      freezeYoutubeChannelV0({
-        id: "castle_architecture",
-        titleTr: "Rhizoh mimari · kısa",
-        titleEn: "Rhizoh architecture · short",
-        type: "youtube",
-        url: buildYoutubeEmbedUrlV0(architectureVideoId, { controls: true }),
-        livePageUrl: CASTLE_GENESIS_LIVE_PAGE_V0,
-        videoId: architectureVideoId,
-        badgeTr: "Teknik özet",
-        badgeEn: "Technical brief"
-      })
-    );
-  }
+  rows.push(
+    architectureVideoId
+      ? freezeYoutubeChannelV0({
+          id: "castle_architecture",
+          titleTr: "Rhizoh mimari · kısa",
+          titleEn: "Rhizoh architecture · short",
+          type: "youtube",
+          url: buildYoutubeEmbedUrlV0(architectureVideoId, { controls: true }),
+          livePageUrl: CASTLE_GENESIS_LIVE_PAGE_V0,
+          videoId: architectureVideoId,
+          badgeTr: "Teknik özet",
+          badgeEn: "Technical brief"
+        })
+      : freezeHoldingChannelV0({
+          id: "castle_architecture",
+          titleTr: "Rhizoh mimari · kısa",
+          titleEn: "Rhizoh architecture · short",
+          type: "castle_genesis_live",
+          url: CASTLE_GENESIS_LIVE_PAGE_V0,
+          livePageUrl: CASTLE_GENESIS_LIVE_PAGE_V0,
+          holdingSlide: CASTLE_GENESIS_SHORT_EMBED_SLIDE_V0,
+          badgeTr: "Teknik özet",
+          badgeEn: "Technical brief"
+        })
+  );
 
-  if (fullVideoId) {
-    rows.push(
-      freezeYoutubeChannelV0({
-        id: "castle_manifesto_trim",
-        titleTr: "Manifesto · kırpılmış önizleme",
-        titleEn: "Manifesto · trimmed preview",
-        type: "youtube",
-        url: buildYoutubeEmbedUrlV0(fullVideoId, {
-          controls: true,
-          startSec: 0,
-          endSec: fullEmbedEndSec
-        }),
-        livePageUrl: CASTLE_GENESIS_LIVE_PAGE_V0,
-        videoId: fullVideoId,
-        embedEndSec: fullEmbedEndSec,
-        badgeTr: `İlk ${fullEmbedEndSec}s`,
-        badgeEn: `First ${fullEmbedEndSec}s`
-      })
-    );
-  }
+  rows.push(
+    fullVideoId
+      ? freezeYoutubeChannelV0({
+          id: "castle_manifesto_trim",
+          titleTr: "Manifesto · kırpılmış önizleme",
+          titleEn: "Manifesto · trimmed preview",
+          type: "youtube",
+          url: buildYoutubeEmbedUrlV0(fullVideoId, {
+            controls: true,
+            startSec: 0,
+            endSec: fullEmbedEndSec
+          }),
+          livePageUrl: CASTLE_GENESIS_LIVE_PAGE_V0,
+          videoId: fullVideoId,
+          embedEndSec: fullEmbedEndSec,
+          badgeTr: `İlk ${fullEmbedEndSec}s`,
+          badgeEn: `First ${fullEmbedEndSec}s`
+        })
+      : freezeHoldingChannelV0({
+          id: "castle_manifesto_trim",
+          titleTr: "Manifesto · kırpılmış önizleme",
+          titleEn: "Manifesto · trimmed preview",
+          type: "castle_genesis_live",
+          url: CASTLE_GENESIS_LIVE_PAGE_V0,
+          livePageUrl: CASTLE_GENESIS_LIVE_PAGE_V0,
+          holdingSlide: CASTLE_GENESIS_HOLDING_SLIDE_V0,
+          badgeTr: "Önizleme",
+          badgeEn: "Preview"
+        })
+  );
 
   rows.push(
     freezeYoutubeChannelV0({
@@ -329,6 +368,7 @@ export function resolveWorldSpaceMediaChannelForMapNodeV0(node) {
   if (id === "chess" || id === "arena" || id === "chess_arena" || id.includes("chess")) {
     return RHIZOH_LEARNING_CHANNEL_ID_V0;
   }
+  if (id === "castle_chess") return "castle_chess";
   if (id === "event") return "nasa";
   if (id === "radio") return "lofi";
   const type = String(node?.type || "").trim().toLowerCase();

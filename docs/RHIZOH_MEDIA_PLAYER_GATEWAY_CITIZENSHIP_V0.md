@@ -72,7 +72,7 @@ Citizenship labels:
 
 ## Not in v0
 
-- WorldSports **map pin** (next PR)
+- WorldSports **map pin** — `worldsports` on sovereign mesh (`SOVEREIGN_CORE_NODES_V0`)
 - Per-channel ACK / `MEDIA_STATE_APPLIED` wire
 - Ticket mesh E2E (`traceGraphIndex` mount)
 
