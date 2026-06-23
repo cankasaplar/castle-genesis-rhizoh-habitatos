@@ -9,15 +9,59 @@ import {
   buildSovereignTowerGraphEdgesV0
 } from "./sovereignWorldMapNodesV0.js";
 import { resolveRhizohTowerProviderV0 } from "./rhizohTowerProviderRegistryV0.js";
+import { listSpiralMMOContinentMapPinsV0 } from "./spiralMMOContinentPinsV0.js";
 
 export const RHIZOH_LLM_TOWER_FIT_EVENT_V0 = "rhizoh:llm-tower-fit-v0";
+export const RHIZOH_SPIRAL_SATELLITE_FIT_EVENT_V0 = "rhizoh:spiral-satellite-fit-v0";
 export const LLM_TOWER_MAP_REGISTRY_SCHEMA_V0 = "rhizoh.llm_tower_map_registry.v0";
+
+/** World-zoom fan — keeps all 7 labels readable (true coords unchanged for warp). */
+export const LLM_TOWER_WORLD_FAN_OFFSETS_V0 = Object.freeze({
+  gemini_tower: Object.freeze({ dLat: 3, dLon: -5 }),
+  claude_tower: Object.freeze({ dLat: 6, dLon: 1 }),
+  chatgpt_tower: Object.freeze({ dLat: -1, dLon: 6 }),
+  deepmind_tower: Object.freeze({ dLat: 4, dLon: -4 }),
+  mistral_tower: Object.freeze({ dLat: -2, dLon: 5 }),
+  kyoto_tower: Object.freeze({ dLat: 0, dLon: 0 }),
+  sora_tower: Object.freeze({ dLat: -5, dLon: -7 })
+});
 
 /**
  * @returns {ReadonlyArray<object>}
  */
 export function listLlmTowerMapNodesV0() {
   return SOVEREIGN_TOWERS_V0;
+}
+
+/**
+ * Spread tower pins at low zoom so SF/EU clusters do not stack (display only).
+ * @param {object} node
+ * @param {number} [mapZoom]
+ */
+export function resolveLlmTowerMarkerCoordsV0(node, mapZoom = 14) {
+  const lat = Number(node?.lat);
+  const lon = Number(node?.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return Object.freeze({ lat: 0, lon: 0 });
+  }
+  if (String(node?.type || "") !== "tower") {
+    return Object.freeze({ lat, lon });
+  }
+  const zoom = Number(mapZoom);
+  if (Number.isFinite(zoom) && zoom > 5) {
+    return Object.freeze({ lat, lon });
+  }
+  const off = LLM_TOWER_WORLD_FAN_OFFSETS_V0[String(node.id || "")];
+  if (!off) return Object.freeze({ lat, lon });
+  return Object.freeze({ lat: lat + off.dLat, lon: lon + off.dLon });
+}
+
+/**
+ * SpiralMMO continent pins for satellite viewport fit.
+ * @returns {readonly object[]}
+ */
+export function resolveSpiralSatelliteViewportFitNodesV0() {
+  return listSpiralMMOContinentMapPinsV0();
 }
 
 /**
@@ -80,6 +124,23 @@ export function requestFitLlmTowersOnMapV0(source = "console") {
 }
 
 /**
+ * Switch viewport to SpiralMMO satellite layer (Uydu) pin set.
+ * @param {string} [source]
+ */
+export function requestFitSpiralSatelliteMapV0(source = "console") {
+  if (typeof window === "undefined") return false;
+  window.dispatchEvent(
+    new CustomEvent(RHIZOH_SPIRAL_SATELLITE_FIT_EVENT_V0, {
+      detail: Object.freeze({
+        source: String(source || "console"),
+        nodes: resolveSpiralSatelliteViewportFitNodesV0()
+      })
+    })
+  );
+  return true;
+}
+
+/**
  * Voice / chat: "tüm kuleler", "all towers", …
  * @param {string} text
  * @param {{ source?: string, tr?: boolean }} [opts]
@@ -91,20 +152,38 @@ export function tryExecuteLlmTowerFitFromTextV0(text = "", opts = {}) {
     .replace(/[\u0300-\u036f]/g, "")
     .trim();
   if (!normalized) return null;
-  const hit =
+  const towerHit =
     /\b(tum kuleler|tum llm|butun kuleler|kuleleri goster|llm kuleleri|kule agi)\b/.test(
       normalized
     ) || /\b(all towers|show towers|llm towers|every tower|tower mesh)\b/.test(normalized);
-  if (!hit) return null;
-  requestFitLlmTowersOnMapV0(opts.source || "voice_command");
-  const tr = opts.tr !== false;
-  return Object.freeze({
-    ok: true,
-    kind: "LLM_TOWER_FIT",
-    reply: tr
-      ? "Tüm LLM kulelerini haritada gösteriyorum."
-      : "Showing all LLM towers on the map."
-  });
+  if (towerHit) {
+    requestFitLlmTowersOnMapV0(opts.source || "voice_command");
+    const tr = opts.tr !== false;
+    return Object.freeze({
+      ok: true,
+      kind: "LLM_TOWER_FIT",
+      reply: tr
+        ? "Tüm LLM kulelerini haritada gösteriyorum."
+        : "Showing all LLM towers on the map."
+    });
+  }
+
+  const spiralHit =
+    /\b(uydu|spiralmmo|spiral mmo|uydu haritasi|satellite map)\b/.test(normalized) ||
+    /\b(spiral satellite|spiral map)\b/.test(normalized);
+  if (spiralHit) {
+    requestFitSpiralSatelliteMapV0(opts.source || "voice_command");
+    const tr = opts.tr !== false;
+    return Object.freeze({
+      ok: true,
+      kind: "SPIRAL_SATELLITE_FIT",
+      reply: tr
+        ? "SpiralMMO uydu haritasına geçiyorum."
+        : "Switching to SpiralMMO satellite map."
+    });
+  }
+
+  return null;
 }
 
 /**
@@ -144,6 +223,26 @@ export function mountLlmTowerMapConsoleV0() {
   if (typeof window === "undefined" || consoleMountedV0) return;
   consoleMountedV0 = true;
   window.__rhizoh = window.__rhizoh || {};
-  window.__rhizoh.listLlmTowers = () => buildLlmTowerMapRegistrySnapshotV0();
+  window.__rhizoh.listLlmTowers = () => {
+    const snap = buildLlmTowerMapRegistrySnapshotV0();
+    try {
+      if (typeof console !== "undefined" && console.table) {
+        console.table(
+          snap.towers.map((t) => ({
+            label: t.label,
+            id: t.id,
+            provider: t.provider,
+            lat: t.lat,
+            lon: t.lon
+          }))
+        );
+      }
+    } catch {
+      /* noop */
+    }
+    return snap;
+  };
   window.__rhizoh.fitAllLlmTowers = (source) => requestFitLlmTowersOnMapV0(source || "console");
+  window.__rhizoh.fitSpiralSatellite = (source) =>
+    requestFitSpiralSatelliteMapV0(source || "console");
 }

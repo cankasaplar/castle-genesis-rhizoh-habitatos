@@ -24,6 +24,12 @@ import { mountMatchGatewayCommitBridgeConsoleV0 } from "./matchmakingGatewayComm
 import { mountMatchBroadcastTransportConsoleV0 } from "./matchmakingBroadcastTransportV0.js";
 import { mountGatewayServiceRegistrationConsoleV0 } from "./gatewayServiceRegistrationV0.js";
 import { mountVoiceGatewayCitizenshipConsoleV0 } from "./voiceGatewayCitizenshipV0.js";
+import {
+  armLlmTowerGatewayCitizenshipBootV0,
+  ensureLlmTowerGatewayCitizenshipV0,
+  mountTowerGatewayCitizenshipConsoleV0
+} from "./towerGatewayCitizenshipV0.js";
+import { waitForMatchGatewayWsOpenV0 } from "./matchmakingGatewayWsV0.js";
 import { mountMatchGameTransportConsoleV0 } from "./matchGameTransportV0.js";
 import { mountMatchSessionSyncBridgeConsoleV0 } from "./matchSessionSyncBridgeV0.js";
 import { mountMatchBroadcastE2eVerifyConsoleV0 } from "./matchmakingBroadcastE2eVerifyV0.js";
@@ -107,6 +113,11 @@ export function mountMatchmakingConsoleV0() {
       consoleSchema: MATCHMAKING_CONSOLE_SCHEMA_V0
     });
     mountVoiceGatewayCitizenshipConsoleV0();
+    mountTowerGatewayCitizenshipConsoleV0();
+    armLlmTowerGatewayCitizenshipBootV0();
+    void waitForMatchGatewayWsOpenV0({ timeoutMs: 20_000 }).then((res) => {
+      if (res.ok && res.ws) void ensureLlmTowerGatewayCitizenshipV0(res.ws);
+    });
     const snap = buildMatchmakingConsoleSnapV0();
     window.__rhizoh.matchmakingConsole = snap;
     return snap;
@@ -127,6 +138,11 @@ export function mountMatchmakingConsoleV0() {
   mountMatchBroadcastTransportConsoleV0();
   mountGatewayServiceRegistrationConsoleV0();
   mountVoiceGatewayCitizenshipConsoleV0();
+  mountTowerGatewayCitizenshipConsoleV0();
+  armLlmTowerGatewayCitizenshipBootV0();
+  void waitForMatchGatewayWsOpenV0({ timeoutMs: 20_000 }).then((res) => {
+    if (res.ok && res.ws) void ensureLlmTowerGatewayCitizenshipV0(res.ws);
+  });
   mountMatchGameTransportConsoleV0();
   mountMatchSessionSyncBridgeConsoleV0();
   mountMatchBroadcastE2eVerifyConsoleV0();
