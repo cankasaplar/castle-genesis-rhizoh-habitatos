@@ -28,6 +28,28 @@ Pipeline özeti: Live conversation → observation extraction → **SESSION_LOG*
 
 ---
 
+### 2026-06-19 — Günlük backlog gözden geçirme + NETWORK SURFACE rapor
+
+**Summary:**
+- Prod doğrulama: `index-DfG7boLh.js` — boot sağlıklı, proof overlay kaldırıldı (#322), gateway ~1.5s, voice v3 kayıtlı
+- `__RHIZOH_FULL_REPORT__()`: structural ✔ · spatial ⏳ `legal_activation_hold` · operational ✔
+- **PR #323** — `NETWORK SURFACE` bölümü: harita pinleri (SpiralMMO), tower registry, 6:44 geri sayım, voice/broadcast registration, invite ops, ticket graph mount
+- Yatırımcı linkleri: `__rhizoh.inviteOps.generate({ role: 'investor' })` + `mailDraft()` hazır; batch gönderim manuel
+- Backlog durumu (henüz merge/deploy yok): tower citizenship, media player live broadcast, castle-to-castle AV, ticket mesh E2E, paper polish
+
+**Linked Artifacts:**
+- PR #323 — `cursor/system-report-network-surface-8f5d`
+- `apps/client/src/rhizoh/runtime/rhizohFullSystemReportV0.js`
+- `docs/RHIZOH_PRODUCT_GAPS_V0.md`
+
+- **Habitat:** Collaboration / ops
+- **Katılımcılar:** Founder + Cursor Agent
+- **SPECFLOW:** CORE-ELIGIBLE (rapor diagnostic) · RESEARCH-ONLY (backlog tracks)
+- **Hedef:** Günlük iş listesi + investor-ready sistem raporu
+- **Frozen core:** dokunulmadı
+
+---
+
 ### 2026-06-19 — Matchmaking Core Spec v1 (P0 backbone)
 
 **Summary:**
