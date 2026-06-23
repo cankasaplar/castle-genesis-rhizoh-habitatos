@@ -276,6 +276,12 @@ function resolveAgreementMetricsV0() {
   });
 }
 
+function resolveClusterSessionMovesSeenV0() {
+  if (typeof window === "undefined") return 0;
+  const slots = window.__rhizoh?.chessGameCluster?.slots || [];
+  return slots.reduce((sum, slot) => sum + (Number(slot?.moveCount) || 0), 0);
+}
+
 /**
  * Build learning report from live cluster observability (no fabricated totals).
  */
@@ -286,7 +292,12 @@ export function buildRhizohChessLearningReportV0() {
   const compressionGames = memoryNodes.filter((n) => n.kind === "game_compression").length;
   const weights = readChessLearningWeightsV0();
 
-  const totalMovesSeen = Math.max(monitor.measurement.movesMeasured || 0, 0);
+  const clusterMovesSeen = resolveClusterSessionMovesSeenV0();
+  const totalMovesSeen = Math.max(
+    monitor.measurement.movesMeasured || 0,
+    clusterMovesSeen,
+    0
+  );
   const gamesObserved = Math.max(observedMatchIdsV0.size, gameRowsV0.size);
   const clusterSessionEnded =
     typeof window !== "undefined"
@@ -316,6 +327,7 @@ export function buildRhizohChessLearningReportV0() {
     gamesObserved,
     gamesCompleted,
     totalMovesSeen,
+    clusterMovesSeen,
     uniquePositions: uniqueFenKeysV0.size,
     openingCoverage: resolveOpeningCoverageV0(),
     averageDepthSeen,
