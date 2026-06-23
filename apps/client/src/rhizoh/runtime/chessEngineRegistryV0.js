@@ -3,6 +3,11 @@
  * RESEARCH-ONLY — no execution authority; move selection stays in arena/cluster pipelines.
  */
 
+import {
+  getChessLc0EngineStatusV0,
+  isChessLc0UciConfiguredV0
+} from "./chessLc0UciBridgeV0.js";
+
 export const CHESS_ENGINE_REGISTRY_SCHEMA_V0 = "castle.rhizoh.chess_engine_registry.v0";
 
 export const CHESS_ENGINE_BACKEND_ID_V0 = Object.freeze({
@@ -10,6 +15,10 @@ export const CHESS_ENGINE_BACKEND_ID_V0 = Object.freeze({
   LC0_UCI: "lc0_uci",
   HEURISTIC_FALLBACK: "heuristic_fallback"
 });
+
+function isLc0BackendAvailableV0() {
+  return getChessLc0EngineStatusV0() === "lc0_uci";
+}
 
 /** @type {Readonly<Record<string, { available: boolean, description: string }>>} */
 export const CHESS_ENGINE_REGISTRY_V0 = Object.freeze({
@@ -19,7 +28,7 @@ export const CHESS_ENGINE_REGISTRY_V0 = Object.freeze({
   }),
   [CHESS_ENGINE_BACKEND_ID_V0.LC0_UCI]: Object.freeze({
     available: false,
-    description: "Leela Chess Zero UCI — reserved; weights + bridge not bundled"
+    description: "Leela Chess Zero UCI — optional sidecar via VITE_RHIZOH_LC0_UCI_URL"
   }),
   [CHESS_ENGINE_BACKEND_ID_V0.HEURISTIC_FALLBACK]: Object.freeze({
     available: true,
@@ -33,6 +42,9 @@ export const CHESS_ENGINE_REGISTRY_V0 = Object.freeze({
  */
 export function resolveChessEngineBackendV0(preferred) {
   const id = String(preferred || CHESS_ENGINE_BACKEND_ID_V0.STOCKFISH_WASM_16);
+  if (id === CHESS_ENGINE_BACKEND_ID_V0.LC0_UCI && isLc0BackendAvailableV0()) {
+    return CHESS_ENGINE_BACKEND_ID_V0.LC0_UCI;
+  }
   const entry = CHESS_ENGINE_REGISTRY_V0[id];
   if (entry?.available) return id;
   return CHESS_ENGINE_BACKEND_ID_V0.HEURISTIC_FALLBACK;
@@ -41,7 +53,12 @@ export function resolveChessEngineBackendV0(preferred) {
 export function listChessEngineBackendsV0() {
   return Object.freeze(
     Object.entries(CHESS_ENGINE_REGISTRY_V0).map(([id, meta]) =>
-      Object.freeze({ id, ...meta })
+      Object.freeze({
+        id,
+        ...meta,
+        available: id === CHESS_ENGINE_BACKEND_ID_V0.LC0_UCI ? isLc0BackendAvailableV0() : meta.available,
+        configured: id === CHESS_ENGINE_BACKEND_ID_V0.LC0_UCI ? isChessLc0UciConfiguredV0() : undefined
+      })
     )
   );
 }

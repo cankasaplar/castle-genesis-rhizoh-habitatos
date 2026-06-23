@@ -9,6 +9,7 @@ import { getChessLearningBatchSnapshotV0 } from "./chessLearningBatchV0.js";
 import { getChessLearningBatchOpeningFeedSnapshotV0 } from "./chessLearningBatchOpeningFeedV0.js";
 import { getChessLearningMonitorSnapshotV0 } from "./chessLearningMonitorV0.js";
 import { listChessEngineBackendsV0 } from "./chessEngineRegistryV0.js";
+import { getChessLc0BridgeSnapshotV0 } from "./chessLc0UciBridgeV0.js";
 import { getChessStockfishEngineStatusV0 } from "./chessStockfishEngineV0.js";
 import {
   CHESS_LEARN_BUFFER_MAX_V0,
@@ -87,11 +88,7 @@ export function buildRhizohChessLearningCameraV0() {
     engines: Object.freeze({
       stockfish: getChessStockfishEngineStatusV0(),
       registry: listChessEngineBackendsV0(),
-      lc0: Object.freeze({
-        available: false,
-        status: "reserved",
-        note: "UCI bridge + weights not bundled — truth uses stockfish + DB only"
-      })
+      lc0: getChessLc0BridgeSnapshotV0()
     }),
     cluster: Object.freeze({
       running: Boolean(monitor.clusterRunning),

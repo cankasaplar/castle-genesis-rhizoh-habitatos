@@ -18,9 +18,10 @@ describe("chessEngineRegistryV0", () => {
     );
   });
 
-  it("lists LC0 as reserved", () => {
+  it("lists LC0 as reserved with configured flag", () => {
     const backends = listChessEngineBackendsV0();
     const lc0 = backends.find((b) => b.id === CHESS_ENGINE_BACKEND_ID_V0.LC0_UCI);
     expect(lc0?.available).toBe(false);
+    expect(lc0?.configured).toBe(false);
   });
 });
