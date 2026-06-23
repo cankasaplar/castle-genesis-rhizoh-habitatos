@@ -165,6 +165,17 @@ export function recordChessClusterMoveDriftV0(slot, moveRow, enrich = {}) {
   const drifted = matchedRank == null || matchedRank > 2;
   const position = moveRow.fenBefore || slot.game?.fen?.() || null;
 
+  if (position) {
+    rememberFenClusterObservationV0(position, {
+      slotId: slot.slotId,
+      matchId: slot.matchId,
+      ply: moveRow.ply,
+      drifted,
+      learningEligible: false,
+      preview: true
+    });
+  }
+
   const row = Object.freeze({
     schema: CHESS_CLUSTER_DRIFT_DATASET_SCHEMA_V0,
     slotId: slot.slotId,

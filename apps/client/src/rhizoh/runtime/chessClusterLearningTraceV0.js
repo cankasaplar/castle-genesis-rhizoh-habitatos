@@ -55,7 +55,7 @@ export async function traceChessClusterPolicyDiffFromBufferV0(slot, moveRow, fen
         movetimeMs: 320,
         depth: 10
       }),
-    { label: `policy_diff_slot_${slot.slotId}`, force: false, fromDeferred: true }
+    { label: `policy_diff_slot_${slot.slotId}`, force: true, fromDeferred: true }
   );
   if (!multi?.lines?.length) return null;
 

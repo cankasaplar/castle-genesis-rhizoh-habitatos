@@ -29,15 +29,9 @@ export function registerUglLearnBufferEnrichHandlerV0(handler) {
 function isEngineIdleForLearnEnrichmentV0() {
   if (isChessArenaWorkspaceOpenV0()) return false;
   const queue = getChessEngineQueueSnapshotV0();
-  const playPending =
-    (queue.pendingByPriority?.arena || 0) + (queue.pendingByPriority?.cluster || 0);
-  if (playPending > 0) return false;
-  if (
-    queue.active?.kind === CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE ||
-    queue.active?.kind === CHESS_ENGINE_TASK_KIND_V0.ARENA_MOVE
-  ) {
-    return false;
-  }
+  if ((queue.pendingByPriority?.arena || 0) > 0) return false;
+  if (queue.active?.kind === CHESS_ENGINE_TASK_KIND_V0.ARENA_MOVE) return false;
+  // Cluster may run continuously — learn MultiPV interleaves via LEARNING_MEASURE priority.
   return true;
 }
 
