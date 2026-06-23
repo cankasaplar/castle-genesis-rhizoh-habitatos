@@ -21,6 +21,7 @@ import { ensureExecutionGovernanceSwitchboardDevToolsV0 } from "./rhizohExecutio
 import { ensureHardSeparationDevToolsV0 } from "./rhizohHardSeparationLayerV0.js";
 import { ensureRhizohChessLearningReportV0 } from "./rhizohChessLearningReportV0.js";
 import { ensureRhizohChessLearningCameraV0 } from "./rhizohChessLearningCameraV0.js";
+import { ensureChessLearningDebugV0 } from "./rhizohChessLearningDebugV0.js";
 import { ensureRhizohChessLifetimeReportV0 } from "./rhizohChessLifetimeReportV0.js";
 import { ensureChessHistoryBrainV0 } from "./chessHistoryBrainReportV0.js";
 import { ensureRhizohChessEvolutionCurveV0 } from "./rhizohChessEvolutionCurveV0.js";
@@ -100,6 +101,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureChessOfflineBatchTrainerV0();
     ensureRhizohChessLearningReportV0();
     ensureRhizohChessLearningCameraV0();
+    ensureChessLearningDebugV0();
     ensureRhizohChessLifetimeReportV0();
     ensureChessHistoryBrainV0();
     ensureRhizohChessEvolutionCurveV0();
