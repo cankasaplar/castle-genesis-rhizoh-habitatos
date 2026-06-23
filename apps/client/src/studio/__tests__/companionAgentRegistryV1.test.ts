@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createCompanionAgentRegistryV1 } from "../companionAgentRegistryV1";
+import { createCompanionAgentRegistryV1 } from "../runtime/companionAgentRegistryV1";
 
 describe("companionAgentRegistryV1", () => {
   it("produces valid provenance structure", () => {

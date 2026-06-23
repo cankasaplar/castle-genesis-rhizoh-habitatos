@@ -55,7 +55,7 @@ export async function invokeRhizohCognitiveTurn(opts: RhizohCognitiveInvokeOptio
   }
 
   const prep = prepareRhizohLlmTurnV0({
-    message: opts.userGoal,
+    text: opts.userGoal,
     speakInstantAck: false,
     sourcePath: "studio_cognitive_invoke"
   });

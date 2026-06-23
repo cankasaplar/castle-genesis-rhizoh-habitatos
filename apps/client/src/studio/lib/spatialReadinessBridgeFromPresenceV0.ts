@@ -167,7 +167,10 @@ export function buildSpatialReadinessBridgeFromPresenceV0(input: {
   baseEmbodimentDrive?: Record<string, unknown> | null;
   symbolicEmbodimentActive?: boolean;
 }): SpatialReadinessBridgeFromPresenceV0 {
-  const pres = input.presence && typeof input.presence === "object" ? input.presence : { avatars: {}, rooms: {} };
+  const pres: PresenceLayerState =
+    input.presence && typeof input.presence === "object"
+      ? input.presence
+      : ({ avatars: {}, rooms: {}, broadcasts: {} } as PresenceLayerState);
   const roomUid =
     input.roomUid && typeof input.roomUid === "string" && pres.rooms?.[input.roomUid]
       ? input.roomUid
