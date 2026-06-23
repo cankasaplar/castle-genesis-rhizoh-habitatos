@@ -145,6 +145,9 @@ export function resolveSymbyoMapIntentDecisionV0(intent = {}, surface = {}, node
     if (nodeId === "chess_arena") {
       return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_CHESS_ARENA, 0.92, refs);
     }
+    if (nodeId === "worldsports" || nodeId === "world_sports") {
+      return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER, 0.9, refs);
+    }
     if (nodeId === "rhizoh_portal" || nodeType === "portal") {
       return normalizeSymbyoMapDecisionV0(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_TOWER_PORTAL, 0.9, refs);
     }

@@ -36,10 +36,11 @@ describe("mediaPlayerGatewayCitizenshipV0", () => {
     expect(typeof globalThis.window.__rhizoh.mediaGateway.listRegistered).toBe("function");
   });
 
-  it("listMediaGatewayCitizenChannelIdsV0 includes world_sports", () => {
+  it("listMediaGatewayCitizenChannelIdsV0 includes world_sports and full pack", () => {
     const ids = listMediaGatewayCitizenChannelIdsV0();
     expect(ids).toContain(RHIZOH_WORLDSPORTS_CHANNEL_ID_V0);
     expect(ids).toContain("castle_genesis");
+    expect(ids).toHaveLength(10);
   });
 
   it("recordMediaObservationV1 surfaces media slice", () => {

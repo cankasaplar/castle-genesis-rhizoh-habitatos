@@ -3,7 +3,7 @@
  * Map renderer reads this; orchestrator maps types → workspace / media / info.
  */
 
-import { resolveInitialWorldSpaceMediaChannelIdV0, resolveWorldSpaceMediaChannelForMapNodeV0, RHIZOH_LEARNING_CHANNEL_ID_V0 } from "./worldSpaceMediaChannelsV0.js";
+import { resolveInitialWorldSpaceMediaChannelIdV0, resolveWorldSpaceMediaChannelForMapNodeV0, RHIZOH_LEARNING_CHANNEL_ID_V0, RHIZOH_WORLDSPORTS_CHANNEL_ID_V0 } from "./worldSpaceMediaChannelsV0.js";
 import { publishChessClusterBroadcastActiveV0 } from "./chessEngineContentionGateV0.js";
 import { presenceColorForStateV0 } from "./castlePresenceRegistryV0.js";
 import {
@@ -110,6 +110,17 @@ export const SOVEREIGN_CORE_NODES_V0 = Object.freeze([
     color: "#10b981",
     owner: "Mind_Core",
     description: "Nöral satranç motoru devrede."
+  }),
+  Object.freeze({
+    id: "worldsports",
+    name: "WorldSports",
+    label: "SPORTS",
+    type: "zone",
+    lat: 41.043,
+    lon: 29.004,
+    color: "#14b8a6",
+    owner: "Public",
+    description: "Canlı spor skorları ve haber başlıkları — WorldSports kanalı."
   })
 ]);
 
@@ -539,6 +550,7 @@ export function dispatchSovereignVoiceWarpV0(target, source = "voice_warp") {
 /** Turkish spoken labels for map pins (TTS + chat; avoid English tower names in TR UI). */
 export const SOVEREIGN_MAP_NODE_VOICE_LABEL_TR_V0 = Object.freeze({
   chess_arena: "Satranç Arenası",
+  worldsports: "WorldSports",
   library: "Codex Kasası",
   event: "Etkinlik Alanı",
   ghost: "Rhizoh Yapay Zekâ",
@@ -560,6 +572,19 @@ const SOVEREIGN_MAP_VOICE_NAV_ALIASES_V0 = Object.freeze([
   Object.freeze({
     nodeId: "chess_arena",
     aliases: ["chess arena", "chess", "satranc arenasi", "satranç arenası", "satranç", "satranc"]
+  }),
+  Object.freeze({
+    nodeId: "worldsports",
+    aliases: [
+      "worldsports",
+      "world sports",
+      "dunya sporlari",
+      "dünya sporları",
+      "canli spor",
+      "canlı spor",
+      "spor kanali",
+      "spor kanalı"
+    ]
   }),
   Object.freeze({
     nodeId: "library",
@@ -883,5 +908,29 @@ export function dispatchOpenRhizohLearningChannelV0(payload = {}) {
       (tr ? "Rhizoh Öğrenme Kanalı" : "Rhizoh Learning Channel"),
     source: payload.source || "rhizoh_learning_channel",
     initialChannelId: RHIZOH_LEARNING_CHANNEL_ID_V0
+  });
+}
+
+/**
+ * Open World · Space media tube on WorldSports channel (scores + headlines).
+ * @param {{ node?: object, title?: string, source?: string }} [payload]
+ */
+export function dispatchOpenWorldSportsChannelV0(payload = {}) {
+  const sportsNode =
+    payload.node ||
+    SOVEREIGN_CORE_NODES_V0.find((n) => n.id === "worldsports") ||
+    Object.freeze({
+      id: "worldsports",
+      type: "zone",
+      label: "SPORTS",
+      name: "WorldSports",
+      color: "#14b8a6"
+    });
+  const tr = payload.tr !== false;
+  dispatchOpenMediaTubeV0({
+    node: sportsNode,
+    title: payload.title || (tr ? "WorldSports" : "WorldSports"),
+    source: payload.source || "map:node:worldsports",
+    initialChannelId: RHIZOH_WORLDSPORTS_CHANNEL_ID_V0
   });
 }

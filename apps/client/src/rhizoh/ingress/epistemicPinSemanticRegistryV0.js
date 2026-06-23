@@ -59,6 +59,18 @@ const STATIC_PIN_SEMANTICS_V0 = Object.freeze({
       description: "Karar baskısı simülatörü — hamle zincirleri nedensel baskıyı zaman içinde gösterir."
     })
   }),
+  worldsports: Object.freeze({
+    en: Object.freeze({
+      title: "WorldSports",
+      role: "Live scores + headlines surface",
+      description: "Gateway world-feed observation — API-Sports scores and news; interpretation only."
+    }),
+    tr: Object.freeze({
+      title: "WorldSports",
+      role: "Canlı skor + haber yüzeyi",
+      description: "Gateway world-feed gözlemi — API-Sports skorları ve haberler; yalnızca yorum."
+    })
+  }),
   gemini_tower: Object.freeze({
     en: Object.freeze({
       title: "Gemini Neural Tower",
