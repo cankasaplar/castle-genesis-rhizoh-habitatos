@@ -10,6 +10,7 @@ import {
 } from "./executionPhaseSynchronizerV0.js";
 import { ingestMediaTimelineLaneV0 } from "./crossSpaceCausalFusionV0.js";
 import { recordMediaShadowTimelineEventV0 } from "./mediaShadowTimelineV0.js";
+import { wireWorldBridgeFusionAfterIngestV0 } from "./worldBridgeFusionWireV0.js";
 
 export const MEDIA_EVENT_ADAPTER_SCHEMA_V0 = "castle.rhizoh.media_event_adapter.v0";
 export const MEDIA_TIMELINE_EVENT_V0 = "rhizoh:media-timeline-event-v0";
@@ -77,7 +78,7 @@ const mediaEventLogV0 = [];
 
 /**
  * @param {object} normalized
- * @param {{ dispatchEvent?: boolean }} [opts]
+ * @param {{ dispatchEvent?: boolean, fuse?: boolean }} [opts]
  */
 export function ingestMediaTimelineEventV0(normalized, opts = {}) {
   mediaEventLogV0.unshift(normalized);
@@ -108,6 +109,11 @@ export function ingestMediaTimelineEventV0(normalized, opts = {}) {
   });
 
   const shadowEntry = recordMediaShadowTimelineEventV0(normalized);
+  const fusion = wireWorldBridgeFusionAfterIngestV0({
+    atMs: normalized.atMs,
+    fuse: opts.fuse,
+    suppressEvent: opts.dispatchEvent === false
+  });
 
   if (opts.dispatchEvent !== false && typeof globalThis !== "undefined" && globalThis.dispatchEvent) {
     globalThis.dispatchEvent(
@@ -122,6 +128,7 @@ export function ingestMediaTimelineEventV0(normalized, opts = {}) {
     normalized,
     lane,
     shadowEntry,
+    fusion,
     interpretationOnly: true,
     nonExecutive: true
   });
