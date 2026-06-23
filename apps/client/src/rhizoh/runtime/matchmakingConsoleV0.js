@@ -34,6 +34,7 @@ import {
   ensureMediaPlayerGatewayCitizenshipV0,
   mountMediaPlayerGatewayCitizenshipConsoleV0
 } from "./mediaPlayerGatewayCitizenshipV0.js";
+import { mountTraceGraphIndexConsoleV0 } from "../ticket/traceGraphIndexConsoleV0.js";
 import { waitForMatchGatewayWsOpenV0 } from "./matchmakingGatewayWsV0.js";
 import { mountMatchGameTransportConsoleV0 } from "./matchGameTransportV0.js";
 import { mountMatchSessionSyncBridgeConsoleV0 } from "./matchSessionSyncBridgeV0.js";
@@ -120,6 +121,7 @@ export function mountMatchmakingConsoleV0() {
     mountVoiceGatewayCitizenshipConsoleV0();
     mountTowerGatewayCitizenshipConsoleV0();
     mountMediaPlayerGatewayCitizenshipConsoleV0();
+    mountTraceGraphIndexConsoleV0();
     armLlmTowerGatewayCitizenshipBootV0();
     armMediaPlayerGatewayCitizenshipBootV0();
     void waitForMatchGatewayWsOpenV0({ timeoutMs: 20_000 }).then((res) => {
@@ -150,6 +152,7 @@ export function mountMatchmakingConsoleV0() {
   mountVoiceGatewayCitizenshipConsoleV0();
   mountTowerGatewayCitizenshipConsoleV0();
   mountMediaPlayerGatewayCitizenshipConsoleV0();
+  mountTraceGraphIndexConsoleV0();
   armLlmTowerGatewayCitizenshipBootV0();
   armMediaPlayerGatewayCitizenshipBootV0();
   void waitForMatchGatewayWsOpenV0({ timeoutMs: 20_000 }).then((res) => {

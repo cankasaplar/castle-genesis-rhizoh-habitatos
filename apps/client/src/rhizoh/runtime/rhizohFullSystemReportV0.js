@@ -665,6 +665,10 @@ function collectNetworkSurfaceDiagnosticV0() {
     ticketGraph: traceGraph
       ? Object.freeze({
           mounted: true,
+          liveIngestCount:
+            typeof traceGraph.getSnapshot === "function"
+              ? traceGraph.getSnapshot()?.liveIngestCount ?? 0
+              : 0,
           note: "window.__rhizoh.traceGraphIndex — causal ticket mesh"
         })
       : Object.freeze({ mounted: false, note: "ticket graph console not mounted this session" }),
@@ -681,7 +685,9 @@ function collectNetworkSurfaceDiagnosticV0() {
       "__rhizoh.towerGateway.ensure()",
       "__rhizoh.towerGateway.listRegistered()",
       "__rhizoh.mediaGateway.ensure()",
-      "__rhizoh.mediaGateway.listRegistered()"
+      "__rhizoh.mediaGateway.listRegistered()",
+      "__rhizoh.traceGraphIndex.snapshot()",
+      "__rhizoh.traceGraphIndex.runPipeline({ records: [] })"
     ])
   });
 }
@@ -945,7 +951,7 @@ export function printFullSystemReportV0(report) {
     `    broadcast: ack ${r.networkSurface?.gatewayRegistration?.broadcastAck ?? 0} · delivered ${r.networkSurface?.gatewayRegistration?.broadcastDelivered ?? 0}`,
     `    gateway services: voice ${r.networkSurface?.gatewayRegistration?.voiceGatewayMounted ? "mounted" : "off"} · tower ${r.networkSurface?.gatewayRegistration?.towerGatewayMounted ? "mounted" : "off"} · media ${r.networkSurface?.gatewayRegistration?.mediaGatewayMounted ? "mounted" : "off"} · registry ${r.networkSurface?.gatewayRegistration?.gatewayServiceMounted ? "mounted" : "off"}`,
     `    invite ops: ${r.networkSurface?.inviteOps?.lastGenerated?.role ? `last ${r.networkSurface.inviteOps.lastGenerated.role}` : "none generated this session"}`,
-    `    ticket graph: ${r.networkSurface?.ticketGraph?.mounted ? "mounted" : "not mounted"}`,
+    `    ticket graph: ${r.networkSurface?.ticketGraph?.mounted ? `mounted · ingest ${r.networkSurface?.ticketGraph?.liveIngestCount ?? 0}` : "not mounted"}`,
     "───────────────────────────────────────────",
     "  EPISTEMIC SUBSTRATE",
     `    turn sovereignty: ${r.epistemicSubstrate?.turnSovereignty?.sovereignReality ?? "none"} (${r.epistemicSubstrate?.turnSovereignty?.enforcement ?? "log_only"})`,

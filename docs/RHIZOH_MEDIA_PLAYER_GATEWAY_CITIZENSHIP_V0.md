@@ -85,6 +85,6 @@ Citizenship labels:
 
 - WorldSports **map pin** — `worldsports` on sovereign mesh (`SOVEREIGN_CORE_NODES_V0`)
 - Per-channel ACK / `MEDIA_STATE_APPLIED` wire
-- Ticket mesh E2E (`traceGraphIndex` mount)
+- Ticket mesh E2E — `window.__rhizoh.traceGraphIndex` mounted at matchmaking console boot (`traceGraphIndexConsoleV0.js`)
 
 *interpretationOnly: true · Observation ≠ Execution*
