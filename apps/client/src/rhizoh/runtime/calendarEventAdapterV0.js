@@ -9,6 +9,7 @@ import {
   schedulePhaseCommitV0
 } from "./executionPhaseSynchronizerV0.js";
 import { ingestCalendarContinuityLaneV0 } from "./crossSpaceCausalFusionV0.js";
+import { recordCalendarShadowTimelineEventV0 } from "./calendarShadowTimelineV0.js";
 
 export const CALENDAR_EVENT_ADAPTER_SCHEMA_V0 = "castle.rhizoh.calendar_event_adapter.v0";
 export const CALENDAR_EVENT_V0 = "rhizoh:calendar-event-v0";
@@ -105,10 +106,12 @@ export function ingestCalendarEventV0(normalized, opts = {}) {
     source: `calendar:${normalized.eventType}`
   });
 
+  const shadowEntry = recordCalendarShadowTimelineEventV0(normalized);
+
   if (opts.dispatchEvent !== false && typeof globalThis !== "undefined" && globalThis.dispatchEvent) {
     globalThis.dispatchEvent(
       new CustomEvent(CALENDAR_EVENT_V0, {
-        detail: Object.freeze({ normalized, lane })
+        detail: Object.freeze({ normalized, lane, shadowEntry })
       })
     );
   }
@@ -117,6 +120,7 @@ export function ingestCalendarEventV0(normalized, opts = {}) {
     schema: CALENDAR_EVENT_ADAPTER_SCHEMA_V0,
     normalized,
     lane,
+    shadowEntry,
     interpretationOnly: true,
     nonExecutive: true
   });

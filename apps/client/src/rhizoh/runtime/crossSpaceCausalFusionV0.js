@@ -338,14 +338,22 @@ export function fuseCrossSpaceEpistemicV0(opts = {}) {
   const chessWeight = primarySpaceId === CAUSAL_SPACE_ID_V0.CHESS ? 0.55 : 0.35;
   const sportsWeight = primarySpaceId === CAUSAL_SPACE_ID_V0.SPORTS ? 0.4 : 0.25;
   const cuxWeight = 0.12;
+  const calendarWeight = calendarLaneV0 ? 0.1 : 0;
   const mediaWeight = mediaLaneV0 ? 0.08 : 0;
 
   const chessShares = weightSharesV0(chessLaneV0?.shares || emptySharesV0(), chessWeight);
   const sportsShares = weightSharesV0(sportsLaneV0?.shares || emptySharesV0(), sportsWeight);
   const cuxShares = weightSharesV0(cuxLaneV0?.shares || emptySharesV0(), cuxWeight);
+  const calendarShares = weightSharesV0(calendarLaneV0?.shares || emptySharesV0(), calendarWeight);
   const mediaShares = weightSharesV0(mediaLaneV0?.shares || emptySharesV0(), mediaWeight);
 
-  const fusedShares = mergeSharesV0(chessShares, sportsShares, cuxShares, mediaShares);
+  const fusedShares = mergeSharesV0(
+    chessShares,
+    sportsShares,
+    cuxShares,
+    calendarShares,
+    mediaShares
+  );
 
   const crossCouplings = (rec.interference || []).map((row) =>
     Object.freeze({
@@ -394,6 +402,13 @@ export function fuseCrossSpaceEpistemicV0(opts = {}) {
         shares: cuxShares,
         present: Boolean(cuxLaneV0),
         rawShares: cuxLaneV0?.shares || emptySharesV0()
+      }),
+      calendar: Object.freeze({
+        lane: FUSION_LANE_V0.CALENDAR_CONTINUITY,
+        weight: calendarWeight,
+        shares: calendarShares,
+        present: Boolean(calendarLaneV0),
+        rawShares: calendarLaneV0?.shares || emptySharesV0()
       }),
       media: Object.freeze({
         lane: FUSION_LANE_V0.MEDIA_TIMELINE,
