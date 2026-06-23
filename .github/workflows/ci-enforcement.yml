@@ -22,8 +22,16 @@ jobs:
       - name: Install
         run: bash scripts/npm-ci-retry.sh
 
+      - name: Frozen core + SPECFLOW gates
+        run: |
+          npm run stabilization:validate-graph
+          npm run stabilization:validate-specflow
+
       - name: Typecheck
         run: npm run typecheck -w apps/client
 
-      - name: Tests
-        run: npm run test -w apps/client
+      - name: Chess learning + substrate tests
+        run: |
+          npm run test:chess-learning -w apps/client
+          npm run test:predeploy-substrate -w apps/client
+          npm run test:substrate-authority -w apps/client

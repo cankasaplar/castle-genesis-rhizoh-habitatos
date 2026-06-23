@@ -7,10 +7,10 @@ import {
 } from "../chessArenaThemeV0.js";
 
 describe("chessArenaThemeV0", () => {
-  it("defaults to classic board", () => {
+  it("defaults to kanagawa board", () => {
     const theme = readChessArenaThemeV0();
-    expect(theme.boardThemeId).toBe("classic");
-    expect(resolveChessBoardColorsV0(theme.boardThemeId).light).toBe("#eeeed2");
+    expect(theme.boardThemeId).toBe("kanagawa");
+    expect(resolveChessBoardColorsV0(theme.boardThemeId).light).toBe("#1a4a6e");
   });
 
   it("persists theme selection", () => {
