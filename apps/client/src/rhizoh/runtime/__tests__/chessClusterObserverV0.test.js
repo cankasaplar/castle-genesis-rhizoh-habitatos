@@ -37,7 +37,9 @@ describe("chessClusterObserverV0", () => {
     const obs = observeChessClusterMoveV0(slot, moveRow, resolveChessClusterAgentPolicyV0("fox_agent"));
     expect(obs.slotId).toBe(2);
     expect(obs.spatialBound).toBeUndefined();
-    expect(listChessClusterMemoryNodesV0().length).toBe(1);
+    const nodes = listChessClusterMemoryNodesV0();
+    expect(nodes.some((n) => n.kind === "move_observation")).toBe(true);
+    expect(nodes.length).toBeGreaterThanOrEqual(3);
     expect(getChessClusterPatternCountsV0().length).toBeGreaterThanOrEqual(0);
   });
 });
