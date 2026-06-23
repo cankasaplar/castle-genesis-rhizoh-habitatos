@@ -332,7 +332,11 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
             ))}
           </div>
 
-          <div className="pointer-events-none absolute inset-0 z-[25]" data-rhizoh-spiral-bird-layer="1">
+          <div
+            className="pointer-events-none absolute inset-0 z-[25]"
+            data-rhizoh-spiral-bird-layer="1"
+            style={{ perspective: "920px", transformStyle: "preserve-3d" }}
+          >
             {scene.birds.map((bird) => (
               <SpiralMMOBirdV0
                 key={bird.id}
@@ -518,7 +522,8 @@ const SpiralMMOBirdV0 = memo(function SpiralMMOBirdV0({ bird, hostRef, cubeTarge
     if (hasSpiralRoute) {
       const loopMs = bird.loopDurationMs || 12000;
       const pathOffset = Number.isFinite(bird.pathOffset) ? bird.pathOffset : 0;
-      const startAt = performance.now() + (bird.birdIndex || 0) * 180;
+      const startAt = performance.now() + (bird.birdIndex || 0) * 220;
+      const inner = el.firstElementChild;
 
       const tick = (now) => {
         const elapsed = Math.max(0, now - startAt);
@@ -526,8 +531,19 @@ const SpiralMMOBirdV0 = memo(function SpiralMMOBirdV0({ bird, hostRef, cubeTarge
         const sample = sampleSpiralMMOBirdRoutePointV0(routePoints, pathOffset + progress);
         const bank = sample.bank ?? 0;
         const heading = sample.headingDeg ?? 0;
-        const lift = 1 + Math.sin(progress * Math.PI * 2) * 0.08;
-        el.style.transform = `translate(${sample.x}px, ${sample.y}px) scale(${bird.depthScale * lift}) rotate(${heading + bank * 0.35}deg) translateY(${bank * -0.35}px)`;
+        const z = sample.z ?? 0;
+        const pitch = sample.pitchDeg ?? -12;
+        const scaleMul = sample.depthScaleMul ?? 1;
+        const bob = 1 + Math.sin(progress * Math.PI * 2) * 0.06;
+        const scale = bird.depthScale * scaleMul * bob;
+        const opacity = Math.max(0.35, Math.min(1, bird.depthOpacity * (0.82 + scaleMul * 0.22)));
+
+        el.style.transform = `translate3d(${sample.x}px, ${sample.y}px, ${z}px)`;
+        el.style.zIndex = String(20 + Math.round(z + 40));
+        if (inner) {
+          inner.style.transform = `scale(${scale}) rotateX(${pitch}deg) rotateZ(${heading + bank * 0.4}deg)`;
+          inner.style.opacity = String(opacity);
+        }
         rafRef.current = requestAnimationFrame(tick);
       };
       rafRef.current = requestAnimationFrame(tick);
@@ -614,7 +630,7 @@ const SpiralMMOBirdV0 = memo(function SpiralMMOBirdV0({ bird, hostRef, cubeTarge
     <div
       ref={elRef}
       className="pointer-events-none absolute left-0 top-0"
-      style={{ width: 0, height: 0 }}
+      style={{ width: 0, height: 0, transformStyle: "preserve-3d" }}
       dangerouslySetInnerHTML={{ __html: spiralMMOAwakeningBirdHtmlV0(bird) }}
     />
   );

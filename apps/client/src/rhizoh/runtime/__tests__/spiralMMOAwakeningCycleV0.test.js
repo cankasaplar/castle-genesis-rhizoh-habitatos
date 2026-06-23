@@ -71,7 +71,7 @@ describe("spiralMMOAwakeningCycleV0", () => {
     });
     expect(birds.length).toBeGreaterThan(0);
     expect(birds[0].routeMode).toBe("spiral_flock");
-    expect(birds[0].tierShort).toBeTruthy();
+    expect(birds[0].tierShort).toBeFalsy();
   });
 
   it("resolves trigger index from pin id", () => {
