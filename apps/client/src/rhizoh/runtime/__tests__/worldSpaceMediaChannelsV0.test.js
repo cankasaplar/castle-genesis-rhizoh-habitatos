@@ -3,6 +3,7 @@ import {
   buildYoutubeEmbedUrlV0,
   buildYoutubeLiveChannelEmbedUrlV0,
   CASTLE_GENESIS_LIVE_PAGE_V0,
+  CASTLE_GENESIS_YOUTUBE_CHANNEL_ID_V0,
   getWorldSpaceMediaChannelPackSnapshotV0,
   listWorldSpaceMediaChannelsV0,
   NASA_ISS_EARTH_VIDEO_ID_V0,
@@ -12,17 +13,20 @@ import {
   resolveWorldSpaceMediaChannelV0,
   RHIZOH_LEARNING_CHANNEL_ID_V0,
   RHIZOH_WORLDSPORTS_CHANNEL_ID_V0,
-  buildRhizohWorldSportsChannelV0
+  RHIZOH_WORLD_NEWS_CHANNEL_ID_V0,
+  buildRhizohWorldSportsChannelV0,
+  buildRhizohWorldNewsChannelV0
 } from "../worldSpaceMediaChannelsV0.js";
 
 describe("worldSpaceMediaChannelsV0", () => {
-  it("lists full media channel pack (10 rows) including optional holding fallbacks", () => {
+  it("lists full media channel pack (11 rows) including optional holding fallbacks", () => {
     const rows = listWorldSpaceMediaChannelsV0();
     const ids = rows.map((r) => r.id);
-    expect(ids).toHaveLength(10);
+    expect(ids).toHaveLength(11);
     expect(ids[0]).toBe("castle_genesis");
     expect(ids).toContain(RHIZOH_LEARNING_CHANNEL_ID_V0);
     expect(ids).toContain(RHIZOH_WORLDSPORTS_CHANNEL_ID_V0);
+    expect(ids).toContain(RHIZOH_WORLD_NEWS_CHANNEL_ID_V0);
     expect(ids).toContain("castle_genesis_live");
     expect(ids).toContain("castle_chess");
     expect(ids).toContain("castle_architecture");
@@ -54,6 +58,9 @@ describe("worldSpaceMediaChannelsV0", () => {
     expect(resolveInitialWorldSpaceMediaChannelIdV0("map:node:worldsports")).toBe(
       RHIZOH_WORLDSPORTS_CHANNEL_ID_V0
     );
+    expect(resolveInitialWorldSpaceMediaChannelIdV0("map:node:worldnews")).toBe(
+      RHIZOH_WORLD_NEWS_CHANNEL_ID_V0
+    );
   });
 
   it("maps sovereign pins to distinct media channels", () => {
@@ -62,6 +69,9 @@ describe("worldSpaceMediaChannelsV0", () => {
     );
     expect(resolveWorldSpaceMediaChannelForMapNodeV0({ id: "worldsports", type: "zone" })).toBe(
       RHIZOH_WORLDSPORTS_CHANNEL_ID_V0
+    );
+    expect(resolveWorldSpaceMediaChannelForMapNodeV0({ id: "worldnews", type: "zone" })).toBe(
+      RHIZOH_WORLD_NEWS_CHANNEL_ID_V0
     );
     expect(resolveWorldSpaceMediaChannelForMapNodeV0({ id: "chess", type: "zone" })).toBe(
       RHIZOH_LEARNING_CHANNEL_ID_V0
@@ -102,6 +112,19 @@ describe("worldSpaceMediaChannelsV0", () => {
     expect(ch.type).toBe("chess_cluster_live");
   });
 
+  it("castle genesis uses live youtube embed fallback when channel id baked", () => {
+    const ch = resolveWorldSpaceMediaChannelV0("castle_genesis");
+    expect(ch.type).toBe("youtube");
+    expect(ch.url).toContain(CASTLE_GENESIS_YOUTUBE_CHANNEL_ID_V0);
+  });
+
+  it("world news channel defaults to world_news_feed without env video", () => {
+    const ch = buildRhizohWorldNewsChannelV0();
+    expect(ch.id).toBe(RHIZOH_WORLD_NEWS_CHANNEL_ID_V0);
+    expect(ch.type).toBe("world_news_feed");
+    expect(ch.titleEn).toBe("World News");
+  });
+
   it("world sports channel defaults to world_sports_feed without env video", () => {
     const ch = buildRhizohWorldSportsChannelV0();
     expect(ch.id).toBe(RHIZOH_WORLDSPORTS_CHANNEL_ID_V0);
@@ -112,7 +135,7 @@ describe("worldSpaceMediaChannelsV0", () => {
   it("channel pack snapshot exposes env keys", () => {
     const snap = getWorldSpaceMediaChannelPackSnapshotV0();
     expect(snap).toHaveProperty("channelCount");
-    expect(snap.channelCount).toBe(10);
+    expect(snap.channelCount).toBe(11);
     expect(snap).toHaveProperty("fullEmbedEndSec");
   });
 });

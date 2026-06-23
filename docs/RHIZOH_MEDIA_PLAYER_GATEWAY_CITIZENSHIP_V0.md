@@ -21,20 +21,31 @@ Media tube channels had **UI playback** but were not **gateway citizens**:
 
 ## Channels registered
 
-All rows in `listWorldSpaceMediaChannelsV0()` including **`world_sports`** (WorldSports).
+All rows in `listWorldSpaceMediaChannelsV0()` including **`world_sports`** and **`world_news`**.
 
-Service id = channel id (`castle_genesis`, `world_sports`, `nasa`, …).
+Service id = channel id (`castle_genesis`, `world_sports`, `world_news`, `nasa`, …).
 
 ---
 
-## WorldSports channel
+## WorldSports / World News channels
+
+| Field | WorldSports | World News |
+|-------|-------------|------------|
+| ID | `world_sports` | `world_news` |
+| Default type | `world_sports_feed` — live scores | `world_news_feed` — headlines |
+| Optional VOD | `VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID` | `VITE_RHIZOH_WORLDNEWS_YOUTUBE_VIDEO_ID` |
+| Map pin | `worldsports` | `worldnews` |
+
+---
+
+## WorldSports channel (legacy section)
 
 | Field | Value |
 |-------|--------|
 | ID | `world_sports` |
-| Default type | `world_sports_feed` — live scores + headlines via gateway world-feed |
+| Default type | `world_sports_feed` — live scores via gateway world-feed |
 | Optional VOD | `VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID` → YouTube embed |
-| Map pin | **deferred** — next PR |
+| Map pin | `worldsports` on sovereign mesh |
 
 ---
 

@@ -3,7 +3,7 @@
  * Map renderer reads this; orchestrator maps types → workspace / media / info.
  */
 
-import { resolveInitialWorldSpaceMediaChannelIdV0, resolveWorldSpaceMediaChannelForMapNodeV0, RHIZOH_LEARNING_CHANNEL_ID_V0, RHIZOH_WORLDSPORTS_CHANNEL_ID_V0 } from "./worldSpaceMediaChannelsV0.js";
+import { resolveInitialWorldSpaceMediaChannelIdV0, resolveWorldSpaceMediaChannelForMapNodeV0, RHIZOH_LEARNING_CHANNEL_ID_V0, RHIZOH_WORLDSPORTS_CHANNEL_ID_V0, RHIZOH_WORLD_NEWS_CHANNEL_ID_V0 } from "./worldSpaceMediaChannelsV0.js";
 import { publishChessClusterBroadcastActiveV0 } from "./chessEngineContentionGateV0.js";
 import { presenceColorForStateV0 } from "./castlePresenceRegistryV0.js";
 import {
@@ -120,7 +120,18 @@ export const SOVEREIGN_CORE_NODES_V0 = Object.freeze([
     lon: 29.004,
     color: "#14b8a6",
     owner: "Public",
-    description: "Canlı spor skorları ve haber başlıkları — WorldSports kanalı."
+    description: "Canlı spor skorları — WorldSports kanalı."
+  }),
+  Object.freeze({
+    id: "worldnews",
+    name: "World News",
+    label: "NEWS",
+    type: "zone",
+    lat: 41.041,
+    lon: 29.006,
+    color: "#f59e0b",
+    owner: "Public",
+    description: "Canlı haber başlıkları — World News kanalı."
   })
 ]);
 
@@ -551,6 +562,7 @@ export function dispatchSovereignVoiceWarpV0(target, source = "voice_warp") {
 export const SOVEREIGN_MAP_NODE_VOICE_LABEL_TR_V0 = Object.freeze({
   chess_arena: "Satranç Arenası",
   worldsports: "WorldSports",
+  worldnews: "World News",
   library: "Codex Kasası",
   event: "Etkinlik Alanı",
   ghost: "Rhizoh Yapay Zekâ",
@@ -572,6 +584,19 @@ const SOVEREIGN_MAP_VOICE_NAV_ALIASES_V0 = Object.freeze([
   Object.freeze({
     nodeId: "chess_arena",
     aliases: ["chess arena", "chess", "satranc arenasi", "satranç arenası", "satranç", "satranc"]
+  }),
+  Object.freeze({
+    nodeId: "worldnews",
+    aliases: [
+      "world news",
+      "worldnews",
+      "dunya haberleri",
+      "dünya haberleri",
+      "haber kanali",
+      "haber kanalı",
+      "canli haber",
+      "canlı haber"
+    ]
   }),
   Object.freeze({
     nodeId: "worldsports",
@@ -932,5 +957,29 @@ export function dispatchOpenWorldSportsChannelV0(payload = {}) {
     title: payload.title || (tr ? "WorldSports" : "WorldSports"),
     source: payload.source || "map:node:worldsports",
     initialChannelId: RHIZOH_WORLDSPORTS_CHANNEL_ID_V0
+  });
+}
+
+/**
+ * Open World · Space media tube on World News channel (headlines).
+ * @param {{ node?: object, title?: string, source?: string }} [payload]
+ */
+export function dispatchOpenWorldNewsChannelV0(payload = {}) {
+  const newsNode =
+    payload.node ||
+    SOVEREIGN_CORE_NODES_V0.find((n) => n.id === "worldnews") ||
+    Object.freeze({
+      id: "worldnews",
+      type: "zone",
+      label: "NEWS",
+      name: "World News",
+      color: "#f59e0b"
+    });
+  const tr = payload.tr !== false;
+  dispatchOpenMediaTubeV0({
+    node: newsNode,
+    title: payload.title || (tr ? "World News" : "World News"),
+    source: payload.source || "map:node:worldnews",
+    initialChannelId: RHIZOH_WORLD_NEWS_CHANNEL_ID_V0
   });
 }

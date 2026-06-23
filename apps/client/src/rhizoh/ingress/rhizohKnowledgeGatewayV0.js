@@ -36,6 +36,7 @@ const ENTITY_QUERY_ALIASES_V0 = Object.freeze([
   { pattern: /\bserencebey\b|origin\s*home/i, entityId: "origin_home_serencebey" },
   { pattern: /\bchess\b|satranç/i, entityId: "chess_arena" },
   { pattern: /\bworldsports\b|world\s*sports|canlı\s*spor/i, entityId: "worldsports" },
+  { pattern: /\bworldnews\b|world\s*news|canlı\s*haber/i, entityId: "worldnews" },
   { pattern: /\bghost\b/i, entityId: "ghost" },
   { pattern: /\bgemini\b/i, entityId: "gemini_tower" }
 ]);

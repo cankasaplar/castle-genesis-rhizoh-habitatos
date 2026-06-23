@@ -105,11 +105,12 @@ VITE_GATEWAY_HTTP=https://HOST/rhizoh/llm
 | `VITE_GENESIS_PASSIVE_EPOCH_MAX` | Hayır | Tamsayı | İlk N epistemik gradient epoch’ta rejim geçişi yalnızca log; varsayılan `100`. |
 | `VITE_CASTLE_GENESIS_YOUTUBE_SHORT_VIDEO_ID` | Hayır | YouTube video ID | Castle Genesis media tube varsayılan ~45s klip (`castle_genesis` kanalı). |
 | `VITE_CASTLE_GENESIS_YOUTUBE_CHESS_VIDEO_ID` | Hayır | YouTube video ID | Satranç B-roll kanalı (`castle_chess`). |
-| `VITE_CASTLE_GENESIS_YOUTUBE_CHANNEL_ID` | Hayır | `UC…` | YouTube Live kanal embed. |
+| `VITE_CASTLE_GENESIS_YOUTUBE_CHANNEL_ID` | Hayır | `UC…` | YouTube Live kanal embed. Spatial-main prod default: `UC24Uv9xXfNkEVO0s7huGQFA`. |
 | `VITE_CASTLE_GENESIS_YOUTUBE_ARCHITECTURE_VIDEO_ID` | Hayır | YouTube video ID | Mimari özet kanalı. |
 | `VITE_CASTLE_GENESIS_YOUTUBE_FULL_VIDEO_ID` | Hayır | YouTube video ID | Uzun VOD kırpılmış önizleme (manifesto_trim). |
 | `VITE_CASTLE_GENESIS_YOUTUBE_FULL_EMBED_END_SEC` | Hayır | Saniye | `FULL_VIDEO_ID` embed bitiş saniyesi (varsayılan 60). |
-| `VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID` | Hayır | YouTube video ID | WorldSports kanalı VOD; yoksa `world_sports_feed` (gateway skor + haber). |
+| `VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID` | Hayır | YouTube video ID | WorldSports kanalı VOD; yoksa `world_sports_feed` (gateway skor). |
+| `VITE_RHIZOH_WORLDNEWS_YOUTUBE_VIDEO_ID` | Hayır | YouTube video ID | World News kanalı VOD; yoksa `world_news_feed` (gateway haber). |
 | `VITE_GENESIS_SIMULATE_LEGACY_DRIFT` | Hayır | `1` yalnız QA | Observability modda Legacy drift UI’yi zorlar; üretimde kapalı tutun. |
 | `VITE_RHIZOH_INVITE_ONLY_GOOGLE` | Hayır | `1` | Giriş ekranında yalnızca Google; misafir + e-posta akışı gizlenir (kapalı kohort). |
 | `VITE_RHIZOH_COHORT_EMAIL_ALLOWLIST` | Hayır | Virgül/noktalı virgül ile e-postalar | **Yalnızca** `VITE_RHIZOH_COHORT_SERVER_GATE` kapalıyken istemci tarafında uygulanır. Üretimde sunucu kapısını tercih edin. |

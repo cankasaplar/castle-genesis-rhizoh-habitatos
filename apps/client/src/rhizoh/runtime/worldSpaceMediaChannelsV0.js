@@ -4,6 +4,8 @@
  */
 
 export const CASTLE_GENESIS_LIVE_PAGE_V0 = "https://www.youtube.com/@CastleGenesis/live";
+/** Official Castle Genesis YouTube channel — live embed + prod fallback when env unset. */
+export const CASTLE_GENESIS_YOUTUBE_CHANNEL_ID_V0 = "UC24Uv9xXfNkEVO0s7huGQFA";
 export const CASTLE_GENESIS_HOLDING_SLIDE_V0 = "/ops/youtube-test/castle-genesis-holding-slide.svg";
 export const CASTLE_GENESIS_SHORT_EMBED_SLIDE_V0 =
   "/ops/youtube-test/castle-genesis-short-embed-slide.svg";
@@ -16,7 +18,7 @@ export const NASA_TV_YOUTUBE_CHANNEL_ID_V0 = "UCSI0uARq_cDIn6keDeXzqJg";
 export const NASA_ISS_EARTH_VIDEO_ID_V0 = "iYmvCUonukw";
 export const NASA_ISS_EARTH_FALLBACK_VIDEO_ID_V0 = "21X5lGlDOfg";
 
-/** @typedef {'youtube'|'local'|'castle_genesis_live'|'chess_cluster_live'|'world_sports_feed'} WorldSpaceMediaChannelTypeV0 */
+/** @typedef {'youtube'|'local'|'castle_genesis_live'|'chess_cluster_live'|'world_sports_feed'|'world_news_feed'} WorldSpaceMediaChannelTypeV0 */
 
 /**
  * @param {string} videoId
@@ -62,7 +64,7 @@ function readEnvV0(key) {
 }
 
 function readCastleGenesisChannelIdV0() {
-  return readEnvV0("VITE_CASTLE_GENESIS_YOUTUBE_CHANNEL_ID");
+  return readEnvV0("VITE_CASTLE_GENESIS_YOUTUBE_CHANNEL_ID") || CASTLE_GENESIS_YOUTUBE_CHANNEL_ID_V0;
 }
 
 function readCastleGenesisShortVideoIdV0() {
@@ -97,9 +99,14 @@ function freezeHoldingChannelV0(row) {
 
 export const RHIZOH_LEARNING_CHANNEL_ID_V0 = "rhizoh_learning";
 export const RHIZOH_WORLDSPORTS_CHANNEL_ID_V0 = "world_sports";
+export const RHIZOH_WORLD_NEWS_CHANNEL_ID_V0 = "world_news";
 
 function readRhizohWorldSportsYoutubeVideoIdV0() {
   return readEnvV0("VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID");
+}
+
+function readRhizohWorldNewsYoutubeVideoIdV0() {
+  return readEnvV0("VITE_RHIZOH_WORLDNEWS_YOUTUBE_VIDEO_ID");
 }
 
 /**
@@ -117,7 +124,7 @@ export function buildRhizohLearningChannelV0() {
 }
 
 /**
- * WorldSports — live scores + headlines (gateway world-feed); optional YouTube B-roll.
+ * WorldSports — live scores only (gateway world-feed); optional YouTube B-roll.
  */
 export function buildRhizohWorldSportsChannelV0() {
   const videoId = readRhizohWorldSportsYoutubeVideoIdV0();
@@ -129,8 +136,8 @@ export function buildRhizohWorldSportsChannelV0() {
       type: "youtube",
       url: buildYoutubeEmbedUrlV0(videoId, { controls: true }),
       videoId,
-      badgeTr: "Skor + haber + VOD",
-      badgeEn: "Scores + headlines + VOD"
+      badgeTr: "Canlı skor + VOD",
+      badgeEn: "Live scores + VOD"
     });
   }
   return Object.freeze({
@@ -140,6 +147,33 @@ export function buildRhizohWorldSportsChannelV0() {
     type: "world_sports_feed",
     badgeTr: "API-Sports · canlı skor",
     badgeEn: "API-Sports · live scores"
+  });
+}
+
+/**
+ * World News — headlines only (gateway world-feed); optional YouTube B-roll.
+ */
+export function buildRhizohWorldNewsChannelV0() {
+  const videoId = readRhizohWorldNewsYoutubeVideoIdV0();
+  if (videoId) {
+    return freezeYoutubeChannelV0({
+      id: RHIZOH_WORLD_NEWS_CHANNEL_ID_V0,
+      titleTr: "World News",
+      titleEn: "World News",
+      type: "youtube",
+      url: buildYoutubeEmbedUrlV0(videoId, { controls: true }),
+      videoId,
+      badgeTr: "Haber + VOD",
+      badgeEn: "Headlines + VOD"
+    });
+  }
+  return Object.freeze({
+    id: RHIZOH_WORLD_NEWS_CHANNEL_ID_V0,
+    titleTr: "World News",
+    titleEn: "World News",
+    type: "world_news_feed",
+    badgeTr: "Gateway · haber akışı",
+    badgeEn: "Gateway · headline feed"
   });
 }
 
@@ -179,7 +213,12 @@ export function listWorldSpaceMediaChannelsV0() {
         badgeEn: "Official channel"
       });
 
-  const rows = [castleGenesisPrimary, buildRhizohLearningChannelV0(), buildRhizohWorldSportsChannelV0()];
+  const rows = [
+    castleGenesisPrimary,
+    buildRhizohLearningChannelV0(),
+    buildRhizohWorldSportsChannelV0(),
+    buildRhizohWorldNewsChannelV0()
+  ];
 
   rows.push(
     castleLiveEmbed
@@ -340,6 +379,9 @@ export function resolveInitialWorldSpaceMediaChannelIdV0(source) {
   const s = String(source || "");
   if (s.startsWith("castle_init")) return "castle_genesis";
   if (s.includes("my_castle") || s.includes("map:node:castle")) return "castle_genesis";
+  if (s.includes("worldnews") || s.includes("world_news") || s.includes("map:node:worldnews")) {
+    return RHIZOH_WORLD_NEWS_CHANNEL_ID_V0;
+  }
   if (s.includes("worldsports") || s.includes("world_sports") || s.includes("map:node:worldsports")) {
     return RHIZOH_WORLDSPORTS_CHANNEL_ID_V0;
   }
@@ -362,6 +404,9 @@ export function resolveInitialWorldSpaceMediaChannelIdV0(source) {
 export function resolveWorldSpaceMediaChannelForMapNodeV0(node) {
   const id = String(node?.id || "").trim().toLowerCase();
   if (id === "my_castle" || id === "castle") return "castle_genesis";
+  if (id === "worldnews" || id === "world_news" || id.includes("worldnews")) {
+    return RHIZOH_WORLD_NEWS_CHANNEL_ID_V0;
+  }
   if (id === "worldsports" || id === "world_sports" || id.includes("worldsports")) {
     return RHIZOH_WORLDSPORTS_CHANNEL_ID_V0;
   }
@@ -387,6 +432,7 @@ export function getWorldSpaceMediaChannelPackSnapshotV0() {
     fullEmbedEndSec: readCastleGenesisFullEmbedEndSecV0(),
     liveChannelId: readCastleGenesisChannelIdV0() || null,
     worldSportsVideoId: readRhizohWorldSportsYoutubeVideoIdV0() || null,
+    worldNewsVideoId: readRhizohWorldNewsYoutubeVideoIdV0() || null,
     channelCount: listWorldSpaceMediaChannelsV0().length,
     atMs: Date.now()
   });

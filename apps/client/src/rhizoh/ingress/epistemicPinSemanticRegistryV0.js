@@ -62,13 +62,25 @@ const STATIC_PIN_SEMANTICS_V0 = Object.freeze({
   worldsports: Object.freeze({
     en: Object.freeze({
       title: "WorldSports",
-      role: "Live scores + headlines surface",
-      description: "Gateway world-feed observation — API-Sports scores and news; interpretation only."
+      role: "Live scores surface",
+      description: "Gateway world-feed observation — API-Sports scores only; interpretation only."
     }),
     tr: Object.freeze({
       title: "WorldSports",
-      role: "Canlı skor + haber yüzeyi",
-      description: "Gateway world-feed gözlemi — API-Sports skorları ve haberler; yalnızca yorum."
+      role: "Canlı skor yüzeyi",
+      description: "Gateway world-feed gözlemi — yalnızca API-Sports skorları; yalnızca yorum."
+    })
+  }),
+  worldnews: Object.freeze({
+    en: Object.freeze({
+      title: "World News",
+      role: "Headlines surface",
+      description: "Gateway world-feed observation — news headlines only; interpretation only."
+    }),
+    tr: Object.freeze({
+      title: "World News",
+      role: "Haber başlıkları yüzeyi",
+      description: "Gateway world-feed gözlemi — yalnızca haber başlıkları; yalnızca yorum."
     })
   }),
   gemini_tower: Object.freeze({

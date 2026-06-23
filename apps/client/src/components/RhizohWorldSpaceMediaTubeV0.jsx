@@ -100,6 +100,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
   }, [detail?.node?.id, detail?.source]);
   const learningChannelActive = activeChannel.type === "chess_cluster_live";
   const worldSportsChannelActive = activeChannel.type === "world_sports_feed";
+  const worldNewsChannelActive = activeChannel.type === "world_news_feed";
   const legalGateMode = Boolean(detail?.legalGate);
   const legalCountdownMs = Number(detail?.countdownRemainingMs) || 0;
 
@@ -479,8 +480,15 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
               {worldSportsChannelActive ? (
                 <p className="mt-1 max-w-md text-[10px] font-normal normal-case leading-relaxed text-emerald-200/85">
                   {tr
-                    ? "WorldSports — gateway üzerinden canlı skorlar ve haber başlıkları. Harita pin'i sonraki adımda."
-                    : "WorldSports — live scores and headlines via gateway. Map pin comes in the next step."}
+                    ? "WorldSports — gateway üzerinden canlı skorlar. World News ayrı kanalda."
+                    : "WorldSports — live scores via gateway. World News is a separate channel."}
+                </p>
+              ) : null}
+              {worldNewsChannelActive ? (
+                <p className="mt-1 max-w-md text-[10px] font-normal normal-case leading-relaxed text-amber-200/85">
+                  {tr
+                    ? "World News — gateway üzerinden haber başlıkları. WorldSports ayrı kanalda."
+                    : "World News — headline feed via gateway. WorldSports is a separate channel."}
                 </p>
               ) : null}
               {isQuantumRadioEntry ? (
@@ -677,15 +685,29 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
               />
             ) : activeChannel.type === "world_sports_feed" ? (
               <div className="relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:p-4">
-                <RhizohWorldSportsNewsStripV0 active uiLocale={uiLocale} className="shrink-0" />
+                <RhizohWorldSportsNewsStripV0 active uiLocale={uiLocale} mode="sports" className="shrink-0" />
                 <div className="flex min-h-[200px] flex-1 flex-col items-center justify-center rounded-2xl border border-emerald-500/25 bg-emerald-950/20 p-6 text-center">
                   <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-300">
                     WorldSports
                   </p>
                   <p className="mt-3 max-w-md text-[10px] leading-relaxed text-white/70 normal-case">
                     {tr
-                      ? "Canlı skor ve haber akışı gateway world-feed üzerinden. İsteğe bağlı VOD için VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID."
-                      : "Live scores and headlines via gateway world-feed. Optional VOD via VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID."}
+                      ? "Canlı skor akışı gateway world-feed üzerinden. İsteğe bağlı VOD için VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID."
+                      : "Live score feed via gateway world-feed. Optional VOD via VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID."}
+                  </p>
+                </div>
+              </div>
+            ) : activeChannel.type === "world_news_feed" ? (
+              <div className="relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:p-4">
+                <RhizohWorldSportsNewsStripV0 active uiLocale={uiLocale} mode="news" className="shrink-0" />
+                <div className="flex min-h-[200px] flex-1 flex-col items-center justify-center rounded-2xl border border-amber-500/25 bg-amber-950/15 p-6 text-center">
+                  <p className="text-[11px] font-black uppercase tracking-[0.28em] text-amber-300">
+                    World News
+                  </p>
+                  <p className="mt-3 max-w-md text-[10px] leading-relaxed text-white/70 normal-case">
+                    {tr
+                      ? "Haber başlıkları gateway world-feed üzerinden. İsteğe bağlı VOD için VITE_RHIZOH_WORLDNEWS_YOUTUBE_VIDEO_ID."
+                      : "Headline feed via gateway world-feed. Optional VOD via VITE_RHIZOH_WORLDNEWS_YOUTUBE_VIDEO_ID."}
                   </p>
                 </div>
               </div>

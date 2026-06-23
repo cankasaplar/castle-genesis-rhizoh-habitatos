@@ -30,6 +30,7 @@ describe("sovereignWorldMapNodesV0", () => {
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "castle")).toBe(true);
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "event")).toBe(true);
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "worldsports")).toBe(true);
+    expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "worldnews")).toBe(true);
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "gemini_tower")).toBe(true);
     expect(SOVEREIGN_WORLD_MAP_NODES_V0.some((n) => n.id === "rhizoh_portal")).toBe(true);
   });
@@ -172,5 +173,23 @@ describe("sovereignWorldMapNodesV0", () => {
       ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER
     );
     expect(resolveWorldSpaceMediaChannelForMapNodeV0(sportsNode)).toBe("world_sports");
+  });
+
+  it("includes worldnews pin in core sovereign nodes", () => {
+    const pin = SOVEREIGN_CORE_NODES_V0.find((n) => n.id === "worldnews");
+    expect(pin?.label).toBe("NEWS");
+    expect(pin?.type).toBe("zone");
+  });
+
+  it("routes worldnews pin to world_news media channel", () => {
+    const newsNode = SOVEREIGN_CORE_NODES_V0.find((n) => n.id === "worldnews");
+    const routed = routeSymbyoMapInteractionToOrchestratorV0({
+      interaction: SYMBYO_MAP_INTERACTION_V0.CLICK,
+      node: newsNode
+    });
+    expect(routed.normalizedDecision.decision).toBe(
+      ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER
+    );
+    expect(resolveWorldSpaceMediaChannelForMapNodeV0(newsNode)).toBe("world_news");
   });
 });
