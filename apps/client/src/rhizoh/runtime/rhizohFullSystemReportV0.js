@@ -56,6 +56,7 @@ import { getSpatialRendererRegistrySnapshotV0 } from "./rhizohSpatialSurfaceRend
 import { buildTowerRegistrySnapshotV0, getLastSpatialDistributionV0 } from "./spatialDistributionLayerV0.js";
 import { buildLlmTowerMapRegistrySnapshotV0 } from "./llmTowerMapViewportV0.js";
 import { listSpiralMMOContinentMapPinsV0 } from "./spiralMMOContinentPinsV0.js";
+import { listSpiralMMOPinCitizenshipSnapshotsV0 } from "./spiralMMOPinCitizenshipV0.js";
 import { buildRhizohObservationStateV1 } from "./rhizohObservationStateV1.js";
 import {
   formatRhizohNeonCountdownMsV0,
@@ -583,6 +584,7 @@ function collectEnvBlockersV0() {
  */
 function collectNetworkSurfaceDiagnosticV0() {
   const spiralPins = listSpiralMMOContinentMapPinsV0();
+  const pinCitizenship = listSpiralMMOPinCitizenshipSnapshotsV0();
   const spatialDistribution = getLastSpatialDistributionV0();
   const observation = buildRhizohObservationStateV1();
   const cityGate = readCityMapLegalGateSnapshotV0();
@@ -624,7 +626,23 @@ function collectNetworkSurfaceDiagnosticV0() {
       legalHold: cityGate.legalHold === true,
       legalAcked: cityGate.legalAcked === true,
       ingressRoute: cityGate.ingressRoute || null,
-      mediaEventState: cityGate.eventState || null
+      mediaEventState: cityGate.eventState || null,
+      pinCitizenship: Object.freeze({
+        pinCount: pinCitizenship.length,
+        birdsExempt: true,
+        tiers: Object.freeze(["hour", "day", "month", "year"]),
+        sample: Object.freeze(
+          pinCitizenship.slice(0, 3).map((c) =>
+            Object.freeze({
+              pinId: c.pinId,
+              activeTierId: c.activeTierId,
+              activeRemainingLabel: c.activeRemainingLabel,
+              cycleSec: c.motion?.cycleSec ?? null
+            })
+          )
+        ),
+        consoleApi: "__rhizoh.listSpiralMMOPinCitizenship()"
+      })
     }),
     gatewayRegistration: Object.freeze({
       voiceCitizenship: observation.voice?.citizenship || "detached",

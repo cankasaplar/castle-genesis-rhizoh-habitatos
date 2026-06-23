@@ -38,7 +38,9 @@ export function buildSpiralMMOAwakeningBirdSpecV0(input) {
     depthOpacity,
     wingDur,
     hoverDur,
-    color: `rgb(${gray}, ${gray}, ${gray})`
+    color: `rgb(${gray}, ${gray}, ${gray})`,
+    citizenshipExempt: true,
+    routeMode: "free"
   });
 }
 

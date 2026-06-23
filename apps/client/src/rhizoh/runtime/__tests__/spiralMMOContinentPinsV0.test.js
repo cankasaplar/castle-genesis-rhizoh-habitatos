@@ -11,10 +11,10 @@ import {
 import { deriveSpiralMMOContinentCubeMotionV0 } from "../spiralMMOContinentCubeMotionV0.js";
 
 describe("spiralMMOContinentPinsV0", () => {
-  it("defines one pin per continent", () => {
+  it("defines one pin per continent plus bootstrap gate", () => {
     expect(SPIRAL_MMO_CONTINENT_IDS_V0).toHaveLength(7);
     expect(RHIZOH_SPIRAL_MMO_CONTINENT_PINS_V0).toHaveLength(7);
-    expect(listSpiralMMOContinentMapPinsV0()).toHaveLength(7);
+    expect(listSpiralMMOContinentMapPinsV0()).toHaveLength(8);
   });
 
   it("pins use spiralmmo type with continental anchors", () => {
@@ -34,7 +34,7 @@ describe("spiralMMOContinentPinsV0", () => {
     const pin = RHIZOH_SPIRAL_MMO_CONTINENT_PINS_V0[0];
     const html = spiralMMOPinIconHtmlV0(pin);
     expect(html).toContain('data-rhizoh-spiral-mmo-rev="dim-collapse-gate-v0"');
-    expect(html).toContain("animateTransform");
+    expect(html).toContain('data-rhizoh-spiral-644-cycle-sec');
     expect(html).toContain("#00ccff");
     expect(html).not.toContain("0644");
     expect(html).not.toContain("preserve-3d");
