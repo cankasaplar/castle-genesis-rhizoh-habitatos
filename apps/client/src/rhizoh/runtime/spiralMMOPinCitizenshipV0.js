@@ -40,6 +40,38 @@ export const SPIRAL_MMO_CITIZENSHIP_TIER_DURATION_MS_V0 = Object.freeze({
   year: (6 * 365 * 24 * 60 * 60 + 44 * 24 * 60 * 60) * 1000
 });
 
+/** Human-readable 6+44 tier units — hour / day / month / year gates (not minutes alone). */
+export const SPIRAL_MMO_SIX_FORTY_FOUR_TIER_LABELS_V0 = Object.freeze({
+  hour: Object.freeze({
+    short: "6h·44m",
+    long: "Hour gate — 6 hours + 44 minutes",
+    unit: "hour"
+  }),
+  day: Object.freeze({
+    short: "6d·44m",
+    long: "Day gate — 6 days + 44 minutes",
+    unit: "day"
+  }),
+  month: Object.freeze({
+    short: "6mo·44d",
+    long: "Month gate — 6 months + 44 days",
+    unit: "month"
+  }),
+  year: Object.freeze({
+    short: "6y·44d",
+    long: "Year gate — 6 years + 44 days",
+    unit: "year"
+  })
+});
+
+/**
+ * @param {"hour"|"day"|"month"|"year"} tierId
+ */
+export function resolveSpiralMMOSixFortyFourTierLabelV0(tierId) {
+  const key = String(tierId || SPIRAL_MMO_CITIZENSHIP_TIER_ID_V0.HOUR);
+  return SPIRAL_MMO_SIX_FORTY_FOUR_TIER_LABELS_V0[key] || SPIRAL_MMO_SIX_FORTY_FOUR_TIER_LABELS_V0.hour;
+}
+
 const SPIRAL_MMO_PIN_CITIZENSHIP_LS_PREFIX_V0 = "rhizoh.spiral_mmo_pin_citizenship_anchor.v0:";
 
 const MS_PER_MIN = 60 * 1000;
@@ -218,7 +250,7 @@ export function publishSpiralMMOPinCitizenshipRegistryV0(nowMs = Date.now()) {
     schema: `${SPIRAL_MMO_PIN_CITIZENSHIP_SCHEMA_V0}.registry`,
     pins,
     birdsExempt: true,
-    note: "Per-pin 6+44 tier countdown; birds use free routes only",
+    note: "Per-pin 6+44 tier countdown (hour/day/month/year); birds fly spiral flocks with tier badges",
     atMs: nowMs
   });
   window.__rhizoh.listSpiralMMOPinCitizenship = () => listSpiralMMOPinCitizenshipSnapshotsV0();

@@ -3,7 +3,11 @@
  */
 
 import { deriveSpiralMMOContinentCubeMotionV0 } from "./spiralMMOContinentCubeMotionV0.js";
-import { deriveSpiralMMOPinSixFortyFourMotionV0 } from "./spiralMMOPinCitizenshipV0.js";
+import {
+  deriveSpiralMMOPinSixFortyFourMotionV0,
+  resolveSpiralMMOPinCitizenshipV0,
+  resolveSpiralMMOSixFortyFourTierLabelV0
+} from "./spiralMMOPinCitizenshipV0.js";
 
 const GATE_ORDER_COLOR_V0 = "#00ccff";
 
@@ -14,6 +18,8 @@ const GATE_ORDER_COLOR_V0 = "#00ccff";
 export function spiralMMOClosedSpiralPinHtmlV0(node) {
   const motion = deriveSpiralMMOContinentCubeMotionV0(node);
   const sixFortyFour = deriveSpiralMMOPinSixFortyFourMotionV0(node);
+  const citizenship = resolveSpiralMMOPinCitizenshipV0(node);
+  const activeTier = resolveSpiralMMOSixFortyFourTierLabelV0(citizenship.activeTierId);
   const id = String(node?.id || `spiralmmo_${motion.continent}`);
   const size = 26;
   const cx = 50;
@@ -31,11 +37,12 @@ export function spiralMMOClosedSpiralPinHtmlV0(node) {
 
   const label = String(node?.shortLabel || motion.continent.slice(0, 2).toUpperCase());
 
-  return `<div data-rhizoh-spiral-mmo-pin="${id}" data-rhizoh-spiral-mmo-rev="dim-collapse-gate-v0" data-rhizoh-spiral-continent="${motion.continent}" data-rhizoh-spiral-644-cycle-sec="${sixFortyFour.cycleSec}" data-rhizoh-spiral-pin-ordinal="${sixFortyFour.ordinal}" style="width:${size}px;height:${size}px;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto">
+  return `<div data-rhizoh-spiral-mmo-pin="${id}" data-rhizoh-spiral-mmo-rev="dim-collapse-gate-v0" data-rhizoh-spiral-continent="${motion.continent}" data-rhizoh-spiral-644-cycle-sec="${sixFortyFour.cycleSec}" data-rhizoh-spiral-pin-ordinal="${sixFortyFour.ordinal}" data-rhizoh-spiral-644-tier="${citizenship.activeTierId}" title="6+44 citizenship · ${activeTier.long} · remaining ${citizenship.activeRemainingLabel}" style="width:${size}px;height:${size}px;transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto">
     <div style="width:${size}px;height:${size}px;border-radius:50%;background:#030308;box-shadow:0 0 10px ${accent}66,0 0 6px ${chaosHint}44;display:flex;align-items:center;justify-content:center">
       <svg viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true" style="border-radius:50%">
         ${ringSvg}
         <circle cx="${cx}" cy="${cy}" r="5" fill="#ffffff" opacity="0.92"/>
+        <text x="${cx}" y="78" text-anchor="middle" fill="rgba(255,255,255,0.62)" font-family="Courier New,monospace" font-size="8">${activeTier.short}</text>
         <text x="${cx}" y="88" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-family="Courier New,monospace" font-size="10">${label}</text>
       </svg>
     </div>
