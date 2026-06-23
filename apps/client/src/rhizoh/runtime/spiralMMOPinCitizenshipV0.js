@@ -250,7 +250,7 @@ export function publishSpiralMMOPinCitizenshipRegistryV0(nowMs = Date.now()) {
     schema: `${SPIRAL_MMO_PIN_CITIZENSHIP_SCHEMA_V0}.registry`,
     pins,
     birdsExempt: true,
-    note: "Per-pin 6+44 tier countdown (hour/day/month/year); birds fly spiral flocks with tier badges",
+    note: "Per-pin 6+44 tier countdown (hour/day/month/year on pins only); birds fly helical spiral flocks",
     atMs: nowMs
   });
   window.__rhizoh.listSpiralMMOPinCitizenship = () => listSpiralMMOPinCitizenshipSnapshotsV0();
