@@ -44,6 +44,12 @@ export function dispatchV11MapEventPinV0(node, interaction = "click", map = null
   }
 
   if (type === "spiralmmo") {
+    if (normalized === "hover") {
+      emitV11MapIntentV0(node, SYMBYO_MAP_INTERACTION_V0.HOVER, map);
+      publishMapEventPinV0(node, normalized, "spiral_preview");
+      return Object.freeze({ ok: true, route: "spiralmmo_preview" });
+    }
+
     const generated = generatePinEventsV1(pinId, normalized);
     emitCodexBusV0("MAP_EVENT_PIN", {
       pinId,

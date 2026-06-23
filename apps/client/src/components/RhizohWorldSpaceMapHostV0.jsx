@@ -708,7 +708,6 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
         runMapPinClickInteractionV0(mapRef.current, node);
       });
       marker.on("mouseover", () => {
-        if (node.type === "spiralmmo") return;
         scheduleMapPinHoverDwellV0(
           node,
           (n) => dispatchV11MapEventPinV0(n, "hover", mapRef.current),

@@ -636,7 +636,6 @@ export default function AppRhizohWorldSpaceV0() {
     const onV11Intent = (ev) => {
       const detail = ev?.detail;
       if (!detail?.nodeView) return;
-      if (detail.nodeView.type === "spiralmmo") return;
       if (detail?.intent?.intent === "PREVIEW_NODE") {
         setV11NodePanel(detail);
       }
