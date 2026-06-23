@@ -12,6 +12,7 @@ import {
   CHESS_ENGINE_TASK_KIND_V0,
   CHESS_ENGINE_TASK_PRIORITY_V0
 } from "./chessEngineTaskQueueV0.js";
+import { resolveAdaptiveClusterEngineOptsV0 } from "./chessEngineAdaptiveSliceV0.js";
 import { readChessPolicyModeV0, resolveRhizohChessEngineParamsV0 } from "./chessPolicyModeV0.js";
 import {
   readChessLearningWeightsV0,
@@ -43,7 +44,7 @@ function pickBookMoveV0(game) {
 
 /**
  * @param {ReturnType<import('./chessArenaEngineV0.js').createChessArenaGameV0>} game
- * @param {{ policyMode?: string }} [opts]
+ * @param {{ policyMode?: string, clusterPlay?: boolean }} [opts]
  */
 export async function pickRhizohChessMoveV0(game, opts = {}) {
   const bookMove = pickBookMoveV0(game);
@@ -72,7 +73,8 @@ export async function pickRhizohChessMoveV0(game, opts = {}) {
   try {
     if (getChessStockfishEngineStatusV0() === "stockfish_wasm") {
       const arenaWorkspaceOpen = isChessArenaWorkspaceOpenV0();
-      const searchParams = arenaWorkspaceOpen
+      const clusterPlay = opts.clusterPlay === true;
+      let searchParams = arenaWorkspaceOpen
         ? Object.freeze({
             skill: engineParams.skill,
             movetimeMs: Math.min(engineParams.movetimeMs, 1400),
@@ -80,14 +82,32 @@ export async function pickRhizohChessMoveV0(game, opts = {}) {
             contempt: engineParams.contempt
           })
         : engineParams;
+      if (clusterPlay) {
+        searchParams = resolveAdaptiveClusterEngineOptsV0({
+          skill: engineParams.skill,
+          movetimeMs: Math.min(engineParams.movetimeMs, 1000),
+          depth: Math.min(engineParams.depth, 14),
+          contempt: engineParams.contempt,
+          queueKind: CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE
+        });
+      }
       const sf = await getStockfishArenaMoveV0(game.fen(), {
         skill: searchParams.skill,
         movetimeMs: searchParams.movetimeMs,
         depth: searchParams.depth,
         contempt: searchParams.contempt,
-        queuePriority: CHESS_ENGINE_TASK_PRIORITY_V0.ARENA_MATCH,
-        queueKind: CHESS_ENGINE_TASK_KIND_V0.ARENA_MOVE,
-        queueLabel: arenaWorkspaceOpen ? "arena_rhizoh_workspace" : "arena_rhizoh"
+        timeoutBufferMs: searchParams.timeoutBufferMs,
+        queuePriority: clusterPlay
+          ? CHESS_ENGINE_TASK_PRIORITY_V0.CLUSTER_MOVE
+          : CHESS_ENGINE_TASK_PRIORITY_V0.ARENA_MATCH,
+        queueKind: clusterPlay
+          ? CHESS_ENGINE_TASK_KIND_V0.CLUSTER_MOVE
+          : CHESS_ENGINE_TASK_KIND_V0.ARENA_MOVE,
+        queueLabel: clusterPlay
+          ? "cluster_rhizoh"
+          : arenaWorkspaceOpen
+            ? "arena_rhizoh_workspace"
+            : "arena_rhizoh"
       });
       if (sf) {
         return Object.freeze({

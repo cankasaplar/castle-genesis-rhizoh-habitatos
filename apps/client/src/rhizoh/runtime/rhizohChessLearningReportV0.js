@@ -63,7 +63,19 @@ let totalDepthSeenV0 = 0;
 let depthSampleCountV0 = 0;
 let batchFlushesSeenV0 = 0;
 let lastBatchFlushV0 = null;
+let truthPolicyChangesV0 = 0;
+let previewPolicyChangesV0 = 0;
 let listenersInstalledV0 = false;
+/** @type {((ev: Event) => void) | null} */
+let clusterMoveListenerV0 = null;
+/** @type {((ev: Event) => void) | null} */
+let clusterGameEndListenerV0 = null;
+/** @type {((ev: Event) => void) | null} */
+let clusterPolicyDiffListenerV0 = null;
+/** @type {((ev: Event) => void) | null} */
+let predictionScoreListenerV0 = null;
+/** @type {((ev: Event) => void) | null} */
+let learningBatchListenerV0 = null;
 
 function classifyOpeningFromSanMovesV0(moves = []) {
   const san = moves.map((m) => String(m || "").trim()).filter(Boolean).slice(0, 8);
@@ -81,6 +93,14 @@ function classifyOpeningFromSanMovesV0(moves = []) {
 
 function recordDriftSampleV0(policyDiff) {
   if (!policyDiff) return;
+  const truthAuthoritative = policyDiff.truthAuthoritative === true;
+  const previewOnly = policyDiff.observabilityOnly === true || policyDiff.truthAuthoritative === false;
+  if (previewOnly && !truthAuthoritative) {
+    previewPolicyChangesV0 += 1;
+    return;
+  }
+  truthPolicyChangesV0 += 1;
+
   const rank = Number(policyDiff.matchedRank);
   const drift =
     policyDiff.drifted === true
@@ -375,7 +395,9 @@ export function buildRhizohChessLearningReportV0() {
       7
     ),
     preferredOpenings: resolvePreferredOpeningsV0(),
-    policyChanges,
+    policyChanges: truthPolicyChangesV0 + previewPolicyChangesV0,
+    truthPolicyChanges: truthPolicyChangesV0,
+    previewPolicyChanges: previewPolicyChangesV0,
     batchFlushesSeen: Math.max(batchFlushesSeenV0, batchLearning.batchesFlushed),
     lastBatchFlush: lastBatchFlushV0,
     memoryNodes: memory.nodeCount || 0,
@@ -431,13 +453,17 @@ export function ensureRhizohChessLearningReportV0() {
   if (listenersInstalledV0) return window.__rhizoh.learningReport;
   listenersInstalledV0 = true;
 
-  window.addEventListener(CHESS_CLUSTER_MOVE_EVENT_V0, (ev) => recordMoveV0(ev?.detail));
-  window.addEventListener(CHESS_CLUSTER_GAME_END_EVENT_V0, (ev) => recordGameEndV0(ev?.detail));
-  window.addEventListener(CHESS_CLUSTER_POLICY_DIFF_EVENT_V0, (ev) => recordDriftSampleV0(ev?.detail));
-  window.addEventListener(RHIZOH_CHESS_PREDICTION_SCORE_EVENT_V0, (ev) =>
-    recordRhizohPredictionScoreV0(ev?.detail)
-  );
-  window.addEventListener(CHESS_LEARNING_BATCH_EVENT_V0, (ev) => recordBatchFlushV0(ev?.detail));
+  clusterMoveListenerV0 = (ev) => recordMoveV0(ev?.detail);
+  clusterGameEndListenerV0 = (ev) => recordGameEndV0(ev?.detail);
+  clusterPolicyDiffListenerV0 = (ev) => recordDriftSampleV0(ev?.detail);
+  predictionScoreListenerV0 = (ev) => recordRhizohPredictionScoreV0(ev?.detail);
+  learningBatchListenerV0 = (ev) => recordBatchFlushV0(ev?.detail);
+
+  window.addEventListener(CHESS_CLUSTER_MOVE_EVENT_V0, clusterMoveListenerV0);
+  window.addEventListener(CHESS_CLUSTER_GAME_END_EVENT_V0, clusterGameEndListenerV0);
+  window.addEventListener(CHESS_CLUSTER_POLICY_DIFF_EVENT_V0, clusterPolicyDiffListenerV0);
+  window.addEventListener(RHIZOH_CHESS_PREDICTION_SCORE_EVENT_V0, predictionScoreListenerV0);
+  window.addEventListener(CHESS_LEARNING_BATCH_EVENT_V0, learningBatchListenerV0);
 
   return window.__rhizoh.learningReport;
 }
@@ -456,6 +482,30 @@ export function __resetRhizohChessLearningReportForTestV0() {
   depthSampleCountV0 = 0;
   batchFlushesSeenV0 = 0;
   lastBatchFlushV0 = null;
+  truthPolicyChangesV0 = 0;
+  previewPolicyChangesV0 = 0;
+  if (typeof window !== "undefined" && listenersInstalledV0) {
+    if (clusterMoveListenerV0) {
+      window.removeEventListener(CHESS_CLUSTER_MOVE_EVENT_V0, clusterMoveListenerV0);
+    }
+    if (clusterGameEndListenerV0) {
+      window.removeEventListener(CHESS_CLUSTER_GAME_END_EVENT_V0, clusterGameEndListenerV0);
+    }
+    if (clusterPolicyDiffListenerV0) {
+      window.removeEventListener(CHESS_CLUSTER_POLICY_DIFF_EVENT_V0, clusterPolicyDiffListenerV0);
+    }
+    if (predictionScoreListenerV0) {
+      window.removeEventListener(RHIZOH_CHESS_PREDICTION_SCORE_EVENT_V0, predictionScoreListenerV0);
+    }
+    if (learningBatchListenerV0) {
+      window.removeEventListener(CHESS_LEARNING_BATCH_EVENT_V0, learningBatchListenerV0);
+    }
+  }
+  clusterMoveListenerV0 = null;
+  clusterGameEndListenerV0 = null;
+  clusterPolicyDiffListenerV0 = null;
+  predictionScoreListenerV0 = null;
+  learningBatchListenerV0 = null;
   listenersInstalledV0 = false;
   if (typeof window !== "undefined") {
     try {

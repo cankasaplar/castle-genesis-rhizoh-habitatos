@@ -7,6 +7,7 @@ import {
 import { createChessArenaGameV0 } from "../chessArenaEngineV0.js";
 import {
   CHESS_CLUSTER_LEARNING_GRID_MAX_PLY_V0,
+  applyTeacherLeagueToStockfishOptsV0,
   resolveChessClusterLearningMaxPlyV0,
   resolveChessClusterTeacherLeagueRowV0
 } from "../chessClusterLearningThroughputV0.js";
@@ -28,6 +29,17 @@ describe("chessClusterLearningThroughputV0", () => {
     const d1 = resolveChessClusterTeacherLeagueRowV0(1).depth;
     const d7 = resolveChessClusterTeacherLeagueRowV0(7).depth;
     expect(d7).toBeGreaterThan(d1);
+  });
+
+  it("caps featured stockfish to league row during learning throughput", () => {
+    window.__rhizoh = { chessGameCluster: { running: true } };
+    const tuned = applyTeacherLeagueToStockfishOptsV0(0, {
+      preset: "MAX",
+      depth: 22,
+      movetimeMs: 5000
+    });
+    expect(tuned.depth).toBe(10);
+    expect(tuned.movetimeMs).toBe(900);
   });
 });
 

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createChessArenaGameV0 } from "../chessArenaEngineV0.js";
 import { pickChessClusterMoveV0 } from "../chessClusterMovePickerV0.js";
+import { pickRhizohChessMoveV0 } from "../rhizohChessPlayerV0.js";
 import { publishChessClusterBroadcastActiveV0 } from "../chessEngineContentionGateV0.js";
 import { CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0 } from "../chessLearningMonitorV0.js";
 
@@ -34,6 +35,7 @@ describe("chessClusterMovePickerV0", () => {
   beforeEach(() => {
     window.__rhizoh = {};
     publishChessClusterBroadcastActiveV0(false);
+    vi.clearAllMocks();
   });
 
   it("never downgrades featured slot #0 to contention fast heuristic", async () => {
@@ -53,6 +55,22 @@ describe("chessClusterMovePickerV0", () => {
     expect(out.engine).not.toBe("cluster_fast_heuristic_contention");
     expect(out.engine).not.toBe("broadcast_grid_heuristic");
     expect(out.engine).toBe("stockfish_wasm");
+  });
+
+  it("uses clusterPlay queue for rhizoh_vs_stockfish featured turns", async () => {
+    const game = createChessArenaGameV0();
+    const slot = Object.freeze({
+      slotId: CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0,
+      ply: 0,
+      matchId: "cluster_0_rhizoh",
+      rhizohColor: "w"
+    });
+
+    await pickChessClusterMoveV0(slot, game);
+    expect(pickRhizohChessMoveV0).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ clusterPlay: true })
+    );
   });
 
   it("may use contention fast heuristic for non-featured slots during broadcast", async () => {

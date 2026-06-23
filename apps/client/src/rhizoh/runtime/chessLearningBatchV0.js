@@ -9,6 +9,9 @@ import { feedOpeningBookFromLearningBatchV0 } from "./chessLearningBatchOpeningF
 
 export const CHESS_LEARNING_BATCH_SCHEMA_V0 = "castle.rhizoh.chess_learning_batch.v0";
 export const CHESS_LEARNING_BATCH_SIZE_V0 = 32;
+/** Partial flush when truth backlog grows during long cluster sessions. */
+export const CHESS_LEARNING_BATCH_MINI_SIZE_V0 = 16;
+export const CHESS_LEARNING_BATCH_MINI_AGE_MS_V0 = 180_000;
 export const CHESS_LEARNING_BATCH_EVENT_V0 = "rhizoh:chess-learning-batch-v0";
 
 /** @type {object[]} */
@@ -46,12 +49,35 @@ export function enqueueChessLearningBatchSampleV0(sample) {
     return flushChessLearningBatchV0("batch_full");
   }
 
+  const mini = maybeFlushChessLearningMiniBatchV0();
+  if (mini?.flushed) return mini;
+
   return Object.freeze({
     enqueued: true,
     flushed: false,
     pending: pendingBatchV0.length,
     batchSize: CHESS_LEARNING_BATCH_SIZE_V0
   });
+}
+
+/**
+ * @param {string} [reason]
+ */
+export function maybeFlushChessLearningMiniBatchV0() {
+  if (pendingBatchV0.length < CHESS_LEARNING_BATCH_MINI_SIZE_V0) {
+    return Object.freeze({ flushed: false, reason: "below_mini_threshold", pending: pendingBatchV0.length });
+  }
+  const oldestAt = Number(pendingBatchV0[0]?.atMs) || 0;
+  const ageMs = Date.now() - oldestAt;
+  if (ageMs < CHESS_LEARNING_BATCH_MINI_AGE_MS_V0) {
+    return Object.freeze({
+      flushed: false,
+      reason: "mini_age_not_met",
+      pending: pendingBatchV0.length,
+      ageMs
+    });
+  }
+  return flushChessLearningBatchV0("batch_mini_16");
 }
 
 /**
@@ -117,6 +143,7 @@ export function getChessLearningBatchSnapshotV0() {
     schema: CHESS_LEARNING_BATCH_SCHEMA_V0,
     pending: pendingBatchV0.length,
     batchSize: CHESS_LEARNING_BATCH_SIZE_V0,
+    miniBatchSize: CHESS_LEARNING_BATCH_MINI_SIZE_V0,
     batchesFlushed: batchesFlushedV0,
     lastFlushAtMs: lastFlushAtMsV0 || null,
     atMs: Date.now()

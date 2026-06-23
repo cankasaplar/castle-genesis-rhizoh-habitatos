@@ -76,6 +76,36 @@ describe("rhizohChessLearningReportV0", () => {
     expect(report.schema).toContain("chess_learning_report");
   });
 
+  it("separates preview-only policy diffs from truth agreement metrics", () => {
+    ensureRhizohChessLearningReportV0();
+    window.dispatchEvent(
+      new CustomEvent(CHESS_CLUSTER_POLICY_DIFF_EVENT_V0, {
+        detail: {
+          drifted: true,
+          matchedRank: 4,
+          observabilityOnly: true,
+          truthAuthoritative: false
+        }
+      })
+    );
+    window.dispatchEvent(
+      new CustomEvent(CHESS_CLUSTER_POLICY_DIFF_EVENT_V0, {
+        detail: {
+          drifted: false,
+          matchedRank: 1,
+          truthAuthoritative: true,
+          winningLine: { depth: 12, pv: "e2e4" }
+        }
+      })
+    );
+    const report = window.__rhizoh.learningReport();
+    expect(report.previewPolicyChanges).toBe(1);
+    expect(report.truthPolicyChanges).toBe(1);
+    expect(report.policyChanges).toBe(2);
+    expect(report.stockfishAgreement).toBe(1);
+    expect(report.averageDepthSeen).toBe(12);
+  });
+
   it("computes stockfishAgreement from policy diff rank", () => {
     ensureRhizohChessLearningReportV0();
     window.dispatchEvent(

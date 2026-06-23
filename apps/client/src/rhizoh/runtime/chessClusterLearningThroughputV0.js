@@ -61,6 +61,14 @@ export function resolveChessClusterTeacherLeagueRowV0(slotId) {
  */
 export function applyTeacherLeagueToStockfishOptsV0(slotId, baseOpts = {}) {
   const league = resolveChessClusterTeacherLeagueRowV0(slotId);
+  if (isChessClusterLearningThroughputModeV0()) {
+    return Object.freeze({
+      ...baseOpts,
+      depth: league.depth,
+      movetimeMs: league.movetimeMs,
+      teacherLeague: league.label
+    });
+  }
   return Object.freeze({
     ...baseOpts,
     depth: Math.max(Number(baseOpts.depth) || 0, league.depth),
