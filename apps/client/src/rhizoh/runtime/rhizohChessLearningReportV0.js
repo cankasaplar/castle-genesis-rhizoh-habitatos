@@ -10,6 +10,9 @@ import { getChessClusterMemoryGraphSnapshotV0, listChessClusterMemoryNodesV0 } f
 import { CHESS_CLUSTER_POLICY_DIFF_EVENT_V0 } from "./chessClusterLearningTraceV0.js";
 import { readChessLearningWeightsV0 } from "./chessLearningWeightsV0.js";
 import { listRhizohOpeningBookV0 } from "./rhizohOpeningBookV0.js";
+import { getChessLearningAgreementGateSnapshotV0 } from "./chessLearningAgreementGateV0.js";
+import { getChessLearningBatchSnapshotV0 } from "./chessLearningBatchV0.js";
+import { getChessFenClusterMemorySnapshotV0 } from "./chessFenClusterMemoryV0.js";
 
 export const RHIZOH_CHESS_PREDICTION_SCORE_EVENT_V0 = "rhizoh:chess-prediction-score-v0";
 
@@ -231,6 +234,12 @@ function resolvePreferredOpeningsV0() {
 }
 
 function resolveOpeningCoverageV0() {
+  for (const slot of typeof window !== "undefined"
+    ? window.__rhizoh?.chessGameCluster?.slots || []
+    : []) {
+    const bucket = slot?.openingSeed?.bucket;
+    if (bucket) openingBucketsSeenV0.add(bucket);
+  }
   const seen = openingBucketsSeenV0.size;
   const total = OPENING_BUCKETS_V0.length;
   const percent = total > 0 ? Math.round((seen / total) * 100) : 0;
@@ -292,6 +301,13 @@ export function buildRhizohChessLearningReportV0() {
       : null;
 
   const agreement = resolveAgreementMetricsV0();
+  const agreementGate = getChessLearningAgreementGateSnapshotV0();
+  const batchLearning = getChessLearningBatchSnapshotV0();
+  const fenClusters = getChessFenClusterMemorySnapshotV0();
+  const clusterThroughput =
+    typeof window !== "undefined"
+      ? window.__rhizoh?.chessGameCluster?.learningThroughput || null
+      : null;
   const averageDepthSeen =
     depthSampleCountV0 > 0 ? Number((totalDepthSeenV0 / depthSampleCountV0).toFixed(1)) : null;
 
@@ -342,6 +358,14 @@ export function buildRhizohChessLearningReportV0() {
     }),
     engineStatus: monitor.engineStatus,
     agreementSamples: agreement.samples,
+    learningV2: Object.freeze({
+      truthBased: true,
+      agreementGate,
+      batchLearning,
+      fenClusters,
+      clocksDisabled: Boolean(clusterThroughput?.clocksDisabled),
+      deferPerGameUpdates: true
+    }),
     atMs: Date.now()
   });
 

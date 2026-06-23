@@ -17,6 +17,9 @@ import {
   isLearningActivationEnabledV0,
   isMemoryFormationEnabledV0
 } from "./rhizohObservationPhaseV0.js";
+import { getChessLearningBatchSnapshotV0 } from "./chessLearningBatchV0.js";
+
+export const CHESS_LEARNING_V2_DEFER_TO_BATCH_V0 = true;
 
 export const CHESS_LEARNING_LOOP_SCHEMA_V0 = "rhizoh.chess_learning_loop.v0";
 export const CHESS_LEARNING_LOOP_EVENT_V0 = "rhizoh:chess-learning-loop-v0";
@@ -45,8 +48,12 @@ export async function runRhizohChessLearningLoopV0(opts = {}) {
 
   const weightsBefore = readChessLearningWeightsV0();
   const clusterLearningPath = opts.policyMode === "cluster_observer";
+  const deferToBatch =
+    CHESS_LEARNING_V2_DEFER_TO_BATCH_V0 &&
+    (clusterLearningPath || isMemoryFormationEnabledV0());
   const weightsAfter =
-    isLearningActivationEnabledV0() || (clusterLearningPath && isMemoryFormationEnabledV0())
+    !deferToBatch &&
+    (isLearningActivationEnabledV0() || (clusterLearningPath && isMemoryFormationEnabledV0()))
       ? applyChessLearningCorrectionV0(regret)
       : weightsBefore;
   const liveMetrics = computeChessLiveMetricsV0({
@@ -100,6 +107,8 @@ export async function runRhizohChessLearningLoopV0(opts = {}) {
     policyEvolution,
     learningGated: !isLearningActivationEnabledV0() && !(clusterLearningPath && isMemoryFormationEnabledV0()),
     memoryFormationGated: !isMemoryFormationEnabledV0(),
+    deferToBatch,
+    batchLearning: getChessLearningBatchSnapshotV0(),
     learnedAt: new Date().toISOString()
   });
 

@@ -20,7 +20,7 @@ import {
   applyClusterOpeningSeedV0,
   pickClusterOpeningSeedV0
 } from "./chessClusterOpeningDiversityV0.js";
-import { resolveChessClusterLearningMaxPlyV0 } from "./chessClusterLearningThroughputV0.js";
+import { resolveChessClusterLearningMaxPlyV0, shouldTickChessClusterClockForLearningV0 } from "./chessClusterLearningThroughputV0.js";
 import { getChessClusterMemoryGraphSnapshotV0 } from "./chessClusterMemoryGraphV0.js";
 import {
   applyChessClusterClockIncrementV0,
@@ -375,6 +375,7 @@ function endChessClusterSlotV0(slot, outcome, endReason = "normal") {
 
 function runClusterClockTickV0() {
   if (!runningV0 || slotsV0.length === 0) return;
+  if (!shouldTickChessClusterClockForLearningV0()) return;
   for (const slot of slotsV0) {
     if (slot?.status !== "active") continue;
     if (!shouldTickChessClusterSlotClockV0(slot)) continue;
