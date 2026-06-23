@@ -8,6 +8,7 @@ import {
 } from "../rhizoh/runtime/spiralMapLayerFilterStateV0.js";
 import { SPIRAL_MAP_LAYER_V0 } from "../rhizoh/runtime/spatialDistributionLayerV0.js";
 import { readUiLocaleV0 } from "../rhizoh/runtime/rhizohUiLocaleV0.js";
+import { requestFitLlmTowersOnMapV0 } from "../rhizoh/runtime/llmTowerMapViewportV0.js";
 
 function readArenaPopulationCountsV0() {
   if (typeof window === "undefined") return null;
@@ -72,9 +73,25 @@ export const RhizohSpiralMapLayerFilterV0 = memo(function RhizohSpiralMapLayerFi
     setState(writeSpiralMapLayerFilterStateV0({ includeDormant: !state.includeDormant }));
   }, [state.includeDormant]);
 
+  const showAllLlmTowers = useCallback(() => {
+    requestFitLlmTowersOnMapV0("map_layer_filter");
+  }, []);
+
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap gap-1.5">
+        <button
+          type="button"
+          onClick={showAllLlmTowers}
+          title={
+            tr
+              ? "7 LLM kulesi + portal — dünya görünümü"
+              : "7 LLM towers + portal — world view"
+          }
+          className="rounded-lg border border-fuchsia-400/40 bg-fuchsia-500/15 px-2 py-1 text-[8px] font-semibold uppercase tracking-wide text-fuchsia-100 transition hover:border-fuchsia-300/60"
+        >
+          {tr ? "LLM Kuleleri · 7" : "LLM Towers · 7"}
+        </button>
         {rows.map((row) => {
           const active = state[row.key] === true;
           const count = counts?.[row.key];

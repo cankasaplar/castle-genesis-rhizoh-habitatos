@@ -82,6 +82,12 @@ import {
   writeSovereignPortalCoordsV0
 } from "../rhizoh/runtime/sovereignWorldMapNodesV0.js";
 import {
+  RHIZOH_LLM_TOWER_FIT_EVENT_V0,
+  drawLlmTowerGraphPolylinesV0,
+  mountLlmTowerMapConsoleV0,
+  resolveLlmTowerViewportFitNodesV0
+} from "../rhizoh/runtime/llmTowerMapViewportV0.js";
+import {
   getLiveMatchMapPinsV0,
   RHIZOH_LIVE_MATCH_PINS_EVENT_V0
 } from "../rhizoh/runtime/worldMapLiveMatchPinsV0.js";
@@ -356,6 +362,27 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
     }
   }, []);
 
+  const fitAllLlmTowersViewportV0 = useCallback(() => {
+    const L = typeof window !== "undefined" ? window.L : null;
+    const map = mapRef.current;
+    if (!L?.latLngBounds || !map) return false;
+    const nodes = resolveLlmTowerViewportFitNodesV0({ includePortal: true });
+    if (nodes.length < 2) return false;
+    const bounds = L.latLngBounds(nodes.map((n) => [n.lat, n.lon]));
+    map.fitBounds(bounds, {
+      paddingTopLeft: [28, 88],
+      paddingBottomRight: [28, 32],
+      maxZoom: 4,
+      animate: true
+    });
+    const nodeById = new Map(nodes.map((n) => [String(n.id), { lat: n.lat, lon: n.lon }]));
+    if (!graphLayerRef.current && map) {
+      graphLayerRef.current = L.layerGroup().addTo(map);
+    }
+    drawLlmTowerGraphPolylinesV0(L, graphLayerRef.current, nodeById);
+    return true;
+  }, []);
+
   useEffect(() => {
     const onPins = (ev) => setLiveMatchPins(ev?.detail?.pins || getLiveMatchMapPinsV0());
     window.addEventListener(RHIZOH_LIVE_MATCH_PINS_EVENT_V0, onPins);
@@ -383,13 +410,16 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
         fitCastleIdentityViewportV0();
       }
     };
+    const onLlmTowerFit = () => fitAllLlmTowersViewportV0();
     window.addEventListener(CASTLE_IDENTITY_MODE_EVENT_V0, onCastleIdentity);
     window.addEventListener(SPIRAL_MAP_REALITY_MODE_EVENT_V0, onRealityMode);
+    window.addEventListener(RHIZOH_LLM_TOWER_FIT_EVENT_V0, onLlmTowerFit);
     return () => {
       window.removeEventListener(CASTLE_IDENTITY_MODE_EVENT_V0, onCastleIdentity);
       window.removeEventListener(SPIRAL_MAP_REALITY_MODE_EVENT_V0, onRealityMode);
+      window.removeEventListener(RHIZOH_LLM_TOWER_FIT_EVENT_V0, onLlmTowerFit);
     };
-  }, [fitCastleIdentityViewportV0]);
+  }, [fitCastleIdentityViewportV0, fitAllLlmTowersViewportV0]);
 
   const displayNodes = useMemo(
     () =>
@@ -472,6 +502,7 @@ function V11CoreMapLayerV0({ activeMapTool = "city_map", remoteCastles = [], rem
             /* noop */
           }
           setLeafletReady(true);
+          mountLlmTowerMapConsoleV0();
           publishV11LeafletReadyV0({ pinCount: displayNodes.length });
           setTimeout(() => {
             try {

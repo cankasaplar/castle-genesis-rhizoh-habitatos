@@ -21,6 +21,7 @@ import {
   tryOpenSovereignMapNodeFromTextV0,
   tryOpenSovereignMediaTubeFromTextV0
 } from "./sovereignWorldMapNodesV0.js";
+import { tryExecuteLlmTowerFitFromTextV0 } from "./llmTowerMapViewportV0.js";
 import { tryShowLiveMatchPinsFromTextV0 } from "./worldMapLiveMatchPinsV0.js";
 import { tryResolveRhizohLocalKnowledgeV0 } from "./rhizohPolicyRouterV0.js";
 import {
@@ -120,6 +121,21 @@ export function tryResolveLocalConversationTurnV0(text, opts = {}) {
       source: "live_match_pins",
       llmBypass: true,
       kind: livePins.kind
+    });
+  }
+
+  const llmTowerFit = tryExecuteLlmTowerFitFromTextV0(raw, {
+    source: opts.source || "conversation_dock",
+    tr: localeTr
+  });
+  if (llmTowerFit) {
+    return Object.freeze({
+      schema: RHIZOH_LOCAL_CONVERSATION_TURN_SCHEMA_V0,
+      ok: true,
+      reply: commitLocalConversationReplyV0(llmTowerFit.reply, "llm_tower_fit"),
+      source: "llm_tower_fit",
+      llmBypass: true,
+      kind: llmTowerFit.kind
     });
   }
 

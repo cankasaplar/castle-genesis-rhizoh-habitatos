@@ -53,11 +53,14 @@ describe("rhizohFullSystemReportV0", () => {
   });
 
   it("prints report text with integrity tiers", () => {
-    const text = printFullSystemReportV0(runFullSystemReportV0({ probe: false }));
+    const report = runFullSystemReportV0({ probe: false });
+    const text = printFullSystemReportV0(report);
     expect(text).toContain("RHIZOH FULL SYSTEM REPORT");
     expect(text).toContain("OVERALL");
     expect(text).toContain("Core Integrity");
     expect(text).toContain("structural:");
     expect(text).toContain("NETWORK SURFACE");
+    expect(text).toContain("llm towers:");
+    expect(report.networkSurface?.llmTowers?.count).toBe(7);
   });
 });

@@ -54,6 +54,7 @@ import { buildSystemIntegrityTiersV0 } from "./rhizohSystemIntegrityTiersV0.js";
 import { resolveWorldLayerActivationStatusV0 } from "./rhizohWorldLayerActivationStatusV0.js";
 import { getSpatialRendererRegistrySnapshotV0 } from "./rhizohSpatialSurfaceRendererRegistryV0.js";
 import { buildTowerRegistrySnapshotV0, getLastSpatialDistributionV0 } from "./spatialDistributionLayerV0.js";
+import { buildLlmTowerMapRegistrySnapshotV0 } from "./llmTowerMapViewportV0.js";
 import { listSpiralMMOContinentMapPinsV0 } from "./spiralMMOContinentPinsV0.js";
 import { buildRhizohObservationStateV1 } from "./rhizohObservationStateV1.js";
 import {
@@ -611,6 +612,7 @@ function collectNetworkSurfaceDiagnosticV0() {
       sampleIds: Object.freeze(spiralPins.slice(0, 5).map((p) => p?.id || p?.label || "—"))
     }),
     towers: buildTowerRegistrySnapshotV0(),
+    llmTowers: buildLlmTowerMapRegistrySnapshotV0(),
     spiralJourney: Object.freeze({
       countdownRemaining: formatRhizohNeonCountdownMsV0(spiralRemainingMs),
       countdownRemainingMs: spiralRemainingMs,
@@ -657,7 +659,9 @@ function collectNetworkSurfaceDiagnosticV0() {
       "__rhizoh.voiceGateway.sessionActive()",
       "__rhizoh.inviteOps.generate({ role: 'investor' })",
       "__rhizoh.distributeSpatialPins()",
-      "__rhizoh.spatialDistribution()"
+      "__rhizoh.spatialDistribution()",
+      "__rhizoh.listLlmTowers()",
+      "__rhizoh.fitAllLlmTowers()"
     ])
   });
 }
@@ -912,6 +916,8 @@ export function printFullSystemReportV0(report) {
     `    map pins: spiral ${r.networkSurface?.mapPins?.spiralContinent ?? 0} · distributed ${r.networkSurface?.mapPins?.distributed ?? 0} · unique coords ${r.networkSurface?.mapPins?.uniqueCoords ?? 0}`,
     `    pin types: ${Object.entries(r.networkSurface?.mapPins?.pinTypes || {}).map(([k, v]) => `${k}:${v}`).join(", ") || "—"}`,
     `    towers: explorer/castle/economy/seasonal layers registered (${Object.keys(r.networkSurface?.towers?.towerClasses || {}).length} classes)`,
+    `    llm towers: ${r.networkSurface?.llmTowers?.count ?? 0} — ${(r.networkSurface?.llmTowers?.towerLabels || []).join(", ") || "—"} + portal`,
+    `    llm tower fit: __rhizoh.fitAllLlmTowers()  (World · Space map)`,
     `    spiral journey: countdown ${r.networkSurface?.spiralJourney?.countdownRemaining ?? "—"} · legalHold ${r.networkSurface?.spiralJourney?.legalHold ? "yes" : "no"} · ack ${r.networkSurface?.spiralJourney?.legalAcked ? "yes" : "no"}`,
     `    voice citizenship: ${r.networkSurface?.gatewayRegistration?.voiceCitizenship ?? "—"} · session ${r.networkSurface?.gatewayRegistration?.voiceSessionId ?? "—"}`,
     `    broadcast: ack ${r.networkSurface?.gatewayRegistration?.broadcastAck ?? 0} · delivered ${r.networkSurface?.gatewayRegistration?.broadcastDelivered ?? 0}`,

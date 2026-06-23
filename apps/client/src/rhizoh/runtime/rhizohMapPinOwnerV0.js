@@ -27,6 +27,7 @@ import {
   readCastleMemoryMapPinRowsV0
 } from "./worldMapCastleIdentityV0.js";
 import { publishSpiralMapRealityDevtoolsV0 } from "./spiralMapRealityModeV0.js";
+import { mountLlmTowerMapConsoleV0 } from "./llmTowerMapViewportV0.js";
 import {
   filterPinsForWorldMapToolV0,
   isSatelliteWorldMapToolV0,
@@ -446,6 +447,7 @@ export function installRhizohMapPinOwnerAutoRefreshV0(ctx = {}) {
   window.__rhizoh = window.__rhizoh || {};
   window.__rhizoh.refreshMapPinOwner = refresh;
   window.__rhizoh.inspectMapPinOwner = inspectRhizohMapPinOwnerV0;
+  mountLlmTowerMapConsoleV0();
   publishSpiralMapRealityDevtoolsV0();
 
   if (mapPinOwnerAutoRefreshInstalledV0) return () => {};
