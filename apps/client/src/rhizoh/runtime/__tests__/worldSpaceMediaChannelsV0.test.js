@@ -10,15 +10,18 @@ import {
   resolveInitialWorldSpaceMediaChannelIdV0,
   resolveWorldSpaceMediaChannelForMapNodeV0,
   resolveWorldSpaceMediaChannelV0,
-  RHIZOH_LEARNING_CHANNEL_ID_V0
+  RHIZOH_LEARNING_CHANNEL_ID_V0,
+  RHIZOH_WORLDSPORTS_CHANNEL_ID_V0,
+  buildRhizohWorldSportsChannelV0
 } from "../worldSpaceMediaChannelsV0.js";
 
 describe("worldSpaceMediaChannelsV0", () => {
-  it("lists castle genesis, learning channel, nasa, lofi, local (no empty chess VOD)", () => {
+  it("lists castle genesis, learning channel, world sports, nasa, lofi, local (no empty chess VOD)", () => {
     const rows = listWorldSpaceMediaChannelsV0();
     const ids = rows.map((r) => r.id);
     expect(ids[0]).toBe("castle_genesis");
     expect(ids).toContain(RHIZOH_LEARNING_CHANNEL_ID_V0);
+    expect(ids).toContain(RHIZOH_WORLDSPORTS_CHANNEL_ID_V0);
     expect(ids).not.toContain("castle_chess");
     expect(ids).toContain("nasa");
     expect(ids).toContain("lofi");
@@ -49,6 +52,9 @@ describe("worldSpaceMediaChannelsV0", () => {
   it("maps sovereign pins to distinct media channels", () => {
     expect(resolveWorldSpaceMediaChannelForMapNodeV0({ id: "my_castle", type: "castle" })).toBe(
       "castle_genesis"
+    );
+    expect(resolveWorldSpaceMediaChannelForMapNodeV0({ id: "worldsports", type: "zone" })).toBe(
+      RHIZOH_WORLDSPORTS_CHANNEL_ID_V0
     );
     expect(resolveWorldSpaceMediaChannelForMapNodeV0({ id: "chess", type: "zone" })).toBe(
       RHIZOH_LEARNING_CHANNEL_ID_V0
@@ -81,6 +87,13 @@ describe("worldSpaceMediaChannelsV0", () => {
     const ch = resolveWorldSpaceMediaChannelV0(RHIZOH_LEARNING_CHANNEL_ID_V0);
     expect(ch.type).toBe("chess_cluster_live");
     expect(ch.titleTr).toContain("Öğrenme");
+  });
+
+  it("world sports channel defaults to world_sports_feed without env video", () => {
+    const ch = buildRhizohWorldSportsChannelV0();
+    expect(ch.id).toBe(RHIZOH_WORLDSPORTS_CHANNEL_ID_V0);
+    expect(ch.type).toBe("world_sports_feed");
+    expect(ch.titleEn).toBe("WorldSports");
   });
 
   it("channel pack snapshot exposes env keys", () => {

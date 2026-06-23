@@ -16,7 +16,7 @@ export const NASA_TV_YOUTUBE_CHANNEL_ID_V0 = "UCSI0uARq_cDIn6keDeXzqJg";
 export const NASA_ISS_EARTH_VIDEO_ID_V0 = "iYmvCUonukw";
 export const NASA_ISS_EARTH_FALLBACK_VIDEO_ID_V0 = "21X5lGlDOfg";
 
-/** @typedef {'youtube'|'local'|'castle_genesis_live'|'chess_cluster_live'} WorldSpaceMediaChannelTypeV0 */
+/** @typedef {'youtube'|'local'|'castle_genesis_live'|'chess_cluster_live'|'world_sports_feed'} WorldSpaceMediaChannelTypeV0 */
 
 /**
  * @param {string} videoId
@@ -96,6 +96,11 @@ function freezeHoldingChannelV0(row) {
 }
 
 export const RHIZOH_LEARNING_CHANNEL_ID_V0 = "rhizoh_learning";
+export const RHIZOH_WORLDSPORTS_CHANNEL_ID_V0 = "world_sports";
+
+function readRhizohWorldSportsYoutubeVideoIdV0() {
+  return readEnvV0("VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID");
+}
 
 /**
  * Live 8-camera chess cluster — embedded in World · Space media tube (not YouTube).
@@ -108,6 +113,33 @@ export function buildRhizohLearningChannelV0() {
     type: "chess_cluster_live",
     badgeTr: "Canlı · 8 kamera · Stockfish",
     badgeEn: "Live · 8 cameras · Stockfish"
+  });
+}
+
+/**
+ * WorldSports — live scores + headlines (gateway world-feed); optional YouTube B-roll.
+ */
+export function buildRhizohWorldSportsChannelV0() {
+  const videoId = readRhizohWorldSportsYoutubeVideoIdV0();
+  if (videoId) {
+    return freezeYoutubeChannelV0({
+      id: RHIZOH_WORLDSPORTS_CHANNEL_ID_V0,
+      titleTr: "WorldSports",
+      titleEn: "WorldSports",
+      type: "youtube",
+      url: buildYoutubeEmbedUrlV0(videoId, { controls: true }),
+      videoId,
+      badgeTr: "Skor + haber + VOD",
+      badgeEn: "Scores + headlines + VOD"
+    });
+  }
+  return Object.freeze({
+    id: RHIZOH_WORLDSPORTS_CHANNEL_ID_V0,
+    titleTr: "WorldSports",
+    titleEn: "WorldSports",
+    type: "world_sports_feed",
+    badgeTr: "API-Sports · canlı skor",
+    badgeEn: "API-Sports · live scores"
   });
 }
 
@@ -147,7 +179,7 @@ export function listWorldSpaceMediaChannelsV0() {
         badgeEn: "Official channel"
       });
 
-  const rows = [castleGenesisPrimary, buildRhizohLearningChannelV0()];
+  const rows = [castleGenesisPrimary, buildRhizohLearningChannelV0(), buildRhizohWorldSportsChannelV0()];
 
   if (castleLiveEmbed) {
     rows.push(
@@ -269,6 +301,9 @@ export function resolveInitialWorldSpaceMediaChannelIdV0(source) {
   const s = String(source || "");
   if (s.startsWith("castle_init")) return "castle_genesis";
   if (s.includes("my_castle") || s.includes("map:node:castle")) return "castle_genesis";
+  if (s.includes("worldsports") || s.includes("world_sports") || s.includes("map:node:worldsports")) {
+    return RHIZOH_WORLDSPORTS_CHANNEL_ID_V0;
+  }
   if (s.includes("chess") || s.includes("map:node:chess") || s.includes("learning")) return RHIZOH_LEARNING_CHANNEL_ID_V0;
   if (s.includes("radio") || s.includes("map:node:radio")) return "lofi";
   if (s.includes("event") || s.includes("map:node:event")) return "nasa";
@@ -288,6 +323,9 @@ export function resolveInitialWorldSpaceMediaChannelIdV0(source) {
 export function resolveWorldSpaceMediaChannelForMapNodeV0(node) {
   const id = String(node?.id || "").trim().toLowerCase();
   if (id === "my_castle" || id === "castle") return "castle_genesis";
+  if (id === "worldsports" || id === "world_sports" || id.includes("worldsports")) {
+    return RHIZOH_WORLDSPORTS_CHANNEL_ID_V0;
+  }
   if (id === "chess" || id === "arena" || id === "chess_arena" || id.includes("chess")) {
     return RHIZOH_LEARNING_CHANNEL_ID_V0;
   }
@@ -308,6 +346,7 @@ export function getWorldSpaceMediaChannelPackSnapshotV0() {
     fullVideoId: readCastleGenesisFullVideoIdV0() || null,
     fullEmbedEndSec: readCastleGenesisFullEmbedEndSecV0(),
     liveChannelId: readCastleGenesisChannelIdV0() || null,
+    worldSportsVideoId: readRhizohWorldSportsYoutubeVideoIdV0() || null,
     channelCount: listWorldSpaceMediaChannelsV0().length,
     atMs: Date.now()
   });

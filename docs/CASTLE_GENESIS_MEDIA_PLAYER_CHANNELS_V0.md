@@ -21,6 +21,7 @@ Kaynak: `apps/client/src/rhizoh/runtime/worldSpaceMediaChannelsV0.js`
 | `castle_chess` | 8 kamera satranç B-roll | `VITE_CASTLE_GENESIS_YOUTUBE_CHESS_VIDEO_ID` |
 | `castle_architecture` | Mimari özet (2. parça) | `VITE_CASTLE_GENESIS_YOUTUBE_ARCHITECTURE_VIDEO_ID` |
 | `castle_manifesto_trim` | Uzun VOD’un ilk N saniyesi | `FULL_VIDEO_ID` + `FULL_EMBED_END_SEC` |
+| `world_sports` | WorldSports — skor + haber | `world_sports_feed` veya `VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID` |
 | `nasa` | ISS / NASA TV | sabit embed |
 | `lofi` | Kuantum ambient | sabit embed |
 | `local` | Yerel kamera | capture |
