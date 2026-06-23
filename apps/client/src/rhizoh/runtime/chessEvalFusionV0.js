@@ -4,8 +4,11 @@
  */
 
 import { listRhizohOpeningBookV0 } from "./rhizohOpeningBookV0.js";
-import { estimateChessMaterialBalanceV0, createChessArenaGameV0 } from "./chessArenaEngineV0.js";
-import { CHESS_GAME_MODE_V0 } from "./chessArenaSessionV0.js";
+import {
+  estimateChessMaterialBalanceV0,
+  createChessArenaGameV0,
+  CHESS_GAME_MODE_V0
+} from "./chessArenaEngineV0.js";
 
 export const CHESS_EVAL_FUSION_SCHEMA_V0 = "castle.rhizoh.chess_eval_fusion.v0";
 
