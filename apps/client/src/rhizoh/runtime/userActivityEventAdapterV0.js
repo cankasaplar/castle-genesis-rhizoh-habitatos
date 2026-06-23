@@ -9,6 +9,7 @@ import {
   schedulePhaseCommitV0
 } from "./executionPhaseSynchronizerV0.js";
 import { ingestUserActivityLaneV0 } from "./crossSpaceCausalFusionV0.js";
+import { wireWorldBridgeFusionAfterIngestV0 } from "./worldBridgeFusionWireV0.js";
 
 export const USER_ACTIVITY_ADAPTER_SCHEMA_V0 = "castle.rhizoh.user_activity_adapter.v0";
 export const USER_ACTIVITY_EVENT_V0 = "rhizoh:user-activity-event-v0";
@@ -69,7 +70,7 @@ const activityLogV0 = [];
 
 /**
  * @param {object} normalized
- * @param {{ dispatchEvent?: boolean }} [opts]
+ * @param {{ dispatchEvent?: boolean, fuse?: boolean }} [opts]
  */
 export function ingestUserActivityEventV0(normalized, opts = {}) {
   activityLogV0.unshift(normalized);
@@ -97,6 +98,12 @@ export function ingestUserActivityEventV0(normalized, opts = {}) {
     source: `user_activity:${normalized.activityType}`
   });
 
+  const fusion = wireWorldBridgeFusionAfterIngestV0({
+    atMs: normalized.atMs,
+    fuse: opts.fuse,
+    suppressEvent: opts.dispatchEvent === false
+  });
+
   if (opts.dispatchEvent !== false && typeof globalThis !== "undefined" && globalThis.dispatchEvent) {
     globalThis.dispatchEvent(
       new CustomEvent(USER_ACTIVITY_EVENT_V0, {
@@ -109,6 +116,7 @@ export function ingestUserActivityEventV0(normalized, opts = {}) {
     schema: USER_ACTIVITY_ADAPTER_SCHEMA_V0,
     normalized,
     lane,
+    fusion,
     interpretationOnly: true,
     nonExecutive: true
   });
