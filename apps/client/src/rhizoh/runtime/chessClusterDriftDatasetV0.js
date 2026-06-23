@@ -1,7 +1,6 @@
 /**
- * Move-level drift dataset — position, played, best, drift (heuristic + engine enrich).
- * RESEARCH-ONLY — feeds policy_diff events → agreementSamples / policyChanges.
- * v2: multi-source fusion + agreement gate + batch learning queue.
+ * Move-level drift dataset — observation (immediate) vs truth learning (engine-enriched).
+ * RESEARCH-ONLY — learning = f(agreement), not every move event.
  */
 
 import { pickChessArenaAiMoveV0 } from "./chessArenaEngineV0.js";
@@ -21,10 +20,6 @@ const MAX_DRIFT_ROWS_V0 = 2048;
 /** @type {object[]} */
 const driftRowsV0 = [];
 
-/**
- * Heuristic best-move proxy when WASM MultiPV is throttled — still closes the learning loop.
- * @param {ReturnType<import('./chessArenaEngineV0.js').createChessArenaGameV0>} game
- */
 function pickHeuristicBestMoveUciV0(game) {
   const legal = game.legalMoves();
   if (!legal.length) return null;
@@ -33,36 +28,49 @@ function pickHeuristicBestMoveUciV0(game) {
   return uci;
 }
 
+function dispatchPolicyDiffV0(policyDiff) {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new CustomEvent(CHESS_CLUSTER_POLICY_DIFF_EVENT_V0, { detail: policyDiff }));
+  } catch {
+    /* noop */
+  }
+}
+
 /**
+ * Engine-truth path — MultiPV enrich → fusion → agreement gate → batch-32.
  * @param {object} slot
  * @param {object} moveRow
- * @param {{ engineBest?: string | null, matchedRank?: number | null, source?: string, stockfishCp?: number | null }} [enrich]
+ * @param {{
+ *   engineBest?: string | null,
+ *   matchedRank?: number | null,
+ *   stockfishCp?: number | null,
+ *   source?: string,
+ *   winningLine?: object | null
+ * }} enrich
  */
-export function recordChessClusterMoveDriftV0(slot, moveRow, enrich = {}) {
+export function submitChessClusterTruthLearningSampleV0(slot, moveRow, enrich = {}) {
   if (!slot || !moveRow) return null;
   const played = String(moveRow.uci || "").trim();
-  const engineBest = enrich.engineBest != null ? String(enrich.engineBest) : pickHeuristicBestMoveUciV0(slot.game);
+  const engineBest = enrich.engineBest != null ? String(enrich.engineBest) : null;
   const matchedRank =
-    enrich.matchedRank != null
-      ? Number(enrich.matchedRank)
-      : engineBest && played === engineBest
-        ? 1
-        : null;
+    enrich.matchedRank != null ? Number(enrich.matchedRank) : null;
   const drifted = matchedRank == null || matchedRank > 2;
   const position = moveRow.fenBefore || slot.game?.fen?.() || null;
   const sanMoves = (slot.moveHistory || []).map((m) => m.san);
-
   const stockfishCp =
     enrich.stockfishCp != null
       ? Number(enrich.stockfishCp)
-      : stockfishCpFromMatchedRankV0(matchedRank);
+      : enrich.winningLine?.cp != null
+        ? Number(enrich.winningLine.cp)
+        : stockfishCpFromMatchedRankV0(matchedRank);
 
-  const fusion = fuseChessEvalSourcesV0({
-    stockfishCp,
-    fen: position,
-    sanMoves
+  const fusion = fuseChessEvalSourcesV0({ stockfishCp, fen: position, sanMoves });
+  const gate = evaluateChessLearningAgreementGateV0(fusion, {
+    drifted,
+    matchedRank,
+    truthAuthoritative: true
   });
-  const gate = evaluateChessLearningAgreementGateV0(fusion, { drifted, matchedRank });
 
   const fenCluster = position
     ? rememberFenClusterObservationV0(position, {
@@ -84,11 +92,12 @@ export function recordChessClusterMoveDriftV0(slot, moveRow, enrich = {}) {
     bestMove: engineBest,
     drifted,
     matchedRank: Number.isFinite(matchedRank) && matchedRank > 0 ? matchedRank : null,
-    source: enrich.source || "heuristic_immediate",
+    source: enrich.source || "learn_buffer_enrich",
     fusion,
     gate,
     clusterId: fenCluster?.clusterId || null,
     learningEligible: gate.learningEligible,
+    truthAuthoritative: true,
     atMs: Date.now()
   });
 
@@ -100,10 +109,8 @@ export function recordChessClusterMoveDriftV0(slot, moveRow, enrich = {}) {
     slotId: slot.slotId,
     matchId: slot.matchId,
     summary: gate.learningEligible
-      ? drifted
-        ? `Drift ply ${moveRow.ply}: played ${played} vs best ${engineBest || "?"}`
-        : `Aligned ply ${moveRow.ply}`
-      : `Ambiguous ply ${moveRow.ply} (${gate.reason})`,
+      ? `Truth ply ${moveRow.ply}: ${played} vs ${engineBest || "?"}`
+      : `Truth ambiguous ply ${moveRow.ply} (${gate.reason})`,
     observation: row
   });
 
@@ -132,16 +139,76 @@ export function recordChessClusterMoveDriftV0(slot, moveRow, enrich = {}) {
     fusion,
     gate,
     learningEligible: gate.learningEligible,
+    truthAuthoritative: true,
     atMs: row.atMs
   });
+  dispatchPolicyDiffV0(policyDiff);
+  return row;
+}
 
-  if (typeof window !== "undefined") {
-    try {
-      window.dispatchEvent(new CustomEvent(CHESS_CLUSTER_POLICY_DIFF_EVENT_V0, { detail: policyDiff }));
-    } catch {
-      /* noop */
-    }
-  }
+/**
+ * Immediate observation — UI/monitor only; does NOT enqueue batch learning.
+ * @param {object} slot
+ * @param {object} moveRow
+ * @param {{ engineBest?: string | null, matchedRank?: number | null, source?: string }} [enrich]
+ */
+export function recordChessClusterMoveDriftV0(slot, moveRow, enrich = {}) {
+  if (!slot || !moveRow) return null;
+  const played = String(moveRow.uci || "").trim();
+  const engineBest = enrich.engineBest != null ? String(enrich.engineBest) : pickHeuristicBestMoveUciV0(slot.game);
+  const matchedRank =
+    enrich.matchedRank != null
+      ? Number(enrich.matchedRank)
+      : engineBest && played === engineBest
+        ? 1
+        : null;
+  const drifted = matchedRank == null || matchedRank > 2;
+  const position = moveRow.fenBefore || slot.game?.fen?.() || null;
+
+  const row = Object.freeze({
+    schema: CHESS_CLUSTER_DRIFT_DATASET_SCHEMA_V0,
+    slotId: slot.slotId,
+    matchId: slot.matchId,
+    ply: moveRow.ply,
+    position,
+    playedMove: played,
+    bestMove: engineBest,
+    drifted,
+    matchedRank: Number.isFinite(matchedRank) && matchedRank > 0 ? matchedRank : null,
+    source: enrich.source || "heuristic_immediate",
+    learningEligible: false,
+    truthAuthoritative: false,
+    observabilityOnly: true,
+    atMs: Date.now()
+  });
+
+  driftRowsV0.push(row);
+  while (driftRowsV0.length > MAX_DRIFT_ROWS_V0) driftRowsV0.shift();
+
+  writeChessClusterMemoryNodeV0({
+    kind: "move_drift_preview",
+    slotId: slot.slotId,
+    matchId: slot.matchId,
+    summary: `Preview ply ${moveRow.ply} (awaiting engine truth)`,
+    observation: row
+  });
+
+  dispatchPolicyDiffV0(
+    Object.freeze({
+      schema: "castle.rhizoh.chess_cluster_learning_trace.v0",
+      slotId: slot.slotId,
+      matchId: slot.matchId,
+      played,
+      engineBest,
+      matchedRank: row.matchedRank,
+      drifted,
+      source: row.source,
+      learningEligible: false,
+      truthAuthoritative: false,
+      observabilityOnly: true,
+      atMs: row.atMs
+    })
+  );
 
   return row;
 }

@@ -11,6 +11,7 @@ import {
 import { writeChessClusterMemoryNodeV0 } from "./chessClusterMemoryGraphV0.js";
 import { resolveChessClusterSlotModeV0 } from "./chessClusterSlotModesV0.js";
 import { maybeEnqueueEpistemicCouncilV0 } from "./rhizohEpistemicCouncilV0.js";
+import { submitChessClusterTruthLearningSampleV0 } from "./chessClusterDriftDatasetV0.js";
 import { scheduleUglLearnTaskV0 } from "./rhizohUglMatchSchedulerV0.js";
 import {
   enqueueUglLearnBufferObservationV0,
@@ -90,15 +91,13 @@ export async function traceChessClusterPolicyDiffFromBufferV0(slot, moveRow, fen
     observation: policyDiff
   });
 
-  if (typeof window !== "undefined") {
-    try {
-      window.dispatchEvent(
-        new CustomEvent(CHESS_CLUSTER_POLICY_DIFF_EVENT_V0, { detail: policyDiff })
-      );
-    } catch {
-      /* noop */
-    }
-  }
+  submitChessClusterTruthLearningSampleV0(slot, moveRow, {
+    engineBest,
+    matchedRank: policyDiff.matchedRank,
+    stockfishCp: winningVariation?.cp ?? null,
+    winningLine: winningVariation,
+    source: "learn_buffer_enrich"
+  });
 
   if (policyDiff.drifted) {
     maybeEnqueueEpistemicCouncilV0({

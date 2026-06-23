@@ -19,9 +19,22 @@ let ambiguousCountV0 = 0;
 
 /**
  * @param {ReturnType<import('./chessEvalFusionV0.js').fuseChessEvalSourcesV0>} fusion
- * @param {{ drifted?: boolean, matchedRank?: number | null }} [ctx]
+ * @param {{ drifted?: boolean, matchedRank?: number | null, truthAuthoritative?: boolean }} [ctx]
  */
 export function evaluateChessLearningAgreementGateV0(fusion, ctx = {}) {
+  if (ctx.truthAuthoritative === false) {
+    return Object.freeze({
+      schema: CHESS_LEARNING_AGREEMENT_GATE_SCHEMA_V0,
+      accepted: false,
+      learningEligible: false,
+      ambiguous: false,
+      reason: "heuristic_preview",
+      variance: null,
+      threshold: CHESS_LEARNING_AGREEMENT_VARIANCE_THRESHOLD_V0,
+      atMs: Date.now()
+    });
+  }
+
   if (!fusion) {
     rejectedCountV0 += 1;
     return Object.freeze({
