@@ -1,11 +1,19 @@
 /**
  * Move-level drift dataset — position, played, best, drift (heuristic + engine enrich).
  * RESEARCH-ONLY — feeds policy_diff events → agreementSamples / policyChanges.
+ * v2: multi-source fusion + agreement gate + batch learning queue.
  */
 
 import { pickChessArenaAiMoveV0 } from "./chessArenaEngineV0.js";
 import { writeChessClusterMemoryNodeV0 } from "./chessClusterMemoryGraphV0.js";
 import { CHESS_CLUSTER_POLICY_DIFF_EVENT_V0 } from "./chessClusterLearningTraceV0.js";
+import {
+  fuseChessEvalSourcesV0,
+  stockfishCpFromMatchedRankV0
+} from "./chessEvalFusionV0.js";
+import { evaluateChessLearningAgreementGateV0 } from "./chessLearningAgreementGateV0.js";
+import { enqueueChessLearningBatchSampleV0 } from "./chessLearningBatchV0.js";
+import { rememberFenClusterObservationV0 } from "./chessFenClusterMemoryV0.js";
 
 export const CHESS_CLUSTER_DRIFT_DATASET_SCHEMA_V0 = "castle.rhizoh.chess_cluster_drift_dataset.v0";
 
@@ -28,7 +36,7 @@ function pickHeuristicBestMoveUciV0(game) {
 /**
  * @param {object} slot
  * @param {object} moveRow
- * @param {{ engineBest?: string | null, matchedRank?: number | null, source?: string }} [enrich]
+ * @param {{ engineBest?: string | null, matchedRank?: number | null, source?: string, stockfishCp?: number | null }} [enrich]
  */
 export function recordChessClusterMoveDriftV0(slot, moveRow, enrich = {}) {
   if (!slot || !moveRow) return null;
@@ -41,18 +49,46 @@ export function recordChessClusterMoveDriftV0(slot, moveRow, enrich = {}) {
         ? 1
         : null;
   const drifted = matchedRank == null || matchedRank > 2;
+  const position = moveRow.fenBefore || slot.game?.fen?.() || null;
+  const sanMoves = (slot.moveHistory || []).map((m) => m.san);
+
+  const stockfishCp =
+    enrich.stockfishCp != null
+      ? Number(enrich.stockfishCp)
+      : stockfishCpFromMatchedRankV0(matchedRank);
+
+  const fusion = fuseChessEvalSourcesV0({
+    stockfishCp,
+    fen: position,
+    sanMoves
+  });
+  const gate = evaluateChessLearningAgreementGateV0(fusion, { drifted, matchedRank });
+
+  const fenCluster = position
+    ? rememberFenClusterObservationV0(position, {
+        slotId: slot.slotId,
+        matchId: slot.matchId,
+        ply: moveRow.ply,
+        drifted,
+        learningEligible: gate.learningEligible
+      })
+    : null;
 
   const row = Object.freeze({
     schema: CHESS_CLUSTER_DRIFT_DATASET_SCHEMA_V0,
     slotId: slot.slotId,
     matchId: slot.matchId,
     ply: moveRow.ply,
-    position: moveRow.fenBefore || slot.game?.fen?.() || null,
+    position,
     playedMove: played,
     bestMove: engineBest,
     drifted,
     matchedRank: Number.isFinite(matchedRank) && matchedRank > 0 ? matchedRank : null,
     source: enrich.source || "heuristic_immediate",
+    fusion,
+    gate,
+    clusterId: fenCluster?.clusterId || null,
+    learningEligible: gate.learningEligible,
     atMs: Date.now()
   });
 
@@ -60,14 +96,29 @@ export function recordChessClusterMoveDriftV0(slot, moveRow, enrich = {}) {
   while (driftRowsV0.length > MAX_DRIFT_ROWS_V0) driftRowsV0.shift();
 
   writeChessClusterMemoryNodeV0({
-    kind: "move_drift",
+    kind: gate.learningEligible ? "move_drift" : "move_drift_ambiguous",
     slotId: slot.slotId,
     matchId: slot.matchId,
-    summary: drifted
-      ? `Drift ply ${moveRow.ply}: played ${played} vs best ${engineBest || "?"}`
-      : `Aligned ply ${moveRow.ply}`,
+    summary: gate.learningEligible
+      ? drifted
+        ? `Drift ply ${moveRow.ply}: played ${played} vs best ${engineBest || "?"}`
+        : `Aligned ply ${moveRow.ply}`
+      : `Ambiguous ply ${moveRow.ply} (${gate.reason})`,
     observation: row
   });
+
+  if (gate.learningEligible) {
+    enqueueChessLearningBatchSampleV0({
+      position,
+      playedMove: played,
+      bestMove: engineBest,
+      drifted,
+      matchedRank: row.matchedRank,
+      fusion,
+      gate,
+      clusterId: fenCluster?.clusterId || null
+    });
+  }
 
   const policyDiff = Object.freeze({
     schema: "castle.rhizoh.chess_cluster_learning_trace.v0",
@@ -78,6 +129,9 @@ export function recordChessClusterMoveDriftV0(slot, moveRow, enrich = {}) {
     matchedRank: row.matchedRank,
     drifted,
     source: row.source,
+    fusion,
+    gate,
+    learningEligible: gate.learningEligible,
     atMs: row.atMs
   });
 

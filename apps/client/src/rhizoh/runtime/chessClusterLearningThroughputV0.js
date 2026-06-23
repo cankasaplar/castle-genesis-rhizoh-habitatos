@@ -76,6 +76,16 @@ export function getChessClusterLearningThroughputSnapshotV0() {
     gridMaxPly: CHESS_CLUSTER_LEARNING_GRID_MAX_PLY_V0,
     featuredMaxPly: CHESS_CLUSTER_LEARNING_FEATURED_MAX_PLY_V0,
     teacherLeague: CHESS_CLUSTER_TEACHER_LEAGUE_V0,
+    /** Learning sessions use ply cap — not wall-clock timeout (prevents 45s starvation). */
+    clocksDisabled: isChessClusterLearningThroughputModeV0(),
     atMs: Date.now()
   });
+}
+
+/**
+ * During learning throughput, sim clocks must not kill games before ply cap.
+ */
+export function shouldTickChessClusterClockForLearningV0(slot) {
+  if (isChessClusterLearningThroughputModeV0()) return false;
+  return true;
 }
