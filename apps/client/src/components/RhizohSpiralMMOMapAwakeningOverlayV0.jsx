@@ -18,6 +18,7 @@ import {
   buildSpiralMMOAwakeningBirdPlanV0,
   spiralMMOAwakeningBirdHtmlV0
 } from "../rhizoh/runtime/spiralMMOAwakeningBirdV0.js";
+import { sampleSpiralMMOBirdRoutePointV0 } from "../rhizoh/runtime/spiralMMOBirdFlockFlightV0.js";
 import {
   buildSpiralMMOAwakeningBottlePlanV0,
   spiralMMOAwakeningBottleHtmlV0
@@ -109,7 +110,9 @@ export const RhizohSpiralMMOMapAwakeningOverlayV0 = memo(function RhizohSpiralMM
 
     const birds = buildSpiralMMOAwakeningBirdPlanV0(cubes, plan.cycleSeed, {
       triggerX: triggerPx.x,
-      triggerY: triggerPx.y
+      triggerY: triggerPx.y,
+      hostW: w,
+      hostH: h
     });
     const bottles = buildSpiralMMOAwakeningBottlePlanV0(cubes, w, h);
 
@@ -508,6 +511,31 @@ const SpiralMMOBirdV0 = memo(function SpiralMMOBirdV0({ bird, hostRef, cubeTarge
     const el = elRef.current;
     const host = hostRef.current;
     if (!el || !host) return undefined;
+
+    const routePoints = bird.routePoints;
+    const hasSpiralRoute = bird.routeMode === "spiral_flock" && routePoints?.length > 1;
+
+    if (hasSpiralRoute) {
+      const loopMs = bird.loopDurationMs || 12000;
+      const pathOffset = Number.isFinite(bird.pathOffset) ? bird.pathOffset : 0;
+      const startAt = performance.now() + (bird.birdIndex || 0) * 180;
+
+      const tick = (now) => {
+        const elapsed = Math.max(0, now - startAt);
+        const progress = (elapsed % loopMs) / loopMs;
+        const sample = sampleSpiralMMOBirdRoutePointV0(routePoints, pathOffset + progress);
+        const bank = sample.bank ?? 0;
+        const heading = sample.headingDeg ?? 0;
+        const lift = 1 + Math.sin(progress * Math.PI * 2) * 0.08;
+        el.style.transform = `translate(${sample.x}px, ${sample.y}px) scale(${bird.depthScale * lift}) rotate(${heading + bank * 0.35}deg) translateY(${bank * -0.35}px)`;
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      rafRef.current = requestAnimationFrame(tick);
+
+      return () => {
+        cancelAnimationFrame(rafRef.current);
+      };
+    }
 
     let currentX = bird.startX;
     let currentY = bird.startY;

@@ -65,9 +65,13 @@ describe("spiralMMOAwakeningCycleV0", () => {
     }));
     const birds = buildSpiralMMOAwakeningBirdPlanV0(mockCubes, plan.cycleSeed, {
       triggerX: 50,
-      triggerY: 50
+      triggerY: 50,
+      hostW: 800,
+      hostH: 600
     });
     expect(birds.length).toBeGreaterThan(0);
+    expect(birds[0].routeMode).toBe("spiral_flock");
+    expect(birds[0].tierShort).toBeTruthy();
   });
 
   it("resolves trigger index from pin id", () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildSpiralMMOWhirlpoolPathV0,
+  listSpiralMMOWhirlpoolPathPointsV0,
   listSpiralMMOContinentMapPinsV0,
   resolveSpiralMMOContinentDisplayNameV0,
   RHIZOH_SPIRAL_MMO_CONTINENT_PINS_V0,
@@ -35,6 +36,7 @@ describe("spiralMMOContinentPinsV0", () => {
     const html = spiralMMOPinIconHtmlV0(pin);
     expect(html).toContain('data-rhizoh-spiral-mmo-rev="dim-collapse-gate-v0"');
     expect(html).toContain('data-rhizoh-spiral-644-cycle-sec');
+    expect(html).toContain("6h·44m");
     expect(html).toContain("#00ccff");
     expect(html).not.toContain("0644");
     expect(html).not.toContain("preserve-3d");
@@ -56,5 +58,11 @@ describe("spiralMMOContinentPinsV0", () => {
     const xs = nums.filter((_, i) => i % 2 === 0);
     const maxR = Math.max(...xs.map((x, i) => Math.hypot(x - 19, nums[i * 2 + 1] - 19)));
     expect(maxR).toBeCloseTo(spiralOuterRadius, 0);
+  });
+
+  it("lists whirlpool path as point samples", () => {
+    const points = listSpiralMMOWhirlpoolPathPointsV0(40, 40);
+    expect(points.length).toBeGreaterThan(30);
+    expect(points[0].x).toBeCloseTo(40 + RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0.spiralOuterRadius, 0);
   });
 });

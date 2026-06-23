@@ -89,6 +89,33 @@ export function buildSpiralMMOWhirlpoolPathV0(cx, cy, opts = {}) {
   return parts.join("");
 }
 
+/**
+ * Whirlpool path as screen-space points (flock routes, tests).
+ * @param {number} cx
+ * @param {number} cy
+ * @param {object} [opts]
+ * @returns {ReadonlyArray<{ x: number, y: number }>}
+ */
+export function listSpiralMMOWhirlpoolPathPointsV0(cx, cy, opts = {}) {
+  const turns = opts.turns ?? RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0.spiralTurns;
+  const outerR = opts.outerR ?? RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0.spiralOuterRadius;
+  const innerR = opts.innerR ?? RHIZOH_SPIRAL_MMO_PIN_VISUAL_V0.spiralInnerRadius;
+  const startAngleDeg = opts.startAngleDeg ?? 0;
+  const stepDeg = opts.stepDeg ?? 5.5;
+  const totalSteps = Math.max(20, Math.ceil((turns * 360) / stepDeg));
+  const points = [];
+  for (let i = 0; i <= totalSteps; i += 1) {
+    const t = i / totalSteps;
+    const angle = ((startAngleDeg - t * turns * 360) * Math.PI) / 180;
+    const radius = outerR * (innerR / outerR) ** t;
+    points.push({
+      x: cx + radius * Math.cos(angle),
+      y: cy + radius * Math.sin(angle)
+    });
+  }
+  return Object.freeze(points);
+}
+
 /** Bootstrap observation window — Bosphorus entry (visible on V11 Istanbul zoom). */
 export const RHIZOH_SPIRAL_MMO_BOOTSTRAP_PIN_V0 = Object.freeze({
   id: "spiralmmo_bootstrap",
