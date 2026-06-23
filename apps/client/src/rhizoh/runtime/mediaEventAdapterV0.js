@@ -9,6 +9,7 @@ import {
   schedulePhaseCommitV0
 } from "./executionPhaseSynchronizerV0.js";
 import { ingestMediaTimelineLaneV0 } from "./crossSpaceCausalFusionV0.js";
+import { recordMediaShadowTimelineEventV0 } from "./mediaShadowTimelineV0.js";
 
 export const MEDIA_EVENT_ADAPTER_SCHEMA_V0 = "castle.rhizoh.media_event_adapter.v0";
 export const MEDIA_TIMELINE_EVENT_V0 = "rhizoh:media-timeline-event-v0";
@@ -106,10 +107,12 @@ export function ingestMediaTimelineEventV0(normalized, opts = {}) {
     source: `media:${normalized.eventType}`
   });
 
+  const shadowEntry = recordMediaShadowTimelineEventV0(normalized);
+
   if (opts.dispatchEvent !== false && typeof globalThis !== "undefined" && globalThis.dispatchEvent) {
     globalThis.dispatchEvent(
       new CustomEvent(MEDIA_TIMELINE_EVENT_V0, {
-        detail: Object.freeze({ normalized, lane })
+        detail: Object.freeze({ normalized, lane, shadowEntry })
       })
     );
   }
@@ -118,6 +121,7 @@ export function ingestMediaTimelineEventV0(normalized, opts = {}) {
     schema: MEDIA_EVENT_ADAPTER_SCHEMA_V0,
     normalized,
     lane,
+    shadowEntry,
     interpretationOnly: true,
     nonExecutive: true
   });
