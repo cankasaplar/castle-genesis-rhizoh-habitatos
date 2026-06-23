@@ -37,6 +37,10 @@ import {
   ingestCalendarEventV0,
   normalizeCalendarEventV0
 } from "./calendarEventAdapterV0.js";
+import {
+  ingestMediaTimelineEventV0,
+  normalizeMediaTimelineEventV0
+} from "./mediaEventAdapterV0.js";
 
 export const RHIZOH_RUNTIME_SURFACE_BINDER_SCHEMA_V0 =
   "castle.rhizoh.runtime_surface_binder.v0";
@@ -44,6 +48,7 @@ export const RHIZOH_RUNTIME_SURFACE_BINDER_SCHEMA_V0 =
 export const RUNTIME_SURFACE_API_KEYS_V0 = Object.freeze([
   "ingestSportsEvent",
   "ingestCalendarEvent",
+  "ingestMediaEvent",
   "ingestChessDriftLane",
   "ingestCuxPerceptionLane",
   "fuseCrossSpaceEpistemic",
@@ -68,6 +73,8 @@ export function bindRhizohRuntimeSurfaceV0(target) {
     ingestSportsMatchEventV0(normalizeSportsMatchEventV0(raw));
   rhizoh.ingestCalendarEvent = (raw) =>
     ingestCalendarEventV0(normalizeCalendarEventV0(raw));
+  rhizoh.ingestMediaEvent = (raw) =>
+    ingestMediaTimelineEventV0(normalizeMediaTimelineEventV0(raw));
   rhizoh.ingestChessDriftLane = (input) => ingestChessDriftLaneV0(input);
   rhizoh.ingestCuxPerceptionLane = (input) => ingestCuxPerceptionLaneV0(input);
   rhizoh.fuseCrossSpaceEpistemic = (opts) => fuseCrossSpaceEpistemicV0(opts);
