@@ -32,7 +32,8 @@ export const FUSION_LANE_V0 = Object.freeze({
   CHESS_DRIFT: "chess_drift",
   SPORTS_ENTROPY: "sports_entropy",
   CUX_PERCEPTION: "cux_perception",
-  CALENDAR_CONTINUITY: "calendar_continuity"
+  CALENDAR_CONTINUITY: "calendar_continuity",
+  MEDIA_TIMELINE: "media_timeline"
 });
 
 /** @type {object | null} */
@@ -43,6 +44,8 @@ let sportsLaneV0 = null;
 let cuxLaneV0 = null;
 /** @type {object | null} */
 let calendarLaneV0 = null;
+/** @type {object | null} */
+let mediaLaneV0 = null;
 
 let fusionSeqV0 = 0;
 /** @type {object | null} */
@@ -210,6 +213,38 @@ export function ingestCalendarContinuityLaneV0(input = {}) {
 }
 
 /**
+ * Media timeline lane — playhead/chapter signals → perception-heavy shares.
+ * @param {{ mediaId?: string, eventType?: string, positionSec?: number, foxSignals?: object, source?: string }} input
+ */
+export function ingestMediaTimelineLaneV0(input = {}) {
+  const fox = input.foxSignals || {};
+  const world01 = Math.max(0, Math.min(1, Number(fox.worldSignal01) || 0.6));
+  const novelty01 = Math.max(0, Math.min(1, Number(fox.noveltySignal01) || 0.25));
+  const continuity01 = Math.max(0, Math.min(1, Number(fox.continuitySignal01) || 0.4));
+  const shares = normalizeSharesV0({
+    PERCEPTION: world01 * 0.85,
+    [MUTATION_REASON_CATEGORY_V1.REC]: novelty01 * 0.45,
+    [MUTATION_REASON_CATEGORY_V1.SC]: continuity01 * 0.35
+  });
+
+  mediaLaneV0 = Object.freeze({
+    lane: FUSION_LANE_V0.MEDIA_TIMELINE,
+    spaceId: "media.timeline.space",
+    mediaId: input.mediaId || null,
+    eventType: input.eventType || null,
+    positionSec: Number(input.positionSec) || 0,
+    foxSignals: Object.freeze({ ...fox }),
+    shares,
+    source: String(input.source || "media_ingress"),
+    atMs: Date.now(),
+    interpretationOnly: true,
+    nonExecutive: true
+  });
+
+  return mediaLaneV0;
+}
+
+/**
  * Hydrate sports lane from REC slice if not explicitly ingested.
  */
 function hydrateSportsLaneFromRecV0(recSnap) {
@@ -251,6 +286,11 @@ function buildLaneAuditV0() {
       present: Boolean(calendarLaneV0),
       raw: calendarLaneV0,
       spaceId: "calendar.continuity.space"
+    }),
+    media: Object.freeze({
+      present: Boolean(mediaLaneV0),
+      raw: mediaLaneV0,
+      spaceId: "media.timeline.space"
     })
   });
 }
@@ -299,13 +339,21 @@ export function fuseCrossSpaceEpistemicV0(opts = {}) {
   const sportsWeight = primarySpaceId === CAUSAL_SPACE_ID_V0.SPORTS ? 0.4 : 0.25;
   const cuxWeight = 0.12;
   const calendarWeight = calendarLaneV0 ? 0.1 : 0;
+  const mediaWeight = mediaLaneV0 ? 0.08 : 0;
 
   const chessShares = weightSharesV0(chessLaneV0?.shares || emptySharesV0(), chessWeight);
   const sportsShares = weightSharesV0(sportsLaneV0?.shares || emptySharesV0(), sportsWeight);
   const cuxShares = weightSharesV0(cuxLaneV0?.shares || emptySharesV0(), cuxWeight);
   const calendarShares = weightSharesV0(calendarLaneV0?.shares || emptySharesV0(), calendarWeight);
+  const mediaShares = weightSharesV0(mediaLaneV0?.shares || emptySharesV0(), mediaWeight);
 
-  const fusedShares = mergeSharesV0(chessShares, sportsShares, cuxShares, calendarShares);
+  const fusedShares = mergeSharesV0(
+    chessShares,
+    sportsShares,
+    cuxShares,
+    calendarShares,
+    mediaShares
+  );
 
   const crossCouplings = (rec.interference || []).map((row) =>
     Object.freeze({
@@ -323,6 +371,7 @@ export function fuseCrossSpaceEpistemicV0(opts = {}) {
     (sportsLaneV0 ? 1 : 0) +
     (cuxLaneV0 ? 1 : 0) +
     (calendarLaneV0 ? 1 : 0) +
+    (mediaLaneV0 ? 1 : 0) +
     (rec.interferenceCount || 0);
   const confidence01 = Math.min(1, signalCount / 5);
 
@@ -360,6 +409,13 @@ export function fuseCrossSpaceEpistemicV0(opts = {}) {
         shares: calendarShares,
         present: Boolean(calendarLaneV0),
         rawShares: calendarLaneV0?.shares || emptySharesV0()
+      }),
+      media: Object.freeze({
+        lane: FUSION_LANE_V0.MEDIA_TIMELINE,
+        weight: mediaWeight,
+        shares: mediaShares,
+        present: Boolean(mediaLaneV0),
+        rawShares: mediaLaneV0?.shares || emptySharesV0()
       })
     }),
     crossCouplings,
@@ -383,7 +439,8 @@ export function fuseCrossSpaceEpistemicV0(opts = {}) {
       chess: chessLaneV0,
       sports: sportsLaneV0,
       cux: cuxLaneV0,
-      calendar: calendarLaneV0
+      calendar: calendarLaneV0,
+      media: mediaLaneV0
     }),
     laneAudit,
     guard,
@@ -416,7 +473,8 @@ export function getCrossSpaceFusionSnapshotV0() {
       chess: chessLaneV0,
       sports: sportsLaneV0,
       cux: cuxLaneV0,
-      calendar: calendarLaneV0
+      calendar: calendarLaneV0,
+      media: mediaLaneV0
     }),
     recentFusions: Object.freeze(fusionLogV0.slice(0, 8)),
     diagnosis: Object.freeze({
@@ -516,6 +574,7 @@ export function resetCrossSpaceCausalFusionForTestV0() {
   sportsLaneV0 = null;
   cuxLaneV0 = null;
   calendarLaneV0 = null;
+  mediaLaneV0 = null;
   fusionSeqV0 = 0;
   lastFusionV0 = null;
   fusionLogV0.length = 0;
