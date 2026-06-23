@@ -26,6 +26,7 @@ import { ensureRhizohChessEvolutionCurveV0 } from "./rhizohChessEvolutionCurveV0
 import { ensureRhizohUglV0 } from "./rhizohUglBootV0.js";
 import { ensureChessEngineHealthDevToolsV0 } from "./rhizohChessEngineHealthV0.js";
 import { ensureRhizohChessLearningCheckpointV0 } from "./rhizohChessLearningCheckpointV0.js";
+import { ensureRhizohOpeningBookGmSeedV0 } from "./rhizohOpeningBookGmSeedV0.js";
 import { ensureChessUnifiedMemoryGraphV0 } from "./chessUnifiedMemoryGraphBootV0.js";
 import { ensureChessOfflineBatchTrainerV0 } from "./chessOfflineBatchTrainerV0.js";
 import { ensureChessBroadcastOpponentMatrixDevToolsV0 } from "./chessBroadcastOpponentMatrixV0.js";
@@ -92,6 +93,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureExecutionGovernanceSwitchboardDevToolsV0();
     ensureHardSeparationDevToolsV0();
     ensureRhizohChessLearningCheckpointV0();
+    ensureRhizohOpeningBookGmSeedV0();
     pruneRhizohLocalStorageOnBootV0();
     ensureChessUnifiedMemoryGraphV0();
     ensureChessOfflineBatchTrainerV0();
