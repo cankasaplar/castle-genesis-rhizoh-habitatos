@@ -123,7 +123,8 @@ export function submitChessClusterTruthLearningSampleV0(slot, moveRow, enrich = 
       matchedRank: row.matchedRank,
       fusion,
       gate,
-      clusterId: fenCluster?.clusterId || null
+      clusterId: fenCluster?.clusterId || null,
+      sanMoves
     });
   }
 

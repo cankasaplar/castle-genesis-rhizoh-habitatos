@@ -5,6 +5,7 @@
 
 import { applyChessBatchLearningCorrectionV0, readChessLearningWeightsV0 } from "./chessLearningWeightsV0.js";
 import { getChessLearningAgreementGateSnapshotV0 } from "./chessLearningAgreementGateV0.js";
+import { feedOpeningBookFromLearningBatchV0 } from "./chessLearningBatchOpeningFeedV0.js";
 
 export const CHESS_LEARNING_BATCH_SCHEMA_V0 = "castle.rhizoh.chess_learning_batch.v0";
 export const CHESS_LEARNING_BATCH_SIZE_V0 = 32;
@@ -24,7 +25,8 @@ let lastFlushAtMsV0 = 0;
  *   matchedRank?: number | null,
  *   fusion?: object,
  *   gate?: object,
- *   clusterId?: string | null
+ *   clusterId?: string | null,
+ *   sanMoves?: string[]
  * }} sample
  */
 export function enqueueChessLearningBatchSampleV0(sample) {
@@ -77,6 +79,8 @@ export function flushChessLearningBatchV0(reason = "manual") {
     { gamesTrained: batch.length }
   );
 
+  const openingFeed = feedOpeningBookFromLearningBatchV0(batch);
+
   batchesFlushedV0 += 1;
   lastFlushAtMsV0 = Date.now();
 
@@ -90,6 +94,7 @@ export function flushChessLearningBatchV0(reason = "manual") {
     forcedWinRatio: Number(forcedWinRatio.toFixed(3)),
     weightsBefore: Object.freeze({ ...weightsBefore }),
     weightsAfter: Object.freeze({ ...weightsAfter }),
+    openingFeed,
     agreementGate: getChessLearningAgreementGateSnapshotV0(),
     atMs: lastFlushAtMsV0
   });

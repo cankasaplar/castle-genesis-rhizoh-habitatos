@@ -8,10 +8,12 @@ import { CHESS_CLUSTER_GAME_END_EVENT_V0, CHESS_CLUSTER_MOVE_EVENT_V0 } from "./
 import { getChessLearningMonitorSnapshotV0 } from "./chessLearningMonitorV0.js";
 import { getChessClusterMemoryGraphSnapshotV0, listChessClusterMemoryNodesV0 } from "./chessClusterMemoryGraphV0.js";
 import { CHESS_CLUSTER_POLICY_DIFF_EVENT_V0 } from "./chessClusterLearningTraceV0.js";
-import { readChessLearningWeightsV0 } from "./chessLearningWeightsV0.js";
+import { readChessLearningWeightsV0, resolveLearningWeightDeltasV0 } from "./chessLearningWeightsV0.js";
 import { listRhizohOpeningBookV0 } from "./rhizohOpeningBookV0.js";
 import { getChessLearningAgreementGateSnapshotV0 } from "./chessLearningAgreementGateV0.js";
 import { getChessLearningBatchSnapshotV0 } from "./chessLearningBatchV0.js";
+import { CHESS_LEARNING_BATCH_EVENT_V0 } from "./chessLearningBatchV0.js";
+import { getChessLearningBatchOpeningFeedSnapshotV0 } from "./chessLearningBatchOpeningFeedV0.js";
 import { getChessFenClusterMemorySnapshotV0 } from "./chessFenClusterMemoryV0.js";
 import { getUglLearnBufferSnapshotV0 } from "./rhizohUglLearnBufferSinkV0.js";
 
@@ -59,6 +61,8 @@ const learnedLineCountsV0 = new Map();
 const openingBucketsSeenV0 = new Set();
 let totalDepthSeenV0 = 0;
 let depthSampleCountV0 = 0;
+let batchFlushesSeenV0 = 0;
+let lastBatchFlushV0 = null;
 let listenersInstalledV0 = false;
 
 function classifyOpeningFromSanMovesV0(moves = []) {
@@ -133,6 +137,20 @@ function recordAgreementSampleV0(row) {
     predictionAccuracy: Math.max(0, Math.min(1, Number(row.predictionAccuracy) || 0))
   });
   while (agreementSamplesV0.length > 512) agreementSamplesV0.shift();
+}
+
+function recordBatchFlushV0(detail) {
+  if (!detail?.flushed) return;
+  batchFlushesSeenV0 += 1;
+  lastBatchFlushV0 = Object.freeze({
+    sampleCount: detail.sampleCount,
+    drifted: detail.drifted,
+    aligned: detail.aligned,
+    forcedWinRatio: detail.forcedWinRatio,
+    openingLinesFed: detail.openingFeed?.fed ?? 0,
+    matchesLearnedAfter: detail.weightsAfter?.matchesLearned ?? null,
+    atMs: detail.atMs || Date.now()
+  });
 }
 
 function recordMoveV0(detail) {
@@ -315,6 +333,8 @@ export function buildRhizohChessLearningReportV0() {
   const agreement = resolveAgreementMetricsV0();
   const agreementGate = getChessLearningAgreementGateSnapshotV0();
   const batchLearning = getChessLearningBatchSnapshotV0();
+  const batchOpeningFeed = getChessLearningBatchOpeningFeedSnapshotV0();
+  const weightDeltas = resolveLearningWeightDeltasV0(weights);
   const fenClusters = getChessFenClusterMemorySnapshotV0();
   const learnBuffer = getUglLearnBufferSnapshotV0();
   const clusterThroughput =
@@ -356,6 +376,8 @@ export function buildRhizohChessLearningReportV0() {
     ),
     preferredOpenings: resolvePreferredOpeningsV0(),
     policyChanges,
+    batchFlushesSeen: Math.max(batchFlushesSeenV0, batchLearning.batchesFlushed),
+    lastBatchFlush: lastBatchFlushV0,
     memoryNodes: memory.nodeCount || 0,
     weightMatrixUpdated:
       memoryNodes.some((n) => n.kind === "policy_diff" || n.kind === "game_compression") ||
@@ -375,7 +397,15 @@ export function buildRhizohChessLearningReportV0() {
     learningV2: Object.freeze({
       truthBased: true,
       agreementGate,
-      batchLearning,
+      batchLearning: Object.freeze({
+        ...batchLearning,
+        openingFeed: batchOpeningFeed,
+        lastFlush: lastBatchFlushV0
+      }),
+      weights: Object.freeze({
+        ...weights,
+        engineDeltas: weightDeltas
+      }),
       fenClusters,
       learnBuffer,
       clocksDisabled: Boolean(clusterThroughput?.clocksDisabled),
@@ -407,6 +437,7 @@ export function ensureRhizohChessLearningReportV0() {
   window.addEventListener(RHIZOH_CHESS_PREDICTION_SCORE_EVENT_V0, (ev) =>
     recordRhizohPredictionScoreV0(ev?.detail)
   );
+  window.addEventListener(CHESS_LEARNING_BATCH_EVENT_V0, (ev) => recordBatchFlushV0(ev?.detail));
 
   return window.__rhizoh.learningReport;
 }
@@ -423,6 +454,8 @@ export function __resetRhizohChessLearningReportForTestV0() {
   agreementSamplesV0.length = 0;
   totalDepthSeenV0 = 0;
   depthSampleCountV0 = 0;
+  batchFlushesSeenV0 = 0;
+  lastBatchFlushV0 = null;
   listenersInstalledV0 = false;
   if (typeof window !== "undefined") {
     try {

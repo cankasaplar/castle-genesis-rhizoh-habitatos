@@ -27,6 +27,7 @@ import { captureChessEvolutionSnapshotV0, RHIZOH_CHESS_EVOLUTION_CURVE_LS_KEY_V0
 import { CHESS_MATCH_ANALYZED_EVENT_V0 } from "./chessLearningBridgeV0.js";
 import { CHESS_CLUSTER_GAME_END_EVENT_V0 } from "./chessGameClusterV0.js";
 import { CHESS_LEARNING_WEIGHTS_EVENT_V0 } from "./chessLearningWeightsV0.js";
+import { CHESS_LEARNING_BATCH_EVENT_V0 } from "./chessLearningBatchV0.js";
 import {
   readChessUnifiedMemoryGraphV0,
   mergeChessUnifiedMemoryGraphV0,
@@ -522,6 +523,10 @@ export function ensureRhizohChessLearningCheckpointV0() {
   const bump = () => freezeChessLearningCheckpointV0({ reason: "learning_event" });
   window.addEventListener(CHESS_MATCH_ANALYZED_EVENT_V0, bump);
   window.addEventListener(CHESS_CLUSTER_GAME_END_EVENT_V0, bump);
+  window.addEventListener(CHESS_LEARNING_WEIGHTS_EVENT_V0, bump);
+  window.addEventListener(CHESS_LEARNING_BATCH_EVENT_V0, (ev) => {
+    if (ev?.detail?.flushed) freezeChessLearningCheckpointV0({ reason: "batch_flush", force: true });
+  });
 
   return window.__rhizoh.chessLearningCheckpoint;
 }
