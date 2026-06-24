@@ -101,6 +101,7 @@ export async function registerMediaPlayerGatewayCitizenV0(ws, ctx = {}) {
       titleEn: channel?.titleEn || null,
       titleTr: channel?.titleTr || null,
       liveMatchCount: worldSportsSnap?.liveMatchCount ?? null,
+      upcomingMatchCount: worldSportsSnap?.upcomingMatchCount ?? null,
       pinCount: worldSportsSnap?.pinCount ?? null
     })
   });

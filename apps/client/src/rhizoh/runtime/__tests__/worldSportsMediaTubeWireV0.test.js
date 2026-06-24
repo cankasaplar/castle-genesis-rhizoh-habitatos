@@ -4,6 +4,7 @@ import {
   getWorldSportsTubeSnapshotV0,
   wireWorldSportsMediaTubeV0
 } from "../worldSportsMediaTubeWireV0.js";
+import * as worldMapLiveFeedV0 from "../worldMapLiveFeedV0.js";
 
 vi.mock("../worldMapLiveFeedV0.js", async (importOriginal) => {
   const actual = await importOriginal();
@@ -13,7 +14,19 @@ vi.mock("../worldMapLiveFeedV0.js", async (importOriginal) => {
       Object.freeze({
         schema: "castle.live.world.feed.v0",
         fetchedAt: Date.now(),
-        sports: Object.freeze({ live: [{ id: "m1", homeName: "Lakers", awayName: "Celtics", sport: "basketball" }] }),
+        sports: Object.freeze({
+          live: [{ id: "m1", homeName: "Lakers", awayName: "Celtics", sport: "basketball", phase: "live", homeScore: 88, awayScore: 90 }],
+          upcoming: [
+            {
+              id: "m2",
+              homeName: "Galatasaray",
+              awayName: "Fenerbahçe",
+              sport: "football",
+              phase: "scheduled",
+              startTimeIso: "2026-06-20T18:00:00Z"
+            }
+          ]
+        }),
         news: null
       })
     ),
@@ -37,13 +50,46 @@ describe("worldSportsMediaTubeWireV0", () => {
     const result = await wireWorldSportsMediaTubeV0({ force: true, locale: "en" });
     expect(result.ok).toBe(true);
     expect(result.liveMatchCount).toBe(1);
+    expect(result.upcomingMatchCount).toBe(1);
     expect(result.pinCount).toBe(1);
     expect(result.interpretationOnly).toBe(true);
   });
 
-  it("exposes snapshot with recent chips", () => {
+  it("exposes snapshot with live and upcoming chips", () => {
+    vi.mocked(worldMapLiveFeedV0.getWorldMapLiveFeedSnapshotV0).mockReturnValueOnce(
+      Object.freeze({
+        fetchedAt: Date.now(),
+        sports: Object.freeze({
+          live: Object.freeze([
+            {
+              id: "m1",
+              homeName: "Lakers",
+              awayName: "Celtics",
+              sport: "basketball",
+              phase: "live",
+              homeScore: 88,
+              awayScore: 90
+            }
+          ]),
+          upcoming: Object.freeze([
+            {
+              id: "m2",
+              homeName: "Galatasaray",
+              awayName: "Fenerbahçe",
+              sport: "football",
+              phase: "scheduled",
+              startTimeIso: "2026-06-20T18:00:00Z"
+            }
+          ])
+        })
+      })
+    );
     const snap = getWorldSportsTubeSnapshotV0({ locale: "en" });
     expect(snap.schema).toContain("snapshot");
-    expect(snap.liveMatchCount).toBe(0);
+    expect(snap.liveMatchCount).toBe(1);
+    expect(snap.upcomingMatchCount).toBe(1);
+    expect(snap.liveChips.length).toBe(1);
+    expect(snap.upcomingChips.length).toBe(1);
+    expect(snap.recentChips.length).toBe(2);
   });
 });

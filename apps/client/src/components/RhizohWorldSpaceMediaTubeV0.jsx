@@ -717,24 +717,44 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                   </p>
                   <p className="text-[10px] leading-relaxed text-white/70 normal-case">
                     {tr
-                      ? `Canlı skor: ${worldSportsWire.liveMatchCount} maç · harita pini: ${worldSportsWire.pinCount}`
-                      : `Live scores: ${worldSportsWire.liveMatchCount} matches · map pins: ${worldSportsWire.pinCount}`}
+                      ? `Canlı: ${worldSportsWire.liveMatchCount} · yaklaşan: ${worldSportsWire.upcomingMatchCount ?? 0} · harita pini: ${worldSportsWire.pinCount}`
+                      : `Live: ${worldSportsWire.liveMatchCount} · upcoming: ${worldSportsWire.upcomingMatchCount ?? 0} · map pins: ${worldSportsWire.pinCount}`}
                   </p>
-                  {worldSportsWire.recentChips?.length ? (
-                    <ul className="mt-2 space-y-1 text-left text-[10px] text-emerald-100/90 normal-case">
-                      {worldSportsWire.recentChips.map((chip) => (
-                        <li key={chip} className="rounded-lg border border-emerald-500/15 bg-black/25 px-2 py-1">
-                          {chip}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
+                  {worldSportsWire.liveChips?.length ? (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-[9px] font-semibold uppercase tracking-wider text-emerald-400/80">
+                        {tr ? "Canlı" : "Live"}
+                      </p>
+                      <ul className="space-y-1 text-left text-[10px] text-emerald-100/90 normal-case">
+                        {worldSportsWire.liveChips.map((chip) => (
+                          <li key={`live:${chip}`} className="rounded-lg border border-emerald-500/15 bg-black/25 px-2 py-1">
+                            {chip}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {worldSportsWire.upcomingChips?.length ? (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-[9px] font-semibold uppercase tracking-wider text-sky-400/80">
+                        {tr ? "Yaklaşan maçlar" : "Upcoming"}
+                      </p>
+                      <ul className="space-y-1 text-left text-[10px] text-sky-100/90 normal-case">
+                        {worldSportsWire.upcomingChips.map((chip) => (
+                          <li key={`upcoming:${chip}`} className="rounded-lg border border-sky-500/15 bg-black/25 px-2 py-1">
+                            {chip}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {!worldSportsWire.liveChips?.length && !worldSportsWire.upcomingChips?.length ? (
                     <p className="text-[9px] text-white/45 normal-case">
                       {tr
-                        ? "Gateway world-feed bekleniyor veya API-Sports anahtarı yapılandırılmamış."
-                        : "Awaiting gateway world-feed or API-Sports key on Render."}
+                        ? "Gateway world-feed bekleniyor. Canlı NBA için Render'da API_SPORTS_KEY ekleyin; futbol yaklaşan maçları football-data.org ile gelir."
+                        : "Awaiting gateway world-feed. Add API_SPORTS_KEY on Render for live NBA; football upcoming comes via football-data.org."}
                     </p>
-                  )}
+                  ) : null}
                 </div>
               </div>
             ) : activeChannel.type === "world_news_feed" ? (

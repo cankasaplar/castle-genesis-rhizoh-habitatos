@@ -82,8 +82,8 @@ window.__rhizoh.worldSportsTube()
 | Map pin `worldsports` | `rhizohMapExecutionOrchestratorV1.js` → `dispatchOpenWorldSportsMediaTubeV0` |
 | Gateway feed refresh | `worldSportsMediaTubeWireV0.js` → `worldMapLiveFeedV0` |
 | Live match pins | `worldMapLiveMatchPinsV0.js` |
-| Media tube surface | `RhizohWorldSpaceMediaTubeV0.jsx` — chips + pin count |
-| Gateway meta | `mediaPlayerGatewayCitizenshipV0.js` — `liveMatchCount` / `pinCount` on register |
+| Media tube surface | `RhizohWorldSpaceMediaTubeV0.jsx` — live + upcoming chips + pin count |
+| Gateway meta | `mediaPlayerGatewayCitizenshipV0.js` — `liveMatchCount` / `upcomingMatchCount` / `pinCount` on register |
 
 Citizenship labels:
 
