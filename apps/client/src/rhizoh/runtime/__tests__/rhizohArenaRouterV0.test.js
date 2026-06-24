@@ -19,13 +19,13 @@ describe("rhizohDomainFabricV0", () => {
     const snap = getDomainFabricSnapshotV0();
     expect(snap.uglComplete).toBe(true);
     expect(snap.domainComplete).toBe(true);
-    expect(snap.activeDomainCount).toBe(2);
+    expect(snap.activeDomainCount).toBe(3);
 
     const chess = resolveDomainDescriptorV0(RHIZOH_UGL_GAME_TYPE_V0.CHESS);
     expect(chess.coverage).toBe(DOMAIN_COVERAGE_V0.FULL_ACTIVE);
 
     const go = resolveDomainDescriptorV0(RHIZOH_UGL_GAME_TYPE_V0.GO);
-    expect(go.coverage).toBe(DOMAIN_COVERAGE_V0.PASSIVE_STUB);
+    expect(go.coverage).toBe(DOMAIN_COVERAGE_V0.EVENT_ACTIVE);
 
     const sports = resolveDomainDescriptorV0(RHIZOH_UGL_GAME_TYPE_V0.SPORTS);
     expect(sports.coverage).toBe(DOMAIN_COVERAGE_V0.EVENT_ACTIVE);

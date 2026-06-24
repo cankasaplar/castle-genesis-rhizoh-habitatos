@@ -33,13 +33,14 @@ const DOMAIN_REGISTRY_V0 = Object.freeze({
   [RHIZOH_UGL_GAME_TYPE_V0.GO]: Object.freeze({
     domainId: "go",
     gameType: RHIZOH_UGL_GAME_TYPE_V0.GO,
-    coverage: DOMAIN_COVERAGE_V0.PASSIVE_STUB,
+    coverage: DOMAIN_COVERAGE_V0.EVENT_ACTIVE,
+    causalSpaceId: "go.causal.space",
     stateSchema: "go.board.v0",
-    stateRepr: "unknown_tensor",
+    stateRepr: "board_hash_19x19",
     actionTypes: Object.freeze([RHIZOH_UGL_ACTION_TYPE_V0.MOVE, RHIZOH_UGL_ACTION_TYPE_V0.PASS]),
-    rewardSignals: Object.freeze([]),
+    rewardSignals: Object.freeze(["terminal", "drift", "policy_diff"]),
     adapterId: null,
-    arenaId: null
+    arenaId: "go_arena"
   }),
   [RHIZOH_UGL_GAME_TYPE_V0.SHOGI]: Object.freeze({
     domainId: "shogi",
