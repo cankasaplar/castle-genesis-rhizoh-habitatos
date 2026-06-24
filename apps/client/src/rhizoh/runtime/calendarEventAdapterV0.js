@@ -11,6 +11,7 @@ import {
 import { ingestCalendarContinuityLaneV0 } from "./crossSpaceCausalFusionV0.js";
 import { recordCalendarShadowTimelineEventV0 } from "./calendarShadowTimelineV0.js";
 import { wireWorldBridgeFusionAfterIngestV0 } from "./worldBridgeFusionWireV0.js";
+import { emitCalendarActionTriggerV0 } from "./calendarActionTriggerV0.js";
 
 export const CALENDAR_EVENT_ADAPTER_SCHEMA_V0 = "castle.rhizoh.calendar_event_adapter.v0";
 export const CALENDAR_EVENT_V0 = "rhizoh:calendar-event-v0";
@@ -108,6 +109,7 @@ export function ingestCalendarEventV0(normalized, opts = {}) {
   });
 
   const shadowEntry = recordCalendarShadowTimelineEventV0(normalized);
+  const actionTrigger = emitCalendarActionTriggerV0(normalized);
   const fusion = wireWorldBridgeFusionAfterIngestV0({
     atMs: normalized.startAtMs,
     fuse: opts.fuse,
@@ -127,6 +129,7 @@ export function ingestCalendarEventV0(normalized, opts = {}) {
     normalized,
     lane,
     shadowEntry,
+    actionTrigger,
     fusion,
     interpretationOnly: true,
     nonExecutive: true

@@ -29,6 +29,11 @@ import { ensureMediaShadowTimelineDevToolsV0 } from "./mediaShadowTimelineV0.js"
 import { ensureUserActivityShadowTimelineDevToolsV0 } from "./userActivityShadowTimelineV0.js";
 import { ensureLifeShadowDayBranchDevToolsV0 } from "./lifeShadowDayBranchesV0.js";
 import { ensureWorldBridgeMemoryGraphDevToolsV0 } from "./worldBridgeMemoryGraphV0.js";
+import { ensureExecutionPermissionLayerDevToolsV0 } from "./executionPermissionLayerV0.js";
+import { ensureCalendarActionTriggerDevToolsV0 } from "./calendarActionTriggerV0.js";
+import { ensureMediaFeedbackObservationLoopDevToolsV0 } from "./mediaFeedbackObservationLoopV0.js";
+import { ensureWorldBridgeShadowTraceBridgeDevToolsV0 } from "./worldBridgeShadowTraceBridgeV0.js";
+import { ensureHabitatClimatePatternEngineDevToolsV0 } from "./habitatClimatePatternEngineV0.js";
 import { ensureSpatialRendererRegistryDevToolsV0 } from "./rhizohSpatialSurfaceRendererRegistryV0.js";
 import { ensureWorldLayerActivationDevToolsV0 } from "./rhizohWorldLayerActivationStatusV0.js";
 import { ensureWorldSportsMediaTubeDevToolsV0 } from "./worldSportsMediaTubeWireV0.js";
@@ -124,6 +129,11 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureUserActivityShadowTimelineDevToolsV0();
     ensureLifeShadowDayBranchDevToolsV0();
     ensureWorldBridgeMemoryGraphDevToolsV0();
+    ensureExecutionPermissionLayerDevToolsV0();
+    ensureCalendarActionTriggerDevToolsV0();
+    ensureMediaFeedbackObservationLoopDevToolsV0();
+    ensureWorldBridgeShadowTraceBridgeDevToolsV0();
+    ensureHabitatClimatePatternEngineDevToolsV0();
     ensureSpatialRendererRegistryDevToolsV0();
     ensureWorldLayerActivationDevToolsV0();
     ensureWorldSportsMediaTubeDevToolsV0();

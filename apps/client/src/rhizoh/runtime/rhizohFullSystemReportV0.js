@@ -77,6 +77,10 @@ import {
   getCrossSpaceFusionSnapshotV0
 } from "./crossSpaceCausalFusionV0.js";
 import { getWorldBridgeMemoryGraphSnapshotV0 } from "./worldBridgeMemoryGraphV0.js";
+import { getExecutionPermissionLayerSnapshotV0 } from "./executionPermissionLayerV0.js";
+import { getMediaFeedbackObservationLoopSnapshotV0 } from "./mediaFeedbackObservationLoopV0.js";
+import { getWorldBridgeShadowTraceBridgeSnapshotV0 } from "./worldBridgeShadowTraceBridgeV0.js";
+import { buildHabitatClimateSnapshotV0 } from "./habitatClimatePatternEngineV0.js";
 
 export const RHIZOH_FULL_SYSTEM_REPORT_SCHEMA_V0 = "rhizoh.full_system_report.v0";
 
@@ -606,6 +610,10 @@ function collectWorldBridgeDiagnosticV0() {
   const laneAudit = getCrossSpaceFusionLaneAuditV0();
   const memoryGraph = getWorldBridgeMemoryGraphSnapshotV0();
   const laneContrib = fusion?.lastFusion?.epistemicUpdate?.laneContributions || null;
+  const executionPermission = getExecutionPermissionLayerSnapshotV0();
+  const mediaFeedbackLoop = getMediaFeedbackObservationLoopSnapshotV0();
+  const shadowWriteback = getWorldBridgeShadowTraceBridgeSnapshotV0();
+  const habitatClimate = buildHabitatClimateSnapshotV0();
 
   const rhizoh = typeof window !== "undefined" ? window.__rhizoh : null;
 
@@ -683,7 +691,33 @@ function collectWorldBridgeDiagnosticV0() {
       calendarShadowTimeline: typeof rhizoh?.calendarShadowTimeline === "function",
       mediaShadowTimeline: typeof rhizoh?.mediaShadowTimeline === "function",
       userActivityShadowTimeline: typeof rhizoh?.userActivityShadowTimeline === "function",
-      lifeShadowDayBranches: typeof rhizoh?.lifeShadowDayBranches === "function"
+      lifeShadowDayBranches: typeof rhizoh?.lifeShadowDayBranches === "function",
+      executionPermission: typeof rhizoh?.executionPermission === "function",
+      calendarActionTrigger: typeof rhizoh?.calendarActionTrigger === "function",
+      mediaFeedbackLoop: typeof rhizoh?.mediaFeedbackLoop === "function",
+      habitatClimate: typeof rhizoh?.habitatClimate === "function",
+      worldBridgeShadowWriteback: typeof rhizoh?.worldBridgeShadowWriteback === "function"
+    }),
+    executionPermission: Object.freeze({
+      governanceMode: executionPermission.governanceMode,
+      mutationPermitted: executionPermission.mutationPermitted,
+      executionClass: executionPermission.executionClass,
+      consoleApi: "__rhizoh.executionPermission()"
+    }),
+    mediaFeedbackLoop: Object.freeze({
+      cycleCount: mediaFeedbackLoop.cycleCount,
+      consoleApi: "__rhizoh.mediaFeedbackLoop()"
+    }),
+    shadowWriteback: Object.freeze({
+      projectionCount: shadowWriteback.projectionCount,
+      consoleApi: "__rhizoh.worldBridgeShadowWriteback()"
+    }),
+    habitatClimate: Object.freeze({
+      horizon: habitatClimate.horizon,
+      dominantBranch: habitatClimate.pattern?.dominantBranch ?? null,
+      climateLabel: habitatClimate.identity?.climateLabel ?? null,
+      memoryNodeCount: habitatClimate.evolution?.memoryNodeCount ?? 0,
+      consoleApi: "__rhizoh.habitatClimate()"
     })
   });
 }
@@ -1092,7 +1126,11 @@ export function printFullSystemReportV0(report) {
     `    day A/B: dayA ${r.worldBridge?.lifeShadowDayAb?.dayA ?? 0} · dayB ${r.worldBridge?.lifeShadowDayAb?.dayB ?? 0} · dominant ${r.worldBridge?.lifeShadowDayAb?.dominantBranch ?? "—"}`,
     `    memory graph: ${r.worldBridge?.memoryGraph?.nodeCount ?? 0} nodes · ${Object.entries(r.worldBridge?.memoryGraph?.bySource || {}).map(([k, v]) => `${k}:${v}`).join(", ") || "—"}`,
     `    fusion lanes: cal ${r.worldBridge?.fusionLanes?.calendarPresent ? `on (${r.worldBridge.fusionLanes.calendarWeight})` : "off"} · media ${r.worldBridge?.fusionLanes?.mediaPresent ? `on (${r.worldBridge.fusionLanes.mediaWeight})` : "off"} · activity ${r.worldBridge?.fusionLanes?.userActivityPresent ? `on (${r.worldBridge.fusionLanes.userActivityWeight})` : "off"}`,
-    `    console: __rhizoh.ingestCalendarEvent() · __rhizoh.ingestMediaEvent() · __rhizoh.ingestUserActivity() · __rhizoh.lifeShadowDayBranches()`,
+    `    execution permission: ${r.worldBridge?.executionPermission?.executionClass ?? "—"} · mutation ${r.worldBridge?.executionPermission?.mutationPermitted ? "on" : "off"}`,
+    `    media feedback loop: ${r.worldBridge?.mediaFeedbackLoop?.cycleCount ?? 0} cycles`,
+    `    shadow writeback: ${r.worldBridge?.shadowWriteback?.projectionCount ?? 0} ledger projections`,
+    `    habitat climate: ${r.worldBridge?.habitatClimate?.climateLabel ?? "—"} · memory ${r.worldBridge?.habitatClimate?.memoryNodeCount ?? 0}`,
+    `    console: __rhizoh.ingestCalendarEvent() · __rhizoh.ingestMediaEvent() · __rhizoh.mediaFeedbackLoop() · __rhizoh.habitatClimate()`,
     "───────────────────────────────────────────",
     "  EPISTEMIC SUBSTRATE",
     `    turn sovereignty: ${r.epistemicSubstrate?.turnSovereignty?.sovereignReality ?? "none"} (${r.epistemicSubstrate?.turnSovereignty?.enforcement ?? "log_only"})`,

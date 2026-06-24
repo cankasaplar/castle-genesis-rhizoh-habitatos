@@ -33,7 +33,7 @@ import {
   labelCastleMediaFrequencyBandV0
 } from "../rhizoh/runtime/castleArchiveMediaMetaV0.js";
 import { RHIZOH_YOUTUBE_COMMUNITY_LAB_EVENT_V0 } from "../rhizoh/runtime/youtubeCommunityDataAdapterV0.js";
-import { affirmActiveMediaPlayerGatewayCitizenV0 } from "../rhizoh/runtime/mediaPlayerGatewayCitizenshipV0.js";
+import { runMediaFeedbackObservationCycleV0 } from "../rhizoh/runtime/mediaFeedbackObservationLoopV0.js";
 import { RhizohWorldSportsNewsStripV0 } from "./RhizohWorldSportsNewsStripV0.jsx";
 import {
   getWorldSportsTubeSnapshotV0,
@@ -159,7 +159,17 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
       publishChessClusterBroadcastActiveV0(true);
     }
     void affirmActiveMediaPlayerGatewayCitizenV0(channel.id);
-  }, [initialChannelId]);
+    void runMediaFeedbackObservationCycleV0(
+      {
+        eventType: "chapter",
+        mediaId: channel.id,
+        title: tr ? channel.titleTr : channel.titleEn,
+        source: detail?.source || "media_tube",
+        positionSec: 0
+      },
+      { dispatchEvent: false, fuse: false }
+    );
+  }, [initialChannelId, detail?.source, tr]);
 
   useEffect(() => {
     if (activeChannel.id !== RHIZOH_WORLDSPORTS_CHANNEL_ID_V0 && activeChannel.type !== "world_sports_feed") {
