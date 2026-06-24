@@ -19,8 +19,10 @@ import {
 } from "./rhizohObservationStateV1.js";
 import {
   listWorldSpaceMediaChannelsV0,
-  resolveWorldSpaceMediaChannelV0
+  resolveWorldSpaceMediaChannelV0,
+  RHIZOH_WORLDSPORTS_CHANNEL_ID_V0
 } from "./worldSpaceMediaChannelsV0.js";
+import { getWorldSportsTubeSnapshotV0 } from "./worldSportsMediaTubeWireV0.js";
 
 export const MEDIA_PLAYER_GATEWAY_CITIZENSHIP_CLIENT_SCHEMA_V0 =
   "castle.rhizoh.media_player_gateway_citizenship_client.v0";
@@ -84,6 +86,8 @@ export async function registerMediaPlayerGatewayCitizenV0(ws, ctx = {}) {
     worldId: ctx.worldId,
     boundMatchSessionId: ctx.boundMatchSessionId
   });
+  const worldSportsSnap =
+    channelId === RHIZOH_WORLDSPORTS_CHANNEL_ID_V0 ? getWorldSportsTubeSnapshotV0() : null;
 
   const reg = await registerGatewayServiceV0({
     ws: socket,
@@ -95,7 +99,9 @@ export async function registerMediaPlayerGatewayCitizenV0(ws, ctx = {}) {
       boundMatchSessionId: worldCtx.boundMatchSessionId,
       channelType: channel?.type || null,
       titleEn: channel?.titleEn || null,
-      titleTr: channel?.titleTr || null
+      titleTr: channel?.titleTr || null,
+      liveMatchCount: worldSportsSnap?.liveMatchCount ?? null,
+      pinCount: worldSportsSnap?.pinCount ?? null
     })
   });
 

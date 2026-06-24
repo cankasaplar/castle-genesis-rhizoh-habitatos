@@ -4,6 +4,7 @@ import {
   dispatchSpiralMMOAwakeningStagedV0
 } from "./worldMapMeaningfulTransitionV0.js";
 import { resolveWorldSpaceMediaChannelForMapNodeV0 } from "./worldSpaceMediaChannelsV0.js";
+import { dispatchOpenWorldSportsMediaTubeV0 } from "./worldSportsMediaTubeWireV0.js";
 import {
   ORCHESTRATOR_ACTION_REGISTRY_V0,
   RHIZOH_OPEN_CASTLE_EVENT_V1,
@@ -90,6 +91,11 @@ export function attachRhizohMapExecutionOrchestratorV1() {
 
       case ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER: {
         const source = `map:node:${String(node.id || "unknown")}`;
+        const nodeId = String(node.id || "").trim().toLowerCase();
+        if (nodeId === "worldsports" || nodeId.includes("worldsports")) {
+          dispatchOpenWorldSportsMediaTubeV0({ node, source, title: node.name || node.label });
+          break;
+        }
         window.dispatchEvent(
           new CustomEvent(RHIZOH_OPEN_MEDIA_TUBE_EVENT_V1, {
             detail: Object.freeze({
