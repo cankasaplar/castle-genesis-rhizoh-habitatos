@@ -5,6 +5,7 @@ import {
 } from "./worldMapMeaningfulTransitionV0.js";
 import { resolveWorldSpaceMediaChannelForMapNodeV0 } from "./worldSpaceMediaChannelsV0.js";
 import { dispatchOpenWorldSportsMediaTubeV0 } from "./worldSportsMediaTubeWireV0.js";
+import { dispatchOpenGoLearningMediaTubeV0 } from "./goLearningMediaTubeWireV0.js";
 import {
   ORCHESTRATOR_ACTION_REGISTRY_V0,
   RHIZOH_OPEN_CASTLE_EVENT_V1,
@@ -94,6 +95,10 @@ export function attachRhizohMapExecutionOrchestratorV1() {
         const nodeId = String(node.id || "").trim().toLowerCase();
         if (nodeId === "worldsports" || nodeId.includes("worldsports")) {
           dispatchOpenWorldSportsMediaTubeV0({ node, source, title: node.name || node.label });
+          break;
+        }
+        if (nodeId === "go_arena" || nodeId === "go" || nodeId.includes("go_board")) {
+          dispatchOpenGoLearningMediaTubeV0({ node, source, title: node.name || node.label });
           break;
         }
         window.dispatchEvent(
