@@ -1,8 +1,12 @@
-import React, { memo, useEffect, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { buildRhizohStudioVisibilitySnapshotV0 } from "../rhizoh/runtime/rhizohStudioVisibilitySnapshotV0.js";
 import { buildStudioEightCameraDashboardTilesV0 } from "../rhizoh/runtime/rhizohStudioEightCameraDashboardMetaV0.js";
 import { getStudioObservationAdapterRegistrySnapshotV0 } from "../rhizoh/runtime/rhizohStudioObservationAdapterRegistryV0.js";
+import {
+  buildRhizohChessObservationShortCaptureV0,
+  CHESS_OBSERVATION_SHORT_001_MIN_MOVES_V0
+} from "../rhizoh/runtime/rhizohChessObservationShortCaptureV0.js";
 import { RhizohStudioCameraAdapterPreviewV0 } from "./RhizohStudioCameraAdapterPreviewV0.jsx";
 
 function readStudioVisibilitySnapshotV0() {
@@ -57,6 +61,25 @@ export const RhizohStudioEightCameraDashboardV0 = memo(function RhizohStudioEigh
   const liveCount = useMemo(() => tiles.filter((t) => t.live || t.armed).length, [tiles]);
   const adapterReadyCount = adapters?.consumerReadyCount ?? 0;
 
+  const chessCapture = useMemo(
+    () => buildRhizohChessObservationShortCaptureV0({ locale: uiLocale }),
+    [snap, adapters, uiLocale]
+  );
+
+  const onCopyShortBrief = useCallback(async () => {
+    if (typeof window !== "undefined" && typeof window.__rhizoh?.copyChessObservationBrief === "function") {
+      await window.__rhizoh.copyChessObservationBrief({ locale: uiLocale });
+      return;
+    }
+    const { formatChessObservationShortBriefV0 } = await import(
+      "../rhizoh/runtime/rhizohChessObservationShortCaptureV0.js"
+    );
+    const text = formatChessObservationShortBriefV0(chessCapture);
+    if (typeof navigator?.clipboard?.writeText === "function") {
+      await navigator.clipboard.writeText(text);
+    }
+  }, [chessCapture, uiLocale]);
+
   if (!snap) return null;
 
   return (
@@ -84,6 +107,29 @@ export const RhizohStudioEightCameraDashboardV0 = memo(function RhizohStudioEigh
           v1
         </span>
       </header>
+
+      {chessCapture.digest.movesSeen > 0 ? (
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-400/25 bg-emerald-500/5 px-2 py-1.5">
+          <p className="text-[8px] text-emerald-100/90">
+            {tr ? "Short #001" : "Short #001"} · {chessCapture.digest.movesSeen}/
+            {CHESS_OBSERVATION_SHORT_001_MIN_MOVES_V0}{" "}
+            {chessCapture.readyToRecord
+              ? tr
+                ? "· kayda hazır"
+                : "· record ready"
+              : tr
+                ? `· ${chessCapture.digest.movesDeficit} hamle kaldı`
+                : `· ${chessCapture.digest.movesDeficit} moves left`}
+          </p>
+          <button
+            type="button"
+            onClick={onCopyShortBrief}
+            className="rounded border border-emerald-400/35 bg-emerald-500/15 px-2 py-0.5 text-[7px] font-semibold uppercase tracking-wider text-emerald-100 hover:bg-emerald-500/25"
+          >
+            {tr ? "Brief kopyala" : "Copy brief"}
+          </button>
+        </div>
+      ) : null}
 
       <div
         className="grid grid-cols-2 gap-2"

@@ -35,6 +35,8 @@ Close (5s) — honest disclaimer
 
 **Capture:** Studio drawer dashboard · `/world/space?channel=chess` · `academyLearningUnion()`.
 
+**Runtime:** `__rhizoh.chessObservationShort001()` · `await __rhizoh.copyChessObservationBrief()` — see [`RHIZOH_CHESS_OBSERVATION_SHORT_001_V0.md`](RHIZOH_CHESS_OBSERVATION_SHORT_001_V0.md).
+
 **Bonus:** Go + Checkers cameras · Academy union · Fusion timeline.
 
 ## 8-camera capture map
