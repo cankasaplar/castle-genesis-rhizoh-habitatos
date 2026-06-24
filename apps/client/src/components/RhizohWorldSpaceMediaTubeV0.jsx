@@ -112,6 +112,19 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
   const captureRef = useRef(null);
   const previewRef = useRef(null);
   const castleBroadcast = useMemo(() => isCastleMediaSourceV0(detail?.source), [detail?.source]);
+  const broadcastMode = useMemo(() => {
+    if (detail?.broadcastMode === true) return true;
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      return sp.get("broadcast") === "1" || sp.get("view") === "broadcast";
+    }
+    return false;
+  }, [detail?.broadcastMode]);
+  const clusterBroadcastChannel =
+    activeChannel.type === "chess_cluster_live" ||
+    activeChannel.type === "go_cluster_live" ||
+    activeChannel.type === "checkers_cluster_live";
+  const obsBroadcastLayout = broadcastMode && clusterBroadcastChannel;
   const octoLabMode = useMemo(
     () => Boolean(detail?.octoLabMode || detail?.source === "octo_yuva_lab"),
     [detail?.octoLabMode, detail?.source]
@@ -526,20 +539,28 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
         className={
           octoLabMode
             ? "pointer-events-auto relative flex max-h-[78vh] min-h-0 flex-1 flex-col overflow-hidden rounded-t-2xl border border-white/10 bg-[#050505]/94 shadow-2xl backdrop-blur-xl"
-            : "flex min-h-0 flex-1 flex-col p-4 sm:p-6"
+            : obsBroadcastLayout
+              ? "flex min-h-0 flex-1 flex-col overflow-hidden p-1"
+              : "flex min-h-0 flex-1 flex-col p-4 sm:p-6"
         }
       >
         <div
           className={`relative z-50 flex shrink-0 items-center justify-between gap-3 border-b border-purple-500/30 pb-3 ${
-            octoLabMode ? "px-4 pt-3" : "mb-4 pb-4"
+            octoLabMode ? "px-4 pt-3" : obsBroadcastLayout ? "mb-1 px-2 pb-2" : "mb-4 pb-4"
           }`}
         >
           <div className="flex items-center gap-3">
-            <div className="rounded-xl border border-purple-500/50 bg-purple-500/20 p-2">
-              <Tv size={22} className="animate-pulse text-purple-400" />
-            </div>
+            {!obsBroadcastLayout ? (
+              <div className="rounded-xl border border-purple-500/50 bg-purple-500/20 p-2">
+                <Tv size={22} className="animate-pulse text-purple-400" />
+              </div>
+            ) : null}
             <div>
-              <h1 className={`font-black uppercase tracking-widest text-white ${octoLabMode ? "text-sm" : "text-lg"}`}>
+              <h1
+                className={`font-black uppercase tracking-widest text-white ${
+                  octoLabMode ? "text-sm" : obsBroadcastLayout ? "text-xs" : "text-lg"
+                }`}
+              >
                 {octoLabMode ? (tr ? "Octo Lab · Bekleme" : "Octo Lab · Waiting") : title}
               </h1>
               <p className="text-[9px] font-bold uppercase text-purple-400">
@@ -547,23 +568,27 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                   ? tr
                     ? "Harita arkada — Esc veya dışarı tıkla"
                     : "Map behind — Esc or tap outside"
-                  : `Symbio Media Engine V4 · ${channelLabelV0(activeChannel, tr)}`}
+                  : obsBroadcastLayout
+                    ? tr
+                      ? "Yayın modu · scroll yok"
+                      : "Broadcast mode · no scroll"
+                    : `Symbio Media Engine V4 · ${channelLabelV0(activeChannel, tr)}`}
               </p>
-              {castleBroadcast ? (
+              {!obsBroadcastLayout && castleBroadcast ? (
                 <p className="mt-1 text-[9px] font-semibold normal-case text-cyan-300/80">
                   {tr
                     ? "Castle kurulumu tamam — Castle Genesis kanalı varsayılan."
                     : "Castle setup complete — Castle Genesis channel is default."}
                 </p>
               ) : null}
-              {legalGateMode ? (
+              {!obsBroadcastLayout && legalGateMode ? (
                 <p className="mt-1 text-[9px] font-semibold normal-case text-amber-200/90">
                   {tr
                     ? `Yasal onay bekleniyor — geri sayım ${Math.max(0, Math.floor(legalCountdownMs / 1000))}s`
                     : `Legal hold — countdown ${Math.max(0, Math.floor(legalCountdownMs / 1000))}s`}
                 </p>
               ) : null}
-              {communityLab?.ok ? (
+              {!obsBroadcastLayout && communityLab?.ok ? (
                 <p className="mt-1 text-[9px] font-normal normal-case text-emerald-200/80">
                   {tr ? "YouTube lab" : "YouTube lab"}: {(communityLab.communities || []).length}{" "}
                   {tr ? "topluluk" : "communities"} · {(communityLab.votes || []).length}{" "}
@@ -572,28 +597,28 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                   {tr ? "protesto" : "protest"}
                 </p>
               ) : null}
-              {learningChannelActive ? (
+              {!obsBroadcastLayout && learningChannelActive ? (
                 <p className="mt-1 max-w-md text-[10px] font-normal normal-case leading-relaxed text-cyan-200/85">
                   {tr
                     ? "Rhizoh Öğrenme Kanalı — canlı 8 kamera cluster, Rhizoh vs Stockfish ve öğrenme şeridi. Sol menüden Castle Genesis veya diğer kanallara geçebilirsin."
                     : "Rhizoh Learning Channel — live 8-camera cluster, Rhizoh vs Stockfish, and learning strip. Switch channels for Castle Genesis or other feeds."}
                 </p>
               ) : null}
-              {worldSportsChannelActive ? (
+              {!obsBroadcastLayout && worldSportsChannelActive ? (
                 <p className="mt-1 max-w-md text-[10px] font-normal normal-case leading-relaxed text-emerald-200/85">
                   {tr
                     ? "WorldSports — gateway üzerinden canlı skorlar. World News ayrı kanalda."
                     : "WorldSports — live scores via gateway. World News is a separate channel."}
                 </p>
               ) : null}
-              {worldNewsChannelActive ? (
+              {!obsBroadcastLayout && worldNewsChannelActive ? (
                 <p className="mt-1 max-w-md text-[10px] font-normal normal-case leading-relaxed text-amber-200/85">
                   {tr
                     ? "World News — gateway üzerinden haber başlıkları. WorldSports ayrı kanalda."
                     : "World News — headline feed via gateway. WorldSports is a separate channel."}
                 </p>
               ) : null}
-              {isQuantumRadioEntry ? (
+              {!obsBroadcastLayout && isQuantumRadioEntry ? (
                 <p className="mt-1 max-w-md text-[10px] font-normal normal-case leading-relaxed text-violet-200/85">
                   {tr
                     ? "Kuantum Radyo — dünya akışı + ambient frekans penceresi. Haritadan açıldığında varsayılan Global Kuantum Akışı (Lofi) çalar; sol menüden NASA TV, Castle Genesis veya yerel kamera/mikrofon kanallarına geçebilirsin."
@@ -603,12 +628,14 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
             </div>
           </div>
           <div className="relative z-[60] flex shrink-0 items-center gap-2">
-            <RhizohCastleShadowInboxV0
-              uiLocale={uiLocale}
-              compact
-              panelPlacement="portal"
-              onCloseMediaTube={onClose}
-            />
+            {!obsBroadcastLayout ? (
+              <RhizohCastleShadowInboxV0
+                uiLocale={uiLocale}
+                compact
+                panelPlacement="portal"
+                onCloseMediaTube={onClose}
+              />
+            ) : null}
             <button
               type="button"
               onClick={octoLabMode ? onDismissOctoLab : onClose}
@@ -630,6 +657,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
             </div>
           ) : (
             <>
+          {!obsBroadcastLayout ? (
           <div className="flex w-full flex-col rounded-2xl border border-white/10 bg-white/5 p-3 sm:w-60">
             <p className="mb-3 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-white/45">
               <Radio size={12} /> {tr ? "Kanallar" : "Channels"}
@@ -705,8 +733,13 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
               </div>
             </div>
           </div>
+          ) : null}
 
-          <div className="relative flex min-h-[240px] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
+          <div
+            className={`relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${
+              obsBroadcastLayout ? "rounded-lg border border-white/10 bg-black" : "min-h-[240px] rounded-2xl border border-white/10 bg-black shadow-2xl"
+            }`}
+          >
             {activeChannel.type === "youtube" ? (
               <>
                 <RhizohMediaStageWithOctoV0
@@ -782,6 +815,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
               <RhizohChessClusterArenaV0
                 open
                 embedMode
+                broadcastMode={broadcastMode}
                 uiLocale={uiLocale}
                 onClose={onClose}
               />
@@ -789,6 +823,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
               <RhizohGoClusterArenaV0
                 open
                 embedMode
+                broadcastMode={broadcastMode}
                 uiLocale={uiLocale}
                 onClose={onClose}
               />
@@ -796,6 +831,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
               <RhizohCheckersClusterArenaV0
                 open
                 embedMode
+                broadcastMode={broadcastMode}
                 uiLocale={uiLocale}
                 onClose={onClose}
               />
@@ -912,7 +948,9 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
         ) : null}
       </div>
 
-      {!octoLabMode ? <WorldSpaceMediaDataTickerV0 active uiLocale={uiLocale} /> : null}
+      {!octoLabMode && !obsBroadcastLayout ? (
+        <WorldSpaceMediaDataTickerV0 active uiLocale={uiLocale} />
+      ) : null}
     </div>
   );
 });

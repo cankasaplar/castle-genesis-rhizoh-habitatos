@@ -28,7 +28,7 @@ describe("rhizohStudioEightCameraDashboardMetaV0", () => {
     expect(tile.title).toBe("Chess Arena");
     expect(tile.live).toBe(true);
     expect(tile.primary).toBe("31 moves");
-    expect(tile.href).toBe("/world/space?channel=chess");
+    expect(tile.href).toBe("/world/space?channel=chess&broadcast=1");
   });
 
   it("marks spatial as held without href", () => {

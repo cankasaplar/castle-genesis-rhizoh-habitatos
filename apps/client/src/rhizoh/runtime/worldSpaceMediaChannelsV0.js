@@ -471,6 +471,29 @@ export function resolveWorldSpaceMediaChannelV0(channelId) {
 /**
  * @param {string} [source]
  */
+/**
+ * Deep link: /world/space?channel=chess|go|checkers|world_sports
+ * @param {string} [queryChannel]
+ * @returns {string | null}
+ */
+export function resolveWorldSpaceMediaChannelIdFromQueryParamV0(queryChannel) {
+  const s = String(queryChannel || "").trim().toLowerCase();
+  if (!s) return null;
+  if (s === "chess" || s === "rhizoh_learning" || s === "learning") return RHIZOH_LEARNING_CHANNEL_ID_V0;
+  if (s === "go" || s === "go_learning" || s === "rhizoh_go") return RHIZOH_GO_LEARNING_CHANNEL_ID_V0;
+  if (s === "checkers" || s === "dama" || s === "checkers_learning" || s === "rhizoh_checkers") {
+    return RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0;
+  }
+  if (s === "world_sports" || s === "worldsports") return RHIZOH_WORLDSPORTS_CHANNEL_ID_V0;
+  if (s === "world_news" || s === "worldnews") return RHIZOH_WORLD_NEWS_CHANNEL_ID_V0;
+  if (s === "castle_genesis" || s === "castle") return "castle_genesis";
+  if (s === "nasa" || s === "event") return "nasa";
+  if (s === "lofi" || s === "radio") return "lofi";
+  const rows = listWorldSpaceMediaChannelsV0();
+  if (rows.some((r) => r.id === s)) return s;
+  return resolveInitialWorldSpaceMediaChannelIdV0(s);
+}
+
 export function resolveInitialWorldSpaceMediaChannelIdV0(source) {
   const s = String(source || "");
   if (s.startsWith("castle_init")) return "castle_genesis";

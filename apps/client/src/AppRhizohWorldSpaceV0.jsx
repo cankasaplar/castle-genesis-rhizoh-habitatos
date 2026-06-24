@@ -82,6 +82,7 @@ import { RhizohChessArenaWorkspaceV0 } from "./components/RhizohChessArenaWorksp
 import { RhizohTowerPortalDiscoveryV0 } from "./components/RhizohTowerPortalDiscoveryV0.jsx";
 import { RhizohCastleLivingMemoryPanelV0 } from "./components/RhizohCastleLivingMemoryPanelV0.jsx";
 import { RhizohWorldSpaceMediaTubeV0 } from "./components/RhizohWorldSpaceMediaTubeV0.jsx";
+import { resolveWorldSpaceMediaChannelIdFromQueryParamV0 } from "./rhizoh/runtime/worldSpaceMediaChannelsV0.js";
 import { RhizohProductSurfaceDrawerV0 } from "./components/RhizohProductSurfaceDrawerV0.jsx";
 import { getGenesisProtocolGatewayOrigin } from "./castleFlight/castleFlightConfig.js";
 import { CASTLE_ARCHIVE_OPEN_MEDIA_EVENT_V0 } from "./rhizoh/runtime/castleArchiveVaultV0.js";
@@ -302,6 +303,36 @@ export default function AppRhizohWorldSpaceV0() {
   useEffect(() => {
     applySpiralMapLayerFromQueryV0(location.search);
   }, [location.search]);
+
+  useEffect(() => {
+    const sp = new URLSearchParams(location.search);
+    const channelQuery = sp.get("channel");
+    if (!channelQuery) return;
+    const channelId = resolveWorldSpaceMediaChannelIdFromQueryParamV0(channelQuery);
+    if (!channelId) return;
+    const broadcastMode = sp.get("broadcast") === "1" || sp.get("view") === "broadcast";
+    setV11MediaTube(
+      Object.freeze({
+        node: Object.freeze({
+          id: channelQuery,
+          label: String(channelQuery).toUpperCase(),
+          name: uiLocale === "tr" ? "Öğrenme kanalı" : "Learning channel",
+          type: "broadcast",
+          color: "#a855f7"
+        }),
+        title:
+          uiLocale === "tr"
+            ? `Rhizoh · ${channelQuery}`
+            : `Rhizoh · ${channelQuery}`,
+        source: `query:channel:${channelQuery}`,
+        initialChannelId: channelId,
+        broadcastMode
+      })
+    );
+    setV11Workspace(null);
+    setV11NodePanel(null);
+    setV11ChessArena(null);
+  }, [location.search, uiLocale]);
 
   const onSpiralMapLayerFocusV0 = useCallback((layerFocus) => {
     if (typeof layerFocus === "string") {
