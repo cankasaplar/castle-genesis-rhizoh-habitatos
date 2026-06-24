@@ -64,6 +64,7 @@ See [`RHIZOH_LIFE_OS_V0_1_CLOSURE_NOTE.md`](RHIZOH_LIFE_OS_V0_1_CLOSURE_NOTE.md)
 | **Studio Life Memory** | Visible World Bridge + habitat + learning cameras | ✔ Studio drawer + academy observe | `studioVisibility()` · Studio shell | shell bar | Observation only |
 | **Studio Dashboard** | 8 cameras on one screen — Memory · Habitat · Chess · Go · Checkers · Academy · WorldSports · Spatial | ✔ 2×4 grid + adapter previews | `studioVisibility()` · `studioAdapters()` | Studio drawer | Observation only |
 | **Studio demo seed** | One-click investor memory demo | ✔ panel + console | `studioDemoSeed()` | Studio panel | Observation only |
+| **Chess Observation #001** | 60s YouTube short capture manifest | ✔ console + dashboard brief | `chessObservationShort001()` | Studio dashboard | Observation only |
 | **WorldSports** | Live scores + map pins + media tube | ◐ feed + pin + tube wire | `API_SPORTS_KEY` (gateway), optional YouTube VOD | pin / voice / tube | Gateway |
 | **World News** | Headline strip + feed | ◐ gateway feed | gateway world-feed | tube channel | Gateway |
 | **Castle Genesis media** | YouTube live + short honest clips | ✔ embed + channels SSOT | `VITE_CASTLE_GENESIS_YOUTUBE_*` | media tube | Prod |
@@ -99,6 +100,8 @@ Legal counsel READY
 ```javascript
 __rhizoh.studioVisibility()
 __rhizoh.studioAdapters()
+__rhizoh.chessObservationShort001()
+await __rhizoh.copyChessObservationBrief()
 __rhizoh.studioDemoSeed()
 __rhizoh.lifeOsStatus()
 __rhizoh.worldBridgeMemory()
