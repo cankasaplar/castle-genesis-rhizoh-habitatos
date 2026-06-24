@@ -35,6 +35,22 @@ describe("worldMapLiveFeedV0", () => {
     expect(chip).toContain("34");
   });
 
+  it("formats scheduled football chip", () => {
+    const chip = formatSportMatchChipV0(
+      {
+        sport: "football",
+        phase: "scheduled",
+        homeName: "Galatasaray",
+        awayName: "Fenerbahçe",
+        startTimeIso: "2026-06-20T18:00:00Z"
+      },
+      "tr"
+    );
+    expect(chip).toContain("Galatasaray");
+    expect(chip).toContain("Fenerbahçe");
+    expect(chip).toContain("vs");
+  });
+
   it("builds sports and news lines", () => {
     const feed = normalizeWorldMapLiveFeedV0({
       sports: {

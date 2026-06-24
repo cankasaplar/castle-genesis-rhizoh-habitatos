@@ -32,11 +32,13 @@ export async function wireWorldSportsMediaTubeV0(opts = {}) {
     force: opts.force === true
   });
   const live = Array.isArray(feed?.sports?.live) ? feed.sports.live : [];
+  const upcoming = Array.isArray(feed?.sports?.upcoming) ? feed.sports.upcoming : [];
 
   return Object.freeze({
     schema: WORLD_SPORTS_MEDIA_TUBE_WIRE_SCHEMA_V0,
     ok: true,
     liveMatchCount: live.length,
+    upcomingMatchCount: upcoming.length,
     pinCount: pins.length,
     feedFetchedAt: feed?.fetchedAt ?? null,
     interpretationOnly: true,
@@ -53,13 +55,19 @@ export function getWorldSportsTubeSnapshotV0(opts = {}) {
   const pins = getLiveMatchMapPinsV0();
   const locale = String(opts.locale || "tr");
   const live = Array.isArray(feed?.sports?.live) ? feed.sports.live : [];
-  const chips = live.slice(0, 8).map((m) => formatSportMatchChipV0(m, locale));
+  const upcoming = Array.isArray(feed?.sports?.upcoming) ? feed.sports.upcoming : [];
+  const liveChips = live.slice(0, 8).map((m) => formatSportMatchChipV0(m, locale));
+  const upcomingChips = upcoming.slice(0, 8).map((m) => formatSportMatchChipV0(m, locale));
+  const recentChips = Object.freeze([...liveChips, ...upcomingChips].slice(0, 8));
 
   return Object.freeze({
     schema: `${WORLD_SPORTS_MEDIA_TUBE_WIRE_SCHEMA_V0}.snapshot`,
     liveMatchCount: live.length,
+    upcomingMatchCount: upcoming.length,
     pinCount: pins.length,
-    recentChips: Object.freeze(chips),
+    liveChips: Object.freeze(liveChips),
+    upcomingChips: Object.freeze(upcomingChips),
+    recentChips,
     feedFetchedAt: feed?.fetchedAt ?? null,
     atMs: Date.now(),
     interpretationOnly: true

@@ -137,8 +137,21 @@ export function formatSportMatchChipV0(match, locale = "tr") {
   const away = String(match.awayName || "");
   const phase = String(match.phase || "");
 
-  if (sport === "formula1" && phase === "scheduled") {
-    return `${icon} ${home} · ${match.startTimeIso ? new Date(String(match.startTimeIso)).toLocaleDateString(tr ? "tr-TR" : "en-GB") : tr ? "yakında" : "soon"}`;
+  if (phase === "scheduled") {
+    const when = match.startTimeIso
+      ? new Date(String(match.startTimeIso)).toLocaleString(tr ? "tr-TR" : "en-GB", {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+      : tr
+        ? "yakında"
+        : "soon";
+    if (sport === "formula1") {
+      return `${icon} ${home} · ${when}`;
+    }
+    return `${icon} ${home} vs ${away} · ${when}`;
   }
 
   const hs = Number.isFinite(match.homeScore) ? match.homeScore : "-";
