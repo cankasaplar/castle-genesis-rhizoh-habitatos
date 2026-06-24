@@ -70,6 +70,8 @@ services:
       # Live world map feed (sports + news) — set in Render dashboard (never commit).
       - key: FOOTBALL_DATA_ORG_TOKEN
         sync: false
+      - key: API_SPORTS_KEY
+        sync: false
       - key: NEWSDATA_API_KEY
         sync: false
       # Voice Engine v3 — POST /rhizoh/voice/transcribe/v3

@@ -48,7 +48,37 @@ export function ensureAcademyLearningUnionDevToolsV0() {
   return window.__rhizoh.academyLearningUnion;
 }
 
+let bootWireScheduledV0 = false;
+
+/**
+ * Deferred boot wire — arms go + checkers learning tubes once per session.
+ * Chess cluster arms independently; union report then shows 3/3 armed after demo moves.
+ * @param {{ locale?: string, delayMs?: number }} [opts]
+ */
+export function startAcademyLearningUnionBootWireV0(opts = {}) {
+  if (typeof window === "undefined" || bootWireScheduledV0) return;
+  bootWireScheduledV0 = true;
+  const locale = String(opts.locale || "tr");
+  const delayMs = Number(opts.delayMs) || 0;
+  const run = () => {
+    void wireAcademyLearningUnionV0({ locale, demoMove: true }).then((result) => {
+      window.__rhizoh = window.__rhizoh || {};
+      window.__rhizoh.lastAcademyLearningUnionWire = result;
+    });
+  };
+  const schedule =
+    delayMs > 0
+      ? () => window.setTimeout(run, delayMs)
+      : typeof requestIdleCallback !== "undefined"
+        ? () => requestIdleCallback(run, { timeout: 5000 })
+        : () => window.setTimeout(run, 2500);
+  schedule();
+}
+
 /** @internal vitest */
 export function resetAcademyLearningUnionWireForTestV0() {
-  /* stateless — noop */
+  bootWireScheduledV0 = false;
+  if (typeof window !== "undefined" && window.__rhizoh) {
+    delete window.__rhizoh.lastAcademyLearningUnionWire;
+  }
 }

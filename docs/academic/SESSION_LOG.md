@@ -28,6 +28,30 @@ Pipeline özeti: Live conversation → observation extraction → **SESSION_LOG*
 
 ---
 
+## 2026-06-24 — Studio sprint closure · broadcast parity · Render prep
+
+**Tag:** `RESEARCH-ONLY`
+
+**Shipped (main):**
+- PR #400 Output Engine v1 · PR #401 World Space broadcast (`broadcast=1`, Go/Dama taşlar + öğrenme şeridi)
+- `__RHIZOH_FULL_REPORT__()` import fix (`buildLifeOsV01StatusSnapshotV0`)
+- Life OS v0.1 **ACHIEVED** on prod full report
+
+**This session (branch):**
+- Academy Learning Union **boot wire** — go + checkers demo on core boot (~3.2s)
+- Paper source sync: `RHIZOH_DISTRIBUTED_REALITY_CONSTRUCTION_PAPER_V0.1.md` ← preprint
+- [`RENDER_API_GAPS_CHECKLIST_V1.0.md`](../ops/RENDER_API_GAPS_CHECKLIST_V1.0.md)
+
+**Prod smoke (founder):**
+```javascript
+await __RHIZOH_FULL_REPORT__()
+__rhizoh.outputPack({ locale: "tr" })  // lifeOs ACHIEVED · chess 72 moves
+```
+
+**Next:** Render §1–2 keys · Chess Short OBS upload · `API_SPORTS_KEY` in render.yaml
+
+---
+
 ### 2026-06-19 — Günlük backlog gözden geçirme + NETWORK SURFACE rapor
 
 **Summary:**

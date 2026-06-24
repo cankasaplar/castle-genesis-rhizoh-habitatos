@@ -32,7 +32,17 @@ This is **not** a product announcement, game release, or daily-life OS claim.
 
 ---
 
-## Reproduce claims
+## Read the paper (canonical)
+
+**Latest source (2026-06-24):** [`RHIZOH_DISTRIBUTED_REALITY_CONSTRUCTION_PAPER_V0.1.md`](RHIZOH_DISTRIBUTED_REALITY_CONSTRUCTION_PAPER_V0.1.md)
+
+**Public PDF:** `/rhizoh/academic/paper-v0.1.pdf` (regenerate: `npm run academic:export-preprint-v0.1`)
+
+**Title:** *Rhizoh: Event-Sourced Authority Arbitration for Reconciliation-Based Distributed Reality Construction*
+
+**What's new in v0.1 sync:** Life OS v0.1 closure (World Bridge observation layer), habitat climate, academy learning union, honest `legal_activation_hold` on spatial.
+
+---
 
 ```bash
 npm run academic:reproduce-paper

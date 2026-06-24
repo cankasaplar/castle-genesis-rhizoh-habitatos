@@ -44,7 +44,7 @@ import { ensureGoKataGoGtpBridgeDevToolsV0, prewarmGoKataGoEngineV0 } from "./go
 import { ensureCheckersLearningMediaTubeDevToolsV0 } from "./checkersLearningMediaTubeWireV0.js";
 import { ensureRhizohCheckersLearningReportV0 } from "./rhizohCheckersLearningReportV0.js";
 import { ensureRhizohCheckersLearningCameraV0 } from "./rhizohCheckersLearningCameraV0.js";
-import { ensureAcademyLearningUnionDevToolsV0 } from "./academyLearningUnionWireV0.js";
+import { ensureAcademyLearningUnionDevToolsV0, startAcademyLearningUnionBootWireV0 } from "./academyLearningUnionWireV0.js";
 import { ensureLifeOsV01StatusDevToolsV0 } from "./lifeOsV01StatusV0.js";
 import { ensureRhizohStudioVisibilityDevToolsV0 } from "./rhizohStudioVisibilityWireV0.js";
 import { ensureRhizohStudioDemoSeedDevToolsV0 } from "./rhizohStudioDemoSeedWireV0.js";
@@ -158,6 +158,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureRhizohCheckersLearningReportV0();
     ensureRhizohCheckersLearningCameraV0();
     ensureAcademyLearningUnionDevToolsV0();
+    startAcademyLearningUnionBootWireV0({ locale: "tr", delayMs: 3200 });
     ensureLifeOsV01StatusDevToolsV0();
     ensureRhizohStudioVisibilityDevToolsV0();
     ensureRhizohStudioObservationAdapterDevToolsV0();
