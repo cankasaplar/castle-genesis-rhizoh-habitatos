@@ -62,4 +62,10 @@ describe("rhizohCoreSubsystemBootV0", () => {
     expect(typeof window.__rhizoh?.matchmaking?.tryMatch).toBe("function");
     expect(window.__rhizoh?.matchmakingConsole?.mounted).toBe(true);
   });
+
+  it("publishes spatial renderer registry and world layer status on boot", () => {
+    ensureRhizohCoreSubsystemsBootV0();
+    expect(window.__rhizoh?.spatialRendererRegistry?.plugins?.length).toBeGreaterThan(0);
+    expect(window.__rhizoh?.worldLayerStatus?.phase).toBeTruthy();
+  });
 });
