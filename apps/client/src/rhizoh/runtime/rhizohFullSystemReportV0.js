@@ -81,6 +81,7 @@ import { getExecutionPermissionLayerSnapshotV0 } from "./executionPermissionLaye
 import { getMediaFeedbackObservationLoopSnapshotV0 } from "./mediaFeedbackObservationLoopV0.js";
 import { getWorldBridgeShadowTraceBridgeSnapshotV0 } from "./worldBridgeShadowTraceBridgeV0.js";
 import { buildHabitatClimateSnapshotV0 } from "./habitatClimatePatternEngineV0.js";
+import { buildRhizohAcademyLearningUnionReportV0 } from "./rhizohAcademyLearningUnionReportV0.js";
 
 export const RHIZOH_FULL_SYSTEM_REPORT_SCHEMA_V0 = "rhizoh.full_system_report.v0";
 
@@ -723,6 +724,35 @@ function collectWorldBridgeDiagnosticV0() {
 }
 
 /**
+ * Academy learning union — chess + go + checkers discipline digests.
+ * @returns {object}
+ */
+function collectAcademyLearningDiagnosticV0() {
+  const union = buildRhizohAcademyLearningUnionReportV0();
+  const rhizoh = typeof window !== "undefined" ? window.__rhizoh : null;
+
+  return Object.freeze({
+    schema: "rhizoh.full_system_report.academy_learning_union.v0",
+    interpretationOnly: true,
+    nonExecutive: true,
+    unionLabel: union.unionLabel,
+    dominantDiscipline: union.dominantDiscipline,
+    armedDisciplineCount: union.armedDisciplineCount,
+    totalMovesSeen: union.totalMovesSeen,
+    totalBatchesFlushed: union.totalBatchesFlushed,
+    disciplines: union.disciplines,
+    surfaceBound: Object.freeze({
+      academyLearningUnion: typeof rhizoh?.academyLearningUnion === "function",
+      wireAcademyLearningUnion: typeof rhizoh?.wireAcademyLearningUnion === "function",
+      learningReport: typeof rhizoh?.learningReport === "function",
+      goLearningReport: typeof rhizoh?.goLearningReport === "function",
+      checkersLearningReport: typeof rhizoh?.checkersLearningReport === "function"
+    }),
+    consoleApi: "__rhizoh.academyLearningUnion()"
+  });
+}
+
+/**
  * Network surface — map pins, towers, gateway registration, invites (investor ops).
  * @returns {object}
  */
@@ -916,6 +946,7 @@ export function runFullSystemReportV0(opts = {}) {
   const rendererRegistry = getSpatialRendererRegistrySnapshotV0();
   const networkSurface = collectNetworkSurfaceDiagnosticV0();
   const worldBridge = collectWorldBridgeDiagnosticV0();
+  const academyLearning = collectAcademyLearningDiagnosticV0();
 
   const integrityTiers = buildSystemIntegrityTiersV0({
     causalMap,
@@ -976,6 +1007,7 @@ export function runFullSystemReportV0(opts = {}) {
     presenceRuntime,
     networkSurface,
     worldBridge,
+    academyLearning,
     evaluation: Object.freeze({
       structuralTruthPass: causalMap.truthLoss?.structuralPass !== false,
       structuralPass: integrityTiers.structuralPass,
@@ -1131,6 +1163,12 @@ export function printFullSystemReportV0(report) {
     `    shadow writeback: ${r.worldBridge?.shadowWriteback?.projectionCount ?? 0} ledger projections`,
     `    habitat climate: ${r.worldBridge?.habitatClimate?.climateLabel ?? "—"} · memory ${r.worldBridge?.habitatClimate?.memoryNodeCount ?? 0}`,
     `    console: __rhizoh.ingestCalendarEvent() · __rhizoh.ingestMediaEvent() · __rhizoh.mediaFeedbackLoop() · __rhizoh.habitatClimate()`,
+    "───────────────────────────────────────────",
+    "  ACADEMY LEARNING UNION",
+    `    union: ${r.academyLearning?.unionLabel ?? "—"} · dominant ${r.academyLearning?.dominantDiscipline ?? "—"} · armed ${r.academyLearning?.armedDisciplineCount ?? 0}/3`,
+    `    moves: chess ${r.academyLearning?.disciplines?.chess?.movesSeen ?? 0} · go ${r.academyLearning?.disciplines?.go?.movesSeen ?? 0} · checkers ${r.academyLearning?.disciplines?.checkers?.movesSeen ?? 0} · total ${r.academyLearning?.totalMovesSeen ?? 0}`,
+    `    batches: total ${r.academyLearning?.totalBatchesFlushed ?? 0}`,
+    `    console: __rhizoh.academyLearningUnion() · await __rhizoh.wireAcademyLearningUnion({ demoMove: true })`,
     "───────────────────────────────────────────",
     "  EPISTEMIC SUBSTRATE",
     `    turn sovereignty: ${r.epistemicSubstrate?.turnSovereignty?.sovereignReality ?? "none"} (${r.epistemicSubstrate?.turnSovereignty?.enforcement ?? "log_only"})`,

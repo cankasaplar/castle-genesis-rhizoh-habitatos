@@ -22,10 +22,11 @@
 | **Ingress** | Legal consent + identity on one screen | ✔ live | cohort allowlist, Firebase auth | checkboxes + Google | Legal freeze |
 | **Voice (Rhizoh)** | Speak; get bounded reply | ✔ v3 + gateway STT | `VITE_GATEWAY_TOKEN`, gateway HTTP/WS | mic | Prod |
 | **Chess / Learning** | Play, learn, lifetime report | ✔ ~88% (Stockfish, cluster, reports) | WASM local | pin → arena | Prod |
-| **Go / Checkers media** | Academy broadcast B-roll on Castle Genesis | ◐ channel + holding slide | `VITE_CASTLE_GENESIS_YOUTUBE_GO_VIDEO_ID`, `…_CHECKERS_…` | media tube | Content |
+| **Go / Checkers media** | Academy broadcast B-roll + learning tube wire | ◐ channel + tube wire + union report | `wireGoLearningTube`, `wireCheckersLearningTube`, `VITE_CASTLE_GENESIS_YOUTUBE_*` | media tube / pin | Content |
+| **Academy Learning Union** | Single observability across chess + go + checkers | ◐ session_v0 union digest | `academyLearningUnion()`, `wireAcademyLearningUnion()` | console | Observation only |
 | **World Bridge** | Calendar / media / activity → life memory | ✔ 3 lanes, fusion, memory graph | `ingestCalendarEvent`, `ingestMediaEvent`, `ingestUserActivity` | console / future sync | Observation only |
 | **Life Shadow** | Day A/B counterfactual | ✔ calendar + media branches | `lifeShadowDayBranches()` | ingest + compare | Observation only |
-| **Habitat climate** | 90-day behavior / learning climate | ✗ spec | — | — | Post data-plane |
+| **Habitat climate** | 90-day behavior / learning climate | ◐ session_v0 pattern engine | `habitatClimate()` | ingest + compare | Observation only |
 | **WorldSports** | Live scores + map pins + media tube | ◐ feed + pin + tube wire | `API_SPORTS_KEY` (gateway), optional YouTube VOD | pin / voice / tube | Gateway |
 | **World News** | Headline strip + feed | ◐ gateway feed | gateway world-feed | tube channel | Gateway |
 | **Castle Genesis media** | YouTube live + short honest clips | ✔ embed + channels SSOT | `VITE_CASTLE_GENESIS_YOUTUBE_*` | media tube | Prod |
@@ -60,6 +61,9 @@ Legal counsel READY
 
 ```javascript
 __rhizoh.worldBridgeMemory()
+__rhizoh.habitatClimate()
+__rhizoh.academyLearningUnion()
+await __rhizoh.wireAcademyLearningUnion({ demoMove: true })
 __rhizoh.spatialRendererRegistry.gateCause
 __rhizoh.worldLayerStatus.phase
 await window.__rhizoh.mediaGateway.ensure()
