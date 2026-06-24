@@ -66,6 +66,7 @@ See [`RHIZOH_LIFE_OS_V0_1_CLOSURE_NOTE.md`](RHIZOH_LIFE_OS_V0_1_CLOSURE_NOTE.md)
 | **Studio demo seed** | One-click investor memory demo | ✔ panel + console | `studioDemoSeed()` | Studio panel | Observation only |
 | **Chess Observation #001** | 60s YouTube short capture manifest | ✔ console + dashboard brief | `chessObservationShort001()` | Studio dashboard | Observation only |
 | **Director Engine v1** | Event → scene timeline · cut triggers | ✔ director mode panel | `directorTimeline()` · `soraPromptPack()` | Studio drawer | Observation only |
+| **Output Engine v1** | Upload pack · subtitles · checklist | ✔ output panel | `outputPack()` · `copyOutputPack()` | Studio drawer | Observation only |
 | **WorldSports Short #001** | 50s observation when feed live | ◐ gateway keys required | `worldSportsObservationShort001()` | Studio / world sports | Gateway |
 | **WorldSports** | Live scores + map pins + media tube | ◐ feed poll + studio wire | `wireWorldSportsTube()` · `worldSportsTube()` | pin / voice / tube | Gateway |
 | **World News** | Headline strip + feed | ◐ gateway feed | gateway world-feed | tube channel | Gateway |
@@ -109,6 +110,8 @@ __rhizoh.directorTimeline({ locale: "tr" })
 __rhizoh.soraPromptPack({ locale: "tr" })
 await __rhizoh.wireWorldSportsTube({ force: true })
 __rhizoh.worldSportsObservationShort001({ locale: "tr" })
+__rhizoh.outputPack({ locale: "tr" })
+await __rhizoh.copyOutputPack({ locale: "tr" })
 __rhizoh.studioDemoSeed()
 __rhizoh.lifeOsStatus()
 __rhizoh.worldBridgeMemory()

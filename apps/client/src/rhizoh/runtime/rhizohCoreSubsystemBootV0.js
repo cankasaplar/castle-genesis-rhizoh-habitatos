@@ -51,6 +51,7 @@ import { ensureRhizohStudioDemoSeedDevToolsV0 } from "./rhizohStudioDemoSeedWire
 import { ensureRhizohStudioObservationAdapterDevToolsV0 } from "./rhizohStudioObservationAdapterWireV0.js";
 import { ensureRhizohChessObservationShortDevToolsV0 } from "./rhizohChessObservationShortWireV0.js";
 import { ensureRhizohDirectorEngineDevToolsV0 } from "./rhizohDirectorEngineWireV0.js";
+import { ensureRhizohOutputEngineDevToolsV0 } from "./rhizohOutputEngineWireV0.js";
 import {
   ensureRhizohWorldSportsObservationShortDevToolsV0,
   startRhizohStudioWorldSportsFeedPollV0
@@ -162,6 +163,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureRhizohStudioObservationAdapterDevToolsV0();
     ensureRhizohChessObservationShortDevToolsV0();
     ensureRhizohDirectorEngineDevToolsV0();
+    ensureRhizohOutputEngineDevToolsV0();
     ensureRhizohWorldSportsObservationShortDevToolsV0();
     startRhizohStudioWorldSportsFeedPollV0({ locale: "tr" });
     ensureRhizohStudioDemoSeedDevToolsV0();
