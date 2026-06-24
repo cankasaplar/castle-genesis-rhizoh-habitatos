@@ -21,8 +21,21 @@ import { buildRhizohChessLearningCameraV0 } from "./rhizohChessLearningCameraV0.
 import { buildRhizohGoLearningCameraV0 } from "./rhizohGoLearningCameraV0.js";
 import { buildRhizohCheckersLearningCameraV0 } from "./rhizohCheckersLearningCameraV0.js";
 import { buildRhizohAcademyLearningUnionReportV0 } from "./rhizohAcademyLearningUnionReportV0.js";
+import { getWorldSportsTubeSnapshotV0 } from "./worldSportsMediaTubeWireV0.js";
+import { resolveWorldLayerActivationStatusV0 } from "./rhizohWorldLayerActivationStatusV0.js";
 
 export const RHIZOH_STUDIO_VISIBILITY_SCHEMA_V0 = "castle.rhizoh.studio_visibility.v0";
+
+export const STUDIO_EIGHT_CAMERA_IDS_V0 = Object.freeze([
+  "chess_arena",
+  "go_arena",
+  "checkers_arena",
+  "habitat",
+  "memory",
+  "academy",
+  "world_sports",
+  "spatial"
+]);
 
 export const STUDIO_VISIBILITY_PANEL_IDS_V0 = Object.freeze([
   "life_os",
@@ -90,6 +103,56 @@ export function buildRhizohStudioVisibilitySnapshotV0() {
     (id) => learningCameras[id].armed
   ).length;
 
+  const worldSports = getWorldSportsTubeSnapshotV0();
+  const worldLayer = resolveWorldLayerActivationStatusV0();
+
+  const eightCameras = Object.freeze({
+    chess_arena: Object.freeze({
+      id: "chess_arena",
+      armed: learningCameras.chess.armed,
+      movesSeen: learningCameras.chess.movesSeen
+    }),
+    go_arena: Object.freeze({
+      id: "go_arena",
+      armed: learningCameras.go.armed,
+      movesSeen: learningCameras.go.movesSeen,
+      causalSpaceId: learningCameras.go.causalSpaceId
+    }),
+    checkers_arena: Object.freeze({
+      id: "checkers_arena",
+      armed: learningCameras.checkers.armed,
+      movesSeen: learningCameras.checkers.movesSeen,
+      causalSpaceId: learningCameras.checkers.causalSpaceId
+    }),
+    habitat: Object.freeze({
+      id: "habitat",
+      armed: Boolean(habitat.identity?.climateLabel),
+      climateLabel: habitat.identity?.climateLabel ?? null
+    }),
+    memory: Object.freeze({
+      id: "memory",
+      armed: memory.nodeCount > 0,
+      nodeCount: memory.nodeCount
+    }),
+    academy: Object.freeze({
+      id: "academy",
+      armed: academyUnion.armedDisciplineCount > 0,
+      unionLabel: academyUnion.unionLabel
+    }),
+    world_sports: Object.freeze({
+      id: "world_sports",
+      armed: (worldSports?.liveMatchCount ?? 0) > 0 || (worldSports?.pinCount ?? 0) > 0,
+      liveMatchCount: worldSports?.liveMatchCount ?? 0,
+      pinCount: worldSports?.pinCount ?? 0
+    }),
+    spatial: Object.freeze({
+      id: "spatial",
+      armed: false,
+      legalHold: true,
+      phase: worldLayer?.phase ?? null
+    })
+  });
+
   return Object.freeze({
     schema: RHIZOH_STUDIO_VISIBILITY_SCHEMA_V0,
     interpretationOnly: true,
@@ -130,6 +193,7 @@ export function buildRhizohStudioVisibilitySnapshotV0() {
       dominantDiscipline: academyUnion.dominantDiscipline,
       totalMovesSeen: academyUnion.totalMovesSeen
     }),
+    eightCameras,
     panels: STUDIO_VISIBILITY_PANEL_IDS_V0,
     atMs: Date.now()
   });

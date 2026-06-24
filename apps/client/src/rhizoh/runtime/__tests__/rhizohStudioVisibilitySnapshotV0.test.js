@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   RHIZOH_STUDIO_VISIBILITY_SCHEMA_V0,
   STUDIO_VISIBILITY_PANEL_IDS_V0,
+  STUDIO_EIGHT_CAMERA_IDS_V0,
   buildRhizohStudioVisibilitySnapshotV0,
   summarizeStudioLearningCameraV0
 } from "../rhizohStudioVisibilitySnapshotV0.js";
@@ -31,6 +32,7 @@ describe("buildRhizohStudioVisibilitySnapshotV0", () => {
     expect(snap.learningCameras.chess.discipline).toBe("chess");
     expect(snap.learningCameras.go.discipline).toBe("go");
     expect(snap.learningCameras.checkers.discipline).toBe("checkers");
+    expect(Object.keys(snap.eightCameras).sort()).toEqual([...STUDIO_EIGHT_CAMERA_IDS_V0].sort());
     expect(["ACHIEVED", "DORMANT"]).toContain(snap.lifeOsStatus);
   });
 });
