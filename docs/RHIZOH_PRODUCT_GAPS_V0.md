@@ -22,6 +22,8 @@
 | Paper evidence | `epistemicSeparationProof`, `invitationStudy.export` |
 | Resonance (measure only) | `epistemicResonanceField.measure()` — no coupling |
 | UI v1 | Epistemic dashboard panel, founder cohort panel |
+| **Life OS v0.1** | World Bridge · Memory graph · Habitat climate · `lifeOsStatus()` prod-verified |
+| **Studio V1 visibility** | In flight — [`RHIZOH_STUDIO_V1_VISIBILITY_LAYER_V0.md`](RHIZOH_STUDIO_V1_VISIBILITY_LAYER_V0.md) |
 
 ---
 
@@ -46,6 +48,8 @@
 | Item | Priority |
 |------|----------|
 | **2-browser Reality Binding video** | **P0** — trust milestone |
+| **Studio Life Memory panel** | **P0** — make observation layer visible (investor / user) |
+| **First YouTube observation series** | **P1** — Ep 1–4 from learning cameras + habitat |
 | **First 20 Founder Circle witnesses** | **P0** — manual invites |
 | Founder Circle Stripe / membership backend | High after video |
 | Founder multi-invitee map view | High — needs `active_castles` + UX |

@@ -71,4 +71,14 @@ See Phase 1 §11 in [`RHIZOH_PHASE1_CONTROLLED_REAL_SIGNAL_V1.0.md`](RHIZOH_PHAS
 
 ---
 
+## Current product lever (2026-06)
+
+**P0 — Studio V1 visibility** (not new motors): Life OS observation layer is prod-verified (`lifeOsStatus: ACHIEVED`) but was console-only. [`RHIZOH_STUDIO_V1_VISIBILITY_LAYER_V0.md`](RHIZOH_STUDIO_V1_VISIBILITY_LAYER_V0.md) surfaces World Bridge · Habitat · Fusion · Learning cameras in Studio drawer.
+
+**P1 — YouTube content series** feeds from the same 8-camera observation digest (Chess · Go · Checkers · Habitat · Memory · Academy).
+
+**P2 — WorldSports full loop** and **Cesium spatial** remain after visibility + content proof.
+
+---
+
 *Rhizoh Systems — Phase Evolution v1.0 — 2026-05-19*
