@@ -22,7 +22,7 @@ export const NASA_TV_YOUTUBE_CHANNEL_ID_V0 = "UCSI0uARq_cDIn6keDeXzqJg";
 export const NASA_ISS_EARTH_VIDEO_ID_V0 = "iYmvCUonukw";
 export const NASA_ISS_EARTH_FALLBACK_VIDEO_ID_V0 = "21X5lGlDOfg";
 
-/** @typedef {'youtube'|'local'|'castle_genesis_live'|'chess_cluster_live'|'world_sports_feed'|'world_news_feed'} WorldSpaceMediaChannelTypeV0 */
+/** @typedef {'youtube'|'local'|'castle_genesis_live'|'chess_cluster_live'|'go_cluster_live'|'world_sports_feed'|'world_news_feed'} WorldSpaceMediaChannelTypeV0 */
 
 /**
  * @param {string} videoId
@@ -110,6 +110,7 @@ function freezeHoldingChannelV0(row) {
 }
 
 export const RHIZOH_LEARNING_CHANNEL_ID_V0 = "rhizoh_learning";
+export const RHIZOH_GO_LEARNING_CHANNEL_ID_V0 = "rhizoh_go_learning";
 export const RHIZOH_WORLDSPORTS_CHANNEL_ID_V0 = "world_sports";
 export const RHIZOH_WORLD_NEWS_CHANNEL_ID_V0 = "world_news";
 
@@ -132,6 +133,20 @@ export function buildRhizohLearningChannelV0() {
     type: "chess_cluster_live",
     badgeTr: "Canlı · 8 kamera · Stockfish",
     badgeEn: "Live · 8 cameras · Stockfish"
+  });
+}
+
+/**
+ * Live Go learning cluster — spacetime observation envelope in media tube.
+ */
+export function buildRhizohGoLearningChannelV0() {
+  return Object.freeze({
+    id: RHIZOH_GO_LEARNING_CHANNEL_ID_V0,
+    titleTr: "Go Öğrenme · Uzay-Zaman",
+    titleEn: "Go Learning · Spacetime",
+    type: "go_cluster_live",
+    badgeTr: "Canlı · mekân · faz",
+    badgeEn: "Live · space · phase"
   });
 }
 
@@ -230,6 +245,7 @@ export function listWorldSpaceMediaChannelsV0() {
   const rows = [
     castleGenesisPrimary,
     buildRhizohLearningChannelV0(),
+    buildRhizohGoLearningChannelV0(),
     buildRhizohWorldSportsChannelV0(),
     buildRhizohWorldNewsChannelV0()
   ];
@@ -450,7 +466,8 @@ export function resolveInitialWorldSpaceMediaChannelIdV0(source) {
     return RHIZOH_WORLDSPORTS_CHANNEL_ID_V0;
   }
   if (s.includes("checkers") || s.includes("dama") || s.includes("map:node:checkers")) return "castle_checkers";
-  if (s.includes("go_board") || s.includes("map:node:go")) return "castle_go";
+  if (s.includes("go_learning") || s.includes("rhizoh_go")) return RHIZOH_GO_LEARNING_CHANNEL_ID_V0;
+  if (s.includes("go_board") || s.includes("map:node:go")) return RHIZOH_GO_LEARNING_CHANNEL_ID_V0;
   if (s.includes("chess") || s.includes("map:node:chess") || s.includes("learning")) return RHIZOH_LEARNING_CHANNEL_ID_V0;
   if (s.includes("radio") || s.includes("map:node:radio")) return "lofi";
   if (s.includes("event") || s.includes("map:node:event")) return "nasa";
@@ -480,7 +497,10 @@ export function resolveWorldSpaceMediaChannelForMapNodeV0(node) {
     return RHIZOH_LEARNING_CHANNEL_ID_V0;
   }
   if (id === "castle_chess") return "castle_chess";
-  if (id === "castle_go" || id === "go" || id.includes("go_board")) return "castle_go";
+  if (id === "go_arena" || id === "go_learning" || id === "rhizoh_go_learning") {
+    return RHIZOH_GO_LEARNING_CHANNEL_ID_V0;
+  }
+  if (id === "castle_go" || id === "go" || id.includes("go_board")) return RHIZOH_GO_LEARNING_CHANNEL_ID_V0;
   if (id === "castle_checkers" || id === "checkers" || id.includes("dama")) return "castle_checkers";
   if (id === "event") return "nasa";
   if (id === "radio") return "lofi";

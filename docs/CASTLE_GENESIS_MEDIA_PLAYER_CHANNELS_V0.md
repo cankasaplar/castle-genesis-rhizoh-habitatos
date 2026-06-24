@@ -19,6 +19,8 @@ Kaynak: `apps/client/src/rhizoh/runtime/worldSpaceMediaChannelsV0.js`
 | `castle_genesis` | Varsayılan · ~45s kısa veya canlı | `VITE_CASTLE_GENESIS_YOUTUBE_SHORT_VIDEO_ID` · yoksa **YouTube Live** (`UC24Uv9xXfNkEVO0s7huGQFA`) |
 | `castle_genesis_live` | YouTube Live | `VITE_CASTLE_GENESIS_YOUTUBE_CHANNEL_ID` · prod default baked |
 | `castle_chess` | 8 kamera satranç B-roll | `VITE_CASTLE_GENESIS_YOUTUBE_CHESS_VIDEO_ID` · yoksa canlı cluster |
+| `rhizoh_learning` | Satranç öğrenme · 8 kamera cluster | `chess_cluster_live` |
+| `rhizoh_go_learning` | Go öğrenme · uzay-zaman zarfı | `go_cluster_live` · `map:node:go` |
 | `castle_go` | Go Academy B-roll | `VITE_CASTLE_GENESIS_YOUTUBE_GO_VIDEO_ID` · yoksa holding slide |
 | `castle_checkers` | Checkers Academy B-roll | `VITE_CASTLE_GENESIS_YOUTUBE_CHECKERS_VIDEO_ID` · yoksa holding slide |
 | `castle_architecture` | Mimari özet (2. parça) | `VITE_CASTLE_GENESIS_YOUTUBE_ARCHITECTURE_VIDEO_ID` · yoksa holding slide |

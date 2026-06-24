@@ -3,7 +3,7 @@
  * Map renderer reads this; orchestrator maps types → workspace / media / info.
  */
 
-import { resolveInitialWorldSpaceMediaChannelIdV0, resolveWorldSpaceMediaChannelForMapNodeV0, RHIZOH_LEARNING_CHANNEL_ID_V0, RHIZOH_WORLDSPORTS_CHANNEL_ID_V0, RHIZOH_WORLD_NEWS_CHANNEL_ID_V0 } from "./worldSpaceMediaChannelsV0.js";
+import { resolveInitialWorldSpaceMediaChannelIdV0, resolveWorldSpaceMediaChannelForMapNodeV0, RHIZOH_LEARNING_CHANNEL_ID_V0, RHIZOH_GO_LEARNING_CHANNEL_ID_V0, RHIZOH_WORLDSPORTS_CHANNEL_ID_V0, RHIZOH_WORLD_NEWS_CHANNEL_ID_V0 } from "./worldSpaceMediaChannelsV0.js";
 import { publishChessClusterBroadcastActiveV0 } from "./chessEngineContentionGateV0.js";
 import { presenceColorForStateV0 } from "./castlePresenceRegistryV0.js";
 import {
@@ -933,6 +933,30 @@ export function dispatchOpenRhizohLearningChannelV0(payload = {}) {
       (tr ? "Rhizoh Öğrenme Kanalı" : "Rhizoh Learning Channel"),
     source: payload.source || "rhizoh_learning_channel",
     initialChannelId: RHIZOH_LEARNING_CHANNEL_ID_V0
+  });
+}
+
+/**
+ * Open World · Space media tube on Go learning channel (spacetime cluster).
+ * @param {{ node?: object, title?: string, source?: string }} [payload]
+ */
+export function dispatchOpenRhizohGoLearningChannelV0(payload = {}) {
+  const goNode =
+    payload.node ||
+    SOVEREIGN_CORE_NODES_V0.find((n) => n.id === "go_arena" || n.id === "go") ||
+    Object.freeze({
+      id: "go_arena",
+      type: "zone",
+      label: "GO",
+      name: "Rhizoh Go Arena",
+      color: "#38bdf8"
+    });
+  const tr = payload.tr !== false;
+  dispatchOpenMediaTubeV0({
+    node: goNode,
+    title: payload.title || (tr ? "Go Öğrenme · Uzay-Zaman" : "Go Learning · Spacetime"),
+    source: payload.source || "map:node:go",
+    initialChannelId: RHIZOH_GO_LEARNING_CHANNEL_ID_V0
   });
 }
 

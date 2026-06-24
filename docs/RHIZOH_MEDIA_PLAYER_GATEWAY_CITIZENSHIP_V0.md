@@ -73,6 +73,12 @@ window.__rhizoh.observationState.snapshot().media
 // WorldSports pin → feed → tube (v0 wire)
 await window.__rhizoh.wireWorldSportsTube({ force: true })
 window.__rhizoh.worldSportsTube()
+
+// Go learning pin → spacetime envelope → tube (v0 wire)
+await window.__rhizoh.wireGoLearningTube({ force: true, demoMove: true })
+window.__rhizoh.goLearningTube()
+window.__rhizoh.goLearningReport()
+window.__rhizoh.goLearningCamera()
 ```
 
 ## E2E wire (pin → feed → tube)
