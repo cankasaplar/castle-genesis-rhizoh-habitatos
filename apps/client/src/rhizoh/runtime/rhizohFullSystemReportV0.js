@@ -82,7 +82,7 @@ import { getMediaFeedbackObservationLoopSnapshotV0 } from "./mediaFeedbackObserv
 import { getWorldBridgeShadowTraceBridgeSnapshotV0 } from "./worldBridgeShadowTraceBridgeV0.js";
 import { buildHabitatClimateSnapshotV0 } from "./habitatClimatePatternEngineV0.js";
 import { buildRhizohAcademyLearningUnionReportV0 } from "./rhizohAcademyLearningUnionReportV0.js";
-import { buildLifeOsV01StatusSnapshotV0 } from "./lifeOsV01StatusV0.js";
+import { buildRhizohStudioVisibilitySnapshotV0 } from "./rhizohStudioVisibilitySnapshotV0.js";
 
 export const RHIZOH_FULL_SYSTEM_REPORT_SCHEMA_V0 = "rhizoh.full_system_report.v0";
 
@@ -752,6 +752,31 @@ function collectLifeOsV01DiagnosticV0() {
 }
 
 /**
+ * Studio V1 visibility — Life Memory product surface digest.
+ * @returns {object}
+ */
+function collectStudioVisibilityDiagnosticV0() {
+  const snap = buildRhizohStudioVisibilitySnapshotV0();
+  const rhizoh = typeof window !== "undefined" ? window.__rhizoh : null;
+
+  return Object.freeze({
+    schema: "rhizoh.full_system_report.studio_visibility.v0",
+    interpretationOnly: true,
+    nonExecutive: true,
+    lifeOsStatus: snap.lifeOsStatus,
+    memoryNodeCount: snap.worldBridge.memoryNodeCount,
+    climateLabel: snap.habitatClimate.climateLabel,
+    fusionSeq: snap.fusionTimeline.fusionSeq,
+    armedLearningCount: snap.armedLearningCount,
+    academyUnionLabel: snap.academyUnion.unionLabel,
+    surfaceBound: Object.freeze({
+      studioVisibility: typeof rhizoh?.studioVisibility === "function"
+    }),
+    consoleApi: "__rhizoh.studioVisibility()"
+  });
+}
+
+/**
  * Academy learning union — chess + go + checkers discipline digests.
  * @returns {object}
  */
@@ -976,6 +1001,7 @@ export function runFullSystemReportV0(opts = {}) {
   const worldBridge = collectWorldBridgeDiagnosticV0();
   const academyLearning = collectAcademyLearningDiagnosticV0();
   const lifeOsV01 = collectLifeOsV01DiagnosticV0();
+  const studioVisibility = collectStudioVisibilityDiagnosticV0();
 
   const integrityTiers = buildSystemIntegrityTiersV0({
     causalMap,
@@ -1038,6 +1064,7 @@ export function runFullSystemReportV0(opts = {}) {
     worldBridge,
     academyLearning,
     lifeOsV01,
+    studioVisibility,
     evaluation: Object.freeze({
       structuralTruthPass: causalMap.truthLoss?.structuralPass !== false,
       structuralPass: integrityTiers.structuralPass,
@@ -1207,6 +1234,11 @@ export function printFullSystemReportV0(report) {
     `    governance: mutation ${r.lifeOsV01?.governance?.mutationPermitted ? "on" : "off"} · ${r.lifeOsV01?.governance?.governanceMode ?? "—"}`,
     `    academy parity: go ${r.lifeOsV01?.academy?.goParity ? "✔" : "◐"} · checkers ${r.lifeOsV01?.academy?.checkersParity ? "✔" : "◐"}`,
     `    console: __rhizoh.lifeOsStatus()`,
+    "───────────────────────────────────────────",
+    "  STUDIO VISIBILITY",
+    `    life os: ${r.studioVisibility?.lifeOsStatus ?? "—"} · memory ${r.studioVisibility?.memoryNodeCount ?? 0} · climate ${r.studioVisibility?.climateLabel ?? "—"}`,
+    `    fusion seq: ${r.studioVisibility?.fusionSeq ?? 0} · academy ${r.studioVisibility?.academyUnionLabel ?? "—"} · learning armed ${r.studioVisibility?.armedLearningCount ?? 0}/3`,
+    `    console: __rhizoh.studioVisibility() · Studio drawer Life Memory panel`,
     "───────────────────────────────────────────",
     "  EPISTEMIC SUBSTRATE",
     `    turn sovereignty: ${r.epistemicSubstrate?.turnSovereignty?.sovereignReality ?? "none"} (${r.epistemicSubstrate?.turnSovereignty?.enforcement ?? "log_only"})`,

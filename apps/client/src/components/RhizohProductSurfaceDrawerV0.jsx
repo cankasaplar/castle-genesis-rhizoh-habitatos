@@ -23,6 +23,7 @@ import {
   RHIZOH_UI_Z_INDEX_V0
 } from "../rhizoh/runtime/rhizohUiLayoutResolverV0.js";
 import { RhizohGreenroomWaitingPanelV0 } from "./RhizohGreenroomWaitingPanelV0.jsx";
+import { RhizohStudioLifeMemoryPanelV0 } from "./RhizohStudioLifeMemoryPanelV0.jsx";
 
 const PROFILE_OBS_TABS_V0 = Object.freeze([
   { id: "reality", label: "Reality" },
@@ -77,14 +78,14 @@ const USER_OUTCOME_COPY_V0 = Object.freeze({
     tr: Object.freeze({
       eyebrow: "Beta kapsamı",
       title: "Stüdyo durumu",
-      body: "Stüdyo bu sürümde üretim motoru gibi davranmaz. Kullanıcıya yalnızca durum, profil ve güvenli inceleme bağlantıları gösterilir.",
-      outcomes: Object.freeze(["Robotics cihaz köprüsü", "Stüdyo üretim durumu", "Gözlem kayıtları"])
+      body: "Stüdyo bu sürümde üretim motoru gibi davranmaz. Yaşam hafızası gözlem paneli, durum ve güvenli inceleme bağlantıları gösterilir.",
+      outcomes: Object.freeze(["Yaşam hafızası paneli", "Robotics cihaz köprüsü", "Gözlem kayıtları"])
     }),
     en: Object.freeze({
       eyebrow: "Beta scope",
       title: "Studio status",
-      body: "Studio does not behave like a production engine in this build. Users see status, profile, and safe inspection links only.",
-      outcomes: Object.freeze(["Robotics device bridge", "Studio production status", "Observation records"])
+      body: "Studio does not behave like a production engine in this build. Life Memory observation panel, status, and safe inspection links.",
+      outcomes: Object.freeze(["Life Memory panel", "Robotics device bridge", "Observation records"])
     })
   })
 });
@@ -206,6 +207,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
               </p>
             ) : null}
             <LayerTransitionNav activeLayer="robotics" locale={locale} />
+            <RhizohStudioLifeMemoryPanelV0 uiLocale={locale} />
             <RhizohStudioSecuritySharingPanelV0 uiLocale={locale} gatewayOrigin={gatewayOrigin} />
             <RuntimeHealthPanel health={runtimeHealth} gatewayBaseUrl={gatewayOrigin} />
             <QuickLinks
