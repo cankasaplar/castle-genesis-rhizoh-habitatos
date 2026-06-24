@@ -17,8 +17,11 @@ Prod log verified: chess cluster + academy union sufficient for first capture.
 ```javascript
 __rhizoh.chessObservationShort001()
 __rhizoh.chessObservationShort001({ locale: "tr" })
-await __rhizoh.copyChessObservationBrief()
+await __rhizoh.copyChessObservationBrief({ locale: "tr" })
+__rhizoh.printChessObservationBrief({ locale: "tr" })  // DevTools-safe — no clipboard
 ```
+
+**DevTools note:** If clipboard throws `NotAllowedError` (tab unfocused), `copyChessObservationBrief` falls back to download or `console.log` — never throws. Use `printChessObservationBrief()` from console.
 
 ## Shot list (60s)
 
