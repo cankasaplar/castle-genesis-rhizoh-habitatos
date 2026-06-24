@@ -19,16 +19,18 @@ import {
 } from "../worldSpaceMediaChannelsV0.js";
 
 describe("worldSpaceMediaChannelsV0", () => {
-  it("lists full media channel pack (11 rows) including optional holding fallbacks", () => {
+  it("lists full media channel pack (13 rows) including go and checkers academy", () => {
     const rows = listWorldSpaceMediaChannelsV0();
     const ids = rows.map((r) => r.id);
-    expect(ids).toHaveLength(11);
+    expect(ids).toHaveLength(13);
     expect(ids[0]).toBe("castle_genesis");
     expect(ids).toContain(RHIZOH_LEARNING_CHANNEL_ID_V0);
     expect(ids).toContain(RHIZOH_WORLDSPORTS_CHANNEL_ID_V0);
     expect(ids).toContain(RHIZOH_WORLD_NEWS_CHANNEL_ID_V0);
     expect(ids).toContain("castle_genesis_live");
     expect(ids).toContain("castle_chess");
+    expect(ids).toContain("castle_go");
+    expect(ids).toContain("castle_checkers");
     expect(ids).toContain("castle_architecture");
     expect(ids).toContain("castle_manifesto_trim");
     expect(ids).toContain("nasa");
@@ -58,6 +60,8 @@ describe("worldSpaceMediaChannelsV0", () => {
     expect(resolveInitialWorldSpaceMediaChannelIdV0("map:node:worldsports")).toBe(
       RHIZOH_WORLDSPORTS_CHANNEL_ID_V0
     );
+    expect(resolveInitialWorldSpaceMediaChannelIdV0("map:node:go")).toBe("castle_go");
+    expect(resolveInitialWorldSpaceMediaChannelIdV0("map:node:checkers")).toBe("castle_checkers");
     expect(resolveInitialWorldSpaceMediaChannelIdV0("map:node:worldnews")).toBe(
       RHIZOH_WORLD_NEWS_CHANNEL_ID_V0
     );
@@ -132,10 +136,19 @@ describe("worldSpaceMediaChannelsV0", () => {
     expect(ch.titleEn).toBe("WorldSports");
   });
 
+  it("castle go and checkers use holding slides without VOD env", () => {
+    const go = resolveWorldSpaceMediaChannelV0("castle_go");
+    const checkers = resolveWorldSpaceMediaChannelV0("castle_checkers");
+    expect(go.holdingSlide).toContain("go-embed-slide");
+    expect(checkers.holdingSlide).toContain("checkers-embed-slide");
+  });
+
   it("channel pack snapshot exposes env keys", () => {
     const snap = getWorldSpaceMediaChannelPackSnapshotV0();
     expect(snap).toHaveProperty("channelCount");
-    expect(snap.channelCount).toBe(11);
+    expect(snap.channelCount).toBe(13);
+    expect(snap).toHaveProperty("goVideoId");
+    expect(snap).toHaveProperty("checkersVideoId");
     expect(snap).toHaveProperty("fullEmbedEndSec");
   });
 });
