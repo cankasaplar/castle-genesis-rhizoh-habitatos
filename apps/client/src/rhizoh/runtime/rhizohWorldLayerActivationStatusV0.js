@@ -8,6 +8,7 @@ import { isWorldLayerEnabled } from "./castleWorldLayerGateV0.js";
 import { getWorldExecutionModeV0 } from "./worldExecutionGateV0.js";
 import { getSpatialReadyGateSnapshotV0 } from "./rhizohSpatialReadyGateV0.js";
 import { listSpatialNodesV0 } from "./rhizohSpatialNodeLayerV0.js";
+import { getSpatialWorldSyncSnapshotV0 } from "./spatialWorldSyncV0.js";
 
 export const RHIZOH_WORLD_LAYER_ACTIVATION_SCHEMA_V0 = "rhizoh.world_layer_activation.v0";
 
@@ -34,6 +35,7 @@ export function resolveWorldLayerActivationStatusV0() {
   const worldLayerEnabled = isWorldLayerEnabled();
   const executionMode = getWorldExecutionModeV0();
   const gate = getSpatialReadyGateSnapshotV0();
+  const worldSync = getSpatialWorldSyncSnapshotV0();
   const cesiumTarget = readEnvFlagV0("VITE_CESIUM_WORLD_PROJECTION_BIND");
   const ontologicalGate = readEnvFlagV0("VITE_ONTOLOGICAL_BOOT_GATE");
   const closedAdmission = readEnvFlagV0("VITE_RHIZOH_CLOSED_ADMISSION");
@@ -73,6 +75,11 @@ export function resolveWorldLayerActivationStatusV0() {
     spatialNodeCount: nodeCount,
     rendererReady: gate.cesiumReady === true,
     spatialGateOpen: gate.open === true,
+    worldSync: Object.freeze({
+      worldSyncActive: worldSync.worldSyncActive,
+      adapterAlive: worldSync.adapterAlive,
+      ready: worldSync.ready
+    }),
     narrative:
       phase === WORLD_LAYER_PHASE_V0.LEGAL_HOLD
         ? "Spatial surface held — legal / READY-HOLD activation gate"
