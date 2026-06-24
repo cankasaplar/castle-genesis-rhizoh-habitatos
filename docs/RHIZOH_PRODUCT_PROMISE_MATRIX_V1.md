@@ -60,7 +60,7 @@ See [`RHIZOH_LIFE_OS_V0_1_CLOSURE_NOTE.md`](RHIZOH_LIFE_OS_V0_1_CLOSURE_NOTE.md)
 | **World Bridge** | Calendar / media / activity → life memory | ✔ 3 lanes, fusion, memory graph | `ingestCalendarEvent`, `ingestMediaEvent`, `ingestUserActivity` | console / future sync | Observation only |
 | **Life Shadow** | Day A/B counterfactual | ✔ calendar + media branches | `lifeShadowDayBranches()` | ingest + compare | Observation only |
 | **Habitat climate** | Behavior / learning climate labels | ◐ session_v0 pattern engine | `habitatClimate()` | ingest + compare | Observation only |
-| **Life OS status** | Honest closure snapshot | ◐ wire pending | `lifeOsStatus()` | console | Observation only |
+| **Life OS status** | Honest closure snapshot | ✔ runtime observability | `lifeOsStatus()` | console | Observation only |
 | **WorldSports** | Live scores + map pins + media tube | ◐ feed + pin + tube wire | `API_SPORTS_KEY` (gateway), optional YouTube VOD | pin / voice / tube | Gateway |
 | **World News** | Headline strip + feed | ◐ gateway feed | gateway world-feed | tube channel | Gateway |
 | **Castle Genesis media** | YouTube live + short honest clips | ✔ embed + channels SSOT | `VITE_CASTLE_GENESIS_YOUTUBE_*` | media tube | Prod |

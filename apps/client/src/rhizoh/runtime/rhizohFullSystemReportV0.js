@@ -82,6 +82,7 @@ import { getMediaFeedbackObservationLoopSnapshotV0 } from "./mediaFeedbackObserv
 import { getWorldBridgeShadowTraceBridgeSnapshotV0 } from "./worldBridgeShadowTraceBridgeV0.js";
 import { buildHabitatClimateSnapshotV0 } from "./habitatClimatePatternEngineV0.js";
 import { buildRhizohAcademyLearningUnionReportV0 } from "./rhizohAcademyLearningUnionReportV0.js";
+import { buildLifeOsV01StatusSnapshotV0 } from "./lifeOsV01StatusV0.js";
 
 export const RHIZOH_FULL_SYSTEM_REPORT_SCHEMA_V0 = "rhizoh.full_system_report.v0";
 
@@ -724,6 +725,33 @@ function collectWorldBridgeDiagnosticV0() {
 }
 
 /**
+ * Life OS v0.1 closure — honest observability snapshot.
+ * @returns {object}
+ */
+function collectLifeOsV01DiagnosticV0() {
+  const status = buildLifeOsV01StatusSnapshotV0();
+  const rhizoh = typeof window !== "undefined" ? window.__rhizoh : null;
+
+  return Object.freeze({
+    schema: "rhizoh.full_system_report.life_os_v0_1.v0",
+    interpretationOnly: true,
+    nonExecutive: true,
+    status: status.status,
+    honestLabel: status.honestLabel,
+    worldBridge: status.worldBridge,
+    habitatClimate: status.habitatClimate,
+    governance: status.governance,
+    academy: status.academy,
+    scopeDelivered: status.scope.delivered,
+    scopeExcluded: status.scope.excluded,
+    surfaceBound: Object.freeze({
+      lifeOsStatus: typeof rhizoh?.lifeOsStatus === "function"
+    }),
+    consoleApi: "__rhizoh.lifeOsStatus()"
+  });
+}
+
+/**
  * Academy learning union — chess + go + checkers discipline digests.
  * @returns {object}
  */
@@ -947,6 +975,7 @@ export function runFullSystemReportV0(opts = {}) {
   const networkSurface = collectNetworkSurfaceDiagnosticV0();
   const worldBridge = collectWorldBridgeDiagnosticV0();
   const academyLearning = collectAcademyLearningDiagnosticV0();
+  const lifeOsV01 = collectLifeOsV01DiagnosticV0();
 
   const integrityTiers = buildSystemIntegrityTiersV0({
     causalMap,
@@ -1008,6 +1037,7 @@ export function runFullSystemReportV0(opts = {}) {
     networkSurface,
     worldBridge,
     academyLearning,
+    lifeOsV01,
     evaluation: Object.freeze({
       structuralTruthPass: causalMap.truthLoss?.structuralPass !== false,
       structuralPass: integrityTiers.structuralPass,
@@ -1169,6 +1199,14 @@ export function printFullSystemReportV0(report) {
     `    moves: chess ${r.academyLearning?.disciplines?.chess?.movesSeen ?? 0} · go ${r.academyLearning?.disciplines?.go?.movesSeen ?? 0} · checkers ${r.academyLearning?.disciplines?.checkers?.movesSeen ?? 0} · total ${r.academyLearning?.totalMovesSeen ?? 0}`,
     `    batches: total ${r.academyLearning?.totalBatchesFlushed ?? 0}`,
     `    console: __rhizoh.academyLearningUnion() · await __rhizoh.wireAcademyLearningUnion({ demoMove: true })`,
+    "───────────────────────────────────────────",
+    "  LIFE OS v0.1",
+    `    status: ${r.lifeOsV01?.status ?? "—"} · ${r.lifeOsV01?.honestLabel ?? ""}`,
+    `    world bridge: cal ${r.lifeOsV01?.worldBridge?.calendarEvents ?? 0} · media ${r.lifeOsV01?.worldBridge?.mediaEvents ?? 0} · memory ${r.lifeOsV01?.worldBridge?.memoryNodeCount ?? 0}`,
+    `    habitat: ${r.lifeOsV01?.habitatClimate?.climateLabel ?? "—"} · branch ${r.lifeOsV01?.habitatClimate?.dominantBranch ?? "—"}`,
+    `    governance: mutation ${r.lifeOsV01?.governance?.mutationPermitted ? "on" : "off"} · ${r.lifeOsV01?.governance?.governanceMode ?? "—"}`,
+    `    academy parity: go ${r.lifeOsV01?.academy?.goParity ? "✔" : "◐"} · checkers ${r.lifeOsV01?.academy?.checkersParity ? "✔" : "◐"}`,
+    `    console: __rhizoh.lifeOsStatus()`,
     "───────────────────────────────────────────",
     "  EPISTEMIC SUBSTRATE",
     `    turn sovereignty: ${r.epistemicSubstrate?.turnSovereignty?.sovereignReality ?? "none"} (${r.epistemicSubstrate?.turnSovereignty?.enforcement ?? "log_only"})`,
