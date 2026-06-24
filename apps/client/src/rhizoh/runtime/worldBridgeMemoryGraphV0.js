@@ -3,6 +3,8 @@
  * Interpretation-only projection; no execution authority; no WAL write.
  */
 
+import { projectWorldBridgeShadowToLedgerV0 } from "./worldBridgeShadowTraceBridgeV0.js";
+
 export const WORLD_BRIDGE_MEMORY_GRAPH_SCHEMA_V0 = "castle.rhizoh.world_bridge_memory_graph.v0";
 
 const MAX_NODES_V0 = 256;
@@ -51,7 +53,7 @@ export function writeWorldBridgeMemoryNodeV0(row) {
  */
 export function recordWorldBridgeShadowMemoryV0(shadowEntry, source) {
   const shadow = shadowEntry?.shadow || {};
-  return writeWorldBridgeMemoryNodeV0({
+  const node = writeWorldBridgeMemoryNodeV0({
     source,
     sourceId:
       shadowEntry?.eventId || shadowEntry?.mediaId || shadowEntry?.activityId || null,
@@ -61,6 +63,8 @@ export function recordWorldBridgeShadowMemoryV0(shadowEntry, source) {
     outcomeScore01: shadow.outcomeScore01 ?? shadow.attentionScore01 ?? null,
     foxSignals: shadowEntry?.foxSignals || null
   });
+  const ledgerProjection = projectWorldBridgeShadowToLedgerV0(shadowEntry, source);
+  return Object.freeze({ node, ledgerProjection });
 }
 
 export function listWorldBridgeMemoryNodesV0(opts = {}) {
