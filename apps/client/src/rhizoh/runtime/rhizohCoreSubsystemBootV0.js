@@ -35,6 +35,7 @@ import { ensureWorldSportsMediaTubeDevToolsV0 } from "./worldSportsMediaTubeWire
 import { ensureGoLearningMediaTubeDevToolsV0 } from "./goLearningMediaTubeWireV0.js";
 import { ensureRhizohGoLearningReportV0 } from "./rhizohGoLearningReportV0.js";
 import { ensureRhizohGoLearningCameraV0 } from "./rhizohGoLearningCameraV0.js";
+import { ensureGoKataGoGtpBridgeDevToolsV0, prewarmGoKataGoEngineV0 } from "./goKataGoGtpBridgeV0.js";
 import { ensureCheckersLearningMediaTubeDevToolsV0 } from "./checkersLearningMediaTubeWireV0.js";
 import { ensureRhizohCheckersLearningReportV0 } from "./rhizohCheckersLearningReportV0.js";
 import { ensureRhizohCheckersLearningCameraV0 } from "./rhizohCheckersLearningCameraV0.js";
@@ -130,6 +131,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureGoLearningMediaTubeDevToolsV0();
     ensureRhizohGoLearningReportV0();
     ensureRhizohGoLearningCameraV0();
+    ensureGoKataGoGtpBridgeDevToolsV0();
     ensureCheckersLearningMediaTubeDevToolsV0();
     ensureRhizohCheckersLearningReportV0();
     ensureRhizohCheckersLearningCameraV0();
@@ -159,6 +161,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
 
   void prewarmChessStockfishEngineV0();
   void prewarmChessLc0EngineV0();
+  void prewarmGoKataGoEngineV0();
 
   const startChessClusterAfterPrewarmV0 = () => {
     chessClusterBootArmedV0 = true;
