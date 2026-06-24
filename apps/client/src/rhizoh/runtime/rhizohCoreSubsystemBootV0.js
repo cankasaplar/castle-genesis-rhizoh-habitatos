@@ -32,6 +32,9 @@ import { ensureWorldBridgeMemoryGraphDevToolsV0 } from "./worldBridgeMemoryGraph
 import { ensureSpatialRendererRegistryDevToolsV0 } from "./rhizohSpatialSurfaceRendererRegistryV0.js";
 import { ensureWorldLayerActivationDevToolsV0 } from "./rhizohWorldLayerActivationStatusV0.js";
 import { ensureWorldSportsMediaTubeDevToolsV0 } from "./worldSportsMediaTubeWireV0.js";
+import { ensureGoLearningMediaTubeDevToolsV0 } from "./goLearningMediaTubeWireV0.js";
+import { ensureRhizohGoLearningReportV0 } from "./rhizohGoLearningReportV0.js";
+import { ensureRhizohGoLearningCameraV0 } from "./rhizohGoLearningCameraV0.js";
 import { ensureRhizohChessLifetimeReportV0 } from "./rhizohChessLifetimeReportV0.js";
 import { ensureChessHistoryBrainV0 } from "./chessHistoryBrainReportV0.js";
 import { ensureRhizohChessEvolutionCurveV0 } from "./rhizohChessEvolutionCurveV0.js";
@@ -121,6 +124,9 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureSpatialRendererRegistryDevToolsV0();
     ensureWorldLayerActivationDevToolsV0();
     ensureWorldSportsMediaTubeDevToolsV0();
+    ensureGoLearningMediaTubeDevToolsV0();
+    ensureRhizohGoLearningReportV0();
+    ensureRhizohGoLearningCameraV0();
     ensureRhizohChessLifetimeReportV0();
     ensureChessHistoryBrainV0();
     ensureRhizohChessEvolutionCurveV0();
