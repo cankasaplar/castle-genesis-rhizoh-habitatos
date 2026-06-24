@@ -28,6 +28,7 @@ import {
 } from "./genesisHubQueryContextV1.js";
 import { RhizohInterpretationOpsPanel } from "../rhizoh/ops/RhizohInterpretationOpsPanel.jsx";
 import { RhizohStudioLifeMemoryPanelV0 } from "../components/RhizohStudioLifeMemoryPanelV0.jsx";
+import { RhizohStudioEightCameraDashboardV0 } from "../components/RhizohStudioEightCameraDashboardV0.jsx";
 
 /** @typedef {"stream" | "replay" | "evolution"} GenesisObserveMode */
 
@@ -428,6 +429,14 @@ export default function GenesisObservabilityHubPage() {
             <span className="font-mono text-white/55">temporal-field-map</span>.
           </p>
           <GenesisTemporalFieldMapV01 gatewayOrigin={gatewayOrigin} hubQueryContext={hubQueryContext} lastSeq={streamTel.lastSeq} />
+        </section>
+
+        <section id="hub-studio-dashboard" className="rounded-xl border border-cyan-500/20 bg-cyan-950/10 p-3">
+          <SectionTitle k="A0b">Studio · 8 Camera Dashboard</SectionTitle>
+          <p className="mb-2 text-[9px] leading-relaxed text-white/40 normal-case">
+            Memory · Habitat · Chess · Go · Checkers · Academy · WorldSports · Spatial — aynı ekranda.
+          </p>
+          <RhizohStudioEightCameraDashboardV0 uiLocale="tr" />
         </section>
 
         <section id="hub-life-memory" className="rounded-xl border border-violet-500/20 bg-violet-950/10 p-3">

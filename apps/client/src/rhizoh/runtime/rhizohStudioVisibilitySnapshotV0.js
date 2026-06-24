@@ -23,6 +23,7 @@ import { buildRhizohCheckersLearningCameraV0 } from "./rhizohCheckersLearningCam
 import { buildRhizohAcademyLearningUnionReportV0 } from "./rhizohAcademyLearningUnionReportV0.js";
 import { getWorldSportsTubeSnapshotV0 } from "./worldSportsMediaTubeWireV0.js";
 import { resolveWorldLayerActivationStatusV0 } from "./rhizohWorldLayerActivationStatusV0.js";
+import { isChessGameClusterRunningV0 } from "./chessGameClusterV0.js";
 
 export const RHIZOH_STUDIO_VISIBILITY_SCHEMA_V0 = "castle.rhizoh.studio_visibility.v0";
 
@@ -105,11 +106,13 @@ export function buildRhizohStudioVisibilitySnapshotV0() {
 
   const worldSports = getWorldSportsTubeSnapshotV0();
   const worldLayer = resolveWorldLayerActivationStatusV0();
+  const chessClusterRunning = isChessGameClusterRunningV0();
 
   const eightCameras = Object.freeze({
     chess_arena: Object.freeze({
       id: "chess_arena",
-      armed: learningCameras.chess.armed,
+      armed: learningCameras.chess.armed || chessClusterRunning,
+      clusterRunning: chessClusterRunning,
       movesSeen: learningCameras.chess.movesSeen
     }),
     go_arena: Object.freeze({

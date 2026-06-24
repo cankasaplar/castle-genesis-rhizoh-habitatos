@@ -141,23 +141,11 @@ export const RhizohStudioLifeMemoryPanelV0 = memo(function RhizohStudioLifeMemor
               label={tr ? "Akademi birliği" : "Academy union"}
               value={`${snap.academyUnion.unionLabel} · ${snap.academyUnion.totalMovesSeen} moves`}
             />
-            <p className="text-[8px] uppercase tracking-wider text-white/40">
-              {tr ? "8 kamera" : "8 cameras"}
+            <p className="text-[8px] text-white/40">
+              {tr
+                ? "8 kamera paneli yukarıda · detay için sekmeleri kullan"
+                : "8-camera grid above · use tabs for detail"}
             </p>
-            <div className="flex flex-wrap gap-1">
-              {Object.values(snap.eightCameras || {}).map((cam) => (
-                <span
-                  key={cam.id}
-                  className={`rounded border px-1.5 py-0.5 text-[7px] font-mono uppercase ${
-                    cam.armed
-                      ? "border-violet-400/40 bg-violet-500/15 text-violet-100"
-                      : "border-white/10 bg-white/5 text-white/40"
-                  }`}
-                >
-                  {cam.id.replace(/_/g, " ")} {cam.armed ? "●" : "○"}
-                </span>
-              ))}
-            </div>
           </div>
         ) : null}
 

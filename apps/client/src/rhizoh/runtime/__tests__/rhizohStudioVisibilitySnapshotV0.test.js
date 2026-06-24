@@ -33,6 +33,7 @@ describe("buildRhizohStudioVisibilitySnapshotV0", () => {
     expect(snap.learningCameras.go.discipline).toBe("go");
     expect(snap.learningCameras.checkers.discipline).toBe("checkers");
     expect(Object.keys(snap.eightCameras).sort()).toEqual([...STUDIO_EIGHT_CAMERA_IDS_V0].sort());
+    expect(snap.eightCameras.chess_arena).toHaveProperty("clusterRunning");
     expect(["ACHIEVED", "DORMANT"]).toContain(snap.lifeOsStatus);
   });
 });
