@@ -15,20 +15,40 @@ Rhizoh is **not** a Life OS executive. It is a **World Bridge observation layer*
 | 3 | World Bridge Memory Layer | Memory tab + demo seed | `studioDemoSeed()` |
 | 4 | Habitat Climate Engine | Climate tab | `habitatClimate()` |
 
+### Short #001 — Rhizoh Chess Observation
+
+**Format:** 60s vertical short · capture from Studio dashboard + chess arena.
+
+```
+Opening (5s) — "Rhizoh observes, does not execute"
+↓
+31-move learning session (20s) — chess tile ● live + arena
+↓
+Drift observations (10s) — learning report digest
+↓
+Memory formation (10s) — demo seed or live memory tab
+↓
+Habitat shift (10s) — climate label if present
+↓
+Close (5s) — honest disclaimer
+```
+
+**Capture:** Studio drawer dashboard · `/world/space?channel=chess` · `academyLearningUnion()`.
+
 **Bonus:** Go + Checkers cameras · Academy union · Fusion timeline.
 
 ## 8-camera capture map
 
 | Camera | Studio tab | Episode |
 |--------|------------|---------|
-| Chess Arena | Learning | 2 |
-| Go Arena | Learning | 2b |
-| Checkers Arena | Learning | 2c |
-| Habitat | Climate | 4 |
-| Memory | Memory | 3 |
-| Academy | Overview | 1 |
-| WorldSports | Overview (partial) | Future |
-| Spatial | — | Legal hold · deferred |
+| Chess Arena | Dashboard · Learning | 2 · Short #001 |
+| Go Arena | Dashboard · Learning | 2b |
+| Checkers Arena | Dashboard · Learning | 2c |
+| Habitat | Dashboard · Climate | 4 |
+| Memory | Dashboard · Memory | 3 |
+| Academy | Dashboard · Overview | 1 |
+| WorldSports | Dashboard (partial) | Future |
+| Spatial | Dashboard (held) | Legal hold · deferred |
 
 ## Honest disclaimer (every video)
 

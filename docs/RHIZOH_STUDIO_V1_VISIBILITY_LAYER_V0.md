@@ -37,8 +37,9 @@ All panels: `interpretationOnly: true` · no executive affordances.
 ## Insertion points
 
 1. **Studio drawer** (`RhizohProductSurfaceDrawerV0` · `surface === "studio"`) — primary P0
-2. **Academy observe** (`/academy/observe`) — secondary handoff
-3. **Console** — `__rhizoh.studioVisibility()` for investor demo
+2. **Studio Dashboard** (`RhizohStudioEightCameraDashboardV0`) — 2×4 camera grid above Life Memory panel
+3. **Academy observe** (`/academy/observe`) — secondary handoff
+4. **Console** — `__rhizoh.studioVisibility()` for investor demo
 
 ## PR chain
 
@@ -59,8 +60,9 @@ All panels: `interpretationOnly: true` · no executive affordances.
 ## Prod smoke (after wire)
 
 1. Open **Studio** bottom drawer (shell bar)
-2. See **Life Memory** panel with status ACHIEVED
-3. Switch tabs: Memory · Habitat · Fusion · Learning
-4. Console: `__rhizoh.studioVisibility()`
+2. See **Studio dashboard** — 8-camera grid with chess ● when cluster running
+3. See **Life Memory** panel with status ACHIEVED
+4. Switch tabs: Memory · Habitat · Fusion · Learning
+5. Console: `__rhizoh.studioVisibility()`
 
 *Observation ≠ Execution*
