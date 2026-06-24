@@ -435,6 +435,7 @@ export default function GenesisObservabilityHubPage() {
           <SectionTitle k="A0b">Studio · 8 Camera Dashboard</SectionTitle>
           <p className="mb-2 text-[9px] leading-relaxed text-white/40 normal-case">
             Memory · Habitat · Chess · Go · Checkers · Academy · WorldSports · Spatial — aynı ekranda.
+            Tarayıcıdaki &quot;No available adapters&quot; uyarısı WebGPU probudur; Studio adapter registry ayrıdır.
           </p>
           <RhizohStudioEightCameraDashboardV0 uiLocale="tr" />
         </section>
