@@ -27,6 +27,7 @@ import {
   buildGenesisContinuityEventArchiveQueryUrl
 } from "./genesisHubQueryContextV1.js";
 import { RhizohInterpretationOpsPanel } from "../rhizoh/ops/RhizohInterpretationOpsPanel.jsx";
+import { RhizohStudioLifeMemoryPanelV0 } from "../components/RhizohStudioLifeMemoryPanelV0.jsx";
 
 /** @typedef {"stream" | "replay" | "evolution"} GenesisObserveMode */
 
@@ -427,6 +428,14 @@ export default function GenesisObservabilityHubPage() {
             <span className="font-mono text-white/55">temporal-field-map</span>.
           </p>
           <GenesisTemporalFieldMapV01 gatewayOrigin={gatewayOrigin} hubQueryContext={hubQueryContext} lastSeq={streamTel.lastSeq} />
+        </section>
+
+        <section id="hub-life-memory" className="rounded-xl border border-violet-500/20 bg-violet-950/10 p-3">
+          <SectionTitle k="A0">Life Memory · World Bridge</SectionTitle>
+          <p className="mb-2 text-[9px] leading-relaxed text-white/40 normal-case">
+            Observation-only — user behavior → memory graph → habitat climate. Not executive Life OS.
+          </p>
+          <RhizohStudioLifeMemoryPanelV0 uiLocale="tr" />
         </section>
 
         <section id="hub-interpretation-ops" className="rounded-xl border border-amber-500/12 bg-amber-950/8 p-3">
