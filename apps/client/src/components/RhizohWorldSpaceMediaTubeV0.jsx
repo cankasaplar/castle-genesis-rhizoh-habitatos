@@ -48,6 +48,9 @@ import {
   wireCheckersLearningMediaTubeV0
 } from "../rhizoh/runtime/checkersLearningMediaTubeWireV0.js";
 import {
+  affirmActiveMediaPlayerGatewayCitizenV0
+} from "../rhizoh/runtime/mediaPlayerGatewayCitizenshipV0.js";
+import {
   RHIZOH_WORLDSPORTS_CHANNEL_ID_V0,
   RHIZOH_GO_LEARNING_CHANNEL_ID_V0,
   RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0

@@ -29,7 +29,7 @@ Modern real-time multiplayer systems typically enforce a **single centralized tr
 
 The system implements a **multi-stage authority arbitration model** with explicit observability phases (`MATCH_EVENT_APPENDED`, `MATCH_EVENT_VALIDATED`, `MATCH_EVENT_COMMITTED`, `MATCH_STATE_REDUCED`) and a **drift–reconciliation engine** that classifies shadow vs. committed divergence (`DRIFT_DETECTED`, `RECONCILIATION_APPLIED`, `DRIFT_RESOLVED`) instead of silently overwriting candidate states. Users are modeled as **observer nodes** in an epistemic stack: interpretation layers may influence understanding but do not hold execution authority over sealed subgraphs (v562–v570).
 
-We report **reproducible harness measurements** from the running prototype: deterministic replay equivalence (`produced state === replayed state`), successful single-writer boundary verification (`effectiveCommitWriter: server`, `commitAuthority: server` derived post-ack), and controlled drift injection with reconciliation recovery. We explicitly document **remaining product gaps**: live WebSocket fan-out (`broadcast_to_all_clients`), world/tower routing segmentation, and production-grade life-OS scheduling. **World Bridge Layer 2** (calendar, media, user-activity ingress with cross-space fusion, life-shadow counterfactuals, and **behavioral memory graph** nodes) is implemented as an **interpretation-only** stub — not authoritative daily-life OS integration. Production spatial surfaces may remain under **legal / READY-HOLD** (`activation_ready_hold_pending`) until counsel-approved data-plane activation.
+We report **reproducible harness measurements** from the running prototype: deterministic replay equivalence (`produced state === replayed state`), successful single-writer boundary verification (`effectiveCommitWriter: server`, `commitAuthority: server` derived post-ack), and controlled drift injection with reconciliation recovery. We explicitly document **remaining product gaps**: live WebSocket fan-out (`broadcast_to_all_clients`), world/tower routing segmentation, and production-grade life-OS scheduling. **World Bridge Layer 2** (calendar, media, user-activity ingress with cross-space fusion, life-shadow counterfactuals, **behavioral memory graph**, **session habitat climate**, and **interpretation-only governance**) achieved **Life OS v0.1 closure** as an observation layer — not executive daily-life OS integration. Production spatial surfaces may remain under **legal / READY-HOLD** (`activation_ready_hold_pending`) until counsel-approved data-plane activation.
 
 **Contribution:** (1) a testable **proposal–preview–commit** authority split with derived commit metadata; (2) an append-only **truth kernel** with reconciliation-tolerant simulation lanes; (3) operational verification hooks suitable for distributed-systems evaluation. **Not claimed:** solved consensus, production-grade C2C mesh, or general-purpose daily-life OS readiness.
 
@@ -262,6 +262,95 @@ flowchart TB
 2. **World router** — tower isolation, session mesh, identity routing  
 3. **Scheduler v2** — real-world tasks, AI assistant layer  
 4. **Media → event system** — playback as state machine on truth log  
+
+### 5.4 World Bridge Layer 2 & Life Memory (v0.1 closure)
+
+**Status (2026-06):** `ACHIEVED` as an **interpretation-only observation layer** — not a Life Operating System with executive authority.
+
+Rhizoh v0.1 closes a **Life Memory core** in production shadow: fragmented digital activity is ingested, fused, and projected into descriptive structures without mutating the data plane or scheduling the user's life.
+
+#### 5.4.1 World Bridge Layer 2
+
+Three ingress lanes are wired in the client runtime:
+
+| Lane | Ingress API | Shadow timeline | Fusion weight |
+|------|-------------|-----------------|---------------|
+| Calendar | `ingestCalendarEvent` | `calendarShadowTimeline` | Fox-axis calendar lane |
+| Media | `ingestMediaEvent` | `mediaShadowTimeline` | Fox-axis media lane |
+| User activity | `ingestUserActivity` | `userActivityShadowTimeline` | Fox-axis activity lane |
+
+Cross-space fusion (`fuseCrossSpaceEpistemic`) produces lane-weighted epistemic updates. Life-shadow **Day A / Day B** counterfactuals compare calendar and media branches (`lifeShadowDayBranches`). All lanes are **observation-only**: no WAL commit, no external calendar writeback.
+
+**Prod smoke (verified):**
+
+```javascript
+__rhizoh.ingestCalendarEvent({ title: "Focus block" })
+__rhizoh.ingestMediaEvent({ title: "Playhead", eventType: "playhead" })
+__rhizoh.lifeShadowDayBranches()
+```
+
+#### 5.4.2 Memory Graph
+
+`worldBridgeMemoryGraphV0` records **behavioral memory nodes** keyed by source (`calendar` · `media` · `user_activity`). Nodes carry shadow branch metadata and outcome scores; they feed fusion sequence counters and habitat climate evolution rings. Shadow entries may project to the authority ledger as **interpretation-only** ledger rows (`worldBridgeShadowWriteback`) — not authoritative life-state mutation.
+
+```javascript
+__rhizoh.worldBridgeMemory()
+__rhizoh.worldBridgeShadowWriteback()
+```
+
+#### 5.4.3 Habitat Climate (session v0)
+
+`habitatClimatePatternEngineV0` synthesizes three read-only lanes from existing World Bridge state:
+
+| Lane | Inputs | Output labels |
+|------|--------|---------------|
+| **pattern** | Day A/B share, memory by source | `dominantBranch`, `dayAShare01` |
+| **evolution** | fusion seq, lane presence, node count | `memoryNodeCount`, lane flags |
+| **identity** | admission verdict, governance mode | `climateLabel`, `inferenceEligible` |
+
+Horizon is honestly **session_v0** — not 90-day persistence. Prod validation: `climateLabel: continuity_dominant` after calendar + media ingest.
+
+```javascript
+__rhizoh.habitatClimate()
+```
+
+#### 5.4.4 Legal Hold Governance
+
+Production operates under **legal / READY-HOLD** gates:
+
+- `admissionVerdict: hold` · `mutationPermitted: false` · `governanceMode: shadow_production`
+- Ingress UI and spatial surfaces may remain frozen until counsel-approved READY
+- Data-plane WAL writes are blocked; client role is `reality_simulator`, not life executive
+
+`executionPermissionLayerV0` classifies actions (`observe` permitted · `mutate` blocked). Calendar action triggers and media feedback loops are **suggest-only** with `feedbackToExecution: false`.
+
+```javascript
+__rhizoh.executionPermission()
+__rhizoh.calendarActionTrigger({ title: "Focus", eventType: "scheduled" })
+__rhizoh.mediaFeedbackLoop({ eventType: "playhead", positionSec: 42 })
+```
+
+#### 5.4.5 Interpretation-Only Boundary
+
+**Agents may influence interpretation, never execution** (`OBSERVATION_FABRIC_V1`). Every World Bridge and Habitat artifact carries:
+
+- `interpretationOnly: true`
+- `nonExecutive: true`
+- No path from habitat climate or memory graph to admission mutation without explicit READY/HOLD lift
+
+This boundary is the scientific claim for Life OS v0.1: Rhizoh today is a **World Bridge observation layer**, not an autonomous scheduler.
+
+#### 5.4.6 Life OS v0.1 — explicit non-scope
+
+| Included (v0.1) | Not included |
+|-----------------|--------------|
+| World Bridge Layer 2 (3 lanes) | Autonomous scheduling |
+| Memory graph + shadow writeback projection | Executive decision engine |
+| Habitat climate (session) | Life automation |
+| Shadow governance + permission layer | 9-lane Habitat |
+| Interpretation-only boundary | Full spatial activation |
+
+See [`RHIZOH_LIFE_OS_V0_1_CLOSURE_NOTE.md`](../RHIZOH_LIFE_OS_V0_1_CLOSURE_NOTE.md) · [`RHIZOH_INVESTOR_APPENDIX_V1.md`](../outreach/RHIZOH_INVESTOR_APPENDIX_V1.md).
 
 ---
 
