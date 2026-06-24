@@ -115,9 +115,17 @@ export const RhizohAcademyLandingPageV0 = memo(function RhizohAcademyLandingPage
       <section style={cardStyle}>
         <h2 style={{ fontSize: 16, margin: "0 0 10px" }}>{copy.paperTitle}</h2>
         <p style={{ margin: "0 0 12px", lineHeight: 1.6, opacity: 0.9 }}>{copy.paperBody}</p>
-        <a href={copy.paperHref} style={INGRESS_SURFACE_V0.link} download>
-          {copy.paperCta}
-        </a>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+          <a href={copy.paperHref} style={INGRESS_SURFACE_V0.link} download>
+            {copy.paperCta}
+          </a>
+          <a href={copy.paperHtmlHref} style={INGRESS_SURFACE_V0.link} target="_blank" rel="noopener noreferrer">
+            {copy.paperReadCta}
+          </a>
+        </div>
+        <p style={{ margin: "10px 0 0", fontSize: 12, opacity: 0.7, fontFamily: "ui-monospace, monospace" }}>
+          {copy.paperConsoleHint}
+        </p>
       </section>
 
       <section style={cardStyle}>
