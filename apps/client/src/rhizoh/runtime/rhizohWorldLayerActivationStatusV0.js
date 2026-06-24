@@ -97,3 +97,8 @@ export function resolveWorldLayerActivationStatusV0() {
 
   return snap;
 }
+
+export function ensureWorldLayerActivationDevToolsV0() {
+  if (typeof window === "undefined") return null;
+  return resolveWorldLayerActivationStatusV0();
+}

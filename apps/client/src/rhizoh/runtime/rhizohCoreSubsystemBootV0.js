@@ -29,6 +29,8 @@ import { ensureMediaShadowTimelineDevToolsV0 } from "./mediaShadowTimelineV0.js"
 import { ensureUserActivityShadowTimelineDevToolsV0 } from "./userActivityShadowTimelineV0.js";
 import { ensureLifeShadowDayBranchDevToolsV0 } from "./lifeShadowDayBranchesV0.js";
 import { ensureWorldBridgeMemoryGraphDevToolsV0 } from "./worldBridgeMemoryGraphV0.js";
+import { ensureSpatialRendererRegistryDevToolsV0 } from "./rhizohSpatialSurfaceRendererRegistryV0.js";
+import { ensureWorldLayerActivationDevToolsV0 } from "./rhizohWorldLayerActivationStatusV0.js";
 import { ensureRhizohChessLifetimeReportV0 } from "./rhizohChessLifetimeReportV0.js";
 import { ensureChessHistoryBrainV0 } from "./chessHistoryBrainReportV0.js";
 import { ensureRhizohChessEvolutionCurveV0 } from "./rhizohChessEvolutionCurveV0.js";
@@ -115,6 +117,8 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureUserActivityShadowTimelineDevToolsV0();
     ensureLifeShadowDayBranchDevToolsV0();
     ensureWorldBridgeMemoryGraphDevToolsV0();
+    ensureSpatialRendererRegistryDevToolsV0();
+    ensureWorldLayerActivationDevToolsV0();
     ensureRhizohChessLifetimeReportV0();
     ensureChessHistoryBrainV0();
     ensureRhizohChessEvolutionCurveV0();
