@@ -26,7 +26,8 @@ describe("rhizohFullSystemReportV0 worldBridge", () => {
         ingestUserActivityEventV0(normalizeUserActivityEventV0(raw), { dispatchEvent: false }),
       fuseCrossSpaceEpistemic: () => null,
       calendarShadowTimeline: () => null,
-      mediaShadowTimeline: () => null
+      mediaShadowTimeline: () => null,
+      lifeShadowDayBranches: () => null
     };
   });
 
@@ -47,5 +48,7 @@ describe("rhizohFullSystemReportV0 worldBridge", () => {
     expect(wb.fusionLanes.calendarPresent).toBe(true);
     expect(wb.fusionLanes.userActivityPresent).toBe(true);
     expect(wb.surfaceBound.ingestUserActivity).toBe(true);
+    expect(wb.lifeShadowDayAb).toBeTruthy();
+    expect(wb.lifeShadowDayAb.dayA).toBe(1);
   });
 });
