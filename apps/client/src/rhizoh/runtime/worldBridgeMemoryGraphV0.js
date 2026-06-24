@@ -46,14 +46,15 @@ export function writeWorldBridgeMemoryNodeV0(row) {
 }
 
 /**
- * @param {object} shadowEntry — calendar or media shadow timeline entry
- * @param {"calendar"|"media"} source
+ * @param {object} shadowEntry — calendar, media, or user-activity shadow timeline entry
+ * @param {"calendar"|"media"|"user_activity"} source
  */
 export function recordWorldBridgeShadowMemoryV0(shadowEntry, source) {
   const shadow = shadowEntry?.shadow || {};
   return writeWorldBridgeMemoryNodeV0({
     source,
-    sourceId: shadowEntry?.eventId || shadowEntry?.mediaId || null,
+    sourceId:
+      shadowEntry?.eventId || shadowEntry?.mediaId || shadowEntry?.activityId || null,
     branchId: shadow.branchId || null,
     title: shadowEntry?.title || null,
     summary: shadow.narrative || null,

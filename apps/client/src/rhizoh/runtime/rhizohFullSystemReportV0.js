@@ -70,6 +70,7 @@ import { buildCalendarShadowTimelineViewV0 } from "./calendarShadowTimelineV0.js
 import { getMediaEventAdapterSnapshotV0 } from "./mediaEventAdapterV0.js";
 import { buildMediaShadowTimelineViewV0 } from "./mediaShadowTimelineV0.js";
 import { buildLifeShadowDayBranchComparisonV0 } from "./lifeShadowDayBranchesV0.js";
+import { buildUserActivityShadowTimelineViewV0 } from "./userActivityShadowTimelineV0.js";
 import { getUserActivityAdapterSnapshotV0 } from "./userActivityEventAdapterV0.js";
 import {
   getCrossSpaceFusionLaneAuditV0,
@@ -599,6 +600,7 @@ function collectWorldBridgeDiagnosticV0() {
   const userActivity = getUserActivityAdapterSnapshotV0();
   const calendarShadow = buildCalendarShadowTimelineViewV0();
   const mediaShadow = buildMediaShadowTimelineViewV0();
+  const userActivityShadow = buildUserActivityShadowTimelineViewV0();
   const lifeShadowDayAb = buildLifeShadowDayBranchComparisonV0();
   const fusion = getCrossSpaceFusionSnapshotV0();
   const laneAudit = getCrossSpaceFusionLaneAuditV0();
@@ -641,6 +643,12 @@ function collectWorldBridgeDiagnosticV0() {
       branches: mediaShadow.branches,
       consoleApi: "__rhizoh.mediaShadowTimeline()"
     }),
+    userActivityShadow: Object.freeze({
+      eventCount: userActivityShadow.eventCount,
+      avgBehaviorScore01: userActivityShadow.avgBehaviorScore01,
+      branches: userActivityShadow.branches,
+      consoleApi: "__rhizoh.userActivityShadowTimeline()"
+    }),
     lifeShadowDayAb: Object.freeze({
       dayA: lifeShadowDayAb.dayA.eventCount,
       dayB: lifeShadowDayAb.dayB.eventCount,
@@ -674,6 +682,7 @@ function collectWorldBridgeDiagnosticV0() {
       fuseCrossSpaceEpistemic: typeof rhizoh?.fuseCrossSpaceEpistemic === "function",
       calendarShadowTimeline: typeof rhizoh?.calendarShadowTimeline === "function",
       mediaShadowTimeline: typeof rhizoh?.mediaShadowTimeline === "function",
+      userActivityShadowTimeline: typeof rhizoh?.userActivityShadowTimeline === "function",
       lifeShadowDayBranches: typeof rhizoh?.lifeShadowDayBranches === "function"
     })
   });

@@ -11,6 +11,12 @@ import {
 } from "../mediaEventAdapterV0.js";
 import { resetCalendarShadowTimelineForTestV0 } from "../calendarShadowTimelineV0.js";
 import { resetMediaShadowTimelineForTestV0 } from "../mediaShadowTimelineV0.js";
+import { resetUserActivityShadowTimelineForTestV0 } from "../userActivityShadowTimelineV0.js";
+import {
+  ingestUserActivityEventV0,
+  normalizeUserActivityEventV0,
+  resetUserActivityAdapterForTestV0
+} from "../userActivityEventAdapterV0.js";
 import {
   getWorldBridgeMemoryGraphSnapshotV0,
   resetWorldBridgeMemoryGraphForTestV0
@@ -22,6 +28,8 @@ describe("worldBridgeMemoryGraphV0", () => {
     resetMediaEventAdapterForTestV0();
     resetCalendarShadowTimelineForTestV0();
     resetMediaShadowTimelineForTestV0();
+    resetUserActivityShadowTimelineForTestV0();
+    resetUserActivityAdapterForTestV0();
     resetWorldBridgeMemoryGraphForTestV0();
   });
 
@@ -38,5 +46,16 @@ describe("worldBridgeMemoryGraphV0", () => {
     const snap = getWorldBridgeMemoryGraphSnapshotV0();
     expect(snap.nodeCount).toBe(1);
     expect(snap.bySource.media).toBe(1);
+  });
+
+  it("records user activity shadow ingress into memory graph", () => {
+    ingestUserActivityEventV0(
+      normalizeUserActivityEventV0({ activityType: "focus", surface: "world_map" }),
+      { dispatchEvent: false }
+    );
+    const snap = getWorldBridgeMemoryGraphSnapshotV0();
+    expect(snap.nodeCount).toBe(1);
+    expect(snap.bySource.user_activity).toBe(1);
+    expect(snap.recent[0].source).toBe("user_activity");
   });
 });
