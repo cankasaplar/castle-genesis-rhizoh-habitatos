@@ -29,7 +29,7 @@ Modern real-time multiplayer systems typically enforce a **single centralized tr
 
 The system implements a **multi-stage authority arbitration model** with explicit observability phases (`MATCH_EVENT_APPENDED`, `MATCH_EVENT_VALIDATED`, `MATCH_EVENT_COMMITTED`, `MATCH_STATE_REDUCED`) and a **drift–reconciliation engine** that classifies shadow vs. committed divergence (`DRIFT_DETECTED`, `RECONCILIATION_APPLIED`, `DRIFT_RESOLVED`) instead of silently overwriting candidate states. Users are modeled as **observer nodes** in an epistemic stack: interpretation layers may influence understanding but do not hold execution authority over sealed subgraphs (v562–v570).
 
-We report **reproducible harness measurements** from the running prototype: deterministic replay equivalence (`produced state === replayed state`), successful single-writer boundary verification (`effectiveCommitWriter: server`, `commitAuthority: server` derived post-ack), and controlled drift injection with reconciliation recovery. We explicitly document **remaining product gaps**: live WebSocket fan-out (`broadcast_to_all_clients`), world/tower routing segmentation, and production-grade life-OS scheduling. **World Bridge Layer 2** (calendar, media, user-activity ingress with cross-space fusion and life-shadow counterfactuals) is implemented as an **interpretation-only** stub — not authoritative daily-life OS integration.
+We report **reproducible harness measurements** from the running prototype: deterministic replay equivalence (`produced state === replayed state`), successful single-writer boundary verification (`effectiveCommitWriter: server`, `commitAuthority: server` derived post-ack), and controlled drift injection with reconciliation recovery. We explicitly document **remaining product gaps**: live WebSocket fan-out (`broadcast_to_all_clients`), world/tower routing segmentation, and production-grade life-OS scheduling. **World Bridge Layer 2** (calendar, media, user-activity ingress with cross-space fusion, life-shadow counterfactuals, and **behavioral memory graph** nodes) is implemented as an **interpretation-only** stub — not authoritative daily-life OS integration. Production spatial surfaces may remain under **legal / READY-HOLD** (`activation_ready_hold_pending`) until counsel-approved data-plane activation.
 
 **Contribution:** (1) a testable **proposal–preview–commit** authority split with derived commit metadata; (2) an append-only **truth kernel** with reconciliation-tolerant simulation lanes; (3) operational verification hooks suitable for distributed-systems evaluation. **Not claimed:** solved consensus, production-grade C2C mesh, or general-purpose daily-life OS readiness.
 
@@ -61,7 +61,11 @@ Rhizoh asks: *what if we engineer for reconciliation rather than pretending dive
 
 - Not a replacement for Raft/PBFT consensus
 - Not proof of “multi-truth” in the philosophical sense — **one authoritative log** after arbitration
-- Not production-grade daily-life OS — **World Bridge v0** provides interpretation-only calendar/media/user-activity ingress, shadow timelines, and fusion lanes (`ingestCalendarEvent`, `ingestMediaEvent`, `ingestUserActivity`); external calendar/media sync and executive scheduling remain future work
+- Not production-grade daily-life OS — **World Bridge v0** provides interpretation-only calendar/media/user-activity ingress, shadow timelines, fusion lanes, and a **session memory graph** (`worldBridgeMemory`: `calendar` · `media` · `user_activity` sources); external calendar/media sync and executive scheduling remain future work
+
+### 1.4 Problem framing (product — non-executable)
+
+Rhizoh's motivating user problem is **digital life fragmentation**: calendar, chat, video, notes, games, and mail live in silos with no continuous model of *who the observer is becoming*. **Life OS** in product language means **continuous life memory** (time, learning, behavior, identity continuity) — not a literal "human operating system." **Habitat** denotes the long-horizon **climate** layer (patterns, evolution, identity drift) over many ingress lanes — today three lanes are wired (calendar, media, activity); climate synthesis remains specification-stage. See [`RHIZOH_PRODUCT_PROMISE_MATRIX_V1.md`](../RHIZOH_PRODUCT_PROMISE_MATRIX_V1.md).
 
 ---
 
@@ -245,7 +249,9 @@ flowchart TB
 
 | Subsystem | Today | Target |
 |-----------|-------|--------|
-| **World Bridge (Layer 2)** | Interpretation-only ingress: calendar · media · user activity → Fox-axis fusion + life-shadow Day A/B | External sync + executive scheduling |
+| **World Bridge (Layer 2)** | Interpretation-only ingress: calendar · media · user activity → Fox-axis fusion + life-shadow Day A/B + **memory graph** | External sync + executive scheduling |
+| **Academy (product)** | Chess learning reports + media channels; learning topology spec | Full coach learning map (e.g. basketball philosophy drift) |
+| **Habitat (product)** | 3-lane World Bridge observation | Multi-lane climate (pattern · evolution · identity) |
 | Media / YouTube | UI embed + `ingestMediaEvent` shadow timeline | Full `video_play` / `seek` / `pause` as truth events on `truth_log_v0` |
 | Scheduler | Game/simulation tasks | Game + learning + real-life + AI delegation |
 | Daily OS | Shadow counterfactuals only (`lifeShadowDayBranches`) | Life-OS scheduler v2 + external world sync |
