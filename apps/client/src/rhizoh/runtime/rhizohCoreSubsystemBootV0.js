@@ -50,6 +50,11 @@ import { ensureRhizohStudioVisibilityDevToolsV0 } from "./rhizohStudioVisibility
 import { ensureRhizohStudioDemoSeedDevToolsV0 } from "./rhizohStudioDemoSeedWireV0.js";
 import { ensureRhizohStudioObservationAdapterDevToolsV0 } from "./rhizohStudioObservationAdapterWireV0.js";
 import { ensureRhizohChessObservationShortDevToolsV0 } from "./rhizohChessObservationShortWireV0.js";
+import { ensureRhizohDirectorEngineDevToolsV0 } from "./rhizohDirectorEngineWireV0.js";
+import {
+  ensureRhizohWorldSportsObservationShortDevToolsV0,
+  startRhizohStudioWorldSportsFeedPollV0
+} from "./rhizohWorldSportsObservationShortWireV0.js";
 import { ensureRhizohChessLifetimeReportV0 } from "./rhizohChessLifetimeReportV0.js";
 import { ensureChessHistoryBrainV0 } from "./chessHistoryBrainReportV0.js";
 import { ensureRhizohChessEvolutionCurveV0 } from "./rhizohChessEvolutionCurveV0.js";
@@ -156,6 +161,9 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureRhizohStudioVisibilityDevToolsV0();
     ensureRhizohStudioObservationAdapterDevToolsV0();
     ensureRhizohChessObservationShortDevToolsV0();
+    ensureRhizohDirectorEngineDevToolsV0();
+    ensureRhizohWorldSportsObservationShortDevToolsV0();
+    startRhizohStudioWorldSportsFeedPollV0({ locale: "tr" });
     ensureRhizohStudioDemoSeedDevToolsV0();
     ensureRhizohChessLifetimeReportV0();
     ensureChessHistoryBrainV0();

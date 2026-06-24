@@ -52,6 +52,7 @@ Chrome `No available adapters` on `/academy/observe` = **WebGPU GPU probe** — 
 | Sprint 2 | YouTube short — Chess Observation #001 |
 | Sprint 3 | WorldSports feed → camera → YouTube |
 | Sprint 4 | Spatial / Cesium (legal hold lift) |
+| Director | `directorTimeline()` + Sora prompt stub — [`RHIZOH_DIRECTOR_ENGINE_V1.md`](RHIZOH_DIRECTOR_ENGINE_V1.md) |
 
 ## Honest framing
 

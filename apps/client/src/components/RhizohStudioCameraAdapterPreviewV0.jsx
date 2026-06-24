@@ -185,17 +185,36 @@ function AcademyUnionPreview({ frame, tr }) {
 
 /** @param {{ frame: object, tr: boolean }} props */
 function LiveFeedPreview({ frame, tr }) {
+  const chips = frame.recentChips || [];
   if (frame.feedEmpty) {
     return (
-      <p className="mt-1.5 rounded border border-dashed border-white/15 px-1.5 py-1 text-[7px] text-white/40">
-        {tr ? "besleme boş · iskelet hazır" : "feed empty · skeleton ready"}
-      </p>
+      <div className="mt-1.5 space-y-1">
+        <p className="rounded border border-dashed border-white/15 px-1.5 py-1 text-[7px] text-white/40">
+          {tr ? "besleme boş · gateway anahtarı gerek" : "feed empty · gateway keys required"}
+        </p>
+        <p className="text-[7px] text-amber-200/70">
+          {tr ? "wireWorldSportsTube()" : "wireWorldSportsTube()"}
+        </p>
+      </div>
     );
   }
   return (
-    <p className="mt-1.5 font-mono text-[8px] text-amber-100/90">
-      {frame.liveMatchCount} live · {frame.pinCount} pins
-    </p>
+    <div className="mt-1.5 space-y-1">
+      <p className="font-mono text-[8px] text-amber-100/90">
+        {frame.liveMatchCount} live · {frame.pinCount} pins
+      </p>
+      <div className="flex flex-wrap gap-0.5">
+        {chips.map((chip, i) => (
+          <span
+            key={`${chip.label}-${i}`}
+            className="max-w-[5rem] truncate rounded border border-amber-400/30 bg-amber-500/10 px-1 py-px text-[7px] text-amber-100"
+            title={chip.label}
+          >
+            {chip.label}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
