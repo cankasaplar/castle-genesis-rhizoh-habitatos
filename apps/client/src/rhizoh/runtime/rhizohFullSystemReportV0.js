@@ -83,6 +83,7 @@ import { getWorldBridgeShadowTraceBridgeSnapshotV0 } from "./worldBridgeShadowTr
 import { buildHabitatClimateSnapshotV0 } from "./habitatClimatePatternEngineV0.js";
 import { buildRhizohAcademyLearningUnionReportV0 } from "./rhizohAcademyLearningUnionReportV0.js";
 import { buildRhizohStudioVisibilitySnapshotV0 } from "./rhizohStudioVisibilitySnapshotV0.js";
+import { buildLifeOsV01StatusSnapshotV0 } from "./lifeOsV01StatusV0.js";
 
 export const RHIZOH_FULL_SYSTEM_REPORT_SCHEMA_V0 = "rhizoh.full_system_report.v0";
 

@@ -50,6 +50,8 @@ describe("rhizohFullSystemReportV0", () => {
     expect(report.domainCore).toBeTruthy();
     expect(report.truthTrace).toBeTruthy();
     expect(report.probe?.gates.length).toBe(FULL_SYSTEM_PROBE_ROUTES_V0.length);
+    expect(report.lifeOsV01?.status).toBeTruthy();
+    expect(report.lifeOsV01?.interpretationOnly).toBe(true);
   });
 
   it("prints report text with integrity tiers", () => {
