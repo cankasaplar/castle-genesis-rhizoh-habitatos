@@ -11,7 +11,8 @@ describe("academyFounderLandingCopyV0", () => {
   it("returns bilingual academy landing copy with paper href", () => {
     const en = getAcademyLandingCopyV0("en");
     const tr = getAcademyLandingCopyV0("tr");
-    expect(en.paperHref).toBe("/rhizoh/academic/paper-v0.1.pdf");
+    expect(en.paperHref).toBe("/rhizoh/academic/paper-v0.1.md");
+    expect(en.paperHtmlHref).toBe("/rhizoh/academic/paper-v0.1.html");
     expect(tr.whatIs.length).toBeGreaterThan(2);
     expect(tr.roadmap.some((row) => row.item.includes("Founder Circle"))).toBe(true);
   });

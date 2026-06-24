@@ -5,7 +5,8 @@
 
 export const ACADEMY_FOUNDER_LANDING_SCHEMA_V0 = "castle.rhizoh.academy_founder_landing.v0";
 
-const PAPER_PDF_HREF_V0 = "/rhizoh/academic/paper-v0.1.pdf";
+const PAPER_MD_HREF_V0 = "/rhizoh/academic/paper-v0.1.md";
+const PAPER_HTML_HREF_V0 = "/rhizoh/academic/paper-v0.1.html";
 
 /** @typedef {"en" | "tr"} AcademyFounderLocaleV0 */
 
@@ -79,8 +80,13 @@ export function getAcademyLandingCopyV0(locale = "en") {
     paperBody: tr
       ? "Dağıtık gerçeklik inşası üzerine sistem araştırması ön baskısı. Ürün duyurusu değil; tekrarlanabilir iddialar ve mimari kanıt."
       : "Systems research preprint on distributed reality construction. Not a product launch — reproducible claims and architectural evidence.",
-    paperHref: PAPER_PDF_HREF_V0,
-    paperCta: tr ? "PDF indir" : "Download PDF",
+    paperHref: PAPER_MD_HREF_V0,
+    paperHtmlHref: PAPER_HTML_HREF_V0,
+    paperCta: tr ? "Markdown indir" : "Download Markdown",
+    paperReadCta: tr ? "Tarayıcıda oku (HTML)" : "Read in browser (HTML)",
+    paperConsoleHint: tr
+      ? "Konsol: await __rhizoh.downloadPaperV01({ locale: 'tr' })"
+      : "Console: await __rhizoh.downloadPaperV01({ locale: 'en' })",
     roadmapTitle: tr ? "Yol haritası (dürüst sıra)" : "Roadmap (honest order)",
     roadmap: tr
       ? [

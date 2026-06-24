@@ -45,6 +45,8 @@ import { ensureCheckersLearningMediaTubeDevToolsV0 } from "./checkersLearningMed
 import { ensureRhizohCheckersLearningReportV0 } from "./rhizohCheckersLearningReportV0.js";
 import { ensureRhizohCheckersLearningCameraV0 } from "./rhizohCheckersLearningCameraV0.js";
 import { ensureAcademyLearningUnionDevToolsV0, startAcademyLearningUnionBootWireV0 } from "./academyLearningUnionWireV0.js";
+import { mountEpistemicAuditBundleConsoleV0 } from "./epistemicAuditBundleV0.js";
+import { ensureRhizohAcademicPaperWireV0 } from "./rhizohAcademicPaperWireV0.js";
 import { ensureLifeOsV01StatusDevToolsV0 } from "./lifeOsV01StatusV0.js";
 import { ensureRhizohStudioVisibilityDevToolsV0 } from "./rhizohStudioVisibilityWireV0.js";
 import { ensureRhizohStudioDemoSeedDevToolsV0 } from "./rhizohStudioDemoSeedWireV0.js";
@@ -159,6 +161,8 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureRhizohCheckersLearningCameraV0();
     ensureAcademyLearningUnionDevToolsV0();
     startAcademyLearningUnionBootWireV0({ locale: "tr", delayMs: 3200 });
+    mountEpistemicAuditBundleConsoleV0();
+    ensureRhizohAcademicPaperWireV0();
     ensureLifeOsV01StatusDevToolsV0();
     ensureRhizohStudioVisibilityDevToolsV0();
     ensureRhizohStudioObservationAdapterDevToolsV0();
