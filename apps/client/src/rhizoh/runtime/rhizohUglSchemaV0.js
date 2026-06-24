@@ -10,6 +10,7 @@ export const RHIZOH_UGL_EMBEDDING_DIM_V0 = 64;
 export const RHIZOH_UGL_GAME_TYPE_V0 = Object.freeze({
   CHESS: "chess",
   GO: "go",
+  CHECKERS: "checkers",
   SHOGI: "shogi",
   SPORTS: "sports",
   CUSTOM: "custom"

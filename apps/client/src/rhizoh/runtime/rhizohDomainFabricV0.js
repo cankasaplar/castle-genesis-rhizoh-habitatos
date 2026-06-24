@@ -42,6 +42,18 @@ const DOMAIN_REGISTRY_V0 = Object.freeze({
     adapterId: null,
     arenaId: "go_arena"
   }),
+  [RHIZOH_UGL_GAME_TYPE_V0.CHECKERS]: Object.freeze({
+    domainId: "checkers",
+    gameType: RHIZOH_UGL_GAME_TYPE_V0.CHECKERS,
+    coverage: DOMAIN_COVERAGE_V0.EVENT_ACTIVE,
+    causalSpaceId: "checkers.causal.space",
+    stateSchema: "checkers.board.v0",
+    stateRepr: "board_hash_8x8",
+    actionTypes: Object.freeze([RHIZOH_UGL_ACTION_TYPE_V0.MOVE, RHIZOH_UGL_ACTION_TYPE_V0.PASS]),
+    rewardSignals: Object.freeze(["terminal", "drift", "policy_diff"]),
+    adapterId: null,
+    arenaId: "checkers_arena"
+  }),
   [RHIZOH_UGL_GAME_TYPE_V0.SHOGI]: Object.freeze({
     domainId: "shogi",
     gameType: RHIZOH_UGL_GAME_TYPE_V0.SHOGI,
@@ -127,7 +139,12 @@ export function getDomainFabricSnapshotV0() {
     domainComplete: domains.filter(isActive).length >= 2,
     activeDomainCount: domains.filter(isActive).length,
     domains,
-    causalSpaces: Object.freeze(["chess.causal.space", "sports.causal.space"]),
+    causalSpaces: Object.freeze([
+      "chess.causal.space",
+      "go.causal.space",
+      "checkers.causal.space",
+      "sports.causal.space"
+    ]),
     interpretationOnly: true,
     nonExecutive: true
   });

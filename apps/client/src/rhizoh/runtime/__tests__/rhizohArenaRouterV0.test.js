@@ -19,7 +19,7 @@ describe("rhizohDomainFabricV0", () => {
     const snap = getDomainFabricSnapshotV0();
     expect(snap.uglComplete).toBe(true);
     expect(snap.domainComplete).toBe(true);
-    expect(snap.activeDomainCount).toBe(3);
+    expect(snap.activeDomainCount).toBe(4);
 
     const chess = resolveDomainDescriptorV0(RHIZOH_UGL_GAME_TYPE_V0.CHESS);
     expect(chess.coverage).toBe(DOMAIN_COVERAGE_V0.FULL_ACTIVE);
