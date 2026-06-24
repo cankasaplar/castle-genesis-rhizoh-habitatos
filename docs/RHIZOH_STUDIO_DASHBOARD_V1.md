@@ -34,6 +34,16 @@
 
 Chess tile shows **● live** when `isChessGameClusterRunningV0()` — cluster active, not just historical moves. Deep link: `/world/space?channel=chess`.
 
+## Adapter registry
+
+Each camera tile binds a **visual consumer adapter** via `rhizohStudioObservationAdapterRegistryV0`:
+
+```javascript
+__rhizoh.studioAdapters()  // 8/8 consumerReady
+```
+
+Chrome `No available adapters` on `/academy/observe` = **WebGPU GPU probe** — not missing studio adapters. See [`RHIZOH_STUDIO_OBSERVATION_ADAPTER_REGISTRY_V0.md`](RHIZOH_STUDIO_OBSERVATION_ADAPTER_REGISTRY_V0.md).
+
 ## Sprint alignment
 
 | Sprint | Focus |

@@ -2,6 +2,8 @@ import React, { memo, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { buildRhizohStudioVisibilitySnapshotV0 } from "../rhizoh/runtime/rhizohStudioVisibilitySnapshotV0.js";
 import { buildStudioEightCameraDashboardTilesV0 } from "../rhizoh/runtime/rhizohStudioEightCameraDashboardMetaV0.js";
+import { getStudioObservationAdapterRegistrySnapshotV0 } from "../rhizoh/runtime/rhizohStudioObservationAdapterRegistryV0.js";
+import { RhizohStudioCameraAdapterPreviewV0 } from "./RhizohStudioCameraAdapterPreviewV0.jsx";
 
 function readStudioVisibilitySnapshotV0() {
   if (typeof window !== "undefined" && typeof window.__rhizoh?.studioVisibility === "function") {
@@ -25,9 +27,23 @@ export const RhizohStudioEightCameraDashboardV0 = memo(function RhizohStudioEigh
 }) {
   const tr = uiLocale === "tr";
   const [snap, setSnap] = useState(() => readStudioVisibilitySnapshotV0());
+  const [adapters, setAdapters] = useState(() => {
+    try {
+      return getStudioObservationAdapterRegistrySnapshotV0();
+    } catch {
+      return null;
+    }
+  });
 
   useEffect(() => {
-    const tick = () => setSnap(readStudioVisibilitySnapshotV0());
+    const tick = () => {
+      setSnap(readStudioVisibilitySnapshotV0());
+      try {
+        setAdapters(getStudioObservationAdapterRegistrySnapshotV0());
+      } catch {
+        setAdapters(null);
+      }
+    };
     tick();
     const id = window.setInterval(tick, 3000);
     return () => window.clearInterval(id);
@@ -39,6 +55,7 @@ export const RhizohStudioEightCameraDashboardV0 = memo(function RhizohStudioEigh
   );
 
   const liveCount = useMemo(() => tiles.filter((t) => t.live || t.armed).length, [tiles]);
+  const adapterReadyCount = adapters?.consumerReadyCount ?? 0;
 
   if (!snap) return null;
 
@@ -55,12 +72,12 @@ export const RhizohStudioEightCameraDashboardV0 = memo(function RhizohStudioEigh
             {tr ? "Stüdyo gösterge paneli" : "Studio dashboard"}
           </p>
           <p className="mt-0.5 text-[11px] font-semibold text-white/90">
-            {tr ? "8 kamera · gözlem katmanı" : "8 cameras · observation layer"}
+            {tr ? "8 kamera · adapter bağlı" : "8 cameras · adapters bound"}
           </p>
           <p className="mt-1 text-[9px] leading-relaxed text-white/50">
             {tr
-              ? `${liveCount}/8 kamera sinyal taşıyor · yürütme yok`
-              : `${liveCount}/8 cameras carrying signal · no execution`}
+              ? `${adapterReadyCount}/8 adapter · ${liveCount}/8 sinyal · yürütme yok`
+              : `${adapterReadyCount}/8 adapters · ${liveCount}/8 signal · no execution`}
           </p>
         </div>
         <span className="rounded-md border border-white/10 px-2 py-0.5 text-[8px] uppercase tracking-wider text-white/40">
@@ -74,15 +91,20 @@ export const RhizohStudioEightCameraDashboardV0 = memo(function RhizohStudioEigh
         aria-label={tr ? "Sekiz kamera paneli" : "Eight camera panels"}
       >
         {tiles.map((tile) => (
-          <CameraTile key={tile.id} tile={tile} tr={tr} />
+          <CameraTile
+            key={tile.id}
+            tile={tile}
+            frame={adapters?.adapters?.[tile.id]}
+            tr={tr}
+          />
         ))}
       </div>
     </section>
   );
 });
 
-/** @param {{ tile: ReturnType<typeof buildStudioEightCameraDashboardTilesV0>[number], tr: boolean }} props */
-function CameraTile({ tile, tr }) {
+/** @param {{ tile: ReturnType<typeof buildStudioEightCameraDashboardTilesV0>[number], frame?: object, tr: boolean }} props */
+function CameraTile({ tile, frame, tr }) {
   const armedClass = tile.live
     ? "border-emerald-400/50 bg-emerald-500/10 shadow-[0_0_12px_rgba(52,211,153,0.15)]"
     : tile.armed
@@ -109,6 +131,7 @@ function CameraTile({ tile, tr }) {
       </div>
       <p className="mt-1 font-mono text-[10px] font-semibold text-cyan-100/95">{tile.primary}</p>
       <p className="mt-0.5 truncate text-[8px] text-white/45">{tile.secondary}</p>
+      <RhizohStudioCameraAdapterPreviewV0 frame={frame} tr={tr} />
       <p className={`mt-1 text-[7px] uppercase tracking-wide ${statusClass}`}>{tile.status}</p>
     </>
   );
