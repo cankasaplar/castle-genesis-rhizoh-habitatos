@@ -202,3 +202,8 @@ export function getSpatialRendererRegistrySnapshotV0() {
 
   return snap;
 }
+
+export function ensureSpatialRendererRegistryDevToolsV0() {
+  if (typeof window === "undefined") return null;
+  return getSpatialRendererRegistrySnapshotV0();
+}
