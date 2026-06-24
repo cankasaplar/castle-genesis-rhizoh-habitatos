@@ -26,6 +26,7 @@ import { RhizohGreenroomWaitingPanelV0 } from "./RhizohGreenroomWaitingPanelV0.j
 import { RhizohStudioLifeMemoryPanelV0 } from "./RhizohStudioLifeMemoryPanelV0.jsx";
 import { RhizohStudioEightCameraDashboardV0 } from "./RhizohStudioEightCameraDashboardV0.jsx";
 import { RhizohStudioDirectorModePanelV0 } from "./RhizohStudioDirectorModePanelV0.jsx";
+import { RhizohStudioOutputPackPanelV0 } from "./RhizohStudioOutputPackPanelV0.jsx";
 
 const PROFILE_OBS_TABS_V0 = Object.freeze([
   { id: "reality", label: "Reality" },
@@ -210,6 +211,7 @@ export const RhizohProductSurfaceDrawerV0 = memo(function RhizohProductSurfaceDr
             ) : null}
             <LayerTransitionNav activeLayer="robotics" locale={locale} />
             <RhizohStudioDirectorModePanelV0 uiLocale={locale} />
+            <RhizohStudioOutputPackPanelV0 uiLocale={locale} />
             <RhizohStudioEightCameraDashboardV0 uiLocale={locale} />
             <RhizohStudioLifeMemoryPanelV0 uiLocale={locale} />
             <RhizohStudioSecuritySharingPanelV0 uiLocale={locale} gatewayOrigin={gatewayOrigin} />
