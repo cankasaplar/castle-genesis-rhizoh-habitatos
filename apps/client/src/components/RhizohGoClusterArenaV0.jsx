@@ -3,15 +3,16 @@ import {
   getGoArenaEngineSnapshotV0,
   GO_ARENA_MOVE_EVENT_V0
 } from "../rhizoh/runtime/goArenaEngineV0.js";
-import { ingestGoLearningDemoMoveV0 } from "../rhizoh/runtime/goLearningDemoIngestV0.js";
+import { ingestGoLearningDemoMoveAsyncV0 } from "../rhizoh/runtime/goLearningDemoIngestV0.js";
 import {
   getGoLearningTubeSnapshotV0,
   wireGoLearningMediaTubeV0
 } from "../rhizoh/runtime/goLearningMediaTubeWireV0.js";
+import { getGoKataGoBridgeSnapshotV0, GO_KATAGO_GTP_STATUS_EVENT_V0 } from "../rhizoh/runtime/goKataGoGtpBridgeV0.js";
 
 /**
  * Go cluster arena v0 — minimal board + spacetime learning wire (media tube embed).
- * RESEARCH-ONLY — not rules-complete; KataGo bridge is future work.
+ * RESEARCH-ONLY — not rules-complete; KataGo sidecar optional via env.
  */
 export const RhizohGoClusterArenaV0 = memo(function RhizohGoClusterArenaV0({
   open = true,
@@ -22,15 +23,21 @@ export const RhizohGoClusterArenaV0 = memo(function RhizohGoClusterArenaV0({
   const tr = uiLocale === "tr";
   const [arena, setArena] = useState(() => getGoArenaEngineSnapshotV0());
   const [wire, setWire] = useState(() => getGoLearningTubeSnapshotV0({ locale: uiLocale }));
+  const [kataGo, setKataGo] = useState(() => getGoKataGoBridgeSnapshotV0());
 
   useEffect(() => {
     if (!open) return undefined;
     const refresh = () => setArena(getGoArenaEngineSnapshotV0());
+    const onKata = () => setKataGo(getGoKataGoBridgeSnapshotV0());
     window.addEventListener(GO_ARENA_MOVE_EVENT_V0, refresh);
+    window.addEventListener(GO_KATAGO_GTP_STATUS_EVENT_V0, onKata);
     void wireGoLearningMediaTubeV0({ locale: uiLocale, force: true }).then(() => {
       setWire(getGoLearningTubeSnapshotV0({ locale: uiLocale }));
     });
-    return () => window.removeEventListener(GO_ARENA_MOVE_EVENT_V0, refresh);
+    return () => {
+      window.removeEventListener(GO_ARENA_MOVE_EVENT_V0, refresh);
+      window.removeEventListener(GO_KATAGO_GTP_STATUS_EVENT_V0, onKata);
+    };
   }, [open, uiLocale]);
 
   const grid = useMemo(() => {
@@ -42,14 +49,15 @@ export const RhizohGoClusterArenaV0 = memo(function RhizohGoClusterArenaV0({
 
   const onDemoMove = useCallback(() => {
     const snap = getGoArenaEngineSnapshotV0();
-    ingestGoLearningDemoMoveV0({
+    void ingestGoLearningDemoMoveAsyncV0({
       x: 3 + (snap.moveCount % 10),
       y: 3 + Math.floor(snap.moveCount / 10),
-      confidence: 0.8,
       locale: uiLocale
+    }).then(() => {
+      setArena(getGoArenaEngineSnapshotV0());
+      setWire(getGoLearningTubeSnapshotV0({ locale: uiLocale }));
+      setKataGo(getGoKataGoBridgeSnapshotV0());
     });
-    setArena(getGoArenaEngineSnapshotV0());
-    setWire(getGoLearningTubeSnapshotV0({ locale: uiLocale }));
   }, [uiLocale]);
 
   if (!open) return null;
@@ -76,8 +84,8 @@ export const RhizohGoClusterArenaV0 = memo(function RhizohGoClusterArenaV0({
 
       <p className="text-[10px] text-white/65 normal-case">
         {tr
-          ? `Hamle: ${arena.moveCount} · batch bekleyen: ${wire.batchPending} · faz: ${wire.spacetime?.observationWindow?.phaseId || "?"}`
-          : `Moves: ${arena.moveCount} · batch pending: ${wire.batchPending} · phase: ${wire.spacetime?.observationWindow?.phaseId || "?"}`}
+          ? `Hamle: ${arena.moveCount} · batch bekleyen: ${wire.batchPending} · KataGo: ${kataGo.status}`
+          : `Moves: ${arena.moveCount} · batch pending: ${wire.batchPending} · KataGo: ${kataGo.status}`}
       </p>
 
       <div className="mx-auto grid aspect-square w-full max-w-[280px] grid-cols-[repeat(19,minmax(0,1fr))] gap-px rounded-xl border border-sky-500/20 bg-sky-950/30 p-1">
@@ -87,9 +95,15 @@ export const RhizohGoClusterArenaV0 = memo(function RhizohGoClusterArenaV0({
               key={`${cell.x}-${cell.y}`}
               type="button"
               onClick={() => {
-                ingestGoLearningDemoMoveV0({ x: cell.x, y: cell.y, confidence: 0.75, locale: uiLocale });
-                setArena(getGoArenaEngineSnapshotV0());
-                setWire(getGoLearningTubeSnapshotV0({ locale: uiLocale }));
+                void ingestGoLearningDemoMoveAsyncV0({
+                  x: cell.x,
+                  y: cell.y,
+                  locale: uiLocale
+                }).then(() => {
+                  setArena(getGoArenaEngineSnapshotV0());
+                  setWire(getGoLearningTubeSnapshotV0({ locale: uiLocale }));
+                  setKataGo(getGoKataGoBridgeSnapshotV0());
+                });
               }}
               className="aspect-square rounded-sm bg-emerald-950/20 hover:bg-sky-500/20"
               aria-label={`${cell.x},${cell.y}`}

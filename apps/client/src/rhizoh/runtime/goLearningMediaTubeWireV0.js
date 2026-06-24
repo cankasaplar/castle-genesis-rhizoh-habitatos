@@ -6,7 +6,7 @@
 import { getGoArenaEngineSnapshotV0 } from "./goArenaEngineV0.js";
 import { getGoLearningBatchSnapshotV0 } from "./goLearningBatchV0.js";
 import { buildGoSpacetimeObservationEnvelopeV0 } from "./goSpacetimeObservationEnvelopeV0.js";
-import { ingestGoLearningDemoMoveV0 } from "./goLearningDemoIngestV0.js";
+import { ingestGoLearningDemoMoveAsyncV0 } from "./goLearningDemoIngestV0.js";
 import { buildRhizohGoLearningCameraV0 } from "./rhizohGoLearningCameraV0.js";
 import { RHIZOH_GO_LEARNING_CHANNEL_ID_V0 } from "./worldSpaceMediaChannelsV0.js";
 import { dispatchOpenMediaTubeV0 } from "./sovereignWorldMapNodesV0.js";
@@ -28,10 +28,9 @@ export async function wireGoLearningMediaTubeV0(opts = {}) {
 
   let demoIngest = null;
   if (opts.demoMove === true || opts.force === true) {
-    demoIngest = ingestGoLearningDemoMoveV0({
+    demoIngest = await ingestGoLearningDemoMoveAsyncV0({
       x: 3 + (getGoArenaEngineSnapshotV0().moveCount % 12),
       y: 3 + Math.floor(getGoArenaEngineSnapshotV0().moveCount / 12),
-      confidence: 0.78,
       locale
     });
   }

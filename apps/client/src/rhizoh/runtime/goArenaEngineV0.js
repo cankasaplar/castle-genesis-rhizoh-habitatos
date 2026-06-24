@@ -67,6 +67,18 @@ export function getGoArenaEngineSnapshotV0() {
   });
 }
 
+/**
+ * @returns {ReadonlyArray<{ x: number, y: number, color: 'B'|'W' }>}
+ */
+export function listGoArenaStonesV0() {
+  return Object.freeze(
+    [...stonesV0.entries()].map(([key, color]) => {
+      const [x, y] = key.split(",").map(Number);
+      return Object.freeze({ x, y, color });
+    })
+  );
+}
+
 /** @internal vitest */
 export function resetGoArenaEngineForTestV0() {
   stonesV0.clear();

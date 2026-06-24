@@ -8,6 +8,7 @@ import { GO_ARENA_MOVE_EVENT_V0, getGoArenaEngineSnapshotV0 } from "./goArenaEng
 import { GO_LEARNING_BATCH_EVENT_V0, getGoLearningBatchSnapshotV0 } from "./goLearningBatchV0.js";
 import { getGoLearningAgreementGateSnapshotV0 } from "./goLearningAgreementGateV0.js";
 import { buildGoSpacetimeObservationEnvelopeV0 } from "./goSpacetimeObservationEnvelopeV0.js";
+import { getGoKataGoBridgeSnapshotV0 } from "./goKataGoGtpBridgeV0.js";
 
 export const RHIZOH_GO_LEARNING_REPORT_SCHEMA_V0 = "castle.rhizoh.go_learning_report.v0";
 
@@ -29,6 +30,7 @@ export function buildRhizohGoLearningReportV0() {
   const batch = getGoLearningBatchSnapshotV0();
   const gate = getGoLearningAgreementGateSnapshotV0();
   const spacetime = buildGoSpacetimeObservationEnvelopeV0();
+  const kataGo = getGoKataGoBridgeSnapshotV0();
 
   return Object.freeze({
     schema: RHIZOH_GO_LEARNING_REPORT_SCHEMA_V0,
@@ -40,6 +42,9 @@ export function buildRhizohGoLearningReportV0() {
     batchPending: batch.pending,
     gateAccepted: gate.accepted,
     gateRejected: gate.rejected,
+    kataGoStatus: kataGo.status,
+    kataGoConfigured: kataGo.configured,
+    kataGoLastWinrate: kataGo.lastAnalysis?.winrate ?? null,
     worldAnchorDistribution: Object.freeze(Object.fromEntries(anchorCountsV0)),
     lastBatchFlush: lastBatchFlushV0,
     spacetimeSample: spacetime,
