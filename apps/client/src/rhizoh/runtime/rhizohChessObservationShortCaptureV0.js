@@ -45,7 +45,7 @@ function buildShotListV0(locale, digest) {
       beat: 2,
       durationSec: 20,
       scene: tr ? "Chess arena · canlı cluster" : "Chess arena · live cluster",
-      captureUrl: "/world/space?channel=chess",
+      captureUrl: "/world/space?channel=chess&broadcast=1",
       consoleHook: "__rhizoh.chessLearningCamera()",
       narratorLine: tr
         ? `${digest.movesSeen} hamlelik öğrenme oturumu — Stockfish gölgesi.`
@@ -167,7 +167,7 @@ export function buildRhizohChessObservationShortCaptureV0(opts = {}) {
     suggestions,
     captureSurfaces: Object.freeze([
       "/studio",
-      "/world/space?channel=chess",
+      "/world/space?channel=chess&broadcast=1",
       "/academy/observe"
     ]),
     disclaimer:

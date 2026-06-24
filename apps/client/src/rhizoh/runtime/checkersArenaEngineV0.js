@@ -66,6 +66,18 @@ export function getCheckersArenaEngineSnapshotV0() {
   });
 }
 
+/**
+ * @returns {ReadonlyArray<{ x: number, y: number, color: 'R'|'B' }>}
+ */
+export function listCheckersArenaPiecesV0() {
+  return Object.freeze(
+    [...piecesV0.entries()].map(([key, color]) => {
+      const [x, y] = key.split(",").map(Number);
+      return Object.freeze({ x, y, color });
+    })
+  );
+}
+
 /** @internal vitest */
 export function resetCheckersArenaEngineForTestV0() {
   piecesV0.clear();

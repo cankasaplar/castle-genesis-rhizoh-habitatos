@@ -9,6 +9,7 @@ import {
   NASA_ISS_EARTH_VIDEO_ID_V0,
   NASA_TV_YOUTUBE_CHANNEL_ID_V0,
   resolveInitialWorldSpaceMediaChannelIdV0,
+  resolveWorldSpaceMediaChannelIdFromQueryParamV0,
   resolveWorldSpaceMediaChannelForMapNodeV0,
   resolveWorldSpaceMediaChannelV0,
   RHIZOH_LEARNING_CHANNEL_ID_V0,
@@ -50,6 +51,18 @@ describe("worldSpaceMediaChannelsV0", () => {
     const url = buildYoutubeEmbedUrlV0("abc123", { startSec: 10, endSec: 60 });
     expect(url).toContain("start=10");
     expect(url).toContain("end=60");
+  });
+
+  it("resolves query param channel deep links", () => {
+    expect(resolveWorldSpaceMediaChannelIdFromQueryParamV0("chess")).toBe(RHIZOH_LEARNING_CHANNEL_ID_V0);
+    expect(resolveWorldSpaceMediaChannelIdFromQueryParamV0("go")).toBe(RHIZOH_GO_LEARNING_CHANNEL_ID_V0);
+    expect(resolveWorldSpaceMediaChannelIdFromQueryParamV0("dama")).toBe(
+      RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0
+    );
+    expect(resolveWorldSpaceMediaChannelIdFromQueryParamV0("world_sports")).toBe(
+      RHIZOH_WORLDSPORTS_CHANNEL_ID_V0
+    );
+    expect(resolveWorldSpaceMediaChannelIdFromQueryParamV0("")).toBeNull();
   });
 
   it("resolves initial channel by source", () => {

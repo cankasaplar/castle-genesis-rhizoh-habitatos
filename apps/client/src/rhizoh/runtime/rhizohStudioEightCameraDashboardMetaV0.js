@@ -45,12 +45,15 @@ export function resolveStudioEightCameraTitleV0(id, locale = "en") {
 export function resolveStudioEightCameraHrefV0(id) {
   switch (id) {
     case "chess_arena":
-      return "/world/space?channel=chess";
+      return "/world/space?channel=chess&broadcast=1";
     case "go_arena":
+      return "/world/space?channel=go&broadcast=1";
     case "checkers_arena":
+      return "/world/space?channel=checkers&broadcast=1";
     case "academy":
       return "/academy/observe";
     case "habitat":
+      return "/academy/observe?mode=stream";
     case "memory":
       return "/academy/observe?mode=stream";
     case "world_sports":
