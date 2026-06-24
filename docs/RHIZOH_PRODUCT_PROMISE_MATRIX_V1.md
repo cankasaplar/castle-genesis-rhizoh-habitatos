@@ -62,6 +62,7 @@ See [`RHIZOH_LIFE_OS_V0_1_CLOSURE_NOTE.md`](RHIZOH_LIFE_OS_V0_1_CLOSURE_NOTE.md)
 | **Habitat climate** | Behavior / learning climate labels | ◐ session_v0 pattern engine | `habitatClimate()` | ingest + compare | Observation only |
 | **Life OS status** | Honest closure snapshot | ✔ runtime observability | `lifeOsStatus()` | console | Observation only |
 | **Studio Life Memory** | Visible World Bridge + habitat + learning cameras | ✔ Studio drawer + academy observe | `studioVisibility()` · Studio shell | shell bar | Observation only |
+| **Studio demo seed** | One-click investor memory demo | ◐ wire pending | `studioDemoSeed()` | Studio panel | Observation only |
 | **WorldSports** | Live scores + map pins + media tube | ◐ feed + pin + tube wire | `API_SPORTS_KEY` (gateway), optional YouTube VOD | pin / voice / tube | Gateway |
 | **World News** | Headline strip + feed | ◐ gateway feed | gateway world-feed | tube channel | Gateway |
 | **Castle Genesis media** | YouTube live + short honest clips | ✔ embed + channels SSOT | `VITE_CASTLE_GENESIS_YOUTUBE_*` | media tube | Prod |
