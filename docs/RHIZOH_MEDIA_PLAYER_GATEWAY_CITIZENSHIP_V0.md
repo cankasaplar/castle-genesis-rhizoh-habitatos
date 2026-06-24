@@ -69,7 +69,21 @@ await window.__rhizoh.mediaGateway.registerAll()      // alias
 window.__rhizoh.mediaGateway.listRegistered()
 window.__rhizoh.mediaGateway.listChannelIds()
 window.__rhizoh.observationState.snapshot().media
+
+// WorldSports pin → feed → tube (v0 wire)
+await window.__rhizoh.wireWorldSportsTube({ force: true })
+window.__rhizoh.worldSportsTube()
 ```
+
+## E2E wire (pin → feed → tube)
+
+| Step | Module |
+|------|--------|
+| Map pin `worldsports` | `rhizohMapExecutionOrchestratorV1.js` → `dispatchOpenWorldSportsMediaTubeV0` |
+| Gateway feed refresh | `worldSportsMediaTubeWireV0.js` → `worldMapLiveFeedV0` |
+| Live match pins | `worldMapLiveMatchPinsV0.js` |
+| Media tube surface | `RhizohWorldSpaceMediaTubeV0.jsx` — chips + pin count |
+| Gateway meta | `mediaPlayerGatewayCitizenshipV0.js` — `liveMatchCount` / `pinCount` on register |
 
 Citizenship labels:
 

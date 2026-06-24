@@ -33,6 +33,11 @@ import {
 import { RHIZOH_YOUTUBE_COMMUNITY_LAB_EVENT_V0 } from "../rhizoh/runtime/youtubeCommunityDataAdapterV0.js";
 import { affirmActiveMediaPlayerGatewayCitizenV0 } from "../rhizoh/runtime/mediaPlayerGatewayCitizenshipV0.js";
 import { RhizohWorldSportsNewsStripV0 } from "./RhizohWorldSportsNewsStripV0.jsx";
+import {
+  getWorldSportsTubeSnapshotV0,
+  wireWorldSportsMediaTubeV0
+} from "../rhizoh/runtime/worldSportsMediaTubeWireV0.js";
+import { RHIZOH_WORLDSPORTS_CHANNEL_ID_V0 } from "../rhizoh/runtime/worldSpaceMediaChannelsV0.js";
 
 function isCastleMediaSourceV0(source) {
   return String(source || "").startsWith("castle_init");
@@ -82,6 +87,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     typeof window !== "undefined" ? window.__rhizoh?.youtubeCommunityLab || null : null
   );
   const [localPreviewStream, setLocalPreviewStream] = useState(null);
+  const [worldSportsWire, setWorldSportsWire] = useState(() => getWorldSportsTubeSnapshotV0({ locale: uiLocale }));
   const captureRef = useRef(null);
   const previewRef = useRef(null);
   const castleBroadcast = useMemo(() => isCastleMediaSourceV0(detail?.source), [detail?.source]);
@@ -134,6 +140,25 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     }
     void affirmActiveMediaPlayerGatewayCitizenV0(channel.id);
   }, [initialChannelId]);
+
+  useEffect(() => {
+    if (activeChannel.id !== RHIZOH_WORLDSPORTS_CHANNEL_ID_V0 && activeChannel.type !== "world_sports_feed") {
+      return undefined;
+    }
+    let cancelled = false;
+    void wireWorldSportsMediaTubeV0({ locale: uiLocale, force: true }).then((result) => {
+      if (!cancelled) {
+        setWorldSportsWire(getWorldSportsTubeSnapshotV0({ locale: uiLocale }));
+        if (typeof window !== "undefined") {
+          window.__rhizoh = window.__rhizoh || {};
+          window.__rhizoh.lastWorldSportsWire = result;
+        }
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeChannel.id, activeChannel.type, uiLocale]);
 
   useEffect(() => {
     const refresh = () => setArchiveRows(listMediaArchiveEntriesV0());
@@ -686,15 +711,30 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
             ) : activeChannel.type === "world_sports_feed" ? (
               <div className="relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:p-4">
                 <RhizohWorldSportsNewsStripV0 active uiLocale={uiLocale} mode="sports" className="shrink-0" />
-                <div className="flex min-h-[200px] flex-1 flex-col items-center justify-center rounded-2xl border border-emerald-500/25 bg-emerald-950/20 p-6 text-center">
+                <div className="flex min-h-[200px] flex-1 flex-col gap-3 rounded-2xl border border-emerald-500/25 bg-emerald-950/20 p-4">
                   <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-300">
                     WorldSports
                   </p>
-                  <p className="mt-3 max-w-md text-[10px] leading-relaxed text-white/70 normal-case">
+                  <p className="text-[10px] leading-relaxed text-white/70 normal-case">
                     {tr
-                      ? "Canlı skor akışı gateway world-feed üzerinden. İsteğe bağlı VOD için VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID."
-                      : "Live score feed via gateway world-feed. Optional VOD via VITE_RHIZOH_WORLDSPORTS_YOUTUBE_VIDEO_ID."}
+                      ? `Canlı skor: ${worldSportsWire.liveMatchCount} maç · harita pini: ${worldSportsWire.pinCount}`
+                      : `Live scores: ${worldSportsWire.liveMatchCount} matches · map pins: ${worldSportsWire.pinCount}`}
                   </p>
+                  {worldSportsWire.recentChips?.length ? (
+                    <ul className="mt-2 space-y-1 text-left text-[10px] text-emerald-100/90 normal-case">
+                      {worldSportsWire.recentChips.map((chip) => (
+                        <li key={chip} className="rounded-lg border border-emerald-500/15 bg-black/25 px-2 py-1">
+                          {chip}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-[9px] text-white/45 normal-case">
+                      {tr
+                        ? "Gateway world-feed bekleniyor veya API-Sports anahtarı yapılandırılmamış."
+                        : "Awaiting gateway world-feed or API-Sports key on Render."}
+                    </p>
+                  )}
                 </div>
               </div>
             ) : activeChannel.type === "world_news_feed" ? (
