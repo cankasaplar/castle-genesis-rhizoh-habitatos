@@ -113,15 +113,15 @@ export const RhizohGoClusterArenaV0 = memo(function RhizohGoClusterArenaV0({
   if (!open) return null;
 
   const boardMaxClass = broadcastMode
-    ? "h-full w-full max-w-none"
+    ? "aspect-square h-full max-h-full w-auto max-w-full"
     : embedMode
       ? "w-full max-w-[min(100%,52dvh)]"
       : "w-full max-w-[min(100%,42dvh)]";
 
   return (
     <div
-      className={`flex min-h-0 flex-1 flex-col gap-2 ${embedMode ? "p-1" : "p-4"} ${
-        broadcastMode ? "h-full overflow-hidden" : ""
+      className={`flex min-h-0 flex-1 flex-col ${embedMode ? "gap-1 p-1" : "gap-2 p-4"} ${
+        broadcastMode ? "h-full overflow-hidden p-1" : ""
       }`}
       data-testid="rhizoh-go-cluster-arena-v0"
       data-broadcast-mode={broadcastMode ? "1" : "0"}
@@ -155,10 +155,11 @@ export const RhizohGoClusterArenaV0 = memo(function RhizohGoClusterArenaV0({
           gateAccepted={report.gateAccepted}
           gateRejected={report.gateRejected}
           lastMoveLabel={lastMoveLabel}
+          compact={broadcastMode}
         />
       </div>
 
-      <div className={`flex min-h-0 flex-1 items-center justify-center ${broadcastMode ? "p-0" : "py-1"}`}>
+      <div className={`flex min-h-0 flex-1 items-center justify-center overflow-hidden ${broadcastMode ? "p-0.5" : "py-1"}`}>
         <div
           className={`relative grid aspect-square ${boardMaxClass} grid-cols-[repeat(19,minmax(0,1fr))] gap-px rounded-xl border border-sky-500/20 bg-[#1a3d2e] p-1 shadow-[inset_0_0_24px_rgba(0,0,0,0.4)]`}
         >

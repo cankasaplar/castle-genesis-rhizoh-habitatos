@@ -108,8 +108,8 @@ const LiveCameraBoardV0 = memo(function LiveCameraBoardV0({
 
   return (
     <div
-      className={`flex h-full min-h-0 flex-col rounded-lg border bg-black/50 ${
-        compact ? "p-1" : "p-2"
+      className={`flex h-full min-h-0 flex-col overflow-hidden rounded-lg border bg-black/50 ${
+        compact ? "p-0.5" : "p-2"
       } ${
         featured
           ? "border-cyan-400/80 shadow-[0_0_18px_rgba(34,211,238,0.35)]"
@@ -119,56 +119,66 @@ const LiveCameraBoardV0 = memo(function LiveCameraBoardV0({
       }`}
       data-chess-cluster-slot={slot.slotId}
     >
-      <div className={`mb-1 flex items-center justify-between gap-1 text-[9px] text-white/70 ${compact ? "mb-0.5" : "mb-1.5"}`}>
+      {compact ? (
+      <div className="mb-0.5 flex min-h-[10px] flex-shrink-0 items-center justify-between gap-1 text-[8px] text-white/70">
+        <span className="font-bold text-white/90">
+          #{slot.slotId + 1}
+          {featured ? (
+            <span className="ml-0.5 rounded bg-cyan-500/25 px-0.5 py-px text-[7px] font-black uppercase text-cyan-100">
+              LIVE
+            </span>
+          ) : null}
+        </span>
+        <span className="font-mono text-[7px] text-white/40">ply {slot.ply}</span>
+      </div>
+      ) : (
+        <>
+      <div className="mb-1 flex items-center justify-between gap-1 text-[9px] text-white/70">
         <span className="font-bold text-white/90">
           #{slot.slotId + 1}
           {featured ? (
             <span className="ml-1 rounded bg-cyan-500/25 px-1 py-px text-[8px] font-black uppercase text-cyan-100">
               LIVE
             </span>
-          ) : !compact && roleCopy ? (
+          ) : roleCopy ? (
             <span className="ml-1 rounded bg-white/10 px-1 py-px text-[7px] font-semibold uppercase text-white/55">
               {roleCopy.tag}
             </span>
           ) : null}
         </span>
-        {!compact ? (
-          <span className="truncate text-right">{white.label} vs {black.label}</span>
-        ) : (
-          <span className="font-mono text-[8px] text-white/40">ply {slot.ply}</span>
-        )}
+        <span className="truncate text-right">{white.label} vs {black.label}</span>
       </div>
-      {!compact && roleCopy ? (
+      {roleCopy ? (
         <p className="mb-1 line-clamp-2 text-[8px] leading-tight text-white/40" title={roleCopy.observes}>
           {roleCopy.role}
         </p>
       ) : null}
+      <div className="mb-1 grid grid-cols-2 gap-1">
+        <ClockRowV0
+          label={white.label}
+          clock={slot.clock?.whiteClock}
+          active={turnW && slot.status === "active"}
+          tr={tr}
+        />
+        <ClockRowV0
+          label={black.label}
+          clock={slot.clock?.blackClock}
+          active={!turnW && slot.status === "active"}
+          tr={tr}
+        />
+      </div>
+        </>
+      )}
 
-      {!compact ? (
-        <div className="mb-1 grid grid-cols-2 gap-1">
-          <ClockRowV0
-            label={white.label}
-            clock={slot.clock?.whiteClock}
-            active={turnW && slot.status === "active"}
-            tr={tr}
-          />
-          <ClockRowV0
-            label={black.label}
-            clock={slot.clock?.blackClock}
-            active={!turnW && slot.status === "active"}
-            tr={tr}
-          />
-        </div>
-      ) : null}
-
-      <div className="min-h-0 flex-1">
+      <div className="mb-0.5 flex min-h-0 flex-1 items-center justify-center overflow-hidden">
         <RhizohChessBoardV0
           rows={rows}
           boardColors={boardColors}
           pieceStyleId={pieceStyleId}
           pieceBold={pieceBold}
           lastMove={lastMove}
-          sizeClass="h-full w-full"
+          sizeClass={compact ? "h-full w-full max-h-full max-w-full" : "h-full w-full"}
+          compact={compact}
           showCoords={false}
           interactive={false}
           borderClass={
@@ -248,7 +258,7 @@ function LiveMatchPreflightV0({ tr, teacherStatus, onOpenLobby }) {
   );
 }
 
-function LearningStripV0({ monitor, activeSlotCount, tr, timeControlLabel, sessionGamesEnded, lastGameEnd, showTech }) {
+function LearningStripV0({ monitor, activeSlotCount, tr, timeControlLabel, sessionGamesEnded, lastGameEnd, showTech, compact = false }) {
   const recentMoves = monitor?.recentMoves || [];
   const lastMove = recentMoves[recentMoves.length - 1];
   const m = monitor?.measurement;
@@ -259,8 +269,12 @@ function LearningStripV0({ monitor, activeSlotCount, tr, timeControlLabel, sessi
     : null;
 
   return (
-    <div className="rounded-lg border border-violet-500/30 bg-violet-950/25 px-3 py-2 text-[10px] text-white/75">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+    <div
+      className={`rounded-lg border border-violet-500/30 bg-violet-950/25 text-white/75 ${
+        compact ? "px-2 py-0.5 text-[8px]" : "px-3 py-2 text-[10px]"
+      }`}
+    >
+      <div className={`flex flex-wrap items-center ${compact ? "gap-x-2 gap-y-0" : "gap-x-3 gap-y-1"}`}>
         <span className="font-semibold text-violet-200/90">
           {tr ? "Öğrenme durumu" : "Learning status"}
         </span>
@@ -466,6 +480,10 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
   };
 
   useEffect(() => {
+    if (broadcastMode) setViewMode("grid");
+  }, [broadcastMode]);
+
+  useEffect(() => {
     if (!open) return undefined;
     publishChessClusterArenaUiOpenV0(true);
     publishChessClusterBroadcastActiveV0(true);
@@ -571,53 +589,40 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
 
   const panel = (
     <div className={shellClass}>
+        {!broadcastMode ? (
         <header
           className={`flex shrink-0 items-center justify-between border-b border-white/10 ${
-            broadcastMode
-              ? "px-2 py-1"
-              : embedMode
-                ? "px-2 py-1.5 sm:px-3 sm:py-2"
-                : "px-3 py-2 sm:px-4 sm:py-3"
+            embedMode
+              ? "px-2 py-1.5 sm:px-3 sm:py-2"
+              : "px-3 py-2 sm:px-4 sm:py-3"
           }`}
         >
           <div>
-            <h2 className={`font-semibold text-white ${broadcastMode ? "text-xs" : "text-sm sm:text-base"}`}>
-              {heroCopy.title}
-            </h2>
-            {!broadcastMode ? (
-              <p className="text-[10px] text-white/45 sm:text-[11px]">
-                {heroCopy.subtitle}
-                {" · "}
-                {tr ? clusterTimeControl.labelTr : clusterTimeControl.labelEn}
-                {" · "}
-                {boardColors.label || "classic"}
-              </p>
-            ) : (
-              <p className="text-[9px] text-white/45">
-                {tr ? "8 kamera · scroll yok" : "8 cameras · no scroll"}
-              </p>
-            )}
+            <h2 className="text-sm font-semibold text-white sm:text-base">{heroCopy.title}</h2>
+            <p className="text-[10px] text-white/45 sm:text-[11px]">
+              {heroCopy.subtitle}
+              {" · "}
+              {tr ? clusterTimeControl.labelTr : clusterTimeControl.labelEn}
+              {" · "}
+              {boardColors.label || "classic"}
+            </p>
           </div>
           <div className="flex items-center gap-2">
-            {!broadcastMode ? (
-              <>
-                <button
-                  type="button"
-                  onClick={openChessLobby}
-                  className="rounded-md border border-emerald-400/55 bg-emerald-500/20 px-3 py-1 text-[11px] font-semibold text-emerald-50 hover:bg-emerald-500/30"
-                  title={heroCopy.playDesc}
-                >
-                  {heroCopy.playCta}
-                </button>
-                <button
-                  type="button"
-                  onClick={openChessLobby}
-                  className="hidden rounded-md border border-white/20 px-2 py-1 text-[10px] text-white/70 hover:bg-white/10 sm:inline"
-                >
-                  {tr ? "Lobi" : "Lobby"}
-                </button>
-              </>
-            ) : null}
+            <button
+              type="button"
+              onClick={openChessLobby}
+              className="rounded-md border border-emerald-400/55 bg-emerald-500/20 px-3 py-1 text-[11px] font-semibold text-emerald-50 hover:bg-emerald-500/30"
+              title={heroCopy.playDesc}
+            >
+              {heroCopy.playCta}
+            </button>
+            <button
+              type="button"
+              onClick={openChessLobby}
+              className="hidden rounded-md border border-white/20 px-2 py-1 text-[10px] text-white/70 hover:bg-white/10 sm:inline"
+            >
+              {tr ? "Lobi" : "Lobby"}
+            </button>
             <div className="flex rounded-md border border-white/15 p-0.5 text-[10px]">
               <button
                 type="button"
@@ -645,8 +650,9 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
             ) : null}
           </div>
         </header>
+        ) : null}
 
-        <div className={`shrink-0 border-b border-white/10 ${broadcastMode ? "px-2 py-1" : "px-3 py-2 sm:px-4"}`}>
+        <div className={`shrink-0 ${broadcastMode ? "px-1 py-0.5" : "border-b border-white/10 px-3 py-2 sm:px-4"}`}>
           {!broadcastMode ? (
             <GameEndBannerV0
               banner={gameEndBanner}
@@ -654,7 +660,8 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
               onDismiss={() => setGameEndBanner(null)}
             />
           ) : null}
-          <div className={`mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-white/55 ${broadcastMode ? "mb-1 text-[9px]" : ""}`}>
+          {!broadcastMode ? (
+          <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-white/55">
             <span>
               {isChessGameClusterRunningV0() ? (tr ? "● yayın aktif" : "● broadcast on") : tr ? "○ yayın kapalı" : "○ broadcast off"}
             </span>
@@ -679,7 +686,8 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
                   : "tech details"}
             </button>
           </div>
-          {showTechStrip ? (
+          ) : null}
+          {showTechStrip && !broadcastMode ? (
             <div className="mb-2 flex flex-wrap gap-x-3 gap-y-1 text-[9px] text-white/35">
               <span>tick {tickCount}</span>
               <span>
@@ -697,15 +705,16 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
             sessionGamesEnded={sessionGamesEnded}
             lastGameEnd={lastGameEnd}
             showTech={showTechStrip}
+            compact={broadcastMode}
           />
         </div>
 
         <div
           className={`min-h-0 flex-1 ${
-            broadcastMode ? "overflow-hidden p-1" : "overflow-y-auto p-2 sm:p-3"
+            broadcastMode ? "overflow-hidden p-0.5" : "overflow-y-auto p-2 sm:p-3"
           }`}
         >
-          {viewMode === "featured" ? (
+          {viewMode === "featured" && !broadcastMode ? (
             <>
               {!broadcastMode ? (
                 <LiveMatchPreflightV0
@@ -745,13 +754,13 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
             <div
               className={
                 broadcastMode
-                  ? "grid h-full min-h-0 grid-cols-4 grid-rows-2 gap-0.5"
+                  ? "grid h-full min-h-0 grid-cols-4 grid-rows-2 gap-0.5 [grid-template-rows:repeat(2,minmax(0,1fr))]"
                   : "grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-rows-2 lg:gap-2"
               }
             >
               {padded.map((slot, i) => (
+                <div key={i} className={broadcastMode ? "min-h-0 min-w-0 overflow-hidden" : undefined}>
                 <LiveCameraBoardV0
-                  key={i}
                   slot={slot}
                   featured={i === CHESS_CLUSTER_SPECTATOR_SLOT_ID_V0}
                   highlight={highlightSlot === i}
@@ -762,6 +771,7 @@ export const RhizohChessClusterArenaV0 = memo(function RhizohChessClusterArenaV0
                   pieceStyleId={pieceStyleId}
                   roleCopy={resolveClusterSlotRoleCopyV0(i, tr)}
                 />
+                </div>
               ))}
             </div>
           )}

@@ -124,7 +124,10 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     activeChannel.type === "chess_cluster_live" ||
     activeChannel.type === "go_cluster_live" ||
     activeChannel.type === "checkers_cluster_live";
-  const obsBroadcastLayout = broadcastMode && clusterBroadcastChannel;
+  const feedBroadcastChannel =
+    activeChannel.type === "world_sports_feed" || activeChannel.type === "world_news_feed";
+  const obsBroadcastLayout =
+    broadcastMode && (clusterBroadcastChannel || feedBroadcastChannel);
   const octoLabMode = useMemo(
     () => Boolean(detail?.octoLabMode || detail?.source === "octo_yuva_lab"),
     [detail?.octoLabMode, detail?.source]
@@ -519,7 +522,9 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
       className={
         octoLabMode
           ? "pointer-events-none fixed inset-0 z-[450] flex flex-col justify-end bg-black/35 backdrop-blur-[2px]"
-          : "pointer-events-auto fixed inset-0 z-[450] flex flex-col bg-[#050505]/96 backdrop-blur-3xl"
+          : obsBroadcastLayout
+            ? "pointer-events-auto fixed inset-0 z-[450] flex h-dvh flex-col overflow-hidden bg-black"
+            : "pointer-events-auto fixed inset-0 z-[450] flex flex-col bg-[#050505]/96 backdrop-blur-3xl"
       }
       data-rhizoh-v11-surface-modal="1"
       data-rhizoh-world-space-media-tube="1"
@@ -540,7 +545,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
           octoLabMode
             ? "pointer-events-auto relative flex max-h-[78vh] min-h-0 flex-1 flex-col overflow-hidden rounded-t-2xl border border-white/10 bg-[#050505]/94 shadow-2xl backdrop-blur-xl"
             : obsBroadcastLayout
-              ? "flex min-h-0 flex-1 flex-col overflow-hidden p-1"
+              ? "flex h-full min-h-0 flex-1 flex-col overflow-hidden"
               : "flex min-h-0 flex-1 flex-col p-4 sm:p-6"
         }
       >
@@ -836,6 +841,56 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                 onClose={onClose}
               />
             ) : activeChannel.type === "world_sports_feed" ? (
+              broadcastMode ? (
+                <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-emerald-950/40 to-black p-2">
+                  <RhizohWorldSportsNewsStripV0 active uiLocale={uiLocale} mode="sports" className="mb-2 shrink-0" />
+                  <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+                    <div className="shrink-0 text-center">
+                      <p className="text-lg font-black uppercase tracking-[0.35em] text-emerald-300 sm:text-2xl">
+                        WorldSports
+                      </p>
+                      <p className="mt-1 text-[10px] text-white/60 normal-case">
+                        {tr
+                          ? `Canlı: ${worldSportsWire.liveMatchCount} · yaklaşan: ${worldSportsWire.upcomingMatchCount ?? 0} · harita pini: ${worldSportsWire.pinCount}`
+                          : `Live: ${worldSportsWire.liveMatchCount} · upcoming: ${worldSportsWire.upcomingMatchCount ?? 0} · map pins: ${worldSportsWire.pinCount}`}
+                      </p>
+                    </div>
+                    {worldSportsWire.liveChips?.length ? (
+                      <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
+                        {worldSportsWire.liveChips.map((chip) => (
+                          <div
+                            key={`live-broadcast:${chip}`}
+                            className="flex items-center justify-center rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-6 text-center text-base font-bold text-emerald-50 sm:text-xl"
+                          >
+                            {chip}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-emerald-500/25 text-sm text-white/45">
+                        {tr ? "Canlı maç bekleniyor" : "Awaiting live matches"}
+                      </div>
+                    )}
+                    {worldSportsWire.upcomingChips?.length ? (
+                      <div className="shrink-0 overflow-hidden">
+                        <p className="mb-1 text-[8px] font-semibold uppercase tracking-wider text-sky-400/80">
+                          {tr ? "Yaklaşan" : "Upcoming"}
+                        </p>
+                        <div className="flex gap-2 overflow-x-auto pb-1">
+                          {worldSportsWire.upcomingChips.slice(0, 6).map((chip) => (
+                            <span
+                              key={`upcoming-broadcast:${chip}`}
+                              className="shrink-0 rounded-lg border border-sky-500/20 bg-black/40 px-2 py-1 text-[9px] text-sky-100/90"
+                            >
+                              {chip}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : (
               <div className="relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:p-4">
                 <RhizohWorldSportsNewsStripV0 active uiLocale={uiLocale} mode="sports" className="shrink-0" />
                 <div className="flex min-h-[200px] flex-1 flex-col gap-3 rounded-2xl border border-emerald-500/25 bg-emerald-950/20 p-4">
@@ -884,6 +939,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
                   ) : null}
                 </div>
               </div>
+              )
             ) : activeChannel.type === "world_news_feed" ? (
               <div className="relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:p-4">
                 <RhizohWorldSportsNewsStripV0 active uiLocale={uiLocale} mode="news" className="shrink-0" />
@@ -941,7 +997,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
           )}
         </div>
 
-        {detail.node?.description ? (
+        {detail.node?.description && !obsBroadcastLayout ? (
           <p className={`text-center text-[10px] text-white/45 ${octoLabMode ? "px-4 pb-2" : "mt-3"}`}>
             {detail.node.description}
           </p>

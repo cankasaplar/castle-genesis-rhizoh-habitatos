@@ -16,13 +16,18 @@ export const RhizohArenaLearningStripV0 = memo(function RhizohArenaLearningStrip
   gateRejected = 0,
   lastMoveLabel = null,
   activeCameras = 1,
-  cameraTotal = 1
+  cameraTotal = 1,
+  compact = false
 }) {
   const gameLabel = game === "checkers" ? (tr ? "Dama" : "Checkers") : "Go";
 
   return (
-    <div className="rounded-lg border border-violet-500/30 bg-violet-950/25 px-3 py-2 text-[10px] text-white/75">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+    <div
+      className={`rounded-lg border border-violet-500/30 bg-violet-950/25 text-white/75 ${
+        compact ? "px-2 py-0.5 text-[8px]" : "px-3 py-2 text-[10px]"
+      }`}
+    >
+      <div className={`flex flex-wrap items-center ${compact ? "gap-x-2 gap-y-0" : "gap-x-3 gap-y-1"}`}>
         <span className="font-semibold text-violet-200/90">
           {tr ? "Öğrenme durumu" : "Learning status"}
         </span>
@@ -56,9 +61,11 @@ export const RhizohArenaLearningStripV0 = memo(function RhizohArenaLearningStrip
           <span className="text-white/40">{tr ? "hamle bekleniyor" : "awaiting moves"}</span>
         )}
       </div>
-      <p className="mt-1 text-[9px] text-white/35">
-        {gameLabel} · {tr ? "yalnızca gözlem" : "observation only"}
-      </p>
+      {!compact ? (
+        <p className="mt-1 text-[9px] text-white/35">
+          {gameLabel} · {tr ? "yalnızca gözlem" : "observation only"}
+        </p>
+      ) : null}
     </div>
   );
 });

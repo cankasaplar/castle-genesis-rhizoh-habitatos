@@ -21,7 +21,8 @@ export const RhizohChessBoardV0 = memo(function RhizohChessBoardV0({
   borderClass = "border-2 border-cyan-500/40 shadow-[0_0_24px_rgba(0,204,255,0.12)]",
   showCoords = true,
   interactive = true,
-  orientation = "white"
+  orientation = "white",
+  compact = false
 }) {
   const lastMoveSquares = resolveChessLastMoveSquaresV0(lastMove);
   const useFide = pieceStyleId === CHESS_PIECE_STYLE_V0.fide;
@@ -32,8 +33,12 @@ export const RhizohChessBoardV0 = memo(function RhizohChessBoardV0({
     ? rows.map((row) => [...row].reverse()).reverse()
     : rows;
 
+  const rootClass = compact
+    ? `flex min-h-0 ${sizeClass} flex-col items-center justify-center gap-0`
+    : `my-2 flex ${sizeClass} shrink-0 flex-col items-center gap-1`;
+
   return (
-    <div className={`my-2 flex ${sizeClass} shrink-0 flex-col items-center gap-1`}>
+    <div className={rootClass}>
       <div className="flex w-full items-stretch gap-1">
         {showCoords ? (
           <div className="grid shrink-0 grid-rows-8 text-[8px] font-semibold text-white/50 sm:text-[9px]">
