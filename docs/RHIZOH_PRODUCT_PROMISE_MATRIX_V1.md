@@ -1,7 +1,7 @@
 # Rhizoh Product Promise Matrix v1
 
 **SPECFLOW:** `RESEARCH-ONLY` — investor / founder SSOT; not execution authority.  
-**Parent:** [`RHIZOH_HONEST_BASELINE_CHARTER_V1.md`](RHIZOH_HONEST_BASELINE_CHARTER_V1.md) · [`paper-v0.1.md`](academic/preprint/paper-v0.1.md)
+**Parent:** [`RHIZOH_HONEST_BASELINE_CHARTER_V1.md`](RHIZOH_HONEST_BASELINE_CHARTER_V1.md) · [`paper-v0.1.md`](academic/preprint/paper-v0.1.md) · [`RHIZOH_INVESTOR_APPENDIX_V1.md`](outreach/RHIZOH_INVESTOR_APPENDIX_V1.md)
 
 ---
 
@@ -11,7 +11,39 @@
 
 ## One-liner (honest today)
 
-> Today: **observation + memory graph + academy seeds** under legal hold. Life OS executive scheduling and data-plane mutation ship after counsel READY.
+> Today: **World Bridge observation layer** + memory graph + session habitat climate under legal hold. Rhizoh is **not** an executive Life OS until counsel READY.
+
+---
+
+## Expectation management (read this first)
+
+| Surface | User may assume | Reality today |
+|---------|-----------------|---------------|
+| **Life OS** | Autonomous daily-life operating system | **Observation layer** — ingest, fuse, describe; no executive scheduling |
+| **Habitat** | 90-day behavior climate engine | **Session climate** — pattern labels from World Bridge lanes |
+| **Academy** | Full learning coach product | **Learning topology** — chess ✔ · go ✔ · checkers ✔ (observation reports) |
+| **Spatial world** | Live 3D mesh for all users | **Legal hold** — Cesium gated in prod |
+| **Sora** | Video generation tower | **Placeholder** — pin only, no Sora EP |
+| **WorldSports** | Complete sports life layer | **Partial** — gateway feed + map pin + media tube |
+| **Data plane** | Real WAL writes from life | **Off** — `admission=hold`, `mutationPermitted: false` |
+
+This table is the primary risk control: **expectation management**, not technical debt hiding.
+
+---
+
+## Life OS v0.1 closure
+
+**Status:** `ACHIEVED` (observational scope only)
+
+| In scope | Out of scope |
+|----------|--------------|
+| World Bridge Layer 2 | Autonomous scheduling |
+| Memory graph | Executive decision engine |
+| Habitat climate (session) | Life automation |
+| Shadow governance | 9-lane Habitat |
+| Interpretation-only boundary | Full spatial activation |
+
+See [`RHIZOH_LIFE_OS_V0_1_CLOSURE_NOTE.md`](RHIZOH_LIFE_OS_V0_1_CLOSURE_NOTE.md).
 
 ---
 
@@ -22,11 +54,13 @@
 | **Ingress** | Legal consent + identity on one screen | ✔ live | cohort allowlist, Firebase auth | checkboxes + Google | Legal freeze |
 | **Voice (Rhizoh)** | Speak; get bounded reply | ✔ v3 + gateway STT | `VITE_GATEWAY_TOKEN`, gateway HTTP/WS | mic | Prod |
 | **Chess / Learning** | Play, learn, lifetime report | ✔ ~88% (Stockfish, cluster, reports) | WASM local | pin → arena | Prod |
-| **Go / Checkers media** | Academy broadcast B-roll + learning tube wire | ◐ channel + tube wire + union report | `wireGoLearningTube`, `wireCheckersLearningTube`, `VITE_CASTLE_GENESIS_YOUTUBE_*` | media tube / pin | Content |
+| **Go learning** | Academy Go + spacetime wire | ✔ pipeline parity (arena, batch, gate, tube, KataGo optional) | `wireGoLearningTube`, `goLearningReport` | pin / media tube | Observation only |
+| **Checkers learning** | Academy checkers + spacetime wire | ✔ pipeline parity | `wireCheckersLearningTube`, `checkersLearningReport` | pin / media tube | Observation only |
 | **Academy Learning Union** | Single observability across chess + go + checkers | ◐ session_v0 union digest | `academyLearningUnion()`, `wireAcademyLearningUnion()` | console | Observation only |
 | **World Bridge** | Calendar / media / activity → life memory | ✔ 3 lanes, fusion, memory graph | `ingestCalendarEvent`, `ingestMediaEvent`, `ingestUserActivity` | console / future sync | Observation only |
 | **Life Shadow** | Day A/B counterfactual | ✔ calendar + media branches | `lifeShadowDayBranches()` | ingest + compare | Observation only |
-| **Habitat climate** | 90-day behavior / learning climate | ◐ session_v0 pattern engine | `habitatClimate()` | ingest + compare | Observation only |
+| **Habitat climate** | Behavior / learning climate labels | ◐ session_v0 pattern engine | `habitatClimate()` | ingest + compare | Observation only |
+| **Life OS status** | Honest closure snapshot | ◐ wire pending | `lifeOsStatus()` | console | Observation only |
 | **WorldSports** | Live scores + map pins + media tube | ◐ feed + pin + tube wire | `API_SPORTS_KEY` (gateway), optional YouTube VOD | pin / voice / tube | Gateway |
 | **World News** | Headline strip + feed | ◐ gateway feed | gateway world-feed | tube channel | Gateway |
 | **Castle Genesis media** | YouTube live + short honest clips | ✔ embed + channels SSOT | `VITE_CASTLE_GENESIS_YOUTUBE_*` | media tube | Prod |
@@ -47,11 +81,11 @@
 ```
 Legal counsel READY
     → Data plane open
-    → Life OS scheduling
+    → Life OS scheduling (executive — not v0.1)
     → First paying cohort
     → Academy topology (learning map)
     → Castle Genesis (life simulation UI)
-    → Habitat climate layers
+    → Habitat climate layers (90-day)
     → Spiral MMO
 ```
 
@@ -60,8 +94,10 @@ Legal counsel READY
 ## Console probes (prod)
 
 ```javascript
+__rhizoh.lifeOsStatus()
 __rhizoh.worldBridgeMemory()
 __rhizoh.habitatClimate()
+__rhizoh.executionPermission()
 __rhizoh.academyLearningUnion()
 await __rhizoh.wireAcademyLearningUnion({ demoMove: true })
 __rhizoh.spatialRendererRegistry.gateCause
@@ -76,3 +112,4 @@ await window.__rhizoh.mediaGateway.ensure()
 - [`RHIZOH_LLM_TOWER_API_REGISTRY_V1.0.md`](RHIZOH_LLM_TOWER_API_REGISTRY_V1.0.md)
 - [`CASTLE_GENESIS_MEDIA_PLAYER_CHANNELS_V0.md`](CASTLE_GENESIS_MEDIA_PLAYER_CHANNELS_V0.md)
 - [`RHIZOH_ACTIVATION_READINESS_CHECKLIST_V1.0.md`](RHIZOH_ACTIVATION_READINESS_CHECKLIST_V1.0.md)
+- [`RHIZOH_INVESTOR_APPENDIX_V1.md`](outreach/RHIZOH_INVESTOR_APPENDIX_V1.md)
