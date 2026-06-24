@@ -4,6 +4,7 @@
  */
 
 import { MEDIA_EVENT_TYPE_V0 } from "./mediaEventAdapterV0.js";
+import { recordWorldBridgeShadowMemoryV0 } from "./worldBridgeMemoryGraphV0.js";
 
 export const MEDIA_SHADOW_TIMELINE_SCHEMA_V0 = "castle.rhizoh.media_shadow_timeline.v0";
 export const MEDIA_SHADOW_TIMELINE_EVENT_V0 = "rhizoh:media-shadow-timeline-v0";
@@ -66,6 +67,8 @@ export function recordMediaShadowTimelineEventV0(normalized, opts = {}) {
 
   shadowEventsV0.unshift(entry);
   if (shadowEventsV0.length > MAX_EVENTS) shadowEventsV0.length = MAX_EVENTS;
+
+  recordWorldBridgeShadowMemoryV0(entry, "media");
 
   if (typeof globalThis !== "undefined" && globalThis.dispatchEvent) {
     globalThis.dispatchEvent(new CustomEvent(MEDIA_SHADOW_TIMELINE_EVENT_V0, { detail: entry }));

@@ -75,6 +75,7 @@ import {
   getCrossSpaceFusionLaneAuditV0,
   getCrossSpaceFusionSnapshotV0
 } from "./crossSpaceCausalFusionV0.js";
+import { getWorldBridgeMemoryGraphSnapshotV0 } from "./worldBridgeMemoryGraphV0.js";
 
 export const RHIZOH_FULL_SYSTEM_REPORT_SCHEMA_V0 = "rhizoh.full_system_report.v0";
 
@@ -601,6 +602,7 @@ function collectWorldBridgeDiagnosticV0() {
   const lifeShadowDayAb = buildLifeShadowDayBranchComparisonV0();
   const fusion = getCrossSpaceFusionSnapshotV0();
   const laneAudit = getCrossSpaceFusionLaneAuditV0();
+  const memoryGraph = getWorldBridgeMemoryGraphSnapshotV0();
   const laneContrib = fusion?.lastFusion?.epistemicUpdate?.laneContributions || null;
 
   const rhizoh = typeof window !== "undefined" ? window.__rhizoh : null;
@@ -650,6 +652,11 @@ function collectWorldBridgeDiagnosticV0() {
       calendar: laneAudit.calendar.present,
       media: laneAudit.media.present,
       userActivity: laneAudit.userActivity.present
+    }),
+    memoryGraph: Object.freeze({
+      nodeCount: memoryGraph.nodeCount,
+      bySource: memoryGraph.bySource,
+      consoleApi: "__rhizoh.worldBridgeMemory()"
     }),
     fusionLanes: Object.freeze({
       calendarPresent: Boolean(laneContrib?.calendar?.present ?? laneAudit.calendar.present),
@@ -1074,6 +1081,7 @@ export function printFullSystemReportV0(report) {
     `    life shadow: ${r.worldBridge?.lifeShadow?.calendarEventCount ?? 0} entries · dayA ${r.worldBridge?.lifeShadow?.branches?.shadow_day_a ?? 0} · dayB ${r.worldBridge?.lifeShadow?.branches?.shadow_day_b ?? 0}`,
     `    media shadow: ${r.worldBridge?.mediaShadow?.eventCount ?? 0} entries · immersive ${r.worldBridge?.mediaShadow?.branches?.shadow_immersive ?? 0} · scattered ${r.worldBridge?.mediaShadow?.branches?.shadow_scattered ?? 0}`,
     `    day A/B: dayA ${r.worldBridge?.lifeShadowDayAb?.dayA ?? 0} · dayB ${r.worldBridge?.lifeShadowDayAb?.dayB ?? 0} · dominant ${r.worldBridge?.lifeShadowDayAb?.dominantBranch ?? "—"}`,
+    `    memory graph: ${r.worldBridge?.memoryGraph?.nodeCount ?? 0} nodes · ${Object.entries(r.worldBridge?.memoryGraph?.bySource || {}).map(([k, v]) => `${k}:${v}`).join(", ") || "—"}`,
     `    fusion lanes: cal ${r.worldBridge?.fusionLanes?.calendarPresent ? `on (${r.worldBridge.fusionLanes.calendarWeight})` : "off"} · media ${r.worldBridge?.fusionLanes?.mediaPresent ? `on (${r.worldBridge.fusionLanes.mediaWeight})` : "off"} · activity ${r.worldBridge?.fusionLanes?.userActivityPresent ? `on (${r.worldBridge.fusionLanes.userActivityWeight})` : "off"}`,
     `    console: __rhizoh.ingestCalendarEvent() · __rhizoh.ingestMediaEvent() · __rhizoh.ingestUserActivity() · __rhizoh.lifeShadowDayBranches()`,
     "───────────────────────────────────────────",
