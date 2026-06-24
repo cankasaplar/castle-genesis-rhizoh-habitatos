@@ -21,6 +21,7 @@ import { RhizohMediaStageWithOctoV0 } from "./RhizohMediaOctoCompanionOverlayV0.
 import { RhizohOctoEightCameraLabV0 } from "./RhizohOctoEightCameraLabV0.jsx";
 import { RhizohChessClusterArenaV0 } from "./RhizohChessClusterArenaV0.jsx";
 import { RhizohGoClusterArenaV0 } from "./RhizohGoClusterArenaV0.jsx";
+import { RhizohCheckersClusterArenaV0 } from "./RhizohCheckersClusterArenaV0.jsx";
 import { RhizohCastleShadowInboxV0 } from "./RhizohCastleShadowInboxV0.jsx";
 import { publishChessClusterBroadcastActiveV0 } from "../rhizoh/runtime/chessEngineContentionGateV0.js";
 import {
@@ -42,7 +43,15 @@ import {
   getGoLearningTubeSnapshotV0,
   wireGoLearningMediaTubeV0
 } from "../rhizoh/runtime/goLearningMediaTubeWireV0.js";
-import { RHIZOH_WORLDSPORTS_CHANNEL_ID_V0, RHIZOH_GO_LEARNING_CHANNEL_ID_V0 } from "../rhizoh/runtime/worldSpaceMediaChannelsV0.js";
+import {
+  getCheckersLearningTubeSnapshotV0,
+  wireCheckersLearningMediaTubeV0
+} from "../rhizoh/runtime/checkersLearningMediaTubeWireV0.js";
+import {
+  RHIZOH_WORLDSPORTS_CHANNEL_ID_V0,
+  RHIZOH_GO_LEARNING_CHANNEL_ID_V0,
+  RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0
+} from "../rhizoh/runtime/worldSpaceMediaChannelsV0.js";
 
 function isCastleMediaSourceV0(source) {
   return String(source || "").startsWith("castle_init");
@@ -94,6 +103,9 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
   const [localPreviewStream, setLocalPreviewStream] = useState(null);
   const [worldSportsWire, setWorldSportsWire] = useState(() => getWorldSportsTubeSnapshotV0({ locale: uiLocale }));
   const [goLearningWire, setGoLearningWire] = useState(() => getGoLearningTubeSnapshotV0({ locale: uiLocale }));
+  const [checkersLearningWire, setCheckersLearningWire] = useState(() =>
+    getCheckersLearningTubeSnapshotV0({ locale: uiLocale })
+  );
   const captureRef = useRef(null);
   const previewRef = useRef(null);
   const castleBroadcast = useMemo(() => isCastleMediaSourceV0(detail?.source), [detail?.source]);
@@ -112,6 +124,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
   }, [detail?.node?.id, detail?.source]);
   const learningChannelActive = activeChannel.type === "chess_cluster_live";
   const goLearningChannelActive = activeChannel.type === "go_cluster_live";
+  const checkersLearningChannelActive = activeChannel.type === "checkers_cluster_live";
   const worldSportsChannelActive = activeChannel.type === "world_sports_feed";
   const worldNewsChannelActive = activeChannel.type === "world_news_feed";
   const legalGateMode = Boolean(detail?.legalGate);
@@ -181,6 +194,28 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
         if (typeof window !== "undefined") {
           window.__rhizoh = window.__rhizoh || {};
           window.__rhizoh.lastGoLearningWire = result;
+        }
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeChannel.id, activeChannel.type, uiLocale]);
+
+  useEffect(() => {
+    if (
+      activeChannel.id !== RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0 &&
+      activeChannel.type !== "checkers_cluster_live"
+    ) {
+      return undefined;
+    }
+    let cancelled = false;
+    void wireCheckersLearningMediaTubeV0({ locale: uiLocale, force: true, demoMove: true }).then((result) => {
+      if (!cancelled) {
+        setCheckersLearningWire(getCheckersLearningTubeSnapshotV0({ locale: uiLocale }));
+        if (typeof window !== "undefined") {
+          window.__rhizoh = window.__rhizoh || {};
+          window.__rhizoh.lastCheckersLearningWire = result;
         }
       }
     });
@@ -739,6 +774,13 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
               />
             ) : activeChannel.type === "go_cluster_live" ? (
               <RhizohGoClusterArenaV0
+                open
+                embedMode
+                uiLocale={uiLocale}
+                onClose={onClose}
+              />
+            ) : activeChannel.type === "checkers_cluster_live" ? (
+              <RhizohCheckersClusterArenaV0
                 open
                 embedMode
                 uiLocale={uiLocale}

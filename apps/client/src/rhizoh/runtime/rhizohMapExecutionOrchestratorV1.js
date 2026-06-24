@@ -6,6 +6,7 @@ import {
 import { resolveWorldSpaceMediaChannelForMapNodeV0 } from "./worldSpaceMediaChannelsV0.js";
 import { dispatchOpenWorldSportsMediaTubeV0 } from "./worldSportsMediaTubeWireV0.js";
 import { dispatchOpenGoLearningMediaTubeV0 } from "./goLearningMediaTubeWireV0.js";
+import { dispatchOpenCheckersLearningMediaTubeV0 } from "./checkersLearningMediaTubeWireV0.js";
 import {
   ORCHESTRATOR_ACTION_REGISTRY_V0,
   RHIZOH_OPEN_CASTLE_EVENT_V1,
@@ -99,6 +100,15 @@ export function attachRhizohMapExecutionOrchestratorV1() {
         }
         if (nodeId === "go_arena" || nodeId === "go" || nodeId.includes("go_board")) {
           dispatchOpenGoLearningMediaTubeV0({ node, source, title: node.name || node.label });
+          break;
+        }
+        if (
+          nodeId === "checkers_arena" ||
+          nodeId === "checkers" ||
+          nodeId.includes("dama") ||
+          nodeId.includes("checkers_board")
+        ) {
+          dispatchOpenCheckersLearningMediaTubeV0({ node, source, title: node.name || node.label });
           break;
         }
         window.dispatchEvent(

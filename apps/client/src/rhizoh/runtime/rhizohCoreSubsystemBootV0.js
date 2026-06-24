@@ -35,6 +35,9 @@ import { ensureWorldSportsMediaTubeDevToolsV0 } from "./worldSportsMediaTubeWire
 import { ensureGoLearningMediaTubeDevToolsV0 } from "./goLearningMediaTubeWireV0.js";
 import { ensureRhizohGoLearningReportV0 } from "./rhizohGoLearningReportV0.js";
 import { ensureRhizohGoLearningCameraV0 } from "./rhizohGoLearningCameraV0.js";
+import { ensureCheckersLearningMediaTubeDevToolsV0 } from "./checkersLearningMediaTubeWireV0.js";
+import { ensureRhizohCheckersLearningReportV0 } from "./rhizohCheckersLearningReportV0.js";
+import { ensureRhizohCheckersLearningCameraV0 } from "./rhizohCheckersLearningCameraV0.js";
 import { ensureRhizohChessLifetimeReportV0 } from "./rhizohChessLifetimeReportV0.js";
 import { ensureChessHistoryBrainV0 } from "./chessHistoryBrainReportV0.js";
 import { ensureRhizohChessEvolutionCurveV0 } from "./rhizohChessEvolutionCurveV0.js";
@@ -127,6 +130,9 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureGoLearningMediaTubeDevToolsV0();
     ensureRhizohGoLearningReportV0();
     ensureRhizohGoLearningCameraV0();
+    ensureCheckersLearningMediaTubeDevToolsV0();
+    ensureRhizohCheckersLearningReportV0();
+    ensureRhizohCheckersLearningCameraV0();
     ensureRhizohChessLifetimeReportV0();
     ensureChessHistoryBrainV0();
     ensureRhizohChessEvolutionCurveV0();
