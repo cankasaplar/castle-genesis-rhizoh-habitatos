@@ -20,6 +20,10 @@ import {
 } from "../rhizoh/runtime/spiralMMOAwakeningBirdV0.js";
 import { sampleSpiralMMOBirdRoutePointV0 } from "../rhizoh/runtime/spiralMMOBirdFlockFlightV0.js";
 import {
+  sampleSpiralMMOBirdCubeGlideV0,
+  shouldTriggerSpiralMMOBirdCubeGlideV0
+} from "../rhizoh/runtime/spiralMMOBirdCubeGlideV0.js";
+import {
   buildSpiralMMOAwakeningBottlePlanV0,
   spiralMMOAwakeningBottleHtmlV0
 } from "../rhizoh/runtime/spiralMMOAwakeningBottleV0.js";
@@ -524,26 +528,64 @@ const SpiralMMOBirdV0 = memo(function SpiralMMOBirdV0({ bird, hostRef, cubeTarge
       const pathOffset = Number.isFinite(bird.pathOffset) ? bird.pathOffset : 0;
       const startAt = performance.now() + (bird.birdIndex || 0) * 220;
       const inner = el.firstElementChild;
+      let loopIndex = 0;
+      let glideActive = false;
+      let glideStartAt = 0;
+      let glideFrom = { x: bird.startX, y: bird.startY, z: 0 };
+      let glideTo = null;
+      const glideMs = 1600;
 
-      const tick = (now) => {
-        const elapsed = Math.max(0, now - startAt);
-        const progress = (elapsed % loopMs) / loopMs;
-        const sample = sampleSpiralMMOBirdRoutePointV0(routePoints, pathOffset + progress);
+      const applySample = (sample, opacityMul = 1) => {
         const bank = sample.bank ?? 0;
         const heading = sample.headingDeg ?? 0;
         const z = sample.z ?? 0;
         const pitch = sample.pitchDeg ?? -12;
         const scaleMul = sample.depthScaleMul ?? 1;
-        const bob = 1 + Math.sin(progress * Math.PI * 2) * 0.06;
-        const scale = bird.depthScale * scaleMul * bob;
-        const opacity = Math.max(0.35, Math.min(1, bird.depthOpacity * (0.82 + scaleMul * 0.22)));
-
+        const scale = bird.depthScale * scaleMul;
+        const opacity = Math.max(
+          0.35,
+          Math.min(1, bird.depthOpacity * (0.82 + scaleMul * 0.22) * opacityMul)
+        );
         el.style.transform = `translate3d(${sample.x}px, ${sample.y}px, ${z}px)`;
         el.style.zIndex = String(20 + Math.round(z + 40));
         if (inner) {
           inner.style.transform = `scale(${scale}) rotateX(${pitch}deg) rotateZ(${heading + bank * 0.4}deg)`;
           inner.style.opacity = String(opacity);
         }
+      };
+
+      const tick = (now) => {
+        if (glideActive && glideTo) {
+          const glideT = Math.min(1, (now - glideStartAt) / glideMs);
+          applySample(sampleSpiralMMOBirdCubeGlideV0(glideFrom, glideTo, glideT));
+          if (glideT >= 1) {
+            glideActive = false;
+            glideTo = null;
+            loopIndex += 1;
+          }
+          rafRef.current = requestAnimationFrame(tick);
+          return;
+        }
+
+        const elapsed = Math.max(0, now - startAt);
+        const loopElapsed = elapsed % loopMs;
+        const progress = loopElapsed / loopMs;
+        const sample = sampleSpiralMMOBirdRoutePointV0(routePoints, pathOffset + progress);
+        const bob = 1 + Math.sin(progress * Math.PI * 2) * 0.06;
+        applySample({ ...sample, depthScaleMul: (sample.depthScaleMul ?? 1) * bob });
+
+        if (
+          !glideActive &&
+          cubeTargets.length > 0 &&
+          shouldTriggerSpiralMMOBirdCubeGlideV0(progress, loopIndex, bird.birdIndex || 0)
+        ) {
+          glideActive = true;
+          glideStartAt = now;
+          glideFrom = { x: sample.x, y: sample.y, z: sample.z ?? 0 };
+          const target = cubeTargets[(bird.birdIndex || 0) % cubeTargets.length];
+          glideTo = { x: target.x, y: target.y };
+        }
+
         rafRef.current = requestAnimationFrame(tick);
       };
       rafRef.current = requestAnimationFrame(tick);

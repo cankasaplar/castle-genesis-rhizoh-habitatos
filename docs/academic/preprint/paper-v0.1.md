@@ -29,7 +29,7 @@ Modern real-time multiplayer systems typically enforce a **single centralized tr
 
 The system implements a **multi-stage authority arbitration model** with explicit observability phases (`MATCH_EVENT_APPENDED`, `MATCH_EVENT_VALIDATED`, `MATCH_EVENT_COMMITTED`, `MATCH_STATE_REDUCED`) and a **drift–reconciliation engine** that classifies shadow vs. committed divergence (`DRIFT_DETECTED`, `RECONCILIATION_APPLIED`, `DRIFT_RESOLVED`) instead of silently overwriting candidate states. Users are modeled as **observer nodes** in an epistemic stack: interpretation layers may influence understanding but do not hold execution authority over sealed subgraphs (v562–v570).
 
-We report **reproducible harness measurements** from the running prototype: deterministic replay equivalence (`produced state === replayed state`), successful single-writer boundary verification (`effectiveCommitWriter: server`, `commitAuthority: server` derived post-ack), and controlled drift injection with reconciliation recovery. We explicitly document **product gaps**: live WebSocket fan-out (`broadcast_to_all_clients`), world/tower routing segmentation, media-as-event-stream, and life-OS scheduling remain future layers — the current artifact is approximately **70% execution engine / 30% product surface**.
+We report **reproducible harness measurements** from the running prototype: deterministic replay equivalence (`produced state === replayed state`), successful single-writer boundary verification (`effectiveCommitWriter: server`, `commitAuthority: server` derived post-ack), and controlled drift injection with reconciliation recovery. We explicitly document **remaining product gaps**: live WebSocket fan-out (`broadcast_to_all_clients`), world/tower routing segmentation, and production-grade life-OS scheduling. **World Bridge Layer 2** (calendar, media, user-activity ingress with cross-space fusion and life-shadow counterfactuals) is implemented as an **interpretation-only** stub — not authoritative daily-life OS integration.
 
 **Contribution:** (1) a testable **proposal–preview–commit** authority split with derived commit metadata; (2) an append-only **truth kernel** with reconciliation-tolerant simulation lanes; (3) operational verification hooks suitable for distributed-systems evaluation. **Not claimed:** solved consensus, production-grade C2C mesh, or general-purpose daily-life OS readiness.
 
@@ -61,7 +61,7 @@ Rhizoh asks: *what if we engineer for reconciliation rather than pretending dive
 
 - Not a replacement for Raft/PBFT consensus
 - Not proof of “multi-truth” in the philosophical sense — **one authoritative log** after arbitration
-- Not daily-life OS, calendar sync, or media timeline integration (documented gaps)
+- Not production-grade daily-life OS — **World Bridge v0** provides interpretation-only calendar/media/user-activity ingress, shadow timelines, and fusion lanes (`ingestCalendarEvent`, `ingestMediaEvent`, `ingestUserActivity`); external calendar/media sync and executive scheduling remain future work
 
 ---
 
@@ -245,9 +245,10 @@ flowchart TB
 
 | Subsystem | Today | Target |
 |-----------|-------|--------|
-| Media / YouTube | UI embed playback | `video_play` / `seek` / `pause` as truth events |
+| **World Bridge (Layer 2)** | Interpretation-only ingress: calendar · media · user activity → Fox-axis fusion + life-shadow Day A/B | External sync + executive scheduling |
+| Media / YouTube | UI embed + `ingestMediaEvent` shadow timeline | Full `video_play` / `seek` / `pause` as truth events on `truth_log_v0` |
 | Scheduler | Game/simulation tasks | Game + learning + real-life + AI delegation |
-| Daily OS | Not safe for general daily use | Life-OS scheduler v2 + external world sync |
+| Daily OS | Shadow counterfactuals only (`lifeShadowDayBranches`) | Life-OS scheduler v2 + external world sync |
 
 **Productization order (do not reorder):**
 
