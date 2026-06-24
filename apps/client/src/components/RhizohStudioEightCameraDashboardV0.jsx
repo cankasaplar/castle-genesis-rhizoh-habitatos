@@ -67,18 +67,14 @@ export const RhizohStudioEightCameraDashboardV0 = memo(function RhizohStudioEigh
   );
 
   const onCopyShortBrief = useCallback(async () => {
-    if (typeof window !== "undefined" && typeof window.__rhizoh?.copyChessObservationBrief === "function") {
-      await window.__rhizoh.copyChessObservationBrief({ locale: uiLocale });
-      return;
-    }
-    const { formatChessObservationShortBriefV0 } = await import(
-      "../rhizoh/runtime/rhizohChessObservationShortCaptureV0.js"
+    const { copyRhizohChessObservationBriefV0 } = await import(
+      "../rhizoh/runtime/rhizohChessObservationShortWireV0.js"
     );
-    const text = formatChessObservationShortBriefV0(chessCapture);
-    if (typeof navigator?.clipboard?.writeText === "function") {
-      await navigator.clipboard.writeText(text);
+    const result = await copyRhizohChessObservationBriefV0({ locale: uiLocale });
+    if (!result.copied && result.hint && typeof console !== "undefined") {
+      console.info(result.hint);
     }
-  }, [chessCapture, uiLocale]);
+  }, [uiLocale]);
 
   if (!snap) return null;
 
