@@ -3,7 +3,7 @@
  * Map renderer reads this; orchestrator maps types → workspace / media / info.
  */
 
-import { resolveInitialWorldSpaceMediaChannelIdV0, resolveWorldSpaceMediaChannelForMapNodeV0, RHIZOH_LEARNING_CHANNEL_ID_V0, RHIZOH_WORLDSPORTS_CHANNEL_ID_V0, RHIZOH_WORLD_NEWS_CHANNEL_ID_V0 } from "./worldSpaceMediaChannelsV0.js";
+import { resolveInitialWorldSpaceMediaChannelIdV0, resolveWorldSpaceMediaChannelForMapNodeV0, RHIZOH_LEARNING_CHANNEL_ID_V0, RHIZOH_GO_LEARNING_CHANNEL_ID_V0, RHIZOH_WORLDSPORTS_CHANNEL_ID_V0, RHIZOH_WORLD_NEWS_CHANNEL_ID_V0 } from "./worldSpaceMediaChannelsV0.js";
 import { publishChessClusterBroadcastActiveV0 } from "./chessEngineContentionGateV0.js";
 import { presenceColorForStateV0 } from "./castlePresenceRegistryV0.js";
 import {
@@ -110,6 +110,17 @@ export const SOVEREIGN_CORE_NODES_V0 = Object.freeze([
     color: "#10b981",
     owner: "Mind_Core",
     description: "Nöral satranç motoru devrede."
+  }),
+  Object.freeze({
+    id: "go_arena",
+    name: "Go Arena",
+    label: "GO",
+    type: "zone",
+    lat: 41.048,
+    lon: 29.003,
+    color: "#38bdf8",
+    owner: "Mind_Core",
+    description: "Go öğrenme topolojisi — uzay-zaman gözlem zarfı."
   }),
   Object.freeze({
     id: "worldsports",
@@ -561,6 +572,7 @@ export function dispatchSovereignVoiceWarpV0(target, source = "voice_warp") {
 /** Turkish spoken labels for map pins (TTS + chat; avoid English tower names in TR UI). */
 export const SOVEREIGN_MAP_NODE_VOICE_LABEL_TR_V0 = Object.freeze({
   chess_arena: "Satranç Arenası",
+  go_arena: "Go Arenası",
   worldsports: "WorldSports",
   worldnews: "World News",
   library: "Codex Kasası",
@@ -584,6 +596,10 @@ const SOVEREIGN_MAP_VOICE_NAV_ALIASES_V0 = Object.freeze([
   Object.freeze({
     nodeId: "chess_arena",
     aliases: ["chess arena", "chess", "satranc arenasi", "satranç arenası", "satranç", "satranc"]
+  }),
+  Object.freeze({
+    nodeId: "go_arena",
+    aliases: ["go arena", "go", "igo", "baduk", "weiqi", "go arenasi", "go arenası"]
   }),
   Object.freeze({
     nodeId: "worldnews",
@@ -933,6 +949,30 @@ export function dispatchOpenRhizohLearningChannelV0(payload = {}) {
       (tr ? "Rhizoh Öğrenme Kanalı" : "Rhizoh Learning Channel"),
     source: payload.source || "rhizoh_learning_channel",
     initialChannelId: RHIZOH_LEARNING_CHANNEL_ID_V0
+  });
+}
+
+/**
+ * Open World · Space media tube on Go learning channel (spacetime cluster).
+ * @param {{ node?: object, title?: string, source?: string }} [payload]
+ */
+export function dispatchOpenRhizohGoLearningChannelV0(payload = {}) {
+  const goNode =
+    payload.node ||
+    SOVEREIGN_CORE_NODES_V0.find((n) => n.id === "go_arena" || n.id === "go") ||
+    Object.freeze({
+      id: "go_arena",
+      type: "zone",
+      label: "GO",
+      name: "Rhizoh Go Arena",
+      color: "#38bdf8"
+    });
+  const tr = payload.tr !== false;
+  dispatchOpenMediaTubeV0({
+    node: goNode,
+    title: payload.title || (tr ? "Go Öğrenme · Uzay-Zaman" : "Go Learning · Spacetime"),
+    source: payload.source || "map:node:go",
+    initialChannelId: RHIZOH_GO_LEARNING_CHANNEL_ID_V0
   });
 }
 

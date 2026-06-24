@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import {
   attachRhizohMapExecutionOrchestratorV1,
   resetRhizohMapExecutionOrchestratorForTestV1
@@ -10,6 +10,7 @@ import {
   routeSymbyoMapInteractionToOrchestratorV0,
   SYMBYO_MAP_INTERACTION_V0
 } from "../symbyoMapIntentBridgeV0.js";
+import * as goLearningWire from "../goLearningMediaTubeWireV0.js";
 
 describe("rhizohMapExecutionOrchestratorV1", () => {
   beforeEach(() => {
@@ -67,5 +68,29 @@ describe("rhizohMapExecutionOrchestratorV1", () => {
     window.dispatchEvent(new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, { detail }));
 
     expect(opened.length).toBe(1);
+  });
+
+  it("routes go_arena pin to go learning media tube wire", () => {
+    const spy = vi.spyOn(goLearningWire, "dispatchOpenGoLearningMediaTubeV0");
+    attachRhizohMapExecutionOrchestratorV1();
+
+    const routed = routeSymbyoMapInteractionToOrchestratorV0({
+      interaction: SYMBYO_MAP_INTERACTION_V0.CLICK,
+      node: { id: "go_arena", label: "GO", type: "zone", color: "#38bdf8" }
+    });
+    expect(routed.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER);
+
+    window.dispatchEvent(
+      new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, {
+        detail: {
+          ...routed,
+          nodeView: { id: "go_arena", label: "GO", type: "zone", color: "#38bdf8" }
+        }
+      })
+    );
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy.mock.calls[0][0].node.id).toBe("go_arena");
+    spy.mockRestore();
   });
 });
