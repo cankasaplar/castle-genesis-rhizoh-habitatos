@@ -8,6 +8,7 @@ import {
   CHESS_OBSERVATION_SHORT_001_MIN_MOVES_V0
 } from "../rhizoh/runtime/rhizohChessObservationShortCaptureV0.js";
 import { RhizohStudioCameraAdapterPreviewV0 } from "./RhizohStudioCameraAdapterPreviewV0.jsx";
+import { RhizohStudioChessShortRecordGuideV0 } from "./RhizohStudioChessShortRecordGuideV0.jsx";
 
 function readStudioVisibilitySnapshotV0() {
   if (typeof window !== "undefined" && typeof window.__rhizoh?.studioVisibility === "function") {
@@ -76,6 +77,15 @@ export const RhizohStudioEightCameraDashboardV0 = memo(function RhizohStudioEigh
     }
   }, [uiLocale]);
 
+  const refreshCapture = useCallback(() => {
+    setSnap(readStudioVisibilitySnapshotV0());
+    try {
+      setAdapters(getStudioObservationAdapterRegistrySnapshotV0());
+    } catch {
+      setAdapters(null);
+    }
+  }, []);
+
   if (!snap) return null;
 
   return (
@@ -126,6 +136,12 @@ export const RhizohStudioEightCameraDashboardV0 = memo(function RhizohStudioEigh
           </button>
         </div>
       ) : null}
+
+      <RhizohStudioChessShortRecordGuideV0
+        capture={chessCapture}
+        uiLocale={uiLocale}
+        onRefresh={refreshCapture}
+      />
 
       <div
         className="grid grid-cols-2 gap-2"
