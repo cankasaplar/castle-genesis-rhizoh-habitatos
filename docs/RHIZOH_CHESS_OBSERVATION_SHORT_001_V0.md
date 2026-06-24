@@ -38,6 +38,16 @@ __rhizoh.printChessObservationBrief({ locale: "tr" })  // DevTools-safe — no c
 
 Studio dashboard → **Copy brief** when chess moves > 0.
 
+When `readyToRecord: true` → **Record guide · Short #001** — step-through teleprompter with per-beat timer (60s total).
+
+## Record workflow (prod)
+
+1. `ready: YES` on brief (31+ moves)
+2. Studio drawer → **Record guide · Short #001**
+3. Beat 4 (memory): tap **demo seed** if `lifeOsStatus: DORMANT`
+4. Screen record each beat · follow narrator lines
+5. Export 60s vertical short
+
 ## If `lifeOsStatus: DORMANT`
 
 Memory beat: run `await __rhizoh.studioDemoSeed()` before recording beat 4.
