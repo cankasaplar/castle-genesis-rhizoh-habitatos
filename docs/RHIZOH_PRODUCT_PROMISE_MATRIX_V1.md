@@ -65,7 +65,9 @@ See [`RHIZOH_LIFE_OS_V0_1_CLOSURE_NOTE.md`](RHIZOH_LIFE_OS_V0_1_CLOSURE_NOTE.md)
 | **Studio Dashboard** | 8 cameras on one screen — Memory · Habitat · Chess · Go · Checkers · Academy · WorldSports · Spatial | ✔ 2×4 grid + adapter previews | `studioVisibility()` · `studioAdapters()` | Studio drawer | Observation only |
 | **Studio demo seed** | One-click investor memory demo | ✔ panel + console | `studioDemoSeed()` | Studio panel | Observation only |
 | **Chess Observation #001** | 60s YouTube short capture manifest | ✔ console + dashboard brief | `chessObservationShort001()` | Studio dashboard | Observation only |
-| **WorldSports** | Live scores + map pins + media tube | ◐ feed + pin + tube wire | `API_SPORTS_KEY` (gateway), optional YouTube VOD | pin / voice / tube | Gateway |
+| **Director Engine v1** | Event → scene timeline · cut triggers | ✔ director mode panel | `directorTimeline()` · `soraPromptPack()` | Studio drawer | Observation only |
+| **WorldSports Short #001** | 50s observation when feed live | ◐ gateway keys required | `worldSportsObservationShort001()` | Studio / world sports | Gateway |
+| **WorldSports** | Live scores + map pins + media tube | ◐ feed poll + studio wire | `wireWorldSportsTube()` · `worldSportsTube()` | pin / voice / tube | Gateway |
 | **World News** | Headline strip + feed | ◐ gateway feed | gateway world-feed | tube channel | Gateway |
 | **Castle Genesis media** | YouTube live + short honest clips | ✔ embed + channels SSOT | `VITE_CASTLE_GENESIS_YOUTUBE_*` | media tube | Prod |
 | **Gemini tower** | Vision + creative surface | ◐ chat/vision ✔, Imagen stub | `GEMINI_API_KEY` | pin → workspace | Gateway |
@@ -103,6 +105,10 @@ __rhizoh.studioAdapters()
 __rhizoh.chessObservationShort001()
 await __rhizoh.copyChessObservationBrief()
 __rhizoh.printChessObservationBrief({ locale: "tr" })
+__rhizoh.directorTimeline({ locale: "tr" })
+__rhizoh.soraPromptPack({ locale: "tr" })
+await __rhizoh.wireWorldSportsTube({ force: true })
+__rhizoh.worldSportsObservationShort001({ locale: "tr" })
 __rhizoh.studioDemoSeed()
 __rhizoh.lifeOsStatus()
 __rhizoh.worldBridgeMemory()

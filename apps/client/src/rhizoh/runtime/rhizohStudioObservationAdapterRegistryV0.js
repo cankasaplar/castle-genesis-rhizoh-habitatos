@@ -200,7 +200,9 @@ function buildWorldSportsAdapterFrameV0() {
     consumerReady: true,
     feedEmpty: live === 0 && pins === 0,
     liveMatchCount: live,
-    pinCount: pins
+    pinCount: pins,
+    recentChips: Object.freeze((sports?.recentChips || []).slice(0, 4)),
+    feedFetchedAt: sports?.feedFetchedAt ?? null
   });
 }
 
