@@ -11,6 +11,7 @@ import {
   SYMBYO_MAP_INTERACTION_V0
 } from "../symbyoMapIntentBridgeV0.js";
 import * as goLearningWire from "../goLearningMediaTubeWireV0.js";
+import * as checkersLearningWire from "../checkersLearningMediaTubeWireV0.js";
 
 describe("rhizohMapExecutionOrchestratorV1", () => {
   beforeEach(() => {
@@ -91,6 +92,30 @@ describe("rhizohMapExecutionOrchestratorV1", () => {
 
     expect(spy).toHaveBeenCalledTimes(1);
     expect(spy.mock.calls[0][0].node.id).toBe("go_arena");
+    spy.mockRestore();
+  });
+
+  it("routes checkers_arena pin to checkers learning media tube wire", () => {
+    const spy = vi.spyOn(checkersLearningWire, "dispatchOpenCheckersLearningMediaTubeV0");
+    attachRhizohMapExecutionOrchestratorV1();
+
+    const routed = routeSymbyoMapInteractionToOrchestratorV0({
+      interaction: SYMBYO_MAP_INTERACTION_V0.CLICK,
+      node: { id: "checkers_arena", label: "CHECKERS", type: "zone", color: "#f472b6" }
+    });
+    expect(routed.normalizedDecision.decision).toBe(ORCHESTRATOR_ACTION_REGISTRY_V0.OPEN_MEDIA_PLAYER);
+
+    window.dispatchEvent(
+      new CustomEvent(RHIZOH_V11_MAP_INTENT_EVENT_V0, {
+        detail: {
+          ...routed,
+          nodeView: { id: "checkers_arena", label: "CHECKERS", type: "zone", color: "#f472b6" }
+        }
+      })
+    );
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy.mock.calls[0][0].node.id).toBe("checkers_arena");
     spy.mockRestore();
   });
 });

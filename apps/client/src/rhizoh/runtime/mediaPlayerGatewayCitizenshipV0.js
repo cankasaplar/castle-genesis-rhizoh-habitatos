@@ -21,10 +21,12 @@ import {
   listWorldSpaceMediaChannelsV0,
   resolveWorldSpaceMediaChannelV0,
   RHIZOH_WORLDSPORTS_CHANNEL_ID_V0,
-  RHIZOH_GO_LEARNING_CHANNEL_ID_V0
+  RHIZOH_GO_LEARNING_CHANNEL_ID_V0,
+  RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0
 } from "./worldSpaceMediaChannelsV0.js";
 import { getWorldSportsTubeSnapshotV0 } from "./worldSportsMediaTubeWireV0.js";
 import { getGoLearningTubeSnapshotV0 } from "./goLearningMediaTubeWireV0.js";
+import { getCheckersLearningTubeSnapshotV0 } from "./checkersLearningMediaTubeWireV0.js";
 
 export const MEDIA_PLAYER_GATEWAY_CITIZENSHIP_CLIENT_SCHEMA_V0 =
   "castle.rhizoh.media_player_gateway_citizenship_client.v0";
@@ -92,6 +94,8 @@ export async function registerMediaPlayerGatewayCitizenV0(ws, ctx = {}) {
     channelId === RHIZOH_WORLDSPORTS_CHANNEL_ID_V0 ? getWorldSportsTubeSnapshotV0() : null;
   const goLearningSnap =
     channelId === RHIZOH_GO_LEARNING_CHANNEL_ID_V0 ? getGoLearningTubeSnapshotV0() : null;
+  const checkersLearningSnap =
+    channelId === RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0 ? getCheckersLearningTubeSnapshotV0() : null;
 
   const reg = await registerGatewayServiceV0({
     ws: socket,
@@ -109,7 +113,10 @@ export async function registerMediaPlayerGatewayCitizenV0(ws, ctx = {}) {
       pinCount: worldSportsSnap?.pinCount ?? null,
       goMoveCount: goLearningSnap?.moveCount ?? null,
       goBatchPending: goLearningSnap?.batchPending ?? null,
-      goCausalSpaceId: goLearningSnap?.spacetime?.causalSpaceId ?? null
+      goCausalSpaceId: goLearningSnap?.spacetime?.causalSpaceId ?? null,
+      checkersMoveCount: checkersLearningSnap?.moveCount ?? null,
+      checkersBatchPending: checkersLearningSnap?.batchPending ?? null,
+      checkersCausalSpaceId: checkersLearningSnap?.spacetime?.causalSpaceId ?? null
     })
   });
 

@@ -111,6 +111,7 @@ function freezeHoldingChannelV0(row) {
 
 export const RHIZOH_LEARNING_CHANNEL_ID_V0 = "rhizoh_learning";
 export const RHIZOH_GO_LEARNING_CHANNEL_ID_V0 = "rhizoh_go_learning";
+export const RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0 = "rhizoh_checkers_learning";
 export const RHIZOH_WORLDSPORTS_CHANNEL_ID_V0 = "world_sports";
 export const RHIZOH_WORLD_NEWS_CHANNEL_ID_V0 = "world_news";
 
@@ -145,6 +146,20 @@ export function buildRhizohGoLearningChannelV0() {
     titleTr: "Go Öğrenme · Uzay-Zaman",
     titleEn: "Go Learning · Spacetime",
     type: "go_cluster_live",
+    badgeTr: "Canlı · mekân · faz",
+    badgeEn: "Live · space · phase"
+  });
+}
+
+/**
+ * Live Checkers learning cluster — spacetime observation envelope in media tube.
+ */
+export function buildRhizohCheckersLearningChannelV0() {
+  return Object.freeze({
+    id: RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0,
+    titleTr: "Dama Öğrenme · Uzay-Zaman",
+    titleEn: "Checkers Learning · Spacetime",
+    type: "checkers_cluster_live",
     badgeTr: "Canlı · mekân · faz",
     badgeEn: "Live · space · phase"
   });
@@ -246,6 +261,7 @@ export function listWorldSpaceMediaChannelsV0() {
     castleGenesisPrimary,
     buildRhizohLearningChannelV0(),
     buildRhizohGoLearningChannelV0(),
+    buildRhizohCheckersLearningChannelV0(),
     buildRhizohWorldSportsChannelV0(),
     buildRhizohWorldNewsChannelV0()
   ];
@@ -465,7 +481,12 @@ export function resolveInitialWorldSpaceMediaChannelIdV0(source) {
   if (s.includes("worldsports") || s.includes("world_sports") || s.includes("map:node:worldsports")) {
     return RHIZOH_WORLDSPORTS_CHANNEL_ID_V0;
   }
-  if (s.includes("checkers") || s.includes("dama") || s.includes("map:node:checkers")) return "castle_checkers";
+  if (s.includes("checkers_learning") || s.includes("rhizoh_checkers")) {
+    return RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0;
+  }
+  if (s.includes("checkers") || s.includes("dama") || s.includes("map:node:checkers")) {
+    return RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0;
+  }
   if (s.includes("go_learning") || s.includes("rhizoh_go")) return RHIZOH_GO_LEARNING_CHANNEL_ID_V0;
   if (s.includes("go_board") || s.includes("map:node:go")) return RHIZOH_GO_LEARNING_CHANNEL_ID_V0;
   if (s.includes("chess") || s.includes("map:node:chess") || s.includes("learning")) return RHIZOH_LEARNING_CHANNEL_ID_V0;
@@ -501,6 +522,9 @@ export function resolveWorldSpaceMediaChannelForMapNodeV0(node) {
     return RHIZOH_GO_LEARNING_CHANNEL_ID_V0;
   }
   if (id === "castle_go" || id === "go" || id.includes("go_board")) return RHIZOH_GO_LEARNING_CHANNEL_ID_V0;
+  if (id === "checkers_arena" || id === "checkers_learning" || id === "rhizoh_checkers_learning") {
+    return RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0;
+  }
   if (id === "castle_checkers" || id === "checkers" || id.includes("dama")) return "castle_checkers";
   if (id === "event") return "nasa";
   if (id === "radio") return "lofi";

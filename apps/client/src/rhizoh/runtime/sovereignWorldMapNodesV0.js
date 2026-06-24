@@ -123,6 +123,17 @@ export const SOVEREIGN_CORE_NODES_V0 = Object.freeze([
     description: "Go öğrenme topolojisi — uzay-zaman gözlem zarfı."
   }),
   Object.freeze({
+    id: "checkers_arena",
+    name: "Checkers Arena",
+    label: "CHECKERS",
+    type: "zone",
+    lat: 41.047,
+    lon: 29.001,
+    color: "#f472b6",
+    owner: "Mind_Core",
+    description: "Dama öğrenme topolojisi — uzay-zaman gözlem zarfı."
+  }),
+  Object.freeze({
     id: "worldsports",
     name: "WorldSports",
     label: "SPORTS",
@@ -573,6 +584,7 @@ export function dispatchSovereignVoiceWarpV0(target, source = "voice_warp") {
 export const SOVEREIGN_MAP_NODE_VOICE_LABEL_TR_V0 = Object.freeze({
   chess_arena: "Satranç Arenası",
   go_arena: "Go Arenası",
+  checkers_arena: "Dama Arenası",
   worldsports: "WorldSports",
   worldnews: "World News",
   library: "Codex Kasası",
@@ -600,6 +612,17 @@ const SOVEREIGN_MAP_VOICE_NAV_ALIASES_V0 = Object.freeze([
   Object.freeze({
     nodeId: "go_arena",
     aliases: ["go arena", "go", "igo", "baduk", "weiqi", "go arenasi", "go arenası"]
+  }),
+  Object.freeze({
+    nodeId: "checkers_arena",
+    aliases: [
+      "checkers arena",
+      "checkers",
+      "dama",
+      "dama arenasi",
+      "dama arenası",
+      "draughts"
+    ]
   }),
   Object.freeze({
     nodeId: "worldnews",

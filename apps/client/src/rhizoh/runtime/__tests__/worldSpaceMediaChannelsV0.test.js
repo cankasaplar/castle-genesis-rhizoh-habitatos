@@ -13,6 +13,7 @@ import {
   resolveWorldSpaceMediaChannelV0,
   RHIZOH_LEARNING_CHANNEL_ID_V0,
   RHIZOH_GO_LEARNING_CHANNEL_ID_V0,
+  RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0,
   RHIZOH_WORLDSPORTS_CHANNEL_ID_V0,
   RHIZOH_WORLD_NEWS_CHANNEL_ID_V0,
   buildRhizohWorldSportsChannelV0,
@@ -20,13 +21,14 @@ import {
 } from "../worldSpaceMediaChannelsV0.js";
 
 describe("worldSpaceMediaChannelsV0", () => {
-  it("lists full media channel pack (14 rows) including go learning and academy B-roll", () => {
+  it("lists full media channel pack (15 rows) including go/checkers learning and academy B-roll", () => {
     const rows = listWorldSpaceMediaChannelsV0();
     const ids = rows.map((r) => r.id);
-    expect(ids).toHaveLength(14);
+    expect(ids).toHaveLength(15);
     expect(ids[0]).toBe("castle_genesis");
     expect(ids).toContain(RHIZOH_LEARNING_CHANNEL_ID_V0);
     expect(ids).toContain(RHIZOH_GO_LEARNING_CHANNEL_ID_V0);
+    expect(ids).toContain(RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0);
     expect(ids).toContain(RHIZOH_WORLDSPORTS_CHANNEL_ID_V0);
     expect(ids).toContain(RHIZOH_WORLD_NEWS_CHANNEL_ID_V0);
     expect(ids).toContain("castle_genesis_live");
@@ -63,7 +65,9 @@ describe("worldSpaceMediaChannelsV0", () => {
       RHIZOH_WORLDSPORTS_CHANNEL_ID_V0
     );
     expect(resolveInitialWorldSpaceMediaChannelIdV0("map:node:go")).toBe(RHIZOH_GO_LEARNING_CHANNEL_ID_V0);
-    expect(resolveInitialWorldSpaceMediaChannelIdV0("map:node:checkers")).toBe("castle_checkers");
+    expect(resolveInitialWorldSpaceMediaChannelIdV0("map:node:checkers")).toBe(
+      RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0
+    );
     expect(resolveInitialWorldSpaceMediaChannelIdV0("map:node:worldnews")).toBe(
       RHIZOH_WORLD_NEWS_CHANNEL_ID_V0
     );
@@ -118,6 +122,12 @@ describe("worldSpaceMediaChannelsV0", () => {
     expect(ch.titleTr).toContain("Go");
   });
 
+  it("checkers learning channel is checkers_cluster_live type", () => {
+    const ch = resolveWorldSpaceMediaChannelV0(RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0);
+    expect(ch.type).toBe("checkers_cluster_live");
+    expect(ch.titleTr).toContain("Dama");
+  });
+
   it("castle chess fallback uses live cluster when no VOD env", () => {
     const ch = resolveWorldSpaceMediaChannelV0("castle_chess");
     expect(ch.id).toBe("castle_chess");
@@ -154,7 +164,7 @@ describe("worldSpaceMediaChannelsV0", () => {
   it("channel pack snapshot exposes env keys", () => {
     const snap = getWorldSpaceMediaChannelPackSnapshotV0();
     expect(snap).toHaveProperty("channelCount");
-    expect(snap.channelCount).toBe(14);
+    expect(snap.channelCount).toBe(15);
     expect(snap).toHaveProperty("goVideoId");
     expect(snap).toHaveProperty("checkersVideoId");
     expect(snap).toHaveProperty("fullEmbedEndSec");
