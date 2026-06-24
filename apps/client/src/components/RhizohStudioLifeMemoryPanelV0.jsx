@@ -1,5 +1,6 @@
-import React, { memo, useEffect, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { buildRhizohStudioVisibilitySnapshotV0 } from "../rhizoh/runtime/rhizohStudioVisibilitySnapshotV0.js";
+import { runStudioObservationDemoSeedV0 } from "../rhizoh/runtime/rhizohStudioDemoSeedV0.js";
 
 const STUDIO_MEMORY_TABS_V0 = Object.freeze([
   { id: "overview", labelTr: "Özet", labelEn: "Overview" },
@@ -44,6 +45,18 @@ export const RhizohStudioLifeMemoryPanelV0 = memo(function RhizohStudioLifeMemor
     return "◐";
   }, [snap?.lifeOsStatus]);
 
+  const showDemoSeed =
+    snap?.lifeOsStatus === "DORMANT" || (snap?.worldBridge?.memoryNodeCount ?? 0) === 0;
+
+  const onDemoSeed = useCallback(() => {
+    if (typeof window !== "undefined" && typeof window.__rhizoh?.studioDemoSeed === "function") {
+      window.__rhizoh.studioDemoSeed({ locale: uiLocale });
+    } else {
+      runStudioObservationDemoSeedV0({ locale: uiLocale });
+    }
+    setSnap(readStudioVisibilitySnapshotV0());
+  }, [uiLocale]);
+
   if (!snap) return null;
 
   return (
@@ -67,6 +80,16 @@ export const RhizohStudioLifeMemoryPanelV0 = memo(function RhizohStudioLifeMemor
           {tr ? "yorum · yürütme yok" : "interpret · no exec"}
         </span>
       </header>
+
+      {showDemoSeed ? (
+        <button
+          type="button"
+          onClick={onDemoSeed}
+          className="mb-2 w-full rounded-lg border border-violet-400/35 bg-violet-500/15 px-3 py-2 text-[9px] font-semibold uppercase tracking-wider text-violet-100 hover:bg-violet-500/25"
+        >
+          {tr ? "Demo tohumu · hafızayı göster" : "Demo seed · show memory"}
+        </button>
+      ) : null}
 
       <nav
         className="mb-2 flex flex-wrap gap-1 rounded-lg border border-white/10 bg-black/30 p-1"
@@ -118,6 +141,23 @@ export const RhizohStudioLifeMemoryPanelV0 = memo(function RhizohStudioLifeMemor
               label={tr ? "Akademi birliği" : "Academy union"}
               value={`${snap.academyUnion.unionLabel} · ${snap.academyUnion.totalMovesSeen} moves`}
             />
+            <p className="text-[8px] uppercase tracking-wider text-white/40">
+              {tr ? "8 kamera" : "8 cameras"}
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {Object.values(snap.eightCameras || {}).map((cam) => (
+                <span
+                  key={cam.id}
+                  className={`rounded border px-1.5 py-0.5 text-[7px] font-mono uppercase ${
+                    cam.armed
+                      ? "border-violet-400/40 bg-violet-500/15 text-violet-100"
+                      : "border-white/10 bg-white/5 text-white/40"
+                  }`}
+                >
+                  {cam.id.replace(/_/g, " ")} {cam.armed ? "●" : "○"}
+                </span>
+              ))}
+            </div>
           </div>
         ) : null}
 

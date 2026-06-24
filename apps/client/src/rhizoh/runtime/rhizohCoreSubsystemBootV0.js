@@ -47,6 +47,7 @@ import { ensureRhizohCheckersLearningCameraV0 } from "./rhizohCheckersLearningCa
 import { ensureAcademyLearningUnionDevToolsV0 } from "./academyLearningUnionWireV0.js";
 import { ensureLifeOsV01StatusDevToolsV0 } from "./lifeOsV01StatusV0.js";
 import { ensureRhizohStudioVisibilityDevToolsV0 } from "./rhizohStudioVisibilityWireV0.js";
+import { ensureRhizohStudioDemoSeedDevToolsV0 } from "./rhizohStudioDemoSeedWireV0.js";
 import { ensureRhizohChessLifetimeReportV0 } from "./rhizohChessLifetimeReportV0.js";
 import { ensureChessHistoryBrainV0 } from "./chessHistoryBrainReportV0.js";
 import { ensureRhizohChessEvolutionCurveV0 } from "./rhizohChessEvolutionCurveV0.js";
@@ -151,6 +152,7 @@ export function ensureRhizohCoreSubsystemsBootV0(opts = {}) {
     ensureAcademyLearningUnionDevToolsV0();
     ensureLifeOsV01StatusDevToolsV0();
     ensureRhizohStudioVisibilityDevToolsV0();
+    ensureRhizohStudioDemoSeedDevToolsV0();
     ensureRhizohChessLifetimeReportV0();
     ensureChessHistoryBrainV0();
     ensureRhizohChessEvolutionCurveV0();
