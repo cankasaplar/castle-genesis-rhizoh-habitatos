@@ -26,6 +26,16 @@ const VARIANTS = Object.freeze({
     outName: "castle_genesis_short_chess_broadcast.mp4",
     audioMaxSec: 0
   },
+  go: {
+    slideSvg: "apps/client/public/ops/youtube-test/castle-genesis-go-embed-slide.svg",
+    outName: "castle_genesis_short_go_academy.mp4",
+    audioMaxSec: 0
+  },
+  checkers: {
+    slideSvg: "apps/client/public/ops/youtube-test/castle-genesis-checkers-embed-slide.svg",
+    outName: "castle_genesis_short_checkers_academy.mp4",
+    audioMaxSec: 0
+  },
   manifesto_trim: {
     slideSvg: "apps/client/public/ops/youtube-test/castle-genesis-holding-slide.svg",
     outName: "castle_genesis_manifesto_trim_preview.mp4",
