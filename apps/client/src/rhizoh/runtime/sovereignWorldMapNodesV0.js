@@ -112,6 +112,17 @@ export const SOVEREIGN_CORE_NODES_V0 = Object.freeze([
     description: "Nöral satranç motoru devrede."
   }),
   Object.freeze({
+    id: "go_arena",
+    name: "Go Arena",
+    label: "GO",
+    type: "zone",
+    lat: 41.048,
+    lon: 29.003,
+    color: "#38bdf8",
+    owner: "Mind_Core",
+    description: "Go öğrenme topolojisi — uzay-zaman gözlem zarfı."
+  }),
+  Object.freeze({
     id: "worldsports",
     name: "WorldSports",
     label: "SPORTS",
@@ -561,6 +572,7 @@ export function dispatchSovereignVoiceWarpV0(target, source = "voice_warp") {
 /** Turkish spoken labels for map pins (TTS + chat; avoid English tower names in TR UI). */
 export const SOVEREIGN_MAP_NODE_VOICE_LABEL_TR_V0 = Object.freeze({
   chess_arena: "Satranç Arenası",
+  go_arena: "Go Arenası",
   worldsports: "WorldSports",
   worldnews: "World News",
   library: "Codex Kasası",
@@ -584,6 +596,10 @@ const SOVEREIGN_MAP_VOICE_NAV_ALIASES_V0 = Object.freeze([
   Object.freeze({
     nodeId: "chess_arena",
     aliases: ["chess arena", "chess", "satranc arenasi", "satranç arenası", "satranç", "satranc"]
+  }),
+  Object.freeze({
+    nodeId: "go_arena",
+    aliases: ["go arena", "go", "igo", "baduk", "weiqi", "go arenasi", "go arenası"]
   }),
   Object.freeze({
     nodeId: "worldnews",
