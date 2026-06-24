@@ -1,6 +1,6 @@
 # Rhizoh Research Artifact Roadmap v0
 
-**Date:** 2026-06-19  
+**Date:** 2026-06-24  
 **Tag:** `RESEARCH-ONLY`  
 **Strategy:** Artifact production over feature sprawl (frozen core untouched)
 
@@ -25,6 +25,8 @@ Narrative must be **separable from code** — via public manifests, protocol doc
 | 6 | Honest Baseline (abridged) | `RHIZOH_HONEST_BASELINE_CHARTER_V1.md` | `/rhizoh/honest-baseline-charter-v1.md` |
 | 7 | Research Preprint v1 (draft) | `academic/RHIZOH_RESEARCH_PREPRINT_V1.md` | export via `npm run academic:export-preprint-v0` |
 | 8 | Invitation Study spec | `RHIZOH_INVITATION_STUDY_V0.md` | docs-only (ops) |
+| 9 | Studio observation stack | `RHIZOH_STUDIO_V1_VISIBILITY_LAYER_V0.md` · Output Pack | `__rhizoh.outputPack()` |
+| 10 | World Space broadcast parity | PR #401 | `?channel=chess&broadcast=1` |
 
 ---
 

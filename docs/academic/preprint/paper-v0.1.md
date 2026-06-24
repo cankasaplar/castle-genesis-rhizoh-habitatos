@@ -2,6 +2,7 @@
 
 **Tag:** `RESEARCH-ONLY`  
 **Status:** arXiv-ready draft v0.1 (outline + abstract + architecture + measured results)  
+**Last synced:** 2026-06-24 (canonical source = `RHIZOH_DISTRIBUTED_REALITY_CONSTRUCTION_PAPER_V0.1.md`)
 **Parent:** [`OUTREACH_ACADEMIC_PAPER_PACK_V0.1.md`](../OUTREACH_ACADEMIC_PAPER_PACK_V0.1.md) · [`RHIZOH_HONEST_BASELINE_CHARTER_V1.md`](../RHIZOH_HONEST_BASELINE_CHARTER_V1.md)
 
 **Authors:** [Founder] · Rhizoh Habitat (Castle / Rhizoh continuity protocol)  

@@ -1,6 +1,6 @@
 # Rhizoh Product Gaps v0 — Honest Inventory
 
-**Status:** OPS snapshot · 2026-06-22  
+**Status:** OPS snapshot · 2026-06-24  
 **Phase:** 0.5 — perception frozen · data-plane HOLD
 
 ---
@@ -23,7 +23,10 @@
 | Resonance (measure only) | `epistemicResonanceField.measure()` — no coupling |
 | UI v1 | Epistemic dashboard panel, founder cohort panel |
 | **Life OS v0.1** | World Bridge · Memory graph · Habitat climate · `lifeOsStatus()` prod-verified |
-| **Studio V1 visibility** | In flight — [`RHIZOH_STUDIO_V1_VISIBILITY_LAYER_V0.md`](RHIZOH_STUDIO_V1_VISIBILITY_LAYER_V0.md) |
+| **Studio V1 visibility** | 8-camera dashboard · adapters · Life Memory panel · Director · Output Pack |
+| **World Space broadcast** | `?channel=chess|go|checkers&broadcast=1` — no-scroll OBS layout |
+| **Academy union boot wire** | Go + checkers demo moves on core boot (`armed 3/3` hedef) |
+| **Full system report** | `__RHIZOH_FULL_REPORT__()` + Life OS diagnostic |
 
 ---
 
@@ -48,9 +51,12 @@
 | Item | Priority |
 |------|----------|
 | **2-browser Reality Binding video** | **P0** — trust milestone |
-| **Studio Life Memory panel** | **P0** — make observation layer visible (investor / user) |
-| **First YouTube observation series** | **P1** — Ep 1–4 from learning cameras + habitat |
+| **Studio Life Memory panel** | ✔ shipped — Studio drawer |
+| **First YouTube observation series** | **P0** — Ep 1 Chess Short kaydı (pack ready, manuel upload) |
+| **Render API keys** | **P0** — [`RENDER_API_GAPS_CHECKLIST_V1.0.md`](ops/RENDER_API_GAPS_CHECKLIST_V1.0.md) |
 | **First 20 Founder Circle witnesses** | **P0** — manual invites |
+| Go/Dama 8-camera cluster parity | Medium — tek tahta + öğrenme şeridi var; chess parity sonraki sprint |
+| KataGo / Lc0 sidecar on Render | Medium — env + ayrı servis |
 | Founder Circle Stripe / membership backend | High after video |
 | Founder multi-invitee map view | High — needs `active_castles` + UX |
 | Epistemic dashboard on invite landing | Medium |
@@ -67,6 +73,8 @@ window.__rhizoh.founderCohort.build();
 window.__rhizoh.epistemicSeparationProof.build();
 window.__rhizoh.invitationStudy.export();
 window.__rhizoh.epistemicResonanceField.measure();
+__rhizoh.academyLearningUnion()
+__rhizoh.outputPack({ locale: "tr" })
 ```
 
 Founder UI: `?founder=1` or `?cohort=review` on rhizoh.com
@@ -76,5 +84,6 @@ Founder UI: `?founder=1` or `?cohort=review` on rhizoh.com
 ## Related
 
 - [`RHIZOH_PHASE_GATE_OPERATING_MODE_V1.0.md`](RHIZOH_PHASE_GATE_OPERATING_MODE_V1.0.md)
+- [`RENDER_API_GAPS_CHECKLIST_V1.0.md`](ops/RENDER_API_GAPS_CHECKLIST_V1.0.md)
 - [`RHIZOH_INVITATION_STUDY_V0.md`](RHIZOH_INVITATION_STUDY_V0.md)
 - [`RHIZOH_EPISTEMIC_DASHBOARD_V1.md`](RHIZOH_EPISTEMIC_DASHBOARD_V1.md)
