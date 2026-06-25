@@ -26,7 +26,10 @@ Legal onay (READY imzası) **öncesi** YouTube/OBS canlı yayın ve kanal geçi�
 | Tam rapor | `await __RHIZOH_FULL_REPORT__()` | ✔ |
 | Çıktı paketi | `await __rhizoh.outputPack({ locale: "tr" })` | ✔ OBS URL'leri dahil |
 | Paper indir | `await __rhizoh.downloadPaperV01()` · `/academy` | ✔ (deploy sonrası) |
-| WorldSports liste | `/world/space?channel=world_sports` | ◐ yaklaşan maçlar · canlı=0 · pin=0 (key yok) |
+| WorldSports liste | `/world/space?channel=world_sports` | ◐ canlı skor · pin = venue eşleşmesi |
+| WorldSports futbol | `/world/space?channel=football&broadcast=1` | ◐ sportFilter |
+| WorldSports basketbol | `/world/space?channel=basketball&broadcast=1` | ◐ sportFilter |
+| WorldSports voleybol | `/world/space?channel=volleyball&broadcast=1` | ◐ sportFilter |
 
 ---
 

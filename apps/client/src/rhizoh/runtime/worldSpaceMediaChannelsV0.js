@@ -113,6 +113,9 @@ export const RHIZOH_LEARNING_CHANNEL_ID_V0 = "rhizoh_learning";
 export const RHIZOH_GO_LEARNING_CHANNEL_ID_V0 = "rhizoh_go_learning";
 export const RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0 = "rhizoh_checkers_learning";
 export const RHIZOH_WORLDSPORTS_CHANNEL_ID_V0 = "world_sports";
+export const RHIZOH_WORLDSPORTS_FOOTBALL_CHANNEL_ID_V0 = "world_sports_football";
+export const RHIZOH_WORLDSPORTS_BASKETBALL_CHANNEL_ID_V0 = "world_sports_basketball";
+export const RHIZOH_WORLDSPORTS_VOLLEYBALL_CHANNEL_ID_V0 = "world_sports_volleyball";
 export const RHIZOH_WORLD_NEWS_CHANNEL_ID_V0 = "world_news";
 
 function readRhizohWorldSportsYoutubeVideoIdV0() {
@@ -166,6 +169,21 @@ export function buildRhizohCheckersLearningChannelV0() {
 }
 
 /**
+ * @param {{ id: string, titleTr: string, titleEn: string, sportFilter?: string | null, badgeTr: string, badgeEn: string }} row
+ */
+function buildRhizohWorldSportsFeedChannelV0(row) {
+  return Object.freeze({
+    id: row.id,
+    titleTr: row.titleTr,
+    titleEn: row.titleEn,
+    type: "world_sports_feed",
+    sportFilter: row.sportFilter || null,
+    badgeTr: row.badgeTr,
+    badgeEn: row.badgeEn
+  });
+}
+
+/**
  * WorldSports — live scores only (gateway world-feed); optional YouTube B-roll.
  */
 export function buildRhizohWorldSportsChannelV0() {
@@ -182,13 +200,46 @@ export function buildRhizohWorldSportsChannelV0() {
       badgeEn: "Live scores + VOD"
     });
   }
-  return Object.freeze({
+  return buildRhizohWorldSportsFeedChannelV0({
     id: RHIZOH_WORLDSPORTS_CHANNEL_ID_V0,
     titleTr: "WorldSports",
     titleEn: "WorldSports",
-    type: "world_sports_feed",
+    sportFilter: null,
     badgeTr: "API-Sports · canlı skor",
     badgeEn: "API-Sports · live scores"
+  });
+}
+
+export function buildRhizohWorldSportsFootballChannelV0() {
+  return buildRhizohWorldSportsFeedChannelV0({
+    id: RHIZOH_WORLDSPORTS_FOOTBALL_CHANNEL_ID_V0,
+    titleTr: "WorldSports · Futbol",
+    titleEn: "WorldSports · Football",
+    sportFilter: "football",
+    badgeTr: "Futbol · canlı skor",
+    badgeEn: "Football · live scores"
+  });
+}
+
+export function buildRhizohWorldSportsBasketballChannelV0() {
+  return buildRhizohWorldSportsFeedChannelV0({
+    id: RHIZOH_WORLDSPORTS_BASKETBALL_CHANNEL_ID_V0,
+    titleTr: "WorldSports · Basketbol",
+    titleEn: "WorldSports · Basketball",
+    sportFilter: "basketball",
+    badgeTr: "NBA · canlı skor",
+    badgeEn: "NBA · live scores"
+  });
+}
+
+export function buildRhizohWorldSportsVolleyballChannelV0() {
+  return buildRhizohWorldSportsFeedChannelV0({
+    id: RHIZOH_WORLDSPORTS_VOLLEYBALL_CHANNEL_ID_V0,
+    titleTr: "WorldSports · Voleybol",
+    titleEn: "WorldSports · Volleyball",
+    sportFilter: "volleyball",
+    badgeTr: "Voleybol · canlı skor",
+    badgeEn: "Volleyball · live scores"
   });
 }
 
@@ -263,6 +314,9 @@ export function listWorldSpaceMediaChannelsV0() {
     buildRhizohGoLearningChannelV0(),
     buildRhizohCheckersLearningChannelV0(),
     buildRhizohWorldSportsChannelV0(),
+    buildRhizohWorldSportsFootballChannelV0(),
+    buildRhizohWorldSportsBasketballChannelV0(),
+    buildRhizohWorldSportsVolleyballChannelV0(),
     buildRhizohWorldNewsChannelV0()
   ];
 
@@ -485,6 +539,15 @@ export function resolveWorldSpaceMediaChannelIdFromQueryParamV0(queryChannel) {
     return RHIZOH_CHECKERS_LEARNING_CHANNEL_ID_V0;
   }
   if (s === "world_sports" || s === "worldsports") return RHIZOH_WORLDSPORTS_CHANNEL_ID_V0;
+  if (s === "world_sports_football" || s === "football" || s === "futbol") {
+    return RHIZOH_WORLDSPORTS_FOOTBALL_CHANNEL_ID_V0;
+  }
+  if (s === "world_sports_basketball" || s === "basketball" || s === "basketbol" || s === "nba") {
+    return RHIZOH_WORLDSPORTS_BASKETBALL_CHANNEL_ID_V0;
+  }
+  if (s === "world_sports_volleyball" || s === "volleyball" || s === "voleybol") {
+    return RHIZOH_WORLDSPORTS_VOLLEYBALL_CHANNEL_ID_V0;
+  }
   if (s === "world_news" || s === "worldnews") return RHIZOH_WORLD_NEWS_CHANNEL_ID_V0;
   if (s === "castle_genesis" || s === "castle") return "castle_genesis";
   if (s === "nasa" || s === "event") return "nasa";
