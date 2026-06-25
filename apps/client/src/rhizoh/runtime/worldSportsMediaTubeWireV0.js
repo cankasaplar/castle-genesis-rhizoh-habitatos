@@ -18,8 +18,19 @@ import { dispatchOpenMediaTubeV0 } from "./sovereignWorldMapNodesV0.js";
 export const WORLD_SPORTS_MEDIA_TUBE_WIRE_SCHEMA_V0 = "castle.rhizoh.world_sports_media_tube_wire.v0";
 
 /**
+ * @param {ReadonlyArray<object>} matches
+ * @param {string | null | undefined} sportFilter
+ */
+function filterSportMatchesV0(matches, sportFilter) {
+  const list = Array.isArray(matches) ? matches : [];
+  const filter = String(sportFilter || "").trim();
+  if (!filter) return list;
+  return list.filter((m) => String(m?.sport || "") === filter);
+}
+
+/**
  * Refresh gateway world-feed + publish live match pins when WorldSports tube opens.
- * @param {{ locale?: string, force?: boolean }} [opts]
+ * @param {{ locale?: string, force?: boolean, sportFilter?: string | null }} [opts]
  */
 export async function wireWorldSportsMediaTubeV0(opts = {}) {
   const feed =
@@ -31,15 +42,21 @@ export async function wireWorldSportsMediaTubeV0(opts = {}) {
     locale: opts.locale,
     force: opts.force === true
   });
-  const live = Array.isArray(feed?.sports?.live) ? feed.sports.live : [];
-  const upcoming = Array.isArray(feed?.sports?.upcoming) ? feed.sports.upcoming : [];
+  const liveAll = Array.isArray(feed?.sports?.live) ? feed.sports.live : [];
+  const upcomingAll = Array.isArray(feed?.sports?.upcoming) ? feed.sports.upcoming : [];
+  const live = filterSportMatchesV0(liveAll, opts.sportFilter);
+  const upcoming = filterSportMatchesV0(upcomingAll, opts.sportFilter);
+  const pinCount = opts.sportFilter
+    ? pins.filter((p) => String(p?.liveMatch?.sport || "") === opts.sportFilter).length
+    : pins.length;
 
   return Object.freeze({
     schema: WORLD_SPORTS_MEDIA_TUBE_WIRE_SCHEMA_V0,
     ok: true,
     liveMatchCount: live.length,
     upcomingMatchCount: upcoming.length,
-    pinCount: pins.length,
+    pinCount,
+    sportFilter: opts.sportFilter || null,
     feedFetchedAt: feed?.fetchedAt ?? null,
     interpretationOnly: true,
     nonExecutive: true,
@@ -48,14 +65,20 @@ export async function wireWorldSportsMediaTubeV0(opts = {}) {
 }
 
 /**
- * @param {{ locale?: string }} [opts]
+ * @param {{ locale?: string, sportFilter?: string | null }} [opts]
  */
 export function getWorldSportsTubeSnapshotV0(opts = {}) {
   const feed = getWorldMapLiveFeedSnapshotV0();
   const pins = getLiveMatchMapPinsV0();
   const locale = String(opts.locale || "tr");
-  const live = Array.isArray(feed?.sports?.live) ? feed.sports.live : [];
-  const upcoming = Array.isArray(feed?.sports?.upcoming) ? feed.sports.upcoming : [];
+  const sportFilter = opts.sportFilter || null;
+  const liveAll = Array.isArray(feed?.sports?.live) ? feed.sports.live : [];
+  const upcomingAll = Array.isArray(feed?.sports?.upcoming) ? feed.sports.upcoming : [];
+  const live = filterSportMatchesV0(liveAll, sportFilter);
+  const upcoming = filterSportMatchesV0(upcomingAll, sportFilter);
+  const pinCount = sportFilter
+    ? pins.filter((p) => String(p?.liveMatch?.sport || "") === sportFilter).length
+    : pins.length;
   const liveChips = live.slice(0, 8).map((m) => formatSportMatchChipV0(m, locale));
   const upcomingChips = upcoming.slice(0, 8).map((m) => formatSportMatchChipV0(m, locale));
   const recentChips = Object.freeze([...liveChips, ...upcomingChips].slice(0, 8));
@@ -64,7 +87,8 @@ export function getWorldSportsTubeSnapshotV0(opts = {}) {
     schema: `${WORLD_SPORTS_MEDIA_TUBE_WIRE_SCHEMA_V0}.snapshot`,
     liveMatchCount: live.length,
     upcomingMatchCount: upcoming.length,
-    pinCount: pins.length,
+    pinCount,
+    sportFilter,
     liveChips: Object.freeze(liveChips),
     upcomingChips: Object.freeze(upcomingChips),
     recentChips,

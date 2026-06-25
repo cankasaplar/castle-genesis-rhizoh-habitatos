@@ -25,7 +25,7 @@ describe("worldSpaceMediaChannelsV0", () => {
   it("lists full media channel pack (15 rows) including go/checkers learning and academy B-roll", () => {
     const rows = listWorldSpaceMediaChannelsV0();
     const ids = rows.map((r) => r.id);
-    expect(ids).toHaveLength(15);
+    expect(ids).toHaveLength(18);
     expect(ids[0]).toBe("castle_genesis");
     expect(ids).toContain(RHIZOH_LEARNING_CHANNEL_ID_V0);
     expect(ids).toContain(RHIZOH_GO_LEARNING_CHANNEL_ID_V0);
@@ -167,6 +167,15 @@ describe("worldSpaceMediaChannelsV0", () => {
     expect(ch.titleEn).toBe("WorldSports");
   });
 
+  it("resolves sport-specific world sports deep links", () => {
+    expect(resolveWorldSpaceMediaChannelIdFromQueryParamV0("basketball")).toBe(
+      "world_sports_basketball"
+    );
+    expect(resolveWorldSpaceMediaChannelIdFromQueryParamV0("voleybol")).toBe("world_sports_volleyball");
+    const bb = resolveWorldSpaceMediaChannelV0("world_sports_basketball");
+    expect(bb.sportFilter).toBe("basketball");
+  });
+
   it("castle go and checkers use holding slides without VOD env", () => {
     const go = resolveWorldSpaceMediaChannelV0("castle_go");
     const checkers = resolveWorldSpaceMediaChannelV0("castle_checkers");
@@ -177,7 +186,7 @@ describe("worldSpaceMediaChannelsV0", () => {
   it("channel pack snapshot exposes env keys", () => {
     const snap = getWorldSpaceMediaChannelPackSnapshotV0();
     expect(snap).toHaveProperty("channelCount");
-    expect(snap.channelCount).toBe(15);
+    expect(snap.channelCount).toBe(18);
     expect(snap).toHaveProperty("goVideoId");
     expect(snap).toHaveProperty("checkersVideoId");
     expect(snap).toHaveProperty("fullEmbedEndSec");

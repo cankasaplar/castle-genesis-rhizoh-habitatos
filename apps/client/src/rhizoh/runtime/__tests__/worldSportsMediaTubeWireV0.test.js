@@ -92,4 +92,22 @@ describe("worldSportsMediaTubeWireV0", () => {
     expect(snap.upcomingChips.length).toBe(1);
     expect(snap.recentChips.length).toBe(2);
   });
+
+  it("filters snapshot by sportFilter", () => {
+    vi.mocked(worldMapLiveFeedV0.getWorldMapLiveFeedSnapshotV0).mockReturnValueOnce(
+      Object.freeze({
+        fetchedAt: Date.now(),
+        sports: Object.freeze({
+          live: Object.freeze([
+            { id: "m1", homeName: "Lakers", awayName: "Celtics", sport: "basketball", phase: "live" },
+            { id: "m2", homeName: "Morocco", awayName: "Haiti", sport: "football", phase: "live" }
+          ]),
+          upcoming: Object.freeze([])
+        })
+      })
+    );
+    const snap = getWorldSportsTubeSnapshotV0({ locale: "tr", sportFilter: "football" });
+    expect(snap.liveMatchCount).toBe(1);
+    expect(snap.sportFilter).toBe("football");
+  });
 });

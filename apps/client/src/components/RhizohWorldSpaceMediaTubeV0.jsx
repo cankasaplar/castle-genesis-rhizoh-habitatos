@@ -104,7 +104,9 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     typeof window !== "undefined" ? window.__rhizoh?.youtubeCommunityLab || null : null
   );
   const [localPreviewStream, setLocalPreviewStream] = useState(null);
-  const [worldSportsWire, setWorldSportsWire] = useState(() => getWorldSportsTubeSnapshotV0({ locale: uiLocale }));
+  const [worldSportsWire, setWorldSportsWire] = useState(() =>
+    getWorldSportsTubeSnapshotV0({ locale: uiLocale, sportFilter: null })
+  );
   const [goLearningWire, setGoLearningWire] = useState(() => getGoLearningTubeSnapshotV0({ locale: uiLocale }));
   const [checkersLearningWire, setCheckersLearningWire] = useState(() =>
     getCheckersLearningTubeSnapshotV0({ locale: uiLocale })
@@ -145,6 +147,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
   const goLearningChannelActive = activeChannel.type === "go_cluster_live";
   const checkersLearningChannelActive = activeChannel.type === "checkers_cluster_live";
   const worldSportsChannelActive = activeChannel.type === "world_sports_feed";
+  const activeSportFilter = activeChannel.sportFilter || null;
   const worldNewsChannelActive = activeChannel.type === "world_news_feed";
   const legalGateMode = Boolean(detail?.legalGate);
   const legalCountdownMs = Number(detail?.countdownRemainingMs) || 0;
@@ -194,10 +197,11 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     if (activeChannel.id !== RHIZOH_WORLDSPORTS_CHANNEL_ID_V0 && activeChannel.type !== "world_sports_feed") {
       return undefined;
     }
+    const sportFilter = activeChannel.sportFilter || null;
     let cancelled = false;
-    void wireWorldSportsMediaTubeV0({ locale: uiLocale, force: true }).then((result) => {
+    void wireWorldSportsMediaTubeV0({ locale: uiLocale, force: true, sportFilter }).then((result) => {
       if (!cancelled) {
-        setWorldSportsWire(getWorldSportsTubeSnapshotV0({ locale: uiLocale }));
+        setWorldSportsWire(getWorldSportsTubeSnapshotV0({ locale: uiLocale, sportFilter }));
         if (typeof window !== "undefined") {
           window.__rhizoh = window.__rhizoh || {};
           window.__rhizoh.lastWorldSportsWire = result;
@@ -207,7 +211,7 @@ export const RhizohWorldSpaceMediaTubeV0 = memo(function RhizohWorldSpaceMediaTu
     return () => {
       cancelled = true;
     };
-  }, [activeChannel.id, activeChannel.type, uiLocale]);
+  }, [activeChannel.id, activeChannel.type, activeChannel.sportFilter, uiLocale]);
 
   useEffect(() => {
     if (
