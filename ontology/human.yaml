@@ -1,0 +1,6 @@
+kind: Human
+name: human
+attributes:
+  role: originator
+  authority: limited
+  can_commit: false

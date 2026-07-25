@@ -1,3 +1,5 @@
+import { FixedTimestepEngine, LockFreeEventQueue, DoubleBufferedMatrix } from "@castle/sim-engine";
+
 const CASTLES = [
   { id: "castle-01", name: "Zion Core", lat: 41.0082, lng: 28.9784 },
   { id: "castle-02", name: "Training Ground", lat: 35.6895, lng: 139.6917 },
@@ -60,6 +62,15 @@ export function createSimulationCore(seed = "rhizoh-seed") {
   const entityCastleIdx = new Uint8Array(ENTITY_CAPACITY);
 
   const byEntity = new Map();
+  const simQueue = new LockFreeEventQueue(2048);
+  const worldGrid = new DoubleBufferedMatrix(100, 100);
+
+  const simEngine = new FixedTimestepEngine((dt) => {
+    worldGrid.clearBackBuffer();
+    simQueue.flush(handleSimEvent);
+    runPhysicsUpdate(dt);
+    worldGrid.swap();
+  }, 60);
 
   function addAgent(targetCastleId = "castle-01") {
     if (count >= CAPACITY) return null;
@@ -187,13 +198,26 @@ export function createSimulationCore(seed = "rhizoh-seed") {
     simTime += dt;
   }
 
+  function handleSimEvent(event) {
+    if (!event || typeof event !== "object") return;
+    if (event.type === "MOVE" && Number.isFinite(event.x) && Number.isFinite(event.y)) {
+      const row = Math.max(0, Math.min(worldGrid.rows - 1, Math.floor(event.x)));
+      const col = Math.max(0, Math.min(worldGrid.cols - 1, Math.floor(event.y)));
+      worldGrid.setNext(row, col, event.value ?? 1);
+    }
+  }
+
+  function runPhysicsUpdate(dt) {
+    runFixedStep(dt);
+  }
+
   function step(deltaTime) {
     const nowMs = Date.now();
     const dtReal = typeof deltaTime === "number" ? deltaTime : (nowMs - lastStepMs) / 1000;
     lastStepMs = nowMs;
     accumulator += Math.max(0, Math.min(dtReal, 0.25));
     while (accumulator >= FIXED_DT) {
-      runFixedStep(FIXED_DT);
+      runPhysicsUpdate(FIXED_DT);
       accumulator -= FIXED_DT;
     }
   }
@@ -256,5 +280,17 @@ export function createSimulationCore(seed = "rhizoh-seed") {
     };
   }
 
-  return { step, spawnAgent, spawnEntity, createCastle, getWorldSnapshot, fixedDt: FIXED_DT };
+  return {
+    step,
+    spawnAgent,
+    spawnEntity,
+    createCastle,
+    getWorldSnapshot,
+    fixedDt: FIXED_DT,
+    enqueueEvent: (event) => simQueue.enqueue(event),
+    start: () => simEngine.start(),
+    stop: () => simEngine.stop(),
+    simQueue,
+    worldGrid
+  };
 }

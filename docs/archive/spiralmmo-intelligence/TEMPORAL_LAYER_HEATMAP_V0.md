@@ -1,6 +1,6 @@
 ﻿# Temporal Layer Heatmap (V0)
 
-_Auto-generated: 2026-06-06 18:44:59
+_Auto-generated: 2026-07-24 18:44:47
 
 Source: LLM chat inbox frontmatter (rchived_at_utc, layer_hits).
 

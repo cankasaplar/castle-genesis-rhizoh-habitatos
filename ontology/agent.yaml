@@ -1,0 +1,6 @@
+kind: Agent
+name: default_agent
+attributes:
+  role: executor
+  authority: constrained
+  trust_class: derived

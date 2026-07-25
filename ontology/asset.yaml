@@ -1,0 +1,6 @@
+kind: Asset
+name: asset
+attributes:
+  id: required
+  category: required
+  ownership: optional

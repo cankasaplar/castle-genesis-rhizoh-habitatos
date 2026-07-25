@@ -1,0 +1,10 @@
+kind: Observation
+name: observation
+attributes:
+  id: required
+  timestamp: required
+  confidence: required
+  signature: required
+  modality: required
+  sensor_type: required
+  provenance: required

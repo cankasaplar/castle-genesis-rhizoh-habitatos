@@ -1,0 +1,6 @@
+kind: Event
+name: event
+attributes:
+  type: required
+  source: required
+  payload: optional

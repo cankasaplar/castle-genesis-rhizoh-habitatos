@@ -1,0 +1,12 @@
+# operations/schema.yaml
+artifact_definition:
+  required_fields:
+    - id          # Örn: MOVEGEN_001
+    - owner       # Örn: Core, Research, Product
+    - inputs      # Girdi dosyaları (Dizi)
+    - outputs     # Çıktı dosyaları (Dizi)
+    - quality_gate:
+        - build       # PASS / FAIL
+        - perft       # PASS / FAIL / NA
+        - benchmark   # Değişim yüzdesi (Örn: +2%)
+    - status      # Pending / Passed / Rejected

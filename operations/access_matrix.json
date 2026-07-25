@@ -1,0 +1,24 @@
+{
+  "roles": {
+    "Core_Agent": {
+      "write_zones": ["src/core/**", "src/board.rs", "src/uci.rs"],
+      "read_zones": ["paper/**", "operations/schema.yaml"]
+    },
+    "Research_Agent": {
+      "write_zones": ["paper/**"],
+      "read_zones": ["src/**", "operations/schema.yaml"]
+    },
+    "Product_Agent": {
+      "write_zones": ["castle/studio/**"],
+      "read_zones": ["src/core/**"]
+    },
+    "Red_Team_Agent": {
+      "write_zones": [],
+      "read_zones": ["src/**", "paper/**", "operations/artifacts/**"]
+    }
+  },
+  "global_rules": {
+    "allow_direct_main_commit": false,
+    "require_human_approval": true
+  }
+}

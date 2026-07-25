@@ -17,3 +17,8 @@ apps/gateway/data/*.json
 
 # Gerçek anahtarları buraya yaz; bu dosya repoda olmasın (şablon: ANAHTARLAR_BURAYA.txt)
 ANAHTARLAR_BURAYA.local.txt
+
+
+# Added by cargo
+
+/target

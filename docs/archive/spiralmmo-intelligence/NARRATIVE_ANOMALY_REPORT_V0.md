@@ -1,6 +1,6 @@
 ﻿# Narrative Anomaly Report (V0)
 
-_Auto-generated: 2026-06-06 18:44:59
+_Auto-generated: 2026-07-24 18:44:47
 
 Scope: bozuk ayna / broken mirror class signals (interpretation lane only).
 

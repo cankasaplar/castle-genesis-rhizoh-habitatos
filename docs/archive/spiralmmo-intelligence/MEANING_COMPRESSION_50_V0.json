@@ -1,5 +1,5 @@
 ﻿{
-    "total_files":  74514,
+    "total_files":  60679,
     "target_clusters":  50,
     "clusters":  [
                      {
@@ -64,16 +64,6 @@
                      },
                      {
                          "cluster_id":  "C07",
-                         "signature":  ".git|dashboard|rh-dashboard|xs",
-                         "file_count":  26,
-                         "sample_paths":  [
-                                              "rh-dashboard\\.git\\COMMIT_EDITMSG",
-                                              "rh-dashboard\\.git\\config",
-                                              "rh-dashboard\\.git\\description"
-                                          ]
-                     },
-                     {
-                         "cluster_id":  "C08",
                          "signature":  "ext.js|spiral_core|spİralchİp and tech|spiralzeka_alphacodex|xs",
                          "file_count":  21,
                          "sample_paths":  [
@@ -83,13 +73,23 @@
                                           ]
                      },
                      {
-                         "cluster_id":  "C09",
+                         "cluster_id":  "C08",
                          "signature":  "ext.pdf|spiral_core|spİralchİp and tech|yeni klasör (2)|sm",
                          "file_count":  18,
                          "sample_paths":  [
                                               "SPİRALCHİP AND TECH\\Yeni klasör (2)\\SpiralMMO_Feedback_Horizon_Europe.pdf",
                                               "SPİRALCHİP AND TECH\\Yeni klasör (2)\\SpiralMMO_Feedback_TUBITAK.pdf",
                                               "SPİRALCHİP AND TECH\\Yeni klasör (2)\\SpiralMMO_Feedback_Venture_Capital.pdf"
+                                          ]
+                     },
+                     {
+                         "cluster_id":  "C09",
+                         "signature":  "ext.py|spiral_core|spİralchİp and tech|spiralchip_project|sm",
+                         "file_count":  17,
+                         "sample_paths":  [
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\examples\\basic_usage.py",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\examples\\basic_usage.py",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\examples\\basic\\text_classification.py"
                                           ]
                      },
                      {
@@ -104,12 +104,12 @@
                      },
                      {
                          "cluster_id":  "C11",
-                         "signature":  "ext.py|spiral_core|spİralchİp and tech|spiralchip_project|sm",
-                         "file_count":  17,
+                         "signature":  "bundle|ext.zip|spiral_core|spİralchİp and tech|spiralzeka_alphacodex|sm",
+                         "file_count":  15,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\examples\\basic_usage.py",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\examples\\basic_usage.py",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\examples\\basic\\text_classification.py"
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_AlphaCodex.zip",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_AutoEvolveSystem.zip",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_EvolutionPanel.zip"
                                           ]
                      },
                      {
@@ -124,16 +124,6 @@
                      },
                      {
                          "cluster_id":  "C13",
-                         "signature":  "bundle|ext.zip|spiral_core|spİralchİp and tech|spiralzeka_alphacodex|sm",
-                         "file_count":  15,
-                         "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_AlphaCodex.zip",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_AutoEvolveSystem.zip",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_EvolutionPanel.zip"
-                                          ]
-                     },
-                     {
-                         "cluster_id":  "C14",
                          "signature":  "ext.js|spiral_core|spİralchİp and tech|spiralzeka_alphacodex|sm",
                          "file_count":  13,
                          "sample_paths":  [
@@ -143,7 +133,7 @@
                                           ]
                      },
                      {
-                         "cluster_id":  "C15",
+                         "cluster_id":  "C14",
                          "signature":  "ext.html|spiral_core|spİralchİp and tech|spiralchip_project|web_surface|sm",
                          "file_count":  11,
                          "sample_paths":  [
@@ -153,7 +143,7 @@
                                           ]
                      },
                      {
-                         "cluster_id":  "C16",
+                         "cluster_id":  "C15",
                          "signature":  "ext.js|spiral_core|spİralchİp and tech|spiralchip_project|sm",
                          "file_count":  11,
                          "sample_paths":  [
@@ -163,17 +153,7 @@
                                           ]
                      },
                      {
-                         "cluster_id":  "C17",
-                         "signature":  "ext.txt|spiral_core|spİralchİp and tech|spiralchip_project|xs",
-                         "file_count":  10,
-                         "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\README.txt",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\requirements-dev.txt",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\requirements.txt"
-                                          ]
-                     },
-                     {
-                         "cluster_id":  "C18",
+                         "cluster_id":  "C16",
                          "signature":  "ext.txt|spİralchİp and tech|yeni klasör (2)|xs",
                          "file_count":  10,
                          "sample_paths":  [
@@ -183,7 +163,7 @@
                                           ]
                      },
                      {
-                         "cluster_id":  "C19",
+                         "cluster_id":  "C17",
                          "signature":  "ext.docx|spiral_core|spİralchİp and tech|spiralchip_project|md",
                          "file_count":  10,
                          "sample_paths":  [
@@ -193,57 +173,17 @@
                                           ]
                      },
                      {
-                         "cluster_id":  "C20",
-                         "signature":  ".git|dashboard|ext.sample|rh-dashboard|sm",
-                         "file_count":  8,
+                         "cluster_id":  "C18",
+                         "signature":  "ext.txt|spiral_core|spİralchİp and tech|spiralchip_project|xs",
+                         "file_count":  10,
                          "sample_paths":  [
-                                              "rh-dashboard\\.git\\hooks\\fsmonitor-watchman.sample",
-                                              "rh-dashboard\\.git\\hooks\\pre-commit.sample",
-                                              "rh-dashboard\\.git\\hooks\\pre-push.sample"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\README.txt",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\requirements-dev.txt",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\requirements.txt"
                                           ]
                      },
                      {
-                         "cluster_id":  "C21",
-                         "signature":  "dashboard|data|ext.json|rh voice asistant|rh-dashboard|xs",
-                         "file_count":  8,
-                         "sample_paths":  [
-                                              "rh-dashboard\\rh voice asistant\\package.json",
-                                              "rh-dashboard\\rh voice asistant\\tsconfig.json",
-                                              "rh-dashboard\\rh voice asistant\\.next\\build-manifest.json"
-                                          ]
-                     },
-                     {
-                         "cluster_id":  "C22",
-                         "signature":  "dashboard|ext.js|rh voice asistant|rh-dashboard|xs",
-                         "file_count":  7,
-                         "sample_paths":  [
-                                              "rh-dashboard\\rh voice asistant\\next.config.js",
-                                              "rh-dashboard\\rh voice asistant\\.next\\server\\middleware-build-manifest.js",
-                                              "rh-dashboard\\rh voice asistant\\.next\\server\\middleware-react-loadable-manifest.js"
-                                          ]
-                     },
-                     {
-                         "cluster_id":  "C23",
-                         "signature":  "ext.png|media|spiral_core|spİralchİp and tech|spiralchip_project|xl",
-                         "file_count":  7,
-                         "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\SpiralChip_Mimari_Diagram.png",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\SpiralChip_Mimari_Diagram.png",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Gemini_Generated_Image_1osh3n1osh3n1osh.png"
-                                          ]
-                     },
-                     {
-                         "cluster_id":  "C24",
-                         "signature":  "ext.js|spiral_core|spİralchİp and tech|spiralzeka_project|sm",
-                         "file_count":  7,
-                         "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_Project\\game.js",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_Project\\memoryExplorer.js",
-                                              "SPİRALCHİP AND TECH\\SpiralZeka_Project\\mongo-init.js"
-                                          ]
-                     },
-                     {
-                         "cluster_id":  "C25",
+                         "cluster_id":  "C19",
                          "signature":  "ext.glb|spiral_core|spİralchİp and tech|spiralchip_project|lg",
                          "file_count":  7,
                          "sample_paths":  [
@@ -253,7 +193,27 @@
                                           ]
                      },
                      {
-                         "cluster_id":  "C26",
+                         "cluster_id":  "C20",
+                         "signature":  "ext.js|spiral_core|spİralchİp and tech|spiralzeka_project|sm",
+                         "file_count":  7,
+                         "sample_paths":  [
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_Project\\game.js",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_Project\\memoryExplorer.js",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_Project\\mongo-init.js"
+                                          ]
+                     },
+                     {
+                         "cluster_id":  "C21",
+                         "signature":  "ext.png|media|spiral_core|spİralchİp and tech|spiralchip_project|xl",
+                         "file_count":  7,
+                         "sample_paths":  [
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\SpiralChip_Mimari_Diagram.png",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\OpenAI_SpiralChip_TechShare\\SpiralChip_Mimari_Diagram.png",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Gemini_Generated_Image_1osh3n1osh3n1osh.png"
+                                          ]
+                     },
+                     {
+                         "cluster_id":  "C22",
                          "signature":  "ext.html|spiral_core|spİralchİp and tech|web_surface|yeni klasör (2)|sm",
                          "file_count":  7,
                          "sample_paths":  [
@@ -263,47 +223,7 @@
                                           ]
                      },
                      {
-                         "cluster_id":  "C27",
-                         "signature":  ".git|dashboard|ext.sample|rh-dashboard|xs",
-                         "file_count":  6,
-                         "sample_paths":  [
-                                              "rh-dashboard\\.git\\hooks\\applypatch-msg.sample",
-                                              "rh-dashboard\\.git\\hooks\\commit-msg.sample",
-                                              "rh-dashboard\\.git\\hooks\\post-update.sample"
-                                          ]
-                     },
-                     {
-                         "cluster_id":  "C28",
-                         "signature":  "assets|dashboard|ext.html|spiral_core|spiralmmo html|web_surface|sm",
-                         "file_count":  6,
-                         "sample_paths":  [
-                                              "assets\\SPIRALMMO HTML\\06_dashboard.html",
-                                              "assets\\SPIRALMMO HTML\\07_dashboard.html",
-                                              "assets\\SPIRALMMO HTML\\08_dashboard.html"
-                                          ]
-                     },
-                     {
-                         "cluster_id":  "C29",
-                         "signature":  "assets|ext.js|spiral_core|src|sm",
-                         "file_count":  6,
-                         "sample_paths":  [
-                                              "assets\\src\\components\\compass\\SpiralCompass.js",
-                                              "assets\\src\\components\\controls\\SpiralTouchControls.js",
-                                              "assets\\src\\components\\overlay\\SpiralTransitionOverlay.js"
-                                          ]
-                     },
-                     {
-                         "cluster_id":  "C30",
-                         "signature":  "ext.jpg|spiral_core|spİralchİp and tech|spiralchip_project|md",
-                         "file_count":  6,
-                         "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\conexion-neuronal-1024x512.jpg",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Development-of-neuromorphic-devices-Building-neuromorphic-systems-based-on-Hebbian_Q320.jpg",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Selection-of-ion-channels-by-plasticity-rules-Hebbian-equation-4-and-anti-Hebbian_Q640.jpg"
-                                          ]
-                     },
-                     {
-                         "cluster_id":  "C31",
+                         "cluster_id":  "C23",
                          "signature":  "ext.pdf|spiral_core|spİralchİp and tech|spiralchip_project|xs",
                          "file_count":  6,
                          "sample_paths":  [
@@ -313,7 +233,17 @@
                                           ]
                      },
                      {
-                         "cluster_id":  "C32",
+                         "cluster_id":  "C24",
+                         "signature":  "ext.jpg|spiral_core|spİralchİp and tech|spiralchip_project|md",
+                         "file_count":  6,
+                         "sample_paths":  [
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\conexion-neuronal-1024x512.jpg",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Development-of-neuromorphic-devices-Building-neuromorphic-systems-based-on-Hebbian_Q320.jpg",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Selection-of-ion-channels-by-plasticity-rules-Hebbian-equation-4-and-anti-Hebbian_Q640.jpg"
+                                          ]
+                     },
+                     {
+                         "cluster_id":  "C25",
                          "signature":  "ext.pdf|spİralchİp and tech|yeni klasör (2)|sm",
                          "file_count":  6,
                          "sample_paths":  [
@@ -323,7 +253,27 @@
                                           ]
                      },
                      {
-                         "cluster_id":  "C33",
+                         "cluster_id":  "C26",
+                         "signature":  "assets|ext.js|spiral_core|src|sm",
+                         "file_count":  6,
+                         "sample_paths":  [
+                                              "assets\\src\\components\\compass\\SpiralCompass.js",
+                                              "assets\\src\\components\\controls\\SpiralTouchControls.js",
+                                              "assets\\src\\components\\overlay\\SpiralTransitionOverlay.js"
+                                          ]
+                     },
+                     {
+                         "cluster_id":  "C27",
+                         "signature":  "assets|dashboard|ext.html|spiral_core|spiralmmo html|web_surface|sm",
+                         "file_count":  6,
+                         "sample_paths":  [
+                                              "assets\\SPIRALMMO HTML\\06_dashboard.html",
+                                              "assets\\SPIRALMMO HTML\\07_dashboard.html",
+                                              "assets\\SPIRALMMO HTML\\08_dashboard.html"
+                                          ]
+                     },
+                     {
+                         "cluster_id":  "C28",
                          "signature":  "data|ext.json|spiral_core|spİralchİp and tech|spiralzeka_alphacodex|xs",
                          "file_count":  5,
                          "sample_paths":  [
@@ -333,37 +283,7 @@
                                           ]
                      },
                      {
-                         "cluster_id":  "C34",
-                         "signature":  "ext.png|media|spiral_core|spİralchİp and tech|spiralchip_project|md",
-                         "file_count":  5,
-                         "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Fabrication-steps-of-spiral-microchip.png",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\output (5).png",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\output (6).png"
-                                          ]
-                     },
-                     {
-                         "cluster_id":  "C35",
-                         "signature":  "ext.tex|spiral_core|spİralchİp and tech|spiralchip_project|sm",
-                         "file_count":  5,
-                         "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\SpiralChip-WebXR-Demo\\spiral_technologies_book.tex",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\SpiralChip-WebXR-Demo\\spiral_technologies_book_interactive.tex",
-                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\SpiralChip-WebXR-Demo\\spiral_technologies_book_styled.tex"
-                                          ]
-                     },
-                     {
-                         "cluster_id":  "C36",
-                         "signature":  "assets|dashboard|ext.html|spiral_core|spiralmmo html|web_surface|xs",
-                         "file_count":  5,
-                         "sample_paths":  [
-                                              "assets\\SPIRALMMO HTML\\09_dashboard.html",
-                                              "assets\\SPIRALMMO HTML\\10_dashboard.html",
-                                              "assets\\SPIRALMMO HTML\\11_dashboard.html"
-                                          ]
-                     },
-                     {
-                         "cluster_id":  "C37",
+                         "cluster_id":  "C29",
                          "signature":  "ext.jpg|spiral_core|spİralchİp and tech|yeni klasör (2)|md",
                          "file_count":  5,
                          "sample_paths":  [
@@ -373,27 +293,7 @@
                                           ]
                      },
                      {
-                         "cluster_id":  "C38",
-                         "signature":  "ext.txt|spiral_core|spİralchİp and tech|yeni klasör (2)|xs",
-                         "file_count":  5,
-                         "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Hebbian_Spiral_Chip_TUBITAK_Application\\1_Proje_Ozeti_TR.txt",
-                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Hebbian_Spiral_Chip_TUBITAK_Application\\2_Proje_Aciklamasi.txt",
-                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Hebbian_Spiral_Chip_TUBITAK_Application\\3_Teknoloji_Hazirlik_Seviyesi.txt"
-                                          ]
-                     },
-                     {
-                         "cluster_id":  "C39",
-                         "signature":  "ext.png|media|spiral_core|spİralchİp and tech|yeni klasör (2)|xl",
-                         "file_count":  5,
-                         "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Gemini_Generated_Image_1osh3n1osh3n1osh.png",
-                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Gemini_Generated_Image_8h8xtr8h8xtr8h8x.png",
-                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Gemini_Generated_Image_r9hdoar9hdoar9hd.png"
-                                          ]
-                     },
-                     {
-                         "cluster_id":  "C40",
+                         "cluster_id":  "C30",
                          "signature":  "bundle|ext.zip|spiral_core|spİralchİp and tech|spiralchip_project|xl",
                          "file_count":  5,
                          "sample_paths":  [
@@ -403,7 +303,7 @@
                                           ]
                      },
                      {
-                         "cluster_id":  "C41",
+                         "cluster_id":  "C31",
                          "signature":  "ext.png|media|spiral_core|spİralchİp and tech|yeni klasör (2)|md",
                          "file_count":  5,
                          "sample_paths":  [
@@ -413,7 +313,77 @@
                                           ]
                      },
                      {
-                         "cluster_id":  "C42",
+                         "cluster_id":  "C32",
+                         "signature":  "ext.png|media|spiral_core|spİralchİp and tech|spiralchip_project|md",
+                         "file_count":  5,
+                         "sample_paths":  [
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\Fabrication-steps-of-spiral-microchip.png",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\output (5).png",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\output (6).png"
+                                          ]
+                     },
+                     {
+                         "cluster_id":  "C33",
+                         "signature":  "assets|dashboard|ext.html|spiral_core|spiralmmo html|web_surface|xs",
+                         "file_count":  5,
+                         "sample_paths":  [
+                                              "assets\\SPIRALMMO HTML\\09_dashboard.html",
+                                              "assets\\SPIRALMMO HTML\\10_dashboard.html",
+                                              "assets\\SPIRALMMO HTML\\11_dashboard.html"
+                                          ]
+                     },
+                     {
+                         "cluster_id":  "C34",
+                         "signature":  "ext.png|media|spiral_core|spİralchİp and tech|yeni klasör (2)|xl",
+                         "file_count":  5,
+                         "sample_paths":  [
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Gemini_Generated_Image_1osh3n1osh3n1osh.png",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Gemini_Generated_Image_8h8xtr8h8xtr8h8x.png",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Gemini_Generated_Image_r9hdoar9hdoar9hd.png"
+                                          ]
+                     },
+                     {
+                         "cluster_id":  "C35",
+                         "signature":  "ext.txt|spiral_core|spİralchİp and tech|yeni klasör (2)|xs",
+                         "file_count":  5,
+                         "sample_paths":  [
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Hebbian_Spiral_Chip_TUBITAK_Application\\1_Proje_Ozeti_TR.txt",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Hebbian_Spiral_Chip_TUBITAK_Application\\2_Proje_Aciklamasi.txt",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\Hebbian_Spiral_Chip_TUBITAK_Application\\3_Teknoloji_Hazirlik_Seviyesi.txt"
+                                          ]
+                     },
+                     {
+                         "cluster_id":  "C36",
+                         "signature":  "ext.tex|spiral_core|spİralchİp and tech|spiralchip_project|sm",
+                         "file_count":  5,
+                         "sample_paths":  [
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\SpiralChip-WebXR-Demo\\spiral_technologies_book.tex",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\SpiralChip-WebXR-Demo\\spiral_technologies_book_interactive.tex",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\SpiralChip-WebXR-Demo\\spiral_technologies_book_styled.tex"
+                                          ]
+                     },
+                     {
+                         "cluster_id":  "C37",
+                         "signature":  "assets|css|ext.css|sm",
+                         "file_count":  4,
+                         "sample_paths":  [
+                                              "assets\\css\\dna-fusion-center.css",
+                                              "assets\\css\\dna-styles.css",
+                                              "assets\\css\\main.css"
+                                          ]
+                     },
+                     {
+                         "cluster_id":  "C38",
+                         "signature":  "ext.pdf|spiral_core|spİralchİp and tech|yeni klasör (2)|xl",
+                         "file_count":  4,
+                         "sample_paths":  [
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\SpiralMMO_HSMC_Application_Package.pdf",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\SpiralMMO_HSMC_Application_Package.pdf",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\The_Future_is_Spiral_Roadmap.pdf"
+                                          ]
+                     },
+                     {
+                         "cluster_id":  "C39",
                          "signature":  "ext.py|spiral_core|spİralchİp and tech|spiralchip_project|xs",
                          "file_count":  4,
                          "sample_paths":  [
@@ -423,23 +393,53 @@
                                           ]
                      },
                      {
-                         "cluster_id":  "C43",
-                         "signature":  "assets|ext.js|js|sm",
+                         "cluster_id":  "C40",
+                         "signature":  "ext.html|spiral_core|spİralchİp and tech|spiralzeka_alphacodex|web_surface|xs",
                          "file_count":  4,
                          "sample_paths":  [
-                                              "assets\\js\\main.js",
-                                              "assets\\js\\config\\dna-patterns.js",
-                                              "assets\\js\\core\\fusion-system.js"
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\public\\index.html",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_OnlineStarter\\index.html",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_Project\\public\\index.html"
                                           ]
                      },
                      {
-                         "cluster_id":  "C44",
+                         "cluster_id":  "C41",
+                         "signature":  "ext.js|spİralchİp and tech|yeni klasör (2)|md",
+                         "file_count":  4,
+                         "sample_paths":  [
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\src\\hardwareSimulator.js",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\src\\main.js",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\src\\modelManager.js"
+                                          ]
+                     },
+                     {
+                         "cluster_id":  "C42",
+                         "signature":  "bundle|ext.zip|spiral_core|spİralchİp and tech|spiralzeka_alphacodex|xs",
+                         "file_count":  4,
+                         "sample_paths":  [
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_ActionEngine.zip",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_EvaluateWithReflection.zip",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_PlusOneWithInsight.zip"
+                                          ]
+                     },
+                     {
+                         "cluster_id":  "C43",
                          "signature":  "ext.html|spiral_core|spİralchİp and tech|spiralzeka_alphacodex|web_surface|sm",
                          "file_count":  4,
                          "sample_paths":  [
                                               "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\index.html",
                                               "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_EvolutionPanel\\public\\index.html",
                                               "SPİRALCHİP AND TECH\\SpiralZeka_AlphaCodex\\SpiralZeka_VoiceCodex\\index.html"
+                                          ]
+                     },
+                     {
+                         "cluster_id":  "C44",
+                         "signature":  "ext.js|spİralchİp and tech|yeni klasör (2)|sm",
+                         "file_count":  4,
+                         "sample_paths":  [
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\server.js",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\src\\api.js",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\src\\layers\\ShaderLayer.js"
                                           ]
                      },
                      {
@@ -454,52 +454,52 @@
                      },
                      {
                          "cluster_id":  "C46",
-                         "signature":  "assets|css|ext.css|sm",
-                         "file_count":  4,
+                         "signature":  "ext.glb|spiral_core|spİralchİp and tech|yeni klasör (2)|lg",
+                         "file_count":  3,
                          "sample_paths":  [
-                                              "assets\\css\\dna-fusion-center.css",
-                                              "assets\\css\\dna-styles.css",
-                                              "assets\\css\\main.css"
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\spiral_ai_chip.glb",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\spiral_chip_network_animated.glb",
+                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör (2)\\spiral hebbian chip\\spiral_hebbian_chip.glb"
                                           ]
                      },
                      {
                          "cluster_id":  "C47",
-                         "signature":  "ext.js|spİralchİp and tech|yeni klasör (2)|sm",
-                         "file_count":  4,
+                         "signature":  "ext.docx|spiral_core|spİralchİp and tech|spiralchip_project|xl",
+                         "file_count":  3,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\server.js",
-                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\src\\api.js",
-                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\src\\layers\\ShaderLayer.js"
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\spiral hebbian chip\\The_Future_is_Spiral_Roadmap.docx",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\SpiralChip-WebXR-Demo\\Spiral_Introduction_With_Visuals_Can_Kasaplar.docx",
+                                              "SPİRALCHİP AND TECH\\SpiralChip_Project\\SpiralChip-WebXR-Demo\\Spiral_Visual_Overview_Can_Kasaplar.docx"
                                           ]
                      },
                      {
                          "cluster_id":  "C48",
-                         "signature":  "ext.js|spİralchİp and tech|yeni klasör (2)|md",
-                         "file_count":  4,
+                         "signature":  "ext.js|spiral_core|spİralchİp and tech|spiralzeka_project|xs",
+                         "file_count":  3,
                          "sample_paths":  [
-                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\src\\hardwareSimulator.js",
-                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\src\\main.js",
-                                              "SPİRALCHİP AND TECH\\Yeni klasör (2)\\Yeni klasör\\src\\modelManager.js"
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_Project\\actionEngine.js",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_Project\\dnatimespiral.js",
+                                              "SPİRALCHİP AND TECH\\SpiralZeka_Project\\playground.js"
                                           ]
                      },
                      {
                          "cluster_id":  "C49",
-                         "signature":  "assets|ext.js|rc|sm",
-                         "file_count":  4,
+                         "signature":  "assets|ext.js|spiral_core|src|md",
+                         "file_count":  3,
                          "sample_paths":  [
-                                              "assets\\rc\\js\\modules\\DNALab.js",
-                                              "assets\\rc\\js\\modules\\DNASystem.js",
-                                              "assets\\rc\\js\\modules\\DNAVisualizer.js"
+                                              "assets\\src\\components\\emotionMap\\SpiralEmotionMap.js",
+                                              "assets\\src\\js\\modules\\spiral-layer-system.js",
+                                              "assets\\src\\js\\modules\\spiral\\SpiralEmotionMap.js"
                                           ]
                      },
                      {
                          "cluster_id":  "C50",
                          "signature":  "OTHER|mixed_tail",
-                         "file_count":  73597,
+                         "file_count":  59801,
                          "sample_paths":  [
 
                                           ]
                      }
                  ],
-    "remainder_unassigned_estimate":  73597
+    "remainder_unassigned_estimate":  59801
 }

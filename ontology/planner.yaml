@@ -1,0 +1,5 @@
+kind: Planner
+name: planner
+attributes:
+  strategy: required
+  evidence_required: required

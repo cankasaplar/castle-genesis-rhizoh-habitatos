@@ -1,0 +1,6 @@
+kind: Belief
+name: belief
+attributes:
+  state: required
+  confidence: required
+  source_observation: optional

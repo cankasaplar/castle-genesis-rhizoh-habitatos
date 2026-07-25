@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "main": "src/index.js",
+  "dependencies": {
+    "@castle/sim-engine": "file:../../packages/sim-engine"
+  },
   "scripts": {
     "dev": "node src/dev.js"
   }

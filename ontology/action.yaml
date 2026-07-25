@@ -1,0 +1,6 @@
+kind: Action
+name: action
+attributes:
+  action_type: required
+  payload: required
+  target: optional
