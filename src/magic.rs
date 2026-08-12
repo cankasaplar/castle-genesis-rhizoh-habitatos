@@ -1,38 +1,48 @@
-// src/magic.rs
+use std::sync::LazyLock;
 
-// Yön kaydırma yardımcıları
-pub fn shift_north(bb: u64) -> u64 { bb << 8 }
-pub fn shift_south(bb: u64) -> u64 { bb >> 8 }
-pub fn shift_east(bb: u64) -> u64 { (bb << 1) & 0xFEFEFEFEFEFEFEFE }
-pub fn shift_west(bb: u64) -> u64 { (bb >> 1) & 0x7F7F7F7F7F7F7F7F }
+pub static KNIGHT_ATTACKS: LazyLock<[u64; 64]> = LazyLock::new(|| {
+    let mut table = [0u64; 64];
+    for sq in 0..64 {
+        let bb = 1u64 << sq;
+        let mut attacks = 0u64;
+        attacks |= (bb << 17) & 0xFEFEFEFEFEFEFEFE;
+        attacks |= (bb << 15) & 0x7F7F7F7F7F7F7F7F;
+        attacks |= (bb << 10) & 0xFCFCFCFCFCFCFCFC;
+        attacks |= (bb << 6)  & 0x3F3F3F3F3F3F3F3F;
+        attacks |= (bb >> 17) & 0x7F7F7F7F7F7F7F7F;
+        attacks |= (bb >> 15) & 0xFEFEFEFEFEFEFEFE;
+        attacks |= (bb >> 10) & 0x3F3F3F3F3F3F3F3F;
+        attacks |= (bb >> 6)  & 0xFCFCFCFCFCFCFCFC;
+        table[sq] = attacks;
+    }
+    table
+});
 
-// Klasik ışın (ray) oluşturma - Non-sliding taşlar için (At ve Şah) maskeler
+pub static KING_ATTACKS: LazyLock<[u64; 64]> = LazyLock::new(|| {
+    let mut table = [0u64; 64];
+    for sq in 0..64 {
+        let bb = 1u64 << sq;
+        let n = bb << 8;
+        let s = bb >> 8;
+        let e = (bb << 1) & 0xFEFEFEFEFEFEFEFE;
+        let w = (bb >> 1) & 0x7F7F7F7F7F7F7F7F;
+        let ne = (n << 1) & 0xFEFEFEFEFEFEFEFE;
+        let nw = (n >> 1) & 0x7F7F7F7F7F7F7F7F;
+        let se = (s << 1) & 0xFEFEFEFEFEFEFEFE;
+        let sw = (s >> 1) & 0x7F7F7F7F7F7F7F7F;
+        table[sq] = n | s | e | w | ne | nw | se | sw;
+    }
+    table
+});
+
+#[inline(always)]
 pub fn get_knight_attacks(square: u8) -> u64 {
-    let bb = 1u64 << square;
-    let mut attacks = 0;
-    
-    // Atın 8 olası hareketi
-    attacks |= (bb << 17) & 0xFEFEFEFEFEFEFEFE; // 2 Kuzey, 1 Doğu
-    attacks |= (bb << 15) & 0x7F7F7F7F7F7F7F7F; // 2 Kuzey, 1 Batı
-    attacks |= (bb << 10) & 0xFCFCFCFCFCFCFCFC; // 1 Kuzey, 2 Doğu
-    attacks |= (bb << 6)  & 0x3F3F3F3F3F3F3F3F; // 1 Kuzey, 2 Batı
-    attacks |= (bb >> 17) & 0x7F7F7F7F7F7F7F7F; // 2 Güney, 1 Batı
-    attacks |= (bb >> 15) & 0xFEFEFEFEFEFEFEFE; // 2 Güney, 1 Doğu
-    attacks |= (bb >> 10) & 0x3F3F3F3F3F3F3F3F; // 1 Güney, 2 Batı
-    attacks |= (bb >> 6)  & 0xFCFCFCFCFCFCFCFC; // 1 Güney, 2 Doğu
-    
-    attacks
+    KNIGHT_ATTACKS[square as usize]
 }
 
+#[inline(always)]
 pub fn get_king_attacks(square: u8) -> u64 {
-    let bb = 1u64 << square;
-    let mut attacks = 0;
-    
-    attacks |= shift_north(bb) | shift_south(bb);
-    let east_west = shift_east(bb) | shift_west(bb);
-    attacks |= east_west | shift_north(east_west) | shift_south(east_west);
-    
-    attacks
+    KING_ATTACKS[square as usize]
 }
 
 // Sliding piece (Fil ve Kale) maskeleri (Kenar kareler blokör maskesine dahil edilmez)

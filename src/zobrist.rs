@@ -1,0 +1,321 @@
+use crate::board::Board;
+use crate::types::Color;
+use std::sync::OnceLock;
+
+pub struct ZobristKeys {
+    pub pieces: [[[u64; 64]; 6]; 2],
+    pub side_to_move: u64,
+    pub castling: [u64; 16],
+}
+
+impl ZobristKeys {
+    pub fn init() -> Self {
+        let mut seed = 1070372 as u64;
+        let mut next_rand = || {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            seed
+        };
+
+        let mut pieces = [[[0u64; 64]; 6]; 2];
+        for color in 0..2 {
+            for piece in 0..6 {
+                for sq in 0..64 {
+                    pieces[color][piece][sq] = next_rand();
+                }
+            }
+        }
+
+        let side_to_move = next_rand();
+
+        let mut castling = [0u64; 16];
+        for i in 0..16 {
+            castling[i] = next_rand();
+        }
+
+        ZobristKeys { pieces, side_to_move, castling }
+    }
+
+    pub fn generate_hash(&self, board: &Board) -> u64 {
+        let mut hash = 0u64;
+
+        for color in 0..2 {
+            for piece in 0..6 {
+                let mut bb = board.pieces[color][piece];
+                while bb != 0 {
+                    let sq = bb.trailing_zeros() as usize;
+                    hash ^= self.pieces[color][piece][sq];
+                    bb &= bb - 1;
+                }
+            }
+        }
+
+        if board.side_to_move == Color::Black {
+            hash ^= self.side_to_move;
+        }
+
+        hash ^= self.castling[board.castling_rights as usize];
+        hash
+    }
+}
+
+/// Global Zobrist anahtar tablosu (Thread-safe ve hızlı erişim için)
+pub static ZOBRIST: OnceLock<ZobristKeys> = OnceLock::new();
+
+pub fn get_zobrist_instance() -> &'static ZobristKeys {
+    ZOBRIST.get_or_init(|| ZobristKeys::init())
+}
+
+pub static POLYGLOT_RANDOMS: [u64; 781] = [
+    0x9d39247e33776d41u64, 0x2af7398005aaa5c7u64, 0x44db015024623547u64, 0x9c15f73e62a76ae2u64,
+    0x75834465489c0c89u64, 0x3290ac3a203001bfu64, 0x0fbbad1f61042279u64, 0xe83a908ff2fb60cau64,
+    0x0d7e765d58755c10u64, 0x1a083822ceafe02du64, 0x9605d5f0e25ec3b0u64, 0xd021ff5cd13a2ed5u64,
+    0x40bdf15d4a672e32u64, 0x011355146fd56395u64, 0x5db4832046f3d9e5u64, 0x239f8b2d7ff719ccu64,
+    0x05d1a1ae85b49aa1u64, 0x679f848f6e8fc971u64, 0x7449bbff801fed0bu64, 0x7d11cdb1c3b7adf0u64,
+    0x82c7709e781eb7ccu64, 0xf3218f1c9510786cu64, 0x331478f3af51bbe6u64, 0x4bb38de5e7219443u64,
+    0xaa649c6ebcfd50fcu64, 0x8dbd98a352afd40bu64, 0x87d2074b81d79217u64, 0x19f3c751d3e92ae1u64,
+    0xb4ab30f062b19abfu64, 0x7b0500ac42047ac4u64, 0xc9452ca81a09d85du64, 0x24aa6c514da27500u64,
+    0x4c9f34427501b447u64, 0x14a68fd73c910841u64, 0xa71b9b83461cbd93u64, 0x03488b95b0f1850fu64,
+    0x637b2b34ff93c040u64, 0x09d1bc9a3dd90a94u64, 0x3575668334a1dd3bu64, 0x735e2b97a4c45a23u64,
+    0x18727070f1bd400bu64, 0x1fcbacd259bf02e7u64, 0xd310a7c2ce9b6555u64, 0xbf983fe0fe5d8244u64,
+    0x9f74d14f7454a824u64, 0x51ebdc4ab9ba3035u64, 0x5c82c505db9ab0fau64, 0xfcf7fe8a3430b241u64,
+    0x3253a729b9ba3ddeu64, 0x8c74c368081b3075u64, 0xb9bc6c87167c33e7u64, 0x7ef48f2b83024e20u64,
+    0x11d505d4c351bd7fu64, 0x6568fca92c76a243u64, 0x4de0b0f40f32a7b8u64, 0x96d693460cc37e5du64,
+    0x42e240cb63689f2fu64, 0x6d2bdcdae2919661u64, 0x42880b0236e4d951u64, 0x5f0f4a5898171bb6u64,
+    0x39f890f579f92f88u64, 0x93c5b5f47356388bu64, 0x63dc359d8d231b78u64, 0xec16ca8aea98ad76u64,
+    0x5355f900c2a82dc7u64, 0x07fb9f855a997142u64, 0x5093417aa8a7ed5eu64, 0x7bcbc38da25a7f3cu64,
+    0x19fc8a768cf4b6d4u64, 0x637a7780decfc0d9u64, 0x8249a47aee0e41f7u64, 0x79ad695501e7d1e8u64,
+    0x14acbaf4777d5776u64, 0xf145b6beccdea195u64, 0xdabf2ac8201752fcu64, 0x24c3c94df9c8d3f6u64,
+    0xbb6e2924f03912eau64, 0x0ce26c0b95c980d9u64, 0xa49cd132bfbf7cc4u64, 0xe99d662af4243939u64,
+    0x27e6ad7891165c3fu64, 0x8535f040b9744ff1u64, 0x54b3f4fa5f40d873u64, 0x72b12c32127fed2bu64,
+    0xee954d3c7b411f47u64, 0x9a85ac909a24eaa1u64, 0x70ac4cd9f04f21f5u64, 0xf9b89d3e99a075c2u64,
+    0x87b3e2b2b5c907b1u64, 0xa366e5b8c54f48b8u64, 0xae4a9346cc3f7cf2u64, 0x1920c04d47267bbdu64,
+    0x87bf02c6b49e2ae9u64, 0x092237ac237f3859u64, 0xff07f64ef8ed14d0u64, 0x8de8dca9f03cc54eu64,
+    0x9c1633264db49c89u64, 0xb3f22c3d0b0b38edu64, 0x390e5fb44d01144bu64, 0x5bfea5b4712768e9u64,
+    0x1e1032911fa78984u64, 0x9a74acb964e78cb3u64, 0x4f80f7a035dafb04u64, 0x6304d09a0b3738c4u64,
+    0x2171e64683023a08u64, 0x5b9b63eb9ceff80cu64, 0x506aacf489889342u64, 0x1881afc9a3a701d6u64,
+    0x6503080440750644u64, 0xdfd395339cdbf4a7u64, 0xef927dbcf00c20f2u64, 0x7b32f7d1e03680ecu64,
+    0xb9fd7620e7316243u64, 0x05a7e8a57db91b77u64, 0xb5889c6e15630a75u64, 0x4a750a09ce9573f7u64,
+    0xcf464cec899a2f8au64, 0xf538639ce705b824u64, 0x3c79a0ff5580ef7fu64, 0xede6c87f8477609du64,
+    0x799e81f05bc93f31u64, 0x86536b8cf3428a8cu64, 0x97d7374c60087b73u64, 0xa246637cff328532u64,
+    0x043fcae60cc0eba0u64, 0x920e449535dd359eu64, 0x70eb093b15b290ccu64, 0x73a1921916591cbdu64,
+    0x56436c9fe1a1aa8du64, 0xefac4b70633b8f81u64, 0xbb215798d45df7afu64, 0x45f20042f24f1768u64,
+    0x930f80f4e8eb7462u64, 0xff6712ffcfd75ea1u64, 0xae623fd67468aa70u64, 0xdd2c5bc84bc8d8fcu64,
+    0x7eed120d54cf2dd9u64, 0x22fe545401165f1cu64, 0xc91800e98fb99929u64, 0x808bd68e6ac10365u64,
+    0xdec468145b7605f6u64, 0x1bede3a3aef53302u64, 0x43539603d6c55602u64, 0xaa969b5c691ccb7au64,
+    0xa87832d392efee56u64, 0x65942c7b3c7e11aeu64, 0xded2d633cad004f6u64, 0x21f08570f420e565u64,
+    0xb415938d7da94e3cu64, 0x91b859e59ecb6350u64, 0x10cff333e0ed804au64, 0x28aed140be0bb7ddu64,
+    0xc5cc1d89724fa456u64, 0x5648f680f11a2741u64, 0x2d255069f0b7dab3u64, 0x9bc5a38ef729abd4u64,
+    0xef2f054308f6a2bcu64, 0xaf2042f5cc5c2858u64, 0x480412bab7f5be2au64, 0xaef3af4a563dfe43u64,
+    0x19afe59ae451497fu64, 0x52593803dff1e840u64, 0xf4f076e65f2ce6f0u64, 0x11379625747d5af3u64,
+    0xbce5d2248682c115u64, 0x9da4243de836994fu64, 0x066f70b33fe09017u64, 0x4dc4de189b671a1cu64,
+    0x51039ab7712457c3u64, 0xc07a3f80c31fb4b4u64, 0xb46ee9c5e64a6e7cu64, 0xb3819a42abe61c87u64,
+    0x21a007933a522a20u64, 0x2df16f761598aa4fu64, 0x763c4a1371b368fdu64, 0xf793c46702e086a0u64,
+    0xd7288e012aeb8d31u64, 0xde336a2a4bc1c44bu64, 0x0bf692b38d079f23u64, 0x2c604a7a177326b3u64,
+    0x4850e73e03eb6064u64, 0xcfc447f1e53c8e1bu64, 0xb05ca3f564268d99u64, 0x9ae182c8bc9474e8u64,
+    0xa4fc4bd4fc5558cau64, 0xe755178d58fc4e76u64, 0x69b97db1a4c03dfeu64, 0xf9b5b7c4acc67c96u64,
+    0xfc6a82d64b8655fbu64, 0x9c684cb6c4d24417u64, 0x8ec97d2917456ed0u64, 0x6703df9d2924e97eu64,
+    0xc547f57e42a7444eu64, 0x78e37644e7cad29eu64, 0xfe9a44e9362f05fau64, 0x08bd35cc38336615u64,
+    0x9315e5eb3a129aceu64, 0x94061b871e04df75u64, 0xdf1d9f9d784ba010u64, 0x3bba57b68871b59du64,
+    0xd2b7adeeded1f73fu64, 0xf7a255d83bc373f8u64, 0xd7f4f2448c0ceb81u64, 0xd95be88cd210ffa7u64,
+    0x336f52f8ff4728e7u64, 0xa74049dac312ac71u64, 0xa2f61bb6e437fdb5u64, 0x4f2a5cb07f6a35b3u64,
+    0x87d380bda5bf7859u64, 0x16b9f7e06c453a21u64, 0x7ba2484c8a0fd54eu64, 0xf3a678cad9a2e38cu64,
+    0x39b0bf7dde437ba2u64, 0xfcaf55c1bf8a4424u64, 0x18fcf680573fa594u64, 0x4c0563b89f495ac3u64,
+    0x40e087931a00930du64, 0x8cffa9412eb642c1u64, 0x68ca39053261169fu64, 0x7a1ee967d27579e2u64,
+    0x9d1d60e5076f5b6fu64, 0x3810e399b6f65ba2u64, 0x32095b6d4ab5f9b1u64, 0x35cab62109dd038au64,
+    0xa90b24499fcfafb1u64, 0x77a225a07cc2c6bdu64, 0x513e5e634c70e331u64, 0x4361c0ca3f692f12u64,
+    0xd941aca44b20a45bu64, 0x528f7c8602c5807bu64, 0x52ab92beb9613989u64, 0x9d1dfa2efc557f73u64,
+    0x722ff175f572c348u64, 0x1d1260a51107fe97u64, 0x7a249a57ec0c9ba2u64, 0x04208fe9e8f7f2d6u64,
+    0x5a110c6058b920a0u64, 0x0cd9a497658a5698u64, 0x56fd23c8f9715a4cu64, 0x284c847b9d887aaeu64,
+    0x04feabfbbdb619cbu64, 0x742e1e651c60ba83u64, 0x9a9632e65904ad3cu64, 0x881b82a13b51b9e2u64,
+    0x506e6744cd974924u64, 0xb0183db56ffc6a79u64, 0x0ed9b915c66ed37eu64, 0x5e11e86d5873d484u64,
+    0xf678647e3519ac6eu64, 0x1b85d488d0f20cc5u64, 0xdab9fe6525d89021u64, 0x0d151d86adb73615u64,
+    0xa865a54edcc0f019u64, 0x93c42566aef98ffbu64, 0x99e7afeabe000731u64, 0x48cbff086ddf285au64,
+    0x7f9b6af1ebf78bafu64, 0x58627e1a149bba21u64, 0x2cd16e2abd791e33u64, 0xd363eff5f0977996u64,
+    0x0ce2a38c344a6eedu64, 0x1a804aadb9cfa741u64, 0x907f30421d78c5deu64, 0x501f65edb3034d07u64,
+    0x37624ae5a48fa6e9u64, 0x957baf61700cff4eu64, 0x3a6c27934e31188au64, 0xd49503536abca345u64,
+    0x088e049589c432e0u64, 0xf943aee7febf21b8u64, 0x6c3b8e3e336139d3u64, 0x364f6ffa464ee52eu64,
+    0xd60f6dcedc314222u64, 0x56963b0dca418fc0u64, 0x16f50edf91e513afu64, 0xef1955914b609f93u64,
+    0x565601c0364e3228u64, 0xecb53939887e8175u64, 0xbac7a9a18531294bu64, 0xb344c470397bba52u64,
+    0x65d34954daf3cebdu64, 0xb4b81b3fa97511e2u64, 0xb422061193d6f6a7u64, 0x071582401c38434du64,
+    0x7a13f18bbedc4ff5u64, 0xbc4097b116c524d2u64, 0x59b97885e2f2ea28u64, 0x99170a5dc3115544u64,
+    0x6f423357e7c6a9f9u64, 0x325928ee6e6f8794u64, 0xd0e4366228b03343u64, 0x565c31f7de89ea27u64,
+    0x30f5611484119414u64, 0xd873db391292ed4fu64, 0x7bd94e1d8e17debcu64, 0xc7d9f16864a76e94u64,
+    0x947ae053ee56e63cu64, 0xc8c93882f9475f5fu64, 0x3a9bf55ba91f81cau64, 0xd9a11fbb3d9808e4u64,
+    0x0fd22063edc29fcau64, 0xb3f256d8aca0b0b9u64, 0xb03031a8b4516e84u64, 0x35dd37d5871448afu64,
+    0xe9f6082b05542e4eu64, 0xebfafa33d7254b59u64, 0x9255abb50d532280u64, 0xb9ab4ce57f2d34f3u64,
+    0x693501d628297551u64, 0xc62c58f97dd949bfu64, 0xcd454f8f19c5126au64, 0xbbe83f4ecc2bdecbu64,
+    0xdc842b7e2819e230u64, 0xba89142e007503b8u64, 0xa3bc941d0a5061cbu64, 0xe9f6760e32cd8021u64,
+    0x09c7e552bc76492fu64, 0x852f54934da55cc9u64, 0x8107fccf064fcf56u64, 0x098954d51fff6580u64,
+    0x23b70edb1955c4bfu64, 0xc330de426430f69du64, 0x4715ed43e8a45c0au64, 0xa8d7e4dab780a08du64,
+    0x0572b974f03ce0bbu64, 0xb57d2e985e1419c7u64, 0xe8d9ecbe2cf3d73fu64, 0x2fe4b17170e59750u64,
+    0x11317ba87905e790u64, 0x7fbf21ec8a1f45ecu64, 0x1725cabfcb045b00u64, 0x964e915cd5e2b207u64,
+    0x3e2b8bcbf016d66du64, 0xbe7444e39328a0acu64, 0xf85b2b4fbcde44b7u64, 0x49353fea39ba63b1u64,
+    0x1dd01aafcd53486au64, 0x1fca8a92fd719f85u64, 0xfc7c95d827357afau64, 0x18a6a990c8b35ebdu64,
+    0xcccb7005c6b9c28du64, 0x3bdbb92c43b17f26u64, 0xaa70b5b4f89695a2u64, 0xe94c39a54a98307fu64,
+    0xb7a0b174cff6f36eu64, 0xd4dba84729af48adu64, 0x2e18bc1ad9704a68u64, 0x2de0966daf2f8b1cu64,
+    0xb9c11d5b1e43a07eu64, 0x64972d68dee33360u64, 0x94628d38d0c20584u64, 0xdbc0d2b6ab90a559u64,
+    0xd2733c4335c6a72fu64, 0x7e75d99d94a70f4du64, 0x6ced1983376fa72bu64, 0x97fcaacbf030bc24u64,
+    0x7b77497b32503b12u64, 0x8547eddfb81ccb94u64, 0x79999cdff70902cbu64, 0xcffe1939438e9b24u64,
+    0x829626e3892d95d7u64, 0x92fae24291f2b3f1u64, 0x63e22c147b9c3403u64, 0xc678b6d860284a1cu64,
+    0x5873888850659ae7u64, 0x0981dcd296a8736du64, 0x9f65789a6509a440u64, 0x9ff38fed72e9052fu64,
+    0xe479ee5b9930578cu64, 0xe7f28ecd2d49eecdu64, 0x56c074a581ea17feu64, 0x5544f7d774b14aefu64,
+    0x7b3f0195fc6f290fu64, 0x12153635b2c0cf57u64, 0x7f5126dbba5e0ca7u64, 0x7a76956c3eafb413u64,
+    0x3d5774a11d31ab39u64, 0x8a1b083821f40cb4u64, 0x7b4a38e32537df62u64, 0x950113646d1d6e03u64,
+    0x4da8979a0041e8a9u64, 0x3bc36e078f7515d7u64, 0x5d0a12f27ad310d1u64, 0x7f9d1a2e1ebe1327u64,
+    0xda3a361b1c5157b1u64, 0xdcdd7d20903d0c25u64, 0x36833336d068f707u64, 0xce68341f79893389u64,
+    0xab9090168dd05f34u64, 0x43954b3252dc25e5u64, 0xb438c2b67f98e5e9u64, 0x10dcd78e3851a492u64,
+    0xdbc27ab5447822bfu64, 0x9b3cdb65f82ca382u64, 0xb67b7896167b4c84u64, 0xbfced1b0048eac50u64,
+    0xa9119b60369ffebdu64, 0x1fff7ac80904bf45u64, 0xac12fb171817eee7u64, 0xaf08da9177dda93du64,
+    0x1b0cab936e65c744u64, 0xb559eb1d04e5e932u64, 0xc37b45b3f8d6f2bau64, 0xc3a9dc228caac9e9u64,
+    0xf3b8b6675a6507ffu64, 0x9fc477de4ed681dau64, 0x67378d8eccef96cbu64, 0x6dd856d94d259236u64,
+    0xa319ce15b0b4db31u64, 0x073973751f12dd5eu64, 0x8a8e849eb32781a5u64, 0xe1925c71285279f5u64,
+    0x74c04bf1790c0efeu64, 0x4dda48153c94938au64, 0x9d266d6a1cc0542cu64, 0x7440fb816508c4feu64,
+    0x13328503df48229fu64, 0xd6bf7baee43cac40u64, 0x4838d65f6ef6748fu64, 0x1e152328f3318deau64,
+    0x8f8419a348f296bfu64, 0x72c8834a5957b511u64, 0xd7a023a73260b45cu64, 0x94ebc8abcfb56daeu64,
+    0x9fc10d0f989993e0u64, 0xde68a2355b93cae6u64, 0xa44cfe79ae538bbeu64, 0x9d1d84fcce371425u64,
+    0x51d2b1ab2ddfb636u64, 0x2fd7e4b9e72cd38cu64, 0x65ca5b96b7552210u64, 0xdd69a0d8ab3b546du64,
+    0x604d51b25fbf70e2u64, 0x73aa8a564fb7ac9eu64, 0x1a8c1e992b941148u64, 0xaac40a2703d9bea0u64,
+    0x764dbeae7fa4f3a6u64, 0x1e99b96e70a9be8bu64, 0x2c5e9deb57ef4743u64, 0x3a938fee32d29981u64,
+    0x26e6db8ffdf5adfeu64, 0x469356c504ec9f9du64, 0xc8763c5b08d1908cu64, 0x3f6c6af859d80055u64,
+    0x7f7cc39420a3a545u64, 0x9bfb227ebdf4c5ceu64, 0x89039d79d6fc5c5cu64, 0x8fe88b57305e2ab6u64,
+    0xa09e8c8c35ab96deu64, 0xfa7e393983325753u64, 0xd6b6d0ecc617c699u64, 0xdfea21ea9e7557e3u64,
+    0xb67c1fa481680af8u64, 0xca1e3785a9e724e5u64, 0x1cfc8bed0d681639u64, 0xd18d8549d140caeau64,
+    0x4ed0fe7e9dc91335u64, 0xe4dbf0634473f5d2u64, 0x1761f93a44d5aefeu64, 0x53898e4c3910da55u64,
+    0x734de8181f6ec39au64, 0x2680b122baa28d97u64, 0x298af231c85bafabu64, 0x7983eed3740847d5u64,
+    0x66c1a2a1a60cd889u64, 0x9e17e49642a3e4c1u64, 0xedb454e7badc0805u64, 0x50b704cab602c329u64,
+    0x4cc317fb9cddd023u64, 0x66b4835d9eafea22u64, 0x219b97e26ffc81bdu64, 0x261e4e4c0a333a9du64,
+    0x1fe2cca76517db90u64, 0xd7504dfa8816edbbu64, 0xb9571fa04dc089c8u64, 0x1ddc0325259b27deu64,
+    0xcf3f4688801eb9aau64, 0xf4f5d05c10cab243u64, 0x38b6525c21a42b0eu64, 0x36f60e2ba4fa6800u64,
+    0xeb3593803173e0ceu64, 0x9c4cd6257c5a3603u64, 0xaf0c317d32adaa8au64, 0x258e5a80c7204c4bu64,
+    0x8b889d624d44885du64, 0xf4d14597e660f855u64, 0xd4347f66ec8941c3u64, 0xe699ed85b0dfb40du64,
+    0x2472f6207c2d0484u64, 0xc2a1e7b5b459aeb5u64, 0xab4f6451cc1d45ecu64, 0x63767572ae3d6174u64,
+    0xa59e0bd101731a28u64, 0x116d0016cb948f09u64, 0x2cf9c8ca052f6e9fu64, 0x0b090a7560a968e3u64,
+    0xabeeddb2dde06ff1u64, 0x58efc10b06a2068du64, 0xc6e57a78fbd986e0u64, 0x2eab8ca63ce802d7u64,
+    0x14a195640116f336u64, 0x7c0828dd624ec390u64, 0xd74bbe77e6116ac7u64, 0x804456af10f5fb53u64,
+    0xebe9ea2adf4321c7u64, 0x03219a39ee587a30u64, 0x49787fef17af9924u64, 0xa1e9300cd8520548u64,
+    0x5b45e522e4b1b4efu64, 0xb49c3b3995091a36u64, 0xd4490ad526f14431u64, 0x12a8f216af9418c2u64,
+    0x001f837cc7350524u64, 0x1877b51e57a764d5u64, 0xa2853b80f17f58eeu64, 0x993e1de72d36d310u64,
+    0xb3598080ce64a656u64, 0x252f59cf0d9f04bbu64, 0xd23c8e176d113600u64, 0x1bda0492e7e4586eu64,
+    0x21e0bd5026c619bfu64, 0x3b097adaf088f94eu64, 0x8d14dedb30be846eu64, 0xf95cffa23af5f6f4u64,
+    0x3871700761b3f743u64, 0xca672b91e9e4fa16u64, 0x64c8e531bff53b55u64, 0x241260ed4ad1e87du64,
+    0x106c09b972d2e822u64, 0x7fba195410e5ca30u64, 0x7884d9bc6cb569d8u64, 0x0647dfedcd894a29u64,
+    0x63573ff03e224774u64, 0x4fc8e9560f91b123u64, 0x1db956e450275779u64, 0xb8d91274b9e9d4fbu64,
+    0xa2ebee47e2fbfce1u64, 0xd9f1f30ccd97fb09u64, 0xefed53d75fd64e6bu64, 0x2e6d02c36017f67fu64,
+    0xa9aa4d20db084e9bu64, 0xb64be8d8b25396c1u64, 0x70cb6af7c2d5bcf0u64, 0x98f076a4f7a2322eu64,
+    0xbf84470805e69b5fu64, 0x94c3251f06f90cf3u64, 0x3e003e616a6591e9u64, 0xb925a6cd0421aff3u64,
+    0x61bdd1307c66e300u64, 0xbf8d5108e27e0d48u64, 0x240ab57a8b888b20u64, 0xfc87614baf287e07u64,
+    0xef02cdd06ffdb432u64, 0xa1082c0466df6c0au64, 0x8215e577001332c8u64, 0xd39bb9c3a48db6cfu64,
+    0x2738259634305c14u64, 0x61cf4f94c97df93du64, 0x1b6baca2ae4e125bu64, 0x758f450c88572e0bu64,
+    0x959f587d507a8359u64, 0xb063e962e045f54du64, 0x60e8ed72c0dff5d1u64, 0x7b64978555326f9fu64,
+    0xfd080d236da814bau64, 0x8c90fd9b083f4558u64, 0x106f72fe81e2c590u64, 0x7976033a39f7d952u64,
+    0xa4ec0132764ca04bu64, 0x733ea705fae4fa77u64, 0xb4d8f77bc3e56167u64, 0x9e21f4f903b33fd9u64,
+    0x9d765e419fb69f6du64, 0xd30c088ba61ea5efu64, 0x5d94337fbfaf7f5bu64, 0x1a4e4822eb4d7a59u64,
+    0x6ffe73e81b637fb3u64, 0xddf957bc36d8b9cau64, 0x64d0e29eea8838b3u64, 0x08dd9bdfd96b9f63u64,
+    0x087e79e5a57d1d13u64, 0xe328e230e3e2b3fbu64, 0x1c2559e30f0946beu64, 0x720bf5f26f4d2eaau64,
+    0xb0774d261cc609dbu64, 0x443f64ec5a371195u64, 0x4112cf68649a260eu64, 0xd813f2fab7f5c5cau64,
+    0x660d3257380841eeu64, 0x59ac2c7873f910a3u64, 0xe846963877671a17u64, 0x93b633abfa3469f8u64,
+    0xc0c0f5a60ef4cdcfu64, 0xcaf21ecd4377b28cu64, 0x57277707199b8175u64, 0x506c11b9d90e8b1du64,
+    0xd83cc2687a19255fu64, 0x4a29c6465a314cd1u64, 0xed2df21216235097u64, 0xb5635c95ff7296e2u64,
+    0x22af003ab672e811u64, 0x52e762596bf68235u64, 0x9aeba33ac6ecc6b0u64, 0x944f6de09134dfb6u64,
+    0x6c47bec883a7de39u64, 0x6ad047c430a12104u64, 0xa5b1cfdba0ab4067u64, 0x7c45d833aff07862u64,
+    0x5092ef950a16da0bu64, 0x9338e69c052b8e7bu64, 0x455a4b4cfe30e3f5u64, 0x6b02e63195ad0cf8u64,
+    0x6b17b224bad6bf27u64, 0xd1e0ccd25bb9c169u64, 0xde0c89a556b9ae70u64, 0x50065e535a213cf6u64,
+    0x9c1169fa2777b874u64, 0x78edefd694af1eedu64, 0x6dc93d9526a50e68u64, 0xee97f453f06791edu64,
+    0x32ab0edb696703d3u64, 0x3a6853c7e70757a7u64, 0x31865ced6120f37du64, 0x67fef95d92607890u64,
+    0x1f2b1d1f15f6dc9cu64, 0xb69e38a8965c6b65u64, 0xaa9119ff184cccf4u64, 0xf43c732873f24c13u64,
+    0xfb4a3d794a9a80d2u64, 0x3550c2321fd6109cu64, 0x371f77e76bb8417eu64, 0x6bfa9aae5ec05779u64,
+    0xcd04f3ff001a4778u64, 0xe3273522064480cau64, 0x9f91508bffcfc14au64, 0x049a7f41061a9e60u64,
+    0xfcb6be43a9f2fe9bu64, 0x08de8a1c7797da9bu64, 0x8f9887e6078735a1u64, 0xb5b4071dbfc73a66u64,
+    0x230e343dfba08d33u64, 0x43ed7f5a0fae657du64, 0x3a88a0fbbcb05c63u64, 0x21874b8b4d2dbc4fu64,
+    0x1bdea12e35f6a8c9u64, 0x53c065c6c8e63528u64, 0xe34a1d250e7a8d6bu64, 0xd6b04d3b7651dd7eu64,
+    0x5e90277e7cb39e2du64, 0x2c046f22062dc67du64, 0xb10bb459132d0a26u64, 0x3fa9ddfb67e2f199u64,
+    0x0e09b88e1914f7afu64, 0x10e8b35af3eeab37u64, 0x9eedeca8e272b933u64, 0xd4c718bc4ae8ae5fu64,
+    0x81536d601170fc20u64, 0x91b534f885818a06u64, 0xec8177f83f900978u64, 0x190e714fada5156eu64,
+    0xb592bf39b0364963u64, 0x89c350c893ae7dc1u64, 0xac042e70f8b383f2u64, 0xb49b52e587a1ee60u64,
+    0xfb152fe3ff26da89u64, 0x3e666e6f69ae2c15u64, 0x3b544ebe544c19f9u64, 0xe805a1e290cf2456u64,
+    0x24b33c9d7ed25117u64, 0xe74733427b72f0c1u64, 0x0a804d18b7097475u64, 0x57e3306d881edb4fu64,
+    0x4ae7d6a36eb5dbcbu64, 0x2d8d5432157064c8u64, 0xd1e649de1e7f268bu64, 0x8a328a1cedfe552cu64,
+    0x07a3aec79624c7dau64, 0x84547ddc3e203c94u64, 0x990a98fd5071d263u64, 0x1a4ff12616eefc89u64,
+    0xf6f7fd1431714200u64, 0x30c05b1ba332f41cu64, 0x8d2636b81555a786u64, 0x46c9feb55d120902u64,
+    0xccec0a73b49c9921u64, 0x4e9d2827355fc492u64, 0x19ebb029435dcb0fu64, 0x4659d2b743848a2cu64,
+    0x963ef2c96b33be31u64, 0x74f85198b05a2e7du64, 0x5a0f544dd2b1fb18u64, 0x03727073c2e134b1u64,
+    0xc7f6aa2de59aea61u64, 0x352787baa0d7c22fu64, 0x9853eab63b5e0b35u64, 0xabbdcdd7ed5c0860u64,
+    0xcf05daf5ac8d77b0u64, 0x49cad48cebf4a71eu64, 0x7a4c10ec2158c4a6u64, 0xd9e92aa246bf719eu64,
+    0x13ae978d09fe5557u64, 0x730499af921549ffu64, 0x4e4b705b92903ba4u64, 0xff577222c14f0a3au64,
+    0x55b6344cf97aafaeu64, 0xb862225b055b6960u64, 0xcac09afbddd2cdb4u64, 0xdaf8e9829fe96b5fu64,
+    0xb5fdfc5d3132c498u64, 0x310cb380db6f7503u64, 0xe87fbb46217a360eu64, 0x2102ae466ebb1148u64,
+    0xf8549e1a3aa5e00du64, 0x07a69afdcc42261au64, 0xc4c118bfe78feaaeu64, 0xf9f4892ed96bd438u64,
+    0x1af3dbe25d8f45dau64, 0xf5b4b0b0d2deeeb4u64, 0x962aceefa82e1c84u64, 0x046e3ecaaf453ce9u64,
+    0xf05d129681949a4cu64, 0x964781ce734b3c84u64, 0x9c2ed44081ce5fbdu64, 0x522e23f3925e319eu64,
+    0x177e00f9fc32f791u64, 0x2bc60a63a6f3b3f2u64, 0x222bbfae61725606u64, 0x486289ddcc3d6780u64,
+    0x7dc7785b8efdfc80u64, 0x8af38731c02ba980u64, 0x1fab64ea29a2ddf7u64, 0xe4d9429322cd065au64,
+    0x9da058c67844f20cu64, 0x24c0e332b70019b0u64, 0x233003b5a6cfe6adu64, 0xd586bd01c5c217f6u64,
+    0x5e5637885f29bc2bu64, 0x7eba726d8c94094bu64, 0x0a56a5f0bfe39272u64, 0xd79476a84ee20d06u64,
+    0x9e4c1269baa4bf37u64, 0x17efee45b0dee640u64, 0x1d95b0a5fcf90bc6u64, 0x93cbe0b699c2585du64,
+    0x65fa4f227a2b6d79u64, 0xd5f9e858292504d5u64, 0xc2b5a03f71471a6fu64, 0x59300222b4561e00u64,
+    0xce2f8642ca0712dcu64, 0x7ca9723fbb2e8988u64, 0x2785338347f2ba08u64, 0xc61bb3a141e50e8cu64,
+    0x150f361dab9dec26u64, 0x9f6a419d382595f4u64, 0x64a53dc924fe7ac9u64, 0x142de49fff7a7c3du64,
+    0x0c335248857fa9e7u64, 0x0a9c32d5eae45305u64, 0xe6c42178c4bbb92eu64, 0x71f1ce2490d20b07u64,
+    0xf1bcc3d275afe51au64, 0xe728e8c83c334074u64, 0x96fbf83a12884624u64, 0x81a1549fd6573da5u64,
+    0x5fa7867caf35e149u64, 0x56986e2ef3ed091bu64, 0x917f1dd5f8886c61u64, 0xd20d8c88c8ffe65fu64,
+    0x31d71dce64b2c310u64, 0xf165b587df898190u64, 0xa57e6339dd2cf3a0u64, 0x1ef6e6dbb1961ec9u64,
+    0x70cc73d90bc26e24u64, 0xe21a6b35df0c3ad7u64, 0x003a93d8b2806962u64, 0x1c99ded33cb890a1u64,
+    0xcf3145de0add4289u64, 0xd0e4427a5514fb72u64, 0x77c621cc9fb3a483u64, 0x67a34dac4356550bu64,
+    0xf8d626aaaf278509u64,
+];
+
+pub fn get_polyglot_hash(board: &Board) -> u64 {
+    let mut hash = 0u64;
+    for color in 0..2 {
+        let c_color = if color == 0 { Color::White } else { Color::Black };
+        for p_idx in 0..6 {
+            let piece_type = match p_idx {
+                0 => crate::types::PieceType::Pawn,
+                1 => crate::types::PieceType::Knight,
+                2 => crate::types::PieceType::Bishop,
+                3 => crate::types::PieceType::Rook,
+                4 => crate::types::PieceType::Queen,
+                _ => crate::types::PieceType::King,
+            };
+            let mut bb = board.pieces[color][p_idx];
+            while bb != 0 {
+                let sq = bb.trailing_zeros() as usize;
+                let c_poly = if color == 0 { 1 } else { 0 };
+                let poly_p_idx = p_idx * 2 + c_poly;
+                hash ^= POLYGLOT_RANDOMS[64 * poly_p_idx + sq];
+                bb &= bb - 1;
+            }
+        }
+    }
+
+    if (board.castling_rights & 0b0001) != 0 { hash ^= POLYGLOT_RANDOMS[768]; }
+    if (board.castling_rights & 0b0010) != 0 { hash ^= POLYGLOT_RANDOMS[768 + 1]; }
+    if (board.castling_rights & 0b0100) != 0 { hash ^= POLYGLOT_RANDOMS[768 + 2]; }
+    if (board.castling_rights & 0b1000) != 0 { hash ^= POLYGLOT_RANDOMS[768 + 3]; }
+
+    if let Some(ep_sq) = board.en_passant_square {
+        let ep_file = (ep_sq % 8) as usize;
+        let ep_rank = (ep_sq / 8) as usize;
+        let us_pawn_bb = board.pieces[board.side_to_move as usize][crate::types::PieceType::Pawn as usize];
+        let mut ep_can_be_captured = false;
+        if ep_file > 0 {
+            let left_sq = if board.side_to_move == Color::White { (ep_rank - 1) * 8 + ep_file - 1 } else { (ep_rank + 1) * 8 + ep_file - 1 };
+            if (us_pawn_bb & (1u64 << left_sq)) != 0 { ep_can_be_captured = true; }
+        }
+        if ep_file < 7 {
+            let right_sq = if board.side_to_move == Color::White { (ep_rank - 1) * 8 + ep_file + 1 } else { (ep_rank + 1) * 8 + ep_file + 1 };
+            if (us_pawn_bb & (1u64 << right_sq)) != 0 { ep_can_be_captured = true; }
+        }
+        if ep_can_be_captured {
+            hash ^= POLYGLOT_RANDOMS[772 + ep_file];
+        }
+    }
+
+    if board.side_to_move == Color::White {
+        hash ^= POLYGLOT_RANDOMS[780];
+    }
+
+    hash
+}
