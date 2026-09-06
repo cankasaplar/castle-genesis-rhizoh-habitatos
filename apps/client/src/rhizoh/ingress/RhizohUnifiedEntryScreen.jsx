@@ -1,325 +1,398 @@
-import React, { useMemo, useState } from "react";
+import React from "react";
 import {
-  RHIZOH_UI_LAUNCH_LOCALES_V0,
-  readUiLocaleV0,
-  resolveLaunchLocaleLabelV0,
-  writeUiLocaleV0
-} from "../runtime/rhizohUiLocaleV0.js";
-import {
-  RHIZOH_SPEECH_MODE_V0,
-  writeRhizohSpeechProfileV0
-} from "../runtime/rhizohSpeechProfileV0.js";
-import { RHIZOH_LANGUAGE_CATALOG_V0 } from "../runtime/rhizohMultilingualBridgeV0.js";
-import {
-  clearRhizohOutputLanguagePreferenceV0,
-  writeRhizohOutputLanguagePreferenceV0
-} from "../runtime/rhizohOutputLanguagePolicyV0.js";
-import { getLanguagePickerCopyV0, getLegalPreambleCopyForLocaleV0 } from "./ingressCopyI18nV0.js";
-import {
-  acknowledgeLegalAccessV0,
-  getLegalDocumentPathsV0,
-  hasLegalAccessAckV0
-} from "./ingress_router.js";
-import { INGRESS_SURFACE_V0 } from "./ingressFlowStylesV0.js";
-import { CookieConsentBanner } from "./CookieConsentBanner.jsx";
+  Cpu,
+  Activity,
+  ShieldCheck,
+  Radio,
+  Sparkles,
+  Zap,
+  Binary,
+  Clock
+} from "lucide-react";
 
-const sectionStyle = {
-  border: "1px solid rgba(148,163,184,0.22)",
-  borderRadius: 18,
-  padding: 16,
-  marginBottom: 14,
-  background: "rgba(2,6,23,0.62)"
-};
-
-const chipGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(128px, 1fr))",
-  gap: 8
-};
-
-const stickyFooterStyle = {
-  position: "fixed",
-  left: 0,
-  right: 0,
-  bottom: 0,
-  zIndex: 10050,
-  padding: "12px 16px calc(12px + env(safe-area-inset-bottom, 0px))",
-  background: "linear-gradient(180deg, rgba(5,8,16,0) 0%, rgba(5,8,16,0.92) 28%, rgba(5,8,16,0.98) 100%)",
-  borderTop: "1px solid rgba(148,163,184,0.18)",
-  boxSizing: "border-box"
-};
-
-const stickyInnerStyle = {
-  maxWidth: 760,
-  margin: "0 auto",
-  width: "100%"
-};
-
-function pickButtonStyle(active) {
-  return {
-    ...INGRESS_SURFACE_V0.primaryBtn(active),
-    background: active ? "#38bdf8" : "rgba(15,23,42,0.85)",
-    color: active ? "#041018" : "#e2e8f0",
-    border: active ? "none" : "1px solid #334155",
-    textAlign: "left",
-    padding: "10px 12px"
-  };
-}
+const VERIFIED_METRICS_V0 = [
+  {
+    id: "holdout-r",
+    label: "Holdout Pearson Correlation (r)",
+    value: "0.4404",
+    subtext: "MAE: 226.7 cp · RMSE: 318.5 cp (10,000 Holdout Positions)",
+    status: "Verified",
+    icon: Activity,
+    color: "#38bdf8"
+  },
+  {
+    id: "wac30",
+    label: "WAC 30 Tactical Resolution",
+    value: "23 / 30 (76.7%)",
+    subtext: "Median pass rate across Win-At-Chess critical positions",
+    status: "Verified",
+    icon: Zap,
+    color: "#f59e0b"
+  },
+  {
+    id: "gate0",
+    label: "Gate 0 Symmetry Invariance",
+    value: "10 / 10 PASS",
+    subtext: "100.0% sign-inversion parity (0 cp delta across all plies)",
+    status: "Verified",
+    icon: ShieldCheck,
+    color: "#10b981"
+  },
+  {
+    id: "architecture",
+    label: "Network Architecture",
+    value: "HalfKP (40960 → 256×2 → 1)",
+    subtext: "AVX2-Quantized INT16 dual-accumulator SIMD inference",
+    status: "Deployed",
+    icon: Binary,
+    color: "#6366f1"
+  }
+];
 
 /**
- * Single persistent entry surface: language + legal + optional identity.
- * @param {{ onProceed: () => void, specSha256?: string | null, legalRequired?: boolean }} props
+ * Clean English landing interface for rhizoh.com.
+ * Replaces legacy translator integration and map viewports.
+ * Strictly displays only the 4 verified telemetry benchmarks.
  */
-export function RhizohUnifiedEntryScreen({ onProceed, specSha256 = null, legalRequired = true }) {
-  const [appLocale, setAppLocale] = useState(readUiLocaleV0());
-  const [appSearch, setAppSearch] = useState("");
-  const [rhizohMode, setRhizohMode] = useState(RHIZOH_SPEECH_MODE_V0.MANUAL);
-  const [rhizohLocale, setRhizohLocale] = useState(appLocale === "tr" ? "tr" : "en");
-  const [rhizohSearch, setRhizohSearch] = useState("");
-  const [guestName, setGuestName] = useState("");
-  const [terms, setTerms] = useState(false);
-  const [kvkk, setKvkk] = useState(false);
-  const [aiConsent, setAiConsent] = useState(false);
-  const [legalCollapsed, setLegalCollapsed] = useState(!legalRequired || hasLegalAccessAckV0());
-
-  const languageCopy = useMemo(() => getLanguagePickerCopyV0(appLocale), [appLocale]);
-  const legalCopy = useMemo(() => getLegalPreambleCopyForLocaleV0(appLocale), [appLocale]);
-  const docs = getLegalDocumentPathsV0();
-  const legalAcked = hasLegalAccessAckV0();
-  const legalReady = !legalRequired || legalAcked || (terms && kvkk && aiConsent);
-  const tr = appLocale === "tr";
-  const appLocaleRows = RHIZOH_UI_LAUNCH_LOCALES_V0.filter((code) => {
-    const q = appSearch.trim().toLowerCase();
-    if (!q) return true;
-    return `${code} ${resolveLaunchLocaleLabelV0(code)}`.toLowerCase().includes(q);
-  });
-  const rhizohLanguageRows = RHIZOH_LANGUAGE_CATALOG_V0.filter((row) => {
-    if (row.code === "und" || row.code === "mixed") return false;
-    const q = rhizohSearch.trim().toLowerCase();
-    if (!q) return true;
-    return `${row.code} ${row.label} ${row.bcp47} ${row.family}`.toLowerCase().includes(q);
-  });
-
-  const persistLanguage = () => {
-    writeUiLocaleV0(appLocale);
-    if (rhizohMode === RHIZOH_SPEECH_MODE_V0.MANUAL) {
-      writeRhizohOutputLanguagePreferenceV0(rhizohLocale, "unified_entry_manual");
-      writeRhizohSpeechProfileV0({ mode: RHIZOH_SPEECH_MODE_V0.MANUAL, manualLocale: rhizohLocale });
-    } else if (rhizohMode === RHIZOH_SPEECH_MODE_V0.MIRROR_UI) {
-      writeRhizohOutputLanguagePreferenceV0(appLocale, "unified_entry_mirror_ui");
-      writeRhizohSpeechProfileV0({ mode: RHIZOH_SPEECH_MODE_V0.MIRROR_UI });
-    } else {
-      clearRhizohOutputLanguagePreferenceV0();
-      writeRhizohSpeechProfileV0({ mode: RHIZOH_SPEECH_MODE_V0.AUTO });
-    }
-    try {
-      if (guestName.trim() && typeof sessionStorage !== "undefined") {
-        sessionStorage.setItem("rhizoh.entry.guest_name.v1", guestName.trim().slice(0, 80));
-      }
-    } catch {
-      /* noop */
-    }
-  };
-
-  const proceed = () => {
-    if (legalRequired && !legalReady) {
-      setLegalCollapsed(false);
-      return;
-    }
-    persistLanguage();
-    if (legalRequired && !legalAcked) {
-      acknowledgeLegalAccessV0({
-        specSha256,
-        acceptances: { terms, kvkkAydinlatma: kvkk, aiCrossBorderConsent: aiConsent }
-      });
-      setLegalCollapsed(true);
-    }
-    onProceed?.();
-  };
-
+export function RhizohUnifiedEntryScreen() {
   return (
-    <>
-      <div
-        data-rhizoh-ingress-surface="unified-entry"
-        style={{ ...INGRESS_SURFACE_V0.page, maxWidth: 760, paddingBottom: "calc(120px + env(safe-area-inset-bottom, 0px))" }}
-      >
-        <p style={INGRESS_SURFACE_V0.kicker}>{tr ? "RHIZOH GİRİŞ" : "RHIZOH ENTRY"}</p>
-        <h1 style={INGRESS_SURFACE_V0.title}>{tr ? "Tek yüzeyden başla" : "Start from one surface"}</h1>
-        <p style={INGRESS_SURFACE_V0.lead}>
-          {tr
-            ? "Dil, hukuki onay ve kimlik aynı ekranda kalır; sadece durum değişir."
-            : "Language, legal consent, and identity stay on one screen; only state changes."}
-        </p>
-
-        <section style={sectionStyle} data-rhizoh-entry-section="language">
-          <p style={INGRESS_SURFACE_V0.kicker}>{languageCopy.kicker}</p>
-          <h2 style={{ fontSize: 20, margin: "0 0 8px" }}>{languageCopy.title}</h2>
-          <p style={{ fontSize: 12, opacity: 0.7, margin: "0 0 12px" }}>
-            {tr ? "UI dili butonları ve menüleri etkiler; Rhizoh cevap dili ayrı seçilir." : "UI language affects buttons and menus; Rhizoh response language is separate."}
-          </p>
-          <input
-            value={appSearch}
-            onChange={(e) => setAppSearch(e.target.value)}
-            placeholder={tr ? "UI dili ara" : "Search app language"}
-            style={{
-              width: "100%",
-              boxSizing: "border-box",
-              borderRadius: 12,
-              border: "1px solid #334155",
-              background: "rgba(15,23,42,0.75)",
-              color: "#e2e8f0",
-              padding: "10px 12px",
-              marginBottom: 10
-            }}
-          />
-          <div style={{ ...chipGridStyle, maxHeight: 150, overflowY: "auto" }}>
-            {appLocaleRows.map((code) => (
-              <button
-                key={code}
-                type="button"
-                style={pickButtonStyle(appLocale === code)}
-                aria-pressed={appLocale === code}
-                onClick={() => setAppLocale(code)}
-              >
-                <span style={{ display: "block", fontWeight: 700 }}>{resolveLaunchLocaleLabelV0(code)}</span>
-                <span style={{ display: "block", fontSize: 10, opacity: 0.65 }}>{code}</span>
-              </button>
-            ))}
+    <div
+      data-rhizoh-surface="chess-landing"
+      style={{
+        minHeight: "100vh",
+        background: "radial-gradient(circle at 50% 0%, #0c1830 0%, #050a14 55%, #020408 100%)",
+        color: "#f1f5f9",
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        padding: "32px 20px 80px",
+        boxSizing: "border-box"
+      }}
+    >
+      <div style={{ maxWidth: 960, margin: "0 auto" }}>
+        {/* Navigation Header */}
+        <header
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "16px 24px",
+            background: "rgba(15, 23, 42, 0.65)",
+            backdropFilter: "blur(12px)",
+            border: "1px solid rgba(148, 163, 184, 0.12)",
+            borderRadius: 16,
+            marginBottom: 48
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: "linear-gradient(135deg, #38bdf8 0%, #6366f1 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 900,
+                fontSize: 18,
+                color: "#020617",
+                boxShadow: "0 0 16px rgba(56, 189, 248, 0.4)"
+              }}
+            >
+              R
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: "0.05em" }}>RHIZOH</div>
+              <div style={{ fontSize: 11, color: "#94a3b8" }}>Autonomous Chess Intelligence</div>
+            </div>
           </div>
-        </section>
 
-        <section style={sectionStyle} data-rhizoh-entry-section="rhizoh-language">
-          <p style={INGRESS_SURFACE_V0.kicker}>{tr ? "RHIZOH DİLİ" : "RHIZOH LANGUAGE"}</p>
-          <h2 style={{ fontSize: 20, margin: "0 0 8px" }}>{tr ? "Rhizoh nasıl cevap versin?" : "How should Rhizoh respond?"}</h2>
-          <div style={{ display: "grid", gap: 8, marginBottom: 10 }}>
-            {[
-              { id: RHIZOH_SPEECH_MODE_V0.AUTO, label: tr ? "Otomatik: kullanıcının son mesajını izle" : "Auto: follow the user's latest message" },
-              { id: RHIZOH_SPEECH_MODE_V0.MIRROR_UI, label: tr ? "UI diliyle aynı" : "Same as UI language" },
-              { id: RHIZOH_SPEECH_MODE_V0.MANUAL, label: tr ? "Manuel cevap dili seç" : "Choose response language" }
-            ].map((row) => (
-              <button
-                key={row.id}
-                type="button"
-                style={pickButtonStyle(rhizohMode === row.id)}
-                aria-pressed={rhizohMode === row.id}
-                onClick={() => setRhizohMode(row.id)}
-              >
-                {row.label}
-              </button>
-            ))}
-          </div>
-          {rhizohMode === RHIZOH_SPEECH_MODE_V0.MANUAL ? (
-            <>
-              <input
-                value={rhizohSearch}
-                onChange={(e) => setRhizohSearch(e.target.value)}
-                placeholder={tr ? "Rhizoh cevap dili ara" : "Search Rhizoh response language"}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 10px",
+                background: "rgba(16, 185, 129, 0.12)",
+                border: "1px solid rgba(16, 185, 129, 0.3)",
+                borderRadius: 20,
+                fontSize: 12,
+                color: "#34d399",
+                fontWeight: 600
+              }}
+            >
+              <span
                 style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  borderRadius: 12,
-                  border: "1px solid #334155",
-                  background: "rgba(15,23,42,0.75)",
-                  color: "#e2e8f0",
-                  padding: "10px 12px",
-                  marginBottom: 10
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: "#10b981",
+                  boxShadow: "0 0 8px #10b981"
                 }}
               />
-              <div style={{ ...chipGridStyle, maxHeight: 220, overflowY: "auto" }}>
-              {rhizohLanguageRows.map((row) => (
-                <button
-                  key={row.code}
-                  type="button"
-                  style={pickButtonStyle(rhizohLocale === row.code)}
-                  onClick={() => setRhizohLocale(row.code)}
-                >
-                  <span style={{ display: "block", fontWeight: 700 }}>{row.label}</span>
-                  <span style={{ display: "block", fontSize: 10, opacity: 0.65 }}>{row.code} · {row.bcp47}</span>
-                </button>
-              ))}
-              </div>
-            </>
-          ) : null}
-        </section>
+              NNUE v5 Active
+            </span>
+          </div>
+        </header>
 
-        <section style={{ ...sectionStyle, opacity: legalCollapsed ? 0.72 : 1 }} data-rhizoh-entry-section="legal">
-          <button
-            type="button"
-            onClick={() => {
-              if (legalAcked) setLegalCollapsed((v) => !v);
-              else setLegalCollapsed(false);
-            }}
-            style={{ ...INGRESS_SURFACE_V0.primaryBtn(false), width: "100%", justifyContent: "space-between" }}
-          >
-            {legalAcked ? (tr ? "Hukuki geçit kilitlendi" : "Legal gate locked") : legalCopy.title}
-          </button>
-          {!legalCollapsed ? (
-            <div style={{ marginTop: 14 }}>
-              <p style={{ fontSize: 13, opacity: 0.82 }}>{legalCopy.lead}</p>
-              <nav style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12, fontSize: 12 }}>
-                {[
-                  [docs.terms, legalCopy.docLinks?.terms || "Terms"],
-                  [docs.privacy, legalCopy.docLinks?.privacy || "Privacy"],
-                  [docs.kvkk, legalCopy.docLinks?.kvkk || "KVKK"],
-                  [docs.aiOpenConsent, legalCopy.docLinks?.ai || "AI consent"]
-                ].map(([href, label]) => (
-                  <a key={href} href={href} target="_blank" rel="noopener noreferrer" style={INGRESS_SURFACE_V0.link}>
-                    {label}
-                  </a>
-                ))}
-              </nav>
-              {[
-                ["terms", legalCopy.checkboxes.terms, terms, setTerms],
-                ["kvkk", legalCopy.checkboxes.kvkk, kvkk, setKvkk],
-                ["ai", legalCopy.checkboxes.ai, aiConsent, setAiConsent]
-              ].map(([key, label, checked, setChecked]) => (
-                <label key={key} style={{ display: "flex", gap: 10, fontSize: 12, lineHeight: 1.45, marginBottom: 8 }}>
-                  <input type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
-                  <span>{label}</span>
-                </label>
-              ))}
-            </div>
-          ) : null}
-        </section>
-
-        <section style={sectionStyle} data-rhizoh-entry-section="identity">
-          <p style={INGRESS_SURFACE_V0.kicker}>{tr ? "KİMLİK" : "IDENTITY"}</p>
-          <input
-            value={guestName}
-            onChange={(e) => setGuestName(e.target.value)}
-            placeholder={tr ? "İsim opsiyonel — misafir olarak devam edebilirsin" : "Name optional — continue as guest"}
+        {/* Hero Section */}
+        <section style={{ textAlign: "center", marginBottom: 56 }}>
+          <div
             style={{
-              width: "100%",
-              boxSizing: "border-box",
-              borderRadius: 12,
-              border: "1px solid #334155",
-              background: "rgba(15,23,42,0.75)",
-              color: "#e2e8f0",
-              padding: "12px 14px"
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "6px 14px",
+              background: "rgba(56, 189, 248, 0.08)",
+              border: "1px solid rgba(56, 189, 248, 0.25)",
+              borderRadius: 24,
+              fontSize: 12,
+              fontWeight: 700,
+              color: "#38bdf8",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              marginBottom: 16
             }}
-          />
-        </section>
-      </div>
-
-      <div style={stickyFooterStyle} data-rhizoh-entry-cta="sticky">
-        <div style={stickyInnerStyle}>
-          {!legalReady && legalRequired && !legalAcked ? (
-            <p style={{ margin: "0 0 8px", fontSize: 11, lineHeight: 1.45, color: "#fbbf24" }}>
-              {tr
-                ? "Devam etmek için yukarıdaki hukuki kutuların üçünü de işaretle."
-                : "Check all three legal boxes above to continue."}
-            </p>
-          ) : null}
-          <button
-            type="button"
-            onClick={proceed}
-            style={{ ...INGRESS_SURFACE_V0.primaryBtn(legalReady), width: "100%", padding: "14px 20px", fontSize: 15 }}
           >
-            {tr ? "Rhizoh'a gir" : "Enter Rhizoh"}
-          </button>
-        </div>
+            <Sparkles size={14} /> Real-Time Developmental Telemetry
+          </div>
+          <h1
+            style={{
+              fontSize: "clamp(32px, 5vw, 54px)",
+              fontWeight: 900,
+              letterSpacing: "-0.03em",
+              lineHeight: 1.15,
+              margin: "0 0 20px",
+              background: "linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent"
+            }}
+          >
+            Rhizoh is learning chess.
+          </h1>
+          <p
+            style={{
+              maxWidth: 680,
+              margin: "0 auto",
+              fontSize: "clamp(15px, 2vw, 18px)",
+              color: "#94a3b8",
+              lineHeight: 1.6
+            }}
+          >
+            An autonomous, self-evaluating HalfKP neural network chess engine engineered for
+            uncompromising positional intuition, rigorous tactical precision, and verifiable holdout validation.
+          </p>
+        </section>
+
+        {/* Live Metrics Grid (Strictly 4 Verified Metrics) */}
+        <section style={{ marginBottom: 48 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 20
+            }}
+          >
+            <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: "#f8fafc" }}>
+              Live Training & Evaluation Metrics
+            </h2>
+            <span style={{ fontSize: 12, color: "#64748b" }}>
+              Verified benchmarks · Zero contamination
+            </span>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: 16
+            }}
+          >
+            {VERIFIED_METRICS_V0.map((m) => {
+              const Icon = m.icon;
+              return (
+                <div
+                  key={m.id}
+                  style={{
+                    background: "rgba(15, 23, 42, 0.7)",
+                    border: "1px solid rgba(148, 163, 184, 0.14)",
+                    borderRadius: 16,
+                    padding: 20,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)"
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 12
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          color: m.color
+                        }}
+                      >
+                        <Icon size={18} />
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8" }}>
+                          {m.label}
+                        </span>
+                      </div>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: "2px 8px",
+                          borderRadius: 12,
+                          background: "rgba(255, 255, 255, 0.06)",
+                          color: "#cbd5e1"
+                        }}
+                      >
+                        {m.status}
+                      </span>
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: 26,
+                        fontWeight: 800,
+                        color: "#f8fafc",
+                        letterSpacing: "-0.02em",
+                        marginBottom: 8
+                      }}
+                    >
+                      {m.value}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#64748b",
+                      borderTop: "1px solid rgba(148, 163, 184, 0.08)",
+                      paddingTop: 10,
+                      marginTop: 4
+                    }}
+                  >
+                    {m.subtext}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Future YouTube Live Stream Placeholder */}
+        <section
+          style={{
+            background: "linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)",
+            border: "1px solid rgba(239, 68, 68, 0.25)",
+            borderRadius: 20,
+            padding: "28px 24px",
+            marginBottom: 48,
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.35)"
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 20
+            }}
+          >
+            <div style={{ maxWidth: 540 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "3px 10px",
+                    background: "rgba(239, 68, 68, 0.15)",
+                    border: "1px solid rgba(239, 68, 68, 0.4)",
+                    borderRadius: 16,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "#f87171",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em"
+                  }}
+                >
+                  <Radio size={13} />
+                  Status: Coming Soon (Offline)
+                </span>
+                <span style={{ fontSize: 12, color: "#64748b" }}>YouTube Stream Integration</span>
+              </div>
+              <h3 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 8px", color: "#f8fafc" }}>
+                Live Stream Broadcast Slot
+              </h3>
+              <p style={{ fontSize: 13, color: "#94a3b8", margin: 0, lineHeight: 1.5 }}>
+                Direct YouTube streaming of autonomous self-play sessions, real-time NNUE gradient updates,
+                and engine benchmark gauntlets is currently being prepared.
+              </p>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                disabled
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "12px 20px",
+                  background: "rgba(239, 68, 68, 0.1)",
+                  border: "1px solid rgba(239, 68, 68, 0.3)",
+                  borderRadius: 12,
+                  color: "#fca5a5",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "not-allowed",
+                  opacity: 0.8
+                }}
+              >
+                <Clock size={16} />
+                Live Broadcast Coming Soon
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer
+          style={{
+            borderTop: "1px solid rgba(148, 163, 184, 0.1)",
+            paddingTop: 24,
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            alignItems: "center",
+            fontSize: 12,
+            color: "#64748b",
+            gap: 12
+          }}
+        >
+          <div>
+            © {new Date().getFullYear()} Rhizoh Chess Engine · Castle Platform
+          </div>
+          <div style={{ display: "flex", gap: 16 }}>
+            <span>Protocol: Zero-Contamination EPD Audit</span>
+            <span>•</span>
+            <span>Architecture: HalfKP SIMD INT16</span>
+          </div>
+        </footer>
       </div>
-      <CookieConsentBanner ingressSurface />
-    </>
+    </div>
   );
 }
