@@ -663,8 +663,9 @@ impl Board {
                 mv.captured.map(|cap| (cap, self.side_to_move.opposite(), mv.to))
             };
             let w_king_sq = (self.pieces[Color::White as usize][PieceType::King as usize]).trailing_zeros() as u8;
+            let b_king_sq = (self.pieces[Color::Black as usize][PieceType::King as usize]).trailing_zeros() as u8;
             let nnue = crate::nnue::get_global_nnue();
-            nnue.update_accumulator_move(acc, mv.piece, self.side_to_move, mv.from, mv.to, captured_info, mv.promotion, mv.is_castling, w_king_sq);
+            nnue.update_accumulator_move(acc, mv.piece, self.side_to_move, mv.from, mv.to, captured_info, mv.promotion, mv.is_castling, w_king_sq, b_king_sq);
         }
 
         self.side_to_move = self.side_to_move.opposite();

@@ -1,3 +1,4 @@
+import { RhizohPlayRoom } from "./RhizohPlayRoom.jsx";
 import React from "react";
 import {
   Cpu,
@@ -55,6 +56,7 @@ const VERIFIED_METRICS_V0 = [
  * Strictly displays only the 4 verified telemetry benchmarks.
  */
 export function RhizohUnifiedEntryScreen() {
+  const [activeTab, setActiveTab] = React.useState("overview"); // 'overview' | 'play'
   return (
     <div
       data-rhizoh-surface="chess-landing"
@@ -106,7 +108,42 @@ export function RhizohUnifiedEntryScreen() {
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {/* Tab Navigation */}
+            <div style={{ display: "flex", alignItems: "center", background: "rgba(0,0,0,0.35)", padding: 4, borderRadius: 10, border: "1px solid rgba(148, 163, 184, 0.15)" }}>
+              <button
+                onClick={() => setActiveTab("overview")}
+                style={{
+                  padding: "5px 12px",
+                  borderRadius: 8,
+                  background: activeTab === "overview" ? "rgba(255, 255, 255, 0.12)" : "transparent",
+                  color: activeTab === "overview" ? "#f8fafc" : "#94a3b8",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  border: "none",
+                  cursor: "pointer"
+                }}
+              >
+                📊 Telemetry
+              </button>
+              <button
+                onClick={() => setActiveTab("play")}
+                style={{
+                  padding: "5px 12px",
+                  borderRadius: 8,
+                  background: activeTab === "play" ? "#38bdf8" : "transparent",
+                  color: activeTab === "play" ? "#020617" : "#94a3b8",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  border: "none",
+                  cursor: "pointer",
+                  boxShadow: activeTab === "play" ? "0 0 12px rgba(56, 189, 248, 0.4)" : "none"
+                }}
+              >
+                ⚔️ Play Room
+              </button>
+            </div>
+
             <span
               style={{
                 display: "inline-flex",
@@ -130,11 +167,15 @@ export function RhizohUnifiedEntryScreen() {
                   boxShadow: "0 0 8px #10b981"
                 }}
               />
-              NNUE v5 Active
+              HCE 21.0 Baseline
             </span>
           </div>
         </header>
 
+        {activeTab === "play" ? (
+          <RhizohPlayRoom onBackToMetrics={() => setActiveTab("overview")} />
+        ) : (
+          <>
         {/* Hero Section */}
         <section style={{ textAlign: "center", marginBottom: 56 }}>
           <div
@@ -368,6 +409,8 @@ export function RhizohUnifiedEntryScreen() {
             </div>
           </div>
         </section>
+          </>
+        )}
 
         {/* Footer */}
         <footer

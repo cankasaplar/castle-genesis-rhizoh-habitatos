@@ -859,6 +859,205 @@ async function buildGenesisRuntimeSurfacePayloadLive() {
   };
 }
 
+
+import fs from "node:fs";
+import { spawn } from "node:child_process";
+
+function resolveCastleBinaryPath() {
+  const isWin = process.platform === "win32";
+  const binName = isWin ? "castle.exe" : "castle";
+  const candidates = [
+    path.join(__dirname, "..", "bin", binName),
+    path.join(__dirname, "bin", binName),
+    path.join(__dirname, "..", "..", binName),
+    path.join(process.cwd(), "apps", "gateway", "bin", binName),
+    path.join(process.cwd(), "bin", binName),
+    path.join(process.cwd(), binName),
+    path.join("/opt", "castle", "apps", "gateway", "bin", binName),
+    path.join("/opt", "castle", binName)
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      try {
+        if (!isWin) fs.chmodSync(p, 0o755);
+        return p;
+      } catch {
+        return p;
+      }
+    }
+  }
+  return null;
+}
+
+function queryCastleMove({ fen, movetime = 400 }) {
+  return new Promise((resolve) => {
+    const tStart = Date.now();
+    const binPath = resolveCastleBinaryPath();
+    if (!binPath) {
+      return resolve({
+        ok: false,
+        bestMove: null,
+        evalCp: 0,
+        depth: 0,
+        nodes: 0,
+        nps: 0,
+        searchTimeMs: 0,
+        pv: "",
+        engine: "Rhizoh HCE (Unbound)",
+        reason: "binary_not_found"
+      });
+    }
+
+    const cleanFen = String(fen || "").trim();
+    if (!cleanFen) {
+      return resolve({
+        ok: false,
+        bestMove: null,
+        evalCp: 0,
+        depth: 0,
+        nodes: 0,
+        nps: 0,
+        searchTimeMs: 0,
+        pv: "",
+        engine: "Rhizoh HCE",
+        reason: "empty_fen"
+      });
+    }
+
+    const effectiveTime = Math.max(100, Math.min(3000, Number(movetime) || 400));
+    let proc = null;
+    let resolved = false;
+    let bestMove = null;
+    let evalCp = 0;
+    let depth = 0;
+    let nodes = 0;
+    let nps = 0;
+    let searchTimeMs = 0;
+    let pv = "";
+
+    const finish = (result) => {
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(timer);
+      if (proc) {
+        try {
+          proc.stdin.write("quit\n");
+          proc.stdin.end();
+          proc.kill("SIGKILL");
+        } catch {}
+      }
+      const wallElapsed = Date.now() - tStart;
+      console.log(`[CHESS_API] FEN: "${cleanFen.slice(0, 35)}..." | movetime: ${effectiveTime}ms -> bestmove: ${result.bestMove} | depth: ${result.depth} | nodes: ${result.nodes} | eval: ${result.evalCp}cp | wallTime: ${wallElapsed}ms`);
+      resolve({ ...result, wallTimeMs: wallElapsed });
+    };
+
+    const timer = setTimeout(() => {
+      if (bestMove) {
+        finish({
+          ok: true,
+          bestMove,
+          evalCp,
+          depth,
+          nodes,
+          nps,
+          searchTimeMs,
+          pv,
+          engine: "Rhizoh HCE 21.0"
+        });
+      } else {
+        finish({
+          ok: false,
+          bestMove: null,
+          evalCp: 0,
+          depth: 0,
+          nodes: 0,
+          nps: 0,
+          searchTimeMs: 0,
+          pv: "",
+          engine: "Rhizoh HCE 21.0",
+          reason: "timeout"
+        });
+      }
+    }, effectiveTime + 2500);
+
+    try {
+      proc = spawn(binPath, [], { stdio: ["pipe", "pipe", "pipe"] });
+    } catch (err) {
+      clearTimeout(timer);
+      return resolve({
+        ok: false,
+        bestMove: null,
+        evalCp: 0,
+        depth: 0,
+        nodes: 0,
+        nps: 0,
+        searchTimeMs: 0,
+        pv: "",
+        engine: "Rhizoh HCE 21.0",
+        reason: String(err?.message || err)
+      });
+    }
+
+    let lineBuffer = "";
+    proc.stdout.on("data", (chunk) => {
+      lineBuffer += chunk.toString("utf8");
+      const lines = lineBuffer.split("\n");
+      lineBuffer = lines.pop() || "";
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.includes("readyok")) {
+          proc.stdin.write(`ucinewgame\nposition fen ${cleanFen}\ngo movetime ${effectiveTime}\n`);
+        } else if (trimmed.startsWith("info")) {
+          const depthMatch = trimmed.match(/depth\s+(\d+)/);
+          if (depthMatch) depth = parseInt(depthMatch[1], 10);
+          const scoreMatch = trimmed.match(/score\s+cp\s+(-?\d+)/);
+          if (scoreMatch) evalCp = parseInt(scoreMatch[1], 10);
+          const nodesMatch = trimmed.match(/nodes\s+(\d+)/);
+          if (nodesMatch) nodes = parseInt(nodesMatch[1], 10);
+          const npsMatch = trimmed.match(/nps\s+(\d+)/);
+          if (npsMatch) nps = parseInt(npsMatch[1], 10);
+          const timeMatch = trimmed.match(/time\s+(\d+)/);
+          if (timeMatch) searchTimeMs = parseInt(timeMatch[1], 10);
+          const pvIdx = trimmed.indexOf(" pv ");
+          if (pvIdx !== -1) pv = trimmed.slice(pvIdx + 4).trim();
+        } else if (trimmed.startsWith("bestmove")) {
+          const parts = trimmed.split(/\s+/);
+          if (parts.length >= 2) bestMove = parts[1];
+          finish({
+            ok: Boolean(bestMove),
+            bestMove,
+            evalCp,
+            depth,
+            nodes,
+            nps,
+            searchTimeMs,
+            pv,
+            engine: "Rhizoh HCE 21.0"
+          });
+          break;
+        }
+      }
+    });
+
+    proc.on("error", (err) => {
+      finish({
+        ok: false,
+        bestMove: null,
+        evalCp: 0,
+        depth: 0,
+        nodes: 0,
+        nps: 0,
+        searchTimeMs: 0,
+        pv: "",
+        engine: "Rhizoh HCE 21.0",
+        reason: String(err?.message || err)
+      });
+    });
+
+    proc.stdin.write("uci\nsetoption name UseNNUE value false\nsetoption name OwnBook value false\nisready\n");
+  });
+}
+
 const httpServer = createServer(async (req, res) => {
   const corsAllow = applyHttpCorsHeaders(req, res);
   if (req.method === "OPTIONS") {
@@ -871,6 +1070,19 @@ const httpServer = createServer(async (req, res) => {
   }
 
   const pathname = getHttpPathname(req);
+
+  if (req.method === "POST" && (pathname === "/api/chess/move" || pathname === "/rhizoh/chess/move" || pathname === "/api/gatewayProxy/api/chess/move" || pathname.endsWith("/api/chess/move"))) {
+    try {
+      const body = await readHttpJson(req, 16 * 1024);
+      const fen = String(body?.fen || "").trim();
+      const movetime = Number(body?.movetime || 300);
+      const result = await queryCastleMove({ fen, movetime });
+      sendJson(res, 200, result);
+    } catch (e) {
+      sendJson(res, 500, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
 
   if (req.method === "GET" && pathname === "/rhizoh/genesis/__ping") {
     sendJson(res, 200, {

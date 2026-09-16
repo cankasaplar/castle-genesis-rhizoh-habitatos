@@ -72,7 +72,7 @@ impl Default for UciOptions {
             use_history_gravity: true,
             use_loss_memory: true,
             use_opening_antiblunder: true,
-            use_nnue: true, // Enabled for NNUE neural evaluation!
+            use_nnue: false, // Default to Pure HCE Golden Baseline (NNUE gated until candidate beats WAC 21)
         }
     }
 }
@@ -145,7 +145,7 @@ fn main() {
                 writeln!(stdout, "option name UseHistoryGravity type check default false").unwrap();
                 writeln!(stdout, "option name UseLossMemory type check default false").unwrap();
                 writeln!(stdout, "option name UseOpeningAntiBlunder type check default false").unwrap();
-                writeln!(stdout, "option name UseNNUE type check default true").unwrap();
+                writeln!(stdout, "option name UseNNUE type check default false").unwrap();
                 writeln!(stdout, "option name Ponder type check default true").unwrap();
                 writeln!(stdout, "option name BookFile type string default lab/books/Performance.bin").unwrap();
                 writeln!(stdout, "option name SyzygyPath type string default syzygy").unwrap();
@@ -165,6 +165,7 @@ fn main() {
                 searcher = Searcher::new();
                 searcher.tt = existing_tt;
                 searcher.tt.clear();
+                searcher.heuristics.clear();
                 searcher.heuristics.use_nmp = options.use_nmp;
                 searcher.heuristics.use_lmr = options.use_lmr;
                 searcher.features.use_see_ordering = options.use_see_ordering;
@@ -196,6 +197,11 @@ fn main() {
                     writeln!(stdout, "info string Opening set to: {}", current_opening).unwrap();
                     stdout.flush().unwrap();
                 }
+            }
+            "eval" => {
+                let score = eval::Evaluator::evaluate(&board, &searcher.features);
+                writeln!(stdout, "info string static eval {}", score).unwrap();
+                stdout.flush().unwrap();
             }
             "go" => {
                 let mut requested_depth: Option<u8> = None;
@@ -755,6 +761,7 @@ fn parse_setoption(line: &str, options: &mut UciOptions, opening_book: &mut Open
                     "usennue" => {
                         if let Ok(enabled) = val.parse::<bool>() {
                             options.use_nnue = enabled;
+                            searcher.features.use_nnue = enabled;
                         }
                     }
                     "bookfile" => {

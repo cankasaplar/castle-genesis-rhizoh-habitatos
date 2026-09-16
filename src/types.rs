@@ -204,10 +204,10 @@ impl SearchHeuristics {
             killer_moves: [[None; 2]; 64],
             history_table: [[0; 64]; 64],
             counter_moves: [[None; 64]; 64],
-            continuation_history: Box::new([[[[0; 64]; 6]; 64]; 6]),
-            capture_history: Box::new([[[0; 64]; 6]; 6]),
-            correction_history: Box::new([[0; 16384]; 2]),
-            non_pawn_correction_history: Box::new([[0; 16384]; 2]),
+            continuation_history: unsafe { Box::new_zeroed().assume_init() },
+            capture_history: unsafe { Box::new_zeroed().assume_init() },
+            correction_history: unsafe { Box::new_zeroed().assume_init() },
+            non_pawn_correction_history: unsafe { Box::new_zeroed().assume_init() },
         }
     }
 
@@ -222,10 +222,12 @@ impl SearchHeuristics {
         self.killer_moves = [[None; 2]; 64];
         self.history_table = [[0; 64]; 64];
         self.counter_moves = [[None; 64]; 64];
-        self.continuation_history = Box::new([[[[0; 64]; 6]; 64]; 6]);
-        self.capture_history = Box::new([[[0; 64]; 6]; 6]);
-        self.correction_history = Box::new([[0; 16384]; 2]);
-        self.non_pawn_correction_history = Box::new([[0; 16384]; 2]);
+        unsafe {
+            std::ptr::write_bytes(self.continuation_history.as_mut(), 0, 1);
+            std::ptr::write_bytes(self.capture_history.as_mut(), 0, 1);
+            std::ptr::write_bytes(self.correction_history.as_mut(), 0, 1);
+            std::ptr::write_bytes(self.non_pawn_correction_history.as_mut(), 0, 1);
+        }
     }
 
     pub fn get_correction(&self, color: Color, pawn_hash: u64) -> i32 {

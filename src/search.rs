@@ -302,6 +302,13 @@ impl Searcher {
             // Order root moves
             self.order_moves(board, &mut searched_moves, 0, tt_move, None);
 
+            // Prioritize previous iteration best move at root
+            if let Some((best_mv, _)) = prev_best_at_root {
+                if let Some(pos) = searched_moves.iter().position(|&m| m == best_mv) {
+                    searched_moves.swap(0, pos);
+                }
+            }
+
             let mut loop_count = 0;
             loop {
                 current_move_scores.clear();
@@ -354,15 +361,7 @@ impl Searcher {
                         }
                     };
 
-                    // Root Bad Capture Guard: Penalize unsound piece sacrifices with negative SEE
-                    if (mv.captured.is_some() || mv.is_en_passant) && !board.is_king_in_check(board.side_to_move) {
-                        let see_val = see_eval(board, mv);
-                        if see_val < -100 {
-                            score -= 20000; // Unsound piece loss at root IS 100% ELIMINATED!
-                        } else if see_val < 0 {
-                            score += see_val * 2;
-                        }
-                    }
+
 
                     // Root Move Inertia Stabilizer: Apply small stability hysteresis bonus (+6cp) to previous PV move
                     if let Some((prev_mv, _)) = prev_best_at_root {
@@ -631,17 +630,17 @@ impl Searcher {
                 None => if mv.is_en_passant { 100 } else { 0 },
             };
 
-            // 1. Delta Pruning: If even capturing piece cannot raise alpha, prune capture
+            // 1. Delta Pruning: If even capturing piece (+ queen margin) cannot raise alpha, prune capture
             if !in_check && mv.promotion.is_none() {
-                if stand_pat + captured_val + 200 < alpha {
+                if stand_pat + captured_val + 900 < alpha {
                     self.stats.delta_prunes += 1;
                     continue;
                 }
             }
 
-            // 2. SEE Pruning: Skip losing capture sequences in quiescence (exempt promotions)
+            // 2. SEE Pruning: Skip severely losing capture sequences in quiescence (exempt promotions & tactical sacrifices)
             if !in_check && mv.promotion.is_none() && (mv.captured.is_some() || mv.is_en_passant) {
-                if crate::see::see_eval(board, mv) < 0 {
+                if crate::see::see_eval(board, mv) < -300 {
                     self.stats.see_prunes += 1;
                     continue;
                 }
@@ -758,7 +757,7 @@ impl Searcher {
         }
         
         // Internal Iterative Reduction (IIR): Reduce depth by 1 if no TT move available at non-PV node
-        let depth = if tt_move.is_none() && depth >= 4 && !in_check {
+        let depth = if tt_move.is_none() && depth >= 6 && !in_check {
             depth - 1
         } else {
             depth

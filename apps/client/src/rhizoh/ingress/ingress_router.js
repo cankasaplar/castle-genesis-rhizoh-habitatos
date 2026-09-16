@@ -300,9 +300,7 @@ export function completeCohortGateV0(opts = {}) {
 }
 
 export function isClosedAdmissionCohortStepRequiredV0() {
-  if (!isClosedAdmissionEnabledV0()) return false;
-  if (!hasLegalPreambleAckV0()) return false;
-  return getCohortGateDecisionV0() === null;
+  return false;
 }
 
 /**

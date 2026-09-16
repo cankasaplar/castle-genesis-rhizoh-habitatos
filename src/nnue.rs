@@ -1,29 +1,28 @@
 // NNUE Neural Network Evaluator
-// Architecture: HalfKP-style 768→1024x2→1 with dual perspective accumulators
+// Architecture: HalfKA-style 45,056 → 512x2 → 1 with dual perspective accumulators
 // Quantization: INT16 weights (i16), INT32 accumulation
-// Format: RHIZOH_NNUE_V3 binary format (aligned with Python trainer)
+// Format: RHNNUEV6 binary format (aligned with Python HalfKA trainer)
 
 use crate::board::Board;
 use crate::types::{Color, PieceType};
 
-/// Feature dimension: HalfKP 40,960 inputs (64 King Squares * 10 Piece Types * 64 Squares)
+/// Feature dimension: HalfKP 40,960 inputs (64 King Squares * 640 Piece-Square Features per King)
 pub const INPUT_DIM: usize = 40960;
-/// Hidden layer size — 256 for high-speed compact HalfKP architecture (~20MB binary)
-pub const HIDDEN_DIM: usize = 256;
+/// Hidden layer size — 512 for expanded architecture (~41MB binary)
+pub const HIDDEN_DIM: usize = 512;
 /// Quantization scale factor (weights stored as i16 * QUANT_SCALE)
 const QUANT_SCALE: i32 = 64;
-/// Output scale factor
-const OUTPUT_SCALE: i32 = 400;
 
 /// Binary format magic header
-const MAGIC_V4: &[u8; 8] = b"RHNNUEV4";
+const MAGIC_V6: &[u8; 8] = b"RHNNUEV6";
+const MAGIC_V5: &[u8; 8] = b"RHNNUEV5";
 
 pub struct NnueEvaluator {
     /// Feature → hidden weights: [INPUT_DIM][HIDDEN_DIM] as i16
     feature_weights: Box<[[i16; HIDDEN_DIM]; INPUT_DIM]>,
     /// Hidden layer biases as i16
     feature_biases: [i16; HIDDEN_DIM],
-    /// Output layer weights as i16 (both perspectives concatenated: HIDDEN_DIM*2)
+    /// Output layer weights as i16 (White and Black perspective)
     output_weights_w: [i16; HIDDEN_DIM],
     output_weights_b: [i16; HIDDEN_DIM],
     /// Output bias as i32
@@ -34,15 +33,13 @@ pub struct NnueEvaluator {
 
 impl NnueEvaluator {
     pub fn new() -> Self {
-        // Initialize with small random weights (fallback if no .bin file)
-        let mut feature_weights_vec = vec![[0i16; HIDDEN_DIM]; INPUT_DIM];
+        let feature_weights_vec = vec![[0i16; HIDDEN_DIM]; INPUT_DIM];
         let feature_biases = [10i16; HIDDEN_DIM];
         let output_weights_w = [1i16; HIDDEN_DIM];
         let output_weights_b = [1i16; HIDDEN_DIM];
         let output_bias = 0i32;
         let mut loaded = false;
 
-        // Search for NNUE binary in multiple locations
         let mut candidate_paths = vec![
             std::path::PathBuf::from("config/rhizoh_nnue.bin"),
             std::path::PathBuf::from("../config/rhizoh_nnue.bin"),
@@ -64,98 +61,56 @@ impl NnueEvaluator {
 
         'outer: for path in &candidate_paths {
             if let Ok(data) = std::fs::read(path) {
-                // Try V4 format (i16 quantized HalfKP, HIDDEN_DIM=1024, INPUT_DIM=40960)
-                // Header: 8 magic + 4 input_dim + 4 hidden_dim = 16 bytes
-                let expected_v4 = 16
-                    + INPUT_DIM * HIDDEN_DIM * 2
-                    + HIDDEN_DIM * 2
-                    + HIDDEN_DIM * 2
-                    + HIDDEN_DIM * 2
-                    + 4;
-
-                if data.len() >= expected_v4 && &data[..8] == MAGIC_V4 {
-                    let mut pos = 16; // Skip header (magic + dims)
-                    for i in 0..INPUT_DIM {
-                        for j in 0..HIDDEN_DIM {
-                            loaded_fw[i][j] = i16::from_le_bytes([data[pos], data[pos + 1]]);
-                            pos += 2;
-                        }
-                    }
-                    for j in 0..HIDDEN_DIM {
-                        loaded_fb[j] = i16::from_le_bytes([data[pos], data[pos + 1]]);
-                        pos += 2;
-                    }
-                    for j in 0..HIDDEN_DIM {
-                        loaded_ow_w[j] = i16::from_le_bytes([data[pos], data[pos + 1]]);
-                        pos += 2;
-                    }
-                    for j in 0..HIDDEN_DIM {
-                        loaded_ow_b[j] = i16::from_le_bytes([data[pos], data[pos + 1]]);
-                        pos += 2;
-                    }
-                    loaded_ob = i32::from_le_bytes([data[pos], data[pos+1], data[pos+2], data[pos+3]]);
-                    loaded = true;
-                    println!("info string [NNUE V4 HalfKP] Loaded {INPUT_DIM}→{HIDDEN_DIM}x2→1 from {:?}", path);
-                    break 'outer;
-                }
-
-                // Fallback: Try legacy V2 format (i16, HIDDEN_DIM=256 or other)
-                // Header: 8 magic + 4 input + 4 hidden = 16 bytes
-                // We attempt to load if input_dim matches and file is large enough
                 if data.len() >= 16 {
+                    let magic = &data[..8];
                     let file_input = u32::from_le_bytes([data[8], data[9], data[10], data[11]]) as usize;
                     let file_hidden = u32::from_le_bytes([data[12], data[13], data[14], data[15]]) as usize;
-                    if file_input == INPUT_DIM && file_hidden <= HIDDEN_DIM && file_hidden > 0 {
-                        // Partial load with upsampling
-                        let hd = file_hidden;
-                        let expected_v2 = 16 + INPUT_DIM * hd * 2 + hd * 2 + hd * 2 + 4;
-                        if data.len() >= expected_v2 {
+
+                    if (magic == MAGIC_V6 || magic == MAGIC_V5) && file_input == INPUT_DIM && file_hidden == HIDDEN_DIM {
+                        let expected_size = 16
+                            + INPUT_DIM * HIDDEN_DIM * 2
+                            + HIDDEN_DIM * 2
+                            + HIDDEN_DIM * 2
+                            + HIDDEN_DIM * 2
+                            + 4;
+
+                        if data.len() >= expected_size {
                             let mut pos = 16;
                             for i in 0..INPUT_DIM {
-                                for j in 0..hd {
+                                for j in 0..HIDDEN_DIM {
                                     loaded_fw[i][j] = i16::from_le_bytes([data[pos], data[pos + 1]]);
                                     pos += 2;
                                 }
                             }
-                            for j in 0..hd {
+                            for j in 0..HIDDEN_DIM {
                                 loaded_fb[j] = i16::from_le_bytes([data[pos], data[pos + 1]]);
                                 pos += 2;
                             }
-                            for j in 0..hd {
+                            for j in 0..HIDDEN_DIM {
                                 loaded_ow_w[j] = i16::from_le_bytes([data[pos], data[pos + 1]]);
                                 pos += 2;
                             }
+                            for j in 0..HIDDEN_DIM {
+                                loaded_ow_b[j] = i16::from_le_bytes([data[pos], data[pos + 1]]);
+                                pos += 2;
+                            }
                             loaded_ob = i32::from_le_bytes([data[pos], data[pos+1], data[pos+2], data[pos+3]]);
-                            // Copy white weights to black perspective
-                            loaded_ow_b = loaded_ow_w;
                             loaded = true;
-                            println!("info string [NNUE Legacy] Loaded {file_input}→{file_hidden} from {:?} (upsampled to {HIDDEN_DIM})", path);
+                            println!("info string [NNUE V5 HalfKP 512] Loaded {INPUT_DIM}→{HIDDEN_DIM}x2→1 from {:?}", path);
                             break 'outer;
+                        } else {
+                            eprintln!("[NNUE DEBUG] File size mismatch: {} < expected {}", data.len(), expected_size);
                         }
+                    } else {
+                        eprintln!("[NNUE DEBUG] Magic/Dim mismatch: magic={:?}, input={}, hidden={}", magic, file_input, file_hidden);
                     }
                 }
             }
         }
 
-        if !loaded {
-            // Use pseudo-random fallback weights (deterministic)
-            for i in 0..INPUT_DIM {
-                for j in 0..HIDDEN_DIM {
-                    loaded_fw[i][j] = (((i * 17 + j * 31) % 40) as i16) - 20;
-                }
-            }
-            for j in 0..HIDDEN_DIM {
-                loaded_ow_w[j] = (((j * 13) % 20) as i16) - 10;
-                loaded_ow_b[j] = (((j * 7) % 20) as i16) - 10;
-            }
-            // NNUE disabled without a proper .bin file
-        }
-
-        let boxed_weights: Box<[[i16; HIDDEN_DIM]; INPUT_DIM]> = match loaded_fw.try_into() {
-            Ok(b) => b,
-            Err(_) => panic!("[NNUE] Failed to allocate feature weight matrix ({} KB)",
-                INPUT_DIM * HIDDEN_DIM * 2 / 1024),
-        };
+        let boxed_slice = loaded_fw.into_boxed_slice();
+        let ptr = Box::into_raw(boxed_slice) as *mut [[i16; HIDDEN_DIM]; INPUT_DIM];
+        let boxed_weights: Box<[[i16; HIDDEN_DIM]; INPUT_DIM]> = unsafe { Box::from_raw(ptr) };
 
         Self {
             feature_weights: boxed_weights,
@@ -172,36 +127,21 @@ impl NnueEvaluator {
         self.enabled
     }
 
-    /// Compute HalfKP feature index for a piece on a square given the friendly King square
-    /// Layout: 64 King Squares * 10 Piece Types (5 white + 5 black) * 64 Squares = 40,960
-    #[inline(always)]
-    pub fn feature_index_halfkp(king_sq: u8, piece: PieceType, color: Color, square: u8, is_friendly_view: bool) -> usize {
-        let k_sq = king_sq as usize;
-        let p_type_val = match piece {
-            PieceType::Pawn => 0,
-            PieceType::Knight => 1,
-            PieceType::Bishop => 2,
-            PieceType::Rook => 3,
-            PieceType::Queen => 4,
-            PieceType::King => return usize::MAX, // Skip Kings as features
-        };
-        let p_idx = if (color == Color::White) == is_friendly_view {
-            p_type_val
-        } else {
-            p_type_val + 5
-        };
-        let sq = square as usize;
-        (k_sq * 640 + p_idx * 64 + sq).min(INPUT_DIM - 1)
-    }
-
-    /// Build HalfKP accumulator from scratch for a board position
+    /// Build HalfKA dual-perspective accumulators from scratch for a board position
     pub fn compute_accumulator(&self, board: &Board) -> Accumulator {
         let mut acc = Accumulator::new(&self.feature_biases);
         let w_king_sq = (board.pieces[Color::White as usize][PieceType::King as usize]).trailing_zeros() as u8;
+        let b_king_sq = (board.pieces[Color::Black as usize][PieceType::King as usize]).trailing_zeros() as u8;
 
+        let w_k_idx = w_king_sq as usize;
+        let b_k_flipped = (b_king_sq ^ 56) as usize;
+
+
+
+        // Non-king pieces for both perspectives
         for c_idx in 0..2 {
             let color = if c_idx == 0 { Color::White } else { Color::Black };
-            for p_idx in 0..5 { // Non-king pieces
+            for p_idx in 0..5 {
                 let piece_type = match p_idx {
                     0 => PieceType::Pawn,
                     1 => PieceType::Knight,
@@ -212,10 +152,21 @@ impl NnueEvaluator {
                 let mut bb = board.pieces[c_idx][p_idx];
                 while bb != 0 {
                     let sq = bb.trailing_zeros() as u8;
-                    let f_idx = Self::feature_index_halfkp(w_king_sq, piece_type, color, sq, true);
-                    if f_idx < INPUT_DIM {
-                        acc.add_feature(&self.feature_weights[f_idx]);
+
+                    // White perspective feature
+                    let p_idx_w = if color == Color::White { p_idx } else { p_idx + 5 };
+                    let f_w = w_k_idx * 640 + p_idx_w * 64 + (sq as usize);
+                    if f_w < INPUT_DIM {
+                        acc.add_feature_white(&self.feature_weights[f_w]);
                     }
+
+                    // Black perspective feature
+                    let p_idx_b = if color == Color::Black { p_idx } else { p_idx + 5 };
+                    let f_b = b_k_flipped * 640 + p_idx_b * 64 + ((sq ^ 56) as usize);
+                    if f_b < INPUT_DIM {
+                        acc.add_feature_black(&self.feature_weights[f_b]);
+                    }
+
                     bb &= bb - 1;
                 }
             }
@@ -224,41 +175,38 @@ impl NnueEvaluator {
     }
 
     /// Evaluate a position using dual-perspective accumulators
-    /// White perspective uses output_weights_w, Black uses output_weights_b
-    #[inline(always)]
     #[inline(always)]
     pub fn evaluate_accumulator(&self, acc: &Accumulator, board: &Board) -> i32 {
         if !self.enabled {
             return 0;
         }
 
-        let (own_weights, opp_weights) = if board.side_to_move == Color::White {
-            (&self.output_weights_w, &self.output_weights_b)
+        let (own_acc, opp_acc) = if board.side_to_move == Color::White {
+            (&acc.white, &acc.black)
         } else {
-            (&self.output_weights_b, &self.output_weights_w)
+            (&acc.black, &acc.white)
         };
+
+        let own_weights = &self.output_weights_w;
+        let opp_weights = &self.output_weights_b;
 
         #[cfg(target_arch = "x86_64")]
         {
             if is_x86_feature_detected!("avx2") {
                 let score = unsafe {
                     evaluate_accumulator_avx2(
-                        &acc.values,
+                        own_acc,
+                        opp_acc,
                         own_weights,
                         opp_weights,
                         self.output_bias,
                     )
                 };
                 let final_cp = (score / QUANT_SCALE).clamp(-4000, 4000);
-                return if board.side_to_move == Color::White {
-                    final_cp
-                } else {
-                    -final_cp
-                };
+                return final_cp;
             }
         }
 
-        // ClippedReLU(0, 127) activation + SIMD/AVX2-optimized 32-way unrolled dot product
         let mut score: i32 = self.output_bias;
 
         let mut i = 0;
@@ -268,34 +216,35 @@ impl NnueEvaluator {
         while i + 32 <= HIDDEN_DIM {
             for k in 0..16 {
                 let idx0 = i + k;
-                let val0 = acc.values[idx0];
-                let act0 = if val0 > 0 { (val0 as i32).min(127) } else { 0 };
-                sum0 += act0 * (own_weights[idx0] as i32) + act0 * (opp_weights[idx0] as i32);
+                let val_own0 = own_acc[idx0];
+                let act_own0 = if val_own0 > 0 { (val_own0 as i32).min(127) } else { 0 };
+                let val_opp0 = opp_acc[idx0];
+                let act_opp0 = if val_opp0 > 0 { (val_opp0 as i32).min(127) } else { 0 };
+                sum0 += act_own0 * (own_weights[idx0] as i32) + act_opp0 * (opp_weights[idx0] as i32);
 
                 let idx1 = i + 16 + k;
-                let val1 = acc.values[idx1];
-                let act1 = if val1 > 0 { (val1 as i32).min(127) } else { 0 };
-                sum1 += act1 * (own_weights[idx1] as i32) + act1 * (opp_weights[idx1] as i32);
+                let val_own1 = own_acc[idx1];
+                let act_own1 = if val_own1 > 0 { (val_own1 as i32).min(127) } else { 0 };
+                let val_opp1 = opp_acc[idx1];
+                let act_opp1 = if val_opp1 > 0 { (val_opp1 as i32).min(127) } else { 0 };
+                sum1 += act_own1 * (own_weights[idx1] as i32) + act_opp1 * (opp_weights[idx1] as i32);
             }
             i += 32;
         }
 
         while i < HIDDEN_DIM {
-            let val = acc.values[i];
-            let act = if val > 0 { (val as i32).min(127) } else { 0 };
-            sum0 += act * (own_weights[i] as i32) + act * (opp_weights[i] as i32);
+            let val_own = own_acc[i];
+            let act_own = if val_own > 0 { (val_own as i32).min(127) } else { 0 };
+            let val_opp = opp_acc[i];
+            let act_opp = if val_opp > 0 { (val_opp as i32).min(127) } else { 0 };
+            sum0 += act_own * (own_weights[i] as i32) + act_opp * (opp_weights[i] as i32);
             i += 1;
         }
 
         score += sum0 + sum1;
 
-        // Scale to centipawns
         let final_cp = (score / QUANT_SCALE).clamp(-4000, 4000);
-        if board.side_to_move == Color::White {
-            final_cp
-        } else {
-            -final_cp
-        }
+        final_cp
     }
 
     /// Evaluate a board position (recompute accumulator if needed)
@@ -312,7 +261,7 @@ impl NnueEvaluator {
         }
     }
 
-    /// Incrementally update accumulator after a move
+    /// Incrementally update accumulator after a non-king move
     pub fn update_accumulator_move(
         &self,
         acc: &mut Accumulator,
@@ -324,34 +273,74 @@ impl NnueEvaluator {
         promo: Option<PieceType>,
         is_castling: bool,
         w_king_sq: u8,
+        b_king_sq: u8,
     ) {
         if piece == PieceType::King {
-            // Recompute accumulator on King moves (Handled by caller)
             return;
         }
 
-        // Remove piece from source square
-        let f_from = Self::feature_index_halfkp(w_king_sq, piece, color, from_sq, true);
-        if f_from < INPUT_DIM {
-            acc.remove_feature(&self.feature_weights[f_from]);
-        }
+        let w_k_idx = w_king_sq as usize;
+        let b_k_flipped = (b_king_sq ^ 56) as usize;
 
-        // Remove captured piece if any
+        let p_type_val = match piece {
+            PieceType::Pawn => 0,
+            PieceType::Knight => 1,
+            PieceType::Bishop => 2,
+            PieceType::Rook => 3,
+            PieceType::Queen => 4,
+            PieceType::King => return,
+        };
+
+        let p_idx_w = if color == Color::White { p_type_val } else { p_type_val + 5 };
+        let p_idx_b = if color == Color::Black { p_type_val } else { p_type_val + 5 };
+
+        // 1. Remove piece from source square
+        let f_from_w = w_k_idx * 640 + p_idx_w * 64 + (from_sq as usize);
+        let f_from_b = b_k_flipped * 640 + p_idx_b * 64 + ((from_sq ^ 56) as usize);
+
+        if f_from_w < INPUT_DIM { acc.remove_feature_white(&self.feature_weights[f_from_w]); }
+        if f_from_b < INPUT_DIM { acc.remove_feature_black(&self.feature_weights[f_from_b]); }
+
+        // 2. Remove captured piece if any
         if let Some((c_piece, c_color, c_sq)) = captured {
-            let f_cap = Self::feature_index_halfkp(w_king_sq, c_piece, c_color, c_sq, true);
-            if f_cap < INPUT_DIM {
-                acc.remove_feature(&self.feature_weights[f_cap]);
-            }
+            let c_type_val = match c_piece {
+                PieceType::Pawn => 0,
+                PieceType::Knight => 1,
+                PieceType::Bishop => 2,
+                PieceType::Rook => 3,
+                PieceType::Queen => 4,
+                PieceType::King => 0,
+            };
+            let c_idx_w = if c_color == Color::White { c_type_val } else { c_type_val + 5 };
+            let c_idx_b = if c_color == Color::Black { c_type_val } else { c_type_val + 5 };
+
+            let f_cap_w = w_k_idx * 640 + c_idx_w * 64 + (c_sq as usize);
+            let f_cap_b = b_k_flipped * 640 + c_idx_b * 64 + ((c_sq ^ 56) as usize);
+
+            if f_cap_w < INPUT_DIM { acc.remove_feature_white(&self.feature_weights[f_cap_w]); }
+            if f_cap_b < INPUT_DIM { acc.remove_feature_black(&self.feature_weights[f_cap_b]); }
         }
 
-        // Add piece to destination (handle promotion)
+        // 3. Add piece to destination (handle promotion)
         let p_placed = promo.unwrap_or(piece);
-        let f_to = Self::feature_index_halfkp(w_king_sq, p_placed, color, to_sq, true);
-        if f_to < INPUT_DIM {
-            acc.add_feature(&self.feature_weights[f_to]);
-        }
+        let placed_type_val = match p_placed {
+            PieceType::Pawn => 0,
+            PieceType::Knight => 1,
+            PieceType::Bishop => 2,
+            PieceType::Rook => 3,
+            PieceType::Queen => 4,
+            PieceType::King => 0,
+        };
+        let placed_idx_w = if color == Color::White { placed_type_val } else { placed_type_val + 5 };
+        let placed_idx_b = if color == Color::Black { placed_type_val } else { placed_type_val + 5 };
 
-        // Handle castling rook move
+        let f_to_w = w_k_idx * 640 + placed_idx_w * 64 + (to_sq as usize);
+        let f_to_b = b_k_flipped * 640 + placed_idx_b * 64 + ((to_sq ^ 56) as usize);
+
+        if f_to_w < INPUT_DIM { acc.add_feature_white(&self.feature_weights[f_to_w]); }
+        if f_to_b < INPUT_DIM { acc.add_feature_black(&self.feature_weights[f_to_b]); }
+
+        // 4. Handle castling rook move
         if is_castling {
             let (r_from, r_to) = match to_sq {
                 6  => (7u8,  5u8),  // White kingside
@@ -361,91 +350,92 @@ impl NnueEvaluator {
                 _  => (0u8,  0u8),
             };
             if r_from != r_to {
-                let f_rfrom = Self::feature_index_halfkp(w_king_sq, PieceType::Rook, color, r_from, true);
-                let f_rto   = Self::feature_index_halfkp(w_king_sq, PieceType::Rook, color, r_to, true);
-                if f_rfrom < INPUT_DIM { acc.remove_feature(&self.feature_weights[f_rfrom]); }
-                if f_rto < INPUT_DIM { acc.add_feature(&self.feature_weights[f_rto]); }
+                let r_idx_w = if color == Color::White { 3 } else { 8 };
+                let r_idx_b = if color == Color::Black { 3 } else { 8 };
+
+                let f_rf_w = w_k_idx * 640 + r_idx_w * 64 + (r_from as usize);
+                let f_rf_b = b_k_flipped * 640 + r_idx_b * 64 + ((r_from ^ 56) as usize);
+
+                let f_rt_w = w_k_idx * 640 + r_idx_w * 64 + (r_to as usize);
+                let f_rt_b = b_k_flipped * 640 + r_idx_b * 64 + ((r_to ^ 56) as usize);
+
+                if f_rf_w < INPUT_DIM { acc.remove_feature_white(&self.feature_weights[f_rf_w]); }
+                if f_rf_b < INPUT_DIM { acc.remove_feature_black(&self.feature_weights[f_rf_b]); }
+                if f_rt_w < INPUT_DIM { acc.add_feature_white(&self.feature_weights[f_rt_w]); }
+                if f_rt_b < INPUT_DIM { acc.add_feature_black(&self.feature_weights[f_rt_b]); }
             }
         }
     }
 }
 
-/// NNUE position accumulator — stores hidden layer values after feature addition
+/// NNUE position accumulator — stores hidden layer values for White and Black perspectives
 #[derive(Clone, Copy, Debug)]
 pub struct Accumulator {
-    pub values: [i16; HIDDEN_DIM],
+    pub white: [i16; HIDDEN_DIM],
+    pub black: [i16; HIDDEN_DIM],
 }
 
 impl Accumulator {
     pub fn new(biases: &[i16; HIDDEN_DIM]) -> Self {
-        Self { values: *biases }
-    }
-
-    /// Add a feature's weights to accumulator (SIMD-friendly 16-way unrolled loop)
-    #[inline(always)]
-    pub fn add_feature(&mut self, weights: &[i16; HIDDEN_DIM]) {
-        #[cfg(target_arch = "x86_64")]
-        {
-            if is_x86_feature_detected!("avx2") {
-                unsafe {
-                    add_feature_avx2(&mut self.values, weights);
-                }
-                return;
-            }
-        }
-        let mut i = 0;
-        while i + 16 <= HIDDEN_DIM {
-            self.values[i]      = self.values[i].saturating_add(weights[i]);
-            self.values[i + 1]  = self.values[i + 1].saturating_add(weights[i + 1]);
-            self.values[i + 2]  = self.values[i + 2].saturating_add(weights[i + 2]);
-            self.values[i + 3]  = self.values[i + 3].saturating_add(weights[i + 3]);
-            self.values[i + 4]  = self.values[i + 4].saturating_add(weights[i + 4]);
-            self.values[i + 5]  = self.values[i + 5].saturating_add(weights[i + 5]);
-            self.values[i + 6]  = self.values[i + 6].saturating_add(weights[i + 6]);
-            self.values[i + 7]  = self.values[i + 7].saturating_add(weights[i + 7]);
-            self.values[i + 8]  = self.values[i + 8].saturating_add(weights[i + 8]);
-            self.values[i + 9]  = self.values[i + 9].saturating_add(weights[i + 9]);
-            self.values[i + 10] = self.values[i + 10].saturating_add(weights[i + 10]);
-            self.values[i + 11] = self.values[i + 11].saturating_add(weights[i + 11]);
-            self.values[i + 12] = self.values[i + 12].saturating_add(weights[i + 12]);
-            self.values[i + 13] = self.values[i + 13].saturating_add(weights[i + 13]);
-            self.values[i + 14] = self.values[i + 14].saturating_add(weights[i + 14]);
-            self.values[i + 15] = self.values[i + 15].saturating_add(weights[i + 15]);
-            i += 16;
+        Self {
+            white: *biases,
+            black: *biases,
         }
     }
 
-    /// Remove a feature's weights from accumulator (SIMD-friendly 16-way unrolled loop)
     #[inline(always)]
-    pub fn remove_feature(&mut self, weights: &[i16; HIDDEN_DIM]) {
+    pub fn add_feature_white(&mut self, weights: &[i16; HIDDEN_DIM]) {
         #[cfg(target_arch = "x86_64")]
         {
             if is_x86_feature_detected!("avx2") {
-                unsafe {
-                    remove_feature_avx2(&mut self.values, weights);
-                }
+                unsafe { add_feature_avx2(&mut self.white, weights); }
                 return;
             }
         }
-        let mut i = 0;
-        while i + 16 <= HIDDEN_DIM {
-            self.values[i]      = self.values[i].saturating_sub(weights[i]);
-            self.values[i + 1]  = self.values[i + 1].saturating_sub(weights[i + 1]);
-            self.values[i + 2]  = self.values[i + 2].saturating_sub(weights[i + 2]);
-            self.values[i + 3]  = self.values[i + 3].saturating_sub(weights[i + 3]);
-            self.values[i + 4]  = self.values[i + 4].saturating_sub(weights[i + 4]);
-            self.values[i + 5]  = self.values[i + 5].saturating_sub(weights[i + 5]);
-            self.values[i + 6]  = self.values[i + 6].saturating_sub(weights[i + 6]);
-            self.values[i + 7]  = self.values[i + 7].saturating_sub(weights[i + 7]);
-            self.values[i + 8]  = self.values[i + 8].saturating_sub(weights[i + 8]);
-            self.values[i + 9]  = self.values[i + 9].saturating_sub(weights[i + 9]);
-            self.values[i + 10] = self.values[i + 10].saturating_sub(weights[i + 10]);
-            self.values[i + 11] = self.values[i + 11].saturating_sub(weights[i + 11]);
-            self.values[i + 12] = self.values[i + 12].saturating_sub(weights[i + 12]);
-            self.values[i + 13] = self.values[i + 13].saturating_sub(weights[i + 13]);
-            self.values[i + 14] = self.values[i + 14].saturating_sub(weights[i + 14]);
-            self.values[i + 15] = self.values[i + 15].saturating_sub(weights[i + 15]);
-            i += 16;
+        for i in 0..HIDDEN_DIM {
+            self.white[i] = self.white[i].saturating_add(weights[i]);
+        }
+    }
+
+    #[inline(always)]
+    pub fn remove_feature_white(&mut self, weights: &[i16; HIDDEN_DIM]) {
+        #[cfg(target_arch = "x86_64")]
+        {
+            if is_x86_feature_detected!("avx2") {
+                unsafe { remove_feature_avx2(&mut self.white, weights); }
+                return;
+            }
+        }
+        for i in 0..HIDDEN_DIM {
+            self.white[i] = self.white[i].saturating_sub(weights[i]);
+        }
+    }
+
+    #[inline(always)]
+    pub fn add_feature_black(&mut self, weights: &[i16; HIDDEN_DIM]) {
+        #[cfg(target_arch = "x86_64")]
+        {
+            if is_x86_feature_detected!("avx2") {
+                unsafe { add_feature_avx2(&mut self.black, weights); }
+                return;
+            }
+        }
+        for i in 0..HIDDEN_DIM {
+            self.black[i] = self.black[i].saturating_add(weights[i]);
+        }
+    }
+
+    #[inline(always)]
+    pub fn remove_feature_black(&mut self, weights: &[i16; HIDDEN_DIM]) {
+        #[cfg(target_arch = "x86_64")]
+        {
+            if is_x86_feature_detected!("avx2") {
+                unsafe { remove_feature_avx2(&mut self.black, weights); }
+                return;
+            }
+        }
+        for i in 0..HIDDEN_DIM {
+            self.black[i] = self.black[i].saturating_sub(weights[i]);
         }
     }
 }
@@ -487,7 +477,8 @@ unsafe fn remove_feature_avx2(values: &mut [i16; HIDDEN_DIM], weights: &[i16; HI
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 unsafe fn evaluate_accumulator_avx2(
-    values: &[i16; HIDDEN_DIM],
+    own_acc: &[i16; HIDDEN_DIM],
+    opp_acc: &[i16; HIDDEN_DIM],
     own_weights: &[i16; HIDDEN_DIM],
     opp_weights: &[i16; HIDDEN_DIM],
     output_bias: i32,
@@ -500,14 +491,17 @@ unsafe fn evaluate_accumulator_avx2(
 
         let mut i = 0;
         while i + 16 <= HIDDEN_DIM {
-            let val = _mm256_loadu_si256(values.as_ptr().add(i) as *const __m256i);
-            let act = _mm256_min_epi16(_mm256_max_epi16(val, zero), max_clip);
+            let val_own = _mm256_loadu_si256(own_acc.as_ptr().add(i) as *const __m256i);
+            let act_own = _mm256_min_epi16(_mm256_max_epi16(val_own, zero), max_clip);
+
+            let val_opp = _mm256_loadu_si256(opp_acc.as_ptr().add(i) as *const __m256i);
+            let act_opp = _mm256_min_epi16(_mm256_max_epi16(val_opp, zero), max_clip);
 
             let w_own = _mm256_loadu_si256(own_weights.as_ptr().add(i) as *const __m256i);
             let w_opp = _mm256_loadu_si256(opp_weights.as_ptr().add(i) as *const __m256i);
 
-            let prod_own = _mm256_madd_epi16(act, w_own);
-            let prod_opp = _mm256_madd_epi16(act, w_opp);
+            let prod_own = _mm256_madd_epi16(act_own, w_own);
+            let prod_opp = _mm256_madd_epi16(act_opp, w_opp);
 
             acc_sum = _mm256_add_epi32(acc_sum, _mm256_add_epi32(prod_own, prod_opp));
             i += 16;
@@ -515,6 +509,7 @@ unsafe fn evaluate_accumulator_avx2(
 
         _mm256_storeu_si256(temp.as_mut_ptr() as *mut __m256i, acc_sum);
     }
+
     let mut total: i32 = output_bias;
     for &t in &temp {
         total += t;
