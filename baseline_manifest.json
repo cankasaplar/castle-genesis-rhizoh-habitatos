@@ -1,23 +1,22 @@
 {
-  "eval_mode": "NNUE_OPEN_SOURCE_CC0",
-  "binary_windows_sha256": "eae7521a1aa5acfdd4557d7cbef9e4ec4d5ea7eb269dffba49c97e36141baf7a",
-  "binary_linux_sha256": "f52ddd8dffd8dc1e9a3b722d51db6f4d88214fe0f98b8d61f4cd9db1b74b0270",
-  "model_sha256": "9931db908a9bbf95174df1fd83c5387e2329036997c8d1f1330a73f64fc79bed",
-  "model_name": "nn-9931db908a9b.nnue",
-  "license": "CC0 1.0 Universal (Public Domain) + MIT Runtime (nnue-rs)",
-  "gpl_status": "ZERO_GPL_INFECTION",
+  "eval_mode": "HCE",
+  "binary_sha256": "f650f3ff61f4d6ca52f9b397da876a6e59379ada21299ac64f0cb46488b2b6a5",
+  "model_sha256": null,
   "hce_reference_wac_median": 19.0,
+  "wac_30_5run_scores": [
+    21,
+    20,
+    21,
+    22,
+    22
+  ],
+  "wac_30_5run_median": 21.0,
+  "holdout_pearson_r": null,
   "gate0_result": {
     "passed": true,
-    "startpos_eval_cp": 45,
-    "material_delta_cp": 2904,
-    "mate_in_1_found": true
+    "note": "HCE evaluation mode"
   },
-  "cross_platform_parity": {
-    "status": "PASS_100%",
-    "wsl_alpine_eval_match": true,
-    "windows_eval_match": true,
-    "centipawn_delta": 0
-  },
-  "promoted_at": "2026-09-17T03:36:00Z"
+  "hce_dominance_guard": true,
+  "min_nnue_wac_median": 21.0,
+  "promoted_at": "2026-09-17T07:30:37Z"
 }

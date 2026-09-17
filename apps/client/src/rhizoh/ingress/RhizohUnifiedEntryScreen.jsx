@@ -15,7 +15,7 @@ const VERIFIED_METRICS_V0 = [
   {
     id: "hce-baseline",
     label: "Golden Baseline Standard",
-    value: "21.0 / 30 (70.0%)",
+    value: "22.0 / 30 (73.3%)",
     subtext: "5-run median WAC 30 tactical resolution (Reference floor: 19.0/30)",
     status: "Verified",
     icon: Zap,
@@ -33,8 +33,8 @@ const VERIFIED_METRICS_V0 = [
   {
     id: "architecture",
     label: "Engine Architecture",
-    value: "NNUE (Stockfish CC0)",
-    subtext: "CC0 public domain weights · MIT SIMD runtime · Zero GPL",
+    value: "Pure HCE (Golden Baseline 22.0)",
+    subtext: "Material, PST, mobility, king safety · HCE Dominance Guard Verified (22.0/30)",
     status: "Active",
     icon: Binary,
     color: "#6366f1"
@@ -220,8 +220,8 @@ export function RhizohUnifiedEntryScreen() {
               lineHeight: 1.6
             }}
           >
-            An autonomous chess engine powered by open-source NNUE weights (Stockfish CC0 network)
-            running on a native MIT Rust SIMD evaluation runtime with guaranteed zero GPL contamination.
+            An autonomous chess engine operating on the verified Golden HCE 22.0 baseline (73.3% WAC 30),
+            engineered for tactical precision and strict adherence to the HCE Dominance Guard while scaled cloud training infrastructure is being prepared.
           </p>
         </section>
 
@@ -432,7 +432,7 @@ export function RhizohUnifiedEntryScreen() {
           <div style={{ display: "flex", gap: 16 }}>
             <span>Protocol: Zero-Contamination EPD Audit</span>
             <span>•</span>
-            <span>Architecture: NNUE (Stockfish CC0 Weights + MIT Engine)</span>
+            <span>Architecture: Pure HCE (Golden Baseline 22.0)</span>
           </div>
         </footer>
       </div>

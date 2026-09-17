@@ -72,7 +72,7 @@ impl Default for UciOptions {
             use_history_gravity: true,
             use_loss_memory: true,
             use_opening_antiblunder: true,
-            use_nnue: true, // Stockfish CC0 open network auto-loaded with automatic HCE fallback
+            use_nnue: false, // Default to Pure HCE Golden Baseline (NNUE gated until candidate beats WAC 21)
         }
     }
 }
@@ -145,7 +145,7 @@ fn main() {
                 writeln!(stdout, "option name UseHistoryGravity type check default false").unwrap();
                 writeln!(stdout, "option name UseLossMemory type check default false").unwrap();
                 writeln!(stdout, "option name UseOpeningAntiBlunder type check default false").unwrap();
-                writeln!(stdout, "option name UseNNUE type check default true").unwrap();
+                writeln!(stdout, "option name UseNNUE type check default false").unwrap();
                 writeln!(stdout, "option name Ponder type check default true").unwrap();
                 writeln!(stdout, "option name BookFile type string default lab/books/Performance.bin").unwrap();
                 writeln!(stdout, "option name SyzygyPath type string default syzygy").unwrap();
