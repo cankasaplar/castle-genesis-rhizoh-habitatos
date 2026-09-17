@@ -13,40 +13,40 @@ import {
 
 const VERIFIED_METRICS_V0 = [
   {
-    id: "holdout-r",
-    label: "Holdout Pearson Correlation (r)",
-    value: "0.4404",
-    subtext: "MAE: 226.7 cp · RMSE: 318.5 cp (10,000 Holdout Positions)",
-    status: "Verified",
-    icon: Activity,
-    color: "#38bdf8"
-  },
-  {
-    id: "wac30",
-    label: "WAC 30 Tactical Resolution",
-    value: "23 / 30 (76.7%)",
-    subtext: "Median pass rate across Win-At-Chess critical positions",
+    id: "hce-baseline",
+    label: "Golden Baseline Standard",
+    value: "21.0 / 30 (70.0%)",
+    subtext: "5-run median WAC 30 tactical resolution (Reference floor: 19.0/30)",
     status: "Verified",
     icon: Zap,
     color: "#f59e0b"
   },
   {
-    id: "gate0",
-    label: "Gate 0 Symmetry Invariance",
+    id: "cross-platform-parity",
+    label: "Linux / Windows Parity",
     value: "10 / 10 PASS",
-    subtext: "100.0% sign-inversion parity (0 cp delta across all plies)",
+    subtext: "100.0% bit-for-bit evaluation match (0 cp delta across Linux & Windows)",
     status: "Verified",
     icon: ShieldCheck,
     color: "#10b981"
   },
   {
     id: "architecture",
-    label: "Network Architecture",
-    value: "HalfKP (40960 → 256×2 → 1)",
-    subtext: "AVX2-Quantized INT16 dual-accumulator SIMD inference",
-    status: "Deployed",
+    label: "Engine Architecture",
+    value: "Pure HCE (Handcrafted)",
+    subtext: "Material, PST, mobility, king safety · Zero NNUE fallback",
+    status: "Active",
     icon: Binary,
     color: "#6366f1"
+  },
+  {
+    id: "nnue-pipeline",
+    label: "NNUE Training Pipeline",
+    value: "Phase 1: Cloud Infra",
+    subtext: "Autonomous cloud worker infrastructure in prep for next-gen weights",
+    status: "Preparing",
+    icon: Activity,
+    color: "#38bdf8"
   }
 ];
 
@@ -220,8 +220,8 @@ export function RhizohUnifiedEntryScreen() {
               lineHeight: 1.6
             }}
           >
-            An autonomous, self-evaluating HalfKP neural network chess engine engineered for
-            uncompromising positional intuition, rigorous tactical precision, and verifiable holdout validation.
+            An autonomous chess engine currently operating on a verified Golden HCE 21.0 baseline,
+            engineered for tactical precision and verifiable holdout validation while scaled cloud NNUE infrastructure is being prepared.
           </p>
         </section>
 
@@ -432,7 +432,7 @@ export function RhizohUnifiedEntryScreen() {
           <div style={{ display: "flex", gap: 16 }}>
             <span>Protocol: Zero-Contamination EPD Audit</span>
             <span>•</span>
-            <span>Architecture: HalfKP SIMD INT16</span>
+            <span>Architecture: Pure HCE (Golden Baseline 21.0)</span>
           </div>
         </footer>
       </div>

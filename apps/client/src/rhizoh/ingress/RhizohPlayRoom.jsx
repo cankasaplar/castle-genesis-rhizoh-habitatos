@@ -46,10 +46,11 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
   const [playerColor, setPlayerColor] = useState("w");
   const [isThinking, setIsThinking] = useState(false);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
-  const [evalScore, setEvalScore] = useState(20); // in centipawns (+ for White)
-  const [depth, setDepth] = useState(12);
-  const [nodes, setNodes] = useState(48200);
-  const [pv, setPv] = useState("Nf3 d5 d4 Nf6");
+  const [evalScore, setEvalScore] = useState(0); // in centipawns (+ for White)
+  const [depth, setDepth] = useState(0);
+  const [nodes, setNodes] = useState(0);
+  const [nps, setNps] = useState(0);
+  const [pv, setPv] = useState("");
   const [copiedPgn, setCopiedPgn] = useState(false);
   const [statusMessage, setStatusMessage] = useState("Game started. Your turn!");
 
@@ -168,10 +169,9 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
         setHistory(game.history({ verbose: true }));
         setLastMove({ from, to });
         setEvalScore(evalCp || 0);
-        setDepth(currentDepth || 8);
-        if (realNodes > 0) {
-          setNodes((prev) => prev + realNodes);
-        }
+        setDepth(currentDepth || 0);
+        setNodes(realNodes || 0);
+        setNps(realNps || 0);
         if (currentPv) setPv(currentPv);
 
         checkGameOver();
@@ -599,17 +599,20 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
               <div style={{ background: "rgba(255,255,255,0.03)", padding: "8px 10px", borderRadius: 8 }}>
                 <div style={{ fontSize: 10, color: "#64748b" }}>SEARCH DEPTH</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#f8fafc" }}>{depth} plies</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#f8fafc" }}>{depth > 0 ? `${depth} plies` : "—"}</div>
               </div>
               <div style={{ background: "rgba(255,255,255,0.03)", padding: "8px 10px", borderRadius: 8 }}>
-                <div style={{ fontSize: 10, color: "#64748b" }}>TOTAL NODES</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#f8fafc" }}>{nodes.toLocaleString()}</div>
+                <div style={{ fontSize: 10, color: "#64748b" }}>POSITION NODES</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#f8fafc" }}>{nodes > 0 ? nodes.toLocaleString() : "—"}</div>
               </div>
             </div>
 
             <div style={{ background: "rgba(255,255,255,0.03)", padding: "8px 10px", borderRadius: 8 }}>
-              <div style={{ fontSize: 10, color: "#64748b", marginBottom: 2 }}>PRINCIPAL VARIATION (PV)</div>
-              <div style={{ fontSize: 12, fontFamily: "monospace", color: "#38bdf8" }}>{pv || "(calculating...)"}</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+                <div style={{ fontSize: 10, color: "#64748b" }}>PRINCIPAL VARIATION (PV)</div>
+                {nps > 0 && <div style={{ fontSize: 10, color: "#10b981", fontWeight: 600 }}>{nps.toLocaleString()} NPS</div>}
+              </div>
+              <div style={{ fontSize: 12, fontFamily: "monospace", color: "#38bdf8" }}>{pv || "(waiting for move...)"}</div>
             </div>
           </div>
 
