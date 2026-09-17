@@ -157,7 +157,7 @@ export function RhizohUnifiedEntryScreen() {
                   boxShadow: activeTab === "puzzle-lab" ? "0 0 12px rgba(168, 85, 247, 0.4)" : "none"
                 }}
               >
-                🧩 Taktik & Kendini Düzeltme Labı
+                🧩 Tactical Lab
               </button>
             </div>
 
@@ -191,6 +191,8 @@ export function RhizohUnifiedEntryScreen() {
 
         {activeTab === "play" ? (
           <RhizohPlayRoom onBackToMetrics={() => setActiveTab("overview")} />
+        ) : activeTab === "puzzle-lab" ? (
+          <RhizohPuzzleLab onBackToOverview={() => setActiveTab("overview")} />
         ) : (
           <>
         {/* Hero Section */}
@@ -259,7 +261,7 @@ export function RhizohUnifiedEntryScreen() {
                 transition: "transform 0.15s ease"
               }}
             >
-              🧩 Canlı Taktik & Kendini Düzeltme Labı
+              🧩 Tactical & Self-Correction Lab
             </button>
             <button
               onClick={() => setActiveTab("play")}
@@ -277,7 +279,7 @@ export function RhizohUnifiedEntryScreen() {
                 cursor: "pointer"
               }}
             >
-              ⚔️ Rhizoh ile Oyna
+              ⚔️ Play Against Rhizoh
             </button>
           </div>
         </section>

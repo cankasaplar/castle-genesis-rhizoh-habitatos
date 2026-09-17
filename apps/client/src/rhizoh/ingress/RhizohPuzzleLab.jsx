@@ -54,7 +54,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
   const [mode, setMode] = useState("auto"); // 'auto' (Rhizoh solves) | 'interactive' (user tries)
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [autoSpeedMs, setAutoSpeedMs] = useState(1800);
-  const [statusMessage, setStatusMessage] = useState("Taktik laboratuvarı hazır.");
+  const [statusMessage, setStatusMessage] = useState("Tactical laboratory ready.");
 
   const autoTimerRef = useRef(null);
 
@@ -102,14 +102,15 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
       setLastMove(null);
       setSolveState("idle");
       setEngineMoveInfo(null);
-      setStatusMessage(`${puzzle.motif || "Taktik"} pozisyonu yüklendi. Sıra: ${g.turn() === "w" ? "Beyaz" : "Siyah"}`);
+      const turnName = g.turn() === "w" ? "White to move" : "Black to move";
+      setStatusMessage(`${puzzle.motif || "Tactical"} puzzle loaded. ${turnName}.`);
     } catch (err) {
       console.error("Failed to load puzzle FEN:", err);
     }
   };
 
   const fetchNextPuzzle = async (requestedId = null) => {
-    setStatusMessage("Yeni puzzle yükleniyor...");
+    setStatusMessage("Loading next tactical puzzle...");
     const url = requestedId ? `/api/chess/puzzle/next?id=${encodeURIComponent(requestedId)}` : "/api/chess/puzzle/next";
     const data = await fetchWithFallback(url);
     if (data?.ok && data.puzzle) {
@@ -132,7 +133,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
   const triggerEngineSolve = async () => {
     if (!currentPuzzle || solveState === "solving") return;
     setSolveState("solving");
-    setStatusMessage("Rhizoh HCE 22.0 pozisyonu inceliyor (400ms arama)...");
+    setStatusMessage("Rhizoh HCE 22.0 searching position (400ms movetime)...");
 
     const solvePayload = {
       puzzleId: currentPuzzle.id,
@@ -169,15 +170,15 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
 
       if (data.solved) {
         setSolveState("solved");
-        setStatusMessage(`✅ Rhizoh taktiği doğru çözdü: ${data.engineMove}`);
+        setStatusMessage(`✅ Rhizoh correctly solved the tactic: ${data.engineMove}`);
       } else {
         setSolveState("failed");
-        setStatusMessage(`❌ Rhizoh taktiği kaçırdı! Oynanan: ${data.engineMove || "Yok"} | Beklenen: ${data.expectedBestMove}`);
+        setStatusMessage(`❌ Rhizoh missed the tactic! Played: ${data.engineMove || "None"} | Expected: ${data.expectedBestMove}`);
         fetchStatsAndHistory(); // Refresh failure list
       }
     } else {
       setSolveState("failed");
-      setStatusMessage("Sunucu çözümü yanıtlamadı.");
+      setStatusMessage("Gateway did not return solution.");
     }
   };
 
@@ -228,10 +229,10 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
 
           if (isCorrect) {
             setSolveState("solved");
-            setStatusMessage(`🎉 Harika! Doğru taktik hamleyi buldun: ${move.san}`);
+            setStatusMessage(`🎉 Outstanding! You found the correct tactical move: ${move.san}`);
           } else {
             setSolveState("failed");
-            setStatusMessage(`❌ Yanlış hamle! Senin hamlen: ${move.san} | Doğru hamle: ${currentPuzzle?.bestMoveSan || currentPuzzle?.bestMove}`);
+            setStatusMessage(`❌ Incorrect move! You played: ${move.san} | Correct: ${currentPuzzle?.bestMoveSan || currentPuzzle?.bestMove}`);
           }
           return;
         }
@@ -401,7 +402,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
               cursor: "pointer"
             }}
           >
-            <ArrowLeft size={14} /> Genel Bakışa Dön
+            <ArrowLeft size={14} /> Back to Overview
           </button>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -415,7 +416,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
               }}
             />
             <span style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>
-              Rhizoh Taktik & Kendini Düzeltme Laboratuvarı
+              Rhizoh Tactical & Self-Correction Lab
             </span>
             <span
               style={{
@@ -451,7 +452,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
               cursor: "pointer"
             }}
           >
-            🤖 Rhizoh Çözsün
+            🤖 Rhizoh Solve
           </button>
           <button
             onClick={() => {
@@ -469,7 +470,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
               cursor: "pointer"
             }}
           >
-            ♟️ Önce Sen Dene
+            ♟️ Try Yourself First
           </button>
         </div>
       </div>
@@ -553,7 +554,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
                     cursor: solveState === "solving" ? "not-allowed" : "pointer"
                   }}
                 >
-                  <Cpu size={15} /> {solveState === "solving" ? "Hesaplanıyor..." : "Rhizoh Çözsün"}
+                  <Cpu size={15} /> {solveState === "solving" ? "Calculating..." : "Rhizoh Solve"}
                 </button>
                 <button
                   onClick={() => setIsAutoPlaying(!isAutoPlaying)}
@@ -572,7 +573,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
                   }}
                 >
                   {isAutoPlaying ? <Pause size={15} /> : <Play size={15} />}
-                  {isAutoPlaying ? "Durdur" : "Otomatik Akış"}
+                  {isAutoPlaying ? "Pause Stream" : "Auto Stream"}
                 </button>
               </>
             ) : (
@@ -594,7 +595,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
                   cursor: "pointer"
                 }}
               >
-                <RotateCcw size={15} /> Pozisyonu Sıfırla
+                <RotateCcw size={15} /> Reset Position
               </button>
             )}
 
@@ -614,7 +615,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
                 cursor: "pointer"
               }}
             >
-              <SkipForward size={15} /> Sonraki Puzzle
+              <SkipForward size={15} /> Next Puzzle
             </button>
           </div>
         </div>
@@ -635,7 +636,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <Brain size={18} color="#38bdf8" />
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#f8fafc" }}>
-                  Aktif Öğrenme & Hata Madenciliği
+                  Active Learning & Hard Negative Mining
                 </span>
               </div>
               <span
@@ -648,13 +649,13 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
                   fontWeight: 700
                 }}
               >
-                Track B Besleyici
+                Track B Feeder
               </span>
             </div>
             <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5, margin: 0 }}>
-              Rhizoh, WAC 30 benchmark'ı dışındaki 9.500 puzzle'lık bağımsız taktik havuzundan pozisyon çözer.
-              Modelin <strong>yanlış çözdüğü</strong> pozisyonlar anında <strong>hedefli eğitim havuzuna</strong> kaydedilir.
-              Ay başı Hetzner GPU altyapısında eğitilecek yeni NNUE modeli, bu "en zor kaçırılan" örnekler üzerinden eğitilip yeniden test edilecektir.
+              Rhizoh autonomously attempts tactical positions from an independent pool of 9,500 puzzles (strictly isolated from WAC 30 to prevent contamination).
+              Positions where the engine <strong>misses the tactic</strong> are automatically captured into the <strong>targeted training queue</strong> with 5x priority.
+              The upcoming NNUE model trained on cloud GPUs will be trained specifically on these hard negatives.
             </p>
           </div>
 
@@ -675,7 +676,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
                 textAlign: "center"
               }}
             >
-              <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, marginBottom: 4 }}>Denenen</div>
+              <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, marginBottom: 4 }}>Attempted</div>
               <div style={{ fontSize: 20, fontWeight: 800, color: "#f8fafc" }}>{stats.totalAttempted}</div>
             </div>
             <div
@@ -687,7 +688,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
                 textAlign: "center"
               }}
             >
-              <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, marginBottom: 4 }}>Taktik Başarısı</div>
+              <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, marginBottom: 4 }}>Tactical Accuracy</div>
               <div style={{ fontSize: 20, fontWeight: 800, color: "#34d399" }}>{stats.accuracyPct}%</div>
             </div>
             <div
@@ -699,7 +700,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
                 textAlign: "center"
               }}
             >
-              <div style={{ fontSize: 11, color: "#f87171", fontWeight: 600, marginBottom: 4 }}>Eğitim Havuzuna (Kaçırılan)</div>
+              <div style={{ fontSize: 11, color: "#f87171", fontWeight: 600, marginBottom: 4 }}>Queued for Training (Missed)</div>
               <div style={{ fontSize: 20, fontWeight: 800, color: "#ef4444" }}>{stats.totalFailed}</div>
             </div>
           </div>
@@ -743,19 +744,19 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: 10, color: "#64748b" }}>Derinlik</div>
+                    <div style={{ fontSize: 10, color: "#64748b" }}>Depth</div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>{engineMoveInfo.depth} ply</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 10, color: "#64748b" }}>Düğüm (Nodes)</div>
+                    <div style={{ fontSize: 10, color: "#64748b" }}>Nodes</div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>{engineMoveInfo.nodes?.toLocaleString()}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 10, color: "#64748b" }}>Hız (NPS)</div>
+                    <div style={{ fontSize: 10, color: "#64748b" }}>Speed (NPS)</div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>{engineMoveInfo.nps?.toLocaleString()}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 10, color: "#64748b" }}>Arama Süresi</div>
+                    <div style={{ fontSize: 10, color: "#64748b" }}>Search Time</div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>{engineMoveInfo.searchTimeMs}ms</div>
                   </div>
                 </div>
@@ -777,15 +778,15 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <Flame size={15} color="#ef4444" />
                 <span style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>
-                  Eğitime Aktarılan Kaçırılmış Pozisyonlar ({recentFailures.length})
+                  Missed Positions Queued for Training ({recentFailures.length})
                 </span>
               </div>
-              <span style={{ fontSize: 11, color: "#64748b" }}>Tıkla & Tekrar Dene</span>
+              <span style={{ fontSize: 11, color: "#64748b" }}>Click to Re-attempt</span>
             </div>
 
             {recentFailures.length === 0 ? (
               <div style={{ fontSize: 12, color: "#64748b", textAlign: "center", padding: "16px 0" }}>
-                Henüz kaçırılan pozisyon kaydedilmedi.
+                No missed positions recorded yet.
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 200, overflowY: "auto" }}>
@@ -817,7 +818,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
                         {fail.puzzleId} <span style={{ color: "#c084fc", fontSize: 11 }}>({fail.motif})</span>
                       </div>
                       <div style={{ fontSize: 10, color: "#94a3b8" }}>
-                        Oynanan: <span style={{ color: "#f87171" }}>{fail.playedMove || "none"}</span> | Doğru: <span style={{ color: "#34d399" }}>{fail.bestMove}</span>
+                        Played: <span style={{ color: "#f87171" }}>{fail.playedMove || "none"}</span> | Expected: <span style={{ color: "#34d399" }}>{fail.bestMove}</span>
                       </div>
                     </div>
                     <span
@@ -830,7 +831,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
                         color: "#f87171"
                       }}
                     >
-                      5x Öncelik
+                      5x Priority
                     </span>
                   </div>
                 ))}
