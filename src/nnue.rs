@@ -18,6 +18,8 @@ const MAGIC_V6: &[u8; 8] = b"RHNNUEV6";
 const MAGIC_V5: &[u8; 8] = b"RHNNUEV5";
 
 pub struct NnueEvaluator {
+    /// Stockfish CC0 open-source network evaluator (MIT runtime)
+    stockfish_net: Option<nnue_rs::Network>,
     /// Feature → hidden weights: [INPUT_DIM][HIDDEN_DIM] as i16
     feature_weights: Box<[[i16; HIDDEN_DIM]; INPUT_DIM]>,
     /// Hidden layer biases as i16
@@ -40,6 +42,40 @@ impl NnueEvaluator {
         let output_bias = 0i32;
         let mut loaded = false;
 
+        let mut sf_net: Option<nnue_rs::Network> = None;
+        let mut sf_candidate_paths = vec![
+            std::path::PathBuf::from("config/stockfish_cc0.nnue"),
+            std::path::PathBuf::from("../config/stockfish_cc0.nnue"),
+            std::path::PathBuf::from("../../config/stockfish_cc0.nnue"),
+        ];
+
+        if let Ok(exe_path) = std::env::current_exe() {
+            if let Some(exe_dir) = exe_path.parent() {
+                sf_candidate_paths.push(exe_dir.join("config/stockfish_cc0.nnue"));
+                sf_candidate_paths.push(exe_dir.join("../config/stockfish_cc0.nnue"));
+                sf_candidate_paths.push(exe_dir.join("stockfish_cc0.nnue"));
+                sf_candidate_paths.push(exe_dir.join("bin/stockfish_cc0.nnue"));
+            }
+        }
+
+        for path in &sf_candidate_paths {
+            if path.exists() {
+                if let Some(p_str) = path.to_str() {
+                    match nnue_rs::Network::from_file(p_str) {
+                        Ok(net) => {
+                            println!("info string [NNUE Stockfish CC0] Loaded {:?} architecture from {:?}", net.arch(), path);
+                            sf_net = Some(net);
+                            loaded = true;
+                            break;
+                        }
+                        Err(e) => {
+                            eprintln!("[NNUE DEBUG] Failed to load Stockfish net from {:?}: {:?}", path, e);
+                        }
+                    }
+                }
+            }
+        }
+
         let mut candidate_paths = vec![
             std::path::PathBuf::from("config/rhizoh_nnue.bin"),
             std::path::PathBuf::from("../config/rhizoh_nnue.bin"),
@@ -59,50 +95,52 @@ impl NnueEvaluator {
         let mut loaded_ow_b = output_weights_b;
         let mut loaded_ob = output_bias;
 
-        'outer: for path in &candidate_paths {
-            if let Ok(data) = std::fs::read(path) {
-                if data.len() >= 16 {
-                    let magic = &data[..8];
-                    let file_input = u32::from_le_bytes([data[8], data[9], data[10], data[11]]) as usize;
-                    let file_hidden = u32::from_le_bytes([data[12], data[13], data[14], data[15]]) as usize;
+        if !loaded {
+            'outer: for path in &candidate_paths {
+                if let Ok(data) = std::fs::read(path) {
+                    if data.len() >= 16 {
+                        let magic = &data[..8];
+                        let file_input = u32::from_le_bytes([data[8], data[9], data[10], data[11]]) as usize;
+                        let file_hidden = u32::from_le_bytes([data[12], data[13], data[14], data[15]]) as usize;
 
-                    if (magic == MAGIC_V6 || magic == MAGIC_V5) && file_input == INPUT_DIM && file_hidden == HIDDEN_DIM {
-                        let expected_size = 16
-                            + INPUT_DIM * HIDDEN_DIM * 2
-                            + HIDDEN_DIM * 2
-                            + HIDDEN_DIM * 2
-                            + HIDDEN_DIM * 2
-                            + 4;
+                        if (magic == MAGIC_V6 || magic == MAGIC_V5) && file_input == INPUT_DIM && file_hidden == HIDDEN_DIM {
+                            let expected_size = 16
+                                + INPUT_DIM * HIDDEN_DIM * 2
+                                + HIDDEN_DIM * 2
+                                + HIDDEN_DIM * 2
+                                + HIDDEN_DIM * 2
+                                + 4;
 
-                        if data.len() >= expected_size {
-                            let mut pos = 16;
-                            for i in 0..INPUT_DIM {
+                            if data.len() >= expected_size {
+                                let mut pos = 16;
+                                for i in 0..INPUT_DIM {
+                                    for j in 0..HIDDEN_DIM {
+                                        loaded_fw[i][j] = i16::from_le_bytes([data[pos], data[pos + 1]]);
+                                        pos += 2;
+                                    }
+                                }
                                 for j in 0..HIDDEN_DIM {
-                                    loaded_fw[i][j] = i16::from_le_bytes([data[pos], data[pos + 1]]);
+                                    loaded_fb[j] = i16::from_le_bytes([data[pos], data[pos + 1]]);
                                     pos += 2;
                                 }
+                                for j in 0..HIDDEN_DIM {
+                                    loaded_ow_w[j] = i16::from_le_bytes([data[pos], data[pos + 1]]);
+                                    pos += 2;
+                                }
+                                for j in 0..HIDDEN_DIM {
+                                    loaded_ow_b[j] = i16::from_le_bytes([data[pos], data[pos + 1]]);
+                                    pos += 2;
+                                }
+                                loaded_ob = i32::from_le_bytes([data[pos], data[pos+1], data[pos+2], data[pos+3]]);
+                                loaded = true;
+                                println!("info string [NNUE V5 HalfKP 512] Loaded {INPUT_DIM}→{HIDDEN_DIM}x2→1 from {:?}", path);
+                                break 'outer;
+                            } else {
+                                eprintln!("[NNUE DEBUG] File size mismatch: {} < expected {}", data.len(), expected_size);
                             }
-                            for j in 0..HIDDEN_DIM {
-                                loaded_fb[j] = i16::from_le_bytes([data[pos], data[pos + 1]]);
-                                pos += 2;
-                            }
-                            for j in 0..HIDDEN_DIM {
-                                loaded_ow_w[j] = i16::from_le_bytes([data[pos], data[pos + 1]]);
-                                pos += 2;
-                            }
-                            for j in 0..HIDDEN_DIM {
-                                loaded_ow_b[j] = i16::from_le_bytes([data[pos], data[pos + 1]]);
-                                pos += 2;
-                            }
-                            loaded_ob = i32::from_le_bytes([data[pos], data[pos+1], data[pos+2], data[pos+3]]);
-                            loaded = true;
-                            println!("info string [NNUE V5 HalfKP 512] Loaded {INPUT_DIM}→{HIDDEN_DIM}x2→1 from {:?}", path);
-                            break 'outer;
                         } else {
-                            eprintln!("[NNUE DEBUG] File size mismatch: {} < expected {}", data.len(), expected_size);
+                            eprintln!("[NNUE DEBUG] Magic/Dim mismatch: magic={:?}, input={}, hidden={}", magic, file_input, file_hidden);
                         }
-                    } else {
-                        eprintln!("[NNUE DEBUG] Magic/Dim mismatch: magic={:?}, input={}, hidden={}", magic, file_input, file_hidden);
                     }
                 }
             }
@@ -113,6 +151,7 @@ impl NnueEvaluator {
         let boxed_weights: Box<[[i16; HIDDEN_DIM]; INPUT_DIM]> = unsafe { Box::from_raw(ptr) };
 
         Self {
+            stockfish_net: sf_net,
             feature_weights: boxed_weights,
             feature_biases: loaded_fb,
             output_weights_w: loaded_ow_w,
@@ -247,10 +286,14 @@ impl NnueEvaluator {
         final_cp
     }
 
-    /// Evaluate a board position (recompute accumulator if needed)
+    /// Evaluate a board position (using Stockfish CC0 network if available, else legacy accumulator)
     pub fn evaluate(&self, board: &Board) -> i32 {
         if !self.enabled {
             return 0;
+        }
+
+        if let Some(ref net) = self.stockfish_net {
+            return net.evaluate(board);
         }
 
         if let Some(ref acc) = board.accumulator {
@@ -523,4 +566,30 @@ static GLOBAL_NNUE: OnceLock<NnueEvaluator> = OnceLock::new();
 
 pub fn get_global_nnue() -> &'static NnueEvaluator {
     GLOBAL_NNUE.get_or_init(NnueEvaluator::new)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_nnue_fen_parity() {
+        let evaluator = get_global_nnue();
+        if let Some(ref net) = evaluator.stockfish_net {
+            let test_fens = [
+                "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+                "r1bqk2r/ppp2ppp/2n5/1B1pp3/4n3/5N2/PPPP1PPP/R1BQK2R w KQkq - 0 1",
+                "4k3/8/8/8/8/8/8/4K2Q w - - 0 1",
+                "4k2q/8/8/8/8/8/8/4K3 b - - 0 1",
+                "4k2q/8/8/8/8/8/8/4K3 w - - 0 1",
+            ];
+            for fen in test_fens {
+                let fen_score = net.evaluate_fen(fen).expect("evaluate_fen failed");
+                let board = Board::from_fen(fen);
+                let board_score = net.evaluate(&board);
+                println!("FEN {fen}: fen_score={fen_score}, board_score={board_score}");
+                assert_eq!(fen_score, board_score, "Parity mismatch on FEN {fen}: fen={fen_score}, board={board_score}");
+            }
+        }
+    }
 }

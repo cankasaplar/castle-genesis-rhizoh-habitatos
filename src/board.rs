@@ -704,6 +704,57 @@ impl Board {
     }
 }
 
+impl nnue_rs::Board for Board {
+    #[inline(always)]
+    fn side_to_move(&self) -> nnue_rs::Color {
+        match self.side_to_move {
+            Color::White => nnue_rs::Color::White,
+            Color::Black => nnue_rs::Color::Black,
+        }
+    }
+
+    #[inline(always)]
+    fn king_square(&self, color: nnue_rs::Color) -> u8 {
+        let c_idx = match color {
+            nnue_rs::Color::White => Color::White as usize,
+            nnue_rs::Color::Black => Color::Black as usize,
+        };
+        let bb = self.pieces[c_idx][PieceType::King as usize];
+        if bb != 0 {
+            bb.trailing_zeros() as u8
+        } else {
+            0
+        }
+    }
+
+    #[inline(always)]
+    fn for_each_piece(&self, f: &mut dyn FnMut(u8, nnue_rs::Piece)) {
+        for c_idx in 0..2 {
+            let color = if c_idx == 0 {
+                nnue_rs::Color::White
+            } else {
+                nnue_rs::Color::Black
+            };
+            for p_idx in 0..6 {
+                let kind = match p_idx {
+                    0 => nnue_rs::PieceKind::Pawn,
+                    1 => nnue_rs::PieceKind::Knight,
+                    2 => nnue_rs::PieceKind::Bishop,
+                    3 => nnue_rs::PieceKind::Rook,
+                    4 => nnue_rs::PieceKind::Queen,
+                    _ => nnue_rs::PieceKind::King,
+                };
+                let mut bb = self.pieces[c_idx][p_idx];
+                while bb != 0 {
+                    let sq = bb.trailing_zeros() as u8;
+                    f(sq, nnue_rs::Piece::new(color, kind));
+                    bb &= bb - 1;
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

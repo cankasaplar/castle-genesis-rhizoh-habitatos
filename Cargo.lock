@@ -7,6 +7,7 @@ name = "castle"
 version = "0.1.0"
 dependencies = [
  "memmap2",
+ "nnue-rs",
  "rand",
  "rayon",
  "serde",
@@ -87,6 +88,12 @@ checksum = "d1219ed1b7f229ee7104d281dd01d6802fe28bb6e95d292942c4daacdeb798c0"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "nnue-rs"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f484047679d5f4ad45412bffb6e4e9ee8d8943fdaae65107ad9b9fa6ba32d916"
 
 [[package]]
 name = "ppv-lite86"

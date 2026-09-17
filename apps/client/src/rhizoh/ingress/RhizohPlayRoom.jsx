@@ -93,10 +93,10 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
   // Request engine move from gateway or local fallback
   const requestEngineMove = async (currentFen) => {
     setIsThinking(true);
-    setStatusMessage("Rhizoh HCE is calculating...");
+    setStatusMessage("Rhizoh NNUE is calculating...");
 
     try {
-      // Query Gateway API for genuine native Rhizoh HCE search across production proxy or local
+      // Query Gateway API for genuine native Rhizoh NNUE search across production proxy or local
       const candidateEndpoints = [
         "/api/gatewayProxy/api/chess/move",
         "/api/chess/move",
@@ -460,7 +460,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 fontWeight: 700
               }}
             >
-              HCE 21.0
+              NNUE (CC0)
             </span>
           </div>
         </div>
@@ -592,7 +592,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
               <Cpu size={14} color="#38bdf8" />
               <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>
-                Rhizoh HCE Engine Telemetry
+                Rhizoh NNUE Engine Telemetry
               </span>
             </div>
 

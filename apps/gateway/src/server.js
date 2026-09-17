@@ -919,7 +919,7 @@ function queryCastleMove({ fen, movetime = 400 }) {
         nps: 0,
         searchTimeMs: 0,
         pv: "",
-        engine: "Rhizoh HCE",
+        engine: "Rhizoh NNUE (Stockfish CC0 + MIT)",
         reason: "empty_fen"
       });
     }
@@ -962,7 +962,7 @@ function queryCastleMove({ fen, movetime = 400 }) {
           nps,
           searchTimeMs,
           pv,
-          engine: "Rhizoh HCE 21.0"
+          engine: "Rhizoh NNUE (Stockfish CC0 + MIT)"
         });
       } else {
         finish({
@@ -974,7 +974,7 @@ function queryCastleMove({ fen, movetime = 400 }) {
           nps: 0,
           searchTimeMs: 0,
           pv: "",
-          engine: "Rhizoh HCE 21.0",
+          engine: "Rhizoh NNUE (Stockfish CC0 + MIT)",
           reason: "timeout"
         });
       }
@@ -993,7 +993,7 @@ function queryCastleMove({ fen, movetime = 400 }) {
         nps: 0,
         searchTimeMs: 0,
         pv: "",
-        engine: "Rhizoh HCE 21.0",
+        engine: "Rhizoh NNUE (Stockfish CC0 + MIT)",
         reason: String(err?.message || err)
       });
     }
@@ -1032,7 +1032,7 @@ function queryCastleMove({ fen, movetime = 400 }) {
             nps,
             searchTimeMs,
             pv,
-            engine: "Rhizoh HCE 21.0"
+            engine: "Rhizoh NNUE (Stockfish CC0 + MIT)"
           });
           break;
         }
@@ -1049,12 +1049,12 @@ function queryCastleMove({ fen, movetime = 400 }) {
         nps: 0,
         searchTimeMs: 0,
         pv: "",
-        engine: "Rhizoh HCE 21.0",
+        engine: "Rhizoh NNUE (Stockfish CC0 + MIT)",
         reason: String(err?.message || err)
       });
     });
 
-    proc.stdin.write("uci\nsetoption name UseNNUE value false\nsetoption name OwnBook value false\nisready\n");
+    proc.stdin.write("uci\nsetoption name UseNNUE value true\nsetoption name OwnBook value false\nisready\n");
   });
 }
 

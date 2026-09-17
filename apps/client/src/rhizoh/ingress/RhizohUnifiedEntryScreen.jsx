@@ -33,8 +33,8 @@ const VERIFIED_METRICS_V0 = [
   {
     id: "architecture",
     label: "Engine Architecture",
-    value: "Pure HCE (Handcrafted)",
-    subtext: "Material, PST, mobility, king safety · Zero NNUE fallback",
+    value: "NNUE (Stockfish CC0)",
+    subtext: "CC0 public domain weights · MIT SIMD runtime · Zero GPL",
     status: "Active",
     icon: Binary,
     color: "#6366f1"
@@ -220,8 +220,8 @@ export function RhizohUnifiedEntryScreen() {
               lineHeight: 1.6
             }}
           >
-            An autonomous chess engine currently operating on a verified Golden HCE 21.0 baseline,
-            engineered for tactical precision and verifiable holdout validation while scaled cloud NNUE infrastructure is being prepared.
+            An autonomous chess engine powered by open-source NNUE weights (Stockfish CC0 network)
+            running on a native MIT Rust SIMD evaluation runtime with guaranteed zero GPL contamination.
           </p>
         </section>
 
@@ -432,7 +432,7 @@ export function RhizohUnifiedEntryScreen() {
           <div style={{ display: "flex", gap: 16 }}>
             <span>Protocol: Zero-Contamination EPD Audit</span>
             <span>•</span>
-            <span>Architecture: Pure HCE (Golden Baseline 21.0)</span>
+            <span>Architecture: NNUE (Stockfish CC0 Weights + MIT Engine)</span>
           </div>
         </footer>
       </div>
