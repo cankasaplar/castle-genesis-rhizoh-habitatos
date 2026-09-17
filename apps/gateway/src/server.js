@@ -118,6 +118,13 @@ import {
 import { verifyResolutionStabilityEnvelopeV0 } from "./ops/resolutionStabilityEnvelopeV0.js";
 import { logLlmAccess } from "./castleLlmAudit.js";
 import { appendMemory, listMemories, getMemoryContext, getPersonaGoalMemory, setPersonaGoalMemory, autoCompactMemories } from "./memoryStore.js";
+import {
+  initPuzzleController,
+  getNextPuzzle,
+  recordPuzzleSolution,
+  getPuzzleStats,
+  getRecentFailures
+} from "./puzzleController.js";
 import { getFirebasePersistence } from "./firebasePersistence.js";
 import { registerAgentIdentity, listAgentIdentities, getAgentIdentity, updateAgentIdentity } from "./agentIdentityStore.js";
 import { queueAcademyEvent, listAcademyEvents, resolveAcademyEvent, runAcademyEventTick } from "./academyEventEngine.js";
@@ -1078,6 +1085,83 @@ const httpServer = createServer(async (req, res) => {
       const movetime = Number(body?.movetime || 300);
       const result = await queryCastleMove({ fen, movetime });
       sendJson(res, 200, result);
+    } catch (e) {
+      sendJson(res, 500, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
+
+  // Live Puzzle & Active Learning Endpoints
+  if (req.method === "GET" && (pathname === "/api/chess/puzzle/next" || pathname === "/rhizoh/chess/puzzle/next" || pathname === "/api/gatewayProxy/api/chess/puzzle/next" || pathname.endsWith("/api/chess/puzzle/next"))) {
+    try {
+      const url = new URL(req.url, "http://localhost");
+      const id = url.searchParams.get("id");
+      const puzzle = getNextPuzzle(id);
+      sendJson(res, 200, { ok: true, puzzle });
+    } catch (e) {
+      sendJson(res, 500, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && (pathname === "/api/chess/puzzle/solve" || pathname === "/rhizoh/chess/puzzle/solve" || pathname === "/api/gatewayProxy/api/chess/puzzle/solve" || pathname.endsWith("/api/chess/puzzle/solve"))) {
+    try {
+      const body = await readHttpJson(req, 16 * 1024);
+      const puzzleId = String(body?.puzzleId || "");
+      const fen = String(body?.fen || "").trim();
+      const expectedBestMove = String(body?.bestMove || "").trim();
+      const motif = String(body?.motif || "Tactics");
+      const movetime = Number(body?.movetime || 400);
+
+      // Solve position using Rhizoh HCE engine
+      const moveResult = await queryCastleMove({ fen, movetime });
+      const engineMove = moveResult.bestMove;
+
+      // Record solution / failure
+      const recorded = recordPuzzleSolution({
+        puzzleId,
+        fen,
+        playedMove: engineMove,
+        bestMove: expectedBestMove,
+        motif,
+        engine: moveResult.engine || "Rhizoh HCE 22.0",
+        depth: moveResult.depth,
+        nodes: moveResult.nodes,
+        timeMs: moveResult.searchTimeMs
+      });
+
+      sendJson(res, 200, {
+        ok: true,
+        puzzleId,
+        engineMove,
+        expectedBestMove,
+        solved: recorded.solved,
+        evalCp: moveResult.evalCp,
+        depth: moveResult.depth,
+        nodes: moveResult.nodes,
+        nps: moveResult.nps,
+        pv: moveResult.pv,
+        searchTimeMs: moveResult.searchTimeMs,
+        stats: recorded.stats
+      });
+    } catch (e) {
+      sendJson(res, 500, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && (pathname === "/api/chess/puzzle/stats" || pathname === "/rhizoh/chess/puzzle/stats" || pathname === "/api/gatewayProxy/api/chess/puzzle/stats" || pathname.endsWith("/api/chess/puzzle/stats"))) {
+    try {
+      sendJson(res, 200, { ok: true, stats: getPuzzleStats() });
+    } catch (e) {
+      sendJson(res, 500, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && (pathname === "/api/chess/puzzle/history" || pathname === "/rhizoh/chess/puzzle/history" || pathname === "/api/gatewayProxy/api/chess/puzzle/history" || pathname.endsWith("/api/chess/puzzle/history"))) {
+    try {
+      sendJson(res, 200, { ok: true, failures: getRecentFailures(20), stats: getPuzzleStats() });
     } catch (e) {
       sendJson(res, 500, { ok: false, error: String(e?.message || e) });
     }
@@ -4662,6 +4746,7 @@ setInterval(() => {
   if (!genesisDiskBoot.ok) {
     console.warn("[GATEWAY] genesis disk hydrate failed; continuing with in-memory genesis continuity");
   }
+  initPuzzleController();
   httpServer.listen(PORT, () => {
     startGenesisCanonicalClock();
     installGenesisCheckpointSurfaceGetter(buildGenesisRuntimeSurfacePayloadLive);

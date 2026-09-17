@@ -1,3 +1,4 @@
+import { RhizohPuzzleLab } from "./RhizohPuzzleLab.jsx";
 import { RhizohPlayRoom } from "./RhizohPlayRoom.jsx";
 import React from "react";
 import {
@@ -142,6 +143,22 @@ export function RhizohUnifiedEntryScreen() {
               >
                 ⚔️ Play Room
               </button>
+              <button
+                onClick={() => setActiveTab("puzzle-lab")}
+                style={{
+                  padding: "5px 12px",
+                  borderRadius: 8,
+                  background: activeTab === "puzzle-lab" ? "#a855f7" : "transparent",
+                  color: activeTab === "puzzle-lab" ? "#ffffff" : "#94a3b8",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  border: "none",
+                  cursor: "pointer",
+                  boxShadow: activeTab === "puzzle-lab" ? "0 0 12px rgba(168, 85, 247, 0.4)" : "none"
+                }}
+              >
+                🧩 Taktik & Kendini Düzeltme Labı
+              </button>
             </div>
 
             <span
@@ -167,7 +184,7 @@ export function RhizohUnifiedEntryScreen() {
                   boxShadow: "0 0 8px #10b981"
                 }}
               />
-              HCE 21.0 Baseline
+              HCE 22.0 Baseline
             </span>
           </div>
         </header>
@@ -223,6 +240,46 @@ export function RhizohUnifiedEntryScreen() {
             An autonomous chess engine operating on the verified Golden HCE 22.0 baseline (73.3% WAC 30),
             engineered for tactical precision and strict adherence to the HCE Dominance Guard while scaled cloud training infrastructure is being prepared.
           </p>
+          <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 12, marginTop: 24 }}>
+            <button
+              onClick={() => setActiveTab("puzzle-lab")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 22px",
+                background: "linear-gradient(135deg, #a855f7 0%, #6366f1 100%)",
+                border: "none",
+                borderRadius: 12,
+                color: "#ffffff",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+                boxShadow: "0 0 20px rgba(168, 85, 247, 0.35)",
+                transition: "transform 0.15s ease"
+              }}
+            >
+              🧩 Canlı Taktik & Kendini Düzeltme Labı
+            </button>
+            <button
+              onClick={() => setActiveTab("play")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 22px",
+                background: "rgba(255, 255, 255, 0.08)",
+                border: "1px solid rgba(148, 163, 184, 0.25)",
+                borderRadius: 12,
+                color: "#f8fafc",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer"
+              }}
+            >
+              ⚔️ Rhizoh ile Oyna
+            </button>
+          </div>
         </section>
 
         {/* Live Metrics Grid (Strictly 4 Verified Metrics) */}
