@@ -96,8 +96,9 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     setStatusMessage("Rhizoh HCE is calculating...");
 
     try {
-      // Query Gateway API for genuine native Rhizoh HCE search across production proxy or local
+      // Query Gateway API for genuine native Rhizoh HCE search across production proxy, live Render or local
       const candidateEndpoints = [
+        "https://castle-genesis-rhizoh-habitatos.onrender.com/api/chess/move",
         "/api/gatewayProxy/api/chess/move",
         "/api/chess/move",
         "http://localhost:8090/api/chess/move"
@@ -142,18 +143,21 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
         return;
       }
 
-      // Prioritize captures, checks, central moves
+      // Fallback: Prioritize Queen promotions, then captures, then quiet central moves
       moves.sort((a, b) => {
-        const valA = (a.captured ? PIECE_VALUES[a.captured] * 10 : 0) + (a.san.includes("+") ? 5 : 0);
-        const valB = (b.captured ? PIECE_VALUES[b.captured] * 10 : 0) + (b.san.includes("+") ? 5 : 0);
+        const promoA = a.promotion === "q" ? 900 : (a.promotion ? 100 : 0);
+        const promoB = b.promotion === "q" ? 900 : (b.promotion ? 100 : 0);
+        const valA = promoA + (a.captured ? PIECE_VALUES[a.captured] * 10 : 0);
+        const valB = promoB + (b.captured ? PIECE_VALUES[b.captured] * 10 : 0);
         return valB - valA;
       });
 
       const chosenMove = moves[0];
       const moveUci = chosenMove.from + chosenMove.to + (chosenMove.promotion || "");
-      const simulatedEval = tempGame.turn() === "w" ? 35 : -35;
+      const simulatedEval = 0;
 
-      applyEngineMove(moveUci, simulatedEval, 6, 0, chosenMove.san, 0, 400);
+      setStatusMessage("⚠️ Engine Gateway Offline — Reconnecting...");
+      applyEngineMove(moveUci, simulatedEval, 1, 1, chosenMove.san, 100, 400);
     }, 400);
   };
 

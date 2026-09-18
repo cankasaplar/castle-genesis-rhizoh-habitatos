@@ -71,6 +71,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
   }, []);
 
   const candidateBaseUrls = [
+    "https://castle-genesis-rhizoh-habitatos.onrender.com",
     "/api/gatewayProxy",
     "",
     "http://localhost:8090"
