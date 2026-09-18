@@ -48,7 +48,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
     totalFailed: 0,
     accuracyPct: 0,
     failuresInQueue: 0,
-    datasetPoolSize: 755
+    datasetPoolSize: 2382
   });
   const [recentFailures, setRecentFailures] = useState([]);
   const [mode, setMode] = useState("auto"); // 'auto' (Rhizoh solves) | 'interactive' (user tries)
@@ -501,6 +501,19 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
             >
               HCE 22.0 Golden Baseline
             </span>
+            <span
+              style={{
+                padding: "2px 8px",
+                borderRadius: 9999,
+                fontSize: 11,
+                fontWeight: 700,
+                background: "rgba(16, 185, 129, 0.15)",
+                color: "#34d399",
+                border: "1px solid rgba(16, 185, 129, 0.3)"
+              }}
+            >
+              🎯 {stats.datasetPoolSize ? stats.datasetPoolSize.toLocaleString() : "..."} Verified Master Puzzles
+            </span>
           </div>
         </div>
 
@@ -723,7 +736,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
               </span>
             </div>
             <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5, margin: 0 }}>
-              Rhizoh autonomously attempts tactical positions from an independent pool of 755 verified master puzzles (strictly isolated from WAC 30 to prevent contamination).
+              Rhizoh autonomously attempts tactical positions from an independent pool of {stats.datasetPoolSize ? stats.datasetPoolSize.toLocaleString() : 'thousands of'} verified master puzzles (strictly isolated from WAC 30 to prevent contamination).
               Positions where the engine <strong>misses the tactic</strong> are automatically captured into the <strong>targeted training queue</strong> with 5x priority.
               The upcoming NNUE model trained on cloud GPUs will be trained specifically on these hard negatives.
             </p>

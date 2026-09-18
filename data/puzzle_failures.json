@@ -11,5 +11,51 @@
     "timeMs": 0,
     "recordedAt": "2026-09-17T16:41:08.717Z",
     "trainingPriority": 5
+  },
+  {
+    "puzzleId": "TestFail.001",
+    "fen": "8/1P6/8/8/8/8/6k1/4K2R w - - 0 1",
+    "playedMove": "b7b8q",
+    "bestMove": "b8=R",
+    "motif": "PawnPromotion",
+    "engine": "Rhizoh HCE 22.0",
+    "depth": 6,
+    "nodes": 12000,
+    "timeMs": 400,
+    "correction": {
+      "playedSan": "b8=Q",
+      "playedUci": "b7b8q",
+      "bestSan": "b8=R",
+      "bestUci": "b7b8r",
+      "motif": "PawnPromotion",
+      "explanation": "Tactical oversight in PawnPromotion: Rhizoh played b8=Q, failing to execute b8=R.",
+      "refutationCategory": "SuboptimalMaterialLoss",
+      "queuedForTraining": true
+    },
+    "recordedAt": "2026-09-18T15:36:35.906Z",
+    "trainingPriority": 5
+  },
+  {
+    "puzzleId": "TestFail.001",
+    "fen": "8/1P6/8/8/8/8/6k1/4K2R w - - 0 1",
+    "playedMove": "b7b8q",
+    "bestMove": "b8=R",
+    "motif": "PawnPromotion",
+    "engine": "Rhizoh HCE 22.0",
+    "depth": 6,
+    "nodes": 12000,
+    "timeMs": 400,
+    "correction": {
+      "playedSan": "b8=Q",
+      "playedUci": "b7b8q",
+      "bestSan": "b8=R",
+      "bestUci": "b7b8r",
+      "motif": "PawnPromotion",
+      "explanation": "Tactical oversight in PawnPromotion: Rhizoh played b8=Q, failing to execute b8=R.",
+      "refutationCategory": "SuboptimalMaterialLoss",
+      "queuedForTraining": true
+    },
+    "recordedAt": "2026-09-18T17:01:51.810Z",
+    "trainingPriority": 5
   }
 ]
