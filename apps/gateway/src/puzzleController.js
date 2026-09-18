@@ -179,29 +179,168 @@ export function initPuzzleController() {
   }
 }
 
-export function getNextPuzzle(requestedId) {
+const sessionCursors = new Map();
+
+function cleanStaleSessions() {
+  const now = Date.now();
+  for (const [sid, item] of sessionCursors.entries()) {
+    if (now - item.lastActive > 3600000) {
+      sessionCursors.delete(sid);
+    }
+  }
+}
+
+export function generateTacticalRefutation(fen, playedMove, bestMove, motif) {
+  try {
+    const cPlayed = new Chess(fen);
+    const cBest = new Chess(fen);
+    let playedSan = playedMove || "none";
+    let playedUci = playedMove || "";
+    let bestSan = bestMove || "";
+    let bestUci = bestMove || "";
+
+    if (playedMove) {
+      if (/^[a-h][1-8][a-h][1-8][qrbn]?$/i.test(playedMove)) {
+        const from = playedMove.slice(0, 2).toLowerCase();
+        const to = playedMove.slice(2, 4).toLowerCase();
+        const promo = playedMove.length > 4 ? playedMove[4].toLowerCase() : undefined;
+        const res = cPlayed.move({ from, to, promotion: promo });
+        if (res) {
+          playedSan = res.san;
+          playedUci = res.from + res.to + (res.promotion || "");
+        }
+      } else {
+        const res = cPlayed.move(playedMove);
+        if (res) {
+          playedSan = res.san;
+          playedUci = res.from + res.to + (res.promotion || "");
+        }
+      }
+    }
+
+    if (bestMove) {
+      if (/^[a-h][1-8][a-h][1-8][qrbn]?$/i.test(bestMove)) {
+        const from = bestMove.slice(0, 2).toLowerCase();
+        const to = bestMove.slice(2, 4).toLowerCase();
+        const promo = bestMove.length > 4 ? bestMove[4].toLowerCase() : undefined;
+        const res = cBest.move({ from, to, promotion: promo });
+        if (res) {
+          bestSan = res.san;
+          bestUci = res.from + res.to + (res.promotion || "");
+        }
+      } else {
+        const res = cBest.move(bestMove);
+        if (res) {
+          bestSan = res.san;
+          bestUci = res.from + res.to + (res.promotion || "");
+        }
+      }
+    }
+
+    let explanation = "";
+    if (bestSan.includes("#")) {
+      explanation = `Rhizoh chose ${playedSan}, overlooking immediate forced checkmate via ${bestSan}.`;
+    } else if (bestSan.includes("+")) {
+      explanation = `Rhizoh played ${playedSan}, missing a decisive checking combination with ${bestSan}.`;
+    } else if (motif) {
+      explanation = `Tactical oversight in ${motif}: Rhizoh played ${playedSan}, failing to execute ${bestSan}.`;
+    } else {
+      explanation = `Rhizoh played ${playedSan}, conceding tactical advantage compared to master move ${bestSan}.`;
+    }
+
+    return {
+      playedSan,
+      playedUci,
+      bestSan,
+      bestUci,
+      motif: motif || "Tactics",
+      explanation,
+      refutationCategory: bestSan.includes("#") ? "MissedForcedMate" : (bestSan.includes("+") ? "MissedDecisiveCheck" : "SuboptimalMaterialLoss"),
+      queuedForTraining: true
+    };
+  } catch (err) {
+    return {
+      playedSan: playedMove,
+      playedUci: playedMove,
+      bestSan: bestMove,
+      bestUci: bestMove,
+      motif: motif || "Tactics",
+      explanation: `Tactical difference: ${bestMove} required instead of ${playedMove}.`,
+      refutationCategory: "GeneralTacticsMiss",
+      queuedForTraining: true
+    };
+  }
+}
+
+export function getNextPuzzle(requestedId, options = {}) {
   if (puzzlesCache.length === 0) {
     initPuzzleController();
   }
   let puzzle = null;
   if (requestedId) {
     puzzle = puzzlesCache.find(p => p.id === requestedId);
+    if (puzzle) return enrichPuzzleMoves(puzzle);
   }
-  if (!puzzle) {
-    puzzle = puzzlesCache[currentIndex % puzzlesCache.length];
-    currentIndex = (currentIndex + 1) % puzzlesCache.length;
+
+  const { sessionId, random, motif } = options;
+  let pool = puzzlesCache;
+  if (motif) {
+    const filtered = puzzlesCache.filter(p => p.motif && p.motif.toLowerCase() === motif.toLowerCase());
+    if (filtered.length > 0) pool = filtered;
   }
+
+  if (sessionId) {
+    cleanStaleSessions();
+    let sess = sessionCursors.get(sessionId);
+    if (!sess) {
+      sess = {
+        cursor: Math.floor(Math.random() * pool.length),
+        seenIds: new Set(),
+        lastActive: Date.now()
+      };
+      sessionCursors.set(sessionId, sess);
+    }
+    sess.lastActive = Date.now();
+
+    if (random) {
+      const unseen = pool.filter(p => !sess.seenIds.has(p.id));
+      const pickList = unseen.length > 0 ? unseen : pool;
+      puzzle = pickList[Math.floor(Math.random() * pickList.length)];
+    } else {
+      puzzle = pool[sess.cursor % pool.length];
+      sess.cursor = (sess.cursor + 1) % pool.length;
+    }
+
+    if (puzzle) {
+      sess.seenIds.add(puzzle.id);
+      if (sess.seenIds.size > 300) {
+        const arr = Array.from(sess.seenIds);
+        sess.seenIds = new Set(arr.slice(-100));
+      }
+      return enrichPuzzleMoves(puzzle);
+    }
+  }
+
+  if (random) {
+    puzzle = pool[Math.floor(Math.random() * pool.length)];
+    return enrichPuzzleMoves(puzzle);
+  }
+
+  puzzle = pool[currentIndex % pool.length];
+  currentIndex = (currentIndex + 1) % pool.length;
   return enrichPuzzleMoves(puzzle);
 }
 
 export function recordPuzzleSolution({ puzzleId, fen, playedMove, bestMove, motif, engine, depth, nodes, timeMs }) {
   stats.totalAttempted += 1;
   const isCorrect = areMovesEquivalent(fen, playedMove, bestMove);
+  let correction = null;
   
   if (isCorrect) {
     stats.totalSolved += 1;
   } else {
     stats.totalFailed += 1;
+    correction = generateTacticalRefutation(fen, playedMove, bestMove, motif);
     const failureRecord = {
       puzzleId: puzzleId || `Fail_${Date.now()}`,
       fen: fen || "",
@@ -212,17 +351,16 @@ export function recordPuzzleSolution({ puzzleId, fen, playedMove, bestMove, moti
       depth: Number(depth) || 0,
       nodes: Number(nodes) || 0,
       timeMs: Number(timeMs) || 0,
+      correction,
       recordedAt: new Date().toISOString(),
-      trainingPriority: 5 // High priority for Track B hard-negative training
+      trainingPriority: 5 // High priority for Track B hard-negative distillation
     };
     failuresCache.push(failureRecord);
 
-    // Keep memory cache bounded
     if (failuresCache.length > 5000) {
       failuresCache.shift();
     }
 
-    // Persist to disk asynchronously
     try {
       const failuresFile = resolveFailuresPath();
       const dir = path.dirname(failuresFile);
@@ -239,6 +377,7 @@ export function recordPuzzleSolution({ puzzleId, fen, playedMove, bestMove, moti
     solved: isCorrect,
     playedMove,
     bestMove,
+    correction,
     stats: getPuzzleStats()
   };
 }

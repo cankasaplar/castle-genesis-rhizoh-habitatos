@@ -48,15 +48,18 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
     totalFailed: 0,
     accuracyPct: 0,
     failuresInQueue: 0,
-    datasetPoolSize: 9500
+    datasetPoolSize: 755
   });
   const [recentFailures, setRecentFailures] = useState([]);
   const [mode, setMode] = useState("auto"); // 'auto' (Rhizoh solves) | 'interactive' (user tries)
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [autoSpeedMs, setAutoSpeedMs] = useState(1800);
   const [statusMessage, setStatusMessage] = useState("Tactical laboratory ready.");
+  const [correctionInfo, setCorrectionInfo] = useState(null);
+  const [showingRefutationOnBoard, setShowingRefutationOnBoard] = useState(false);
 
   const autoTimerRef = useRef(null);
+  const tabSessionIdRef = useRef("tab_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now());
 
   // Load stats and next puzzle on mount
   useEffect(() => {
@@ -102,6 +105,8 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
       setLastMove(null);
       setSolveState("idle");
       setEngineMoveInfo(null);
+      setCorrectionInfo(null);
+      setShowingRefutationOnBoard(false);
       const turnName = g.turn() === "w" ? "White to move" : "Black to move";
       setStatusMessage(`${puzzle.motif || "Tactical"} puzzle loaded. ${turnName}.`);
     } catch (err) {
@@ -111,7 +116,9 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
 
   const fetchNextPuzzle = async (requestedId = null) => {
     setStatusMessage("Loading next tactical puzzle...");
-    const url = requestedId ? `/api/chess/puzzle/next?id=${encodeURIComponent(requestedId)}` : "/api/chess/puzzle/next";
+    const url = requestedId 
+      ? `/api/chess/puzzle/next?id=${encodeURIComponent(requestedId)}` 
+      : `/api/chess/puzzle/next?sessionId=${encodeURIComponent(tabSessionIdRef.current)}&random=true`;
     const data = await fetchWithFallback(url);
     if (data?.ok && data.puzzle) {
       loadPuzzleIntoBoard(data.puzzle);
@@ -170,10 +177,18 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
 
       if (data.solved) {
         setSolveState("solved");
+        setCorrectionInfo(null);
         setStatusMessage(`✅ Rhizoh correctly solved the tactic: ${data.engineMove}`);
       } else {
         setSolveState("failed");
-        setStatusMessage(`❌ Rhizoh missed the tactic! Played: ${data.engineMove || "None"} | Expected: ${data.expectedBestMove}`);
+        setCorrectionInfo(data.correction || {
+          playedSan: data.engineMove,
+          bestSan: data.expectedBestMove,
+          explanation: `Tactical oversight: Rhizoh played ${data.engineMove}, failing to execute winning continuation ${data.expectedBestMove}.`,
+          refutationCategory: "GeneralTacticsMiss",
+          queuedForTraining: true
+        });
+        setStatusMessage(`⚠️ Tactical Miss: Rhizoh played ${data.engineMove || "None"} • Switched to Self-Correction Analysis`);
         fetchStatsAndHistory(); // Refresh failure list
       }
     } else {
@@ -193,10 +208,15 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
       autoTimerRef.current = setTimeout(() => {
         triggerEngineSolve();
       }, 500);
-    } else if (solveState === "solved" || solveState === "failed") {
+    } else if (solveState === "solved") {
       autoTimerRef.current = setTimeout(() => {
         fetchNextPuzzle();
       }, autoSpeedMs);
+    } else if (solveState === "failed") {
+      // Extended pause during self-correction mode so viewer can examine the refutation
+      autoTimerRef.current = setTimeout(() => {
+        fetchNextPuzzle();
+      }, Math.max(autoSpeedMs * 2.2, 4200));
     }
   }, [isAutoPlaying, solveState, currentPuzzle, autoSpeedMs]);
 
@@ -251,6 +271,43 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
     }
   };
 
+  const applyRefutationToBoard = () => {
+    if (!currentPuzzle) return;
+    try {
+      const g = new Chess(currentPuzzle.fen);
+      const m = currentPuzzle.bestMoveUci || currentPuzzle.bestMove;
+      let res = null;
+      if (/^[a-h][1-8][a-h][1-8][qrbn]?$/i.test(m)) {
+        res = g.move({ from: m.slice(0, 2), to: m.slice(2, 4), promotion: m[4] });
+      } else {
+        res = g.move(m);
+      }
+      if (res) {
+        setGame(g);
+        setLastMove({ from: res.from, to: res.to });
+        setShowingRefutationOnBoard(true);
+        setStatusMessage(`Showing master refutation: ${res.san}`);
+      }
+    } catch (err) {
+      console.error("Refutation apply failed:", err);
+    }
+  };
+
+  const revertToEngineBlunder = () => {
+    if (!currentPuzzle || !engineMoveInfo?.engineMove) return;
+    try {
+      const g = new Chess(currentPuzzle.fen);
+      const m = engineMoveInfo.engineMove;
+      const res = g.move({ from: m.slice(0, 2), to: m.slice(2, 4), promotion: m[4] });
+      if (res) {
+        setGame(g);
+        setLastMove({ from: res.from, to: res.to });
+        setShowingRefutationOnBoard(false);
+        setStatusMessage(`Reverted to engine blunder: ${engineMoveInfo.engineMove}`);
+      }
+    } catch {}
+  };
+
   const renderBoard = () => {
     const rows = [8, 7, 6, 5, 4, 3, 2, 1];
     const cols = ["a", "b", "c", "d", "e", "f", "g", "h"];
@@ -282,7 +339,20 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
 
             let bg = isDark ? "#475569" : "#94a3b8";
             if (isSelected) bg = "#3b82f6";
-            else if (isLastMove) bg = isDark ? "#334155" : "#64748b";
+            else if (isLastMove) {
+              if (solveState === "failed" && !showingRefutationOnBoard) {
+                bg = isDark ? "#7f1d1d" : "#ef4444"; // Red for engine blunder
+              } else if (showingRefutationOnBoard) {
+                bg = isDark ? "#065f46" : "#10b981"; // Emerald for corrected refutation
+              } else {
+                bg = isDark ? "#334155" : "#64748b";
+              }
+            } else if (solveState === "failed" && currentPuzzle?.bestMoveUci) {
+              const bUci = currentPuzzle.bestMoveUci.toLowerCase();
+              if (bUci.slice(0, 2) === sq || bUci.slice(2, 4) === sq) {
+                bg = isDark ? "rgba(16, 185, 129, 0.45)" : "rgba(16, 185, 129, 0.65)"; // Highlight master target
+              }
+            }
 
             return (
               <div
@@ -653,7 +723,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
               </span>
             </div>
             <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5, margin: 0 }}>
-              Rhizoh autonomously attempts tactical positions from an independent pool of 9,500 puzzles (strictly isolated from WAC 30 to prevent contamination).
+              Rhizoh autonomously attempts tactical positions from an independent pool of 755 verified master puzzles (strictly isolated from WAC 30 to prevent contamination).
               Positions where the engine <strong>misses the tactic</strong> are automatically captured into the <strong>targeted training queue</strong> with 5x priority.
               The upcoming NNUE model trained on cloud GPUs will be trained specifically on these hard negatives.
             </p>
@@ -704,6 +774,134 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
               <div style={{ fontSize: 20, fontWeight: 800, color: "#ef4444" }}>{stats.totalFailed}</div>
             </div>
           </div>
+
+          {/* Counterfactual Analysis & Self-Correction Card */}
+          {solveState === "failed" && (
+            <div
+              style={{
+                padding: "16px 18px",
+                background: "linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(15, 23, 42, 0.8))",
+                border: "1px solid rgba(239, 68, 68, 0.35)",
+                borderRadius: 14,
+                boxShadow: "0 10px 25px -5px rgba(239, 68, 68, 0.15)"
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <AlertTriangle size={16} color="#ef4444" />
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "#fca5a5" }}>
+                    Self-Correction & Deep Analysis
+                  </span>
+                </div>
+                <span
+                  style={{
+                    padding: "2px 8px",
+                    borderRadius: 9999,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    background: "rgba(239, 68, 68, 0.2)",
+                    color: "#f87171",
+                    border: "1px solid rgba(239, 68, 68, 0.4)"
+                  }}
+                >
+                  ⚡ Queued for NNUE Distillation (5x)
+                </span>
+              </div>
+
+              {/* Comparison Grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                <div
+                  style={{
+                    padding: "10px 12px",
+                    background: "rgba(239, 68, 68, 0.1)",
+                    border: "1px solid rgba(239, 68, 68, 0.25)",
+                    borderRadius: 10
+                  }}
+                >
+                  <div style={{ fontSize: 10, color: "#fca5a5", fontWeight: 700, textTransform: "uppercase" }}>
+                    Engine Blunder
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#f87171", marginTop: 2 }}>
+                    {correctionInfo?.playedSan || engineMoveInfo?.engineMove || "None"}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: "10px 12px",
+                    background: "rgba(16, 185, 129, 0.1)",
+                    border: "1px solid rgba(16, 185, 129, 0.25)",
+                    borderRadius: 10
+                  }}
+                >
+                  <div style={{ fontSize: 10, color: "#6ee7b7", fontWeight: 700, textTransform: "uppercase" }}>
+                    Master Refutation
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#34d399", marginTop: 2 }}>
+                    {correctionInfo?.bestSan || currentPuzzle.bestMoveSan || currentPuzzle.bestMove}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ fontSize: 12, color: "#cbd5e1", lineHeight: 1.5, marginBottom: 12 }}>
+                {correctionInfo?.explanation || `Engine missed critical continuation ${currentPuzzle.bestMoveSan || currentPuzzle.bestMove}.`}
+              </div>
+
+              {/* Action Buttons for Interactive Refutation */}
+              <div style={{ display: "flex", gap: 8 }}>
+                {!showingRefutationOnBoard ? (
+                  <button
+                    onClick={applyRefutationToBoard}
+                    style={{
+                      flex: 1,
+                      padding: "6px 12px",
+                      background: "rgba(16, 185, 129, 0.2)",
+                      border: "1px solid rgba(16, 185, 129, 0.4)",
+                      borderRadius: 8,
+                      color: "#34d399",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: "pointer"
+                    }}
+                  >
+                    👁️ Preview Master Refutation
+                  </button>
+                ) : (
+                  <button
+                    onClick={revertToEngineBlunder}
+                    style={{
+                      flex: 1,
+                      padding: "6px 12px",
+                      background: "rgba(239, 68, 68, 0.2)",
+                      border: "1px solid rgba(239, 68, 68, 0.4)",
+                      borderRadius: 8,
+                      color: "#f87171",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: "pointer"
+                    }}
+                  >
+                    ↩️ Show Engine Blunder
+                  </button>
+                )}
+                <button
+                  onClick={() => fetchNextPuzzle()}
+                  style={{
+                    padding: "6px 12px",
+                    background: "rgba(255, 255, 255, 0.08)",
+                    border: "1px solid rgba(148, 163, 184, 0.2)",
+                    borderRadius: 8,
+                    color: "#f8fafc",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: "pointer"
+                  }}
+                >
+                  Next Puzzle →
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Current Puzzle Info Card */}
           {currentPuzzle && (

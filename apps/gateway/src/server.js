@@ -1096,7 +1096,10 @@ const httpServer = createServer(async (req, res) => {
     try {
       const url = new URL(req.url, "http://localhost");
       const id = url.searchParams.get("id");
-      const puzzle = getNextPuzzle(id);
+      const sessionId = url.searchParams.get("sessionId") || url.searchParams.get("tabSessionId");
+      const random = url.searchParams.get("random") === "true" || url.searchParams.get("mode") === "random";
+      const motif = url.searchParams.get("motif");
+      const puzzle = getNextPuzzle(id, { sessionId, random, motif });
       sendJson(res, 200, { ok: true, puzzle });
     } catch (e) {
       sendJson(res, 500, { ok: false, error: String(e?.message || e) });
@@ -1136,6 +1139,7 @@ const httpServer = createServer(async (req, res) => {
         engineMove,
         expectedBestMove,
         solved: recorded.solved,
+        correction: recorded.correction,
         evalCp: moveResult.evalCp,
         depth: moveResult.depth,
         nodes: moveResult.nodes,
