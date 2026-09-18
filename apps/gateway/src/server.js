@@ -1016,15 +1016,15 @@ function queryCastleMove({ fen, movetime = 400 }) {
           proc.stdin.write(`ucinewgame\nposition fen ${cleanFen}\ngo movetime ${effectiveTime}\n`);
         } else if (trimmed.startsWith("info")) {
           const depthMatch = trimmed.match(/depth\s+(\d+)/);
-          if (depthMatch) depth = parseInt(depthMatch[1], 10);
+          if (depthMatch) depth = Math.max(depth, parseInt(depthMatch[1], 10));
           const scoreMatch = trimmed.match(/score\s+cp\s+(-?\d+)/);
           if (scoreMatch) evalCp = parseInt(scoreMatch[1], 10);
           const nodesMatch = trimmed.match(/nodes\s+(\d+)/);
-          if (nodesMatch) nodes = parseInt(nodesMatch[1], 10);
+          if (nodesMatch) nodes = Math.max(nodes, parseInt(nodesMatch[1], 10));
           const npsMatch = trimmed.match(/nps\s+(\d+)/);
-          if (npsMatch) nps = parseInt(npsMatch[1], 10);
+          if (npsMatch) nps = Math.max(nps, parseInt(npsMatch[1], 10));
           const timeMatch = trimmed.match(/time\s+(\d+)/);
-          if (timeMatch) searchTimeMs = parseInt(timeMatch[1], 10);
+          if (timeMatch) searchTimeMs = Math.max(searchTimeMs, parseInt(timeMatch[1], 10));
           const pvIdx = trimmed.indexOf(" pv ");
           if (pvIdx !== -1) pv = trimmed.slice(pvIdx + 4).trim();
         } else if (trimmed.startsWith("bestmove")) {
