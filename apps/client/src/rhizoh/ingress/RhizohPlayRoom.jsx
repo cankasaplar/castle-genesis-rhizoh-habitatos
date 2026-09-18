@@ -171,15 +171,30 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
 
   const applyEngineMove = (moveUci, evalCp = 0, currentDepth = 8, realNodes = 0, currentPv = "", realNps = 0, wallTime = 400) => {
     try {
-      const from = moveUci.slice(0, 2);
-      const to = moveUci.slice(2, 4);
-      const promotion = moveUci.length > 4 ? moveUci[4] : undefined;
+      let move = null;
+      if (typeof moveUci === "string") {
+        const clean = moveUci.trim();
+        // Try standard UCI (e.g. e2e4, e7e8q, e1g1)
+        if (clean.length >= 4 && /^[a-h][1-8][a-h][1-8]/.test(clean)) {
+          const from = clean.slice(0, 2);
+          const to = clean.slice(2, 4);
+          const promotion = clean.length > 4 ? clean[4].toLowerCase() : undefined;
+          try {
+            move = game.move({ from, to, ...(promotion ? { promotion } : {}) });
+          } catch {}
+        }
+        // Fallback: try as SAN string (e.g. O-O, Nf3)
+        if (!move) {
+          try {
+            move = game.move(clean);
+          } catch {}
+        }
+      }
 
-      const move = game.move({ from, to, promotion });
       if (move) {
         setFen(game.fen());
         setHistory(game.history({ verbose: true }));
-        setLastMove({ from, to });
+        setLastMove({ from: move.from, to: move.to });
         setEvalScore(evalCp || 0);
         setDepth(currentDepth || 0);
         setNodes(realNodes || 0);
@@ -215,38 +230,57 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     if (isThinking || game.isGameOver()) return;
     if (gameMode === "human_vs_rhizoh" && game.turn() !== playerColor) return;
 
-    if (selectedSquare) {
-      // Attempt to move
-      const move = game.move({
-        from: selectedSquare,
-        to: square,
-        promotion: "q" // auto queen for quick play
-      });
+    const piece = game.get(square);
 
-      if (move) {
-        const nextFen = game.fen();
-        setFen(nextFen);
-        setHistory(game.history({ verbose: true }));
-        setLastMove({ from: selectedSquare, to: square });
-        setSelectedSquare(null);
-        setValidMoves([]);
-        checkGameOver();
-
-        // Trigger Rhizoh response
-        if (!game.isGameOver() && gameMode === "human_vs_rhizoh") {
-          requestEngineMove(nextFen);
-        }
-        return;
-      }
+    // 1. If clicking the already selected piece, deselect
+    if (selectedSquare === square) {
+      setSelectedSquare(null);
+      setValidMoves([]);
+      return;
     }
 
-    // Select piece
-    const piece = game.get(square);
+    // 2. If clicking another piece of the player's own color, switch selection seamlessly
     if (piece && piece.color === game.turn()) {
       setSelectedSquare(square);
       const moves = game.moves({ square, verbose: true }).map((m) => m.to);
       setValidMoves(moves);
-    } else {
+      return;
+    }
+
+    // 3. If a piece was selected and clicking a destination square
+    if (selectedSquare) {
+      if (validMoves.includes(square)) {
+        try {
+          const selectedPiece = game.get(selectedSquare);
+          const isPromotion = selectedPiece?.type === "p" && (square.endsWith("8") || square.endsWith("1"));
+
+          const move = game.move({
+            from: selectedSquare,
+            to: square,
+            ...(isPromotion ? { promotion: "q" } : {})
+          });
+
+          if (move) {
+            const nextFen = game.fen();
+            setFen(nextFen);
+            setHistory(game.history({ verbose: true }));
+            setLastMove({ from: selectedSquare, to: square });
+            setSelectedSquare(null);
+            setValidMoves([]);
+            checkGameOver();
+
+            // Trigger Rhizoh response
+            if (!game.isGameOver() && gameMode === "human_vs_rhizoh") {
+              requestEngineMove(nextFen);
+            }
+            return;
+          }
+        } catch (err) {
+          console.warn("Move execution error:", err);
+        }
+      }
+
+      // If clicked destination is invalid or move was illegal, safely reset selection without throwing
       setSelectedSquare(null);
       setValidMoves([]);
     }
