@@ -46,6 +46,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
   const [playerColor, setPlayerColor] = useState("w");
   const [isThinking, setIsThinking] = useState(false);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+  const [engineSpeedMs, setEngineSpeedMs] = useState(600); // 400ms (Fast) | 800ms (Standard) | 1400ms (Deep)
   const [evalScore, setEvalScore] = useState(0); // in centipawns (+ for White)
   const [depth, setDepth] = useState(0);
   const [nodes, setNodes] = useState(0);
@@ -93,7 +94,10 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
   // Request engine move from gateway or local fallback
   const requestEngineMove = async (currentFen) => {
     setIsThinking(true);
-    setStatusMessage("Rhizoh HCE is calculating...");
+    setStatusMessage(`Rhizoh HCE calculating (depth targeting ${engineSpeedMs >= 1000 ? "8-10" : (engineSpeedMs >= 700 ? "6-8" : "4-6")} plies)...`);
+
+    // Extract complete move history in UCI format to enable engine repetition avoidance
+    const uciMoves = game.history({ verbose: true }).map((m) => m.from + m.to + (m.promotion || ""));
 
     try {
       // Query Gateway API for genuine native Rhizoh HCE search across production proxy, live Render or local
@@ -109,7 +113,11 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
           const res = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ fen: currentFen, movetime: 400 })
+            body: JSON.stringify({
+              fen: currentFen,
+              moves: uciMoves,
+              movetime: engineSpeedMs
+            })
           });
           if (res.ok) {
             const data = await res.json();
@@ -469,6 +477,35 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
           </div>
         </div>
 
+        {/* Depth / Speed & Mode Controls */}
+        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          {/* Depth / Thinking Speed */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.03)", padding: "3px 6px", borderRadius: 8, border: "1px solid rgba(148,163,184,0.15)" }}>
+            <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, marginRight: 4 }}>Depth:</span>
+            {[
+              { label: "Fast (~5p)", ms: 400 },
+              { label: "Standard (~7p)", ms: 800 },
+              { label: "Deep (~9p)", ms: 1400 }
+            ].map(lvl => (
+              <button
+                key={lvl.ms}
+                onClick={() => setEngineSpeedMs(lvl.ms)}
+                style={{
+                  padding: "4px 8px",
+                  borderRadius: 6,
+                  fontSize: 11,
+                  fontWeight: engineSpeedMs === lvl.ms ? 700 : 500,
+                  background: engineSpeedMs === lvl.ms ? "rgba(56, 189, 248, 0.2)" : "transparent",
+                  color: engineSpeedMs === lvl.ms ? "#38bdf8" : "#94a3b8",
+                  border: engineSpeedMs === lvl.ms ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid transparent",
+                  cursor: "pointer"
+                }}
+              >
+                {lvl.label}
+              </button>
+            ))}
+          </div>
+
         {/* Mode Selector */}
         <div style={{ display: "flex", gap: 8 }}>
           <button
@@ -509,6 +546,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
           </button>
         </div>
       </div>
+    </div>
 
       {/* Main Play Area */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, alignItems: "start" }}>

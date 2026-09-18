@@ -896,7 +896,7 @@ function resolveCastleBinaryPath() {
   return null;
 }
 
-function queryCastleMove({ fen, movetime = 400 }) {
+function queryCastleMove({ fen, movetime = 400, moves = [] }) {
   return new Promise((resolve) => {
     const tStart = Date.now();
     const binPath = resolveCastleBinaryPath();
@@ -1013,7 +1013,12 @@ function queryCastleMove({ fen, movetime = 400 }) {
       for (const line of lines) {
         const trimmed = line.trim();
         if (trimmed.includes("readyok")) {
-          proc.stdin.write(`ucinewgame\nposition fen ${cleanFen}\ngo movetime ${effectiveTime}\n`);
+          const moveTokens = Array.isArray(moves) ? moves : (typeof moves === "string" ? moves.trim().split(/\s+/).filter(Boolean) : []);
+          if (moveTokens.length > 0) {
+            proc.stdin.write(`ucinewgame\nposition startpos moves ${moveTokens.join(" ")}\ngo movetime ${effectiveTime}\n`);
+          } else {
+            proc.stdin.write(`ucinewgame\nposition fen ${cleanFen}\ngo movetime ${effectiveTime}\n`);
+          }
         } else if (trimmed.startsWith("info")) {
           const depthMatch = trimmed.match(/depth\s+(\d+)/);
           if (depthMatch) depth = Math.max(depth, parseInt(depthMatch[1], 10));
@@ -1082,8 +1087,9 @@ const httpServer = createServer(async (req, res) => {
     try {
       const body = await readHttpJson(req, 16 * 1024);
       const fen = String(body?.fen || "").trim();
-      const movetime = Number(body?.movetime || 300);
-      const result = await queryCastleMove({ fen, movetime });
+      const movetime = Number(body?.movetime || 400);
+      const moves = body?.moves || [];
+      const result = await queryCastleMove({ fen, movetime, moves });
       sendJson(res, 200, result);
     } catch (e) {
       sendJson(res, 500, { ok: false, error: String(e?.message || e) });
