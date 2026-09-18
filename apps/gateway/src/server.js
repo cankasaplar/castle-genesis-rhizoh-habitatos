@@ -985,7 +985,7 @@ function queryCastleMove({ fen, movetime = 400 }) {
           reason: "timeout"
         });
       }
-    }, effectiveTime + 2500);
+    }, effectiveTime + 5500); // Extended grace period for cloud container execution
 
     try {
       proc = spawn(binPath, [], { stdio: ["pipe", "pipe", "pipe"] });

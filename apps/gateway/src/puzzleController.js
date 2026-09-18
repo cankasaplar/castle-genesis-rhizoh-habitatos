@@ -49,9 +49,19 @@ function resolveFailuresPath() {
 
 export function areMovesEquivalent(fen, moveA, moveB) {
   if (!moveA || !moveB) return false;
-  const a = String(moveA).trim();
-  const b = String(moveB).trim();
+  let a = String(moveA).trim();
+  let b = String(moveB).trim();
   if (a.toLowerCase() === b.toLowerCase()) return true;
+
+  // Safe castling normalization: normalize both o-o and 0-0 variations
+  const normalizeSan = (s) => {
+    const clean = s.trim();
+    if (/^(o-o-o|0-0-0)$/i.test(clean)) return "O-O-O";
+    if (/^(o-o|0-0)$/i.test(clean)) return "O-O";
+    return clean;
+  };
+  a = normalizeSan(a);
+  b = normalizeSan(b);
 
   try {
     const parseToUci = (m) => {
@@ -64,7 +74,8 @@ export function areMovesEquivalent(fen, moveA, moveB) {
         const res = chess.move({ from, to, promotion });
         if (res) return res.from + res.to + (res.promotion || "");
       } else {
-        const res = chess.move(m);
+        const normalized = normalizeSan(m);
+        const res = chess.move(normalized);
         if (res) return res.from + res.to + (res.promotion || "");
       }
       return m.toLowerCase();
@@ -84,17 +95,21 @@ function enrichPuzzleMoves(puzzle) {
   puzzle.bestMoveUci = "";
   try {
     const c = new Chess(puzzle.fen);
-    if (/^[a-h][1-8][a-h][1-8][qrbn]?$/i.test(puzzle.bestMove)) {
-      const from = puzzle.bestMove.slice(0, 2).toLowerCase();
-      const to = puzzle.bestMove.slice(2, 4).toLowerCase();
-      const promo = puzzle.bestMove.length > 4 ? puzzle.bestMove[4].toLowerCase() : undefined;
+    const cleanMove = puzzle.bestMove.trim();
+    if (/^[a-h][1-8][a-h][1-8][qrbn]?$/i.test(cleanMove)) {
+      const from = cleanMove.slice(0, 2).toLowerCase();
+      const to = cleanMove.slice(2, 4).toLowerCase();
+      const promo = cleanMove.length > 4 ? cleanMove[4].toLowerCase() : undefined;
       const res = c.move({ from, to, promotion: promo });
       if (res) {
         puzzle.bestMoveUci = res.from + res.to + (res.promotion || "");
         puzzle.bestMoveSan = res.san;
       }
     } else {
-      const res = c.move(puzzle.bestMove);
+      let san = cleanMove;
+      if (/^(o-o-o|0-0-0)$/i.test(san)) san = "O-O-O";
+      else if (/^(o-o|0-0)$/i.test(san)) san = "O-O";
+      const res = c.move(san);
       if (res) {
         puzzle.bestMoveUci = res.from + res.to + (res.promotion || "");
         puzzle.bestMoveSan = res.san;
@@ -172,7 +187,12 @@ export function initPuzzleController() {
     try {
       const data = JSON.parse(fs.readFileSync(failuresFile, "utf8"));
       if (Array.isArray(data)) {
-        failuresCache = data;
+        // Deduplicate loaded failures by puzzleId keeping most recent
+        const seen = new Map();
+        for (const item of data) {
+          if (item?.puzzleId) seen.set(item.puzzleId, item);
+        }
+        failuresCache = Array.from(seen.values());
         stats.totalFailed = failuresCache.length;
       }
     } catch {}
@@ -199,42 +219,34 @@ export function generateTacticalRefutation(fen, playedMove, bestMove, motif) {
     let bestSan = bestMove || "";
     let bestUci = bestMove || "";
 
-    if (playedMove) {
-      if (/^[a-h][1-8][a-h][1-8][qrbn]?$/i.test(playedMove)) {
-        const from = playedMove.slice(0, 2).toLowerCase();
-        const to = playedMove.slice(2, 4).toLowerCase();
-        const promo = playedMove.length > 4 ? playedMove[4].toLowerCase() : undefined;
-        const res = cPlayed.move({ from, to, promotion: promo });
-        if (res) {
-          playedSan = res.san;
-          playedUci = res.from + res.to + (res.promotion || "");
-        }
-      } else {
-        const res = cPlayed.move(playedMove);
-        if (res) {
-          playedSan = res.san;
-          playedUci = res.from + res.to + (res.promotion || "");
-        }
-      }
-    }
+    const parseMoveOnBoard = (board, m) => {
+      if (!m) return { san: "none", uci: "" };
+      let str = String(m).trim();
+      if (/^(o-o-o|0-0-0)$/i.test(str)) str = "O-O-O";
+      else if (/^(o-o|0-0)$/i.test(str)) str = "O-O";
 
-    if (bestMove) {
-      if (/^[a-h][1-8][a-h][1-8][qrbn]?$/i.test(bestMove)) {
-        const from = bestMove.slice(0, 2).toLowerCase();
-        const to = bestMove.slice(2, 4).toLowerCase();
-        const promo = bestMove.length > 4 ? bestMove[4].toLowerCase() : undefined;
-        const res = cBest.move({ from, to, promotion: promo });
-        if (res) {
-          bestSan = res.san;
-          bestUci = res.from + res.to + (res.promotion || "");
-        }
+      if (/^[a-h][1-8][a-h][1-8][qrbn]?$/i.test(str)) {
+        const from = str.slice(0, 2).toLowerCase();
+        const to = str.slice(2, 4).toLowerCase();
+        const promo = str.length > 4 ? str[4].toLowerCase() : undefined;
+        const res = board.move({ from, to, promotion: promo });
+        if (res) return { san: res.san, uci: res.from + res.to + (res.promotion || "") };
       } else {
-        const res = cBest.move(bestMove);
-        if (res) {
-          bestSan = res.san;
-          bestUci = res.from + res.to + (res.promotion || "");
-        }
+        const res = board.move(str);
+        if (res) return { san: res.san, uci: res.from + res.to + (res.promotion || "") };
       }
+      return { san: str, uci: str };
+    };
+
+    if (playedMove) {
+      const r = parseMoveOnBoard(cPlayed, playedMove);
+      playedSan = r.san;
+      playedUci = r.uci;
+    }
+    if (bestMove) {
+      const r = parseMoveOnBoard(cBest, bestMove);
+      bestSan = r.san;
+      bestUci = r.uci;
     }
 
     let explanation = "";
@@ -341,10 +353,15 @@ export function recordPuzzleSolution({ puzzleId, fen, playedMove, bestMove, moti
   } else {
     stats.totalFailed += 1;
     correction = generateTacticalRefutation(fen, playedMove, bestMove, motif);
+
+    // Track B Quality Guard: Strict deduplication by puzzleId
+    const existingIdx = failuresCache.findIndex(f => f.puzzleId === puzzleId);
+    const existing = existingIdx !== -1 ? failuresCache[existingIdx] : null;
+
     const failureRecord = {
       puzzleId: puzzleId || `Fail_${Date.now()}`,
       fen: fen || "",
-      playedMove: playedMove || "",
+      playedMove: playedMove || "none",
       bestMove: bestMove || "",
       motif: motif || "GeneralTactics",
       engine: engine || "Rhizoh HCE 22.0",
@@ -352,9 +369,15 @@ export function recordPuzzleSolution({ puzzleId, fen, playedMove, bestMove, moti
       nodes: Number(nodes) || 0,
       timeMs: Number(timeMs) || 0,
       correction,
+      attemptCount: (existing?.attemptCount || 0) + 1,
+      firstRecordedAt: existing?.firstRecordedAt || new Date().toISOString(),
       recordedAt: new Date().toISOString(),
-      trainingPriority: 5 // High priority for Track B hard-negative distillation
+      trainingPriority: Math.min(25, (existing?.trainingPriority || 5) + 5) // Incremental priority for recurring misses
     };
+
+    if (existingIdx !== -1) {
+      failuresCache.splice(existingIdx, 1);
+    }
     failuresCache.push(failureRecord);
 
     if (failuresCache.length > 5000) {
