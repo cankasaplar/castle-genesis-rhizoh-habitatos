@@ -958,6 +958,7 @@ function queryCastleMove({ fen, movetime = 400, moves = [] }) {
       resolve({ ...result, wallTimeMs: wallElapsed });
     };
 
+    const timeoutGraceMs = Math.max(16000, effectiveTime + 10000); // 16s grace period for Render cold-boot
     const timer = setTimeout(() => {
       if (bestMove) {
         finish({
@@ -985,7 +986,7 @@ function queryCastleMove({ fen, movetime = 400, moves = [] }) {
           reason: "timeout"
         });
       }
-    }, effectiveTime + 5500); // Extended grace period for cloud container execution
+    }, timeoutGraceMs);
 
     try {
       proc = spawn(binPath, [], { stdio: ["pipe", "pipe", "pipe"] });
@@ -1048,6 +1049,27 @@ function queryCastleMove({ fen, movetime = 400, moves = [] }) {
           });
           break;
         }
+      }
+    });
+
+    proc.stderr.on("data", (chunk) => {
+      console.warn(`[CHESS_STDERR] ${chunk.toString("utf8").trim()}`);
+    });
+
+    proc.on("close", (code) => {
+      if (!resolved && !bestMove) {
+        finish({
+          ok: false,
+          bestMove: null,
+          evalCp: 0,
+          depth: 0,
+          nodes: 0,
+          nps: 0,
+          searchTimeMs: 0,
+          pv: "",
+          engine: "Rhizoh HCE 22.0 (Golden Baseline)",
+          reason: `process_closed_code_${code}`
+        });
       }
     });
 

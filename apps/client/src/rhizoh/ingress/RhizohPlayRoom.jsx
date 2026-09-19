@@ -91,25 +91,35 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     return { balance, capturedWhite, capturedBlack };
   }, [fen]);
 
-  // Request engine move from gateway or local fallback
+  // Request engine move from gateway with transparent retry and ZERO fake moves
   const requestEngineMove = async (currentFen) => {
     setIsThinking(true);
-    setStatusMessage(`Rhizoh HCE calculating (depth targeting ${engineSpeedMs >= 1000 ? "8-10" : (engineSpeedMs >= 700 ? "6-8" : "4-6")} plies)...`);
 
     // Extract complete move history in UCI format to enable engine repetition avoidance
     const uciMoves = game.history({ verbose: true }).map((m) => m.from + m.to + (m.promotion || ""));
 
-    try {
-      // Query Gateway API for genuine native Rhizoh HCE search across production proxy, live Render or local
-      const candidateEndpoints = [
-        "https://castle-genesis-rhizoh-habitatos.onrender.com/api/chess/move",
-        "/api/gatewayProxy/api/chess/move",
-        "/api/chess/move",
-        "http://localhost:8090/api/chess/move"
-      ];
+    const candidateEndpoints = [
+      "https://castle-genesis-rhizoh-habitatos.onrender.com/api/chess/move",
+      "/api/gatewayProxy/api/chess/move",
+      "/api/chess/move",
+      "http://localhost:8090/api/chess/move"
+    ];
+
+    const maxRetries = 8;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      if (attempt === 1) {
+        setStatusMessage(`Rhizoh HCE calculating (${engineSpeedMs}ms, depth ~7p)...`);
+      } else {
+        setStatusMessage(`⏳ Rhizoh HCE is waking up (Render cold-start boot, attempt ${attempt}/${maxRetries})... Please wait.`);
+        // Wait 2.5 seconds before retrying
+        await new Promise((r) => setTimeout(r, 2500));
+      }
 
       for (const endpoint of candidateEndpoints) {
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 16000);
+
           const res = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -117,8 +127,11 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
               fen: currentFen,
               moves: uciMoves,
               movetime: engineSpeedMs
-            })
+            }),
+            signal: controller.signal
           });
+          clearTimeout(timeoutId);
+
           if (res.ok) {
             const data = await res.json();
             if (data.ok && data.bestMove) {
@@ -135,38 +148,14 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
             }
           }
         } catch {
-          // Try next candidate
+          // Endpoint timed out or unreachable, try next candidate or retry
         }
       }
-    } catch {
-      // Gateway not available or offline
     }
 
-    // Fallback: Local Tactical Move Generator (Only if backend engine is offline)
-    setTimeout(() => {
-      const tempGame = new Chess(currentFen);
-      const moves = tempGame.moves({ verbose: true });
-      if (moves.length === 0) {
-        setIsThinking(false);
-        return;
-      }
-
-      // Fallback: Prioritize Queen promotions, then captures, then quiet central moves
-      moves.sort((a, b) => {
-        const promoA = a.promotion === "q" ? 900 : (a.promotion ? 100 : 0);
-        const promoB = b.promotion === "q" ? 900 : (b.promotion ? 100 : 0);
-        const valA = promoA + (a.captured ? PIECE_VALUES[a.captured] * 10 : 0);
-        const valB = promoB + (b.captured ? PIECE_VALUES[b.captured] * 10 : 0);
-        return valB - valA;
-      });
-
-      const chosenMove = moves[0];
-      const moveUci = chosenMove.from + chosenMove.to + (chosenMove.promotion || "");
-      const simulatedEval = 0;
-
-      setStatusMessage("⚠️ Engine Gateway Offline — Reconnecting...");
-      applyEngineMove(moveUci, simulatedEval, 1, 1, chosenMove.san, 100, 400);
-    }, 400);
+    // Absolutely NO fake moves! The board state is preserved honestly.
+    setIsThinking(false);
+    setStatusMessage("⚠️ Rhizoh Engine Gateway Unreachable. Please ensure the backend is active and retry.");
   };
 
   const applyEngineMove = (moveUci, evalCp = 0, currentDepth = 8, realNodes = 0, currentPv = "", realNps = 0, wallTime = 400) => {
