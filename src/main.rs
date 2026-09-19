@@ -203,6 +203,12 @@ fn main() {
                 writeln!(stdout, "info string static eval {}", score).unwrap();
                 stdout.flush().unwrap();
             }
+            "zobrist" | "d" => {
+                let z_key = board.get_zobrist_key();
+                let p_key = board.get_polyglot_key();
+                writeln!(stdout, "info string zobrist {} polyglot {}", z_key, p_key).unwrap();
+                stdout.flush().unwrap();
+            }
             "go" => {
                 let mut requested_depth: Option<u8> = None;
                 let mut wtime: Option<u64> = None;
@@ -751,6 +757,7 @@ fn parse_setoption(line: &str, options: &mut UciOptions, opening_book: &mut Open
                     "uselossmemory" => {
                         if let Ok(enabled) = val.parse::<bool>() {
                             options.use_loss_memory = enabled;
+                            searcher.features.use_loss_memory = enabled;
                         }
                     }
                     "useopeningantiblunder" => {

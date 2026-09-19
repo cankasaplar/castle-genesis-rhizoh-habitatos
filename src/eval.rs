@@ -209,9 +209,9 @@ impl Evaluator {
             if let Ok(mem) = LOSS_MINER_MEMORY.read() {
                 if mem.contains(&key) {
                     if board.side_to_move == Color::White {
-                        score -= 100;
-                    } else {
                         score += 100;
+                    } else {
+                        score -= 100;
                     }
                 }
             }

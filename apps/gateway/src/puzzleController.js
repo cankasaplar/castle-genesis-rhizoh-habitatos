@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Chess } from "chess.js";
+import { computePolyglotHash } from "./polyglotHash.js";
+import { computeCastleZobristHash } from "./castleHasher.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,6 +16,68 @@ const candidateEpdPaths = [
   path.join(process.cwd(), "apps", "gateway", "data", "tactics_puzzles.epd"),
   path.join("/opt", "castle", "data", "tactics_puzzles.epd")
 ];
+
+const candidateLossMemoryPaths = [
+  path.join(__dirname, "..", "..", "..", "data", "loss_miner_memory.json"),
+  path.join(__dirname, "..", "data", "loss_miner_memory.json"),
+  path.join(process.cwd(), "data", "loss_miner_memory.json"),
+  path.join(process.cwd(), "apps", "gateway", "data", "loss_miner_memory.json"),
+  path.join("/opt", "castle", "data", "loss_miner_memory.json")
+];
+
+function resolveLossMemoryPath() {
+  for (const p of candidateLossMemoryPaths) {
+    if (fs.existsSync(p)) return p;
+  }
+  return candidateLossMemoryPaths[0];
+}
+
+function recordBlunderHash(fen, playedMove) {
+  try {
+    if (!fen || !playedMove || playedMove === "none") return;
+    const c = new Chess(fen);
+    const clean = playedMove.trim();
+    let moveRes = null;
+    if (/^[a-h][1-8][a-h][1-8][qrbn]?$/i.test(clean)) {
+      const from = clean.slice(0, 2).toLowerCase();
+      const to = clean.slice(2, 4).toLowerCase();
+      const promotion = clean.length > 4 ? clean[4].toLowerCase() : undefined;
+      moveRes = c.move({ from, to, promotion });
+    } else {
+      let san = clean;
+      if (/^(o-o-o|0-0-0)$/i.test(san)) san = "O-O-O";
+      else if (/^(o-o|0-0)$/i.test(san)) san = "O-O";
+      moveRes = c.move(san);
+    }
+    if (moveRes) {
+      const blunderFen = c.fen();
+      const polyHashStr = computePolyglotHash(blunderFen).toString();
+      const zobristHashStr = computeCastleZobristHash(blunderFen).toString();
+      const lossFile = resolveLossMemoryPath();
+      const dir = path.dirname(lossFile);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+      let existing = "";
+      if (fs.existsSync(lossFile)) existing = fs.readFileSync(lossFile, "utf8");
+      const lines = new Set(existing.split("\n").map(l => l.trim()).filter(Boolean));
+      let changed = false;
+      if (!lines.has(zobristHashStr)) {
+        lines.add(zobristHashStr);
+        changed = true;
+      }
+      if (!lines.has(polyHashStr)) {
+        lines.add(polyHashStr);
+        changed = true;
+      }
+      if (changed) {
+        fs.writeFileSync(lossFile, Array.from(lines).join("\n") + "\n", "utf8");
+        console.log(`[LOSS_MINER_INGEST] Recorded blunder hashes zobrist:${zobristHashStr}, polyglot:${polyHashStr} to ${lossFile}`);
+      }
+    }
+  } catch (err) {
+    console.warn("[LOSS_MINER_RECORD_ERROR]", err.message);
+  }
+}
 
 const candidateStatsPaths = [
   path.join(__dirname, "..", "..", "..", "data", "puzzle_stats.json"),

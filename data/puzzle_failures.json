@@ -23,5 +23,30 @@
     "firstRecordedAt": "2026-09-18T18:48:39.605Z",
     "recordedAt": "2026-09-18T18:48:39.626Z",
     "trainingPriority": 25
+  },
+  {
+    "puzzleId": "Tactics.0136",
+    "fen": "3r1r1k/1b4pp/ppn1p3/4Pp1R/Pn5P/3P4/4QP2/1qB1NKR1 w - - 0 1",
+    "playedMove": "g1g7",
+    "bestMove": "Rxh7+",
+    "motif": "Tactics",
+    "engine": "Rhizoh HCE 22.0",
+    "depth": 3,
+    "nodes": 1000,
+    "timeMs": 400,
+    "correction": {
+      "playedSan": "Rxg7",
+      "playedUci": "g1g7",
+      "bestSan": "Rxh7+",
+      "bestUci": "h5h7",
+      "motif": "Tactics",
+      "explanation": "Rhizoh played Rxg7, missing a decisive checking combination with Rxh7+.",
+      "refutationCategory": "MissedDecisiveCheck",
+      "queuedForTraining": true
+    },
+    "attemptCount": 1,
+    "firstRecordedAt": "2026-09-19T20:02:17.208Z",
+    "recordedAt": "2026-09-19T20:02:17.208Z",
+    "trainingPriority": 10
   }
 ]

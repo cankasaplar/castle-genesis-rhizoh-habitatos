@@ -896,7 +896,7 @@ function resolveCastleBinaryPath() {
   return null;
 }
 
-function queryCastleMove({ fen, movetime = 400, moves = [] }) {
+function queryCastleMove({ fen, movetime = 400, moves = [], useBook = false, useLossMemory = false, bookFile = "data/tactics_experience.bin" }) {
   return new Promise((resolve) => {
     const tStart = Date.now();
     const binPath = resolveCastleBinaryPath();
@@ -1088,7 +1088,19 @@ function queryCastleMove({ fen, movetime = 400, moves = [] }) {
       });
     });
 
-    proc.stdin.write("uci\nsetoption name UseNNUE value false\nsetoption name OwnBook value false\nisready\n");
+    const initCmds = [
+      "uci",
+      "setoption name UseNNUE value false",
+      `setoption name OwnBook value ${useBook ? "true" : "false"}`
+    ];
+    if (useBook && bookFile) {
+      initCmds.push(`setoption name BookFile value ${bookFile}`);
+    }
+    if (useLossMemory) {
+      initCmds.push("setoption name UseLossMemory value true");
+    }
+    initCmds.push("isready\n");
+    proc.stdin.write(initCmds.join("\n"));
   });
 }
 
@@ -1111,7 +1123,15 @@ const httpServer = createServer(async (req, res) => {
       const fen = String(body?.fen || "").trim();
       const movetime = Number(body?.movetime || 400);
       const moves = body?.moves || [];
-      const result = await queryCastleMove({ fen, movetime, moves });
+      const useBook = body?.useBook !== false;
+      const result = await queryCastleMove({
+        fen,
+        movetime,
+        moves,
+        useBook,
+        bookFile: "lab/books/Performance.bin",
+        useLossMemory: true
+      });
       sendJson(res, 200, result);
     } catch (e) {
       sendJson(res, 500, { ok: false, error: String(e?.message || e) });
@@ -1144,8 +1164,14 @@ const httpServer = createServer(async (req, res) => {
       const motif = String(body?.motif || "Tactics");
       const movetime = Number(body?.movetime || 400);
 
-      // Solve position using Rhizoh HCE engine
-      const moveResult = await queryCastleMove({ fen, movetime });
+      // Solve position using Rhizoh HCE engine with native tactical experience & loss memory
+      const moveResult = await queryCastleMove({
+        fen,
+        movetime,
+        useBook: true,
+        useLossMemory: true,
+        bookFile: "data/tactics_experience.bin"
+      });
       const engineMove = moveResult.bestMove;
 
       // Record solution / failure
