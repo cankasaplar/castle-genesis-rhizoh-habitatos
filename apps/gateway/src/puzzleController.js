@@ -15,6 +15,14 @@ const candidateEpdPaths = [
   path.join("/opt", "castle", "data", "tactics_puzzles.epd")
 ];
 
+const candidateStatsPaths = [
+  path.join(__dirname, "..", "..", "..", "data", "puzzle_stats.json"),
+  path.join(__dirname, "..", "data", "puzzle_stats.json"),
+  path.join(process.cwd(), "data", "puzzle_stats.json"),
+  path.join(process.cwd(), "apps", "gateway", "data", "puzzle_stats.json"),
+  path.join("/opt", "castle", "data", "puzzle_stats.json")
+];
+
 const candidateFailuresPaths = [
   path.join(__dirname, "..", "..", "..", "data", "puzzle_failures.json"),
   path.join(__dirname, "..", "data", "puzzle_failures.json"),
@@ -45,6 +53,13 @@ function resolveFailuresPath() {
     if (fs.existsSync(p)) return p;
   }
   return candidateFailuresPaths[0];
+}
+
+function resolveStatsPath() {
+  for (const p of candidateStatsPaths) {
+    if (fs.existsSync(p)) return p;
+  }
+  return candidateStatsPaths[0];
 }
 
 export function areMovesEquivalent(fen, moveA, moveB) {
@@ -181,6 +196,23 @@ export function initPuzzleController() {
     puzzlesCache = FALLBACK_PUZZLES;
   }
 
+  // Load persistent stats
+  const statsFile = resolveStatsPath();
+  if (statsFile && fs.existsSync(statsFile)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(statsFile, "utf8"));
+      if (typeof data?.totalAttempted === "number") {
+        stats.totalAttempted = data.totalAttempted;
+        stats.totalSolved = data.totalSolved || 0;
+        stats.totalFailed = data.totalFailed || 0;
+        stats.lastUpdated = data.lastUpdated || new Date().toISOString();
+        console.log("[PUZZLE_INIT] Loaded persistent puzzle stats:", stats);
+      }
+    } catch (err) {
+      console.warn("[PUZZLE_INIT] Failed loading puzzle stats:", err.message);
+    }
+  }
+
   // Load existing failures
   const failuresFile = resolveFailuresPath();
   if (fs.existsSync(failuresFile)) {
@@ -193,7 +225,10 @@ export function initPuzzleController() {
           if (item?.puzzleId) seen.set(item.puzzleId, item);
         }
         failuresCache = Array.from(seen.values());
-        stats.totalFailed = failuresCache.length;
+        if (stats.totalAttempted === 0 && failuresCache.length > 0) {
+          stats.totalFailed = failuresCache.length;
+          stats.totalAttempted = failuresCache.length;
+        }
       }
     } catch {}
   }
@@ -395,6 +430,17 @@ export function recordPuzzleSolution({ puzzleId, fen, playedMove, bestMove, moti
   }
 
   stats.lastUpdated = new Date().toISOString();
+
+  // Persist cumulative stats to disk
+  try {
+    const statsFile = resolveStatsPath();
+    const sDir = path.dirname(statsFile);
+    if (!fs.existsSync(sDir)) fs.mkdirSync(sDir, { recursive: true });
+    fs.writeFile(statsFile, JSON.stringify(stats, null, 2), "utf8", () => {});
+  } catch (err) {
+    console.warn("[PUZZLE_STATS_PERSIST_ERROR]", err.message);
+  }
+
   return {
     ok: true,
     solved: isCorrect,
