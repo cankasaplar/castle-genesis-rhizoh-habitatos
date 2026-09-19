@@ -989,7 +989,10 @@ function queryCastleMove({ fen, movetime = 400, moves = [], useBook = false, use
     }, timeoutGraceMs);
 
     try {
-      proc = spawn(binPath, [], { stdio: ["pipe", "pipe", "pipe"] });
+      const repoRoot = fs.existsSync(path.join(process.cwd(), "data"))
+        ? process.cwd()
+        : path.resolve(__dirname, "../..");
+      proc = spawn(binPath, [], { cwd: repoRoot, stdio: ["pipe", "pipe", "pipe"] });
     } catch (err) {
       clearTimeout(timer);
       return resolve({
@@ -1094,7 +1097,22 @@ function queryCastleMove({ fen, movetime = 400, moves = [], useBook = false, use
       `setoption name OwnBook value ${useBook ? "true" : "false"}`
     ];
     if (useBook && bookFile) {
-      initCmds.push(`setoption name BookFile value ${bookFile}`);
+      const candidates = [
+        path.resolve(bookFile),
+        path.resolve(process.cwd(), bookFile),
+        path.resolve(__dirname, "..", "..", bookFile),
+        path.resolve(__dirname, "..", bookFile),
+        path.resolve(__dirname, "..", "bin", path.basename(bookFile)),
+        path.join("/opt/render/project/src", bookFile)
+      ];
+      let resolvedBook = bookFile;
+      for (const c of candidates) {
+        if (fs.existsSync(c)) {
+          resolvedBook = c;
+          break;
+        }
+      }
+      initCmds.push(`setoption name BookFile value ${resolvedBook}`);
     }
     if (useLossMemory) {
       initCmds.push("setoption name UseLossMemory value true");
