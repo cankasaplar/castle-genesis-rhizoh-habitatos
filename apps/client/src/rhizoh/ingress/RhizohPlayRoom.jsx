@@ -54,8 +54,12 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
   const [pv, setPv] = useState("");
   const [copiedPgn, setCopiedPgn] = useState(false);
   const [statusMessage, setStatusMessage] = useState("Game started. Your turn!");
+  const [isWakingUp, setIsWakingUp] = useState(false);
+  const [wakeAttempt, setWakeAttempt] = useState(0);
+  const [wakeElapsedSec, setWakeElapsedSec] = useState(0);
 
   const autoPlayTimerRef = useRef(null);
+  const wakeTimerRef = useRef(null);
 
   // Material balance calculation
   const materialBalance = useMemo(() => {
@@ -94,6 +98,12 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
   // Request engine move from gateway with transparent retry and ZERO fake moves
   const requestEngineMove = async (currentFen) => {
     setIsThinking(true);
+    setIsWakingUp(false);
+    setWakeAttempt(0);
+    setWakeElapsedSec(0);
+    clearInterval(wakeTimerRef.current);
+
+    const startTime = Date.now();
 
     // Extract complete move history in UCI format to enable engine repetition avoidance
     const uciMoves = game.history({ verbose: true }).map((m) => m.from + m.to + (m.promotion || ""));
@@ -107,12 +117,19 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
 
     const maxRetries = 8;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      setWakeAttempt(attempt);
+
       if (attempt === 1) {
         setStatusMessage(`Rhizoh HCE calculating (${engineSpeedMs}ms, depth ~7p)...`);
       } else {
+        setIsWakingUp(true);
         setStatusMessage(`⏳ Rhizoh HCE is waking up (Render cold-start boot, attempt ${attempt}/${maxRetries})... Please wait.`);
-        // Wait 2.5 seconds before retrying
-        await new Promise((r) => setTimeout(r, 2500));
+        if (!wakeTimerRef.current) {
+          wakeTimerRef.current = setInterval(() => {
+            setWakeElapsedSec(Math.round((Date.now() - startTime) / 1000));
+          }, 1000);
+        }
+        await new Promise((r) => setTimeout(r, 2000));
       }
 
       for (const endpoint of candidateEndpoints) {
@@ -135,6 +152,8 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
           if (res.ok) {
             const data = await res.json();
             if (data.ok && data.bestMove) {
+              clearInterval(wakeTimerRef.current);
+              setIsWakingUp(false);
               applyEngineMove(
                 data.bestMove,
                 data.evalCp,
@@ -154,6 +173,8 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     }
 
     // Absolutely NO fake moves! The board state is preserved honestly.
+    clearInterval(wakeTimerRef.current);
+    setIsWakingUp(false);
     setIsThinking(false);
     setStatusMessage("⚠️ Rhizoh Engine Gateway Unreachable. Please ensure the backend is active and retry.");
   };
@@ -605,8 +626,36 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
             />
           </div>
 
-          {/* Chessboard */}
-          <div>{renderBoard()}</div>
+          {/* Chessboard with Floating Cold-Start Badge */}
+          <div style={{ position: "relative", width: "100%", maxWidth: 520 }}>
+            {isWakingUp && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 14,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  background: "rgba(15, 23, 42, 0.94)",
+                  backdropFilter: "blur(12px)",
+                  border: "1px solid rgba(245, 158, 11, 0.6)",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+                  borderRadius: 20,
+                  padding: "7px 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  zIndex: 30,
+                  whiteSpace: "nowrap"
+                }}
+              >
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b", boxShadow: "0 0 8px #f59e0b" }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#fef3c7" }}>
+                  Rhizoh HCE Booting: Attempt {wakeAttempt}/8 ({wakeElapsedSec}s) — No Fake Moves
+                </span>
+              </div>
+            )}
+            {renderBoard()}
+          </div>
         </div>
 
         {/* Right Column: Telemetry & Controls */}
@@ -634,9 +683,54 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 Eval: {evalScore > 0 ? `+${(evalScore / 100).toFixed(2)}` : (evalScore / 100).toFixed(2)}
               </span>
             </div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#f8fafc", marginBottom: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: isWakingUp ? "#f59e0b" : "#f8fafc", marginBottom: isWakingUp ? 6 : 12 }}>
               {statusMessage}
             </div>
+
+            {/* Cold-Start Progress Bar */}
+            {isWakingUp && (
+              <div style={{ marginBottom: 12, background: "rgba(255,255,255,0.04)", padding: 8, borderRadius: 8, border: "1px solid rgba(245, 158, 11, 0.2)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#f59e0b", marginBottom: 4 }}>
+                  <span>Waking Cloud Container...</span>
+                  <span style={{ fontWeight: 700 }}>{wakeAttempt}/8 ({wakeElapsedSec}s)</span>
+                </div>
+                <div style={{ width: "100%", height: 5, background: "rgba(255,255,255,0.1)", borderRadius: 3, overflow: "hidden" }}>
+                  <div
+                    style={{
+                      width: `${(wakeAttempt / 8) * 100}%`,
+                      height: "100%",
+                      background: "linear-gradient(90deg, #f59e0b, #38bdf8)",
+                      transition: "width 0.3s ease"
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Manual Retry Button if Unreachable */}
+            {statusMessage.includes("Unreachable") && (
+              <div style={{ marginBottom: 12 }}>
+                <button
+                  onClick={() => requestEngineMove(game.fen())}
+                  style={{
+                    padding: "6px 14px",
+                    background: "#38bdf8",
+                    color: "#0f172a",
+                    border: "none",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6
+                  }}
+                >
+                  <RotateCcw size={13} />
+                  Retry Engine Connection
+                </button>
+              </div>
+            )}
 
             {/* Material Balance Bar */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "#94a3b8" }}>
