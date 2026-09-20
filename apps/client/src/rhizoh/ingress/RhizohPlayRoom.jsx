@@ -80,6 +80,18 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
   const [isClockRunning, setIsClockRunning] = useState(false);
   const [engineSpeedMs, setEngineSpeedMs] = useState(600); // for fixed_movetime
 
+  const whiteClockRef = useRef(180000);
+  const blackClockRef = useRef(180000);
+  const lastTickTimeRef = useRef(null);
+
+  useEffect(() => {
+    whiteClockRef.current = whiteClockMs;
+  }, [whiteClockMs]);
+
+  useEffect(() => {
+    blackClockRef.current = blackClockMs;
+  }, [blackClockMs]);
+
   // Engine Telemetry
   const [evalScore, setEvalScore] = useState(0);
   const [depth, setDepth] = useState(0);
@@ -179,40 +191,58 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Clock tick interval
+  // Clock tick interval with high-precision Date.now() delta
   useEffect(() => {
-    if (!isClockRunning || game.isGameOver()) {
+    if (!isClockRunning || game.isGameOver() || selectedTc === "fixed_movetime") {
       clearInterval(clockIntervalRef.current);
+      clockIntervalRef.current = null;
+      lastTickTimeRef.current = null;
       return;
     }
 
+    lastTickTimeRef.current = Date.now();
     clockIntervalRef.current = setInterval(() => {
+      const now = Date.now();
+      const delta = lastTickTimeRef.current ? Math.max(1, now - lastTickTimeRef.current) : 100;
+      lastTickTimeRef.current = now;
+
+      if (game.isGameOver()) {
+        clearInterval(clockIntervalRef.current);
+        setIsClockRunning(false);
+        return;
+      }
+
       const currentTurn = game.turn();
       if (currentTurn === "w") {
         setWhiteClockMs((prev) => {
-          if (prev <= 100) {
+          const next = Math.max(0, prev - delta);
+          whiteClockRef.current = next;
+          if (next === 0) {
             clearInterval(clockIntervalRef.current);
             setIsClockRunning(false);
             setStatusMessage("⏱️ Time out! Black wins on time.");
-            return 0;
           }
-          return prev - 100;
+          return next;
         });
       } else {
         setBlackClockMs((prev) => {
-          if (prev <= 100) {
+          const next = Math.max(0, prev - delta);
+          blackClockRef.current = next;
+          if (next === 0) {
             clearInterval(clockIntervalRef.current);
             setIsClockRunning(false);
             setStatusMessage("⏱️ Time out! White wins on time.");
-            return 0;
           }
-          return prev - 100;
+          return next;
         });
       }
     }, 100);
 
-    return () => clearInterval(clockIntervalRef.current);
-  }, [isClockRunning, fen]);
+    return () => {
+      clearInterval(clockIntervalRef.current);
+      clockIntervalRef.current = null;
+    };
+  }, [isClockRunning, fen, selectedTc]);
 
   // Handle Time Control preset change before or during new game
   const handleSelectTimeControl = (presetId) => {
@@ -221,6 +251,14 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     if (preset && preset.totalMs !== null) {
       setWhiteClockMs(preset.totalMs);
       setBlackClockMs(preset.totalMs);
+      whiteClockRef.current = preset.totalMs;
+      blackClockRef.current = preset.totalMs;
+      lastTickTimeRef.current = Date.now();
+      if (!game.isGameOver() && (game.history().length > 0 || (gameMode === "exhibition" && isAutoPlaying))) {
+        setIsClockRunning(true);
+      }
+    } else {
+      setIsClockRunning(false);
     }
   };
 
@@ -251,10 +289,11 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     if (selectedTc === "fixed_movetime") {
       payload.movetime = engineSpeedMs;
     } else {
-      payload.wtime = Math.max(10, Math.round(whiteClockMs));
-      payload.btime = Math.max(10, Math.round(blackClockMs));
-      payload.winc = 0;
-      payload.binc = 0;
+      payload.wtime = Math.max(10, Math.round(whiteClockRef.current));
+      payload.btime = Math.max(10, Math.round(blackClockRef.current));
+      const preset = TIME_CONTROL_PRESETS.find(p => p.id === selectedTc);
+      payload.winc = preset?.incMs || 0;
+      payload.binc = preset?.incMs || 0;
     }
 
     const maxRetries = 8;
@@ -349,6 +388,12 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
         setIsLastMoveBook(isBook);
         if (uciCmd) setLastUciCommand(uciCmd);
 
+        // Ensure clock continues ticking for opponent unless fixed movetime or game over
+        if (selectedTc !== "fixed_movetime" && !game.isGameOver()) {
+          lastTickTimeRef.current = Date.now();
+          setIsClockRunning(true);
+        }
+
         checkGameOver();
       }
     } catch (e) {
@@ -394,7 +439,8 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
 
         if (move) {
           // Start clock on first move
-          if (!isClockRunning && selectedTc !== "fixed_movetime") {
+          if (selectedTc !== "fixed_movetime") {
+            lastTickTimeRef.current = Date.now();
             setIsClockRunning(true);
           }
 
@@ -432,13 +478,19 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
 
   // Exhibition match autoplay loop
   useEffect(() => {
-    if (gameMode === "exhibition" && isAutoPlaying && !game.isGameOver() && !isThinking) {
-      autoPlayTimerRef.current = setTimeout(() => {
-        requestEngineMove(game.fen());
-      }, 500);
+    if (gameMode === "exhibition" && isAutoPlaying && !game.isGameOver()) {
+      if (selectedTc !== "fixed_movetime" && !isClockRunning) {
+        lastTickTimeRef.current = Date.now();
+        setIsClockRunning(true);
+      }
+      if (!isThinking) {
+        autoPlayTimerRef.current = setTimeout(() => {
+          requestEngineMove(game.fen());
+        }, 500);
+      }
     }
     return () => clearTimeout(autoPlayTimerRef.current);
-  }, [gameMode, isAutoPlaying, fen, isThinking]);
+  }, [gameMode, isAutoPlaying, fen, isThinking, selectedTc, isClockRunning]);
 
   // Restart game
   const resetGame = (newPlayerColor = playerColor) => {
@@ -461,13 +513,25 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     setLastUciCommand("");
     setStatusMessage("New game started. Good luck!");
 
+    lastTickTimeRef.current = null;
     const preset = TIME_CONTROL_PRESETS.find((p) => p.id === selectedTc);
     if (preset && preset.totalMs !== null) {
       setWhiteClockMs(preset.totalMs);
       setBlackClockMs(preset.totalMs);
+      whiteClockRef.current = preset.totalMs;
+      blackClockRef.current = preset.totalMs;
     }
 
-    if (gameMode === "human_vs_rhizoh" && newPlayerColor === "b") {
+    if (gameMode === "exhibition") {
+      if (selectedTc !== "fixed_movetime") {
+        lastTickTimeRef.current = Date.now();
+        setIsClockRunning(true);
+      }
+    } else if (gameMode === "human_vs_rhizoh" && newPlayerColor === "b") {
+      if (selectedTc !== "fixed_movetime") {
+        lastTickTimeRef.current = Date.now();
+        setIsClockRunning(true);
+      }
       setTimeout(() => requestEngineMove(newGame.fen()), 400);
     }
   };
@@ -732,6 +796,10 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
               onClick={() => {
                 setGameMode("exhibition");
                 setIsAutoPlaying(true);
+                if (selectedTc !== "fixed_movetime" && !game.isGameOver()) {
+                  lastTickTimeRef.current = Date.now();
+                  setIsClockRunning(true);
+                }
               }}
               style={{
                 padding: "6px 10px",
@@ -780,7 +848,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 }}
               />
               <span style={{ fontSize: 12, fontWeight: 700, color: "#cbd5e1" }}>
-                {orientation === "w" ? "Rhizoh HCE 22.0 (Black)" : "You (Black)"}
+                {gameMode === "exhibition" ? (topClockColor === "w" ? "Rhizoh HCE 22.0 (White)" : "Rhizoh HCE 22.0 (Black)") : (orientation === "w" ? "Rhizoh HCE 22.0 (Black)" : "You (Black)")}
               </span>
             </div>
             <div
@@ -888,7 +956,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 }}
               />
               <span style={{ fontSize: 12, fontWeight: 700, color: "#cbd5e1" }}>
-                {orientation === "w" ? "You (White)" : "Rhizoh HCE 22.0 (White)"}
+                {gameMode === "exhibition" ? (bottomClockColor === "w" ? "Rhizoh HCE 22.0 (White)" : "Rhizoh HCE 22.0 (Black)") : (orientation === "w" ? "You (White)" : "Rhizoh HCE 22.0 (White)")}
               </span>
             </div>
             <div
