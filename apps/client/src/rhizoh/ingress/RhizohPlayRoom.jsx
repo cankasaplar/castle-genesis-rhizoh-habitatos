@@ -387,6 +387,14 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
         }
       }
 
+      if (!move && !game.isGameOver()) {
+        // Safety fallback: if engine move string could not be parsed, play first legal move so match never freezes
+        const legalMoves = game.moves({ verbose: true });
+        if (legalMoves.length > 0) {
+          move = game.move(legalMoves[0]);
+        }
+      }
+
       if (move) {
         setFen(game.fen());
         setHistory(game.history({ verbose: true }));
@@ -400,7 +408,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
         if (uciCmd) setLastUciCommand(uciCmd);
 
         // Ensure clock continues ticking for opponent unless fixed movetime or game over
-        if (selectedTc !== "fixed_movetime" && !game.isGameOver()) {
+        if (selectedTc !== "fixed_movetime" && !game.isGameOver() && !isTimedOut) {
           lastTickTimeRef.current = Date.now();
           setIsClockRunning(true);
         }
@@ -496,13 +504,14 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
       }
       if (!isThinking) {
         const delay = exhibitionSpeed === "turbo" ? 35 : (exhibitionSpeed === "fast" ? 160 : 500);
+        clearTimeout(autoPlayTimerRef.current);
         autoPlayTimerRef.current = setTimeout(() => {
           requestEngineMove(game.fen());
         }, delay);
       }
     }
     return () => clearTimeout(autoPlayTimerRef.current);
-  }, [gameMode, isAutoPlaying, fen, isThinking, selectedTc, isClockRunning, isTimedOut, exhibitionSpeed]);
+  }, [gameMode, isAutoPlaying, fen, isThinking, selectedTc, isTimedOut, exhibitionSpeed]);
 
   // Restart game
   const resetGame = (newPlayerColor = playerColor) => {
@@ -516,16 +525,20 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     setValidMoves([]);
     setLastMove(null);
     setIsThinking(false);
-    setIsAutoPlaying(false);
+    setIsAutoPlaying(gameMode === "exhibition");
     setIsClockRunning(false);
     setIsTimedOut(false);
     setTimedOutWinner(null);
     setEvalScore(15);
+    setDepth(0);
+    setNodes(0);
+    setNps(0);
+    setPv("");
     setPlayerColor(newPlayerColor);
     setOrientation(newPlayerColor);
     setIsLastMoveBook(false);
     setLastUciCommand("");
-    setStatusMessage("New game started. Good luck!");
+    setStatusMessage(gameMode === "exhibition" ? "Exhibition Match started." : "New game started. Good luck!");
 
     lastTickTimeRef.current = null;
     const preset = TIME_CONTROL_PRESETS.find((p) => p.id === selectedTc);
@@ -537,10 +550,12 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     }
 
     if (gameMode === "exhibition") {
+      setIsAutoPlaying(true);
       if (selectedTc !== "fixed_movetime") {
         lastTickTimeRef.current = Date.now();
         setIsClockRunning(true);
       }
+      setTimeout(() => requestEngineMove(newGame.fen()), 200);
     } else if (gameMode === "human_vs_rhizoh" && newPlayerColor === "b") {
       if (selectedTc !== "fixed_movetime") {
         lastTickTimeRef.current = Date.now();
@@ -813,6 +828,9 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 if (selectedTc !== "fixed_movetime" && !game.isGameOver() && !isTimedOut) {
                   lastTickTimeRef.current = Date.now();
                   setIsClockRunning(true);
+                }
+                if (!isThinking && !game.isGameOver() && !isTimedOut) {
+                  setTimeout(() => requestEngineMove(game.fen()), 100);
                 }
               }}
               style={{
