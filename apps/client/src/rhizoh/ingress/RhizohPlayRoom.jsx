@@ -79,6 +79,9 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
   const [blackClockMs, setBlackClockMs] = useState(180000);
   const [isClockRunning, setIsClockRunning] = useState(false);
   const [engineSpeedMs, setEngineSpeedMs] = useState(600); // for fixed_movetime
+  const [isTimedOut, setIsTimedOut] = useState(false);
+  const [timedOutWinner, setTimedOutWinner] = useState(null);
+  const [exhibitionSpeed, setExhibitionSpeed] = useState("normal"); // "normal" (500ms) | "fast" (180ms) | "turbo" (40ms)
 
   const whiteClockRef = useRef(180000);
   const blackClockRef = useRef(180000);
@@ -219,7 +222,11 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
           whiteClockRef.current = next;
           if (next === 0) {
             clearInterval(clockIntervalRef.current);
+            clearTimeout(autoPlayTimerRef.current);
             setIsClockRunning(false);
+            setIsAutoPlaying(false);
+            setIsTimedOut(true);
+            setTimedOutWinner("Black");
             setStatusMessage("⏱️ Time out! Black wins on time.");
           }
           return next;
@@ -230,7 +237,11 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
           blackClockRef.current = next;
           if (next === 0) {
             clearInterval(clockIntervalRef.current);
+            clearTimeout(autoPlayTimerRef.current);
             setIsClockRunning(false);
+            setIsAutoPlaying(false);
+            setIsTimedOut(true);
+            setTimedOutWinner("White");
             setStatusMessage("⏱️ Time out! White wins on time.");
           }
           return next;
@@ -420,7 +431,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
 
   // Handle player square click
   const handleSquareClick = (square) => {
-    if (isThinking || game.isGameOver()) return;
+    if (isThinking || game.isGameOver() || isTimedOut) return;
     if (gameMode === "human_vs_rhizoh" && game.turn() !== playerColor) return;
 
     if (selectedSquare) {
@@ -476,21 +487,22 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     }
   };
 
-  // Exhibition match autoplay loop
+  // Exhibition match autoplay loop with adjustable speed & strict timeout termination
   useEffect(() => {
-    if (gameMode === "exhibition" && isAutoPlaying && !game.isGameOver()) {
+    if (gameMode === "exhibition" && isAutoPlaying && !game.isGameOver() && !isTimedOut) {
       if (selectedTc !== "fixed_movetime" && !isClockRunning) {
         lastTickTimeRef.current = Date.now();
         setIsClockRunning(true);
       }
       if (!isThinking) {
+        const delay = exhibitionSpeed === "turbo" ? 35 : (exhibitionSpeed === "fast" ? 160 : 500);
         autoPlayTimerRef.current = setTimeout(() => {
           requestEngineMove(game.fen());
-        }, 500);
+        }, delay);
       }
     }
     return () => clearTimeout(autoPlayTimerRef.current);
-  }, [gameMode, isAutoPlaying, fen, isThinking, selectedTc, isClockRunning]);
+  }, [gameMode, isAutoPlaying, fen, isThinking, selectedTc, isClockRunning, isTimedOut, exhibitionSpeed]);
 
   // Restart game
   const resetGame = (newPlayerColor = playerColor) => {
@@ -506,6 +518,8 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     setIsThinking(false);
     setIsAutoPlaying(false);
     setIsClockRunning(false);
+    setIsTimedOut(false);
+    setTimedOutWinner(null);
     setEvalScore(15);
     setPlayerColor(newPlayerColor);
     setOrientation(newPlayerColor);
@@ -796,7 +810,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
               onClick={() => {
                 setGameMode("exhibition");
                 setIsAutoPlaying(true);
-                if (selectedTc !== "fixed_movetime" && !game.isGameOver()) {
+                if (selectedTc !== "fixed_movetime" && !game.isGameOver() && !isTimedOut) {
                   lastTickTimeRef.current = Date.now();
                   setIsClockRunning(true);
                 }
@@ -815,6 +829,66 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
               Exhibition Match
             </button>
           </div>
+
+          {/* Exhibition Speed Selector */}
+          {gameMode === "exhibition" && (
+            <div style={{ display: "flex", alignItems: "center", gap: 3, background: "rgba(255,255,255,0.04)", padding: "3px 8px", borderRadius: 8, border: "1px solid rgba(148,163,184,0.2)" }}>
+              <Zap size={12} color="#f59e0b" style={{ marginRight: 2 }} />
+              <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>Speed:</span>
+              {[
+                { id: "normal", label: "1x" },
+                { id: "fast", label: "2x" },
+                { id: "turbo", label: "⚡ Turbo" }
+              ].map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setExhibitionSpeed(s.id)}
+                  style={{
+                    padding: "3px 6px",
+                    borderRadius: 5,
+                    fontSize: 10,
+                    fontWeight: exhibitionSpeed === s.id ? 700 : 500,
+                    background: exhibitionSpeed === s.id ? "rgba(245, 158, 11, 0.25)" : "transparent",
+                    color: exhibitionSpeed === s.id ? "#f59e0b" : "#94a3b8",
+                    border: exhibitionSpeed === s.id ? "1px solid rgba(245, 158, 11, 0.5)" : "1px solid transparent",
+                    cursor: "pointer"
+                  }}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Fixed Movetime Engine Speed Options */}
+          {selectedTc === "fixed_movetime" && (
+            <div style={{ display: "flex", alignItems: "center", gap: 3, background: "rgba(255,255,255,0.04)", padding: "3px 8px", borderRadius: 8, border: "1px solid rgba(148,163,184,0.2)" }}>
+              <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>Depth Time:</span>
+              {[
+                { ms: 100, label: "100ms" },
+                { ms: 300, label: "300ms" },
+                { ms: 600, label: "600ms" },
+                { ms: 1200, label: "1.2s" }
+              ].map((m) => (
+                <button
+                  key={m.ms}
+                  onClick={() => setEngineSpeedMs(m.ms)}
+                  style={{
+                    padding: "3px 6px",
+                    borderRadius: 5,
+                    fontSize: 10,
+                    fontWeight: engineSpeedMs === m.ms ? 700 : 500,
+                    background: engineSpeedMs === m.ms ? "rgba(56, 189, 248, 0.25)" : "transparent",
+                    color: engineSpeedMs === m.ms ? "#38bdf8" : "#94a3b8",
+                    border: engineSpeedMs === m.ms ? "1px solid rgba(56, 189, 248, 0.5)" : "1px solid transparent",
+                    cursor: "pointer"
+                  }}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -927,6 +1001,67 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 </div>
               )}
               {renderBoard()}
+
+              {/* Decisive Game Over & Time Out Overlay */}
+              {(isTimedOut || game.isGameOver()) && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    background: "rgba(15, 23, 42, 0.96)",
+                    backdropFilter: "blur(16px)",
+                    border: isTimedOut ? "2px solid #f87171" : "2px solid #38bdf8",
+                    boxShadow: "0 16px 40px rgba(0,0,0,0.85)",
+                    borderRadius: 16,
+                    padding: "20px 28px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 10,
+                    zIndex: 50,
+                    textAlign: "center",
+                    minWidth: 260
+                  }}
+                >
+                  <div style={{ fontSize: 32 }}>{isTimedOut ? "⏱️" : game.isCheckmate() ? "🏆" : "🤝"}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#f8fafc", letterSpacing: 0.5 }}>
+                    {isTimedOut
+                      ? `TIME OUT — ${timedOutWinner.toUpperCase()} WINS!`
+                      : game.isCheckmate()
+                      ? `CHECKMATE — ${(game.turn() === "w" ? "Black" : "White").toUpperCase()} WINS!`
+                      : "GAME DRAWN"}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#94a3b8" }}>
+                    {isTimedOut
+                      ? `${timedOutWinner === "White" ? "Black" : "White"}'s clock reached 0:00.0`
+                      : game.isCheckmate()
+                      ? `Decisive checkmate in ${game.history().length} plies`
+                      : "Game concluded by chess draw rule"}
+                  </div>
+                  <button
+                    onClick={() => resetGame()}
+                    style={{
+                      marginTop: 8,
+                      padding: "8px 18px",
+                      background: isTimedOut ? "#f87171" : "#38bdf8",
+                      color: "#020617",
+                      border: "none",
+                      borderRadius: 8,
+                      fontWeight: 700,
+                      fontSize: 12,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.4)"
+                    }}
+                  >
+                    <RotateCcw size={14} /> New Match
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

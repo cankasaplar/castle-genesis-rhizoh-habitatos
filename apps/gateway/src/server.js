@@ -1133,11 +1133,18 @@ function queryCastleMove({
     ];
     if (useBook && bookFile) {
       const candidates = [
+        path.join(__dirname, "..", "bin", "performance.bin"),
+        path.join(__dirname, "..", "bin", "book.bin"),
+        path.join(process.cwd(), "apps", "gateway", "bin", "performance.bin"),
+        path.join(process.cwd(), "data", "performance.bin"),
+        path.join(process.cwd(), "data", "rhizoh_master_book.bin"),
         path.resolve(bookFile),
         path.resolve(process.cwd(), bookFile),
         path.resolve(__dirname, "..", "..", bookFile),
         path.resolve(__dirname, "..", bookFile),
         path.resolve(__dirname, "..", "bin", path.basename(bookFile)),
+        path.join("/opt/render/project/src", "apps", "gateway", "bin", "performance.bin"),
+        path.join("/opt/render/project/src", "data", "performance.bin"),
         path.join("/opt/render/project/src", bookFile)
       ];
       let resolvedBook = bookFile;
@@ -1190,7 +1197,7 @@ const httpServer = createServer(async (req, res) => {
         binc,
         moves,
         useBook,
-        bookFile: "lab/books/Performance.bin",
+        bookFile: "apps/gateway/bin/performance.bin",
         useLossMemory: true
       });
       sendJson(res, 200, result);
