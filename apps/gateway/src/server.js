@@ -896,7 +896,18 @@ function resolveCastleBinaryPath() {
   return null;
 }
 
-function queryCastleMove({ fen, movetime = 400, moves = [], useBook = false, useLossMemory = false, bookFile = "data/tactics_experience.bin" }) {
+function queryCastleMove({
+  fen,
+  movetime,
+  wtime,
+  btime,
+  winc,
+  binc,
+  moves = [],
+  useBook = false,
+  useLossMemory = false,
+  bookFile = "data/tactics_experience.bin"
+}) {
   return new Promise((resolve) => {
     const tStart = Date.now();
     const binPath = resolveCastleBinaryPath();
@@ -931,7 +942,24 @@ function queryCastleMove({ fen, movetime = 400, moves = [], useBook = false, use
       });
     }
 
-    const effectiveTime = Math.max(100, Math.min(3000, Number(movetime) || 400));
+    // Construct UCI Go command based on time control parameters
+    const hasClock = (wtime !== undefined && wtime !== null) || (btime !== undefined && btime !== null);
+    let uciGoCmd = "";
+    let effectiveTime = 400;
+
+    if (hasClock) {
+      const wVal = Math.max(10, Math.round(Number(wtime) || 0));
+      const bVal = Math.max(10, Math.round(Number(btime) || 0));
+      const wiVal = Math.max(0, Math.round(Number(winc) || 0));
+      const biVal = Math.max(0, Math.round(Number(binc) || 0));
+      uciGoCmd = `go wtime ${wVal} btime ${bVal} winc ${wiVal} binc ${biVal}`;
+      const activeTime = cleanFen.includes(" b ") ? bVal : wVal;
+      effectiveTime = Math.min(activeTime, 15000);
+    } else {
+      effectiveTime = Math.max(100, Math.min(5000, Number(movetime) || 400));
+      uciGoCmd = `go movetime ${effectiveTime}`;
+    }
+
     let proc = null;
     let resolved = false;
     let bestMove = null;
@@ -955,7 +983,7 @@ function queryCastleMove({ fen, movetime = 400, moves = [], useBook = false, use
         } catch {}
       }
       const wallElapsed = Date.now() - tStart;
-      console.log(`[CHESS_API] FEN: "${cleanFen.slice(0, 35)}..." | movetime: ${effectiveTime}ms -> bestmove: ${result.bestMove} | depth: ${result.depth} | nodes: ${result.nodes} | eval: ${result.evalCp}cp | wallTime: ${wallElapsed}ms`);
+      console.log(`[CHESS_API] FEN: "${cleanFen.slice(0, 35)}..." | UCI: "${uciGoCmd}" -> bestmove: ${result.bestMove} | depth: ${result.depth} | nodes: ${result.nodes} | eval: ${result.evalCp}cp | wallTime: ${wallElapsed}ms`);
       resolve({ ...result, wallTimeMs: wallElapsed });
     };
 
@@ -1021,9 +1049,9 @@ function queryCastleMove({ fen, movetime = 400, moves = [], useBook = false, use
         if (trimmed.includes("readyok")) {
           const moveTokens = Array.isArray(moves) ? moves : (typeof moves === "string" ? moves.trim().split(/\s+/).filter(Boolean) : []);
           if (moveTokens.length > 0) {
-            proc.stdin.write(`ucinewgame\nposition startpos moves ${moveTokens.join(" ")}\ngo movetime ${effectiveTime}\n`);
+            proc.stdin.write(`ucinewgame\nposition startpos moves ${moveTokens.join(" ")}\n${uciGoCmd}\n`);
           } else {
-            proc.stdin.write(`ucinewgame\nposition fen ${cleanFen}\ngo movetime ${effectiveTime}\n`);
+            proc.stdin.write(`ucinewgame\nposition fen ${cleanFen}\n${uciGoCmd}\n`);
           }
         } else if (trimmed.startsWith("info")) {
           if (trimmed.includes("book move")) {
@@ -1054,7 +1082,8 @@ function queryCastleMove({ fen, movetime = 400, moves = [], useBook = false, use
             searchTimeMs: isBookMove ? 1 : searchTimeMs,
             pv: isBookMove ? (bestMove || "") : pv,
             isBookMove,
-            engine: isBookMove ? "Rhizoh Opening/Tactics Book" : "Rhizoh HCE 22.0 (Golden Baseline)"
+            engine: isBookMove ? "Rhizoh Opening/Tactics Book" : "Rhizoh HCE 22.0 (Golden Baseline)",
+            uciCommandSent: uciGoCmd
           });
           break;
         }
@@ -1145,12 +1174,20 @@ const httpServer = createServer(async (req, res) => {
     try {
       const body = await readHttpJson(req, 16 * 1024);
       const fen = String(body?.fen || "").trim();
-      const movetime = Number(body?.movetime || 400);
+      const movetime = body?.movetime !== undefined ? Number(body.movetime) : undefined;
+      const wtime = body?.wtime !== undefined ? Number(body.wtime) : undefined;
+      const btime = body?.btime !== undefined ? Number(body.btime) : undefined;
+      const winc = body?.winc !== undefined ? Number(body.winc) : 0;
+      const binc = body?.binc !== undefined ? Number(body.binc) : 0;
       const moves = body?.moves || [];
       const useBook = body?.useBook !== false;
       const result = await queryCastleMove({
         fen,
         movetime,
+        wtime,
+        btime,
+        winc,
+        binc,
         moves,
         useBook,
         bookFile: "lab/books/Performance.bin",

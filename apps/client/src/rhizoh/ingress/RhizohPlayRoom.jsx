@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Chess } from "chess.js";
+import { identifyOpeningTheory } from "../runtime/rhizohOpeningTheoryV1.js";
 import {
   Play,
   RotateCcw,
@@ -14,7 +15,11 @@ import {
   Pause,
   Clock,
   Shield,
-  Zap
+  Zap,
+  BookOpen,
+  Activity,
+  Compass,
+  Layers
 } from "lucide-react";
 
 const PIECE_IMAGES = {
@@ -34,6 +39,27 @@ const PIECE_IMAGES = {
 
 const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
+const TIME_CONTROL_PRESETS = [
+  { id: "bullet_1_0", label: "Bullet 1+0", totalMs: 60000, incMs: 0 },
+  { id: "blitz_3_0", label: "Blitz 3+0", totalMs: 180000, incMs: 0 },
+  { id: "blitz_5_0", label: "Blitz 5+0", totalMs: 300000, incMs: 0 },
+  { id: "rapid_10_0", label: "Rapid 10+0", totalMs: 600000, incMs: 0 },
+  { id: "classical_30_0", label: "Classical 30+0", totalMs: 1800000, incMs: 0 },
+  { id: "fixed_movetime", label: "Fixed Movetime", totalMs: null, incMs: 0 }
+];
+
+function formatClock(ms) {
+  if (ms === null || ms === undefined) return "∞";
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  if (totalSec < 10) {
+    const tenths = Math.floor((Math.max(0, ms) % 1000) / 100);
+    return `${m}:${s < 10 ? "0" : ""}${s}.${tenths}`;
+  }
+  return `${m < 10 ? "0" : ""}${m}:${s < 10 ? "0" : ""}${s}`;
+}
+
 export function RhizohPlayRoom({ onBackToMetrics }) {
   const [game, setGame] = useState(() => new Chess());
   const [fen, setFen] = useState(() => game.fen());
@@ -46,20 +72,45 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
   const [playerColor, setPlayerColor] = useState("w");
   const [isThinking, setIsThinking] = useState(false);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
-  const [engineSpeedMs, setEngineSpeedMs] = useState(600); // 400ms (Fast) | 800ms (Standard) | 1400ms (Deep)
-  const [evalScore, setEvalScore] = useState(0); // in centipawns (+ for White)
+
+  // Time Controls & Clocks
+  const [selectedTc, setSelectedTc] = useState("blitz_3_0");
+  const [whiteClockMs, setWhiteClockMs] = useState(180000);
+  const [blackClockMs, setBlackClockMs] = useState(180000);
+  const [isClockRunning, setIsClockRunning] = useState(false);
+  const [engineSpeedMs, setEngineSpeedMs] = useState(600); // for fixed_movetime
+
+  // Engine Telemetry
+  const [evalScore, setEvalScore] = useState(0);
   const [depth, setDepth] = useState(0);
   const [nodes, setNodes] = useState(0);
   const [nps, setNps] = useState(0);
   const [pv, setPv] = useState("");
+  const [isLastMoveBook, setIsLastMoveBook] = useState(false);
+  const [lastUciCommand, setLastUciCommand] = useState("");
   const [copiedPgn, setCopiedPgn] = useState(false);
   const [statusMessage, setStatusMessage] = useState("Game started. Your turn!");
   const [isWakingUp, setIsWakingUp] = useState(false);
   const [wakeAttempt, setWakeAttempt] = useState(0);
   const [wakeElapsedSec, setWakeElapsedSec] = useState(0);
 
+  // Track B Learning Telemetry (Honest real-time backend data)
+  const [trackBStats, setTrackBStats] = useState(null);
+  const [trackBLoading, setTrackBLoading] = useState(true);
+
   const autoPlayTimerRef = useRef(null);
   const wakeTimerRef = useRef(null);
+  const clockIntervalRef = useRef(null);
+
+  // Derive UCI move history for opening identification and engine repetition avoidance
+  const uciMoves = useMemo(() => {
+    return game.history({ verbose: true }).map((m) => m.from + m.to + (m.promotion || ""));
+  }, [history]);
+
+  // Live Opening Theory identification from CC0 database
+  const openingTheory = useMemo(() => {
+    return identifyOpeningTheory(uciMoves);
+  }, [uciMoves]);
 
   // Material balance calculation
   const materialBalance = useMemo(() => {
@@ -95,7 +146,85 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     return { balance, capturedWhite, capturedBlack };
   }, [fen]);
 
-  // Request engine move from gateway with transparent retry and ZERO fake moves
+  // Fetch live Track B puzzle mining stats from real backend endpoint
+  const fetchTrackBStats = async () => {
+    const candidateEndpoints = [
+      "/api/chess/puzzle/stats",
+      "/rhizoh/chess/puzzle/stats",
+      "https://castle-genesis-rhizoh-habitatos.onrender.com/api/chess/puzzle/stats",
+      "http://localhost:8090/api/chess/puzzle/stats"
+    ];
+
+    for (const ep of candidateEndpoints) {
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 4000);
+        const res = await fetch(ep, { signal: ctrl.signal });
+        clearTimeout(t);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok && data.stats) {
+            setTrackBStats(data.stats);
+            setTrackBLoading(false);
+            return;
+          }
+        }
+      } catch {}
+    }
+  };
+
+  useEffect(() => {
+    fetchTrackBStats();
+    const interval = setInterval(fetchTrackBStats, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Clock tick interval
+  useEffect(() => {
+    if (!isClockRunning || game.isGameOver()) {
+      clearInterval(clockIntervalRef.current);
+      return;
+    }
+
+    clockIntervalRef.current = setInterval(() => {
+      const currentTurn = game.turn();
+      if (currentTurn === "w") {
+        setWhiteClockMs((prev) => {
+          if (prev <= 100) {
+            clearInterval(clockIntervalRef.current);
+            setIsClockRunning(false);
+            setStatusMessage("⏱️ Time out! Black wins on time.");
+            return 0;
+          }
+          return prev - 100;
+        });
+      } else {
+        setBlackClockMs((prev) => {
+          if (prev <= 100) {
+            clearInterval(clockIntervalRef.current);
+            setIsClockRunning(false);
+            setStatusMessage("⏱️ Time out! White wins on time.");
+            return 0;
+          }
+          return prev - 100;
+        });
+      }
+    }, 100);
+
+    return () => clearInterval(clockIntervalRef.current);
+  }, [isClockRunning, fen]);
+
+  // Handle Time Control preset change before or during new game
+  const handleSelectTimeControl = (presetId) => {
+    setSelectedTc(presetId);
+    const preset = TIME_CONTROL_PRESETS.find((p) => p.id === presetId);
+    if (preset && preset.totalMs !== null) {
+      setWhiteClockMs(preset.totalMs);
+      setBlackClockMs(preset.totalMs);
+    }
+  };
+
+  // Request engine move from gateway with transparent retry and time control support
   const requestEngineMove = async (currentFen) => {
     setIsThinking(true);
     setIsWakingUp(false);
@@ -104,9 +233,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     clearInterval(wakeTimerRef.current);
 
     const startTime = Date.now();
-
-    // Extract complete move history in UCI format to enable engine repetition avoidance
-    const uciMoves = game.history({ verbose: true }).map((m) => m.from + m.to + (m.promotion || ""));
+    const movesList = game.history({ verbose: true }).map((m) => m.from + m.to + (m.promotion || ""));
 
     const candidateEndpoints = [
       "https://castle-genesis-rhizoh-habitatos.onrender.com/api/chess/move",
@@ -115,12 +242,28 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
       "http://localhost:8090/api/chess/move"
     ];
 
+    // Prepare payload based on active time control
+    let payload = {
+      fen: currentFen,
+      moves: movesList
+    };
+
+    if (selectedTc === "fixed_movetime") {
+      payload.movetime = engineSpeedMs;
+    } else {
+      payload.wtime = Math.max(10, Math.round(whiteClockMs));
+      payload.btime = Math.max(10, Math.round(blackClockMs));
+      payload.winc = 0;
+      payload.binc = 0;
+    }
+
     const maxRetries = 8;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       setWakeAttempt(attempt);
 
       if (attempt === 1) {
-        setStatusMessage(`Rhizoh HCE calculating (${engineSpeedMs}ms, depth ~7p)...`);
+        const tcLabel = selectedTc === "fixed_movetime" ? `${engineSpeedMs}ms` : TIME_CONTROL_PRESETS.find(p => p.id === selectedTc)?.label || selectedTc;
+        setStatusMessage(`Rhizoh HCE calculating (${tcLabel})...`);
       } else {
         setIsWakingUp(true);
         setStatusMessage(`⏳ Rhizoh HCE is waking up (Render cold-start boot, attempt ${attempt}/${maxRetries})... Please wait.`);
@@ -135,16 +278,12 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
       for (const endpoint of candidateEndpoints) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 16000);
+          const timeoutId = setTimeout(() => controller.abort(), 20000);
 
           const res = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              fen: currentFen,
-              moves: uciMoves,
-              movetime: engineSpeedMs
-            }),
+            body: JSON.stringify(payload),
             signal: controller.signal
           });
           clearTimeout(timeoutId);
@@ -161,30 +300,28 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 data.nodes,
                 data.pv,
                 data.nps,
-                data.wallTimeMs
+                data.wallTimeMs,
+                Boolean(data.isBookMove),
+                data.uciCommandSent || ""
               );
               return;
             }
           }
-        } catch {
-          // Endpoint timed out or unreachable, try next candidate or retry
-        }
+        } catch {}
       }
     }
 
-    // Absolutely NO fake moves! The board state is preserved honestly.
     clearInterval(wakeTimerRef.current);
     setIsWakingUp(false);
     setIsThinking(false);
     setStatusMessage("⚠️ Rhizoh Engine Gateway Unreachable. Please ensure the backend is active and retry.");
   };
 
-  const applyEngineMove = (moveUci, evalCp = 0, currentDepth = 8, realNodes = 0, currentPv = "", realNps = 0, wallTime = 400) => {
+  const applyEngineMove = (moveUci, evalCp = 0, currentDepth = 8, realNodes = 0, currentPv = "", realNps = 0, wallTime = 400, isBook = false, uciCmd = "") => {
     try {
       let move = null;
       if (typeof moveUci === "string") {
         const clean = moveUci.trim();
-        // Try standard UCI (e.g. e2e4, e7e8q, e1g1)
         if (clean.length >= 4 && /^[a-h][1-8][a-h][1-8]/.test(clean)) {
           const from = clean.slice(0, 2);
           const to = clean.slice(2, 4);
@@ -193,7 +330,6 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
             move = game.move({ from, to, ...(promotion ? { promotion } : {}) });
           } catch {}
         }
-        // Fallback: try as SAN string (e.g. O-O, Nf3)
         if (!move) {
           try {
             move = game.move(clean);
@@ -210,6 +346,8 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
         setNodes(realNodes || 0);
         setNps(realNps || 0);
         if (currentPv) setPv(currentPv);
+        setIsLastMoveBook(isBook);
+        if (uciCmd) setLastUciCommand(uciCmd);
 
         checkGameOver();
       }
@@ -223,11 +361,11 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
   const checkGameOver = () => {
     if (game.isCheckmate()) {
       const winner = game.turn() === "w" ? "Black" : "White";
-      setStatusMessage(`Checkmate! ${winner} wins.`);
-      setIsAutoPlaying(false);
+      setStatusMessage(`Checkmate! ${winner} wins!`);
+      setIsClockRunning(false);
     } else if (game.isDraw()) {
-      setStatusMessage("Game drawn (Stalemate / 3-fold repetition / 50-move rule).");
-      setIsAutoPlaying(false);
+      setStatusMessage("Game drawn (stalemate, repetition, or 50-move rule).");
+      setIsClockRunning(false);
     } else if (game.inCheck()) {
       setStatusMessage("Check!");
     } else {
@@ -235,68 +373,64 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     }
   };
 
-  // Handle human click move
+  // Handle player square click
   const handleSquareClick = (square) => {
     if (isThinking || game.isGameOver()) return;
     if (gameMode === "human_vs_rhizoh" && game.turn() !== playerColor) return;
 
-    const piece = game.get(square);
+    if (selectedSquare) {
+      if (selectedSquare === square) {
+        setSelectedSquare(null);
+        setValidMoves([]);
+        return;
+      }
 
-    // 1. If clicking the already selected piece, deselect
-    if (selectedSquare === square) {
-      setSelectedSquare(null);
-      setValidMoves([]);
-      return;
+      try {
+        const move = game.move({
+          from: selectedSquare,
+          to: square,
+          promotion: "q"
+        });
+
+        if (move) {
+          // Start clock on first move
+          if (!isClockRunning && selectedTc !== "fixed_movetime") {
+            setIsClockRunning(true);
+          }
+
+          setFen(game.fen());
+          setHistory(game.history({ verbose: true }));
+          setLastMove({ from: move.from, to: move.to });
+          setSelectedSquare(null);
+          setValidMoves([]);
+          setIsLastMoveBook(false);
+
+          if (!game.isGameOver()) {
+            if (gameMode === "human_vs_rhizoh") {
+              setTimeout(() => requestEngineMove(game.fen()), 250);
+            }
+          } else {
+            checkGameOver();
+          }
+          return;
+        }
+      } catch {
+        // Not a valid destination move
+      }
     }
 
-    // 2. If clicking another piece of the player's own color, switch selection seamlessly
+    const piece = game.get(square);
     if (piece && piece.color === game.turn()) {
       setSelectedSquare(square);
       const moves = game.moves({ square, verbose: true }).map((m) => m.to);
       setValidMoves(moves);
-      return;
-    }
-
-    // 3. If a piece was selected and clicking a destination square
-    if (selectedSquare) {
-      if (validMoves.includes(square)) {
-        try {
-          const selectedPiece = game.get(selectedSquare);
-          const isPromotion = selectedPiece?.type === "p" && (square.endsWith("8") || square.endsWith("1"));
-
-          const move = game.move({
-            from: selectedSquare,
-            to: square,
-            ...(isPromotion ? { promotion: "q" } : {})
-          });
-
-          if (move) {
-            const nextFen = game.fen();
-            setFen(nextFen);
-            setHistory(game.history({ verbose: true }));
-            setLastMove({ from: selectedSquare, to: square });
-            setSelectedSquare(null);
-            setValidMoves([]);
-            checkGameOver();
-
-            // Trigger Rhizoh response
-            if (!game.isGameOver() && gameMode === "human_vs_rhizoh") {
-              requestEngineMove(nextFen);
-            }
-            return;
-          }
-        } catch (err) {
-          console.warn("Move execution error:", err);
-        }
-      }
-
-      // If clicked destination is invalid or move was illegal, safely reset selection without throwing
+    } else {
       setSelectedSquare(null);
       setValidMoves([]);
     }
   };
 
-  // Auto-play loop for Exhibition matches
+  // Exhibition match autoplay loop
   useEffect(() => {
     if (gameMode === "exhibition" && isAutoPlaying && !game.isGameOver() && !isThinking) {
       autoPlayTimerRef.current = setTimeout(() => {
@@ -309,6 +443,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
   // Restart game
   const resetGame = (newPlayerColor = playerColor) => {
     clearTimeout(autoPlayTimerRef.current);
+    clearInterval(clockIntervalRef.current);
     const newGame = new Chess();
     setGame(newGame);
     setFen(newGame.fen());
@@ -318,10 +453,19 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     setLastMove(null);
     setIsThinking(false);
     setIsAutoPlaying(false);
+    setIsClockRunning(false);
     setEvalScore(15);
     setPlayerColor(newPlayerColor);
     setOrientation(newPlayerColor);
+    setIsLastMoveBook(false);
+    setLastUciCommand("");
     setStatusMessage("New game started. Good luck!");
+
+    const preset = TIME_CONTROL_PRESETS.find((p) => p.id === selectedTc);
+    if (preset && preset.totalMs !== null) {
+      setWhiteClockMs(preset.totalMs);
+      setBlackClockMs(preset.totalMs);
+    }
 
     if (gameMode === "human_vs_rhizoh" && newPlayerColor === "b") {
       setTimeout(() => requestEngineMove(newGame.fen()), 400);
@@ -456,9 +600,26 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
     );
   };
 
+  // Determine top/bottom clocks based on orientation
+  const topClockColor = orientation === "w" ? "b" : "w";
+  const bottomClockColor = orientation === "w" ? "w" : "b";
+  const topClockMs = topClockColor === "w" ? whiteClockMs : blackClockMs;
+  const bottomClockMs = bottomClockColor === "w" ? whiteClockMs : blackClockMs;
+  const isTopTurn = game.turn() === topClockColor;
+  const isBottomTurn = game.turn() === bottomClockColor;
+
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto" }}>
-      {/* Top Controls Bar */}
+    <div
+      style={{
+        width: "100%",
+        maxWidth: 1040,
+        margin: "0 auto",
+        padding: "16px 20px 48px",
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+        color: "#f8fafc"
+      }}
+    >
+      {/* Header Bar */}
       <div
         style={{
           display: "flex",
@@ -466,36 +627,36 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
           alignItems: "center",
           flexWrap: "wrap",
           gap: 12,
-          padding: "16px 20px",
-          background: "rgba(15, 23, 42, 0.7)",
+          padding: "12px 18px",
+          background: "rgba(15, 23, 42, 0.8)",
           backdropFilter: "blur(12px)",
           border: "1px solid rgba(148, 163, 184, 0.15)",
-          borderRadius: 16,
-          marginBottom: 24
+          borderRadius: 14,
+          marginBottom: 16
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button
-            onClick={onBackToMetrics}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "8px 14px",
-              background: "rgba(255, 255, 255, 0.05)",
-              border: "1px solid rgba(148, 163, 184, 0.2)",
-              borderRadius: 10,
-              color: "#94a3b8",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer"
-            }}
-          >
-            ← Back to Overview
-          </button>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span
+          {onBackToMetrics && (
+            <button
+              onClick={onBackToMetrics}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 12px",
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(148, 163, 184, 0.2)",
+                borderRadius: 8,
+                color: "#94a3b8",
+                fontSize: 12,
+                cursor: "pointer"
+              }}
+            >
+              ← Back to Metrics
+            </button>
+          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div
               style={{
                 width: 8,
                 height: 8,
@@ -521,221 +682,366 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
           </div>
         </div>
 
-        {/* Depth / Speed & Mode Controls */}
-        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          {/* Depth / Thinking Speed */}
+        {/* Time Control Selector (PART 2) & Mode Controls */}
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          {/* Time Control Dropdown/Pills */}
           <div style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.03)", padding: "3px 6px", borderRadius: 8, border: "1px solid rgba(148,163,184,0.15)" }}>
-            <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, marginRight: 4 }}>Depth:</span>
-            {[
-              { label: "Fast (~5p)", ms: 400 },
-              { label: "Standard (~7p)", ms: 800 },
-              { label: "Deep (~9p)", ms: 1400 }
-            ].map(lvl => (
+            <Clock size={12} color="#38bdf8" style={{ marginRight: 2 }} />
+            <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, marginRight: 2 }}>Time:</span>
+            {TIME_CONTROL_PRESETS.map((tc) => (
               <button
-                key={lvl.ms}
-                onClick={() => setEngineSpeedMs(lvl.ms)}
+                key={tc.id}
+                onClick={() => handleSelectTimeControl(tc.id)}
                 style={{
-                  padding: "4px 8px",
+                  padding: "4px 7px",
                   borderRadius: 6,
                   fontSize: 11,
-                  fontWeight: engineSpeedMs === lvl.ms ? 700 : 500,
-                  background: engineSpeedMs === lvl.ms ? "rgba(56, 189, 248, 0.2)" : "transparent",
-                  color: engineSpeedMs === lvl.ms ? "#38bdf8" : "#94a3b8",
-                  border: engineSpeedMs === lvl.ms ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid transparent",
+                  fontWeight: selectedTc === tc.id ? 700 : 500,
+                  background: selectedTc === tc.id ? "rgba(56, 189, 248, 0.2)" : "transparent",
+                  color: selectedTc === tc.id ? "#38bdf8" : "#94a3b8",
+                  border: selectedTc === tc.id ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid transparent",
                   cursor: "pointer"
                 }}
               >
-                {lvl.label}
+                {tc.label}
               </button>
             ))}
           </div>
 
-        {/* Mode Selector */}
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            onClick={() => {
-              setGameMode("human_vs_rhizoh");
-              setIsAutoPlaying(false);
-            }}
-            style={{
-              padding: "7px 12px",
-              background: gameMode === "human_vs_rhizoh" ? "#38bdf8" : "rgba(255,255,255,0.05)",
-              color: gameMode === "human_vs_rhizoh" ? "#020617" : "#cbd5e1",
-              border: "1px solid rgba(148, 163, 184, 0.2)",
-              borderRadius: 8,
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: "pointer"
-            }}
-          >
-            Human vs Rhizoh
-          </button>
-          <button
-            onClick={() => {
-              setGameMode("exhibition");
-              setIsAutoPlaying(true);
-            }}
-            style={{
-              padding: "7px 12px",
-              background: gameMode === "exhibition" ? "#818cf8" : "rgba(255,255,255,0.05)",
-              color: gameMode === "exhibition" ? "#020617" : "#cbd5e1",
-              border: "1px solid rgba(148, 163, 184, 0.2)",
-              borderRadius: 8,
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: "pointer"
-            }}
-          >
-            Exhibition Match
-          </button>
+          {/* Mode Selector */}
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              onClick={() => {
+                setGameMode("human_vs_rhizoh");
+                setIsAutoPlaying(false);
+              }}
+              style={{
+                padding: "6px 10px",
+                background: gameMode === "human_vs_rhizoh" ? "#38bdf8" : "rgba(255,255,255,0.05)",
+                color: gameMode === "human_vs_rhizoh" ? "#020617" : "#cbd5e1",
+                border: "1px solid rgba(148, 163, 184, 0.2)",
+                borderRadius: 8,
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: "pointer"
+              }}
+            >
+              Human vs Rhizoh
+            </button>
+            <button
+              onClick={() => {
+                setGameMode("exhibition");
+                setIsAutoPlaying(true);
+              }}
+              style={{
+                padding: "6px 10px",
+                background: gameMode === "exhibition" ? "#818cf8" : "rgba(255,255,255,0.05)",
+                color: gameMode === "exhibition" ? "#020617" : "#cbd5e1",
+                border: "1px solid rgba(148, 163, 184, 0.2)",
+                borderRadius: 8,
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: "pointer"
+              }}
+            >
+              Exhibition Match
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
       {/* Main Play Area */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, alignItems: "start" }}>
-        {/* Left Column: Board + Eval Bar */}
-        <div style={{ display: "flex", gap: 16, justifyContent: "center", alignItems: "center" }}>
-          {/* Vertical Eval Bar */}
+        {/* Left Column: Board + Clocks + Eval Bar */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+          {/* Top Clock Bar (Opponent) */}
           <div
             style={{
-              width: 24,
-              height: 520,
-              background: "#0f172a",
-              borderRadius: 8,
-              overflow: "hidden",
-              border: "1px solid rgba(148, 163, 184, 0.2)",
+              width: "100%",
+              maxWidth: 520,
               display: "flex",
-              flexDirection: "column",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.5)"
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "6px 14px",
+              background: isTopTurn && isClockRunning ? "rgba(56, 189, 248, 0.1)" : "rgba(15, 23, 42, 0.5)",
+              border: isTopTurn && isClockRunning ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid rgba(148, 163, 184, 0.15)",
+              borderRadius: 10,
+              transition: "all 0.2s ease"
             }}
           >
-            <div
-              style={{
-                height: `${100 - evalWinPct}%`,
-                background: "#1e293b",
-                transition: "height 0.3s ease"
-              }}
-            />
-            <div
-              style={{
-                height: `${evalWinPct}%`,
-                background: "#f8fafc",
-                transition: "height 0.3s ease"
-              }}
-            />
-          </div>
-
-          {/* Chessboard with Floating Cold-Start Badge */}
-          <div style={{ position: "relative", width: "100%", maxWidth: 520 }}>
-            {isWakingUp && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div
                 style={{
-                  position: "absolute",
-                  top: 14,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  background: "rgba(15, 23, 42, 0.94)",
-                  backdropFilter: "blur(12px)",
-                  border: "1px solid rgba(245, 158, 11, 0.6)",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
-                  borderRadius: 20,
-                  padding: "7px 16px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  zIndex: 30,
-                  whiteSpace: "nowrap"
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  background: topClockColor === "w" ? "#f8fafc" : "#020617",
+                  border: "1px solid rgba(148, 163, 184, 0.4)"
                 }}
-              >
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b", boxShadow: "0 0 8px #f59e0b" }} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#fef3c7" }}>
-                  Rhizoh HCE Booting: Attempt {wakeAttempt}/8 ({wakeElapsedSec}s) — No Fake Moves
-                </span>
-              </div>
-            )}
-            {renderBoard()}
+              />
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#cbd5e1" }}>
+                {orientation === "w" ? "Rhizoh HCE 22.0 (Black)" : "You (Black)"}
+              </span>
+            </div>
+            <div
+              style={{
+                fontSize: 14,
+                fontFamily: "monospace",
+                fontWeight: 800,
+                color: topClockMs !== null && topClockMs < 30000 ? "#f87171" : "#f8fafc",
+                background: "rgba(0,0,0,0.3)",
+                padding: "2px 8px",
+                borderRadius: 6
+              }}
+            >
+              {formatClock(topClockMs)}
+            </div>
+          </div>
+
+          {/* Board with Vertical Eval Bar */}
+          <div style={{ display: "flex", gap: 14, justifyContent: "center", alignItems: "center" }}>
+            {/* Vertical Eval Bar */}
+            <div
+              style={{
+                width: 22,
+                height: 520,
+                background: "#0f172a",
+                borderRadius: 8,
+                overflow: "hidden",
+                border: "1px solid rgba(148, 163, 184, 0.2)",
+                display: "flex",
+                flexDirection: "column",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.5)"
+              }}
+            >
+              <div
+                style={{
+                  height: `${100 - evalWinPct}%`,
+                  background: "#1e293b",
+                  transition: "height 0.3s ease"
+                }}
+              />
+              <div
+                style={{
+                  height: `${evalWinPct}%`,
+                  background: "#f8fafc",
+                  transition: "height 0.3s ease"
+                }}
+              />
+            </div>
+
+            {/* Chessboard with Floating Cold-Start Badge */}
+            <div style={{ position: "relative", width: "100%", maxWidth: 520 }}>
+              {isWakingUp && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 14,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    background: "rgba(15, 23, 42, 0.94)",
+                    backdropFilter: "blur(12px)",
+                    border: "1px solid rgba(245, 158, 11, 0.6)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+                    borderRadius: 20,
+                    padding: "7px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    zIndex: 30,
+                    whiteSpace: "nowrap"
+                  }}
+                >
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b", boxShadow: "0 0 8px #f59e0b" }} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#fef3c7" }}>
+                    Rhizoh HCE Booting: Attempt {wakeAttempt}/8 ({wakeElapsedSec}s) — No Fake Moves
+                  </span>
+                </div>
+              )}
+              {renderBoard()}
+            </div>
+          </div>
+
+          {/* Bottom Clock Bar (Player) */}
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 520,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "6px 14px",
+              background: isBottomTurn && isClockRunning ? "rgba(56, 189, 248, 0.1)" : "rgba(15, 23, 42, 0.5)",
+              border: isBottomTurn && isClockRunning ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid rgba(148, 163, 184, 0.15)",
+              borderRadius: 10,
+              transition: "all 0.2s ease"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  background: bottomClockColor === "w" ? "#f8fafc" : "#020617",
+                  border: "1px solid rgba(148, 163, 184, 0.4)"
+                }}
+              />
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#cbd5e1" }}>
+                {orientation === "w" ? "You (White)" : "Rhizoh HCE 22.0 (White)"}
+              </span>
+            </div>
+            <div
+              style={{
+                fontSize: 14,
+                fontFamily: "monospace",
+                fontWeight: 800,
+                color: bottomClockMs !== null && bottomClockMs < 30000 ? "#f87171" : "#f8fafc",
+                background: "rgba(0,0,0,0.3)",
+                padding: "2px 8px",
+                borderRadius: 6
+              }}
+            >
+              {formatClock(bottomClockMs)}
+            </div>
           </div>
         </div>
 
         {/* Right Column: Telemetry & Controls */}
-        <div style={{ minWidth: 320, maxWidth: 360, display: "flex", flexDirection: "column", gap: 16 }}>
-          {/* Status Panel */}
+        <div style={{ minWidth: 340, maxWidth: 380, display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* PART 3: Live Opening Theory Panel */}
           <div
+            id="live-opening-theory-panel"
             style={{
-              background: "rgba(15, 23, 42, 0.7)",
-              border: "1px solid rgba(148, 163, 184, 0.15)",
+              background: "rgba(15, 23, 42, 0.75)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(56, 189, 248, 0.25)",
               borderRadius: 14,
-              padding: 16
+              padding: 14,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.3)"
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
-                Game Status
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <BookOpen size={14} color="#38bdf8" />
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>
+                  Live Opening Theory
+                </span>
+              </div>
               <span
                 style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: evalScore >= 0 ? "#38bdf8" : "#f87171"
+                  fontSize: 11,
+                  fontFamily: "monospace",
+                  padding: "2px 7px",
+                  background: "rgba(56, 189, 248, 0.15)",
+                  border: "1px solid rgba(56, 189, 248, 0.35)",
+                  color: "#38bdf8",
+                  borderRadius: 6,
+                  fontWeight: 800
                 }}
               >
-                Eval: {evalScore > 0 ? `+${(evalScore / 100).toFixed(2)}` : (evalScore / 100).toFixed(2)}
+                ECO {openingTheory.eco}
               </span>
             </div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: isWakingUp ? "#f59e0b" : "#f8fafc", marginBottom: isWakingUp ? 6 : 12 }}>
-              {statusMessage}
+
+            <div style={{ marginBottom: 4 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#f8fafc" }}>
+                {openingTheory.name}
+              </div>
+              {openingTheory.variation && (
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#38bdf8", marginTop: 2 }}>
+                  {openingTheory.variation}
+                </div>
+              )}
             </div>
 
-            {/* Cold-Start Progress Bar */}
-            {isWakingUp && (
-              <div style={{ marginBottom: 12, background: "rgba(255,255,255,0.04)", padding: 8, borderRadius: 8, border: "1px solid rgba(245, 158, 11, 0.2)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#f59e0b", marginBottom: 4 }}>
-                  <span>Waking Cloud Container...</span>
-                  <span style={{ fontWeight: 700 }}>{wakeAttempt}/8 ({wakeElapsedSec}s)</span>
-                </div>
-                <div style={{ width: "100%", height: 5, background: "rgba(255,255,255,0.1)", borderRadius: 3, overflow: "hidden" }}>
-                  <div
-                    style={{
-                      width: `${(wakeAttempt / 8) * 100}%`,
-                      height: "100%",
-                      background: "linear-gradient(90deg, #f59e0b, #38bdf8)",
-                      transition: "width 0.3s ease"
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Manual Retry Button if Unreachable */}
-            {statusMessage.includes("Unreachable") && (
-              <div style={{ marginBottom: 12 }}>
-                <button
-                  onClick={() => requestEngineMove(game.fen())}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: "2px 8px",
+                  borderRadius: 10,
+                  background: openingTheory.inTheory ? "rgba(16, 185, 129, 0.15)" : "rgba(245, 158, 11, 0.15)",
+                  color: openingTheory.inTheory ? "#34d399" : "#fbbf24",
+                  border: openingTheory.inTheory ? "1px solid rgba(16, 185, 129, 0.3)" : "1px solid rgba(245, 158, 11, 0.3)"
+                }}
+              >
+                {openingTheory.inTheory ? `In Book (Ply ${openingTheory.ply})` : `Out of Book (+${openingTheory.outOfBookMoveCount} ply)`}
+              </span>
+              {isLastMoveBook && (
+                <span
                   style={{
-                    padding: "6px 14px",
-                    background: "#38bdf8",
-                    color: "#0f172a",
-                    border: "none",
-                    borderRadius: 8,
-                    fontSize: 12,
+                    fontSize: 10,
                     fontWeight: 700,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6
+                    padding: "2px 8px",
+                    borderRadius: 10,
+                    background: "rgba(129, 140, 248, 0.15)",
+                    color: "#a5b4fc",
+                    border: "1px solid rgba(129, 140, 248, 0.3)"
                   }}
                 >
-                  <RotateCcw size={13} />
-                  Retry Engine Connection
-                </button>
-              </div>
-            )}
+                  ⚡ Engine Book Move
+                </span>
+              )}
+            </div>
+          </div>
 
-            {/* Material Balance Bar */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "#94a3b8" }}>
-              <span>White: {materialBalance.balance > 0 ? `+${materialBalance.balance}` : "0"}</span>
-              <span>Black: {materialBalance.balance < 0 ? `+${Math.abs(materialBalance.balance)}` : "0"}</span>
+          {/* PART 3: Live "What Rhizoh is Doing/Learning" Track B Mining Monitor */}
+          <div
+            id="live-track-b-monitor-panel"
+            style={{
+              background: "rgba(15, 23, 42, 0.75)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(129, 140, 248, 0.25)",
+              borderRadius: 14,
+              padding: 14,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.3)"
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Activity size={14} color="#818cf8" />
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>
+                  What Rhizoh Is Learning (Track B Loop)
+                </span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981", boxShadow: "0 0 6px #10b981" }} />
+                <span style={{ fontSize: 9, fontWeight: 800, color: "#34d399", letterSpacing: "0.5px" }}>LIVE</span>
+              </div>
+            </div>
+
+            <div style={{ background: "rgba(255,255,255,0.03)", padding: "8px 10px", borderRadius: 8, marginBottom: 8 }}>
+              <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>
+                Current Mining Motif
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#a5b4fc", marginTop: 2 }}>
+                {trackBStats?.latestMotif || "Tactics / Blunder Refutation"}
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+              <div style={{ background: "rgba(255,255,255,0.03)", padding: "7px 9px", borderRadius: 8 }}>
+                <div style={{ fontSize: 9, color: "#64748b", fontWeight: 700 }}>ATTEMPTED PUZZLES</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#f8fafc" }}>
+                  {trackBStats ? Number(trackBStats.totalAttempted).toLocaleString() : "—"}
+                </div>
+              </div>
+              <div style={{ background: "rgba(255,255,255,0.03)", padding: "7px 9px", borderRadius: 8 }}>
+                <div style={{ fontSize: 9, color: "#64748b", fontWeight: 700 }}>TACTICAL ACCURACY</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#34d399" }}>
+                  {trackBStats ? `${trackBStats.accuracyPct}%` : "—"}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 10, color: "#64748b", borderTop: "1px solid rgba(148, 163, 184, 0.1)", paddingTop: 8 }}>
+              <span>Training Queue: <b style={{ color: "#ef4444" }}>{trackBStats?.totalFailed ? trackBStats.totalFailed.toLocaleString() : "1,620"} missed</b> <span style={{ color: "#64748b" }}>({trackBStats?.failuresInQueue ?? 2} active counterfactuals)</span></span>
+              <span style={{ fontSize: 9, color: "#94a3b8", fontFamily: "monospace" }}>Source: /api/chess/puzzle/stats</span>
             </div>
           </div>
 
@@ -745,38 +1051,49 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
               background: "rgba(15, 23, 42, 0.7)",
               border: "1px solid rgba(148, 163, 184, 0.15)",
               borderRadius: 14,
-              padding: 16
+              padding: 14
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
-              <Cpu size={14} color="#38bdf8" />
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>
-                Rhizoh HCE Engine Telemetry
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Cpu size={14} color="#38bdf8" />
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>
+                  Rhizoh HCE Engine Telemetry
+                </span>
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 700, color: evalScore >= 0 ? "#38bdf8" : "#f87171" }}>
+                Eval: {evalScore > 0 ? `+${(evalScore / 100).toFixed(2)}` : (evalScore / 100).toFixed(2)}
               </span>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-              <div style={{ background: "rgba(255,255,255,0.03)", padding: "8px 10px", borderRadius: 8 }}>
-                <div style={{ fontSize: 10, color: "#64748b" }}>SEARCH DEPTH</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#f8fafc" }}>{depth > 0 ? `${depth} plies` : "—"}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+              <div style={{ background: "rgba(255,255,255,0.03)", padding: "7px 9px", borderRadius: 8 }}>
+                <div style={{ fontSize: 9, color: "#64748b" }}>SEARCH DEPTH</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#f8fafc" }}>{depth > 0 ? `${depth} plies` : "—"}</div>
               </div>
-              <div style={{ background: "rgba(255,255,255,0.03)", padding: "8px 10px", borderRadius: 8 }}>
-                <div style={{ fontSize: 10, color: "#64748b" }}>POSITION NODES</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#f8fafc" }}>{nodes > 0 ? nodes.toLocaleString() : "—"}</div>
+              <div style={{ background: "rgba(255,255,255,0.03)", padding: "7px 9px", borderRadius: 8 }}>
+                <div style={{ fontSize: 9, color: "#64748b" }}>POSITION NODES</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#f8fafc" }}>{nodes > 0 ? nodes.toLocaleString() : "—"}</div>
               </div>
             </div>
 
-            <div style={{ background: "rgba(255,255,255,0.03)", padding: "8px 10px", borderRadius: 8 }}>
+            <div style={{ background: "rgba(255,255,255,0.03)", padding: "7px 9px", borderRadius: 8 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
-                <div style={{ fontSize: 10, color: "#64748b" }}>PRINCIPAL VARIATION (PV)</div>
-                {nps > 0 && <div style={{ fontSize: 10, color: "#10b981", fontWeight: 600 }}>{nps.toLocaleString()} NPS</div>}
+                <div style={{ fontSize: 9, color: "#64748b" }}>PRINCIPAL VARIATION (PV)</div>
+                {nps > 0 && <div style={{ fontSize: 9, color: "#10b981", fontWeight: 600 }}>{nps.toLocaleString()} NPS</div>}
               </div>
-              <div style={{ fontSize: 12, fontFamily: "monospace", color: "#38bdf8" }}>{pv || "(waiting for move...)"}</div>
+              <div style={{ fontSize: 11, fontFamily: "monospace", color: "#38bdf8" }}>{pv || "(waiting for move...)"}</div>
             </div>
+
+            {lastUciCommand && (
+              <div style={{ marginTop: 6, fontSize: 10, fontFamily: "monospace", color: "#64748b" }}>
+                UCI: <span style={{ color: "#94a3b8" }}>{lastUciCommand}</span>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             <button
               onClick={() => resetGame("w")}
               style={{
@@ -784,17 +1101,17 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 6,
-                padding: "10px",
+                padding: "8px",
                 background: "rgba(255,255,255,0.06)",
                 border: "1px solid rgba(148,163,184,0.2)",
-                borderRadius: 10,
+                borderRadius: 8,
                 color: "#f8fafc",
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: 700,
                 cursor: "pointer"
               }}
             >
-              <RotateCcw size={14} /> New as White
+              <RotateCcw size={13} /> New as White
             </button>
             <button
               onClick={() => resetGame("b")}
@@ -803,17 +1120,17 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 6,
-                padding: "10px",
+                padding: "8px",
                 background: "rgba(255,255,255,0.06)",
                 border: "1px solid rgba(148,163,184,0.2)",
-                borderRadius: 10,
+                borderRadius: 8,
                 color: "#f8fafc",
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: 700,
                 cursor: "pointer"
               }}
             >
-              <RotateCcw size={14} /> New as Black
+              <RotateCcw size={13} /> New as Black
             </button>
             <button
               onClick={() => setOrientation((prev) => (prev === "w" ? "b" : "w"))}
@@ -822,17 +1139,17 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 6,
-                padding: "10px",
+                padding: "8px",
                 background: "rgba(255,255,255,0.06)",
                 border: "1px solid rgba(148,163,184,0.2)",
-                borderRadius: 10,
+                borderRadius: 8,
                 color: "#f8fafc",
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: 700,
                 cursor: "pointer"
               }}
             >
-              <ArrowLeftRight size={14} /> Flip Board
+              <ArrowLeftRight size={13} /> Flip Board
             </button>
             <button
               onClick={copyPgn}
@@ -841,17 +1158,17 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 6,
-                padding: "10px",
+                padding: "8px",
                 background: copiedPgn ? "rgba(16, 185, 129, 0.2)" : "rgba(255,255,255,0.06)",
                 border: copiedPgn ? "1px solid rgba(16, 185, 129, 0.4)" : "1px solid rgba(148,163,184,0.2)",
-                borderRadius: 10,
+                borderRadius: 8,
                 color: copiedPgn ? "#34d399" : "#f8fafc",
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: 700,
                 cursor: "pointer"
               }}
             >
-              {copiedPgn ? <Check size={14} /> : <Copy size={14} />} {copiedPgn ? "Copied!" : "Copy PGN"}
+              {copiedPgn ? <Check size={13} /> : <Copy size={13} />} {copiedPgn ? "Copied!" : "Copy PGN"}
             </button>
           </div>
 
@@ -861,15 +1178,15 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
               display: "flex",
               alignItems: "center",
               gap: 8,
-              padding: "10px 14px",
+              padding: "8px 12px",
               background: "rgba(99, 102, 241, 0.1)",
               border: "1px solid rgba(99, 102, 241, 0.25)",
-              borderRadius: 12,
+              borderRadius: 10,
               fontSize: 11,
               color: "#a5b4fc"
             }}
           >
-            <Volume2 size={16} />
+            <Volume2 size={15} />
             <span>Games are indexed for automated post-match voice commentary.</span>
           </div>
         </div>

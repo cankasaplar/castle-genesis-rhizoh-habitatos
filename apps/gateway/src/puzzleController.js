@@ -444,7 +444,11 @@ export function getNextPuzzle(requestedId, options = {}) {
 
 export function recordPuzzleSolution({ puzzleId, fen, playedMove, bestMove, motif, engine, depth, nodes, timeMs }) {
   stats.totalAttempted += 1;
+  stats.latestMotif = motif || "Tactics";
+  stats.latestPuzzleId = puzzleId;
+  stats.latestAttemptedAt = new Date().toISOString();
   const isCorrect = areMovesEquivalent(fen, playedMove, bestMove);
+  stats.latestSolved = isCorrect;
   let correction = null;
   
   if (isCorrect) {
@@ -526,6 +530,10 @@ export function getPuzzleStats() {
     accuracyPct: Number(accuracy),
     failuresInQueue: failuresCache.length,
     datasetPoolSize: puzzlesCache.length,
+    latestMotif: stats.latestMotif || "Tactics",
+    latestPuzzleId: stats.latestPuzzleId || null,
+    latestSolved: stats.latestSolved ?? null,
+    latestAttemptedAt: stats.latestAttemptedAt || stats.lastUpdated,
     lastUpdated: stats.lastUpdated
   };
 }
