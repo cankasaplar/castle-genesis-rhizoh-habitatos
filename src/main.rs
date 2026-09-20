@@ -185,7 +185,7 @@ fn main() {
                 parse_setoption(&line, &mut options, &mut opening_book, &mut searcher);
             }
             "position" => {
-                parse_position(&parts, &mut board, &mut current_fen);
+                parse_position(&parts, &mut board, &mut current_fen, &mut searcher);
             }
             "perft" => {
                 let depth = parts.get(1).and_then(|s| s.parse::<u8>().ok()).unwrap_or(3);
@@ -276,7 +276,7 @@ fn main() {
                         let book_uci = move_to_uci_string(book_mv);
                         let legal_moves = board.generate_moves();
                         if let Some(valid_mv) = legal_moves.into_iter().find(|m| m.to_uci() == book_uci) {
-                            writeln!(stdout, "info depth 24 score cp 15 nodes 1000 nps 1000000 time 1 hashfull 0 pv {}", valid_mv.to_uci()).unwrap();
+                            writeln!(stdout, "info string book move {}", valid_mv.to_uci()).unwrap();
                             writeln!(stdout, "bestmove {}", valid_mv.to_uci()).unwrap();
                             stdout.flush().unwrap();
                             continue;
@@ -781,16 +781,18 @@ fn parse_setoption(line: &str, options: &mut UciOptions, opening_book: &mut Open
     }
 }
 
-fn parse_position(parts: &[&str], board: &mut Board, current_fen: &mut String) {
+fn parse_position(parts: &[&str], board: &mut Board, current_fen: &mut String, searcher: &mut Searcher) {
     if parts.len() < 2 {
         return;
     }
 
     let mut move_start_idx = None;
+    let mut history = Vec::new();
 
     if parts[1] == "startpos" {
         *board = Board::new();
         *current_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string();
+        history.push(board.get_zobrist_key());
         if let Some(pos) = parts.iter().position(|&r| r == "moves") {
             move_start_idx = Some(pos + 1);
         }
@@ -804,6 +806,7 @@ fn parse_position(parts: &[&str], board: &mut Board, current_fen: &mut String) {
         let trimmed_fen = fen_parts.join(" ");
         *board = Board::from_fen(&trimmed_fen);
         *current_fen = trimmed_fen;
+        history.push(board.get_zobrist_key());
 
         if idx < parts.len() && parts[idx] == "moves" {
             move_start_idx = Some(idx + 1);
@@ -813,8 +816,11 @@ fn parse_position(parts: &[&str], board: &mut Board, current_fen: &mut String) {
     if let Some(start_idx) = move_start_idx {
         for i in start_idx..parts.len() {
             apply_uci_move(board, parts[i]);
+            history.push(board.get_zobrist_key());
         }
     }
+
+    searcher.set_game_history(history);
 }
 
 fn apply_uci_move(board: &mut Board, uci_str: &str) {

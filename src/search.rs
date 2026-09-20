@@ -77,6 +77,8 @@ pub struct Searcher {
     pub shared_abort: Option<Arc<AtomicBool>>,
     pub threads: usize,
     pub stats: SearchStats,
+    pub game_history: Vec<u64>,
+    pub search_stack: Vec<u64>,
 }
 
 fn has_non_pawn_material(board: &Board, color: Color) -> bool {
@@ -100,6 +102,8 @@ impl Searcher {
             shared_abort: None,
             threads: 1,
             stats: SearchStats::default(),
+            game_history: Vec::new(),
+            search_stack: Vec::with_capacity(128),
         }
     }
 
@@ -133,6 +137,56 @@ impl Searcher {
                 }
             }
         }
+    }
+
+    pub fn set_game_history(&mut self, history: Vec<u64>) {
+        self.game_history = history;
+    }
+
+    pub fn clear_game_history(&mut self) {
+        self.game_history.clear();
+        self.search_stack.clear();
+    }
+
+    #[inline(always)]
+    pub fn is_repetition(&self, zobrist_key: u64, ply: usize, halfmove_clock: u8) -> bool {
+        if halfmove_clock < 2 || self.game_history.len() <= 1 {
+            return false;
+        }
+
+        let max_dist = halfmove_clock as usize;
+
+        // 1. Search stack (ancestor positions on the current search path)
+        // In chess, a position cannot repeat in fewer than 4 plies (2 full moves).
+        let stack_len = self.search_stack.len();
+        if stack_len >= 4 && max_dist >= 4 {
+            let mut d = 4;
+            while d <= ply && d <= max_dist && d <= stack_len {
+                if self.search_stack[stack_len - d] == zobrist_key {
+                    return true;
+                }
+                d += 2;
+            }
+        }
+
+        // 2. Game history (positions played in the game prior to search root)
+        if !self.game_history.is_empty() && max_dist >= 2 {
+            let hist_len = self.game_history.len();
+            for k in (0..hist_len).rev() {
+                let dist_before_root = hist_len - 1 - k;
+                let total_dist = ply + dist_before_root;
+                if total_dist > max_dist {
+                    break;
+                }
+                if total_dist >= 2 && total_dist % 2 == 0 {
+                    if self.game_history[k] == zobrist_key {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        false
     }
 
     pub fn extract_pv_string(&self, board: &Board, max_depth: usize) -> String {
@@ -203,6 +257,7 @@ impl Searcher {
             let counter_clone = Arc::clone(&worker_nodes_counter);
             let abort_clone = Arc::clone(&shared_abort);
 
+            let history_clone = self.game_history.clone();
             let handle = thread::spawn(move || {
                 let mut worker_searcher = Searcher {
                     nodes: 0,
@@ -214,6 +269,8 @@ impl Searcher {
                     shared_abort: Some(Arc::clone(&abort_clone)),
                     threads: 1,
                     stats: SearchStats::default(),
+                    game_history: history_clone,
+                    search_stack: Vec::with_capacity(128),
                 };
                 // Workers check shared abort flag in their search loop
                 // search_single_thread already checks time_limits internally;
@@ -269,6 +326,7 @@ impl Searcher {
         }
 
         let mut move_scores: Vec<(Move, i32)> = Vec::new();
+        self.search_stack.clear();
 
         for current_depth in 1..=target_depth {
             if self.aborted {
@@ -337,6 +395,9 @@ impl Searcher {
                     let is_quiet = mv.captured.is_none() && !mv.is_en_passant && mv.promotion.is_none();
                     let can_reduce_root = self.heuristics.use_lmr && current_depth >= 3 && i >= 2 && is_quiet && !board.is_king_in_check(board.side_to_move);
 
+                    let root_key = board.get_zobrist_key();
+                    self.search_stack.push(root_key);
+
                     let mut score = if i == 0 {
                         // Principal Variation (PV) move: full window
                         -self.alpha_beta(&mut next_board, (current_depth as usize).saturating_sub(1), 1, -beta, -search_alpha)
@@ -361,12 +422,36 @@ impl Searcher {
                         }
                     };
 
+                    self.search_stack.pop();
+
 
 
                     // Root Move Inertia Stabilizer: Apply small stability hysteresis bonus (+6cp) to previous PV move
                     if let Some((prev_mv, _)) = prev_best_at_root {
                         if mv == prev_mv && current_depth >= 6 {
                             score += 6;
+                        }
+                    }
+
+                    // Threefold Repetition Awareness Penalty:
+                    // If a root move repeats a position from the actual game history,
+                    // evaluate repetition as a draw (0cp) when winning, so the engine never perpetually repeats checks when ahead!
+                    if self.game_history.len() > 1 && next_board.halfmove_clock >= 2 {
+                        let next_key = next_board.get_zobrist_key();
+                        let hist_len = self.game_history.len();
+                        for k in (0..hist_len).rev() {
+                            let dist = hist_len - 1 - k + 1; // +1 for the root move
+                            if dist > next_board.halfmove_clock as usize {
+                                break;
+                            }
+                            if dist >= 2 && dist % 2 == 0 {
+                                if self.game_history[k] == next_key {
+                                    if score > 0 {
+                                        score = 0; // Evaluate repetition as draw (0cp)
+                                    }
+                                    break;
+                                }
+                            }
                         }
                     }
 
@@ -441,12 +526,14 @@ impl Searcher {
                     };
                     let pv_str = self.extract_pv_string(board, current_depth as usize);
                     let final_pv = if pv_str.is_empty() { best_mv.to_uci() } else { pv_str };
-                    println!(
-                        "info depth {} score {} nodes {} nps {} time {} hashfull {} pv {}",
-                        current_depth, score_str, self.nodes, nps, elapsed_ms, hashfull, final_pv
-                    );
-                    use std::io::Write;
-                    let _ = std::io::stdout().flush();
+                    if self.shared_abort.is_none() {
+                        println!(
+                            "info depth {} score {} nodes {} nps {} time {} hashfull {} pv {}",
+                            current_depth, score_str, self.nodes, nps, elapsed_ms, hashfull, final_pv
+                        );
+                        use std::io::Write;
+                        let _ = std::io::stdout().flush();
+                    }
                 }
             }
 
@@ -727,6 +814,14 @@ impl Searcher {
         }
 
         let zobrist_key = board.get_zobrist_key();
+
+        // 50-move rule and repetition detection
+        if ply > 0 && board.halfmove_clock >= 2 {
+            if board.halfmove_clock >= 100 || self.is_repetition(zobrist_key, ply, board.halfmove_clock) {
+                return 0;
+            }
+        }
+
         let mut tt_move = None;
 
         self.stats.tt_probes += 1;
@@ -965,6 +1060,8 @@ impl Searcher {
                 && !is_counter
                 && adjusted_eval >= -100;
 
+            self.search_stack.push(zobrist_key);
+
             let score = if i == 0 {
                 // Full window search for first move (PV candidate)
                 -self.alpha_beta_with_prev(&mut next_board, current_depth - 1, ply + 1, -beta, -alpha, Some(mv), None)
@@ -1001,6 +1098,8 @@ impl Searcher {
                     pvs_score
                 }
             };
+
+            self.search_stack.pop();
 
             if self.aborted {
                 return 0;

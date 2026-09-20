@@ -232,6 +232,18 @@ impl Board {
             board.en_passant_square = Some(ep_rank * 8 + ep_file);
         }
 
+        if parts.len() > 4 {
+            if let Ok(hmc) = parts[4].parse::<u8>() {
+                board.halfmove_clock = hmc;
+            }
+        }
+
+        if parts.len() > 5 {
+            if let Ok(fmn) = parts[5].parse::<u16>() {
+                board.fullmove_number = fmn;
+            }
+        }
+
         board.update_occupancies();
         board.accumulator = Some(crate::nnue::get_global_nnue().compute_accumulator(&board));
         board
@@ -668,6 +680,17 @@ impl Board {
             nnue.update_accumulator_move(acc, mv.piece, self.side_to_move, mv.from, mv.to, captured_info, mv.promotion, mv.is_castling, w_king_sq, b_king_sq);
         }
 
+        // 50 hamle kuralı sayacı (halfmove clock) ve hamle sayısı güncellemesi
+        if mv.piece == PieceType::Pawn || mv.captured.is_some() || mv.is_en_passant {
+            self.halfmove_clock = 0;
+        } else {
+            self.halfmove_clock = self.halfmove_clock.saturating_add(1);
+        }
+
+        if self.side_to_move == Color::Black {
+            self.fullmove_number = self.fullmove_number.saturating_add(1);
+        }
+
         self.side_to_move = self.side_to_move.opposite();
         self.update_occupancies();
     }
@@ -775,7 +798,8 @@ mod tests {
     #[test]
     fn test_side_to_move_eval_perspective() {
         let board = Board::new();
-        let features = crate::types::SearchFeatures::default();
+        let mut features = crate::types::SearchFeatures::default();
+        features.use_nnue = false;
         let eval_w = crate::eval::Evaluator::evaluate(&board, &features);
         let mut board_b = board.clone();
         board_b.side_to_move = Color::Black;

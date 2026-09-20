@@ -194,7 +194,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
       }
     } else {
       setSolveState("failed");
-      setStatusMessage("Gateway did not return solution.");
+      setStatusMessage("⚠️ Yanıt alınamadı: Motor zaman aşımı (sahte veri üretilmedi).");
     }
   };
 
@@ -945,33 +945,66 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
               </div>
 
               {engineMoveInfo && (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4, 1fr)",
-                    gap: 8,
-                    marginTop: 12,
-                    paddingTop: 12,
-                    borderTop: "1px solid rgba(148, 163, 184, 0.1)"
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: 10, color: "#64748b" }}>Depth</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>{engineMoveInfo.depth} ply</div>
+                engineMoveInfo.isBookMove || engineMoveInfo.depth === 0 ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginTop: 12,
+                      padding: "10px 14px",
+                      background: "rgba(59, 130, 246, 0.1)",
+                      border: "1px solid rgba(59, 130, 246, 0.25)",
+                      borderRadius: 10
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 16 }}>📖</span>
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#93c5fd" }}>
+                          Polyglot Experience Book
+                        </div>
+                        <div style={{ fontSize: 10, color: "#60a5fa" }}>
+                          Instant Experience Lookup (No search needed)
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 10, color: "#64748b" }}>Lookup Time</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#38bdf8" }}>
+                        {engineMoveInfo.searchTimeMs || 1}ms
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <div style={{ fontSize: 10, color: "#64748b" }}>Nodes</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>{engineMoveInfo.nodes?.toLocaleString()}</div>
+                ) : (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(4, 1fr)",
+                      gap: 8,
+                      marginTop: 12,
+                      paddingTop: 12,
+                      borderTop: "1px solid rgba(148, 163, 184, 0.1)"
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: 10, color: "#64748b" }}>Depth</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>{engineMoveInfo.depth} ply</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: "#64748b" }}>Nodes</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>{engineMoveInfo.nodes?.toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: "#64748b" }}>Speed (NPS)</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>{engineMoveInfo.nps?.toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: "#64748b" }}>Search Time</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>{engineMoveInfo.searchTimeMs}ms</div>
+                    </div>
                   </div>
-                  <div>
-                    <div style={{ fontSize: 10, color: "#64748b" }}>Speed (NPS)</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>{engineMoveInfo.nps?.toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, color: "#64748b" }}>Search Time</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>{engineMoveInfo.searchTimeMs}ms</div>
-                  </div>
-                </div>
+                )
               )}
             </div>
           )}

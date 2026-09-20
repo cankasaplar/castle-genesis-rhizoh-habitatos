@@ -941,6 +941,7 @@ function queryCastleMove({ fen, movetime = 400, moves = [], useBook = false, use
     let nps = 0;
     let searchTimeMs = 0;
     let pv = "";
+    let isBookMove = false;
 
     const finish = (result) => {
       if (resolved) return;
@@ -982,6 +983,7 @@ function queryCastleMove({ fen, movetime = 400, moves = [], useBook = false, use
           nps: 0,
           searchTimeMs: 0,
           pv: "",
+          isBookMove: false,
           engine: "Rhizoh HCE 22.0 (Golden Baseline)",
           reason: "timeout"
         });
@@ -1024,6 +1026,9 @@ function queryCastleMove({ fen, movetime = 400, moves = [], useBook = false, use
             proc.stdin.write(`ucinewgame\nposition fen ${cleanFen}\ngo movetime ${effectiveTime}\n`);
           }
         } else if (trimmed.startsWith("info")) {
+          if (trimmed.includes("book move")) {
+            isBookMove = true;
+          }
           const depthMatch = trimmed.match(/depth\s+(\d+)/);
           if (depthMatch) depth = Math.max(depth, parseInt(depthMatch[1], 10));
           const scoreMatch = trimmed.match(/score\s+cp\s+(-?\d+)/);
@@ -1043,12 +1048,13 @@ function queryCastleMove({ fen, movetime = 400, moves = [], useBook = false, use
             ok: Boolean(bestMove),
             bestMove,
             evalCp,
-            depth,
-            nodes,
-            nps,
-            searchTimeMs,
-            pv,
-            engine: "Rhizoh HCE 22.0 (Golden Baseline)"
+            depth: isBookMove ? 0 : depth,
+            nodes: isBookMove ? 0 : nodes,
+            nps: isBookMove ? 0 : nps,
+            searchTimeMs: isBookMove ? 1 : searchTimeMs,
+            pv: isBookMove ? (bestMove || "") : pv,
+            isBookMove,
+            engine: isBookMove ? "Rhizoh Opening/Tactics Book" : "Rhizoh HCE 22.0 (Golden Baseline)"
           });
           break;
         }
@@ -1218,6 +1224,7 @@ const httpServer = createServer(async (req, res) => {
         nps: moveResult.nps,
         pv: moveResult.pv,
         searchTimeMs: moveResult.searchTimeMs,
+        isBookMove: Boolean(moveResult.isBookMove),
         stats: recorded.stats
       });
     } catch (e) {
