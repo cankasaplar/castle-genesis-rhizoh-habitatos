@@ -14,3 +14,5 @@ services:
         value: production
       - key: RHIZOH_WORLD_MODE
         value: production_world
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=300"

@@ -896,7 +896,15 @@ function resolveCastleBinaryPath() {
   return null;
 }
 
-function queryCastleMove({
+let engineExecutionQueue = Promise.resolve();
+
+function queryCastleMove(params) {
+  const next = engineExecutionQueue.then(() => executeEngineQuery(params)).catch(() => executeEngineQuery(params));
+  engineExecutionQueue = next.catch(() => {});
+  return next;
+}
+
+function executeEngineQuery({
   fen,
   movetime,
   wtime,
@@ -1128,6 +1136,8 @@ function queryCastleMove({
 
     const initCmds = [
       "uci",
+      "setoption name Hash value 32",
+      "setoption name Threads value 1",
       "setoption name UseNNUE value false",
       `setoption name OwnBook value ${useBook ? "true" : "false"}`
     ];

@@ -496,7 +496,7 @@ export function recordPuzzleSolution({ puzzleId, fen, playedMove, bestMove, moti
     }
     failuresCache.push(failureRecord);
 
-    if (failuresCache.length > 5000) {
+    if (failuresCache.length > 250) {
       failuresCache.shift();
     }
 
