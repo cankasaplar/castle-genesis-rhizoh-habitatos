@@ -1,3 +1,37 @@
+// STRICT QUARANTINE: 30 WAC Benchmark Positions that must NEVER enter Loss Memory
+const WAC_30_QUARANTINE_BOARDS = new Set([
+  "2r3k1/1p3ppp/p1q1p3/3p4/P2Pn3/1P2P3/3NQPPP/R5K1",
+  "r6k/pp4pp/8/8/8/8/1Q3PPP/6K1",
+  "r1bqk2r/ppp2ppp/2n5/1B1pp3/4n3/5N2/PPPP1PPP/R1BQK2R",
+  "6k1/5ppp/8/8/8/8/1R3PPP/6K1",
+  "3r2k1/5ppp/8/8/8/8/5PPP/3R2K1",
+  "r1bqk2r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R",
+  "r1bqk2r/pppp1ppp/2n5/4p3/2B1n3/5N2/PPPP1PPP/RNBQ1RK1",
+  "r1b1kb1r/pppp1ppp/8/4n3/3P3q/8/PPP1PPPP/RNBQKB1R",
+  "2r2rk1/pp3ppp/8/3N4/8/8/PPP2PPP/R4RK1",
+  "r4rk1/pp3ppp/8/8/8/8/1Q3PPP/5RK1",
+  "r1bqk1nr/pppp1ppp/2n5/4p3/1b2P3/2N2N2/PPPP1PPP/R1BQKB1R",
+  "r1bqk2r/ppp2ppp/2n5/3pp3/4P3/2N2N2/PPPP1PPP/R1BQKB1R",
+  "r1b2rk1/ppp2ppp/2n5/3qp3/8/3P1N2/PPP1BPPP/R1BQ1RK1",
+  "8/5pk1/4p1p1/3pP2p/3R1P1P/6P1/4K3/r7",
+  "8/8/4k3/8/8/8/r7/1R2K3",
+  "2r3k1/pp3ppp/2r5/8/8/3P1B2/P4PPP/2RQ1RK1",
+  "r3k2r/ppp2ppp/2n5/3N4/8/8/PPP2PPP/R4RK1",
+  "6k1/5ppp/8/8/8/8/r7/1R4K1",
+  "r1b2rk1/pp3ppp/2p5/8/8/2qP1B2/PPP2PPP/R1BQ1RK1",
+  "r1b2rk1/pp3ppp/2p5/8/8/3P1B2/P1q2PPP/R1BQ1RK1",
+  "r1bqk2r/ppp2ppp/2n5/1B1p4/3Pn3/2P2N2/P4PPP/R1BQK2R",
+  "8/6pk/8/8/8/8/1B6/1K5r",
+  "r1bq1rk1/ppp2ppp/2n5/3np3/2B5/3P1N2/PPP2PPP/RNBQK2R",
+  "r4rk1/ppp2ppp/2n5/3qp3/1b6/3P1N2/PPP1BPPP/R1BQ1RK1",
+  "8/5p2/4p1p1/3pP2p/3P1P1P/6P1/4K3/8",
+  "r1b2rk1/ppp2ppp/2n5/3qp3/3n4/3P1N2/PPP1BPPP/R1BQ1RK1",
+  "r1b2rk1/ppp2ppp/8/3qp3/3N4/3P4/PPP1BPPP/R1BQ1RK1",
+  "r1b2rk1/ppp2ppp/8/3q4/3p4/3P4/PPP1BPPP/R1BQ1RK1",
+  "r1b2rk1/ppp2ppp/8/8/3q4/3P1B2/PPP2PPP/R1BQ1RK1",
+  "r1b2rk1/pp3ppp/2p5/8/3q4/3P1B2/PPP2PPP/R1BQ1RK1"
+]);
+
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -35,6 +69,12 @@ function resolveLossMemoryPath() {
 function recordBlunderHash(fen, playedMove) {
   try {
     if (!fen || !playedMove || playedMove === "none") return;
+    const boardKey = fen.split(" ")[0];
+    if (WAC_30_QUARANTINE_BOARDS.has(boardKey)) {
+      console.warn("[QUARANTINE_GUARD] Refusing to record blunder hash for WAC 30 benchmark position:", fen);
+      return;
+    }
+
     const c = new Chess(fen);
     const clean = playedMove.trim();
     let moveRes = null;
