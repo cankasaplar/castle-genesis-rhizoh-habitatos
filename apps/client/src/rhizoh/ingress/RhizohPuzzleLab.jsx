@@ -515,6 +515,20 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
             >
               🎯 {stats.datasetPoolSize ? stats.datasetPoolSize.toLocaleString() : "..."} Verified Master Puzzles
             </span>
+            <span
+              style={{
+                padding: "2px 8px",
+                borderRadius: 9999,
+                fontSize: 11,
+                fontWeight: 700,
+                background: "rgba(168, 85, 247, 0.15)",
+                color: "#c084fc",
+                border: "1px solid rgba(168, 85, 247, 0.3)"
+              }}
+              title="Autonomous Blunder Refutation: Tactical errors are recorded in Loss Memory to refute recurrence."
+            >
+              ⚡ Adaptive Loss Memory Active
+            </span>
           </div>
         </div>
 

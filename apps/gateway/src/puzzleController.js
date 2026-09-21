@@ -53,25 +53,36 @@ function recordBlunderHash(fen, playedMove) {
       const blunderFen = c.fen();
       const polyHashStr = computePolyglotHash(blunderFen).toString();
       const zobristHashStr = computeCastleZobristHash(blunderFen).toString();
-      const lossFile = resolveLossMemoryPath();
-      const dir = path.dirname(lossFile);
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      const writtenPaths = new Set();
+      for (const lossFile of candidateLossMemoryPaths) {
+        try {
+          const dir = path.dirname(lossFile);
+          if (fs.existsSync(dir) || lossFile === candidateLossMemoryPaths[0]) {
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+            const resolved = path.resolve(lossFile);
+            if (writtenPaths.has(resolved)) continue;
+            writtenPaths.add(resolved);
 
-      let existing = "";
-      if (fs.existsSync(lossFile)) existing = fs.readFileSync(lossFile, "utf8");
-      const lines = new Set(existing.split("\n").map(l => l.trim()).filter(Boolean));
-      let changed = false;
-      if (!lines.has(zobristHashStr)) {
-        lines.add(zobristHashStr);
-        changed = true;
-      }
-      if (!lines.has(polyHashStr)) {
-        lines.add(polyHashStr);
-        changed = true;
-      }
-      if (changed) {
-        fs.writeFileSync(lossFile, Array.from(lines).join("\n") + "\n", "utf8");
-        console.log(`[LOSS_MINER_INGEST] Recorded blunder hashes zobrist:${zobristHashStr}, polyglot:${polyHashStr} to ${lossFile}`);
+            let existing = "";
+            if (fs.existsSync(resolved)) existing = fs.readFileSync(resolved, "utf8");
+            const lines = new Set(existing.split("\n").map(l => l.trim()).filter(Boolean));
+            let changed = false;
+            if (!lines.has(zobristHashStr)) {
+              lines.add(zobristHashStr);
+              changed = true;
+            }
+            if (!lines.has(polyHashStr)) {
+              lines.add(polyHashStr);
+              changed = true;
+            }
+            if (changed) {
+              fs.writeFileSync(resolved, Array.from(lines).join("\n") + "\n", "utf8");
+              console.log(`[LOSS_MINER_INGEST] Recorded blunder hashes zobrist:${zobristHashStr}, polyglot:${polyHashStr} to ${resolved}`);
+            }
+          }
+        } catch (err) {
+          console.warn("[LOSS_MINER_WRITE_WARN]", lossFile, err.message);
+        }
       }
     }
   } catch (err) {
@@ -456,6 +467,8 @@ export function recordPuzzleSolution({ puzzleId, fen, playedMove, bestMove, moti
   } else {
     stats.totalFailed += 1;
     correction = generateTacticalRefutation(fen, playedMove, bestMove, motif);
+    // Ingest blunder move into live Loss Memory to refute recurrence on replay
+    recordBlunderHash(fen, playedMove);
 
     // Track B Quality Guard: Strict deduplication by puzzleId
     const existingIdx = failuresCache.findIndex(f => f.puzzleId === puzzleId);
