@@ -592,5 +592,11 @@ export function getPuzzleStats() {
 }
 
 export function getRecentFailures(limit = 10) {
-  return failuresCache.slice(-limit).reverse();
+  const lim = Number(limit) || 10;
+  if (lim >= failuresCache.length) return [...failuresCache].reverse();
+  return failuresCache.slice(-lim).reverse();
+}
+
+export function getAllFailures() {
+  return [...failuresCache];
 }

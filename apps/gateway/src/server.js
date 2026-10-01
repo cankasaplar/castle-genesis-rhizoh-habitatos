@@ -123,7 +123,8 @@ import {
   getNextPuzzle,
   recordPuzzleSolution,
   getPuzzleStats,
-  getRecentFailures
+  getRecentFailures,
+  getAllFailures
 } from "./puzzleController.js";
 import { getFirebasePersistence } from "./firebasePersistence.js";
 import { registerAgentIdentity, listAgentIdentities, getAgentIdentity, updateAgentIdentity } from "./agentIdentityStore.js";
@@ -1296,9 +1297,35 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
+  // Live Puzzle Failures Queue (Full or query-limited, token-authenticated if configured)
+  if (req.method === "GET" && (pathname === "/api/chess/puzzle/failures" || pathname === "/rhizoh/chess/puzzle/failures" || pathname === "/api/gatewayProxy/api/chess/puzzle/failures" || pathname.endsWith("/api/chess/puzzle/failures"))) {
+    try {
+      const url = new URL(req.url, "http://localhost");
+      const token = req.headers["x-castle-gateway-token"] || url.searchParams.get("token") || (req.headers["authorization"] ? req.headers["authorization"].replace(/^Bearer\s+/i, "") : "");
+      if (REQUIRED_GATEWAY_TOKEN && token !== REQUIRED_GATEWAY_TOKEN) {
+        sendJson(res, 401, { ok: false, error: "Unauthorized: Invalid or missing gateway token" });
+        return;
+      }
+      const limitParam = url.searchParams.get("limit");
+      const limit = limitParam ? Math.max(1, parseInt(limitParam, 10)) : null;
+      let failures = getAllFailures();
+      if (limit && failures.length > limit) {
+        failures = failures.slice(-limit);
+      }
+      sendJson(res, 200, { ok: true, count: failures.length, failures, stats: getPuzzleStats() });
+    } catch (e) {
+      sendJson(res, 500, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
+
   if (req.method === "GET" && (pathname === "/api/chess/puzzle/history" || pathname === "/rhizoh/chess/puzzle/history" || pathname === "/api/gatewayProxy/api/chess/puzzle/history" || pathname.endsWith("/api/chess/puzzle/history"))) {
     try {
-      sendJson(res, 200, { ok: true, failures: getRecentFailures(20), stats: getPuzzleStats() });
+      const url = new URL(req.url, "http://localhost");
+      const all = url.searchParams.get("all") === "true";
+      const limitParam = url.searchParams.get("limit");
+      const limit = all ? 10000 : (limitParam ? parseInt(limitParam, 10) : 20);
+      sendJson(res, 200, { ok: true, failures: getRecentFailures(limit), stats: getPuzzleStats() });
     } catch (e) {
       sendJson(res, 500, { ok: false, error: String(e?.message || e) });
     }
