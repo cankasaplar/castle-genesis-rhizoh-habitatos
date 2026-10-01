@@ -168,3 +168,12 @@ Bu repo için **kalıcı yürütme bağlamı** Cursor kurallarında tanımlıdı
 - [Perceptual stability layer v0](docs/PERCEPTUAL_STABILITY_LAYER_V0.md) — jitter, smoothness, frame–perception, Cesium human-stable feel (`RESEARCH-ONLY`)
 - [Cognitive load layer v0](docs/COGNITIVE_LOAD_LAYER_V0.md) — disclosure, visibility schedule, perception budget (`RESEARCH-ONLY`)
 - [Surface reduction pass (live) v0](docs/SURFACE_REDUCTION_PASS_LIVE_V0.md) — prod hides debug overlays / demo shortcuts; engine kept (`RESEARCH-ONLY`)
+
+---
+
+## Kalıcı Güvenlik Kuralı: Sır ve Token Redaksiyon Politikası (Permanent Redaction Rule)
+
+1. **Düz Metin Sır Yasağı**: Hiçbir raporda, yanıtta, log çıktısında veya kullanıcıya sunulan metinde gerçek production veya staging secret tokenları, API anahtarları, şifreler veya private keyler DÜZ METİN OLARAK YAZILAMAZ.
+2. **Redaksiyon Formatı**: Hassas değerler her zaman `***REDACTED***` veya `[Token doğrulandı - değer gizlendi]` olarak maskelenmelidir. (Örn: `CASTLE_GATEWAY_TOKEN=***REDACTED***`, `?token=***REDACTED***`).
+3. **Kapsam**: `CASTLE_GATEWAY_TOKEN`, `VITE_GATEWAY_TOKEN`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `FIREBASE` secretları, Stripe keyleri ve tüm kimlik doğrulama anahtarları.
+4. **Bağlayıcılık**: Bu kural kalıcı, mutlak ve tüm ajan oturumlarında geçerlidir.
