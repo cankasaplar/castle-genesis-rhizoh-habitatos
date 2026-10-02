@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::sync::{LazyLock, RwLock};
 
 use crate::board::Board as ChessBoard;
@@ -50,7 +50,12 @@ pub static GLOBAL_WEIGHTS: RwLock<EvaluationWeights> = RwLock::new(EvaluationWei
     bonus_open_file_rook: 25,
 });
 
-pub static LOSS_MINER_MEMORY: LazyLock<RwLock<HashSet<u64>>> = LazyLock::new(|| RwLock::new(HashSet::new()));
+/// Minimum verified blunder occurrences required before a position is penalized (3+ guard)
+pub const LOSS_MEMORY_THRESHOLD: u32 = 3;
+/// Penalty in centipawns applied against the side entering the blunder state
+pub const LOSS_MEMORY_PENALTY_CP: i32 = 120;
+
+pub static LOSS_MINER_MEMORY: LazyLock<RwLock<HashMap<u64, u32>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
 
 pub struct Evaluator;
 
@@ -203,15 +208,18 @@ impl Evaluator {
         // Tempo bonus for side to move
         score += TEMPO_BONUS;
 
-        // Experimental Feature Flag: Loss Miner Position Penalty (-100cp)
+        // A recorded post-blunder position penalizes the previous mover through negamax.
         if features.use_loss_memory {
             let key = board.get_zobrist_key();
             if let Ok(mem) = LOSS_MINER_MEMORY.read() {
-                if mem.contains(&key) {
-                    if board.side_to_move == Color::White {
-                        score += 100;
-                    } else {
-                        score -= 100;
+                if let Some(&fail_count) = mem.get(&key) {
+                    if fail_count >= LOSS_MEMORY_THRESHOLD {
+                        // Reward the side to move so the parent avoids the blunder move.
+                        if board.side_to_move == Color::White {
+                            score += LOSS_MEMORY_PENALTY_CP;
+                        } else {
+                            score -= LOSS_MEMORY_PENALTY_CP;
+                        }
                     }
                 }
             }
@@ -227,7 +235,7 @@ impl Evaluator {
     pub fn load_weights_from_file(path: &str) -> bool {
         if let Ok(content) = std::fs::read_to_string(path) {
             // Primitive JSON parsing for evaluation weights
-            let mut w = GLOBAL_WEIGHTS.write().unwrap();
+            let _w = GLOBAL_WEIGHTS.write().unwrap();
             if content.contains("val_pawn") {
                 // Successfully validated weights JSON
                 return true;
@@ -242,14 +250,51 @@ impl Evaluator {
             let mut mem = LOSS_MINER_MEMORY.write().unwrap();
             for line in content.lines() {
                 let trimmed = line.trim();
-                if let Ok(hash) = trimmed.parse::<u64>() {
-                    mem.insert(hash);
-                    count += 1;
+                if trimmed.is_empty() || trimmed.starts_with('#') || trimmed.starts_with("//") {
+                    continue;
+                }
+                // Supports format: "hash count", "hash:count", "hash,count", or single "hash"
+                let parts: Vec<&str> = trimmed
+                    .split(|c| c == ' ' || c == ':' || c == ',')
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                if let Some(first) = parts.first() {
+                    let clean_hash = first.trim_matches(|c| c == '"' || c == '\'' || c == '{' || c == '}');
+                    if let Ok(hash) = clean_hash.parse::<u64>() {
+                        let fail_cnt = if parts.len() > 1 {
+                            parts[1].trim_matches(|c| c == '"' || c == '\'').parse::<u32>().unwrap_or(1)
+                        } else {
+                            1
+                        };
+                        let entry = mem.entry(hash).or_insert(0);
+                        *entry = (*entry).max(fail_cnt);
+                        count += 1;
+                    }
                 }
             }
             return count;
         }
         0
+    }
+
+    /// Records a verified failure occurrence for a position hash, returning the updated count
+    pub fn record_loss_position(key: u64) -> u32 {
+        let mut mem = LOSS_MINER_MEMORY.write().unwrap();
+        let entry = mem.entry(key).or_insert(0);
+        *entry += 1;
+        *entry
+    }
+
+    /// Serializes active epistemic loss memory back to disk
+    pub fn save_loss_memory_to_file(path: &str) -> bool {
+        if let Ok(mem) = LOSS_MINER_MEMORY.read() {
+            let mut out = String::new();
+            for (hash, count) in mem.iter() {
+                out.push_str(&format!("{} {}\n", hash, count));
+            }
+            return std::fs::write(path, out).is_ok();
+        }
+        false
     }
 
     pub fn count_material(board: &ChessBoard, color: Color) -> i32 {
@@ -488,7 +533,7 @@ impl Evaluator {
         score
     }
 
-    fn compute_pawn_structure_uncached(board: &ChessBoard, white_pawns: u64, black_pawns: u64) -> i32 {
+    fn compute_pawn_structure_uncached(_board: &ChessBoard, white_pawns: u64, black_pawns: u64) -> i32 {
         let mut score = 0i32;
 
         for f in 0..8u64 {
@@ -543,11 +588,11 @@ impl Evaluator {
                 let front_sq = sq + 8;
                 let front_file = front_sq % 8;
                 let front_rank = front_sq / 8;
-                if front_rank < 8 {
+                if front_rank < 7 {
                     let b_attacks = {
                         let mut att = 0u64;
-                        if front_file > 0 { att |= 1u64 << (front_sq - 1); }
-                        if front_file < 7 { att |= 1u64 << (front_sq + 1); }
+                        if front_file > 0 { att |= 1u64 << (front_sq + 7); }
+                        if front_file < 7 { att |= 1u64 << (front_sq + 9); }
                         att
                     };
                     if (black_pawns & b_attacks) != 0 {
@@ -575,13 +620,14 @@ impl Evaluator {
                 m
             };
             if (black_pawns & adj_behind_mask) == 0 {
-                if rank > 0 {
-                    let front_sq = sq - 8;
-                    let front_file = front_sq % 8;
+                let front_sq = sq - 8;
+                let front_file = front_sq % 8;
+                let front_rank = front_sq / 8;
+                if front_rank > 0 {
                     let w_attacks = {
                         let mut att = 0u64;
-                        if front_file > 0 { att |= 1u64 << (front_sq - 1); }
-                        if front_file < 7 { att |= 1u64 << (front_sq + 1); }
+                        if front_file > 0 { att |= 1u64 << (front_sq - 9); }
+                        if front_file < 7 { att |= 1u64 << (front_sq - 7); }
                         att
                     };
                     if (white_pawns & w_attacks) != 0 {
@@ -1023,5 +1069,138 @@ impl Evaluator {
         }
 
         Self::evaluate_hce(board, features)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::SearchFeatures;
+
+    #[test]
+    fn test_loss_memory_threshold_and_perspective() {
+        let board_w = ChessBoard::new();
+        let key = board_w.get_zobrist_key();
+
+        let mut features_off = SearchFeatures::default();
+        features_off.use_nnue = false;
+        features_off.use_loss_memory = false;
+
+        let mut features_on = SearchFeatures::default();
+        features_on.use_nnue = false;
+        features_on.use_loss_memory = true;
+
+        // Baseline score without loss memory
+        let base_w = Evaluator::evaluate(&board_w, &features_off);
+
+        // Reset memory for this key
+        {
+            let mut mem = LOSS_MINER_MEMORY.write().unwrap();
+            mem.remove(&key);
+        }
+
+        // Test 0 occurrences: no penalty
+        let score_0 = Evaluator::evaluate(&board_w, &features_on);
+        assert_eq!(score_0, base_w, "0 occurrences must have 0cp penalty");
+
+        // Test 1 occurrence: below threshold -> no penalty
+        let cnt1 = Evaluator::record_loss_position(key);
+        assert_eq!(cnt1, 1);
+        let score_1 = Evaluator::evaluate(&board_w, &features_on);
+        assert_eq!(score_1, base_w, "1 occurrence (< threshold) must have 0cp penalty");
+
+        // Test 2 occurrences: below threshold -> no penalty
+        let cnt2 = Evaluator::record_loss_position(key);
+        assert_eq!(cnt2, 2);
+        let score_2 = Evaluator::evaluate(&board_w, &features_on);
+        assert_eq!(score_2, base_w, "2 occurrences (< threshold) must have 0cp penalty");
+
+        // Test 3 occurrences: the previous mover is penalized through negamax.
+        let cnt3 = Evaluator::record_loss_position(key);
+        assert_eq!(cnt3, 3);
+        let score_3 = Evaluator::evaluate(&board_w, &features_on);
+        assert_eq!(score_3, base_w + LOSS_MEMORY_PENALTY_CP, "3 occurrences must favor the side to move in a bad successor position");
+
+        // Feature flag isolation: with use_loss_memory=false, score must remain unchanged even with count=3
+        let score_off = Evaluator::evaluate(&board_w, &features_off);
+        assert_eq!(score_off, base_w, "Features disabled must completely ignore loss memory");
+
+        // Test Black to move perspective
+        let mut board_b = board_w.clone();
+        board_b.side_to_move = Color::Black;
+        let key_b = board_b.get_zobrist_key();
+        let base_b = Evaluator::evaluate(&board_b, &features_off);
+
+        // Record 3 occurrences for Black's blunder state
+        Evaluator::record_loss_position(key_b);
+        Evaluator::record_loss_position(key_b);
+        Evaluator::record_loss_position(key_b);
+
+        let score_b_adjusted = Evaluator::evaluate(&board_b, &features_on);
+        assert_eq!(score_b_adjusted, base_b + LOSS_MEMORY_PENALTY_CP, "Black-to-move bad successor positions must be unfavorable to the previous mover");
+
+        // Clean up
+        {
+            let mut mem = LOSS_MINER_MEMORY.write().unwrap();
+            mem.remove(&key);
+            mem.remove(&key_b);
+        }
+    }
+
+    #[test]
+    fn test_loss_memory_save_and_load() {
+        let temp_dir = std::env::temp_dir();
+        let test_file = temp_dir.join("test_loss_memory_roundtrip.txt");
+        let path_str = test_file.to_str().unwrap();
+
+        let test_key_a: u64 = 0x123456789ABCDEF0;
+        let test_key_b: u64 = 0xFEDCBA9876543210;
+
+        {
+            let mut mem = LOSS_MINER_MEMORY.write().unwrap();
+            mem.insert(test_key_a, 3);
+            mem.insert(test_key_b, 5);
+        }
+
+        let saved = Evaluator::save_loss_memory_to_file(path_str);
+        assert!(saved, "Should successfully save loss memory to file");
+
+        // Clear memory
+        {
+            let mut mem = LOSS_MINER_MEMORY.write().unwrap();
+            mem.clear();
+        }
+
+        // Load back
+        let loaded_count = Evaluator::load_loss_memory_from_file(path_str);
+        assert!(loaded_count >= 2, "Should load at least 2 entries");
+
+        {
+            let mem = LOSS_MINER_MEMORY.read().unwrap();
+            assert_eq!(mem.get(&test_key_a), Some(&3));
+            assert_eq!(mem.get(&test_key_b), Some(&5));
+        }
+
+        // Test alternate format parsing (e.g. colon, comma)
+        let alt_content = format!("{}:4\n{},6\n999999\n", test_key_a, test_key_b);
+        let alt_file = temp_dir.join("test_loss_memory_formats.txt");
+        std::fs::write(&alt_file, alt_content).unwrap();
+        let loaded_alt = Evaluator::load_loss_memory_from_file(alt_file.to_str().unwrap());
+        assert_eq!(loaded_alt, 3);
+
+        {
+            let mem = LOSS_MINER_MEMORY.read().unwrap();
+            assert_eq!(mem.get(&test_key_a), Some(&4));
+            assert_eq!(mem.get(&test_key_b), Some(&6));
+            assert_eq!(mem.get(&999999), Some(&1));
+        }
+
+        // Clean up test files and memory
+        let _ = std::fs::remove_file(&test_file);
+        let _ = std::fs::remove_file(&alt_file);
+        {
+            let mut mem = LOSS_MINER_MEMORY.write().unwrap();
+            mem.clear();
+        }
     }
 }

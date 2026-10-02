@@ -1,4 +1,3 @@
-use crate::board::Board;
 
 #[derive(Debug, Clone)]
 pub struct TexelTuneConfig {

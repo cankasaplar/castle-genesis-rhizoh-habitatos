@@ -54,7 +54,7 @@ test("gateway commits legal move and broadcasts to session room", () => {
   );
 
   assert.equal(out.ok, true);
-  assert.ok(sent.filter((m) => m.type === WS_MESSAGE.MATCH_MOVE_ACK).length >= 2);
-  assert.ok(sent.filter((m) => m.type === WS_MESSAGE.MATCH_STATE).length >= 2);
+  assert.equal(sent.filter((m) => m.type === WS_MESSAGE.MATCH_MOVE_ACK).length, 1);
+  assert.equal(sent.filter((m) => m.type === WS_MESSAGE.MATCH_STATE).length, 2);
   assert.equal(out.ack.commitAuthority, "server");
 });

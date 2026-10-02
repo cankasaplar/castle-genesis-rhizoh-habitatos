@@ -1,6 +1,6 @@
 ﻿# Meaning Compression (V0)
 
-_Auto-generated: 2026-08-12 18:46:17
+_Auto-generated: 2026-08-15 18:45:37
 
 Method: path-semantics signature clustering (v0 heuristic, not embedding model).
 

@@ -22,3 +22,7 @@ ANAHTARLAR_BURAYA.local.txt
 # Added by cargo
 
 /target
+
+# Social & Cloud API credentials
+config/*_credentials.json
+config/*_token.json

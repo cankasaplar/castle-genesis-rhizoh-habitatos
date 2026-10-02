@@ -2,7 +2,6 @@
 
 use std::fs;
 use std::io::{self, BufRead, Write};
-use std::path::Path;
 
 mod board;
 mod epistemic;
@@ -33,7 +32,7 @@ use perft::Perft;
 use search::Searcher;
 use tt::TranspositionTable;
 use types::GameResult;
-use planner::{RhizohPlanner, StrategicExplanation};
+use planner::RhizohPlanner;
 
 struct UciOptions {
     hash_mb: usize,
@@ -70,7 +69,7 @@ impl Default for UciOptions {
             use_correction_history: true,
             use_null_verification: false,
             use_history_gravity: true,
-            use_loss_memory: true,
+            use_loss_memory: false, // Default false to match UCI declaration and ensure strict baseline isolation
             use_opening_antiblunder: true,
             use_nnue: false, // Default to Pure HCE Golden Baseline (NNUE gated until candidate beats WAC 21)
         }
@@ -88,6 +87,8 @@ fn main() {
     let mut current_opening = "Italian Game".to_string();
 
     let mut searcher = Searcher::new();
+    searcher.features.use_loss_memory = options.use_loss_memory;
+    searcher.features.use_nnue = options.use_nnue;
 
     // 1. Canlı Öğrenme Döngüsü: Texel Ağırlıkları ve Kayıp Hafızasını Yükle
     let weights_loaded = eval::Evaluator::load_weights_from_file("config/eval_weights.json");
@@ -573,7 +574,7 @@ fn main() {
             }
             "perft-suite" => {
                 writeln!(stdout, "info string Running Perft Validation Suite...").unwrap();
-                let mut b_start = Board::new();
+                let b_start = Board::new();
                 writeln!(stdout, "info string Startpos Perft(4): {}", b_start.perft(4)).unwrap();
                 let b_kiwi = Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
                 writeln!(stdout, "info string Kiwipete Perft(3): {}", b_kiwi.perft(3)).unwrap();

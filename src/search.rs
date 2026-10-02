@@ -3,18 +3,16 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::thread;
 use crate::board::Board;
 use crate::eval::Evaluator;
-use crate::see::see_eval;
 use crate::time_mgr::TimeLimits;
 use crate::tt::{NodeType, TranspositionTable};
 use crate::types::{CandidateMove, Color, Move, PieceType, SearchFeatures, SearchHeuristics};
 
 static LMR_TABLE: LazyLock<[[usize; 64]; 64]> = LazyLock::new(|| {
-    // Aligned LMR formula: 0.70 + ln(depth) * ln(moves) / 2.25
-    // Optimized reduction for deep tree search & move ordering
+    // Conservative LMR: retain more depth for late moves with tactical potential.
     let mut table = [[0usize; 64]; 64];
     for d in 1..64 {
         for m in 1..64 {
-            let r = 0.70 + (d as f64).ln() * (m as f64).ln() / 2.25;
+            let r = 0.70 + (d as f64).ln() * (m as f64).ln() / 2.5;
             table[d][m] = (r.floor() as usize).max(1);
         }
     }
@@ -892,7 +890,6 @@ impl Searcher {
         if depth >= 5 && !in_check && ply > 0 && beta.abs() < MATE_SCORE - 1000 && adjusted_eval >= beta + 80 {
             let probcut_beta = (beta + 150).min(MATE_SCORE - 1000);
             let probcut_depth = depth.saturating_sub(4).max(1);
-            let mut pc_board = board.clone();
             // Only try ProbCut on captures (avoid expensive quiet searches)
             let pc_moves = board.generate_moves();
             let pc_captures: Vec<_> = pc_moves.iter().filter(|m| {
@@ -1115,7 +1112,6 @@ impl Searcher {
                 node_type = NodeType::Exact;
 
                 if score >= beta {
-                    node_type = NodeType::Beta;
 
                     if is_quiet {
                         if ply < 64 {
