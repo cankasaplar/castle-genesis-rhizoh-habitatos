@@ -139,7 +139,7 @@ fn main() {
                 writeln!(stdout, "option name UseSEEOrdering type check default true").unwrap();
                 writeln!(stdout, "option name UseSEEPruning type check default true").unwrap();
                 writeln!(stdout, "option name UseIIR type check default true").unwrap();
-                writeln!(stdout, "option name UseSingularExt type check default false").unwrap();
+                writeln!(stdout, "option name UseSingularExt type check default true").unwrap();
                 writeln!(stdout, "option name UseCounterMoveHistory type check default true").unwrap();
                 writeln!(stdout, "option name UseCorrectionHistory type check default true").unwrap();
                 writeln!(stdout, "option name UseNullVerification type check default false").unwrap();

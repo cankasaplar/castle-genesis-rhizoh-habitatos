@@ -63,6 +63,8 @@ pub struct SearchStats {
     pub aspiration_researches: u64,
     pub aspiration_fail_high: u64,
     pub aspiration_fail_low: u64,
+    pub singular_extensions: u64,
+    pub singular_probes: u64,
 }
 
 pub struct Searcher {
@@ -805,7 +807,7 @@ impl Searcher {
         }
 
         // Syzygy Endgame Tablebase Probing
-        if ply > 0 && board.combined_occupancy.count_ones() <= 5 {
+        if excluded_move.is_none() && ply > 0 && board.combined_occupancy.count_ones() <= 5 {
             if let Some(tb_score) = crate::syzygy::SyzygyProber::probe_wdl(board, ply) {
                 return tb_score;
             }
@@ -825,11 +827,13 @@ impl Searcher {
         self.stats.tt_probes += 1;
         if let Some(entry) = self.tt.probe(zobrist_key) {
             if let Some(m_u16) = entry.best_move {
-                if board.is_legal_u16(m_u16).is_some() {
+                if board.is_legal_u16(m_u16).is_some()
+                    && excluded_move.map_or(true, |mv| ((mv.from as u16) << 6 | mv.to as u16) != m_u16)
+                {
                     tt_move = Some(m_u16);
                 }
             }
-            if entry.depth >= depth as u8 {
+            if excluded_move.is_none() && entry.depth >= depth as u8 {
                 self.stats.tt_hits += 1;
                 let tt_score = score_from_tt(entry.score, ply);
                 match entry.node_type {
@@ -961,9 +965,15 @@ impl Searcher {
             }
         }
 
-        let moves = board.generate_moves();
+        let mut moves = board.generate_moves();
+        if let Some(excluded) = excluded_move {
+            moves.retain(|mv| *mv != excluded);
+        }
 
         if moves.is_empty() {
+            if excluded_move.is_some() {
+                return beta;
+            }
             if in_check {
                 return -MATE_SCORE + ply as i32;
             } else {
@@ -973,6 +983,7 @@ impl Searcher {
 
         let mut sorted_moves = moves;
         self.order_moves(board, &mut sorted_moves, ply, tt_move, prev_move);
+        let has_singular_alternatives = sorted_moves.len() > 1;
 
         let mut best_score = -i32::MAX;
         let mut node_type = NodeType::Alpha;
@@ -1015,21 +1026,36 @@ impl Searcher {
                 searched_quiets.push(mv);
             }
 
-            // Singular Extension Probe: Extend search depth by +1 if TT move is singular
-            let singular_extension = if self.features.use_singular_ext && is_tt_move && depth >= 6 && ply > 0 && excluded_move.is_none() {
+            // Verify the TT move against a same-position search that excludes it.
+            let singular_probe_eligible = self.features.use_singular_ext
+                && is_tt_move
+                && depth >= 6
+                && ply > 0
+                && excluded_move.is_none()
+                && beta - alpha == 1;
+            if singular_probe_eligible {
+                self.stats.singular_probes += 1;
+            }
+            let singular_extension = if singular_probe_eligible {
                 if let Some(entry) = self.tt.probe(zobrist_key) {
                     let tt_score = score_from_tt(entry.score, ply);
-                    if (entry.node_type == NodeType::Exact || entry.node_type == NodeType::Beta) && entry.depth >= (depth as u8).saturating_sub(3) {
+                    if (entry.node_type == NodeType::Exact || entry.node_type == NodeType::Beta)
+                        && entry.depth >= (depth as u8).saturating_sub(3)
+                        && has_singular_alternatives
+                    {
                         let singular_margin = (depth as i32) * 3;
                         let singular_beta = tt_score - singular_margin;
                         let singular_depth = (depth - 1) / 2;
 
                         let singular_score = self.alpha_beta_with_prev(board, singular_depth, ply, singular_beta - 1, singular_beta, prev_move, Some(mv));
-                        if singular_score < singular_beta { 1 } else { 0 }
+                        if !self.aborted && singular_score < singular_beta { 1 } else { 0 }
                     } else { 0 }
                 } else { 0 }
             } else { 0 };
 
+            if singular_extension > 0 {
+                self.stats.singular_extensions += 1;
+            }
             let extension = if is_recapture { 1 } else if gives_check && ply < 64 { 1 } else { singular_extension };
             let current_depth = depth + extension;
 
@@ -1151,7 +1177,9 @@ impl Searcher {
                     }
 
                     let tt_beta = score_to_tt(beta, ply);
-                    self.tt.store(zobrist_key, depth as u8, tt_beta, NodeType::Beta, Some(mv_u16));
+                    if excluded_move.is_none() {
+                        self.tt.store(zobrist_key, depth as u8, tt_beta, NodeType::Beta, Some(mv_u16));
+                    }
                     return beta;
                 }
             }
@@ -1164,7 +1192,7 @@ impl Searcher {
             self.heuristics.update_non_pawn_correction(board.side_to_move, non_pawn_hash, delta);
         }
 
-        if !self.aborted {
+        if !self.aborted && excluded_move.is_none() {
             let best_mv_u16 = best_move_found.map(|m| ((m.from as u16) << 6) | (m.to as u16));
             let tt_best_score = score_to_tt(best_score, ply);
             self.tt.store(zobrist_key, depth as u8, tt_best_score, node_type, best_mv_u16);
@@ -1194,5 +1222,64 @@ impl Searcher {
         } else {
             0
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tt::NodeType;
+
+    #[test]
+    fn singular_extension_searches_alternatives_without_tt_cutoff() {
+        let mut searcher = Searcher::new();
+        searcher.features.use_nnue = false;
+        searcher.features.use_singular_ext = true;
+        searcher.heuristics.use_nmp = false;
+        searcher.heuristics.use_lmr = false;
+
+        let mut board = Board::from_fen("4k3/8/8/8/8/8/PP6/R3K2Q b - - 0 1");
+        let tt_move = board.generate_moves()[0];
+        let tt_move_u16 = ((tt_move.from as u16) << 6) | tt_move.to as u16;
+        searcher.tt.store(board.get_zobrist_key(), 4, 1200, NodeType::Exact, Some(tt_move_u16));
+
+        let _ = searcher.alpha_beta_with_prev(&mut board, 7, 1, 1000, 1001, None, None);
+
+        assert!(
+            searcher.stats.singular_extensions > 0,
+            "probes={}, extensions={}, nodes={}",
+            searcher.stats.singular_probes,
+            searcher.stats.singular_extensions,
+            searcher.nodes
+        );
+    }
+
+    #[test]
+    fn excluded_move_search_bypasses_and_preserves_transposition_entry() {
+        let mut searcher = Searcher::new();
+        searcher.features.use_nnue = false;
+        searcher.heuristics.use_nmp = false;
+        searcher.heuristics.use_lmr = false;
+
+        let mut board = Board::from_fen("4k3/8/8/8/8/8/PP6/R3K2Q b - - 0 1");
+        let excluded = board.generate_moves()[0];
+        let excluded_u16 = ((excluded.from as u16) << 6) | excluded.to as u16;
+        let key = board.get_zobrist_key();
+        searcher.tt.store(key, 6, 1200, NodeType::Exact, Some(excluded_u16));
+
+        let _ = searcher.alpha_beta_with_prev(
+            &mut board,
+            2,
+            1,
+            1000,
+            1001,
+            None,
+            Some(excluded),
+        );
+
+        assert!(searcher.nodes > 1, "excluded search must evaluate alternative moves");
+        let entry = searcher.tt.probe(key).expect("original TT entry must remain");
+        assert_eq!(entry.score, 1200);
+        assert_eq!(entry.best_move, Some(excluded_u16));
     }
 }
