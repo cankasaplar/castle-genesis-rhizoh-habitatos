@@ -14,10 +14,10 @@ import {
 
 const VERIFIED_METRICS_V0 = [
   {
-    id: "hce-baseline",
-    label: "Golden Baseline Standard",
-    value: "22.0 / 30 (73.3%)",
-    subtext: "5-run median WAC 30 tactical resolution (Reference floor: 19.0/30)",
+    id: "nnue-baseline",
+    label: "Tactical Benchmark Standard",
+    value: "23.0 / 30 (76.7%)",
+    subtext: "5-run median WAC 30 tactical resolution (Peak: 25/30 - 83.3% · Floor: 19.0/30)",
     status: "Verified",
     icon: Zap,
     color: "#f59e0b"
@@ -34,20 +34,20 @@ const VERIFIED_METRICS_V0 = [
   {
     id: "architecture",
     label: "Engine Architecture",
-    value: "Pure HCE (Golden Baseline 22.0)",
-    subtext: "Material, PST, mobility, king safety · HCE Dominance Guard Verified (22.0/30)",
+    value: "HalfKP NNUE (r=+0.4648)",
+    subtext: "SWA Hybrid 512-dim NNUE · Pearson r=+0.4648 (+0.033 gain) · WAC 23.0/30 (76.7%) · Gates Passed",
     status: "Active",
     icon: Binary,
     color: "#6366f1"
   },
   {
-    id: "nnue-pipeline",
-    label: "NNUE Training Pipeline",
-    value: "Phase 1: Cloud Infra",
-    subtext: "Autonomous cloud worker infrastructure in prep for next-gen weights",
-    status: "Preparing",
+    id: "leorik-gauntlet",
+    label: "Weekly Leorik Gauntlet",
+    value: "0.5 / 10.0 (5.0%)",
+    subtext: "vs Leorik 3.2.1 (~3,490 CCRL) · Historic 140-ply Round 2 Draw",
+    status: "Active",
     icon: Activity,
-    color: "#38bdf8"
+    color: "#ec4899"
   }
 ];
 
@@ -184,7 +184,7 @@ export function RhizohUnifiedEntryScreen() {
                   boxShadow: "0 0 8px #10b981"
                 }}
               />
-              HCE 22.0 Baseline
+              HalfKP NNUE (r=+0.4648, WAC 23.0)
             </span>
           </div>
         </header>
@@ -239,8 +239,8 @@ export function RhizohUnifiedEntryScreen() {
               lineHeight: 1.6
             }}
           >
-            An autonomous chess engine operating on the verified Golden HCE 22.0 baseline (73.3% WAC 30),
-            engineered for tactical precision and strict adherence to the HCE Dominance Guard while scaled cloud training infrastructure is being prepared.
+            An autonomous chess engine operating on the verified SWA Hybrid NNUE baseline (r=+0.4648, 76.7% WAC 30, peak 83.3%),
+            engineered for tactical precision, deep neural positional intuition, and continuous active learning from puzzle telemetry.
           </p>
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 12, marginTop: 24 }}>
             <button
@@ -491,7 +491,7 @@ export function RhizohUnifiedEntryScreen() {
           <div style={{ display: "flex", gap: 16 }}>
             <span>Protocol: Zero-Contamination EPD Audit</span>
             <span>•</span>
-            <span>Architecture: Pure HCE (Golden Baseline 22.0)</span>
+            <span>Architecture: HalfKP NNUE (r=+0.4648, WAC 23.0)</span>
           </div>
         </footer>
       </div>

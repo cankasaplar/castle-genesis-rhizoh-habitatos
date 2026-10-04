@@ -1,9 +1,20 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::{LazyLock, RwLock};
 
 use crate::board::Board as ChessBoard;
 use crate::types::{Color, PawnHashTable, PieceType};
+
+static NNUE_BLEND_PERCENT: AtomicI32 = AtomicI32::new(30);
+
+pub fn set_nnue_blend_percent(percent: i32) {
+    NNUE_BLEND_PERCENT.store(percent.clamp(0, 100), Ordering::Relaxed);
+}
+
+pub fn get_nnue_blend_percent() -> i32 {
+    NNUE_BLEND_PERCENT.load(Ordering::Relaxed)
+}
 
 thread_local! {
     static THREAD_PAWN_TABLE: RefCell<PawnHashTable> = RefCell::new(PawnHashTable::new());
@@ -452,10 +463,20 @@ impl Evaluator {
         let w_king_sq = white_king_sq as usize;
         let b_king_sq = black_king_sq as usize;
 
-        // Dynamic King Shield for White (Kingside vs Queenside)
+// Castling intact
+
+        // Trapped Rook Penalty (King on f1 trapping h1 rook, or King on f8 trapping h8 rook)
+        if w_king_sq == 5 && board.get_piece_at(7, Color::White) == Some(PieceType::Rook) {
+            score -= 60;
+        }
+        if b_king_sq == 61 && board.get_piece_at(63, Color::Black) == Some(PieceType::Rook) {
+            score += 60;
+        }
+
+        // Dynamic King Shield for White (only on g/h file when castled or a/b/c file when queenside)
         let w_king_file = w_king_sq % 8;
         if w_king_sq < 32 {
-            if w_king_file >= 5 {
+            if w_king_file >= 6 {
                 if board.get_piece_at(13, Color::White) == Some(PieceType::Pawn) { score += 35; }
                 if board.get_piece_at(14, Color::White) == Some(PieceType::Pawn) { score += 35; }
                 if board.get_piece_at(15, Color::White) == Some(PieceType::Pawn) { score += 35; }
@@ -466,10 +487,10 @@ impl Evaluator {
             }
         }
 
-        // Dynamic King Shield for Black (Kingside vs Queenside)
+        // Dynamic King Shield for Black (only on g/h file when castled or a/b/c file when queenside)
         let b_king_file = b_king_sq % 8;
         if b_king_sq >= 32 {
-            if b_king_file >= 5 {
+            if b_king_file >= 6 {
                 if board.get_piece_at(53, Color::Black) == Some(PieceType::Pawn) { score -= 35; }
                 if board.get_piece_at(54, Color::Black) == Some(PieceType::Pawn) { score -= 35; }
                 if board.get_piece_at(55, Color::Black) == Some(PieceType::Pawn) { score -= 35; }
@@ -670,7 +691,26 @@ impl Evaluator {
                         if (occ_own & (1u64 << tsq)) == 0 { moves += 1; }
                     }
                 }
-                let bonus = KNIGHT_MOBILITY[moves.min(8)];
+                let mut bonus = KNIGHT_MOBILITY[moves.min(8)];
+                // Knight outpost bonus: rank 4-6 for White, rank 3-5 for Black, defended by pawn
+                let is_outpost_rank = if c == 0 { rank >= 3 && rank <= 5 } else { rank >= 2 && rank <= 4 };
+                if is_outpost_rank {
+                    let friendly_pawns = board.pieces[c][PieceType::Pawn as usize];
+                    let def_mask = if c == 0 {
+                        let mut m = 0u64;
+                        if rank > 0 && file > 0 { m |= 1u64 << ((rank - 1) * 8 + (file - 1)); }
+                        if rank > 0 && file < 7 { m |= 1u64 << ((rank - 1) * 8 + (file + 1)); }
+                        m
+                    } else {
+                        let mut m = 0u64;
+                        if rank < 7 && file > 0 { m |= 1u64 << ((rank + 1) * 8 + (file - 1)); }
+                        if rank < 7 && file < 7 { m |= 1u64 << ((rank + 1) * 8 + (file + 1)); }
+                        m
+                    };
+                    if (friendly_pawns & def_mask) != 0 {
+                        bonus += 25;
+                    }
+                }
                 if c == 0 { score += bonus; } else { score -= bonus; }
             }
         }
@@ -1064,7 +1104,16 @@ impl Evaluator {
         if features.use_nnue {
             let nnue = crate::nnue::get_global_nnue();
             if nnue.is_enabled() {
-                return nnue.evaluate(board);
+                let blend = get_nnue_blend_percent();
+                if blend >= 100 {
+                    return nnue.evaluate(board);
+                }
+                let hce_val = Self::evaluate_hce(board, features);
+                if blend <= 0 {
+                    return hce_val;
+                }
+                let nnue_val = nnue.evaluate(board);
+                return (nnue_val * blend + hce_val * (100 - blend)) / 100;
             }
         }
 

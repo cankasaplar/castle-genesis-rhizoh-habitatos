@@ -147,6 +147,7 @@ fn main() {
                 writeln!(stdout, "option name UseLossMemory type check default false").unwrap();
                 writeln!(stdout, "option name UseOpeningAntiBlunder type check default false").unwrap();
                 writeln!(stdout, "option name UseNNUE type check default false").unwrap();
+                writeln!(stdout, "option name NNUEBlend type spin default 30 min 0 max 100").unwrap();
                 writeln!(stdout, "option name Ponder type check default true").unwrap();
                 writeln!(stdout, "option name BookFile type string default lab/books/Performance.bin").unwrap();
                 writeln!(stdout, "option name SyzygyPath type string default syzygy").unwrap();
@@ -770,6 +771,11 @@ fn parse_setoption(line: &str, options: &mut UciOptions, opening_book: &mut Open
                         if let Ok(enabled) = val.parse::<bool>() {
                             options.use_nnue = enabled;
                             searcher.features.use_nnue = enabled;
+                        }
+                    }
+                    "nnueblend" => {
+                        if let Ok(b) = val.parse::<i32>() {
+                            eval::set_nnue_blend_percent(b);
                         }
                     }
                     "bookfile" => {

@@ -6,6 +6,7 @@ use crate::eval::Evaluator;
 use crate::time_mgr::TimeLimits;
 use crate::tt::{NodeType, TranspositionTable};
 use crate::types::{CandidateMove, Color, Move, PieceType, SearchFeatures, SearchHeuristics};
+use crate::magic::get_knight_attacks;
 
 static LMR_TABLE: LazyLock<[[usize; 64]; 64]> = LazyLock::new(|| {
     // Conservative LMR: retain more depth for late moves with tactical potential.
@@ -88,6 +89,25 @@ fn has_non_pawn_material(board: &Board, color: Color) -> bool {
         | board.pieces[c_idx][PieceType::Rook as usize]
         | board.pieces[c_idx][PieceType::Queen as usize])
         != 0
+}
+
+#[inline]
+fn can_reduce_root_move(
+    board: &Board,
+    next_board: &Board,
+    mv: Move,
+    depth: u8,
+    move_index: usize,
+    use_lmr: bool,
+) -> bool {
+    use_lmr
+        && depth >= 3
+        && move_index >= 2
+        && mv.captured.is_none()
+        && !mv.is_en_passant
+        && mv.promotion.is_none()
+        && !board.is_king_in_check(board.side_to_move)
+        && !next_board.is_king_in_check(next_board.side_to_move)
 }
 
 impl Searcher {
@@ -382,7 +402,7 @@ impl Searcher {
                     }
                     if i > 0 {
                         if let Some(ref limits) = self.time_limits {
-                            if limits.is_soft_limit_exceeded() || limits.is_hard_limit_exceeded() {
+                            if limits.is_hard_limit_exceeded() {
                                 self.aborted = true;
                                 break;
                             }
@@ -392,8 +412,14 @@ impl Searcher {
                     let mut next_board = board.clone();
                     next_board.make_move(mv);
 
-                    let is_quiet = mv.captured.is_none() && !mv.is_en_passant && mv.promotion.is_none();
-                    let can_reduce_root = self.heuristics.use_lmr && current_depth >= 3 && i >= 2 && is_quiet && !board.is_king_in_check(board.side_to_move);
+                    let can_reduce_root = can_reduce_root_move(
+                        board,
+                        &next_board,
+                        mv,
+                        current_depth,
+                        i,
+                        self.heuristics.use_lmr,
+                    );
 
                     let root_key = board.get_zobrist_key();
                     self.search_stack.push(root_key);
@@ -495,7 +521,11 @@ impl Searcher {
                 let old_best = move_scores.first().cloned();
                 move_scores = current_move_scores;
                 if let Some(&(best_mv, best_score)) = move_scores.first() {
-                    // Dynamic Time Management: Extend search time on root move instability or score collapse (>30cp drop)
+                    let best_u16 = ((best_mv.from as u16) << 6) | (best_mv.to as u16);
+                    let tt_score = score_to_tt(best_score, 0);
+                    self.tt.store(zobrist_key, current_depth as u8, tt_score, NodeType::Exact, Some(best_u16));
+
+                    // Dynamic Time Management: Extend search time on root move instability, score collapse, or tactical moves
                     if let Some((prev_mv, prev_score)) = old_best {
                         if current_depth >= 4 {
                             if best_mv != prev_mv {
@@ -507,6 +537,11 @@ impl Searcher {
                                     limits.extend_time_for_panic(1.25);
                                 }
                             }
+                        }
+                    }
+                    if current_depth >= 4 && (best_mv.captured.is_some() || board.is_king_in_check(board.side_to_move)) {
+                        if let Some(ref mut limits) = self.time_limits {
+                            limits.extend_time_for_panic(1.2);
                         }
                     }
 
@@ -638,6 +673,89 @@ impl Searcher {
             }
         }
 
+        let is_quiet = mv.captured.is_none() && !mv.is_en_passant && mv.promotion.is_none();
+        if is_quiet {
+            let enemy_color = board.side_to_move.opposite();
+            let enemy_king_bb = board.pieces[enemy_color as usize][PieceType::King as usize];
+            if enemy_king_bb != 0 {
+                let k_sq = enemy_king_bb.trailing_zeros() as u8;
+                let clear_slider_ray = |from: u8, to: u8, target: u8| {
+                    let target_rank = target as i8 / 8;
+                    let target_file = target as i8 % 8;
+                    let to_rank = to as i8 / 8;
+                    let to_file = to as i8 % 8;
+                    let rank_delta = target_rank - to_rank;
+                    let file_delta = target_file - to_file;
+                    let mut rank = to_rank + rank_delta.signum();
+                    let mut file = to_file + file_delta.signum();
+
+                    while rank != target_rank || file != target_file {
+                        let square = (rank * 8 + file) as u8;
+                        if square != from && board.combined_occupancy & (1u64 << square) != 0 {
+                            return false;
+                        }
+                        rank += rank_delta.signum();
+                        file += file_delta.signum();
+                    }
+                    true
+                };
+                let gives_check = match mv.piece {
+                    PieceType::Knight => (get_knight_attacks(k_sq) & (1u64 << mv.to)) != 0,
+                    PieceType::Pawn => {
+                        let att = if board.side_to_move == Color::White {
+                            ((1u64 << mv.to) << 7 & !0x8080808080808080) | ((1u64 << mv.to) << 9 & !0x0101010101010101)
+                        } else {
+                            ((1u64 << mv.to) >> 7 & !0x0101010101010101) | ((1u64 << mv.to) >> 9 & !0x8080808080808080)
+                        };
+                        (att & enemy_king_bb) != 0
+                    }
+                    PieceType::Bishop => {
+                        let k_rank = k_sq as i8 / 8;
+                        let k_file = k_sq as i8 % 8;
+                        let to_rank = mv.to as i8 / 8;
+                        let to_file = mv.to as i8 % 8;
+                        let aligned = (k_rank - to_rank).abs() == (k_file - to_file).abs();
+                        aligned && clear_slider_ray(mv.from, mv.to, k_sq)
+                    }
+                    PieceType::Rook => {
+                        let k_rank = k_sq / 8;
+                        let k_file = k_sq % 8;
+                        let to_rank = mv.to / 8;
+                        let to_file = mv.to % 8;
+                        (k_rank == to_rank || k_file == to_file)
+                            && clear_slider_ray(mv.from, mv.to, k_sq)
+                    }
+                    PieceType::Queen => {
+                        let k_rank = k_sq as i8 / 8;
+                        let k_file = k_sq as i8 % 8;
+                        let to_rank = mv.to as i8 / 8;
+                        let to_file = mv.to as i8 % 8;
+                        let aligned = k_rank == to_rank
+                            || k_file == to_file
+                            || (k_rank - to_rank).abs() == (k_file - to_file).abs();
+                        aligned && clear_slider_ray(mv.from, mv.to, k_sq)
+                    }
+                    PieceType::King => false,
+                };
+                if gives_check {
+                    return 620_000;
+                }
+            }
+
+            // Penalty for quiet non-pawn moves that step into enemy pawn attacks without capture
+            if mv.piece != PieceType::Pawn {
+                let enemy_pawns = board.pieces[enemy_color as usize][PieceType::Pawn as usize];
+                let pawn_att = if enemy_color == Color::White {
+                    ((enemy_pawns << 7) & !0x8080808080808080) | ((enemy_pawns << 9) & !0x0101010101010101)
+                } else {
+                    ((enemy_pawns >> 7) & !0x0101010101010101) | ((enemy_pawns >> 9) & !0x8080808080808080)
+                };
+                if (pawn_att & (1u64 << mv.to)) != 0 {
+                    return -200_000;
+                }
+            }
+        }
+
         // History & Continuation History
         let history_score = self.heuristics.history_table[mv.from as usize][mv.to as usize];
         let con_hist = self.heuristics.get_continuation_history(prev_move, mv);
@@ -683,20 +801,10 @@ impl Searcher {
             }
         }
 
-        // Generate legal moves (captures, evasions or quiet checks at shallow quiescence)
+        // Generate legal moves (captures, promotions, and evasions if in check)
         let moves = board.generate_moves();
         let captures: Vec<Move> = moves.into_iter().filter(|m| {
-            if in_check || m.captured.is_some() || m.is_en_passant || m.promotion.is_some() {
-                return true;
-            }
-            if ply <= 2 {
-                let mut test_b = board.clone();
-                test_b.make_move(*m);
-                if test_b.is_king_in_check(test_b.side_to_move) {
-                    return true;
-                }
-            }
-            false
+            in_check || m.captured.is_some() || m.is_en_passant || m.promotion.is_some()
         }).collect();
 
         if captures.is_empty() {
@@ -706,7 +814,7 @@ impl Searcher {
             return alpha;
         }
 
-        // Sort captures by MVV-LVA + SEE
+        // Sort captures by MVV-LVA
         let mut sorted_captures = captures;
         sorted_captures.sort_by_key(|mv| -self.score_move_mvv_lva(board, *mv));
 
@@ -717,17 +825,17 @@ impl Searcher {
                 None => if mv.is_en_passant { 100 } else { 0 },
             };
 
-            // 1. Delta Pruning: If even capturing piece (+ queen margin) cannot raise alpha, prune capture
+            // 1. Delta Pruning: If even capturing piece (+ margin) cannot raise alpha, prune capture
             if !in_check && mv.promotion.is_none() {
-                if stand_pat + captured_val + 900 < alpha {
+                if stand_pat + captured_val + 800 < alpha {
                     self.stats.delta_prunes += 1;
                     continue;
                 }
             }
 
-            // 2. SEE Pruning: Skip severely losing capture sequences in quiescence (exempt promotions & tactical sacrifices)
+            // 2. SEE Pruning: Skip losing capture sequences in quiescence (SEE < 0)
             if !in_check && mv.promotion.is_none() && (mv.captured.is_some() || mv.is_en_passant) {
-                if crate::see::see_eval(board, mv) < -300 {
+                if crate::see::see_eval(board, mv) < -150 {
                     self.stats.see_prunes += 1;
                     continue;
                 }
@@ -1007,7 +1115,6 @@ impl Searcher {
 
             let mv_u16 = ((mv.from as u16) << 6) | (mv.to as u16);
             let is_tt_move = Some(mv_u16) == tt_move;
-            let is_recapture = prev_move.map_or(false, |pm| mv.to == pm.to && mv.captured.is_some());
 
             // 2. Futility Pruning: Prune quiet moves at low depth if static eval + margin <= alpha
             if i > 0 && is_quiet && !in_check && !is_tt_move && depth <= 3 {
@@ -1048,7 +1155,13 @@ impl Searcher {
                         let singular_depth = (depth - 1) / 2;
 
                         let singular_score = self.alpha_beta_with_prev(board, singular_depth, ply, singular_beta - 1, singular_beta, prev_move, Some(mv));
-                        if !self.aborted && singular_score < singular_beta { 1 } else { 0 }
+                        if !self.aborted && singular_score < singular_beta {
+                            if singular_score < singular_beta - 60 && depth >= 8 {
+                                2
+                            } else {
+                                1
+                            }
+                        } else { 0 }
                     } else { 0 }
                 } else { 0 }
             } else { 0 };
@@ -1056,7 +1169,7 @@ impl Searcher {
             if singular_extension > 0 {
                 self.stats.singular_extensions += 1;
             }
-            let extension = if is_recapture { 1 } else if gives_check && ply < 64 { 1 } else { singular_extension };
+            let extension = singular_extension;
             let current_depth = depth + extension;
 
             // Main Search SEE Pruning: Prune losing captures at non-PV nodes (NEVER PRUNE CHECKS OR PROMOTIONS!)
@@ -1281,5 +1394,56 @@ mod tests {
         let entry = searcher.tt.probe(key).expect("original TT entry must remain");
         assert_eq!(entry.score, 1200);
         assert_eq!(entry.best_move, Some(excluded_u16));
+    }
+
+    #[test]
+    fn blocked_slider_ray_does_not_receive_quiet_check_bonus() {
+        let mut searcher = Searcher::new();
+        searcher.features.use_nnue = false;
+        let board = Board::from_fen("r1bqk1nr/pppp1ppp/2n5/4p3/1b2P3/2N2N2/PPPP1PPP/R1BQKB1R w KQkq - 0 1");
+        let bishop_move = board
+            .generate_moves()
+            .into_iter()
+            .find(|mv| mv.from == 5 && mv.to == 33)
+            .expect("WAC 011 bishop move f1b5 should be legal");
+
+        assert_ne!(searcher.score_move(&board, bishop_move, 0, None, None), 620_000);
+    }
+
+    #[test]
+    fn clear_slider_ray_receives_quiet_check_bonus() {
+        let mut searcher = Searcher::new();
+        searcher.features.use_nnue = false;
+        let board = Board::from_fen("4k3/8/8/1B6/8/8/8/4K3 w - - 0 1");
+        let bishop_move = board
+            .generate_moves()
+            .into_iter()
+            .find(|mv| mv.from == 33 && mv.to == 51)
+            .expect("bishop move b5d7 should be legal");
+
+        assert_eq!(searcher.score_move(&board, bishop_move, 0, None, None), 620_000);
+    }
+
+    #[test]
+    fn root_lmr_does_not_reduce_quiet_checking_moves() {
+        let board = Board::from_fen("4k3/8/8/1B6/8/8/8/K7 w - - 0 1");
+        let moves = board.generate_moves();
+        let checking_move = moves
+            .iter()
+            .copied()
+            .find(|mv| mv.from == 33 && mv.to == 51)
+            .expect("bishop move b5d7 should be legal");
+        let quiet_move = moves
+            .iter()
+            .copied()
+            .find(|mv| mv.from == 33 && mv.to == 40)
+            .expect("bishop move b5a6 should be legal");
+        let mut checking_position = board.clone();
+        checking_position.make_move(checking_move);
+        let mut quiet_position = board.clone();
+        quiet_position.make_move(quiet_move);
+
+        assert!(!can_reduce_root_move(&board, &checking_position, checking_move, 3, 2, true));
+        assert!(can_reduce_root_move(&board, &quiet_position, quiet_move, 3, 2, true));
     }
 }

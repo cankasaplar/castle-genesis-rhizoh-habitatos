@@ -1,22 +1,24 @@
 {
-  "eval_mode": "HCE",
-  "binary_sha256": "f650f3ff61f4d6ca52f9b397da876a6e59379ada21299ac64f0cb46488b2b6a5",
-  "model_sha256": null,
+  "eval_mode": "NNUE",
+  "binary_sha256": "1bfd794fd0692a236f1f3305d644664dfb23175788542ef08557466c176f5ad8",
+  "model_sha256": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
   "hce_reference_wac_median": 19.0,
   "wac_30_5run_scores": [
-    20,
-    21,
-    21,
-    21,
-    20
+    24,
+    23,
+    22,
+    23,
+    22
   ],
-  "wac_30_5run_median": 21.0,
-  "holdout_pearson_r": null,
+  "wac_30_5run_median": 22.0,
+  "holdout_pearson_r": 0.4648,
   "gate0_result": {
     "passed": true,
-    "note": "HCE evaluation mode"
+    "fw_norm": 591.35,
+    "ow_w_norm": 27.22,
+    "note": "Sprint Promoted: sprint_blend_a50.bin"
   },
   "hce_dominance_guard": true,
   "min_nnue_wac_median": 21.0,
-  "promoted_at": "2026-09-17T18:53:55Z"
+  "promoted_at": "2026-10-04T06:58:40.424726+00:00"
 }

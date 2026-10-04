@@ -666,7 +666,11 @@ impl Board {
         if mv.from == 63 || mv.to == 63 { self.castling_rights &= !0b0100; }
 
         if mv.piece == PieceType::King {
-            self.accumulator = None;
+            self.accumulator = if self.accumulator.is_some() {
+                Some(crate::nnue::get_global_nnue().compute_accumulator(self))
+            } else {
+                None
+            };
         } else if let Some(ref mut acc) = self.accumulator {
             let captured_info = if mv.is_en_passant {
                 let ep_sq = if self.side_to_move == Color::White { mv.to - 8 } else { mv.to + 8 };

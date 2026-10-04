@@ -930,7 +930,7 @@ function executeEngineQuery({
         nps: 0,
         searchTimeMs: 0,
         pv: "",
-        engine: "Rhizoh HCE (Unbound)",
+        engine: "Rhizoh HalfKP NNUE (Unbound)",
         reason: "binary_not_found"
       });
     }
@@ -946,7 +946,7 @@ function executeEngineQuery({
         nps: 0,
         searchTimeMs: 0,
         pv: "",
-        engine: "Rhizoh HCE 22.0 (Golden Baseline)",
+        engine: "Rhizoh HalfKP NNUE (r=+0.4648, WAC 23.0)",
         reason: "empty_fen"
       });
     }
@@ -1008,7 +1008,7 @@ function executeEngineQuery({
           nps,
           searchTimeMs,
           pv,
-          engine: "Rhizoh HCE 22.0 (Golden Baseline)"
+          engine: "Rhizoh HalfKP NNUE (r=+0.4648, WAC 23.0)"
         });
       } else {
         finish({
@@ -1021,7 +1021,7 @@ function executeEngineQuery({
           searchTimeMs: 0,
           pv: "",
           isBookMove: false,
-          engine: "Rhizoh HCE 22.0 (Golden Baseline)",
+          engine: "Rhizoh HalfKP NNUE (r=+0.4648, WAC 23.0)",
           reason: "timeout"
         });
       }
@@ -1043,7 +1043,7 @@ function executeEngineQuery({
         nps: 0,
         searchTimeMs: 0,
         pv: "",
-        engine: "Rhizoh HCE 22.0 (Golden Baseline)",
+        engine: "Rhizoh HalfKP NNUE (r=+0.4648, WAC 23.0)",
         reason: String(err?.message || err)
       });
     }
@@ -1114,7 +1114,7 @@ function executeEngineQuery({
           nps: 0,
           searchTimeMs: 0,
           pv: "",
-          engine: "Rhizoh HCE 22.0 (Golden Baseline)",
+          engine: "Rhizoh HalfKP NNUE (r=+0.4648, WAC 23.0)",
           reason: `process_closed_code_${code}`
         });
       }
@@ -1130,7 +1130,7 @@ function executeEngineQuery({
         nps: 0,
         searchTimeMs: 0,
         pv: "",
-        engine: "Rhizoh HCE 22.0 (Golden Baseline)",
+        engine: "Rhizoh HalfKP NNUE (r=+0.4648, WAC 23.0)",
         reason: String(err?.message || err)
       });
     });
@@ -1139,7 +1139,7 @@ function executeEngineQuery({
       "uci",
       "setoption name Hash value 32",
       "setoption name Threads value 1",
-      "setoption name UseNNUE value false",
+      "setoption name UseNNUE value true",
       `setoption name OwnBook value ${useBook ? "true" : "false"}`
     ];
     if (useBook && bookFile) {

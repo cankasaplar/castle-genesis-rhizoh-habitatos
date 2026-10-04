@@ -43,38 +43,6 @@ impl NnueEvaluator {
         let mut loaded = false;
 
         let mut sf_net: Option<nnue_rs::Network> = None;
-        let mut sf_candidate_paths = vec![
-            std::path::PathBuf::from("config/stockfish_cc0.nnue"),
-            std::path::PathBuf::from("../config/stockfish_cc0.nnue"),
-            std::path::PathBuf::from("../../config/stockfish_cc0.nnue"),
-        ];
-
-        if let Ok(exe_path) = std::env::current_exe() {
-            if let Some(exe_dir) = exe_path.parent() {
-                sf_candidate_paths.push(exe_dir.join("config/stockfish_cc0.nnue"));
-                sf_candidate_paths.push(exe_dir.join("../config/stockfish_cc0.nnue"));
-                sf_candidate_paths.push(exe_dir.join("stockfish_cc0.nnue"));
-                sf_candidate_paths.push(exe_dir.join("bin/stockfish_cc0.nnue"));
-            }
-        }
-
-        for path in &sf_candidate_paths {
-            if path.exists() {
-                if let Some(p_str) = path.to_str() {
-                    match nnue_rs::Network::from_file(p_str) {
-                        Ok(net) => {
-                            println!("info string [NNUE Stockfish CC0] Loaded {:?} architecture from {:?}", net.arch(), path);
-                            sf_net = Some(net);
-                            loaded = true;
-                            break;
-                        }
-                        Err(e) => {
-                            eprintln!("[NNUE DEBUG] Failed to load Stockfish net from {:?}: {:?}", path, e);
-                        }
-                    }
-                }
-            }
-        }
 
         let mut candidate_paths = vec![
             std::path::PathBuf::from("config/rhizoh_nnue.bin"),
@@ -86,6 +54,7 @@ impl NnueEvaluator {
             if let Some(exe_dir) = exe_path.parent() {
                 candidate_paths.push(exe_dir.join("config/rhizoh_nnue.bin"));
                 candidate_paths.push(exe_dir.join("../config/rhizoh_nnue.bin"));
+                candidate_paths.push(exe_dir.join("rhizoh_nnue.bin"));
             }
         }
 
@@ -133,13 +102,49 @@ impl NnueEvaluator {
                                 }
                                 loaded_ob = i32::from_le_bytes([data[pos], data[pos+1], data[pos+2], data[pos+3]]);
                                 loaded = true;
-                                println!("info string [NNUE V5 HalfKP 512] Loaded {INPUT_DIM}→{HIDDEN_DIM}x2→1 from {:?}", path);
+                                let format = if magic == MAGIC_V5 { "RHNNUEV5" } else { "RHNNUEV6" };
+                                println!("info string [NNUE Rhizoh] Loaded {format} HalfKP {INPUT_DIM}→{HIDDEN_DIM}x2→1 from {:?}", path);
                                 break 'outer;
                             } else {
-                                eprintln!("[NNUE DEBUG] File size mismatch: {} < expected {}", data.len(), expected_size);
+                                eprintln!("[NNUE Rhizoh] Rejected {:?}: file size {} is below expected {}", path, data.len(), expected_size);
                             }
                         } else {
-                            eprintln!("[NNUE DEBUG] Magic/Dim mismatch: magic={:?}, input={}, hidden={}", magic, file_input, file_hidden);
+                            eprintln!("[NNUE Rhizoh] Rejected {:?}: magic={:?}, dimensions={}x{}; expected RHNNUEV5/V6 {}x{}", path, magic, file_input, file_hidden, INPUT_DIM, HIDDEN_DIM);
+                        }
+                    }
+                }
+            }
+        }
+
+        if !loaded {
+            let mut sf_candidate_paths = vec![
+                std::path::PathBuf::from("config/stockfish_cc0.nnue"),
+                std::path::PathBuf::from("../config/stockfish_cc0.nnue"),
+                std::path::PathBuf::from("../../config/stockfish_cc0.nnue"),
+            ];
+
+            if let Ok(exe_path) = std::env::current_exe() {
+                if let Some(exe_dir) = exe_path.parent() {
+                    sf_candidate_paths.push(exe_dir.join("config/stockfish_cc0.nnue"));
+                    sf_candidate_paths.push(exe_dir.join("../config/stockfish_cc0.nnue"));
+                    sf_candidate_paths.push(exe_dir.join("stockfish_cc0.nnue"));
+                    sf_candidate_paths.push(exe_dir.join("bin/stockfish_cc0.nnue"));
+                }
+            }
+
+            for path in &sf_candidate_paths {
+                if path.exists() {
+                    if let Some(p_str) = path.to_str() {
+                        match nnue_rs::Network::from_file(p_str) {
+                            Ok(net) => {
+                                println!("info string [NNUE Stockfish CC0] Loaded {:?} architecture from {:?}", net.arch(), path);
+                                sf_net = Some(net);
+                                loaded = true;
+                                break;
+                            }
+                            Err(e) => {
+                                eprintln!("[NNUE DEBUG] Failed to load Stockfish net from {:?}: {:?}", path, e);
+                            }
                         }
                     }
                 }
@@ -232,7 +237,7 @@ impl NnueEvaluator {
         #[cfg(target_arch = "x86_64")]
         {
             if is_x86_feature_detected!("avx2") {
-                let score = unsafe {
+                return unsafe {
                     evaluate_accumulator_avx2(
                         own_acc,
                         opp_acc,
@@ -241,12 +246,8 @@ impl NnueEvaluator {
                         self.output_bias,
                     )
                 };
-                let final_cp = (score / QUANT_SCALE).clamp(-4000, 4000);
-                return final_cp;
             }
         }
-
-        let mut score: i32 = self.output_bias;
 
         let mut i = 0;
         let mut sum0: i32 = 0;
@@ -280,9 +281,8 @@ impl NnueEvaluator {
             i += 1;
         }
 
-        score += sum0 + sum1;
-
-        let final_cp = (score / QUANT_SCALE).clamp(-4000, 4000);
+        let dot_sum = sum0 + sum1;
+        let final_cp = (dot_sum / (QUANT_SCALE * QUANT_SCALE) + self.output_bias / QUANT_SCALE).clamp(-4000, 4000);
         final_cp
     }
 
@@ -553,11 +553,12 @@ unsafe fn evaluate_accumulator_avx2(
         _mm256_storeu_si256(temp.as_mut_ptr() as *mut __m256i, acc_sum);
     }
 
-    let mut total: i32 = output_bias;
+    let mut dot_sum: i32 = 0;
     for &t in &temp {
-        total += t;
+        dot_sum += t;
     }
-    total
+    let final_cp = dot_sum / (QUANT_SCALE * QUANT_SCALE) + output_bias / QUANT_SCALE;
+    final_cp.clamp(-4000, 4000)
 }
 
 /// Global NNUE instance (thread-safe, loaded once at startup)

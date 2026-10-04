@@ -313,10 +313,10 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
 
       if (attempt === 1) {
         const tcLabel = selectedTc === "fixed_movetime" ? `${engineSpeedMs}ms` : TIME_CONTROL_PRESETS.find(p => p.id === selectedTc)?.label || selectedTc;
-        setStatusMessage(`Rhizoh HCE calculating (${tcLabel})...`);
+        setStatusMessage(`Rhizoh NNUE calculating (${tcLabel})...`);
       } else {
         setIsWakingUp(true);
-        setStatusMessage(`⏳ Rhizoh HCE is waking up (Render cold-start boot, attempt ${attempt}/${maxRetries})... Please wait.`);
+        setStatusMessage(`⏳ Rhizoh NNUE is waking up (Render cold-start boot, attempt ${attempt}/${maxRetries})... Please wait.`);
         if (!wakeTimerRef.current) {
           wakeTimerRef.current = setInterval(() => {
             setWakeElapsedSec(Math.round((Date.now() - startTime) / 1000));
@@ -770,7 +770,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 fontWeight: 700
               }}
             >
-              HCE 22.0
+              NNUE 23.0
             </span>
           </div>
         </div>
@@ -940,7 +940,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 }}
               />
               <span style={{ fontSize: 12, fontWeight: 700, color: "#cbd5e1" }}>
-                {gameMode === "exhibition" ? (topClockColor === "w" ? "Rhizoh HCE 22.0 (White)" : "Rhizoh HCE 22.0 (Black)") : (orientation === "w" ? "Rhizoh HCE 22.0 (Black)" : "You (Black)")}
+                {gameMode === "exhibition" ? (topClockColor === "w" ? "Rhizoh NNUE (r=+0.4648) (White)" : "Rhizoh NNUE (r=+0.4648) (Black)") : (orientation === "w" ? "Rhizoh NNUE (r=+0.4648) (Black)" : "You (Black)")}
               </span>
             </div>
             <div
@@ -1014,7 +1014,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 >
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b", boxShadow: "0 0 8px #f59e0b" }} />
                   <span style={{ fontSize: 12, fontWeight: 700, color: "#fef3c7" }}>
-                    Rhizoh HCE Booting: Attempt {wakeAttempt}/8 ({wakeElapsedSec}s) — No Fake Moves
+                    Rhizoh NNUE Booting: Attempt {wakeAttempt}/8 ({wakeElapsedSec}s) — No Fake Moves
                   </span>
                 </div>
               )}
@@ -1109,7 +1109,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 }}
               />
               <span style={{ fontSize: 12, fontWeight: 700, color: "#cbd5e1" }}>
-                {gameMode === "exhibition" ? (bottomClockColor === "w" ? "Rhizoh HCE 22.0 (White)" : "Rhizoh HCE 22.0 (Black)") : (orientation === "w" ? "You (White)" : "Rhizoh HCE 22.0 (White)")}
+                {gameMode === "exhibition" ? (bottomClockColor === "w" ? "Rhizoh NNUE (r=+0.4648) (White)" : "Rhizoh NNUE (r=+0.4648) (Black)") : (orientation === "w" ? "You (White)" : "Rhizoh NNUE (r=+0.4648) (White)")}
               </span>
             </div>
             <div
@@ -1279,7 +1279,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <Cpu size={14} color="#38bdf8" />
                 <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>
-                  Rhizoh HCE Engine Telemetry
+                  Rhizoh NNUE Engine Telemetry
                 </span>
               </div>
               <span style={{ fontSize: 12, fontWeight: 700, color: evalScore >= 0 ? "#38bdf8" : "#f87171" }}>
