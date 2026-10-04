@@ -141,7 +141,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
   const triggerEngineSolve = async () => {
     if (!currentPuzzle || solveState === "solving") return;
     setSolveState("solving");
-    setStatusMessage("Rhizoh NNUE (r=+0.4648) searching position (400ms movetime)...");
+    setStatusMessage("Rhizoh NNUE (r=+0.4684) searching position (400ms movetime)...");
 
     const solvePayload = {
       puzzleId: currentPuzzle.id,
@@ -500,7 +500,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
                 border: "1px solid rgba(56, 189, 248, 0.3)"
               }}
             >
-              HalfKP NNUE (r=+0.4648, WAC 23.0)
+              HalfKP NNUE (r=+0.4648, WAC 22.0)
             </span>
             <span
               style={{

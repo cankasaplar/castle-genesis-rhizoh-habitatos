@@ -946,7 +946,7 @@ function executeEngineQuery({
         nps: 0,
         searchTimeMs: 0,
         pv: "",
-        engine: "Rhizoh HalfKP NNUE (r=+0.4648, WAC 23.0)",
+        engine: "Rhizoh HalfKP NNUE v1.0.4 (r=+0.4684, WAC 23.0)",
         reason: "empty_fen"
       });
     }
@@ -1008,7 +1008,7 @@ function executeEngineQuery({
           nps,
           searchTimeMs,
           pv,
-          engine: "Rhizoh HalfKP NNUE (r=+0.4648, WAC 23.0)"
+          engine: "Rhizoh HalfKP NNUE v1.0.4 (r=+0.4684, WAC 23.0)"
         });
       } else {
         finish({
@@ -1021,7 +1021,7 @@ function executeEngineQuery({
           searchTimeMs: 0,
           pv: "",
           isBookMove: false,
-          engine: "Rhizoh HalfKP NNUE (r=+0.4648, WAC 23.0)",
+          engine: "Rhizoh HalfKP NNUE v1.0.4 (r=+0.4684, WAC 23.0)",
           reason: "timeout"
         });
       }
@@ -1043,7 +1043,7 @@ function executeEngineQuery({
         nps: 0,
         searchTimeMs: 0,
         pv: "",
-        engine: "Rhizoh HalfKP NNUE (r=+0.4648, WAC 23.0)",
+        engine: "Rhizoh HalfKP NNUE v1.0.4 (r=+0.4684, WAC 23.0)",
         reason: String(err?.message || err)
       });
     }
@@ -1114,7 +1114,7 @@ function executeEngineQuery({
           nps: 0,
           searchTimeMs: 0,
           pv: "",
-          engine: "Rhizoh HalfKP NNUE (r=+0.4648, WAC 23.0)",
+          engine: "Rhizoh HalfKP NNUE v1.0.4 (r=+0.4684, WAC 23.0)",
           reason: `process_closed_code_${code}`
         });
       }
@@ -1130,7 +1130,7 @@ function executeEngineQuery({
         nps: 0,
         searchTimeMs: 0,
         pv: "",
-        engine: "Rhizoh HalfKP NNUE (r=+0.4648, WAC 23.0)",
+        engine: "Rhizoh HalfKP NNUE v1.0.4 (r=+0.4684, WAC 23.0)",
         reason: String(err?.message || err)
       });
     });

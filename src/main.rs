@@ -51,6 +51,8 @@ struct UciOptions {
     use_loss_memory: bool,
     use_opening_antiblunder: bool,
     use_nnue: bool,
+    lmr_mode: types::LmrMode,
+    use_central_pawn_bonus: bool,
 }
 
 impl Default for UciOptions {
@@ -72,6 +74,8 @@ impl Default for UciOptions {
             use_loss_memory: false, // Default false to match UCI declaration and ensure strict baseline isolation
             use_opening_antiblunder: true,
             use_nnue: false, // Default to Pure HCE Golden Baseline (NNUE gated until candidate beats WAC 21)
+            lmr_mode: types::LmrMode::Baseline,
+            use_central_pawn_bonus: false,
         }
     }
 }
@@ -89,6 +93,7 @@ fn main() {
     let mut searcher = Searcher::new();
     searcher.features.use_loss_memory = options.use_loss_memory;
     searcher.features.use_nnue = options.use_nnue;
+    searcher.features.use_central_pawn_bonus = options.use_central_pawn_bonus;
 
     // 1. Canlı Öğrenme Döngüsü: Texel Ağırlıkları ve Kayıp Hafızasını Yükle
     let weights_loaded = eval::Evaluator::load_weights_from_file("config/eval_weights.json");
@@ -147,6 +152,8 @@ fn main() {
                 writeln!(stdout, "option name UseLossMemory type check default false").unwrap();
                 writeln!(stdout, "option name UseOpeningAntiBlunder type check default false").unwrap();
                 writeln!(stdout, "option name UseNNUE type check default false").unwrap();
+                writeln!(stdout, "option name LmrMode type combo default Baseline var Baseline var Conservative var TacticalGuard").unwrap();
+                writeln!(stdout, "option name UseCentralPawnBonus type check default false").unwrap();
                 writeln!(stdout, "option name NNUEBlend type spin default 30 min 0 max 100").unwrap();
                 writeln!(stdout, "option name Ponder type check default true").unwrap();
                 writeln!(stdout, "option name BookFile type string default lab/books/Performance.bin").unwrap();
@@ -181,6 +188,7 @@ fn main() {
                 searcher.features.use_loss_memory = options.use_loss_memory;
                 searcher.features.use_opening_antiblunder = options.use_opening_antiblunder;
                 searcher.features.use_nnue = options.use_nnue;
+                searcher.features.lmr_mode = options.lmr_mode;
                 searcher.set_threads(options.threads);
             }
             "setoption" => {
@@ -203,6 +211,16 @@ fn main() {
             "eval" => {
                 let score = eval::Evaluator::evaluate(&board, &searcher.features);
                 writeln!(stdout, "info string static eval {}", score).unwrap();
+                stdout.flush().unwrap();
+            }
+            "anatomy" => {
+                let target_uci = parts.get(1).unwrap_or(&"");
+                if let Some(res) = searcher.inspect_move_anatomy(&board, target_uci) {
+                    let json_str = serde_json::to_string(&res).unwrap_or_default();
+                    writeln!(stdout, "info string ANATOMY {}", json_str).unwrap();
+                } else {
+                    writeln!(stdout, "info string ANATOMY_NOT_FOUND").unwrap();
+                }
                 stdout.flush().unwrap();
             }
             "zobrist" | "d" => {
@@ -310,6 +328,7 @@ fn main() {
                 searcher.features.use_loss_memory = options.use_loss_memory;
                 searcher.features.use_opening_antiblunder = options.use_opening_antiblunder;
                 searcher.features.use_nnue = options.use_nnue;
+                searcher.features.lmr_mode = options.lmr_mode;
 
                 // 3. Alpha-Beta ve Epistemik Arama Devreye Girer
                 let base_depth = requested_depth.unwrap_or(64);
@@ -767,10 +786,32 @@ fn parse_setoption(line: &str, options: &mut UciOptions, opening_book: &mut Open
                             options.use_opening_antiblunder = enabled;
                         }
                     }
+                    "usecentralpawnbonus" => {
+                        if let Ok(enabled) = val.parse::<bool>() {
+                            options.use_central_pawn_bonus = enabled;
+                            searcher.features.use_central_pawn_bonus = enabled;
+                        }
+                    }
                     "usennue" => {
                         if let Ok(enabled) = val.parse::<bool>() {
                             options.use_nnue = enabled;
                             searcher.features.use_nnue = enabled;
+                        }
+                    }
+                    "lmrmode" => {
+                        match val.to_lowercase().as_str() {
+                            "conservative" => {
+                                options.lmr_mode = types::LmrMode::Conservative;
+                                searcher.features.lmr_mode = types::LmrMode::Conservative;
+                            },
+                            "tacticalguard" | "tactical_guard" => {
+                                options.lmr_mode = types::LmrMode::TacticalGuard;
+                                searcher.features.lmr_mode = types::LmrMode::TacticalGuard;
+                            },
+                            _ => {
+                                options.lmr_mode = types::LmrMode::Baseline;
+                                searcher.features.lmr_mode = types::LmrMode::Baseline;
+                            }
                         }
                     }
                     "nnueblend" => {

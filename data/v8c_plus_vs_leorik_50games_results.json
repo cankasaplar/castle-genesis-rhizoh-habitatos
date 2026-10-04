@@ -1,0 +1,469 @@
+{
+  "timestamp_utc": "2026-10-04T12:34:05Z",
+  "experiment": "Rhizoh V8-C+ Q2 vs Leorik 3.2.1 Tournament (50 Games)",
+  "total_games": 50,
+  "rhizoh_wins": 0,
+  "rhizoh_draws": 5,
+  "rhizoh_losses": 45,
+  "rhizoh_points": 2.5,
+  "win_rate_pct": 5.0,
+  "delta_elo_vs_leorik": -511.5,
+  "ci_95": 152.1,
+  "baseline_comparison": {
+    "v1_0_3_baseline_pct": 5.0,
+    "gain_pct_points": 0.0
+  },
+  "pgn_path": "C:\\Users\\LENOVO\\Desktop\\castle\\data\\pgn_archive\\v8c_plus_vs_leorik_50games.pgn",
+  "games": [
+    {
+      "round": 1,
+      "opening": "Italian Game (Giuoco Piano)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 57
+    },
+    {
+      "round": 2,
+      "opening": "Italian Game (Giuoco Piano)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 84
+    },
+    {
+      "round": 3,
+      "opening": "Ruy Lopez (Closed Morphy)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 37
+    },
+    {
+      "round": 4,
+      "opening": "Ruy Lopez (Closed Morphy)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 42
+    },
+    {
+      "round": 5,
+      "opening": "Sicilian Defense (Open Classical)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 85
+    },
+    {
+      "round": 6,
+      "opening": "Sicilian Defense (Open Classical)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 54
+    },
+    {
+      "round": 7,
+      "opening": "Sicilian Defense (Najdorf)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 61
+    },
+    {
+      "round": 8,
+      "opening": "Sicilian Defense (Najdorf)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 64
+    },
+    {
+      "round": 9,
+      "opening": "French Defense (Winawer)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 63
+    },
+    {
+      "round": 10,
+      "opening": "French Defense (Winawer)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 68
+    },
+    {
+      "round": 11,
+      "opening": "French Defense (Tarrasch)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 65
+    },
+    {
+      "round": 12,
+      "opening": "French Defense (Tarrasch)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 42
+    },
+    {
+      "round": 13,
+      "opening": "Caro-Kann Defense (Advance)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "*",
+      "rhizoh_outcome": "draw",
+      "plies": 160
+    },
+    {
+      "round": 14,
+      "opening": "Caro-Kann Defense (Advance)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 57
+    },
+    {
+      "round": 15,
+      "opening": "Caro-Kann Defense (Classical)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 95
+    },
+    {
+      "round": 16,
+      "opening": "Caro-Kann Defense (Classical)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 84
+    },
+    {
+      "round": 17,
+      "opening": "Queen's Gambit Declined (Exchange)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 90
+    },
+    {
+      "round": 18,
+      "opening": "Queen's Gambit Declined (Exchange)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "*",
+      "rhizoh_outcome": "draw",
+      "plies": 160
+    },
+    {
+      "round": 19,
+      "opening": "Queen's Gambit Accepted",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "*",
+      "rhizoh_outcome": "draw",
+      "plies": 160
+    },
+    {
+      "round": 20,
+      "opening": "Queen's Gambit Accepted",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 81
+    },
+    {
+      "round": 21,
+      "opening": "Nimzo-Indian Defense (Rubinstein)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 37
+    },
+    {
+      "round": 22,
+      "opening": "Nimzo-Indian Defense (Rubinstein)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 64
+    },
+    {
+      "round": 23,
+      "opening": "King's Indian Defense (Mar del Plata)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 60
+    },
+    {
+      "round": 24,
+      "opening": "King's Indian Defense (Mar del Plata)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 79
+    },
+    {
+      "round": 25,
+      "opening": "Grunfeld Defense (Exchange)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 23
+    },
+    {
+      "round": 26,
+      "opening": "Grunfeld Defense (Exchange)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 82
+    },
+    {
+      "round": 27,
+      "opening": "English Opening (Symmetrical)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 35
+    },
+    {
+      "round": 28,
+      "opening": "English Opening (Symmetrical)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 40
+    },
+    {
+      "round": 29,
+      "opening": "Reti Opening (King's Indian Setup)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 83
+    },
+    {
+      "round": 30,
+      "opening": "Reti Opening (King's Indian Setup)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 86
+    },
+    {
+      "round": 31,
+      "opening": "Slav Defense (Modern)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 30
+    },
+    {
+      "round": 32,
+      "opening": "Slav Defense (Modern)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "*",
+      "rhizoh_outcome": "draw",
+      "plies": 160
+    },
+    {
+      "round": 33,
+      "opening": "Semi-Slav Defense (Meran)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 59
+    },
+    {
+      "round": 34,
+      "opening": "Semi-Slav Defense (Meran)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 50
+    },
+    {
+      "round": 35,
+      "opening": "Scotch Game (Mieses)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 30
+    },
+    {
+      "round": 36,
+      "opening": "Scotch Game (Mieses)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 117
+    },
+    {
+      "round": 37,
+      "opening": "Scandinavian Defense (Main Line)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 24
+    },
+    {
+      "round": 38,
+      "opening": "Scandinavian Defense (Main Line)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 97
+    },
+    {
+      "round": 39,
+      "opening": "Alekhine Defense (Modern)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 92
+    },
+    {
+      "round": 40,
+      "opening": "Alekhine Defense (Modern)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 63
+    },
+    {
+      "round": 41,
+      "opening": "Vienna Game (Falkbeer)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 20
+    },
+    {
+      "round": 42,
+      "opening": "Vienna Game (Falkbeer)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 93
+    },
+    {
+      "round": 43,
+      "opening": "Benoni Defense (Modern)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 31
+    },
+    {
+      "round": 44,
+      "opening": "Benoni Defense (Modern)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 58
+    },
+    {
+      "round": 45,
+      "opening": "Dutch Defense (Classical)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "*",
+      "rhizoh_outcome": "draw",
+      "plies": 160
+    },
+    {
+      "round": 46,
+      "opening": "Dutch Defense (Classical)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 92
+    },
+    {
+      "round": 47,
+      "opening": "Pirc Defense (Austrian Attack)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 48
+    },
+    {
+      "round": 48,
+      "opening": "Pirc Defense (Austrian Attack)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 105
+    },
+    {
+      "round": 49,
+      "opening": "King's Gambit (Accepted)",
+      "white": "Leorik 3.2.1",
+      "black": "Rhizoh Castle Core (V8-C+ Q2)",
+      "result": "1-0",
+      "rhizoh_outcome": "loss",
+      "plies": 70
+    },
+    {
+      "round": 50,
+      "opening": "King's Gambit (Accepted)",
+      "white": "Rhizoh Castle Core (V8-C+ Q2)",
+      "black": "Leorik 3.2.1",
+      "result": "0-1",
+      "rhizoh_outcome": "loss",
+      "plies": 23
+    }
+  ]
+}

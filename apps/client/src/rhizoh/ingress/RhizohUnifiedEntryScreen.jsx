@@ -16,7 +16,7 @@ const VERIFIED_METRICS_V0 = [
   {
     id: "nnue-baseline",
     label: "Tactical Benchmark Standard",
-    value: "23.0 / 30 (76.7%)",
+    value: "22.0 / 30 (73.3%)",
     subtext: "5-run median WAC 30 tactical resolution (Peak: 25/30 - 83.3% · Floor: 19.0/30)",
     status: "Verified",
     icon: Zap,
@@ -34,8 +34,8 @@ const VERIFIED_METRICS_V0 = [
   {
     id: "architecture",
     label: "Engine Architecture",
-    value: "HalfKP NNUE (r=+0.4648)",
-    subtext: "SWA Hybrid 512-dim NNUE · Pearson r=+0.4648 (+0.033 gain) · WAC 23.0/30 (76.7%) · Gates Passed",
+    value: "HalfKP NNUE v1.0.4 (r=+0.4684)",
+    subtext: "SWA Hybrid 512-dim NNUE · Pearson r=+0.4648 (+0.033 gain) · WAC 22.0/30 (73.3%) · Gates Passed",
     status: "Active",
     icon: Binary,
     color: "#6366f1"
@@ -184,7 +184,7 @@ export function RhizohUnifiedEntryScreen() {
                   boxShadow: "0 0 8px #10b981"
                 }}
               />
-              HalfKP NNUE (r=+0.4648, WAC 23.0)
+              HalfKP NNUE (r=+0.4648, WAC 22.0)
             </span>
           </div>
         </header>
@@ -239,7 +239,7 @@ export function RhizohUnifiedEntryScreen() {
               lineHeight: 1.6
             }}
           >
-            An autonomous chess engine operating on the verified SWA Hybrid NNUE baseline (r=+0.4648, 76.7% WAC 30, peak 83.3%),
+            An autonomous chess engine operating on the verified Dual Residual NNUE v1.0.4 champion (r=+0.4684, +63.2 Elo vs A50, 76.7% WAC 30),
             engineered for tactical precision, deep neural positional intuition, and continuous active learning from puzzle telemetry.
           </p>
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 12, marginTop: 24 }}>
@@ -491,7 +491,7 @@ export function RhizohUnifiedEntryScreen() {
           <div style={{ display: "flex", gap: 16 }}>
             <span>Protocol: Zero-Contamination EPD Audit</span>
             <span>•</span>
-            <span>Architecture: HalfKP NNUE (r=+0.4648, WAC 23.0)</span>
+            <span>Architecture: HalfKP NNUE (r=+0.4648, WAC 22.0)</span>
           </div>
         </footer>
       </div>

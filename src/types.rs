@@ -84,6 +84,13 @@ pub struct CandidateMove {
     pub pv: Vec<Move>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LmrMode {
+    Baseline = 0,
+    Conservative = 1,
+    TacticalGuard = 2,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct SearchFeatures {
     pub use_see_ordering: bool,
@@ -97,6 +104,8 @@ pub struct SearchFeatures {
     pub use_loss_memory: bool,
     pub use_opening_antiblunder: bool,
     pub use_nnue: bool,
+    pub lmr_mode: LmrMode,
+    pub use_central_pawn_bonus: bool,
 }
 
 impl Default for SearchFeatures {
@@ -113,6 +122,8 @@ impl Default for SearchFeatures {
             use_loss_memory: true,
             use_opening_antiblunder: true,
             use_nnue: true,
+            lmr_mode: LmrMode::Baseline,
+            use_central_pawn_bonus: false,
         }
     }
 }

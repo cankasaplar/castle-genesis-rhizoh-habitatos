@@ -5,7 +5,7 @@ use crate::board::Board;
 use crate::eval::Evaluator;
 use crate::time_mgr::TimeLimits;
 use crate::tt::{NodeType, TranspositionTable};
-use crate::types::{CandidateMove, Color, Move, PieceType, SearchFeatures, SearchHeuristics};
+use crate::types::{CandidateMove, Color, Move, PieceType, SearchFeatures, SearchHeuristics, LmrMode};
 use crate::magic::get_knight_attacks;
 
 static LMR_TABLE: LazyLock<[[usize; 64]; 64]> = LazyLock::new(|| {
@@ -99,15 +99,22 @@ fn can_reduce_root_move(
     depth: u8,
     move_index: usize,
     use_lmr: bool,
+    mode: LmrMode,
 ) -> bool {
-    use_lmr
-        && depth >= 3
-        && move_index >= 2
-        && mv.captured.is_none()
-        && !mv.is_en_passant
-        && mv.promotion.is_none()
-        && !board.is_king_in_check(board.side_to_move)
-        && !next_board.is_king_in_check(next_board.side_to_move)
+    if !use_lmr || depth < 3 || move_index < 2 {
+        return false;
+    }
+    if mv.captured.is_some() || mv.is_en_passant || mv.promotion.is_some() {
+        return false;
+    }
+    if board.is_king_in_check(board.side_to_move) || next_board.is_king_in_check(next_board.side_to_move) {
+        return false;
+    }
+    match mode {
+        LmrMode::Baseline => true,
+        LmrMode::Conservative => crate::see::see_eval(board, mv) < 0,
+        LmrMode::TacticalGuard => crate::see::see_eval(board, mv) < 0,
+    }
 }
 
 impl Searcher {
@@ -419,6 +426,7 @@ impl Searcher {
                         current_depth,
                         i,
                         self.heuristics.use_lmr,
+                        self.features.lmr_mode,
                     );
 
                     let root_key = board.get_zobrist_key();
@@ -752,6 +760,11 @@ impl Searcher {
                 };
                 if (pawn_att & (1u64 << mv.to)) != 0 {
                     return -200_000;
+                }
+            } else {
+                // Central Pawn Push Bonus (d4, e4, d5, e5) - Experimental Heuristic (Default: False)
+                if self.features.use_central_pawn_bonus && (mv.to == 27 || mv.to == 28 || mv.to == 35 || mv.to == 36) {
+                    return 50_000;
                 }
             }
         }
@@ -1185,7 +1198,7 @@ impl Searcher {
             let is_counter = prev_move.map_or(false, |pm| self.heuristics.counter_moves[pm.from as usize][pm.to as usize] == Some(mv));
 
             // LMR Exemption Criteria: No LMR if in_check, gives_check, TT move, killer move, countermove, or under high king danger (adjusted_eval < -100)
-            let can_reduce = self.heuristics.use_lmr
+            let mut can_reduce = self.heuristics.use_lmr
                 && current_depth >= 3
                 && i >= 2
                 && is_quiet
@@ -1195,6 +1208,19 @@ impl Searcher {
                 && !is_killer
                 && !is_counter
                 && adjusted_eval >= -100;
+
+            if can_reduce && self.features.lmr_mode == LmrMode::TacticalGuard {
+                let see_val = crate::see::see_eval(board, mv);
+                let hist_score = self.heuristics.history_table[mv.from as usize][mv.to as usize];
+                let cont_hist = self.heuristics.get_continuation_history(prev_move, mv);
+                let is_tactical_candidate = gives_check
+                    || is_killer
+                    || is_counter
+                    || (see_val >= 0 && (hist_score + cont_hist > 15_000 || adjusted_eval >= alpha));
+                if is_tactical_candidate && i < 8 {
+                    can_reduce = false;
+                }
+            }
 
             self.search_stack.push(zobrist_key);
 
@@ -1208,7 +1234,17 @@ impl Searcher {
                 let hist_score = self.heuristics.history_table[mv.from as usize][mv.to as usize];
                 let cont_hist = self.heuristics.get_continuation_history(prev_move, mv);
                 let hist_adj = ((hist_score + cont_hist) / 5000).clamp(-2, 3) as i8;
-                let r = (base_r as i8 - hist_adj).max(1) as usize;
+                let mut r = (base_r as i8 - hist_adj).max(1) as usize;
+
+                if self.features.lmr_mode == LmrMode::Conservative {
+                    let see_val = crate::see::see_eval(board, mv);
+                    if see_val >= 0 && adjusted_eval >= alpha - 50 {
+                        r = (r.saturating_sub(1)).max(1);
+                    }
+                } else if self.features.lmr_mode == LmrMode::TacticalGuard {
+                    r = 1; // Tactical candidates reaching here receive minimal LMR
+                }
+
                 let reduced_depth = current_depth.saturating_sub(r).max(1);
 
                 let lmr_score = -self.alpha_beta_with_prev(&mut next_board, reduced_depth, ply + 1, -alpha - 1, -alpha, Some(mv), None);
@@ -1443,7 +1479,81 @@ mod tests {
         let mut quiet_position = board.clone();
         quiet_position.make_move(quiet_move);
 
-        assert!(!can_reduce_root_move(&board, &checking_position, checking_move, 3, 2, true));
-        assert!(can_reduce_root_move(&board, &quiet_position, quiet_move, 3, 2, true));
+        assert!(!can_reduce_root_move(&board, &checking_position, checking_move, 3, 2, true, crate::types::LmrMode::Baseline));
+        assert!(can_reduce_root_move(&board, &quiet_position, quiet_move, 3, 2, true, crate::types::LmrMode::Baseline));
+    }
+}
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct MoveAnatomy {
+    pub uci: String,
+    pub rank: usize,
+    pub total_moves: usize,
+    pub order_score: i32,
+    pub see: i32,
+    pub history: i32,
+    pub is_killer: bool,
+    pub is_capture: bool,
+    pub is_quiet: bool,
+    pub gives_check: bool,
+    pub lmr_eligible: bool,
+    pub lmr_reduction: usize,
+    pub static_eval_before: i32,
+    pub static_eval_after: i32,
+    pub delta_nnue: i32,
+}
+
+impl Searcher {
+    pub fn inspect_move_anatomy(&mut self, board: &Board, target_uci: &str) -> Option<MoveAnatomy> {
+        let mut legal_moves = board.generate_moves();
+        if legal_moves.is_empty() {
+            return None;
+        }
+        let total_moves = legal_moves.len();
+        let zobrist_key = board.get_zobrist_key();
+        let raw_tt_move = self.tt.probe(zobrist_key).and_then(|e| e.best_move);
+        let tt_move = raw_tt_move.filter(|&m_u16| board.is_legal_u16(m_u16).is_some());
+
+        self.order_moves(board, &mut legal_moves, 0, tt_move, None);
+
+        let target_pos = legal_moves.iter().position(|m| m.to_uci() == target_uci)?;
+        let mv = legal_moves[target_pos];
+        let rank = target_pos + 1; // 1-based
+
+        let order_score = self.score_move(board, mv, 0, tt_move, None);
+        let see = crate::see::see_eval(board, mv);
+        let history = self.heuristics.history_table[mv.from as usize][mv.to as usize];
+        let is_killer = self.heuristics.killer_moves[0].contains(&Some(mv));
+        let is_capture = mv.captured.is_some() || mv.is_en_passant;
+        let is_quiet = mv.captured.is_none() && !mv.is_en_passant && mv.promotion.is_none();
+
+        let mut next_board = board.clone();
+        next_board.make_move(mv);
+        let gives_check = next_board.is_king_in_check(next_board.side_to_move);
+        let in_check = board.is_king_in_check(board.side_to_move);
+
+        let lmr_eligible = self.heuristics.use_lmr && is_quiet && !in_check && !gives_check && !is_killer;
+        let base_r = if rank >= 2 { LMR_TABLE[6.min(63)][rank.min(63)] } else { 0 };
+
+        let static_eval_before = crate::eval::Evaluator::evaluate(board, &self.features);
+        let static_eval_after = -crate::eval::Evaluator::evaluate(&next_board, &self.features);
+        let delta_nnue = static_eval_after - static_eval_before;
+
+        Some(MoveAnatomy {
+            uci: target_uci.to_string(),
+            rank,
+            total_moves,
+            order_score,
+            see,
+            history,
+            is_killer,
+            is_capture,
+            is_quiet,
+            gives_check,
+            lmr_eligible,
+            lmr_reduction: if lmr_eligible { base_r } else { 0 },
+            static_eval_before,
+            static_eval_after,
+            delta_nnue,
+        })
     }
 }

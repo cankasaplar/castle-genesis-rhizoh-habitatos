@@ -1,0 +1,465 @@
+{
+  "timestamp_utc": "2026-10-04T12:20:03Z",
+  "experiment": "A50 Champion vs Rhizoh V8-C+ Q2 Gauntlet",
+  "total_games": 50,
+  "v8c_plus_wins": 23,
+  "v8c_plus_draws": 13,
+  "v8c_plus_losses": 14,
+  "v8c_plus_points": 29.5,
+  "win_rate_pct": 59.0,
+  "delta_elo": 63.2,
+  "ci_95": 83.7,
+  "pgn_path": "C:\\Users\\LENOVO\\Desktop\\castle\\data\\pgn_archive\\a50_vs_v8c_plus_gauntlet_50games.pgn",
+  "games": [
+    {
+      "round": 1,
+      "opening": "Italian Game (Giuoco Piano)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "0-1",
+      "v8c_outcome": "win",
+      "plies": 70
+    },
+    {
+      "round": 2,
+      "opening": "Italian Game (Giuoco Piano)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "1-0",
+      "v8c_outcome": "win",
+      "plies": 75
+    },
+    {
+      "round": 3,
+      "opening": "Ruy Lopez (Closed Morphy)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "1/2-1/2",
+      "v8c_outcome": "draw",
+      "plies": 160
+    },
+    {
+      "round": 4,
+      "opening": "Ruy Lopez (Closed Morphy)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "0-1",
+      "v8c_outcome": "loss",
+      "plies": 86
+    },
+    {
+      "round": 5,
+      "opening": "Sicilian Defense (Open Classical)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "0-1",
+      "v8c_outcome": "win",
+      "plies": 116
+    },
+    {
+      "round": 6,
+      "opening": "Sicilian Defense (Open Classical)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "1/2-1/2",
+      "v8c_outcome": "draw",
+      "plies": 120
+    },
+    {
+      "round": 7,
+      "opening": "Sicilian Defense (Najdorf)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "1-0",
+      "v8c_outcome": "loss",
+      "plies": 87
+    },
+    {
+      "round": 8,
+      "opening": "Sicilian Defense (Najdorf)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "*",
+      "v8c_outcome": "draw",
+      "plies": 160
+    },
+    {
+      "round": 9,
+      "opening": "French Defense (Winawer)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "0-1",
+      "v8c_outcome": "win",
+      "plies": 100
+    },
+    {
+      "round": 10,
+      "opening": "French Defense (Winawer)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "1-0",
+      "v8c_outcome": "win",
+      "plies": 105
+    },
+    {
+      "round": 11,
+      "opening": "French Defense (Tarrasch)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "0-1",
+      "v8c_outcome": "win",
+      "plies": 62
+    },
+    {
+      "round": 12,
+      "opening": "French Defense (Tarrasch)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "1/2-1/2",
+      "v8c_outcome": "draw",
+      "plies": 150
+    },
+    {
+      "round": 13,
+      "opening": "Caro-Kann Defense (Advance)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "1/2-1/2",
+      "v8c_outcome": "draw",
+      "plies": 80
+    },
+    {
+      "round": 14,
+      "opening": "Caro-Kann Defense (Advance)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "1-0",
+      "v8c_outcome": "win",
+      "plies": 32
+    },
+    {
+      "round": 15,
+      "opening": "Caro-Kann Defense (Classical)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "0-1",
+      "v8c_outcome": "win",
+      "plies": 86
+    },
+    {
+      "round": 16,
+      "opening": "Caro-Kann Defense (Classical)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "1-0",
+      "v8c_outcome": "win",
+      "plies": 71
+    },
+    {
+      "round": 17,
+      "opening": "Queen's Gambit Declined (Exchange)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "0-1",
+      "v8c_outcome": "win",
+      "plies": 95
+    },
+    {
+      "round": 18,
+      "opening": "Queen's Gambit Declined (Exchange)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "1-0",
+      "v8c_outcome": "win",
+      "plies": 64
+    },
+    {
+      "round": 19,
+      "opening": "Queen's Gambit Accepted",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "*",
+      "v8c_outcome": "draw",
+      "plies": 160
+    },
+    {
+      "round": 20,
+      "opening": "Queen's Gambit Accepted",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "1-0",
+      "v8c_outcome": "win",
+      "plies": 60
+    },
+    {
+      "round": 21,
+      "opening": "Nimzo-Indian Defense (Rubinstein)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "0-1",
+      "v8c_outcome": "win",
+      "plies": 48
+    },
+    {
+      "round": 22,
+      "opening": "Nimzo-Indian Defense (Rubinstein)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "0-1",
+      "v8c_outcome": "loss",
+      "plies": 48
+    },
+    {
+      "round": 23,
+      "opening": "King's Indian Defense (Mar del Plata)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "0-1",
+      "v8c_outcome": "win",
+      "plies": 79
+    },
+    {
+      "round": 24,
+      "opening": "King's Indian Defense (Mar del Plata)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "1/2-1/2",
+      "v8c_outcome": "draw",
+      "plies": 125
+    },
+    {
+      "round": 25,
+      "opening": "Grunfeld Defense (Exchange)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "1-0",
+      "v8c_outcome": "loss",
+      "plies": 71
+    },
+    {
+      "round": 26,
+      "opening": "Grunfeld Defense (Exchange)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "1-0",
+      "v8c_outcome": "win",
+      "plies": 35
+    },
+    {
+      "round": 27,
+      "opening": "English Opening (Symmetrical)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "1-0",
+      "v8c_outcome": "loss",
+      "plies": 71
+    },
+    {
+      "round": 28,
+      "opening": "English Opening (Symmetrical)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "0-1",
+      "v8c_outcome": "loss",
+      "plies": 44
+    },
+    {
+      "round": 29,
+      "opening": "Reti Opening (King's Indian Setup)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "1/2-1/2",
+      "v8c_outcome": "draw",
+      "plies": 62
+    },
+    {
+      "round": 30,
+      "opening": "Reti Opening (King's Indian Setup)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "1-0",
+      "v8c_outcome": "win",
+      "plies": 71
+    },
+    {
+      "round": 31,
+      "opening": "Slav Defense (Modern)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "1/2-1/2",
+      "v8c_outcome": "draw",
+      "plies": 160
+    },
+    {
+      "round": 32,
+      "opening": "Slav Defense (Modern)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "1-0",
+      "v8c_outcome": "win",
+      "plies": 74
+    },
+    {
+      "round": 33,
+      "opening": "Semi-Slav Defense (Meran)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "1-0",
+      "v8c_outcome": "loss",
+      "plies": 71
+    },
+    {
+      "round": 34,
+      "opening": "Semi-Slav Defense (Meran)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "0-1",
+      "v8c_outcome": "loss",
+      "plies": 78
+    },
+    {
+      "round": 35,
+      "opening": "Scotch Game (Mieses)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "1-0",
+      "v8c_outcome": "loss",
+      "plies": 66
+    },
+    {
+      "round": 36,
+      "opening": "Scotch Game (Mieses)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "1/2-1/2",
+      "v8c_outcome": "draw",
+      "plies": 105
+    },
+    {
+      "round": 37,
+      "opening": "Scandinavian Defense (Main Line)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "0-1",
+      "v8c_outcome": "win",
+      "plies": 97
+    },
+    {
+      "round": 38,
+      "opening": "Scandinavian Defense (Main Line)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "1-0",
+      "v8c_outcome": "win",
+      "plies": 68
+    },
+    {
+      "round": 39,
+      "opening": "Alekhine Defense (Modern)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "0-1",
+      "v8c_outcome": "win",
+      "plies": 123
+    },
+    {
+      "round": 40,
+      "opening": "Alekhine Defense (Modern)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "0-1",
+      "v8c_outcome": "loss",
+      "plies": 57
+    },
+    {
+      "round": 41,
+      "opening": "Vienna Game (Falkbeer)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "0-1",
+      "v8c_outcome": "win",
+      "plies": 119
+    },
+    {
+      "round": 42,
+      "opening": "Vienna Game (Falkbeer)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "0-1",
+      "v8c_outcome": "loss",
+      "plies": 55
+    },
+    {
+      "round": 43,
+      "opening": "Benoni Defense (Modern)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "1/2-1/2",
+      "v8c_outcome": "draw",
+      "plies": 130
+    },
+    {
+      "round": 44,
+      "opening": "Benoni Defense (Modern)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "0-1",
+      "v8c_outcome": "loss",
+      "plies": 64
+    },
+    {
+      "round": 45,
+      "opening": "Dutch Defense (Classical)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "*",
+      "v8c_outcome": "draw",
+      "plies": 160
+    },
+    {
+      "round": 46,
+      "opening": "Dutch Defense (Classical)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "0-1",
+      "v8c_outcome": "loss",
+      "plies": 110
+    },
+    {
+      "round": 47,
+      "opening": "Pirc Defense (Austrian Attack)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "1/2-1/2",
+      "v8c_outcome": "draw",
+      "plies": 128
+    },
+    {
+      "round": 48,
+      "opening": "Pirc Defense (Austrian Attack)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "0-1",
+      "v8c_outcome": "loss",
+      "plies": 71
+    },
+    {
+      "round": 49,
+      "opening": "King's Gambit (Accepted)",
+      "white": "Rhizoh A50 Champion",
+      "black": "Rhizoh V8-C+ Q2 Candidate",
+      "result": "0-1",
+      "v8c_outcome": "win",
+      "plies": 25
+    },
+    {
+      "round": 50,
+      "opening": "King's Gambit (Accepted)",
+      "white": "Rhizoh V8-C+ Q2 Candidate",
+      "black": "Rhizoh A50 Champion",
+      "result": "1-0",
+      "v8c_outcome": "win",
+      "plies": 86
+    }
+  ]
+}
