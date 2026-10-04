@@ -1,0 +1,23 @@
+{
+  "timestamp_utc": "2026-10-04T14:45:22Z",
+  "total_games": 200,
+  "v104_wins": 64,
+  "v104_draws": 60,
+  "v104_losses": 76,
+  "v104_points": 94.0,
+  "score_pct": 47.0,
+  "delta_elo": -20.9,
+  "ci_95_bounds": [
+    -61.2,
+    19.5
+  ],
+  "ci_95_width": 40.3,
+  "zero_in_ci": true,
+  "sprt_llr": -1.977,
+  "sprt_bounds": [
+    -2.944,
+    2.944
+  ],
+  "sprt_verdict": "INCONCLUSIVE (REACHED MAX GAMES)",
+  "pgn_archive": "C:\\Users\\LENOVO\\Desktop\\castle\\data\\pgn_archive\\v104_vs_a50_rigorous_200g.pgn"
+}

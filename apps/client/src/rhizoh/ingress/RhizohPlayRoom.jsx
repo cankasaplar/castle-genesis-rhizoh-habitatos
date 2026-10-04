@@ -940,7 +940,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 }}
               />
               <span style={{ fontSize: 12, fontWeight: 700, color: "#cbd5e1" }}>
-                {gameMode === "exhibition" ? (topClockColor === "w" ? "Rhizoh NNUE (r=+0.4684) (White)" : "Rhizoh NNUE (r=+0.4684) (Black)") : (orientation === "w" ? "Rhizoh NNUE (r=+0.4684) (Black)" : "You (Black)")}
+                {gameMode === "exhibition" ? (topClockColor === "w" ? "Rhizoh NNUE (r=+0.4648) (White)" : "Rhizoh NNUE (r=+0.4648) (Black)") : (orientation === "w" ? "Rhizoh NNUE (r=+0.4648) (Black)" : "You (Black)")}
               </span>
             </div>
             <div
@@ -1109,7 +1109,7 @@ export function RhizohPlayRoom({ onBackToMetrics }) {
                 }}
               />
               <span style={{ fontSize: 12, fontWeight: 700, color: "#cbd5e1" }}>
-                {gameMode === "exhibition" ? (bottomClockColor === "w" ? "Rhizoh NNUE (r=+0.4684) (White)" : "Rhizoh NNUE (r=+0.4684) (Black)") : (orientation === "w" ? "You (White)" : "Rhizoh NNUE (r=+0.4684) (White)")}
+                {gameMode === "exhibition" ? (bottomClockColor === "w" ? "Rhizoh NNUE (r=+0.4648) (White)" : "Rhizoh NNUE (r=+0.4648) (Black)") : (orientation === "w" ? "You (White)" : "Rhizoh NNUE (r=+0.4648) (White)")}
               </span>
             </div>
             <div

@@ -1,51 +1,33 @@
 {
-  "model_name": "Rhizoh V8-C+ Q2 Champion",
-  "version": "1.0.4",
-  "model_sha256": "57635f0f4a3f1b3943cbdbb94fc3c4cd11f63ebfdbd194b9a4f97cb3ae028f62",
-  "promoted_at_utc": "2026-10-04T12:37:05Z",
-  "lineage": {
-    "base_champion": "sprint_blend_a50 (SHA: 39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c)",
-    "technique": "Dual-Constrained Sparse Bounded Residual Delta Learning",
-    "clamping_bound_q_units": 2,
-    "quantization_scale": 64,
-    "active_feature_rows": 4077,
-    "total_feature_rows": 64140,
-    "frozen_network_percentage": 93.64,
-    "training_pool": "data/v8c_plus_injection_pool.epd (31,298 positions)",
-    "loss_diagnostics": "Stockfish 18 depth-12 mined inflection points (166 blunders)"
+  "eval_mode": "NNUE",
+  "binary_sha256": "1bfd794fd0692a236f1f3305d644664dfb23175788542ef08557466c176f5ad8",
+  "model_sha256": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+  "hce_reference_wac_median": 19.0,
+  "wac_30_5run_scores": [
+    22,
+    20,
+    21,
+    22,
+    21
+  ],
+  "wac_30_5run_median": 21.0,
+  "holdout_pearson_r": 0.4648,
+  "gate0_result": {
+    "passed": true,
+    "fw_norm": 591.35,
+    "ow_w_norm": 27.22,
+    "note": "Restored: Genuine Golden Baseline Champion A50 (Verified by 200-game statistical audit)"
   },
-  "six_pillar_matrix": {
-    "holdout_pearson_r": 0.4684,
-    "holdout_delta_vs_a50": 0.0036,
-    "wac_median_score": 23.0,
-    "quiet_search_nodes_1k": 3080.9,
-    "quiet_search_inflation_pct": 0.2,
-    "tactical_solve_pct_1k": 23.0,
-    "tactical_solve_delta_vs_a50": 3.0,
-    "tactical_nodes_1k": 4342.3,
-    "unseen_analog_solve_pct": 76.5,
-    "search_control_mean_drift_cp": 15.2
-  },
-  "gauntlet_results": {
-    "head_to_head_vs_a50_50games": {
-      "score": "29.5 / 50 (59.0%)",
-      "record": "23W - 13D - 14L",
-      "delta_elo": 63.2,
-      "ci_95": 83.7,
-      "pgn_archive": "data/pgn_archive/a50_vs_v8c_plus_gauntlet_50games.pgn"
-    },
-    "targeted_problem_openings_20games": {
-      "score": "13.5 / 20 (67.5%)",
-      "record": "8W - 11D - 1L",
-      "previous_v8c_score": "3.0 / 20 (15.0%)",
-      "delta_improvement_pct": 52.5,
-      "pgn_archive": "data/pgn_archive/v8c_plus_targeted_problem_match.pgn"
-    },
-    "leorik_3_2_1_tournament_50games": {
-      "score": "2.5 / 50 (5.0%)",
-      "record": "0W - 5D - 45L",
-      "draws_highlight": "5 resilient 160-ply draws in QGD, QGA, Slav, Dutch, and Caro-Kann",
-      "pgn_archive": "data/pgn_archive/v8c_plus_vs_leorik_50games.pgn"
-    }
+  "hce_dominance_guard": true,
+  "min_nnue_wac_median": 21.0,
+  "promoted_at": "2026-10-04T17:45:00.000000+00:00",
+  "audit_200g_vs_v104": {
+    "v104_score_pct": 47.0,
+    "v104_delta_elo": -20.9,
+    "v104_ci_95": [
+      -61.2,
+      19.5
+    ],
+    "verdict": "V8-C+ rejected due to -20.9 Elo regression over 200 games. A50 confirmed as reigning Golden Champion."
   }
 }

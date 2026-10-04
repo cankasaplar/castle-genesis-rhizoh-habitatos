@@ -141,7 +141,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
   const triggerEngineSolve = async () => {
     if (!currentPuzzle || solveState === "solving") return;
     setSolveState("solving");
-    setStatusMessage("Rhizoh NNUE (r=+0.4684) searching position (400ms movetime)...");
+    setStatusMessage("Rhizoh NNUE (r=+0.4648) searching position (400ms movetime)...");
 
     const solvePayload = {
       puzzleId: currentPuzzle.id,

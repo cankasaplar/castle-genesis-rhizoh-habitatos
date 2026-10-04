@@ -34,7 +34,7 @@ const VERIFIED_METRICS_V0 = [
   {
     id: "architecture",
     label: "Engine Architecture",
-    value: "HalfKP NNUE v1.0.4 (r=+0.4684)",
+    value: "HalfKP NNUE A50 Golden Baseline (r=+0.4648)",
     subtext: "SWA Hybrid 512-dim NNUE · Pearson r=+0.4648 (+0.033 gain) · WAC 22.0/30 (73.3%) · Gates Passed",
     status: "Active",
     icon: Binary,
@@ -239,7 +239,7 @@ export function RhizohUnifiedEntryScreen() {
               lineHeight: 1.6
             }}
           >
-            An autonomous chess engine operating on the verified Dual Residual NNUE v1.0.4 champion (r=+0.4684, +63.2 Elo vs A50, 76.7% WAC 30),
+            An autonomous chess engine operating on the verified Dual Residual NNUE A50 Golden Baseline champion (r=+0.4648, Verified Baseline vs A50, 76.7% WAC 30),
             engineered for tactical precision, deep neural positional intuition, and continuous active learning from puzzle telemetry.
           </p>
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 12, marginTop: 24 }}>
