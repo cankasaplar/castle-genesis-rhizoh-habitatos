@@ -106,6 +106,16 @@ pub struct SearchFeatures {
     pub use_nnue: bool,
     pub lmr_mode: LmrMode,
     pub use_central_pawn_bonus: bool,
+    pub syzygy_probe_limit: u8,
+    pub use_qsearch_checks: bool,
+    pub use_c2_shadow_probe: bool,
+    pub use_c3_lmr_horizon_guard: bool,
+    pub use_c3_regime_gated_guard: bool,
+    pub use_structural_search_bridge: bool,
+    pub structural_bonus_direct_break: i32,
+    pub structural_bonus_break_enabler: i32,
+    pub structural_bonus_anti_break: i32,
+    pub structural_bonus_tension_capture: i32,
 }
 
 impl Default for SearchFeatures {
@@ -124,6 +134,16 @@ impl Default for SearchFeatures {
             use_nnue: true,
             lmr_mode: LmrMode::Baseline,
             use_central_pawn_bonus: false,
+            syzygy_probe_limit: 5,
+            use_qsearch_checks: true,
+            use_c2_shadow_probe: false,
+            use_c3_lmr_horizon_guard: false,
+            use_c3_regime_gated_guard: false,
+            use_structural_search_bridge: false,
+            structural_bonus_direct_break: 180,
+            structural_bonus_break_enabler: 120,
+            structural_bonus_anti_break: 100,
+            structural_bonus_tension_capture: 80,
         }
     }
 }

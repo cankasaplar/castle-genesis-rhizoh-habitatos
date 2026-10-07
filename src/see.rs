@@ -197,15 +197,6 @@ pub fn see_eval(board: &Board, mv: Move) -> i32 {
     let mut side = board.side_to_move.opposite();
 
     loop {
-        depth += 1;
-        // Gain for current side = value of piece on target - previous side's gain
-        gain[depth] = current_piece_value - gain[depth - 1];
-
-        // Pruning: if even capturing the piece can't improve the score, bail early
-        if (-gain[depth - 1]).max(gain[depth]) < 0 {
-            break;
-        }
-
         // Get side-to-move's attackers
         let side_occ = board.color_occupancy[side as usize];
         let side_attackers = attacker_set & side_occ;
@@ -215,37 +206,47 @@ pub fn see_eval(board: &Board, mv: Move) -> i32 {
         }
 
         // Find least valuable attacker
-        if let Some((lva_piece, lva_bit)) = least_valuable_attacker(board, side_attackers, side) {
-            current_piece_value = PIECE_VALUES[lva_piece as usize];
+        let (lva_piece, lva_bit) = match least_valuable_attacker(board, side_attackers, side) {
+            Some(res) => res,
+            None => break,
+        };
 
-            // Remove attacker from occupancy to reveal X-ray attackers
-            occ &= !lva_bit;
+        depth += 1;
+        // Gain for current side = value of piece on target - previous side's gain
+        gain[depth] = current_piece_value - gain[depth - 1];
 
-            // Re-compute sliding attackers (X-ray discovery)
-            // Only re-check bishop-like and rook-like since those can be discovered
-            let bishop_like = (board.pieces[0][PieceType::Bishop as usize] | board.pieces[1][PieceType::Bishop as usize]
-                | board.pieces[0][PieceType::Queen as usize] | board.pieces[1][PieceType::Queen as usize]) & occ;
-            let rook_like = (board.pieces[0][PieceType::Rook as usize] | board.pieces[1][PieceType::Rook as usize]
-                | board.pieces[0][PieceType::Queen as usize] | board.pieces[1][PieceType::Queen as usize]) & occ;
-
-            // Update attacker set with newly discovered sliders
-            attacker_set = (attacker_set & !lva_bit)
-                | (bishop_attacks(target_sq, occ) & bishop_like)
-                | (rook_attacks(target_sq, occ) & rook_like);
-            attacker_set &= occ;
-
-            // Don't capture with king if opponent has remaining attackers
-            if lva_piece == PieceType::King {
-                let opp_side_attackers = attacker_set & board.color_occupancy[side.opposite() as usize] & occ;
-                if opp_side_attackers != 0 {
-                    break;
-                }
-            }
-
-            side = side.opposite();
-        } else {
+        // Pruning: if even capturing the piece can't improve the score, bail early
+        if (-gain[depth - 1]).max(gain[depth]) < 0 {
             break;
         }
+
+        current_piece_value = PIECE_VALUES[lva_piece as usize];
+
+        // Remove attacker from occupancy to reveal X-ray attackers
+        occ &= !lva_bit;
+
+        // Re-compute sliding attackers (X-ray discovery)
+        // Only re-check bishop-like and rook-like since those can be discovered
+        let bishop_like = (board.pieces[0][PieceType::Bishop as usize] | board.pieces[1][PieceType::Bishop as usize]
+            | board.pieces[0][PieceType::Queen as usize] | board.pieces[1][PieceType::Queen as usize]) & occ;
+        let rook_like = (board.pieces[0][PieceType::Rook as usize] | board.pieces[1][PieceType::Rook as usize]
+            | board.pieces[0][PieceType::Queen as usize] | board.pieces[1][PieceType::Queen as usize]) & occ;
+
+        // Update attacker set with newly discovered sliders
+        attacker_set = (attacker_set & !lva_bit)
+            | (bishop_attacks(target_sq, occ) & bishop_like)
+            | (rook_attacks(target_sq, occ) & rook_like);
+        attacker_set &= occ;
+
+        // Don't capture with king if opponent has remaining attackers
+        if lva_piece == PieceType::King {
+            let opp_side_attackers = attacker_set & board.color_occupancy[side.opposite() as usize] & occ;
+            if opp_side_attackers != 0 {
+                break;
+            }
+        }
+
+        side = side.opposite();
     }
 
     // Negamax minimax from the end

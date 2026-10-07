@@ -1,0 +1,129 @@
+[Event "Rhizoh Weekly Leorik Benchmark Gauntlet"]
+[Site "Local Host"]
+[Date "2026.10.07"]
+[Round "1"]
+[White "Rhizoh Castle Core (HalfKP NNUE)"]
+[Black "Leorik 3.2.1"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4"]
+[Opening "Italian Game (Giuoco Piano)"]
+
+4. O-O Nf6 5. Nc3 O-O 6. Bd5 d6 7. Bxc6 bxc6 8. d4 exd4 9. Nxd4 Bb7 10. Bg5 h6 11. Bxf6 Qxf6 12. Nf3 Rfe8 13. a3 Bb6 14. Qd3 Re7 15. Na4 Rae8 16. Rae1 c5 17. Qc3 Qxc3 18. Nxc3 Ba6 19. Nd5 Re6 20. Nf4 Rxe4 21. Rxe4 Rxe4 22. Nd3 Re2 23. Nde1 c4 24. g4 Bc8 25. g5 Bh3 26. Ng2 Rxc2 27. gxh6 gxh6 28. Rb1 Rxf2 29. Re1 Bxg2 30. Nd4 Bxd4 31. Re8+ Kg7 32. h4 Rxb2+ 33. Kh2 Bc6+ 34. Kg3 Bxe8 35. Kf4 Kf6 36. Ke4 Bc5 37. h5 Rf2 38. Kd5 Rf4 39. a4 Rd4# 0-1
+
+[Event "Rhizoh Weekly Leorik Benchmark Gauntlet"]
+[Site "Local Host"]
+[Date "2026.10.07"]
+[Round "2"]
+[White "Leorik 3.2.1"]
+[Black "Rhizoh Castle Core (HalfKP NNUE)"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4"]
+[Opening "Italian Game (Giuoco Piano)"]
+
+4. O-O Nge7 5. c3 d5 6. exd5 Nxd5 7. Qb3 Be6 8. Qxb7 Nde7 9. Bxe6 fxe6 10. d3 Rb8 11. Qa6 Rb6 12. Qc4 Qd5 13. b4 Qxc4 14. dxc4 Nxb4 15. cxb4 Bd4 16. Nxd4 exd4 17. b5 Ng6 18. a4 e5 19. f3 Kf7 20. Nd2 Nf4 21. Ne4 Ne2+ 22. Kf2 Nxc1 23. Raxc1 Rf8 24. Nc5 Rg6 25. Rfe1 Re8 26. Re4 Rg5 27. Nd3 Re7 28. Rce1 Ke6 29. h4 Rf5 30. Nxe5 Kd6 31. Rxd4+ Kc5 32. Rd5+ Kb6 33. Nd7+ Rxd7 34. Rxd7 g6 35. Re6+ Kb7 36. Rc6 Kb8 37. Rcxc7 Rf4 38. Rxh7 Rxh4 39. Rb7+ Kc8 40. Rxa7 Kb8 41. Rxh4 Kxa7 42. Ke3 Kb6 43. Kd4 Ka5 44. Kd5 g5 45. Rd4 Kxa4 46. Rg4 Ka5 47. Kc5 Ka4 48. Rxg5 Ka5 49. Re5 Ka4 50. Re3 Ka5 51. Ra3# 1-0
+
+[Event "Rhizoh Weekly Leorik Benchmark Gauntlet"]
+[Site "Local Host"]
+[Date "2026.10.07"]
+[Round "3"]
+[White "Rhizoh Castle Core (HalfKP NNUE)"]
+[Black "Leorik 3.2.1"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "r1bqkb1r/1ppp1ppp/p1n5/4p3/B3P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 5"]
+[Opening "Ruy Lopez (Morphy Defense)"]
+
+5. O-O b5 6. d4 bxa4 7. dxe5 Rb8 8. Nc3 d6 9. Bg5 Qd7 10. Nd4 Nxe5 11. f4 h6 12. fxe5 hxg5 13. Rf5 g6 14. Rxg5 Bh6 15. e6 fxe6 16. Rxg6 Be3+ 17. Kh1 Qh7 18. Rg8+ Rxg8 19. Qd3 Qg7 20. Qe2 Bxd4 21. Nxa4 Qg4 22. Qxg4 Rxg4 23. Re1 Bd7 24. h3 Rg6 25. b3 Bxa4 26. bxa4 Be5 27. Kg1 Kd7 28. Rf1 Rf6 29. Rxf6 Bxf6 30. Kf2 Rb2 31. Ke1 Rxc2 32. g4 Rxa2 33. a5 Kc6 34. Kd1 Kc5 35. Ke1 Kd4 36. Kd1 Kxe4 37. Kc1 Kd3 38. h4 Ra1# 0-1
+
+[Event "Rhizoh Weekly Leorik Benchmark Gauntlet"]
+[Site "Local Host"]
+[Date "2026.10.07"]
+[Round "4"]
+[White "Leorik 3.2.1"]
+[Black "Rhizoh Castle Core (HalfKP NNUE)"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "r1bqkb1r/1ppp1ppp/p1n5/4p3/B3P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 5"]
+[Opening "Ruy Lopez (Morphy Defense)"]
+
+5. O-O b5 6. Bb3 Bc5 7. Bd5 Qf6 8. c3 Bd6 9. d4 exd4 10. Bxc6 dxc6 11. e5 Bxe5 12. Re1 Bg4 13. Qxd4 Bxf3 14. Qxe5+ Qxe5 15. Rxe5+ Kf8 16. gxf3 Re8 17. Rxe8+ Kxe8 18. Be3 f5 19. Nd2 Kf7 20. Kf1 Re8 21. Re1 Kg6 22. Bd4 Rxe1+ 23. Kxe1 c5 24. Bxc5 Kh6 25. f4 Kh5 26. Kf1 a5 27. Ke2 a4 28. Nf3 Kg4 29. Nd4 Kxf4 30. Nxb5 Kg5 31. Nxc7 Kf6 32. Nd5+ Ke5 33. Nb6 h6 34. Nxa4 Ke6 35. Kd3 Kf7 36. b4 f4 37. Bd6 Ke6 38. Bxf4 Kf5 39. Bg3 h5 40. h4 g5 41. hxg5 Kxg5 42. Kd4 h4 43. Bxh4+ Kxh4 44. c4 Kg5 45. b5 Kf6 46. b6 Kg6 47. Nc3 Kf5 48. Nd5 Kg4 49. Ke4 Kh4 50. c5 Kh3 51. Kf5 Kg2 52. f4 Kg3 53. c6 Kh3 54. Ke4 Kg4 55. b7 Kh5 56. b8=Q Kg4 57. Qg8+ Kh4 58. Kf3 Kh3 59. Qg3# 1-0
+
+[Event "Rhizoh Weekly Leorik Benchmark Gauntlet"]
+[Site "Local Host"]
+[Date "2026.10.07"]
+[Round "5"]
+[White "Rhizoh Castle Core (HalfKP NNUE)"]
+[Black "Leorik 3.2.1"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "r1bqkb1r/pp2pppp/2np1n2/8/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 2 6"]
+[Opening "Sicilian Defense (Classical)"]
+
+6. Bb5 Bd7 7. Bxc6 bxc6 8. Bg5 e5 9. Nf3 h6 10. Bxf6 Qxf6 11. O-O Be7 12. Qd3 O-O 13. Qc4 Qe6 14. Qd3 f5 15. b4 fxe4 16. Qxe4 Rf4 17. Qe1 Qg6 18. a3 Bh3 19. Ng5 Qxg5 20. g3 Raf8 21. Ne4 Qg6 22. Nc3 Bxf1 23. Qxf1 Rxf2 24. Qxf2 Rxf2 25. Kxf2 Qf6+ 26. Ke2 e4 27. Nxe4 Qxa1 28. Kf3 Qxa3+ 29. c3 Kf7 30. b5 cxb5 31. Ke3 d5 32. g4 dxe4 33. Kxe4 Qxc3 34. Kd5 Qc4+ 35. Ke5 Qd3 36. h3 Bd6# 0-1
+
+[Event "Rhizoh Weekly Leorik Benchmark Gauntlet"]
+[Site "Local Host"]
+[Date "2026.10.07"]
+[Round "6"]
+[White "Leorik 3.2.1"]
+[Black "Rhizoh Castle Core (HalfKP NNUE)"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "r1bqkb1r/pp2pppp/2np1n2/8/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 2 6"]
+[Opening "Sicilian Defense (Classical)"]
+
+6. Bg5 Bd7 7. Be2 Nxd4 8. Qxd4 e5 9. Qd3 Be7 10. Bxf6 Bxf6 11. Qxd6 Bc6 12. Qxd8+ Rxd8 13. Bb5 Bxb5 14. Nxb5 O-O 15. Rd1 Rxd1+ 16. Kxd1 Bh4 17. Ke2 f5 18. exf5 Rxf5 19. g3 Be7 20. Rd1 e4 21. Nd6 Bxd6 22. Rxd6 Rf8 23. Rd4 Rc8 24. c3 Re8 25. Ke3 Rf8 26. Rxe4 Rf6 27. a4 Kf7 28. Rf4 Rxf4 29. Kxf4 Kf6 30. b4 h5 31. Ke4 Ke6 32. f3 Kd7 33. Kf5 Kd6 34. Kg6 a5 35. bxa5 Kd5 36. Kxg7 Kc5 37. f4 Kc4 38. f5 Kxc3 39. f6 h4 40. gxh4 Kb4 41. f7 Kxa4 42. f8=Q Kxa5 43. Qa8+ Kb4 44. Qxb7+ Kc3 45. Qe4 Kb3 46. h5 Kc3 47. h4 Kb2 48. Kf6 Kc3 49. h6 Kb2 50. h7 Kc3 51. h8=Q Kd2 52. Qc8 Kd1 53. Qcc2# 1-0
+
+[Event "Rhizoh Weekly Leorik Benchmark Gauntlet"]
+[Site "Local Host"]
+[Date "2026.10.07"]
+[Round "7"]
+[White "Rhizoh Castle Core (HalfKP NNUE)"]
+[Black "Leorik 3.2.1"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "rnbqkb1r/ppp2ppp/4pn2/3p4/2PP4/2N5/PP2PPPP/R1BQKBNR w KQkq - 2 4"]
+[Opening "Queen's Gambit Declined"]
+
+4. Nf3 Be7 5. cxd5 exd5 6. e3 O-O 7. Bd3 Re8 8. Ne5 Bd6 9. f4 c5 10. O-O Nc6 11. Nxc6 bxc6 12. f5 cxd4 13. exd4 Qb6 14. Ne2 h6 15. Rb1 Ba6 16. Bf4 Bxf4 17. Rxf4 Re3 18. Bxa6 Qxa6 19. Nc3 Rae8 20. Qf1 Qb6 21. Na4 Qb4 22. Nc3 Ne4 23. Nxe4 R3xe4 24. Rd1 Re1 25. Rxe1 Rxe1 26. b3 Rxf1+ 27. Kxf1 Qd2 28. Rh4 Qd3+ 29. Kg1 Qb1+ 30. Kf2 Qxf5+ 31. Ke2 Qc2+ 32. Kf3 Qxa2 33. b4 Qa3+ 34. Ke2 Qxb4 35. g3 f6 36. Kf1 Kf7 37. Kg2 a5 38. Kh3 a4 39. Kg2 a3 40. Rxh6 gxh6 41. g4 a2 42. g5 hxg5 43. h4 a1=Q 44. hxg5 Qd2+ 45. Kg3 Qa3+ 46. Kh4 Qxg5# 0-1
+
+[Event "Rhizoh Weekly Leorik Benchmark Gauntlet"]
+[Site "Local Host"]
+[Date "2026.10.07"]
+[Round "8"]
+[White "Leorik 3.2.1"]
+[Black "Rhizoh Castle Core (HalfKP NNUE)"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "rnbqkb1r/ppp2ppp/4pn2/3p4/2PP4/2N5/PP2PPPP/R1BQKBNR w KQkq - 2 4"]
+[Opening "Queen's Gambit Declined"]
+
+4. Nf3 Be7 5. Bg5 O-O 6. e3 Nc6 7. Be2 Ne4 8. Bxe7 Qxe7 9. Nxe4 dxe4 10. Nd2 f5 11. O-O Bd7 12. Qb3 Na5 13. Qc3 b6 14. b4 Nb7 15. c5 bxc5 16. dxc5 a5 17. a3 axb4 18. axb4 e5 19. Rxa8 Rxa8 20. c6 Bxc6 21. Qxc6 Rb8 22. Qb5 Rd8 23. Qxb7 Rxd2 24. Qc8+ Rd8 25. Qxf5 Qxb4 26. Qxe5 c5 27. Qe7 Rb8 28. Qe6+ Kh8 29. Bc4 Qd2 30. Qxe4 Rd8 31. g3 Qb2 32. Qe7 Qb6 33. Bd3 Qd6 34. Qxd6 Rxd6 35. Be4 Rd8 36. Rc1 c4 37. Rxc4 Rd1+ 38. Kg2 Rd8 39. Rd4 Re8 40. Ra4 g6 41. Ra8 Rxa8 42. Bxa8 Kg7 43. Kf3 Kf6 44. Kg4 h5+ 45. Kh4 Ke6 46. Kg5 h4 47. Kxh4 Ke5 48. Kg5 Kd6 49. e4 Kc5 50. Kxg6 Kd4 51. Bd5 Kd3 52. e5 Kd4 53. e6 Kxd5 54. e7 Kc6 55. e8=Q+ Kc7 56. Qe5+ Kd7 57. g4 Kd8 58. h4 Kd7 59. Kf5 Kc6 60. Kf4 Kd7 61. Kg5 Kc6 62. Kf5 Kb6 63. Ke4 Kb7 64. Qd5+ Kc8 65. Ke5 Kc7 66. Qb5 Kd8 67. Kd6 Kc8 68. Qb3 Kd8 69. Qb8# 1-0
+
+[Event "Rhizoh Weekly Leorik Benchmark Gauntlet"]
+[Site "Local Host"]
+[Date "2026.10.07"]
+[Round "9"]
+[White "Rhizoh Castle Core (HalfKP NNUE)"]
+[Black "Leorik 3.2.1"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "rnbqkbnr/pp2pppp/2p5/3pP3/3P4/8/PPP2PPP/RNBQKBNR b KQkq - 0 3"]
+[Opening "Caro-Kann Defense (Advance)"]
+
+3... Bf5 4. Nf3 e6 5. Nc3 c5 6. Bb5+ Nd7 7. Bd2 a6 8. Bxd7+ Qxd7 9. O-O Bg4 10. Ne2 Ne7 11. b4 Bxf3 12. gxf3 cxb4 13. Bxb4 Ng6 14. Bxf8 Nxf8 15. Rc1 Ng6 16. Qd3 O-O 17. f4 Rac8 18. f5 exf5 19. c4 dxc4 20. Rxc4 Nxe5 21. Rxc8 Nxd3 22. Rxf8+ Kxf8 23. Rd1 Qe6 24. Rxd3 Qxe2 25. Re3 Qd1+ 26. Kg2 g6 27. Rc3 Qxd4 28. Rc7 Kg7 29. a3 Qg4+ 30. Kh1 Qf4 31. Rxb7 Qxf2 32. Rb1 Qf3+ 33. Kg1 Qe3+ 34. Kg2 Qe4+ 35. Kf2 Qxb1 36. Kg2 Qa2+ 37. Kg1 Qa1+ 38. Kf2 Kf6 39. Kg2 Ke5 40. h3 Qxa3 41. h4 Kf4 42. Kf2 Qb2+ 43. Kf1 Kf3 44. h5 Qa1# 0-1
+
+[Event "Rhizoh Weekly Leorik Benchmark Gauntlet"]
+[Site "Local Host"]
+[Date "2026.10.07"]
+[Round "10"]
+[White "Leorik 3.2.1"]
+[Black "Rhizoh Castle Core (HalfKP NNUE)"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "rnbqkbnr/pp2pppp/2p5/3pP3/3P4/8/PPP2PPP/RNBQKBNR b KQkq - 0 3"]
+[Opening "Caro-Kann Defense (Advance)"]
+
+3... c5 4. dxc5 Nd7 5. Qxd5 e6 6. Qd3 Nxe5 7. Qg3 Nc6 8. Nc3 Nf6 9. Be3 Nh5 10. Qf3 Nf6 11. Bb5 Bd7 12. O-O-O Be7 13. Bxc6 bxc6 14. Bd4 O-O 15. Qg3 Rb8 16. Nf3 Nh5 17. Qe5 Nf6 18. g4 h6 19. h4 Qa5 20. g5 Qb4 21. Ne4 hxg5 22. hxg5 Ne8 23. Qh2 Bxg5+ 24. Nfxg5 Qxb2+ 25. Bxb2 Bc8 26. Qh7# 1-0

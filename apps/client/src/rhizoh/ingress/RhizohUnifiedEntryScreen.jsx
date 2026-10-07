@@ -9,15 +9,18 @@ import {
   Sparkles,
   Zap,
   Binary,
-  Clock
+  Clock,
+  Heart,
+  Coffee,
+  ExternalLink
 } from "lucide-react";
 
 const VERIFIED_METRICS_V0 = [
   {
     id: "nnue-baseline",
     label: "Tactical Benchmark Standard",
-    value: "22.0 / 30 (73.3%)",
-    subtext: "5-run median WAC 30 tactical resolution (Peak: 25/30 - 83.3% · Floor: 19.0/30)",
+    value: "21.0 / 30 (70.0%)",
+    subtext: "5-run median WAC 30 tactical resolution (Peak: 23/30 - 76.7% · Floor: 20.0/30)",
     status: "Verified",
     icon: Zap,
     color: "#f59e0b"
@@ -34,8 +37,8 @@ const VERIFIED_METRICS_V0 = [
   {
     id: "architecture",
     label: "Engine Architecture",
-    value: "HalfKP NNUE A50 Golden Baseline (r=+0.4648)",
-    subtext: "SWA Hybrid 512-dim NNUE · Pearson r=+0.4648 (+0.033 gain) · WAC 22.0/30 (73.3%) · Gates Passed",
+    value: "Castle Core v1.0.2 E5 (r=+0.4648)",
+    subtext: "HalfKP NNUE A50 Golden Baseline · Pearson r=+0.4648 · WAC 21.0/30 (70.0%) · Verified Baseline",
     status: "Active",
     icon: Binary,
     color: "#6366f1"
@@ -43,8 +46,8 @@ const VERIFIED_METRICS_V0 = [
   {
     id: "leorik-gauntlet",
     label: "Weekly Leorik Gauntlet",
-    value: "0.5 / 10.0 (5.0%)",
-    subtext: "vs Leorik 3.2.1 (~3,490 CCRL) · Historic 140-ply Round 2 Draw",
+    value: "0.0 / 10.0 (0.0%)",
+    subtext: "vs Leorik 3.2.1 (~3,490 CCRL) · Fresh 10-Game Weekly Gauntlet (Oct 7, 2026)",
     status: "Active",
     icon: Activity,
     color: "#ec4899"
@@ -184,7 +187,7 @@ export function RhizohUnifiedEntryScreen() {
                   boxShadow: "0 0 8px #10b981"
                 }}
               />
-              HalfKP NNUE (r=+0.4648, WAC 22.0)
+              Castle Core v1.0.2 E5 (r=+0.4648, WAC 21.0)
             </span>
           </div>
         </header>
@@ -239,7 +242,7 @@ export function RhizohUnifiedEntryScreen() {
               lineHeight: 1.6
             }}
           >
-            An autonomous chess engine operating on the verified Dual Residual NNUE A50 Golden Baseline champion (r=+0.4648, Verified Baseline vs A50, 76.7% WAC 30),
+            An autonomous chess engine operating on the verified Castle Core v1.0.2 E5 Champion with HalfKP NNUE A50 Golden Baseline (r=+0.4648, 70.0% WAC 30 median),
             engineered for tactical precision, deep neural positional intuition, and continuous active learning from puzzle telemetry.
           </p>
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 12, marginTop: 24 }}>
@@ -468,6 +471,81 @@ export function RhizohUnifiedEntryScreen() {
             </div>
           </div>
         </section>
+
+        {/* Support Rhizoh Development */}
+        <section
+          style={{
+            background: "rgba(15, 23, 42, 0.6)",
+            border: "1px solid rgba(245, 158, 11, 0.25)",
+            borderRadius: 16,
+            padding: "24px 28px",
+            marginBottom: 40,
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 20
+          }}
+        >
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <Heart size={18} color="#f59e0b" />
+              <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "#f8fafc" }}>
+                Support Rhizoh Development
+              </h3>
+            </div>
+            <p style={{ fontSize: 13, color: "#94a3b8", margin: 0, maxWidth: 580, lineHeight: 1.5 }}>
+              Help sustain autonomous self-play infrastructure, neural training compute, and open chess research. Direct contributions fund GPU hours and hardware verification.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            <a
+              href="https://www.patreon.com/c/cankasaplar"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 18px",
+                background: "rgba(249, 115, 22, 0.12)",
+                border: "1px solid rgba(249, 115, 22, 0.35)",
+                borderRadius: 10,
+                color: "#fb923c",
+                fontSize: 13,
+                fontWeight: 600,
+                textDecoration: "none"
+              }}
+            >
+              <span>Patreon</span>
+              <ExternalLink size={14} />
+            </a>
+
+            <a
+              href="https://buymeacoffee.com/cankasaplar"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 18px",
+                background: "rgba(234, 179, 8, 0.12)",
+                border: "1px solid rgba(234, 179, 8, 0.35)",
+                borderRadius: 10,
+                color: "#fde047",
+                fontSize: 13,
+                fontWeight: 600,
+                textDecoration: "none"
+              }}
+            >
+              <Coffee size={16} />
+              <span>Buy Me a Coffee</span>
+              <ExternalLink size={14} />
+            </a>
+          </div>
+        </section>
           </>
         )}
 
@@ -491,7 +569,7 @@ export function RhizohUnifiedEntryScreen() {
           <div style={{ display: "flex", gap: 16 }}>
             <span>Protocol: Zero-Contamination EPD Audit</span>
             <span>•</span>
-            <span>Architecture: HalfKP NNUE (r=+0.4648, WAC 22.0)</span>
+            <span>Architecture: Castle Core v1.0.2 E5 (r=+0.4648, WAC 21.0)</span>
           </div>
         </footer>
       </div>

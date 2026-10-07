@@ -930,7 +930,7 @@ function executeEngineQuery({
         nps: 0,
         searchTimeMs: 0,
         pv: "",
-        engine: "Rhizoh HalfKP NNUE (Unbound)",
+        engine: "RhizohAI Castle Core v1.0.2 (E5 Champion)",
         reason: "binary_not_found"
       });
     }
@@ -946,7 +946,7 @@ function executeEngineQuery({
         nps: 0,
         searchTimeMs: 0,
         pv: "",
-        engine: "Rhizoh HalfKP NNUE v1.0.4 (r=+0.4684, WAC 23.0)",
+        engine: "RhizohAI Castle Core v1.0.2 (E5 Champion)",
         reason: "empty_fen"
       });
     }
@@ -1008,7 +1008,7 @@ function executeEngineQuery({
           nps,
           searchTimeMs,
           pv,
-          engine: "Rhizoh HalfKP NNUE v1.0.4 (r=+0.4684, WAC 23.0)"
+          engine: "RhizohAI Castle Core v1.0.2 (E5 Champion)"
         });
       } else {
         finish({
@@ -1021,7 +1021,7 @@ function executeEngineQuery({
           searchTimeMs: 0,
           pv: "",
           isBookMove: false,
-          engine: "Rhizoh HalfKP NNUE v1.0.4 (r=+0.4684, WAC 23.0)",
+          engine: "RhizohAI Castle Core v1.0.2 (E5 Champion)",
           reason: "timeout"
         });
       }
@@ -1043,7 +1043,7 @@ function executeEngineQuery({
         nps: 0,
         searchTimeMs: 0,
         pv: "",
-        engine: "Rhizoh HalfKP NNUE v1.0.4 (r=+0.4684, WAC 23.0)",
+        engine: "RhizohAI Castle Core v1.0.2 (E5 Champion)",
         reason: String(err?.message || err)
       });
     }
@@ -1091,7 +1091,7 @@ function executeEngineQuery({
             searchTimeMs: isBookMove ? 1 : searchTimeMs,
             pv: isBookMove ? (bestMove || "") : pv,
             isBookMove,
-            engine: isBookMove ? "Rhizoh Opening/Tactics Book" : "Rhizoh HCE 22.0 (Golden Baseline)",
+            engine: isBookMove ? "Rhizoh Opening/Tactics Book" : "RhizohAI Castle Core v1.0.2 (E5 Champion)",
             uciCommandSent: uciGoCmd
           });
           break;
@@ -1114,7 +1114,7 @@ function executeEngineQuery({
           nps: 0,
           searchTimeMs: 0,
           pv: "",
-          engine: "Rhizoh HalfKP NNUE v1.0.4 (r=+0.4684, WAC 23.0)",
+          engine: "RhizohAI Castle Core v1.0.2 (E5 Champion)",
           reason: `process_closed_code_${code}`
         });
       }
@@ -1130,7 +1130,7 @@ function executeEngineQuery({
         nps: 0,
         searchTimeMs: 0,
         pv: "",
-        engine: "Rhizoh HalfKP NNUE v1.0.4 (r=+0.4684, WAC 23.0)",
+        engine: "RhizohAI Castle Core v1.0.2 (E5 Champion)",
         reason: String(err?.message || err)
       });
     });
@@ -1260,7 +1260,7 @@ const httpServer = createServer(async (req, res) => {
         playedMove: engineMove,
         bestMove: expectedBestMove,
         motif,
-        engine: moveResult.engine || "Rhizoh HCE 22.0",
+        engine: moveResult.engine || "RhizohAI Castle Core v1.0.2 (E5 Champion)",
         depth: moveResult.depth,
         nodes: moveResult.nodes,
         timeMs: moveResult.searchTimeMs

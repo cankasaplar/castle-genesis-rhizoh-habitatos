@@ -19,11 +19,11 @@ impl TimeLimits {
 
     pub fn fixed_movetime(ms: u64) -> Self {
         let soft_ms = if ms <= 1000 {
-            (ms * 65 / 100).max(10)
+            (ms * 82 / 100).max(10)
         } else {
-            (ms * 70 / 100).max(10)
+            (ms * 85 / 100).max(10)
         };
-        let hard_ms = ms.saturating_sub(10).max(15);
+        let hard_ms = ms.saturating_sub(4).max(15);
         Self {
             start_time: Instant::now(),
             soft_limit: Some(Duration::from_millis(soft_ms)),

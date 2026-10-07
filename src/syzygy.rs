@@ -1,125 +1,124 @@
+use std::sync::{LazyLock, RwLock};
+use shakmaty::{Chess, CastlingMode, fen::Fen};
+use shakmaty_syzygy::{Tablebase, Wdl};
 use crate::board::Board;
-use crate::types::PieceType;
+use crate::types::Move;
 
 const MATE_SCORE: i32 = 30000;
+const TB_WIN_SCORE: i32 = 20000;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WdlResult {
-    Win,
-    Draw,
-    Loss,
-}
+static TABLEBASE: LazyLock<RwLock<Tablebase<Chess>>> = LazyLock::new(|| {
+    let mut tb = Tablebase::new();
+    let default_path = std::path::Path::new("syzygy");
+    if default_path.is_dir() {
+        let _ = tb.add_directory(default_path);
+    }
+    RwLock::new(tb)
+});
 
-pub struct SyzygyProber {
-    pub path: String,
-    pub enabled: bool,
-}
+pub struct SyzygyProber;
 
 impl SyzygyProber {
-    pub fn new() -> Self {
-        Self {
-            path: "syzygy".to_string(),
-            enabled: true,
+    pub fn set_path(path: &str) -> usize {
+        if let Ok(mut tb) = TABLEBASE.write() {
+            *tb = Tablebase::new();
+            let _ = tb.add_directory(path);
+            tb.max_pieces()
+        } else {
+            0
         }
     }
 
-    pub fn set_path(&mut self, path: String) {
-        self.path = path;
+    pub fn max_pieces() -> usize {
+        TABLEBASE.read().map(|tb| tb.max_pieces()).unwrap_or(0)
     }
 
-    /// Evaluates exact WDL outcome for 3, 4, 5, 6, and 7-piece endgames
-    pub fn probe_wdl(board: &Board, ply: usize) -> Option<i32> {
-        let piece_count = board.combined_occupancy.count_ones();
-        if piece_count > 7 {
+    /// Evaluates exact WDL outcome for positions up to max_pieces
+    /// Returns Some(score) ONLY when a genuine tablebase file yields an exact outcome.
+    /// Otherwise returns None so the search falls back naturally to normal NNUE/search.
+    pub fn probe_wdl(board: &Board, ply: usize, max_pieces: usize) -> Option<i32> {
+        let piece_count = board.combined_occupancy.count_ones() as usize;
+        if piece_count > max_pieces || piece_count < 2 {
             return None;
         }
 
-        // 1. Bare Kings (K vs K) -> Draw
+        // Bare Kings (K vs K) is universally a theoretical draw
         if piece_count == 2 {
             return Some(0);
         }
 
-        let stm = board.side_to_move;
-        let stm_idx = stm as usize;
-        let opp_idx = stm.opposite() as usize;
-
-        let stm_queens = board.pieces[stm_idx][PieceType::Queen as usize].count_ones();
-        let opp_queens = board.pieces[opp_idx][PieceType::Queen as usize].count_ones();
-        let stm_rooks = board.pieces[stm_idx][PieceType::Rook as usize].count_ones();
-        let opp_rooks = board.pieces[opp_idx][PieceType::Rook as usize].count_ones();
-        let stm_bishops = board.pieces[stm_idx][PieceType::Bishop as usize].count_ones();
-        let opp_bishops = board.pieces[opp_idx][PieceType::Bishop as usize].count_ones();
-        let stm_knights = board.pieces[stm_idx][PieceType::Knight as usize].count_ones();
-        let opp_knights = board.pieces[opp_idx][PieceType::Knight as usize].count_ones();
-        let stm_minors = stm_bishops + stm_knights;
-        let opp_minors = opp_bishops + opp_knights;
-
-        let stm_pawns = board.pieces[stm_idx][PieceType::Pawn as usize].count_ones();
-        let opp_pawns = board.pieces[opp_idx][PieceType::Pawn as usize].count_ones();
-        let total_pawns = stm_pawns + opp_pawns;
-
-        // 2. Decisive Major Piece Overwhelming Advantage (K+Q+R vs K, K+Q+Q vs K, K+R+R vs K)
-        let stm_majors = stm_queens * 2 + stm_rooks;
-        let opp_majors = opp_queens * 2 + opp_rooks;
-
-        if stm_majors >= 2 && opp_majors == 0 && opp_minors == 0 && opp_pawns == 0 {
-            return Some(MATE_SCORE - ply as i32);
-        }
-        if opp_majors >= 2 && stm_majors == 0 && stm_minors == 0 && stm_pawns == 0 {
-            return Some(-MATE_SCORE + ply as i32);
+        let tb_guard = TABLEBASE.read().ok()?;
+        if tb_guard.max_pieces() < piece_count {
+            return None;
         }
 
-        // 3. Insufficient material draws in 3, 4, 5, 6, 7-piece endgames (Pawnless draws)
-        if total_pawns == 0 {
-            // K+B vs K, K+N vs K -> Draw
-            if piece_count == 3 && (stm_minors == 1 || opp_minors == 1) {
-                return Some(0);
-            }
-            // K+N+N vs K -> Known theoretical draw
-            if piece_count == 4 && ((stm_knights == 2 && opp_minors == 0) || (opp_knights == 2 && stm_minors == 0)) {
-                return Some(0);
-            }
-            // K+B vs K+B (Same-colored or opposite colored bishops without pawns)
-            if piece_count == 4 && stm_bishops == 1 && opp_bishops == 1 {
-                return Some(0);
-            }
-            // K+N vs K+N, K+B vs K+N -> Draw
-            if piece_count == 4 && stm_minors == 1 && opp_minors == 1 && stm_majors == 0 && opp_majors == 0 {
-                return Some(0);
-            }
+        let fen_str = board.to_fen();
+        let fen = fen_str.parse::<Fen>().ok()?;
+        let pos: Chess = fen.into_position(CastlingMode::Standard).ok()?;
+
+        let wdl = tb_guard.probe_wdl_after_zeroing(&pos).ok()?;
+        Some(match wdl {
+            Wdl::Win => TB_WIN_SCORE - ply as i32,
+            Wdl::Loss => -TB_WIN_SCORE + ply as i32,
+            Wdl::Draw => 0,
+            Wdl::BlessedLoss => 0,
+            Wdl::CursedWin => 0,
+        })
+    }
+
+    /// Probes root moves for optimal tablebase play (DTZ-guided)
+    /// Returns Some((best_move, score)) ONLY when genuine tablebases resolve the root.
+    pub fn probe_root(board: &Board, legal_moves: &[Move], max_pieces: usize) -> Option<(Move, i32)> {
+        let piece_count = board.combined_occupancy.count_ones() as usize;
+        if piece_count > max_pieces || piece_count < 2 || legal_moves.is_empty() {
+            return None;
         }
 
-        // 4. Single Major piece wins vs Bare King (K+Q vs K, K+R vs K)
-        if (stm_queens > 0 || stm_rooks > 0) && opp_queens == 0 && opp_rooks == 0 && opp_minors == 0 && opp_pawns == 0 {
-            return Some(MATE_SCORE - ply as i32);
+        let tb_guard = TABLEBASE.read().ok()?;
+        if tb_guard.max_pieces() < piece_count {
+            return None;
         }
-        if (opp_queens > 0 || opp_rooks > 0) && stm_queens == 0 && stm_rooks == 0 && stm_minors == 0 && stm_pawns == 0 {
-            return Some(-MATE_SCORE + ply as i32);
+
+        let fen_str = board.to_fen();
+        let fen = fen_str.parse::<Fen>().ok()?;
+        let pos: Chess = fen.into_position(CastlingMode::Standard).ok()?;
+
+        if let Some((shak_mv, dtz_res)) = tb_guard.best_move(&pos).ok().flatten() {
+            let from_sq = shak_mv.from().map(|s| s as u8).unwrap_or(0);
+            let to_sq = shak_mv.to() as u8;
+            if let Some(&mv) = legal_moves.iter().find(|m| m.from == from_sq && m.to == to_sq) {
+                let dtz_val = dtz_res.ignore_rounding().0;
+                let score = if dtz_val > 0 {
+                    TB_WIN_SCORE - dtz_val
+                } else if dtz_val < 0 {
+                    -TB_WIN_SCORE - dtz_val
+                } else {
+                    0
+                };
+                return Some((mv, score));
+            }
         }
 
         None
     }
 
-    /// Evaluates DTZ (Distance To Zero - ply count to zeroing move/pawn move/capture)
-    pub fn probe_dtz(board: &Board, ply: usize) -> Option<i32> {
-        let piece_count = board.combined_occupancy.count_ones();
-        if piece_count > 7 {
+    /// Evaluates DTZ (Distance To Zero)
+    pub fn probe_dtz(board: &Board, max_pieces: usize) -> Option<i32> {
+        let piece_count = board.combined_occupancy.count_ones() as usize;
+        if piece_count > max_pieces || piece_count < 2 {
             return None;
         }
 
-        if let Some(wdl_score) = Self::probe_wdl(board, ply) {
-            let dtz_dist = if wdl_score > 0 {
-                // Winning: Return DTZ score towards mate
-                (wdl_score - MATE_SCORE).abs()
-            } else if wdl_score < 0 {
-                // Losing: Maximize DTZ to delay loss
-                (-wdl_score - MATE_SCORE).abs()
-            } else {
-                0
-            };
-            return Some(dtz_dist);
+        let tb_guard = TABLEBASE.read().ok()?;
+        if tb_guard.max_pieces() < piece_count {
+            return None;
         }
 
-        None
+        let fen_str = board.to_fen();
+        let fen = fen_str.parse::<Fen>().ok()?;
+        let pos: Chess = fen.into_position(CastlingMode::Standard).ok()?;
+
+        let dtz = tb_guard.probe_dtz(&pos).ok()?;
+        Some(dtz.ignore_rounding().0)
     }
 }

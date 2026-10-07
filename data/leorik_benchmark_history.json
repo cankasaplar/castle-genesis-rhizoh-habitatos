@@ -1,0 +1,108 @@
+[
+  {
+    "sprint": "Week 1 (v1.0.3 Baseline)",
+    "timestamp": "2026-10-03T16:30:00Z",
+    "rhizoh_score": 0.5,
+    "total_games": 10,
+    "score_percent": "5.0%",
+    "movetime_ms": 500,
+    "opponent": "Leorik 3.2.1 (~3490 CCRL)",
+    "highlight": "Round 2 Draw (140 plies / 73 full moves) as Black in Italian Game",
+    "pgn_archive": "data/pgn_archive/rhizoh_vs_leorik_fair.pgn",
+    "model_sha256": "1a7542c6de8fac98f363b698e9b1b8d1b89b38d96e521899990a6e9ba2685b16",
+    "wac_median": 23.0,
+    "holdout_pearson_r": 0.4321
+  },
+  {
+    "timestamp": "2026-10-07T11:05:04.261171+00:00",
+    "rhizoh_score": 0.0,
+    "total_games": 10,
+    "score_percent": "0.0%",
+    "movetime_ms": 500,
+    "opponent": "Leorik 3.2.1 (~3490 CCRL)",
+    "pgn_archive": "data\\pgn_archive\\weekly_leorik\\rhizoh_vs_leorik_gauntlet_20261007_105901.pgn",
+    "games": [
+      {
+        "round": 1,
+        "opening": "Italian Game (Giuoco Piano)",
+        "rhizoh_color": "White",
+        "result": "0-1",
+        "rhizoh_points": 0.0,
+        "plies": 72
+      },
+      {
+        "round": 2,
+        "opening": "Italian Game (Giuoco Piano)",
+        "rhizoh_color": "Black",
+        "result": "1-0",
+        "rhizoh_points": 0.0,
+        "plies": 95
+      },
+      {
+        "round": 3,
+        "opening": "Ruy Lopez (Morphy Defense)",
+        "rhizoh_color": "White",
+        "result": "0-1",
+        "rhizoh_points": 0.0,
+        "plies": 68
+      },
+      {
+        "round": 4,
+        "opening": "Ruy Lopez (Morphy Defense)",
+        "rhizoh_color": "Black",
+        "result": "1-0",
+        "rhizoh_points": 0.0,
+        "plies": 109
+      },
+      {
+        "round": 5,
+        "opening": "Sicilian Defense (Classical)",
+        "rhizoh_color": "White",
+        "result": "0-1",
+        "rhizoh_points": 0.0,
+        "plies": 62
+      },
+      {
+        "round": 6,
+        "opening": "Sicilian Defense (Classical)",
+        "rhizoh_color": "Black",
+        "result": "1-0",
+        "rhizoh_points": 0.0,
+        "plies": 95
+      },
+      {
+        "round": 7,
+        "opening": "Queen's Gambit Declined",
+        "rhizoh_color": "White",
+        "result": "0-1",
+        "rhizoh_points": 0.0,
+        "plies": 86
+      },
+      {
+        "round": 8,
+        "opening": "Queen's Gambit Declined",
+        "rhizoh_color": "Black",
+        "result": "1-0",
+        "rhizoh_points": 0.0,
+        "plies": 131
+      },
+      {
+        "round": 9,
+        "opening": "Caro-Kann Defense (Advance)",
+        "rhizoh_color": "White",
+        "result": "0-1",
+        "rhizoh_points": 0.0,
+        "plies": 83
+      },
+      {
+        "round": 10,
+        "opening": "Caro-Kann Defense (Advance)",
+        "rhizoh_color": "Black",
+        "result": "1-0",
+        "rhizoh_points": 0.0,
+        "plies": 46
+      }
+    ],
+    "note": "Weekly Baseline Benchmark"
+  }
+]

@@ -66,6 +66,13 @@ pub struct SearchStats {
     pub aspiration_fail_low: u64,
     pub singular_extensions: u64,
     pub singular_probes: u64,
+    pub ksc_root: bool,
+    pub ksc_nodes: u64,
+    pub ksc_actual_pruned: u64,
+    pub ksc_shadow_protected: u64,
+    pub ksc_actual_not_pruned: u64,
+    pub zcb_nodes: u64,
+    pub c3_guard_triggers: u64,
 }
 
 pub struct Searcher {
@@ -80,6 +87,148 @@ pub struct Searcher {
     pub stats: SearchStats,
     pub game_history: Vec<u64>,
     pub search_stack: Vec<u64>,
+}
+
+#[inline(always)]
+#[inline(always)]
+pub fn is_regime_a_locked_tension(board: &Board) -> bool {
+    let w_pawns = board.pieces[Color::White as usize][PieceType::Pawn as usize];
+    let b_pawns = board.pieces[Color::Black as usize][PieceType::Pawn as usize];
+
+    const CENTER_FILES_MASK: u64 = 0x3C3C3C3C3C3C3C3Cu64;
+    let center_pawns = (w_pawns | b_pawns) & CENTER_FILES_MASK;
+    let total_center = center_pawns.count_ones();
+
+    // Regime C (Open): if central pawn mass is depleted (<= 3 pawns on C, D, E, F)
+    if total_center <= 3 {
+        return false;
+    }
+
+    // Locked pawn pairs in extended center (White pawn on sq, Black pawn on sq + 8)
+    let locked_center_pairs = ((w_pawns & (b_pawns >> 8)) & CENTER_FILES_MASK).count_ones();
+
+    // Blocked pawns (pawns whose forward square is occupied by any piece)
+    let w_blocked = (w_pawns & (board.combined_occupancy >> 8)).count_ones();
+    let b_blocked = (b_pawns & (board.combined_occupancy << 8)).count_ones();
+    let total_blocked = w_blocked + b_blocked;
+
+    // Direct mutual pawn tension in the center
+    let direct_tension = {
+        let left = (w_pawns & !0x0101010101010101u64) << 7;
+        let right = (w_pawns & !0x8080808080808080u64) << 9;
+        ((left | right) & b_pawns & CENTER_FILES_MASK).count_ones()
+    };
+
+    // Levers / pawn breaks available for the side to move
+    let color = board.side_to_move;
+    let my_pawns = board.pieces[color as usize][PieceType::Pawn as usize];
+    let opp_pawns = board.pieces[color.opposite() as usize][PieceType::Pawn as usize];
+
+    let break_captures = match color {
+        Color::White => {
+            let left = (my_pawns & !0x0101010101010101u64) << 7;
+            let right = (my_pawns & !0x8080808080808080u64) << 9;
+            ((left | right) & opp_pawns & CENTER_FILES_MASK).count_ones()
+        }
+        Color::Black => {
+            let left = (my_pawns & !0x8080808080808080u64) >> 7;
+            let right = (my_pawns & !0x0101010101010101u64) >> 9;
+            ((left | right) & opp_pawns & CENTER_FILES_MASK).count_ones()
+        }
+    };
+
+    let empty = !board.combined_occupancy;
+    let single_pushes = match color {
+        Color::White => (my_pawns << 8) & empty & CENTER_FILES_MASK,
+        Color::Black => (my_pawns >> 8) & empty & CENTER_FILES_MASK,
+    };
+    let push_attacks = match color {
+        Color::White => {
+            let left = (single_pushes & !0x0101010101010101u64) << 7;
+            let right = (single_pushes & !0x8080808080808080u64) << 9;
+            ((left | right) & opp_pawns).count_ones()
+        }
+        Color::Black => {
+            let left = (single_pushes & !0x8080808080808080u64) >> 7;
+            let right = (single_pushes & !0x0101010101010101u64) >> 9;
+            ((left | right) & opp_pawns).count_ones()
+        }
+    };
+
+    let available_breaks = break_captures + (if push_attacks != 0 { 1 } else { 0 });
+
+    // Regime A: high central mass (>=4), structure present (locked pairs >= 1 or blocked >= 3 or direct tension >= 1 or break >= 1)
+    // AND break availability is low (available_breaks <= 1)
+    if (locked_center_pairs >= 1 || total_blocked >= 3 || direct_tension >= 1 || available_breaks >= 1) && available_breaks <= 1 {
+        return true;
+    }
+
+    false
+}
+
+pub fn is_king_safe_in_locked_center(board: &Board, color: Color) -> bool {
+    let k_bb = board.pieces[color as usize][PieceType::King as usize];
+    if k_bb == 0 { return false; }
+    let k_sq = k_bb.trailing_zeros() as u8;
+    let k_file = k_sq % 8;
+    let k_rank = k_sq / 8;
+
+    let is_central_king = match color {
+        Color::White => (k_rank <= 1) && (k_file >= 2 && k_file <= 4),
+        Color::Black => (k_rank >= 6) && (k_file >= 2 && k_file <= 4),
+    };
+    if !is_central_king {
+        return false;
+    }
+
+    let w_pawns = board.pieces[Color::White as usize][PieceType::Pawn as usize];
+    let b_pawns = board.pieces[Color::Black as usize][PieceType::Pawn as usize];
+    const CENTER_FILES_MASK: u64 = 0x3C3C3C3C3C3C3C3Cu64;
+    let locked_pawns = (w_pawns & (b_pawns >> 8)) & CENTER_FILES_MASK;
+    if locked_pawns == 0 {
+        return false;
+    }
+
+    let min_f = if k_file == 0 { 0 } else { k_file - 1 };
+    let max_f = if k_file == 7 { 7 } else { k_file + 1 };
+    let opp_color = match color { Color::White => Color::Black, Color::Black => Color::White };
+    let opp_pawns = board.pieces[opp_color as usize][PieceType::Pawn as usize];
+
+    for f in min_f..=max_f {
+        let file_mask = 0x0101010101010101u64 << f;
+        if (opp_pawns & file_mask) == 0 {
+            return false;
+        }
+    }
+    true
+}
+
+#[inline(always)]
+pub fn has_zero_central_breaks(board: &Board, color: Color) -> bool {
+    let w_pawns = board.pieces[Color::White as usize][PieceType::Pawn as usize];
+    let b_pawns = board.pieces[Color::Black as usize][PieceType::Pawn as usize];
+    const CENTER_FILES_MASK: u64 = 0x3C3C3C3C3C3C3C3Cu64;
+    let locked_pawns = (w_pawns & (b_pawns >> 8)) & CENTER_FILES_MASK;
+    if locked_pawns == 0 {
+        return false;
+    }
+
+    // Check if side has pawn moves in central files
+    let my_pawns = board.pieces[color as usize][PieceType::Pawn as usize] & CENTER_FILES_MASK;
+    if my_pawns == 0 {
+        return true;
+    }
+
+    // Single step push into empty square
+    let empty = !board.combined_occupancy;
+    let single_push = match color {
+        Color::White => (my_pawns << 8) & empty & CENTER_FILES_MASK,
+        Color::Black => (my_pawns >> 8) & empty & CENTER_FILES_MASK,
+    };
+    if single_push == 0 {
+        return true;
+    }
+    false
 }
 
 fn has_non_pawn_material(board: &Board, color: Color) -> bool {
@@ -257,6 +406,9 @@ impl Searcher {
         self.nodes = 0;
         self.aborted = false;
         self.stats = SearchStats::default();
+        if self.features.use_c2_shadow_probe {
+            self.stats.ksc_root = is_king_safe_in_locked_center(board, board.side_to_move);
+        }
         self.tt.new_search();
 
         let legal_moves = board.generate_moves();
@@ -345,6 +497,33 @@ impl Searcher {
             return candidates;
         }
 
+        // Syzygy Endgame Tablebase Root Probe (DTZ-Optimal):
+        let probe_limit = self.features.syzygy_probe_limit as usize;
+        if probe_limit >= 3 && board.combined_occupancy.count_ones() <= probe_limit as u32 {
+            if let Some((tb_move, tb_score)) = crate::syzygy::SyzygyProber::probe_root(board, &legal_moves, probe_limit) {
+                let score_str = if tb_score > MATE_SCORE - 1000 {
+                    let mate_in_moves = (MATE_SCORE - tb_score + 1) / 2;
+                    format!("mate {}", mate_in_moves)
+                } else if tb_score < -MATE_SCORE + 1000 {
+                    let mate_in_moves = (MATE_SCORE + tb_score + 1) / 2;
+                    format!("mate -{}", mate_in_moves)
+                } else {
+                    format!("cp {}", tb_score)
+                };
+                println!("info depth 64 score {} nodes 1 tbhits 1 pv {}", score_str, tb_move.to_uci());
+                use std::io::Write;
+                let _ = std::io::stdout().flush();
+
+                candidates.push(CandidateMove {
+                    mv: tb_move,
+                    score: tb_score,
+                    depth: 64,
+                    pv: vec![tb_move],
+                });
+                return candidates;
+            }
+        }
+
         if self.features.use_nnue && board.accumulator.is_none() {
             let nnue = crate::nnue::get_global_nnue();
             if nnue.is_enabled() {
@@ -382,7 +561,7 @@ impl Searcher {
 
             let zobrist_key = board.get_zobrist_key();
             let raw_tt_move = self.tt.probe(zobrist_key).and_then(|e| e.best_move);
-            let tt_move = raw_tt_move.filter(|&m_u16| board.is_legal_u16(m_u16).is_some());
+            let tt_move = raw_tt_move.filter(|&m_u16| legal_moves.iter().any(|m| ((m.from as u16) << 6 | m.to as u16) == m_u16));
 
             // Order root moves
             self.order_moves(board, &mut searched_moves, 0, tt_move, None);
@@ -437,7 +616,31 @@ impl Searcher {
                         -self.alpha_beta(&mut next_board, (current_depth as usize).saturating_sub(1), 1, -beta, -search_alpha)
                     } else if can_reduce_root {
                         // Root Late Move Reduction (Root LMR)
-                        let r = LMR_TABLE[current_depth.min(63) as usize][i.min(63)];
+                        let base_r = LMR_TABLE[current_depth.min(63) as usize][i.min(63)];
+                        let mut r = base_r;
+                        if self.features.use_c3_lmr_horizon_guard {
+                            let is_pawn_move = mv.piece == PieceType::Pawn;
+                            let opp_king_bb = board.pieces[board.side_to_move.opposite() as usize][PieceType::King as usize];
+                            let is_king_zone = opp_king_bb != 0 && {
+                                let opp_king_sq = opp_king_bb.trailing_zeros() as u8;
+                                (crate::magic::get_king_attacks(opp_king_sq) & (1u64 << mv.to)) != 0
+                            };
+                            if search_alpha.abs() >= 80 && (is_pawn_move || is_king_zone) {
+                                r = r.saturating_sub(1).max(1);
+                                self.stats.c3_guard_triggers += 1;
+                            }
+                        } else if self.features.use_c3_regime_gated_guard {
+                            let is_pawn_move = mv.piece == PieceType::Pawn;
+                            let opp_king_bb = board.pieces[board.side_to_move.opposite() as usize][PieceType::King as usize];
+                            let is_king_zone = opp_king_bb != 0 && {
+                                let opp_king_sq = opp_king_bb.trailing_zeros() as u8;
+                                (crate::magic::get_king_attacks(opp_king_sq) & (1u64 << mv.to)) != 0
+                            };
+                            if search_alpha.abs() >= 80 && (is_pawn_move || is_king_zone) && is_regime_a_locked_tension(board) {
+                                r = r.saturating_sub(1).max(1);
+                                self.stats.c3_guard_triggers += 1;
+                            }
+                        }
                         let reduced_depth = (current_depth as usize).saturating_sub(1 + r).max(1);
                         let lmr_score = -self.alpha_beta(&mut next_board, reduced_depth, 1, -search_alpha - 1, -search_alpha);
                         if lmr_score > search_alpha {
@@ -574,6 +777,14 @@ impl Searcher {
                             "info depth {} score {} nodes {} nps {} time {} hashfull {} pv {}",
                             current_depth, score_str, self.nodes, nps, elapsed_ms, hashfull, final_pv
                         );
+                        if self.features.use_c2_shadow_probe {
+                            println!(
+                                "info string C2_SHADOW ksc_root {} ksc_nodes {} ksc_actual_pruned {} ksc_shadow_protected {} ksc_actual_not_pruned {} zcb_nodes {}",
+                                self.stats.ksc_root, self.stats.ksc_nodes, self.stats.ksc_actual_pruned,
+                                self.stats.ksc_shadow_protected, self.stats.ksc_nodes.saturating_sub(self.stats.ksc_actual_pruned),
+                                self.stats.zcb_nodes
+                            );
+                        }
                         use std::io::Write;
                         let _ = std::io::stdout().flush();
                     }
@@ -642,7 +853,27 @@ impl Searcher {
             let cap_hist = if let Some(cap) = mv.captured {
                 self.heuristics.get_capture_history(mv.piece, cap, mv.to as usize)
             } else { 0 };
-            return 1_000_000_000 + mvv_lva + cap_hist;
+
+            let mut struct_cap_bonus = 0;
+            if self.features.use_structural_search_bridge {
+                let (c, s) = self.classify_structural_move(board, mv);
+                if c == "TENSION_CAPTURE" {
+                    struct_cap_bonus = s;
+                }
+            }
+
+            if self.features.use_see_ordering {
+                let see_val = crate::see::see_eval(board, mv);
+                if see_val >= 0 {
+                    // Winning or equal capture: top priority above quiet moves
+                    return 1_000_000_000 + mvv_lva + cap_hist + struct_cap_bonus;
+                } else {
+                    // Losing capture: demoted below quiet moves, but preserved with negative offset
+                    return -500_000 + see_val;
+                }
+            } else {
+                return 1_000_000_000 + mvv_lva + cap_hist;
+            }
         }
 
         if let Some(promo) = mv.promotion {
@@ -659,12 +890,12 @@ impl Searcher {
         // Killer Moves
         if ply < 64 {
             if let Some(k0) = self.heuristics.killer_moves[ply][0] {
-                if k0 == mv && board.is_legal(&mv) {
+                if k0 == mv {
                     return 800_000;
                 }
             }
             if let Some(k1) = self.heuristics.killer_moves[ply][1] {
-                if k1 == mv && board.is_legal(&mv) {
+                if k1 == mv {
                     return 700_000;
                 }
             }
@@ -674,7 +905,7 @@ impl Searcher {
         if self.features.use_countermove_history {
             if let Some(pm) = prev_move {
                 if let Some(cm) = self.heuristics.counter_moves[pm.from as usize][pm.to as usize] {
-                    if cm == mv && board.is_legal(&mv) {
+                    if cm == mv {
                         return 650_000;
                     }
                 }
@@ -767,6 +998,15 @@ impl Searcher {
                     return 50_000;
                 }
             }
+
+            // Candidate 2: Structural Priority (Structural Search Bridge)
+            // Sits between checks/countermoves/killers (620k-800k) and normal quiet history (max 32k)
+            if self.features.use_structural_search_bridge {
+                let (_s_class, s_score) = self.classify_structural_move(board, mv);
+                if s_score > 0 {
+                    return 500_000 + s_score;
+                }
+            }
         }
 
         // History & Continuation History
@@ -781,7 +1021,7 @@ impl Searcher {
     }
 
     /// Quiescence Search: Searches capture moves to prevent horizon effect with Delta & SEE Pruning
-    pub fn quiescence(&mut self, board: &mut Board, ply: usize, mut alpha: i32, beta: i32) -> i32 {
+    pub fn quiescence(&mut self, board: &mut Board, ply: usize, qply: usize, mut alpha: i32, beta: i32) -> i32 {
         self.nodes += 1;
         self.stats.nodes += 1;
         self.stats.qnodes += 1;
@@ -803,21 +1043,30 @@ impl Searcher {
 
         let in_check = board.is_king_in_check(board.side_to_move);
 
-        // Standing Pat
-        let stand_pat = Evaluator::evaluate(board, &self.features);
-        if !in_check {
-            if stand_pat >= beta {
+        // Standing Pat (only if not in check; in check we must resolve the check)
+        let stand_pat = if in_check {
+            -MATE_SCORE + ply as i32
+        } else {
+            let sp = Evaluator::evaluate(board, &self.features);
+            if sp >= beta {
                 return beta;
             }
-            if stand_pat > alpha {
-                alpha = stand_pat;
+            if sp > alpha {
+                alpha = sp;
             }
-        }
+            sp
+        };
 
         // Generate legal moves (captures, promotions, and evasions if in check)
         let moves = board.generate_moves();
         let captures: Vec<Move> = moves.into_iter().filter(|m| {
-            in_check || m.captured.is_some() || m.is_en_passant || m.promotion.is_some()
+            if in_check || m.captured.is_some() || m.is_en_passant || m.promotion.is_some() {
+                true
+            } else if self.features.use_qsearch_checks && qply == 0 && self.is_promising_quiet_check(board, *m) {
+                true
+            } else {
+                false
+            }
         }).collect();
 
         if captures.is_empty() {
@@ -829,7 +1078,7 @@ impl Searcher {
 
         // Sort captures by MVV-LVA
         let mut sorted_captures = captures;
-        sorted_captures.sort_by_key(|mv| -self.score_move_mvv_lva(board, *mv));
+        sorted_captures.sort_by_key(|mv| -self.score_qsearch_move(board, *mv));
 
         let orig_alpha = alpha;
         for mv in sorted_captures {
@@ -856,15 +1105,17 @@ impl Searcher {
 
             let mut next_board = board.clone();
             next_board.make_move(mv);
-            let score = -self.quiescence(&mut next_board, ply + 1, -beta, -alpha);
+            let score = -self.quiescence(&mut next_board, ply + 1, qply + 1, -beta, -alpha);
 
             if self.aborted {
                 return 0;
             }
 
             if score >= beta {
-                let tt_score = score_to_tt(beta, ply);
-                self.tt.store(zobrist_key, 0, tt_score, NodeType::Beta, None);
+                if !self.aborted {
+                    let tt_score = score_to_tt(beta, ply);
+                    self.tt.store(zobrist_key, 0, tt_score, NodeType::Beta, None);
+                }
                 return beta;
             }
             if score > alpha {
@@ -927,9 +1178,10 @@ impl Searcher {
             return alpha;
         }
 
-        // Syzygy Endgame Tablebase Probing
-        if excluded_move.is_none() && ply > 0 && board.combined_occupancy.count_ones() <= 5 {
-            if let Some(tb_score) = crate::syzygy::SyzygyProber::probe_wdl(board, ply) {
+        // Syzygy Endgame Tablebase Probing (Exact WDL cutoff)
+        let probe_limit = self.features.syzygy_probe_limit as usize;
+        if excluded_move.is_none() && ply > 0 && probe_limit >= 3 && board.combined_occupancy.count_ones() <= probe_limit as u32 {
+            if let Some(tb_score) = crate::syzygy::SyzygyProber::probe_wdl(board, ply, probe_limit) {
                 return tb_score;
             }
         }
@@ -948,9 +1200,7 @@ impl Searcher {
         self.stats.tt_probes += 1;
         if let Some(entry) = self.tt.probe(zobrist_key) {
             if let Some(m_u16) = entry.best_move {
-                if board.is_legal_u16(m_u16).is_some()
-                    && excluded_move.map_or(true, |mv| ((mv.from as u16) << 6 | mv.to as u16) != m_u16)
-                {
+                if excluded_move.map_or(true, |mv| ((mv.from as u16) << 6 | mv.to as u16) != m_u16) {
                     tt_move = Some(m_u16);
                 }
             }
@@ -971,7 +1221,7 @@ impl Searcher {
         let depth = if in_check && ply < 64 { depth + 1 } else { depth };
 
         if depth == 0 {
-            return self.quiescence(board, ply, alpha, beta);
+            return self.quiescence(board, ply, 0, alpha, beta);
         }
         
         // Internal Iterative Reduction (IIR): Reduce depth by 1 if no TT move available at non-PV node
@@ -981,22 +1231,40 @@ impl Searcher {
             depth
         };
 
-        let static_eval = Evaluator::evaluate(board, &self.features);
-        let pawn_hash = board.pieces[board.side_to_move as usize][PieceType::Pawn as usize];
-        let non_pawn_hash = board.color_occupancy[board.side_to_move as usize] ^ pawn_hash;
-        let p_corr = self.heuristics.get_correction(board.side_to_move, pawn_hash);
-        let np_corr = self.heuristics.get_non_pawn_correction(board.side_to_move, non_pawn_hash);
-        let adjusted_eval = static_eval + p_corr + np_corr;
+        let (_static_eval, adjusted_eval) = if in_check {
+            (0, 0)
+        } else {
+            let se = Evaluator::evaluate(board, &self.features);
+            let pawn_hash = board.pieces[board.side_to_move as usize][PieceType::Pawn as usize];
+            let non_pawn_hash = board.color_occupancy[board.side_to_move as usize] ^ pawn_hash;
+            let p_corr = self.heuristics.get_correction(board.side_to_move, pawn_hash);
+            let np_corr = self.heuristics.get_non_pawn_correction(board.side_to_move, non_pawn_hash);
+            (se, se + p_corr + np_corr)
+        };
+
+        let (is_ksc_node, _is_zcb_node) = if self.features.use_c2_shadow_probe && !in_check {
+            let ksc = is_king_safe_in_locked_center(board, board.side_to_move);
+            let zcb = has_zero_central_breaks(board, board.side_to_move);
+            if ksc { self.stats.ksc_nodes += 1; }
+            if zcb { self.stats.zcb_nodes += 1; }
+            (ksc, zcb)
+        } else {
+            (false, false)
+        };
 
         // Razoring: At shallow depths, if static eval is far below alpha, drop to quiescence
         if !in_check && ply > 0 && depth <= 3 && alpha.abs() < MATE_SCORE - 1000 {
             let razor_margin = RAZORING_MARGIN[depth];
             if adjusted_eval + razor_margin <= alpha {
                 if depth <= 1 {
-                    return self.quiescence(board, ply, alpha, beta);
+                    return self.quiescence(board, ply, 0, alpha, beta);
                 }
-                let qs_score = self.quiescence(board, ply, alpha, beta);
+                let qs_score = self.quiescence(board, ply, 0, alpha, beta);
                 if qs_score <= alpha {
+                    if is_ksc_node {
+                        self.stats.ksc_actual_pruned += 1;
+                        if adjusted_eval < -50 { self.stats.ksc_shadow_protected += 1; }
+                    }
                     return qs_score;
                 }
             }
@@ -1006,9 +1274,14 @@ impl Searcher {
         if depth <= 6 && !in_check && ply > 0 && beta.abs() < MATE_SCORE - 1000 {
             let rfp_margin = depth as i32 * 90;
             if adjusted_eval - rfp_margin >= beta {
+                if is_ksc_node {
+                    self.stats.ksc_actual_pruned += 1;
+                }
                 return adjusted_eval;
             }
         }
+
+        let mut cached_moves: Option<Vec<Move>> = None;
 
         // 2. Multi-ProbCut (ProbCut): Shallow high-beta pruning
         // Margin reduced to 150cp (was 200cp) to avoid false cutoffs
@@ -1016,8 +1289,8 @@ impl Searcher {
             let probcut_beta = (beta + 150).min(MATE_SCORE - 1000);
             let probcut_depth = depth.saturating_sub(4).max(1);
             // Only try ProbCut on captures (avoid expensive quiet searches)
-            let pc_moves = board.generate_moves();
-            let pc_captures: Vec<_> = pc_moves.iter().filter(|m| {
+            let moves_ref = cached_moves.get_or_insert_with(|| board.generate_moves());
+            let pc_captures: Vec<_> = moves_ref.iter().filter(|m| {
                 m.captured.is_some() || m.is_en_passant
             }).take(6).cloned().collect();
             for pc_mv in pc_captures {
@@ -1035,8 +1308,8 @@ impl Searcher {
         // Multi-Cut Pruning: If at high depth, many moves cause beta cutoff at reduced depth, prune
         if depth >= 8 && !in_check && ply > 0 && beta.abs() < MATE_SCORE - 1000 {
             let mc_depth = depth.saturating_sub(4).max(1);
-            let mc_moves = board.generate_moves();
-            let mut mc_sorted = mc_moves;
+            let moves_ref = cached_moves.get_or_insert_with(|| board.generate_moves());
+            let mut mc_sorted = moves_ref.clone();
             self.order_moves(board, &mut mc_sorted, ply, tt_move, prev_move);
             let mut cuts = 0;
             let mc_limit = mc_sorted.len().min(6);
@@ -1086,7 +1359,7 @@ impl Searcher {
             }
         }
 
-        let mut moves = board.generate_moves();
+        let mut moves = cached_moves.unwrap_or_else(|| board.generate_moves());
         if let Some(excluded) = excluded_move {
             moves.retain(|mv| *mv != excluded);
         }
@@ -1134,6 +1407,10 @@ impl Searcher {
                 let futility_margin = depth as i32 * 95 + 30;
                 if adjusted_eval + futility_margin <= alpha {
                     self.stats.futility_prunes += 1;
+                    if is_ksc_node {
+                        self.stats.ksc_actual_pruned += 1;
+                        if adjusted_eval < -50 { self.stats.ksc_shadow_protected += 1; }
+                    }
                     continue;
                 }
             }
@@ -1245,6 +1522,30 @@ impl Searcher {
                     r = 1; // Tactical candidates reaching here receive minimal LMR
                 }
 
+                if self.features.use_c3_lmr_horizon_guard {
+                    let is_pawn_move = mv.piece == PieceType::Pawn;
+                    let opp_king_bb = board.pieces[board.side_to_move.opposite() as usize][PieceType::King as usize];
+                    let is_king_zone = opp_king_bb != 0 && {
+                        let opp_king_sq = opp_king_bb.trailing_zeros() as u8;
+                        (crate::magic::get_king_attacks(opp_king_sq) & (1u64 << mv.to)) != 0
+                    };
+                    if adjusted_eval.abs() >= 80 && (is_pawn_move || is_king_zone) {
+                        r = r.saturating_sub(1).max(1);
+                        self.stats.c3_guard_triggers += 1;
+                    }
+                } else if self.features.use_c3_regime_gated_guard {
+                    let is_pawn_move = mv.piece == PieceType::Pawn;
+                    let opp_king_bb = board.pieces[board.side_to_move.opposite() as usize][PieceType::King as usize];
+                    let is_king_zone = opp_king_bb != 0 && {
+                        let opp_king_sq = opp_king_bb.trailing_zeros() as u8;
+                        (crate::magic::get_king_attacks(opp_king_sq) & (1u64 << mv.to)) != 0
+                    };
+                    if adjusted_eval.abs() >= 80 && (is_pawn_move || is_king_zone) && is_regime_a_locked_tension(board) {
+                        r = r.saturating_sub(1).max(1);
+                        self.stats.c3_guard_triggers += 1;
+                    }
+                }
+
                 let reduced_depth = current_depth.saturating_sub(r).max(1);
 
                 let lmr_score = -self.alpha_beta_with_prev(&mut next_board, reduced_depth, ply + 1, -alpha - 1, -alpha, Some(mv), None);
@@ -1326,7 +1627,7 @@ impl Searcher {
                     }
 
                     let tt_beta = score_to_tt(beta, ply);
-                    if excluded_move.is_none() {
+                    if !self.aborted && excluded_move.is_none() {
                         self.tt.store(zobrist_key, depth as u8, tt_beta, NodeType::Beta, Some(mv_u16));
                     }
                     return beta;
@@ -1336,6 +1637,8 @@ impl Searcher {
 
         // Correction History Update: Smooth static evaluation based on search deltas
         if !in_check && best_score.abs() < MATE_SCORE - 100 {
+            let pawn_hash = board.pieces[board.side_to_move as usize][PieceType::Pawn as usize];
+            let non_pawn_hash = board.color_occupancy[board.side_to_move as usize] ^ pawn_hash;
             let delta = (best_score - adjusted_eval).clamp(-400, 400);
             self.heuristics.update_correction(board.side_to_move, pawn_hash, delta);
             self.heuristics.update_non_pawn_correction(board.side_to_move, non_pawn_hash, delta);
@@ -1347,6 +1650,191 @@ impl Searcher {
             self.tt.store(zobrist_key, depth as u8, tt_best_score, node_type, best_mv_u16);
         }
         best_score
+    }
+
+    /// E4-B: Selective Quiet Check Evaluation
+    /// Evaluates if a quiet check at qply==0 possesses sufficient tactical urgency,
+    /// safe escape geometry, and non-losing SEE context.
+    pub fn is_promising_quiet_check(&self, board: &Board, mv: Move) -> bool {
+        let opp_color = board.side_to_move.opposite();
+        let enemy_king_bb = board.pieces[opp_color as usize][PieceType::King as usize];
+        if enemy_king_bb == 0 { return false; }
+        let k_sq = enemy_king_bb.trailing_zeros() as u8;
+
+        // 1. King Distance & Geometry Filter (fast O(1) early reject before raytracing)
+        let k_rank = (k_sq / 8) as i8;
+        let k_file = (k_sq % 8) as i8;
+        let to_rank = (mv.to / 8) as i8;
+        let to_file = (mv.to % 8) as i8;
+        let dist = (k_rank - to_rank).abs().max((k_file - to_file).abs());
+
+        let is_edge_king = k_rank == 0 || k_rank == 7 || k_file == 0 || k_file == 7;
+        if dist > 3 && !(is_edge_king && (mv.piece == PieceType::Rook || mv.piece == PieceType::Queen)) {
+            return false; // Far away check against open king: creates useless branches
+        }
+
+        if !self.gives_direct_check(board, mv) {
+            return false;
+        }
+
+        // 2. Hanging / Safe Context Filter
+        let opp_att = board.is_square_attacked(mv.to, opp_color);
+        if opp_att {
+            let our_def = board.is_square_attacked(mv.to, board.side_to_move);
+            if !our_def {
+                // Suicidal Queen Contact Check: immediate O(1) reject (guards Game 1 Qh2+ blunder)
+                if mv.piece == PieceType::Queen && dist <= 1 {
+                    return false;
+                }
+                // If undefended, only permit if the attacker is pinned to enemy king (e.g. Game 1 Qg3+)
+                let mut test_board = board.clone_for_legality();
+                test_board.make_move(mv);
+                let opp_moves = test_board.generate_moves();
+                if opp_moves.iter().any(|m| m.to == mv.to) {
+                    return false; // Real legal hanging piece!
+                }
+            } else if mv.piece != PieceType::Pawn {
+                // Defended, but check if attacked by a pawn (losing exchange)
+                let pawns = board.pieces[opp_color as usize][PieceType::Pawn as usize];
+                let pawn_att = if opp_color == Color::White {
+                    ((pawns << 7) & !0x8080808080808080) | ((pawns << 9) & !0x0101010101010101)
+                } else {
+                    ((pawns >> 7) & !0x0101010101010101) | ((pawns >> 9) & !0x8080808080808080)
+                };
+                if (pawn_att & (1u64 << mv.to)) != 0 {
+                    let mut test_board = board.clone_for_legality();
+                    test_board.make_move(mv);
+                    let opp_moves = test_board.generate_moves();
+                    if opp_moves.iter().any(|m| m.to == mv.to && m.piece == PieceType::Pawn) {
+                        return false; // Defended pawn can legally capture: losing exchange!
+                    }
+                }
+            }
+        }
+
+        // 3. Tactical Urgency
+        // Contact checks (dist <= 1) and Pawn checks are always urgent
+        if dist <= 1 || mv.piece == PieceType::Pawn {
+            return true;
+        }
+
+        // Queen / Rook checks within distance <= 3 against castled shelter / edge king
+        if (mv.piece == PieceType::Queen || mv.piece == PieceType::Rook) && dist <= 3 {
+            return true;
+        }
+
+        // Minor piece checks: Bishop allowed at dist <= 3 (diagonal pins/skewers), Knight at dist <= 2
+        if mv.piece == PieceType::Bishop && dist <= 3 {
+            return true;
+        }
+        if mv.piece == PieceType::Knight && dist <= 2 {
+            return true;
+        }
+
+        false
+    }
+
+    pub fn gives_direct_check(&self, board: &Board, mv: Move) -> bool {
+        let opp_color = board.side_to_move.opposite();
+        let enemy_king_bb = board.pieces[opp_color as usize][PieceType::King as usize];
+        if enemy_king_bb == 0 { return false; }
+        let k_sq = enemy_king_bb.trailing_zeros() as u8;
+        let enemy_king_bb = 1u64 << k_sq;
+
+        let clear_slider_ray = |from: u8, to: u8, target: u8| -> bool {
+            let from_rank = from as i8 / 8;
+            let from_file = from as i8 % 8;
+            let to_rank = to as i8 / 8;
+            let to_file = to as i8 % 8;
+            let target_rank = target as i8 / 8;
+            let target_file = target as i8 % 8;
+
+            let rank_delta = target_rank - to_rank;
+            let file_delta = target_file - to_file;
+
+            let step_rank = rank_delta.signum();
+            let step_file = file_delta.signum();
+
+            let mut rank = to_rank + step_rank;
+            let mut file = to_file + step_file;
+
+            while rank != target_rank || file != target_file {
+                let sq = (rank * 8 + file) as u8;
+                if sq != from && (board.combined_occupancy & (1u64 << sq)) != 0 {
+                    return false;
+                }
+                rank += step_rank;
+                file += step_file;
+            }
+            true
+        };
+
+        match mv.piece {
+            PieceType::Knight => (crate::magic::get_knight_attacks(k_sq) & (1u64 << mv.to)) != 0,
+            PieceType::Pawn => {
+                let att = if board.side_to_move == Color::White {
+                    ((1u64 << mv.to) << 7 & !0x8080808080808080) | ((1u64 << mv.to) << 9 & !0x0101010101010101)
+                } else {
+                    ((1u64 << mv.to) >> 7 & !0x0101010101010101) | ((1u64 << mv.to) >> 9 & !0x8080808080808080)
+                };
+                (att & enemy_king_bb) != 0
+            }
+            PieceType::Bishop => {
+                let k_rank = k_sq as i8 / 8;
+                let k_file = k_sq as i8 % 8;
+                let to_rank = mv.to as i8 / 8;
+                let to_file = mv.to as i8 % 8;
+                let aligned = (k_rank - to_rank).abs() == (k_file - to_file).abs();
+                aligned && clear_slider_ray(mv.from, mv.to, k_sq)
+            }
+            PieceType::Rook => {
+                let k_rank = k_sq / 8;
+                let k_file = k_sq % 8;
+                let to_rank = mv.to / 8;
+                let to_file = mv.to % 8;
+                (k_rank == to_rank || k_file == to_file)
+                    && clear_slider_ray(mv.from, mv.to, k_sq)
+            }
+            PieceType::Queen => {
+                let k_rank = k_sq as i8 / 8;
+                let k_file = k_sq as i8 % 8;
+                let to_rank = mv.to as i8 / 8;
+                let to_file = mv.to as i8 % 8;
+                let aligned = k_rank == to_rank
+                    || k_file == to_file
+                    || (k_rank - to_rank).abs() == (k_file - to_file).abs();
+                aligned && clear_slider_ray(mv.from, mv.to, k_sq)
+            }
+            PieceType::King => false,
+        }
+    }
+
+    fn score_qsearch_move(&self, board: &Board, mv: Move) -> i32 {
+        if let Some(cap) = mv.captured {
+            let victim_val = match cap {
+                PieceType::Pawn => 100,
+                PieceType::Knight => 320,
+                PieceType::Bishop => 330,
+                PieceType::Rook => 500,
+                PieceType::Queen => 900,
+                PieceType::King => 20000,
+            };
+            let attacker_val = match mv.piece {
+                PieceType::Pawn => 100,
+                PieceType::Knight => 320,
+                PieceType::Bishop => 330,
+                PieceType::Rook => 500,
+                PieceType::Queen => 900,
+                PieceType::King => 20000,
+            };
+            10000 + victim_val * 10 - attacker_val
+        } else if mv.promotion.is_some() {
+            9000
+        } else if self.gives_direct_check(board, mv) {
+            8000
+        } else {
+            0
+        }
     }
 
     fn score_move_mvv_lva(&self, _board: &Board, mv: Move) -> i32 {
@@ -1555,5 +2043,153 @@ impl Searcher {
             static_eval_after,
             delta_nnue,
         })
+    }
+}
+
+impl Searcher {
+    #[inline]
+    pub fn is_regime_a(&self, board: &Board) -> bool {
+        let white_pawns = board.pieces[Color::White as usize][PieceType::Pawn as usize];
+        let black_pawns = board.pieces[Color::Black as usize][PieceType::Pawn as usize];
+        
+        const CENTER_FILES_MASK: u64 = 0x3C3C3C3C3C3C3C3C;
+        let center_pawns = (white_pawns | black_pawns) & CENTER_FILES_MASK;
+        if center_pawns.count_ones() <= 3 {
+            return false;
+        }
+
+        let locked_pairs = ((white_pawns << 8) & black_pawns & CENTER_FILES_MASK).count_ones();
+        let w_blocked = ((white_pawns << 8) & board.combined_occupancy).count_ones();
+        let b_blocked = ((black_pawns >> 8) & board.combined_occupancy).count_ones();
+        let total_blocked = w_blocked + b_blocked;
+
+        if locked_pairs >= 1 || total_blocked >= 3 {
+            let (stm_pawns, opp_pawns) = if board.side_to_move == Color::White {
+                (white_pawns, black_pawns)
+            } else {
+                (black_pawns, white_pawns)
+            };
+            
+            let empty = !board.combined_occupancy;
+            let single_pushes = if board.side_to_move == Color::White {
+                (stm_pawns << 8) & empty & CENTER_FILES_MASK
+            } else {
+                (stm_pawns >> 8) & empty & CENTER_FILES_MASK
+            };
+            
+            let mut breaks = 0;
+            let mut temp = single_pushes;
+            while temp != 0 {
+                let to_sq = temp.trailing_zeros() as u8;
+                let att = if board.side_to_move == Color::White {
+                    let bb = 1u64 << to_sq;
+                    ((bb << 7) & !0x8080808080808080) | ((bb << 9) & !0x0101010101010101)
+                } else {
+                    let bb = 1u64 << to_sq;
+                    ((bb >> 7) & !0x0101010101010101) | ((bb >> 9) & !0x8080808080808080)
+                };
+                if (att & opp_pawns) != 0 {
+                    breaks += 1;
+                }
+                temp &= temp - 1;
+            }
+            
+            return breaks <= 1;
+        }
+
+        false
+    }
+
+    pub fn classify_structural_move(&self, board: &Board, mv: Move) -> (&'static str, i32) {
+        if !self.is_regime_a(board) {
+            return ("NONE", 0);
+        }
+
+        const CENTER_FILES_MASK: u64 = 0x3C3C3C3C3C3C3C3C;
+        let to_bb = 1u64 << mv.to;
+        let is_center_dest = (to_bb & CENTER_FILES_MASK) != 0;
+
+        let us = board.side_to_move;
+        let them = us.opposite();
+        let my_pawns = board.pieces[us as usize][PieceType::Pawn as usize];
+        let opp_pawns = board.pieces[them as usize][PieceType::Pawn as usize];
+
+        // 4. Tension-Changing Capture
+        if (mv.captured.is_some() || mv.is_en_passant) && mv.piece == PieceType::Pawn && is_center_dest {
+            return ("TENSION_CAPTURE", self.features.structural_bonus_tension_capture);
+        }
+
+        // 1. Direct Pawn Break
+        if mv.piece == PieceType::Pawn && is_center_dest {
+            let att = if us == Color::White {
+                ((to_bb << 7) & !0x8080808080808080) | ((to_bb << 9) & !0x0101010101010101)
+            } else {
+                ((to_bb >> 7) & !0x0101010101010101) | ((to_bb >> 9) & !0x8080808080808080)
+            };
+            if (att & opp_pawns) != 0 {
+                return ("DIRECT_BREAK", self.features.structural_bonus_direct_break);
+            }
+            let opp_pawn_attacks = if them == Color::White {
+                ((opp_pawns << 7) & !0x8080808080808080) | ((opp_pawns << 9) & !0x0101010101010101)
+            } else {
+                ((opp_pawns >> 7) & !0x0101010101010101) | ((opp_pawns >> 9) & !0x8080808080808080)
+            };
+            if (opp_pawn_attacks & to_bb) != 0 {
+                return ("DIRECT_BREAK", self.features.structural_bonus_direct_break);
+            }
+        }
+
+        // 2. Break Enabler: Pawn move defending a future break square
+        if mv.piece == PieceType::Pawn {
+            let new_att = if us == Color::White {
+                ((to_bb << 7) & !0x8080808080808080) | ((to_bb << 9) & !0x0101010101010101)
+            } else {
+                ((to_bb >> 7) & !0x0101010101010101) | ((to_bb >> 9) & !0x8080808080808080)
+            };
+            let mut p_temp = my_pawns & !(1u64 << mv.from);
+            while p_temp != 0 {
+                let p_sq = p_temp.trailing_zeros() as u8;
+                let dest = if us == Color::White { p_sq as i8 + 8 } else { p_sq as i8 - 8 };
+                if (0..64).contains(&dest) {
+                    let dest_bb = 1u64 << dest;
+                    if (new_att & dest_bb) != 0 && (dest_bb & CENTER_FILES_MASK) != 0 {
+                        let dest_att = if us == Color::White {
+                            ((dest_bb << 7) & !0x8080808080808080) | ((dest_bb << 9) & !0x0101010101010101)
+                        } else {
+                            ((dest_bb >> 7) & !0x0101010101010101) | ((dest_bb >> 9) & !0x8080808080808080)
+                        };
+                        if (dest_att & opp_pawns) != 0 {
+                            return ("BREAK_ENABLER", self.features.structural_bonus_break_enabler);
+                        }
+                    }
+                }
+                p_temp &= p_temp - 1;
+            }
+        }
+
+        // 3. Anti-Break Defense: Occupying opponent's break square in center
+        if is_center_dest {
+            let mut opp_temp = opp_pawns;
+            while opp_temp != 0 {
+                let opp_sq = opp_temp.trailing_zeros() as u8;
+                let opp_dest = if them == Color::White { opp_sq as i8 + 8 } else { opp_sq as i8 - 8 };
+                if (0..64).contains(&opp_dest) {
+                    let opp_dest_bb = 1u64 << opp_dest;
+                    if (opp_dest_bb & CENTER_FILES_MASK) != 0 {
+                        let opp_dest_att = if them == Color::White {
+                            ((opp_dest_bb << 7) & !0x8080808080808080) | ((opp_dest_bb << 9) & !0x0101010101010101)
+                        } else {
+                            ((opp_dest_bb >> 7) & !0x0101010101010101) | ((opp_dest_bb >> 9) & !0x8080808080808080)
+                        };
+                        if (opp_dest_att & my_pawns) != 0 && mv.to == opp_dest as u8 {
+                            return ("ANTI_BREAK", self.features.structural_bonus_anti_break);
+                        }
+                    }
+                }
+                opp_temp &= opp_temp - 1;
+            }
+        }
+
+        ("NONE", 0)
     }
 }

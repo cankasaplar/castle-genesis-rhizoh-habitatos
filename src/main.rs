@@ -53,6 +53,16 @@ struct UciOptions {
     use_nnue: bool,
     lmr_mode: types::LmrMode,
     use_central_pawn_bonus: bool,
+    syzygy_path: String,
+    syzygy_probe_limit: u8,
+    use_qsearch_checks: bool,
+    use_c3_lmr_horizon_guard: bool,
+    pub use_c3_regime_gated_guard: bool,
+    pub use_structural_search_bridge: bool,
+    pub structural_bonus_direct_break: i32,
+    pub structural_bonus_break_enabler: i32,
+    pub structural_bonus_anti_break: i32,
+    pub structural_bonus_tension_capture: i32,
 }
 
 impl Default for UciOptions {
@@ -76,6 +86,16 @@ impl Default for UciOptions {
             use_nnue: false, // Default to Pure HCE Golden Baseline (NNUE gated until candidate beats WAC 21)
             lmr_mode: types::LmrMode::Baseline,
             use_central_pawn_bonus: false,
+            syzygy_path: "syzygy".to_string(),
+            syzygy_probe_limit: 5,
+            use_qsearch_checks: true,
+            use_c3_lmr_horizon_guard: false,
+            use_c3_regime_gated_guard: false,
+            use_structural_search_bridge: false,
+            structural_bonus_direct_break: 180,
+            structural_bonus_break_enabler: 120,
+            structural_bonus_anti_break: 100,
+            structural_bonus_tension_capture: 80,
         }
     }
 }
@@ -94,6 +114,14 @@ fn main() {
     searcher.features.use_loss_memory = options.use_loss_memory;
     searcher.features.use_nnue = options.use_nnue;
     searcher.features.use_central_pawn_bonus = options.use_central_pawn_bonus;
+    searcher.features.use_qsearch_checks = options.use_qsearch_checks;
+    searcher.features.use_c3_lmr_horizon_guard = options.use_c3_lmr_horizon_guard;
+    searcher.features.use_c3_regime_gated_guard = options.use_c3_regime_gated_guard;
+    searcher.features.use_structural_search_bridge = options.use_structural_search_bridge;
+    searcher.features.structural_bonus_direct_break = options.structural_bonus_direct_break;
+    searcher.features.structural_bonus_break_enabler = options.structural_bonus_break_enabler;
+    searcher.features.structural_bonus_anti_break = options.structural_bonus_anti_break;
+    searcher.features.structural_bonus_tension_capture = options.structural_bonus_tension_capture;
 
     // 1. Canlı Öğrenme Döngüsü: Texel Ağırlıkları ve Kayıp Hafızasını Yükle
     let weights_loaded = eval::Evaluator::load_weights_from_file("config/eval_weights.json");
@@ -158,6 +186,14 @@ fn main() {
                 writeln!(stdout, "option name Ponder type check default true").unwrap();
                 writeln!(stdout, "option name BookFile type string default lab/books/Performance.bin").unwrap();
                 writeln!(stdout, "option name SyzygyPath type string default syzygy").unwrap();
+                writeln!(stdout, "option name SyzygyProbeLimit type spin default 5 min 0 max 7").unwrap();
+                writeln!(stdout, "option name UseC3LmrHorizonGuard type check default false").unwrap();
+                writeln!(stdout, "option name UseC3RegimeGatedGuard type check default false").unwrap();
+                writeln!(stdout, "option name UseStructuralSearchBridge type check default false").unwrap();
+                writeln!(stdout, "option name StructuralBonusDirectBreak type spin default 180 min 0 max 1000").unwrap();
+                writeln!(stdout, "option name StructuralBonusBreakEnabler type spin default 120 min 0 max 1000").unwrap();
+                writeln!(stdout, "option name StructuralBonusAntiBreak type spin default 100 min 0 max 1000").unwrap();
+                writeln!(stdout, "option name StructuralBonusTensionCapture type spin default 80 min 0 max 1000").unwrap();
                 writeln!(stdout, "uciok").unwrap();
                 stdout.flush().unwrap();
             }
@@ -188,7 +224,14 @@ fn main() {
                 searcher.features.use_loss_memory = options.use_loss_memory;
                 searcher.features.use_opening_antiblunder = options.use_opening_antiblunder;
                 searcher.features.use_nnue = options.use_nnue;
+                searcher.features.use_qsearch_checks = options.use_qsearch_checks;
+                searcher.features.syzygy_probe_limit = options.syzygy_probe_limit;
+                searcher.features.use_c3_lmr_horizon_guard = options.use_c3_lmr_horizon_guard;
+                searcher.features.use_c3_regime_gated_guard = options.use_c3_regime_gated_guard;
                 searcher.features.lmr_mode = options.lmr_mode;
+                searcher.features.syzygy_probe_limit = options.syzygy_probe_limit;
+                searcher.features.use_c3_lmr_horizon_guard = options.use_c3_lmr_horizon_guard;
+                searcher.features.use_c3_regime_gated_guard = options.use_c3_regime_gated_guard;
                 searcher.set_threads(options.threads);
             }
             "setoption" => {
@@ -328,7 +371,10 @@ fn main() {
                 searcher.features.use_loss_memory = options.use_loss_memory;
                 searcher.features.use_opening_antiblunder = options.use_opening_antiblunder;
                 searcher.features.use_nnue = options.use_nnue;
+                searcher.features.use_qsearch_checks = options.use_qsearch_checks;
+                searcher.features.syzygy_probe_limit = options.syzygy_probe_limit;
                 searcher.features.lmr_mode = options.lmr_mode;
+                searcher.features.syzygy_probe_limit = options.syzygy_probe_limit;
 
                 // 3. Alpha-Beta ve Epistemik Arama Devreye Girer
                 let base_depth = requested_depth.unwrap_or(64);
@@ -821,6 +867,59 @@ fn parse_setoption(line: &str, options: &mut UciOptions, opening_book: &mut Open
                     }
                     "bookfile" => {
                         let _ = opening_book.load_bin_file(val);
+                    }
+                    "syzygypath" => {
+                        options.syzygy_path = val.to_string();
+                        let loaded = crate::syzygy::SyzygyProber::set_path(val);
+                        println!("info string SyzygyPath set to '{}' (loaded up to {}-piece tables)", val, loaded);
+                    }
+                    "syzygyprobelimit" => {
+                        if let Ok(limit) = val.parse::<u8>() {
+                            options.syzygy_probe_limit = limit.clamp(0, 7);
+                            searcher.features.syzygy_probe_limit = options.syzygy_probe_limit;
+                        }
+                    }
+                    "usec3lmrhorizonguard" | "c3_lmr_horizon_guard" => {
+                        if let Ok(enabled) = val.parse::<bool>() {
+                            options.use_c3_lmr_horizon_guard = enabled;
+                            searcher.features.use_c3_lmr_horizon_guard = enabled;
+                        }
+                    }
+                    "usestructuralsearchbridge" | "structural_search_bridge" => {
+                        if let Ok(enabled) = val.parse::<bool>() {
+                            options.use_structural_search_bridge = enabled;
+                            searcher.features.use_structural_search_bridge = enabled;
+                        }
+                    }
+                    "structuralbonusdirectbreak" => {
+                        if let Ok(v) = val.parse::<i32>() {
+                            options.structural_bonus_direct_break = v;
+                            searcher.features.structural_bonus_direct_break = v;
+                        }
+                    }
+                    "structuralbonusbreakenabler" => {
+                        if let Ok(v) = val.parse::<i32>() {
+                            options.structural_bonus_break_enabler = v;
+                            searcher.features.structural_bonus_break_enabler = v;
+                        }
+                    }
+                    "structuralbonusantibreak" => {
+                        if let Ok(v) = val.parse::<i32>() {
+                            options.structural_bonus_anti_break = v;
+                            searcher.features.structural_bonus_anti_break = v;
+                        }
+                    }
+                    "structuralbonustensioncapture" => {
+                        if let Ok(v) = val.parse::<i32>() {
+                            options.structural_bonus_tension_capture = v;
+                            searcher.features.structural_bonus_tension_capture = v;
+                        }
+                    }
+                    "usec3regimegatedguard" | "c3_regime_gated_guard" => {
+                        if let Ok(enabled) = val.parse::<bool>() {
+                            options.use_c3_regime_gated_guard = enabled;
+                            searcher.features.use_c3_regime_gated_guard = enabled;
+                        }
                     }
                     _ => {}
                 }

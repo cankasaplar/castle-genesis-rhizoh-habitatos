@@ -32,6 +32,21 @@ impl Board {
         board
     }
 
+    #[inline(always)]
+    pub fn clone_for_legality(&self) -> Self {
+        Board {
+            pieces: self.pieces,
+            color_occupancy: self.color_occupancy,
+            combined_occupancy: self.combined_occupancy,
+            side_to_move: self.side_to_move,
+            en_passant_square: self.en_passant_square,
+            castling_rights: self.castling_rights,
+            halfmove_clock: self.halfmove_clock,
+            fullmove_number: self.fullmove_number,
+            accumulator: None,
+        }
+    }
+
     pub fn setup_start_position(&mut self) {
         self.pieces[Color::White as usize][PieceType::Pawn as usize]   = 0x000000000000FF00;
         self.pieces[Color::White as usize][PieceType::Rook as usize]   = 0x0000000000000081;
@@ -541,7 +556,7 @@ impl Board {
 
         // Legal filtre
         pseudo_moves.into_iter().filter(|mv| {
-            let mut test_board = self.clone();
+            let mut test_board = self.clone_for_legality();
             test_board.make_move(*mv);
             !test_board.is_king_in_check(us)
         }).collect()
