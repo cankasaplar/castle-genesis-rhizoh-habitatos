@@ -1,10 +1,10 @@
 import React from "react";
-import { RhizohUnifiedEntryScreen } from "./RhizohUnifiedEntryScreen.jsx";
+import { RhizohAppShell } from "../shell/RhizohAppShell.jsx";
 
 /**
- * rhizoh.com clean entry flow.
- * Directly renders the simple English landing interface.
+ * rhizoh.com P0-P13 Unified Application Entry Flow.
+ * Mounts the complete sovereign Rhizoh App Shell.
  */
 export function RhizohIngressFlow() {
-  return <RhizohUnifiedEntryScreen />;
+  return <RhizohAppShell />;
 }

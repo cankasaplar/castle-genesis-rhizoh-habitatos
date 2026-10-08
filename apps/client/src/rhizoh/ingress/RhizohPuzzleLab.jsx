@@ -70,11 +70,10 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
     };
   }, []);
 
-  const candidateBaseUrls = [
-    "https://castle-genesis-rhizoh-habitatos.onrender.com",
-    "/api/gatewayProxy",
+    const candidateBaseUrls = [
     "",
-    "http://localhost:8090"
+    "/api/gatewayProxy",
+    "https://castle-genesis-rhizoh-habitatos.onrender.com"
   ];
 
   const fetchWithFallback = async (endpoint, options = {}) => {

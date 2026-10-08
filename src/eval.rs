@@ -216,8 +216,12 @@ impl Evaluator {
 
         let mut score = mat_score + final_non_mat;
 
-        // Tempo bonus for side to move
-        score += TEMPO_BONUS;
+        // Tempo bonus for side to move (White gets +TEMPO, Black gets -TEMPO from White's perspective)
+        if board.side_to_move == Color::White {
+            score += TEMPO_BONUS;
+        } else {
+            score -= TEMPO_BONUS;
+        }
 
         // A recorded post-blunder position penalizes the previous mover through negamax.
         if features.use_loss_memory {
@@ -838,14 +842,17 @@ impl Evaluator {
             score -= (white_pawns & FLANK_PAWNS_WHITE_PASSIVE).count_ones() as i32 * 25;
             score += (black_pawns & FLANK_PAWNS_BLACK_PASSIVE).count_ones() as i32 * 25;
 
-            // Premature f-pawn Push Penalty (e.g. 7... f6 or 8... f5 in Sicilian / Ruy Lopez before castling)
-            const F_PAWN_WHITE_BAD: u64 = (1u64 << 21) | (1u64 << 29) | (1u64 << 37); // f3, f4, f5
-            const F_PAWN_BLACK_BAD: u64 = (1u64 << 42) | (1u64 << 34) | (1u64 << 26); // f6, f5, f4
-            if (white_pawns & F_PAWN_WHITE_BAD) != 0 {
-                score -= 45;
+            // Premature f-pawn Push Penalty (e.g. 4... f5 or 5... f6 in Italian / Ruy Lopez before castling)
+            const F_PAWN_WHITE_BAD: u64 = (1u64 << 21) | (1u64 << 29); // f3, f4
+            const F_PAWN_BLACK_BAD: u64 = (1u64 << 45) | (1u64 << 37); // f6, f5
+            let white_king_e1 = (board.pieces[Color::White as usize][PieceType::King as usize] & (1u64 << 4)) != 0;
+            let black_king_e8 = (board.pieces[Color::Black as usize][PieceType::King as usize] & (1u64 << 60)) != 0;
+
+            if (white_pawns & F_PAWN_WHITE_BAD) != 0 && white_king_e1 {
+                score -= 85;
             }
-            if (black_pawns & F_PAWN_BLACK_BAD) != 0 {
-                score += 45;
+            if (black_pawns & F_PAWN_BLACK_BAD) != 0 && black_king_e8 {
+                score += 85;
             }
         }
 

@@ -90,7 +90,6 @@ pub struct Searcher {
 }
 
 #[inline(always)]
-#[inline(always)]
 pub fn is_regime_a_locked_tension(board: &Board) -> bool {
     let w_pawns = board.pieces[Color::White as usize][PieceType::Pawn as usize];
     let b_pawns = board.pieces[Color::Black as usize][PieceType::Pawn as usize];
@@ -992,7 +991,26 @@ impl Searcher {
                 if (pawn_att & (1u64 << mv.to)) != 0 {
                     return -200_000;
                 }
+                // Evasion priority: piece is currently attacked by enemy pawn and retreats to a safe square
+                if (pawn_att & (1u64 << mv.from)) != 0 {
+                    return 550_000;
+                }
             } else {
+                // Opening anti-blunder: prevent suicidal uncastled early f-pawn pushes
+                if self.features.use_opening_antiblunder && board.fullmove_number <= 8 {
+                    if board.side_to_move == Color::Black && mv.from == 53 && (mv.to == 37 || mv.to == 45) {
+                        let k_bb = board.pieces[Color::Black as usize][PieceType::King as usize];
+                        if k_bb != 0 && (k_bb.trailing_zeros() as u8) == 60 {
+                            return -800_000;
+                        }
+                    } else if board.side_to_move == Color::White && mv.from == 13 && (mv.to == 29 || mv.to == 21) {
+                        let k_bb = board.pieces[Color::White as usize][PieceType::King as usize];
+                        if k_bb != 0 && (k_bb.trailing_zeros() as u8) == 4 {
+                            return -800_000;
+                        }
+                    }
+                }
+
                 // Central Pawn Push Bonus (d4, e4, d5, e5) - Experimental Heuristic (Default: False)
                 if self.features.use_central_pawn_bonus && (mv.to == 27 || mv.to == 28 || mv.to == 35 || mv.to == 36) {
                     return 50_000;
@@ -1057,17 +1075,12 @@ impl Searcher {
             sp
         };
 
-        // Generate legal moves (captures, promotions, and evasions if in check)
-        let moves = board.generate_moves();
-        let captures: Vec<Move> = moves.into_iter().filter(|m| {
-            if in_check || m.captured.is_some() || m.is_en_passant || m.promotion.is_some() {
-                true
-            } else if self.features.use_qsearch_checks && qply == 0 && self.is_promising_quiet_check(board, *m) {
-                true
-            } else {
-                false
-            }
-        }).collect();
+        // Generate legal moves: fast capture-only generation when not in check, full generation only when in check
+        let captures: Vec<Move> = if in_check {
+            board.generate_moves()
+        } else {
+            board.generate_captures()
+        };
 
         if captures.is_empty() {
             if in_check {
@@ -1494,7 +1507,7 @@ impl Searcher {
                     || is_killer
                     || is_counter
                     || (see_val >= 0 && (hist_score + cont_hist > 15_000 || adjusted_eval >= alpha));
-                if is_tactical_candidate && i < 8 {
+                if is_tactical_candidate && i < 3 {
                     can_reduce = false;
                 }
             }

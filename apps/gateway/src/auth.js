@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { getPlayerByToken } from "./rhizoh/playerIdentityStoreV1.js";
 import { initializeApp, cert, getApps } from "firebase-admin/app";
 import { getAuth as getFirebaseAdminAuth } from "firebase-admin/auth";
 
@@ -32,10 +33,18 @@ function parseBearerHeader(value) {
 
 export async function verifyClientToken(req) {
   const url = new URL(`ws://localhost${req.url || "/"}`);
-  const tokenFromQuery = url.searchParams.get("auth") || "";
+  const tokenFromQuery = url.searchParams.get("auth") || url.searchParams.get("player_token") || url.searchParams.get("session_token") || "";
   const tokenFromHeader = parseBearerHeader(req.headers?.authorization || "");
   const token = tokenFromQuery || tokenFromHeader;
   if (!token) return { ok: false, reason: "Missing auth token." };
+
+  // First: Authentic Rhizoh Player Identity session token verification (Phase 3)
+  try {
+    const player = getPlayerByToken(token);
+    if (player) {
+      return { ok: true, kind: "player_session", user: { uid: player.player_id, role: "player", player } };
+    }
+  } catch {}
 
   initFirebaseAdminIfConfigured();
 

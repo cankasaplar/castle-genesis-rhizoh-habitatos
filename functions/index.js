@@ -150,6 +150,10 @@ function pickGatewayProxyForwardHeaders(req, path = "") {
   const ctype = req.headers["content-type"];
   const devUid = req.headers["x-castle-dev-uid"];
   const gwTok = req.headers["x-castle-gateway-token"];
+  const playerTok = req.headers["x-rhizoh-player-token"];
+  if (playerTok) headers["X-Rhizoh-Player-Token"] = String(playerTok);
+  const playerId = req.headers["x-rhizoh-player-id"];
+  if (playerId) headers["X-Rhizoh-Player-Id"] = String(playerId);
   if (ctype) headers["Content-Type"] = String(ctype);
   if (devUid) headers["X-Castle-Dev-Uid"] = String(devUid);
 

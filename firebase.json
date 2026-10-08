@@ -1,7 +1,9 @@
 {
   "hosting": {
     "site": "castle-genesis",
-    "predeploy": ["npm run build:rhizoh-production"],
+    "predeploy": [
+      "npm run build:rhizoh-production"
+    ],
     "public": "apps/client/dist",
     "ignore": [
       "firebase.json",
@@ -39,6 +41,14 @@
       {
         "source": "/api/cohortFeedbackSubmitV0",
         "function": "cohortFeedbackSubmitV0"
+      },
+      {
+        "source": "/api/chess/**",
+        "function": "gatewayProxyV0"
+      },
+      {
+        "source": "/api/lab/**",
+        "function": "gatewayProxyV0"
       },
       {
         "source": "/api/gatewayProxy/**",

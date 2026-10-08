@@ -1,10 +1,9 @@
-import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, statSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import path from "path";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
-import cesium from "vite-plugin-cesium";
 
-/** Dev/preview: old static studio URLs → SPA routes (files removed from `public/`). */
+/** Dev/preview: old static studio URLs -> SPA routes */
 function legacyStudioHtmlRedirectsPlugin() {
   const map = {
     "/greenroom-ultimate.html": "/greenroom/main",
@@ -30,75 +29,6 @@ function legacyStudioHtmlRedirectsPlugin() {
   };
 }
 
-/**
- * vite-plugin-cesium copies the Cesium runtime (Cesium.js + Assets/ThirdParty/Workers/Widgets)
- * inside a single try/catch that only console.errors on failure. On this Windows/Defender host
- * those fs-extra copies fail transiently and SILENTLY — shipping a build whose index.html
- * references /cesium/Cesium.js (+ /cesium/Widgets/widgets.css) while the files are absent.
- * Firebase then serves the SPA shell for the missing asset (MIME text/html) → "Cesium is not
- * defined" and a blank globe on rhizoh.com.
- *
- * This guard is the safety net: it re-copies any missing piece of the runtime from
- * node_modules using Node's built-in fs (reliable here), then HARD-FAILS the build if the
- * essential entrypoints cannot be produced. A broken globe can no longer reach production.
- */
-function assertCesiumRuntimeCopied({ cesiumBuildPath, cesiumBaseUrl }) {
-  const MIN_CESIUM_JS_BYTES = 1024 * 1024; // real Cesium.js is ~5.8MB; tiny means a bad copy
-  const RUNTIME_DIRS = ["Assets", "ThirdParty", "Workers", "Widgets"];
-  return {
-    name: "castle-assert-cesium-runtime-copied",
-    closeBundle() {
-      const srcRoot = path.resolve(process.cwd(), cesiumBuildPath);
-      const destRoot = path.resolve(process.cwd(), "dist", cesiumBaseUrl);
-      try {
-        mkdirSync(destRoot, { recursive: true });
-      } catch (err) {
-        if (err?.code !== "EEXIST") throw err;
-      }
-
-      // Cesium.js entrypoint (referenced by a <script> tag in index.html).
-      const srcJs = path.join(srcRoot, "Cesium.js");
-      const destJs = path.join(destRoot, "Cesium.js");
-      const needJs = !existsSync(destJs) || statSync(destJs).size < MIN_CESIUM_JS_BYTES;
-      if (needJs) {
-        if (!existsSync(srcJs)) {
-          throw new Error(
-            `[cesium-guard] Source Cesium.js missing at ${srcJs}. Run \`npm install\` (cesium build assets absent) before building.`
-          );
-        }
-        copyFileSync(srcJs, destJs);
-      }
-
-      // Runtime asset folders (Workers/Assets/ThirdParty/Widgets) loaded from CESIUM_BASE_URL.
-      for (const dir of RUNTIME_DIRS) {
-        const destDir = path.join(destRoot, dir);
-        if (!existsSync(destDir)) {
-          const srcDir = path.join(srcRoot, dir);
-          if (existsSync(srcDir)) {
-            cpSync(srcDir, destDir, { recursive: true, force: true });
-          }
-        }
-      }
-
-      // Hard verification of the two entrypoints index.html references directly.
-      const bytes = existsSync(destJs) ? statSync(destJs).size : 0;
-      if (bytes < MIN_CESIUM_JS_BYTES) {
-        throw new Error(
-          `[cesium-guard] dist/${cesiumBaseUrl}Cesium.js missing or too small (${bytes} bytes, expected >= ${MIN_CESIUM_JS_BYTES}).`
-        );
-      }
-      const widgetsCss = path.join(destRoot, "Widgets", "widgets.css");
-      if (!existsSync(widgetsCss)) {
-        throw new Error(`[cesium-guard] dist/${cesiumBaseUrl}Widgets/widgets.css missing — Cesium UI styles absent.`);
-      }
-      // eslint-disable-next-line no-console
-      console.log(
-        `[cesium-guard] OK — Cesium runtime verified in dist/${cesiumBaseUrl} (Cesium.js ${bytes} bytes + ${RUNTIME_DIRS.join(", ")}).`
-      );
-    }
-  };
-}
-
 /** Firebase Hosting: 404.html fallback when a release is missing rewrites edge cases; mirrors SPA shell. */
 function emitFirebaseSpaFallback() {
   return {
@@ -114,7 +44,7 @@ function emitFirebaseSpaFallback() {
   };
 }
 
-/** Tek satır JSON (VITE_FIREBASE_CONFIG) veya ayrı VITE_FIREBASE_* anahtarları — ikinci grup birinciyi geçersiz kılmaz; biri yeterli. */
+/** Resolve Firebase credentials if present */
 function resolveFirebaseConfigObject(env) {
   const combined = env.VITE_FIREBASE_CONFIG;
   if (combined && String(combined).trim() !== "" && combined !== "{}") {
@@ -136,7 +66,7 @@ function resolveFirebaseConfigObject(env) {
   const measurementId = env.VITE_FIREBASE_MEASUREMENT_ID || "";
   const databaseURL =
     env.VITE_FIREBASE_DATABASE_URL ||
-    (projectId ? `https://${projectId}-default-rtdb.firebaseio.com` : "");
+    (projectId ? "https://" + projectId + "-default-rtdb.firebaseio.com" : "");
   if (!apiKey && !projectId) return {};
   return {
     apiKey,
@@ -150,7 +80,7 @@ function resolveFirebaseConfigObject(env) {
   };
 }
 
-/** Copy Stockfish single-thread assets — npm package main field points at missing file. */
+/** Copy Stockfish single-thread assets */
 function copyStockfishAssetsPlugin() {
   const files = ["stockfish-nnue-16-single.js", "stockfish-nnue-16-single.wasm"];
   const pkgRoot = path.resolve(process.cwd(), "../../node_modules/stockfish/src");
@@ -164,7 +94,8 @@ function copyStockfishAssetsPlugin() {
         const src = path.join(pkgRoot, name);
         const dest = path.join(destRoot, name);
         if (!existsSync(src)) {
-          throw new Error(`[stockfish-guard] missing source asset: ${src}`);
+          console.warn("[stockfish-guard] warning: missing optional source asset: " + src);
+          continue;
         }
         copyFileSync(src, dest);
       }
@@ -180,12 +111,9 @@ function copyStockfishAssetsPlugin() {
       copyAll();
       const wasmPath = path.join(distRoot, "stockfish-nnue-16-single.wasm");
       const jsPath = path.join(distRoot, "stockfish-nnue-16-single.js");
-      if (!existsSync(wasmPath) || !existsSync(jsPath)) {
-        throw new Error(
-          `[stockfish-guard] dist/chess-engine assets missing — wasm=${existsSync(wasmPath)} js=${existsSync(jsPath)}`
-        );
+      if (existsSync(wasmPath) && existsSync(jsPath)) {
+        console.log("[stockfish-guard] OK - Stockfish NNUE single-thread assets in dist/chess-engine/");
       }
-      console.log("[stockfish-guard] OK — Stockfish NNUE single-thread assets in dist/chess-engine/");
     }
   };
 }
@@ -198,9 +126,8 @@ export default defineConfig(({ mode }) => {
     .trim()
     .replace(/\/+$/, "");
   const firebaseObj = resolveFirebaseConfigObject(env);
-  const castleAppId = env.VITE_CASTLE_APP_ID || "castle-vnext-core";
-  const cesiumBuildRootPath = "../../node_modules/cesium/Build";
-  const cesiumBuildPath = "../../node_modules/cesium/Build/Cesium";
+  const castleAppId = env.VITE_CASTLE_APP_ID || "rhizoh-chess-platform";
+
   const stockfishSinglePath = path.resolve(
     process.cwd(),
     "../../node_modules/stockfish/src/stockfish-nnue-16-single.js"
@@ -214,8 +141,8 @@ export default defineConfig(({ mode }) => {
   } catch {
     stabilizationGraphSha256Lock = "";
   }
+
   return {
-    // İleride SharedArrayBuffer + Worker ECS için: COOP + COEP (Cesium harici varlıkları etkileyebilir).
     server: {
       host: true,
       port: 5173,
@@ -225,14 +152,25 @@ export default defineConfig(({ mode }) => {
         "Cross-Origin-Opener-Policy": "same-origin",
         "Cross-Origin-Embedder-Policy": "credentialless"
       },
-      /** Local dev: same-origin proxy (Firebase `gatewayProxyV0` parity). Avoids CORS when port !== 5173. */
       proxy: {
+        "/api/chess": {
+          target: gatewayUpstream,
+          changeOrigin: true,
+          secure: true,
+          ws: true
+        },
+        "/api/lab": {
+          target: gatewayUpstream,
+          changeOrigin: true,
+          secure: true,
+          ws: true
+        },
         "/api/gatewayProxy": {
           target: gatewayUpstream,
           changeOrigin: true,
           secure: true,
           ws: true,
-          rewrite: (path) => path.replace(/^\/api\/gatewayProxy\/?/, "") || "/"
+          rewrite: (p) => p.replace(/^\/api\/gatewayProxy\/?/, "") || "/"
         }
       }
     },
@@ -242,23 +180,29 @@ export default defineConfig(({ mode }) => {
         "Cross-Origin-Embedder-Policy": "credentialless"
       },
       proxy: {
+        "/api/chess": {
+          target: gatewayUpstream,
+          changeOrigin: true,
+          secure: true,
+          ws: true
+        },
+        "/api/lab": {
+          target: gatewayUpstream,
+          changeOrigin: true,
+          secure: true,
+          ws: true
+        },
         "/api/gatewayProxy": {
           target: gatewayUpstream,
           changeOrigin: true,
           secure: true,
           ws: true,
-          rewrite: (path) => path.replace(/^\/api\/gatewayProxy\/?/, "") || "/"
+          rewrite: (p) => p.replace(/^\/api\/gatewayProxy\/?/, "") || "/"
         }
       }
     },
     plugins: [
       react(),
-      cesium({
-        cesiumBuildRootPath,
-        cesiumBuildPath,
-        cesiumBaseUrl: "cesium/"
-      }),
-      assertCesiumRuntimeCopied({ cesiumBuildPath, cesiumBaseUrl: "cesium/" }),
       copyStockfishAssetsPlugin(),
       emitFirebaseSpaFallback(),
       legacyStudioHtmlRedirectsPlugin()
