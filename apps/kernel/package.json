@@ -1,0 +1,6 @@
+{
+  "name": "@castle/kernel",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module"
+}

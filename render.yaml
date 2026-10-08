@@ -21,7 +21,7 @@ services:
     #   rootDir: apps/gateway      →  startCommand: node src/server.js   veya  npm start  (asla tekrar apps/gateway/… ekleme)
     rootDir: .
     # Monorepo workspace: ilk deploy için npm install daha toleranslı (npm ci --omit=dev alternatif)
-    buildCommand: npm install
+    buildCommand: npm install --workspace=@castle/gateway --omit=dev
     startCommand: node apps/gateway/src/server.js
     healthCheckPath: /health/live
     envVars:
