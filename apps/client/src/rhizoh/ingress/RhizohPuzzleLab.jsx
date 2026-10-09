@@ -77,14 +77,23 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
   ];
 
   const fetchWithFallback = async (endpoint, options = {}) => {
+    let lastError = null;
     for (const base of candidateBaseUrls) {
       try {
         const fullUrl = `${base}${endpoint}`;
         const res = await fetch(fullUrl, options);
-        if (res.ok) return await res.json();
-      } catch {}
+        const data = await res.json().catch(() => null);
+        if (res.ok && data) return data;
+        if (data) {
+          lastError = { ...data, status: res.status, httpStatus: res.status };
+        } else {
+          lastError = { ok: false, status: res.status, httpStatus: res.status };
+        }
+      } catch (err) {
+        lastError = { ok: false, error: err.message, status: 0 };
+      }
     }
-    return null;
+    return lastError || { ok: false, error: "NETWORK_ERROR" };
   };
 
   const fetchStatsAndHistory = async () => {
@@ -99,7 +108,13 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
     try {
       const g = new Chess(puzzle.fen);
       setGame(g);
-      setCurrentPuzzle(puzzle);
+      const pid = puzzle.puzzle_id || puzzle.id;
+      setCurrentPuzzle({
+        ...puzzle,
+        id: pid,
+        puzzle_id: pid,
+        motif: puzzle.motif || puzzle.category || "Tactics"
+      });
       setSelectedSquare(null);
       setValidMoves([]);
       setLastMove(null);
@@ -108,7 +123,7 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
       setCorrectionInfo(null);
       setShowingRefutationOnBoard(false);
       const turnName = g.turn() === "w" ? "White to move" : "Black to move";
-      setStatusMessage(`${puzzle.motif || "Tactical"} puzzle loaded. ${turnName}.`);
+      setStatusMessage(`${puzzle.motif || puzzle.category || "Tactical"} puzzle loaded. ${turnName}.`);
     } catch (err) {
       console.error("Failed to load puzzle FEN:", err);
     }
@@ -143,10 +158,9 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
     setStatusMessage("Rhizoh NNUE (r=+0.4648) searching position (400ms movetime)...");
 
     const solvePayload = {
-      puzzleId: currentPuzzle.id,
+      puzzleId: currentPuzzle.puzzle_id || currentPuzzle.id,
+      puzzle_id: currentPuzzle.puzzle_id || currentPuzzle.id,
       fen: currentPuzzle.fen,
-      bestMove: currentPuzzle.bestMoveSan || currentPuzzle.bestMove,
-      motif: currentPuzzle.motif || "Tactics",
       movetime: 400
     };
 
@@ -160,12 +174,14 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
       setEngineMoveInfo(data);
       if (data.stats) setStats(data.stats);
 
+      const playedMove = data.engineMove || data.engine_move;
+
       // Play the engine's move on the board
-      if (data.engineMove) {
+      if (playedMove) {
         try {
-          const moveFrom = data.engineMove.slice(0, 2);
-          const moveTo = data.engineMove.slice(2, 4);
-          const promo = data.engineMove.length > 4 ? data.engineMove[4] : undefined;
+          const moveFrom = playedMove.slice(0, 2);
+          const moveTo = playedMove.slice(2, 4);
+          const promo = playedMove.length > 4 ? playedMove[4] : undefined;
           const clonedGame = new Chess(game.fen());
           const played = clonedGame.move({ from: moveFrom, to: moveTo, promotion: promo });
           if (played) {
@@ -178,22 +194,31 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
       if (data.solved) {
         setSolveState("solved");
         setCorrectionInfo(null);
-        setStatusMessage(`✅ Rhizoh correctly solved the tactic: ${data.engineMove}`);
+        setStatusMessage(`✅ Rhizoh correctly solved the tactic: ${playedMove}`);
       } else {
         setSolveState("failed");
+        const expMove = data.expectedBestMove || data.expected_best_move || "Unknown";
         setCorrectionInfo(data.correction || {
-          playedSan: data.engineMove,
-          bestSan: data.expectedBestMove,
-          explanation: `Tactical oversight: Rhizoh played ${data.engineMove}, failing to execute winning continuation ${data.expectedBestMove}.`,
-          refutationCategory: "GeneralTacticsMiss",
+          playedSan: playedMove || "None",
+          bestSan: expMove,
+          explanation: `Tactical oversight: Rhizoh played ${playedMove || "None"}, failing to execute winning continuation ${expMove}.`,
+          refutationCategory: currentPuzzle.motif || "GeneralTacticsMiss",
           queuedForTraining: true
         });
-        setStatusMessage(`⚠️ Tactical Miss: Rhizoh played ${data.engineMove || "None"} • Switched to Self-Correction Analysis`);
+        setStatusMessage(`⚠️ Tactical Miss: Rhizoh played ${playedMove || "None"} • Switched to Self-Correction Analysis`);
         fetchStatsAndHistory(); // Refresh failure list
       }
     } else {
       setSolveState("failed");
-      setStatusMessage("⚠️ Yanıt alınamadı: Motor zaman aşımı (sahte veri üretilmedi).");
+      if (data?.status === 504 || data?.error === "ENGINE_TIMEOUT") {
+        setStatusMessage("⏱️ Motor zaman aşımı: Arama süresi doldu (sahte veri üretilmedi).");
+      } else if (data?.status === 503 || data?.error === "ENGINE_UNAVAILABLE") {
+        setStatusMessage("⚠️ Motor çevrimdışı: Gerçek motor çalıştırılamadı (sahte veri üretilmedi).");
+      } else if (data?.error === "VERIFIED_SOLUTION_NOT_AVAILABLE") {
+        setStatusMessage("⚠️ Doğrulanmış referans çözümü bulunamadı (sahte veri üretilmedi).");
+      } else {
+        setStatusMessage(data?.message || "⚠️ Yanıt alınamadı: Motor hatası (sahte veri üretilmedi).");
+      }
     }
   };
 
@@ -273,9 +298,10 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
 
   const applyRefutationToBoard = () => {
     if (!currentPuzzle) return;
+    const m = correctionInfo?.bestSan || correctionInfo?.best_san || correctionInfo?.bestUci || currentPuzzle.bestMoveUci || currentPuzzle.bestMove;
+    if (!m) return;
     try {
       const g = new Chess(currentPuzzle.fen);
-      const m = currentPuzzle.bestMoveUci || currentPuzzle.bestMove;
       let res = null;
       if (/^[a-h][1-8][a-h][1-8][qrbn]?$/i.test(m)) {
         res = g.move({ from: m.slice(0, 2), to: m.slice(2, 4), promotion: m[4] });
@@ -294,16 +320,22 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
   };
 
   const revertToEngineBlunder = () => {
-    if (!currentPuzzle || !engineMoveInfo?.engineMove) return;
+    if (!currentPuzzle) return;
+    const m = correctionInfo?.playedSan || correctionInfo?.played_san || engineMoveInfo?.engineMove || engineMoveInfo?.engine_move;
+    if (!m) return;
     try {
       const g = new Chess(currentPuzzle.fen);
-      const m = engineMoveInfo.engineMove;
-      const res = g.move({ from: m.slice(0, 2), to: m.slice(2, 4), promotion: m[4] });
+      let res = null;
+      if (/^[a-h][1-8][a-h][1-8][qrbn]?$/i.test(m)) {
+        res = g.move({ from: m.slice(0, 2), to: m.slice(2, 4), promotion: m[4] });
+      } else {
+        res = g.move(m);
+      }
       if (res) {
         setGame(g);
         setLastMove({ from: res.from, to: res.to });
         setShowingRefutationOnBoard(false);
-        setStatusMessage(`Reverted to engine blunder: ${engineMoveInfo.engineMove}`);
+        setStatusMessage(`Reverted to engine blunder: ${res.san || m}`);
       }
     } catch {}
   };
@@ -865,13 +897,13 @@ export function RhizohPuzzleLab({ onBackToOverview }) {
                     Master Refutation
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: "#34d399", marginTop: 2 }}>
-                    {correctionInfo?.bestSan || currentPuzzle.bestMoveSan || currentPuzzle.bestMove}
+                    {correctionInfo?.bestSan || correctionInfo?.best_san || currentPuzzle.bestMoveSan || currentPuzzle.bestMove || "—"}
                   </div>
                 </div>
               </div>
 
               <div style={{ fontSize: 12, color: "#cbd5e1", lineHeight: 1.5, marginBottom: 12 }}>
-                {correctionInfo?.explanation || `Engine missed critical continuation ${currentPuzzle.bestMoveSan || currentPuzzle.bestMove}.`}
+                {correctionInfo?.explanation || (currentPuzzle.bestMoveSan ? `Engine missed critical continuation ${currentPuzzle.bestMoveSan}.` : "Engine missed critical tactical continuation.")}
               </div>
 
               {/* Action Buttons for Interactive Refutation */}

@@ -1355,6 +1355,18 @@ function executeEngineQuery({
   });
 }
 
+
+// Idempotency cache to prevent duplicate writes to Loss Memory or stats on repeated solve requests
+const engineSolveIdempotencyCache = new Map();
+function cleanStaleSolveIdempotency() {
+  const now = Date.now();
+  for (const [key, val] of engineSolveIdempotencyCache.entries()) {
+    if (now - val.timestamp > 300000) { // 5 minutes TTL
+      engineSolveIdempotencyCache.delete(key);
+    }
+  }
+}
+
 const httpServer = createServer(async (req, res) => {
   const corsAllow = applyHttpCorsHeaders(req, res);
   if (req.method === "OPTIONS") {
@@ -1438,13 +1450,143 @@ const httpServer = createServer(async (req, res) => {
   // -------------------------------------------------------------------------
   // 8. Server-Authoritative Puzzle Candidate & Verification Engine (Phase 4 - P4-A)
   // -------------------------------------------------------------------------
-  // Attack B: Client cannot declare a puzzle solved
-  if (req.method === "POST" && (pathname === "/api/chess/puzzle/solve" || pathname === "/rhizoh/chess/puzzle/solve" || pathname.endsWith("/api/chess/puzzle/solve"))) {
-    sendJson(res, 403, {
-      ok: false,
-      error: "CLIENT_SOLVE_DECLARATION_FORBIDDEN",
-      message: "Client cannot declare puzzle solved. Outcome is authoritatively evaluated by server on move attempt."
-    });
+  // Autonomous Engine Solver & Hard Negative Mining (Track B Active Learning)
+  if (req.method === "POST" && (pathname === "/api/chess/puzzle/solve" || pathname === "/rhizoh/chess/puzzle/solve" || pathname === "/api/gatewayProxy/api/chess/puzzle/solve" || pathname.endsWith("/api/chess/puzzle/solve"))) {
+    try {
+      const body = await readHttpJson(req, 16 * 1024);
+      const puzzleId = String(body?.puzzleId || body?.puzzle_id || "").trim();
+      const fen = String(body?.fen || "").trim();
+      const rawMovetime = Number(body?.movetime || 400);
+
+      if (!fen) {
+        sendJson(res, 400, { ok: false, error: "FEN_REQUIRED", message: "FEN position is required for engine solve." });
+        return;
+      }
+
+      // FEN validation: verify legal syntax and piece placement
+      try {
+        new Chess(fen);
+      } catch (fenErr) {
+        sendJson(res, 400, { ok: false, error: "INVALID_FEN", message: "Supplied FEN is not a valid chess position: " + fenErr.message });
+        return;
+      }
+
+      // Authoritative reference solution lookup (Section B: do NOT claim miss without verified reference)
+      let canonical = puzzleId ? getPuzzleById(puzzleId) : null;
+      if (!canonical) {
+        sendJson(res, 404, {
+          ok: false,
+          error: "VERIFIED_SOLUTION_NOT_AVAILABLE",
+          message: "Cannot evaluate engine tactic: puzzle lacks verified canonical reference solution."
+        });
+        return;
+      }
+
+      const expectedUci = canonical.solution_line[0];
+      const expectedSan = canonical.solution_san?.[0] || expectedUci;
+      const motif = canonical.difficulty_features?.motifs?.[0] || canonical.category || "Tactics";
+
+      // Clamped movetime within safe bounds
+      const movetime = Math.max(100, Math.min(5000, rawMovetime));
+
+      // Idempotency check: prevent duplicate writes to Loss Memory or stats on repeated requests
+      cleanStaleSolveIdempotency();
+      const idempotencyKey = `${puzzleId}:${fen}`;
+      const cached = engineSolveIdempotencyCache.get(idempotencyKey);
+      if (cached && (Date.now() - cached.timestamp < 60000)) {
+        sendJson(res, 200, { ...cached.response, idempotent: true });
+        return;
+      }
+
+      // Execute engine search via real Castle Core UCI engine
+      const moveResult = await queryCastleMove({ fen, movetime, useLossMemory: true });
+      if (!moveResult.ok || !moveResult.bestMove) {
+        if (moveResult.reason === "search_timeout") {
+          sendJson(res, 504, {
+            ok: false,
+            error: "ENGINE_TIMEOUT",
+            status: 504,
+            message: "Engine search timed out. Reality Seal strictly enforced — zero synthetic fallback."
+          });
+          return;
+        }
+        sendJson(res, 503, {
+          ok: false,
+          error: "ENGINE_UNAVAILABLE",
+          status: 503,
+          reason: moveResult.reason || "engine_failure",
+          message: "Engine offline or move generation failed. Reality Seal strictly enforced — zero synthetic fallback."
+        });
+        return;
+      }
+
+      const engineMove = moveResult.bestMove;
+
+      // Authoritatively compare engine move vs canonical master solution
+      const isMatch = areMovesEquivalent(fen, engineMove, expectedUci);
+
+      // Record result: if engine missed, capture into Hard Negative training queue and Loss Memory
+      const recorded = recordPuzzleSolution({
+        puzzleId: canonical.puzzle_id,
+        fen,
+        playedMove: engineMove,
+        bestMove: expectedSan,
+        motif,
+        engine: moveResult.engine || "RhizohAI Castle Core v1.0.2 (E5 Champion)",
+        depth: moveResult.depth,
+        nodes: moveResult.nodes,
+        timeMs: moveResult.searchTimeMs
+      });
+
+      const authorityStats = getPuzzleAuthorityStats();
+      const pStats = getPuzzleStats();
+
+      const solveResponse = {
+        ok: true,
+        puzzle_id: canonical.puzzle_id,
+        id: canonical.puzzle_id,
+        engine_move: engineMove,
+        engineMove,
+        expected_best_move: expectedSan,
+        expectedBestMove: expectedSan,
+        solved: isMatch,
+        eval_cp: moveResult.evalCp,
+        depth: moveResult.depth,
+        nodes: moveResult.nodes,
+        nps: moveResult.nps,
+        pv: moveResult.pv,
+        search_time_ms: moveResult.searchTimeMs,
+        correction: !isMatch ? {
+          played_san: engineMove,
+          playedSan: engineMove,
+          best_san: expectedSan,
+          bestSan: expectedSan,
+          explanation: `Tactical oversight: Rhizoh played ${engineMove}, failing to execute winning continuation ${expectedSan}.`,
+          refutation_category: motif,
+          refutationCategory: motif,
+          queued_for_training: true,
+          queuedForTraining: true
+        } : null,
+        stats: {
+          totalAttempted: pStats.totalAttempted,
+          totalSolved: pStats.totalSolved,
+          totalFailed: pStats.totalFailed,
+          accuracyPct: pStats.accuracyPct,
+          datasetPoolSize: authorityStats.published_puzzles,
+          datasetSource: "CANONICAL_VERIFIED_V1",
+          failuresInQueue: pStats.failuresInQueue
+        }
+      };
+
+      engineSolveIdempotencyCache.set(idempotencyKey, {
+        timestamp: Date.now(),
+        response: solveResponse
+      });
+
+      sendJson(res, 200, solveResponse);
+    } catch (e) {
+      sendJson(res, 500, { ok: false, error: String(e?.message || e) });
+    }
     return;
   }
 
@@ -1576,7 +1718,7 @@ const httpServer = createServer(async (req, res) => {
   }
 
   // Get Next Published Puzzle (P4-A8: Quarantined puzzles never served)
-  if (req.method === "GET" && (pathname === "/api/chess/puzzle/next" || pathname === "/rhizoh/chess/puzzle/next" || pathname.endsWith("/api/chess/puzzle/next"))) {
+  if (req.method === "GET" && (pathname === "/api/chess/puzzle/next" || pathname === "/rhizoh/chess/puzzle/next" || pathname === "/api/gatewayProxy/api/chess/puzzle/next" || pathname.endsWith("/api/chess/puzzle/next"))) {
     try {
       const url = new URL(req.url, "http://localhost");
       const id = url.searchParams.get("id");
@@ -1586,7 +1728,14 @@ const httpServer = createServer(async (req, res) => {
         sendJson(res, 404, { ok: false, error: "NO_PUBLISHED_PUZZLE_AVAILABLE" });
         return;
       }
-      sendJson(res, 200, { ok: true, puzzle });
+      sendJson(res, 200, {
+        ok: true,
+        puzzle: {
+          ...puzzle,
+          id: puzzle.puzzle_id, // Canonical id mapping for client backward compatibility
+          motif: puzzle.difficulty_features?.motifs?.[0] || puzzle.category || "Tactics"
+        }
+      });
     } catch (e) {
       sendJson(res, 500, { ok: false, error: String(e?.message || e) });
     }
@@ -2015,11 +2164,59 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
-  // Get Puzzle Authority Cumulative Stats (Attack D)
-  if (req.method === "GET" && (pathname === "/api/chess/puzzle/stats" || pathname === "/rhizoh/chess/puzzle/stats" || pathname.endsWith("/api/chess/puzzle/stats"))) {
+  // Get Puzzle Cumulative Stats & Transparency Metadata
+  if (req.method === "GET" && (pathname === "/api/chess/puzzle/stats" || pathname === "/rhizoh/chess/puzzle/stats" || pathname === "/api/gatewayProxy/api/chess/puzzle/stats" || pathname.endsWith("/api/chess/puzzle/stats"))) {
     try {
-      const stats = getPuzzleAuthorityStats();
-      sendJson(res, 200, { ok: true, stats });
+      const aStats = getPuzzleAuthorityStats();
+      const pStats = getPuzzleStats();
+      const failures = getRecentFailures(50);
+      sendJson(res, 200, {
+        ok: true,
+        stats: {
+          total_attempts: aStats.total_attempts,
+          totalAttempted: pStats.totalAttempted || aStats.total_attempts,
+          total_solved: aStats.total_solved,
+          totalSolved: pStats.totalSolved || aStats.total_solved,
+          total_failed: aStats.total_failed,
+          totalFailed: pStats.totalFailed || aStats.total_failed,
+          accuracy_pct: pStats.accuracyPct || aStats.accuracy_pct,
+          accuracyPct: pStats.accuracyPct || aStats.accuracy_pct,
+          published_puzzles: aStats.published_puzzles,
+          datasetPoolSize: aStats.published_puzzles,
+          dataset_source: "CANONICAL_VERIFIED_V1",
+          quarantined_puzzles: aStats.quarantined_puzzles,
+          failures_in_queue: failures.length,
+          failuresInQueue: failures.length,
+          last_attempt_at: aStats.last_attempt_at || pStats.latestAttemptedAt
+        }
+      });
+    } catch (e) {
+      sendJson(res, 500, { ok: false, error: String(e?.message || e) });
+    }
+    return;
+  }
+
+  // Get Puzzle History & Recent Failures
+  if (req.method === "GET" && (pathname === "/api/chess/puzzle/history" || pathname === "/rhizoh/chess/puzzle/history" || pathname === "/api/gatewayProxy/api/chess/puzzle/history" || pathname.endsWith("/api/chess/puzzle/history"))) {
+    try {
+      const url = new URL(req.url, "http://localhost");
+      const limit = parseInt(url.searchParams.get("limit") || "20", 10);
+      const failures = getRecentFailures(limit);
+      const aStats = getPuzzleAuthorityStats();
+      const pStats = getPuzzleStats();
+      sendJson(res, 200, {
+        ok: true,
+        failures,
+        stats: {
+          totalAttempted: pStats.totalAttempted || aStats.total_attempts,
+          totalSolved: pStats.totalSolved || aStats.total_solved,
+          totalFailed: pStats.totalFailed || aStats.total_failed,
+          accuracyPct: pStats.accuracyPct || aStats.accuracy_pct,
+          datasetPoolSize: aStats.published_puzzles,
+          failuresInQueue: failures.length,
+          datasetSource: "CANONICAL_VERIFIED_V1"
+        }
+      });
     } catch (e) {
       sendJson(res, 500, { ok: false, error: String(e?.message || e) });
     }
