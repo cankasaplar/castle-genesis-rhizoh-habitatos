@@ -48,5 +48,30 @@
     "firstRecordedAt": "2026-09-19T20:02:17.208Z",
     "recordedAt": "2026-09-19T20:02:17.208Z",
     "trainingPriority": 10
+  },
+  {
+    "puzzleId": "rhz_puz_e374b24bdc6fb477",
+    "fen": "3r1k2/4npp1/1ppr3p/p6P/P2PPPP1/1NR5/5K2/2R5 w - - 0 1",
+    "playedMove": "e4e5",
+    "bestMove": "d5",
+    "motif": "TACTICAL",
+    "engine": "RhizohAI Castle Core v1.0.2 (E5 Champion)",
+    "depth": 6,
+    "nodes": 5000,
+    "timeMs": 400,
+    "correction": {
+      "playedSan": "e5",
+      "playedUci": "e4e5",
+      "bestSan": "d5",
+      "bestUci": "d4d5",
+      "motif": "TACTICAL",
+      "explanation": "Tactical oversight in TACTICAL: Rhizoh played e5, failing to execute d5.",
+      "refutationCategory": "SuboptimalMaterialLoss",
+      "queuedForTraining": true
+    },
+    "attemptCount": 6,
+    "firstRecordedAt": "2026-10-09T11:17:39.305Z",
+    "recordedAt": "2026-10-09T11:34:10.090Z",
+    "trainingPriority": 25
   }
 ]

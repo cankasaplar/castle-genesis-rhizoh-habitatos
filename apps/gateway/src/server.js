@@ -90,7 +90,8 @@ import {
   getPuzzleAuthorityStats,
   computePuzzleCatalogManifest,
   createAndVerifyPuzzleCandidate,
-  getPuzzleById
+  getPuzzleById,
+  areMovesEquivalent
 } from "./rhizoh/puzzleAuthorityV1.js";
 import {
   getLeaderboard,

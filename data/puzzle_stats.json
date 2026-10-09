@@ -1,6 +1,10 @@
 {
-  "totalAttempted": 2714,
+  "totalAttempted": 2720,
   "totalSolved": 1094,
-  "totalFailed": 1620,
-  "lastUpdated": "2026-09-19T20:02:40.726Z"
+  "totalFailed": 1626,
+  "lastUpdated": "2026-10-09T11:34:10.091Z",
+  "latestMotif": "TACTICAL",
+  "latestPuzzleId": "rhz_puz_e374b24bdc6fb477",
+  "latestAttemptedAt": "2026-10-09T11:34:10.002Z",
+  "latestSolved": false
 }
