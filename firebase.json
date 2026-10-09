@@ -55,6 +55,22 @@
         "function": "gatewayProxyV0"
       },
       {
+        "source": "/api/world/**",
+        "function": "gatewayProxyV0"
+      },
+      {
+        "source": "/api/evolution/**",
+        "function": "gatewayProxyV0"
+      },
+      {
+        "source": "/api/player/**",
+        "function": "gatewayProxyV0"
+      },
+      {
+        "source": "/api/economy/**",
+        "function": "gatewayProxyV0"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

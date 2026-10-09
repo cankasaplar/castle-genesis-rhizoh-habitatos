@@ -1,0 +1,4109 @@
+[
+  {
+    "puzzle_id": "rhz_puz_e374b24bdc6fb477",
+    "source_game_id": "curated_archive_Tactics.0001",
+    "source_ply": 1,
+    "fen_before": "3r1k2/4npp1/1ppr3p/p6P/P2PPPP1/1NR5/5K2/2R5 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "d4d5"
+    ],
+    "solution_san": [
+      "d5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "891b7bdc8e9e61667e49a850971f4a897891244ff5ddf8fcd89caad4ddd77ee5",
+    "solution_hash": "d60c0455837a39d55c774dd83c643c039679ed5f9c388b7005484faa14acd3fa",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:41.941Z",
+    "verified_at": "2026-10-08T15:01:41.941Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0001",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_e1728b56eb9127bd",
+    "source_game_id": "curated_archive_Tactics.0002",
+    "source_ply": 1,
+    "fen_before": "2q1rr1k/3bbnnp/p2p1pp1/2pPp3/PpP1P1P1/1P2BNNP/2BQ1PRK/7R b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "f6f5"
+    ],
+    "solution_san": [
+      "f5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "16dfdefb2a7a32f82a44d0d74200567234600c0e370e024ab3b44d28c9a12f97",
+    "solution_hash": "e8c57193b49fbd23b2b1a6f41bd74f68e273a08a545e39522a7cdb3f60875200",
+    "difficulty_features": {
+      "motifs": [
+        "DoubleAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:41.948Z",
+    "verified_at": "2026-10-08T15:01:41.948Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0002",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_16539da56167d87d",
+    "source_game_id": "curated_archive_Tactics.0003",
+    "source_ply": 1,
+    "fen_before": "rnbqkb1r/p3pppp/1p6/2ppP3/3N4/2P5/PPP1QPPP/R1B1KB1R w KQkq - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "e5e6"
+    ],
+    "solution_san": [
+      "e6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "607e072935d50c921d8af1886ed4a97feea4510bbf7c5490e46f849c29082680",
+    "solution_hash": "4263a3ec01bafcc663e1fa19083ee7c7b2d161923d9a0d5c05be1c2838f0dffa",
+    "difficulty_features": {
+      "motifs": [
+        "DoubleAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:41.957Z",
+    "verified_at": "2026-10-08T15:01:41.957Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0003",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_c5116067892b3f8e",
+    "source_game_id": "curated_archive_Tactics.0004",
+    "source_ply": 1,
+    "fen_before": "2r3k1/pppR1pp1/4p3/4P1P1/5P2/1P4K1/P1P5/8 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "g5g6"
+    ],
+    "solution_san": [
+      "g6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "41f962e9c4a4885c75bb3b171ddb004f90866eda7981d20201ff5ff6d9a6b7ec",
+    "solution_hash": "ffe236610180dd3646ed61b0524b313a137f6703dfcb93e00db2fdf3d5cf0bb4",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:41.960Z",
+    "verified_at": "2026-10-08T15:01:41.960Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0004",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_e888e339b2e8222f",
+    "source_game_id": "curated_archive_Tactics.0005",
+    "source_ply": 1,
+    "fen_before": "1nk1r1r1/pp2n1pp/4p3/q2pPp1N/b1pP1P2/B1P2R2/2P1B1PP/R2Q2K1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "h5f6"
+    ],
+    "solution_san": [
+      "Nf6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "872e15dc79cfb1c3081ceac336f20a3e53969e98896c0d7b973c51540d67a06b",
+    "solution_hash": "1d45dc7f67287f04086026cde573dc7b269e58e14fb227b4bda237857475a2ca",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:41.964Z",
+    "verified_at": "2026-10-08T15:01:41.964Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0005",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:24:37.628Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_e83f37744a4e05c4",
+    "source_game_id": "curated_archive_Tactics.0006",
+    "source_ply": 1,
+    "fen_before": "4b3/p3kp2/6p1/3pP2p/2pP1P2/4K1P1/P3N2P/8 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "f4f5"
+    ],
+    "solution_san": [
+      "f5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "9b0c36b73da2aa574bffe0c91b621cbec95b60d43a630fd9636d9f2cb592ca4b",
+    "solution_hash": "5345043042a0a24d9d515893c3e13546981b3533c646652254773be00bd9c75a",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:41.967Z",
+    "verified_at": "2026-10-08T15:01:41.967Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0006",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:21:57.377Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_0b5d8b60d6c7d72e",
+    "source_game_id": "curated_archive_Tactics.0007",
+    "source_ply": 1,
+    "fen_before": "2kr1bnr/pbpq4/2n1pp2/3p3p/3P1P1B/2N2N1Q/PPP3PP/2KR1B1R w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "f4f5"
+    ],
+    "solution_san": [
+      "f5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "33e957b0396cf6b72b725e5f45dd5b85793ad3f2a8c16172515bfe2bf364f0bc",
+    "solution_hash": "5345043042a0a24d9d515893c3e13546981b3533c646652254773be00bd9c75a",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:41.974Z",
+    "verified_at": "2026-10-08T15:01:41.974Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0007",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_ef6c1d26f229c76f",
+    "source_game_id": "curated_archive_Tactics.0008",
+    "source_ply": 1,
+    "fen_before": "3rr1k1/pp3pp1/1qn2np1/8/3p4/PP1R1P2/2P1NQPP/R1B3K1 b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "c6e5"
+    ],
+    "solution_san": [
+      "Ne5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "34820fdd9b11cd29f8c4b7c45dfec26d546141cd3c5bfc936a2c9728a9183755",
+    "solution_hash": "275b58ef7e6dcec74728b182f17cdf44520f8a1fdaba080487ce53b171e2f102",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:41.979Z",
+    "verified_at": "2026-10-08T15:01:41.979Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0008",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:24:37.666Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_13b446db5edd2e63",
+    "source_game_id": "curated_archive_Tactics.0009",
+    "source_ply": 1,
+    "fen_before": "2r1nrk1/p2q1ppp/bp1p4/n1pPp3/P1P1P3/2PBB1N1/4QPPP/R4RK1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "f2f4"
+    ],
+    "solution_san": [
+      "f4"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "9ec869a4ce1887afacab52aace7c39ed731fc8654c5a700662abc3b56877bfdb",
+    "solution_hash": "98ddddb14f5566a0d7048dafd6a04231e90b63e8521be213ad9c674cfb236138",
+    "difficulty_features": {
+      "motifs": [
+        "DoubleAttack"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:41.982Z",
+    "verified_at": "2026-10-08T15:01:41.982Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0009",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:18:38.560Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_36bd024042037b2b",
+    "source_game_id": "curated_archive_Tactics.0010",
+    "source_ply": 1,
+    "fen_before": "r3r1k1/ppqb1ppp/8/4p1NQ/8/2P5/PP3PPP/R3R1K1 b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "d7f5"
+    ],
+    "solution_san": [
+      "Bf5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "44bbc1e4a158e77f4d18b5c17b0710fed5b3a51cd714620cf21f0b0c4b0c7c89",
+    "solution_hash": "b419d75ee8a81add9a10fb4dff54090c9e7aa6329530aaf7447173cb51b8b561",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:41.985Z",
+    "verified_at": "2026-10-08T15:01:41.985Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0010",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_3ae9afbb5b42f948",
+    "source_game_id": "curated_archive_Tactics.0011",
+    "source_ply": 1,
+    "fen_before": "r2q1rk1/4bppp/p2p4/2pP4/3pP3/3Q4/PP1B1PPP/R3R1K1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "b2b4"
+    ],
+    "solution_san": [
+      "b4"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "9b159cd03200b892ad27b694342653f4138e2f8b565dae0df3f6bc2fd905bb2d",
+    "solution_hash": "022dd339a4b2841911dc3795fa38ff1b7c31c4d35927c403e66f97873ea641b1",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:41.987Z",
+    "verified_at": "2026-10-08T15:01:41.987Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0011",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:25:47.831Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_63b375a0b0a60fb7",
+    "source_game_id": "curated_archive_Tactics.0012",
+    "source_ply": 1,
+    "fen_before": "r1bqkb1r/4npp1/p1p4p/1p1pP1B1/8/1B6/PPPN1PPP/R2Q1RK1 w kq - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "d2e4"
+    ],
+    "solution_san": [
+      "Ne4"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "26915aca8f239418084d0510f435acce71db8bbfc2d6333541c34839fdbd21ea",
+    "solution_hash": "d2d009700ed81f6ec7ec6c2c0d1d4a843207e3d02673b76c24997c28dc74ad61",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:41.990Z",
+    "verified_at": "2026-10-08T15:01:41.990Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0012",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_0e41e2a5530d6d91",
+    "source_game_id": "curated_archive_Tactics.0013",
+    "source_ply": 1,
+    "fen_before": "r2q1rk1/1ppnbppp/p2p1nb1/3Pp3/2P1P1P1/2N2N1P/PPB1QP2/R1B2RK1 b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "h7h5"
+    ],
+    "solution_san": [
+      "h5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "b2d6c490798e5a2ded435909f7be6ee4419e39eafa90883976233fff6197c107",
+    "solution_hash": "22e1002be43ccebe432e4f0c9feba18e4d083edc71b14e283c4929150d75d0d7",
+    "difficulty_features": {
+      "motifs": [
+        "DoubleAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:41.994Z",
+    "verified_at": "2026-10-08T15:01:41.994Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0013",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_cdfaac03a14f4a8f",
+    "source_game_id": "curated_archive_Tactics.0014",
+    "source_ply": 1,
+    "fen_before": "r1bq1rk1/pp2ppbp/2np2p1/2n5/P3PP2/N1P2N2/1PB3PP/R1B1QRK1 b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "c5b3"
+    ],
+    "solution_san": [
+      "Nb3"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "62d497e5f19be56ad1868e51c49f87a5a305ba2e8f3f6c81925a81aea6beabdd",
+    "solution_hash": "6ef122a5bdf91f20f4c99e542ed4bfb62fc212fc00478576733acd518376ff9e",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:41.998Z",
+    "verified_at": "2026-10-08T15:01:41.998Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0014",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_1c05e6cefe7a1c4d",
+    "source_game_id": "curated_archive_Tactics.0015",
+    "source_ply": 1,
+    "fen_before": "3rr3/2pq2pk/p2p1pnp/8/2QBPP2/1P6/P5PP/4RRK1 b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "e8e4"
+    ],
+    "solution_san": [
+      "Rxe4"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "0e9981f187cf9b63352bbd3763c8e29c68d86b331d3b4e915196355fab76d73f",
+    "solution_hash": "0aa5bc86fa37733f441204fd7d117aa68dbbc765cc8ea17300501bf4d7147cf1",
+    "difficulty_features": {
+      "motifs": [
+        "TacticalCapture"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.002Z",
+    "verified_at": "2026-10-08T15:01:42.002Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0015",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:18:38.695Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_cefc47309a145a92",
+    "source_game_id": "curated_archive_Tactics.0016",
+    "source_ply": 1,
+    "fen_before": "r4k2/pb2bp1r/1p1qp2p/3pNp2/3P1P2/2N3P1/PPP1Q2P/2KRR3 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "g3g4"
+    ],
+    "solution_san": [
+      "g4"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "2354f2fc920842980602b144353a605f42f445a85aa0ed31510a04a14315d520",
+    "solution_hash": "822564dafc98d74d7bba937b801457731f25f4360c774d7391134449c1ad4a16",
+    "difficulty_features": {
+      "motifs": [
+        "DoubleAttack"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.005Z",
+    "verified_at": "2026-10-08T15:01:42.005Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0016",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:25:47.661Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_f7312602adb9ea3d",
+    "source_game_id": "curated_archive_Tactics.0017",
+    "source_ply": 1,
+    "fen_before": "3rn2k/ppb2rpp/2ppqp2/5N2/2P1P3/1P5Q/PB3PPP/3RR1K1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "f5h6"
+    ],
+    "solution_san": [
+      "Nh6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "1930cc4dafbd50277bbfa985df22162c43968829fb6027d3518ab112c867c57a",
+    "solution_hash": "9b44a39fae8471412b36ff399ea10fbe2fca472da0da155121e2d00230048783",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.009Z",
+    "verified_at": "2026-10-08T15:01:42.009Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0017",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_7be44130de6718b0",
+    "source_game_id": "curated_archive_Tactics.0018",
+    "source_ply": 1,
+    "fen_before": "2r2rk1/1bqnbpp1/1p1ppn1p/pP6/N1P1P3/P2B1N1P/1B2QPP1/R2R2K1 b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "b7e4"
+    ],
+    "solution_san": [
+      "Bxe4"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "f6a5d298bcf664a6b5a2013fdfc381e9f6c8d295a717d0635512a0af6291a451",
+    "solution_hash": "5a93f2b7fde828a9e0635bb2675c2b6f2902a860f62f3bf8f493ff81221adcab",
+    "difficulty_features": {
+      "motifs": [
+        "TacticalCapture"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.012Z",
+    "verified_at": "2026-10-08T15:01:42.012Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0018",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:24:37.877Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_a383813b0c43ffab",
+    "source_game_id": "curated_archive_Tactics.0019",
+    "source_ply": 1,
+    "fen_before": "r1bqk2r/pp2bppp/2p5/3pP3/P2Q1P2/2N1B3/1PP3PP/R4RK1 b kq - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "f7f6"
+    ],
+    "solution_san": [
+      "f6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "fe2336a061c6c7de2187abb072f99692aca4e5bb45243fa699f55c09ba3830fe",
+    "solution_hash": "63fb2d35fef8dcf13aa7c083b8a084f0984c11f58b8e9f0aaa474228c666972a",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.015Z",
+    "verified_at": "2026-10-08T15:01:42.015Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0019",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_31615f4bea0a840c",
+    "source_game_id": "curated_archive_Tactics.0020",
+    "source_ply": 1,
+    "fen_before": "r2qnrnk/p2b2b1/1p1p2pp/2pPpp2/1PP1P3/PRNBB3/3QNPPP/5RK1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "f2f4"
+    ],
+    "solution_san": [
+      "f4"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "474dbc5152fc6c85714564f112210bd38139255cfa39fa6233238030f7fc9066",
+    "solution_hash": "98ddddb14f5566a0d7048dafd6a04231e90b63e8521be213ad9c674cfb236138",
+    "difficulty_features": {
+      "motifs": [
+        "DoubleAttack"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.017Z",
+    "verified_at": "2026-10-08T15:01:42.017Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0020",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:21:57.724Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_953648f5c190db5f",
+    "source_game_id": "curated_archive_Tactics.0021",
+    "source_ply": 1,
+    "fen_before": "1R6/1brk2p1/4p2p/p1P1Pp2/P7/6P1/1P4P1/2R3K1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "b8b7"
+    ],
+    "solution_san": [
+      "Rxb7"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "df4935d72da4f54f02bd52d34ebef85e7d8117e67f7dfb3c0389f8581b6a7ddd",
+    "solution_hash": "a3ab9711f9eb7a32f752045332fe8b02f79a289c2f75d91c5f28b4b7a000b2ef",
+    "difficulty_features": {
+      "motifs": [
+        "TacticalCapture"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.020Z",
+    "verified_at": "2026-10-08T15:01:42.020Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0021",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_df4a4b3106a545e3",
+    "source_game_id": "curated_archive_Tactics.0022",
+    "source_ply": 1,
+    "fen_before": "4r1k1/p1qr1p2/2pb1Bp1/1p5p/3P1n1R/1B3P2/PP3PK1/2Q4R w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "c1f4"
+    ],
+    "solution_san": [
+      "Qxf4"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "a090393cd21269eae037d048887435166b8fef60e22bd7a4c2f02afdd634b800",
+    "solution_hash": "ddb64c2eeb0b0bb417084c42799ada72bbfa64c6e05ffd385df9214e2ba6b351",
+    "difficulty_features": {
+      "motifs": [
+        "TacticalCapture"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.023Z",
+    "verified_at": "2026-10-08T15:01:42.023Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0022",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_edb6ec8be4edb585",
+    "source_game_id": "curated_archive_Tactics.0023",
+    "source_ply": 1,
+    "fen_before": "r1b2rk1/ppq1bppp/2p1pn2/8/2NP4/2N1P3/PP2BPPP/2RQK2R w K - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "e1g1"
+    ],
+    "solution_san": [
+      "O-O"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "0a5be5b36311ae84506c35a68a581caf87151dd4575d099570eafa1a313a8172",
+    "solution_hash": "5215838ff188553baee33f2debe7d5fca1dca3458c9479ba4648316145f5f917",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.028Z",
+    "verified_at": "2026-10-08T15:01:42.028Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0023",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_e894a46e732a5db1",
+    "source_game_id": "curated_archive_Tactics.0024",
+    "source_ply": 1,
+    "fen_before": "r3r1k1/1bppq2p/1p1n1bp1/3P1p2/p4N1P/P1PB1P2/1P1Q1BP1/1K1R3R w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "g2g4"
+    ],
+    "solution_san": [
+      "g4"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "0f0c6b439f6ad7e8307e5f978c78cf2b013288a8880a6f1c296f94776f508f44",
+    "solution_hash": "da0bb6996742d97dcf67b2f5cd99bb75ab926b11258e1c573777aa6fd1c3a441",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.031Z",
+    "verified_at": "2026-10-08T15:01:42.031Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0024",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_8033d96ad120a0ac",
+    "source_game_id": "curated_archive_Tactics.0025",
+    "source_ply": 1,
+    "fen_before": "r1bqrk2/pp1n1n1p/3p1p2/P1pP1P1Q/2PpP1NP/6R1/2PB4/4RBK1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "h5f7"
+    ],
+    "solution_san": [
+      "Qxf7+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "0b788b15c3aa097d72ac7a892c38817956b0455ae5f0c8453d60598c05c078be",
+    "solution_hash": "200bead9f549cfb2080e35188ff33e4338bd9c44df288d88765da3a9a91cbea5",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.034Z",
+    "verified_at": "2026-10-08T15:01:42.034Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0025",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_db2455e3cb88ff73",
+    "source_game_id": "curated_archive_Tactics.0026",
+    "source_ply": 1,
+    "fen_before": "rn1q1rk1/p2p1pb1/bp3np1/2pP2Bp/7P/P1N2N2/1PQ1PPP1/R3KB1R w KQ - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "g2g4"
+    ],
+    "solution_san": [
+      "g4"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "2eefbee2aaccc440ec3dfcc6c3126e66e53abfabaa1c84da3f9a558b07141001",
+    "solution_hash": "da0bb6996742d97dcf67b2f5cd99bb75ab926b11258e1c573777aa6fd1c3a441",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.037Z",
+    "verified_at": "2026-10-08T15:01:42.037Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0026",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_7472d9575b65d9b7",
+    "source_game_id": "curated_archive_Tactics.0027",
+    "source_ply": 1,
+    "fen_before": "N7/8/2KQ2rp/6k1/3p3p/2p4P/4PP2/5N2 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "f2f4"
+    ],
+    "solution_san": [
+      "f4+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "8abc93e4d5e76360339243679f5d43de0ba40a7718165a4fa32a7cfc4d2153bf",
+    "solution_hash": "98ddddb14f5566a0d7048dafd6a04231e90b63e8521be213ad9c674cfb236138",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.041Z",
+    "verified_at": "2026-10-08T15:01:42.041Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0027",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_0c862246c3f9bfa5",
+    "source_game_id": "curated_archive_Tactics.0028",
+    "source_ply": 1,
+    "fen_before": "r1bqk2r/ppn1bppp/2n5/2p1p3/8/2NP1NP1/PP1BPPBP/R2Q1RK1 b kq - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "e8g8"
+    ],
+    "solution_san": [
+      "O-O"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "310b5f68ee9075bcd075fd9ca73f1ab53a48199342558c7cd139877c19d92a21",
+    "solution_hash": "95954b32ec087ecc9b2acbd52515fa0c8d8739bc1ac6b62007ff7dc033c47b18",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1407,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.048Z",
+    "verified_at": "2026-10-08T15:01:42.048Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0028",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1407,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:21:57.700Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_dca8a36a27257766",
+    "source_game_id": "curated_archive_Tactics.0029",
+    "source_ply": 1,
+    "fen_before": "8/2p2kb1/np1p2p1/pN1Pp1Pp/2P1P2P/1P6/P4BK1/8 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "b5c7"
+    ],
+    "solution_san": [
+      "Nxc7"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "930ee03f8c36c230134e2b3cab009f83d4045db73e924f3111e1a0b31b6c32cf",
+    "solution_hash": "0af9e4dc74dc5958202982a642ef28176be2f19b1cdc5c3986c5d16e92f9196d",
+    "difficulty_features": {
+      "motifs": [
+        "TacticalCapture"
+      ],
+      "rating_estimate": 1407,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.052Z",
+    "verified_at": "2026-10-08T15:01:42.052Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0029",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1407,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:24:37.549Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_07462fa73a95f8e2",
+    "source_game_id": "curated_archive_Tactics.0030",
+    "source_ply": 1,
+    "fen_before": "4r1rk/p3qpp1/1pnp1n1p/5P2/P1PPP3/4Q2P/2BB2R1/6RK w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "g2g7"
+    ],
+    "solution_san": [
+      "Rxg7"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "fc11b0f47be4041920250bd80a71d4e119f8e05e86bda3b96aabe0414d1d9785",
+    "solution_hash": "2a47ba23546c048d1ec4d43366b0d52d9396b330c8b7af745b3dac1a450dfd20",
+    "difficulty_features": {
+      "motifs": [
+        "TacticalCapture"
+      ],
+      "rating_estimate": 1399,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.055Z",
+    "verified_at": "2026-10-08T15:01:42.055Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0030",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1399,
+    "attempts": 3,
+    "last_attempt_at": "2026-10-08T15:30:41.590Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_c728d2966f41d069",
+    "source_game_id": "curated_archive_Tactics.0031",
+    "source_ply": 1,
+    "fen_before": "rn1q1rk1/pp2bppp/1n2p1b1/8/2pPP3/1BN1BP2/PP2N1PP/R2Q1RK1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "b3c2"
+    ],
+    "solution_san": [
+      "Bc2"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "16715d34548606080669714892b656446420ac91cba0caba0ffd3eb1d67a3027",
+    "solution_hash": "eaa2c94b46209c71a565c811da32b3409bcdde8431a94f1b40bca714cf8cef49",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.058Z",
+    "verified_at": "2026-10-08T15:01:42.058Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0031",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_2635642a6c7bfae7",
+    "source_game_id": "curated_archive_Tactics.0032",
+    "source_ply": 1,
+    "fen_before": "r4r1k/1p4qp/b1pNRbp1/2P5/3p1P1P/PQ4P1/3R2BK/8 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "d2d1"
+    ],
+    "solution_san": [
+      "Rd1"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "bed4343ed273d457bcd34dc6c7e1b67ea66d5f10d775d5e7c56369ea5b329419",
+    "solution_hash": "bd71af20daa5ba08f1206c2483c58618c795f08af99738ca304c6f7877b7e90e",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.061Z",
+    "verified_at": "2026-10-08T15:01:42.061Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0032",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_93f52d7984bc7eb7",
+    "source_game_id": "curated_archive_Tactics.0033",
+    "source_ply": 1,
+    "fen_before": "2b2r1k/4q2p/3p2pQ/2pBp3/8/6P1/1PP2P1P/R5K1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "a1a7"
+    ],
+    "solution_san": [
+      "Ra7"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "acb477b22ad6215a71821fd430e05d4ed598eaad01561dd924fe95beb0cfe247",
+    "solution_hash": "dfc01ef10755ea9578edfb1f25e31b7e3edb4330c05b6e2fa76ae0b2cf07effb",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.064Z",
+    "verified_at": "2026-10-08T15:01:42.064Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0033",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_d990e756c7ce291f",
+    "source_game_id": "curated_archive_Tactics.0034",
+    "source_ply": 1,
+    "fen_before": "r2q1r2/1b2bpkp/n3p1p1/2ppP1P1/p6R/1PN1BQR1/NPP2P1P/4K3 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "f3f6"
+    ],
+    "solution_san": [
+      "Qf6+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "e77092227f407c35eacf9e0402af67967581e40898f2a88674801ef5ccdb5b20",
+    "solution_hash": "0e5885d306cecffbeb7a213d917d7762be17d7ca8b2bde659e804506640b4ce2",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.067Z",
+    "verified_at": "2026-10-08T15:01:42.067Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0034",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:30:41.088Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_590d0413f56958ff",
+    "source_game_id": "curated_archive_Tactics.0035",
+    "source_ply": 1,
+    "fen_before": "r1b1k2r/ppppqppp/8/2bP4/3p4/6P1/PPQPPPBP/R1B2RK1 b kq - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "e8g8"
+    ],
+    "solution_san": [
+      "O-O"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "52c941a3f92a07e69a181e3b960512f4d83ff93ac80b12155d09086b19e1a538",
+    "solution_hash": "95954b32ec087ecc9b2acbd52515fa0c8d8739bc1ac6b62007ff7dc033c47b18",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1407,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.070Z",
+    "verified_at": "2026-10-08T15:01:42.070Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0035",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1407,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:21:57.447Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_739a9c70fb3712af",
+    "source_game_id": "curated_archive_Tactics.0036",
+    "source_ply": 1,
+    "fen_before": "6R1/4qp1p/ppr1n1pk/8/1P2P1QP/6N1/P4PP1/6K1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "g4h5"
+    ],
+    "solution_san": [
+      "Qh5+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "395e49b81e6b9f4d4974de1350f972a8acaa2b481e21ce4b377aa14a8766a2cb",
+    "solution_hash": "3e50f114e853452b5dba9abaf70a6cb9cf11a73bbba36482e8ce63b627ca292d",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.074Z",
+    "verified_at": "2026-10-08T15:01:42.074Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0036",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_d96410e0ac85ec71",
+    "source_game_id": "curated_archive_Tactics.0037",
+    "source_ply": 1,
+    "fen_before": "r1bqr1k1/pp1nb1p1/4p2p/3p1p2/3P4/P1N1PNP1/1PQ2PP1/3RKB1R w K - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "c3b5"
+    ],
+    "solution_san": [
+      "Nb5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "ea01845eaa277c1019ad3f7939b2b24ac7f990e4fd2eab39fe1f4a9e68aded02",
+    "solution_hash": "476ab4688a06c10ab7f547f669dad08a1a88a12c08e0dc01957e1b98052c4856",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.078Z",
+    "verified_at": "2026-10-08T15:01:42.078Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0037",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:21:57.501Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_d2960e87053710b0",
+    "source_game_id": "curated_archive_Tactics.0038",
+    "source_ply": 1,
+    "fen_before": "r6r/pp3ppp/3k1b2/2pb4/B4Pq1/2P1Q3/P5PP/1RBR2K1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "e3c5"
+    ],
+    "solution_san": [
+      "Qxc5+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "a87e53b9cf7ced9461388af71da67df1054e009167cd44f77911717bcc00586d",
+    "solution_hash": "e4a0cedd07cd6d96b450730a22d7d86375cb49db0b9616f79aecdfec6ccbbf93",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.082Z",
+    "verified_at": "2026-10-08T15:01:42.082Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0038",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:18:38.521Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_ee23a7bdc236f22a",
+    "source_game_id": "curated_archive_Tactics.0039",
+    "source_ply": 1,
+    "fen_before": "r4rk1/pbq2pp1/1ppbpn1p/8/2PP4/1P1Q1N2/PBB2PPP/R3R1K1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "c4c5"
+    ],
+    "solution_san": [
+      "c5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "28ffb77c1bc5c07009f16638228ea9bf7631e966369383879a38c279e33c8d73",
+    "solution_hash": "efe3176907bfa0729b079b936701225996056d9d41af589c97754865fe93afd5",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.085Z",
+    "verified_at": "2026-10-08T15:01:42.085Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0039",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_d29a3f6b952e16bb",
+    "source_game_id": "curated_archive_Tactics.0040",
+    "source_ply": 1,
+    "fen_before": "r4rk1/1bn2qnp/3p1B1Q/p2P1pP1/1pp5/5N1P/PPB2P2/2KR3R w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "g5g6"
+    ],
+    "solution_san": [
+      "g6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "4cdcc82807c56cba993e5455f05cea9a5f82df574b845d250ce6e3a5a618780f",
+    "solution_hash": "ffe236610180dd3646ed61b0524b313a137f6703dfcb93e00db2fdf3d5cf0bb4",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.088Z",
+    "verified_at": "2026-10-08T15:01:42.088Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0040",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:25:48.093Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_d395f52a0b66d24b",
+    "source_game_id": "curated_archive_Tactics.0041",
+    "source_ply": 1,
+    "fen_before": "r1b2rk1/p4ppp/1p1Qp3/4P2N/1P6/8/P3qPPP/3R1RK1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "h5f6"
+    ],
+    "solution_san": [
+      "Nf6+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "15902a72017c2443089995cbec59a6ab7582cb4465eb65fee4a3f5e351a80268",
+    "solution_hash": "1d45dc7f67287f04086026cde573dc7b269e58e14fb227b4bda237857475a2ca",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.092Z",
+    "verified_at": "2026-10-08T15:01:42.092Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0041",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_8876ab3546c7c5b4",
+    "source_game_id": "curated_archive_Tactics.0042",
+    "source_ply": 1,
+    "fen_before": "r1br2k1/pp2bppp/2nppn2/8/2P1PB2/2N2P2/PqN1B1PP/R2Q1R1K w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "c3a4"
+    ],
+    "solution_san": [
+      "Na4"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "f83f9aaa0d3ae8acf78af7f43de32e120d52e9da7303b4435acd022c1e9501f7",
+    "solution_hash": "52bee3a9b706ecce9fef4e925ce929066ffe0491916c319f510d4d3584c41066",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.096Z",
+    "verified_at": "2026-10-08T15:01:42.096Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0042",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_412985fb479e8e23",
+    "source_game_id": "curated_archive_Tactics.0043",
+    "source_ply": 1,
+    "fen_before": "rq2rbk1/6p1/p2p2Pp/1p1Rn3/4PB2/6Q1/PPP1B3/2K3R1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "f4h6"
+    ],
+    "solution_san": [
+      "Bxh6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "f1a72e40990e824d983b9f6d7a7b502d3b0875693d15f754a64fad342a678619",
+    "solution_hash": "295830ec1774893893d21ded5f56ab80844923528ad7877175b2b911aa4eea9a",
+    "difficulty_features": {
+      "motifs": [
+        "TacticalCapture"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.098Z",
+    "verified_at": "2026-10-08T15:01:42.098Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0043",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:21:57.527Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_a260f824fa585237",
+    "source_game_id": "curated_archive_Tactics.0044",
+    "source_ply": 1,
+    "fen_before": "8/bB1p1p1k/Pr2nPpn/4P3/1PR3P1/2B4p/4K2P/8 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "g4g5"
+    ],
+    "solution_san": [
+      "g5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "203692e10ddcaa8af50e8c54f048e53db978aa5453b452e00da1cc37ffc84b4f",
+    "solution_hash": "a3116910a14ce6b09ce33ab0b7cea2688b0ac18b796d60bc4f31fa70b4968ceb",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.100Z",
+    "verified_at": "2026-10-08T15:01:42.100Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0044",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_7335dc7fd4a21e79",
+    "source_game_id": "curated_archive_Tactics.0045",
+    "source_ply": 1,
+    "fen_before": "8/3ppp1p/3P4/4N3/8/3n1pKp/8/7k w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "e5d3"
+    ],
+    "solution_san": [
+      "Nxd3"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "f22044d669612e9e0dcd1b5df9049592c376992d99d473a523bc4b2050591c11",
+    "solution_hash": "88bd77912f20437a780bde428ec5e63cdb9d890bbf24e3fb8dedcd54cea1f887",
+    "difficulty_features": {
+      "motifs": [
+        "TacticalCapture"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.102Z",
+    "verified_at": "2026-10-08T15:01:42.102Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0045",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_937fd3453d0f6942",
+    "source_game_id": "curated_archive_Tactics.0046",
+    "source_ply": 1,
+    "fen_before": "1nr5/2rbkppp/p3p3/Np6/2PRPP2/8/PKP1B1PP/3R4 b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "e6e5"
+    ],
+    "solution_san": [
+      "e5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "e7f65356d3fa8baed02d3e1554ac90da1684a23af1b1bb8460aa50f9f0f02fd2",
+    "solution_hash": "b83bd2fe2fd3325f80ec48bc8a363a98dc11466616c3af4b84d8da118e59c05f",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.105Z",
+    "verified_at": "2026-10-08T15:01:42.105Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0046",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_91d6aadb3efee73c",
+    "source_game_id": "curated_archive_Tactics.0047",
+    "source_ply": 1,
+    "fen_before": "r1b2rk1/1pq1nppp/pbn1p3/8/3N4/3BBN2/PPP1QPPP/3R1RK1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "d3h7"
+    ],
+    "solution_san": [
+      "Bxh7+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "4a1a653a5089bd307e7fa3497da706721fe093ee00244c4cd94c813f26514e6a",
+    "solution_hash": "9ee600e48fa1c85f0371ca8c94489f719f01518510b572d6d7d7b78e601a9481",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.108Z",
+    "verified_at": "2026-10-08T15:01:42.108Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0047",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_a0672d33a192ac7a",
+    "source_game_id": "curated_archive_Tactics.0048",
+    "source_ply": 1,
+    "fen_before": "3r2k1/ppp2ppp/6q1/b4n2/3nQB2/2p5/P4PPP/RN3RK1 b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "f5g3"
+    ],
+    "solution_san": [
+      "Ng3"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "e927bb4a8852044526736107f1dce49e507faa6466acea39c036e3468c336e78",
+    "solution_hash": "b2da846d7da1f3b5e7752e3a4d404064dabec1c8a586ef3b6a242df49af57253",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.113Z",
+    "verified_at": "2026-10-08T15:01:42.113Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0048",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_b11bccb49a5bd6f4",
+    "source_game_id": "curated_archive_Tactics.0049",
+    "source_ply": 1,
+    "fen_before": "3q4/4k3/1p1b1p1r/p2Q4/3B1p1p/7P/1P4P1/3R3K w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "b2b4"
+    ],
+    "solution_san": [
+      "b4"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "543ea6eaa29d32e2b0a793d360284d8e51bac19debdbf05adc4a896d5a6a3040",
+    "solution_hash": "022dd339a4b2841911dc3795fa38ff1b7c31c4d35927c403e66f97873ea641b1",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.121Z",
+    "verified_at": "2026-10-08T15:01:42.121Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0049",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_18ded2b03732f45e",
+    "source_game_id": "curated_archive_Tactics.0050",
+    "source_ply": 1,
+    "fen_before": "6k1/5p2/p5np/4B3/3P4/1PP1q3/P3r1QP/6RK w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "g2a8"
+    ],
+    "solution_san": [
+      "Qa8+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "4eb759066bdabd8950f7db132e3d1170d43ba6f6c853b43fb35bfb993f6061ac",
+    "solution_hash": "bb8dc1314a34a8c3e36d4755a1e5791e8e068aa74744fa1cf8ee2e9988821af4",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.135Z",
+    "verified_at": "2026-10-08T15:01:42.135Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0050",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_61ee486dd9a039fc",
+    "source_game_id": "curated_archive_Tactics.0051",
+    "source_ply": 1,
+    "fen_before": "2r2bk1/pNq3p1/2Pp3p/1p1Prp2/1P2p1P1/6Q1/P4P1P/2RR2K1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "g3e5"
+    ],
+    "solution_san": [
+      "Qxe5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "e60d98a706a6e03b9046297e0c8004cd2970fa4b7f90ed7ebe83cafd4be9c282",
+    "solution_hash": "34b15f89f0e7bd7d0f70a6b53bcc1132ba4a659a72eb7a31efa05f110df7ac4a",
+    "difficulty_features": {
+      "motifs": [
+        "TacticalCapture"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.138Z",
+    "verified_at": "2026-10-08T15:01:42.138Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0051",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_853ed7731645cef2",
+    "source_game_id": "curated_archive_Tactics.0052",
+    "source_ply": 1,
+    "fen_before": "4q2r/1b1kbp2/1p2p1p1/pP1pP1N1/P2P1PQP/3BK3/2R5/8 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "d3g6"
+    ],
+    "solution_san": [
+      "Bxg6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "8785a1b222ec70459877c04cf2d283ad06207f72a6a2f90498594241a2378428",
+    "solution_hash": "2ee62fcf27ea2e00a9087a7a01538a0d173c33b9d7da53cf4288debc5dc2bff1",
+    "difficulty_features": {
+      "motifs": [
+        "TacticalCapture"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.142Z",
+    "verified_at": "2026-10-08T15:01:42.142Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0052",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_0d34b19997d6defd",
+    "source_game_id": "curated_archive_Tactics.0053",
+    "source_ply": 1,
+    "fen_before": "7k/1b1r2p1/p6p/1p2qN2/3bP3/3Q4/P5PP/1B1R3K b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "d4g1"
+    ],
+    "solution_san": [
+      "Bg1"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "a7d9c0accf8a9fc1f007e52d17fc59e82fd026e18becae4b8d06146fa2e11f77",
+    "solution_hash": "7b02e0d8c464d3ef94dc3553a8bfb64dbaa1c394447bcda037ab73421995e826",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.145Z",
+    "verified_at": "2026-10-08T15:01:42.145Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0053",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_cbe343cf8bbceb42",
+    "source_game_id": "curated_archive_Tactics.0054",
+    "source_ply": 1,
+    "fen_before": "3r2k1/pp2npp1/2rqp2p/8/3PQ3/1BR3P1/PP3P1P/3R2K1 b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "c6b6"
+    ],
+    "solution_san": [
+      "Rb6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "02a064d416679f5505b40e26bbc4937c409e682159a6323ccecd134f82656bc4",
+    "solution_hash": "3ddae8f38bf8643b9a675625952a05ca2b43dbf798175bfe17252aa60b84b040",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.147Z",
+    "verified_at": "2026-10-08T15:01:42.147Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0054",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_6495d87bab8d8c8d",
+    "source_game_id": "curated_archive_Tactics.0055",
+    "source_ply": 1,
+    "fen_before": "8/bp4Pk/4KB2/R6p/2pNp1P1/p7/3p1Pnq/2r5 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "d4c6"
+    ],
+    "solution_san": [
+      "Nc6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "bb0654e063bf463a4f295a8d65277fc427eabc2ac41f69c841ab309856655bba",
+    "solution_hash": "156cf1fac4c6425d9ef7d790b407864ed665637ddd6c0064c4bbb6aab1926422",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.150Z",
+    "verified_at": "2026-10-08T15:01:42.150Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0055",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:18:38.339Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_49d3f52ad6417f26",
+    "source_game_id": "curated_archive_Tactics.0056",
+    "source_ply": 1,
+    "fen_before": "r1b1k1nr/1p3ppp/p1np4/4p1q1/2P1P3/N1NB4/PP3PPP/2RQK2R w Kkq - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "e1g1"
+    ],
+    "solution_san": [
+      "O-O"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "54cec8d07505c50b1822230da9583669d79478d45b17376f5f25d72856857cba",
+    "solution_hash": "5215838ff188553baee33f2debe7d5fca1dca3458c9479ba4648316145f5f917",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.153Z",
+    "verified_at": "2026-10-08T15:01:42.153Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0056",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_7bb6f5641439a657",
+    "source_game_id": "curated_archive_Tactics.0057",
+    "source_ply": 1,
+    "fen_before": "r2qkb1r/pp2nppp/1np1p3/4Pb2/3P4/PB3N2/1P3PPP/RNBQ1RK1 b kq - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "e7d5"
+    ],
+    "solution_san": [
+      "Ned5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "63dac8a945f75a88e94e8a47058db017f3344b82bce056377cdb3a55aae44edf",
+    "solution_hash": "6cd2e5041f78468e4633aad683f6bdb939a31a4b776c7d44e7e2ff56734150ad",
+    "difficulty_features": {
+      "motifs": [
+        "DoubleAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.156Z",
+    "verified_at": "2026-10-08T15:01:42.156Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0057",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_782b245ae0ba5c36",
+    "source_game_id": "curated_archive_Tactics.0058",
+    "source_ply": 1,
+    "fen_before": "1r1rb1k1/2p3pp/p2q1p2/3PpP1Q/Pp1bP2N/1B5R/1P4PP/2B4K w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "h5h7"
+    ],
+    "solution_san": [
+      "Qxh7+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "6e7475a185d84486109ff4f2e2cd192c422d03f0d458319549e1574af5224e32",
+    "solution_hash": "c23f59609a2100f8c7d926eb49e227f62d2700ef06e6acfd8d60fd19463c1bbe",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.160Z",
+    "verified_at": "2026-10-08T15:01:42.160Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0058",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_129370308435be7c",
+    "source_game_id": "curated_archive_Tactics.0059",
+    "source_ply": 1,
+    "fen_before": "2b1r3/r2ppN2/8/1p1p1k2/pP1P4/2P3R1/PP3PP1/2K5 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "f7d6"
+    ],
+    "solution_san": [
+      "Nd6+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "235d5c99b6a6d8d278185f46a807a04559eb62c0d3ea42909d72f737bc333bb2",
+    "solution_hash": "6662c188887795efb31999018f9dcd7f70484907c37f22683f62b6a60e8e2b41",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack"
+      ],
+      "rating_estimate": 1407,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.162Z",
+    "verified_at": "2026-10-08T15:01:42.162Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0059",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1407,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:18:38.665Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_06c54a87d828295a",
+    "source_game_id": "curated_archive_Tactics.0060",
+    "source_ply": 1,
+    "fen_before": "7k/3q1pp1/1p3r2/p1bP4/P1P2p2/1P2rNpP/2Q3P1/4RR1K b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "e3f3"
+    ],
+    "solution_san": [
+      "Rxf3"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "ff3cdbb3c508e93ce2e8003075884121d3becfcf0f0845c02e864160b50e16a8",
+    "solution_hash": "2e76bd318736a590ba57ef3760de33ce5c8586e49f212bd3ddbf1b99fff8a4c7",
+    "difficulty_features": {
+      "motifs": [
+        "TacticalCapture"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.165Z",
+    "verified_at": "2026-10-08T15:01:42.165Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0060",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_945efec7ff0561ad",
+    "source_game_id": "curated_archive_Tactics.0061",
+    "source_ply": 1,
+    "fen_before": "3r2k1/3N1ppp/p2Pp3/8/5q2/8/1PP3R1/1K1R1B2 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "c2c4"
+    ],
+    "solution_san": [
+      "c4"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "cd16e2d7e5d4067414cb8ee49e13bfef9d8641345e31fb2bee5f2ff7bb6e572b",
+    "solution_hash": "4d796683ca1580b9c42c5f60fdb08c1e22df62743076117a853f447446eb184e",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.167Z",
+    "verified_at": "2026-10-08T15:01:42.167Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0061",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_430f9a2ab3b8b9b2",
+    "source_game_id": "curated_archive_Tactics.0062",
+    "source_ply": 1,
+    "fen_before": "4k1br/1K1p1n1r/2p2pN1/P2p1N2/2P3pP/5B2/P2P4/8 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "b7c8"
+    ],
+    "solution_san": [
+      "Kc8"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "f357b3e77683c11bb53cfbad895c2ad39447f334585fbc43bd167fb0433cdf26",
+    "solution_hash": "9126bf7c438ea49be6afe0897d52fb798cc02a812e41cc0b7af8d7bf2d3c8fde",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.170Z",
+    "verified_at": "2026-10-08T15:01:42.170Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0062",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_23807d3a4ee4d77b",
+    "source_game_id": "curated_archive_Tactics.0063",
+    "source_ply": 1,
+    "fen_before": "1B1k4/3p4/1Kp5/PpP2p2/1PqP1P2/8/1P6/8 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "a5a6"
+    ],
+    "solution_san": [
+      "a6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "b51209f4d2ed94bc09393d5e5c6a9ed639f8517f03d8ea89d4528b53be00bffc",
+    "solution_hash": "98170a1f8deb3aff5e5af91af5465825152a5c0802679892e6917700bba8f761",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.172Z",
+    "verified_at": "2026-10-08T15:01:42.172Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0063",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_adbda5e982241551",
+    "source_game_id": "curated_archive_Tactics.0064",
+    "source_ply": 1,
+    "fen_before": "r1b2rk1/ppqn1p1p/2n1p1p1/2b3N1/2N5/PP1BP3/1B3PPP/R2QK2R w KQ - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "d1h5"
+    ],
+    "solution_san": [
+      "Qh5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "4c6b7b17269159726b685ec37f099cf4503899a104c76372ed1df0cbab2328f3",
+    "solution_hash": "ca744eaf49681d0ee30895ea1e3f35db1dcc41a84a1f417bfccde7ae476407cd",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.177Z",
+    "verified_at": "2026-10-08T15:01:42.177Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0064",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_dd2e93980700c26f",
+    "source_game_id": "curated_archive_Tactics.0065",
+    "source_ply": 1,
+    "fen_before": "r1bqk2r/5ppp/p1np4/1p1Np1b1/4P3/2P5/PPN2PPP/R2QKB1R b KQkq - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "e8g8"
+    ],
+    "solution_san": [
+      "O-O"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "e430f73e7c6bca6ea5aeefe2ab5da2536daaafa5fc9f2f0c6f1022f6fbf6ddee",
+    "solution_hash": "95954b32ec087ecc9b2acbd52515fa0c8d8739bc1ac6b62007ff7dc033c47b18",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.180Z",
+    "verified_at": "2026-10-08T15:01:42.180Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0065",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_8e2bedc47e7c5431",
+    "source_game_id": "curated_archive_Tactics.0066",
+    "source_ply": 1,
+    "fen_before": "1rr1b1k1/1pq1bp2/p2p1np1/4p3/P2BP3/2NB2Q1/1PP3PP/4RR1K w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "f1f6"
+    ],
+    "solution_san": [
+      "Rxf6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "c7a8586d0ca7fdb668a9d1d91737659f54ced0fa2e81f82660e28f42dea47363",
+    "solution_hash": "765f2dfefa9bd419f0644afe0821840d93ccf5f73ed0928fbfe9f17542e1359a",
+    "difficulty_features": {
+      "motifs": [
+        "TacticalCapture"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.184Z",
+    "verified_at": "2026-10-08T15:01:42.184Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0066",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_9e5885160bba4c1f",
+    "source_game_id": "curated_archive_Tactics.0067",
+    "source_ply": 1,
+    "fen_before": "2rr3k/1b2bppP/p2p1n2/R7/3P4/1qB2P2/1P4Q1/1K5R w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "g2g7"
+    ],
+    "solution_san": [
+      "Qxg7+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "8c76e054da3ec65f3a201e2759bd78480d9c4b4c923662427bb8665ceda47a6e",
+    "solution_hash": "2a47ba23546c048d1ec4d43366b0d52d9396b330c8b7af745b3dac1a450dfd20",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.187Z",
+    "verified_at": "2026-10-08T15:01:42.187Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0067",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_4984f1ddb3f98227",
+    "source_game_id": "curated_archive_Tactics.0068",
+    "source_ply": 1,
+    "fen_before": "r1b1k1r1/1p2np1p/p1n1pQp1/3p4/3NPP2/P2RB3/2PK2PP/q4B1R w q d6 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "f1e2"
+    ],
+    "solution_san": [
+      "Be2"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "17172363ca839130e1c70a8cf8ad76f1af3bc1a80f542190f01ca6b6f366bde2",
+    "solution_hash": "9f36f5205c4a51c14c13ad430183b8beb4b6c5121c5ffe75f91eb94cac467681",
+    "difficulty_features": {
+      "motifs": [
+        "DoubleAttack"
+      ],
+      "rating_estimate": 1403,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.192Z",
+    "verified_at": "2026-10-08T15:01:42.192Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0068",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1403,
+    "attempts": 2,
+    "last_attempt_at": "2026-10-08T15:25:48.056Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_9d472211b3e78207",
+    "source_game_id": "curated_archive_Tactics.0069",
+    "source_ply": 1,
+    "fen_before": "3b1rk1/1bq3pp/5pn1/1p2rN2/2p1p3/2P1B2Q/1PB2PPP/R2R2K1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "d1d7"
+    ],
+    "solution_san": [
+      "Rd7"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "c0d2967aba3eb6dfbbb48ae47dc882c567dfbee292e3a98f72b20ca1b831d190",
+    "solution_hash": "bdf277106717701701f056958d83f2e7066e580bc094df3addad242b45d3b428",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.195Z",
+    "verified_at": "2026-10-08T15:01:42.195Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0069",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_1bde935585acfae9",
+    "source_game_id": "curated_archive_Tactics.0070",
+    "source_ply": 1,
+    "fen_before": "r1b1r1k1/p2q1ppp/np2n3/3p1NBQ/8/6PB/P4P1P/1R2R1K1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "g5f6"
+    ],
+    "solution_san": [
+      "Bf6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "6e8d0a0715f2b5e2e2ddefb35ba6ecab8f72aabc2edb6ee94e1b295754ed9a1e",
+    "solution_hash": "fffe770e0950ddc27ce0a65246bff26b53d5e3d8459d09b9ea1b332c706112b2",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.199Z",
+    "verified_at": "2026-10-08T15:01:42.199Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0070",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_3abaebb4ca4a17d4",
+    "source_game_id": "curated_archive_Tactics.0071",
+    "source_ply": 1,
+    "fen_before": "r1b2rk1/2q1bppp/p2pp3/2n3PQ/1p1BP3/1BN5/PPP2P1P/2KR2R1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "d4f6"
+    ],
+    "solution_san": [
+      "Bf6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "d261df4888d2a4a5a80c82100234db19cff84fa77473ecdbbe29372f41a68d4b",
+    "solution_hash": "f34a744c31e1ae9a1e9771b7e24c936e3b658fb4fdd613c6a5a7a13e27c46747",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.203Z",
+    "verified_at": "2026-10-08T15:01:42.203Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0071",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_af521f54b70db1a4",
+    "source_game_id": "curated_archive_Tactics.0072",
+    "source_ply": 1,
+    "fen_before": "r1bqk2r/pp3ppp/5n2/8/1b1npB2/2N5/PP1Q2PP/1K2RBNR w kq - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "c3e4"
+    ],
+    "solution_san": [
+      "Nxe4"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "970e9b4d9c6fda2697432f049fc41974eaeaea908d1e5e921f7229beee5b050f",
+    "solution_hash": "1c74dde0b311555c4386b9953d8119ca9d5f50e9ea396b83b64f77826a0fe802",
+    "difficulty_features": {
+      "motifs": [
+        "TacticalCapture"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.206Z",
+    "verified_at": "2026-10-08T15:01:42.206Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0072",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_086a8d6c9f5f29dc",
+    "source_game_id": "curated_archive_Tactics.0073",
+    "source_ply": 1,
+    "fen_before": "1r2r1k1/3bnppp/p2q4/2RPp3/4P3/6P1/2Q1NPBP/2R3K1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "c5c7"
+    ],
+    "solution_san": [
+      "Rc7"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "27c26b9cbcc9ab7788c58d17f4b6eac4a0cf73bee8d061b2f740cbd4f7adccaf",
+    "solution_hash": "9cda1a946e0b1a46117d852fbc0b39694381fe156ca6edebc4f68f92cf290e9d",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.211Z",
+    "verified_at": "2026-10-08T15:01:42.211Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0073",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_b4e1fbb21e867fa4",
+    "source_game_id": "curated_archive_Tactics.0074",
+    "source_ply": 1,
+    "fen_before": "1rbq1rk1/p1p1bppp/2p2n2/8/Q1BP4/2N5/PP3PPP/R1B2RK1 b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "b8b4"
+    ],
+    "solution_san": [
+      "Rb4"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "cf5656c92cf10b9865bc069887039178709d674cc508b5cd431b80bb747da90f",
+    "solution_hash": "9c76c0de838678cf74a00bd1df96936105c7457c1d1d75a52181e1dc89a18db9",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.214Z",
+    "verified_at": "2026-10-08T15:01:42.214Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0074",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:18:38.491Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_ff2c31da534df8c4",
+    "source_game_id": "curated_archive_Tactics.0075",
+    "source_ply": 1,
+    "fen_before": "4K3/2k1Bp1N/6p1/5PP1/8/7p/b7/8 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "e7f6"
+    ],
+    "solution_san": [
+      "Bf6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "eddebb6e44403742a78e374bb2d2741821661e4bb0c3a99459523f526dd89371",
+    "solution_hash": "43aca34ba9d420023e3bd761c6d40f6a2e940a5bc3ba52347a484de2c57c923d",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.218Z",
+    "verified_at": "2026-10-08T15:01:42.218Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0075",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_b1b03cb05317c9dd",
+    "source_game_id": "curated_archive_Tactics.0076",
+    "source_ply": 1,
+    "fen_before": "r1bq1rk1/pppp1pbp/2n2np1/4p3/2P5/P1N2NP1/1P1PPPBP/R1BQK2R w KQ - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "e1g1"
+    ],
+    "solution_san": [
+      "O-O"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "350cd35eb3a3173fced26593682b5305c8d9c49d129cd94563daf404c5c74e70",
+    "solution_hash": "5215838ff188553baee33f2debe7d5fca1dca3458c9479ba4648316145f5f917",
+    "difficulty_features": {
+      "motifs": [
+        "DoubleAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.220Z",
+    "verified_at": "2026-10-08T15:01:42.220Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0076",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_418d584c53a68b42",
+    "source_game_id": "curated_archive_Tactics.0077",
+    "source_ply": 1,
+    "fen_before": "r7/1QP1N1Kp/pn2P1b1/Nnk2p2/7p/p4BP1/1rPPp2q/8 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "e7d5"
+    ],
+    "solution_san": [
+      "Nd5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "80e7171169230fab496ab42115a1fb0ae49221993f9defccb8789d59957ae492",
+    "solution_hash": "6cd2e5041f78468e4633aad683f6bdb939a31a4b776c7d44e7e2ff56734150ad",
+    "difficulty_features": {
+      "motifs": [
+        "DoubleAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.223Z",
+    "verified_at": "2026-10-08T15:01:42.223Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0077",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_3fa29c56a838f68d",
+    "source_game_id": "curated_archive_Tactics.0078",
+    "source_ply": 1,
+    "fen_before": "7q/b1p5/1p1Npkb1/pPP2ppP/P1P5/3B2P1/5P1R/K3R3 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "h5g6"
+    ],
+    "solution_san": [
+      "hxg6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "68856d4ab05343e7c138b34aa1cbfe091586ce6af26dd6ace516a008a8a03f11",
+    "solution_hash": "9fb0ea35506ac12f095badb66d159fe4b37df5fcf3c7ccfdba4f432aa869ad73",
+    "difficulty_features": {
+      "motifs": [
+        "WinningExchange"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.229Z",
+    "verified_at": "2026-10-08T15:01:42.229Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0078",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_4a3657b716af03c3",
+    "source_game_id": "curated_archive_Tactics.0079",
+    "source_ply": 1,
+    "fen_before": "3q1r1k/4n3/1R3p1p/3p1b2/3P4/Q3RBPp/4PP1K/2r2N2 b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "c1f1"
+    ],
+    "solution_san": [
+      "Rxf1"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "2d96b39c57ceaf7e9dba51ac18632f4bed49d7cd85961d3d94e8c582d2131428",
+    "solution_hash": "f4dc7da9e1ebb2481d95214f8bbaec805918bc3d38fd3377a2527ffba02d527c",
+    "difficulty_features": {
+      "motifs": [
+        "TacticalCapture"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.232Z",
+    "verified_at": "2026-10-08T15:01:42.232Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0079",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_ce28e419fd3839a6",
+    "source_game_id": "curated_archive_Tactics.0080",
+    "source_ply": 1,
+    "fen_before": "8/4K2p/6pr/5pk1/1pB2R2/p4PP1/8/8 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "f4g4"
+    ],
+    "solution_san": [
+      "Rg4+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "2e5e2b04eeb55c4b08bd3167d38426adcfc85ccfcbc6699c128619a8a2ed8748",
+    "solution_hash": "bbd5ef478dfd9b91ef2ccbc46fed9285fc1ea96338e6b8ff63d6c160952b7807",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.235Z",
+    "verified_at": "2026-10-08T15:01:42.235Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0080",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_cd398c49bca48155",
+    "source_game_id": "curated_archive_Tactics.0081",
+    "source_ply": 1,
+    "fen_before": "r5k1/p1pb2bp/3p3r/P1pPp1p1/2B1Pq2/1R2QPp1/1P4PP/5RBK b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "h6h2"
+    ],
+    "solution_san": [
+      "Rxh2+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "0e804bf20951b59cbc2e9ee444a6c2a5f9de53d8c505efcae9a3cb930d00ca70",
+    "solution_hash": "5f06c40ca4c7ba8d44d158389de7c04c771db67e7f289c45bfb45a16672bb941",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.239Z",
+    "verified_at": "2026-10-08T15:01:42.239Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0081",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_176a87794942b2a8",
+    "source_game_id": "curated_archive_Tactics.0082",
+    "source_ply": 1,
+    "fen_before": "1nbq1r1k/3rbp1p/p1p1pp1Q/1p6/P1pPN3/5NP1/1P2PPBP/R4RK1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "f3g5"
+    ],
+    "solution_san": [
+      "Nfg5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "ef78c64ce38933ff9e517e8cb65c85ff2ec88abfc38f24a57a2c479aab0358cf",
+    "solution_hash": "9c5ec23465f1eb29cd332ee53b8cda2b6f3bed754e1fcc1ed24dd2743d77ee58",
+    "difficulty_features": {
+      "motifs": [
+        "DoubleAttack"
+      ],
+      "rating_estimate": 1406,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.243Z",
+    "verified_at": "2026-10-08T15:01:42.243Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0082",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1406,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:30:41.427Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_23fe351fb718e25a",
+    "source_game_id": "curated_archive_Tactics.0083",
+    "source_ply": 1,
+    "fen_before": "r3k3/ppp2Npp/4Bn2/2b5/1n1pp3/N4P2/PPP3qP/R2QKR2 b Qq - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "b4d3"
+    ],
+    "solution_san": [
+      "Nd3+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "b4f5a8dd1bcabf3c19a848088e6819e029a3d5e0f86294bc5f25374a87191e2d",
+    "solution_hash": "8ae8f91db3daa08e4feef54d955ee2d419c45c223ecc86f9c756b8792143a4c4",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.248Z",
+    "verified_at": "2026-10-08T15:01:42.248Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0083",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_b70b3c0892fd44d9",
+    "source_game_id": "curated_archive_Tactics.0084",
+    "source_ply": 1,
+    "fen_before": "r3kbnr/p4ppp/2p1p3/8/Q1B3b1/2N1B3/PP3PqP/R3K2R w KQkq - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "c4d5"
+    ],
+    "solution_san": [
+      "Bd5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "2ac0dd86d88e4d02f43c1371d8304cfef16326e7c68187945de49f4201a2e0cd",
+    "solution_hash": "558d3199c2777f09391c2608c48a7dffe253030691195a880358cf86d9296302",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.252Z",
+    "verified_at": "2026-10-08T15:01:42.252Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0084",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_12d556a1e7a4ae85",
+    "source_game_id": "curated_archive_Tactics.0085",
+    "source_ply": 1,
+    "fen_before": "r1b2rk1/pp4pp/2n1p1p1/3pP1B1/q1pP1PQ1/P1P5/2P1N1PP/R4RK1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "f4f5"
+    ],
+    "solution_san": [
+      "f5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "ecb1fc18063f8a3fa81769b40ab6c02c8d8315b3dedcc67514b04a6003d5e2d1",
+    "solution_hash": "5345043042a0a24d9d515893c3e13546981b3533c646652254773be00bd9c75a",
+    "difficulty_features": {
+      "motifs": [
+        "DoubleAttack"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.257Z",
+    "verified_at": "2026-10-08T15:01:42.257Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0085",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:30:41.550Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_d71e1a2a1e9a6e99",
+    "source_game_id": "curated_archive_Tactics.0086",
+    "source_ply": 1,
+    "fen_before": "6k1/3r4/2R5/P5P1/1P4p1/8/4rB2/6K1 b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "g4g3"
+    ],
+    "solution_san": [
+      "g3"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "7be80429884a6f04db46f1eaacf3575a42f0a7ffb16d602ab2b38d98f65e5272",
+    "solution_hash": "f40c5b3498169103433ce6f5a5235ad2777596054ad1557553e59853d664c4c7",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.261Z",
+    "verified_at": "2026-10-08T15:01:42.261Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0086",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_eeadb3f9affc0ac4",
+    "source_game_id": "curated_archive_Tactics.0087",
+    "source_ply": 1,
+    "fen_before": "6k1/p1B1b2p/2b3r1/2p5/4p3/1PP1N1Pq/P2R1P2/3Q2K1 b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "g6h6"
+    ],
+    "solution_san": [
+      "Rh6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "5e2a5783dcceb5d4df66e70c6fb74a165afc29684998b663c5f71d33102ea740",
+    "solution_hash": "b787e23a59a09625bf3eaadb38122b3712e69465a67164fb5e1d7a4b934cdcdd",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.265Z",
+    "verified_at": "2026-10-08T15:01:42.265Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0087",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_798a841e98b3e41c",
+    "source_game_id": "curated_archive_Tactics.0088",
+    "source_ply": 1,
+    "fen_before": "6r1/3Pn1qk/p1p1P1rp/2Q2p2/2P5/1P4P1/P3R2P/5RK1 b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "g6g3"
+    ],
+    "solution_san": [
+      "Rxg3+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "c21bdad3c8af3050952f79623a516dd5585c028c9529e62a5845249ffb892e53",
+    "solution_hash": "dfe1b5c458f90479f3a2c729be472f90c97800038da93df64aa89a83e3d71742",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack"
+      ],
+      "rating_estimate": 1407,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.269Z",
+    "verified_at": "2026-10-08T15:01:42.269Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0088",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1407,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:24:37.847Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_a3dc547a2ad46d32",
+    "source_game_id": "curated_archive_Tactics.0089",
+    "source_ply": 1,
+    "fen_before": "2r1r1k1/4bppp/1q4n1/3pP3/p1pP4/PnR2NBP/1P4P1/1B1QR2K w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "e5e6"
+    ],
+    "solution_san": [
+      "e6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "4149e21d89b2e1a2005e7f86454b62cfa45ae27b582ddbfb8fc8ffb8ff88efe4",
+    "solution_hash": "4263a3ec01bafcc663e1fa19083ee7c7b2d161923d9a0d5c05be1c2838f0dffa",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.272Z",
+    "verified_at": "2026-10-08T15:01:42.272Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0089",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_6fe942f1651afc35",
+    "source_game_id": "curated_archive_Tactics.0090",
+    "source_ply": 1,
+    "fen_before": "2kr2nr/1pp3pp/p1pb4/4p2b/4P1P1/5N1P/PPPN1P2/R1B1R1K1 b - - 0 1",
+    "side_to_move": "b",
+    "solution_line": [
+      "h5f7"
+    ],
+    "solution_san": [
+      "Bf7"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "ae8185d0744a13be7246d1ca64bbb5aee290aa07e7cdb039693a5b9c1de5b6b9",
+    "solution_hash": "200bead9f549cfb2080e35188ff33e4338bd9c44df288d88765da3a9a91cbea5",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.275Z",
+    "verified_at": "2026-10-08T15:01:42.275Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0090",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_ae781709c22a40a4",
+    "source_game_id": "curated_archive_Tactics.0091",
+    "source_ply": 1,
+    "fen_before": "5k2/7R/8/4Kp2/5Pp1/P5rp/1P6/8 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "e5f6"
+    ],
+    "solution_san": [
+      "Kf6"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "37b350dbefba01fa0d92dd407fb20858c56d3409bc28c06ff2649775ca0b67bb",
+    "solution_hash": "3fbf12158dcf74191c9df225c685d6574b991aba119bdadba2cbfdba77c2ff91",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.278Z",
+    "verified_at": "2026-10-08T15:01:42.278Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0091",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_56eca6502ef755ed",
+    "source_game_id": "curated_archive_Tactics.0092",
+    "source_ply": 1,
+    "fen_before": "r2qr1k1/1b1nbppp/p3pn2/1p1pN3/3P1B2/2PB1N2/PP2QPPP/R4RK1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "e5f7"
+    ],
+    "solution_san": [
+      "Nxf7"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "18d22370682adad3d2e6a236e24666951a6896ee15d4f71f92aa92657b890b48",
+    "solution_hash": "dbc4acda41a05d2ef54ecdf14e4d664d6069f767f060f5b016274d200992e780",
+    "difficulty_features": {
+      "motifs": [
+        "TacticalCapture"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.281Z",
+    "verified_at": "2026-10-08T15:01:42.281Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0092",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:21:57.561Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_58e6a208e525b12a",
+    "source_game_id": "curated_archive_Tactics.0093",
+    "source_ply": 1,
+    "fen_before": "2r2rk1/2q2p1p/p1p1nPpQ/3p4/4p1B1/8/PPP3PP/R4R1K w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "f1f5"
+    ],
+    "solution_san": [
+      "Rf5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "0b43c6acbb2a48c66f42d4cfad4313c4bf383ce4c9d03cf77b01f66823e0e49d",
+    "solution_hash": "df4200d879d3d980063f3507a6a51fe320368a87922f47d9e6470df93c5dc53a",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1407,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.285Z",
+    "verified_at": "2026-10-08T15:01:42.285Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0093",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1407,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:25:47.748Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_5699124030824ad3",
+    "source_game_id": "curated_archive_Tactics.0094",
+    "source_ply": 1,
+    "fen_before": "3r2rk/5pp1/p2p1q1p/n1pPpP2/PpP1Q2P/1P3RR1/2B2PP1/6K1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "g3g5"
+    ],
+    "solution_san": [
+      "Rg5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "35231b01e1840d630067d1dbee1f57eb2e3ad251f660c930d4ad978c59d70524",
+    "solution_hash": "52ab894cebd5f1e82bb8057a3933b9563cb733dc757b7077fb67bef0a8b6cd89",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.288Z",
+    "verified_at": "2026-10-08T15:01:42.288Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0094",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_ceae99a4b166ceba",
+    "source_game_id": "curated_archive_Tactics.0095",
+    "source_ply": 1,
+    "fen_before": "r1bq1rk1/1p2b2p/2p1pppQ/p7/1n1PN2P/3B1N2/PPPR1PP1/2K4R w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "e4g5"
+    ],
+    "solution_san": [
+      "Neg5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "b6120b8f294b7c77336dbda36bd77611deda18eafbc5ac9555766fcb98bad66a",
+    "solution_hash": "7a337a13c4697a705bfa1bb7d5b54a458d98f4b514a8feb35efa83ac88852cd3",
+    "difficulty_features": {
+      "motifs": [
+        "DoubleAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.293Z",
+    "verified_at": "2026-10-08T15:01:42.293Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0095",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_a2ddd3f20dcd07e6",
+    "source_game_id": "curated_archive_Tactics.0096",
+    "source_ply": 1,
+    "fen_before": "2brr1k1/ppq2ppp/2pb1n2/8/3NP3/2P2P2/P1Q2BPP/1R1R1BK1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "g2g3"
+    ],
+    "solution_san": [
+      "g3"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "bb9693aae48b0adc93dc9b701f672656e01b54b01c795f29be6f6058b679f30a",
+    "solution_hash": "6c4cc0f6411ced5a64c6d3325b81ca7d053a103d9df5c2caada7843e4958c938",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.296Z",
+    "verified_at": "2026-10-08T15:01:42.296Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0096",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_a5b8c4ca58c10af0",
+    "source_game_id": "curated_archive_Tactics.0097",
+    "source_ply": 1,
+    "fen_before": "r1b2rk1/1pq2ppp/p1p1p3/2n1P3/2N2P2/3B4/PPP3PP/R2Q1RK1 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "d3h7"
+    ],
+    "solution_san": [
+      "Bxh7+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "60d7466b758126e518d14243d723eee39c7030b90bc1d493e9446828df72cb8d",
+    "solution_hash": "9ee600e48fa1c85f0371ca8c94489f719f01518510b572d6d7d7b78e601a9481",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.301Z",
+    "verified_at": "2026-10-08T15:01:42.301Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0097",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_bb41485a7e7d4c59",
+    "source_game_id": "curated_archive_Tactics.0098",
+    "source_ply": 1,
+    "fen_before": "r1bqk2r/pp2ppbp/2np1np1/2p5/4P3/1B1P1N1P/PPP2PP1/RNBQK2R w KQkq - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "e1g1"
+    ],
+    "solution_san": [
+      "O-O"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "92248f04ea0875bfb3775b9677ea9720de43057fdd58c018676f7330815b770a",
+    "solution_hash": "5215838ff188553baee33f2debe7d5fca1dca3458c9479ba4648316145f5f917",
+    "difficulty_features": {
+      "motifs": [
+        "DoubleAttack"
+      ],
+      "rating_estimate": 1407,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.306Z",
+    "verified_at": "2026-10-08T15:01:42.306Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0098",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1407,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:18:38.426Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_6473d356dec14e3f",
+    "source_game_id": "curated_archive_Tactics.0099",
+    "source_ply": 1,
+    "fen_before": "5k2/1p2pPp1/3pP1P1/2p1pBp1/2K1P1Pp/8/8/N7 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "a1b3"
+    ],
+    "solution_san": [
+      "Nb3"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "c45b1b1a7860c5694b15891bab1c145dd89789337d8e9f676bb5fd9ed0bab005",
+    "solution_hash": "fcc4a1cce4dd2d662d6e8028d1401a74eaa5542e00a2bf62dde085a9dc66c4c3",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.311Z",
+    "verified_at": "2026-10-08T15:01:42.311Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0099",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_71816b1d608ebb51",
+    "source_game_id": "curated_archive_Tactics.0100",
+    "source_ply": 1,
+    "fen_before": "1r4k1/pb3p1p/r1p1p1p1/2p1P3/P1P2P2/1PB5/2K3PP/5R2 w - - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "a4a5"
+    ],
+    "solution_san": [
+      "a5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "b81ac1b873b41cc00ff98c07bdcd7574b4262469004c5f4e88db8336e322b87b",
+    "solution_hash": "1426c7d0a7c5e3fc83f8ed5ab1fbcec3a7615d9cd52ff203a10ba5810948e556",
+    "difficulty_features": {
+      "motifs": [
+        "PositionalTactic"
+      ],
+      "rating_estimate": 1396,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:01:42.314Z",
+    "verified_at": "2026-10-08T15:01:42.314Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "curated_archive_Tactics.0100",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    },
+    "puzzle_rating": 1396,
+    "attempts": 1,
+    "last_attempt_at": "2026-10-08T15:25:47.871Z"
+  },
+  {
+    "puzzle_id": "rhz_puz_7da2051cf7130aea",
+    "source_game_id": "wac_p4b_muzojg3a",
+    "source_ply": 0,
+    "fen_before": "r1b1kb1r/pppp1ppp/8/4n3/3P3q/8/PPP1PPPP/RNBQKB1R w KQkq - 1 5",
+    "side_to_move": "w",
+    "solution_line": [
+      "d4e5"
+    ],
+    "solution_san": [
+      "dxe5"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "b05c9d014146258f43c2a89b11f0a81aa35d24df1ffcbcf829dce7fdf586c51e",
+    "solution_hash": "0b534512ac9cf0f14d6df4d3b10cbb1900be9ff648accd720b47f5d2c390867a",
+    "difficulty_features": {
+      "motifs": [
+        "TACTICAL"
+      ],
+      "rating_estimate": 1400,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "TACTICAL",
+    "status": "QUARANTINED",
+    "quarantine_reason": "HOLDOUT_LEAKAGE_VETO: Position matches sealed WAC-30 benchmark holdout.",
+    "created_at": "2026-10-08T15:16:54.673Z",
+    "verified_at": "2026-10-08T15:16:54.673Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "wac_p4b_muzojg3a",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": false
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_ab1e3932d4dc5aba",
+    "source_game_id": "prod_game_opera_muzpaelb",
+    "source_ply": 31,
+    "fen_before": "4kb1r/p2n1ppp/4q3/4p1B1/4P3/1Q6/PPP2PPP/2KR4 w k - 0 16",
+    "side_to_move": "w",
+    "solution_line": [
+      "b3b8"
+    ],
+    "solution_san": [
+      "Qb8+"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "753016af261f82f42c54aae7e68d541fc7e5515bc50648e8d4054b39fd2bff8f",
+    "solution_hash": "b2fad03d1d27eb936354eaea4908449d4e0468b6200b95562f1e776b70d734b3",
+    "difficulty_features": {
+      "motifs": [
+        "CheckingAttack",
+        "DoubleAttack",
+        "Pin"
+      ],
+      "rating_estimate": 1450,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "PIN",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:37:52.605Z",
+    "verified_at": "2026-10-08T15:37:52.605Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "prod_game_opera_muzpaelb",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  },
+  {
+    "puzzle_id": "rhz_puz_7f4b090f078ab597",
+    "source_game_id": "prod_game_opera_muzpd8bv",
+    "source_ply": 1,
+    "fen_before": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "side_to_move": "w",
+    "solution_line": [
+      "e2e4"
+    ],
+    "solution_san": [
+      "e4"
+    ],
+    "solution_depth": 18,
+    "teacher_engine": "Castle Core v1.0.2 E5 Champion",
+    "teacher_engine_sha": "00ccc8c47e1b6d74ccd2e2e5fb394cb7075b8f772a4f8e1d8962c6603d30d269",
+    "model_sha": "39d3d9ce9aba72fa7ff85ad4a6c3e1b446687f2d4abedcca87549143c8c90e5c",
+    "position_hash": "b1791d7fc9ae3d38966568c257ffb3a02cbf8394cdb4805bc70f64fc3c0b6879",
+    "solution_hash": "3e8db43daed3851a47f554fccba99f80a01e9e8071ac5d9b3d81084761371467",
+    "difficulty_features": {
+      "motifs": [
+        "DoubleAttack",
+        "Fork"
+      ],
+      "rating_estimate": 1450,
+      "depth": 18,
+      "advantage_cp": 350
+    },
+    "category": "FORK",
+    "status": "PUBLISHED",
+    "quarantine_reason": null,
+    "created_at": "2026-10-08T15:40:09.121Z",
+    "verified_at": "2026-10-08T15:40:09.121Z",
+    "is_test": false,
+    "provenance": {
+      "source_type": "VERIFIED_GAME",
+      "verified_game_id": "prod_game_opera_muzpd8bv",
+      "holdout_screened": true,
+      "zero_wac_30_leakage": true
+    }
+  }
+]

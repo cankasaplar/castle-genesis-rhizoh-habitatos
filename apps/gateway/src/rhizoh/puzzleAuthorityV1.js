@@ -60,28 +60,41 @@ export const WAC_30_QUARANTINE_BOARDS = Object.freeze(new Set([
 function resolveRepoRoot() {
   const candidates = [
     process.env.RHIZOH_REPO_ROOT,
+    process.env.REPO_ROOT,
     path.resolve(__dirname, "..", "..", "..", ".."),
-    path.resolve(__dirname, "..", "..", ".."),
-    path.resolve(process.cwd(), ".."),
     process.cwd(),
-    "/home/castle/castle"
-  ];
+    path.resolve(process.cwd(), ".."),
+    path.resolve(__dirname, "..", "..", "..")
+  ].filter(Boolean);
+
   for (const c of candidates) {
-    if (c && fs.existsSync(path.join(c, "data", "event_ledger.jsonl"))) {
+    if (
+      fs.existsSync(path.join(c, "data", "puzzles_canonical_v1.json")) ||
+      fs.existsSync(path.join(c, "data", "tactics_puzzles.epd")) ||
+      (fs.existsSync(path.join(c, "package.json")) && fs.existsSync(path.join(c, "apps", "gateway")))
+    ) {
       return c;
     }
   }
-  return process.platform === "win32" ? path.resolve(__dirname, "..", "..", "..", "..") : "/home/castle/castle";
+  return path.resolve(__dirname, "..", "..", "..", "..");
 }
 
 function resolvePuzzlesStorePath() {
   const root = resolveRepoRoot();
-  const filePath = path.join(root, "data", "puzzles_canonical_v1.json");
-  const dir = path.dirname(filePath);
+  const candidates = [
+    path.join(root, "data", "puzzles_canonical_v1.json"),
+    path.resolve(process.cwd(), "data", "puzzles_canonical_v1.json"),
+    path.resolve(__dirname, "..", "..", "..", "..", "data", "puzzles_canonical_v1.json")
+  ];
+  for (const cand of candidates) {
+    if (fs.existsSync(cand)) return cand;
+  }
+  const defaultPath = path.join(root, "data", "puzzles_canonical_v1.json");
+  const dir = path.dirname(defaultPath);
   if (!fs.existsSync(dir)) {
     try { fs.mkdirSync(dir, { recursive: true }); } catch {}
   }
-  return filePath;
+  return defaultPath;
 }
 
 function resolvePuzzleStatsPath() {
@@ -644,8 +657,14 @@ export function initPuzzleAuthority() {
     return { initialized: true, count: puzzlesStore.size };
   }
 
-  const epdCandidate = path.join(resolveRepoRoot(), "data", "tactics_puzzles.epd");
-  if (fs.existsSync(epdCandidate)) {
+  const root = resolveRepoRoot();
+  const epdCandidates = [
+    path.join(root, "data", "tactics_puzzles.epd"),
+    path.resolve(process.cwd(), "data", "tactics_puzzles.epd"),
+    path.resolve(__dirname, "..", "..", "..", "..", "data", "tactics_puzzles.epd")
+  ];
+  const epdCandidate = epdCandidates.find(p => fs.existsSync(p));
+  if (epdCandidate) {
     try {
       const content = fs.readFileSync(epdCandidate, "utf8");
       const lines = content.split("\n").filter(Boolean);

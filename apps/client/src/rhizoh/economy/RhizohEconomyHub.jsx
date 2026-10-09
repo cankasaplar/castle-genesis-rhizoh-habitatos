@@ -84,6 +84,18 @@ export function RhizohEconomyHub() {
         <div className="text-xs text-slate-400">
           Axiom: Financial resources fund hardware, but have zero influence over game outcomes, engine moves, or promotion gates.
         </div>
+        <div className="pt-2 flex flex-wrap items-center gap-3">
+          <a
+            href="https://www.patreon.com/c/CanKasaplar/membership"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-mono font-bold text-xs transition-all shadow-lg shadow-rose-950/40"
+          >
+            <Heart className="w-3.5 h-3.5 fill-current" />
+            Support Rhizoh on Patreon (7-Day Free Trial)
+            <ArrowRight className="w-3.5 h-3.5" />
+          </a>
+        </div>
       </div>
 
       {/* 3. Metrics Overview */}
@@ -136,12 +148,32 @@ export function RhizohEconomyHub() {
                 <div className="text-[11px] font-mono text-slate-400 mb-3 leading-tight">
                   <span className="text-amber-400">Guard:</span> {tier.epistemic_guard}
                 </div>
-                <button
-                  onClick={() => setFormData((prev) => ({ ...prev, tier_id: tier.tier_id }))}
-                  className="w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-semibold transition-colors"
-                >
-                  Select Tier
-                </button>
+                {tier.patreon_url ? (
+                  <div className="space-y-2">
+                    <a
+                      href={tier.patreon_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-mono font-bold transition-all shadow-md shadow-rose-950/40 text-center"
+                    >
+                      Join on Patreon (Free Trial)
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </a>
+                    <button
+                      onClick={() => setFormData((prev) => ({ ...prev, tier_id: tier.tier_id }))}
+                      className="w-full py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 text-[11px] font-mono transition-colors"
+                    >
+                      Or Register Compute Intent
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setFormData((prev) => ({ ...prev, tier_id: tier.tier_id }))}
+                    className="w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-semibold transition-colors"
+                  >
+                    Select Tier
+                  </button>
+                )}
               </div>
             </div>
           ))}

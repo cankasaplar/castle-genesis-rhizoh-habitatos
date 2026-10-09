@@ -40,15 +40,16 @@ export const MEMBERSHIP_TIERS = [
   {
     tier_id: "RHIZOH_SUPPORTER",
     name: "Rhizoh Supporter",
-    monthly_usd: 5,
-    tagline: "Fuel the continuous live games and community servers",
+    monthly_usd: 10,
+    tagline: "Fuel the continuous live games and community servers (7-day free trial on Patreon)",
     benefits: [
       "Official supporter badge on public profile",
       "Full access to Puzzle World personal analytics",
       "Priority matching in open chess rooms",
       "Supporter attribution in the public Chronicle"
     ],
-    epistemic_guard: "Does not grant access to mutate or poison model weights"
+    epistemic_guard: "Does not grant access to mutate or poison model weights",
+    patreon_url: "https://www.patreon.com/c/CanKasaplar/membership"
   },
   {
     tier_id: "RHIZOH_PATRON",
